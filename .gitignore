@@ -18,6 +18,12 @@ groups/global/*
 !groups/main/CLAUDE.md
 !groups/global/CLAUDE.md
 
+# Knowledge directory — track structure and source files, not agent copies or large generated files
+knowledge/agents/*/llms-full.txt
+knowledge/shared/llms-full.txt
+knowledge/agents/*/SCHEDULE.md
+knowledge/shared/SCHEDULE.md
+
 # Secrets
 *.keys.json
 .env
