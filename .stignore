@@ -1,0 +1,13 @@
+// Runtime state — never sync, will corrupt or conflict
+store/
+data/business/business.db
+data/business/business.db-wal
+data/business/business.db-shm
+data/business/queue/
+
+// Node modules and build output
+node_modules/
+dist/
+
+// Sync conflict files
+*.sync-conflict-*

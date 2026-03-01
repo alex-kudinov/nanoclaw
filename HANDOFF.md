@@ -1,67 +1,71 @@
-# Handoff — 2026-03-01 (Session 3)
+# Handoff — 2026-03-01 (Session 4)
 
 ## Session Summary
-- Fixed n8n access: Google SSO replacing broken email OTP (forwarding account issue)
-- Added `info@tandemcoaching.academy` to CF Access allow policy via API
-- Configured Google OAuth IdP in CF Zero Trust (manual — app ID + client secret from GCP)
-  - Redirect URI: `https://tandemcoach.cloudflareaccess.com/cdn-cgi/access/callback`
-  - One-time PIN login method removed
-- n8n owner account created: `info@tandemcoaching.academy`
-- Confirmed full architecture doc is the execution plan — no re-planning needed
-- Identified Wave 0 pre-requisites before starting Task #3 vertical slice
+- Created Slack app "Gru" (Mr Gru) in cnpc.coach workspace with full scope set
+- Retired nclaw, migrated everything to Gru (bot token + app token in .env)
+- Created Wave 1 channels: #gru-inbox (C0AHDHWMSKH), #gru-sales (C0AHV1SGT6W), #gru-chief (C0AHDHX1NBH) — private, Gru + Alex invited
+- Initialized business.db on Mac Mini from schema.sql (8 tables)
+- Created queue/ directory structure (inbox-to-sales, any-to-chief, sales-to-proposals, proposals-to-sales, billing-to-books)
+- Created groups/inbox/CLAUDE.md, groups/sales/CLAUDE.md, groups/chief/CLAUDE.md
+- Registered all 5 channels in Mac Mini's messages.db (slack:C... → folder)
+- Restarted NanoClaw on Mac Mini — now running as Gru (botUserId: U0AJ7UDBD6D), groupCount: 5
+- Set up SSH to Mac Mini: key at ~/Sync/keys/xbohdpukc, host 100.115.115.204
+- Migrated pulse webhook to Gru (tandemweb/.env PULSE_SLACK_WEBHOOK updated)
+- Renamed nclaw-mac → general-gru (channel ID C0AHEJM92KY unchanged)
+- Created .stignore to prevent Syncthing from syncing store/ and business.db
+- Added full Gru bot scope set via App Manifest (18 scopes incl. reactions:write, users:read.email, channels:manage, im:write, etc.)
 
 ## Current State
-- Branch: main (uncommitted changes — HANDOFF.md only)
-- n8n: live at `ops.tandemcoach.co`, owner account created, ready for workflows
-- CF Access: Google SSO only, `info@tandemcoaching.academy` + academy emails allowed
-- Wave 0 status: n8n ✓ | Slack app ✗ | business.db ✗ | queue/ dirs ✗ | #gru-channels ✗
+- Branch: main (uncommitted changes — many files)
+- NanoClaw: running on Mac Mini as Gru, PID 48464, groupCount 5, all channels live
+- Gru bot: U0AJ7UDBD6D | App: B0AHDHJBNQ7 | xoxb token in .env (same after last reinstall)
+- Wave 0: COMPLETE ✅
+- Wave 1 agent structure: COMPLETE ✅ (groups + db + queues created)
+- NOT YET TESTED: Inbox Commander agent response to a test lead
 
 ## Active Problem Context
-Wave 0 is the blocker for Task #3. Need to complete:
-1. Create Slack app "Gru" in `cnpc.coach` workspace — get `xapp-` and `xoxb-` tokens
-2. Create `#gru-*` channels (Wave 1 set: `#gru-inbox`, `#gru-sales`, `#gru-chief`)
-3. Initialize `business.db` + `queue/` directory structure in NanoClaw repo
-4. Write CLAUDE.md for Wave 1 agents (inbox, sales, chief)
-5. Register agent groups in NanoClaw
-6. Build n8n contact form webhook workflow → posts to `#gru-inbox`
+The test lead was posted to #gru-inbox earlier but was posted BY the Gru bot token — NanoClaw likely filtered it as a bot message. Need to verify if NanoClaw picks up messages posted by the bot itself (n8n will also post via bot token).
 
-User left mid-session to create the Slack app (manual step). NanoClaw repo path on Mac Mini not yet confirmed.
+This is a potential architectural issue: n8n posts to Slack using Gru's bot token → NanoClaw may filter it as a bot_message → agents never fire. Need to test and potentially adjust the message filtering logic in slack.ts.
 
 ## Decisions & Reasoning
-- **Slack workspace:** `cnpc.coach` (not tandemcoach)
-- **Channel naming:** `#gru-*` as per architecture doc — all agent channels private
-- **Contact form → `#gru-inbox`:** per architecture doc, Inbox Commander handles all inbound
-- **Google SSO:** `info@tandemcoaching.academy` is the primary Google account
-  - `tandemcoach.co` emails are forwarding-only — don't use for CF Access or n8n
-  - `tandemcoaching.academy` is the primary Google Workspace domain
-- **Cloudflare team name:** `tandemcoach` (not `tandemcoaching`) — URL is `tandemcoach.cloudflareaccess.com`
-- **"aktx → tandemcoaching" rename:** no script changes needed — scripts use dynamic account ID
+- **One bot (Gru) for everything** — nclaw retired, Gru handles personal assistant + all business agents. One NanoClaw process, one Slack connection.
+- **Socket Mode** — xapp token enables outbound WebSocket from Mac Mini, no inbound ports needed
+- **store/ excluded from Syncthing** — .stignore added to prevent SQLite corruption across machines
+- **Mac Mini is authoritative** — store/messages.db and data/business/business.db live on Mac Mini only
+- **SSH key**: ~/Sync/keys/xbohdpukc (no passphrase, syncs across machines)
+- **general-gru channel** — was nclaw-mac, renamed by user manually (ID unchanged: C0AHEJM92KY)
 
 ## Open Items & Blockers
-- Slack app creation (user doing manually): need `xapp-*` (app token) and `xoxb-*` (bot token)
-- NanoClaw repo path on Mac Mini — same machine or different?
-- husky pre-commit hook broken in NanoClaw repo: `better-sqlite3` native compilation fails on Node 25, so `prettier` never installs. Commits require `--no-verify` or fixing the Node version.
+1. **Test Inbox Commander** — post a non-bot message to #gru-inbox and verify agent fires
+2. **Bot message filtering** — NanoClaw may ignore messages posted by Gru bot (n8n uses bot token). If so, check slack.ts BotMessageEvent filtering and possibly allow n8n's bot messages through
+3. **n8n workflow** — contact form → #gru-inbox not yet built
+4. **SSH config** — add Host mini-claw entry to ~/.ssh/config for convenience
+5. **husky pre-commit hook** — still broken on Node 25 (better-sqlite3 gyp). Commits need --no-verify or fix node version.
+6. **Sync conflict files** — several .sync-conflict-* files in repo root, should be cleaned up
 
 ## Next Steps (priority order)
-1. Confirm Slack app tokens from user (xapp- and xoxb-)
-2. Confirm NanoClaw path on Mac Mini
-3. Create `#gru-inbox`, `#gru-sales`, `#gru-chief` channels, invite Gru bot
-4. Initialize NanoClaw business agent structure:
-   - `data/business/schema.sql` + `business.db`
-   - `data/business/queue/` directories (inbox-to-sales/, any-to-chief/)
-   - `groups/inbox/CLAUDE.md`, `groups/sales/CLAUDE.md`, `groups/chief/CLAUDE.md`
-5. Register channel IDs → group names in NanoClaw
-6. Build n8n workflow: contact form webhook → `#gru-inbox`
-7. End-to-end test: POST test payload → verify Slack message → verify agent responds
+1. Test: send a non-bot message to #gru-inbox (from Slack UI manually) → verify Inbox Commander fires
+2. If bot message filtering blocks n8n: investigate slack.ts BotMessageEvent handling, determine fix
+3. Build n8n workflow: contact form → structured message → #gru-inbox
+4. End-to-end test: POST to WP contact form → n8n → #gru-inbox → agent qualifies → drops to queue
+5. Add SSH config entry for mini-claw
 
 ## Gotchas Discovered
-- **CF Zero Trust team name is `tandemcoach`** (not `tandemcoaching`) — redirect URI must use `tandemcoach.cloudflareaccess.com`
-- **`tandemcoach.co` emails are forwarding-only** — never use them for auth flows
-- **`tandemcoaching.academy` is primary Google Workspace** — use these for all Google auth
-- **husky hook broken on Node 25** — `better-sqlite3` gyp compilation fails, npm install never completes, prettier never installs. Need `--no-verify` to commit in this repo until fixed.
+- **Slack scope UI bug** — adding scopes via the OAuth UI drops others on page refresh. Always use App Manifest to set scopes atomically.
+- **Slack reinstall sometimes revokes bot token** — always verify token after reinstall.
+- **Bot-created channels** — bot is automatically a member (cant_invite_self on invite is expected).
+- **store/messages.db is Mac Mini-only** — .stignore now prevents Syncthing from touching it.
+- **data/business/ doesn't auto-sync** — had to manually scp schema.sql and init db on Mac Mini.
+- **NanoClaw trigger log says "@Andy"** — this is TRIGGER_PATTERN from config, not the bot name. gru channels have requires_trigger=0 so trigger pattern is irrelevant for them.
+- **SSH to Mac Mini needs key specified** — ssh -i ~/Sync/keys/xbohdpukc (no ~/.ssh/id_* exists on this machine)
 
 ## Environment Notes
-- VPS: `100.115.115.15:2225`, user `tca`, key `/Users/xbohdpukc/Sync/Keys/byteberry/tandem_vps`
-- All VPS/CF creds: `setup/vps/.env`
-- n8n UI: `https://ops.tandemcoach.co` (Google SSO — info@tandemcoaching.academy)
-- NanoClaw: running on Mac Mini (path TBC), launchd service
+- Mac Mini SSH: ssh -i ~/Sync/keys/xbohdpukc xbohdpukc@100.115.115.204
+- Mac Mini hostname: macmini-eth.kudinov.com / mini-claw.local / 100.115.115.204 (Tailscale)
+- NanoClaw logs: ~/dev/NanoClaw/logs/nanoclaw.log (on Mac Mini)
+- NanoClaw service: launchctl kickstart -k gui/$(id -u)/com.nanoclaw
+- Gru bot token: NanoClaw/.env SLACK_BOT_TOKEN
+- Gru app token: NanoClaw/.env SLACK_APP_TOKEN
+- VPS: 100.115.115.15:2225, user tca, key ~/Sync/Keys/byteberry/tandem_vps
+- n8n: https://ops.tandemcoach.co (Google SSO — info@tandemcoaching.academy)
