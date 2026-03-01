@@ -3,7 +3,10 @@ import os from 'os';
 import path from 'path';
 import { logger } from './logger.js';
 
-function parseEnvContent(content: string, wanted: Set<string>): Record<string, string> {
+function parseEnvContent(
+  content: string,
+  wanted: Set<string>,
+): Record<string, string> {
   const result: Record<string, string> = {};
   for (const line of content.split('\n')) {
     const trimmed = line.trim();
