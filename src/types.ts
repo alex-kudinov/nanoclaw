@@ -53,6 +53,18 @@ export interface NewMessage {
   is_bot_message?: boolean;
 }
 
+export interface WebhookDefinition {
+  id: string; // URL slug — POST /hook/{id}
+  name: string; // Human-readable name
+  group: string; // Group folder (which agent handles this)
+  chat_jid: string; // JID to deliver response to if no callback URL
+  prompt_template: string; // May contain {{payload}} or {{payload.field}}
+  secret?: string; // Per-webhook secret (falls back to global WEBHOOK_SECRET)
+  callback_url?: string; // Optional fixed callback (overridden by X-Callback-URL header)
+  context_mode?: 'group' | 'isolated'; // Session persistence (default: 'isolated')
+  created_at: string;
+}
+
 export interface ScheduledTask {
   id: string;
   group_folder: string;
@@ -94,6 +106,11 @@ export interface Channel {
 
 // Callback type that channels use to deliver inbound messages
 export type OnInboundMessage = (chatJid: string, message: NewMessage) => void;
+
+// Callback fired when the bot itself joins a new channel/group.
+// The channel implementation resolves the name before calling this.
+// The orchestrator uses it to auto-register the group.
+export type OnBotJoinedChannel = (chatJid: string, name: string) => void;
 
 // Callback for chat metadata discovery.
 // name is optional — channels that deliver names inline (Telegram) pass it here;

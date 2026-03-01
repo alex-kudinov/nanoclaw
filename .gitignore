@@ -34,5 +34,15 @@ groups/global/*
 
 # Skills system (local per-installation state)
 .nanoclaw/
+.toolbox/
+
+# Session handoffs (local JSONL transcripts — synced via Syncthing)
+handoffs/
+
+# Syncthing conflict files
+*.sync-conflict-*
+.mcp.sync-conflict-*
+CLAUDE.sync-conflict-*
+.claude/settings.local.sync-conflict-*
 
 agents-sdk-docs

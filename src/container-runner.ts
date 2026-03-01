@@ -7,12 +7,14 @@ import fs from 'fs';
 import path from 'path';
 
 import {
+  CONTAINER_HOST_IP,
   CONTAINER_IMAGE,
   CONTAINER_MAX_OUTPUT_SIZE,
   CONTAINER_TIMEOUT,
   DATA_DIR,
   GROUPS_DIR,
   IDLE_TIMEOUT,
+  PROXY_PORT,
   TIMEZONE,
 } from './config.js';
 import { readEnvFile } from './env.js';
@@ -211,16 +213,31 @@ function buildVolumeMounts(
 }
 
 /**
- * Read allowed secrets from .env for passing to the container via stdin.
- * Secrets are never written to disk or mounted as files.
+ * Build secrets payload for the container.
+ * Instead of the real token, containers receive a proxy URL — the token proxy
+ * running in the host process injects the real auth header on every request.
+ * This ensures tokens never enter the container environment.
+ *
+ * We preserve the auth mechanism type (OAuth vs API key) so the Claude CLI
+ * uses the correct flow. The proxy strips whichever placeholder arrives and
+ * injects the real credential from .env.
  */
 function readSecrets(): Record<string, string> {
-  return readEnvFile([
+  const proxyUrl = `http://${CONTAINER_HOST_IP}:${PROXY_PORT}`;
+  const configured = readEnvFile([
     'CLAUDE_CODE_OAUTH_TOKEN',
     'ANTHROPIC_API_KEY',
-    'ANTHROPIC_BASE_URL',
-    'ANTHROPIC_AUTH_TOKEN',
   ]);
+  if (configured.CLAUDE_CODE_OAUTH_TOKEN) {
+    return {
+      ANTHROPIC_BASE_URL: proxyUrl,
+      CLAUDE_CODE_OAUTH_TOKEN: 'proxy-placeholder',
+    };
+  }
+  return {
+    ANTHROPIC_BASE_URL: proxyUrl,
+    ANTHROPIC_API_KEY: 'proxy-placeholder',
+  };
 }
 
 function buildContainerArgs(
@@ -228,6 +245,9 @@ function buildContainerArgs(
   containerName: string,
 ): string[] {
   const args: string[] = ['run', '-i', '--rm', '--name', containerName];
+
+  // Apple Container's VM network doesn't inherit host DNS — specify explicitly.
+  args.push('--dns', '192.168.1.1');
 
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);

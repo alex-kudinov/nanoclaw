@@ -3,9 +3,15 @@ import path from 'path';
 
 import {
   ASSISTANT_NAME,
+  DATA_DIR,
   IDLE_TIMEOUT,
   POLL_INTERVAL,
+  PROXY_PORT,
+  SLACK_ONLY,
   TRIGGER_PATTERN,
+  WEBHOOK_PORT,
+  WEBHOOK_SECRET,
+  WEBHOOKS_FILE,
 } from './config.js';
 import './channels/index.js';
 import {
@@ -38,12 +44,15 @@ import {
   storeMessage,
 } from './db.js';
 import { GroupQueue } from './group-queue.js';
-import { resolveGroupFolderPath } from './group-folder.js';
 import { startIpcWatcher } from './ipc.js';
+import { TokenProxy } from './token-proxy.js';
+import { WebhookServer } from './webhook-server.js';
 import { findChannel, formatMessages, formatOutbound } from './router.js';
 import { startSchedulerLoop } from './task-scheduler.js';
 import { Channel, NewMessage, RegisteredGroup } from './types.js';
+import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
+import { readEnvFile } from './env.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -80,21 +89,11 @@ function saveState(): void {
 }
 
 function registerGroup(jid: string, group: RegisteredGroup): void {
-  let groupDir: string;
-  try {
-    groupDir = resolveGroupFolderPath(group.folder);
-  } catch (err) {
-    logger.warn(
-      { jid, folder: group.folder, err },
-      'Rejecting group registration with invalid folder',
-    );
-    return;
-  }
-
   registeredGroups[jid] = group;
   setRegisteredGroup(jid, group);
 
   // Create group folder
+  const groupDir = path.join(DATA_DIR, '..', 'groups', group.folder);
   fs.mkdirSync(path.join(groupDir, 'logs'), { recursive: true });
 
   logger.info(
@@ -138,7 +137,7 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
 
   const channel = findChannel(channels, chatJid);
   if (!channel) {
-    logger.warn({ chatJid }, 'No channel owns JID, skipping messages');
+    console.log(`Warning: no channel owns JID ${chatJid}, skipping messages`);
     return true;
   }
 
@@ -209,10 +208,6 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
       }
       // Only reset idle timer on actual results, not session-update markers (result: null)
       resetIdleTimer();
-    }
-
-    if (result.status === 'success') {
-      queue.notifyIdle(chatJid);
     }
 
     if (result.status === 'error') {
@@ -300,7 +295,6 @@ async function runAgent(
         groupFolder: group.folder,
         chatJid,
         isMain,
-        assistantName: ASSISTANT_NAME,
       },
       (proc, containerName) =>
         queue.registerProcess(chatJid, proc, containerName, group.folder),
@@ -369,22 +363,14 @@ async function startMessageLoop(): Promise<void> {
 
           const channel = findChannel(channels, chatJid);
           if (!channel) {
-            logger.warn({ chatJid }, 'No channel owns JID, skipping messages');
+            console.log(
+              `Warning: no channel owns JID ${chatJid}, skipping messages`,
+            );
             continue;
           }
 
           const isMainGroup = group.isMain === true;
           const needsTrigger = !isMainGroup && group.requiresTrigger !== false;
-
-          // For non-main groups, only act on trigger messages.
-          // Non-trigger messages accumulate in DB and get pulled as
-          // context when a trigger eventually arrives.
-          if (needsTrigger) {
-            const hasTrigger = groupMessages.some((m) =>
-              TRIGGER_PATTERN.test(m.content.trim()),
-            );
-            if (!hasTrigger) continue;
-          }
 
           // Pull all messages since lastAgentTimestamp so non-trigger
           // context that accumulated between triggers is included.
@@ -397,6 +383,8 @@ async function startMessageLoop(): Promise<void> {
             allPending.length > 0 ? allPending : groupMessages;
           const formatted = formatMessages(messagesToSend);
 
+          // Try piping to an active container first — follow-up messages
+          // in an ongoing conversation don't require a trigger.
           if (queue.sendMessage(chatJid, formatted)) {
             logger.debug(
               { chatJid, count: messagesToSend.length },
@@ -406,15 +394,22 @@ async function startMessageLoop(): Promise<void> {
               messagesToSend[messagesToSend.length - 1].timestamp;
             saveState();
             // Show typing indicator while the container processes the piped message
-            channel
-              .setTyping?.(chatJid, true)
-              ?.catch((err) =>
-                logger.warn({ chatJid, err }, 'Failed to set typing indicator'),
-              );
-          } else {
-            // No active container — enqueue for a new one
-            queue.enqueueMessageCheck(chatJid);
+            channel.setTyping?.(chatJid, true);
+            continue;
           }
+
+          // No active container — check trigger before spawning a new one.
+          // Non-trigger messages accumulate in DB and get pulled as
+          // context when a trigger eventually arrives.
+          if (needsTrigger) {
+            const hasTrigger = groupMessages.some((m) =>
+              TRIGGER_PATTERN.test(m.content.trim()),
+            );
+            if (!hasTrigger) continue;
+          }
+
+          // Enqueue for a new container
+          queue.enqueueMessageCheck(chatJid);
         }
       }
     } catch (err) {
@@ -449,6 +444,35 @@ function ensureContainerSystemRunning(): void {
 
 async function main(): Promise<void> {
   ensureContainerSystemRunning();
+
+  // Start token proxy before channels so containers can authenticate
+  // as soon as they spin up. Tokens are never passed into containers.
+  const proxy = new TokenProxy(PROXY_PORT);
+  await proxy.start();
+
+  // Start webhook server — listens on all interfaces (including Tailscale)
+  // for inbound trigger events from Tailscale-connected machines.
+  const webhookServer = new WebhookServer({
+    port: WEBHOOK_PORT,
+    webhooksFile: WEBHOOKS_FILE,
+    globalSecret: WEBHOOK_SECRET,
+    getRegisteredGroups: () => registeredGroups,
+    runAgent: runContainerAgent,
+    sendMessage: async (jid, rawText) => {
+      const channel = findChannel(channels, jid);
+      if (!channel) {
+        logger.warn(
+          { jid },
+          'Webhook: no channel for JID, cannot send response',
+        );
+        return;
+      }
+      const text = formatOutbound(rawText);
+      if (text) await channel.sendMessage(jid, text);
+    },
+  });
+  await webhookServer.start();
+
   initDatabase();
   logger.info('Database initialized');
   loadState();
@@ -458,6 +482,8 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'Shutdown signal received');
     await queue.shutdown(10000);
     for (const ch of channels) await ch.disconnect();
+    await proxy.stop().catch(() => {});
+    await webhookServer.stop().catch(() => {});
     process.exit(0);
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
@@ -473,6 +499,48 @@ async function main(): Promise<void> {
       channel?: string,
       isGroup?: boolean,
     ) => storeChatMetadata(chatJid, timestamp, name, channel, isGroup),
+    onBotJoinedChannel: (jid: string, name: string) => {
+      if (registeredGroups[jid]) return; // already registered
+
+      // Derive folder from channel name; Slack names are already lowercase alnum+hyphens
+      let folder = name
+        .replace(/[^A-Za-z0-9_-]/g, '-')
+        .replace(/^-+/, '')
+        .slice(0, 63);
+
+      if (!isValidGroupFolder(folder)) {
+        logger.warn(
+          { jid, name },
+          'Auto-register: cannot derive valid folder from channel name',
+        );
+        return;
+      }
+
+      // Handle collision: same folder name, different JID
+      const folderTaken = Object.values(registeredGroups).some(
+        (g) => g.folder === folder,
+      );
+      if (folderTaken) {
+        folder = `${folder}-${jid.replace('slack:', '').toLowerCase()}`.slice(
+          0,
+          63,
+        );
+        if (!isValidGroupFolder(folder)) {
+          logger.warn(
+            { jid, name, folder },
+            'Auto-register: folder with suffix is invalid',
+          );
+          return;
+        }
+      }
+
+      registerGroup(jid, {
+        name,
+        folder,
+        trigger: TRIGGER_PATTERN.source,
+        added_at: new Date().toISOString(),
+      });
+    },
     registeredGroups: () => registeredGroups,
   };
 
@@ -507,7 +575,7 @@ async function main(): Promise<void> {
     sendMessage: async (jid, rawText) => {
       const channel = findChannel(channels, jid);
       if (!channel) {
-        logger.warn({ jid }, 'No channel owns JID, cannot send message');
+        console.log(`Warning: no channel owns JID ${jid}, cannot send message`);
         return;
       }
       const text = formatOutbound(rawText);
@@ -532,13 +600,13 @@ async function main(): Promise<void> {
     getAvailableGroups,
     writeGroupsSnapshot: (gf, im, ag, rj) =>
       writeGroupsSnapshot(gf, im, ag, rj),
+    addWebhook: (def) => webhookServer.addWebhook(def),
+    removeWebhook: (id) => webhookServer.removeWebhook(id),
+    listWebhooks: () => webhookServer.listWebhooks(),
   });
   queue.setProcessMessagesFn(processGroupMessages);
   recoverPendingMessages();
-  startMessageLoop().catch((err) => {
-    logger.fatal({ err }, 'Message loop crashed unexpectedly');
-    process.exit(1);
-  });
+  startMessageLoop();
 }
 
 // Guard: only run when executed directly, not when imported by tests

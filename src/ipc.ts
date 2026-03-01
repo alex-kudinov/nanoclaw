@@ -8,7 +8,7 @@ import { AvailableGroup } from './container-runner.js';
 import { createTask, deleteTask, getTaskById, updateTask } from './db.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
-import { RegisteredGroup } from './types.js';
+import { RegisteredGroup, WebhookDefinition } from './types.js';
 
 export interface IpcDeps {
   sendMessage: (jid: string, text: string) => Promise<void>;
@@ -22,6 +22,10 @@ export interface IpcDeps {
     availableGroups: AvailableGroup[],
     registeredJids: Set<string>,
   ) => void;
+  // Webhook management — optional so existing callers don't need to change
+  addWebhook?: (def: WebhookDefinition) => void;
+  removeWebhook?: (id: string) => boolean;
+  listWebhooks?: () => WebhookDefinition[];
 }
 
 let ipcWatcherRunning = false;
@@ -171,6 +175,9 @@ export async function processTaskIpc(
     trigger?: string;
     requiresTrigger?: boolean;
     containerConfig?: RegisteredGroup['containerConfig'];
+    // For webhook management
+    webhook?: WebhookDefinition;
+    webhook_id?: string;
   },
   sourceGroup: string, // Verified identity from IPC directory
   isMain: boolean, // Verified from directory path
@@ -379,6 +386,74 @@ export async function processTaskIpc(
         logger.warn(
           { data },
           'Invalid register_group request - missing required fields',
+        );
+      }
+      break;
+
+    case 'register_webhook':
+      // Only main group can manage webhooks
+      if (!isMain) {
+        logger.warn(
+          { sourceGroup },
+          'Unauthorized register_webhook attempt blocked',
+        );
+        break;
+      }
+      if (data.webhook && deps.addWebhook) {
+        deps.addWebhook(data.webhook);
+        logger.info(
+          { id: data.webhook.id, sourceGroup },
+          'Webhook registered via IPC',
+        );
+      } else {
+        logger.warn(
+          { data },
+          'Invalid register_webhook request — missing webhook field or handler',
+        );
+      }
+      break;
+
+    case 'delete_webhook':
+      // Only main group can manage webhooks
+      if (!isMain) {
+        logger.warn(
+          { sourceGroup },
+          'Unauthorized delete_webhook attempt blocked',
+        );
+        break;
+      }
+      if (data.webhook_id && deps.removeWebhook) {
+        const removed = deps.removeWebhook(data.webhook_id);
+        if (removed) {
+          logger.info(
+            { id: data.webhook_id, sourceGroup },
+            'Webhook removed via IPC',
+          );
+        } else {
+          logger.warn({ id: data.webhook_id }, 'delete_webhook: ID not found');
+        }
+      } else {
+        logger.warn(
+          { data },
+          'Invalid delete_webhook request — missing webhook_id or handler',
+        );
+      }
+      break;
+
+    case 'list_webhooks':
+      // Only main group can list webhooks
+      if (!isMain) {
+        logger.warn(
+          { sourceGroup },
+          'Unauthorized list_webhooks attempt blocked',
+        );
+        break;
+      }
+      if (deps.listWebhooks) {
+        const list = deps.listWebhooks();
+        logger.info(
+          { count: list.length, sourceGroup },
+          'Webhook list requested via IPC',
         );
       }
       break;
