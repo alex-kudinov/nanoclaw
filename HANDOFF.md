@@ -1,71 +1,86 @@
-# Handoff — 2026-03-01 (Session 4)
+# Handoff — 2026-03-01 (Session 5)
 
 ## Session Summary
-- Created Slack app "Gru" (Mr Gru) in cnpc.coach workspace with full scope set
-- Retired nclaw, migrated everything to Gru (bot token + app token in .env)
-- Created Wave 1 channels: #gru-inbox (C0AHDHWMSKH), #gru-sales (C0AHV1SGT6W), #gru-chief (C0AHDHX1NBH) — private, Gru + Alex invited
-- Initialized business.db on Mac Mini from schema.sql (8 tables)
-- Created queue/ directory structure (inbox-to-sales, any-to-chief, sales-to-proposals, proposals-to-sales, billing-to-books)
-- Created groups/inbox/CLAUDE.md, groups/sales/CLAUDE.md, groups/chief/CLAUDE.md
-- Registered all 5 channels in Mac Mini's messages.db (slack:C... → folder)
-- Restarted NanoClaw on Mac Mini — now running as Gru (botUserId: U0AJ7UDBD6D), groupCount: 5
-- Set up SSH to Mac Mini: key at ~/Sync/keys/xbohdpukc, host 100.115.115.204
-- Migrated pulse webhook to Gru (tandemweb/.env PULSE_SLACK_WEBHOOK updated)
-- Renamed nclaw-mac → general-gru (channel ID C0AHEJM92KY unchanged)
-- Created .stignore to prevent Syncthing from syncing store/ and business.db
-- Added full Gru bot scope set via App Manifest (18 scopes incl. reactions:write, users:read.email, channels:manage, im:write, etc.)
+- Consolidated secrets: created `~/dev/.env.shared` as cross-project secrets file (CF, Plutio, email, Things, Encharge, Endorsal, Straico, TextFocus, DataForSEO, Pulse)
+- Updated `src/env.ts` to cascade-load `~/dev/.env.shared` (base) then overlay project `.env` (wins on conflict)
+- Updated `.env`: added ASSISTANT_NAME=Mr Gru, WEBHOOK_PORT, WEBHOOK_SECRET, CONTAINER_HOST_IP, infra reference vars (Mac Mini, VPS, n8n)
+- Fixed bot message filtering in `src/db.ts`: changed `is_bot_message = 0` → `is_from_me = 0` in both query functions
+- Fixed `src/channels/slack.ts`: `is_from_me` now only true for NanoClaw's own output (`user === botUserId`), not all bot messages
+- Created `data/webhooks.json` on Mac Mini with `contact-form` webhook → inbox group
+- Tested end-to-end: `curl → POST /hook/contact-form → container → Inbox Commander → Slack message sent`
+- Updated `groups/inbox/CLAUDE.md`: added 2-step message format (intake receipt first, then qualification)
+- Rebuilt on Mac Mini using `/opt/homebrew/bin/node node_modules/.bin/tsc`
+- Restarted service twice; running as PID 50006, `trigger: @Mr Gru`, groupCount 5
 
 ## Current State
-- Branch: main (uncommitted changes — many files)
-- NanoClaw: running on Mac Mini as Gru, PID 48464, groupCount 5, all channels live
-- Gru bot: U0AJ7UDBD6D | App: B0AHDHJBNQ7 | xoxb token in .env (same after last reinstall)
-- Wave 0: COMPLETE ✅
-- Wave 1 agent structure: COMPLETE ✅ (groups + db + queues created)
-- NOT YET TESTED: Inbox Commander agent response to a test lead
+- Branch: main (many uncommitted changes — same upstream diff as before)
+- NanoClaw: running on Mac Mini (PID 50006), groupCount 5, all channels live
+- `trigger: @Mr Gru` confirmed in logs
+- Wave 1 pipeline: **contact-form webhook → Inbox Commander** works end-to-end
+- Two test leads fired via webhook during this session (Jordan Lee, Sarah Chen)
+- Intake receipt format added to Inbox Commander CLAUDE.md — not yet verified in Slack (agent fired, Slack message sent per logs, but didn't confirm 2-message format visually)
 
 ## Active Problem Context
-The test lead was posted to #gru-inbox earlier but was posted BY the Gru bot token — NanoClaw likely filtered it as a bot message. Need to verify if NanoClaw picks up messages posted by the bot itself (n8n will also post via bot token).
+The 2-step Inbox Commander output (intake receipt + qualification) was added to CLAUDE.md but not visually confirmed. Agent DID fire and send a message (218 chars for first lead, 247 for second). Whether it's sending two separate messages or combining into one is unknown — check #gru-inbox in Slack.
 
-This is a potential architectural issue: n8n posts to Slack using Gru's bot token → NanoClaw may filter it as a bot_message → agents never fire. Need to test and potentially adjust the message filtering logic in slack.ts.
+Also: webhook-triggered agent runs don't store messages in messages.db (they bypass the message cycle). By design — the Slack output is the record. Not a bug.
 
-## Decisions & Reasoning
-- **One bot (Gru) for everything** — nclaw retired, Gru handles personal assistant + all business agents. One NanoClaw process, one Slack connection.
-- **Socket Mode** — xapp token enables outbound WebSocket from Mac Mini, no inbound ports needed
-- **store/ excluded from Syncthing** — .stignore added to prevent SQLite corruption across machines
-- **Mac Mini is authoritative** — store/messages.db and data/business/business.db live on Mac Mini only
-- **SSH key**: ~/Sync/keys/xbohdpukc (no passphrase, syncs across machines)
-- **general-gru channel** — was nclaw-mac, renamed by user manually (ID unchanged: C0AHEJM92KY)
+## Architecture Decisions
+
+### Secrets management
+- `~/dev/.env.shared` — single source of truth for cross-project keys. Not in any repo. Syncthing distributes it.
+- Project `.env` wins on conflict. Add new service keys to `.env.shared`, not to `.env`.
+- BizMGR project is now redundant — all its creds are in `.env.shared`.
+
+### n8n → NanoClaw integration (critical)
+- **Slack does NOT deliver Socket Mode events for the bot's own messages** — n8n posting to Slack via Gru's bot token will never trigger NanoClaw.
+- **Correct architecture**: n8n POSTs directly to NanoClaw webhook server (port 8088, reachable via Tailscale from VPS).
+- n8n can post to Slack separately for human visibility, but the TRIGGER is the webhook POST.
+- Human visibility comes from the agent's intake receipt message, not n8n.
+
+### is_from_me vs is_bot_message
+- `is_from_me = 1`: NanoClaw's own Slack output (user === botUserId). Filter these.
+- `is_bot_message = 1`: any bot (kept for auditing, NOT used as filter).
+- Queries filter `is_from_me = 0` instead of `is_bot_message = 0`.
+
+### Webhook server
+- Already existed, fully featured. Accepts `POST /hook/:id`, validates secret, runs agent group, sends output to channel.
+- `data/webhooks.json` on Mac Mini (not synced, not in git — lives in gitignored `data/`).
+- Watcher picks up changes to `webhooks.json` live (no restart needed for new webhooks).
 
 ## Open Items & Blockers
-1. **Test Inbox Commander** — post a non-bot message to #gru-inbox and verify agent fires
-2. **Bot message filtering** — NanoClaw may ignore messages posted by Gru bot (n8n uses bot token). If so, check slack.ts BotMessageEvent filtering and possibly allow n8n's bot messages through
-3. **n8n workflow** — contact form → #gru-inbox not yet built
-4. **SSH config** — add Host mini-claw entry to ~/.ssh/config for convenience
-5. **husky pre-commit hook** — still broken on Node 25 (better-sqlite3 gyp). Commits need --no-verify or fix node version.
-6. **Sync conflict files** — several .sync-conflict-* files in repo root, should be cleaned up
+1. **Confirm 2-message format** in Slack — open #gru-inbox and check Sarah Chen's lead response
+2. **n8n workflow** — needs to be built: Gravity Form → n8n → POST /hook/contact-form (Mac Mini via Tailscale)
+3. **End-to-end test**: submit real WP contact form → n8n → webhook → Inbox Commander qualifies → queue drop
+4. **Verify DB write + queue drop**: `SELECT * FROM leads;` and `ls data/business/queue/inbox-to-sales/`
+5. **Build Sales Closer CLAUDE.md** (Wave 1, step 2 of 3)
+6. **data/webhooks.json not in git** — recreate if Mac Mini wiped. Webhook secret is in `.env`.
+7. **Sync-conflict files** — several `.sync-conflict-*` files in repo root to clean up
+8. **husky pre-commit hook** — broken on Node 25. Use `--no-verify` or fix later.
 
 ## Next Steps (priority order)
-1. Test: send a non-bot message to #gru-inbox (from Slack UI manually) → verify Inbox Commander fires
-2. If bot message filtering blocks n8n: investigate slack.ts BotMessageEvent handling, determine fix
-3. Build n8n workflow: contact form → structured message → #gru-inbox
-4. End-to-end test: POST to WP contact form → n8n → #gru-inbox → agent qualifies → drops to queue
-5. Add SSH config entry for mini-claw
+1. Check #gru-inbox in Slack — verify 2-step message format for Sarah Chen lead
+2. Build n8n workflow: Gravity Form → format fields → POST to webhook (Mac Mini Tailscale IP)
+3. End-to-end test with real WP contact form
+4. Verify DB write and queue drop after a qualified lead
+5. Build Sales Closer CLAUDE.md (Wave 1, step 2)
 
 ## Gotchas Discovered
-- **Slack scope UI bug** — adding scopes via the OAuth UI drops others on page refresh. Always use App Manifest to set scopes atomically.
-- **Slack reinstall sometimes revokes bot token** — always verify token after reinstall.
-- **Bot-created channels** — bot is automatically a member (cant_invite_self on invite is expected).
-- **store/messages.db is Mac Mini-only** — .stignore now prevents Syncthing from touching it.
-- **data/business/ doesn't auto-sync** — had to manually scp schema.sql and init db on Mac Mini.
-- **NanoClaw trigger log says "@Andy"** — this is TRIGGER_PATTERN from config, not the bot name. gru channels have requires_trigger=0 so trigger pattern is irrelevant for them.
-- **SSH to Mac Mini needs key specified** — ssh -i ~/Sync/keys/xbohdpukc (no ~/.ssh/id_* exists on this machine)
+- **Slack bot self-message blackhole** — Slack never sends Socket Mode events for messages the bot itself posts. n8n must POST to the webhook, not post to Slack, to trigger NanoClaw.
+- **Mac Mini SSH + npm**: non-interactive SSH doesn't source shell profiles. Use `/opt/homebrew/bin/npm run build` with full path. Added `nanoclaw-build` alias to `.zshrc` for interactive sessions.
+- **data/webhooks.json is Mac Mini-only** — in gitignored `data/`. Document webhook definitions or back them up separately.
+- **Webhook agent runs don't write to messages.db** — bypass the message storage cycle. Slack output is the only record.
+- **ASSISTANT_NAME must match bot display name** — was "Andy", now "Mr Gru". All Gru channels have `requires_trigger=0` so the trigger pattern doesn't block them, but it shows up in logs.
 
 ## Environment Notes
-- Mac Mini SSH: ssh -i ~/Sync/keys/xbohdpukc xbohdpukc@100.115.115.204
+- Mac Mini SSH: `ssh -i ~/Sync/keys/xbohdpukc xbohdpukc@100.115.115.204`
 - Mac Mini hostname: macmini-eth.kudinov.com / mini-claw.local / 100.115.115.204 (Tailscale)
-- NanoClaw logs: ~/dev/NanoClaw/logs/nanoclaw.log (on Mac Mini)
-- NanoClaw service: launchctl kickstart -k gui/$(id -u)/com.nanoclaw
-- Gru bot token: NanoClaw/.env SLACK_BOT_TOKEN
-- Gru app token: NanoClaw/.env SLACK_APP_TOKEN
+- NanoClaw logs: `~/dev/NanoClaw/logs/nanoclaw.log` (on Mac Mini)
+- NanoClaw service: `launchctl kickstart -k gui/$(id -u)/com.nanoclaw`
+- Mac Mini build: `ssh ... "/opt/homebrew/bin/node ~/dev/NanoClaw/node_modules/.bin/tsc"` from project dir
+- Webhook endpoint: `http://100.115.115.204:8088/hook/contact-form`
+- Webhook secret: see `.env` WEBHOOK_SECRET (`ed43647461a200485b69ec48c2e00b243941a859ac678307`)
+- Gru bot: U0AJ7UDBD6D | App: B0AHDHJBNQ7
 - VPS: 100.115.115.15:2225, user tca, key ~/Sync/Keys/byteberry/tandem_vps
 - n8n: https://ops.tandemcoach.co (Google SSO — info@tandemcoaching.academy)
+- Shared secrets: `~/dev/.env.shared` (Syncthing-synced, never commit)
