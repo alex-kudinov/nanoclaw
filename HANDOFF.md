@@ -1,68 +1,74 @@
-# Handoff — 2026-03-02 (Session 8)
+# Handoff — 2026-03-02 (Session 9)
 
 ## Session Summary
-- Resolved rebase conflict in `src/container-runner.ts` (kept proxy-based `readSecrets()` from upstream)
-- Connected GravityForms to n8n webhook — full end-to-end pipeline now live
-- Added header auth (httpHeaderAuth) to n8n webhook node — rejects 403 without correct `X-Webhook-Secret`
-- Fixed n8n sanitize node: GF sends message in field `10`, not `3` — added `10` to field patterns
-- Fixed Inbox Commander CLAUDE.md: "CNPC.coach" → "Tandem Coaching", added Knowledge section pointing to `/workspace/knowledge/KNOWLEDGE.md`, expanded qualification criteria to include ICF certification, mentor coaching, coaching supervision, ACSTH/ACTP programs
-- Tested full pipeline: GF form → n8n webhook → sanitize → Mac Mini webhook → Inbox Commander container → Slack `#gru-inbox` — working end-to-end
+- Built cross-group messaging: `send_message` MCP tool now accepts `target_group` param, IPC auth relaxed to allow any registered group to message another
+- Built Sales Closer CLAUDE.md with approval workflow (draft → feedback loop → "Approved")
+- Discovered LLM agents ignore optional MCP params — `target_group: "sales"` never used despite 7x mentions in CLAUDE.md
+- Pivoted to deterministic handoff: IPC watcher pattern-matches `[HANDOFF: X→Y]` in message text and routes to group Y automatically
+- Added `suppress_output` to WebhookDefinition to prevent duplicate messages from webhook onOutput callback
+- Simplified Inbox Commander CLAUDE.md to step-by-step format; handoff is now just posting text with the `[HANDOFF:]` marker
+- Confirmed Syncthing IS syncing NanoClaw (git history matched). Gitignored `groups/` dirs need scp.
 
 ## Current State
-- Branch: main, 7 commits ahead of upstream
-- Uncommitted: `groups/inbox/CLAUDE.md` (already pushed to Mac Mini via scp)
-- Last commit: efe8dd1 — Session 7 knowledge mounts
-- n8n workflow "Contact Form → Gru Inbox" active with header auth
-- GravityForms configured to POST to `webhooks.tandemcoach.co/webhook/contact-form`
+- Branch: main, last commit `119bca1` — deterministic handoff routing
+- Service running on Mac Mini with all changes deployed
+- Container rebuilt with `target_group` support
+- Inbox Commander: receipt + qualification + handoff all working
+- Handoff reaches `#gru-sales` channel (confirmed in logs)
+- **Sales Closer does NOT trigger** — see Active Problem
+
+## Active Problem: Sales Closer Not Triggering
+
+The handoff message reaches `#gru-sales` (confirmed: `IPC handoff routed to target group, handoffJid: slack:C0AHV1SGT6W`). But the Sales Closer container never spawns.
+
+**Root cause (hypothesis):** The message loop filters out messages sent by the bot itself (Mr Gru, `U0AJ7UDBD6D`) to prevent infinite loops. The handoff is sent via `deps.sendMessage()` → Slack bot message → message loop sees `is_from_me` → skips it.
+
+**Where to investigate:**
+- `src/index.ts` — `startMessageLoop`, bot-message filtering logic
+- `src/channels/slack.ts` — how it tags messages as bot/self
+
+**Possible fixes (in order of preference):**
+1. **Direct queue injection** — Instead of sending a Slack message, the IPC handoff injects directly into the GroupQueue for the target group, bypassing the message loop entirely
+2. **New IPC `trigger_agent` command** — spawns a container directly for a target group with a given prompt
+3. **Whitelist IPC-routed messages** — mark handoff messages so the message loop doesn't filter them
+
+Option 1 is cleanest: the handoff doesn't need to be a visible Slack message at all. It can go straight to the queue. The Slack message can be a notification-only copy.
 
 ## Architecture Decisions
 
-### n8n Webhook Auth
-- Used n8n's native `headerAuth` on the webhook node (not an IF node)
-- Rejects at entry point with 403 before workflow starts
-- Credential: `httpHeaderAuth` ID `ivREfplHdZ5oMTwG` ("GravityForms Webhook Secret")
-- Secret: `ed43647461a200485b69ec48c2e00b243941a859ac678307`
+### Deterministic Handoff Routing
+Agent posts `[HANDOFF: inbox→sales]` as plain text. IPC watcher in `src/ipc.ts` pattern-matches `\[HANDOFF:\s*\w+→(\w+)\]` and routes to the target group. No LLM cooperation needed for routing — agent just includes the marker text naturally as part of qualification output. Handoff message goes ONLY to target channel (not duplicated in source).
 
-### GF Field Mapping
-- GF sends: `1.3` (first name), `1.6` (last name), `2` (email), `10` (message), `date_created`
-- Also sends: `form_id`, `id`, `status`, `ip`, `source_url`, `user_agent`, `9048`/`9148` (tracking)
-- Sanitize node checks multiple patterns for each field — handles both GF numeric IDs and human-readable names
+### suppress_output (WebhookDefinition)
+`suppress_output: true` in webhook definition. When set, the webhook server's `onOutput` callback skips sending the agent's final result. Agent uses `mcp__nanoclaw__send_message` for all channel communication. Prevents the duplicate where both IPC and onOutput send the same text.
 
-### Inbox Commander Knowledge Integration
-- Agent reads `/workspace/knowledge/KNOWLEDGE.md` before qualifying — knows all TC services
-- Qualification bias: if in doubt, qualify — Sales Closer handles program matching
-- Agent told never to guess — use KNOWLEDGE.md as source of truth
+### Sales Closer Approval Workflow
+`REQUIRE_APPROVAL=1` flag at top of `groups/sales/CLAUDE.md`. Agent drafts response, posts to `#gru-sales`, waits for "Approved" or feedback. Each reply triggers a new container (trigger `.*`, requires_trigger=0) with session context. Multi-turn flow.
 
 ## Open Items
-1. **Sales Closer CLAUDE.md** — not yet written, qualified leads queue to `inbox-to-sales/` but nothing picks them up
-2. **Inbox Commander 2-step format** — intake receipt works, but the queue/DB write parts haven't been tested (no `business.db` or queue dirs verified on Mac Mini)
-3. **Architecture doc stale** — `docs/business-agents-architecture.md` still references CF Access on ops.tandemcoach.co (removed in session 7). Lines 76-83, 295-296, 457 need updating. Rate limit is 30/min not 60.
-4. **`memory/vps-infrastructure.md`** — referenced in session 7 handoff but never created
-5. **Scheduler Minion** — automate knowledge file copies + llms-full.txt sync
-6. **n8n test URL** — n8n editor base URL still set to ops.tandemcoach.co, test webhook URL in UI won't work. Editor accessed via Tailscale (http://100.115.115.15:5678). Low priority.
-7. **Syncthing not syncing NanoClaw** — scp was needed to push CLAUDE.md to Mac Mini. May need to add NanoClaw dir to Syncthing or verify config.
+1. **Sales Closer not triggering** — see Active Problem (highest priority)
+2. **Sales Closer CLAUDE.md** — written but not committed (gitignored `groups/sales/`)
+3. **business.db + queue dirs** on Mac Mini — unverified
+4. **Architecture doc stale** — CF Access refs, rate limit
+5. **Scheduler Minion** — knowledge file sync automation
 
-## Next Steps (priority order)
-1. Commit inbox CLAUDE.md changes
-2. Run a real GF submission end-to-end (user submits → agent qualifies → check Slack output quality)
-3. Verify business.db and queue dirs exist on Mac Mini for DB write / queue drop
-4. Build Sales Closer CLAUDE.md + register group
-5. Update architecture doc (CF Access removal, rate limit correction)
+## Next Steps
+1. Fix Sales Closer triggering — implement direct queue injection for IPC handoffs
+2. Test full pipeline end-to-end through approval loop
+3. Commit Sales Closer CLAUDE.md
 
 ## Gotchas Discovered
-- **n8n workflow updates don't take effect while active** — must deactivate/reactivate (POST /workflows/1/deactivate then /activate with versionId)
-- **n8n activate endpoint requires versionId** — POST body `{"versionId": "..."}` or it returns validation error
-- **n8n execution data uses indexed array format** — not nested JSON. Values like `"4"` are indexes into a flat array. Need recursive deref to read execution details.
-- **GF field IDs vary per form** — the contact form uses field 10 for message, not 3. Always check a real submission's body before finalizing the sanitize node.
-- **GF preview submissions may not trigger webhooks** — real form submits do.
-- **Syncthing may not cover NanoClaw dir** — files didn't sync automatically between Mac Studio and Mac Mini.
+- **LLM agents ignore optional MCP tool params:** Even with the parameter in the tool schema and 7 explicit mentions in CLAUDE.md (including "CRITICAL"), the agent never used `target_group: "sales"`. Don't rely on agents using optional params for critical routing. Use deterministic system-level pattern matching instead.
+- **Webhook `onOutput` sends final result despite `isScheduledTask`:** The MCP tool description says "your final output is NOT sent" for scheduled tasks, but the webhook callback always sends it. Fixed with `suppress_output`.
+- **Syncthing doesn't sync gitignored dirs:** `groups/` is in .gitignore; Syncthing appears to use gitignore as a filter. Use scp for files in gitignored directories.
+- **Colima not auto-starting on Mac Mini:** Need `colima start` before container builds. Not in launchd.
+- **Mac Mini npm not in PATH for non-interactive SSH:** Needs `export PATH=/opt/homebrew/bin:$PATH` prefix.
 
 ## Environment Notes
+- Mac Mini SSH: `ssh -i ~/Sync/keys/xbohdpukc xbohdpukc@100.115.115.204`
+- Mac Mini npm: `export PATH=/opt/homebrew/bin:$PATH`
+- Colima: `colima start` then `CONTAINER_RUNTIME=docker ./container/build.sh`
 - n8n editor: http://100.115.115.15:5678 (Tailscale)
-- n8n login: info@tandemcoach.co / Gru2026ops
-- n8n docker compose: /home/tca/n8n/docker-compose.yml
-- VPS SSH: ssh -i ~/Sync/Keys/byteberry/tandem_vps -p 2225 tca@100.115.115.15
-- Mac Mini SSH: ssh -i ~/Sync/keys/xbohdpukc xbohdpukc@100.115.115.204
-- NanoClaw DB: store/messages.db
-- NanoClaw logs: /Users/xbohdpukc/dev/NanoClaw/logs/nanoclaw.log (on Mac Mini)
-- n8n cookie jar (this session): /tmp/n8n-cookies.txt
+- Webhook secret: `ed43647461a200485b69ec48c2e00b243941a859ac678307`
+- Inbox channel: `slack:C0AHDHWMSKH` (#gru-inbox)
+- Sales channel: `slack:C0AHV1SGT6W` (#gru-sales)
