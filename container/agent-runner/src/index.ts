@@ -14,7 +14,6 @@
  *   Final marker after loop ends signals completion.
  */
 
-import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 import { query, HookCallback, PreCompactHookInput, PreToolUseHookInput } from '@anthropic-ai/claude-agent-sdk';
@@ -510,9 +509,11 @@ async function main(): Promise<void> {
   }
 
   // Create business.db with leads table if state dir exists
+  // Uses dynamic import so the container compiles even without better-sqlite3 types
   const stateDir = '/workspace/state';
   try {
     fs.mkdirSync(stateDir, { recursive: true });
+    const { default: Database } = await import('better-sqlite3');
     const bdb = new Database(path.join(stateDir, 'business.db'));
     bdb.exec(`CREATE TABLE IF NOT EXISTS leads (
       id TEXT PRIMARY KEY,
