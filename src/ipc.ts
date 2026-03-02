@@ -88,26 +88,60 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     targetJid = resolved[0];
                   } else {
                     logger.warn(
-                      { targetGroupFolder: data.targetGroupFolder, sourceGroup },
+                      {
+                        targetGroupFolder: data.targetGroupFolder,
+                        sourceGroup,
+                      },
                       'IPC message target group not found',
                     );
                     fs.unlinkSync(filePath);
                     continue;
                   }
                 }
-                // Authorization: any registered group can message another
-                const targetGroup = registeredGroups[targetJid];
-                if (targetGroup) {
-                  await deps.sendMessage(targetJid, data.text);
-                  logger.info(
-                    { targetJid, targetFolder: targetGroup.folder, sourceGroup },
-                    'IPC message sent',
-                  );
+                // Deterministic handoff: [HANDOFF: source→target] routes to target group
+                const handoffMatch = data.text.match(
+                  /\[HANDOFF:\s*\w+→(\w+)\]/,
+                );
+                if (handoffMatch) {
+                  const handoffTarget = handoffMatch[1];
+                  const handoffEntry = Object.entries(
+                    registeredGroups,
+                  ).find(([, g]) => g.folder === handoffTarget);
+                  if (handoffEntry) {
+                    await deps.sendMessage(handoffEntry[0], data.text);
+                    logger.info(
+                      {
+                        handoffTarget,
+                        handoffJid: handoffEntry[0],
+                        sourceGroup,
+                      },
+                      'IPC handoff routed to target group',
+                    );
+                  } else {
+                    logger.warn(
+                      { handoffTarget, sourceGroup },
+                      'IPC handoff target group not found',
+                    );
+                  }
                 } else {
-                  logger.warn(
-                    { targetJid, sourceGroup },
-                    'Unauthorized IPC message attempt blocked — target not registered',
-                  );
+                  // Normal message: send to resolved target
+                  const targetGroup = registeredGroups[targetJid];
+                  if (targetGroup) {
+                    await deps.sendMessage(targetJid, data.text);
+                    logger.info(
+                      {
+                        targetJid,
+                        targetFolder: targetGroup.folder,
+                        sourceGroup,
+                      },
+                      'IPC message sent',
+                    );
+                  } else {
+                    logger.warn(
+                      { targetJid, sourceGroup },
+                      'Unauthorized IPC message — target not registered',
+                    );
+                  }
                 }
               }
               fs.unlinkSync(filePath);

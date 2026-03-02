@@ -316,6 +316,7 @@ export class WebhookServer {
         () => {}, // no queue registration for one-shot webhook agents
         async (streamedOutput: ContainerOutput) => {
           if (!streamedOutput.result) return;
+          if (webhook.suppress_output) return;
           const raw =
             typeof streamedOutput.result === 'string'
               ? streamedOutput.result

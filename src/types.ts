@@ -62,6 +62,7 @@ export interface WebhookDefinition {
   secret?: string; // Per-webhook secret (falls back to global WEBHOOK_SECRET)
   callback_url?: string; // Optional fixed callback (overridden by X-Callback-URL header)
   context_mode?: 'group' | 'isolated'; // Session persistence (default: 'isolated')
+  suppress_output?: boolean; // If true, agent's final output is NOT sent to chat_jid (agent uses send_message instead)
   created_at: string;
 }
 
