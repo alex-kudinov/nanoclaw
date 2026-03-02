@@ -45,6 +45,7 @@ server.tool(
   {
     text: z.string().describe('The message text to send'),
     sender: z.string().optional().describe('Your role/identity name (e.g. "Researcher"). When set, messages appear from a dedicated bot in Telegram.'),
+    target_group: z.string().optional().describe('Send to a different group by folder name (e.g. "sales", "chief"). Defaults to your own group. The target must be a registered group.'),
   },
   async (args) => {
     const data: Record<string, string | undefined> = {
@@ -53,12 +54,13 @@ server.tool(
       text: args.text,
       sender: args.sender || undefined,
       groupFolder,
+      targetGroupFolder: args.target_group || undefined,
       timestamp: new Date().toISOString(),
     };
 
     writeIpcFile(MESSAGES_DIR, data);
 
-    return { content: [{ type: 'text' as const, text: 'Message sent.' }] };
+    return { content: [{ type: 'text' as const, text: args.target_group ? `Message sent to ${args.target_group}.` : 'Message sent.' }] };
   },
 );
 

@@ -66,28 +66,22 @@ sqlite3 /workspace/state/business.db "SELECT last_insert_rowid();"
 
 Use the ID in the queue JSON file name: `{id}-{timestamp}.json`
 
-## Queue Drop Protocol
+## Sales Handoff Protocol
 
-After writing to DB, drop a JSON file in `/workspace/state/queue/inbox-to-sales/`:
+After writing to DB and posting the qualification summary to this channel, hand the lead to Sales Closer:
 
-```json
-{
-  "lead_id": 42,
-  "source": "contact-form",
-  "name": "Jordan Lee",
-  "email": "jordan@acme.com",
-  "company": "Acme Corp",
-  "message": "We need executive coaching for 12 leaders...",
-  "qualified_at": "2026-03-01T14:32:00Z",
-  "qualified_by": "inbox"
-}
+```
+mcp__nanoclaw__send_message(
+  text: "[HANDOFF: inbox→sales] Lead ID: {id}\nName: {name} | Email: {email} | Company: {company}\nNeed: {one-line summary}\nSource: contact-form",
+  target_group: "sales"
+)
 ```
 
-File name format: `{lead_id}-{unix_timestamp}.json`
+This triggers the Sales Closer agent in `#gru-sales`, which enriches and presents the lead for human review. Do NOT skip this step — without it, the lead dies in the queue.
 
 ## Approval Protocol
 
-- All DB writes and queue drops are [AUTO] — no approval needed
+- All DB writes and sales handoffs are [AUTO] — no approval needed
 - Escalation to Chief of Staff is [AUTO] — post to `#gru-chief` channel
 
 ## Slack Message Format

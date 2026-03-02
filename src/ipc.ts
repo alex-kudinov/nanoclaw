@@ -78,21 +78,35 @@ export function startIpcWatcher(deps: IpcDeps): void {
             try {
               const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
               if (data.type === 'message' && data.chatJid && data.text) {
-                // Authorization: verify this group can send to this chatJid
-                const targetGroup = registeredGroups[data.chatJid];
-                if (
-                  isMain ||
-                  (targetGroup && targetGroup.folder === sourceGroup)
-                ) {
-                  await deps.sendMessage(data.chatJid, data.text);
+                // Resolve targetGroupFolder → chatJid if present
+                let targetJid = data.chatJid;
+                if (data.targetGroupFolder) {
+                  const resolved = Object.entries(registeredGroups).find(
+                    ([, g]) => g.folder === data.targetGroupFolder,
+                  );
+                  if (resolved) {
+                    targetJid = resolved[0];
+                  } else {
+                    logger.warn(
+                      { targetGroupFolder: data.targetGroupFolder, sourceGroup },
+                      'IPC message target group not found',
+                    );
+                    fs.unlinkSync(filePath);
+                    continue;
+                  }
+                }
+                // Authorization: any registered group can message another
+                const targetGroup = registeredGroups[targetJid];
+                if (targetGroup) {
+                  await deps.sendMessage(targetJid, data.text);
                   logger.info(
-                    { chatJid: data.chatJid, sourceGroup },
+                    { targetJid, targetFolder: targetGroup.folder, sourceGroup },
                     'IPC message sent',
                   );
                 } else {
                   logger.warn(
-                    { chatJid: data.chatJid, sourceGroup },
-                    'Unauthorized IPC message attempt blocked',
+                    { targetJid, sourceGroup },
+                    'Unauthorized IPC message attempt blocked — target not registered',
                   );
                 }
               }
