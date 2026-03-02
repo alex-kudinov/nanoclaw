@@ -378,7 +378,7 @@ export function getMessagesSince(
   const conditions = [
     'chat_jid = ?',
     'timestamp > ?',
-    "content NOT LIKE ?",
+    'content NOT LIKE ?',
     "content != ''",
     'content IS NOT NULL',
   ];
@@ -406,6 +406,22 @@ export function getMessagesSince(
     ORDER BY timestamp
   `;
   return db.prepare(sql).all(...params) as NewMessage[];
+}
+
+/**
+ * Get the thread parent message (the message whose Slack ts matches the thread_ts).
+ * In Slack, thread_ts of replies equals the ts (id) of the parent message.
+ */
+export function getThreadParent(
+  chatJid: string,
+  threadTs: string,
+): NewMessage | undefined {
+  return db
+    .prepare(
+      `SELECT id, chat_jid, sender, sender_name, content, timestamp, from_group, thread_ts
+       FROM messages WHERE chat_jid = ? AND id = ?`,
+    )
+    .get(chatJid, threadTs) as NewMessage | undefined;
 }
 
 export function createTask(

@@ -35,6 +35,7 @@ import {
   getAllTasks,
   getMessagesSince,
   getNewMessages,
+  getThreadParent,
   getRouterState,
   initDatabase,
   setRegisteredGroup,
@@ -49,7 +50,12 @@ import { TokenProxy } from './token-proxy.js';
 import { WebhookServer } from './webhook-server.js';
 import { findChannel, formatMessages, formatOutbound } from './router.js';
 import { startSchedulerLoop } from './task-scheduler.js';
-import { Channel, NewMessage, RegisteredGroup, SendMessageOpts } from './types.js';
+import {
+  Channel,
+  NewMessage,
+  RegisteredGroup,
+  SendMessageOpts,
+} from './types.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { readEnvFile } from './env.js';
@@ -148,7 +154,10 @@ export function _setRegisteredGroups(
  * Process all pending messages for a (chatJid, threadTs) pair.
  * Called by the GroupQueue when it's this group/thread's turn.
  */
-async function processGroupMessages(chatJid: string, threadTs?: string): Promise<boolean> {
+async function processGroupMessages(
+  chatJid: string,
+  threadTs?: string,
+): Promise<boolean> {
   const group = registeredGroups[chatJid];
   if (!group) return true;
 
@@ -181,7 +190,17 @@ async function processGroupMessages(chatJid: string, threadTs?: string): Promise
     if (!hasTrigger) return true;
   }
 
-  const prompt = formatMessages(missedMessages);
+  // For threaded replies, prepend the parent message so the agent has full context.
+  // The parent (root) message has thread_ts IS NULL and won't be in the thread-filtered query.
+  let messagesToFormat = missedMessages;
+  if (threadTs) {
+    const parent = getThreadParent(chatJid, threadTs);
+    if (parent && !missedMessages.some((m) => m.id === parent.id)) {
+      messagesToFormat = [parent, ...missedMessages];
+    }
+  }
+
+  const prompt = formatMessages(messagesToFormat);
 
   // Advance cursor so the piping path in startMessageLoop won't re-fetch
   // these messages. Save the old cursor so we can roll back on error.
@@ -213,28 +232,40 @@ async function processGroupMessages(chatJid: string, threadTs?: string): Promise
   let hadError = false;
   let outputSentToUser = false;
 
-  const output = await runAgent(group, prompt, chatJid, async (result) => {
-    // Streaming output callback — called for each agent result
-    if (result.result) {
-      const raw =
-        typeof result.result === 'string'
-          ? result.result
-          : JSON.stringify(result.result);
-      // Strip <internal>...</internal> blocks — agent uses these for internal reasoning
-      const text = raw.replace(/<internal>[\s\S]*?<\/internal>/g, '').trim();
-      logger.info({ group: group.name }, `Agent output: ${raw.slice(0, 200)}`);
-      if (text) {
-        await channel.sendMessage(chatJid, text, { fromGroup: group.folder, threadTs });
-        outputSentToUser = true;
+  const output = await runAgent(
+    group,
+    prompt,
+    chatJid,
+    async (result) => {
+      // Streaming output callback — called for each agent result
+      if (result.result) {
+        const raw =
+          typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result);
+        // Strip <internal>...</internal> blocks — agent uses these for internal reasoning
+        const text = raw.replace(/<internal>[\s\S]*?<\/internal>/g, '').trim();
+        logger.info(
+          { group: group.name },
+          `Agent output: ${raw.slice(0, 200)}`,
+        );
+        if (text) {
+          await channel.sendMessage(chatJid, text, {
+            fromGroup: group.folder,
+            threadTs,
+          });
+          outputSentToUser = true;
+        }
+        // Only reset idle timer on actual results, not session-update markers (result: null)
+        resetIdleTimer();
       }
-      // Only reset idle timer on actual results, not session-update markers (result: null)
-      resetIdleTimer();
-    }
 
-    if (result.status === 'error') {
-      hadError = true;
-    }
-  }, threadTs);
+      if (result.status === 'error') {
+        hadError = true;
+      }
+    },
+    threadTs,
+  );
 
   await channel.setTyping?.(chatJid, false);
   if (idleTimer) clearTimeout(idleTimer);
@@ -462,7 +493,12 @@ function recoverPendingMessages(): void {
     // Check root (non-threaded) messages
     const rootKey = `${chatJid}||root`;
     const sinceTimestamp = lastAgentTimestamp[rootKey] || '';
-    const pending = getMessagesSince(chatJid, sinceTimestamp, ASSISTANT_NAME, group.folder);
+    const pending = getMessagesSince(
+      chatJid,
+      sinceTimestamp,
+      ASSISTANT_NAME,
+      group.folder,
+    );
     if (pending.length > 0) {
       // Sub-group by thread for per-thread recovery
       const threads = new Set<string | undefined>();
@@ -471,7 +507,9 @@ function recoverPendingMessages(): void {
         const key = `${chatJid}||${threadTs || 'root'}`;
         const threadSince = lastAgentTimestamp[key] || '';
         const threadPending = pending.filter(
-          (m) => (m.thread_ts || undefined) === threadTs && m.timestamp > threadSince,
+          (m) =>
+            (m.thread_ts || undefined) === threadTs &&
+            m.timestamp > threadSince,
         );
         if (threadPending.length > 0) {
           logger.info(
