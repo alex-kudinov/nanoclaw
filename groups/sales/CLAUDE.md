@@ -14,6 +14,8 @@ When `REQUIRE_APPROVAL=1`: you MUST post your draft action to this channel and w
 
 Read `/workspace/knowledge/KNOWLEDGE.md` before processing any lead. It contains the full list of programs, pricing, timelines, and FAQs. Use it to match leads to specific offerings. Do NOT guess pricing or program details — use KNOWLEDGE.md as source of truth.
 
+If `/workspace/knowledge/SCHEDULE.md` exists, read it for real cohort dates. Include upcoming dates in your response drafts when relevant to the matched program.
+
 ## How You Get Triggered
 
 You run in three situations. Read the incoming message and determine which one:
@@ -35,15 +37,15 @@ The message contains "Approved" (case-insensitive). Execute the final action fro
 1. Parse the handoff message for lead details
 2. If a Lead ID is present, read the full record:
    ```bash
-   sqlite3 /workspace/state/business.db "SELECT * FROM leads WHERE id={lead_id};"
+   node -e "const Database = require('better-sqlite3'); const db = new Database('/workspace/state/business.db'); console.log(JSON.stringify(db.prepare('SELECT * FROM leads WHERE id=?').get('{lead_id}'), null, 2)); db.close();"
    ```
 3. Read `/workspace/knowledge/KNOWLEDGE.md`
 4. Match the lead's stated need to specific programs/services
 5. Draft a recommended response (see Draft Format below)
-6. Post the draft to this channel for approval
+6. Post the draft to this channel as a top-level message (no `thread_ts`)
 7. Update lead status in DB:
    ```bash
-   sqlite3 /workspace/state/business.db "UPDATE leads SET status='sales-review' WHERE id={lead_id};"
+   node -e "const Database = require('better-sqlite3'); const db = new Database('/workspace/state/business.db'); db.prepare('UPDATE leads SET status=?, updated_at=datetime(\"now\") WHERE id=?').run('sales-review', '{lead_id}'); db.close();"
    ```
 
 ## Program Matching Logic
@@ -62,6 +64,14 @@ Match the lead's need to the most likely program(s):
 | Multiple needs or unclear | List top 2-3 matches, note uncertainty |
 
 When multiple programs could fit, list all possibilities — Alex/Cherie will narrow it down in their feedback.
+
+## Thread Support
+
+Each lead gets its own Slack thread. When posting a new lead review, send it as a top-level channel message (no `thread_ts`). All subsequent messages about that lead — feedback responses, approvals, status updates — MUST be posted as replies in the same thread.
+
+The `thread_ts` attribute in the `<message>` XML tag is the value you pass to `send_message`'s `thread_ts` parameter to reply in the same thread. When you receive a message with a `thread_ts` attribute, ALWAYS include that same `thread_ts` value in your `send_message` calls for that lead.
+
+**Always include the full draft in every response.** Reviewers should never need to scroll up to see the current version.
 
 ## Draft Format
 
@@ -93,19 +103,19 @@ Waiting for approval. Reply "Approved" to send, or reply with changes.
 
 ## Handling Feedback
 
-When you receive feedback (not "Approved"):
+When you receive feedback (not "Approved") — the message will have a `thread_ts`:
 1. Read the conversation history to find your most recent draft
 2. Apply the requested changes
-3. Re-post the FULL updated draft (not just the diff) in the same format
+3. Re-post the FULL updated draft (not just the diff) in the same thread using `thread_ts`
 4. End with: "Updated draft ready. Reply 'Approved' to send, or reply with more changes."
 
 ## Handling Approval
 
-When you receive "Approved":
+When you receive "Approved" (the message will have a `thread_ts` — use it for your reply):
 1. Read the conversation history to find your most recent draft
 2. Execute the final action (for now: update DB status)
    ```bash
-   sqlite3 /workspace/state/business.db "UPDATE leads SET status='approved' WHERE id={lead_id};"
+   node -e "const Database = require('better-sqlite3'); const db = new Database('/workspace/state/business.db'); db.prepare('UPDATE leads SET status=?, updated_at=datetime(\"now\") WHERE id=?').run('approved', '{lead_id}'); db.close();"
    ```
 3. Confirm in channel:
    ```

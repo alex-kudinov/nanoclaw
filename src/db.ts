@@ -119,6 +119,28 @@ function createSchema(database: Database.Database): void {
     /* column already exists */
   }
 
+  // Add thread_ts column for Slack thread support
+  try {
+    database.exec(`ALTER TABLE messages ADD COLUMN thread_ts TEXT`);
+    database.exec(
+      `CREATE INDEX IF NOT EXISTS idx_thread ON messages(chat_jid, thread_ts, timestamp)`,
+    );
+  } catch {
+    /* column already exists */
+  }
+
+  // Add from_group column — identifies which agent sent the message (null = human)
+  try {
+    database.exec(`ALTER TABLE messages ADD COLUMN from_group TEXT`);
+    // Backfill: set from_group for existing bot messages based on channel ownership
+    database.exec(`
+      UPDATE messages SET from_group = (
+        SELECT rg.folder FROM registered_groups rg WHERE rg.jid = messages.chat_jid
+      ) WHERE is_from_me = 1 AND from_group IS NULL
+    `);
+  } catch {
+    /* column already exists */
+  }
   // Add channel and is_group columns if they don't exist (migration for existing DBs)
   try {
     database.exec(`ALTER TABLE chats ADD COLUMN channel TEXT`);
@@ -262,7 +284,7 @@ export function setLastGroupSync(): void {
  */
 export function storeMessage(msg: NewMessage): void {
   db.prepare(
-    `INSERT OR REPLACE INTO messages (id, chat_jid, sender, sender_name, content, timestamp, is_from_me, is_bot_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO messages (id, chat_jid, sender, sender_name, content, timestamp, is_from_me, is_bot_message, from_group, thread_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     msg.id,
     msg.chat_jid,
@@ -272,6 +294,8 @@ export function storeMessage(msg: NewMessage): void {
     msg.timestamp,
     msg.is_from_me ? 1 : 0,
     msg.is_bot_message ? 1 : 0,
+    msg.from_group ?? null,
+    msg.thread_ts ?? null,
   );
 }
 
@@ -287,9 +311,11 @@ export function storeMessageDirect(msg: {
   timestamp: string;
   is_from_me: boolean;
   is_bot_message?: boolean;
+  from_group?: string;
+  thread_ts?: string;
 }): void {
   db.prepare(
-    `INSERT OR REPLACE INTO messages (id, chat_jid, sender, sender_name, content, timestamp, is_from_me, is_bot_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO messages (id, chat_jid, sender, sender_name, content, timestamp, is_from_me, is_bot_message, from_group, thread_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     msg.id,
     msg.chat_jid,
@@ -299,6 +325,8 @@ export function storeMessageDirect(msg: {
     msg.timestamp,
     msg.is_from_me ? 1 : 0,
     msg.is_bot_message ? 1 : 0,
+    msg.from_group ?? null,
+    msg.thread_ts ?? null,
   );
 }
 
@@ -310,13 +338,14 @@ export function getNewMessages(
   if (jids.length === 0) return { messages: [], newTimestamp: lastTimestamp };
 
   const placeholders = jids.map(() => '?').join(',');
-  // Filter bot messages using both the is_bot_message flag AND the content
-  // prefix as a backstop for messages written before the migration ran.
+  // Filter: exclude messages from the same agent as the channel owner (from_group).
+  // from_group IS NULL = human message (always included).
+  // Content prefix filter is a backstop for pre-migration bot messages.
   const sql = `
-    SELECT id, chat_jid, sender, sender_name, content, timestamp
+    SELECT id, chat_jid, sender, sender_name, content, timestamp, from_group, thread_ts
     FROM messages
     WHERE timestamp > ? AND chat_jid IN (${placeholders})
-      AND is_from_me = 0 AND content NOT LIKE ?
+      AND content NOT LIKE ?
       AND content != '' AND content IS NOT NULL
     ORDER BY timestamp
   `;
@@ -333,24 +362,50 @@ export function getNewMessages(
   return { messages: rows, newTimestamp };
 }
 
+/**
+ * Get messages since a timestamp for a specific chat.
+ * @param threadTs - undefined = all messages (no thread filter),
+ *                   null = root messages only (thread_ts IS NULL),
+ *                   string = specific thread only
+ */
 export function getMessagesSince(
   chatJid: string,
   sinceTimestamp: string,
   botPrefix: string,
+  excludeGroup?: string,
+  threadTs?: string | null,
 ): NewMessage[] {
-  // Filter bot messages using both the is_bot_message flag AND the content
-  // prefix as a backstop for messages written before the migration ran.
+  const conditions = [
+    'chat_jid = ?',
+    'timestamp > ?',
+    "content NOT LIKE ?",
+    "content != ''",
+    'content IS NOT NULL',
+  ];
+  const params: unknown[] = [chatJid, sinceTimestamp];
+
+  if (excludeGroup) {
+    conditions.push('(from_group IS NULL OR from_group != ?)');
+    params.push(excludeGroup);
+  }
+
+  params.push(`${botPrefix}:%`);
+
+  // Thread filter: undefined = no filter, null = root only, string = specific thread
+  if (threadTs === null) {
+    conditions.push('thread_ts IS NULL');
+  } else if (threadTs !== undefined) {
+    conditions.push('thread_ts = ?');
+    params.push(threadTs);
+  }
+
   const sql = `
-    SELECT id, chat_jid, sender, sender_name, content, timestamp
+    SELECT id, chat_jid, sender, sender_name, content, timestamp, from_group, thread_ts
     FROM messages
-    WHERE chat_jid = ? AND timestamp > ?
-      AND is_from_me = 0 AND content NOT LIKE ?
-      AND content != '' AND content IS NOT NULL
+    WHERE ${conditions.join(' AND ')}
     ORDER BY timestamp
   `;
-  return db
-    .prepare(sql)
-    .all(chatJid, sinceTimestamp, `${botPrefix}:%`) as NewMessage[];
+  return db.prepare(sql).all(...params) as NewMessage[];
 }
 
 export function createTask(

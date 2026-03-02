@@ -23,7 +23,7 @@ import { ChildProcess } from 'child_process';
 import { MAIN_GROUP_FOLDER } from './config.js';
 import { ContainerOutput } from './container-runner.js';
 import { logger } from './logger.js';
-import { RegisteredGroup, WebhookDefinition } from './types.js';
+import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -45,7 +45,7 @@ export interface WebhookServerDeps {
   globalSecret: string;
   getRegisteredGroups: () => Record<string, RegisteredGroup>;
   runAgent: RunAgentFn;
-  sendMessage: (jid: string, text: string) => Promise<void>;
+  sendMessage: SendMessageFn;
 }
 
 // ---------------------------------------------------------------------------
@@ -344,7 +344,7 @@ export class WebhookServer {
             }
           } else {
             try {
-              await this.deps.sendMessage(webhook.chat_jid, text);
+              await this.deps.sendMessage(webhook.chat_jid, text, { fromGroup: webhook.group });
             } catch (err) {
               logger.error(
                 { hookId, requestId, err },

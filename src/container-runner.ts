@@ -3,6 +3,7 @@
  * Spawns agent execution in containers and handles IPC
  */
 import { ChildProcess, exec, spawn } from 'child_process';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
@@ -54,6 +55,16 @@ interface VolumeMount {
   hostPath: string;
   containerPath: string;
   readonly: boolean;
+}
+
+function computeDirHash(dir: string): string {
+  const hash = crypto.createHash('md5');
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.ts') || f.endsWith('.json')).sort();
+  for (const file of files) {
+    hash.update(`${file}\n`);
+    hash.update(fs.readFileSync(path.join(dir, file), 'utf-8'));
+  }
+  return hash.digest('hex');
 }
 
 function buildVolumeMounts(
@@ -178,6 +189,7 @@ function buildVolumeMounts(
   // Copy agent-runner source into a per-group writable location so agents
   // can customize it (add tools, change behavior) without affecting other
   // groups. Recompiled on container startup via entrypoint.sh.
+  // Version hash invalidates stale copies when source changes.
   const agentRunnerSrc = path.join(
     projectRoot,
     'container',
@@ -190,8 +202,20 @@ function buildVolumeMounts(
     group.folder,
     'agent-runner-src',
   );
-  if (!fs.existsSync(groupAgentRunnerDir) && fs.existsSync(agentRunnerSrc)) {
-    fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
+  if (fs.existsSync(agentRunnerSrc)) {
+    const sourceHash = computeDirHash(agentRunnerSrc);
+    const versionFile = path.join(groupAgentRunnerDir, '.version');
+    const existingHash = fs.existsSync(versionFile)
+      ? fs.readFileSync(versionFile, 'utf-8').trim()
+      : '';
+    if (sourceHash !== existingHash) {
+      if (fs.existsSync(groupAgentRunnerDir)) {
+        fs.rmSync(groupAgentRunnerDir, { recursive: true });
+      }
+      fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
+      fs.writeFileSync(path.join(groupAgentRunnerDir, '.version'), sourceHash);
+      logger.debug({ group: group.name, hash: sourceHash }, 'Agent runner source updated');
+    }
   }
   mounts.push({
     hostPath: groupAgentRunnerDir,

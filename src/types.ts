@@ -51,7 +51,16 @@ export interface NewMessage {
   timestamp: string;
   is_from_me?: boolean;
   is_bot_message?: boolean;
+  from_group?: string; // Which agent group sent this (null = human)
+  thread_ts?: string; // Slack thread timestamp (null = root/channel message)
 }
+
+export interface SendMessageOpts {
+  fromGroup?: string;
+  threadTs?: string;
+}
+
+export type SendMessageFn = (jid: string, text: string, opts?: SendMessageOpts) => Promise<void>;
 
 export interface WebhookDefinition {
   id: string; // URL slug — POST /hook/{id}
@@ -95,7 +104,7 @@ export interface TaskRunLog {
 export interface Channel {
   name: string;
   connect(): Promise<void>;
-  sendMessage(jid: string, text: string): Promise<void>;
+  sendMessage(jid: string, text: string, opts?: SendMessageOpts): Promise<void>;
   isConnected(): boolean;
   ownsJid(jid: string): boolean;
   disconnect(): Promise<void>;

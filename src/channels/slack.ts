@@ -11,6 +11,7 @@ import {
   OnInboundMessage,
   OnChatMetadata,
   RegisteredGroup,
+  SendMessageOpts,
 } from '../types.js';
 
 // Slack's chat.postMessage API limits text to ~4000 characters per call.
@@ -35,9 +36,12 @@ export class SlackChannel implements Channel {
   private app: App;
   private botUserId: string | undefined;
   private connected = false;
-  private outgoingQueue: Array<{ jid: string; text: string }> = [];
+  private outgoingQueue: Array<{ jid: string; text: string; opts?: SendMessageOpts }> = [];
   private flushing = false;
   private userNameCache = new Map<string, string>();
+  // Maps Slack message ts → fromGroup for bot messages we sent.
+  // The event handler looks this up to set from_group on stored messages.
+  private pendingFromGroup = new Map<string, string>();
 
   private opts: SlackChannelOpts;
 
@@ -113,9 +117,8 @@ export class SlackChannel implements Channel {
 
       if (!msg.text) return;
 
-      // Threaded replies are flattened into the channel conversation.
-      // The agent sees them alongside channel-level messages; responses
-      // always go to the channel, not back into the thread.
+      // Extract thread_ts for thread-aware routing
+      const threadTs = (msg as { thread_ts?: string }).thread_ts;
 
       const jid = `slack:${msg.channel}`;
       const timestamp = new Date(parseFloat(msg.ts) * 1000).toISOString();
@@ -154,6 +157,13 @@ export class SlackChannel implements Channel {
         }
       }
 
+      // Look up from_group for bot messages we sent via sendMessage(jid, text, fromGroup)
+      let fromGroup: string | undefined;
+      if (isBotMessage) {
+        fromGroup = this.pendingFromGroup.get(msg.ts);
+        if (fromGroup) this.pendingFromGroup.delete(msg.ts);
+      }
+
       this.opts.onMessage(jid, {
         id: msg.ts,
         chat_jid: jid,
@@ -161,10 +171,10 @@ export class SlackChannel implements Channel {
         sender_name: senderName,
         content,
         timestamp,
-        // is_from_me: only NanoClaw's own output (prevents re-processing our replies)
-        // is_bot_message: any bot including n8n (kept for auditing, not used as filter)
         is_from_me: msg.user === this.botUserId,
         is_bot_message: isBotMessage,
+        from_group: fromGroup,
+        thread_ts: threadTs,
       });
     });
   }
@@ -192,11 +202,13 @@ export class SlackChannel implements Channel {
     await this.syncChannelMetadata();
   }
 
-  async sendMessage(jid: string, text: string): Promise<void> {
+  async sendMessage(jid: string, text: string, opts?: SendMessageOpts): Promise<void> {
     const channelId = jid.replace(/^slack:/, '');
+    const fromGroup = opts?.fromGroup;
+    const threadTs = opts?.threadTs;
 
     if (!this.connected) {
-      this.outgoingQueue.push({ jid, text });
+      this.outgoingQueue.push({ jid, text, opts });
       logger.info(
         { jid, queueSize: this.outgoingQueue.length },
         'Slack disconnected, message queued',
@@ -205,20 +217,39 @@ export class SlackChannel implements Channel {
     }
 
     try {
+      const postOpts: { channel: string; text: string; thread_ts?: string } = {
+        channel: channelId,
+        text,
+      };
+      if (threadTs) postOpts.thread_ts = threadTs;
+
       // Slack limits messages to ~4000 characters; split if needed
       if (text.length <= MAX_MESSAGE_LENGTH) {
-        await this.app.client.chat.postMessage({ channel: channelId, text });
+        const result = await this.app.client.chat.postMessage(postOpts);
+        if (fromGroup && result.ts) {
+          this.pendingFromGroup.set(result.ts, fromGroup);
+          // FIFO eviction at 1000 entries to prevent memory leak
+          if (this.pendingFromGroup.size > 1000) {
+            this.pendingFromGroup.delete(this.pendingFromGroup.keys().next().value!);
+          }
+        }
       } else {
         for (let i = 0; i < text.length; i += MAX_MESSAGE_LENGTH) {
-          await this.app.client.chat.postMessage({
-            channel: channelId,
+          const result = await this.app.client.chat.postMessage({
+            ...postOpts,
             text: text.slice(i, i + MAX_MESSAGE_LENGTH),
           });
+          if (fromGroup && result.ts) {
+            this.pendingFromGroup.set(result.ts, fromGroup);
+            if (this.pendingFromGroup.size > 1000) {
+              this.pendingFromGroup.delete(this.pendingFromGroup.keys().next().value!);
+            }
+          }
         }
       }
-      logger.info({ jid, length: text.length }, 'Slack message sent');
+      logger.info({ jid, length: text.length, fromGroup, threadTs }, 'Slack message sent');
     } catch (err) {
-      this.outgoingQueue.push({ jid, text });
+      this.outgoingQueue.push({ jid, text, opts });
       logger.warn(
         { jid, err, queueSize: this.outgoingQueue.length },
         'Failed to send Slack message, queued',
@@ -317,10 +348,16 @@ export class SlackChannel implements Channel {
       while (this.outgoingQueue.length > 0) {
         const item = this.outgoingQueue.shift()!;
         const channelId = item.jid.replace(/^slack:/, '');
-        await this.app.client.chat.postMessage({
+        const postOpts: { channel: string; text: string; thread_ts?: string } = {
           channel: channelId,
           text: item.text,
-        });
+        };
+        if (item.opts?.threadTs) postOpts.thread_ts = item.opts.threadTs;
+
+        const result = await this.app.client.chat.postMessage(postOpts);
+        if (item.opts?.fromGroup && result.ts) {
+          this.pendingFromGroup.set(result.ts, item.opts.fromGroup);
+        }
         logger.info(
           { jid: item.jid, length: item.text.length },
           'Queued Slack message sent',

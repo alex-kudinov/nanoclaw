@@ -30,7 +30,7 @@ export class GroupQueue {
   private groups = new Map<string, GroupState>();
   private activeCount = 0;
   private waitingGroups: string[] = [];
-  private processMessagesFn: ((groupJid: string) => Promise<boolean>) | null =
+  private processMessagesFn: ((chatJid: string, threadTs?: string) => Promise<boolean>) | null =
     null;
   private shuttingDown = false;
 
@@ -53,11 +53,16 @@ export class GroupQueue {
     return state;
   }
 
-  setProcessMessagesFn(fn: (groupJid: string) => Promise<boolean>): void {
+  setProcessMessagesFn(fn: (chatJid: string, threadTs?: string) => Promise<boolean>): void {
     this.processMessagesFn = fn;
   }
 
-  enqueueMessageCheck(groupJid: string): void {
+  /**
+   * Enqueue a message check for a (chatJid, threadTs) pair.
+   * Internal key: `${chatJid}||${threadTs || 'root'}`.
+   */
+  enqueueMessageCheck(chatJid: string, threadTs?: string): void {
+    const groupJid = `${chatJid}||${threadTs || 'root'}`;
     if (this.shuttingDown) return;
 
     const state = this.getGroup(groupJid);
@@ -198,14 +203,18 @@ export class GroupQueue {
     state.pendingMessages = false;
     this.activeCount++;
 
+    // Decompose composite key: chatJid||threadTs
+    const [chatJid, rawThreadTs] = groupJid.split('||');
+    const threadTs = rawThreadTs === 'root' ? undefined : rawThreadTs;
+
     logger.debug(
-      { groupJid, reason, activeCount: this.activeCount },
+      { groupJid, chatJid, threadTs, reason, activeCount: this.activeCount },
       'Starting container for group',
     );
 
     try {
       if (this.processMessagesFn) {
-        const success = await this.processMessagesFn(groupJid);
+        const success = await this.processMessagesFn(chatJid, threadTs);
         if (success) {
           state.retryCount = 0;
         } else {

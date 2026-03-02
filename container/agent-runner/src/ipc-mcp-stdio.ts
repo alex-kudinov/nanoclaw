@@ -46,6 +46,7 @@ server.tool(
     text: z.string().describe('The message text to send'),
     sender: z.string().optional().describe('Your role/identity name (e.g. "Researcher"). When set, messages appear from a dedicated bot in Telegram.'),
     target_group: z.string().optional().describe('Send to a different group by folder name (e.g. "sales", "chief"). Defaults to your own group. The target must be a registered group.'),
+    thread_ts: z.string().regex(/^\d+\.\d+$/).optional().describe('Slack thread timestamp to reply in a specific thread. Get this from the thread_ts attribute on incoming <message> XML tags.'),
   },
   async (args) => {
     const data: Record<string, string | undefined> = {
@@ -55,6 +56,7 @@ server.tool(
       sender: args.sender || undefined,
       groupFolder,
       targetGroupFolder: args.target_group || undefined,
+      thread_ts: args.thread_ts || undefined,
       timestamp: new Date().toISOString(),
     };
 

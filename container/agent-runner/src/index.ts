@@ -14,6 +14,7 @@
  *   Final marker after loop ends signals completion.
  */
 
+import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 import { query, HookCallback, PreCompactHookInput, PreToolUseHookInput } from '@anthropic-ai/claude-agent-sdk';
@@ -506,6 +507,27 @@ async function main(): Promise<void> {
       error: `Failed to parse input: ${err instanceof Error ? err.message : String(err)}`
     });
     process.exit(1);
+  }
+
+  // Create business.db with leads table if state dir exists
+  const stateDir = '/workspace/state';
+  try {
+    fs.mkdirSync(stateDir, { recursive: true });
+    const bdb = new Database(path.join(stateDir, 'business.db'));
+    bdb.exec(`CREATE TABLE IF NOT EXISTS leads (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      email TEXT,
+      source TEXT,
+      status TEXT DEFAULT 'new',
+      qualified_at TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+    bdb.close();
+  } catch (err) {
+    log(`business.db init: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // Build SDK env: merge secrets into process.env for the SDK only.

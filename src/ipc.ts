@@ -5,13 +5,13 @@ import { CronExpressionParser } from 'cron-parser';
 
 import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
 import { AvailableGroup } from './container-runner.js';
-import { createTask, deleteTask, getTaskById, updateTask } from './db.js';
+import { createTask, deleteTask, getTaskById, storeMessageDirect, updateTask } from './db.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
-import { RegisteredGroup, WebhookDefinition } from './types.js';
+import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
 
 export interface IpcDeps {
-  sendMessage: (jid: string, text: string) => Promise<void>;
+  sendMessage: SendMessageFn;
   registeredGroups: () => Record<string, RegisteredGroup>;
   registerGroup: (jid: string, group: RegisteredGroup) => void;
   syncGroups: (force: boolean) => Promise<void>;
@@ -104,11 +104,25 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 );
                 if (handoffMatch) {
                   const handoffTarget = handoffMatch[1];
-                  const handoffEntry = Object.entries(
-                    registeredGroups,
-                  ).find(([, g]) => g.folder === handoffTarget);
+                  const handoffEntry = Object.entries(registeredGroups).find(
+                    ([, g]) => g.folder === handoffTarget,
+                  );
                   if (handoffEntry) {
-                    await deps.sendMessage(handoffEntry[0], data.text);
+                    await deps.sendMessage(handoffEntry[0], data.text, { fromGroup: sourceGroup, threadTs: data.thread_ts });
+                    // Store directly in DB — Slack doesn't reliably deliver
+                    // bot_message events back to the same app via Socket Mode.
+                    storeMessageDirect({
+                      id: `ipc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                      chat_jid: handoffEntry[0],
+                      sender: sourceGroup,
+                      sender_name: sourceGroup,
+                      content: data.text,
+                      timestamp: new Date().toISOString(),
+                      is_from_me: false,
+                      is_bot_message: true,
+                      from_group: sourceGroup,
+                      thread_ts: data.thread_ts,
+                    });
                     logger.info(
                       {
                         handoffTarget,
@@ -127,7 +141,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   // Normal message: send to resolved target
                   const targetGroup = registeredGroups[targetJid];
                   if (targetGroup) {
-                    await deps.sendMessage(targetJid, data.text);
+                    await deps.sendMessage(targetJid, data.text, { fromGroup: sourceGroup, threadTs: data.thread_ts });
                     logger.info(
                       {
                         targetJid,
