@@ -513,7 +513,11 @@ async function main(): Promise<void> {
   const stateDir = '/workspace/state';
   try {
     fs.mkdirSync(stateDir, { recursive: true });
-    const { default: Database } = await import('better-sqlite3');
+    // better-sqlite3 is installed in the container image but not in devDependencies
+    // (can't rebuild container image currently). Use createRequire for runtime-only load.
+    const { createRequire } = await import('node:module');
+    const req = createRequire(import.meta.url);
+    const Database = req('better-sqlite3');
     const bdb = new Database(path.join(stateDir, 'business.db'));
     bdb.exec(`CREATE TABLE IF NOT EXISTS leads (
       id TEXT PRIMARY KEY,
