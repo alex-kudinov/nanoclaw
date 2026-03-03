@@ -20,7 +20,7 @@ import https from 'https';
 import path from 'path';
 import { ChildProcess } from 'child_process';
 
-import { MAIN_GROUP_FOLDER } from './config.js';
+// MAIN_GROUP_FOLDER was removed from config; use group.isMain instead
 import { ContainerOutput } from './container-runner.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
@@ -296,7 +296,7 @@ export class WebhookServer {
     res.end(JSON.stringify({ request_id: requestId }));
 
     const prompt = renderPrompt(webhook.prompt_template, payload);
-    const isMain = webhook.group === MAIN_GROUP_FOLDER;
+    const isMain = group.isMain === true;
 
     logger.info(
       { hookId, requestId, group: webhook.group },

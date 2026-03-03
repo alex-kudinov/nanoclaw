@@ -12,6 +12,11 @@ import {
   storeMessageDirect,
   updateTask,
 } from './db.js';
+import {
+  dispatchGmailIpc,
+  isGmailIpcType,
+  GmailIpcPayload,
+} from './gmail-ipc-handlers.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
@@ -169,8 +174,22 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     );
                   }
                 }
+                fs.unlinkSync(filePath);
+              } else if (isGmailIpcType(data.type)) {
+                // Gmail IPC: reply, send, search, read
+                fs.unlinkSync(filePath);
+                await dispatchGmailIpc({
+                  ...data,
+                  groupFolder: sourceGroup,
+                } as GmailIpcPayload);
+              } else {
+                // Unknown type — delete to prevent infinite reprocessing
+                logger.warn(
+                  { type: data.type, sourceGroup },
+                  'Unknown IPC message type',
+                );
+                fs.unlinkSync(filePath);
               }
-              fs.unlinkSync(filePath);
             } catch (err) {
               logger.error(
                 { file, sourceGroup, err },

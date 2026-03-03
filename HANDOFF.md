@@ -1,67 +1,76 @@
-# Handoff — 2026-03-02 Session 12
+# Handoff — 2026-03-03 Session 13
 
 ## Session Summary
-- Completed PostgreSQL migration (Phase 1-3 of plan)
-- Replaced ephemeral SQLite with persistent PostgreSQL on Mac Mini host
-- Created per-agent DB roles: nanoclaw_inbox (INSERT leads), nanoclaw_sales (SELECT+UPDATE), nanoclaw_chief, nanoclaw_admin
-- Updated agent CLAUDE.md files: sqlite3/better-sqlite3 commands → psql
-- Updated container image: added postgresql-client to Dockerfile
-- Updated container-runner: readSecrets(groupFolder) constructs per-agent BUSINESS_DB_URL
-- Updated agent-runner: parses BUSINESS_DB_URL into PG* env vars so psql works with no args
-- Fixed Apple Container builder DNS (must use `container builder start --dns`, not `container build --dns`)
-- Fixed SSH connectivity to Mac Mini (stale hostname, added ~/.ssh/config entry)
-- Integration tested: Lead #1 (Sarah Thompson) inserted with real ID, Sales Closer received handoff
+- Implemented full Gmail Mailman integration (14-task plan from autonomous-plan steelman process in session 12)
+- Created 7 new files: gmail-auth, gmail-consent, gmail-parser, gmail-api, gmail-ipc-handlers, channels/gmail, groups/mailman/CLAUDE.md
+- Modified 5 files: package.json (deps), config.ts (Gmail config), channels/index.ts (barrel), ipc.ts (Gmail IPC dispatch), ipc-mcp-stdio.ts (4 MCP tools)
+- Fixed Slack channel to use registry self-registration pattern (was previously not using registerChannel)
+- Fixed pre-existing build error: webhook-server.ts referenced removed `MAIN_GROUP_FOLDER` export
+- Deployed to Mac Mini: rsync, npm ci, container rebuild, service restart
+- Service verified running with Slack connected; Gmail gracefully disabled (no OAuth yet)
+- 14 gmail-parser unit tests written and passing
 
 ## Current State
 - Branch: main
-- Last commit: e30720e (fix: correct knowledge mount paths)
-- Uncommitted changes (6 files):
-  - `container/Dockerfile` — added `postgresql-client` to apt-get
-  - `container/agent-runner/src/index.ts` — replaced SQLite init (lines 511-536) with PG env propagation
-  - `container/build.sh` — added `--dns 192.168.1.1` to build command
-  - `groups/inbox/CLAUDE.md` — sqlite3 → psql commands
-  - `groups/sales/CLAUDE.md` — better-sqlite3 → psql commands
-  - `src/container-runner.ts` — readSecrets(groupFolder) with per-agent DB credentials
-- Container image rebuilt on Mac Mini with postgresql-client
-- Service running on Mac Mini with all changes deployed
+- Last commit: 7cb063f (feat: migrate business DB from SQLite to PostgreSQL with per-agent roles)
+- Uncommitted changes (9 modified + 7 untracked):
+  - `package.json` / `package-lock.json` — added `googleapis`, `google-auth-library`, `gmail:auth` script
+  - `src/config.ts` — added GMAIL_POLL_INTERVAL, GMAIL_LABEL, GMAIL_MONITORED_EMAIL, GMAIL_SEND_AS
+  - `src/channels/index.ts` — enabled `import './gmail.js'` and `import './slack.js'`
+  - `src/channels/slack.ts` — added `registerChannel('slack', factory)` self-registration at bottom
+  - `src/ipc.ts` — restructured message processing as if/else if chain, added Gmail IPC dispatch
+  - `src/webhook-server.ts` — replaced `MAIN_GROUP_FOLDER` import with `group.isMain === true`
+  - `container/agent-runner/src/ipc-mcp-stdio.ts` — added 4 Gmail MCP tools
+  - `src/gmail-auth.ts` — NEW: singleton cached OAuth2 client
+  - `src/gmail-consent.ts` — NEW: one-time OAuth consent CLI
+  - `src/gmail-parser.ts` — NEW: email body/header parsing, HTML stripping, quoted reply removal
+  - `src/gmail-parser.test.ts` — NEW: 14 unit tests (all passing)
+  - `src/gmail-api.ts` — NEW: Gmail API operations (sendEmail, replyToThread, searchEmails, readEmail)
+  - `src/gmail-ipc-handlers.ts` — NEW: host-side IPC handlers for gmail_* types
+  - `src/channels/gmail.ts` — NEW: Gmail Channel with label-based polling
+  - `groups/mailman/CLAUDE.md` — NEW: Mailman agent instructions
+- Container image rebuilt on Mac Mini with new MCP tools
+- Service running on Mac Mini with Slack connected
 
 ## Active Problem Context
-No blocking bugs. One minor observation: Sales Closer didn't execute the `psql UPDATE leads SET status = 'sales-review'` step during integration test — the SALES REVIEW draft posted correctly but the DB status stayed "qualified". Likely agent treating it as best-effort.
+Gmail channel is deployed but disabled — needs OAuth setup. No blocking bugs.
 
 ## Decisions & Reasoning
-- **PostgreSQL over SQLite:** User explicitly rejected IPC-mediated DB access as "overkill" and read-only SQLite mounts as insufficient. PostgreSQL with per-agent login roles gives standard DB-level permissions. Each agent gets a connection string for its specific role.
-- **PG env vars via stdin secrets:** BUSINESS_DB_URL passed via stdin JSON to container, agent-runner parses into PG* env vars. psql reads these natively. Chose over .pgpass file (simpler, nothing on disk).
-- **Builder DNS separate from build --dns:** Apple Container's `container build --dns` does NOT configure the buildkit worker VM. Must use `container builder start --dns 192.168.1.1`. Discovered through 5+ failed build attempts.
-- **NAT interface en8 not en0:** Mac Mini's active internet interface is en8 (USB Ethernet). Must verify with `route get 8.8.8.8 | grep interface`.
+- **Polling not Pub/Sub:** 30s chained setTimeout. No public endpoint or GCP Pub/Sub needed. Upgradeable later.
+- **Single mailbox JID:** All inbound maps to `gmail:info@tandemcoach.co`. Sender in sender/sender_name fields. Prevents JID explosion.
+- **IPC if/else if restructure:** Old code had `unlinkSync` outside type check — deleted files before new handlers ran. Restructured with unlinkSync inside each branch.
+- **Slack self-registration fix:** Slack wasn't using registerChannel. Added it to match Gmail's pattern. Previous deployment worked because Mac Mini had uncommitted code that instantiated Slack directly.
+- **MCP snake_case → IPC camelCase:** Mapping at write time in MCP tool handlers.
+- **Catch-up polling:** Every 10th poll runs without `after:` filter for late-labeled emails. In-memory Set dedup (capped at 5000).
 
 ## Open Items & Blockers
-- **Uncommitted changes:** 6 files need to be committed
-- **Mailman minion design:** User's next priority — dual-role email agent (send + receive). Not started.
-- **Sales Closer DB update skipped:** Agent posts review but doesn't run psql UPDATE. Low priority.
-- **groups/newsroom/** — untracked directory
+- **Gmail OAuth not completed:** Need GCP project + OAuth client for info@tandemcoach.co
+- **Mailman group not registered:** Needs registration after Gmail channel is live
+- **Uncommitted changes:** 16 files need committing
+- **Deferred from previous sessions:**
+  - Sales minion: optimize response to keep only most relevant information
+  - External-facing agents: use frontier model (Opus 4.6), make model configurable
+  - Stripe Cashier + Student Registrar pipeline
 
 ## Next Steps
-1. Commit the PostgreSQL migration changes
-2. Design the mailman minion (email send/receive agent)
-3. Optionally investigate Sales Closer DB update skip
+1. Complete Gmail OAuth setup (GCP project, client credentials, `npm run gmail:auth`)
+2. Set GMAIL_MONITORED_EMAIL=info@tandemcoach.co + create "NanoClaw" label in Gmail
+3. Register mailman group with JID `gmail:info@tandemcoach.co`
+4. Test end-to-end: labeled email → mailman triggers → Slack summary
+5. Commit all changes
+6. Address deferred items
 
 ## Gotchas Discovered
-- **Apple Container builder DNS:** `container build --dns` does NOT work. Must use `container builder start --dns <ip>`. Resets on reboot.
-- **Three things reset on Mac Mini reboot:** IP forwarding, NAT rules, builder DNS. All must be restored:
-  1. `sudo sysctl -w net.inet.ip.forwarding=1`
-  2. `echo "nat on en8 from 192.168.64.0/24 to any -> (en8)" | sudo pfctl -ef -`
-  3. `container builder stop && container builder delete && container builder start --dns 192.168.1.1`
-- **Mac Mini hostname `macmini` → stale .19:** Real IP is 192.168.1.50 (LAN) or mini-claw (Tailscale).
-- **SSH keys in ~/Sync/keys/ not ~/.ssh/:** Permission-restricted directory, always use Sync/keys.
-- **Remote sudo over SSH:** `echo pw | sudo -S` doesn't work non-interactively. Write temp script with password inline, execute, delete.
-- **Non-interactive SSH needs `source ~/.zprofile`:** npm/node not in PATH without it. container binary at /usr/local/bin/ also needs explicit PATH.
-- **psql binary at /opt/homebrew/opt/postgresql@16/bin/psql:** Not in default PATH even with zprofile.
+- **Slack channel wasn't using registry pattern:** Barrel file had all channels commented out. Slack worked before via uncommitted direct instantiation on Mac Mini. Rsync overwrote it. Fixed by adding registerChannel to slack.ts.
+- **webhook-server.ts MAIN_GROUP_FOLDER:** Referenced removed config export. Fixed with `group.isMain === true`.
+- **Container PATH on Mac Mini:** Need `export PATH="/usr/local/bin:$PATH"` before `./container/build.sh`.
+- **Gmail `after:` uses Unix seconds, not ms:** `messages.list` query expects epoch seconds. Must `Math.floor(lastCheckMs / 1000)`.
 
 ## Environment Notes
-- Mac Mini SSH: `ssh mini-claw` (Tailscale, configured in ~/.ssh/config)
-- PostgreSQL on Mac Mini: `nanoclaw_business` on 192.168.64.1:5432
+- Mac Mini SSH: `ssh mini-claw` (Tailscale)
+- PostgreSQL: `nanoclaw_business` on 192.168.64.1:5432
 - Container runtime: `/usr/local/bin/container`
-- DB credentials: `~/dev/NanoClaw/.env` on Mac Mini
-- Schema: `data/business/schema-pg.sql`
-- Webhook secret: `ed43647461a200485b69ec48c2e00b243941a859ac678307`
-- Test webhook: `curl -X POST http://192.168.1.50:8088/hook/contact-form -H "Content-Type: application/json" -H "X-Webhook-Secret: <secret>" -d @payload.json`
+- Gmail account: info@tandemcoach.co (Google Workspace, tandemcoachingacademy domain)
+- Send-as alias: hello@tandemcoach.co
+- Gmail OAuth scopes: gmail.readonly, gmail.send, gmail.modify
+- Gmail label for routing: "NanoClaw" (configurable via GMAIL_LABEL env var)

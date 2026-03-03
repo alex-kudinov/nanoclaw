@@ -85,3 +85,24 @@ export const CONTAINER_HOST_IP =
 export const WEBHOOK_PORT = parseInt(process.env.WEBHOOK_PORT || '8088', 10);
 export const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
 export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
+
+// Gmail configuration
+const gmailEnv = readEnvFile([
+  'GMAIL_MONITORED_EMAIL',
+  'GMAIL_SEND_AS',
+  'GMAIL_LABEL',
+  'GMAIL_POLL_INTERVAL',
+]);
+
+export const GMAIL_POLL_INTERVAL = parseInt(
+  process.env.GMAIL_POLL_INTERVAL || gmailEnv.GMAIL_POLL_INTERVAL || '30000',
+  10,
+);
+export const GMAIL_LABEL =
+  process.env.GMAIL_LABEL || gmailEnv.GMAIL_LABEL || 'NanoClaw';
+export const GMAIL_MONITORED_EMAIL =
+  process.env.GMAIL_MONITORED_EMAIL || gmailEnv.GMAIL_MONITORED_EMAIL || '';
+export const GMAIL_SEND_AS =
+  process.env.GMAIL_SEND_AS ||
+  gmailEnv.GMAIL_SEND_AS ||
+  GMAIL_MONITORED_EMAIL;

@@ -284,6 +284,98 @@ Use available_groups.json to find the JID for a group. The folder name must be c
   },
 );
 
+// --- Gmail tools ---
+
+server.tool(
+  'gmail_reply',
+  'Reply to an email thread. The reply goes to the original sender.',
+  {
+    thread_id: z.string().describe('Gmail thread ID to reply to'),
+    body: z.string().describe('Plain text reply body'),
+  },
+  async (args) => {
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'gmail_reply',
+      threadId: args.thread_id,
+      body: args.body,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      content: [{ type: 'text' as const, text: `Reply queued for thread ${args.thread_id}.` }],
+    };
+  },
+);
+
+server.tool(
+  'gmail_send',
+  'Send a new email (not a reply).',
+  {
+    to: z.string().describe('Recipient email address'),
+    subject: z.string().describe('Email subject line'),
+    body: z.string().describe('Plain text email body'),
+    cc: z.string().optional().describe('CC recipients (comma-separated)'),
+  },
+  async (args) => {
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'gmail_send',
+      to: args.to,
+      subject: args.subject,
+      body: args.body,
+      cc: args.cc || undefined,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      content: [{ type: 'text' as const, text: `Email queued to ${args.to}.` }],
+    };
+  },
+);
+
+server.tool(
+  'gmail_search',
+  'Search emails using Gmail search syntax. Results are delivered as a follow-up message.',
+  {
+    query: z.string().describe('Gmail search query (e.g., "from:john subject:invoice", "newer_than:7d")'),
+    max_results: z.number().min(1).max(50).default(10).describe('Maximum results to return'),
+  },
+  async (args) => {
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'gmail_search',
+      query: args.query,
+      maxResults: args.max_results,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      content: [{ type: 'text' as const, text: `Search queued: "${args.query}". Results will arrive as a follow-up message.` }],
+    };
+  },
+);
+
+server.tool(
+  'gmail_read',
+  'Read a specific email by message ID. Content is delivered as a follow-up message.',
+  {
+    message_id: z.string().describe('Gmail message ID to read'),
+  },
+  async (args) => {
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'gmail_read',
+      messageId: args.message_id,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      content: [{ type: 'text' as const, text: `Read queued for message ${args.message_id}. Content will arrive as a follow-up message.` }],
+    };
+  },
+);
+
 // Start the stdio transport
 const transport = new StdioServerTransport();
 await server.connect(transport);
