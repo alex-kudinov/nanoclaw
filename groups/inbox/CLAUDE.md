@@ -22,7 +22,7 @@ Call `mcp__nanoclaw__send_message` with ONLY the `text` parameter (no `target_gr
 
 ```
 📥 Received: [TYPE] from [Name] <[email]>
-Company: [company] | [one-line summary of request]
+{FULL original message — copy it word for word}
 ```
 
 ### Step 2 — Read KNOWLEDGE.md and qualify
@@ -31,10 +31,12 @@ Read `/workspace/knowledge/KNOWLEDGE.md`. Determine if the lead matches any Tand
 
 ### Step 3 — Write to DB (qualified leads only)
 
+Store the FULL original message — never truncate.
+
 ```bash
 sqlite3 /workspace/state/business.db "
-  INSERT INTO leads (source, status, name, email, company, message)
-  VALUES ('contact-form', 'qualified', 'Name', 'email@co.com', 'Company', 'truncated message...');
+  INSERT INTO leads (source, status, name, email, message)
+  VALUES ('contact-form', 'qualified', 'Name', 'email@co.com', 'Full original message here — copy it verbatim');
 "
 ```
 
@@ -43,33 +45,32 @@ Then get the row ID:
 sqlite3 /workspace/state/business.db "SELECT last_insert_rowid();"
 ```
 
-### Step 4 — Post qualification summary to THIS channel
+### Step 4 — Post qualification result to THIS channel
 
 Call `mcp__nanoclaw__send_message` with ONLY the `text` parameter (no `target_group`):
 
+For qualified:
 ```
-[ACTION: qualified] [TYPE: lead] [PRIORITY: high]
-Lead ID: {id}
-Name: {name} | Email: {email} | Company: {company}
-Need: {one-line summary}
-Queued → Sales Closer
+[ACTION: qualified] Lead ID: {id} | {name} <{email}> | Queued -> Sales Closer
 ```
 
 For spam/rejected:
 ```
-[ACTION: rejected] [TYPE: spam] [PRIORITY: low]
-Reason: {why}
+[ACTION: rejected] {name} <{email}> | Reason: {why}
 ```
 
 ### Step 5 — Hand off to Sales Closer (qualified leads only)
 
 Post the handoff message using `mcp__nanoclaw__send_message`. The system automatically routes messages containing `[HANDOFF:]` to the correct agent.
 
-Text format (use this exactly):
+Pass through ALL original fields verbatim — do not summarize or compress. Sales Closer needs the full message to craft a response.
+
 ```
-[HANDOFF: inbox→sales] Lead ID: {id}
-Name: {name} | Email: {email} | Company: {company}
-Need: {one-line summary}
+[HANDOFF: inbox→sales]
+Lead ID: {id}
+Name: {name}
+Email: {email}
+Message: {FULL original message — copy it word for word}
 Source: contact-form
 ```
 

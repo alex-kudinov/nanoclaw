@@ -30,8 +30,9 @@ export class GroupQueue {
   private groups = new Map<string, GroupState>();
   private activeCount = 0;
   private waitingGroups: string[] = [];
-  private processMessagesFn: ((chatJid: string, threadTs?: string) => Promise<boolean>) | null =
-    null;
+  private processMessagesFn:
+    | ((chatJid: string, threadTs?: string) => Promise<boolean>)
+    | null = null;
   private shuttingDown = false;
 
   private getGroup(groupJid: string): GroupState {
@@ -53,7 +54,9 @@ export class GroupQueue {
     return state;
   }
 
-  setProcessMessagesFn(fn: (chatJid: string, threadTs?: string) => Promise<boolean>): void {
+  setProcessMessagesFn(
+    fn: (chatJid: string, threadTs?: string) => Promise<boolean>,
+  ): void {
     this.processMessagesFn = fn;
   }
 

@@ -145,7 +145,9 @@ async function runTask(
         if (streamedOutput.result) {
           result = streamedOutput.result;
           // Forward result to user (sendMessage handles formatting)
-          await deps.sendMessage(task.chat_jid, streamedOutput.result, { fromGroup: task.group_folder });
+          await deps.sendMessage(task.chat_jid, streamedOutput.result, {
+            fromGroup: task.group_folder,
+          });
           scheduleClose();
         }
         if (streamedOutput.status === 'success') {

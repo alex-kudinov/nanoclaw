@@ -59,7 +59,10 @@ interface VolumeMount {
 
 function computeDirHash(dir: string): string {
   const hash = crypto.createHash('md5');
-  const files = fs.readdirSync(dir).filter(f => f.endsWith('.ts') || f.endsWith('.json')).sort();
+  const files = fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.ts') || f.endsWith('.json'))
+    .sort();
   for (const file of files) {
     hash.update(`${file}\n`);
     hash.update(fs.readFileSync(path.join(dir, file), 'utf-8'));
@@ -214,7 +217,10 @@ function buildVolumeMounts(
       }
       fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
       fs.writeFileSync(path.join(groupAgentRunnerDir, '.version'), sourceHash);
-      logger.debug({ group: group.name, hash: sourceHash }, 'Agent runner source updated');
+      logger.debug(
+        { group: group.name, hash: sourceHash },
+        'Agent runner source updated',
+      );
     }
   }
   mounts.push({

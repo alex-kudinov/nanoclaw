@@ -60,7 +60,11 @@ export interface SendMessageOpts {
   threadTs?: string;
 }
 
-export type SendMessageFn = (jid: string, text: string, opts?: SendMessageOpts) => Promise<void>;
+export type SendMessageFn = (
+  jid: string,
+  text: string,
+  opts?: SendMessageOpts,
+) => Promise<void>;
 
 export interface WebhookDefinition {
   id: string; // URL slug — POST /hook/{id}

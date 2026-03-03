@@ -344,7 +344,9 @@ export class WebhookServer {
             }
           } else {
             try {
-              await this.deps.sendMessage(webhook.chat_jid, text, { fromGroup: webhook.group });
+              await this.deps.sendMessage(webhook.chat_jid, text, {
+                fromGroup: webhook.group,
+              });
             } catch (err) {
               logger.error(
                 { hookId, requestId, err },

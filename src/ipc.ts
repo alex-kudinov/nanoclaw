@@ -5,7 +5,13 @@ import { CronExpressionParser } from 'cron-parser';
 
 import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
 import { AvailableGroup } from './container-runner.js';
-import { createTask, deleteTask, getTaskById, storeMessageDirect, updateTask } from './db.js';
+import {
+  createTask,
+  deleteTask,
+  getTaskById,
+  storeMessageDirect,
+  updateTask,
+} from './db.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
@@ -108,7 +114,10 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     ([, g]) => g.folder === handoffTarget,
                   );
                   if (handoffEntry) {
-                    await deps.sendMessage(handoffEntry[0], data.text, { fromGroup: sourceGroup, threadTs: data.thread_ts });
+                    await deps.sendMessage(handoffEntry[0], data.text, {
+                      fromGroup: sourceGroup,
+                      threadTs: data.thread_ts,
+                    });
                     // Store directly in DB — Slack doesn't reliably deliver
                     // bot_message events back to the same app via Socket Mode.
                     storeMessageDirect({
@@ -141,7 +150,10 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   // Normal message: send to resolved target
                   const targetGroup = registeredGroups[targetJid];
                   if (targetGroup) {
-                    await deps.sendMessage(targetJid, data.text, { fromGroup: sourceGroup, threadTs: data.thread_ts });
+                    await deps.sendMessage(targetJid, data.text, {
+                      fromGroup: sourceGroup,
+                      threadTs: data.thread_ts,
+                    });
                     logger.info(
                       {
                         targetJid,

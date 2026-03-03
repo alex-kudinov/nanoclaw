@@ -36,7 +36,11 @@ export class SlackChannel implements Channel {
   private app: App;
   private botUserId: string | undefined;
   private connected = false;
-  private outgoingQueue: Array<{ jid: string; text: string; opts?: SendMessageOpts }> = [];
+  private outgoingQueue: Array<{
+    jid: string;
+    text: string;
+    opts?: SendMessageOpts;
+  }> = [];
   private flushing = false;
   private userNameCache = new Map<string, string>();
   // Maps Slack message ts → fromGroup for bot messages we sent.
@@ -202,7 +206,11 @@ export class SlackChannel implements Channel {
     await this.syncChannelMetadata();
   }
 
-  async sendMessage(jid: string, text: string, opts?: SendMessageOpts): Promise<void> {
+  async sendMessage(
+    jid: string,
+    text: string,
+    opts?: SendMessageOpts,
+  ): Promise<void> {
     const channelId = jid.replace(/^slack:/, '');
     const fromGroup = opts?.fromGroup;
     const threadTs = opts?.threadTs;
@@ -230,24 +238,41 @@ export class SlackChannel implements Channel {
           this.pendingFromGroup.set(result.ts, fromGroup);
           // FIFO eviction at 1000 entries to prevent memory leak
           if (this.pendingFromGroup.size > 1000) {
-            this.pendingFromGroup.delete(this.pendingFromGroup.keys().next().value!);
+            this.pendingFromGroup.delete(
+              this.pendingFromGroup.keys().next().value!,
+            );
           }
+        }
+        // Store immediately — Socket Mode doesn't reliably deliver bot_message
+        // events back to the same app, so the parent message may not reach the
+        // DB before a thread reply triggers getThreadParent.
+        if (result.ts) {
+          this.storeOutbound(jid, result.ts, text, fromGroup, threadTs);
         }
       } else {
         for (let i = 0; i < text.length; i += MAX_MESSAGE_LENGTH) {
+          const chunk = text.slice(i, i + MAX_MESSAGE_LENGTH);
           const result = await this.app.client.chat.postMessage({
             ...postOpts,
-            text: text.slice(i, i + MAX_MESSAGE_LENGTH),
+            text: chunk,
           });
           if (fromGroup && result.ts) {
             this.pendingFromGroup.set(result.ts, fromGroup);
             if (this.pendingFromGroup.size > 1000) {
-              this.pendingFromGroup.delete(this.pendingFromGroup.keys().next().value!);
+              this.pendingFromGroup.delete(
+                this.pendingFromGroup.keys().next().value!,
+              );
             }
+          }
+          if (result.ts) {
+            this.storeOutbound(jid, result.ts, chunk, fromGroup, threadTs);
           }
         }
       }
-      logger.info({ jid, length: text.length, fromGroup, threadTs }, 'Slack message sent');
+      logger.info(
+        { jid, length: text.length, fromGroup, threadTs },
+        'Slack message sent',
+      );
     } catch (err) {
       this.outgoingQueue.push({ jid, text, opts });
       logger.warn(
@@ -337,6 +362,34 @@ export class SlackChannel implements Channel {
     }
   }
 
+  /**
+   * Store an outbound bot message immediately after posting.
+   * Socket Mode doesn't reliably deliver bot_message events back to the same
+   * app, so we can't rely on the event handler to persist the message in the DB.
+   * INSERT OR REPLACE means this is idempotent if the event does fire later.
+   */
+  private storeOutbound(
+    jid: string,
+    ts: string,
+    content: string,
+    fromGroup: string | undefined,
+    threadTs: string | undefined,
+  ): void {
+    const timestamp = new Date(parseFloat(ts) * 1000).toISOString();
+    this.opts.onMessage(jid, {
+      id: ts,
+      chat_jid: jid,
+      sender: this.botUserId || '',
+      sender_name: ASSISTANT_NAME,
+      content,
+      timestamp,
+      is_from_me: true,
+      is_bot_message: true,
+      from_group: fromGroup,
+      thread_ts: threadTs,
+    });
+  }
+
   private async flushOutgoingQueue(): Promise<void> {
     if (this.flushing || this.outgoingQueue.length === 0) return;
     this.flushing = true;
@@ -348,10 +401,11 @@ export class SlackChannel implements Channel {
       while (this.outgoingQueue.length > 0) {
         const item = this.outgoingQueue.shift()!;
         const channelId = item.jid.replace(/^slack:/, '');
-        const postOpts: { channel: string; text: string; thread_ts?: string } = {
-          channel: channelId,
-          text: item.text,
-        };
+        const postOpts: { channel: string; text: string; thread_ts?: string } =
+          {
+            channel: channelId,
+            text: item.text,
+          };
         if (item.opts?.threadTs) postOpts.thread_ts = item.opts.threadTs;
 
         const result = await this.app.client.chat.postMessage(postOpts);
