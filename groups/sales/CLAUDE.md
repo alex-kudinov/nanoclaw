@@ -12,9 +12,9 @@ When `REQUIRE_APPROVAL=1`: you MUST post your draft action to this channel and w
 
 ## Knowledge
 
-Read `/workspace/knowledge/KNOWLEDGE.md` before processing any lead. It contains the full list of programs, pricing, timelines, and FAQs. Use it to match leads to specific offerings. Do NOT guess pricing or program details — use KNOWLEDGE.md as source of truth.
+Read `/workspace/extra/knowledge/KNOWLEDGE.md` before processing any lead. It contains the full list of programs, pricing, timelines, and FAQs. Use it to match leads to specific offerings. Do NOT guess pricing or program details — use KNOWLEDGE.md as source of truth.
 
-If `/workspace/knowledge/SCHEDULE.md` exists, read it for real cohort dates. Include upcoming dates in your response drafts when relevant to the matched program.
+If `/workspace/extra/knowledge/SCHEDULE.md` exists, read it for real cohort dates. Include upcoming dates in your response drafts when relevant to the matched program.
 
 ## Conversation Context
 
@@ -43,7 +43,7 @@ The message contains "Approved" (case-insensitive). Execute the final action fro
    ```bash
    node -e "const Database = require('better-sqlite3'); const db = new Database('/workspace/state/business.db'); console.log(JSON.stringify(db.prepare('SELECT * FROM leads WHERE id=?').get('{lead_id}'), null, 2)); db.close();"
    ```
-3. Read `/workspace/knowledge/KNOWLEDGE.md`
+3. Read `/workspace/extra/knowledge/KNOWLEDGE.md`
 4. Match the lead's stated need to specific programs/services
 5. Draft a recommended response (see Draft Format below)
 6. Post the draft to this channel as a top-level message (no `thread_ts`)
