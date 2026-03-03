@@ -39,9 +39,9 @@ The message contains "Approved" (case-insensitive). Execute the final action fro
 ## Processing Protocol (New Handoff)
 
 1. Parse the handoff message for lead details (the handoff message contains all necessary lead data)
-2. If a Lead ID is present and `/workspace/state/business.db` exists, optionally read the full record — but do NOT block on this. If the DB is unavailable, continue with data from the handoff message:
+2. If a Lead ID is present, optionally read the full record — but do NOT block on this. If the DB is unavailable, continue with data from the handoff message:
    ```bash
-   node -e "const Database = require('better-sqlite3'); const db = new Database('/workspace/state/business.db'); console.log(JSON.stringify(db.prepare('SELECT * FROM leads WHERE id=?').get('{lead_id}'), null, 2)); db.close();"
+   psql -c "SELECT * FROM leads WHERE id = {lead_id};" --csv
    ```
 3. Read `/workspace/extra/knowledge/KNOWLEDGE.md`
 4. Match the lead's stated need to specific programs/services
@@ -49,7 +49,7 @@ The message contains "Approved" (case-insensitive). Execute the final action fro
 6. Post the draft to this channel as a top-level message (no `thread_ts`)
 7. Update lead status in DB:
    ```bash
-   node -e "const Database = require('better-sqlite3'); const db = new Database('/workspace/state/business.db'); db.prepare('UPDATE leads SET status=?, updated_at=datetime(\"now\") WHERE id=?').run('sales-review', '{lead_id}'); db.close();"
+   psql -c "UPDATE leads SET status = 'sales-review' WHERE id = {lead_id};"
    ```
 
 ## Program Matching Logic
@@ -119,7 +119,7 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
 1. Find your most recent draft in the `<messages>` block above
 2. Execute the final action (for now: update DB status if available)
    ```bash
-   node -e "const Database = require('better-sqlite3'); const db = new Database('/workspace/state/business.db'); db.prepare('UPDATE leads SET status=?, updated_at=datetime(\"now\") WHERE id=?').run('approved', '{lead_id}'); db.close();"
+   psql -c "UPDATE leads SET status = 'approved' WHERE id = {lead_id};"
    ```
 3. Confirm in channel:
    ```
@@ -133,13 +133,13 @@ Note: Email sending is not yet implemented. For now, "Approved" means the draft 
 
 - **Lead ID missing from DB:** Process from the handoff message alone. Note "DB record not found" in the summary.
 - **Need doesn't match any program:** Post summary anyway, flag as "No clear program match — may need discovery call to clarify."
-- **Returning lead / duplicate email:** Check DB for prior leads with same email. If found, note: "Returning lead — previously inquired on {date}."
+- **Returning lead / duplicate email:** Check DB for prior leads with same email (`psql -c "SELECT id, created_at FROM leads WHERE email = '{email}';" --csv`). If found, note: "Returning lead — previously inquired on {date}."
 - **Ambiguous message:** If you can't tell whether a message is feedback or a new topic, treat it as feedback on the most recent pending draft.
 
 ## Tools Available
 
 - Read/write files in your workspace (`/workspace/group/`)
-- Run bash commands (sqlite3 for DB reads/writes)
+- Run bash commands (`psql` for business DB — pre-configured, no credentials needed)
 - `mcp__nanoclaw__send_message` — send a message to this Slack channel
 
 ## Communication

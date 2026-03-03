@@ -252,22 +252,64 @@ function buildVolumeMounts(
  * uses the correct flow. The proxy strips whichever placeholder arrives and
  * injects the real credential from .env.
  */
-function readSecrets(): Record<string, string> {
+function readSecrets(groupFolder?: string): Record<string, string> {
   const proxyUrl = `http://${CONTAINER_HOST_IP}:${PROXY_PORT}`;
   const configured = readEnvFile([
     'CLAUDE_CODE_OAUTH_TOKEN',
     'ANTHROPIC_API_KEY',
+    'BUSINESS_DB_HOST',
+    'BUSINESS_DB_PORT',
+    'BUSINESS_DB_NAME',
+    'BUSINESS_DB_ROLE_INBOX',
+    'BUSINESS_DB_PASS_INBOX',
+    'BUSINESS_DB_ROLE_SALES',
+    'BUSINESS_DB_PASS_SALES',
+    'BUSINESS_DB_ROLE_CHIEF',
+    'BUSINESS_DB_PASS_CHIEF',
+    'BUSINESS_DB_ROLE_ADMIN',
+    'BUSINESS_DB_PASS_ADMIN',
   ]);
-  if (configured.CLAUDE_CODE_OAUTH_TOKEN) {
-    return {
-      ANTHROPIC_BASE_URL: proxyUrl,
-      CLAUDE_CODE_OAUTH_TOKEN: 'proxy-placeholder',
+
+  const secrets: Record<string, string> = configured.CLAUDE_CODE_OAUTH_TOKEN
+    ? {
+        ANTHROPIC_BASE_URL: proxyUrl,
+        CLAUDE_CODE_OAUTH_TOKEN: 'proxy-placeholder',
+      }
+    : {
+        ANTHROPIC_BASE_URL: proxyUrl,
+        ANTHROPIC_API_KEY: 'proxy-placeholder',
+      };
+
+  // Add per-agent business DB credentials
+  const dbHost = configured.BUSINESS_DB_HOST;
+  const dbPort = configured.BUSINESS_DB_PORT;
+  const dbName = configured.BUSINESS_DB_NAME;
+  if (dbHost && dbName && groupFolder) {
+    const roleMap: Record<string, { role: string; pass: string }> = {
+      inbox: {
+        role: configured.BUSINESS_DB_ROLE_INBOX || '',
+        pass: configured.BUSINESS_DB_PASS_INBOX || '',
+      },
+      sales: {
+        role: configured.BUSINESS_DB_ROLE_SALES || '',
+        pass: configured.BUSINESS_DB_PASS_SALES || '',
+      },
+      chief: {
+        role: configured.BUSINESS_DB_ROLE_CHIEF || '',
+        pass: configured.BUSINESS_DB_PASS_CHIEF || '',
+      },
+      main: {
+        role: configured.BUSINESS_DB_ROLE_ADMIN || '',
+        pass: configured.BUSINESS_DB_PASS_ADMIN || '',
+      },
     };
+    const creds = roleMap[groupFolder];
+    if (creds?.role && creds?.pass) {
+      secrets.BUSINESS_DB_URL = `postgresql://${creds.role}:${encodeURIComponent(creds.pass)}@${dbHost}:${dbPort || '5432'}/${dbName}`;
+    }
   }
-  return {
-    ANTHROPIC_BASE_URL: proxyUrl,
-    ANTHROPIC_API_KEY: 'proxy-placeholder',
-  };
+
+  return secrets;
 }
 
 function buildContainerArgs(
@@ -360,7 +402,7 @@ export async function runContainerAgent(
     let stderrTruncated = false;
 
     // Pass secrets via stdin (never written to disk or mounted as files)
-    input.secrets = readSecrets();
+    input.secrets = readSecrets(input.groupFolder);
     container.stdin.write(JSON.stringify(input));
     container.stdin.end();
     // Remove secrets from input so they don't appear in logs

@@ -508,35 +508,25 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Create business.db with leads table if state dir exists
-  // Uses dynamic import so the container compiles even without better-sqlite3 types
-  const stateDir = '/workspace/state';
-  try {
-    fs.mkdirSync(stateDir, { recursive: true });
-    // better-sqlite3 is installed in the container image but not in devDependencies
-    // (can't rebuild container image currently). Use createRequire for runtime-only load.
-    const { createRequire } = await import('node:module');
-    const req = createRequire(import.meta.url);
-    const Database = req('better-sqlite3');
-    const bdb = new Database(path.join(stateDir, 'business.db'));
-    bdb.exec(`CREATE TABLE IF NOT EXISTS leads (
-      id TEXT PRIMARY KEY,
-      name TEXT,
-      email TEXT,
-      source TEXT,
-      status TEXT DEFAULT 'new',
-      qualified_at TEXT,
-      notes TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`);
-    bdb.close();
-  } catch (err) {
-    log(`business.db init: ${err instanceof Error ? err.message : String(err)}`);
+  // Set up PostgreSQL access for business DB.
+  // PG* env vars are set in process.env so psql subprocesses can connect.
+  const businessDbUrl = containerInput.secrets?.BUSINESS_DB_URL;
+  if (businessDbUrl) {
+    try {
+      const url = new URL(businessDbUrl);
+      process.env.PGHOST = url.hostname;
+      process.env.PGPORT = url.port || '5432';
+      process.env.PGDATABASE = url.pathname.slice(1);
+      process.env.PGUSER = decodeURIComponent(url.username);
+      process.env.PGPASSWORD = decodeURIComponent(url.password);
+    } catch (err) {
+      log(`business DB URL parse: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   // Build SDK env: merge secrets into process.env for the SDK only.
-  // Secrets never touch process.env itself, so Bash subprocesses can't see them.
+  // API secrets never touch process.env, so Bash subprocesses can't see them.
+  // (PG* vars above are intentionally in process.env for psql access.)
   const sdkEnv: Record<string, string | undefined> = { ...process.env };
   for (const [key, value] of Object.entries(containerInput.secrets || {})) {
     sdkEnv[key] = value;

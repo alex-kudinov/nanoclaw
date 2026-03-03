@@ -9,7 +9,7 @@ Read `/workspace/extra/knowledge/KNOWLEDGE.md` before qualifying any lead. It co
 ## Tools Available
 
 - Read/write files in your workspace (`/workspace/group/`)
-- Run bash commands (sqlite3 for DB writes)
+- Run bash commands (`psql` for business DB — pre-configured, no credentials needed)
 - `mcp__nanoclaw__send_message` — send a message to this channel. Pass the `text` parameter with your message.
 
 ## Execution Steps (follow this exact order)
@@ -31,18 +31,10 @@ Read `/workspace/extra/knowledge/KNOWLEDGE.md`. Determine if the lead matches an
 
 ### Step 3 — Write to DB (qualified leads only)
 
-Store the FULL original message — never truncate.
+Store the FULL original message — never truncate. The `RETURNING id` clause gives you the lead ID inline.
 
 ```bash
-sqlite3 /workspace/state/business.db "
-  INSERT INTO leads (source, status, name, email, message)
-  VALUES ('contact-form', 'qualified', 'Name', 'email@co.com', 'Full original message here — copy it verbatim');
-"
-```
-
-Then get the row ID:
-```bash
-sqlite3 /workspace/state/business.db "SELECT last_insert_rowid();"
+psql -c "INSERT INTO leads (source, status, name, email, message) VALUES ('contact-form', 'qualified', 'Name', 'email@co.com', 'Full original message here — copy it verbatim') RETURNING id;"
 ```
 
 ### Step 4 — Post qualification result to THIS channel
