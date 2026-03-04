@@ -1,76 +1,74 @@
-# Handoff — 2026-03-03 Session 13
+# Handoff — 2026-03-04 Session 14
 
 ## Session Summary
-- Implemented full Gmail Mailman integration (14-task plan from autonomous-plan steelman process in session 12)
-- Created 7 new files: gmail-auth, gmail-consent, gmail-parser, gmail-api, gmail-ipc-handlers, channels/gmail, groups/mailman/CLAUDE.md
-- Modified 5 files: package.json (deps), config.ts (Gmail config), channels/index.ts (barrel), ipc.ts (Gmail IPC dispatch), ipc-mcp-stdio.ts (4 MCP tools)
-- Fixed Slack channel to use registry self-registration pattern (was previously not using registerChannel)
-- Fixed pre-existing build error: webhook-server.ts referenced removed `MAIN_GROUP_FOLDER` export
-- Deployed to Mac Mini: rsync, npm ci, container rebuild, service restart
-- Service verified running with Slack connected; Gmail gracefully disabled (no OAuth yet)
-- 14 gmail-parser unit tests written and passing
+
+- **Diagnosed Slack Socket Mode drop** at 06:17 AM — 8 queued messages lost on SIGTERM; restarted NanoClaw via `launchctl kickstart`
+- **Recovered two lost leads** (Kashif Hasnie #4, Maria Leggett #5) by re-injecting handoff IPC files; both surfaced in #gru-sales
+- **Fixed Gmail duplicate re-delivery bug** — `processedIds` Set cleared on restart; catch-up poll re-delivered all labeled emails; fixed by seeding from DB via `getMessageIdsForJid()` on `connect()`
+- **Added `getMessageIdsForJid()` to `src/db.ts`** — queries `messages` table for all IDs with a given `chat_jid`
+- **Killed stuck mailman containers** (4 + 1 chief) blocking sales agent at MAX_CONCURRENT_CONTAINERS (5)
+- **Created `data/business/CLAUDE.md`** — comprehensive PostgreSQL schema docs: connection, tables, roles, common queries
+- **Fixed SCHEDULE.md cohort dates** — `calendar_ctas.py` was only returning nearest cohort; added `find_all_dates()` returning all Module 1 cohort starts (365-day window); fixed PCC/ACTC showing 43 weekly module sessions instead of true cohort starts
+- **Added Voice & Tone section to `groups/sales/CLAUDE.md`** — Cherie Silas voice DNA, banned phrases, structural rules, email format requirements
+- **Corrected voice section** — removed Alex's abrupt example; added required email greeting (`Hi [First Name],`) and sign-off (`Warmly, / Tandem Coaching Team`)
 
 ## Current State
-- Branch: main
-- Last commit: 7cb063f (feat: migrate business DB from SQLite to PostgreSQL with per-agent roles)
-- Uncommitted changes (9 modified + 7 untracked):
-  - `package.json` / `package-lock.json` — added `googleapis`, `google-auth-library`, `gmail:auth` script
-  - `src/config.ts` — added GMAIL_POLL_INTERVAL, GMAIL_LABEL, GMAIL_MONITORED_EMAIL, GMAIL_SEND_AS
-  - `src/channels/index.ts` — enabled `import './gmail.js'` and `import './slack.js'`
-  - `src/channels/slack.ts` — added `registerChannel('slack', factory)` self-registration at bottom
-  - `src/ipc.ts` — restructured message processing as if/else if chain, added Gmail IPC dispatch
-  - `src/webhook-server.ts` — replaced `MAIN_GROUP_FOLDER` import with `group.isMain === true`
-  - `container/agent-runner/src/ipc-mcp-stdio.ts` — added 4 Gmail MCP tools
-  - `src/gmail-auth.ts` — NEW: singleton cached OAuth2 client
-  - `src/gmail-consent.ts` — NEW: one-time OAuth consent CLI
-  - `src/gmail-parser.ts` — NEW: email body/header parsing, HTML stripping, quoted reply removal
-  - `src/gmail-parser.test.ts` — NEW: 14 unit tests (all passing)
-  - `src/gmail-api.ts` — NEW: Gmail API operations (sendEmail, replyToThread, searchEmails, readEmail)
-  - `src/gmail-ipc-handlers.ts` — NEW: host-side IPC handlers for gmail_* types
-  - `src/channels/gmail.ts` — NEW: Gmail Channel with label-based polling
-  - `groups/mailman/CLAUDE.md` — NEW: Mailman agent instructions
-- Container image rebuilt on Mac Mini with new MCP tools
-- Service running on Mac Mini with Slack connected
+
+- **Branch:** main (22 commits ahead of upstream/main, 3 behind)
+- **Last commit:** `aad4fae feat: outbound email sending via Sales→Mailman handoff`
+- **Uncommitted changes:** Large — ~502 insertions across 16 modified files (sessions 11–14 accumulated)
+- **Untracked files:** `knowledge/agents/mailman/`, `knowledge/agents/sales/LEARNED.md`, `scripts/submit-lead.ts`, `src/channels/gmail.test.ts`, `src/learn-ipc-handler.ts`
+- **Files touched this session:**
+  - `groups/sales/CLAUDE.md` — Voice & Tone section: Cherie's voice, banned phrases, email format (greeting + sign-off), corrected abrupt example
+  - `src/channels/gmail.ts` — seed `processedIds` from DB on `connect()` to prevent re-delivery
+  - `src/db.ts` — added `getMessageIdsForJid()` function
+  - `data/business/CLAUDE.md` — new file (PostgreSQL schema docs for agents)
+  - `tandemweb/tools/newsroom/calendar_ctas.py` (separate repo) — `find_all_dates()`, Module 1 filter for all programs
+  - `knowledge/agents/sales/SCHEDULE.md` — regenerated: ACC=12 dates, PCC=11, ACTC=11 (true cohort starts only)
 
 ## Active Problem Context
-Gmail channel is deployed but disabled — needs OAuth setup. No blocking bugs.
+
+No active bugs. System operating. The large uncommitted diff is accumulated work across sessions 11–14 (Gmail channel, PostgreSQL migration, mailman group, sales voice, schedule fix).
+
+**Known issue to watch:** `processedIds` cap logic in `gmail.ts` lines 281–288 has a subtle bug — iterates the iterator to advance past 1000 entries, then tries to rebuild from it, but it's already consumed. Low urgency (only triggers at 5000 IDs).
 
 ## Decisions & Reasoning
-- **Polling not Pub/Sub:** 30s chained setTimeout. No public endpoint or GCP Pub/Sub needed. Upgradeable later.
-- **Single mailbox JID:** All inbound maps to `gmail:info@tandemcoach.co`. Sender in sender/sender_name fields. Prevents JID explosion.
-- **IPC if/else if restructure:** Old code had `unlinkSync` outside type check — deleted files before new handlers ran. Restructured with unlinkSync inside each branch.
-- **Slack self-registration fix:** Slack wasn't using registerChannel. Added it to match Gmail's pattern. Previous deployment worked because Mac Mini had uncommitted code that instantiated Slack directly.
-- **MCP snake_case → IPC camelCase:** Mapping at write time in MCP tool handlers.
-- **Catch-up polling:** Every 10th poll runs without `after:` filter for late-labeled emails. In-memory Set dedup (capped at 5000).
+
+- **Cherie's voice, not Alex's:** User confirmed sales emails use Cherie's warm authority style. "The program page has everything you need to decide" is Alex's abrupt voice. Cherie's version: "If you need more information, a lot of it is on the program page. Feel free to read and reach out."
+- **Greeting/sign-off always required:** The anti-sycophantic rule does NOT apply to structural email conventions. `Hi [First Name],` and `Warmly, / Tandem Coaching Team` are always required. Clarified explicitly in CLAUDE.md.
+- **Module 1 filter for all programs:** PCC/ACTC calendar events include all weekly sessions — must filter `mod != 1` universally in `find_all_dates()` to get true cohort enrollment dates.
+- **DB-seeded processedIds:** Simplest fix for Gmail re-delivery — query existing IDs from SQLite `messages` table on startup. No new tables needed.
 
 ## Open Items & Blockers
-- **Gmail OAuth not completed:** Need GCP project + OAuth client for info@tandemcoach.co
-- **Mailman group not registered:** Needs registration after Gmail channel is live
-- **Uncommitted changes:** 16 files need committing
-- **Deferred from previous sessions:**
-  - Sales minion: optimize response to keep only most relevant information
-  - External-facing agents: use frontier model (Opus 4.6), make model configurable
-  - Stripe Cashier + Student Registrar pipeline
+
+- **Commit the accumulated diff** — ~502 insertions across 16 files, split into logical commits
+- **Review untracked files** before committing: `LEARNED.md`, `submit-lead.ts`, `learn-ipc-handler.ts`, `gmail.test.ts`, `knowledge/agents/mailman/`
+- **`processedIds` cap bug** in `gmail.ts` lines 281–288 (low urgency)
+- **Test voice updates** — send a test lead, verify Cherie's voice + greeting + sign-off in draft
 
 ## Next Steps
-1. Complete Gmail OAuth setup (GCP project, client credentials, `npm run gmail:auth`)
-2. Set GMAIL_MONITORED_EMAIL=info@tandemcoach.co + create "NanoClaw" label in Gmail
-3. Register mailman group with JID `gmail:info@tandemcoach.co`
-4. Test end-to-end: labeled email → mailman triggers → Slack summary
-5. Commit all changes
-6. Address deferred items
+
+1. Commit accumulated work in logical chunks:
+   - Gmail dedup fix (`gmail.ts` + `db.ts`)
+   - `data/business/CLAUDE.md`
+   - `groups/sales/CLAUDE.md` voice section
+2. Review and commit/gitignore untracked files
+3. Send a test lead to verify voice changes
+4. Monitor Gmail logs on next restart for `seededIds: N` (confirms dedup seeding)
 
 ## Gotchas Discovered
-- **Slack channel wasn't using registry pattern:** Barrel file had all channels commented out. Slack worked before via uncommitted direct instantiation on Mac Mini. Rsync overwrote it. Fixed by adding registerChannel to slack.ts.
-- **webhook-server.ts MAIN_GROUP_FOLDER:** Referenced removed config export. Fixed with `group.isMain === true`.
-- **Container PATH on Mac Mini:** Need `export PATH="/usr/local/bin:$PATH"` before `./container/build.sh`.
-- **Gmail `after:` uses Unix seconds, not ms:** `messages.list` query expects epoch seconds. Must `Math.floor(lastCheckMs / 1000)`.
+
+- **Slack Socket Mode drops silently** — no auto-reconnect; queued messages lost on SIGTERM. Must restart manually.
+- **MAX_CONCURRENT_CONTAINERS=5 is a hard ceiling** — hung containers (no timeout) block all agent work. Need container timeout/watchdog.
+- **psql not in PATH on Mac Mini** — full path: `/opt/homebrew/Cellar/postgresql@16/16.13/bin/psql`
+- **PCC/ACTC calendar includes all weekly module sessions** — must filter `mod != 1` for ALL programs, not just ACC.
+- **Google Workspace primary vs. alias** — `info@tandemcoaching.academy` is the GW primary; `info@tandemcoach.co` is an alias. OAuth shows the primary.
 
 ## Environment Notes
-- Mac Mini SSH: `ssh mini-claw` (Tailscale)
-- PostgreSQL: `nanoclaw_business` on 192.168.64.1:5432
-- Container runtime: `/usr/local/bin/container`
-- Gmail account: info@tandemcoach.co (Google Workspace, tandemcoachingacademy domain)
-- Send-as alias: hello@tandemcoach.co
-- Gmail OAuth scopes: gmail.readonly, gmail.send, gmail.modify
-- Gmail label for routing: "NanoClaw" (configurable via GMAIL_LABEL env var)
+
+- **Mac Mini (production):** `mini-claw` (Tailscale) / `192.168.1.50` (LAN). SSH key: `~/Sync/keys/xbohdpukc`
+- **NanoClaw service:** `launchctl kickstart -k gui/$(id -u)/com.nanoclaw`
+- **Logs:** `~/dev/NanoClaw/logs/nanoclaw.log` on Mac Mini
+- **Build + restart:** `npm run build && launchctl kickstart -k gui/$(id -u)/com.nanoclaw`
+- **rsync target:** `mini-claw:~/dev/NanoClaw/`
+- **Container networking resets on reboot** — run IP forwarding + NAT + builder DNS in order (see MEMORY.md)
