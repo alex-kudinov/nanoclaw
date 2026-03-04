@@ -7,9 +7,19 @@
 import fs from 'fs';
 import path from 'path';
 
-import { ASSISTANT_NAME, DATA_DIR, GMAIL_MONITORED_EMAIL } from './config.js';
+import {
+  ASSISTANT_NAME,
+  DATA_DIR,
+  GMAIL_MONITORED_EMAIL,
+  GMAIL_TEST_RECIPIENT,
+} from './config.js';
 import { storeMessageDirect } from './db.js';
-import { replyToThread, sendEmail, searchEmails, readEmail } from './gmail-api.js';
+import {
+  replyToThread,
+  sendEmail,
+  searchEmails,
+  readEmail,
+} from './gmail-api.js';
 import { logger } from './logger.js';
 
 /** Payload shape written by container MCP tools. */
@@ -24,6 +34,7 @@ export interface GmailIpcPayload {
   to?: string;
   subject?: string;
   cc?: string;
+  html?: boolean;
   // gmail_search
   query?: string;
   maxResults?: number;
@@ -64,41 +75,71 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
   );
 }
 
+/** Apply test routing: override to/cc when GMAIL_TEST_RECIPIENT is set. */
+function applyTestRouting(data: GmailIpcPayload): {
+  effectiveTo: string;
+  effectiveCc: string | undefined;
+  originalTo: string;
+  originalCc: string | undefined;
+} {
+  const originalTo = data.to!;
+  const originalCc = data.cc;
+  if (!GMAIL_TEST_RECIPIENT) {
+    return { effectiveTo: originalTo, effectiveCc: originalCc, originalTo, originalCc };
+  }
+  logger.info(
+    { originalTo, originalCc, testRecipient: GMAIL_TEST_RECIPIENT },
+    'gmail_send: test routing override — redirecting email',
+  );
+  return { effectiveTo: GMAIL_TEST_RECIPIENT, effectiveCc: undefined, originalTo, originalCc };
+}
+
+/** Store outbound email in DB for conversation context. */
+function storeOutboundEmail(
+  sentId: string,
+  originalTo: string,
+  subject: string,
+  body: string,
+  groupFolder: string,
+): void {
+  storeMessageDirect({
+    id: sentId,
+    chat_jid: jid,
+    sender: GMAIL_MONITORED_EMAIL,
+    sender_name: ASSISTANT_NAME,
+    content: `To: ${originalTo}\nSubject: ${subject}\n\n${body}`,
+    timestamp: new Date().toISOString(),
+    is_from_me: true,
+    is_bot_message: true,
+    from_group: groupFolder,
+  });
+}
+
 export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
   if (!data.to || !data.subject || !data.body) {
     logger.warn({ data }, 'gmail_send: missing to, subject, or body');
     return;
   }
 
+  const { effectiveTo, effectiveCc, originalTo } = applyTestRouting(data);
+
   const sentId = await sendEmail({
-    to: data.to,
+    to: effectiveTo,
     subject: data.subject,
     body: data.body,
-    cc: data.cc,
+    cc: effectiveCc,
+    html: data.html,
   });
 
-  // Store outbound
-  storeMessageDirect({
-    id: sentId,
-    chat_jid: jid,
-    sender: GMAIL_MONITORED_EMAIL,
-    sender_name: ASSISTANT_NAME,
-    content: `To: ${data.to}\nSubject: ${data.subject}\n\n${data.body}`,
-    timestamp: new Date().toISOString(),
-    is_from_me: true,
-    is_bot_message: true,
-    from_group: data.groupFolder,
-  });
+  storeOutboundEmail(sentId, originalTo, data.subject, data.body, data.groupFolder);
 
   logger.info(
-    { to: data.to, subject: data.subject, sentId, groupFolder: data.groupFolder },
+    { to: effectiveTo, originalTo, subject: data.subject, sentId, groupFolder: data.groupFolder },
     'gmail_send processed',
   );
 }
 
-export async function handleGmailSearch(
-  data: GmailIpcPayload,
-): Promise<void> {
+export async function handleGmailSearch(data: GmailIpcPayload): Promise<void> {
   if (!data.query) {
     logger.warn({ data }, 'gmail_search: missing query');
     return;
@@ -165,9 +206,7 @@ export function isGmailIpcType(type: string): boolean {
 }
 
 /** Dispatch a Gmail IPC payload to the appropriate handler. */
-export async function dispatchGmailIpc(
-  data: GmailIpcPayload,
-): Promise<void> {
+export async function dispatchGmailIpc(data: GmailIpcPayload): Promise<void> {
   switch (data.type) {
     case 'gmail_reply':
       await handleGmailReply(data);

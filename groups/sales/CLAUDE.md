@@ -117,17 +117,25 @@ When you receive feedback (not "Approved") — the message will have a `thread_t
 
 When you receive "Approved" (the message will have a `thread_ts` — use it for your reply):
 1. Find your most recent draft in the `<messages>` block above
-2. Execute the final action (for now: update DB status if available)
+2. Update DB status:
    ```bash
    psql -c "UPDATE leads SET status = 'approved' WHERE id = {lead_id};"
    ```
-3. Confirm in channel:
+3. Hand off to Mailman for email sending. Post a message using `send_message` **in the same thread using `thread_ts`** with this exact format:
    ```
-   Lead #{id} approved. Status updated.
-   {Summary of action taken — e.g., "Ready for manual follow-up by Alex/Cherie."}
+   [HANDOFF: sales→mailman]
+   To: {lead email address from the [SALES REVIEW] header}
+   Subject: {email subject from the draft}
+   Lead ID: {lead_id}
+   Body:
+   {the full draft response text from your DRAFT RESPONSE TO LEAD section — markdown formatting preserved}
    ```
-
-Note: Email sending is not yet implemented. For now, "Approved" means the draft is good and Alex/Cherie will send it manually. The confirmation message should include the final draft text so they can copy-paste it.
+   **IMPORTANT:** Extract the `To:` email and `Subject:` from your most recent `[SALES REVIEW]` post in the `<messages>` block — do NOT guess or recall from memory.
+   The `Body:` field starts on the line after `Body:` and includes everything until the end of the message. Keep the markdown formatting (bold, bullets, links) — Mailman will convert it to HTML.
+4. Confirm in channel (same thread):
+   ```
+   Lead #{id} approved. Email handed off to Mailman for sending.
+   ```
 
 ## Edge Cases
 

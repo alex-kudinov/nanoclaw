@@ -5,7 +5,11 @@
 
 import { gmail_v1 } from 'googleapis';
 
-import { GMAIL_MONITORED_EMAIL, GMAIL_SEND_AS } from './config.js';
+import {
+  GMAIL_MONITORED_EMAIL,
+  GMAIL_SEND_AS,
+  GMAIL_SIGNATURE,
+} from './config.js';
 import { getGmailClient } from './gmail-auth.js';
 import {
   formatEmailForAgent,
@@ -14,28 +18,42 @@ import {
 } from './gmail-parser.js';
 import { logger } from './logger.js';
 
+/** Append the team signature to an HTML email body. */
+export function appendHtmlSignature(body: string): string {
+  return `${body}\n<br><br>\n<p style="color: #666;">${GMAIL_SIGNATURE}</p>`;
+}
+
+/** Strip CR/LF to prevent header injection in RFC 2822 fields. */
+const sanitizeHeader = (s: string): string => s.replace(/[\r\n]/g, '');
+
 /** Build an RFC 2822 message and base64url-encode it. */
-function buildRawMessage(opts: {
+export function buildRawMessage(opts: {
   to: string;
   subject: string;
   body: string;
   cc?: string;
+  html?: boolean;
   inReplyTo?: string;
   references?: string;
 }): string {
   const lines: string[] = [
-    `From: ${GMAIL_SEND_AS}`,
-    `To: ${opts.to}`,
+    `From: ${sanitizeHeader(GMAIL_SEND_AS)}`,
+    `To: ${sanitizeHeader(opts.to)}`,
   ];
-  if (opts.cc) lines.push(`Cc: ${opts.cc}`);
-  lines.push(`Subject: ${opts.subject}`);
+  if (opts.cc) lines.push(`Cc: ${sanitizeHeader(opts.cc)}`);
+  lines.push(`Subject: ${sanitizeHeader(opts.subject)}`);
   if (opts.inReplyTo) {
     lines.push(`In-Reply-To: ${opts.inReplyTo}`);
     lines.push(`References: ${opts.references || opts.inReplyTo}`);
   }
-  lines.push('Content-Type: text/plain; charset=utf-8');
+
+  const contentType = opts.html ? 'text/html' : 'text/plain';
+  lines.push(`Content-Type: ${contentType}; charset=utf-8`);
   lines.push('');
-  lines.push(opts.body);
+
+  // Append signature to HTML emails
+  const body = opts.html ? appendHtmlSignature(opts.body) : opts.body;
+  lines.push(body);
 
   const raw = lines.join('\r\n');
   return Buffer.from(raw)
@@ -51,6 +69,7 @@ export async function sendEmail(opts: {
   subject: string;
   body: string;
   cc?: string;
+  html?: boolean;
 }): Promise<string> {
   const gmail = getGmailClient();
   const raw = buildRawMessage(opts);
@@ -90,8 +109,8 @@ export async function replyToThread(opts: {
   const lastMsg = messages[messages.length - 1];
   const headers = lastMsg.payload?.headers || [];
   const get = (name: string) =>
-    headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())
-      ?.value || '';
+    headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ||
+    '';
 
   const originalFrom = get('From');
   const originalSubject = get('Subject');

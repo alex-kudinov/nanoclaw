@@ -92,6 +92,7 @@ const gmailEnv = readEnvFile([
   'GMAIL_SEND_AS',
   'GMAIL_LABEL',
   'GMAIL_POLL_INTERVAL',
+  'GMAIL_TEST_RECIPIENT',
 ]);
 
 export const GMAIL_POLL_INTERVAL = parseInt(
@@ -99,10 +100,16 @@ export const GMAIL_POLL_INTERVAL = parseInt(
   10,
 );
 export const GMAIL_LABEL =
-  process.env.GMAIL_LABEL || gmailEnv.GMAIL_LABEL || 'NanoClaw';
+  process.env.GMAIL_LABEL || gmailEnv.GMAIL_LABEL || 'MrGru';
 export const GMAIL_MONITORED_EMAIL =
   process.env.GMAIL_MONITORED_EMAIL || gmailEnv.GMAIL_MONITORED_EMAIL || '';
 export const GMAIL_SEND_AS =
-  process.env.GMAIL_SEND_AS ||
-  gmailEnv.GMAIL_SEND_AS ||
-  GMAIL_MONITORED_EMAIL;
+  process.env.GMAIL_SEND_AS || gmailEnv.GMAIL_SEND_AS || GMAIL_MONITORED_EMAIL;
+
+// Test routing: when set, ALL gmail_send calls have their recipient rewritten.
+// Host-enforced — agents cannot bypass this.
+export const GMAIL_TEST_RECIPIENT =
+  process.env.GMAIL_TEST_RECIPIENT || gmailEnv.GMAIL_TEST_RECIPIENT || '';
+
+// Signature appended to outbound HTML emails by the host.
+export const GMAIL_SIGNATURE = 'The Tandem Coaching Team';

@@ -314,8 +314,9 @@ server.tool(
   {
     to: z.string().describe('Recipient email address'),
     subject: z.string().describe('Email subject line'),
-    body: z.string().describe('Plain text email body'),
+    body: z.string().describe('Email body (plain text or HTML)'),
     cc: z.string().optional().describe('CC recipients (comma-separated)'),
+    html: z.boolean().optional().describe('Set to true when body contains HTML'),
   },
   async (args) => {
     writeIpcFile(MESSAGES_DIR, {
@@ -324,6 +325,7 @@ server.tool(
       subject: args.subject,
       body: args.body,
       cc: args.cc || undefined,
+      html: args.html || undefined,
       groupFolder,
       timestamp: new Date().toISOString(),
     });
