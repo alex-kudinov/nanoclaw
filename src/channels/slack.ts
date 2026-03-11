@@ -38,13 +38,7 @@ interface SlackFile {
 const MAX_FILE_DOWNLOAD_SIZE = 100 * 1024;
 
 // MIME types and extensions we'll inline as text attachments
-const TEXT_FILE_TYPES = new Set([
-  'csv',
-  'text',
-  'plain',
-  'tsv',
-  'txt',
-]);
+const TEXT_FILE_TYPES = new Set(['csv', 'text', 'plain', 'tsv', 'txt']);
 
 export interface SlackChannelOpts {
   onMessage: OnInboundMessage;
@@ -107,7 +101,10 @@ export class SlackChannel implements Channel {
     this.app.error(async (error) => {
       const msg = error.message || String(error);
       if (msg.includes('WebSocket') || msg.includes('not ready')) {
-        logger.warn({ err: error }, 'Slack WebSocket error, triggering reconnect');
+        logger.warn(
+          { err: error },
+          'Slack WebSocket error, triggering reconnect',
+        );
         if (this.connected) await this.reconnect();
       } else {
         logger.error({ err: error }, 'Unhandled Slack app error');
@@ -158,7 +155,8 @@ export class SlackChannel implements Channel {
       // Bolt's event type is the full MessageEvent union (17+ subtypes).
       // We filter on subtype first, then narrow to the two types we handle.
       const subtype = (event as { subtype?: string }).subtype;
-      if (subtype && subtype !== 'bot_message' && subtype !== 'file_share') return;
+      if (subtype && subtype !== 'bot_message' && subtype !== 'file_share')
+        return;
 
       // After filtering, event is either GenericMessageEvent or BotMessageEvent
       const msg = event as HandledMessageEvent;

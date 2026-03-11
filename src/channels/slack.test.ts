@@ -672,7 +672,8 @@ describe('SlackChannel', () => {
             mimetype: 'text/csv',
             filetype: 'csv',
             size: 100,
-            url_private_download: 'https://files.slack.com/files-pri/T123/data.csv',
+            url_private_download:
+              'https://files.slack.com/files-pri/T123/data.csv',
           },
         ],
       });
@@ -710,7 +711,8 @@ describe('SlackChannel', () => {
             mimetype: 'image/png',
             filetype: 'png',
             size: 5000,
-            url_private_download: 'https://files.slack.com/files-pri/T123/photo.png',
+            url_private_download:
+              'https://files.slack.com/files-pri/T123/photo.png',
           },
         ],
       });
@@ -1213,7 +1215,9 @@ describe('SlackChannel', () => {
         // Simulate activity every 2 minutes (below 5-min threshold)
         for (let i = 0; i < 5; i++) {
           await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
-          await triggerMessageEvent(createMessageEvent({ text: 'ping', ts: `170406720${i}.000000` }));
+          await triggerMessageEvent(
+            createMessageEvent({ text: 'ping', ts: `170406720${i}.000000` }),
+          );
         }
 
         // stop() should not have been called for reconnect
@@ -1237,7 +1241,11 @@ describe('SlackChannel', () => {
         // Simulate the WebSocket error that Bolt fires
         if (app.errorHandler) {
           // Don't await — reconnect has internal setTimeout
-          app.errorHandler(new Error('Failed to send a WebSocket message as the client is not ready'));
+          app.errorHandler(
+            new Error(
+              'Failed to send a WebSocket message as the client is not ready',
+            ),
+          );
         }
 
         // Advance past the 3s reconnect delay
