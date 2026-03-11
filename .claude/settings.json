@@ -1,8 +1,20 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(rsync -az -e \"ssh -o UserKnownHostsFile=/tmp/nanoclaw_known_hosts -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -i ~/Sync/keys/xbohdpukc\" /Users/xbohdpukc/dev/NanoClaw/tools/contador/process-payment.cjs xbohdpukc@192.168.1.50:~/dev/NanoClaw/tools/contador/process-payment.cjs)",
+      "Bash(rsync -az -e \"ssh -o UserKnownHostsFile=/tmp/nanoclaw_known_hosts -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -i ~/Sync/keys/xbohdpukc\" /Users/xbohdpukc/dev/NanoClaw/tools/contador/ xbohdpukc@192.168.1.50:~/dev/NanoClaw/tools/contador/)"
+    ],
+    "additionalDirectories": [
+      "/Users/xbohdpukc/.claude/projects/-Users-xbohdpukc-dev-NanoClaw"
+    ]
+  },
   "mcpServers": {
     "nanoclaw": {
       "command": "npx",
-      "args": ["-y", "mcp-server-ssh"],
+      "args": [
+        "-y",
+        "mcp-server-ssh"
+      ],
       "env": {
         "SSH_HOST": "100.115.115.205",
         "SSH_USER": "root",
