@@ -95,7 +95,17 @@ Use these as starting entries in the Product Map tab. Verify against your actual
 | ICF Exam Prep Course | ACC Exam Prep |
 | ICF Coach Knowledge Assessment Prep | ACC Exam Prep |
 
-### PCC (Professional Certified Coach)
+### Professional Coach Program (ACC + PCC + ACTC Bundle)
+
+| Stripe Product Name | Roster Column |
+|---|---|
+| Professional Coach Program | ACC Full Program |
+| Professional Coach Program (ACC + PCC + ACTC) | ACC Full Program |
+| Full Professional Coach Program | ACC Full Program |
+
+**Note:** The Professional Coach Program ($7,499) bundles ACC + Systems Coach (PCC+ACTC). When purchased, mark the student's ACC Full Program column. As they progress through Phase 2, their PCC roster entries will be added separately when those components are activated/completed.
+
+### PCC / Systems Coach Program (Professional Certified Coach)
 
 | Stripe Product Name | Roster Column |
 |---|---|
