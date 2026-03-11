@@ -8,7 +8,7 @@ Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and exe
 
 ### ACC — Associate Certified Coach (ICF Level 1)
 - **Price:** $3,999 full program (includes all 4 core modules, Coaching Foundations free module, mentor coaching, exam prep)
-- **Individual modules:** $399 each (free Coaching Foundations first, saves $600+ vs buying separately)
+- **Individual modules:** $399 each (free Coaching Foundations first)
 - **ICF credential fees (paid to ICF, not Tandem):** $175 (ICF member) or $325 (non-member) — total investment ~$4,200–$4,400
 - **Education hours required:** 60+ coach-specific hours (ICF Level 1 program)
 - **Coaching experience required:** 100 hours total (75 paid minimum, 25 can be pro bono)
@@ -22,7 +22,7 @@ Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and exe
 - Free Coaching Foundations module (ICF competencies, ethics, coaching basics)
 - 4 core training modules
 - MCC-level mentor coaching (10 hrs)
-- ICF Exam Prep Course ($29 value, included)
+- ICF Exam Prep Course (included)
 - Performance evaluation prep
 
 **Modular structure:** Start with any upcoming cohort. Pause between modules at no cost. Progress never expires. Can buy modules individually.

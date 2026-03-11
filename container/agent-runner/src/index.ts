@@ -524,6 +524,14 @@ async function main(): Promise<void> {
     }
   }
 
+  // Set El Contador env vars in process.env so bash scripts can access them.
+  const stripeKey = containerInput.secrets?.STRIPE_RESTRICTED_KEY;
+  if (stripeKey) process.env.STRIPE_RESTRICTED_KEY = stripeKey;
+  const sheetsPaymentsId = containerInput.secrets?.SHEETS_PAYMENTS_ID;
+  if (sheetsPaymentsId) process.env.SHEETS_PAYMENTS_ID = sheetsPaymentsId;
+  const sheetsRosterId = containerInput.secrets?.SHEETS_ROSTER_ID;
+  if (sheetsRosterId) process.env.SHEETS_ROSTER_ID = sheetsRosterId;
+
   // Build SDK env: merge secrets into process.env for the SDK only.
   // API secrets never touch process.env, so Bash subprocesses can't see them.
   // (PG* vars above are intentionally in process.env for psql access.)
