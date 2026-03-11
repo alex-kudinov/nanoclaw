@@ -433,7 +433,8 @@ async function startMessageLoop(): Promise<void> {
           }
 
           const isMainGroup = group.isMain === true;
-          const needsTrigger = !isMainGroup && group.requiresTrigger !== false && !threadTs;
+          const needsTrigger =
+            !isMainGroup && group.requiresTrigger !== false && !threadTs;
 
           // Pull all messages since lastAgentTimestamp so non-trigger
           // context that accumulated between triggers is included.
@@ -523,6 +524,26 @@ function recoverPendingMessages(): void {
   }
 }
 
+function startWatchdog(): void {
+  const heartbeatPath = path.join(DATA_DIR, 'heartbeat.json');
+  setInterval(() => {
+    const heapUsed = process.memoryUsage().heapUsed;
+    const data = JSON.stringify({
+      pid: process.pid,
+      ts: Date.now(),
+      uptime: process.uptime(),
+      heapUsed,
+    });
+    fs.writeFileSync(heartbeatPath, data);
+
+    const heapUsedMB = Math.round(heapUsed / 1024 / 1024);
+    if (heapUsed > 400 * 1024 * 1024) {
+      logger.warn({ heapUsedMB }, 'High memory usage detected');
+    }
+  }, 30_000);
+  logger.info('Watchdog heartbeat started');
+}
+
 function ensureContainerSystemRunning(): void {
   ensureContainerRuntimeRunning();
   cleanupOrphans();
@@ -567,6 +588,7 @@ async function main(): Promise<void> {
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutdown signal received');
     await queue.shutdown(10000);
+    cleanupOrphans();
     for (const ch of channels) await ch.disconnect();
     await proxy.stop().catch(() => {});
     await webhookServer.stop().catch(() => {});
@@ -627,6 +649,7 @@ async function main(): Promise<void> {
         added_at: new Date().toISOString(),
       });
     },
+    registerGroup,
     registeredGroups: () => registeredGroups,
   };
 
@@ -692,6 +715,7 @@ async function main(): Promise<void> {
   });
   queue.setProcessMessagesFn(processGroupMessages);
   recoverPendingMessages();
+  startWatchdog();
   startMessageLoop();
 }
 

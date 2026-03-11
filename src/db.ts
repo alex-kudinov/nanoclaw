@@ -409,6 +409,17 @@ export function getMessagesSince(
 }
 
 /**
+ * Get all message IDs stored for a given chat JID.
+ * Used to seed in-memory dedup sets after restarts.
+ */
+export function getMessageIdsForJid(chatJid: string): string[] {
+  const rows = db
+    .prepare('SELECT id FROM messages WHERE chat_jid = ?')
+    .all(chatJid) as Array<{ id: string }>;
+  return rows.map((r) => r.id);
+}
+
+/**
  * Get the thread parent message (the message whose Slack ts matches the thread_ts).
  * In Slack, thread_ts of replies equals the ts (id) of the parent message.
  */

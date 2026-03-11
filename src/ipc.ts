@@ -17,6 +17,11 @@ import {
   isGmailIpcType,
   GmailIpcPayload,
 } from './gmail-ipc-handlers.js';
+import {
+  handleLearnLesson,
+  isLearnIpcType,
+  LearnLessonPayload,
+} from './learn-ipc-handler.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
@@ -182,6 +187,13 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   ...data,
                   groupFolder: sourceGroup,
                 } as GmailIpcPayload);
+              } else if (isLearnIpcType(data.type)) {
+                // Learning loop: append lesson to LEARNED.md
+                fs.unlinkSync(filePath);
+                await handleLearnLesson({
+                  ...data,
+                  groupFolder: sourceGroup,
+                } as LearnLessonPayload);
               } else {
                 // Unknown type — delete to prevent infinite reprocessing
                 logger.warn(

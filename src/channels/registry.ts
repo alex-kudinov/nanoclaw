@@ -1,13 +1,18 @@
 import {
   Channel,
+  OnBotJoinedChannel,
   OnInboundMessage,
   OnChatMetadata,
   RegisteredGroup,
 } from '../types.js';
 
+export type RegisterGroupFn = (jid: string, group: RegisteredGroup) => void;
+
 export interface ChannelOpts {
   onMessage: OnInboundMessage;
   onChatMetadata: OnChatMetadata;
+  onBotJoinedChannel?: OnBotJoinedChannel;
+  registerGroup?: RegisterGroupFn;
   registeredGroups: () => Record<string, RegisteredGroup>;
 }
 

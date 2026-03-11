@@ -7,9 +7,7 @@ import { gmail_v1 } from 'googleapis';
 const MAX_BODY_LENGTH = 10_000;
 
 /** Walk MIME tree, prefer text/plain, fall back to stripped HTML. */
-export function parseEmailBody(
-  payload: gmail_v1.Schema$MessagePart,
-): string {
+export function parseEmailBody(payload: gmail_v1.Schema$MessagePart): string {
   const parts = flattenParts(payload);
 
   // Prefer text/plain

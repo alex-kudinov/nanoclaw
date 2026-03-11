@@ -25,6 +25,11 @@ export function stopContainer(name: string): string {
   return `${CONTAINER_RUNTIME_BIN} stop ${name}`;
 }
 
+/** Returns the shell command to remove a stopped container by name. */
+export function rmContainer(name: string): string {
+  return `${CONTAINER_RUNTIME_BIN} rm ${name}`;
+}
+
 /** Ensure the container runtime is running, starting it if needed. */
 export function ensureContainerRuntimeRunning(): void {
   try {
@@ -78,23 +83,34 @@ export function cleanupOrphans(): void {
     });
     const containers: { status: string; configuration: { id: string } }[] =
       JSON.parse(output || '[]');
-    const orphans = containers
-      .filter(
-        (c) =>
-          c.status === 'running' && c.configuration.id.startsWith('nanoclaw-'),
-      )
+    const ncContainers = containers.filter((c) =>
+      c.configuration.id.startsWith('nanoclaw-'),
+    );
+    const running = ncContainers
+      .filter((c) => c.status === 'running')
       .map((c) => c.configuration.id);
-    for (const name of orphans) {
+    const stopped = ncContainers
+      .filter((c) => c.status === 'stopped')
+      .map((c) => c.configuration.id);
+
+    for (const name of running) {
       try {
         execSync(stopContainer(name), { stdio: 'pipe' });
       } catch {
         /* already stopped */
       }
     }
-    if (orphans.length > 0) {
+    for (const name of stopped) {
+      try {
+        execSync(rmContainer(name), { stdio: 'pipe' });
+      } catch {
+        /* already removed */
+      }
+    }
+    if (running.length > 0 || stopped.length > 0) {
       logger.info(
-        { count: orphans.length, names: orphans },
-        'Stopped orphaned containers',
+        { running: running.length, stopped: stopped.length },
+        'Cleaned up orphaned containers',
       );
     }
   } catch (err) {

@@ -268,6 +268,11 @@ function readSecrets(groupFolder?: string): Record<string, string> {
     'BUSINESS_DB_PASS_CHIEF',
     'BUSINESS_DB_ROLE_ADMIN',
     'BUSINESS_DB_PASS_ADMIN',
+    'BUSINESS_DB_ROLE_CONTADOR',
+    'BUSINESS_DB_PASS_CONTADOR',
+    'STRIPE_RESTRICTED_KEY',
+    'SHEETS_PAYMENTS_ID',
+    'SHEETS_ROSTER_ID',
   ]);
 
   const secrets: Record<string, string> = configured.CLAUDE_CODE_OAUTH_TOKEN
@@ -302,10 +307,27 @@ function readSecrets(groupFolder?: string): Record<string, string> {
         role: configured.BUSINESS_DB_ROLE_ADMIN || '',
         pass: configured.BUSINESS_DB_PASS_ADMIN || '',
       },
+      contador: {
+        role: configured.BUSINESS_DB_ROLE_CONTADOR || '',
+        pass: configured.BUSINESS_DB_PASS_CONTADOR || '',
+      },
     };
     const creds = roleMap[groupFolder];
     if (creds?.role && creds?.pass) {
       secrets.BUSINESS_DB_URL = `postgresql://${creds.role}:${encodeURIComponent(creds.pass)}@${dbHost}:${dbPort || '5432'}/${dbName}`;
+    }
+  }
+
+  // Inject Stripe + Sheets secrets for El Contador
+  if (groupFolder === 'contador') {
+    if (configured.STRIPE_RESTRICTED_KEY) {
+      secrets.STRIPE_RESTRICTED_KEY = configured.STRIPE_RESTRICTED_KEY;
+    }
+    if (configured.SHEETS_PAYMENTS_ID) {
+      secrets.SHEETS_PAYMENTS_ID = configured.SHEETS_PAYMENTS_ID;
+    }
+    if (configured.SHEETS_ROSTER_ID) {
+      secrets.SHEETS_ROSTER_ID = configured.SHEETS_ROSTER_ID;
     }
   }
 

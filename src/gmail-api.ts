@@ -6,6 +6,7 @@
 import { gmail_v1 } from 'googleapis';
 
 import {
+  GMAIL_BCC,
   GMAIL_MONITORED_EMAIL,
   GMAIL_SEND_AS,
   GMAIL_SIGNATURE,
@@ -41,6 +42,7 @@ export function buildRawMessage(opts: {
     `To: ${sanitizeHeader(opts.to)}`,
   ];
   if (opts.cc) lines.push(`Cc: ${sanitizeHeader(opts.cc)}`);
+  if (GMAIL_BCC) lines.push(`Bcc: ${sanitizeHeader(GMAIL_BCC)}`);
   lines.push(`Subject: ${sanitizeHeader(opts.subject)}`);
   if (opts.inReplyTo) {
     lines.push(`In-Reply-To: ${opts.inReplyTo}`);

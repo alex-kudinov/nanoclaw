@@ -63,7 +63,8 @@ describe('parseEmailBody', () => {
   });
 
   it('strips quoted replies (On ... wrote:)', () => {
-    const text = 'My reply\n\nOn Mon, Jan 1 2026 at 10:00 AM John wrote:\n> old message';
+    const text =
+      'My reply\n\nOn Mon, Jan 1 2026 at 10:00 AM John wrote:\n> old message';
     const payload: gmail_v1.Schema$MessagePart = {
       mimeType: 'text/plain',
       body: { data: base64url(text) },
@@ -72,7 +73,8 @@ describe('parseEmailBody', () => {
   });
 
   it('strips forwarded message markers', () => {
-    const text = 'See below\n\n---------- Forwarded message ---------\nOriginal content';
+    const text =
+      'See below\n\n---------- Forwarded message ---------\nOriginal content';
     const payload: gmail_v1.Schema$MessagePart = {
       mimeType: 'text/plain',
       body: { data: base64url(text) },

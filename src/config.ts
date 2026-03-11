@@ -12,7 +12,7 @@ const envConfig = readEnvFile([
 ]);
 
 export const ASSISTANT_NAME =
-  process.env.ASSISTANT_NAME || envConfig.ASSISTANT_NAME || 'Andy';
+  process.env.ASSISTANT_NAME || envConfig.ASSISTANT_NAME || 'Gru';
 export const ASSISTANT_HAS_OWN_NUMBER =
   (process.env.ASSISTANT_HAS_OWN_NUMBER ||
     envConfig.ASSISTANT_HAS_OWN_NUMBER) === 'true';
@@ -93,6 +93,7 @@ const gmailEnv = readEnvFile([
   'GMAIL_LABEL',
   'GMAIL_POLL_INTERVAL',
   'GMAIL_TEST_RECIPIENT',
+  'GMAIL_BCC',
 ]);
 
 export const GMAIL_POLL_INTERVAL = parseInt(
@@ -104,7 +105,9 @@ export const GMAIL_LABEL =
 export const GMAIL_MONITORED_EMAIL =
   process.env.GMAIL_MONITORED_EMAIL || gmailEnv.GMAIL_MONITORED_EMAIL || '';
 export const GMAIL_SEND_AS =
-  process.env.GMAIL_SEND_AS || gmailEnv.GMAIL_SEND_AS || GMAIL_MONITORED_EMAIL;
+  process.env.GMAIL_SEND_AS ||
+  gmailEnv.GMAIL_SEND_AS ||
+  'Tandem Coaching <info@tandemcoach.co>';
 
 // Test routing: when set, ALL gmail_send calls have their recipient rewritten.
 // Host-enforced — agents cannot bypass this.
@@ -113,3 +116,7 @@ export const GMAIL_TEST_RECIPIENT =
 
 // Signature appended to outbound HTML emails by the host.
 export const GMAIL_SIGNATURE = 'The Tandem Coaching Team';
+
+// BCC all outbound emails to this address (empty string = disabled).
+export const GMAIL_BCC =
+  process.env.GMAIL_BCC || gmailEnv.GMAIL_BCC || 'info@tandemcoach.co';

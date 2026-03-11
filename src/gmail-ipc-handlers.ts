@@ -85,13 +85,23 @@ function applyTestRouting(data: GmailIpcPayload): {
   const originalTo = data.to!;
   const originalCc = data.cc;
   if (!GMAIL_TEST_RECIPIENT) {
-    return { effectiveTo: originalTo, effectiveCc: originalCc, originalTo, originalCc };
+    return {
+      effectiveTo: originalTo,
+      effectiveCc: originalCc,
+      originalTo,
+      originalCc,
+    };
   }
   logger.info(
     { originalTo, originalCc, testRecipient: GMAIL_TEST_RECIPIENT },
     'gmail_send: test routing override — redirecting email',
   );
-  return { effectiveTo: GMAIL_TEST_RECIPIENT, effectiveCc: undefined, originalTo, originalCc };
+  return {
+    effectiveTo: GMAIL_TEST_RECIPIENT,
+    effectiveCc: undefined,
+    originalTo,
+    originalCc,
+  };
 }
 
 /** Store outbound email in DB for conversation context. */
@@ -131,10 +141,22 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
     html: data.html,
   });
 
-  storeOutboundEmail(sentId, originalTo, data.subject, data.body, data.groupFolder);
+  storeOutboundEmail(
+    sentId,
+    originalTo,
+    data.subject,
+    data.body,
+    data.groupFolder,
+  );
 
   logger.info(
-    { to: effectiveTo, originalTo, subject: data.subject, sentId, groupFolder: data.groupFolder },
+    {
+      to: effectiveTo,
+      originalTo,
+      subject: data.subject,
+      sentId,
+      groupFolder: data.groupFolder,
+    },
     'gmail_send processed',
   );
 }

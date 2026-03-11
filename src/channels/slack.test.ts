@@ -32,6 +32,7 @@ const appRef = vi.hoisted(() => ({ current: null as any }));
 vi.mock('@slack/bolt', () => ({
   App: class MockApp {
     eventHandlers = new Map<string, Handler>();
+    errorHandler: Handler | null = null;
     token: string;
     appToken: string;
 
@@ -40,7 +41,7 @@ vi.mock('@slack/bolt', () => ({
         test: vi.fn().mockResolvedValue({ user_id: 'U_BOT_123' }),
       },
       chat: {
-        postMessage: vi.fn().mockResolvedValue(undefined),
+        postMessage: vi.fn().mockResolvedValue({ ts: '1704067200.000100' }),
       },
       conversations: {
         list: vi.fn().mockResolvedValue({
@@ -63,6 +64,10 @@ vi.mock('@slack/bolt', () => ({
 
     event(name: string, handler: Handler) {
       this.eventHandlers.set(name, handler);
+    }
+
+    error(handler: Handler) {
+      this.errorHandler = handler;
     }
 
     async start() {}
@@ -112,6 +117,14 @@ function createMessageEvent(overrides: {
   threadTs?: string;
   subtype?: string;
   botId?: string;
+  files?: Array<{
+    id: string;
+    name: string;
+    mimetype: string;
+    filetype: string;
+    size: number;
+    url_private_download?: string;
+  }>;
 }) {
   return {
     channel: overrides.channel ?? 'C0123456789',
@@ -122,6 +135,7 @@ function createMessageEvent(overrides: {
     thread_ts: overrides.threadTs,
     subtype: overrides.subtype,
     bot_id: overrides.botId,
+    files: overrides.files,
   };
 }
 
@@ -292,11 +306,12 @@ describe('SlackChannel', () => {
       });
       await triggerMessageEvent(event);
 
-      // Has bot_id so should be marked as bot message
+      // Has bot_id so is_bot_message=true, but user doesn't match bot ID
+      // so is_from_me is false (it's another bot, not us)
       expect(opts.onMessage).toHaveBeenCalledWith(
         'slack:C0123456789',
         expect.objectContaining({
-          is_from_me: true,
+          is_from_me: false,
           is_bot_message: true,
           sender_name: 'Jonesy',
         }),
@@ -562,6 +577,280 @@ describe('SlackChannel', () => {
           content: 'Hey <@U_OTHER_USER> look at this',
         }),
       );
+    });
+  });
+
+  // --- File attachments ---
+
+  describe('file attachments', () => {
+    it('processes file_share subtype messages', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      const csvContent = 'name,email\nBob,bob@test.com';
+      vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+        new Response(csvContent, { status: 200 }),
+      );
+
+      const event = createMessageEvent({
+        subtype: 'file_share',
+        text: 'send certs to this list',
+        files: [
+          {
+            id: 'F_SHARE',
+            name: 'people.csv',
+            mimetype: 'text/csv',
+            filetype: 'csv',
+            size: 100,
+            url_private_download: 'https://files.slack.com/people.csv',
+          },
+        ],
+      });
+      await triggerMessageEvent(event);
+
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        expect.objectContaining({
+          content: expect.stringContaining('<attached_file name="people.csv">'),
+        }),
+      );
+
+      vi.restoreAllMocks();
+    });
+
+    it('sanitizes file names with special characters', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+        new Response('data', { status: 200 }),
+      );
+
+      const event = createMessageEvent({
+        text: 'check this',
+        files: [
+          {
+            id: 'F_BAD',
+            name: 'file"><evil.csv',
+            mimetype: 'text/csv',
+            filetype: 'csv',
+            size: 10,
+            url_private_download: 'https://files.slack.com/bad.csv',
+          },
+        ],
+      });
+      await triggerMessageEvent(event);
+
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        expect.objectContaining({
+          content: expect.stringContaining('name="file___evil.csv"'),
+        }),
+      );
+
+      vi.restoreAllMocks();
+    });
+
+    it('inlines CSV file content into message', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      const csvContent = 'name,email\nJane Doe,jane@example.com';
+      vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+        new Response(csvContent, { status: 200 }),
+      );
+
+      const event = createMessageEvent({
+        text: 'send cnpc supervision to this list',
+        files: [
+          {
+            id: 'F123',
+            name: 'data.csv',
+            mimetype: 'text/csv',
+            filetype: 'csv',
+            size: 100,
+            url_private_download: 'https://files.slack.com/files-pri/T123/data.csv',
+          },
+        ],
+      });
+      await triggerMessageEvent(event);
+
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        expect.objectContaining({
+          content: expect.stringContaining('<attached_file name="data.csv">'),
+        }),
+      );
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        expect.objectContaining({
+          content: expect.stringContaining(csvContent),
+        }),
+      );
+
+      vi.restoreAllMocks();
+    });
+
+    it('skips non-text file types (images)', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      const fetchSpy = vi.spyOn(global, 'fetch');
+
+      const event = createMessageEvent({
+        text: 'check this image',
+        files: [
+          {
+            id: 'F456',
+            name: 'photo.png',
+            mimetype: 'image/png',
+            filetype: 'png',
+            size: 5000,
+            url_private_download: 'https://files.slack.com/files-pri/T123/photo.png',
+          },
+        ],
+      });
+      await triggerMessageEvent(event);
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        expect.objectContaining({
+          content: 'check this image',
+        }),
+      );
+
+      vi.restoreAllMocks();
+    });
+
+    it('skips files larger than 100KB', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      const fetchSpy = vi.spyOn(global, 'fetch');
+
+      const event = createMessageEvent({
+        text: 'huge file',
+        files: [
+          {
+            id: 'F789',
+            name: 'big.csv',
+            mimetype: 'text/csv',
+            filetype: 'csv',
+            size: 200 * 1024,
+            url_private_download: 'https://files.slack.com/big.csv',
+          },
+        ],
+      });
+      await triggerMessageEvent(event);
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      vi.restoreAllMocks();
+    });
+
+    it('delivers message with file when text is empty', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      const csvContent = 'name,email\nAlice,alice@test.com';
+      vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+        new Response(csvContent, { status: 200 }),
+      );
+
+      const event = createMessageEvent({
+        text: '' as any,
+        files: [
+          {
+            id: 'F999',
+            name: 'list.csv',
+            mimetype: 'text/csv',
+            filetype: 'csv',
+            size: 50,
+            url_private_download: 'https://files.slack.com/list.csv',
+          },
+        ],
+      });
+      await triggerMessageEvent(event);
+
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        expect.objectContaining({
+          content: expect.stringContaining('<attached_file name="list.csv">'),
+        }),
+      );
+
+      vi.restoreAllMocks();
+    });
+
+    it('handles download failure gracefully', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+        new Response('Forbidden', { status: 403 }),
+      );
+
+      const event = createMessageEvent({
+        text: 'send certs',
+        files: [
+          {
+            id: 'F_ERR',
+            name: 'data.csv',
+            mimetype: 'text/csv',
+            filetype: 'csv',
+            size: 100,
+            url_private_download: 'https://files.slack.com/data.csv',
+          },
+        ],
+      });
+      await triggerMessageEvent(event);
+
+      // Message still delivered, just without file content
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        expect.objectContaining({
+          content: 'send certs',
+        }),
+      );
+
+      vi.restoreAllMocks();
+    });
+
+    it('does not download files from bot messages', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      const fetchSpy = vi.spyOn(global, 'fetch');
+
+      const event = createMessageEvent({
+        text: 'bot with file',
+        subtype: 'bot_message',
+        botId: 'B_OTHER',
+        files: [
+          {
+            id: 'F_BOT',
+            name: 'bot.csv',
+            mimetype: 'text/csv',
+            filetype: 'csv',
+            size: 100,
+            url_private_download: 'https://files.slack.com/bot.csv',
+          },
+        ],
+      });
+      await triggerMessageEvent(event);
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      vi.restoreAllMocks();
     });
   });
 
@@ -842,6 +1131,162 @@ describe('SlackChannel', () => {
       // Both channels from both pages stored
       expect(updateChatName).toHaveBeenCalledWith('slack:C001', 'general');
       expect(updateChatName).toHaveBeenCalledWith('slack:C002', 'random');
+    });
+  });
+
+  // --- Health monitor ---
+
+  describe('health monitor', () => {
+    it('updates lastActivityAt on message receipt', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      const before = Date.now();
+      const event = createMessageEvent({ text: 'ping' });
+      await triggerMessageEvent(event);
+
+      // lastActivityAt is private, so we verify indirectly: health check
+      // should NOT trigger reconnect right after a message
+      // (we just confirm the channel stays connected)
+      expect(channel.isConnected()).toBe(true);
+    });
+
+    it('triggers reconnect when auth.test fails', async () => {
+      vi.useFakeTimers();
+      try {
+        const opts = createTestOpts();
+        const channel = new SlackChannel(opts);
+        await channel.connect();
+
+        const app = currentApp();
+        const stopSpy = vi.spyOn(app, 'stop');
+        const startSpy = vi.spyOn(app, 'start');
+
+        // Make auth.test fail on next health check
+        app.client.auth.test = vi
+          .fn()
+          .mockRejectedValueOnce(new Error('connection lost'))
+          .mockResolvedValue({ user_id: 'U_BOT_123' });
+
+        // Advance one health check interval + 3s reconnect delay
+        await vi.advanceTimersByTimeAsync(60_000 + 3_000);
+
+        expect(stopSpy).toHaveBeenCalled();
+        expect(startSpy).toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('triggers reconnect when WebSocket is stale (no events for 5 min)', async () => {
+      vi.useFakeTimers();
+      try {
+        const opts = createTestOpts();
+        const channel = new SlackChannel(opts);
+        await channel.connect();
+
+        const app = currentApp();
+        const stopSpy = vi.spyOn(app, 'stop');
+        const startSpy = vi.spyOn(app, 'start');
+
+        // Advance past the 5-minute staleness threshold + health check interval
+        await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 60_000 + 3_000);
+
+        expect(stopSpy).toHaveBeenCalled();
+        expect(startSpy).toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does not reconnect for staleness if recent activity', async () => {
+      vi.useFakeTimers();
+      try {
+        const opts = createTestOpts();
+        const channel = new SlackChannel(opts);
+        await channel.connect();
+
+        const app = currentApp();
+        const stopSpy = vi.spyOn(app, 'stop');
+
+        // Simulate activity every 2 minutes (below 5-min threshold)
+        for (let i = 0; i < 5; i++) {
+          await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+          await triggerMessageEvent(createMessageEvent({ text: 'ping', ts: `170406720${i}.000000` }));
+        }
+
+        // stop() should not have been called for reconnect
+        expect(stopSpy).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('triggers reconnect on WebSocket error via app.error handler', async () => {
+      vi.useFakeTimers();
+      try {
+        const opts = createTestOpts();
+        const channel = new SlackChannel(opts);
+        await channel.connect();
+
+        const app = currentApp();
+        const stopSpy = vi.spyOn(app, 'stop');
+        const startSpy = vi.spyOn(app, 'start');
+
+        // Simulate the WebSocket error that Bolt fires
+        if (app.errorHandler) {
+          // Don't await — reconnect has internal setTimeout
+          app.errorHandler(new Error('Failed to send a WebSocket message as the client is not ready'));
+        }
+
+        // Advance past the 3s reconnect delay
+        await vi.advanceTimersByTimeAsync(3_500);
+
+        expect(stopSpy).toHaveBeenCalled();
+        expect(startSpy).toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does not reconnect on non-WebSocket app errors', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      const app = currentApp();
+      const stopSpy = vi.spyOn(app, 'stop');
+
+      // Simulate a non-WebSocket error
+      if (app.errorHandler) {
+        await app.errorHandler(new Error('Some other error'));
+      }
+
+      expect(stopSpy).not.toHaveBeenCalled();
+    });
+
+    it('clears health check interval on disconnect', async () => {
+      vi.useFakeTimers();
+      try {
+        const opts = createTestOpts();
+        const channel = new SlackChannel(opts);
+        await channel.connect();
+
+        const app = currentApp();
+        const stopSpy = vi.spyOn(app, 'stop');
+
+        await channel.disconnect();
+
+        // Advance time well past 5 min — no reconnect should fire
+        stopSpy.mockClear();
+        await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+
+        // stop() should not have been called again after disconnect
+        expect(stopSpy).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 

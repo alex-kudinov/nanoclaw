@@ -13,7 +13,7 @@ import {
   GMAIL_MONITORED_EMAIL,
   GMAIL_POLL_INTERVAL,
 } from '../config.js';
-import { getRouterState, setRouterState } from '../db.js';
+import { getMessageIdsForJid, getRouterState, setRouterState } from '../db.js';
 import { getGmailClient } from '../gmail-auth.js';
 import {
   formatEmailForAgent,
@@ -21,10 +21,17 @@ import {
   parseEmailHeaders,
 } from '../gmail-parser.js';
 import { logger } from '../logger.js';
-import { Channel, OnChatMetadata, OnInboundMessage, RegisteredGroup, SendMessageOpts } from '../types.js';
-import { registerChannel } from './registry.js';
+import {
+  Channel,
+  OnChatMetadata,
+  OnInboundMessage,
+  RegisteredGroup,
+  SendMessageOpts,
+} from '../types.js';
+import { registerChannel, RegisterGroupFn } from './registry.js';
 
 const STATE_KEY_LAST_CHECK = 'gmail_last_check';
+const GMAIL_GROUP_FOLDER = 'mailman';
 
 export class GmailChannel implements Channel {
   name = 'gmail';
@@ -33,21 +40,26 @@ export class GmailChannel implements Channel {
   private labelId: string | null = null;
   private jid: string;
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
+  private stallDetector: ReturnType<typeof setInterval> | null = null;
   private connected = false;
   private pollCount = 0;
+  private lastPollCompletedAt = Date.now();
   private processedIds = new Set<string>();
 
   private onMessage: OnInboundMessage;
   private onChatMetadata: OnChatMetadata;
+  private registerGroup?: RegisterGroupFn;
   private registeredGroups: () => Record<string, RegisteredGroup>;
 
   constructor(opts: {
     onMessage: OnInboundMessage;
     onChatMetadata: OnChatMetadata;
+    registerGroup?: RegisterGroupFn;
     registeredGroups: () => Record<string, RegisteredGroup>;
   }) {
     this.onMessage = opts.onMessage;
     this.onChatMetadata = opts.onChatMetadata;
+    this.registerGroup = opts.registerGroup;
     this.registeredGroups = opts.registeredGroups;
     this.jid = `gmail:${GMAIL_MONITORED_EMAIL}`;
   }
@@ -66,23 +78,48 @@ export class GmailChannel implements Channel {
     // Initialize last check timestamp (default: 1h ago)
     const stored = getRouterState(STATE_KEY_LAST_CHECK);
     if (!stored) {
-      setRouterState(
-        STATE_KEY_LAST_CHECK,
-        String(Date.now() - 3_600_000),
-      );
+      setRouterState(STATE_KEY_LAST_CHECK, String(Date.now() - 3_600_000));
     }
+
+    // Seed processedIds from DB so restarts don't re-deliver already-seen emails
+    const knownIds = getMessageIdsForJid(this.jid);
+    for (const id of knownIds) this.processedIds.add(id);
 
     this.connected = true;
     logger.info(
-      { label: GMAIL_LABEL, labelId: this.labelId, jid: this.jid },
+      {
+        label: GMAIL_LABEL,
+        labelId: this.labelId,
+        jid: this.jid,
+        seededIds: knownIds.length,
+      },
       'Gmail channel connected',
     );
 
     // Report metadata so the orchestrator knows about this JID
-    this.onChatMetadata(this.jid, new Date().toISOString(), 'gmail', 'gmail', false);
+    this.onChatMetadata(
+      this.jid,
+      new Date().toISOString(),
+      GMAIL_GROUP_FOLDER,
+      'gmail',
+      true,
+    );
+
+    // Auto-register mailman group if not already registered
+    const groups = this.registeredGroups();
+    if (!groups[this.jid] && this.registerGroup) {
+      this.registerGroup(this.jid, {
+        name: GMAIL_GROUP_FOLDER,
+        folder: GMAIL_GROUP_FOLDER,
+        trigger: '', // no trigger — every email is processed
+        requiresTrigger: false,
+        added_at: new Date().toISOString(),
+      });
+    }
 
     // Start polling
     this.schedulePoll();
+    this.startStallDetector();
   }
 
   async sendMessage(
@@ -91,7 +128,9 @@ export class GmailChannel implements Channel {
     _opts?: SendMessageOpts,
   ): Promise<void> {
     // No-op — agent uses IPC tools for outbound email.
-    logger.debug('Gmail sendMessage called (no-op). Agent should use IPC tools.');
+    logger.debug(
+      'Gmail sendMessage called (no-op). Agent should use IPC tools.',
+    );
   }
 
   isConnected(): boolean {
@@ -108,6 +147,10 @@ export class GmailChannel implements Channel {
       clearTimeout(this.pollTimer);
       this.pollTimer = null;
     }
+    if (this.stallDetector) {
+      clearInterval(this.stallDetector);
+      this.stallDetector = null;
+    }
     logger.info('Gmail channel disconnected');
   }
 
@@ -117,12 +160,39 @@ export class GmailChannel implements Channel {
     if (!this.connected) return;
     this.pollTimer = setTimeout(async () => {
       try {
-        await this.poll();
+        const pollTimeout = GMAIL_POLL_INTERVAL * 3;
+        const result = await Promise.race([
+          this.poll().then(() => 'ok' as const),
+          new Promise<'timeout'>((resolve) =>
+            setTimeout(() => resolve('timeout'), pollTimeout),
+          ),
+        ]);
+        if (result === 'ok') {
+          this.lastPollCompletedAt = Date.now();
+        } else {
+          logger.error(
+            { timeoutMs: pollTimeout },
+            'Gmail poll timed out, rescheduling',
+          );
+        }
       } catch (err) {
         logger.error({ err }, 'Gmail poll error');
       }
       this.schedulePoll();
     }, GMAIL_POLL_INTERVAL);
+  }
+
+  private startStallDetector(): void {
+    this.stallDetector = setInterval(() => {
+      const stalledMs = Date.now() - this.lastPollCompletedAt;
+      if (stalledMs > GMAIL_POLL_INTERVAL * 5) {
+        logger.error(
+          { stalledSec: Math.round(stalledMs / 1000) },
+          'Gmail poll chain appears stalled, restarting',
+        );
+        this.schedulePoll();
+      }
+    }, 120_000);
   }
 
   private async poll(): Promise<void> {
@@ -135,8 +205,8 @@ export class GmailChannel implements Channel {
     );
     const afterSeconds = Math.floor(lastCheckMs / 1000);
 
-    // Every 10th poll: catch-up without time filter (late-labeled emails)
-    const isCatchUp = this.pollCount % 10 === 0;
+    // First poll + every 10th: catch-up without time filter (late-labeled emails)
+    const isCatchUp = this.pollCount <= 1 || this.pollCount % 10 === 0;
 
     const query = isCatchUp ? undefined : `after:${afterSeconds}`;
 
@@ -228,9 +298,7 @@ export class GmailChannel implements Channel {
       sender: headers.from,
       sender_name: headers.fromName,
       content,
-      timestamp: headers.date
-        ? new Date(headers.date).toISOString()
-        : new Date().toISOString(),
+      timestamp: new Date().toISOString(),
       is_from_me: false,
       is_bot_message: false,
       thread_ts: threadId,
@@ -239,9 +307,7 @@ export class GmailChannel implements Channel {
     return true;
   }
 
-  private async resolveLabelId(
-    labelName: string,
-  ): Promise<string | null> {
+  private async resolveLabelId(labelName: string): Promise<string | null> {
     if (!this.gmail) return null;
 
     const res = await this.gmail.users.labels.list({ userId: 'me' });
