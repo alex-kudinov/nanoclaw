@@ -8,8 +8,8 @@ import { gmail_v1 } from 'googleapis';
 import {
   GMAIL_BCC,
   GMAIL_MONITORED_EMAIL,
+  GMAIL_REPLY_TO,
   GMAIL_SEND_AS,
-  GMAIL_SIGNATURE,
 } from './config.js';
 import { getGmailClient } from './gmail-auth.js';
 import {
@@ -18,11 +18,6 @@ import {
   parseEmailHeaders,
 } from './gmail-parser.js';
 import { logger } from './logger.js';
-
-/** Append the team signature to an HTML email body. */
-export function appendHtmlSignature(body: string): string {
-  return `${body}\n<br><br>\n<p style="color: #666;">${GMAIL_SIGNATURE}</p>`;
-}
 
 /** Strip CR/LF to prevent header injection in RFC 2822 fields. */
 const sanitizeHeader = (s: string): string => s.replace(/[\r\n]/g, '');
@@ -43,6 +38,7 @@ export function buildRawMessage(opts: {
   ];
   if (opts.cc) lines.push(`Cc: ${sanitizeHeader(opts.cc)}`);
   if (GMAIL_BCC) lines.push(`Bcc: ${sanitizeHeader(GMAIL_BCC)}`);
+  if (GMAIL_REPLY_TO) lines.push(`Reply-To: ${sanitizeHeader(GMAIL_REPLY_TO)}`);
   lines.push(`Subject: ${sanitizeHeader(opts.subject)}`);
   if (opts.inReplyTo) {
     lines.push(`In-Reply-To: ${opts.inReplyTo}`);
@@ -53,9 +49,7 @@ export function buildRawMessage(opts: {
   lines.push(`Content-Type: ${contentType}; charset=utf-8`);
   lines.push('');
 
-  // Append signature to HTML emails
-  const body = opts.html ? appendHtmlSignature(opts.body) : opts.body;
-  lines.push(body);
+  lines.push(opts.body);
 
   const raw = lines.join('\r\n');
   return Buffer.from(raw)

@@ -10,8 +10,8 @@ vi.mock('./config.js', () => ({
   get GMAIL_TEST_RECIPIENT() {
     return testRecipient;
   },
-  GMAIL_SIGNATURE: 'The Tandem Coaching Team',
-  GMAIL_SEND_AS: 'hello@tandemcoach.co',
+  GMAIL_REPLY_TO: 'info@tandemcoach.co',
+  GMAIL_SEND_AS: 'Tandem Coaching <info@tandemcoach.co>',
 }));
 
 vi.mock('./logger.js', () => ({

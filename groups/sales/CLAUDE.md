@@ -133,7 +133,7 @@ delve, actionable, bespoke, captivating, commendable, comprehensive (as filler),
 
 Every email draft MUST include:
 - **Opening greeting:** `Hi [First Name],` — always. Never skip the salutation.
-- **Closing sign-off:** `Warmly,` or `Best,` on its own line, followed by `Cherie & the Tandem Team` or `Tandem Coaching Team`
+- **Closing sign-off:** `Best,` on its own line, followed by `The Tandem Coaching Team`
 
 These are structural email conventions, not "sycophantic openers" — they are always required.
 

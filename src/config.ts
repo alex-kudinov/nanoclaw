@@ -90,6 +90,7 @@ export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
 const gmailEnv = readEnvFile([
   'GMAIL_MONITORED_EMAIL',
   'GMAIL_SEND_AS',
+  'GMAIL_REPLY_TO',
   'GMAIL_LABEL',
   'GMAIL_POLL_INTERVAL',
   'GMAIL_TEST_RECIPIENT',
@@ -114,8 +115,11 @@ export const GMAIL_SEND_AS =
 export const GMAIL_TEST_RECIPIENT =
   process.env.GMAIL_TEST_RECIPIENT || gmailEnv.GMAIL_TEST_RECIPIENT || '';
 
-// Signature appended to outbound HTML emails by the host.
-export const GMAIL_SIGNATURE = 'The Tandem Coaching Team';
+// Reply-To header on all outbound emails.
+export const GMAIL_REPLY_TO =
+  process.env.GMAIL_REPLY_TO ||
+  gmailEnv.GMAIL_REPLY_TO ||
+  'info@tandemcoach.co';
 
 // BCC all outbound emails to this address (empty string = disabled).
 export const GMAIL_BCC =

@@ -2,8 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('./config.js', () => ({
   GMAIL_MONITORED_EMAIL: 'info@tandemcoach.co',
-  GMAIL_SEND_AS: 'hello@tandemcoach.co',
-  GMAIL_SIGNATURE: 'The Tandem Coaching Team',
+  GMAIL_SEND_AS: 'Tandem Coaching <info@tandemcoach.co>',
+  GMAIL_REPLY_TO: 'info@tandemcoach.co',
+  GMAIL_BCC: '',
 }));
 
 vi.mock('./gmail-auth.js', () => ({
@@ -14,7 +15,7 @@ vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
 }));
 
-import { buildRawMessage, appendHtmlSignature } from './gmail-api.js';
+import { buildRawMessage } from './gmail-api.js';
 
 function decodeRaw(raw: string): string {
   const base64 = raw.replace(/-/g, '+').replace(/_/g, '/');
@@ -43,25 +44,14 @@ describe('buildRawMessage', () => {
     expect(decoded).toContain('Content-Type: text/html; charset=utf-8');
   });
 
-  it('appends signature to HTML emails', () => {
+  it('includes Reply-To header', () => {
     const raw = buildRawMessage({
       to: 'test@example.com',
       subject: 'Test',
-      body: '<p>Hello</p>',
-      html: true,
+      body: 'Hello',
     });
     const decoded = decodeRaw(raw);
-    expect(decoded).toContain('The Tandem Coaching Team');
-  });
-
-  it('does not append signature to plain text emails', () => {
-    const raw = buildRawMessage({
-      to: 'test@example.com',
-      subject: 'Test',
-      body: 'Hello plain text',
-    });
-    const decoded = decodeRaw(raw);
-    expect(decoded).not.toContain('The Tandem Coaching Team');
+    expect(decoded).toContain('Reply-To: info@tandemcoach.co');
   });
 
   it('strips CRLF from header fields to prevent injection', () => {
@@ -79,11 +69,3 @@ describe('buildRawMessage', () => {
   });
 });
 
-describe('appendHtmlSignature', () => {
-  it('appends signature block to HTML body', () => {
-    const result = appendHtmlSignature('<p>Hello</p>');
-    expect(result).toContain('<p>Hello</p>');
-    expect(result).toContain('The Tandem Coaching Team');
-    expect(result).toContain('color: #666');
-  });
-});

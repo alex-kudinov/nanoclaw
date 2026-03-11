@@ -47,12 +47,29 @@ Body:
 2. **Convert markdown to HTML.** Transform the body:
    - `**text**` → `<strong>text</strong>`
    - `- item` or `• item` → `<ul><li>item</li></ul>` (group consecutive items)
-   - Bare URLs → `<a href="url">url</a>`
    - Blank lines between paragraphs → `<p>...</p>` wrapping
    - Single line breaks → `<br>`
-   Keep it semantic HTML — no CSS, no images, no templates. The host appends the team signature automatically.
+   - **Links:** Never leave bare URLs in the email. Convert every URL to a descriptive HTML anchor. Examples:
+     - A program page URL → `<a href="URL">program page</a>` or `<a href="URL">ACC program details</a>`
+     - A free module link → `<a href="URL">start the free Coaching Foundations module</a>`
+     - A generic link → `<a href="URL">Click here</a>` (last resort — prefer descriptive text)
+     - If the surrounding sentence already describes the link, wrap that phrase as the anchor text.
+   Keep it semantic HTML — no CSS, no images, no templates.
 
-3. **Send the email** using `gmail_send` with the HTML body:
+3. **Validate all links.** Extract every URL from `href="..."` attributes in the HTML. For each URL:
+   - **Domain check:** Must point to `tandemcoach.co` or `tandemcoaching.academy`. Reject any other domain.
+   - **HTTP check:** Run `curl -sL -o /dev/null -w '%{http_code}' "{URL}"` and confirm the final status is `200`. Redirects (301/302) are fine as long as the final destination returns 200.
+   - If ANY link fails validation (wrong domain, non-200 final status, or unreachable), **do NOT send the email**. Instead, report to chief:
+     ```
+     [EMAIL BLOCKED] Lead #{id}
+     To: {recipient email}
+     Subject: {subject}
+     Reason: Link validation failed
+     - {URL}: {reason — e.g., "404 Not Found", "domain not ours", "unreachable"}
+     ```
+     Stop processing. Do not proceed to step 4.
+
+4. **Send the email** using `gmail_send` with the HTML body:
    ```
    mcp__nanoclaw__gmail_send({
      to: "{recipient email}",
@@ -62,7 +79,7 @@ Body:
    })
    ```
 
-4. **Confirm to chief** via `send_message` with `target_group` set to `chief`:
+5. **Confirm to chief** via `send_message` with `target_group` set to `chief`:
    ```
    [EMAIL SENT] Lead #{id}
    To: {recipient email}
