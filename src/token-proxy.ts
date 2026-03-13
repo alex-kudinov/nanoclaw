@@ -9,15 +9,15 @@
  *
  * Key pool: set ANTHROPIC_API_KEY_1 … _5 (and/or CLAUDE_CODE_OAUTH_TOKEN_1 … _5)
  * to enable automatic rotation. On 429 (rate limit) or 401 (invalid/expired key)
- * the proxy cycles to the next slot and retries transparently. On 401 the
- * offending key is also commented out of .env so it is excluded on next restart.
+ * the proxy cycles to the next slot and retries transparently. Tokens are never
+ * auto-removed from .env — a 401 may be transient (network outage, API blip).
  * Keys are read from .env on every request so adding a key takes effect immediately.
  */
 
 import http from 'http';
 import https from 'https';
 
-import { readEnvFile, removeEnvKey } from './env.js';
+import { readEnvFile } from './env.js';
 import { logger } from './logger.js';
 
 const ANTHROPIC_API_HOST = 'api.anthropic.com';
@@ -163,10 +163,9 @@ export class TokenProxy {
       }
 
       if (statusCode === 401) {
-        removeEnvKey(token.envKey);
         logger.warn(
           { slot: token.label, envKey: token.envKey },
-          'Token proxy: token expired (401), removed from .env, rotating',
+          'Token proxy: 401 from upstream, rotating (token NOT removed — may be transient)',
         );
       } else {
         const nextLabel = pool[(idx + 1) % pool.length].label;
