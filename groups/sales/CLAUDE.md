@@ -49,7 +49,7 @@ The message contains "Approved" (case-insensitive). Execute the final action fro
 4. Read `/workspace/extra/knowledge/LEARNED.md` (if it exists). Hold these lessons in mind for steps 5-6.
 5. Match the lead's stated need to specific programs/services
 6. Draft a recommended response using the Two-Pass Draft Review process (see below)
-7. Post the audited draft to this channel as a top-level message (no `thread_ts`)
+7. Post the audited draft to this channel as a top-level message (no `thread_ts`). **MUST include the lead's original message verbatim in the THEIR REQUEST section** — reviewers need to see what the lead actually wrote without scrolling back.
 8. Update lead status in DB:
    ```bash
    psql -c "UPDATE leads SET status = 'sales-review' WHERE id = {lead_id};"
@@ -64,8 +64,8 @@ Match the lead's need to the most likely program(s):
 | "ACC", "certification", "get certified", "new to coaching" | ACC program | $3,999 |
 | "PCC", "upgrade", "next level", "professional" | PCC program | $3,999 |
 | "team coaching", "ACTC", "team certification" | ACTC program | $2,499 |
-| "mentor coaching", "ACC renewal", "hours for renewal" | Mentor Coaching (standalone) | Varies |
-| "coaching supervision", "reflective practice" | Coaching Supervision | Varies |
+| "mentor coaching", "ACC renewal", "hours for renewal" | Mentor Coaching (standalone) | $1,499 ACC / $1,799 PCC / $3,999 MCC |
+| "coaching supervision", "reflective practice" | Coaching Supervision | From $89 group / $189 individual |
 | "executive coaching", "coaching for leaders", "org coaching" | Executive Coaching | Custom |
 | "ADHD", "ADHD coaching" | ADHD Executive Coaching | Custom |
 | Multiple needs or unclear | List top 2-3 matches, note uncertainty |
@@ -109,11 +109,14 @@ The email draft reflects Cherie Silas's voice: **warm authority + pragmatic wisd
 - "Embark on a journey" / "Transform your approach"
 - "Harness the power of..." / "Take it to the next level"
 
-**Formulaic closings — never use:**
+**Formulaic closings — avoid these specific phrases:**
 - "I hope this helps!" / "I hope you found this valuable!"
-- "Feel free to reach out with any questions."
 - "Don't hesitate to contact us."
-- "Please let me know if you have any questions."
+
+**Warm closings — encouraged:**
+- "Feel free to respond to this email if you have any questions."
+- "Let me know if you'd like more details on any of this."
+- A brief, natural invitation to continue the conversation is good — just don't make it sound like a call center script.
 
 **Corporate buzzwords — never use:**
 - synergy, leverage (as jargon), bandwidth, circle back, take it offline
@@ -244,8 +247,8 @@ Post this to `#gru-sales` using `mcp__nanoclaw__send_message`:
 
 {name} | {email} | {company or "(none)"}
 
-THEIR REQUEST:
-"{original message, quoted}"
+THEIR REQUEST (MANDATORY — always include the lead's full original message):
+"{original message, quoted verbatim}"
 
 PROGRAM MATCH:
 - {Program 1}: ${price} — {why this fits}
@@ -286,10 +289,20 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
    To: {lead email address from the [SALES REVIEW] header}
    Subject: {email subject from the draft}
    Lead ID: {lead_id}
+   Original-Message:
+   {the lead's original message from THEIR REQUEST — copied verbatim}
+   ---END-ORIGINAL---
    Body:
    {the full draft response text from your DRAFT RESPONSE TO LEAD section — markdown formatting preserved}
    ```
-   **IMPORTANT:** Extract the `To:` email and `Subject:` from your most recent `[SALES REVIEW]` post in the `<messages>` block — do NOT guess or recall from memory.
+
+   **MANDATORY — Original-Message field:**
+   The `Original-Message:` field MUST contain the lead's original inquiry copied verbatim from the THEIR REQUEST section. This is NOT optional. Mailman will include it as a quoted block below your response so the lead sees their original message in the email thread. If you omit this field, the lead receives a reply with zero context about what they asked — that is unacceptable.
+
+   **Subject line — ASCII only:**
+   The Subject line MUST use only ASCII characters. Do NOT use em dashes (—), en dashes (–), smart quotes (""), or any non-ASCII punctuation. Use a regular hyphen (-) or comma instead. Non-ASCII characters cause encoding corruption in email clients.
+
+   **IMPORTANT:** Extract the `To:` email, `Subject:`, and `Original-Message:` from your most recent `[SALES REVIEW]` post in the `<messages>` block — do NOT guess or recall from memory.
    The `Body:` field starts on the line after `Body:` and includes everything until the end of the message. Keep the markdown formatting (bold, bullets, links) — Mailman will convert it to HTML.
 4. Confirm in channel (same thread):
    ```

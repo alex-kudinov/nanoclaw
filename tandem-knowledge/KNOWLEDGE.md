@@ -115,8 +115,24 @@ Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and exe
 ## Other Services
 
 ### ICF Mentor Coaching (standalone)
-- 1-on-1 mentor coaching for ACC, PCC, and MCC candidates
-- Includes observed sessions, feedback, competency development
+Standalone mentor coaching for coaches who need ICF-required mentor coaching hours **outside** of a full Tandem training program. Tandem's ACC, PCC, and ACTC programs already include mentor coaching - this page targets coaches who trained elsewhere or are renewing.
+
+**ICF requirement:** All ICF credentials (initial AND renewal) require 10 hours of mentor coaching with a minimum 3 hours individual (1-on-1), spread over at least 3 months.
+
+| Package | Hours | Format | Price |
+|---------|-------|--------|-------|
+| ACC Renewal | 11 total (8 group + 3 individual) | 4x2hr group + 2x1.5hr individual | $1,499 |
+| PCC Credential | 11 total (8 group + 3 individual) | 4x2hr group + 2x1.5hr individual | $1,799 |
+| MCC Credential | 10 individual | All 1-on-1 with Cherie or Alex | $3,999 |
+
+**Why ACC and PCC have the same format but different prices:** Both are 8 group + 3 individual = 11 hours. PCC costs $300 more because PCC-level feedback requires deeper evaluation against PCC Markers.
+
+**Why MCC is all individual:** MCC-level work is too nuanced for group settings. All sessions are 1-on-1 with an MCC mentor.
+
+**Group sessions:** Run in 5-week cohorts throughout the year via Zoom. Individual sessions scheduled directly with Cherie or Alex.
+
+**All mentors are MCCs AND ICF credential assessors** - they know exactly what ICF evaluators look for.
+
 - URL: /icf/mentor-coaching-acc-pcc-mcc/
 
 ### Coaching Supervision

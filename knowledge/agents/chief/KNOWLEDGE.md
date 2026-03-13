@@ -37,6 +37,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 
 ### Professional Coach Program — ACC + PCC + ACTC (ICF Level 2)
 - **Price:** $7,499 full program — saves $499 vs buying ACC + Systems Coach separately
+- **Individual modules:** $499 each (free Coaching Foundations module first)
 - **ICF credentials earned:** ACC + PCC + ACTC (three credentials, one enrollment)
 - **Education hours:** 125+ coach-specific hours total
 - **Coaching experience required:** 100 hours for ACC (Phase 1), 500 hours for PCC (Phase 2)
@@ -49,6 +50,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 **Two-phase structure:**
 
 **Phase 1 — ACC Certification (60 hours, ICF Level 1):**
+- Free Coaching Foundations module
 - Module 1 – Coaching Fundamentals
 - Module 2 – Critical Coaching Skills
 - Module 3 – Client Mindset & Beliefs
@@ -60,12 +62,15 @@ Four programs for every stage of the coaching journey. Each is independently acc
 - You earn ACC at the end of Phase 1 — a real milestone, not just a stepping stone
 
 **Phase 2 — Systems Coach Bridge (65+ hours, ICF Level 2):**
-- Systems Coaching Methodology
-- Team Coaching Competencies
-- Organizational Systems Dynamics
-- Group & Individual Mentor Coaching
-- Coaching Supervision
-- Performance Evaluation Prep
+- 2 free modules (ICF Competencies + Mastering Core Competencies)
+- Module 1 – System Coaching Mindset and Focus
+- Module 2 – Coaching Organizational and Team Systems
+- Module 3 – System Perception and Framing
+- Module 4 – System Awareness
+- Group Supervision ($699 individually)
+- Group Mentoring ($699 individually)
+- Individual Mentoring ($1,199 individually)
+- ICF Exam Prep Courses (individual $49 + team $59)
 - You earn PCC + ACTC at the end of Phase 2
 
 **How it works:** Start with Phase 1 (join the next ACC cohort). After earning ACC, move into Phase 2 on a flexible schedule. Phase 2 is the same curriculum as the standalone Systems Coach Program.
@@ -76,7 +81,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 
 ### Systems Coach Program — PCC + ACTC (ICF Level 2 Bridge)
 - **Price:** $3,999 full program (includes all core modules, mentoring, supervision, exam prep)
-- **Individual modules:** $399 each (two modules are completely free)
+- **Individual modules:** $399 each for core training (two orientation modules are completely free)
 - **ICF credential fees:** $375 (ICF member) or $525 (non-member) — total ~$4,400–$4,800
 - **ICF credentials earned:** PCC + ACTC (dual credential)
 - **Education hours:** 65+ coach-specific hours (ICF Level 2 program)
@@ -90,6 +95,18 @@ Four programs for every stage of the coaching journey. Each is independently acc
 - **Instructors:** Cherie Silas, Kalina Terzieva
 - **URL:** /icf/pcc-professional-coach-certification/
 
+**Module breakdown (if buying individually):**
+- Free: ICF Individual and Team Competencies (orientation)
+- Free: Mastering ICF Core Competencies (orientation)
+- Module 1 – System Coaching Mindset and Focus: $399
+- Module 2 – Coaching Organizational and Team Systems: $399
+- Module 3 – System Perception and Framing: $399
+- Module 4 – System Awareness: $399
+- Group Supervision: $699
+- Group Mentoring: $699
+- Individual Mentoring: $1,199
+- ICF Exam Prep — Individual ($49) + Team ($59)
+
 **Important:** This is the bridge program for coaches who already have ACC (or 60 hrs prior training) and want to advance to PCC + ACTC. For coaches starting from zero, the Professional Coach Program ($7,499) bundles ACC + Systems Coach together and saves $499.
 
 **Best for:** ACC-credentialed coaches ready to advance to PCC — the most requested credential in corporate coaching.
@@ -98,14 +115,24 @@ Four programs for every stage of the coaching journey. Each is independently acc
 
 ### ACTC — Advanced Certified Team Coach (ICF)
 - **Price:** $2,499 full program (includes all training, supervision, recording review, exam prep)
-- **Individual modules:** $399 each
 - **ICF credential fees:** $250 (ICF member) or $350 (non-member) — total ~$2,749–$2,849
 - **Team coaching engagements required:** 5 engagements within past 5 years (each with intact team of 3+ members working toward shared goals). Can begin during training. Prior engagements count if they meet ICF criteria.
 - **Supervision:** 5 hours of group coaching supervision — included (led by accredited supervisors)
 - **Format:** Self-paced intro module + live/self-paced hybrid core modules (50%+ live per ICF requirement)
 - **Timeline:** 4–6 months to complete program; 6–12 months total including engagements
+- **Prerequisites:** Existing ACC or PCC credential
 - **Instructors:** Cherie Silas, Kalina Terzieva
 - **URL:** /icf/actc-team-coaching-training/
+
+**Module breakdown (if buying individually):**
+- Free: Team Coaching Competencies & Ethics (self-paced orientation)
+- Module 1 – Systems Coaching Foundation: $399
+- Module 2 – Coaching Org and Team Systems: $399
+- Module 3 – System Framing and Re-framing: $399
+- Module 4 – Creating System Awareness: $399
+- Group Supervision: $699
+- Recording Review: $349
+- ICF Team Coaching Test Prep: $59
 
 **Note:** ACTC is also included in both the Professional Coach Program and the Systems Coach Program. This standalone option is for coaches who only want the team coaching credential.
 
@@ -165,7 +192,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 - Situational judgment format: coaching scenarios, select best response based on ICF core competencies and ethics
 - Scaled scoring: passing score 460/600
 - Time: 3 hours
-- Tandem includes dedicated Exam Prep Course ($29 value) in all programs
+- Tandem includes exam prep in all programs (ACC: $29 standalone, PCC individual: $49, team coaching: $59)
 - Vast majority of Tandem graduates pass on first attempt
 
 ---
@@ -173,12 +200,32 @@ Four programs for every stage of the coaching journey. Each is independently acc
 ## Other Services
 
 ### ICF Mentor Coaching (standalone)
-- 1-on-1 mentor coaching for ACC, PCC, and MCC candidates
-- Includes observed sessions, feedback, competency development
+For coaches who need mentor coaching hours outside of a Tandem program. Already in a Tandem program? Mentor coaching is included — no need to buy separately.
+
+| Package | Price | Hours | Format |
+|---------|-------|-------|--------|
+| ACC Credential | $1,499 | 8 group + 3 individual (11 total) | Mixed |
+| PCC Credential | $1,799 | 8 group + 3 individual (11 total) | Mixed |
+| MCC Credential | $3,999 | 10 individual | 1-on-1 only |
+
+- **All sessions:** Live Zoom video calls
+- **Group sessions:** Run in 4-week cohorts throughout the year, 4 sessions × 2 hours each (next: May 5, 2026)
+- **Individual sessions:** Scheduled directly with mentor based on mutual availability
+- **What's included:** Observation and feedback on coaching demonstrations, peer learning (group), personalized feedback (individual), certificate of completion for ICF applications
+- **Mentors:** Cherie Silas (MCC, ICF Credential Assessor, 20+ yrs) and Alex Kudinov (MCC, ICF Credential Assessor)
+- **ICF requirements:** Minimum 10 hours over 3+ months, at least 3 hours individual
 - URL: /icf/mentor-coaching-acc-pcc-mcc/
 
-### Coaching Supervision
-- Reflective practice with experienced supervisors
+### Coaching Supervision (standalone)
+Reflective practice for working coaches — not evaluation, but guided self-examination of coaching patterns, blind spots, and development areas. Supervisor: Cherie Silas (EMCC ESIA Accredited Coaching Supervisor — one of only 215 worldwide).
+
+| Format | Price | Duration | Details |
+|--------|-------|----------|---------|
+| Individual | From $189 | 60 minutes | 1:1 virtual sessions, monthly or as needed |
+| Group | From $89 | Per session | Small group (4–8 coaches), virtual, scheduled cohorts |
+
+- **Who it's for:** Credentialed coaches wanting ongoing professional development. ICF strongly recommends supervision for all credentialed coaches and requires it for ACTC. Up to 10 hours count as CCE units toward ICF recertification. EMCC requires it at Senior Practitioner level and above.
+- **Supervision vs. mentor coaching:** Mentor coaching focuses on developing ICF core competencies (skills-based, required for credentialing). Supervision is broader — addresses ethical challenges, client dynamics, wellbeing, and professional development.
 - URL: /coaching-supervision/
 
 ### Executive Coaching (for leaders/organizations)

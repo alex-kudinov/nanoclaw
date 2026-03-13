@@ -36,13 +36,18 @@ When you receive `[HANDOFF: sales→mailman]`, parse the structured fields:
 To: {recipient email}
 Subject: {subject line}
 Lead ID: {id}
+Original-Message:
+{the lead's original inquiry, verbatim}
+---END-ORIGINAL---
 Body:
 {markdown-formatted email body}
 ```
 
 ### Steps:
 
-1. **Parse** the handoff message. Extract `To`, `Subject`, `Lead ID`, and `Body` (everything after `Body:\n`).
+1. **Parse** the handoff message. Extract `To`, `Subject`, `Lead ID`, `Original-Message` (between `Original-Message:\n` and `---END-ORIGINAL---`), and `Body` (everything after `Body:\n`).
+
+   **Subject sanitization:** Before sending, verify the Subject contains only ASCII characters (codes 0-127). Replace any em dashes (—) with hyphens (-), en dashes (–) with hyphens (-), smart quotes ("" '') with straight quotes ("' '), and any other non-ASCII with their ASCII equivalent. This prevents encoding corruption in email clients.
 
 2. **Convert markdown to HTML.** Transform the body:
    - `**text**` → `<strong>text</strong>`
@@ -55,6 +60,16 @@ Body:
      - A generic link → `<a href="URL">Click here</a>` (last resort — prefer descriptive text)
      - If the surrounding sentence already describes the link, wrap that phrase as the anchor text.
    Keep it semantic HTML — no CSS, no images, no templates.
+
+   **MANDATORY — Append the original message.** After the HTML body, add a quoted block containing the lead's original inquiry. This makes the email read like a proper reply with context. Format:
+   ```html
+   <br><br>
+   <div style="border-left: 2px solid #ccc; padding-left: 12px; color: #555;">
+   <p><strong>On [date if available], [lead name] wrote:</strong></p>
+   {original message converted to HTML paragraphs}
+   </div>
+   ```
+   If the `Original-Message` field is missing from the handoff (it should never be, but if it is), do NOT send the email. Report to chief: `[EMAIL BLOCKED] Lead #{id} — handoff missing Original-Message field. Sales agent must re-submit with the lead's original inquiry included.`
 
 3. **Validate all links.** Extract every URL from `href="..."` attributes in the HTML. For each URL:
    - **Domain check:** Must point to `tandemcoach.co` or `tandemcoaching.academy`. Reject any other domain.

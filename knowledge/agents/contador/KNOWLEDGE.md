@@ -1,210 +1,268 @@
-# El Contador — Knowledge Base
+# Tandem Coaching — Knowledge Base
 
-## Google Sheets Structure
-
-Two SEPARATE Google Sheets (different sharing permissions):
-
-### Sheet 1: "Tandem Payments" (PRIVATE — admin only)
-
-Contains one tab:
-
-#### Tab: "Payment Log"
-
-Raw transaction log. One row per payment event.
-
-Headers (A1:J1):
-Date | Customer Name | Email | Product Name | Amount | Fee | Net | Currency | Stripe ID | Status
-
-### Sheet 2: "Tandem Student Roster" (SHARED with contractor trainers)
-
-Contains four tabs — three program rosters plus a product lookup table.
-
-#### Tab 1: "ACC Roster"
-
-ACC (Associate Certified Coach) students. One row per student.
-
-Headers (A1:L1):
-Email | Name | Full Program | M1 | M2 | M3 | M4 | Group Supervision | Group Mentoring | Individual Mentoring | Exam Prep | Refunded
-
-#### Tab 2: "PCC Roster"
-
-PCC (Professional Certified Coach) students. One row per student.
-
-Headers (A1:M1):
-Email | Name | Full Program | M1 | M2 | M3 | M4 | Group Supervision | Group Mentoring | Individual Mentoring | Exam Prep (Indiv) | Exam Prep (Team) | Refunded
-
-#### Tab 3: "ACTC Roster"
-
-ACTC (Advanced Certified Team Coach) students. One row per student.
-
-Headers (A1:K1):
-Email | Name | Full Program | M1 | M2 | M3 | M4 | Group Supervision | Recording Review | Test Prep | Refunded
-
-#### All Roster Tabs
-
-Row key: column A = Email. If buyer already exists, update their row. If not, append a new row.
-Data cells contain the purchase date (YYYY-MM-DD). The Refunded column contains the refund date.
-A student can appear in multiple tabs if they purchased from different programs.
-
-#### Tab 4: "Product Map"
-
-Lookup table mapping Stripe product names to the correct roster tab and column. The process-payment.cjs script reads this tab at runtime.
-
-Headers (A1:C1):
-Stripe Product Name | Roster Tab | Roster Column
-
-Example rows:
-ICF Level 1: Module 1 Coaching Fundamentals | ACC Roster | M1
-Level 2: Module 4: System Awareness | PCC Roster | M4
-Mastering the ICF ACTC Team Coaching Exam | ACTC Roster | Test Prep
-
-Populate this tab with the actual product names from your Stripe Dashboard / Heartbeat. Add multiple name variants for the same column if needed — the script matches case-insensitively.
-
-### Full Program Rule
-
-When a "Full Program" product is purchased, mark ONLY the corresponding "Full Program" column.
-Do NOT auto-fill individual component columns — components are marked only when purchased individually.
+Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and executive coaching firm based in Dallas, TX. Co-founders: Cherie Silas and Alex Kudinov.
 
 ---
 
-## Initial Product Map Data
+## Certification Programs
 
-Use these as starting entries in the Product Map tab. Verify against your actual Stripe product names and update as needed.
+Four programs for every stage of the coaching journey. Each is independently accredited by the International Coaching Federation.
 
-### ACC (Associate Certified Coach)
+### ACC — Associate Certified Coach (ICF Level 1)
+- **Price:** $3,999 full program (includes all 4 core modules, Coaching Foundations free module, mentor coaching, exam prep)
+- **Individual modules:** $399 each (free Coaching Foundations first, saves $600+ vs buying separately)
+- **ICF credential fees (paid to ICF, not Tandem):** $175 (ICF member) or $325 (non-member) — total investment ~$4,200–$4,400
+- **Education hours required:** 60+ coach-specific hours (ICF Level 1 program)
+- **Coaching experience required:** 100 hours total (75 paid minimum, 25 can be pro bono)
+- **Mentor coaching:** 10 hours over minimum 3 months (group + individual) — included in program
+- **Timeline:** 6–12 months total; training modules can be completed faster, main variable is accumulating 100 hours
+- **Prerequisites:** None — no prior coaching experience required
+- **Instructors:** Cherie Silas, Alex Kudinov, Kalina Terzieva, Karen Bruns
+- **URL:** /icf/acc-coach-certification-training/
 
-| Stripe Product Name | Roster Column |
-|---|---|
-| Full ACC Level 1 Program | ACC Full Program |
-| ACC Full Program | ACC Full Program |
-| ACC Module 1 | ACC M1 |
-| ACC Module 1 – Coaching Fundamentals | ACC M1 |
-| ACC Module 2 | ACC M2 |
-| ACC Module 2 – Critical Coaching Skills | ACC M2 |
-| ACC Module 3 | ACC M3 |
-| ACC Module 3 – Coaching Client Mindset and Beliefs | ACC M3 |
-| ACC Module 4 | ACC M4 |
-| ACC Module 4 – Advanced Coaching Techniques | ACC M4 |
-| ACC Group Supervision | ACC Group Supervision |
-| Group Supervision (ACC) | ACC Group Supervision |
-| ACC Group Mentoring | ACC Group Mentoring |
-| Group Mentoring (ACC) | ACC Group Mentoring |
-| ACC Individual Mentoring | ACC Individual Mentoring |
-| Individual Mentoring (ACC) | ACC Individual Mentoring |
-| ACC Exam Prep | ACC Exam Prep |
-| ICF Exam Prep Course | ACC Exam Prep |
-| ICF Coach Knowledge Assessment Prep | ACC Exam Prep |
+**What's included:**
+- Free Coaching Foundations module (ICF competencies, ethics, coaching basics)
+- 4 core training modules
+- MCC-level mentor coaching (10 hrs)
+- ICF Exam Prep Course ($29 value, included)
+- Performance evaluation prep
 
-### Professional Coach Program (ACC + PCC + ACTC Bundle)
+**Modular structure:** Start with any upcoming cohort. Pause between modules at no cost. Progress never expires. Can buy modules individually.
 
-| Stripe Product Name | Roster Column |
-|---|---|
-| Professional Coach Program | ACC Full Program |
-| Professional Coach Program (ACC + PCC + ACTC) | ACC Full Program |
-| Full Professional Coach Program | ACC Full Program |
+**Refund policy:** Full refund if not satisfied after first session of a module. No refund after attending more than one session, but can complete with a future cohort.
 
-**Note:** The Professional Coach Program ($7,499) bundles ACC + Systems Coach (PCC+ACTC). When purchased, mark the student's ACC Full Program column. As they progress through Phase 2, their PCC roster entries will be added separately when those components are activated/completed.
-
-### PCC / Systems Coach Program (Professional Certified Coach)
-
-| Stripe Product Name | Roster Column |
-|---|---|
-| Full PCC + ACTC Level 2 Program | PCC Full Program |
-| PCC Full Program | PCC Full Program |
-| PCC + ACTC Full Program | PCC Full Program |
-| PCC Module 1 | PCC M1 |
-| PCC Module 1 – System Coaching Mindset and Focus | PCC M1 |
-| PCC Module 2 | PCC M2 |
-| PCC Module 2 – Coaching Organizational and Team Systems | PCC M2 |
-| PCC Module 3 | PCC M3 |
-| PCC Module 3 – System Perception and Framing | PCC M3 |
-| PCC Module 4 | PCC M4 |
-| PCC Module 4 – System Awareness | PCC M4 |
-| PCC Group Supervision | PCC Group Supervision |
-| Group Supervision (PCC) | PCC Group Supervision |
-| PCC Group Mentoring | PCC Group Mentoring |
-| Group Mentoring (PCC) | PCC Group Mentoring |
-| PCC Individual Mentoring | PCC Individual Mentoring |
-| Individual Mentoring (PCC) | PCC Individual Mentoring |
-| ICF Individual Coaching Exam Prep | PCC Exam Prep (Indiv) |
-| PCC Exam Prep – Individual | PCC Exam Prep (Indiv) |
-| ICF Team Coaching Exam Prep | PCC Exam Prep (Team) |
-| PCC Exam Prep – Team | PCC Exam Prep (Team) |
-
-### ACTC (Advanced Certified Team Coach)
-
-| Stripe Product Name | Roster Column |
-|---|---|
-| Full ACTC Program | ACTC Full Program |
-| ACTC Full Program | ACTC Full Program |
-| ACTC Module 1 | ACTC M1 |
-| ACTC Module 1 – Systems Coaching Foundation | ACTC M1 |
-| ACTC Module 2 | ACTC M2 |
-| ACTC Module 2 – Coaching Org and Team Systems | ACTC M2 |
-| ACTC Module 3 | ACTC M3 |
-| ACTC Module 3 – System Framing and Re-framing | ACTC M3 |
-| ACTC Module 4 | ACTC M4 |
-| ACTC Module 4 – Creating System Awareness | ACTC M4 |
-| ACTC Group Supervision | ACTC Group Supervision |
-| Group Supervision (ACTC) | ACTC Group Supervision |
-| Recording Review | ACTC Recording Review |
-| ACTC Recording Review | ACTC Recording Review |
-| ICF Team Coaching Test Prep | ACTC Test Prep |
-| ACTC Test Prep | ACTC Test Prep |
+**Pathway to PCC:** ACC training hours count toward PCC education requirements. Graduates can continue to PCC via the Systems Coach Program ($3,999) or enroll directly in the Professional Coach Program ($7,499) to bundle everything from the start.
 
 ---
 
-## Google Sheets Service Account Setup
+### Professional Coach Program — ACC + PCC + ACTC (ICF Level 2)
+- **Price:** $7,499 full program — saves $499 vs buying ACC + Systems Coach separately
+- **Individual modules:** $499 each (free Coaching Foundations module first)
+- **ICF credentials earned:** ACC + PCC + ACTC (three credentials, one enrollment)
+- **Education hours:** 125+ coach-specific hours total
+- **Coaching experience required:** 100 hours for ACC (Phase 1), 500 hours for PCC (Phase 2)
+- **Prerequisites:** None — starts from zero like ACC
+- **Timeline:** 12–18 months
+- **Instructors:** Cherie Silas, Alex Kudinov, Kalina Terzieva, Karen Bruns (Phase 1); Cherie Silas, Kalina Terzieva (Phase 2)
+- **URL:** /icf/acc-pcc-certification/
+- **Enrollment:** https://community.tandemcoaching.academy/invitation?code=79F646
 
-One-time setup to enable El Contador to write to the sheet.
+**Two-phase structure:**
 
-### Step 1 — Create a Google Cloud Project (or use existing)
+**Phase 1 — ACC Certification (60 hours, ICF Level 1):**
+- Free Coaching Foundations module
+- Module 1 – Coaching Fundamentals
+- Module 2 – Critical Coaching Skills
+- Module 3 – Client Mindset & Beliefs
+- Module 4 – Advanced Techniques
+- Group Supervision
+- Mentor Coaching (group + individual)
+- Performance Evaluation Prep
+- ICF Exam Prep Course
+- You earn ACC at the end of Phase 1 — a real milestone, not just a stepping stone
 
-1. Go to https://console.cloud.google.com/
-2. Select or create a project (e.g., "Tandem NanoClaw")
-3. APIs & Services → Library → Search "Google Sheets API" → Enable it
+**Phase 2 — Systems Coach Bridge (65+ hours, ICF Level 2):**
+- 2 free modules (ICF Competencies + Mastering Core Competencies)
+- Module 1 – System Coaching Mindset and Focus
+- Module 2 – Coaching Organizational and Team Systems
+- Module 3 – System Perception and Framing
+- Module 4 – System Awareness
+- Group Supervision ($699 individually)
+- Group Mentoring ($699 individually)
+- Individual Mentoring ($1,199 individually)
+- ICF Exam Prep Courses (individual $49 + team $59)
+- You earn PCC + ACTC at the end of Phase 2
 
-### Step 2 — Create a Service Account
+**How it works:** Start with Phase 1 (join the next ACC cohort). After earning ACC, move into Phase 2 on a flexible schedule. Phase 2 is the same curriculum as the standalone Systems Coach Program.
 
-1. APIs & Services → Credentials → Create Credentials → Service Account
-2. Name: `nanoclaw-contador` → click Create
-3. Skip role assignment → Done
-4. Click the service account email → Keys tab → Add Key → Create new key → JSON → Create
-5. A JSON file downloads — this is your credential file
+**Best for:** Coaches who want the complete journey from foundations through professional certification in one enrollment at the best price.
 
-### Step 3 — Deploy the Credential File
+---
 
-Copy to Mac Mini (Syncthing will handle the rest if on this machine):
-```bash
-mkdir -p ~/dev/NanoClaw/data/credentials
-cp ~/Downloads/nanoclaw-contador-*.json \
-  ~/dev/NanoClaw/data/credentials/sheets-service-account.json
-```
+### Systems Coach Program — PCC + ACTC (ICF Level 2 Bridge)
+- **Price:** $3,999 full program (includes all core modules, mentoring, supervision, exam prep)
+- **Individual modules:** $399 each for core training (two orientation modules are completely free)
+- **ICF credential fees:** $375 (ICF member) or $525 (non-member) — total ~$4,400–$4,800
+- **ICF credentials earned:** PCC + ACTC (dual credential)
+- **Education hours:** 65+ coach-specific hours (ICF Level 2 program)
+- **Coaching experience required:** 500 hours total (450 paid, minimum 25 clients over 24 months)
+- **Mentor coaching:** 10 hours with PCC or MCC-level coach — included
+- **Performance evaluation:** Two recorded coaching sessions + transcripts submitted to ICF
+- **ICF Credentialing Exam (CKA):** Required — program includes prep
+- **Timeline:** 6–12 months for training; 12–24 months total including coaching hours
+- **Prerequisites:** 60 hours of ICF-accredited coach training (ACC credential or equivalent)
+- **Credential renewal:** Every 3 years — 40 CCE hours required (24 in core competency, rest in resource development)
+- **Instructors:** Cherie Silas, Kalina Terzieva
+- **URL:** /icf/pcc-professional-coach-certification/
 
-The `data/` directory is gitignored. The container mounts this at `/workspace/extra/credentials/`.
+**Module breakdown (if buying individually):**
+- Free: ICF Individual and Team Competencies (orientation)
+- Free: Mastering ICF Core Competencies (orientation)
+- Module 1 – System Coaching Mindset and Focus: $399
+- Module 2 – Coaching Organizational and Team Systems: $399
+- Module 3 – System Perception and Framing: $399
+- Module 4 – System Awareness: $399
+- Group Supervision: $699
+- Group Mentoring: $699
+- Individual Mentoring: $1,199
+- ICF Exam Prep — Individual ($49) + Team ($59)
 
-### Step 4 — Create the Payments Sheet (private)
+**Important:** This is the bridge program for coaches who already have ACC (or 60 hrs prior training) and want to advance to PCC + ACTC. For coaches starting from zero, the Professional Coach Program ($7,499) bundles ACC + Systems Coach together and saves $499.
 
-1. Create a new Google Sheet, name it "Tandem Payments"
-2. Rename Tab 1 to `Payment Log` — add headers from Sheet 1 section above
-3. Share with the service account email → Editor access
-4. Do NOT share with trainers — this is financial data
+**Best for:** ACC-credentialed coaches ready to advance to PCC — the most requested credential in corporate coaching.
 
-### Step 5 — Create the Student Roster Sheet (shared)
+---
 
-1. Create a new Google Sheet, name it "Tandem Student Roster"
-2. Rename Tab 1 to `Student Roster` — add headers from Sheet 2 / Tab 1 section above
-3. Create Tab 2 `Product Map` — add headers and initial data from Sheet 2 / Tab 2 section above
-4. Share with the service account email → Editor access
-5. Share with contractor trainers → Viewer access (they can see roster but not edit)
+### ACTC — Advanced Certified Team Coach (ICF)
+- **Price:** $2,499 full program (includes all training, supervision, recording review, exam prep)
+- **ICF credential fees:** $250 (ICF member) or $350 (non-member) — total ~$2,749–$2,849
+- **Team coaching engagements required:** 5 engagements within past 5 years (each with intact team of 3+ members working toward shared goals). Can begin during training. Prior engagements count if they meet ICF criteria.
+- **Supervision:** 5 hours of group coaching supervision — included (led by accredited supervisors)
+- **Format:** Self-paced intro module + live/self-paced hybrid core modules (50%+ live per ICF requirement)
+- **Timeline:** 4–6 months to complete program; 6–12 months total including engagements
+- **Prerequisites:** Existing ACC or PCC credential
+- **Instructors:** Cherie Silas, Kalina Terzieva
+- **URL:** /icf/actc-team-coaching-training/
 
-### Step 6 — Set the Sheet IDs
+**Module breakdown (if buying individually):**
+- Free: Team Coaching Competencies & Ethics (self-paced orientation)
+- Module 1 – Systems Coaching Foundation: $399
+- Module 2 – Coaching Org and Team Systems: $399
+- Module 3 – System Framing and Re-framing: $399
+- Module 4 – Creating System Awareness: $399
+- Group Supervision: $699
+- Recording Review: $349
+- ICF Team Coaching Test Prep: $59
 
-The Sheet ID is the long string in each sheet's URL:
-`https://docs.google.com/spreadsheets/d/THIS_IS_THE_SHEET_ID/edit`
+**Note:** ACTC is also included in both the Professional Coach Program and the Systems Coach Program. This standalone option is for coaches who only want the team coaching credential.
 
-Add both to `.env`:
-```
-SHEETS_PAYMENTS_ID=your_payments_sheet_id
-SHEETS_ROSTER_ID=your_roster_sheet_id
-```
+**What supervision is:** Reflective practice where a qualified supervisor helps examine coaching patterns, blind spots, development areas. Distinct from mentor coaching (skill-building) — supervision focuses on professional development and self-awareness.
+
+---
+
+## Program Comparison
+
+| Program | Price | Credentials | Prerequisites | Best For |
+|---------|-------|-------------|---------------|----------|
+| ACC Coach Training | $3,999 | ACC | None | Aspiring coaches, HR pros, leaders |
+| Professional Coach Program | $7,499 | ACC + PCC + ACTC | None | Full journey from zero to PCC |
+| Systems Coach Program | $3,999 | PCC + ACTC | 60 hrs prior training (ACC) | ACC holders advancing to PCC |
+| ACTC Team Coaching | $2,499 | ACTC | Existing ACC or PCC | Team coaching specialization |
+
+---
+
+## Instructors
+
+### Cherie Silas — MCC (ICF Master Certified Coach)
+- CEO & Managing Partner, Tandem Coaching
+- Credentials: ICF MCC, SA CEC, CPCC, EMCC ESIA (Accredited Coaching Supervisor — one of only 215 worldwide)
+- 20+ years experience as corporate leader turned professional coach
+- Top 3.7% of 56,000+ credentialed coaches worldwide; named #16 most influential coach by Global Gurus
+- Co-author, *Enterprise Agile Coaching* book
+- Teaches: ACC, Systems Coach (PCC+ACTC), ACTC
+- LinkedIn: linkedin.com/in/cheriesilas/
+
+### Alex Kudinov — MCC (ICF Master Certified Coach)
+- Enterprise Coach & Managing Director, Tandem Coaching
+- Credentials: ICF MCC, Scrum Alliance CEC, Professional Scrum Trainer
+- 20+ years in software development, product leadership, consulting (Oil & Gas, Investment Banking, Commodities Trading)
+- MBA, University of Texas at Austin
+- Co-author, *Enterprise Agile Coaching* book
+- Teaches: ACC only
+- LinkedIn: linkedin.com/in/alexkudinov/
+
+### Kalina Terzieva — PCC (ICF Professional Certified Coach)
+- Coach & Instructor, Tandem Coaching
+- 15+ years delivering leadership and organizational effectiveness training in large corporate environments
+- Integrates NLP, Positive Psychology, and neuroscience
+- Teaches: ACC, Systems Coach (PCC+ACTC), ACTC
+- LinkedIn: linkedin.com/in/kalina-terzieva/
+
+### Karen Bruns — PCC (ICF Professional Certified Coach)
+- Coach & Instructor, Tandem Coaching
+- Experienced facilitator, extensive background in leadership development and executive coaching
+- Teaches: ACC only
+- LinkedIn: linkedin.com/in/kbruns/
+
+---
+
+## ICF Credentialing Exam
+
+- Computer-based, 155 scored questions + 20 unscored pre-test items
+- Situational judgment format: coaching scenarios, select best response based on ICF core competencies and ethics
+- Scaled scoring: passing score 460/600
+- Time: 3 hours
+- Tandem includes exam prep in all programs (ACC: $29 standalone, PCC individual: $49, team coaching: $59)
+- Vast majority of Tandem graduates pass on first attempt
+
+---
+
+## Other Services
+
+### ICF Mentor Coaching (standalone)
+For coaches who need mentor coaching hours outside of a Tandem program. Already in a Tandem program? Mentor coaching is included — no need to buy separately.
+
+| Package | Price | Hours | Format |
+|---------|-------|-------|--------|
+| ACC Credential | $1,499 | 8 group + 3 individual (11 total) | Mixed |
+| PCC Credential | $1,799 | 8 group + 3 individual (11 total) | Mixed |
+| MCC Credential | $3,999 | 10 individual | 1-on-1 only |
+
+- **All sessions:** Live Zoom video calls
+- **Group sessions:** Run in 4-week cohorts throughout the year, 4 sessions × 2 hours each (next: May 5, 2026)
+- **Individual sessions:** Scheduled directly with mentor based on mutual availability
+- **What's included:** Observation and feedback on coaching demonstrations, peer learning (group), personalized feedback (individual), certificate of completion for ICF applications
+- **Mentors:** Cherie Silas (MCC, ICF Credential Assessor, 20+ yrs) and Alex Kudinov (MCC, ICF Credential Assessor)
+- **ICF requirements:** Minimum 10 hours over 3+ months, at least 3 hours individual
+- URL: /icf/mentor-coaching-acc-pcc-mcc/
+
+### Coaching Supervision (standalone)
+Reflective practice for working coaches — not evaluation, but guided self-examination of coaching patterns, blind spots, and development areas. Supervisor: Cherie Silas (EMCC ESIA Accredited Coaching Supervisor — one of only 215 worldwide).
+
+| Format | Price | Duration | Details |
+|--------|-------|----------|---------|
+| Individual | From $189 | 60 minutes | 1:1 virtual sessions, monthly or as needed |
+| Group | From $89 | Per session | Small group (4–8 coaches), virtual, scheduled cohorts |
+
+- **Who it's for:** Credentialed coaches wanting ongoing professional development. ICF strongly recommends supervision for all credentialed coaches and requires it for ACTC. Up to 10 hours count as CCE units toward ICF recertification. EMCC requires it at Senior Practitioner level and above.
+- **Supervision vs. mentor coaching:** Mentor coaching focuses on developing ICF core competencies (skills-based, required for credentialing). Supervision is broader — addresses ethical challenges, client dynamics, wellbeing, and professional development.
+- URL: /coaching-supervision/
+
+### Executive Coaching (for leaders/organizations)
+- MCC-credentialed coaches
+- Specialties: executive, ADHD, women in leadership, team coaching, healthcare, legal, communications, presence
+- URL: /executive-coaching/
+
+### ADHD Executive Coaching (high-traffic specialty)
+- URL: /adhd-executive-coach/
+
+---
+
+## Key FAQs
+
+**Does ACC experience count toward PCC?** Yes — ACC training hours count toward PCC education requirement. Graduates can advance via the Systems Coach Program ($3,999) or start fresh with the Professional Coach Program ($7,499) which bundles everything.
+
+**What's the difference between Professional Coach Program and Systems Coach Program?** Professional Coach Program ($7,499) is the full journey from zero to PCC+ACTC — includes ACC training (Phase 1) + Systems Coach (Phase 2). Systems Coach Program ($3,999) is Phase 2 only — for coaches who already have ACC or 60 hrs of prior training. The curriculum in Phase 2 is identical.
+
+**Level 1 pathway vs Portfolio pathway:** Level 1 (Tandem's approach) packages everything together — education, mentoring, performance eval. Submit completion certificate. ICF review ~4 weeks. Portfolio pathway: piece together from non-accredited sources, arrange mentoring/eval separately, ICF review up to 14 weeks. Level 1 is recommended for most people.
+
+**Can I pause mid-program?** Yes. Modular structure — pause between modules, resume with future cohort at no extra cost. Progress never expires.
+
+**No experience required for ACC?** Correct. Program goes from zero to ACC-ready. Graduates come from HR, consulting, therapy, management backgrounds.
+
+**How to get coaching hours?** Start coaching pro bono during early modules to build skills, transition to paid as you progress. Tandem provides guidance on finding practice clients.
+
+**ACTC prior engagements?** Yes, engagements from past 5 years count even if not labeled "team coaching" at the time, as long as they meet ICF criteria (intact team, 3+ members, documented).
+
+**Can I buy the Professional Coach Program if I already started ACC separately?** Contact Tandem — they can typically work out credit for prior ACC payments toward the full program.
+
+---
+
+## Contact & Location
+
+- Website: tandemcoach.co
+- Location: Dallas, TX
+- Email: info@tandemcoach.co
+- Book a free consultation: /contact/
+- Social: LinkedIn, Facebook, Instagram, WhatsApp
+- Certifications: SBA, SAM, HUB, WBENC, NCTRCA (woman-owned business)
