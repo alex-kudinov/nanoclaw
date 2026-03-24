@@ -170,6 +170,6 @@ Standalone mentor coaching for coaches who need ICF-required mentor coaching hou
 - Website: tandemcoach.co
 - Location: Dallas, TX
 - Email: info@tandemcoach.co
-- Book a free consultation: /contact/
+- Book a free consultation: /contact-us/
 - Social: LinkedIn, Facebook, Instagram, WhatsApp
 - Certifications: SBA, SAM, HUB, WBENC, NCTRCA (woman-owned business)
