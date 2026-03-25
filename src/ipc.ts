@@ -19,8 +19,11 @@ import {
 } from './gmail-ipc-handlers.js';
 import {
   handleLearnLesson,
+  handleRouteLesson,
   isLearnIpcType,
+  isRouteLessonType,
   LearnLessonPayload,
+  RouteLessonPayload,
 } from './learn-ipc-handler.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
@@ -194,6 +197,20 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   ...data,
                   groupFolder: sourceGroup,
                 } as LearnLessonPayload);
+              } else if (isRouteLessonType(data.type)) {
+                // Knowledge management: chief routes lessons to target agents
+                fs.unlinkSync(filePath);
+                if (sourceGroup !== 'chief') {
+                  logger.warn(
+                    { sourceGroup },
+                    'route_lesson rejected — only chief can route lessons',
+                  );
+                } else {
+                  await handleRouteLesson({
+                    ...data,
+                    groupFolder: sourceGroup,
+                  } as RouteLessonPayload);
+                }
               } else {
                 // Unknown type — delete to prevent infinite reprocessing
                 logger.warn(

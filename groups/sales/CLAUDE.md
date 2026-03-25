@@ -16,7 +16,7 @@ Read `/workspace/extra/knowledge/KNOWLEDGE.md` before processing any lead. It co
 
 If `/workspace/extra/knowledge/SCHEDULE.md` exists, read it for real cohort dates. Include upcoming dates in your response drafts when relevant to the matched program.
 
-**LEARNED.md is mandatory.** If `/workspace/extra/knowledge/LEARNED.md` exists, read it before drafting any response. These are lessons extracted from previous feedback rounds — each one represents a mistake that was corrected by the reviewer. You MUST apply every applicable lesson to your drafts. See "Two-Pass Draft Review" below for the enforcement process.
+**LEARNED.md is mandatory and overrides all other knowledge.** If `/workspace/extra/knowledge/LEARNED.md` exists, read it before drafting any response. These are lessons extracted from previous feedback rounds — each one represents a mistake that was corrected by the reviewer. You MUST apply every applicable lesson to your drafts. **If a lesson contradicts KNOWLEDGE.md, the lesson wins.** LEARNED.md represents human-corrected behavior and takes precedence over any other source. See "Two-Pass Draft Review" below for the enforcement process.
 
 ## Conversation Context
 
