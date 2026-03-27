@@ -38,6 +38,7 @@ When you receive `[HANDOFF: sales→mailman]`, parse the structured fields:
 To: {recipient email}
 Subject: {subject line}
 Lead ID: {id}
+Thread-ID: {Gmail thread ID — optional, present for replies to existing threads}
 Follow-Up: true/false (optional — absent means initial send)
 Original-Message:
 {the lead's original inquiry, verbatim — or brief summary for follow-ups}
@@ -65,7 +66,8 @@ Body:
    Keep it semantic HTML — no CSS, no images, no templates.
 
    **MANDATORY — Append context block.** After the HTML body:
-   - **Initial sends (Follow-Up absent or false):** Add a full quoted block with the lead's original inquiry:
+   - **Threaded replies (Thread-ID present):** Do NOT append a quoted block. Gmail threading displays the conversation history automatically. The `Original-Message` field is not required for threaded replies.
+   - **Initial sends (no Thread-ID, Follow-Up absent or false):** Add a full quoted block with the lead's original inquiry:
      ```html
      <br><br>
      <div style="border-left: 2px solid #ccc; padding-left: 12px; color: #555;">
@@ -74,7 +76,7 @@ Body:
      </div>
      ```
      If the `Original-Message` field is missing from an initial send, do NOT send the email. Report to chief: `[EMAIL BLOCKED] Lead #{id} — handoff missing Original-Message field. Sales agent must re-submit with the lead's original inquiry included.`
-   - **Follow-ups (Follow-Up: true):** The `Original-Message` field contains a brief summary reference (e.g., "Inquiry about ACC program on 2026-03-20"), NOT the full verbatim message. Append a brief context line instead:
+   - **Follow-ups without Thread-ID (Follow-Up: true, no Thread-ID):** The `Original-Message` field contains a brief summary reference (e.g., "Inquiry about ACC program on 2026-03-20"), NOT the full verbatim message. Append a brief context line instead:
      ```html
      <br><br>
      <p style="color: #555; font-size: 0.9em;">Regarding your {original message summary}.</p>
@@ -94,7 +96,19 @@ Body:
      ```
      Stop processing. Do not proceed to step 4.
 
-4. **Send the email** using `gmail_send` with the HTML body:
+4. **Send the email.** Choose the correct tool based on whether a `Thread-ID` is present:
+
+   **With Thread-ID** (reply to existing conversation) — use `gmail_reply`:
+   ```
+   mcp__nanoclaw__gmail_reply({
+     thread_id: "{Thread-ID value}",
+     body: "{html body}",
+     html: true
+   })
+   ```
+   This threads the email in Gmail (proper In-Reply-To/References headers, same thread). Subject and recipient are derived from the thread automatically — you do NOT need to pass them.
+
+   **Without Thread-ID** (first outreach) — use `gmail_send`:
    ```
    mcp__nanoclaw__gmail_send({
      to: "{recipient email}",
@@ -162,11 +176,12 @@ psql -c "SELECT id, name, status, follow_up_count, message FROM leads WHERE emai
 **If a match is found** — this is a reply to our outreach:
 1. Update status: `psql -c "UPDATE leads SET status = 'replied' WHERE id = {lead_id};"`
 2. If multiple leads match the same email, include all IDs in the handoff and note "Multiple leads from this email — review which one this reply is for."
-3. Hand off to sales with lead context:
+3. Hand off to sales with lead context. **Extract the `Thread-ID` from the email header** (it appears in the formatted email as `Thread-ID: {value}`):
    ```
    [HANDOFF: mailman→sales]
    [SOURCE: email-reply]
    Lead ID: {lead_id}
+   Thread-ID: {Gmail thread ID from the email header}
    Name: {name}
    Email: {sender_email}
    Follow-up count: {follow_up_count}

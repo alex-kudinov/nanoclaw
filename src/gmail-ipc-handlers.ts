@@ -53,6 +53,8 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
   const sentId = await replyToThread({
     threadId: data.threadId,
     body: data.body,
+    html: data.html,
+    cc: data.cc,
   });
 
   // Store outbound in DB for conversation context

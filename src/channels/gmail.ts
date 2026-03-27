@@ -277,8 +277,8 @@ export class GmailChannel implements Channel {
       return false;
     }
 
-    const content = formatEmailForAgent(headers, body);
     const threadId = msg.threadId || msg.id;
+    const content = formatEmailForAgent(headers, body, threadId);
 
     this.processedIds.add(msg.id);
 

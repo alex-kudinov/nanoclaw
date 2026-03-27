@@ -113,6 +113,13 @@ export function parseEmailHeaders(
 export function formatEmailForAgent(
   headers: ParsedHeaders,
   body: string,
+  threadId?: string,
 ): string {
-  return `From: ${headers.fromName} <${headers.from}>\nSubject: ${headers.subject}\nDate: ${headers.date}\n\n${body}`;
+  const headerLines = [
+    `From: ${headers.fromName} <${headers.from}>`,
+    `Subject: ${headers.subject}`,
+    `Date: ${headers.date}`,
+  ];
+  if (threadId) headerLines.push(`Thread-ID: ${threadId}`);
+  return headerLines.join('\n') + '\n\n' + body;
 }

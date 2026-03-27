@@ -288,16 +288,20 @@ Use available_groups.json to find the JID for a group. The folder name must be c
 
 server.tool(
   'gmail_reply',
-  'Reply to an email thread. The reply goes to the original sender.',
+  'Reply to an email thread. The reply goes to the original sender with proper In-Reply-To/References headers and Gmail thread grouping.',
   {
     thread_id: z.string().describe('Gmail thread ID to reply to'),
-    body: z.string().describe('Plain text reply body'),
+    body: z.string().describe('Reply body (plain text or HTML)'),
+    html: z.boolean().optional().describe('Set to true when body contains HTML'),
+    cc: z.string().optional().describe('CC recipients (comma-separated)'),
   },
   async (args) => {
     writeIpcFile(MESSAGES_DIR, {
       type: 'gmail_reply',
       threadId: args.thread_id,
       body: args.body,
+      html: args.html || undefined,
+      cc: args.cc || undefined,
       groupFolder,
       timestamp: new Date().toISOString(),
     });

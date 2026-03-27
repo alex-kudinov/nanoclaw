@@ -289,6 +289,7 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
    To: {lead email address from the [SALES REVIEW] header}
    Subject: {email subject from the draft}
    Lead ID: {lead_id}
+   Thread-ID: {Gmail thread ID if available — from the mailman→sales handoff or from the email's Thread-ID header}
    Original-Message:
    {the lead's original message from THEIR REQUEST — copied verbatim}
    ---END-ORIGINAL---
@@ -296,8 +297,11 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
    {the full draft response text from your DRAFT RESPONSE TO LEAD section — markdown formatting preserved}
    ```
 
+   **Thread-ID field:**
+   If you have a `Thread-ID` (from a `mailman→sales` handoff or from the original email), include it. Mailman will use `gmail_reply` to thread the response in the same Gmail conversation. If no Thread-ID is available (e.g., lead came from a contact form, not email), omit the line — Mailman will use `gmail_send` instead.
+
    **MANDATORY — Original-Message field:**
-   The `Original-Message:` field MUST contain the lead's original inquiry copied verbatim from the THEIR REQUEST section. This is NOT optional. Mailman will include it as a quoted block below your response so the lead sees their original message in the email thread. If you omit this field, the lead receives a reply with zero context about what they asked — that is unacceptable.
+   The `Original-Message:` field MUST contain the lead's original inquiry copied verbatim from the THEIR REQUEST section. This is NOT optional. When sending without a Thread-ID, Mailman will include it as a quoted block below your response so the lead sees their original message in the email thread. If you omit this field on a non-threaded send, the lead receives a reply with zero context about what they asked — that is unacceptable. (For threaded replies where Thread-ID is present, Original-Message is still included for Mailman's reference but won't be appended to the email body since Gmail threading shows the conversation history.)
 
    **Subject line — ASCII only:**
    The Subject line MUST use only ASCII characters. Do NOT use em dashes (—), en dashes (–), smart quotes (""), or any non-ASCII punctuation. Use a regular hyphen (-) or comma instead. Non-ASCII characters cause encoding corruption in email clients.
@@ -372,7 +376,7 @@ Waiting for approval. Reply "Approved" to send, or reply with changes.
 
 ### Follow-Up Subject Line
 
-Use `Re: {original subject}` to give the appearance of email thread continuity. (Note: v1 uses `gmail_send` not `gmail_reply`, so these are separate emails that look like replies. True Gmail threading via message-id deferred to v2.)
+Use `Re: {original subject}` for follow-ups. When a Thread-ID is available, Mailman uses `gmail_reply` which threads the email in the same Gmail conversation automatically (proper In-Reply-To/References headers). The Subject is derived from the thread, so your Subject value is a fallback.
 
 ### Follow-Up Approval Flow
 
@@ -384,6 +388,7 @@ When human replies "Approved" to a follow-up draft:
    To: {lead email}
    Subject: Re: {original subject}
    Lead ID: {lead_id}
+   Thread-ID: {Gmail thread ID if available}
    Follow-Up: true
    Original-Message:
    Inquiry about {topic} on {date}
@@ -391,16 +396,17 @@ When human replies "Approved" to a follow-up draft:
    Body:
    {the follow-up email draft}
    ```
-   Note: `Original-Message` for follow-ups contains a brief summary reference, NOT the full verbatim message. Mailman will append a brief context line instead of the full quoted reply block.
+   Note: `Original-Message` for follow-ups contains a brief summary reference, NOT the full verbatim message. When Thread-ID is present, Mailman uses `gmail_reply` for proper threading. Without Thread-ID, Mailman appends a brief context line instead.
 3. Confirm in channel (same thread): `Lead #{id} follow-up #{n+1} handed off to Mailman.`
 
 ### Handling Replies (from mailman)
 
 When you receive `[HANDOFF: mailman→sales] [SOURCE: email-reply]`, the lead has responded. This is a new conversation, not a follow-up:
 1. Read the lead context and new reply from the handoff
-2. Draft a reply addressing their new message
-3. Use the initial `[SALES REVIEW]` format (not the follow-up format)
-4. Same approval flow as initial emails
+2. **Save the `Thread-ID`** from the handoff — you MUST include it in your handoff to mailman so the reply threads correctly in Gmail
+3. Draft a reply addressing their new message
+4. Use the initial `[SALES REVIEW]` format (not the follow-up format)
+5. Same approval flow as initial emails
 
 ### Follow-Up Voice
 

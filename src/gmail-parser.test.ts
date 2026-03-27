@@ -155,19 +155,30 @@ describe('parseEmailHeaders', () => {
 // --- formatEmailForAgent ---
 
 describe('formatEmailForAgent', () => {
+  const headers: ParsedHeaders = {
+    from: 'john@example.com',
+    fromName: 'John',
+    to: 'info@tandemcoach.co',
+    subject: 'Inquiry',
+    date: 'Mon, 1 Jan 2026',
+    messageId: '<abc>',
+    inReplyTo: '',
+  };
+
   it('formats email with all fields', () => {
-    const headers: ParsedHeaders = {
-      from: 'john@example.com',
-      fromName: 'John',
-      to: 'info@tandemcoach.co',
-      subject: 'Inquiry',
-      date: 'Mon, 1 Jan 2026',
-      messageId: '<abc>',
-      inReplyTo: '',
-    };
     const result = formatEmailForAgent(headers, 'Hello there');
     expect(result).toContain('From: John <john@example.com>');
     expect(result).toContain('Subject: Inquiry');
     expect(result).toContain('Hello there');
+  });
+
+  it('includes Thread-ID when threadId is provided', () => {
+    const result = formatEmailForAgent(headers, 'Hello', '18e4f2a3bcd');
+    expect(result).toContain('Thread-ID: 18e4f2a3bcd');
+  });
+
+  it('omits Thread-ID when threadId is not provided', () => {
+    const result = formatEmailForAgent(headers, 'Hello');
+    expect(result).not.toContain('Thread-ID');
   });
 });

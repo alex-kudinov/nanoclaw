@@ -86,6 +86,8 @@ export async function sendEmail(opts: {
 export async function replyToThread(opts: {
   threadId: string;
   body: string;
+  html?: boolean;
+  cc?: string;
 }): Promise<string> {
   const gmail = getGmailClient();
 
@@ -122,6 +124,8 @@ export async function replyToThread(opts: {
     to,
     subject,
     body: opts.body,
+    cc: opts.cc,
+    html: opts.html,
     inReplyTo: originalMessageId,
     references: originalMessageId,
   });
