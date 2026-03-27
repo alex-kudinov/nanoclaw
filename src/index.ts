@@ -1,9 +1,12 @@
+import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
 import {
   ASSISTANT_NAME,
   DATA_DIR,
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_JID,
   IDLE_TIMEOUT,
   POLL_INTERVAL,
   SLACK_ONLY,
@@ -42,6 +45,7 @@ import {
   setSession,
   storeChatMetadata,
   storeMessage,
+  storeMessageDirect,
 } from './db.js';
 import { GroupQueue } from './group-queue.js';
 import { startIpcWatcher } from './ipc.js';
@@ -552,11 +556,33 @@ async function main(): Promise<void> {
 
   // Start webhook server — listens on all interfaces (including Tailscale)
   // for inbound trigger events from Tailscale-connected machines.
+  const heartbeatPath = path.join(DATA_DIR, 'heartbeat.json');
   const webhookServer = new WebhookServer({
     port: WEBHOOK_PORT,
     webhooksFile: WEBHOOKS_FILE,
     globalSecret: WEBHOOK_SECRET,
+    heartbeatPath,
     getRegisteredGroups: () => registeredGroups,
+    getHealth: () => {
+      const channelHealth: Record<string, { connected: boolean; lastActivitySec: number | null }> = {};
+      for (const ch of channels) {
+        channelHealth[ch.name] = {
+          connected: ch.isConnected(),
+          lastActivitySec: ch.getLastActivitySec?.() ?? null,
+        };
+      }
+      let activeContainers = 0;
+      try {
+        const out = execSync('container ls --format json', { timeout: 5000, encoding: 'utf8' });
+        const list = JSON.parse(out);
+        activeContainers = list.filter((c: any) => c.configuration?.id?.startsWith('nanoclaw-')).length;
+      } catch { /* container CLI unavailable */ }
+      return {
+        channels: channelHealth,
+        activeContainers,
+        lastMessageAt: getRouterState('last_timestamp') ?? null,
+      };
+    },
     runAgent: runContainerAgent,
     sendMessage: async (jid, rawText, opts) => {
       const channel = findChannel(channels, jid);
@@ -664,6 +690,43 @@ async function main(): Promise<void> {
   if (channels.length === 0) {
     logger.fatal('No channels connected');
     process.exit(1);
+  }
+
+  // Slack heartbeat — diagnostic signal for external watchdog.
+  // Posts a status line every HEARTBEAT_INTERVAL_MS. Explicitly stored in DB
+  // because Slack Socket Mode doesn't deliver bot self-messages as events.
+  if (HEARTBEAT_JID) {
+    setInterval(async () => {
+      const ch = findChannel(channels, HEARTBEAT_JID);
+      if (!ch) return;
+      const uptimeSec = Math.round(process.uptime());
+      const heapMB = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+      const time = new Date().toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const msg = `🫀 ${time} | up ${uptimeSec}s | heap ${heapMB}MB | slack ${ch.isConnected() ? '✓' : '✗'}`;
+      try {
+        await ch.sendMessage(HEARTBEAT_JID, msg);
+        storeMessageDirect({
+          id: `heartbeat-${Date.now()}`,
+          chat_jid: HEARTBEAT_JID,
+          sender: ASSISTANT_NAME,
+          sender_name: ASSISTANT_NAME,
+          content: msg,
+          timestamp: new Date().toISOString(),
+          is_from_me: true,
+          is_bot_message: true,
+        });
+      } catch {
+        // Failure to send IS the signal — watchdog detects stale heartbeat in DB
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+    logger.info(
+      { jid: HEARTBEAT_JID, intervalMs: HEARTBEAT_INTERVAL_MS },
+      'Slack heartbeat started',
+    );
   }
 
   // Start subsystems (independently of connection handler)

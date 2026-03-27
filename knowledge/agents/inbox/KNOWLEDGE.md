@@ -1,10 +1,7 @@
 # Tandem Coaching — Knowledge Base
 
 <!-- llms-full-hash: 12e9ff1a9119db5b910c53cd653a223f8aa2827427dbe6d07592365798311771 -->
-<!-- validated-at: 2026-03-26 -->
-
-
-
+<!-- validated-at: 2026-03-27 -->
 
 
 Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and executive coaching firm based in Dallas, TX. Co-founders: Cherie Silas and Alex Kudinov.

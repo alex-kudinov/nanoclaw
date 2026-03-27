@@ -76,9 +76,11 @@ function makeDeps(overrides?: Partial<WebhookServerDeps>): WebhookServerDeps {
     port: 49100 + Math.floor(Math.random() * 900),
     webhooksFile: '/tmp/webhooks.json',
     globalSecret: '',
+    heartbeatPath: '/tmp/nanoclaw-heartbeat.json',
     getRegisteredGroups: () => ({ 'slack:C123': testGroup }),
     runAgent: vi.fn(async () => ({ status: 'success' as const, result: null })),
     sendMessage: vi.fn(async () => {}),
+    getHealth: () => ({ channels: {}, activeContainers: 0, lastMessageAt: null }),
     ...overrides,
   };
 }

@@ -39,13 +39,21 @@ type RunAgentFn = (
   onOutput?: (output: ContainerOutput) => Promise<void>,
 ) => Promise<ContainerOutput>;
 
+export interface HealthPayload {
+  channels: Record<string, { connected: boolean; lastActivitySec: number | null }>;
+  activeContainers: number;
+  lastMessageAt: string | null;
+}
+
 export interface WebhookServerDeps {
   port: number;
   webhooksFile: string;
   globalSecret: string;
+  heartbeatPath: string;
   getRegisteredGroups: () => Record<string, RegisteredGroup>;
   runAgent: RunAgentFn;
   sendMessage: SendMessageFn;
+  getHealth: () => HealthPayload;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,6 +230,18 @@ export class WebhookServer {
     req: http.IncomingMessage,
     res: http.ServerResponse,
   ): Promise<void> {
+    // GET /health — raw metrics for external watchdog (no auth — Tailscale only)
+    if (req.method === 'GET' && req.url === '/health') {
+      let heartbeat: Record<string, unknown> = {};
+      try {
+        heartbeat = JSON.parse(fs.readFileSync(this.deps.heartbeatPath, 'utf8'));
+      } catch { /* heartbeat file may not exist yet during startup */ }
+      const health = this.deps.getHealth();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ...heartbeat, ...health }));
+      return;
+    }
+
     // GET /hooks — list all webhooks (admin, guarded by global secret)
     if (req.method === 'GET' && req.url === '/hooks') {
       if (this.deps.globalSecret) {

@@ -138,6 +138,10 @@ if [ "$cal_count" -gt 0 ] || [ "$chat_count" -gt 0 ]; then
   [ "$resolved" != "0" ] && slack "[RESOLVER] Resolved $resolved speaker(s) in transcripts."
 fi
 
+# ── Vault hygiene (cross-ref checks only) ────────────────────────────────────
+log "Running post-pipeline hygiene..."
+bash "${HOME}/dev/NanoClaw/scripts/vault-hygiene.sh" --checks crossref-broken-links,crossref-speaker-sync --vault-root "$VAULT_ROOT" 2>&1 | while read -r l; do log "[HYGIENE] $l"; done
+
 # ── Drop folder: copy to vault intake, skip triage ──────────────────────────
 drop_count=0
 if [ -d "$DROP_DIR" ]; then

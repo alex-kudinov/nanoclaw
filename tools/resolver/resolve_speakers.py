@@ -18,6 +18,8 @@ import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 from zoneinfo import ZoneInfo
 
 try:
@@ -27,15 +29,18 @@ except ImportError:
     HAS_YAML = False
 
 try:
-    import anthropic
-    HAS_ANTHROPIC = True
+    # Add tools/lib to path for bridge client
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from lib.bridge import claude as bridge_claude
+    HAS_BRIDGE = True
 except ImportError:
-    HAS_ANTHROPIC = False
+    HAS_BRIDGE = False
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
 CST = ZoneInfo("America/Chicago")
 TIME_TOLERANCE_MIN = 15
+MAX_WORKERS = 1
 CALENDAR_DIRS = ["Solera/Calendar", "Tandem/Calendar", "CNPC/Calendar"]
 PEOPLE_DIRS = ["Solera/People", "Tandem/People", "CNPC/People"]
 TRANSCRIPTS_DIR = "Transcripts"
@@ -43,7 +48,7 @@ OVERRIDES_PATH = "meta/speaker-overrides.json"
 HINTS_PATH = "meta/speaker-hints.json"
 
 HAIKU = "claude-haiku-4-5-20251001"
-SONNET = "claude-haiku-4-5-20251001"  # OAuth token doesn't have Sonnet access; Haiku handles this fine
+SONNET = "claude-sonnet-4-6"
 
 # Regex for transcript lines
 UTTERANCE_RE = re.compile(
@@ -53,6 +58,9 @@ UTTERANCE_RE = re.compile(
 DATE_RE = re.compile(r'^Date:\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})')
 DURATION_RE = re.compile(r'^Duration:\s*(.+)')
 SUMMARY_RE = re.compile(r'^Summary:\s*(.+)')
+FILENAME_DATE_RE = re.compile(
+    r'(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})'
+)
 
 
 # ── Frontmatter Parsing ─────────────────────────────────────────────────────
@@ -148,6 +156,39 @@ def parse_transcript(path: Path) -> dict:
                 result["anonymous_speakers"].add(speaker)
             else:
                 result["named_speakers"].add(speaker)
+
+    # Fallback: extract datetime from filename if not found in body
+    if result["date"] is None:
+        fm_match = FILENAME_DATE_RE.search(path.name)
+        if fm_match:
+            y, mo, d, h, mi, s = fm_match.groups()
+            try:
+                result["date"] = datetime(
+                    int(y), int(mo), int(d), int(h), int(mi), int(s),
+                    tzinfo=CST
+                )
+            except ValueError:
+                pass
+        # Last resort: frontmatter date field (date only, midnight)
+        if result["date"] is None:
+            fm = parse_frontmatter(path)
+            if fm and fm.get("date"):
+                date_val = fm["date"]
+                if isinstance(date_val, str):
+                    try:
+                        result["date"] = datetime.strptime(date_val, "%Y-%m-%d").replace(tzinfo=CST)
+                    except ValueError:
+                        pass
+                elif hasattr(date_val, "year"):  # datetime.date object from YAML
+                    result["date"] = datetime(date_val.year, date_val.month, date_val.day, tzinfo=CST)
+        # Also pull summary/duration from frontmatter if not found in body
+        if not result["summary"] or not result["duration"]:
+            fm = parse_frontmatter(path)
+            if fm:
+                if not result["summary"] and fm.get("summary"):
+                    result["summary"] = str(fm["summary"]).strip('"')
+                if not result["duration"] and fm.get("duration"):
+                    result["duration"] = str(fm["duration"]).strip('"')
 
     return result
 
@@ -416,22 +457,11 @@ def resolve_speakers_ai(
         return resolution
 
     # Step 3: AI resolution
-    if not HAS_ANTHROPIC:
+    if not HAS_BRIDGE:
         for s in remaining_speakers:
             resolution[s] = {
                 "name": None, "confidence": 0,
-                "tier": "unresolved", "evidence": "No AI available",
-            }
-        return resolution
-
-    token = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "")
-    if not token:
-        token = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not token:
-        for s in remaining_speakers:
-            resolution[s] = {
-                "name": None, "confidence": 0,
-                "tier": "unresolved", "evidence": "No API key",
+                "tier": "unresolved", "evidence": "No AI available (bridge not configured)",
             }
         return resolution
 
@@ -485,13 +515,7 @@ SPEAKER: Speaker N | NAME: null | CONFIDENCE: 0 | EVIDENCE: insufficient context
         model = SONNET
 
     try:
-        client = anthropic.Anthropic(api_key=token)
-        resp = client.messages.create(
-            model=model,
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        ai_text = resp.content[0].text
+        ai_text = bridge_claude(prompt, model=model)
         _parse_ai_resolution(ai_text, resolution, remaining_speakers)
     except Exception as e:
         print(f"    AI error: {e}", file=sys.stderr)
@@ -698,6 +722,7 @@ def process_transcript(
     events: list[dict], lookup: dict,
     overrides: dict, hints: dict,
     report: dict, use_ai: bool, dry_run: bool,
+    lock: threading.Lock | None = None,
 ) -> None:
     """Process a single transcript for speaker resolution."""
     transcript = parse_transcript(path)
@@ -707,7 +732,11 @@ def process_transcript(
     n_anon = len(transcript["anonymous_speakers"])
     n_total = len(transcript["speakers"])
     if n_anon == 0:
-        report["already_resolved"] += 1
+        if lock:
+            with lock:
+                report["already_resolved"] += 1
+        else:
+            report["already_resolved"] += 1
         return
 
     print(f"  {path.name}: {n_total} speakers ({n_anon} anonymous)")
@@ -736,7 +765,11 @@ def process_transcript(
 
     # Report
     resolved_count = sum(1 for r in resolution.values() if r["name"] and r["confidence"] >= 0.60)
-    report["processed"] += 1
+    if lock:
+        with lock:
+            report["processed"] += 1
+    else:
+        report["processed"] += 1
     report["speakers_total"] += n_total
     report["speakers_resolved"] += resolved_count
 
@@ -827,13 +860,25 @@ def main() -> None:
     if args.dry_run:
         print("\nDRY RUN — no files will be modified\n")
 
-    for path in transcripts:
-        report["scanned"] += 1
+    lock = threading.Lock()
+
+    def _process(p):
+        with lock:
+            report["scanned"] += 1
         process_transcript(
-            path, vault_root, events, lookup,
+            p, vault_root, events, lookup,
             overrides, hints, report,
             use_ai=not args.no_ai, dry_run=args.dry_run,
+            lock=lock,
         )
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        futures = {pool.submit(_process, p): p for p in transcripts}
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"    Error processing {futures[future].name}: {e}")
 
     print_report(report)
 

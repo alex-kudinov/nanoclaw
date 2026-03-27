@@ -27,10 +27,12 @@ except ImportError:
     HAS_YAML = False
 
 try:
-    import anthropic
-    HAS_ANTHROPIC = True
+    # Add tools/lib to path for bridge client
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from lib.bridge import claude as bridge_claude
+    HAS_BRIDGE = True
 except ImportError:
-    HAS_ANTHROPIC = False
+    HAS_BRIDGE = False
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -311,26 +313,14 @@ def ai_summarize(
 ) -> dict:
     """Call AI to generate summary, key topics, and tags.
     Returns {summary, key_topics, workstreams, tags, meeting_type}."""
-    if not HAS_ANTHROPIC:
+    if not HAS_BRIDGE:
         return _placeholder_ai_result()
 
-    token = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "")
-    if not token:
-        token = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not token:
-        print("  WARNING: No API key found, using placeholder AI", file=sys.stderr)
-        return _placeholder_ai_result()
-
-    client = anthropic.Anthropic(api_key=token)
     prompt = _build_ai_prompt(chat_name, participants, messages_text, existing_summary)
 
     try:
-        resp = client.messages.create(
-            model=AI_MODEL,
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return _parse_ai_response(resp.content[0].text)
+        ai_text = bridge_claude(prompt, model=AI_MODEL)
+        return _parse_ai_response(ai_text)
     except Exception as e:
         print(f"  WARNING: AI call failed: {e}", file=sys.stderr)
         return _placeholder_ai_result()

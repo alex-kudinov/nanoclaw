@@ -451,6 +451,10 @@ export class SlackChannel implements Channel {
     return this.connected;
   }
 
+  getLastActivitySec(): number {
+    return Math.round((Date.now() - this.lastActivityAt) / 1000);
+  }
+
   ownsJid(jid: string): boolean {
     return jid.startsWith('slack:');
   }

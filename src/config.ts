@@ -71,6 +71,17 @@ export const TIMEZONE =
 export const SLACK_ONLY =
   (process.env.SLACK_ONLY || envConfig.SLACK_ONLY) === 'true';
 
+// Heartbeat — periodic Slack status message for watchdog diagnostics
+const heartbeatEnv = readEnvFile(['HEARTBEAT_JID', 'HEARTBEAT_INTERVAL_MS']);
+export const HEARTBEAT_JID =
+  process.env.HEARTBEAT_JID || heartbeatEnv.HEARTBEAT_JID || '';
+export const HEARTBEAT_INTERVAL_MS = parseInt(
+  process.env.HEARTBEAT_INTERVAL_MS ||
+    heartbeatEnv.HEARTBEAT_INTERVAL_MS ||
+    '600000',
+  10,
+);
+
 // Webhook server — listens on all interfaces (including Tailscale) for
 // inbound trigger events. WEBHOOK_SECRET is a global fallback; per-webhook
 // secrets take precedence.

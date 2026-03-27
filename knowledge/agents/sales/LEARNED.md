@@ -21,3 +21,7 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 ### Lesson 4: Untitled
 **Problem:** ACTC inquiry from Luna Tovaglieri — she requested a call and was incorrectly directed to /contact-us instead of the booking calendar
 **Rule:** The /contact-us page is the contact form where leads submit inquiries — sending them back there is counterproductive. For booking a consultation call, use the direct booking link: https://booking.tandemcoach.co/booking?t=s&uuid=6bfbbeab-eaa1-4a3f-b5a7-a05546bad443. This is the calendar link for scheduling calls with Cherie/team.
+
+### Lesson 5: Untitled
+**Problem:** Lead #13 Lynne Mangan - ACC/Professional Coach Program inquiry, asked for mapped timeline
+**Rule:** For Level 1 (ACC) programs, mentor coaching should be positioned AFTER training completion, not concurrent with it. Students get more value from mentor coaching feedback once they have the foundational skills from training. Concurrent mentor coaching makes more sense for Level 2 (PCC) programs. Also, always emphasize the pause/restart flexibility as a core feature: students can pause between any module, restart whenever they want, as many times as needed, and join any future cohort running the same module at no extra cost.

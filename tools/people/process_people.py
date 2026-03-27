@@ -357,22 +357,18 @@ def create_new_note(
     if out_path.exists():
         return out_path
 
-    # Build aliases — include first name if full name is different
-    first_name = display.split()[0] if display else ""
-    aliases = []
-    if first_name and first_name != display:
-        aliases.append(first_name)
+    # No auto-aliases — bare first names cause collisions on common names
+    # (Alex, Chris, Kevin, etc.). Aliases should be added manually or by
+    # the speaker resolver with high confidence.
 
     lines = ["---"]
     lines.append(f"name: {display}")
     lines.append(f"email: {email}")
     if record.get("jobTitle"):
         lines.append(f'role: "{record["jobTitle"]}"')
+    lines.append("type: person")
     lines.append("domain: solera")
-    if aliases:
-        lines.append(f"aliases: [{', '.join(aliases)}]")
-    else:
-        lines.append("aliases: []")
+    lines.append("aliases: []")
     if manager_name:
         lines.append(f"reports-to: {manager_name}")
     if level:
