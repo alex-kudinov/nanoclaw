@@ -1,5 +1,12 @@
 # Tandem Coaching — Knowledge Base
 
+<!-- llms-full-hash: 12e9ff1a9119db5b910c53cd653a223f8aa2827427dbe6d07592365798311771 -->
+<!-- validated-at: 2026-03-26 -->
+
+
+
+
+
 Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and executive coaching firm based in Dallas, TX. Co-founders: Cherie Silas and Alex Kudinov.
 
 ---
@@ -37,7 +44,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 
 ### Professional Coach Program — ACC + PCC + ACTC (ICF Level 2)
 - **Price:** $7,499 full program — saves $499 vs buying ACC + Systems Coach separately
-- **Individual modules:** $499 each (free Coaching Foundations module first)
+- **Individual modules:** $399 each (free Coaching Foundations module first)
 - **ICF credentials earned:** ACC + PCC + ACTC (three credentials, one enrollment)
 - **Education hours:** 125+ coach-specific hours total
 - **Coaching experience required:** 100 hours for ACC (Phase 1), 500 hours for PCC (Phase 2)
@@ -204,7 +211,7 @@ For coaches who need mentor coaching hours outside of a Tandem program. Already 
 
 | Package | Price | Hours | Format |
 |---------|-------|-------|--------|
-| ACC Credential | $1,499 | 8 group + 3 individual (11 total) | Mixed |
+| ACC Renewal | $849 | 10 group | Group only |
 | PCC Credential | $1,799 | 8 group + 3 individual (11 total) | Mixed |
 | MCC Credential | $3,999 | 10 individual | 1-on-1 only |
 
@@ -216,6 +223,8 @@ For coaches who need mentor coaching hours outside of a Tandem program. Already 
 - **ICF requirements:** Minimum 10 hours over 3+ months, at least 3 hours individual
 - URL: /icf/mentor-coaching-acc-pcc-mcc/
 
+**Do you need coaching clients for mentor coaching?** It depends on the format. Individual mentor coaching involves getting feedback on your real coaching sessions with actual clients — so yes, you need clients. Group mentoring (included in certification programs) is live coaching practice in a classroom setting where participants coach peers; no external clients required. If a lead asks whether they need clients before they can start, clarify: group mentoring uses peer practice, but individual mentor coaching requires actual coaching sessions to review.
+
 ### Coaching Supervision (standalone)
 Reflective practice for working coaches — not evaluation, but guided self-examination of coaching patterns, blind spots, and development areas. Supervisor: Cherie Silas (EMCC ESIA Accredited Coaching Supervisor — one of only 215 worldwide).
 
@@ -226,6 +235,7 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 
 - **Who it's for:** Credentialed coaches wanting ongoing professional development. ICF strongly recommends supervision for all credentialed coaches and requires it for ACTC. Up to 10 hours count as CCE units toward ICF recertification. EMCC requires it at Senior Practitioner level and above.
 - **Supervision vs. mentor coaching:** Mentor coaching focuses on developing ICF core competencies (skills-based, required for credentialing). Supervision is broader — addresses ethical challenges, client dynamics, wellbeing, and professional development.
+- **Do you need coaching clients for supervision?** Yes. Supervision is reflective practice about your actual work as a coach — sessions examine real client situations, patterns, and dynamics. A coach without active clients has no material to bring to supervision.
 - URL: /coaching-supervision/
 
 ### Executive Coaching (for leaders/organizations)
@@ -256,6 +266,8 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 
 **Can I buy the Professional Coach Program if I already started ACC separately?** Contact Tandem — they can typically work out credit for prior ACC payments toward the full program.
 
+**Do I need coaching clients to start mentor coaching or supervision?** Group mentoring (part of certification programs) uses peer practice in the classroom — no external clients needed. Individual mentor coaching and coaching supervision both require you to have actual coaching clients: individual mentor coaching reviews your real sessions, and supervision is reflective practice on your live work with clients.
+
 ---
 
 ## Contact & Location
@@ -263,6 +275,23 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 - Website: tandemcoach.co
 - Location: Dallas, TX
 - Email: info@tandemcoach.co
-- Book a free consultation: /contact/
+- Contact form (submit an inquiry): /contact-us
+- Book a consultation call (direct calendar): https://booking.tandemcoach.co/booking?t=s&uuid=6bfbbeab-eaa1-4a3f-b5a7-a05546bad443
 - Social: LinkedIn, Facebook, Instagram, WhatsApp
 - Certifications: SBA, SAM, HUB, WBENC, NCTRCA (woman-owned business)
+
+---
+
+## Agent Operations Notes
+
+### Email Subject Lines
+Subject lines must contain only ASCII characters. Never use em dashes (—), en dashes (–), smart quotes (" " ' '), or any other non-ASCII character. Replace em dashes and en dashes with hyphens (-) and smart quotes with straight quotes. Non-ASCII characters are double-encoded by some mail clients, producing garbled output (e.g., `Ã¢Â€Â"`).
+
+### Email Context — Including the Original Message
+Every outbound email responding to a lead must include the lead's original inquiry as a quoted block below the response. If the original message is unavailable in the handoff, block the email and report to chief before sending. Recipients have no context for a reply without seeing what they originally asked.
+
+### Sales→Mailman Handoff Requirements
+The `[HANDOFF: sales→mailman]` must include an `Original-Message:` field containing the lead's original message verbatim. This is not optional — Mailman will block the email if it is missing. Drafts must not be approved or handed off without it.
+
+### Booking Link vs Contact Form
+The `/contact-us` page is the contact form where leads submit new inquiries — do not send leads back there when they are ready to book a call. For scheduling a consultation call, use the direct booking calendar: https://booking.tandemcoach.co/booking?t=s&uuid=6bfbbeab-eaa1-4a3f-b5a7-a05546bad443

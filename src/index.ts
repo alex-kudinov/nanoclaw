@@ -6,7 +6,6 @@ import {
   DATA_DIR,
   IDLE_TIMEOUT,
   POLL_INTERVAL,
-  PROXY_PORT,
   SLACK_ONLY,
   TRIGGER_PATTERN,
   WEBHOOK_PORT,
@@ -46,7 +45,6 @@ import {
 } from './db.js';
 import { GroupQueue } from './group-queue.js';
 import { startIpcWatcher } from './ipc.js';
-import { TokenProxy } from './token-proxy.js';
 import { WebhookServer } from './webhook-server.js';
 import { findChannel, formatMessages, formatOutbound } from './router.js';
 import { startSchedulerLoop } from './task-scheduler.js';
@@ -552,11 +550,6 @@ function ensureContainerSystemRunning(): void {
 async function main(): Promise<void> {
   ensureContainerSystemRunning();
 
-  // Start token proxy before channels so containers can authenticate
-  // as soon as they spin up. Tokens are never passed into containers.
-  const proxy = new TokenProxy(PROXY_PORT);
-  await proxy.start();
-
   // Start webhook server — listens on all interfaces (including Tailscale)
   // for inbound trigger events from Tailscale-connected machines.
   const webhookServer = new WebhookServer({
@@ -590,7 +583,6 @@ async function main(): Promise<void> {
     await queue.shutdown(10000);
     cleanupOrphans();
     for (const ch of channels) await ch.disconnect();
-    await proxy.stop().catch(() => {});
     await webhookServer.stop().catch(() => {});
     process.exit(0);
   };

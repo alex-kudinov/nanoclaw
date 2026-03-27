@@ -29,7 +29,7 @@ Read `/workspace/extra/knowledge/KNOWLEDGE.md` before {qualifying / processing /
 
 If `/workspace/extra/knowledge/SCHEDULE.md` exists, read it for {live data description}.
 
-If `/workspace/extra/knowledge/LEARNED.md` exists, read it. These are lessons from previous {feedback cycles} — apply them to {your drafts / your decisions}.
+<!-- KNOWLEDGE.md includes lessons from previous feedback cycles, already merged in. No need to read LEARNED.md separately. -->
 
 <!-- CONVERSATION CONTEXT: Include for multi-turn minions (approval loops, feedback cycles). -->
 ## Conversation Context

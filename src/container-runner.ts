@@ -7,15 +7,15 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
+import os from 'os';
+
 import {
-  CONTAINER_HOST_IP,
   CONTAINER_IMAGE,
   CONTAINER_MAX_OUTPUT_SIZE,
   CONTAINER_TIMEOUT,
   DATA_DIR,
   GROUPS_DIR,
   IDLE_TIMEOUT,
-  PROXY_PORT,
   TIMEZONE,
 } from './config.js';
 import { readEnvFile } from './env.js';
@@ -171,6 +171,12 @@ function buildVolumeMounts(
       fs.cpSync(srcDir, dstDir, { recursive: true });
     }
   }
+  // Copy host credentials into group sessions dir for subscription auth
+  const hostCreds = path.join(os.homedir(), '.claude', '.credentials.json');
+  const containerCreds = path.join(groupSessionsDir, '.credentials.json');
+  fs.copyFileSync(hostCreds, containerCreds);
+  fs.chmodSync(containerCreds, 0o600);
+
   mounts.push({
     hostPath: groupSessionsDir,
     containerPath: '/home/node/.claude',
@@ -244,19 +250,12 @@ function buildVolumeMounts(
 
 /**
  * Build secrets payload for the container.
- * Instead of the real token, containers receive a proxy URL — the token proxy
- * running in the host process injects the real auth header on every request.
- * This ensures tokens never enter the container environment.
- *
- * We preserve the auth mechanism type (OAuth vs API key) so the Claude CLI
- * uses the correct flow. The proxy strips whichever placeholder arrives and
- * injects the real credential from .env.
+ * Containers authenticate via copied credentials (subscription auth).
+ * CLAUDE_CONFIG_DIR points to the mounted .claude dir which contains
+ * .credentials.json copied from the host before each launch.
  */
 function readSecrets(groupFolder?: string): Record<string, string> {
-  const proxyUrl = `http://${CONTAINER_HOST_IP}:${PROXY_PORT}`;
   const configured = readEnvFile([
-    'CLAUDE_CODE_OAUTH_TOKEN',
-    'ANTHROPIC_API_KEY',
     'BUSINESS_DB_HOST',
     'BUSINESS_DB_PORT',
     'BUSINESS_DB_NAME',
@@ -270,20 +269,17 @@ function readSecrets(groupFolder?: string): Record<string, string> {
     'BUSINESS_DB_PASS_ADMIN',
     'BUSINESS_DB_ROLE_CONTADOR',
     'BUSINESS_DB_PASS_CONTADOR',
+    'BUSINESS_DB_ROLE_MAILMAN',
+    'BUSINESS_DB_PASS_MAILMAN',
     'STRIPE_RESTRICTED_KEY',
     'SHEETS_PAYMENTS_ID',
     'SHEETS_ROSTER_ID',
+    'OBSIDIAN_API_KEY',
   ]);
 
-  const secrets: Record<string, string> = configured.CLAUDE_CODE_OAUTH_TOKEN
-    ? {
-        ANTHROPIC_BASE_URL: proxyUrl,
-        CLAUDE_CODE_OAUTH_TOKEN: 'proxy-placeholder',
-      }
-    : {
-        ANTHROPIC_BASE_URL: proxyUrl,
-        ANTHROPIC_API_KEY: 'proxy-placeholder',
-      };
+  const secrets: Record<string, string> = {
+    CLAUDE_CONFIG_DIR: '/home/node/.claude',
+  };
 
   // Add per-agent business DB credentials
   const dbHost = configured.BUSINESS_DB_HOST;
@@ -311,10 +307,22 @@ function readSecrets(groupFolder?: string): Record<string, string> {
         role: configured.BUSINESS_DB_ROLE_CONTADOR || '',
         pass: configured.BUSINESS_DB_PASS_CONTADOR || '',
       },
+      mailman: {
+        role: configured.BUSINESS_DB_ROLE_MAILMAN || '',
+        pass: configured.BUSINESS_DB_PASS_MAILMAN || '',
+      },
     };
     const creds = roleMap[groupFolder];
     if (creds?.role && creds?.pass) {
       secrets.BUSINESS_DB_URL = `postgresql://${creds.role}:${encodeURIComponent(creds.pass)}@${dbHost}:${dbPort || '5432'}/${dbName}`;
+    }
+  }
+
+  // Inject Obsidian REST API key for El Archivista
+  if (groupFolder === 'archivista') {
+    const obsidianKey = configured.OBSIDIAN_API_KEY;
+    if (obsidianKey) {
+      secrets.OBSIDIAN_API_KEY = obsidianKey;
     }
   }
 

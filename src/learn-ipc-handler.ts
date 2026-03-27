@@ -45,17 +45,25 @@ export async function handleLearnLesson(
     return;
   }
 
-  const date = data.timestamp || new Date().toISOString().split('T')[0];
-  const lines = [`\n## ${date}`];
-  if (data.lead_context) {
-    lines.push(`**Context:** ${data.lead_context}`);
-  }
-  lines.push(`**Lesson:** ${data.lesson}`, '');
+  const content = fs.readFileSync(learnedPath, 'utf-8');
+  const nextNum = getNextLessonNumber(content);
+
+  // Extract a short title from the lesson text (first sentence or first 60 chars)
+  const titleMatch = data.lesson.match(/^(.{1,60}?)(?:[.!?]|$)/);
+  const title = titleMatch ? titleMatch[1].trim() : 'Untitled';
+
+  const lines = [
+    '',
+    `### Lesson ${nextNum}: ${title}`,
+    `**Problem:** ${data.lead_context || 'Feedback on draft'}`,
+    `**Rule:** ${data.lesson}`,
+    '',
+  ];
 
   fs.appendFileSync(learnedPath, lines.join('\n'), 'utf-8');
 
   logger.info(
-    { groupFolder: data.groupFolder },
+    { groupFolder: data.groupFolder, lessonNumber: nextNum },
     'Lesson appended to LEARNED.md',
   );
 }
@@ -105,10 +113,17 @@ function formatAgentName(folder: string): string {
 export async function handleRouteLesson(
   data: RouteLessonPayload,
 ): Promise<{ updated: string[]; created: string[]; failed: string[] }> {
-  const result = { updated: [] as string[], created: [] as string[], failed: [] as string[] };
+  const result = {
+    updated: [] as string[],
+    created: [] as string[],
+    failed: [] as string[],
+  };
 
   if (!data.target_agents?.length || !data.title || !data.rule) {
-    logger.warn({ data }, 'route_lesson: missing required fields (target_agents, title, rule)');
+    logger.warn(
+      { data },
+      'route_lesson: missing required fields (target_agents, title, rule)',
+    );
     return result;
   }
 
@@ -118,7 +133,10 @@ export async function handleRouteLesson(
 
     // Create LEARNED.md if it doesn't exist (agent dir must exist)
     if (!fs.existsSync(agentDir)) {
-      logger.warn({ agent }, 'route_lesson: agent knowledge dir not found — skipping');
+      logger.warn(
+        { agent },
+        'route_lesson: agent knowledge dir not found — skipping',
+      );
       result.failed.push(agent);
       continue;
     }
@@ -147,7 +165,11 @@ export async function handleRouteLesson(
     fs.appendFileSync(learnedPath, lines.join('\n'), 'utf-8');
 
     // Sync to shared copy
-    const sharedPath = path.resolve('knowledge', 'shared', `LEARNED-${agent}.md`);
+    const sharedPath = path.resolve(
+      'knowledge',
+      'shared',
+      `LEARNED-${agent}.md`,
+    );
     try {
       fs.copyFileSync(learnedPath, sharedPath);
     } catch {

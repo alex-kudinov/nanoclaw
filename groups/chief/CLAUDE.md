@@ -49,11 +49,18 @@ psql -c "
     (SELECT COUNT(*) FROM leads WHERE status = 'opportunity') as pipeline,
     (SELECT COUNT(*) FROM proposals WHERE status = 'sent') as proposals_out,
     (SELECT COUNT(*) FROM contracts WHERE status = 'active') as active_contracts,
-    (SELECT COUNT(*) FROM invoices WHERE status IN ('pending','overdue')) as invoices_open;
+    (SELECT COUNT(*) FROM invoices WHERE status IN ('pending','overdue')) as invoices_open,
+    (SELECT COUNT(*) FROM leads WHERE status IN ('sent', 'follow-up-sent') AND last_contact_at < NOW() - INTERVAL '3 days') as needs_followup,
+    (SELECT COUNT(*) FROM leads WHERE status = 'cold') as cold_leads,
+    (SELECT COUNT(*) FROM leads WHERE status = 'replied') as replied_leads;
 "
 ```
 
-Format as a human-readable digest, not raw SQL output.
+Format as a human-readable digest, not raw SQL output. Include follow-up metrics:
+
+```
+Needs follow-up: {n} | Cold: {n} | Replied: {n}
+```
 
 ## Approval Protocol
 
@@ -100,13 +107,13 @@ If a message contains a correction or new rule, treat it as a lesson even if the
 
 ### Agent Domains
 
-| Agent | Domain | LEARNED.md location |
-|-------|--------|-------------------|
-| `inbox` | Lead triage, routing, classification | `/workspace/extra/all-knowledge/inbox/LEARNED.md` |
-| `sales` | Email drafts, program matching, voice & tone, pricing | `/workspace/extra/all-knowledge/sales/LEARNED.md` |
-| `mailman` | Email delivery, formatting, sending, HTML conversion | `/workspace/extra/all-knowledge/mailman/LEARNED.md` |
-| `certifier` | Certificate issuance, Sertifier presets | `/workspace/extra/all-knowledge/certifier/LEARNED.md` |
-| `contador` | Payment processing, invoicing | `/workspace/extra/all-knowledge/contador/LEARNED.md` |
+| Agent | Domain |
+|-------|--------|
+| `inbox` | Lead triage, routing, classification |
+| `sales` | Email drafts, program matching, voice & tone, pricing |
+| `mailman` | Email delivery, formatting, sending, HTML conversion |
+| `certifier` | Certificate issuance, Sertifier presets |
+| `contador` | Payment processing, invoicing |
 
 If a lesson applies to multiple agents, target all of them. If unclear which agent it applies to, use your best judgment based on the domain table and explain your reasoning.
 
@@ -116,9 +123,8 @@ If a lesson applies to multiple agents, target all of them. If unclear which age
 
 2. **Read current knowledge** for each target agent:
    - `/workspace/extra/all-knowledge/{agent}/KNOWLEDGE.md`
-   - `/workspace/extra/all-knowledge/{agent}/LEARNED.md`
 
-3. **Check for contradictions.** Compare the lesson against KNOWLEDGE.md. If any statement in KNOWLEDGE.md directly contradicts the lesson, flag it in your response. Lessons ALWAYS win — KNOWLEDGE.md is reference material, but LEARNED.md overrides it on any conflict.
+3. **Check for contradictions.** Compare the lesson against the agent's KNOWLEDGE.md. If any statement directly contradicts the lesson, flag it in your response.
 
 4. **Write IPC file.** Create a single JSON file in `/workspace/ipc/messages/`:
    ```json
@@ -132,6 +138,13 @@ If a lesson applies to multiple agents, target all of them. If unclear which age
    ```
    The `context` field is optional — add it if the lesson came from a specific lead or situation.
 
+   After you write this file, the host automatically:
+   - Appends the lesson to each target agent's LEARNED.md
+   - Merges all lessons into KNOWLEDGE.md (via merge-lessons.sh)
+   - Propagates the updated KNOWLEDGE.md to all agent folders
+
+   Agents only read KNOWLEDGE.md — lessons are baked in automatically within minutes.
+
 5. **Report to channel:**
    ```
    [KNOWLEDGE UPDATE]
@@ -142,7 +155,7 @@ If a lesson applies to multiple agents, target all of them. If unclear which age
    CONTRADICTION FLAGGED:
    - {agent}'s KNOWLEDGE.md says: "{quoted text}"
    - This lesson says: "{the correction}"
-   - LEARNED.md will override KNOWLEDGE.md. Update KNOWLEDGE.md if the source material has permanently changed.
+   - The lesson will be merged into KNOWLEDGE.md automatically.
 
    {If no contradictions:}
    No contradictions found in current knowledge.
@@ -150,10 +163,11 @@ If a lesson applies to multiple agents, target all of them. If unclear which age
 
 ### Important Rules
 
-- **Lessons override everything.** LEARNED.md takes precedence over KNOWLEDGE.md on any conflict. This is by design — lessons represent human-corrected behavior.
-- **Always check before writing.** Read the target agent's LEARNED.md first. If an equivalent lesson already exists, update or skip rather than duplicate.
-- **Be specific in the rule.** The agent reading this lesson has no context about the conversation that produced it. The rule must be self-contained and actionable.
-- **Flag knowledge drift.** If you find a contradiction, it may mean KNOWLEDGE.md is outdated. Flag it so the human can decide whether to update the source material.
+- **Lessons are auto-merged.** After you write the IPC file, lessons are automatically incorporated into KNOWLEDGE.md and propagated to all agents. No manual step needed.
+- **Always check before writing.** Read the target agent's knowledge first. If an equivalent lesson already exists, skip rather than duplicate.
+- **Be specific in the rule.** Agents have no context about the conversation that produced the lesson. The rule must be self-contained and actionable.
+- **Flag contradictions.** If KNOWLEDGE.md says something different, flag it — the merge process will correct KNOWLEDGE.md, but humans should know about the drift.
+- **Redundancy lifecycle.** Lessons flagged as redundant after weekly KNOWLEDGE.md regeneration are marked with `<!-- status: redundant -->` in LEARNED.md and excluded from future merges.
 
 ## Communication
 

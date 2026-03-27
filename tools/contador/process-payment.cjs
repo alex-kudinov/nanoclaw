@@ -190,6 +190,64 @@ function sheetsUpdate(sheetId, range, values) {
   );
 }
 
+function sheetsBatchUpdate(spreadsheetId, requests) {
+  return getAccessToken().then(
+    (token) =>
+      new Promise((resolve, reject) => {
+        const body = JSON.stringify({ requests });
+        const req = https.request(
+          {
+            hostname: 'sheets.googleapis.com',
+            path: `/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+          (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              if (res.statusCode >= 400)
+                reject(new Error(`Sheets batchUpdate ${res.statusCode}: ${data}`));
+              else resolve(JSON.parse(data));
+            });
+          },
+        );
+        req.on('error', reject);
+        req.write(body);
+        req.end();
+      }),
+  );
+}
+
+function getSheetMetadata(spreadsheetId) {
+  return getAccessToken().then(
+    (token) =>
+      new Promise((resolve, reject) => {
+        https
+          .get(
+            {
+              hostname: 'sheets.googleapis.com',
+              path: `/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`,
+              headers: { Authorization: `Bearer ${token}` },
+            },
+            (res) => {
+              let data = '';
+              res.on('data', (chunk) => (data += chunk));
+              res.on('end', () => {
+                if (res.statusCode >= 400)
+                  reject(new Error(`Sheets metadata ${res.statusCode}: ${data}`));
+                else resolve(JSON.parse(data));
+              });
+            },
+          )
+          .on('error', reject);
+      }),
+  );
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function colIndexToLetter(index) {
@@ -242,6 +300,10 @@ async function main() {
           const charge = await stripeGet(`/v1/charges/${pi.latest_charge}?expand[]=balance_transaction`);
           feeCents = charge.balance_transaction?.fee || 0;
           refundedCents = charge.amount_refunded || 0;
+          // Fallback: fill name from charge billing details if checkout didn't provide it
+          if (customerName === 'Unknown' && charge.billing_details?.name) {
+            customerName = charge.billing_details.name;
+          }
         }
       } catch { /* non-fatal */ }
     }
@@ -256,23 +318,27 @@ async function main() {
     eventType = 'payment_intent.succeeded';
     stripeCreatedAt = pi.created || 0;
 
-    // Fetch customer details (name + email) and fee from charge
-    if (pi.customer) {
-      const cust = await stripeGet(`/v1/customers/${pi.customer}`);
-      customerEmail = cust.email || '';
-      customerName = cust.name || 'Unknown';
-    }
+    // Fetch charge (needed for fee, refund, and billing details)
+    let charge = null;
     if (pi.latest_charge) {
-      const charge = await stripeGet(`/v1/charges/${pi.latest_charge}?expand[]=balance_transaction`);
-      if (!customerEmail) customerEmail = charge.billing_details?.email || '';
-      if (customerName === 'Unknown') customerName = charge.billing_details?.name || 'Unknown';
+      charge = await stripeGet(`/v1/charges/${pi.latest_charge}?expand[]=balance_transaction`);
       feeCents = charge.balance_transaction?.fee || 0;
       refundedCents = charge.amount_refunded || 0;
     }
-    if (!pi.customer && !pi.latest_charge) {
-      customerEmail = '';
-      customerName = 'Unknown';
+
+    // Resolve customer — try PI customer, then charge customer, then billing details
+    const customerId = pi.customer || charge?.customer;
+    if (customerId) {
+      try {
+        const cust = await stripeGet(`/v1/customers/${customerId}`);
+        customerEmail = cust.email || '';
+        customerName = cust.name || '';
+      } catch { /* non-fatal */ }
     }
+    if (!customerName && charge) customerName = charge.billing_details?.name || '';
+    if (!customerEmail && charge) customerEmail = charge.billing_details?.email || '';
+    if (!customerName) customerName = 'Unknown';
+    if (!customerEmail) customerEmail = '';
   }
 
   const fmtDate = (d) => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
@@ -291,7 +357,7 @@ async function main() {
     sheets_roster: 'skipped',
     db: 'skipped',
   };
-  let matrixColumn = '';
+  let rosterMatches = [];
 
   // 2. Google Sheets operations (separate sheets for payments vs roster)
   const hasSaCreds = fs.existsSync(SA_PATH);
@@ -323,8 +389,31 @@ async function main() {
         await sheetsUpdate(SHEETS_PAYMENTS_ID, `Payment Log!A${sheetRow}:K${sheetRow}`, [logRow]);
         results.sheets_log = 'OK (updated existing)';
       } else {
-        await sheetsAppend(SHEETS_PAYMENTS_ID, 'Payment Log!A:K', [logRow]);
+        const appendResult = await sheetsAppend(SHEETS_PAYMENTS_ID, 'Payment Log!A:K', [logRow]);
         results.sheets_log = 'OK';
+        // Extend BasicFilter to include newly appended row
+        try {
+          const rowMatch = (appendResult.updates?.updatedRange || '').match(/:.*?(\d+)$/);
+          if (rowMatch) {
+            const meta = await getSheetMetadata(SHEETS_PAYMENTS_ID);
+            const tab = meta.sheets?.find((s) => s.properties.title === 'Payment Log');
+            if (tab) {
+              await sheetsBatchUpdate(SHEETS_PAYMENTS_ID, [{
+                setBasicFilter: {
+                  filter: {
+                    range: {
+                      sheetId: tab.properties.sheetId,
+                      startRowIndex: 0,
+                      startColumnIndex: 0,
+                      endRowIndex: parseInt(rowMatch[1], 10),
+                      endColumnIndex: 11,
+                    },
+                  },
+                },
+              }]);
+            }
+          }
+        } catch { /* non-fatal — filter update is nice-to-have */ }
       }
     } catch (e) {
       results.sheets_log = `ERROR: ${e.message.slice(0, 100)}`;
@@ -336,80 +425,80 @@ async function main() {
     results.sheets_log = `skipped (missing: ${missing.join(', ')})`;
   }
 
-  // 2b. Student Roster (shared sheet — 3 tabs: ACC/PCC/ACTC Roster)
-  let rosterTab = '';
+  // 2b. Student Roster (shared sheet — tabs per credential: ACC/PCC/ACTC Roster)
+  // Combo products (e.g. Professional Coach Program) can map to multiple tabs
   if (SHEETS_ROSTER_ID && hasSaCreds) {
     try {
       // Read Product Map (3 columns: product name, tab name, column header)
+      // Combo products have multiple rows — one per roster tab
       const mapping = await sheetsGet(SHEETS_ROSTER_ID, 'Product Map!A:C');
       const rows = mapping.values || [];
-      const match = rows.find(
-        (r, i) =>
-          i > 0 && r[0] && r[0].toLowerCase() === productName.toLowerCase(),
-      );
-      if (match && match[1] && match[2]) {
-        rosterTab = match[1];
-        matrixColumn = match[2];
-      }
+      rosterMatches = rows
+        .filter((r, i) => i > 0 && r[0] && r[0].toLowerCase() === productName.toLowerCase() && r[1] && r[2])
+        .map((r) => ({ tab: r[1], column: r[2] }));
 
-      if (rosterTab && matrixColumn && customerEmail) {
-        const headers = await sheetsGet(SHEETS_ROSTER_ID, `${rosterTab}!1:1`);
-        const headerRow = headers.values?.[0] || [];
-        const colIndex = headerRow.findIndex((h) => h === matrixColumn);
+      if (rosterMatches.length > 0 && customerEmail) {
+        const rosterResults = [];
+        for (const { tab, column } of rosterMatches) {
+          try {
+            const headers = await sheetsGet(SHEETS_ROSTER_ID, `${tab}!1:1`);
+            const headerRow = headers.values?.[0] || [];
+            const colIndex = headerRow.findIndex((h) => h === column);
 
-        if (colIndex >= 0) {
-          const emails = await sheetsGet(SHEETS_ROSTER_ID, `${rosterTab}!A:A`);
-          const emailCol = emails.values || [];
-          const rowIndex = emailCol.findIndex(
-            (r, i) =>
-              i > 0 &&
-              r[0] &&
-              r[0].toLowerCase() === customerEmail.toLowerCase(),
-          );
+            if (colIndex >= 0) {
+              const emails = await sheetsGet(SHEETS_ROSTER_ID, `${tab}!A:A`);
+              const emailCol = emails.values || [];
+              const rowIndex = emailCol.findIndex(
+                (r, i) =>
+                  i > 0 &&
+                  r[0] &&
+                  r[0].toLowerCase() === customerEmail.toLowerCase(),
+              );
 
-          if (rowIndex < 0) {
-            const newRow = new Array(headerRow.length).fill('');
-            newRow[0] = customerEmail;
-            newRow[1] = customerName;
-            newRow[colIndex] = transactionDate;
-            // Mark refund if applicable
-            if (refundedCents > 0) {
-              const refundColIndex = headerRow.findIndex((h) => h === 'Refunded');
-              if (refundColIndex >= 0) newRow[refundColIndex] = transactionDate;
-            }
-            await sheetsAppend(SHEETS_ROSTER_ID, `${rosterTab}!A:A`, [newRow]);
-          } else {
-            const sheetRow = rowIndex + 1;
-            const colLetter = colIndexToLetter(colIndex);
-            await sheetsUpdate(SHEETS_ROSTER_ID, `${rosterTab}!${colLetter}${sheetRow}`, [
-              [transactionDate],
-            ]);
-            try {
-              const nameCheck = await sheetsGet(SHEETS_ROSTER_ID, `${rosterTab}!B${sheetRow}`);
-              if (!nameCheck.values?.[0]?.[0]) {
-                await sheetsUpdate(SHEETS_ROSTER_ID, `${rosterTab}!B${sheetRow}`, [
-                  [customerName],
-                ]);
-              }
-            } catch {
-              // non-fatal
-            }
-            // Mark refund if applicable
-            if (refundedCents > 0) {
-              const refundColIndex = headerRow.findIndex((h) => h === 'Refunded');
-              if (refundColIndex >= 0) {
-                const refundLetter = colIndexToLetter(refundColIndex);
-                await sheetsUpdate(SHEETS_ROSTER_ID, `${rosterTab}!${refundLetter}${sheetRow}`, [
+              if (rowIndex < 0) {
+                const newRow = new Array(headerRow.length).fill('');
+                newRow[0] = customerEmail;
+                newRow[1] = customerName;
+                newRow[colIndex] = transactionDate;
+                if (refundedCents > 0) {
+                  const refundColIndex = headerRow.findIndex((h) => h === 'Refunded');
+                  if (refundColIndex >= 0) newRow[refundColIndex] = transactionDate;
+                }
+                await sheetsAppend(SHEETS_ROSTER_ID, `${tab}!A:A`, [newRow]);
+              } else {
+                const sheetRow = rowIndex + 1;
+                const colLetter = colIndexToLetter(colIndex);
+                await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!${colLetter}${sheetRow}`, [
                   [transactionDate],
                 ]);
+                try {
+                  const nameCheck = await sheetsGet(SHEETS_ROSTER_ID, `${tab}!B${sheetRow}`);
+                  if (!nameCheck.values?.[0]?.[0]) {
+                    await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!B${sheetRow}`, [
+                      [customerName],
+                    ]);
+                  }
+                } catch { /* non-fatal */ }
+                if (refundedCents > 0) {
+                  const refundColIndex = headerRow.findIndex((h) => h === 'Refunded');
+                  if (refundColIndex >= 0) {
+                    const refundLetter = colIndexToLetter(refundColIndex);
+                    await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!${refundLetter}${sheetRow}`, [
+                      [transactionDate],
+                    ]);
+                  }
+                }
               }
+              rosterResults.push(`${tab}: ${refundedCents > 0 ? 'OK (refunded)' : 'OK'}`);
+            } else {
+              rosterResults.push(`${tab}: column "${column}" not found`);
             }
+          } catch (e) {
+            rosterResults.push(`${tab}: ERROR: ${e.message.slice(0, 80)}`);
           }
-          results.sheets_roster = refundedCents > 0 ? 'OK (refunded)' : 'OK';
-        } else {
-          results.sheets_roster = `column "${matrixColumn}" not found in ${rosterTab} headers`;
         }
-      } else if (!rosterTab) {
+        results.sheets_roster = rosterResults.join('; ');
+      } else if (rosterMatches.length === 0) {
         results.sheets_roster = 'unrecognized product — skipped';
       } else {
         results.sheets_roster = 'no customer email — skipped';
@@ -443,7 +532,7 @@ async function main() {
     `Product: ${productName}`,
     `Amount: $${amountDollars} ${currency} (fee: $${feeDollars}, net: $${netDollars})${refundedCents > 0 ? ` [REFUNDED $${(refundedCents / 100).toFixed(2)}]` : ''}`,
     `Stripe ID: ${STRIPE_ID} (${ID_TYPE})`,
-    `Roster: ${rosterTab ? `${rosterTab} → ${matrixColumn}` : 'unrecognized product — skipped'}`,
+    `Roster: ${rosterMatches.length > 0 ? rosterMatches.map(m => `${m.tab} → ${m.column}`).join(', ') : 'unrecognized product — skipped'}`,
     `Payment Log: ${results.sheets_log}`,
     `Student Roster: ${results.sheets_roster}`,
     `DB: ${results.db}`,

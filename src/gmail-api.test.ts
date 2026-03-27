@@ -68,4 +68,3 @@ describe('buildRawMessage', () => {
     expect(decoded).toContain('To: test@example.comBcc: evil@attacker.com');
   });
 });
-

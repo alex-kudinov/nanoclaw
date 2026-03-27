@@ -71,14 +71,6 @@ export const TIMEZONE =
 export const SLACK_ONLY =
   (process.env.SLACK_ONLY || envConfig.SLACK_ONLY) === 'true';
 
-// Token proxy — keeps auth tokens out of agent containers.
-// Containers receive ANTHROPIC_BASE_URL pointing to the proxy instead of
-// the real token. CONTAINER_HOST_IP is the host's IP as seen from containers
-// (192.168.64.1 for Apple Container, host.docker.internal for Docker Desktop).
-export const PROXY_PORT = parseInt(process.env.PROXY_PORT || '40960', 10);
-export const CONTAINER_HOST_IP =
-  process.env.CONTAINER_HOST_IP || '192.168.64.1';
-
 // Webhook server — listens on all interfaces (including Tailscale) for
 // inbound trigger events. WEBHOOK_SECRET is a global fallback; per-webhook
 // secrets take precedence.

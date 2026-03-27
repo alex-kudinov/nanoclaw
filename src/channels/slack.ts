@@ -67,9 +67,12 @@ export class SlackChannel implements Channel {
   private lastActivityAt = Date.now();
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
   private reconnectAttempts = 0;
-  // WebSocket staleness: if no inbound events for this long, force reconnect.
-  // auth.test() is HTTP and succeeds even when the WebSocket is dead.
-  private static readonly STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  // Nuclear fallback: if no inbound events for this long, destroy and recreate
+  // the entire App instance. @slack/socket-mode has built-in ping/pong (5s/30s)
+  // + auto-reconnect that handles normal drops. We only intervene when that fails.
+  // NEVER call app.stop() then app.start() on the same instance — the deferred
+  // WebSocket close event creates zombie connections (see Session 5 postmortem).
+  private static readonly NUCLEAR_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
 
   private opts: SlackChannelOpts;
 
@@ -96,19 +99,15 @@ export class SlackChannel implements Channel {
       logLevel: LogLevel.ERROR,
     });
 
-    // Catch WebSocket errors that Bolt logs to stderr by default.
-    // These fire when the Socket Mode connection dies but auth.test() still works.
+    // Log Bolt app errors. Do NOT trigger reconnect from here —
+    // @slack/socket-mode has built-in auto-reconnect that handles WebSocket drops.
+    // Manual intervention (recreateApp) is only triggered by the health check
+    // after 15 min of silence, avoiding the stop/start race condition.
     this.app.error(async (error) => {
-      const msg = error.message || String(error);
-      if (msg.includes('WebSocket') || msg.includes('not ready')) {
-        logger.warn(
-          { err: error },
-          'Slack WebSocket error, triggering reconnect',
-        );
-        if (this.connected) await this.reconnect();
-      } else {
-        logger.error({ err: error }, 'Unhandled Slack app error');
-      }
+      logger.warn(
+        { err: error },
+        'Slack app error (library will auto-reconnect)',
+      );
     });
 
     this.setupEventHandlers();
@@ -262,47 +261,88 @@ export class SlackChannel implements Channel {
   private startHealthCheck(): void {
     this.healthCheckInterval = setInterval(async () => {
       if (!this.connected) {
-        // Keep retrying reconnect with exponential backoff (max 5 min)
-        const delay = Math.min(3000 * 2 ** this.reconnectAttempts, 300_000);
+        // App was marked disconnected by recreateApp failure — retry with backoff
+        const delay = Math.min(60_000 * 2 ** this.reconnectAttempts, 900_000); // max 15 min
         if (Date.now() - this.lastActivityAt > delay) {
           logger.info(
-            { attempt: this.reconnectAttempts + 1 },
-            'Slack disconnected, attempting reconnect',
+            { attempt: this.reconnectAttempts + 1, delaySec: delay / 1000 },
+            'Slack disconnected, recreating App',
           );
-          await this.reconnect();
+          await this.recreateApp();
         }
         return;
       }
-      // Check WebSocket staleness: if no inbound events for 5 min,
-      // the WebSocket is likely dead even though auth.test() (HTTP) passes.
+      // Check WebSocket staleness. @slack/socket-mode handles normal drops
+      // via built-in ping/pong + auto-reconnect. If no events for 15 min,
+      // the library's reconnect has silently failed — nuclear recreate.
       const staleDuration = Date.now() - this.lastActivityAt;
-      if (staleDuration > SlackChannel.STALE_THRESHOLD_MS) {
+      if (staleDuration > SlackChannel.NUCLEAR_THRESHOLD_MS) {
         logger.warn(
           { staleSec: Math.round(staleDuration / 1000) },
-          'Slack WebSocket stale (no events), forcing reconnect',
+          'Slack WebSocket stale (no events for 15 min), recreating App',
         );
-        await this.reconnect();
+        await this.recreateApp();
         return;
       }
+      // Periodic HTTP sanity check — only resets reconnectAttempts counter.
+      // Does NOT trigger reconnect on failure (stale check handles that).
       try {
         await this.app.client.auth.test();
         this.reconnectAttempts = 0;
       } catch (err) {
-        logger.warn({ err }, 'Slack health check failed, reconnecting');
-        await this.reconnect();
+        logger.warn(
+          { err },
+          'Slack auth.test() failed — will recreate if stale',
+        );
       }
     }, 60_000);
   }
 
-  private async reconnect(): Promise<void> {
+  /**
+   * Nuclear fallback: destroy the current App and create a fresh one.
+   * This avoids the stop/start race in @slack/socket-mode where the old
+   * WebSocket's deferred close event fires after start() resets state,
+   * creating zombie connections that poison the socket pool.
+   */
+  private async recreateApp(): Promise<void> {
+    logger.warn('Slack: recreating App instance (nuclear fallback)');
     this.connected = false;
+
+    // Stop old app — best effort with timeout so we don't hang forever
     try {
-      await this.app.stop();
+      await Promise.race([
+        this.app.stop(),
+        new Promise((r) => setTimeout(r, 5000)),
+      ]);
     } catch (err) {
-      logger.warn({ err }, 'Slack stop failed during reconnect');
+      logger.warn({ err }, 'Slack: old app stop failed during recreate');
     }
-    // Give Slack time to release the WebSocket before reconnecting
-    await new Promise((r) => setTimeout(r, 3000));
+
+    // Read tokens fresh from .env (may have been rotated)
+    const env = readEnvFile(['SLACK_BOT_TOKEN', 'SLACK_APP_TOKEN']);
+    if (!env.SLACK_BOT_TOKEN || !env.SLACK_APP_TOKEN) {
+      logger.error('Slack: cannot recreate — tokens missing from .env');
+      this.reconnectAttempts++;
+      return;
+    }
+
+    this.botToken = env.SLACK_BOT_TOKEN;
+    this.app = new App({
+      token: this.botToken,
+      appToken: env.SLACK_APP_TOKEN,
+      socketMode: true,
+      logLevel: LogLevel.ERROR,
+    });
+
+    this.app.error(async (error) => {
+      logger.warn(
+        { err: error },
+        'Slack app error (library will auto-reconnect)',
+      );
+    });
+
+    this.setupEventHandlers();
+
     try {
       await this.app.start();
       const auth = await this.app.client.auth.test();
@@ -310,18 +350,16 @@ export class SlackChannel implements Channel {
       this.lastActivityAt = Date.now();
       this.connected = true;
       this.reconnectAttempts = 0;
-      logger.info('Slack reconnected successfully');
+      logger.info(
+        { botUserId: this.botUserId },
+        'Slack: recreated App successfully',
+      );
       await this.flushOutgoingQueue();
     } catch (err) {
       this.reconnectAttempts++;
-      const nextDelay = Math.min(3000 * 2 ** this.reconnectAttempts, 300_000);
       logger.error(
-        {
-          err,
-          attempt: this.reconnectAttempts,
-          nextDelaySec: nextDelay / 1000,
-        },
-        'Slack reconnect failed, will retry',
+        { err, attempt: this.reconnectAttempts },
+        'Slack: recreateApp failed, will retry',
       );
     }
   }

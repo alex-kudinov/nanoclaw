@@ -17,7 +17,3 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 ### Lesson 3: Client requirements for mentor coaching vs group mentoring vs supervision
 **Problem:** An agent incorrectly told a lead that coaching clients are not needed for mentoring or supervision. This is wrong for individual mentor coaching and supervision.
 **Rule:** Individual mentor coaching and supervision both require the coach to have actual coaching clients. Supervision is reflective practice about your actual work as a coach with actual clients. Individual mentor coaching involves getting feedback on your real coaching sessions. Group mentoring is different — it is live coaching practice in a classroom setting where participants coach peers and receive feedback to develop at their target certification level. When a lead asks whether they need clients, clarify: you DO need clients for individual mentor coaching and for supervision, but group mentoring uses peer practice in the classroom.
-
-### Lesson 4: Untitled
-**Problem:** ACTC inquiry from Luna Tovaglieri — she requested a call and was incorrectly directed to /contact-us instead of the booking calendar
-**Rule:** The /contact-us page is the contact form where leads submit inquiries — sending them back there is counterproductive. For booking a consultation call, use the direct booking link: https://booking.tandemcoach.co/booking?t=s&uuid=6bfbbeab-eaa1-4a3f-b5a7-a05546bad443. This is the calendar link for scheduling calls with Cherie/team.

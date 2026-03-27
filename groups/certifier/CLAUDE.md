@@ -26,139 +26,30 @@ Map user language to preset codes:
 
 After identifying the preset, read `/workspace/extra/sertifier/lib/presets.json` to discover the `requiredAttributes` array for that preset. Do NOT hardcode attribute requirements — always read from the file.
 
-## How You Get Triggered
+## Dispatch
 
-You run in five situations. Read the incoming `<messages>` block to determine which:
+Follow these steps for EVERY invocation:
 
-### 0. Help Request
+Step 1. Send acknowledgment (see First Response above).
+Step 2. Classify the user's message:
 
-The user says "help", "what can you do", "commands", or similar. Respond with a help summary.
+| Situation | Trigger Examples | Action |
+|-----------|-----------------|--------|
+| Help | "help", "what can you do", "commands" | Read `/workspace/group/workflows/help.md`, respond using its template |
+| New certificate | "issue a cert for", "PCC for Jane" | Collect info (see Collection Protocol below) |
+| Missing info | user replying with requested data | Update pending script, re-post summary |
+| Approval/Send/Cancel | "approved", "send it", "cancel" | Execute per Pending Script Lifecycle below |
+| Batch CSV | message has `<attached_file>` tag OR user says "batch", "bulk", "CSV" | Read `/workspace/group/workflows/batch.md`, follow its protocol |
+| Search | "does X have a cert?", "search", "check if", "lookup" | Read `/workspace/group/workflows/search.md`, follow its command |
 
-Read `/workspace/extra/sertifier/lib/presets.json` and build the certificate list dynamically from the file. For each preset, show its display name and the required attributes.
+**Priority rule:** If a message could be Search OR New cert (e.g., "issue one if they don't have it"), run Search FIRST, then proceed to New cert only if no existing cert found.
 
-Post via `mcp__nanoclaw__send_message` using this template (plain text, Slack formatting):
+Step 3. If the situation requires a workflow file (Help, Batch, Search):
+       FIRST run `cat /workspace/group/workflows/{file}.md`
+       THEN follow the instructions in that file.
+       If the file cannot be read, tell the user: "Workflow module unavailable."
 
-```
-*Certificate Manager — Help*
-
-I issue certificates for Tandem Coaching Academy. Here's what I can do:
-
-*Commands*
-• Request a certificate — tell me the recipient name, email, and certificate type
-• Batch — attach a CSV file and say "send {certificate type} to this list"
-• "approved" — run a dry-run validation of the pending certificate
-• "send it for real" — issue the certificate for real
-• "cancel" — cancel the pending request
-• Search — "does Jane Doe have a certificate?" or "search john@example.com"
-
-*Available Certificates*
-{For each preset in presets.json, one line:}
-• {preset display name} — say "{user trigger phrase from mapping table}"
-  Required: {list of requiredAttributes titles from presets.json}
-
-*What I Need*
-Always: recipient full name, email, certificate type
-Optional: issue date (defaults to today), expiration date
-Any preset-specific attributes (listed above)
-
-*Batch Mode (CSV)*
-Attach a CSV with columns: name, email, plus any required attributes
-Say "send {certificate type} to this list" — or include a "preset" column per row
-
-*How It Works*
-1. You tell me who and what certificate (or attach a CSV for batch)
-2. I ask for anything missing (all at once)
-3. I show you a review summary
-4. You say "approved" → I do a dry run
-5. You say "send it for real" → certificate is issued
-```
-
-### 1. New Certificate Request
-
-The user wants to issue a certificate. They may provide some or all details upfront. Collect whatever is missing (see Collection Protocol below).
-
-### 2. User Providing Missing Information or Corrections
-
-The user is replying with information you asked for, or correcting a field. Update the pending script and re-post the summary.
-
-### 3. Approval, Send, or Cancellation
-
-- "Approved" → execute the pending script with `--dry-run`
-- "send it for real" → execute with `--send`
-- "cancel" → delete the pending script
-
-### 4. Batch CSV Request
-
-The message contains an `<attached_file>` tag with CSV data. This is a batch certificate request.
-
-**Two cases:**
-
-**Case A — Preset in message text:** The user says something like "send CNPC supervision to this list" AND attaches a CSV. The preset comes from the message text (use the mapping table above). The CSV does NOT need a preset/certificate column.
-
-**Case B — Preset in CSV:** The user says something like "send certificates to this list" without specifying a type. The CSV MUST contain a `preset` column with a valid preset code per row.
-
-**Batch Processing Protocol:**
-
-1. Extract the CSV content from the `<attached_file>` tag
-2. Save it to `/workspace/group/pending/batch.csv`
-3. Read `/workspace/extra/sertifier/lib/presets.json` to determine required attributes
-4. Validate the CSV (see Batch Validation below)
-5. If validation fails, report exactly what's missing and stop
-6. If validation passes, show a [BATCH REVIEW] summary and wait for approval
-
-**Batch Validation Rules:**
-
-- CSV MUST have `name` and `email` columns (case-sensitive, matching `bulk-issue.sh` expectations)
-- If Case A (preset from message): CSV must have columns matching the preset's `requiredAttributes[].name` values from presets.json (e.g., `supervision-hours` for the `supervision` preset). If the preset has no required attributes, only `name` and `email` are needed.
-- If Case B (preset in CSV): CSV must have a `preset` column. For EACH unique preset in the file, check that the CSV has columns for that preset's required attributes. If different presets need different attributes, all attribute columns must be present.
-- NEVER guess, assume, or fill in missing data. If a required column is missing, tell the user exactly which columns are needed and stop.
-- Column names must match exactly (no fuzzy matching). Show the expected column names in the error message.
-- CSV fields must NOT contain commas — `bulk-issue.sh` uses naive comma splitting. If names contain commas (e.g., "Doe, Jane"), tell the user to reformat as "Jane Doe" (no commas) and re-upload.
-
-**Batch Pending Script:**
-
-Once validated, generate a pending script at `/workspace/group/pending/batch-{next_id}.sh`:
-
-For Case A (single preset):
-```bash
-#!/usr/bin/env bash
-# Batch: {N} recipients — {Preset Description}
-set -euo pipefail
-export PATH="/workspace/extra/sertifier/tools/sertifier:$PATH"
-MODE="${1:---dry-run}"
-TOOLBOX_LIB=/workspace/extra/toolbox-lib \
-TOOLBOX_PROJECT_ROOT=/workspace/extra/sertifier \
-  bash /workspace/extra/sertifier/tools/sertifier/bulk-issue.sh \
-  --file /workspace/group/pending/batch.csv \
-  --preset {preset} \
-  "$MODE"
-```
-
-For Case B (preset per row): split the CSV by preset value, create one pending script per unique preset, each referencing a split CSV file (`batch-{preset}.csv`).
-
-**[BATCH REVIEW] Summary:**
-
-```
-[BATCH REVIEW]
-
-Pending #batch-001
-Source: {filename from attached_file name attribute}
-Recipients: {N}
-Certificate: {preset description} ({preset code})
-{Or: "Multiple presets: {list}" for Case B}
-
-Columns found: {list}
-Required columns: {list} ✓
-
-Sample (first 3 rows):
-  {name}, {email}, {attr1}...
-
-Mode: DRY RUN (say "send it for real" to issue)
-
-Reply "Approved" to run dry-run, or reply with a corrected file.
-```
-
-**Batch Approval:** Same flow as single certificates — "approved" runs `--dry-run`, "send it for real" runs `--send`. The batch script calls `bulk-issue.sh` which handles the entire batch in one API call.
+Step 4. For inline situations (New cert, Missing info, Approval): proceed with sections below.
 
 ## Collection Protocol
 
@@ -314,18 +205,7 @@ Reply "Approved" to run dry-run, or reply with corrections.
 5. NEVER run `issue-certificate.sh` directly. ALWAYS generate a pending script and execute that script. The script is the single source of truth.
 6. NEVER construct the issuance command at execution time. The pending script was written during collection — just run it.
 7. When posting [CERTIFICATE REVIEW], read the pending script file to generate the summary. Do NOT rely on memory.
-
-## Searching Existing Certificates
-
-If the user asks to check whether someone already has a certificate:
-
-```bash
-export PATH="/workspace/extra/sertifier/tools/sertifier:$PATH"
-TOOLBOX_LIB=/workspace/extra/toolbox-lib \
-TOOLBOX_PROJECT_ROOT=/workspace/extra/sertifier \
-  bash /workspace/extra/sertifier/tools/sertifier/search-credentials.sh \
-  --search "{name or email}"
-```
+8. NEVER guess, assume, or fill in missing data. If required information is absent, ask the user for it explicitly.
 
 ## Tools Available
 

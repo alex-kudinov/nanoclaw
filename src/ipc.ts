@@ -1,3 +1,4 @@
+import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -48,6 +49,38 @@ export interface IpcDeps {
 }
 
 let ipcWatcherRunning = false;
+
+/**
+ * Spawn merge-lessons.sh as a detached background process.
+ * Called after both handleLearnLesson and handleRouteLesson to
+ * merge lessons into KNOWLEDGE.md. The script uses a lock file
+ * to prevent concurrent runs.
+ */
+function spawnMergeLessons(): void {
+  const scriptPath = path.resolve('tools/merge-lessons.sh');
+  if (!fs.existsSync(scriptPath)) {
+    logger.warn('merge-lessons.sh not found, skipping merge');
+    return;
+  }
+  try {
+    const logPath = path.resolve('knowledge/shared/merge.log');
+    const logFd = fs.openSync(logPath, 'a');
+    const child = spawn(scriptPath, [], {
+      detached: true,
+      stdio: ['ignore', logFd, logFd],
+      env: {
+        ...process.env,
+        PATH: '/opt/homebrew/bin:' + (process.env.PATH || ''),
+      },
+      cwd: process.cwd(),
+    });
+    child.unref();
+    fs.closeSync(logFd);
+    logger.info({ pid: child.pid }, 'merge-lessons.sh spawned');
+  } catch (err) {
+    logger.error({ err }, 'Failed to spawn merge-lessons.sh');
+  }
+}
 
 export function startIpcWatcher(deps: IpcDeps): void {
   if (ipcWatcherRunning) {
@@ -197,6 +230,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   ...data,
                   groupFolder: sourceGroup,
                 } as LearnLessonPayload);
+                spawnMergeLessons();
               } else if (isRouteLessonType(data.type)) {
                 // Knowledge management: chief routes lessons to target agents
                 fs.unlinkSync(filePath);
@@ -210,6 +244,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     ...data,
                     groupFolder: sourceGroup,
                   } as RouteLessonPayload);
+                  spawnMergeLessons();
                 }
               } else {
                 // Unknown type — delete to prevent infinite reprocessing

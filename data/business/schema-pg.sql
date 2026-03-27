@@ -21,9 +21,14 @@ CREATE TABLE IF NOT EXISTS leads (
   company     TEXT,
   message     TEXT,
   assigned_to TEXT,
+  follow_up_count INTEGER NOT NULL DEFAULT 0,
+  last_contact_at TIMESTAMPTZ,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS leads_status_last_contact_idx ON leads(status, last_contact_at);
+CREATE INDEX IF NOT EXISTS leads_email_idx ON leads(email);
 
 CREATE TRIGGER leads_updated BEFORE UPDATE ON leads
   FOR EACH ROW EXECUTE FUNCTION update_timestamp();
@@ -135,3 +140,10 @@ CREATE TABLE IF NOT EXISTS tasks (
 
 CREATE TRIGGER tasks_updated BEFORE UPDATE ON tasks
   FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- Roles
+-- nanoclaw_inbox:    INSERT on leads
+-- nanoclaw_sales:    SELECT, UPDATE on leads + proposals
+-- nanoclaw_mailman:  SELECT on leads, UPDATE(status, last_contact_at, follow_up_count) on leads
+-- nanoclaw_chief:    SELECT on all tables
+-- nanoclaw_admin:    Full access (DDL + DML)
