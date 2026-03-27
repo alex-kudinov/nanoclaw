@@ -15,21 +15,23 @@ export TOOLBOX_HOME="$HOME/dev/toolbox"
 export TOOLBOX_LIB="$TOOLBOX_HOME/lib"
 PUSHOVER_SEND="$TOOLBOX_HOME/shared/pushover/tools/pushover/send-message.sh"
 
-# Load env + map .env.shared names to TOOLBOX_ prefix for toolbox tools
-set -a; source "$HOME/dev/.env.shared" 2>/dev/null; set +a
+# Load env — NanoClaw .env first (has HEARTBEAT_JID), then .env.shared (has Pushover keys)
+set -a; source "$PROJECT_ROOT/.env" 2>/dev/null; source "$HOME/dev/.env.shared" 2>/dev/null; set +a
 export TOOLBOX_PUSHOVER_APP_TOKEN="${TOOLBOX_PUSHOVER_APP_TOKEN:-${PUSHOVER_APP_TOKEN:-}}"
 export TOOLBOX_PUSHOVER_USER_KEY="${TOOLBOX_PUSHOVER_USER_KEY:-${PUSHOVER_USER_KEY:-}}"
 HEARTBEAT_JID="${HEARTBEAT_JID:-}"
 
 # Prevent concurrent execution (macOS has no flock — use mkdir atomic lock)
 LOCK_DIR="$STATE_FILE.lock"
-cleanup_lock() { rmdir "$LOCK_DIR" 2>/dev/null; }
+cleanup_lock() { rm -rf "$LOCK_DIR" 2>/dev/null; }
+# Clean up stale file-type lock (bug: something created a file instead of dir)
+[[ -f "$LOCK_DIR" ]] && rm -f "$LOCK_DIR"
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
   # Check if lock is stale (older than 5 min = previous run crashed)
   if [[ -d "$LOCK_DIR" ]]; then
     lock_age=$(( $(date +%s) - $(stat -f %m "$LOCK_DIR") ))
     if (( lock_age > 300 )); then
-      rmdir "$LOCK_DIR" 2>/dev/null; mkdir "$LOCK_DIR" 2>/dev/null
+      rm -rf "$LOCK_DIR" 2>/dev/null; mkdir "$LOCK_DIR" 2>/dev/null
     else
       echo "$(date -Iseconds) Another watchdog running, exiting"; exit 0
     fi
@@ -243,6 +245,7 @@ fi
 if $needs_restart || (( consecutive_failures >= 3 )); then
   [[ -z "$restart_reason" ]] && restart_reason="Consecutive failures: $consecutive_failures"
   do_restart "$restart_reason"
+  consecutive_failures=0  # sync in-memory with state file (do_restart writes 0 on success)
 elif (( consecutive_failures == failures_at_start )); then
   # No new failures this run — all checks passed, reset counter
   consecutive_failures=0
