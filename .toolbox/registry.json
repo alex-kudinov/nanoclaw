@@ -1,0 +1,347 @@
+{
+  "version": "1",
+  "project": "nanoclaw",
+  "categories": {
+    "ssh": {
+      "description": "Remote server management via SSH",
+      "tools": {
+        "connect": {
+          "description": "Test SSH connectivity to the remote host",
+          "script": "tools/ssh/connect.sh",
+          "args": [],
+          "examples": [
+            "tool run ssh/connect"
+          ]
+        },
+        "disconnect": {
+          "description": "Kill SSH ControlMaster connection",
+          "script": "tools/ssh/disconnect.sh",
+          "args": [],
+          "examples": [
+            "tool run ssh/disconnect"
+          ]
+        },
+        "list-connections": {
+          "description": "List active SSH ControlMaster connections",
+          "script": "tools/ssh/list-connections.sh",
+          "args": [],
+          "examples": [
+            "tool run ssh/list-connections"
+          ]
+        },
+        "exec": {
+          "description": "Execute a command on the remote host via SSH",
+          "script": "tools/ssh/exec.sh",
+          "args": [
+            {
+              "name": "cmd",
+              "type": "string",
+              "required": true,
+              "description": "Command to execute remotely"
+            },
+            {
+              "name": "unsafe",
+              "type": "boolean",
+              "required": false,
+              "default": false,
+              "description": "Allow shell metacharacters (dangerous)"
+            }
+          ],
+          "examples": [
+            "tool run ssh/exec --cmd 'ls -la'",
+            "tool run ssh/exec --cmd 'hostname'"
+          ]
+        },
+        "system-info": {
+          "description": "Gather system info (hostname, uname, uptime, disk, memory)",
+          "script": "tools/ssh/system-info.sh",
+          "args": [],
+          "examples": [
+            "tool run ssh/system-info"
+          ]
+        },
+        "sftp-ls": {
+          "description": "List files in a remote directory",
+          "script": "tools/ssh/sftp-ls.sh",
+          "args": [
+            {
+              "name": "path",
+              "type": "string",
+              "required": false,
+              "default": "~",
+              "description": "Remote directory path"
+            }
+          ],
+          "examples": [
+            "tool run ssh/sftp-ls",
+            "tool run ssh/sftp-ls --path /var/log"
+          ]
+        },
+        "sftp-read": {
+          "description": "Read contents of a remote file",
+          "script": "tools/ssh/sftp-read.sh",
+          "args": [
+            {
+              "name": "path",
+              "type": "string",
+              "required": true,
+              "description": "Remote file path to read"
+            }
+          ],
+          "examples": [
+            "tool run ssh/sftp-read --path /etc/hostname"
+          ]
+        },
+        "sftp-write": {
+          "description": "Write content to a remote file",
+          "script": "tools/ssh/sftp-write.sh",
+          "args": [
+            {
+              "name": "path",
+              "type": "string",
+              "required": true,
+              "description": "Remote file path to write"
+            },
+            {
+              "name": "content",
+              "type": "string",
+              "required": true,
+              "description": "Content to write"
+            },
+            {
+              "name": "append",
+              "type": "boolean",
+              "required": false,
+              "default": false,
+              "description": "Append instead of overwrite"
+            }
+          ],
+          "examples": [
+            "tool run ssh/sftp-write --path /tmp/test.txt --content 'hello'"
+          ]
+        },
+        "sftp-mkdir": {
+          "description": "Create a directory on the remote host",
+          "script": "tools/ssh/sftp-mkdir.sh",
+          "args": [
+            {
+              "name": "path",
+              "type": "string",
+              "required": true,
+              "description": "Remote directory path to create"
+            },
+            {
+              "name": "parents",
+              "type": "boolean",
+              "required": false,
+              "default": false,
+              "description": "Create parent directories"
+            }
+          ],
+          "examples": [
+            "tool run ssh/sftp-mkdir --path /tmp/mydir"
+          ]
+        },
+        "sftp-rm": {
+          "description": "Remove a file on the remote host",
+          "script": "tools/ssh/sftp-rm.sh",
+          "args": [
+            {
+              "name": "path",
+              "type": "string",
+              "required": true,
+              "description": "Remote file path to remove"
+            },
+            {
+              "name": "recursive",
+              "type": "boolean",
+              "required": false,
+              "default": false,
+              "description": "Remove directories recursively"
+            }
+          ],
+          "examples": [
+            "tool run ssh/sftp-rm --path /tmp/test.txt"
+          ]
+        },
+        "sftp-mv": {
+          "description": "Move or rename a remote file",
+          "script": "tools/ssh/sftp-mv.sh",
+          "args": [
+            {
+              "name": "src",
+              "type": "string",
+              "required": true,
+              "description": "Source path"
+            },
+            {
+              "name": "dst",
+              "type": "string",
+              "required": true,
+              "description": "Destination path"
+            }
+          ],
+          "examples": [
+            "tool run ssh/sftp-mv --src /tmp/old.txt --dst /tmp/new.txt"
+          ]
+        },
+        "sftp-stat": {
+          "description": "Get file metadata for a remote path",
+          "script": "tools/ssh/sftp-stat.sh",
+          "args": [
+            {
+              "name": "path",
+              "type": "string",
+              "required": true,
+              "description": "Remote file path to stat"
+            }
+          ],
+          "examples": [
+            "tool run ssh/sftp-stat --path /etc/passwd"
+          ]
+        },
+        "sftp-info": {
+          "description": "Get disk usage info for a remote path",
+          "script": "tools/ssh/sftp-info.sh",
+          "args": [
+            {
+              "name": "path",
+              "type": "string",
+              "required": true,
+              "description": "Remote path to check"
+            }
+          ],
+          "examples": [
+            "tool run ssh/sftp-info --path /var"
+          ]
+        },
+        "keygen": {
+          "description": "Generate an SSH key pair",
+          "script": "tools/ssh/keygen.sh",
+          "args": [
+            {
+              "name": "name",
+              "type": "string",
+              "required": true,
+              "description": "Key file name (saved to ~/.ssh/)"
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "required": false,
+              "default": "ed25519",
+              "description": "Key type: ed25519 or rsa"
+            },
+            {
+              "name": "comment",
+              "type": "string",
+              "required": false,
+              "description": "Key comment"
+            }
+          ],
+          "examples": [
+            "tool run ssh/keygen --name myserver"
+          ]
+        },
+        "port-forward": {
+          "description": "Set up SSH port forwarding",
+          "script": "tools/ssh/port-forward.sh",
+          "args": [
+            {
+              "name": "local-port",
+              "type": "integer",
+              "required": true,
+              "description": "Local port number"
+            },
+            {
+              "name": "remote-port",
+              "type": "integer",
+              "required": true,
+              "description": "Remote port number"
+            },
+            {
+              "name": "reverse",
+              "type": "boolean",
+              "required": false,
+              "default": false,
+              "description": "Remote-to-local forwarding"
+            },
+            {
+              "name": "background",
+              "type": "boolean",
+              "required": false,
+              "default": false,
+              "description": "Run in background"
+            }
+          ],
+          "examples": [
+            "tool run ssh/port-forward --local-port 8080 --remote-port 80"
+          ]
+        }
+      }
+    }
+  },
+    "jobs": {
+      "description": "El Campanero — job scheduler management",
+      "tools": {
+        "list": {
+          "description": "Show all scheduled jobs with status, schedule, and last run",
+          "script": "tools/campanero.sh",
+          "args": [],
+          "positional_args": ["list"],
+          "examples": ["tool run jobs/list"]
+        },
+        "status": {
+          "description": "Detailed status for a specific job including recent runs",
+          "script": "tools/campanero.sh",
+          "args": [
+            {"name": "name", "type": "string", "required": true, "description": "Job name"}
+          ],
+          "positional_args": ["status"],
+          "examples": ["tool run jobs/status --name weekly-data-refresh"]
+        },
+        "pause": {
+          "description": "Disable a job (stops cron scheduling)",
+          "script": "tools/campanero.sh",
+          "args": [
+            {"name": "name", "type": "string", "required": true, "description": "Job name to pause"}
+          ],
+          "positional_args": ["pause"],
+          "examples": ["tool run jobs/pause --name newsletter-curation"]
+        },
+        "resume": {
+          "description": "Re-enable a paused job",
+          "script": "tools/campanero.sh",
+          "args": [
+            {"name": "name", "type": "string", "required": true, "description": "Job name to resume"}
+          ],
+          "positional_args": ["resume"],
+          "examples": ["tool run jobs/resume --name newsletter-curation"]
+        },
+        "run": {
+          "description": "Trigger a job to run immediately via webhook",
+          "script": "tools/campanero.sh",
+          "args": [
+            {"name": "name", "type": "string", "required": true, "description": "Job name to trigger"}
+          ],
+          "positional_args": ["run"],
+          "examples": ["tool run jobs/run --name calendar-refresh"]
+        },
+        "logs": {
+          "description": "Show run log history for a job",
+          "script": "tools/campanero.sh",
+          "args": [
+            {"name": "name", "type": "string", "required": true, "description": "Job name"},
+            {"name": "limit", "type": "integer", "required": false, "default": 10, "description": "Number of log entries"}
+          ],
+          "positional_args": ["logs"],
+          "examples": ["tool run jobs/logs --name weekly-data-refresh --limit 5"]
+        }
+      }
+    }
+  },
+  "include_shared": [
+    "things",
+    "claude"
+  ]
+}

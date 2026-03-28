@@ -219,6 +219,15 @@ function createSchema(database: Database.Database): void {
   } catch {
     /* columns already exist */
   }
+
+  // Add run_interval_days column to jobs table (migration for existing DBs)
+  try {
+    database.exec(
+      `ALTER TABLE jobs ADD COLUMN run_interval_days INTEGER`,
+    );
+  } catch {
+    /* column already exists */
+  }
 }
 
 export function initDatabase(): void {
