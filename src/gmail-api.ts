@@ -7,6 +7,7 @@ import { gmail_v1 } from 'googleapis';
 
 import {
   GMAIL_BCC,
+  GMAIL_LABEL,
   GMAIL_MONITORED_EMAIL,
   GMAIL_REPLY_TO,
   GMAIL_SEND_AS,
@@ -21,6 +22,37 @@ import { logger } from './logger.js';
 
 /** Strip CR/LF to prevent header injection in RFC 2822 fields. */
 const sanitizeHeader = (s: string): string => s.replace(/[\r\n]/g, '');
+
+/** Cached label ID for GMAIL_LABEL (resolved once per process). */
+let cachedLabelId: string | null = null;
+
+/** Apply the MrGru label to a sent message so replies route back to us. */
+async function applyLabel(
+  gmail: gmail_v1.Gmail,
+  messageId: string,
+): Promise<void> {
+  if (!GMAIL_LABEL) return;
+  try {
+    if (!cachedLabelId) {
+      const res = await gmail.users.labels.list({ userId: 'me' });
+      const match = (res.data.labels || []).find(
+        (l) => l.name?.toLowerCase() === GMAIL_LABEL.toLowerCase(),
+      );
+      cachedLabelId = match?.id || null;
+    }
+    if (!cachedLabelId) {
+      logger.warn({ label: GMAIL_LABEL }, 'Gmail label not found, skipping');
+      return;
+    }
+    await gmail.users.messages.modify({
+      userId: 'me',
+      id: messageId,
+      requestBody: { addLabelIds: [cachedLabelId] },
+    });
+  } catch (err) {
+    logger.warn({ messageId, err }, 'Failed to apply label to sent message');
+  }
+}
 
 /** Build an RFC 2822 message and base64url-encode it. */
 export function buildRawMessage(opts: {
@@ -75,11 +107,14 @@ export async function sendEmail(opts: {
     requestBody: { raw },
   });
 
+  const sentId = res.data.id || '';
+  await applyLabel(gmail, sentId);
+
   logger.info(
-    { to: opts.to, subject: opts.subject, messageId: res.data.id },
+    { to: opts.to, subject: opts.subject, messageId: sentId },
     'Gmail: email sent',
   );
-  return res.data.id || '';
+  return sentId;
 }
 
 /** Reply to an existing thread. Returns the sent message ID. */
@@ -135,11 +170,14 @@ export async function replyToThread(opts: {
     requestBody: { raw, threadId: opts.threadId },
   });
 
+  const sentId = res.data.id || '';
+  await applyLabel(gmail, sentId);
+
   logger.info(
-    { threadId: opts.threadId, to, messageId: res.data.id },
+    { threadId: opts.threadId, to, messageId: sentId },
     'Gmail: reply sent',
   );
-  return res.data.id || '';
+  return sentId;
 }
 
 /** Search emails. Returns formatted results for agent consumption. */
