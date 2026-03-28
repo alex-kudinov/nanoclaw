@@ -269,6 +269,11 @@ async function processGroupMessages(
         }
         // Only reset idle timer on actual results, not session-update markers (result: null)
         resetIdleTimer();
+      } else {
+        // Null result = agent finished query, now idle.
+        // Notify queue so pending tasks can preempt immediately
+        // instead of waiting for the full idle timeout.
+        queue.notifyIdle(compositeKey);
       }
 
       if (result.status === 'error') {
