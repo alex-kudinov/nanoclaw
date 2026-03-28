@@ -98,12 +98,16 @@ Body:
 
 4. **Send the email.** Choose the correct tool based on whether a `Thread-ID` is present:
 
+   **Always include `lead_id` and `email_type`** in both `gmail_send` and `gmail_reply` calls. The `lead_id` is the numeric Lead ID from the handoff. The `email_type` is `"initial"` for first sends, `"follow-up"` for follow-ups, or `"reply"` for replies to lead responses. These enable email open tracking.
+
    **With Thread-ID** (reply to existing conversation) — use `gmail_reply`:
    ```
    mcp__nanoclaw__gmail_reply({
      thread_id: "{Thread-ID value}",
      body: "{html body}",
-     html: true
+     html: true,
+     lead_id: {lead_id_number},
+     email_type: "reply"
    })
    ```
    This threads the email in Gmail (proper In-Reply-To/References headers, same thread). Subject and recipient are derived from the thread automatically — you do NOT need to pass them.
@@ -114,7 +118,9 @@ Body:
      to: "{recipient email}",
      subject: "{subject}",
      body: "{html body}",
-     html: true
+     html: true,
+     lead_id: {lead_id_number},
+     email_type: "initial"
    })
    ```
 

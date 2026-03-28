@@ -408,6 +408,15 @@ When you receive `[HANDOFF: mailman→sales] [SOURCE: email-reply]`, the lead ha
 4. Use the initial `[SALES REVIEW]` format (not the follow-up format)
 5. Same approval flow as initial emails
 
+### Email Open Events
+
+When you receive `[EMAIL-OPENED]`:
+1. Note the engagement signal — the lead opened your email.
+2. Do NOT auto-send a follow-up. Opens are informational only.
+3. When composing follow-ups, use open data to inform tone:
+   - "Opens: 1" — they saw it, didn't engage. Try a different angle.
+   - "Opens: 3+" — strong interest, something's blocking them. Reduce friction.
+
 ### Follow-Up Voice
 
 Same rules as initial emails but shorter. No "just following up" or "checking in" — lead with value. Reference their specific question. The goal is to be useful, not persistent.

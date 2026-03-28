@@ -4,6 +4,7 @@
  * the host IPC watcher dispatches here.
  */
 
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
@@ -12,8 +13,9 @@ import {
   DATA_DIR,
   GMAIL_MONITORED_EMAIL,
   GMAIL_TEST_RECIPIENT,
+  TRACKING_DOMAIN,
 } from './config.js';
-import { storeMessageDirect } from './db.js';
+import { insertTrackingPixel, storeMessageDirect } from './db.js';
 import {
   replyToThread,
   sendEmail,
@@ -40,6 +42,9 @@ export interface GmailIpcPayload {
   maxResults?: number;
   // gmail_read
   messageId?: string;
+  // open tracking (gmail_send + gmail_reply)
+  leadId?: number;
+  emailType?: string;
 }
 
 const jid = `gmail:${GMAIL_MONITORED_EMAIL}`;
@@ -50,9 +55,25 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
     return;
   }
 
+  // Inject tracking pixel for HTML replies with lead context
+  let bodyForReply = data.body;
+  if (data.html && data.leadId) {
+    const trackingId = crypto.randomUUID();
+    try {
+      insertTrackingPixel(
+        trackingId,
+        data.leadId,
+        data.emailType || 'reply',
+      );
+      bodyForReply += `\n<img src="https://${TRACKING_DOMAIN}/t/${trackingId}" width="1" height="1" alt="" style="display:none">`;
+    } catch (err) {
+      logger.warn({ err, leadId: data.leadId }, 'Failed to insert tracking pixel, sending without');
+    }
+  }
+
   const sentId = await replyToThread({
     threadId: data.threadId,
-    body: data.body,
+    body: bodyForReply,
     html: data.html,
     cc: data.cc,
   });
@@ -63,7 +84,7 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
     chat_jid: jid,
     sender: GMAIL_MONITORED_EMAIL,
     sender_name: ASSISTANT_NAME,
-    content: data.body,
+    content: data.body, // original body without pixel
     timestamp: new Date().toISOString(),
     is_from_me: true,
     is_bot_message: true,
@@ -135,10 +156,26 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
 
   const { effectiveTo, effectiveCc, originalTo } = applyTestRouting(data);
 
+  // Inject tracking pixel for HTML emails with lead context
+  let bodyForSend = data.body;
+  if (data.html && data.leadId) {
+    const trackingId = crypto.randomUUID();
+    try {
+      insertTrackingPixel(
+        trackingId,
+        data.leadId,
+        data.emailType || 'initial',
+      );
+      bodyForSend += `\n<img src="https://${TRACKING_DOMAIN}/t/${trackingId}" width="1" height="1" alt="" style="display:none">`;
+    } catch (err) {
+      logger.warn({ err, leadId: data.leadId }, 'Failed to insert tracking pixel, sending without');
+    }
+  }
+
   const sentId = await sendEmail({
     to: effectiveTo,
     subject: data.subject,
-    body: data.body,
+    body: bodyForSend,
     cc: effectiveCc,
     html: data.html,
   });
@@ -147,7 +184,7 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
     sentId,
     originalTo,
     data.subject,
-    data.body,
+    data.body, // original body without pixel
     data.groupFolder,
   );
 

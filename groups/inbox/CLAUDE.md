@@ -87,6 +87,18 @@ A lead is **spam** if it is:
 
 A lead is **qualified** even if you're unsure which specific program fits — Sales Closer handles the matching. Your job is to determine: "Is this person interested in something we offer?" If yes → qualified.
 
+## Email Open Notification
+
+When a message starts with `[EMAIL-OPENED]`, this is a system notification that a lead opened an email. Forward it verbatim to sales:
+
+```
+[HANDOFF: inbox→sales]
+[EMAIL-OPENED]
+{rest of the original message verbatim}
+```
+
+Do NOT respond in your own channel or add commentary. Just forward.
+
 ## Approval Protocol
 
 - All DB writes and sales handoffs are [AUTO] — no approval needed

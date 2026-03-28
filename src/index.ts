@@ -55,6 +55,7 @@ import {
 import { GroupQueue } from './group-queue.js';
 import { startIpcWatcher } from './ipc.js';
 import { loadJobRegistry, watchJobRegistry } from './job-registry.js';
+import { handleEmailOpen as handleEmailOpenImpl } from './email-tracking.js';
 import { runJob } from './job-runner.js';
 import { writeJobsSnapshot } from './job-snapshot.js';
 import { WebhookServer } from './webhook-server.js';
@@ -566,6 +567,10 @@ function ensureContainerSystemRunning(): void {
 async function main(): Promise<void> {
   ensureContainerSystemRunning();
 
+  // Initialize DB before any handlers that use it (webhook server, IPC, etc.)
+  initDatabase();
+  logger.info('Database initialized');
+
   // Start webhook server — listens on all interfaces (including Tailscale)
   // for inbound trigger events from Tailscale-connected machines.
   const heartbeatPath = path.join(DATA_DIR, 'heartbeat.json');
@@ -618,35 +623,49 @@ async function main(): Promise<void> {
       const text = formatOutbound(rawText);
       if (text) await channel.sendMessage(jid, text, opts);
     },
-    ...(JOB_REPORT_CHANNEL ? {
-      getHostJob: (name: string) => getJob(name),
-      runHostJob: async (name: string, triggeredBy: string) => {
-        const job = getJob(name);
-        if (!job) {
-          throw new Error(`Job not found: ${name}`);
-        }
-        return runJob(job, triggeredBy, {
-          sendMessage: async (jid: string, text: string) => {
-            const ch = findChannel(channels, jid);
-            if (!ch) return;
-            const formatted = formatOutbound(text);
-            if (formatted) await ch.sendMessage(jid, formatted);
-          },
-          reportChannel: JOB_REPORT_CHANNEL,
-          writeJobsSnapshot: () => {
-            for (const [, group] of Object.entries(registeredGroups)) {
-              const ipcDir = path.join(DATA_DIR, 'ipc', group.folder);
-              writeJobsSnapshot(ipcDir);
+    ...(JOB_REPORT_CHANNEL
+      ? {
+          getHostJob: (name: string) => getJob(name),
+          runHostJob: async (name: string, triggeredBy: string) => {
+            const job = getJob(name);
+            if (!job) {
+              throw new Error(`Job not found: ${name}`);
             }
+            return runJob(job, triggeredBy, {
+              sendMessage: async (jid: string, text: string) => {
+                const ch = findChannel(channels, jid);
+                if (!ch) return;
+                const formatted = formatOutbound(text);
+                if (formatted) await ch.sendMessage(jid, formatted);
+              },
+              reportChannel: JOB_REPORT_CHANNEL,
+              writeJobsSnapshot: () => {
+                for (const [, group] of Object.entries(registeredGroups)) {
+                  const ipcDir = path.join(DATA_DIR, 'ipc', group.folder);
+                  writeJobsSnapshot(ipcDir);
+                }
+              },
+            });
           },
-        });
-      },
-    } : {}),
+        }
+      : {}),
+    handleEmailOpen: async (token: string, ua: string) => {
+      const sendToInbox = async (msg: string) => {
+        const inboxEntry = Object.entries(registeredGroups).find(
+          ([, g]) => g.folder === 'inbox',
+        );
+        if (!inboxEntry) {
+          logger.warn('No inbox group registered, cannot route email open');
+          return;
+        }
+        const ch = findChannel(channels, inboxEntry[0]);
+        if (!ch) return;
+        await ch.sendMessage(inboxEntry[0], msg);
+      };
+      await handleEmailOpenImpl(token, ua, sendToInbox);
+    },
   });
   await webhookServer.start();
-
-  initDatabase();
-  logger.info('Database initialized');
 
   // Clean up orphaned job runs from a previous crash
   const staleRuns = markStaleRunsAsFailed(60);
@@ -655,14 +674,24 @@ async function main(): Promise<void> {
       try {
         process.kill(stale.pid, 0); // check if alive
         process.kill(-stale.pid, 'SIGTERM'); // kill process group
-        logger.info({ pid: stale.pid, job: stale.job_name }, 'Killed orphaned job process');
-      } catch { /* process already dead */ }
+        logger.info(
+          { pid: stale.pid, job: stale.job_name },
+          'Killed orphaned job process',
+        );
+      } catch {
+        /* process already dead */
+      }
     }
     if (stale.lockfile) {
       try {
         fs.unlinkSync(stale.lockfile);
-        logger.info({ lockfile: stale.lockfile, job: stale.job_name }, 'Cleaned orphaned lockfile');
-      } catch { /* lockfile may not exist */ }
+        logger.info(
+          { lockfile: stale.lockfile, job: stale.job_name },
+          'Cleaned orphaned lockfile',
+        );
+      } catch {
+        /* lockfile may not exist */
+      }
     }
   }
 
@@ -809,17 +838,22 @@ async function main(): Promise<void> {
     }
   };
 
-  const hostJobDeps = JOB_REPORT_CHANNEL ? {
-    sendMessage: sendJobMessage,
-    reportChannel: JOB_REPORT_CHANNEL,
-    writeJobsSnapshot: doWriteJobsSnapshot,
-  } : undefined;
+  const hostJobDeps = JOB_REPORT_CHANNEL
+    ? {
+        sendMessage: sendJobMessage,
+        reportChannel: JOB_REPORT_CHANNEL,
+        writeJobsSnapshot: doWriteJobsSnapshot,
+      }
+    : undefined;
 
   // Load job registry (if jobs.json exists)
   if (fs.existsSync(JOBS_FILE)) {
     const onJobDisabled = (jobName: string) => {
       if (JOB_REPORT_CHANNEL) {
-        sendJobMessage(JOB_REPORT_CHANNEL, `:no_entry_sign: Job *${jobName}* disabled - removed from registry`).catch(() => {});
+        sendJobMessage(
+          JOB_REPORT_CHANNEL,
+          `:no_entry_sign: Job *${jobName}* disabled - removed from registry`,
+        ).catch(() => {});
       }
     };
     loadJobRegistry(JOBS_FILE, onJobDisabled);
@@ -828,22 +862,27 @@ async function main(): Promise<void> {
   }
 
   // Start subsystems (independently of connection handler)
-  startSchedulerLoop({
-    registeredGroups: () => registeredGroups,
-    getSessions: () => sessions,
-    queue,
-    onProcess: (groupJid, proc, containerName, groupFolder) =>
-      queue.registerProcess(groupJid, proc, containerName, groupFolder),
-    sendMessage: async (jid, rawText, opts) => {
-      const channel = findChannel(channels, jid);
-      if (!channel) {
-        console.log(`Warning: no channel owns JID ${jid}, cannot send message`);
-        return;
-      }
-      const text = formatOutbound(rawText);
-      if (text) await channel.sendMessage(jid, text, opts);
+  startSchedulerLoop(
+    {
+      registeredGroups: () => registeredGroups,
+      getSessions: () => sessions,
+      queue,
+      onProcess: (groupJid, proc, containerName, groupFolder) =>
+        queue.registerProcess(groupJid, proc, containerName, groupFolder),
+      sendMessage: async (jid, rawText, opts) => {
+        const channel = findChannel(channels, jid);
+        if (!channel) {
+          console.log(
+            `Warning: no channel owns JID ${jid}, cannot send message`,
+          );
+          return;
+        }
+        const text = formatOutbound(rawText);
+        if (text) await channel.sendMessage(jid, text, opts);
+      },
     },
-  }, hostJobDeps);
+    hostJobDeps,
+  );
   startIpcWatcher({
     sendMessage: (jid, text, opts) => {
       const channel = findChannel(channels, jid);
@@ -865,20 +904,26 @@ async function main(): Promise<void> {
     addWebhook: (def) => webhookServer.addWebhook(def),
     removeWebhook: (id) => webhookServer.removeWebhook(id),
     listWebhooks: () => webhookServer.listWebhooks(),
-    ...(JOB_REPORT_CHANNEL ? {
-      runHostJob: async (name: string, triggeredBy: string): Promise<void> => {
-        const job = getJob(name);
-        if (!job) return;
-        runJob(job, triggeredBy, {
-          sendMessage: sendJobMessage,
-          reportChannel: JOB_REPORT_CHANNEL,
-          writeJobsSnapshot: doWriteJobsSnapshot,
-        }).catch((err) => {
-          logger.error({ err, job: name }, 'IPC job run failed');
-        });
-      },
-      setJobEnabled: (name: string, enabled: boolean) => setJobEnabled(name, enabled),
-    } : {}),
+    ...(JOB_REPORT_CHANNEL
+      ? {
+          runHostJob: async (
+            name: string,
+            triggeredBy: string,
+          ): Promise<void> => {
+            const job = getJob(name);
+            if (!job) return;
+            runJob(job, triggeredBy, {
+              sendMessage: sendJobMessage,
+              reportChannel: JOB_REPORT_CHANNEL,
+              writeJobsSnapshot: doWriteJobsSnapshot,
+            }).catch((err) => {
+              logger.error({ err, job: name }, 'IPC job run failed');
+            });
+          },
+          setJobEnabled: (name: string, enabled: boolean) =>
+            setJobEnabled(name, enabled),
+        }
+      : {}),
   });
   queue.setProcessMessagesFn(processGroupMessages);
   recoverPendingMessages();

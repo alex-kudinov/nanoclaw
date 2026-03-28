@@ -294,6 +294,8 @@ server.tool(
     body: z.string().describe('Reply body (plain text or HTML)'),
     html: z.boolean().optional().describe('Set to true when body contains HTML'),
     cc: z.string().optional().describe('CC recipients (comma-separated)'),
+    lead_id: z.number().optional().describe('Lead ID for open tracking'),
+    email_type: z.string().optional().describe('Email type: initial, follow-up, or reply'),
   },
   async (args) => {
     writeIpcFile(MESSAGES_DIR, {
@@ -302,6 +304,8 @@ server.tool(
       body: args.body,
       html: args.html || undefined,
       cc: args.cc || undefined,
+      leadId: args.lead_id,
+      emailType: args.email_type,
       groupFolder,
       timestamp: new Date().toISOString(),
     });
@@ -321,6 +325,8 @@ server.tool(
     body: z.string().describe('Email body (plain text or HTML)'),
     cc: z.string().optional().describe('CC recipients (comma-separated)'),
     html: z.boolean().optional().describe('Set to true when body contains HTML'),
+    lead_id: z.number().optional().describe('Lead ID for open tracking'),
+    email_type: z.string().optional().describe('Email type: initial, follow-up, or reply'),
   },
   async (args) => {
     writeIpcFile(MESSAGES_DIR, {
@@ -330,6 +336,8 @@ server.tool(
       body: args.body,
       cc: args.cc || undefined,
       html: args.html || undefined,
+      leadId: args.lead_id,
+      emailType: args.email_type,
       groupFolder,
       timestamp: new Date().toISOString(),
     });

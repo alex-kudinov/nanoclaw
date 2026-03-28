@@ -91,7 +91,8 @@ export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
 
 // Job scheduling
 export const JOBS_FILE = path.join(DATA_DIR, 'jobs.json');
-export const JOB_REPORT_CHANNEL = process.env.JOB_REPORT_CHANNEL || 'slack:C0APF8WMV18';
+export const JOB_REPORT_CHANNEL =
+  process.env.JOB_REPORT_CHANNEL || 'slack:C0APF8WMV18';
 
 // Gmail configuration
 const gmailEnv = readEnvFile([
@@ -131,3 +132,7 @@ export const GMAIL_REPLY_TO =
 // BCC all outbound emails to this address (empty string = disabled).
 export const GMAIL_BCC =
   process.env.GMAIL_BCC || gmailEnv.GMAIL_BCC || 'info@tandemcoach.co';
+
+// Tracking pixel domain for email open tracking.
+export const TRACKING_DOMAIN =
+  process.env.TRACKING_DOMAIN || 't.tandemcoach.co';

@@ -100,6 +100,7 @@ function createSchema(database: Database.Database): void {
       alert_level TEXT DEFAULT 'alert',
       timeout_ms INTEGER DEFAULT 5400000,
       lockfile TEXT,
+      run_interval_days INTEGER,
       enabled INTEGER DEFAULT 1,
       next_run TEXT,
       last_run TEXT,
@@ -127,6 +128,18 @@ function createSchema(database: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_job_run_logs_name ON job_run_logs(job_name, started_at);
     CREATE INDEX IF NOT EXISTS idx_job_run_logs_status ON job_run_logs(status);
+
+    CREATE TABLE IF NOT EXISTS email_tracking (
+      tracking_id TEXT PRIMARY KEY,
+      lead_id INTEGER NOT NULL,
+      email_type TEXT NOT NULL DEFAULT 'initial',
+      sent_at TEXT NOT NULL,
+      first_opened_at TEXT,
+      last_opened_at TEXT,
+      open_count INTEGER DEFAULT 0,
+      last_user_agent TEXT,
+      last_notified_at TEXT
+    );
   `);
 
   // Add context_mode column if it doesn't exist (migration for existing DBs)
@@ -756,8 +769,8 @@ export function getAllRegisteredGroups(): Record<string, RegisteredGroup> {
 export function upsertJobDefinition(def: JobDefinition): void {
   db.prepare(
     `
-    INSERT INTO jobs (name, description, project, project_root, script, args, cron, timezone, retries, retry_delay_ms, alert_level, timeout_ms, lockfile, enabled)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO jobs (name, description, project, project_root, script, args, cron, timezone, retries, retry_delay_ms, alert_level, timeout_ms, lockfile, run_interval_days, enabled)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(name) DO UPDATE SET
       description = excluded.description,
       project = excluded.project,
@@ -771,6 +784,7 @@ export function upsertJobDefinition(def: JobDefinition): void {
       alert_level = excluded.alert_level,
       timeout_ms = excluded.timeout_ms,
       lockfile = excluded.lockfile,
+      run_interval_days = excluded.run_interval_days,
       enabled = excluded.enabled
   `,
   ).run(
@@ -787,6 +801,7 @@ export function upsertJobDefinition(def: JobDefinition): void {
     def.alert_level,
     def.timeout_ms,
     def.lockfile,
+    def.run_interval_days,
     def.enabled ? 1 : 0,
   );
 }
@@ -846,7 +861,16 @@ export function getDueJobs(nowUtc: string): Job[] {
   `,
     )
     .all(nowUtc) as Record<string, unknown>[];
-  return rows.map(parseJobRow);
+  const jobs = rows.map(parseJobRow);
+
+  // Filter out jobs with run_interval_days where last_run is too recent
+  const nowMs = new Date(nowUtc).getTime();
+  return jobs.filter((job) => {
+    if (!job.run_interval_days || !job.last_run) return true;
+    const lastRunMs = new Date(job.last_run).getTime();
+    const intervalMs = job.run_interval_days * 86400000;
+    return nowMs - lastRunMs >= intervalMs;
+  });
 }
 
 export function setJobEnabled(name: string, enabled: boolean): void {
@@ -878,6 +902,7 @@ function parseJobRow(row: Record<string, unknown>): Job {
     alert_level: (row.alert_level as 'alert' | 'warn' | 'silent') || 'alert',
     timeout_ms: (row.timeout_ms as number) || 5400000,
     lockfile: (row.lockfile as string) || null,
+    run_interval_days: (row.run_interval_days as number) || null,
     enabled: (row.enabled as number) === 1,
     next_run: (row.next_run as string) || null,
     last_run: (row.last_run as string) || null,
@@ -1073,4 +1098,95 @@ function migrateJsonState(): void {
       }
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Email open tracking
+// ---------------------------------------------------------------------------
+
+export function insertTrackingPixel(
+  trackingId: string,
+  leadId: number,
+  emailType: string,
+): void {
+  db.prepare(
+    `INSERT INTO email_tracking (tracking_id, lead_id, email_type, sent_at)
+     VALUES (?, ?, ?, ?)`,
+  ).run(trackingId, leadId, emailType, new Date().toISOString());
+}
+
+export interface EmailOpenResult {
+  leadId: number;
+  emailType: string;
+  openCount: number;
+  firstOpenedAt: string;
+  shouldNotify: boolean;
+}
+
+export function recordEmailOpen(
+  trackingId: string,
+  userAgent: string,
+): EmailOpenResult | null {
+  const row = db
+    .prepare(
+      `SELECT lead_id, email_type, open_count, first_opened_at, last_notified_at
+       FROM email_tracking WHERE tracking_id = ?`,
+    )
+    .get(trackingId) as
+    | {
+        lead_id: number;
+        email_type: string;
+        open_count: number;
+        first_opened_at: string | null;
+        last_notified_at: string | null;
+      }
+    | undefined;
+
+  if (!row) return null;
+
+  const now = new Date().toISOString();
+  const prevCount = row.open_count;
+  const newCount = prevCount + 1;
+  const firstOpened = row.first_opened_at || now;
+  const ua = (userAgent || 'unknown').substring(0, 500);
+
+  // Throttle: decide whether to notify agents
+  let shouldNotify = false;
+  if (prevCount === 0) {
+    // First open — always notify
+    shouldNotify = true;
+  } else if (row.last_notified_at) {
+    const sinceLastNotify =
+      (Date.parse(now) - Date.parse(row.last_notified_at)) / 1000;
+    if (sinceLastNotify > 86400) {
+      // >24h since last notification
+      shouldNotify = true;
+    }
+  }
+  if (newCount === 3) {
+    // Multi-read signal
+    shouldNotify = true;
+  }
+
+  db.prepare(
+    `UPDATE email_tracking
+     SET first_opened_at = ?, last_opened_at = ?, open_count = ?,
+         last_user_agent = ?${shouldNotify ? ', last_notified_at = ?' : ''}
+     WHERE tracking_id = ?`,
+  ).run(
+    firstOpened,
+    now,
+    newCount,
+    ua,
+    ...(shouldNotify ? [now] : []),
+    trackingId,
+  );
+
+  return {
+    leadId: row.lead_id,
+    emailType: row.email_type,
+    openCount: newCount,
+    firstOpenedAt: firstOpened,
+    shouldNotify,
+  };
 }

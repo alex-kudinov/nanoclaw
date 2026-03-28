@@ -57,8 +57,12 @@ export interface WebhookServerDeps {
   runAgent: RunAgentFn;
   sendMessage: SendMessageFn;
   getHealth: () => HealthPayload;
-  runHostJob?: (name: string, triggeredBy: string) => Promise<import('./types.js').JobRunResult>;
+  runHostJob?: (
+    name: string,
+    triggeredBy: string,
+  ) => Promise<import('./types.js').JobRunResult>;
   getHostJob?: (name: string) => import('./types.js').Job | undefined;
+  handleEmailOpen?: (token: string, userAgent: string) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -251,6 +255,32 @@ export class WebhookServer {
       return;
     }
 
+    // GET /t/:token — tracking pixel for email opens
+    const trackMatch =
+      req.method === 'GET' && req.url?.match(/^\/t\/([a-zA-Z0-9_-]+)$/);
+    if (trackMatch) {
+      const token = trackMatch[1];
+      const pixel = Buffer.from(
+        'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+        'base64',
+      );
+      res.writeHead(200, {
+        'Content-Type': 'image/gif',
+        'Content-Length': String(pixel.length),
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      });
+      res.end(pixel);
+      if (this.deps.handleEmailOpen) {
+        const ua = (
+          (req.headers['user-agent'] as string) || 'unknown'
+        ).substring(0, 500);
+        this.deps.handleEmailOpen(token, ua).catch((err) =>
+          logger.warn({ err, token }, 'Email open handler failed'),
+        );
+      }
+      return;
+    }
+
     // GET /hooks — list all webhooks (admin, guarded by global secret)
     if (req.method === 'GET' && req.url === '/hooks') {
       if (this.deps.globalSecret) {
@@ -267,7 +297,8 @@ export class WebhookServer {
     }
 
     // Job trigger endpoint: POST /api/job/:name
-    const jobMatch = req.method === 'POST' && req.url?.match(/^\/api\/job\/([^/?]+)/);
+    const jobMatch =
+      req.method === 'POST' && req.url?.match(/^\/api\/job\/([^/?]+)/);
     if (jobMatch) {
       // Auth check - same pattern as existing webhook auth
       const secret = req.headers['x-webhook-secret'] as string;
@@ -299,7 +330,11 @@ export class WebhookServer {
       }
 
       // Fire-and-forget with error handling
-      this.deps.runHostJob(jobName, `webhook:${req.headers['x-forwarded-for'] || 'unknown'}`)
+      this.deps
+        .runHostJob(
+          jobName,
+          `webhook:${req.headers['x-forwarded-for'] || 'unknown'}`,
+        )
         .catch((err) => {
           logger.error({ err, job: jobName }, 'Webhook job dispatch failed');
         });
