@@ -119,6 +119,7 @@ export interface Job {
   alert_level: 'alert' | 'warn' | 'silent';
   timeout_ms: number;
   lockfile: string | null;
+  run_interval_days?: number | null; // If set, skip run when last_run is less than N days ago (for biweekly etc.)
   enabled: boolean;
   next_run: string | null;
   last_run: string | null;
@@ -141,6 +142,7 @@ export interface JobDefinition {
   alert_level: 'alert' | 'warn' | 'silent';
   timeout_ms: number;
   lockfile: string | null;
+  run_interval_days?: number | null;
   enabled: boolean;
 }
 

@@ -28,6 +28,7 @@ interface JobRegistryFile {
     enabled?: boolean;
     timeout_ms?: number;
     lockfile?: string | null;
+    run_interval_days?: number | null;
   }>;
 }
 
@@ -41,7 +42,10 @@ export function loadJobRegistry(
   try {
     raw = fs.readFileSync(registryPath, 'utf-8');
   } catch (err) {
-    logger.warn({ err, path: registryPath }, 'Failed to read job registry file');
+    logger.warn(
+      { err, path: registryPath },
+      'Failed to read job registry file',
+    );
     return;
   }
 
@@ -49,12 +53,18 @@ export function loadJobRegistry(
   try {
     data = JSON.parse(raw);
   } catch (err) {
-    logger.warn({ err, path: registryPath }, 'Failed to parse job registry JSON - skipping sync');
+    logger.warn(
+      { err, path: registryPath },
+      'Failed to parse job registry JSON - skipping sync',
+    );
     return;
   }
 
   if (!data.projects || !data.jobs) {
-    logger.warn({ path: registryPath }, 'Job registry missing projects or jobs key');
+    logger.warn(
+      { path: registryPath },
+      'Job registry missing projects or jobs key',
+    );
     return;
   }
 
@@ -63,7 +73,10 @@ export function loadJobRegistry(
   for (const jobEntry of data.jobs) {
     const projectRoot = data.projects[jobEntry.project];
     if (!projectRoot) {
-      logger.warn({ job: jobEntry.name, project: jobEntry.project }, 'Unknown project in job registry - skipping');
+      logger.warn(
+        { job: jobEntry.name, project: jobEntry.project },
+        'Unknown project in job registry - skipping',
+      );
       continue;
     }
 
@@ -73,7 +86,10 @@ export function loadJobRegistry(
         tz: jobEntry.timezone || 'America/Chicago',
       });
     } catch (err) {
-      logger.warn({ job: jobEntry.name, cron: jobEntry.cron, err }, 'Invalid cron expression - skipping');
+      logger.warn(
+        { job: jobEntry.name, cron: jobEntry.cron, err },
+        'Invalid cron expression - skipping',
+      );
       continue;
     }
 
@@ -91,6 +107,7 @@ export function loadJobRegistry(
       alert_level: jobEntry.alert_level || 'alert',
       timeout_ms: jobEntry.timeout_ms ?? 5400000,
       lockfile: jobEntry.lockfile ?? null,
+      run_interval_days: jobEntry.run_interval_days ?? null,
       enabled: jobEntry.enabled !== false,
     };
 
@@ -98,7 +115,12 @@ export function loadJobRegistry(
     const existing = getJob(def.name);
     upsertJobDefinition(def);
 
-    if (!existing || !existing.next_run || existing.cron !== def.cron || existing.timezone !== def.timezone) {
+    if (
+      !existing ||
+      !existing.next_run ||
+      existing.cron !== def.cron ||
+      existing.timezone !== def.timezone
+    ) {
       // Compute next_run from now
       const nextRun = computeNextRun(def.cron, def.timezone);
       if (nextRun) {
@@ -131,7 +153,10 @@ export function watchJobRegistry(
 ): void {
   fs.watchFile(registryPath, { interval: 2000 }, (curr, prev) => {
     if (curr.mtimeMs === prev.mtimeMs) return;
-    logger.info({ path: registryPath }, 'Job registry file changed - reloading');
+    logger.info(
+      { path: registryPath },
+      'Job registry file changed - reloading',
+    );
     loadJobRegistry(registryPath, onJobDisabled);
   });
 }
@@ -154,7 +179,11 @@ function computeNextRun(cron: string, timezone: string): string | null {
 }
 
 /** Compute next run from a given base time. Used after a job completes. */
-export function computeNextRunFrom(cron: string, timezone: string, fromDate?: Date): string | null {
+export function computeNextRunFrom(
+  cron: string,
+  timezone: string,
+  fromDate?: Date,
+): string | null {
   try {
     const interval = CronExpressionParser.parse(cron, {
       currentDate: fromDate || new Date(),
