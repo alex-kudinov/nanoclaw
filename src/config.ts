@@ -89,6 +89,10 @@ export const WEBHOOK_PORT = parseInt(process.env.WEBHOOK_PORT || '8088', 10);
 export const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
 export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
 
+// Job scheduling
+export const JOBS_FILE = path.join(DATA_DIR, 'jobs.json');
+export const JOB_REPORT_CHANNEL = process.env.JOB_REPORT_CHANNEL || 'slack:C0APF8WMV18';
+
 // Gmail configuration
 const gmailEnv = readEnvFile([
   'GMAIL_MONITORED_EMAIL',

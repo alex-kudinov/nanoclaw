@@ -46,6 +46,9 @@ export interface IpcDeps {
   addWebhook?: (def: WebhookDefinition) => void;
   removeWebhook?: (id: string) => boolean;
   listWebhooks?: () => WebhookDefinition[];
+  // Job management — optional so existing callers don't need to change
+  runHostJob?: (name: string, triggeredBy: string) => Promise<void>;
+  setJobEnabled?: (name: string, enabled: boolean) => void;
 }
 
 let ipcWatcherRunning = false;
@@ -304,6 +307,37 @@ export function startIpcWatcher(deps: IpcDeps): void {
         }
       } catch (err) {
         logger.error({ err, sourceGroup }, 'Error reading IPC tasks directory');
+      }
+
+      // Process job IPC files from this group's IPC directory
+      const jobsDir = path.join(ipcBaseDir, sourceGroup, 'jobs');
+      try {
+        if (fs.existsSync(jobsDir)) {
+          const jobFiles = fs
+            .readdirSync(jobsDir)
+            .filter((f) => f.endsWith('.json'));
+          for (const file of jobFiles) {
+            const filePath = path.join(jobsDir, file);
+            try {
+              const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+              await processJobIpc(data, sourceGroup, deps);
+              fs.unlinkSync(filePath);
+            } catch (err) {
+              logger.error(
+                { file, sourceGroup, err },
+                'Error processing IPC job',
+              );
+              const errorDir = path.join(ipcBaseDir, 'errors');
+              fs.mkdirSync(errorDir, { recursive: true });
+              fs.renameSync(
+                filePath,
+                path.join(errorDir, `${sourceGroup}-${file}`),
+              );
+            }
+          }
+        }
+      } catch (err) {
+        logger.error({ err, sourceGroup }, 'Error reading IPC jobs directory');
       }
     }
 
@@ -617,5 +651,53 @@ export async function processTaskIpc(
 
     default:
       logger.warn({ type: data.type }, 'Unknown IPC task type');
+  }
+}
+
+export async function processJobIpc(
+  data: {
+    action: string;
+    name?: string;
+  },
+  sourceGroup: string,
+  deps: IpcDeps,
+): Promise<void> {
+  const { action, name } = data;
+
+  if (!name) {
+    logger.warn({ action, sourceGroup }, 'Job IPC missing name field');
+    return;
+  }
+
+  switch (action) {
+    case 'run':
+      if (deps.runHostJob) {
+        logger.info({ name, sourceGroup }, 'Job run triggered via IPC');
+        await deps.runHostJob(name, sourceGroup);
+      } else {
+        logger.warn({ name, sourceGroup }, 'runHostJob not configured, ignoring run IPC');
+      }
+      break;
+
+    case 'pause':
+      if (deps.setJobEnabled) {
+        deps.setJobEnabled(name, false);
+        logger.info({ name, sourceGroup }, 'Job paused via IPC');
+      } else {
+        logger.warn({ name, sourceGroup }, 'setJobEnabled not configured, ignoring pause IPC');
+      }
+      break;
+
+    case 'resume':
+      if (deps.setJobEnabled) {
+        deps.setJobEnabled(name, true);
+        logger.info({ name, sourceGroup }, 'Job resumed via IPC');
+      } else {
+        logger.warn({ name, sourceGroup }, 'setJobEnabled not configured, ignoring resume IPC');
+      }
+      break;
+
+    default:
+      logger.warn({ action, name, sourceGroup }, 'Unknown job IPC action');
   }
 }

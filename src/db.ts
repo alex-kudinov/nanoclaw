@@ -6,6 +6,9 @@ import { ASSISTANT_NAME, DATA_DIR, STORE_DIR } from './config.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import {
+  Job,
+  JobDefinition,
+  JobRunLog,
   NewMessage,
   RegisteredGroup,
   ScheduledTask,
@@ -82,6 +85,48 @@ function createSchema(database: Database.Database): void {
       container_config TEXT,
       requires_trigger INTEGER DEFAULT 1
     );
+
+    CREATE TABLE IF NOT EXISTS jobs (
+      name TEXT PRIMARY KEY,
+      description TEXT NOT NULL DEFAULT '',
+      project TEXT NOT NULL,
+      project_root TEXT NOT NULL,
+      script TEXT NOT NULL,
+      args TEXT DEFAULT '[]',
+      cron TEXT NOT NULL,
+      timezone TEXT DEFAULT 'America/Chicago',
+      retries INTEGER DEFAULT 0,
+      retry_delay_ms INTEGER DEFAULT 60000,
+      alert_level TEXT DEFAULT 'alert',
+      timeout_ms INTEGER DEFAULT 5400000,
+      lockfile TEXT,
+      enabled INTEGER DEFAULT 1,
+      next_run TEXT,
+      last_run TEXT,
+      last_result TEXT,
+      last_duration_ms INTEGER,
+      last_output TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_jobs_next_run ON jobs(next_run);
+    CREATE INDEX IF NOT EXISTS idx_jobs_enabled ON jobs(enabled);
+
+    CREATE TABLE IF NOT EXISTS job_run_logs (
+      id TEXT PRIMARY KEY,
+      job_name TEXT NOT NULL,
+      triggered_by TEXT NOT NULL DEFAULT 'cron',
+      started_at TEXT NOT NULL,
+      finished_at TEXT,
+      duration_ms INTEGER,
+      exit_code INTEGER,
+      pid INTEGER,
+      status TEXT DEFAULT 'running',
+      output TEXT,
+      error TEXT,
+      log_file TEXT,
+      retry_attempt INTEGER DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_job_run_logs_name ON job_run_logs(job_name, started_at);
+    CREATE INDEX IF NOT EXISTS idx_job_run_logs_status ON job_run_logs(status);
   `);
 
   // Add context_mode column if it doesn't exist (migration for existing DBs)
@@ -704,6 +749,268 @@ export function getAllRegisteredGroups(): Record<string, RegisteredGroup> {
     };
   }
   return result;
+}
+
+// --- Host Job Scheduling ---
+
+export function upsertJobDefinition(def: JobDefinition): void {
+  db.prepare(
+    `
+    INSERT INTO jobs (name, description, project, project_root, script, args, cron, timezone, retries, retry_delay_ms, alert_level, timeout_ms, lockfile, enabled)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(name) DO UPDATE SET
+      description = excluded.description,
+      project = excluded.project,
+      project_root = excluded.project_root,
+      script = excluded.script,
+      args = excluded.args,
+      cron = excluded.cron,
+      timezone = excluded.timezone,
+      retries = excluded.retries,
+      retry_delay_ms = excluded.retry_delay_ms,
+      alert_level = excluded.alert_level,
+      timeout_ms = excluded.timeout_ms,
+      lockfile = excluded.lockfile,
+      enabled = excluded.enabled
+  `,
+  ).run(
+    def.name,
+    def.description,
+    def.project,
+    def.project_root,
+    def.script,
+    JSON.stringify(def.args),
+    def.cron,
+    def.timezone,
+    def.retries,
+    def.retry_delay_ms,
+    def.alert_level,
+    def.timeout_ms,
+    def.lockfile,
+    def.enabled ? 1 : 0,
+  );
+}
+
+export function updateJobRunState(
+  name: string,
+  state: {
+    last_run: string;
+    last_result: string;
+    last_duration_ms: number;
+    last_output: string | null;
+    next_run: string | null;
+  },
+): void {
+  db.prepare(
+    `
+    UPDATE jobs SET last_run = ?, last_result = ?, last_duration_ms = ?, last_output = ?, next_run = ?
+    WHERE name = ?
+  `,
+  ).run(
+    state.last_run,
+    state.last_result,
+    state.last_duration_ms,
+    state.last_output,
+    state.next_run,
+    name,
+  );
+}
+
+export function updateJobNextRun(name: string, nextRun: string): void {
+  db.prepare('UPDATE jobs SET next_run = ? WHERE name = ?').run(nextRun, name);
+}
+
+export function getJob(name: string): Job | undefined {
+  const row = db.prepare('SELECT * FROM jobs WHERE name = ?').get(name) as
+    | Record<string, unknown>
+    | undefined;
+  if (!row) return undefined;
+  return parseJobRow(row);
+}
+
+export function getAllJobs(): Job[] {
+  const rows = db.prepare('SELECT * FROM jobs ORDER BY name').all() as Record<
+    string,
+    unknown
+  >[];
+  return rows.map(parseJobRow);
+}
+
+export function getDueJobs(nowUtc: string): Job[] {
+  const rows = db
+    .prepare(
+      `
+    SELECT * FROM jobs
+    WHERE enabled = 1 AND next_run IS NOT NULL AND next_run <= ?
+    ORDER BY next_run
+  `,
+    )
+    .all(nowUtc) as Record<string, unknown>[];
+  return rows.map(parseJobRow);
+}
+
+export function setJobEnabled(name: string, enabled: boolean): void {
+  db.prepare('UPDATE jobs SET enabled = ? WHERE name = ?').run(
+    enabled ? 1 : 0,
+    name,
+  );
+}
+
+export function getJobNames(): string[] {
+  const rows = db.prepare('SELECT name FROM jobs').all() as Array<{
+    name: string;
+  }>;
+  return rows.map((r) => r.name);
+}
+
+function parseJobRow(row: Record<string, unknown>): Job {
+  return {
+    name: row.name as string,
+    description: (row.description as string) || '',
+    project: row.project as string,
+    project_root: row.project_root as string,
+    script: row.script as string,
+    args: JSON.parse((row.args as string) || '[]'),
+    cron: row.cron as string,
+    timezone: (row.timezone as string) || 'America/Chicago',
+    retries: (row.retries as number) || 0,
+    retry_delay_ms: (row.retry_delay_ms as number) || 60000,
+    alert_level: (row.alert_level as 'alert' | 'warn' | 'silent') || 'alert',
+    timeout_ms: (row.timeout_ms as number) || 5400000,
+    lockfile: (row.lockfile as string) || null,
+    enabled: (row.enabled as number) === 1,
+    next_run: (row.next_run as string) || null,
+    last_run: (row.last_run as string) || null,
+    last_result: (row.last_result as string) || null,
+    last_duration_ms: (row.last_duration_ms as number) || null,
+    last_output: (row.last_output as string) || null,
+  };
+}
+
+// --- Job Run Logs ---
+
+export function insertJobRunLog(
+  log: Omit<
+    JobRunLog,
+    | 'finished_at'
+    | 'duration_ms'
+    | 'exit_code'
+    | 'output'
+    | 'error'
+    | 'log_file'
+  > &
+    Partial<JobRunLog>,
+): void {
+  db.prepare(
+    `
+    INSERT INTO job_run_logs (id, job_name, triggered_by, started_at, finished_at, duration_ms, exit_code, pid, status, output, error, log_file, retry_attempt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `,
+  ).run(
+    log.id,
+    log.job_name,
+    log.triggered_by,
+    log.started_at,
+    log.finished_at ?? null,
+    log.duration_ms ?? null,
+    log.exit_code ?? null,
+    log.pid ?? null,
+    log.status,
+    log.output ?? null,
+    log.error ?? null,
+    log.log_file ?? null,
+    log.retry_attempt,
+  );
+}
+
+export function updateJobRunLog(
+  id: string,
+  updates: Partial<
+    Pick<
+      JobRunLog,
+      | 'finished_at'
+      | 'duration_ms'
+      | 'exit_code'
+      | 'pid'
+      | 'status'
+      | 'output'
+      | 'error'
+      | 'log_file'
+    >
+  >,
+): void {
+  const fields: string[] = [];
+  const values: unknown[] = [];
+
+  for (const [key, val] of Object.entries(updates)) {
+    if (val !== undefined) {
+      fields.push(`${key} = ?`);
+      values.push(val);
+    }
+  }
+  if (fields.length === 0) return;
+  values.push(id);
+  db.prepare(`UPDATE job_run_logs SET ${fields.join(', ')} WHERE id = ?`).run(
+    ...values,
+  );
+}
+
+export function getJobRunLogs(jobName: string, limit = 10): JobRunLog[] {
+  return db
+    .prepare(
+      `
+    SELECT * FROM job_run_logs
+    WHERE job_name = ?
+    ORDER BY started_at DESC
+    LIMIT ?
+  `,
+    )
+    .all(jobName, limit) as JobRunLog[];
+}
+
+export function getRunningJobNames(): string[] {
+  const rows = db
+    .prepare(
+      "SELECT DISTINCT job_name FROM job_run_logs WHERE status = 'running'",
+    )
+    .all() as Array<{ job_name: string }>;
+  return rows.map((r) => r.job_name);
+}
+
+export function markStaleRunsAsFailed(
+  graceSec: number,
+): Array<{ job_name: string; pid: number | null; lockfile: string | null }> {
+  const cutoff = new Date(Date.now() - graceSec * 1000).toISOString();
+  const staleRows = db
+    .prepare(
+      `
+    SELECT jrl.id, jrl.job_name, jrl.pid, j.lockfile
+    FROM job_run_logs jrl
+    LEFT JOIN jobs j ON j.name = jrl.job_name
+    WHERE jrl.status = 'running' AND jrl.started_at < ?
+  `,
+    )
+    .all(cutoff) as Array<{
+    id: string;
+    job_name: string;
+    pid: number | null;
+    lockfile: string | null;
+  }>;
+
+  for (const row of staleRows) {
+    db.prepare(
+      `
+      UPDATE job_run_logs SET status = 'fail', error = 'Interrupted by restart', finished_at = ?
+      WHERE id = ?
+    `,
+    ).run(new Date().toISOString(), row.id);
+  }
+
+  return staleRows.map((r) => ({
+    job_name: r.job_name,
+    pid: r.pid,
+    lockfile: r.lockfile,
+  }));
 }
 
 // --- JSON migration ---

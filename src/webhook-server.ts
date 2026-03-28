@@ -40,7 +40,10 @@ type RunAgentFn = (
 ) => Promise<ContainerOutput>;
 
 export interface HealthPayload {
-  channels: Record<string, { connected: boolean; lastActivitySec: number | null }>;
+  channels: Record<
+    string,
+    { connected: boolean; lastActivitySec: number | null }
+  >;
   activeContainers: number;
   lastMessageAt: string | null;
 }
@@ -54,6 +57,8 @@ export interface WebhookServerDeps {
   runAgent: RunAgentFn;
   sendMessage: SendMessageFn;
   getHealth: () => HealthPayload;
+  runHostJob?: (name: string, triggeredBy: string) => Promise<import('./types.js').JobRunResult>;
+  getHostJob?: (name: string) => import('./types.js').Job | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -234,8 +239,12 @@ export class WebhookServer {
     if (req.method === 'GET' && req.url === '/health') {
       let heartbeat: Record<string, unknown> = {};
       try {
-        heartbeat = JSON.parse(fs.readFileSync(this.deps.heartbeatPath, 'utf8'));
-      } catch { /* heartbeat file may not exist yet during startup */ }
+        heartbeat = JSON.parse(
+          fs.readFileSync(this.deps.heartbeatPath, 'utf8'),
+        );
+      } catch {
+        /* heartbeat file may not exist yet during startup */
+      }
       const health = this.deps.getHealth();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ...heartbeat, ...health }));
@@ -254,6 +263,49 @@ export class WebhookServer {
       const redacted = this.webhooks.map(({ secret: _, ...rest }) => rest);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(redacted));
+      return;
+    }
+
+    // Job trigger endpoint: POST /api/job/:name
+    const jobMatch = req.method === 'POST' && req.url?.match(/^\/api\/job\/([^/?]+)/);
+    if (jobMatch) {
+      // Auth check - same pattern as existing webhook auth
+      const secret = req.headers['x-webhook-secret'] as string;
+      if (!secret || secret !== this.deps.globalSecret) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Unauthorized' }));
+        return;
+      }
+
+      const jobName = decodeURIComponent(jobMatch[1]);
+
+      if (!this.deps.getHostJob || !this.deps.runHostJob) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Job system not initialized' }));
+        return;
+      }
+
+      const job = this.deps.getHostJob(jobName);
+      if (!job) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `Job not found: ${jobName}` }));
+        return;
+      }
+
+      if (!job.enabled) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `Job is disabled: ${jobName}` }));
+        return;
+      }
+
+      // Fire-and-forget with error handling
+      this.deps.runHostJob(jobName, `webhook:${req.headers['x-forwarded-for'] || 'unknown'}`)
+        .catch((err) => {
+          logger.error({ err, job: jobName }, 'Webhook job dispatch failed');
+        });
+
+      res.writeHead(202, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'started', job: jobName }));
       return;
     }
 

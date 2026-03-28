@@ -103,6 +103,81 @@ export interface TaskRunLog {
   error: string | null;
 }
 
+// --- Host Job Scheduling ---
+
+export interface Job {
+  name: string;
+  description: string;
+  project: string;
+  project_root: string;
+  script: string;
+  args: string[];
+  cron: string;
+  timezone: string;
+  retries: number;
+  retry_delay_ms: number;
+  alert_level: 'alert' | 'warn' | 'silent';
+  timeout_ms: number;
+  lockfile: string | null;
+  enabled: boolean;
+  next_run: string | null;
+  last_run: string | null;
+  last_result: string | null;
+  last_duration_ms: number | null;
+  last_output: string | null;
+}
+
+export interface JobDefinition {
+  name: string;
+  description: string;
+  project: string;
+  project_root: string;
+  script: string;
+  args: string[];
+  cron: string;
+  timezone: string;
+  retries: number;
+  retry_delay_ms: number;
+  alert_level: 'alert' | 'warn' | 'silent';
+  timeout_ms: number;
+  lockfile: string | null;
+  enabled: boolean;
+}
+
+export interface JobRunLog {
+  id: string;
+  job_name: string;
+  triggered_by: string;
+  started_at: string;
+  finished_at: string | null;
+  duration_ms: number | null;
+  exit_code: number | null;
+  pid: number | null;
+  status: 'ok' | 'fail' | 'timeout' | 'running' | 'dispatch_error';
+  output: string | null;
+  error: string | null;
+  log_file: string | null;
+  retry_attempt: number;
+}
+
+export type JobRunResult = {
+  name: string;
+  status:
+    | 'ok'
+    | 'fail'
+    | 'timeout'
+    | 'already_running'
+    | 'dispatch_error'
+    | 'path_error';
+  duration_ms: number;
+  output: string | null;
+  error: string | null;
+  exit_code: number | null;
+  retry_attempts: number;
+  run_id: string | null;
+  log_file: string | null;
+};
+
 // --- Channel abstraction ---
 
 export interface Channel {

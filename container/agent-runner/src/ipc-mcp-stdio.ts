@@ -382,6 +382,63 @@ server.tool(
   },
 );
 
+const JOBS_DIR = path.join(IPC_DIR, 'jobs');
+
+server.tool(
+  'jobs',
+  'Manage host-level scheduled jobs. Use list to see all jobs, status to inspect a specific job, run to trigger it immediately, pause to disable it, or resume to re-enable it.',
+  {
+    action: z.enum(['list', 'run', 'status', 'pause', 'resume']).describe('Action to perform'),
+    name: z.string().optional().describe('Job name (required for run, status, pause, resume)'),
+  },
+  async (args) => {
+    const jobsFile = path.join(IPC_DIR, 'current_jobs.json');
+
+    if (args.action === 'list') {
+      try {
+        if (!fs.existsSync(jobsFile)) {
+          return { content: [{ type: 'text' as const, text: 'No jobs found.' }] };
+        }
+        const snapshot = JSON.parse(fs.readFileSync(jobsFile, 'utf-8'));
+        return { content: [{ type: 'text' as const, text: snapshot.job_list_text || 'No jobs registered.' }] };
+      } catch (err) {
+        return {
+          content: [{ type: 'text' as const, text: `Error reading jobs: ${err instanceof Error ? err.message : String(err)}` }],
+        };
+      }
+    }
+
+    if (!args.name) {
+      return {
+        content: [{ type: 'text' as const, text: `Action "${args.action}" requires a job name.` }],
+        isError: true,
+      };
+    }
+
+    if (args.action === 'status') {
+      try {
+        if (!fs.existsSync(jobsFile)) {
+          return { content: [{ type: 'text' as const, text: 'No jobs found.' }] };
+        }
+        const snapshot = JSON.parse(fs.readFileSync(jobsFile, 'utf-8'));
+        const text = snapshot.job_status?.[args.name] ?? 'Job not found.';
+        return { content: [{ type: 'text' as const, text: text }] };
+      } catch (err) {
+        return {
+          content: [{ type: 'text' as const, text: `Error reading jobs: ${err instanceof Error ? err.message : String(err)}` }],
+        };
+      }
+    }
+
+    // run, pause, resume — write IPC files
+    const filename = writeIpcFile(JOBS_DIR, { action: args.action, name: args.name });
+
+    return {
+      content: [{ type: 'text' as const, text: `Job "${args.name}" ${args.action} requested (${filename}).` }],
+    };
+  },
+);
+
 // Start the stdio transport
 const transport = new StdioServerTransport();
 await server.connect(transport);

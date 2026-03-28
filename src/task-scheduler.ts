@@ -1,4 +1,5 @@
 import { ChildProcess } from 'child_process';
+import crypto from 'crypto';
 import { CronExpressionParser } from 'cron-parser';
 import fs from 'fs';
 
@@ -11,11 +12,16 @@ import {
 import {
   getAllTasks,
   getDueTasks,
+  getDueJobs,
   getTaskById,
+  insertJobRunLog,
   logTaskRun,
+  updateJobRunLog,
   updateTask,
   updateTaskAfterRun,
 } from './db.js';
+import { runJob, type JobRunnerDeps } from './job-runner.js';
+import { reportJobResult } from './job-reporter.js';
 import { GroupQueue } from './group-queue.js';
 import { resolveGroupFolderPath } from './group-folder.js';
 import { logger } from './logger.js';
@@ -32,6 +38,59 @@ export interface SchedulerDependencies {
     groupFolder: string,
   ) => void;
   sendMessage: SendMessageFn;
+}
+
+export interface HostJobDeps {
+  sendMessage: SendMessageFn;
+  reportChannel: string;
+  writeJobsSnapshot: () => void;
+}
+
+export async function processHostJobs(deps: HostJobDeps): Promise<void> {
+  const now = new Date().toISOString();
+  const dueJobs = getDueJobs(now);
+
+  for (const job of dueJobs) {
+    // Fire-and-forget with error catch
+    const runnerDeps: JobRunnerDeps = {
+      sendMessage: deps.sendMessage,
+      reportChannel: deps.reportChannel,
+      writeJobsSnapshot: deps.writeJobsSnapshot,
+    };
+
+    runJob(job, 'cron', runnerDeps).catch((err) => {
+      logger.error({ err, job: job.name }, 'Host job dispatch failed');
+      // Record dispatch error
+      const runId = crypto.randomUUID();
+      insertJobRunLog({
+        id: runId,
+        job_name: job.name,
+        triggered_by: 'cron',
+        started_at: new Date().toISOString(),
+        status: 'dispatch_error',
+        pid: null,
+        retry_attempt: 0,
+        error: err instanceof Error ? err.message : String(err),
+        finished_at: new Date().toISOString(),
+        duration_ms: 0,
+      });
+      reportJobResult(
+        {
+          name: job.name,
+          status: 'dispatch_error',
+          duration_ms: 0,
+          output: null,
+          error: err instanceof Error ? err.message : String(err),
+          exit_code: null,
+          retry_attempts: 0,
+          run_id: runId,
+          log_file: null,
+        },
+        deps.reportChannel,
+        deps.sendMessage,
+      ).catch(() => {/* best effort */});
+    });
+  }
 }
 
 async function runTask(
@@ -211,7 +270,10 @@ async function runTask(
 
 let schedulerRunning = false;
 
-export function startSchedulerLoop(deps: SchedulerDependencies): void {
+export function startSchedulerLoop(
+  deps: SchedulerDependencies,
+  hostJobDeps?: HostJobDeps,
+): void {
   if (schedulerRunning) {
     logger.debug('Scheduler loop already running, skipping duplicate start');
     return;
@@ -236,6 +298,10 @@ export function startSchedulerLoop(deps: SchedulerDependencies): void {
         deps.queue.enqueueTask(currentTask.chat_jid, currentTask.id, () =>
           runTask(currentTask, deps),
         );
+      }
+
+      if (hostJobDeps) {
+        await processHostJobs(hostJobDeps);
       }
     } catch (err) {
       logger.error({ err }, 'Error in scheduler loop');

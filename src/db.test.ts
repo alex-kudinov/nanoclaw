@@ -6,13 +6,24 @@ import {
   deleteTask,
   getAllChats,
   getAllRegisteredGroups,
+  getDueJobs,
+  getJob,
+  getJobRunLogs,
   getMessagesSince,
   getNewMessages,
+  getRunningJobNames,
   getTaskById,
+  insertJobRunLog,
+  markStaleRunsAsFailed,
+  setJobEnabled,
   setRegisteredGroup,
   storeChatMetadata,
   storeMessage,
+  updateJobNextRun,
+  updateJobRunLog,
+  updateJobRunState,
   updateTask,
+  upsertJobDefinition,
 } from './db.js';
 
 beforeEach(() => {
@@ -388,6 +399,449 @@ describe('task CRUD', () => {
 
     deleteTask('task-3');
     expect(getTaskById('task-3')).toBeUndefined();
+  });
+});
+
+// --- Host Job Scheduling CRUD ---
+
+describe('upsertJobDefinition / getJob', () => {
+  it('creates a job and retrieves it', () => {
+    upsertJobDefinition({
+      name: 'daily-sync',
+      description: 'Syncs data every day',
+      project: 'tandemweb',
+      project_root: '/projects/tandemweb',
+      script: 'tools/sync.sh',
+      args: ['--full'],
+      cron: '0 9 * * *',
+      timezone: 'America/Chicago',
+      retries: 1,
+      retry_delay_ms: 30000,
+      alert_level: 'alert',
+      timeout_ms: 300000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    const job = getJob('daily-sync');
+    expect(job).toBeDefined();
+    expect(job!.name).toBe('daily-sync');
+    expect(job!.description).toBe('Syncs data every day');
+    expect(job!.script).toBe('tools/sync.sh');
+    expect(job!.args).toEqual(['--full']);
+    expect(job!.enabled).toBe(true);
+  });
+
+  it('updates definition fields on re-upsert but NOT runtime fields', () => {
+    upsertJobDefinition({
+      name: 'batch-job',
+      description: 'Original description',
+      project: 'tandemweb',
+      project_root: '/projects/tandemweb',
+      script: 'tools/batch.sh',
+      args: [],
+      cron: '0 8 * * *',
+      timezone: 'America/Chicago',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'warn',
+      timeout_ms: 5400000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    // Set some runtime state
+    updateJobRunState('batch-job', {
+      last_run: '2024-06-01T08:00:00.000Z',
+      last_result: 'ok',
+      last_duration_ms: 4200,
+      last_output: 'done',
+      next_run: '2024-06-02T08:00:00.000Z',
+    });
+
+    // Re-upsert with updated description
+    upsertJobDefinition({
+      name: 'batch-job',
+      description: 'Updated description',
+      project: 'tandemweb',
+      project_root: '/projects/tandemweb',
+      script: 'tools/batch.sh',
+      args: [],
+      cron: '0 8 * * *',
+      timezone: 'America/Chicago',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'warn',
+      timeout_ms: 5400000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    const job = getJob('batch-job');
+    expect(job!.description).toBe('Updated description');
+    // Runtime fields must be preserved
+    expect(job!.last_run).toBe('2024-06-01T08:00:00.000Z');
+    expect(job!.last_result).toBe('ok');
+    expect(job!.last_duration_ms).toBe(4200);
+  });
+});
+
+describe('updateJobRunState', () => {
+  it('updates all runtime fields', () => {
+    upsertJobDefinition({
+      name: 'state-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    updateJobRunState('state-job', {
+      last_run: '2024-07-01T10:00:00.000Z',
+      last_result: 'fail',
+      last_duration_ms: 1200,
+      last_output: 'error output',
+      next_run: '2024-07-01T11:00:00.000Z',
+    });
+
+    const job = getJob('state-job');
+    expect(job!.last_run).toBe('2024-07-01T10:00:00.000Z');
+    expect(job!.last_result).toBe('fail');
+    expect(job!.last_duration_ms).toBe(1200);
+    expect(job!.last_output).toBe('error output');
+    expect(job!.next_run).toBe('2024-07-01T11:00:00.000Z');
+  });
+});
+
+describe('getDueJobs', () => {
+  function insertJob(name: string, nextRun: string, enabled = true) {
+    upsertJobDefinition({
+      name,
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled,
+    });
+    updateJobNextRun(name, nextRun);
+  }
+
+  it('returns only enabled jobs with next_run <= now', () => {
+    const now = new Date();
+    const past = new Date(now.getTime() - 60000).toISOString();
+    const future = new Date(now.getTime() + 60000).toISOString();
+
+    insertJob('due-job', past, true);
+    insertJob('future-job', future, true);
+
+    const due = getDueJobs(now.toISOString());
+    expect(due.map((j: { name: string }) => j.name)).toContain('due-job');
+    expect(due.map((j: { name: string }) => j.name)).not.toContain('future-job');
+  });
+
+  it('does not return disabled jobs even when next_run is overdue', () => {
+    const now = new Date();
+    const past = new Date(now.getTime() - 60000).toISOString();
+
+    insertJob('disabled-overdue', past, false);
+
+    const due = getDueJobs(now.toISOString());
+    expect(due.map((j: { name: string }) => j.name)).not.toContain('disabled-overdue');
+  });
+});
+
+describe('setJobEnabled', () => {
+  it('disables an enabled job', () => {
+    upsertJobDefinition({
+      name: 'toggle-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    setJobEnabled('toggle-job', false);
+    expect(getJob('toggle-job')!.enabled).toBe(false);
+  });
+
+  it('re-enables a disabled job', () => {
+    upsertJobDefinition({
+      name: 'reenable-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: false,
+    });
+
+    setJobEnabled('reenable-job', true);
+    expect(getJob('reenable-job')!.enabled).toBe(true);
+  });
+});
+
+describe('insertJobRunLog / getJobRunLogs', () => {
+  it('stores a log and retrieves it ordered by started_at desc', () => {
+    upsertJobDefinition({
+      name: 'log-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    insertJobRunLog({
+      id: 'run-aaa',
+      job_name: 'log-job',
+      triggered_by: 'cron',
+      started_at: '2024-08-01T10:00:00.000Z',
+      status: 'ok',
+      pid: null,
+      retry_attempt: 0,
+    });
+
+    insertJobRunLog({
+      id: 'run-bbb',
+      job_name: 'log-job',
+      triggered_by: 'cron',
+      started_at: '2024-08-02T10:00:00.000Z',
+      status: 'fail',
+      pid: null,
+      retry_attempt: 0,
+    });
+
+    const logs = getJobRunLogs('log-job');
+    expect(logs).toHaveLength(2);
+    // Most recent first
+    expect(logs[0].id).toBe('run-bbb');
+    expect(logs[1].id).toBe('run-aaa');
+  });
+
+  it('respects the limit parameter', () => {
+    upsertJobDefinition({
+      name: 'limit-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    for (let i = 0; i < 5; i++) {
+      insertJobRunLog({
+        id: `run-limit-${i}`,
+        job_name: 'limit-job',
+        triggered_by: 'cron',
+        started_at: `2024-08-0${i + 1}T10:00:00.000Z`,
+        status: 'ok',
+        pid: null,
+        retry_attempt: 0,
+      });
+    }
+
+    const logs = getJobRunLogs('limit-job', 3);
+    expect(logs).toHaveLength(3);
+  });
+});
+
+describe('getRunningJobNames', () => {
+  it('returns names of jobs with status=running', () => {
+    upsertJobDefinition({
+      name: 'running-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    insertJobRunLog({
+      id: 'run-active',
+      job_name: 'running-job',
+      triggered_by: 'cron',
+      started_at: new Date().toISOString(),
+      status: 'running',
+      pid: null,
+      retry_attempt: 0,
+    });
+
+    const names = getRunningJobNames();
+    expect(names).toContain('running-job');
+  });
+
+  it('does not return completed jobs', () => {
+    upsertJobDefinition({
+      name: 'done-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    insertJobRunLog({
+      id: 'run-done',
+      job_name: 'done-job',
+      triggered_by: 'cron',
+      started_at: new Date().toISOString(),
+      status: 'running',
+      pid: null,
+      retry_attempt: 0,
+    });
+
+    updateJobRunLog('run-done', {
+      status: 'ok',
+      finished_at: new Date().toISOString(),
+      duration_ms: 500,
+      exit_code: 0,
+    });
+
+    const names = getRunningJobNames();
+    expect(names).not.toContain('done-job');
+  });
+});
+
+describe('markStaleRunsAsFailed', () => {
+  it('marks old running rows as failed', () => {
+    upsertJobDefinition({
+      name: 'stale-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    // Insert a run that started 2 hours ago (stale)
+    const staleTime = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    insertJobRunLog({
+      id: 'run-stale',
+      job_name: 'stale-job',
+      triggered_by: 'cron',
+      started_at: staleTime,
+      status: 'running',
+      pid: null,
+      retry_attempt: 0,
+    });
+
+    // Grace period of 1 hour means 2-hour-old runs are stale
+    const affected = markStaleRunsAsFailed(3600);
+    expect(affected.map((r: { job_name: string }) => r.job_name)).toContain('stale-job');
+
+    const logs = getJobRunLogs('stale-job');
+    expect(logs[0].status).toBe('fail');
+    expect(logs[0].error).toBe('Interrupted by restart');
+  });
+
+  it('does not touch recently-started runs within grace period', () => {
+    upsertJobDefinition({
+      name: 'fresh-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    // Insert a run started 10 seconds ago (fresh)
+    const recentTime = new Date(Date.now() - 10000).toISOString();
+    insertJobRunLog({
+      id: 'run-fresh',
+      job_name: 'fresh-job',
+      triggered_by: 'cron',
+      started_at: recentTime,
+      status: 'running',
+      pid: null,
+      retry_attempt: 0,
+    });
+
+    // Grace period of 1 hour - fresh run should NOT be marked stale
+    markStaleRunsAsFailed(3600);
+
+    const logs = getJobRunLogs('fresh-job');
+    expect(logs[0].status).toBe('running');
   });
 });
 
