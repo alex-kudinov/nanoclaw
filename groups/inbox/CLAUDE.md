@@ -56,15 +56,16 @@ For spam/rejected:
 
 Post the handoff message using `mcp__nanoclaw__send_message`. The system automatically routes messages containing `[HANDOFF:]` to the correct agent.
 
-Pass through ALL original fields verbatim — do not summarize or compress. Sales Closer needs the full message to craft a response.
+Pass through ALL original fields verbatim — do not summarize or compress. Sales Closer needs the full message to craft a response. **Always pass through the Thread-ID** if one was included in the handoff from mailman — this ensures the email response threads under the lead's original inquiry.
 
 ```
 [HANDOFF: inbox→sales]
 Lead ID: {id}
 Name: {name}
 Email: {email}
+Thread-ID: {Gmail thread ID if present in the incoming handoff — omit this line if not available}
 Message: {FULL original message — copy it word for word}
-Source: contact-form
+Source: {source from the incoming handoff, e.g. "email" or "contact-form"}
 ```
 
 The system routes this to the Sales Closer. You do NOT need to specify a target — just post it.

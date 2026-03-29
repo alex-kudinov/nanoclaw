@@ -19,13 +19,20 @@ Read `/workspace/extra/knowledge/KNOWLEDGE.md` before classifying any email. It 
 
 ## How You Get Triggered
 
-You run in two situations. Read the incoming `<messages>` block to determine which:
+You run in three situations. Read the incoming `<messages>` block to determine which:
 
 ### 1. Inbound Email
 A new email arrived via the Gmail channel. Follow the Inbound Email Processing steps below.
 
 ### 2. Outbound Email Handoff from Sales Closer
 The message starts with `[HANDOFF: sales→mailman]`. Follow the Outbound Email Sending steps below.
+
+### 3. Email Send Result
+The message contains `"type": "gmail_send_result"`. This is the host reporting back after sending an email — it includes the Gmail `threadId` and `leadId`. Store the thread ID in the leads DB so follow-ups can thread correctly:
+```bash
+psql -c "UPDATE leads SET thread_id = '{threadId}' WHERE id = {leadId} AND thread_id IS NULL;"
+```
+The `AND thread_id IS NULL` guard prevents overwriting a thread_id that was already set from an earlier email in the conversation. After updating, wrap your output in `<internal>` tags — no Slack message needed.
 
 ---
 
@@ -38,7 +45,8 @@ When you receive `[HANDOFF: sales→mailman]`, parse the structured fields:
 To: {recipient email}
 Subject: {subject line}
 Lead ID: {id}
-Thread-ID: {Gmail thread ID — optional, present for replies to existing threads}
+Thread-ID: {Gmail thread ID — optional, present for email-originated leads and replies}
+Reply: true (optional — present when responding to a lead's email reply)
 Follow-Up: true/false (optional — absent means initial send)
 Original-Message:
 {the lead's original inquiry, verbatim — or brief summary for follow-ups}
@@ -49,7 +57,7 @@ Body:
 
 ### Steps:
 
-1. **Parse** the handoff message. Extract `To`, `Subject`, `Lead ID`, `Follow-Up` (optional — `true` or absent), `Original-Message` (between `Original-Message:\n` and `---END-ORIGINAL---`), and `Body` (everything after `Body:\n`).
+1. **Parse** the handoff message. Extract `To`, `Subject`, `Lead ID`, `Thread-ID` (optional), `Reply` (optional — `true` or absent), `Follow-Up` (optional — `true` or absent), `Original-Message` (between `Original-Message:\n` and `---END-ORIGINAL---`), and `Body` (everything after `Body:\n`).
 
    **Subject sanitization:** Before sending, verify the Subject contains only ASCII characters (codes 0-127). Replace any em dashes (—) with hyphens (-), en dashes (–) with hyphens (-), smart quotes ("" '') with straight quotes ("' '), and any other non-ASCII with their ASCII equivalent. This prevents encoding corruption in email clients.
 
@@ -66,8 +74,8 @@ Body:
    Keep it semantic HTML — no CSS, no images, no templates.
 
    **MANDATORY — Append context block.** After the HTML body:
-   - **Threaded replies (Thread-ID present):** Do NOT append a quoted block. Gmail threading displays the conversation history automatically. The `Original-Message` field is not required for threaded replies.
-   - **Initial sends (no Thread-ID, Follow-Up absent or false):** Add a full quoted block with the lead's original inquiry:
+   - **Threaded sends (Thread-ID present — whether Reply, Follow-Up, or initial):** Do NOT append a quoted block. Gmail threading displays the conversation history automatically. The `Original-Message` field is not required for threaded sends.
+   - **Standalone initial sends (no Thread-ID, Follow-Up absent or false):** Add a full quoted block with the lead's original inquiry:
      ```html
      <br><br>
      <div style="border-left: 2px solid #ccc; padding-left: 12px; color: #555;">
@@ -96,11 +104,11 @@ Body:
      ```
      Stop processing. Do not proceed to step 4.
 
-4. **Send the email.** Choose the correct tool based on whether a `Thread-ID` is present:
+4. **Send the email.** Choose the correct tool based on Thread-ID, Follow-Up, and Reply fields:
 
    **Always include `lead_id` and `email_type`** in both `gmail_send` and `gmail_reply` calls. The `lead_id` is the numeric Lead ID from the handoff. The `email_type` is `"initial"` for first sends, `"follow-up"` for follow-ups, or `"reply"` for replies to lead responses. These enable email open tracking.
 
-   **With Thread-ID** (reply to existing conversation) — use `gmail_reply`:
+   **Reply to lead's response** (Thread-ID present + `Reply: true`) — use `gmail_reply`:
    ```
    mcp__nanoclaw__gmail_reply({
      thread_id: "{Thread-ID value}",
@@ -110,9 +118,35 @@ Body:
      email_type: "reply"
    })
    ```
-   This threads the email in Gmail (proper In-Reply-To/References headers, same thread). Subject and recipient are derived from the thread automatically — you do NOT need to pass them.
+   Subject and recipient are derived from the thread automatically.
 
-   **Without Thread-ID** (first outreach) — use `gmail_send`:
+   **Follow-up with Thread-ID** (Thread-ID present + `Follow-Up: true`) — use `gmail_reply`:
+   ```
+   mcp__nanoclaw__gmail_reply({
+     thread_id: "{Thread-ID value}",
+     body: "{html body}",
+     html: true,
+     lead_id: {lead_id_number},
+     email_type: "follow-up"
+   })
+   ```
+   Subject (Re: original) and recipient are derived from the thread automatically.
+
+   **First response to inquiry with Thread-ID** (Thread-ID present, no Reply, no Follow-Up) — use `gmail_send` with `thread_id` to thread the email in their inquiry conversation while using our custom subject:
+   ```
+   mcp__nanoclaw__gmail_send({
+     to: "{recipient email}",
+     subject: "{subject}",
+     body: "{html body}",
+     html: true,
+     thread_id: "{Thread-ID value}",
+     lead_id: {lead_id_number},
+     email_type: "initial"
+   })
+   ```
+   This threads the email in Gmail (proper In-Reply-To/References headers) while keeping your custom subject line.
+
+   **No Thread-ID** (contact form lead, no email thread exists) — use `gmail_send`:
    ```
    mcp__nanoclaw__gmail_send({
      to: "{recipient email}",
@@ -201,12 +235,13 @@ psql -c "SELECT id, name, status, follow_up_count, message FROM leads WHERE emai
 
 ### Step 4 — Take action based on classification
 
-**lead:** Hand off to Inbox Commander for qualification:
+**lead:** Hand off to Inbox Commander for qualification. **Always include the Thread-ID** from the email header so threading is preserved through the pipeline:
 ```
 [HANDOFF: mailman→inbox]
 [SOURCE: email]
 Name: {sender name}
 Email: {sender email}
+Thread-ID: {Gmail thread ID from the email header}
 Message: {email body — copy verbatim, do not summarize}
 ```
 

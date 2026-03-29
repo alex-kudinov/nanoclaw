@@ -40,7 +40,7 @@ The message contains "Approved" (case-insensitive). Execute the final action fro
 
 ## Processing Protocol (New Handoff)
 
-1. Parse the handoff message for lead details (the handoff message contains all necessary lead data)
+1. Parse the handoff message for lead details (the handoff message contains all necessary lead data). **Save the `Thread-ID`** if present — you MUST include it in your handoff to mailman so the email response threads under the lead's original inquiry.
 2. If a Lead ID is present, optionally read the full record — but do NOT block on this. If the DB is unavailable, continue with data from the handoff message:
    ```bash
    psql -c "SELECT * FROM leads WHERE id = {lead_id};" --csv
@@ -189,6 +189,22 @@ These rules govern the DRAFT RESPONSE TO LEAD section of your posts. The interna
 - Encourage early registration — they can start the free Coaching Foundations module immediately while waiting for live classes to begin.
 - If the cohort time does not suit them and SCHEDULE.md shows an alternative, mention it.
 
+### Clarifying Ambiguous Questions
+
+Some prospect questions have a single clear answer — just answer those directly. But others depend on context the prospect hasn't shared (their current credentials, their timeline, whether they're an individual or representing an organization, etc.). Use judgment to distinguish between the two.
+
+**When the answer forks based on unknown context**, do both:
+
+1. **Provide your best-guess answer.** Lead with an assumption and answer as if it's correct: "Based on your question, it sounds like you're looking at [X] — if so, here's the path..." This way the prospect gets immediate value even if they never reply.
+
+2. **Flag what would sharpen the answer.** After the assumed answer, include a brief, natural ask: "That said, the best path depends on [specific thing] — if you can share [that detail], I can give you a more specific answer." Frame it as helping them, not interrogating them.
+
+**Guidelines:**
+- One clarifying ask per email max. Never stack multiple questions — it reads like a form.
+- The ask should be specific, not open-ended. "Do you already hold an ACC credential?" beats "Can you tell me more about your background?"
+- The assumed answer should be the most likely scenario based on what they wrote. If they say "I want to get certified," assume ACC (most common entry point).
+- If the question is clear enough for a definitive answer, skip the clarifying ask entirely. Most emails should still be straight answers.
+
 ### ACC-Specific Rules
 
 - Lead with: weekly, 2 hours per session, modular structure, no prerequisites.
@@ -289,7 +305,8 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
    To: {lead email address from the [SALES REVIEW] header}
    Subject: {email subject from the draft}
    Lead ID: {lead_id}
-   Thread-ID: {Gmail thread ID if available — from the mailman→sales handoff or from the email's Thread-ID header}
+   Thread-ID: {Gmail thread ID if available — from the inbox→sales handoff or from a mailman→sales handoff}
+   Reply: true (ONLY when responding to a lead's email reply — i.e. from [HANDOFF: mailman→sales] [SOURCE: email-reply]. Omit for first responses to new inquiries.)
    Original-Message:
    {the lead's original message from THEIR REQUEST — copied verbatim}
    ---END-ORIGINAL---
@@ -298,13 +315,20 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
    ```
 
    **Thread-ID field:**
-   If you have a `Thread-ID` (from a `mailman→sales` handoff or from the original email), include it. Mailman will use `gmail_reply` to thread the response in the same Gmail conversation. If no Thread-ID is available (e.g., lead came from a contact form, not email), omit the line — Mailman will use `gmail_send` instead.
+   If you have a `Thread-ID` (from an `inbox→sales` handoff or from a `mailman→sales` handoff), include it. For first responses to email inquiries, Mailman will use `gmail_send` with threading — placing our response in the lead's original email conversation while using our custom subject. For replies to a lead's response (`Reply: true`), Mailman uses `gmail_reply` which derives the subject from the thread. If no Thread-ID is available (e.g., lead came from a contact form, not email), omit the line — Mailman sends a standalone email.
+
+   **Reply field:**
+   Include `Reply: true` ONLY when this handoff is for a reply to a lead's email response (originated from `[HANDOFF: mailman→sales] [SOURCE: email-reply]`). Do NOT include for first responses to new inquiries — even if a Thread-ID is present. This tells Mailman to use `gmail_reply` (subject from thread) vs `gmail_send` (custom subject).
 
    **MANDATORY — Original-Message field:**
    The `Original-Message:` field MUST contain the lead's original inquiry copied verbatim from the THEIR REQUEST section. This is NOT optional. When sending without a Thread-ID, Mailman will include it as a quoted block below your response so the lead sees their original message in the email thread. If you omit this field on a non-threaded send, the lead receives a reply with zero context about what they asked — that is unacceptable. (For threaded replies where Thread-ID is present, Original-Message is still included for Mailman's reference but won't be appended to the email body since Gmail threading shows the conversation history.)
 
    **Subject line — ASCII only:**
    The Subject line MUST use only ASCII characters. Do NOT use em dashes (—), en dashes (–), smart quotes (""), or any non-ASCII punctuation. Use a regular hyphen (-) or comma instead. Non-ASCII characters cause encoding corruption in email clients.
+
+   **Subject line behavior:**
+   - **First response to inquiry:** Use a descriptive custom subject (e.g., "PCC Certification Path - Tandem Coaching"). This is what the lead sees.
+   - **Reply to lead's response** (`Reply: true`): Subject derived from thread by `gmail_reply` — your Subject value is a fallback only.
 
    **IMPORTANT:** Extract the `To:` email, `Subject:`, and `Original-Message:` from your most recent `[SALES REVIEW]` post in the `<messages>` block — do NOT guess or recall from memory.
    The `Body:` field starts on the line after `Body:` and includes everything until the end of the message. Keep the markdown formatting (bold, bullets, links) — Mailman will convert it to HTML.
@@ -327,7 +351,7 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
 When you receive a scheduled follow-up prompt from the daily cron, query the DB for leads needing follow-up:
 
 ```sql
-SELECT id, name, email, message, status, follow_up_count, last_contact_at, created_at
+SELECT id, name, email, message, status, follow_up_count, last_contact_at, created_at, thread_id
 FROM leads
 WHERE status IN ('sent', 'follow-up-sent')
   AND last_contact_at IS NOT NULL
@@ -335,15 +359,17 @@ WHERE status IN ('sent', 'follow-up-sent')
 ORDER BY last_contact_at ASC;
 ```
 
+The `thread_id` column contains the Gmail thread ID from the initial send. **Always include it in the follow-up handoff** so Mailman can thread the follow-up in the same Gmail conversation as the original response.
+
 Then apply these rules per lead based on `follow_up_count`:
 
 ### Follow-Up #1 (3+ days since last_contact_at, follow_up_count=0)
 
-Quick check-in. Reference their original question. Answer a likely follow-up question they might have. 2-3 short paragraphs. Tone: helpful, not pushy.
+This must read as a follow-up to YOUR previous email, not a cold outreach. Open by referencing what you sent them — e.g., "I sent over some details about the PCC program a few days ago" or "Following up on the ACC information I shared." Then add value: answer a likely follow-up question, mention a detail that might help them decide, or share a relevant upcoming date. 2-3 short paragraphs. Tone: helpful, not pushy.
 
 ### Follow-Up #2 (7+ days since last_contact_at, follow_up_count=1)
 
-Add value — mention an upcoming cohort, a free module, or a relevant detail they didn't ask about. 2-3 paragraphs. Give them a reason to re-engage.
+Again, explicitly reference the conversation — "I reached out a couple of times about {topic}." Add new value: mention an upcoming cohort, a free module, a relevant detail they didn't ask about. Give them a concrete reason to re-engage. 2-3 paragraphs.
 
 ### Cold (14+ days since last_contact_at, follow_up_count >= 2)
 
@@ -406,7 +432,7 @@ When you receive `[HANDOFF: mailman→sales] [SOURCE: email-reply]`, the lead ha
 2. **Save the `Thread-ID`** from the handoff — you MUST include it in your handoff to mailman so the reply threads correctly in Gmail
 3. Draft a reply addressing their new message
 4. Use the initial `[SALES REVIEW]` format (not the follow-up format)
-5. Same approval flow as initial emails
+5. Same approval flow as initial emails, but when handing off to mailman include `Reply: true` (see below)
 
 ### Email Open Events
 
@@ -419,7 +445,11 @@ When you receive `[EMAIL-OPENED]`:
 
 ### Follow-Up Voice
 
-Same rules as initial emails but shorter. No "just following up" or "checking in" — lead with value. Reference their specific question. The goal is to be useful, not persistent.
+Same rules as initial emails but shorter. The follow-up MUST read as part of an ongoing conversation — never as a standalone cold email. The reader should immediately understand this is a follow-up to something you previously sent them.
+
+**Do:** Open by referencing your previous email and what you shared. Then add new value.
+**Don't:** Use generic openers like "just following up" or "checking in." Don't reintroduce yourself or the company as if they've never heard from you.
+**Don't:** Repeat the same information from the first email. Each follow-up should offer something new.
 
 ### Batch Cap
 
