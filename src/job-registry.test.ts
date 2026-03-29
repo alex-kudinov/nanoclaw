@@ -3,7 +3,12 @@ import * as os from 'os';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { _initTestDatabase, getJob, getJobNames, updateJobRunState } from './db.js';
+import {
+  _initTestDatabase,
+  getJob,
+  getJobNames,
+  updateJobRunState,
+} from './db.js';
 import { computeNextRunFrom, loadJobRegistry } from './job-registry.js';
 
 // ---------------------------------------------------------------------------
@@ -17,10 +22,12 @@ function writeTmpRegistry(data: object): string {
   return file;
 }
 
-function makeValidRegistry(overrides: Partial<{
-  projects: Record<string, string>;
-  jobs: object[];
-}> = {}) {
+function makeValidRegistry(
+  overrides: Partial<{
+    projects: Record<string, string>;
+    jobs: object[];
+  }> = {},
+) {
   return {
     projects: {
       tandemweb: '/projects/tandemweb',
@@ -57,7 +64,9 @@ afterEach(() => {
     try {
       fs.unlinkSync(f);
       fs.rmdirSync(path.dirname(f));
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 });
 
@@ -104,30 +113,32 @@ describe('loadJobRegistry - valid registry', () => {
   });
 
   it('loads multiple jobs', () => {
-    const file = writeTmpRegistry(makeValidRegistry({
-      jobs: [
-        {
-          name: 'job-alpha',
-          description: 'Alpha job',
-          project: 'tandemweb',
-          script: 'tools/alpha.sh',
-          args: [],
-          cron: '0 8 * * *',
-          timezone: 'UTC',
-          enabled: true,
-        },
-        {
-          name: 'job-beta',
-          description: 'Beta job',
-          project: 'tandemweb',
-          script: 'tools/beta.sh',
-          args: [],
-          cron: '0 10 * * *',
-          timezone: 'UTC',
-          enabled: true,
-        },
-      ],
-    }));
+    const file = writeTmpRegistry(
+      makeValidRegistry({
+        jobs: [
+          {
+            name: 'job-alpha',
+            description: 'Alpha job',
+            project: 'tandemweb',
+            script: 'tools/alpha.sh',
+            args: [],
+            cron: '0 8 * * *',
+            timezone: 'UTC',
+            enabled: true,
+          },
+          {
+            name: 'job-beta',
+            description: 'Beta job',
+            project: 'tandemweb',
+            script: 'tools/beta.sh',
+            args: [],
+            cron: '0 10 * * *',
+            timezone: 'UTC',
+            enabled: true,
+          },
+        ],
+      }),
+    );
     tmpFiles.push(file);
 
     loadJobRegistry(file);
@@ -148,7 +159,9 @@ describe('loadJobRegistry - invalid / edge-case input', () => {
   });
 
   it('does not crash when file does not exist', () => {
-    expect(() => loadJobRegistry('/tmp/definitely-does-not-exist.json')).not.toThrow();
+    expect(() =>
+      loadJobRegistry('/tmp/definitely-does-not-exist.json'),
+    ).not.toThrow();
   });
 
   it('skips jobs with unknown project', () => {
@@ -229,30 +242,32 @@ describe('loadJobRegistry - runtime state preservation', () => {
 describe('loadJobRegistry - disable removed jobs', () => {
   it('disables a job that was removed from the registry', () => {
     // Load registry with two jobs
-    const file = writeTmpRegistry(makeValidRegistry({
-      jobs: [
-        {
-          name: 'keep-job',
-          description: '',
-          project: 'tandemweb',
-          script: 'tools/keep.sh',
-          args: [],
-          cron: '0 9 * * *',
-          timezone: 'UTC',
-          enabled: true,
-        },
-        {
-          name: 'remove-job',
-          description: '',
-          project: 'tandemweb',
-          script: 'tools/remove.sh',
-          args: [],
-          cron: '0 9 * * *',
-          timezone: 'UTC',
-          enabled: true,
-        },
-      ],
-    }));
+    const file = writeTmpRegistry(
+      makeValidRegistry({
+        jobs: [
+          {
+            name: 'keep-job',
+            description: '',
+            project: 'tandemweb',
+            script: 'tools/keep.sh',
+            args: [],
+            cron: '0 9 * * *',
+            timezone: 'UTC',
+            enabled: true,
+          },
+          {
+            name: 'remove-job',
+            description: '',
+            project: 'tandemweb',
+            script: 'tools/remove.sh',
+            args: [],
+            cron: '0 9 * * *',
+            timezone: 'UTC',
+            enabled: true,
+          },
+        ],
+      }),
+    );
     tmpFiles.push(file);
 
     loadJobRegistry(file);
@@ -260,20 +275,25 @@ describe('loadJobRegistry - disable removed jobs', () => {
     expect(getJob('remove-job')!.enabled).toBe(true);
 
     // Overwrite registry with only one job
-    fs.writeFileSync(file, JSON.stringify(makeValidRegistry({
-      jobs: [
-        {
-          name: 'keep-job',
-          description: '',
-          project: 'tandemweb',
-          script: 'tools/keep.sh',
-          args: [],
-          cron: '0 9 * * *',
-          timezone: 'UTC',
-          enabled: true,
-        },
-      ],
-    })));
+    fs.writeFileSync(
+      file,
+      JSON.stringify(
+        makeValidRegistry({
+          jobs: [
+            {
+              name: 'keep-job',
+              description: '',
+              project: 'tandemweb',
+              script: 'tools/keep.sh',
+              args: [],
+              cron: '0 9 * * *',
+              timezone: 'UTC',
+              enabled: true,
+            },
+          ],
+        }),
+      ),
+    );
 
     loadJobRegistry(file);
 
@@ -292,20 +312,25 @@ describe('loadJobRegistry - cron change triggers next_run recompute', () => {
     expect(before).not.toBeNull();
 
     // Update registry with a different cron
-    fs.writeFileSync(file, JSON.stringify(makeValidRegistry({
-      jobs: [
-        {
-          name: 'daily-sync',
-          description: 'Sync daily',
-          project: 'tandemweb',
-          script: 'tools/sync.sh',
-          args: [],
-          cron: '0 18 * * *', // changed from 0 9 to 0 18
-          timezone: 'America/Chicago',
-          enabled: true,
-        },
-      ],
-    })));
+    fs.writeFileSync(
+      file,
+      JSON.stringify(
+        makeValidRegistry({
+          jobs: [
+            {
+              name: 'daily-sync',
+              description: 'Sync daily',
+              project: 'tandemweb',
+              script: 'tools/sync.sh',
+              args: [],
+              cron: '0 18 * * *', // changed from 0 9 to 0 18
+              timezone: 'America/Chicago',
+              enabled: true,
+            },
+          ],
+        }),
+      ),
+    );
 
     loadJobRegistry(file);
 

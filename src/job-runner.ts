@@ -108,7 +108,13 @@ export async function runJob(
       stdio: ['ignore', 'pipe', 'pipe'],
     });
   } else if (ext === '.py') {
-    const venvPython = path.join(job.project_root, 'tools', '.venv', 'bin', 'python3');
+    const venvPython = path.join(
+      job.project_root,
+      'tools',
+      '.venv',
+      'bin',
+      'python3',
+    );
     const pythonExec = fs.existsSync(venvPython) ? venvPython : 'python3';
     proc = spawn(pythonExec, [scriptPath, ...args], {
       shell: false,
@@ -166,12 +172,16 @@ export async function runJob(
       // Kill entire process group
       try {
         if (proc.pid) process.kill(-proc.pid, 'SIGTERM');
-      } catch { /* process may already be dead */ }
+      } catch {
+        /* process may already be dead */
+      }
       // Force kill after 5s
       setTimeout(() => {
         try {
           if (proc.pid) process.kill(-proc.pid, 'SIGKILL');
-        } catch { /* already dead */ }
+        } catch {
+          /* already dead */
+        }
       }, 5000);
     }, job.timeout_ms);
 
@@ -182,9 +192,10 @@ export async function runJob(
       logStream.end();
 
       const durationMs = Date.now() - startMs;
-      const finalOutput = outputBuffer.length > MAX_BUFFER
-        ? outputBuffer.slice(-MAX_BUFFER)
-        : outputBuffer;
+      const finalOutput =
+        outputBuffer.length > MAX_BUFFER
+          ? outputBuffer.slice(-MAX_BUFFER)
+          : outputBuffer;
 
       // 7. Determine status
       let status: JobRunResult['status'];
@@ -200,13 +211,19 @@ export async function runJob(
       if (status !== 'ok' && job.lockfile) {
         try {
           fs.unlinkSync(job.lockfile);
-          logger.info({ job: job.name, lockfile: job.lockfile }, 'Cleaned up lockfile after failure');
-        } catch { /* lockfile may not exist */ }
+          logger.info(
+            { job: job.name, lockfile: job.lockfile },
+            'Cleaned up lockfile after failure',
+          );
+        } catch {
+          /* lockfile may not exist */
+        }
       }
 
       // Update run log
       updateJobRunLog(runId, {
-        status: status === 'ok' ? 'ok' : status === 'timeout' ? 'timeout' : 'fail',
+        status:
+          status === 'ok' ? 'ok' : status === 'timeout' ? 'timeout' : 'fail',
         exit_code: code ?? null,
         finished_at: new Date().toISOString(),
         duration_ms: durationMs,
@@ -229,7 +246,7 @@ export async function runJob(
         status,
         duration_ms: durationMs,
         output: finalOutput || null,
-        error: status !== 'ok' ? (finalOutput || null) : null,
+        error: status !== 'ok' ? finalOutput || null : null,
         exit_code: code ?? null,
         retry_attempts: retryAttempt,
         run_id: runId,
@@ -252,7 +269,11 @@ export async function runJob(
         const currentJob = getJob(job.name);
         if (currentJob && currentJob.enabled) {
           logger.info(
-            { job: job.name, attempt: retryAttempt + 1, maxRetries: job.retries },
+            {
+              job: job.name,
+              attempt: retryAttempt + 1,
+              maxRetries: job.retries,
+            },
             'Retrying job',
           );
           setTimeout(async () => {
@@ -263,7 +284,10 @@ export async function runJob(
             }
           }, job.retry_delay_ms);
         } else {
-          logger.info({ job: job.name }, 'Job disabled during retry - skipping');
+          logger.info(
+            { job: job.name },
+            'Job disabled during retry - skipping',
+          );
         }
       }
 
@@ -319,7 +343,7 @@ function buildEnv(projectRoot: string): NodeJS.ProcessEnv {
       // Strip surrounding quotes
       if (
         (val.startsWith('"') && val.endsWith('"')) ||
-        (val.startsWith('\'') && val.endsWith('\''))
+        (val.startsWith("'") && val.endsWith("'"))
       ) {
         val = val.slice(1, -1);
       }

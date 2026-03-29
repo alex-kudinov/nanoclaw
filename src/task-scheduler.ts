@@ -88,7 +88,9 @@ export async function processHostJobs(deps: HostJobDeps): Promise<void> {
         },
         deps.reportChannel,
         deps.sendMessage,
-      ).catch(() => {/* best effort */});
+      ).catch(() => {
+        /* best effort */
+      });
     });
   }
 }

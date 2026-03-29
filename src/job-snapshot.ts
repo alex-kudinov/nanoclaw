@@ -22,10 +22,7 @@ export function writeJobsSnapshot(ipcDir: string): void {
       jobs: jobsWithLogs,
       job_list_text: formatJobList(jobs),
       job_status: Object.fromEntries(
-        jobsWithLogs.map((j) => [
-          j.name,
-          formatJobStatus(j, j.recent_logs),
-        ]),
+        jobsWithLogs.map((j) => [j.name, formatJobStatus(j, j.recent_logs)]),
       ),
     };
 
