@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nanoclaw.recording-watcher</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/xbohdpukc/dev/NanoClaw/scripts/recording-watcher.sh</string>
+  </array>
+  <key>WatchPaths</key>
+  <array>
+    <string>/Users/xbohdpukc/Library/CloudStorage/OneDrive-SoleraHoldings,Inc/Recordings</string>
+  </array>
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/xbohdpukc/.local/log/recording-watcher.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/xbohdpukc/.local/log/recording-watcher.stderr.log</string>
+</dict>
+</plist>

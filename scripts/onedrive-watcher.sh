@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# onedrive-watcher.sh — Auto-classify new files appearing in OneDrive
-# Triggered by launchd WatchPaths
-set -euo pipefail
+# onedrive-watcher.sh — Copy files from OneDrive Drop to vault Intake,
+# then spawn processors. Copy step is fast (seconds) and uses a short lock.
+# Processors run independently in background with their own locks.
+# AI processors (chat, email) share a semaphore (max 2 concurrent).
+set -eo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
@@ -33,104 +35,161 @@ slack() {
     >/dev/null 2>&1 || true
 }
 
-# Prevent overlapping runs
-if [ -f "$LOCK" ]; then
-  pid=$(cat "$LOCK" 2>/dev/null || true)
-  if kill -0 "$pid" 2>/dev/null; then
-    log "SKIP: already running (pid $pid)"
-    exit 0
+# ── Acquire lock for copy phase only (seconds, not minutes) ──────────────────
+acquire_lock() {
+  if [ -f "$LOCK" ]; then
+    pid=$(cat "$LOCK" 2>/dev/null || true)
+    if kill -0 "$pid" 2>/dev/null; then
+      log "SKIP: copy phase running (pid $pid)"
+      exit 0
+    fi
   fi
-fi
-echo $$ > "$LOCK"
-trap 'rm -f "$LOCK"' EXIT
+  echo $$ > "$LOCK"
+}
 
-# ── Calendar subfolder: copy to vault Calendar intake ────────────────────────
-cal_count=0
-if [ -d "$DROP_DIR/Calendar" ]; then
-  mkdir -p "${HOME}/Vaults/My Notes/Intake/Calendar"
-  shopt -s nullglob
-  cal_files=("$DROP_DIR"/Calendar/*.txt)
-  shopt -u nullglob
-  for f in "${cal_files[@]}"; do
-    [ -f "$f" ] || continue
-    fname=$(basename "$f")
-    cp "$f" "${HOME}/Vaults/My Notes/Intake/Calendar/$fname"
-    mkdir -p "$DROP_DIR/Calendar/.processed"
-    mv "$f" "$DROP_DIR/Calendar/.processed/$fname"
-    cal_count=$((cal_count + 1))
+release_lock() {
+  rm -f "$LOCK"
+}
+
+acquire_lock
+
+# ── Per-processor lock helpers ───────────────────────────────────────────────
+try_proc_lock() {
+  local lockfile="/tmp/nanoclaw-proc-${1}.lock"
+  if [ -f "$lockfile" ]; then
+    local pid
+    pid=$(cat "$lockfile" 2>/dev/null || true)
+    if kill -0 "$pid" 2>/dev/null; then
+      log "  $1: already running (pid $pid), skipping"
+      return 1
+    fi
+  fi
+  echo "$BASHPID" > "$lockfile"
+  return 0
+}
+
+release_proc_lock() {
+  rm -f "/tmp/nanoclaw-proc-${1}.lock"
+}
+
+# ── AI semaphore (max 2 concurrent AI processors) ────────────────────────────
+AI_SEM_DIR="/tmp/nanoclaw-ai-sem"
+mkdir -p "$AI_SEM_DIR"
+
+acquire_ai_slot() {
+  while true; do
+    local count
+    count=$(find "$AI_SEM_DIR" -maxdepth 1 -name "*.slot" -type f 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$count" -lt 2 ]; then
+      echo "$$" > "$AI_SEM_DIR/$$.slot"
+      return 0
+    fi
+    # Clean stale slots
+    for slot in "$AI_SEM_DIR"/*.slot; do
+      [ -f "$slot" ] || continue
+      local spid
+      spid=$(cat "$slot" 2>/dev/null || true)
+      if ! kill -0 "$spid" 2>/dev/null; then
+        rm -f "$slot"
+      fi
+    done
+    sleep 2
   done
-  if [ "$cal_count" -gt 0 ]; then
-    log "Calendar: copied $cal_count file(s) to vault Calendar intake"
-    slack "[ONEDRIVE] Copied $cal_count calendar file(s) from Drop/Calendar to vault intake."
-  fi
+}
+
+release_ai_slot() {
+  rm -f "$AI_SEM_DIR/$$.slot"
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 1: Copy from Drop to Intake (Python — bash can't read CloudStorage
+# under launchd due to macOS TCC restrictions, but Python can)
+# ══════════════════════════════════════════════════════════════════════════════
+COPY_SCRIPT="${HOME}/dev/NanoClaw/scripts/copy-drop.py"
+copy_json=$("$VENV" "$COPY_SCRIPT" 2>>"$LOG") || true
+
+# Parse JSON counts
+cal_count=$(echo "$copy_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("cal",0))' 2>/dev/null || echo 0)
+chat_count=$(echo "$copy_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("chat",0))' 2>/dev/null || echo 0)
+people_count=$(echo "$copy_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("people",0))' 2>/dev/null || echo 0)
+email_count=$(echo "$copy_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("email",0))' 2>/dev/null || echo 0)
+drop_count=$(echo "$copy_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("drop",0))' 2>/dev/null || echo 0)
+
+[ "$cal_count" -gt 0 ] 2>/dev/null && log "Calendar: copied $cal_count file(s)"
+[ "$chat_count" -gt 0 ] 2>/dev/null && log "Chats: copied $chat_count file(s)"
+[ "$people_count" -gt 0 ] 2>/dev/null && log "People: copied $people_count file(s)"
+[ "$email_count" -gt 0 ] 2>/dev/null && log "Email: copied $email_count file(s)"
+[ "$drop_count" -gt 0 ] 2>/dev/null && log "Drop: copied $drop_count file(s)"
+
+# ── Release copy lock — processors run independently below ───────────────────
+release_lock
+log "Copy phase done: cal=$cal_count chat=$chat_count people=$people_count email=$email_count drop=$drop_count"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Helper: check if directory has files matching pattern
+has_files() {
+  local dir="$1" pattern="${2:-*}"
+  [ -d "$dir" ] || return 1
+  local count
+  count=$(find "$dir" -maxdepth 1 -name "$pattern" -type f 2>/dev/null | head -1 | wc -l | tr -d ' ')
+  [ "$count" -gt 0 ]
+}
+
+
+# PHASE 2: Spawn processors (independent, background, own locks)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── No-AI processors: run immediately, no semaphore ──────────────────────────
+
+if has_files "${VAULT_ROOT}/Intake/Calendar" "*.txt"; then
+  (
+    try_proc_lock calendar || exit 0
+    trap 'release_proc_lock calendar' EXIT
+    log "Processing calendar events..."
+    proc_out=$("$VENV" "${HOME}/dev/NanoClaw/tools/calendar/process_calendar.py" --vault-root "$VAULT_ROOT" 2>&1) || true
+    log "Calendar processor: $proc_out"
+    cal_new=$(echo "$proc_out" | grep "New:" | grep -oE '[0-9]+' || echo "0")
+    [ "$cal_new" != "0" ] && slack "[CALENDAR] Processed $cal_new new calendar event(s)."
+  ) &
 fi
 
-# ── Chats subfolder: copy to vault Chats intake ─────────────────────────────
-chat_count=0
-if [ -d "$DROP_DIR/Chats" ]; then
-  mkdir -p "${VAULT_ROOT}/Intake/Chats"
-  shopt -s nullglob
-  chat_files=("$DROP_DIR"/Chats/*.txt)
-  shopt -u nullglob
-  for f in "${chat_files[@]}"; do
-    [ -f "$f" ] || continue
-    fname=$(basename "$f")
-    cp "$f" "${VAULT_ROOT}/Intake/Chats/$fname"
-    mkdir -p "$DROP_DIR/Chats/.processed"
-    mv "$f" "$DROP_DIR/Chats/.processed/$fname"
-    chat_count=$((chat_count + 1))
-  done
-  if [ "$chat_count" -gt 0 ]; then
-    log "Chats: copied $chat_count file(s) to vault Chats intake"
-    slack "[ONEDRIVE] Copied $chat_count chat file(s) from Drop/Chats to vault intake."
-  fi
+if has_files "${VAULT_ROOT}/Intake/People" "*.json"; then
+  (
+    try_proc_lock people || exit 0
+    trap 'release_proc_lock people' EXIT
+    log "Processing people harvest..."
+    proc_out=$("$VENV" "${HOME}/dev/NanoClaw/tools/people/process_people.py" --vault-root "$VAULT_ROOT" --input "${VAULT_ROOT}/Intake/People/people.json" 2>&1) || true
+    log "People processor: $proc_out"
+  ) &
 fi
 
-# ── People subfolder: copy to vault People intake ───────────────────────────
-people_count=0
-if [ -d "$DROP_DIR/People" ]; then
-  mkdir -p "${VAULT_ROOT}/Intake/People"
-  shopt -s nullglob
-  people_files=("$DROP_DIR"/People/*.json)
-  shopt -u nullglob
-  for f in "${people_files[@]}"; do
-    [ -f "$f" ] || continue
-    fname=$(basename "$f")
-    cp "$f" "${VAULT_ROOT}/Intake/People/$fname"
-    people_count=$((people_count + 1))
-  done
-  if [ "$people_count" -gt 0 ]; then
-    log "People: copied $people_count file(s) to vault People intake"
-  fi
+# ── AI processors: acquire semaphore slot (max 2 concurrent) ─────────────────
+
+if has_files "${VAULT_ROOT}/Intake/Chats" "*.txt"; then
+  (
+    try_proc_lock chat || exit 0
+    trap 'release_proc_lock chat; release_ai_slot' EXIT
+    acquire_ai_slot
+    log "Processing chat exports..."
+    "$VENV" "${HOME}/dev/NanoClaw/tools/chat/process_chat.py" --vault-root "$VAULT_ROOT" 2>&1 | while read -r line; do log "[CHAT] $line"; done || true
+  ) &
 fi
 
-# ── Run processors on new data ──────────────────────────────────────────────
-if [ "$cal_count" -gt 0 ]; then
-  log "Processing calendar events..."
-  proc_out=$("$VENV" "${HOME}/dev/NanoClaw/tools/calendar/process_calendar.py" --vault-root "$VAULT_ROOT" 2>&1) || true
-  log "Calendar processor: $proc_out"
-  cal_new=$(echo "$proc_out" | grep "New:" | grep -oE '[0-9]+' || echo "0")
-  [ "$cal_new" != "0" ] && slack "[CALENDAR] Processed $cal_new new calendar event(s)."
+if has_files "${VAULT_ROOT}/Intake/Email"; then
+  (
+    try_proc_lock email || exit 0
+    trap 'release_proc_lock email; release_ai_slot' EXIT
+    acquire_ai_slot
+    log "Processing email exports..."
+    "$VENV" "${HOME}/dev/NanoClaw/tools/email/process_email.py" --vault-root "$VAULT_ROOT" 2>&1 | while read -r line; do log "[EMAIL] $line"; done || true
+  ) &
 fi
 
-if [ "$people_count" -gt 0 ]; then
-  log "Processing people harvest..."
-  proc_out=$("$VENV" "${HOME}/dev/NanoClaw/tools/people/process_people.py" --vault-root "$VAULT_ROOT" --input "${VAULT_ROOT}/Intake/People/people.json" 2>&1) || true
-  log "People processor: $proc_out"
-fi
+# ── Wait for all processors before post-processing ───────────────────────────
+wait
 
-if [ "$chat_count" -gt 0 ]; then
-  log "Processing chat exports..."
-  proc_out=$("$VENV" "${HOME}/dev/NanoClaw/tools/chat/process_chat.py" --vault-root "$VAULT_ROOT" 2>&1) || true
-  log "Chat processor: $proc_out"
-  chat_new=$(echo "$proc_out" | grep "New:" | grep -oE '[0-9]+' || echo "0")
-  [ "$chat_new" != "0" ] && slack "[CHATS] Processed $chat_new new chat thread(s)."
-fi
-
-# ── Speaker resolution on any new transcripts ───────────────────────────────
-# Runs after calendar/chat processing to maximize matching data
-# Checks all transcripts for unresolved speakers — idempotent
-if [ "$cal_count" -gt 0 ] || [ "$chat_count" -gt 0 ]; then
+# ── Speaker resolution (runs after all processors to maximize data) ──────────
+if [ "$cal_count" -gt 0 ] || [ "$chat_count" -gt 0 ] || [ "$email_count" -gt 0 ] || has_files "${VAULT_ROOT}/Intake/Chats" "*.txt" || has_files "${VAULT_ROOT}/Intake/Email"; then
   log "Running speaker resolution..."
   resolve_out=$("$VENV" "${HOME}/dev/NanoClaw/tools/resolver/resolve_speakers.py" --vault-root "$VAULT_ROOT" 2>&1) || true
   resolved=$(echo "$resolve_out" | grep "Speakers resolved:" | grep -oE '[0-9]+' || echo "0")
@@ -138,32 +197,11 @@ if [ "$cal_count" -gt 0 ] || [ "$chat_count" -gt 0 ]; then
   [ "$resolved" != "0" ] && slack "[RESOLVER] Resolved $resolved speaker(s) in transcripts."
 fi
 
-# ── Vault hygiene (cross-ref checks only) ────────────────────────────────────
+# ── Vault hygiene ────────────────────────────────────────────────────────────
 log "Running post-pipeline hygiene..."
 bash "${HOME}/dev/NanoClaw/scripts/vault-hygiene.sh" --checks crossref-broken-links,crossref-speaker-sync --vault-root "$VAULT_ROOT" 2>&1 | while read -r l; do log "[HYGIENE] $l"; done
 
-# ── Drop folder: copy to vault intake, skip triage ──────────────────────────
-drop_count=0
-if [ -d "$DROP_DIR" ]; then
-  mkdir -p "$VAULT_INTAKE"
-  shopt -s nullglob
-  drop_files=("$DROP_DIR"/*.txt "$DROP_DIR"/*.eml)
-  shopt -u nullglob
-  for f in "${drop_files[@]}"; do
-    [ -f "$f" ] || continue
-    fname=$(basename "$f")
-    cp "$f" "$VAULT_INTAKE/$fname"
-    mkdir -p "$DROP_DIR/.processed"
-    mv "$f" "$DROP_DIR/.processed/$fname"
-    drop_count=$((drop_count + 1))
-  done
-  if [ "$drop_count" -gt 0 ]; then
-    log "Drop: copied $drop_count file(s) to vault intake"
-    slack "[ONEDRIVE] Copied $drop_count file(s) from Drop to vault intake."
-  fi
-fi
-
-# Scan new files into catalog (incremental — skips already-scanned)
+# ── OneDrive file scan/classify ──────────────────────────────────────────────
 log "Scanning for new files..."
 scan_out=$("${HOME}/dev/NanoClaw/tools/onedrive/.venv/bin/python3" "$TRIAGE" scan "$ONEDRIVE" 2>&1) || true
 new_count=$(echo "$scan_out" | grep "Newly cataloged:" | sed 's/.*: //')
@@ -177,7 +215,6 @@ log "Found $new_count new files, classifying..."
 cls_out=$("${HOME}/dev/NanoClaw/tools/onedrive/.venv/bin/python3" "$TRIAGE" classify 2>&1) || true
 log "Classification: $cls_out"
 
-# Report to Slack
 ok_count=$(echo "$cls_out" | grep -oE '[0-9]+ ok' | grep -oE '[0-9]+' || echo "0")
 slack "[ONEDRIVE] Triaged $new_count new files ($ok_count classified). Run \`report\` to review."
 
