@@ -469,12 +469,11 @@ def move_to_errors(
 
 
 def move_to_processed(path: Path, vault_root: Path) -> None:
-    """Move processed file to Intake/Calendar/processed/."""
-    proc_dir = vault_root / "Intake" / "Calendar" / "processed"
-    proc_dir.mkdir(parents=True, exist_ok=True)
-    dest = proc_dir / path.name
-    dest = _unique_path(dest)
-    shutil.move(str(path), str(dest))
+    """Delete processed input file. Manifest handles dedup."""
+    try:
+        path.unlink()
+    except OSError:
+        pass
 
 
 def _unique_path(path: Path) -> Path:

@@ -10,25 +10,26 @@ Usage:
 """
 
 import argparse
-import html
 import json
 import os
 import re
 import shutil
 import sys
-from datetime import datetime, date, timezone
+from datetime import datetime, date
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-try:
-    import yaml
-    HAS_YAML = True
-except ImportError:
-    HAS_YAML = False
+# Add tools/ to path for shared libraries
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.parsing import (
+    parse_export_header as parse_header,
+    strip_html,
+    build_people_lookup,
+    SANITIZE_RE,
+    DOMAIN_PRIORITY,
+)
 
 try:
-    # Add tools/lib to path for bridge client
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from lib.bridge import claude as bridge_claude
     HAS_BRIDGE = True
 except ImportError:
@@ -37,54 +38,14 @@ except ImportError:
 # ── Constants ────────────────────────────────────────────────────────────────
 
 CST = ZoneInfo("America/Chicago")
-PEOPLE_DIRS = ["Solera/People", "Tandem/People", "CNPC/People"]
-DOMAIN_DIRS = {"Solera/People": "solera", "Tandem/People": "tandem", "CNPC/People": "cnpc"}
-DOMAIN_PRIORITY = {"solera": 3, "tandem": 2, "cnpc": 1}
 DEST_MAP = {"solera": "Solera/Chats", "tandem": "Tandem/Chats", "cnpc": "CNPC/Chats"}
-SANITIZE_RE = re.compile(r'[/:\\*?"<>|]')
 MSG_HEADER_RE = re.compile(
     r'^(.*?)\s*\[(\d{4}-\d{2}-\d{2}T[\d:.]+Z)\]:\s*(.*)',
     re.DOTALL,
 )
-AT_TAG_RE = re.compile(r'<at\s+id="[^"]*">([^<]*)</at>')
-SPLIT_AT_RE = re.compile(
-    r'<at\s+id="[^"]*">([^<]*),</at>\s*(?:&nbsp;)?\s*<at\s+id="[^"]*">([^<]*)</at>'
-)
 
 AI_MODEL = "claude-haiku-4-5-20251001"
 MAX_MESSAGES_FOR_AI = 200  # Limit messages sent to AI to control token cost
-
-
-# ── Header Parsing ───────────────────────────────────────────────────────────
-
-def parse_header(text: str) -> tuple[dict | None, str]:
-    """Parse @@EXPORT_META header. Returns (meta_dict, remaining_text).
-    Returns (None, full_text) if no header found."""
-    lines = text.split("\n")
-    if not lines or lines[0].strip() != "@@EXPORT_META":
-        return None, text
-    end_idx = None
-    for i, line in enumerate(lines):
-        if line.strip() == "@@END_META":
-            end_idx = i
-            break
-    if end_idx is None:
-        return None, text
-    meta = {}
-    for line in lines[1:end_idx]:
-        line = line.strip()
-        if not line:
-            continue
-        colon = line.find(":")
-        if colon < 0:
-            continue
-        key = line[:colon].strip()
-        value = line[colon + 1:].strip()
-        meta[key] = value
-    remaining = lines[end_idx + 1:]
-    if remaining and remaining[0].strip() == "":
-        remaining = remaining[1:]
-    return meta, "\n".join(remaining)
 
 
 # ── Message Parsing ──────────────────────────────────────────────────────────
@@ -115,46 +76,6 @@ def is_system_event(msg: dict) -> bool:
     return "<systemEventMessage/>" in msg["body"]
 
 
-# ── HTML Stripping ───────────────────────────────────────────────────────────
-
-def strip_html(text: str) -> str:
-    """Strip HTML from a message body per spec §2."""
-    if not text:
-        return ""
-    # Handle split @mentions: <at>Last,</at>&nbsp;<at>First</at> → First Last
-    text = SPLIT_AT_RE.sub(lambda m: f"{m.group(2).strip()} {m.group(1).strip().rstrip(',')}", text)
-    # Handle single @mentions
-    text = AT_TAG_RE.sub(lambda m: m.group(1).strip(), text)
-    # Handle emoji tags
-    text = re.sub(r'<emoji[^>]*alt="([^"]*)"[^>]*>', r'\1', text)
-    text = re.sub(r'<emoji[^>]*>', '', text)
-    # Handle attachments
-    text = re.sub(
-        r'<a[^>]*href="[^"]*?([^/"]+\.(?:xlsx|pdf|docx|pptx|csv|zip))"[^>]*>.*?</a>',
-        r'[attachment: \1]', text, flags=re.I | re.DOTALL
-    )
-    # Handle links
-    text = re.sub(r'<a[^>]*href="([^"]*)"[^>]*>(.*?)</a>', r'\2 (\1)', text, flags=re.DOTALL)
-    # Handle images
-    text = re.sub(r'<img[^>]*alt="([^"]*)"[^>]*>', lambda m: f'[{m.group(1)}]' if m.group(1) != 'image' else '', text)
-    text = re.sub(r'<img[^>]*>', '', text)
-    # Block-level elements → newlines
-    text = re.sub(r'<(?:p|br|li|div|tr|h[1-6])[^>]*/?>', '\n', text, flags=re.I)
-    text = re.sub(r'</(?:p|li|div|tr|h[1-6])>', '\n', text, flags=re.I)
-    # Code blocks
-    text = re.sub(r'<(?:codeblock|code)>(.*?)</(?:codeblock|code)>', r'```\n\1\n```', text, flags=re.DOTALL)
-    # Strip remaining tags
-    text = re.sub(r'<[^>]+>', '', text)
-    # Decode entities
-    text = text.replace('&nbsp;', ' ')
-    text = html.unescape(text)
-    # Cleanup
-    text = re.sub(r'[ \t]+', ' ', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    lines = [l.strip() for l in text.split('\n')]
-    return '\n'.join(lines).strip()
-
-
 # ── Name Resolution ──────────────────────────────────────────────────────────
 
 def invert_name(sender_raw: str) -> str:
@@ -170,30 +91,6 @@ def invert_name(sender_raw: str) -> str:
     if not first:
         return last
     return f"{first} {last}"
-
-
-def build_people_lookup(vault_root: Path) -> tuple[dict, dict]:
-    """Build name->canonical and name->domain lookup from People notes."""
-    name_lookup: dict[str, str] = {}
-    domain_lookup: dict[str, str] = {}
-    for people_dir_rel, domain in DOMAIN_DIRS.items():
-        people_dir = vault_root / people_dir_rel
-        if not people_dir.is_dir():
-            continue
-        for md_file in people_dir.glob("*.md"):
-            fm = _parse_frontmatter(md_file)
-            if not fm:
-                continue
-            name = fm.get("name", "")
-            if not name:
-                continue
-            person_domain = fm.get("domain", domain)
-            domain_lookup[name] = person_domain
-            name_lookup[name.lower()] = name
-            for alias in fm.get("aliases", []) or []:
-                if alias:
-                    name_lookup[alias.lower()] = name
-    return name_lookup, domain_lookup
 
 
 def resolve_name(raw: str, name_lookup: dict) -> str:
@@ -224,48 +121,6 @@ def infer_domain(participants: list[str], domain_lookup: dict) -> str:
     top = [d for d, c in counts.items() if c == max_count]
     top.sort(key=lambda d: DOMAIN_PRIORITY.get(d, 0), reverse=True)
     return top[0]
-
-
-# ── Frontmatter Parsing ─────────────────────────────────────────────────────
-
-def _parse_frontmatter(path: Path) -> dict | None:
-    """Extract YAML frontmatter dict from a markdown file."""
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return None
-    if not text.startswith("---"):
-        return None
-    end = text.find("\n---", 3)
-    if end < 0:
-        return None
-    block = text[4:end]
-    if HAS_YAML:
-        try:
-            return yaml.safe_load(block) or {}
-        except Exception:
-            return None
-    return _parse_fm_regex(block)
-
-
-def _parse_fm_regex(block: str) -> dict:
-    result: dict = {}
-    for line in block.split("\n"):
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        m = re.match(r"^(\S[\w-]*):\s*(.*)", line)
-        if not m:
-            continue
-        key, val = m.group(1), m.group(2).strip()
-        if val.startswith("[") and val.endswith("]"):
-            items = val[1:-1]
-            result[key] = [s.strip().strip("\"'") for s in items.split(",") if s.strip()]
-        elif val.lower() in ("true", "false"):
-            result[key] = val.lower() == "true"
-        else:
-            result[key] = val.strip("\"'")
-    return result
 
 
 # ── Manifest ─────────────────────────────────────────────────────────────────
@@ -511,16 +366,11 @@ def write_note(vault_root: Path, domain: str, filename: str, content: str) -> Pa
 
 
 def archive_input(path: Path, vault_root: Path) -> None:
-    proc_dir = vault_root / "Intake" / "Chats" / "processed"
-    proc_dir.mkdir(parents=True, exist_ok=True)
-    dest = proc_dir / path.name
-    if dest.exists():
-        stem, suffix = dest.stem, dest.suffix
-        n = 1
-        while dest.exists():
-            dest = dest.parent / f"{stem}_{n}{suffix}"
-            n += 1
-    shutil.move(str(path), str(dest))
+    """Delete processed input file. Manifest handles dedup."""
+    try:
+        path.unlink()
+    except OSError:
+        pass
 
 
 # ── Processing Pipeline ──────────────────────────────────────────────────────
