@@ -1,7 +1,7 @@
 # Tandem Coaching — Knowledge Base
 
 <!-- llms-full-hash: 12e9ff1a9119db5b910c53cd653a223f8aa2827427dbe6d07592365798311771 -->
-<!-- validated-at: 2026-03-27 -->
+<!-- validated-at: 2026-03-28 -->
 
 
 Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and executive coaching firm based in Dallas, TX. Co-founders: Cherie Silas and Alex Kudinov.
@@ -289,6 +289,23 @@ Every outbound email responding to a lead must include the lead's original inqui
 
 ### Sales→Mailman Handoff Requirements
 The `[HANDOFF: sales→mailman]` must include an `Original-Message:` field containing the lead's original message verbatim. This is not optional — Mailman will block the email if it is missing. Drafts must not be approved or handed off without it.
+
+### Thread-ID Pipeline — Pass Through Every Stage
+Gmail Thread-IDs must flow through the entire pipeline: mailman → inbox → sales → mailman. When handing off a new lead to inbox, mailman must include the `Thread-ID:` field from the email header. Inbox must pass it through in `[HANDOFF: inbox→sales]`. Sales must save it and include it in `[HANDOFF: sales→mailman]` on approval. Dropping the Thread-ID at any stage causes the first response to go out as a standalone email instead of threading under the lead's original inquiry.
+
+### gmail_send vs gmail_reply
+When sending a response to an email inquiry, the correct method depends on the Thread-ID and Reply flag:
+
+- **First response to a new inquiry (Thread-ID present, no `Reply: true`):** Use `gmail_send` with the `thread_id` parameter. This threads the email in the lead's original Gmail conversation while keeping a custom descriptive subject line (e.g., "PCC Certification Path - Tandem Coaching").
+- **Reply to a lead's email response (`Reply: true` + Thread-ID present):** Use `gmail_reply`. Subject is derived from the thread automatically.
+- **No Thread-ID:** Use `gmail_send` standalone.
+
+### Reply Flag in Handoffs
+Include `Reply: true` in `[HANDOFF: sales→mailman]` ONLY when responding to a lead's email reply — that is, when the originating handoff was `[SOURCE: email-reply]`. Do NOT include `Reply: true` for first responses to new inquiries, even when a Thread-ID is present. This flag is what tells Mailman which send method to use.
+
+### Subject Line Behavior by Email Type
+- **First response to an inquiry:** Always use a descriptive custom subject (e.g., "PCC Certification Path - Tandem Coaching"). Never "Re: {original subject}".
+- **Follow-ups and replies to lead responses:** Subject is derived from the Gmail thread automatically. The Subject field in the handoff is a fallback only.
 
 ### Booking Link vs Contact Form
 The `/contact-us` page is the contact form where leads submit new inquiries — do not send leads back there when they are ready to book a call. For scheduling a consultation call, use the direct booking calendar: https://booking.tandemcoach.co/booking?t=s&uuid=6bfbbeab-eaa1-4a3f-b5a7-a05546bad443
