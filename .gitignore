@@ -25,8 +25,13 @@ knowledge/shared/SCHEDULE.md
 *.keys.json
 .env
 
+# Python
+__pycache__/
+*.pyc
+
 # Temp files
 .tmp-*
+.syncthing.*.tmp
 
 # OS
 .DS_Store
