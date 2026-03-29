@@ -318,13 +318,14 @@ server.tool(
 
 server.tool(
   'gmail_send',
-  'Send a new email (not a reply).',
+  'Send a new email. Optionally thread into an existing Gmail conversation while using a custom subject line.',
   {
     to: z.string().describe('Recipient email address'),
     subject: z.string().describe('Email subject line'),
     body: z.string().describe('Email body (plain text or HTML)'),
     cc: z.string().optional().describe('CC recipients (comma-separated)'),
     html: z.boolean().optional().describe('Set to true when body contains HTML'),
+    thread_id: z.string().optional().describe('Gmail thread ID to send within an existing thread (keeps your custom subject while threading the email in the same conversation)'),
     lead_id: z.number().optional().describe('Lead ID for open tracking'),
     email_type: z.string().optional().describe('Email type: initial, follow-up, or reply'),
   },
@@ -336,6 +337,7 @@ server.tool(
       body: args.body,
       cc: args.cc || undefined,
       html: args.html || undefined,
+      threadId: args.thread_id || undefined,
       leadId: args.lead_id,
       emailType: args.email_type,
       groupFolder,

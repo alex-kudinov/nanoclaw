@@ -60,18 +60,17 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
   if (data.html && data.leadId) {
     const trackingId = crypto.randomUUID();
     try {
-      insertTrackingPixel(
-        trackingId,
-        data.leadId,
-        data.emailType || 'reply',
-      );
+      insertTrackingPixel(trackingId, data.leadId, data.emailType || 'reply');
       bodyForReply += `\n<img src="https://${TRACKING_DOMAIN}/t/${trackingId}" width="1" height="1" alt="" style="display:none">`;
     } catch (err) {
-      logger.warn({ err, leadId: data.leadId }, 'Failed to insert tracking pixel, sending without');
+      logger.warn(
+        { err, leadId: data.leadId },
+        'Failed to insert tracking pixel, sending without',
+      );
     }
   }
 
-  const sentId = await replyToThread({
+  const result = await replyToThread({
     threadId: data.threadId,
     body: bodyForReply,
     html: data.html,
@@ -80,7 +79,7 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
 
   // Store outbound in DB for conversation context
   storeMessageDirect({
-    id: sentId,
+    id: result.messageId,
     chat_jid: jid,
     sender: GMAIL_MONITORED_EMAIL,
     sender_name: ASSISTANT_NAME,
@@ -92,8 +91,23 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
     thread_ts: data.threadId,
   });
 
+  // Write result back so mailman can store threadId in leads DB
+  if (data.leadId) {
+    writeInputMessage(data.groupFolder, {
+      type: 'gmail_send_result',
+      threadId: result.threadId,
+      messageId: result.messageId,
+      leadId: data.leadId,
+      emailType: data.emailType,
+    });
+  }
+
   logger.info(
-    { threadId: data.threadId, sentId, groupFolder: data.groupFolder },
+    {
+      threadId: data.threadId,
+      sentId: result.messageId,
+      groupFolder: data.groupFolder,
+    },
     'gmail_reply processed',
   );
 }
@@ -134,6 +148,7 @@ function storeOutboundEmail(
   subject: string,
   body: string,
   groupFolder: string,
+  threadId?: string,
 ): void {
   storeMessageDirect({
     id: sentId,
@@ -145,6 +160,7 @@ function storeOutboundEmail(
     is_from_me: true,
     is_bot_message: true,
     from_group: groupFolder,
+    thread_ts: threadId,
   });
 }
 
@@ -161,39 +177,52 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
   if (data.html && data.leadId) {
     const trackingId = crypto.randomUUID();
     try {
-      insertTrackingPixel(
-        trackingId,
-        data.leadId,
-        data.emailType || 'initial',
-      );
+      insertTrackingPixel(trackingId, data.leadId, data.emailType || 'initial');
       bodyForSend += `\n<img src="https://${TRACKING_DOMAIN}/t/${trackingId}" width="1" height="1" alt="" style="display:none">`;
     } catch (err) {
-      logger.warn({ err, leadId: data.leadId }, 'Failed to insert tracking pixel, sending without');
+      logger.warn(
+        { err, leadId: data.leadId },
+        'Failed to insert tracking pixel, sending without',
+      );
     }
   }
 
-  const sentId = await sendEmail({
+  const result = await sendEmail({
     to: effectiveTo,
     subject: data.subject,
     body: bodyForSend,
     cc: effectiveCc,
     html: data.html,
+    threadId: data.threadId,
   });
 
   storeOutboundEmail(
-    sentId,
+    result.messageId,
     originalTo,
     data.subject,
     data.body, // original body without pixel
     data.groupFolder,
+    result.threadId,
   );
+
+  // Write result back so mailman can store threadId in leads DB for follow-ups
+  if (data.leadId) {
+    writeInputMessage(data.groupFolder, {
+      type: 'gmail_send_result',
+      threadId: result.threadId,
+      messageId: result.messageId,
+      leadId: data.leadId,
+      emailType: data.emailType,
+    });
+  }
 
   logger.info(
     {
       to: effectiveTo,
       originalTo,
       subject: data.subject,
-      sentId,
+      sentId: result.messageId,
+      threadId: result.threadId,
       groupFolder: data.groupFolder,
     },
     'gmail_send processed',

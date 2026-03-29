@@ -238,12 +238,18 @@ export class GmailChannel implements Channel {
       if (msg) newCount++;
     }
 
+    // Check MrGru threads for unlabeled replies (Gmail labels are per-message,
+    // not per-thread — new replies don't inherit the label).
+    // Band-aid until gmelius project replaces this polling approach entirely.
+    const threadReplyCount = await this.pollThreadReplies();
+    newCount += threadReplyCount;
+
     // Update last check timestamp
     setRouterState(STATE_KEY_LAST_CHECK, String(Date.now()));
 
     if (newCount > 0) {
       logger.info(
-        { newCount, isCatchUp, pollCount: this.pollCount },
+        { newCount, threadReplyCount, isCatchUp, pollCount: this.pollCount },
         'Gmail poll delivered messages',
       );
     }
@@ -305,6 +311,66 @@ export class GmailChannel implements Channel {
     });
 
     return true;
+  }
+
+  /**
+   * Check recently active MrGru threads for unlabeled replies.
+   * Gmail labels are per-message — replies don't inherit the thread's label.
+   * Band-aid: will be replaced by gmelius Pub/Sub push architecture.
+   */
+  private async pollThreadReplies(): Promise<number> {
+    if (!this.gmail || !this.labelId) return 0;
+
+    const threadsRes = await this.gmail.users.threads.list({
+      userId: 'me',
+      labelIds: [this.labelId],
+      q: 'newer_than:90d',
+      maxResults: 50,
+    });
+
+    const threads = threadsRes.data.threads || [];
+    let newCount = 0;
+
+    for (const threadRef of threads) {
+      if (!threadRef.id) continue;
+
+      const thread = await this.gmail.users.threads.get({
+        userId: 'me',
+        id: threadRef.id,
+        format: 'minimal',
+      });
+
+      for (const msg of thread.data.messages || []) {
+        if (!msg.id || this.processedIds.has(msg.id)) continue;
+
+        const labels = msg.labelIds || [];
+        if (labels.includes('SENT') || labels.includes('DRAFT')) {
+          this.processedIds.add(msg.id);
+          continue;
+        }
+
+        const processed = await this.fetchAndProcess(msg.id);
+        if (processed) {
+          newCount++;
+          if (!labels.includes(this.labelId!)) {
+            try {
+              await this.gmail!.users.messages.modify({
+                userId: 'me',
+                id: msg.id,
+                requestBody: { addLabelIds: [this.labelId!] },
+              });
+            } catch (err) {
+              logger.warn(
+                { messageId: msg.id, err },
+                'Failed to apply label to reply',
+              );
+            }
+          }
+        }
+      }
+    }
+
+    return newCount;
   }
 
   private async resolveLabelId(labelName: string): Promise<string | null> {

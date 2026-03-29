@@ -91,39 +91,82 @@ export function buildRawMessage(opts: {
     .replace(/=+$/, '');
 }
 
-/** Send a new email. Returns the sent message ID. */
+/** Send a new email. Optionally thread into an existing conversation. */
 export async function sendEmail(opts: {
   to: string;
   subject: string;
   body: string;
   cc?: string;
   html?: boolean;
-}): Promise<string> {
+  threadId?: string;
+}): Promise<{ messageId: string; threadId: string }> {
   const gmail = getGmailClient();
-  const raw = buildRawMessage(opts);
+
+  // When threading into an existing conversation, fetch In-Reply-To for proper threading
+  let inReplyTo: string | undefined;
+  let references: string | undefined;
+  if (opts.threadId) {
+    try {
+      const thread = await gmail.users.threads.get({
+        userId: 'me',
+        id: opts.threadId,
+        format: 'metadata',
+        metadataHeaders: ['Message-ID'],
+      });
+      const messages = thread.data.messages || [];
+      if (messages.length > 0) {
+        const lastMsg = messages[messages.length - 1];
+        const headers = lastMsg.payload?.headers || [];
+        const msgId = headers.find(
+          (h) => h.name?.toLowerCase() === 'message-id',
+        )?.value;
+        if (msgId) {
+          inReplyTo = msgId;
+          references = msgId;
+        }
+      }
+    } catch (err) {
+      logger.warn(
+        { threadId: opts.threadId, err },
+        'Failed to fetch thread for In-Reply-To, sending without threading headers',
+      );
+    }
+  }
+
+  const raw = buildRawMessage({
+    ...opts,
+    inReplyTo,
+    references,
+  });
 
   const res = await gmail.users.messages.send({
     userId: 'me',
-    requestBody: { raw },
+    requestBody: { raw, ...(opts.threadId ? { threadId: opts.threadId } : {}) },
   });
 
   const sentId = res.data.id || '';
+  const sentThreadId = res.data.threadId || opts.threadId || '';
   await applyLabel(gmail, sentId);
 
   logger.info(
-    { to: opts.to, subject: opts.subject, messageId: sentId },
+    {
+      to: opts.to,
+      subject: opts.subject,
+      messageId: sentId,
+      threadId: sentThreadId,
+    },
     'Gmail: email sent',
   );
-  return sentId;
+  return { messageId: sentId, threadId: sentThreadId };
 }
 
-/** Reply to an existing thread. Returns the sent message ID. */
+/** Reply to an existing thread. */
 export async function replyToThread(opts: {
   threadId: string;
   body: string;
   html?: boolean;
   cc?: string;
-}): Promise<string> {
+}): Promise<{ messageId: string; threadId: string }> {
   const gmail = getGmailClient();
 
   // Fetch the thread to get the last message's headers for In-Reply-To
@@ -177,7 +220,7 @@ export async function replyToThread(opts: {
     { threadId: opts.threadId, to, messageId: sentId },
     'Gmail: reply sent',
   );
-  return sentId;
+  return { messageId: sentId, threadId: opts.threadId };
 }
 
 /** Search emails. Returns formatted results for agent consumption. */
