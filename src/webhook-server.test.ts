@@ -80,7 +80,11 @@ function makeDeps(overrides?: Partial<WebhookServerDeps>): WebhookServerDeps {
     getRegisteredGroups: () => ({ 'slack:C123': testGroup }),
     runAgent: vi.fn(async () => ({ status: 'success' as const, result: null })),
     sendMessage: vi.fn(async () => {}),
-    getHealth: () => ({ channels: {}, activeContainers: 0, lastMessageAt: null }),
+    getHealth: () => ({
+      channels: {},
+      activeContainers: 0,
+      lastMessageAt: null,
+    }),
     ...overrides,
   };
 }

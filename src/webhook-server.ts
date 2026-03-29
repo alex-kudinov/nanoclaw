@@ -274,9 +274,11 @@ export class WebhookServer {
         const ua = (
           (req.headers['user-agent'] as string) || 'unknown'
         ).substring(0, 500);
-        this.deps.handleEmailOpen(token, ua).catch((err) =>
-          logger.warn({ err, token }, 'Email open handler failed'),
-        );
+        this.deps
+          .handleEmailOpen(token, ua)
+          .catch((err) =>
+            logger.warn({ err, token }, 'Email open handler failed'),
+          );
       }
       return;
     }

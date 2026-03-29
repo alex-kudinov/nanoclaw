@@ -553,7 +553,9 @@ describe('getDueJobs', () => {
 
     const due = getDueJobs(now.toISOString());
     expect(due.map((j: { name: string }) => j.name)).toContain('due-job');
-    expect(due.map((j: { name: string }) => j.name)).not.toContain('future-job');
+    expect(due.map((j: { name: string }) => j.name)).not.toContain(
+      'future-job',
+    );
   });
 
   it('does not return disabled jobs even when next_run is overdue', () => {
@@ -563,7 +565,9 @@ describe('getDueJobs', () => {
     insertJob('disabled-overdue', past, false);
 
     const due = getDueJobs(now.toISOString());
-    expect(due.map((j: { name: string }) => j.name)).not.toContain('disabled-overdue');
+    expect(due.map((j: { name: string }) => j.name)).not.toContain(
+      'disabled-overdue',
+    );
   });
 });
 
@@ -800,7 +804,9 @@ describe('markStaleRunsAsFailed', () => {
 
     // Grace period of 1 hour means 2-hour-old runs are stale
     const affected = markStaleRunsAsFailed(3600);
-    expect(affected.map((r: { job_name: string }) => r.job_name)).toContain('stale-job');
+    expect(affected.map((r: { job_name: string }) => r.job_name)).toContain(
+      'stale-job',
+    );
 
     const logs = getJobRunLogs('stale-job');
     expect(logs[0].status).toBe('fail');

@@ -675,7 +675,10 @@ export async function processJobIpc(
         logger.info({ name, sourceGroup }, 'Job run triggered via IPC');
         await deps.runHostJob(name, sourceGroup);
       } else {
-        logger.warn({ name, sourceGroup }, 'runHostJob not configured, ignoring run IPC');
+        logger.warn(
+          { name, sourceGroup },
+          'runHostJob not configured, ignoring run IPC',
+        );
       }
       break;
 
@@ -684,7 +687,10 @@ export async function processJobIpc(
         deps.setJobEnabled(name, false);
         logger.info({ name, sourceGroup }, 'Job paused via IPC');
       } else {
-        logger.warn({ name, sourceGroup }, 'setJobEnabled not configured, ignoring pause IPC');
+        logger.warn(
+          { name, sourceGroup },
+          'setJobEnabled not configured, ignoring pause IPC',
+        );
       }
       break;
 
@@ -693,7 +699,10 @@ export async function processJobIpc(
         deps.setJobEnabled(name, true);
         logger.info({ name, sourceGroup }, 'Job resumed via IPC');
       } else {
-        logger.warn({ name, sourceGroup }, 'setJobEnabled not configured, ignoring resume IPC');
+        logger.warn(
+          { name, sourceGroup },
+          'setJobEnabled not configured, ignoring resume IPC',
+        );
       }
       break;
 
