@@ -20,7 +20,9 @@ Do this BEFORE reading vault data or running any commands.
 | CNPC | `/workspace/extra/vault-cnpc/` | Read-Only | Meetings/, People/ |
 | Personal | `/workspace/extra/vault-personal/` | Read-Only | Notes |
 | Archivista | `/workspace/extra/vault-archivista/` | Read-Write | Sources.md, Briefings/, Scan Log.md |
-| Meta | `/workspace/extra/vault-meta/` | Read-Only | Tag Registry.md, vault CLAUDE.md |
+| Meta | `/workspace/extra/vault-meta/` | Read-Only | Tag Registry.md, manifests, vault CLAUDE.md |
+| Drop | `/workspace/extra/drop/` | Read-Only | OneDrive Drop queues: Calendar/, Chats/, Email/, People/ |
+| Intake | `/workspace/extra/intake/` | Read-Only | Vault intake queues: Calendar/, Chats/, Email/, People/, OneDrive/ |
 
 ## How to Read Vault Data
 
@@ -132,6 +134,7 @@ Step 2. Classify the user's message into one of these situations:
 | Cross-reference | "what relates to Monday's meeting", "connect X with Y" | Search files + meetings, synthesize connections |
 | Briefing | "brief me on X", "weekly summary", "prepare context for" | Read `/workspace/group/workflows/briefing.md`, follow its format and I/O instructions |
 | Enrichment | "enrich files", "tag the ERP files" | Follow Enriching Catalog Entries section above |
+| Queue status | "queue status", "what's stuck", "pipeline status", "are queues working" | Read `/workspace/extra/vault-meta/queue-status.json`, follow Queue Monitoring section below |
 
 Step 3. If the situation requires reading a workflow file (Help, Briefing):
        FIRST run `cat /workspace/group/workflows/{file}.md`
@@ -139,6 +142,99 @@ Step 3. If the situation requires reading a workflow file (Help, Briefing):
        If the file cannot be read, tell the user: "Workflow module unavailable."
 
 Step 4. Execute and respond with results. ALWAYS include file paths and Obsidian links (see Communication section).
+
+## Queue Monitoring
+
+You have direct read access to both pipeline staging areas. Scan them live when asked.
+
+### Pipeline
+
+```
+Power Automate → Drop/ → [watcher copies] → Intake/ → [processors] → Vault output
+                                                            ↓
+                                                     meta/*-manifest.json
+```
+
+### What to scan
+
+**Drop queues** (`/workspace/extra/drop/`) — files waiting to be copied to Intake:
+
+```bash
+for d in Calendar Chats Email People; do
+  echo "$d: $(find /workspace/extra/drop/$d -maxdepth 1 -type f 2>/dev/null | wc -l) files"
+done
+```
+
+**Intake queues** (`/workspace/extra/intake/`) — files copied but not yet processed:
+
+```bash
+for d in Calendar Chats Email People OneDrive; do
+  echo "$d: $(find /workspace/extra/intake/$d -maxdepth 1 -type f 2>/dev/null | wc -l) files"
+done
+```
+
+**Intake errors** — files that failed processing:
+
+```bash
+for d in Calendar Chats Email; do
+  err="/workspace/extra/intake/$d/errors"
+  [ -d "$err" ] && echo "$d errors: $(find $err -type f | wc -l)"
+done
+```
+
+**Manifests** (`/workspace/extra/vault-meta/`) — cumulative processing stats:
+- `calendar-manifest.json` — keyed by event_id, has `last_seen` dates
+- `chat-manifest.json` — keyed by thread_id, has `last_processed` dates
+- `email-manifest.json` — has `by_message_id` (status: ok/skip) and `by_conversation_id`
+
+For each manifest, report: total entries, most recent activity date, error/skip counts.
+
+### Interpreting health
+
+**Healthy:** Drop counts near zero (files get copied quickly), Intake near zero (processors consume fast), manifests show recent dates.
+
+**Accumulating Drop:** Files piling up → watcher not running or copy failing.
+
+**Accumulating Intake:** Files stuck → processor failing or skipping. Check `Intake/*/errors/` for failures.
+
+**Stale manifests:** If the most recent `last_seen`/`last_processed` date is old, processing has stopped.
+
+### Response format
+
+Use Slack mrkdwn formatting. Follow this template exactly:
+
+*When everything is healthy:*
+
+```
+:white_check_mark:  ALL QUEUES CLEAR
+
+Drop        Calendar 0 | Chats 0 | Email 0 | People 1
+Intake      Calendar 0 | Chats 0 | Email 0 | People 0 | OneDrive 0
+Errors      none
+
+Manifests   Calendar 285 events (last: today) | Chats 121 (last: today) | Email 180 msg / 54 threads (last: today)
+```
+
+*When there are problems:*
+
+```
+:warning:  PROBLEMS FOUND
+
+Drop        Calendar *136* | Chats 0 | Email 0 | People 1
+             ^ 136 files accumulating — watcher may not be copying
+Intake      Calendar 0 | Chats 0 | Email *2* | People 0 | OneDrive 1
+             ^ 2 emails stuck since Mar 26 (no_header)
+Errors      Calendar: 158 in errors/
+
+Manifests   Calendar 285 events (last: today) | Chats 121 (last: today) | Email 180 msg / 54 threads (last: today)
+```
+
+Rules:
+- Bold counts with asterisks only when non-zero AND problematic (Drop > 5, Intake > 0 with old files, errors > 0)
+- Use :white_check_mark: for healthy, :warning: for degraded, :rotating_light: for stalled (manifests older than 24h)
+- For stuck Intake files, include the age (use `stat -c %Y` or `date -r` to get file age)
+- Keep it compact — one line per section, annotation lines only for problems
+- "last: today" if most recent manifest date is today, otherwise show the date
 
 ## Writing Rules
 
