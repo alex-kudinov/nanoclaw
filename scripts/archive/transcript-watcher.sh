@@ -42,6 +42,7 @@ count=0
 for file in "${files[@]}"; do
   [ -f "$file" ] || continue
   filename=$(basename "$file")
+  [[ "$filename" == *".sync-conflict-"* ]] && continue
   log "Spawning worker: $filename"
   bash "$WORKER" "$file" >> "$LOG" 2>&1 &
   log "  -> pid $!"

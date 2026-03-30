@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nanoclaw.commitment-push</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/python3</string>
+        <string>/Users/xbohdpukc/dev/NanoClaw/tools/commitment/sync_from_vault.py</string>
+    </array>
+
+    <key>StartInterval</key>
+    <integer>7200</integer>
+
+    <key>ThrottleInterval</key>
+    <integer>7200</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/xbohdpukc</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/xbohdpukc/.local/log/commitment-push.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/xbohdpukc/.local/log/commitment-push.error.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

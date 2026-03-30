@@ -49,7 +49,7 @@ def copy_subdir(subdir: str, pattern: str, dest: Path, delete_src: bool) -> int:
     dest.mkdir(parents=True, exist_ok=True)
     count = 0
     for f in sorted(src_dir.glob(pattern)):
-        if not f.is_file():
+        if not f.is_file() or ".sync-conflict-" in f.name:
             continue
         if safe_copy(f, dest / f.name):
             if delete_src:
@@ -72,7 +72,7 @@ def copy_drop_root() -> int:
     except Exception:
         return 0
     for f in entries:
-        if f.is_file() and f.suffix in DROP_ROOT_EXTS:
+        if f.is_file() and f.suffix in DROP_ROOT_EXTS and ".sync-conflict-" not in f.name:
             if safe_copy(f, dest / f.name):
                 try:
                     f.unlink()

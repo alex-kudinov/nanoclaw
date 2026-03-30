@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nanoclaw.copy-email</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/xbohdpukc/dev/NanoClaw/.venv/bin/python3</string>
+        <string>/Users/xbohdpukc/dev/NanoClaw/scripts/copiers/copy_email.py</string>
+    </array>
+
+    <key>WatchPaths</key>
+    <array>
+        <string>/Users/xbohdpukc/Library/CloudStorage/OneDrive-SoleraHoldings,Inc/Drop/Email</string>
+    </array>
+
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/xbohdpukc</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/xbohdpukc/.local/log/copy-email.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/xbohdpukc/.local/log/copy-email.error.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
