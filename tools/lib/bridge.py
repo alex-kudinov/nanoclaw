@@ -14,7 +14,7 @@ import os
 import urllib.request
 from pathlib import Path
 
-BRIDGE_URL = "http://100.115.115.206:40960/v1/print"
+BRIDGE_URL = os.environ.get("CLAUDE_BRIDGE_URL", "http://100.115.115.12:40960/v1/print")
 _TIMEOUT_S = 130
 
 _bridge_key = None

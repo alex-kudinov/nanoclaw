@@ -218,6 +218,8 @@ def build_calendar_index(vault_root: Path) -> list[dict]:
         if not cal_dir.is_dir():
             continue
         for md_file in cal_dir.glob("*.md"):
+            if ".sync-conflict-" in md_file.name:
+                continue
             fm = parse_frontmatter(md_file)
             if not fm or fm.get("type") != "calendar-event":
                 continue
@@ -252,6 +254,8 @@ def build_people_lookup(vault_root: Path) -> dict:
         if not people_dir.is_dir():
             continue
         for md_file in people_dir.glob("*.md"):
+            if ".sync-conflict-" in md_file.name:
+                continue
             fm = parse_frontmatter(md_file)
             if not fm:
                 continue
@@ -800,8 +804,9 @@ def find_transcripts(vault_root: Path, specific: Path | None = None) -> list[Pat
     if not transcripts_dir.is_dir():
         return []
     files = sorted(transcripts_dir.glob("*.md"))
-    # Skip triage files
-    return [f for f in files if not f.name.startswith("TRIAGE")]
+    # Skip triage files and sync conflicts
+    return [f for f in files
+            if not f.name.startswith("TRIAGE") and ".sync-conflict-" not in f.name]
 
 
 # ── Report ───────────────────────────────────────────────────────────────────

@@ -163,7 +163,7 @@ def cmd_scan(args):
                        if d not in SKIP_DIRS and not d.startswith('.')]
 
             for name in files:
-                if name.startswith('.'):
+                if name.startswith('.') or ".sync-conflict-" in name:
                     continue
 
                 total += 1

@@ -551,7 +551,8 @@ def main() -> None:
         if not intake_dir.is_dir():
             print(f"No intake directory: {intake_dir}")
             return
-        files = sorted(intake_dir.glob("*.txt"))
+        files = sorted(f for f in intake_dir.glob("*.txt")
+                        if ".sync-conflict-" not in f.name)
 
     if not files:
         print("No .txt files to process")

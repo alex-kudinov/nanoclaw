@@ -1092,7 +1092,8 @@ def main() -> None:
             print(f"Error: reprocess dir not found: {reprocess_dir}", file=sys.stderr)
             sys.exit(1)
         files = sorted(
-            list(reprocess_dir.glob("*.eml")) + list(reprocess_dir.glob("*.txt"))
+            f for f in list(reprocess_dir.glob("*.eml")) + list(reprocess_dir.glob("*.txt"))
+            if ".sync-conflict-" not in f.name
         )
         if not files:
             print(f"No files to reprocess in {reprocess_dir}")
@@ -1146,7 +1147,8 @@ def main() -> None:
                 intake_dir.mkdir(parents=True, exist_ok=True)
                 print(f"Created intake directory: {intake_dir}")
             files = sorted(
-                list(intake_dir.glob("*.txt")) + list(intake_dir.glob("*.eml"))
+                f for f in list(intake_dir.glob("*.txt")) + list(intake_dir.glob("*.eml"))
+                if ".sync-conflict-" not in f.name
             )
 
     if not files:

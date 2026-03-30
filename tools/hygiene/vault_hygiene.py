@@ -191,6 +191,8 @@ def build_vault_index(vault_root: Path) -> dict:
             if not d.is_dir():
                 continue
             for md in d.rglob("*.md"):
+                if ".sync-conflict-" in md.name:
+                    continue
                 fm = _parse_frontmatter(md)
                 if fm:
                     index[category][md] = fm

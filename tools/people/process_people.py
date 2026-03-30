@@ -156,6 +156,8 @@ def build_people_index(vault_root: Path) -> dict:
         if not people_dir.is_dir():
             continue
         for md_file in people_dir.glob("*.md"):
+            if ".sync-conflict-" in md_file.name:
+                continue
             fm = parse_frontmatter(md_file)
             if not fm:
                 continue

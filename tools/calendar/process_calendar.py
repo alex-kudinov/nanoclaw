@@ -34,6 +34,13 @@ SANITIZE_RE = re.compile(r'[/:\\*?"<>|]')
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 
+def parse_categories(raw: str) -> list[str]:
+    """Parse categories from comma-space delimited string per spec §1.4."""
+    if not raw or not raw.strip():
+        return []
+    return [c.strip() for c in raw.split(",") if c.strip()]
+
+
 # ── Header Parsing ───────────────────────────────────────────────────────────
 
 def parse_export_file(path: Path) -> tuple[dict, str]:
@@ -152,6 +159,8 @@ def build_people_lookup(vault_root: Path) -> tuple[dict, dict]:
         if not people_dir.is_dir():
             continue
         for md_file in people_dir.glob("*.md"):
+            if ".sync-conflict-" in md_file.name:
+                continue
             _index_person(md_file, domain, name_lookup, domain_lookup)
     return name_lookup, domain_lookup
 
@@ -353,6 +362,7 @@ def build_filename(start_cst: datetime, subject: str) -> str:
 def build_frontmatter(
     meta: dict, attendees: list[str], organizer: str,
     start_cst: datetime, end_cst: datetime, domain: str,
+    categories: list[str] | None = None,
 ) -> str:
     """Build YAML frontmatter string for calendar event note."""
     lines = ["---"]
@@ -370,6 +380,7 @@ def build_frontmatter(
     _add_optional(lines, "online-meeting-url", meta.get("online_meeting_url", ""))
     _add_optional_bool(lines, "is-recurring", meta.get("is_recurring", ""))
     _add_optional(lines, "series-id", meta.get("series_id", ""))
+    lines.append(_format_list("categories", categories or []))
     lines.append("meeting-type:")
     lines.append("workstreams: []")
     lines.append(f"tags: [{domain}]")
@@ -573,11 +584,12 @@ def _generate_note(
     domain, domain_reason = infer_domain(matched, domain_lookup)
     report["domain_log"].append((meta["subject"], domain, domain_reason))
 
+    categories = parse_categories(meta.get("categories", ""))
     start_cst = utc_to_cst(meta["start_time"])
     end_cst = utc_to_cst(meta["end_time"])
     out_path = _write_event_note(
         meta, body_text, attendees, matched, organizer,
-        start_cst, end_cst, domain, vault_root,
+        start_cst, end_cst, domain, vault_root, categories,
     )
     _update_manifest_entry(meta, out_path, vault_root, manifest)
     report["processed" if action == "new" else "updated"] += 1
@@ -588,11 +600,12 @@ def _write_event_note(
     attendees: list[str], matched: list[str], organizer: str,
     start_cst: datetime, end_cst: datetime,
     domain: str, vault_root: Path,
+    categories: list[str] | None = None,
 ) -> Path:
     """Build and write a calendar event note. Returns output path."""
     filename = build_filename(start_cst, meta["subject"])
     frontmatter = build_frontmatter(
-        meta, attendees, organizer, start_cst, end_cst, domain,
+        meta, attendees, organizer, start_cst, end_cst, domain, categories,
     )
     body = build_body(body_text, attendees, matched, organizer)
     return write_vault_note(vault_root, domain, filename, frontmatter, body)
@@ -693,7 +706,8 @@ def _collect_input_files(vault_root: Path) -> list[Path] | None:
     if not intake_dir.is_dir():
         print(f"No intake directory: {intake_dir}")
         return None
-    files = sorted(intake_dir.glob("*.txt"))
+    files = sorted(f for f in intake_dir.glob("*.txt")
+                    if ".sync-conflict-" not in f.name)
     if not files:
         print("No .txt files in Intake/Calendar/")
         return None

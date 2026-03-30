@@ -25,6 +25,11 @@ DOMAIN_DIRS = {
 }
 DOMAIN_PRIORITY = {"solera": 3, "tandem": 2, "cnpc": 1}
 SANITIZE_RE = re.compile(r'[/:\\*?"<>|]')
+
+
+def is_sync_conflict(path: Path) -> bool:
+    """Return True if path is a Syncthing conflict file (should be skipped)."""
+    return ".sync-conflict-" in path.name
 AT_TAG_RE = re.compile(r'<at\s+id="[^"]*">([^<]*)</at>')
 SPLIT_AT_RE = re.compile(
     r'<at\s+id="[^"]*">([^<]*),</at>\s*(?:&nbsp;)?\s*<at\s+id="[^"]*">([^<]*)</at>'
@@ -154,6 +159,8 @@ def _scan_people_notes(vault_root: Path):
         if not people_dir.is_dir():
             continue
         for md_file in people_dir.glob("*.md"):
+            if is_sync_conflict(md_file):
+                continue
             fm = parse_frontmatter(md_file)
             if not fm:
                 continue
