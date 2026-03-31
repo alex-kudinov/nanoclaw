@@ -33,11 +33,22 @@ beforeEach(() => {
 // --- Pure functions ---
 
 describe('readonlyMountArgs', () => {
-  it('returns --mount flag with type=bind and readonly', () => {
+  it('returns --mount flag for normal paths', () => {
     const args = readonlyMountArgs('/host/path', '/container/path');
     expect(args).toEqual([
       '--mount',
       'type=bind,source=/host/path,target=/container/path,readonly',
+    ]);
+  });
+
+  it('returns -v flag for paths with commas', () => {
+    const args = readonlyMountArgs(
+      '/Users/x/Library/CloudStorage/OneDrive-SoleraHoldings,Inc/Drop',
+      '/workspace/extra/drop',
+    );
+    expect(args).toEqual([
+      '-v',
+      '/Users/x/Library/CloudStorage/OneDrive-SoleraHoldings,Inc/Drop:/workspace/extra/drop:ro',
     ]);
   });
 });

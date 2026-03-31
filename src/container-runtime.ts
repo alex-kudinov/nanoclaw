@@ -9,11 +9,17 @@ import { logger } from './logger.js';
 /** The container runtime binary name. */
 export const CONTAINER_RUNTIME_BIN = 'container';
 
-/** Returns CLI args for a readonly bind mount. */
+/** Returns CLI args for a readonly bind mount.
+ *  Uses -v when the path contains commas (e.g. OneDrive-SoleraHoldings,Inc)
+ *  because --mount uses commas as field separators and can't escape them.
+ */
 export function readonlyMountArgs(
   hostPath: string,
   containerPath: string,
 ): string[] {
+  if (hostPath.includes(',') || containerPath.includes(',')) {
+    return ['-v', `${hostPath}:${containerPath}:ro`];
+  }
   return [
     '--mount',
     `type=bind,source=${hostPath},target=${containerPath},readonly`,

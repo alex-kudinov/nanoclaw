@@ -222,10 +222,35 @@ if [[ -n "$HEARTBEAT_JID" ]] && ! $needs_restart && command -v sqlite3 &>/dev/nu
   fi
 fi
 
-# --- Check 6: Zombie containers ---
+# --- Check 6: Container runtime liveness ---
+# `container system status` lies — it returns "running" even when XPC is wedged.
+# Actual liveness test: `container ls` must return within 10s. If it hangs,
+# the apiserver is frozen and ALL container operations will fail silently.
+container_runtime_ok=false
 if command -v container &>/dev/null && ! $needs_restart; then
-  container ls --format json 2>/dev/null \
-    | jq -r '.[]? | select(.configuration.id | startswith("nanoclaw-")) | .configuration.id' 2>/dev/null \
+  if timeout 10 container ls --format json >/tmp/watchdog-container-ls.json 2>/dev/null; then
+    container_runtime_ok=true
+  else
+    log "CRITICAL: Container runtime unresponsive (XPC timeout)"
+    # Force-kill the apiserver — `container system stop` will also hang
+    pkill -9 -f 'container-apiserver' 2>/dev/null || true
+    sleep 3
+    if container system start 2>/dev/null; then
+      log "Container runtime restarted"
+      alert "Container runtime was frozen — force-restarted apiserver"
+      # Give it a moment to stabilize, then restart NanoClaw so containers work
+      sleep 5
+      request_restart "Container runtime recovered — NanoClaw needs fresh connections"
+    else
+      alert "Container runtime restart FAILED — manual intervention needed"
+    fi
+  fi
+fi
+
+# --- Check 7: Zombie containers (skip if runtime is down) ---
+if $container_runtime_ok && ! $needs_restart; then
+  jq -r '.[]? | select(.configuration.id | startswith("nanoclaw-")) | .configuration.id' \
+    /tmp/watchdog-container-ls.json 2>/dev/null \
     | while read -r cname; do
     ts_part="${cname##*-}"
     if [[ "$ts_part" =~ ^[0-9]{10,13}$ ]]; then
@@ -237,6 +262,7 @@ if command -v container &>/dev/null && ! $needs_restart; then
       fi
     fi
   done
+  rm -f /tmp/watchdog-container-ls.json
 fi
 
 # ===========================================================================
