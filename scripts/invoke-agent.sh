@@ -14,12 +14,12 @@ if [ -z "$GROUP" ] || [ -z "$WORKFLOW" ]; then
     exit 1
 fi
 
-# Currently only archivista/meeting-prep is wired
-if [ "$GROUP" = "archivista" ] && [ "$WORKFLOW" = "meeting-prep" ]; then
+# Currently only archivarista/meeting-prep is wired
+if [ "$GROUP" = "archivarista" ] && [ "$WORKFLOW" = "meeting-prep" ]; then
     TARGET_DATE="${ARGS:-$(date +%Y-%m-%d)}"
     log_msg "invoke-agent" "Running meeting-prep for $TARGET_DATE"
 
-    GENERATOR="${NANOCLAW}/tools/archivista/generate_briefings.py"
+    GENERATOR="${NANOCLAW}/tools/archivarista/generate_briefings.py"
     if [ ! -f "$GENERATOR" ]; then
         log_msg "invoke-agent" "Generator not found: $GENERATOR"
         exit 1

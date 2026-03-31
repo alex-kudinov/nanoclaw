@@ -3,7 +3,7 @@
 
 Scans OneDrive Drop, vault Intake, manifests, processor locks,
 watcher log, and recent output. Writes a snapshot to meta/ so
-El Archivista can answer queue-state questions from inside the container.
+El Archivarista can answer queue-state questions from inside the container.
 
 Called by onedrive-watcher.sh after each cycle, or standalone.
 """

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# archivista-scanner.sh — Scan cloud sources and write file catalog to Obsidian vault
+# archivarista-scanner.sh — Scan cloud sources and write file catalog to Obsidian vault
 # Triggered by launchd WatchPaths + StartInterval
 set -euo pipefail
 
@@ -7,11 +7,11 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 NANOCLAW="${HOME}/dev/NanoClaw"
 VAULT="${HOME}/Vaults/My notes"
-SCANNER="${NANOCLAW}/tools/archivista/scan.py"
+SCANNER="${NANOCLAW}/tools/archivarista/scan.py"
 PYTHON="${NANOCLAW}/tools/onedrive/.venv/bin/python3"
 SOURCES="${VAULT}/Archivista/Sources.md"
-LOG="${HOME}/.local/log/archivista-scanner.log"
-LOCK="/tmp/archivista-scanner.lock"
+LOG="${HOME}/.local/log/archivarista-scanner.log"
+LOCK="/tmp/archivarista-scanner.lock"
 SLACK_CHANNEL="C0ANG8UPTJ7"
 
 # Load bot token from NanoClaw .env
@@ -56,7 +56,7 @@ fi
 log "Starting scan..."
 summary=$("$PYTHON" "$SCANNER" --sources-file "$SOURCES" --vault-root "$VAULT" 2>>"$LOG") || {
   log "FAIL: scanner exited with error"
-  slack "[ARCHIVISTA] Scanner failed — check logs"
+  slack "[ARCHIVARISTA] Scanner failed — check logs"
   exit 1
 }
 
@@ -71,7 +71,7 @@ log "Scan complete: $scanned_count scanned, $new_count new, $updated_count updat
 # Only notify Slack if there are changes
 changes=$((new_count + updated_count))
 if [ "$changes" -gt 0 ]; then
-  slack "[ARCHIVISTA] Scanned $scanned_count files: $new_count new, $updated_count updated, $error_count errors"
+  slack "[ARCHIVARISTA] Scanned $scanned_count files: $new_count new, $updated_count updated, $error_count errors"
 fi
 
 log "Done"

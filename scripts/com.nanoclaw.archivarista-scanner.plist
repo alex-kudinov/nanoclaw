@@ -3,12 +3,12 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.nanoclaw.archivista-scanner</string>
+    <string>com.nanoclaw.archivarista-scanner</string>
 
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/xbohdpukc/dev/NanoClaw/scripts/archivista-scanner.sh</string>
+        <string>/Users/xbohdpukc/dev/NanoClaw/scripts/archivarista-scanner.sh</string>
     </array>
 
     <key>WatchPaths</key>
@@ -29,10 +29,10 @@
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/Users/xbohdpukc/.local/log/archivista-scanner-stdout.log</string>
+    <string>/Users/xbohdpukc/.local/log/archivarista-scanner-stdout.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/xbohdpukc/.local/log/archivista-scanner-stderr.log</string>
+    <string>/Users/xbohdpukc/.local/log/archivarista-scanner-stderr.log</string>
 
     <key>RunAtLoad</key>
     <false/>

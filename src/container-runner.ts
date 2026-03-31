@@ -148,21 +148,29 @@ function buildVolumeMounts(
           CLAUDE_CODE_DISABLE_AUTO_MEMORY: '0',
         },
         hooks: {
-          PreCompact: [{
-            hooks: [{
-              type: 'command',
-              command: 'node /app/hooks/pre-compact-archive.js',
-              timeout: 30000,
-            }],
-          }],
-          PreToolUse: [{
-            matcher: 'Bash',
-            hooks: [{
-              type: 'command',
-              command: 'node /app/hooks/sanitize-bash.js',
-              timeout: 5000,
-            }],
-          }],
+          PreCompact: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'node /app/hooks/pre-compact-archive.js',
+                  timeout: 30000,
+                },
+              ],
+            },
+          ],
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'node /app/hooks/sanitize-bash.js',
+                  timeout: 5000,
+                },
+              ],
+            },
+          ],
         },
       },
       null,
@@ -330,8 +338,8 @@ function readSecrets(groupFolder?: string): Record<string, string> {
     }
   }
 
-  // Inject Obsidian REST API key for El Archivista
-  if (groupFolder === 'archivista') {
+  // Inject Obsidian REST API key for El Archivarista
+  if (groupFolder === 'archivarista') {
     const obsidianKey = configured.OBSIDIAN_API_KEY;
     if (obsidianKey) {
       secrets.OBSIDIAN_API_KEY = obsidianKey;

@@ -72,7 +72,7 @@ Agent list is dynamic — `validate-knowledge.sh --update` discovers agents via 
 | `chief` | KNOWLEDGE (+ all-knowledge mount) | Oversight + knowledge coordination |
 | `certifier` | KNOWLEDGE | Certificate issuance |
 | `contador` | KNOWLEDGE | Payment processing |
-| `archivista` | KNOWLEDGE | Document management |
+| `archivarista` | KNOWLEDGE | Document management |
 
 ## Scripts
 
