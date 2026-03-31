@@ -1,7 +1,13 @@
 /**
  * NanoClaw Agent Runner
  * Runs inside a container, receives config via stdin, outputs result to stdout.
- * Spawns `claude --print` with streaming JSON I/O instead of using the Agent SDK.
+ * Calls the Claude Print Bridge HTTP API for AI inference.
+ * Tools, file access, and MCP run locally in the container via `claude --print`.
+ *
+ * Architecture:
+ *   claude --print runs INSIDE the container (tools, bash, file access)
+ *   but authenticates via CLAUDE_CODE_OAUTH_TOKEN from the bridge's
+ *   token lifecycle (refreshed every 10 min, synced to .env).
  *
  * Input protocol:
  *   Stdin: Full ContainerInput JSON (read until EOF)
@@ -111,7 +117,7 @@ function drainIpcInput(): string[] {
   }
 }
 
-// ── Claude CLI spawn ─────────────────────────────────────────────────────────
+// ── Claude --print via stdin streaming ──────────────────────────────────────
 
 function writeUserMessage(proc: ChildProcess, text: string): void {
   if (proc.stdin!.destroyed) return;
@@ -124,13 +130,13 @@ function writeUserMessage(proc: ChildProcess, text: string): void {
   try {
     proc.stdin!.write(JSON.stringify(msg) + '\n');
   } catch {
-    // Process already exited — safe to ignore
+    // Process already exited
   }
 }
 
 async function runAgent(
   containerInput: ContainerInput,
-  sdkEnv: Record<string, string | undefined>,
+  env: Record<string, string | undefined>,
 ): Promise<void> {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const mcpServerPath = path.join(__dirname, 'ipc-mcp-stdio.js');
@@ -174,7 +180,8 @@ async function runAgent(
     globalClaudeMd = fs.readFileSync(globalClaudeMdPath, 'utf-8');
   }
 
-  // Build CLI args
+  // Build CLI args — claude --print runs locally in the container
+  // Auth via CLAUDE_CODE_OAUTH_TOKEN env var (managed by bridge token lifecycle)
   const args: string[] = [
     '--print',
     '--output-format', 'stream-json',
@@ -198,15 +205,19 @@ async function runAgent(
     args.push('--add-dir', dir);
   }
 
-  // Pass assistant name for hooks
-  sdkEnv.NANOCLAW_ASSISTANT_NAME = containerInput.assistantName || '';
+  env.NANOCLAW_ASSISTANT_NAME = containerInput.assistantName || '';
 
   log(`Spawning claude ${args.slice(0, 6).join(' ')} ... (${args.length} args)`);
 
   const claude = spawn('claude', args, {
     cwd: '/workspace/group',
-    env: sdkEnv as Record<string, string>,
+    env: env as Record<string, string>,
     stdio: ['pipe', 'pipe', 'pipe'],
+  });
+
+  // Register close listener BEFORE the for-await loop to avoid race condition
+  const exitPromise = new Promise<number>(resolve => {
+    claude.on('close', code => resolve(code ?? 1));
   });
 
   // Log stderr
@@ -235,7 +246,7 @@ async function runAgent(
     if (!ipcPolling) return;
     if (shouldClose()) {
       log('Close sentinel detected, ending stdin');
-      claude.stdin!.end();
+      try { claude.stdin!.end(); } catch { /* ignore */ }
       ipcPolling = false;
       return;
     }
@@ -247,11 +258,6 @@ async function runAgent(
     setTimeout(pollIpc, IPC_POLL_MS);
   };
   setTimeout(pollIpc, IPC_POLL_MS);
-
-  // Register close listener BEFORE the for-await loop to avoid race condition
-  const exitPromise = new Promise<number>(resolve => {
-    claude.on('close', code => resolve(code ?? 1));
-  });
 
   // Process streaming JSON output
   let newSessionId: string | undefined;
@@ -299,9 +305,7 @@ async function runAgent(
 
   ipcPolling = false;
 
-  // Wait for process exit (listener registered before the for-await loop)
   const exitCode = await exitPromise;
-
   log(`Claude exited with code ${exitCode}. Messages: ${messageCount}, results: ${resultCount}`);
 
   if (exitCode !== 0 && resultCount === 0) {
@@ -311,6 +315,9 @@ async function runAgent(
       newSessionId,
       error: `claude --print exited with code ${exitCode}`,
     });
+  } else if (resultCount === 0) {
+    // Exited cleanly but produced no result — emit empty success for host tracking
+    writeOutput({ status: 'success', result: null, newSessionId });
   }
 }
 
@@ -322,7 +329,6 @@ async function main(): Promise<void> {
   try {
     const stdinData = await readStdin();
     containerInput = JSON.parse(stdinData);
-    // Delete the temp file the entrypoint wrote — it contains secrets
     try { fs.unlinkSync('/tmp/input.json'); } catch { /* may not exist */ }
     log(`Received input for group: ${containerInput.groupFolder}`);
   } catch (err) {
@@ -334,41 +340,50 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Set up PostgreSQL access for business DB
+  // Build env for claude subprocess: process.env + secrets
+  // CLAUDE_CODE_OAUTH_TOKEN comes from the bridge's token lifecycle
+  // (synced to .env every 10 min by sync-token-to-env.sh)
+  const cliEnv: Record<string, string | undefined> = { ...process.env };
+  for (const [key, value] of Object.entries(containerInput.secrets || {})) {
+    cliEnv[key] = value;
+  }
+
+  // Set up PostgreSQL access — in cliEnv only, not process.env
   const businessDbUrl = containerInput.secrets?.BUSINESS_DB_URL;
   if (businessDbUrl) {
     try {
       const url = new URL(businessDbUrl);
-      process.env.PGHOST = url.hostname;
-      process.env.PGPORT = url.port || '5432';
-      process.env.PGDATABASE = url.pathname.slice(1);
-      process.env.PGUSER = decodeURIComponent(url.username);
-      process.env.PGPASSWORD = decodeURIComponent(url.password);
+      cliEnv.PGHOST = url.hostname;
+      cliEnv.PGPORT = url.port || '5432';
+      cliEnv.PGDATABASE = url.pathname.slice(1);
+      cliEnv.PGUSER = decodeURIComponent(url.username);
+      cliEnv.PGPASSWORD = decodeURIComponent(url.password);
     } catch (err) {
       log(`business DB URL parse: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  // Set tool-specific env vars so bash scripts can access them
-  const envKeys = ['STRIPE_RESTRICTED_KEY', 'SHEETS_PAYMENTS_ID', 'SHEETS_ROSTER_ID'];
-  for (const key of envKeys) {
+  // Tool-specific env vars — in cliEnv only
+  for (const key of ['STRIPE_RESTRICTED_KEY', 'SHEETS_PAYMENTS_ID', 'SHEETS_ROSTER_ID']) {
     const val = containerInput.secrets?.[key];
-    if (val) process.env[key] = val;
+    if (val) cliEnv[key] = val;
   }
 
-  // Build env for the claude subprocess: process.env + secrets
-  // API secrets go in sdkEnv only — the PreToolUse hook strips them from Bash
-  const sdkEnv: Record<string, string | undefined> = { ...process.env };
-  for (const [key, value] of Object.entries(containerInput.secrets || {})) {
-    sdkEnv[key] = value;
+  // Verify auth token is present
+  if (!cliEnv.CLAUDE_CODE_OAUTH_TOKEN) {
+    writeOutput({
+      status: 'error',
+      result: null,
+      error: 'CLAUDE_CODE_OAUTH_TOKEN not set — check bridge token lifecycle',
+    });
+    process.exit(1);
   }
 
   fs.mkdirSync(IPC_INPUT_DIR, { recursive: true });
-  // Clean up stale _close sentinel from previous runs
   try { fs.unlinkSync(IPC_INPUT_CLOSE_SENTINEL); } catch { /* ignore */ }
 
   try {
-    await runAgent(containerInput, sdkEnv);
+    await runAgent(containerInput, cliEnv);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     log(`Agent error: ${errorMessage}`);
