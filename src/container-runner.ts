@@ -136,29 +136,39 @@ function buildVolumeMounts(
     '.claude',
   );
   fs.mkdirSync(groupSessionsDir, { recursive: true });
+  // Always overwrite settings.json to keep hooks and env current
   const settingsFile = path.join(groupSessionsDir, 'settings.json');
-  if (!fs.existsSync(settingsFile)) {
-    fs.writeFileSync(
-      settingsFile,
-      JSON.stringify(
-        {
-          env: {
-            // Enable agent swarms (subagent orchestration)
-            // https://code.claude.com/docs/en/agent-teams#orchestrate-teams-of-claude-code-sessions
-            CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
-            // Load CLAUDE.md from additional mounted directories
-            // https://code.claude.com/docs/en/memory#load-memory-from-additional-directories
-            CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD: '1',
-            // Enable Claude's memory feature (persists user preferences between sessions)
-            // https://code.claude.com/docs/en/memory#manage-auto-memory
-            CLAUDE_CODE_DISABLE_AUTO_MEMORY: '0',
-          },
+  fs.writeFileSync(
+    settingsFile,
+    JSON.stringify(
+      {
+        env: {
+          CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
+          CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD: '1',
+          CLAUDE_CODE_DISABLE_AUTO_MEMORY: '0',
         },
-        null,
-        2,
-      ) + '\n',
-    );
-  }
+        hooks: {
+          PreCompact: [{
+            hooks: [{
+              type: 'command',
+              command: 'node /app/hooks/pre-compact-archive.js',
+              timeout: 30000,
+            }],
+          }],
+          PreToolUse: [{
+            matcher: 'Bash',
+            hooks: [{
+              type: 'command',
+              command: 'node /app/hooks/sanitize-bash.js',
+              timeout: 5000,
+            }],
+          }],
+        },
+      },
+      null,
+      2,
+    ) + '\n',
+  );
 
   // Sync skills from container/skills/ into each group's .claude/skills/
   const skillsSrc = path.join(process.cwd(), 'container', 'skills');
@@ -171,12 +181,6 @@ function buildVolumeMounts(
       fs.cpSync(srcDir, dstDir, { recursive: true });
     }
   }
-  // Copy host credentials into group sessions dir for subscription auth
-  const hostCreds = path.join(os.homedir(), '.claude', '.credentials.json');
-  const containerCreds = path.join(groupSessionsDir, '.credentials.json');
-  fs.copyFileSync(hostCreds, containerCreds);
-  fs.chmodSync(containerCreds, 0o600);
-
   mounts.push({
     hostPath: groupSessionsDir,
     containerPath: '/home/node/.claude',
@@ -250,12 +254,12 @@ function buildVolumeMounts(
 
 /**
  * Build secrets payload for the container.
- * Containers authenticate via copied credentials (subscription auth).
- * CLAUDE_CONFIG_DIR points to the mounted .claude dir which contains
- * .credentials.json copied from the host before each launch.
+ * Auth: CLAUDE_CODE_OAUTH_TOKEN from .env (long-lived setup-token).
+ * CLAUDE_CONFIG_DIR points to the mounted .claude dir for settings/skills.
  */
 function readSecrets(groupFolder?: string): Record<string, string> {
   const configured = readEnvFile([
+    'CLAUDE_CODE_OAUTH_TOKEN',
     'BUSINESS_DB_HOST',
     'BUSINESS_DB_PORT',
     'BUSINESS_DB_NAME',
@@ -277,8 +281,16 @@ function readSecrets(groupFolder?: string): Record<string, string> {
     'OBSIDIAN_API_KEY',
   ]);
 
+  const oauthToken = configured.CLAUDE_CODE_OAUTH_TOKEN;
+  if (!oauthToken) {
+    throw new Error(
+      'CLAUDE_CODE_OAUTH_TOKEN not set in .env — run `claude setup-token` and add the token to .env',
+    );
+  }
+
   const secrets: Record<string, string> = {
     CLAUDE_CONFIG_DIR: '/home/node/.claude',
+    CLAUDE_CODE_OAUTH_TOKEN: oauthToken,
   };
 
   // Add per-agent business DB credentials

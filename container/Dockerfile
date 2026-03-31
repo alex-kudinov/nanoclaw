@@ -1,5 +1,5 @@
 # NanoClaw Agent Container
-# Runs Claude Agent SDK in isolated Linux VM with browser automation
+# Runs Claude CLI (--print) in isolated Linux VM with browser automation
 
 FROM node:22-slim
 
@@ -43,7 +43,7 @@ COPY agent-runner/package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy source code
+# Copy source code (includes hooks/ directory)
 COPY agent-runner/ ./
 
 # Build TypeScript
