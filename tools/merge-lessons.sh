@@ -19,8 +19,16 @@ MERGE_LOG="$PROJECT_ROOT/knowledge/shared/merge.log"
 LOCK_DIR="/tmp/nanoclaw-knowledge-merge.lock"
 COLLECT="$SCRIPT_DIR/collect-lessons.sh"
 
-# Find Claude CLI
-CLAUDE="${CLAUDE_CLI:-$(command -v claude 2>/dev/null || echo /opt/homebrew/bin/claude)}"
+# Bridge config — never call claude --print directly
+BRIDGE_URL="${CLAUDE_BRIDGE_URL:-http://100.115.115.206:40960/v1/print}"
+BRIDGE_KEY=""
+if [[ -f "$HOME/dev/.env.shared" ]]; then
+  BRIDGE_KEY=$(grep '^CLAUDE_BRIDGE_KEY=' "$HOME/dev/.env.shared" | cut -d= -f2- | tr -d "'" | tr -d '"') || true
+fi
+if [[ -z "$BRIDGE_KEY" ]]; then
+  echo "ERROR: CLAUDE_BRIDGE_KEY not found in ~/dev/.env.shared" >&2
+  exit 1
+fi
 
 dry_run=false
 [[ "${1:-}" == "--dry-run" ]] && dry_run=true
@@ -62,7 +70,8 @@ if [[ -z "$lessons" ]]; then
   exit 0
 fi
 
-lesson_count=$("$COLLECT" --count 2>/dev/null) || lesson_count=0
+# Count from already-collected output (avoid calling collect-lessons.sh twice)
+lesson_count=$(echo "$lessons" | grep -c '^-' 2>/dev/null || echo 0)
 log "Collected $lesson_count lesson(s) for merge"
 
 # --- Read current KNOWLEDGE.md ---
@@ -114,10 +123,30 @@ $lessons
 Output the complete updated knowledge base document. Nothing else.
 LESSONS_END
 
-# --- Call Claude ---
-log "Calling claude --print --model sonnet..."
-merged=$("$CLAUDE" --print --model sonnet < "$prompt_file" 2>/dev/null) || {
-  log "ERROR: claude --print failed (exit $?)"
+# --- Call Claude via bridge ---
+log "Calling bridge (model=sonnet)..."
+# Build JSON body from prompt file — pipe directly to avoid ARG_MAX on large prompts
+json_body=$(python3 -c 'import json,sys; print(json.dumps({"prompt": sys.stdin.read(), "model": "sonnet"}))' < "$prompt_file")
+
+bridge_response=$(curl -s --max-time 130 -X POST "$BRIDGE_URL" \
+  -H "Content-Type: application/json" \
+  -H "X-Bridge-Key: $BRIDGE_KEY" \
+  -d "$json_body" 2>/dev/null)
+curl_exit=$?
+if [[ $curl_exit -ne 0 ]]; then
+  log "ERROR: bridge unreachable (curl exit $curl_exit)"
+  exit 1
+fi
+
+# Parse response — check ok field (Python prints True/False for JSON booleans)
+bridge_ok=$(echo "$bridge_response" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("ok",""))' 2>/dev/null)
+if [[ "$bridge_ok" != "True" ]]; then
+  bridge_err=$(echo "$bridge_response" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("code",""), d.get("error","unknown"))' 2>/dev/null)
+  log "ERROR: bridge error: $bridge_err"
+  exit 1
+fi
+merged=$(echo "$bridge_response" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["data"]["result"])' 2>>"$MERGE_LOG") || {
+  log "ERROR: failed to parse bridge response"
   exit 1
 }
 

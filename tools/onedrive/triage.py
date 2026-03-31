@@ -283,29 +283,46 @@ def cmd_classify(args):
             user_msg = "Classify these files:\n\n" + "\n\n".join(lines)
 
             try:
-                result = subprocess.run(
-                    [
-                        'claude', '--print',
-                        '--model', args.model,
-                        '--system-prompt', system_prompt,
-                        '--max-turns', '1',
-                    ],
-                    input=user_msg,
-                    capture_output=True,
-                    text=True,
-                    timeout=180,
+                import urllib.request
+                bridge_url = os.environ.get(
+                    "CLAUDE_BRIDGE_URL",
+                    "http://100.115.115.206:40960/v1/print",
                 )
+                bridge_key = os.environ.get("CLAUDE_BRIDGE_KEY", "")
+                if not bridge_key:
+                    env_shared = os.path.expanduser("~/dev/.env.shared")
+                    if os.path.exists(env_shared):
+                        for ln in open(env_shared):
+                            if ln.strip().startswith("CLAUDE_BRIDGE_KEY="):
+                                bridge_key = ln.strip().split("=", 1)[1].strip("'\"")
+                                break
 
-                if result.returncode != 0:
+                body = json.dumps({
+                    "prompt": user_msg,
+                    "model": args.model,
+                    "system_prompt": system_prompt,
+                }).encode()
+                req = urllib.request.Request(
+                    bridge_url,
+                    data=body,
+                    headers={
+                        "Content-Type": "application/json",
+                        "X-Bridge-Key": bridge_key,
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=180) as resp:
+                    bridge_result = json.loads(resp.read())
+
+                if not bridge_result.get("ok"):
                     print(
-                        f"  Batch {batch_num}: claude error: "
-                        f"{result.stderr[:100]}",
+                        f"  Batch {batch_num}: bridge error: "
+                        f"{bridge_result.get('error', 'unknown')[:100]}",
                         file=sys.stderr,
                     )
                     fail += len(batch)
                     continue
 
-                response = result.stdout.strip()
+                response = bridge_result["data"]["result"].strip()
                 start = response.find('[')
                 end = response.rfind(']') + 1
                 if start < 0 or end <= start:
