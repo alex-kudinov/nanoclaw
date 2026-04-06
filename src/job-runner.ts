@@ -22,6 +22,12 @@ export interface JobRunnerDeps {
   writeJobsSnapshot: () => void;
 }
 
+function shouldReport(job: Job, status: JobRunResult['status']): boolean {
+  if (job.alert_level === 'silent') return false;
+  if (job.alert_level === 'warn' && status === 'ok') return false;
+  return true;
+}
+
 export async function runJob(
   job: Job,
   triggeredBy: string,
@@ -47,7 +53,9 @@ export async function runJob(
         run_id: null,
         log_file: null,
       };
-      await reportJobResult(result, deps.reportChannel, deps.sendMessage);
+      if (shouldReport(job, result.status)) {
+        await reportJobResult(result, deps.reportChannel, deps.sendMessage);
+      }
       return result;
     }
   } catch (err) {
@@ -87,7 +95,9 @@ export async function runJob(
       finished_at: new Date().toISOString(),
       duration_ms: result.duration_ms,
     });
-    await reportJobResult(result, deps.reportChannel, deps.sendMessage);
+    if (shouldReport(job, result.status)) {
+      await reportJobResult(result, deps.reportChannel, deps.sendMessage);
+    }
     return result;
   }
 
@@ -253,8 +263,10 @@ export async function runJob(
         log_file: logFile,
       };
 
-      // Report to Slack
-      await reportJobResult(result, deps.reportChannel, deps.sendMessage);
+      // Report to Slack (respect alert_level)
+      if (shouldReport(job, result.status)) {
+        await reportJobResult(result, deps.reportChannel, deps.sendMessage);
+      }
 
       // Refresh snapshot for any active campanero container
       try {
@@ -320,7 +332,9 @@ export async function runJob(
         duration_ms: durationMs,
       });
 
-      await reportJobResult(result, deps.reportChannel, deps.sendMessage);
+      if (shouldReport(job, result.status)) {
+        await reportJobResult(result, deps.reportChannel, deps.sendMessage);
+      }
       resolve(result);
     });
   });
