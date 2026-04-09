@@ -348,3 +348,147 @@ describe('WebhookServer', () => {
     expect(server.getPort()).toBe(deps.port);
   });
 });
+
+describe('WebhookServer — Gmail Pub/Sub push endpoint', () => {
+  let server: WebhookServer;
+  let deps: WebhookServerDeps;
+  let handleGmailPush: ReturnType<
+    typeof vi.fn<(emailAddress: string, historyId: string) => Promise<void>>
+  >;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    handleGmailPush = vi.fn<
+      (emailAddress: string, historyId: string) => Promise<void>
+    >(async () => {});
+    deps = makeDeps({
+      globalSecret: 'global-secret',
+      gmailPushSecret: 'push-secret',
+      handleGmailPush,
+    });
+    server = new WebhookServer(deps);
+    await server.start();
+  });
+
+  afterEach(async () => {
+    await server.stop().catch(() => {});
+  });
+
+  function envelope(payload: unknown): string {
+    const data = Buffer.from(JSON.stringify(payload)).toString('base64');
+    return JSON.stringify({ message: { data, messageId: 'msg-1' } });
+  }
+
+  it('decodes base64 payload and dispatches to handler', async () => {
+    const res = await makeRequest(deps.port, {
+      path: '/hook/gmail-push',
+      headers: {
+        'x-webhook-secret': 'push-secret',
+        'content-type': 'application/json',
+      },
+      body: envelope({ emailAddress: 'info@tandemcoach.co', historyId: '4242' }),
+    });
+    expect(res.status).toBe(204);
+    // Handler is fire-and-forget; allow microtask flush.
+    await new Promise((r) => setImmediate(r));
+    expect(handleGmailPush).toHaveBeenCalledWith('info@tandemcoach.co', '4242');
+  });
+
+  it('coerces numeric historyId to string', async () => {
+    const res = await makeRequest(deps.port, {
+      path: '/hook/gmail-push',
+      headers: { 'x-webhook-secret': 'push-secret' },
+      body: envelope({ emailAddress: 'info@tandemcoach.co', historyId: 4242 }),
+    });
+    expect(res.status).toBe(204);
+    await new Promise((r) => setImmediate(r));
+    expect(handleGmailPush).toHaveBeenCalledWith('info@tandemcoach.co', '4242');
+  });
+
+  it('rejects with 401 when secret is wrong', async () => {
+    const res = await makeRequest(deps.port, {
+      path: '/hook/gmail-push',
+      headers: { 'x-webhook-secret': 'nope' },
+      body: envelope({ emailAddress: 'x@y.z', historyId: '1' }),
+    });
+    expect(res.status).toBe(401);
+    expect(handleGmailPush).not.toHaveBeenCalled();
+  });
+
+  it('falls back to global secret when gmailPushSecret is unset', async () => {
+    await server.stop();
+    deps = makeDeps({
+      globalSecret: 'global-secret',
+      handleGmailPush,
+    });
+    server = new WebhookServer(deps);
+    await server.start();
+
+    const res = await makeRequest(deps.port, {
+      path: '/hook/gmail-push',
+      headers: { 'x-webhook-secret': 'global-secret' },
+      body: envelope({ emailAddress: 'a@b.c', historyId: '1' }),
+    });
+    expect(res.status).toBe(204);
+  });
+
+  it('returns 400 for missing message.data', async () => {
+    const res = await makeRequest(deps.port, {
+      path: '/hook/gmail-push',
+      headers: { 'x-webhook-secret': 'push-secret' },
+      body: JSON.stringify({ message: {} }),
+    });
+    expect(res.status).toBe(400);
+    expect(handleGmailPush).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for invalid base64 payload', async () => {
+    const res = await makeRequest(deps.port, {
+      path: '/hook/gmail-push',
+      headers: { 'x-webhook-secret': 'push-secret' },
+      body: JSON.stringify({ message: { data: 'not-valid-base64-json@@' } }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when emailAddress or historyId is missing', async () => {
+    const res = await makeRequest(deps.port, {
+      path: '/hook/gmail-push',
+      headers: { 'x-webhook-secret': 'push-secret' },
+      body: envelope({ emailAddress: 'a@b.c' }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 503 when handler is not configured', async () => {
+    await server.stop();
+    deps = makeDeps({
+      globalSecret: 'global-secret',
+      gmailPushSecret: 'push-secret',
+      // handleGmailPush intentionally omitted
+    });
+    server = new WebhookServer(deps);
+    await server.start();
+
+    const res = await makeRequest(deps.port, {
+      path: '/hook/gmail-push',
+      headers: { 'x-webhook-secret': 'push-secret' },
+      body: envelope({ emailAddress: 'a@b.c', historyId: '1' }),
+    });
+    expect(res.status).toBe(503);
+  });
+
+  it('does not conflict with generic /hook/:id matcher', async () => {
+    // A webhook registered with id "gmail-push" should still be intercepted
+    // by the Pub/Sub endpoint, not the generic handler.
+    (server as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      { ...testWebhook, id: 'gmail-push', secret: 'other-secret' },
+    ];
+    const res = await makeRequest(deps.port, {
+      path: '/hook/gmail-push',
+      headers: { 'x-webhook-secret': 'push-secret' },
+      body: envelope({ emailAddress: 'a@b.c', historyId: '1' }),
+    });
+    expect(res.status).toBe(204);
+  });
+});

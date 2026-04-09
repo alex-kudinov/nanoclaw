@@ -1,0 +1,65 @@
+{
+  "id": "gmail-push",
+  "name": "Gmail Pub/Sub Push → NanoClaw",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gmail-push",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "trigger-gmail-push",
+      "name": "Google Pub/Sub Push",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "gmail-push"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pass the Pub/Sub envelope through to NanoClaw unchanged.\n// Pub/Sub delivers: { message: { data: base64, messageId, publishTime }, subscription }\n// NanoClaw will base64-decode message.data to extract {emailAddress, historyId}.\nconst raw = $input.first().json;\nconst body = raw.body || raw;\nif (!body || !body.message) { return []; }\nreturn [{ json: body }];"
+      },
+      "id": "forward-body",
+      "name": "Extract Envelope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://100.115.115.206:8088/hook/gmail-push",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "REPLACE_WITH_GMAIL_PUSH_WEBHOOK_SECRET"
+            },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "post-to-nanoclaw",
+      "name": "POST to NanoClaw",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [740, 300]
+    }
+  ],
+  "connections": {
+    "Google Pub/Sub Push": {
+      "main": [[{ "node": "Extract Envelope", "type": "main", "index": 0 }]]
+    },
+    "Extract Envelope": {
+      "main": [[{ "node": "POST to NanoClaw", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

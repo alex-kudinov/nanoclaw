@@ -5,6 +5,7 @@ import path from 'path';
 import {
   ASSISTANT_NAME,
   DATA_DIR,
+  GMAIL_PUSH_WEBHOOK_SECRET,
   HEARTBEAT_INTERVAL_MS,
   HEARTBEAT_JID,
   IDLE_TIMEOUT,
@@ -668,6 +669,27 @@ async function main(): Promise<void> {
         await ch.sendMessage(inboxEntry[0], msg);
       };
       await handleEmailOpenImpl(token, ua, sendToInbox);
+    },
+    gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
+    handleGmailPush: async (emailAddress: string, historyId: string) => {
+      // Late-bound lookup: channels array is populated after webhook server
+      // is constructed, so we resolve the gmail channel at call time.
+      const gmailChannel = channels.find((c) => c.name === 'gmail') as
+        | (Channel & {
+            handlePushNotification?: (
+              emailAddress: string,
+              historyId: string,
+            ) => Promise<void>;
+          })
+        | undefined;
+      if (!gmailChannel?.handlePushNotification) {
+        logger.warn(
+          { emailAddress, historyId },
+          'Gmail push received but channel is unavailable',
+        );
+        return;
+      }
+      await gmailChannel.handlePushNotification(emailAddress, historyId);
     },
   });
   await webhookServer.start();

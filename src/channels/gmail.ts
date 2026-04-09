@@ -12,6 +12,10 @@ import {
   GMAIL_LABEL,
   GMAIL_MONITORED_EMAIL,
   GMAIL_POLL_INTERVAL,
+  GMAIL_PUBSUB_TOPIC,
+  GMAIL_PUSH_ENABLED,
+  GMAIL_PUSH_OWN_WATCH,
+  GMAIL_PUSH_SAFETY_POLL_INTERVAL,
 } from '../config.js';
 import { getMessageIdsForJid, getRouterState, setRouterState } from '../db.js';
 import { getGmailClient } from '../gmail-auth.js';
@@ -20,6 +24,16 @@ import {
   parseEmailBody,
   parseEmailHeaders,
 } from '../gmail-parser.js';
+import {
+  compareHistoryIds,
+  ensureHistoryIdBaseline,
+  getStoredHistoryId,
+  getWatchExpiresAt,
+  HistoryExpiredError,
+  processHistoryDelta,
+  setStoredHistoryId,
+  startWatch,
+} from '../gmail-push.js';
 import { logger } from '../logger.js';
 import {
   Channel,
@@ -41,10 +55,14 @@ export class GmailChannel implements Channel {
   private jid: string;
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private stallDetector: ReturnType<typeof setInterval> | null = null;
+  private renewalTimer: ReturnType<typeof setInterval> | null = null;
   private connected = false;
   private pollCount = 0;
   private lastPollCompletedAt = Date.now();
   private processedIds = new Set<string>();
+  private pushMode = false;
+  // Serialize push processing so overlapping notifications don't double-fetch.
+  private pushQueue: Promise<void> = Promise.resolve();
 
   private onMessage: OnInboundMessage;
   private onChatMetadata: OnChatMetadata;
@@ -117,9 +135,46 @@ export class GmailChannel implements Channel {
       });
     }
 
-    // Start polling
-    this.schedulePoll();
-    this.startStallDetector();
+    // Push mode: safety-net poll + history-delta processing on webhook.
+    // If we own the watch, also register users.watch() + renewal loop.
+    // If we don't (Hive coexistence), seed baseline from users.getProfile().
+    // Legacy mode: fast poll + stall detector.
+    if (GMAIL_PUSH_ENABLED) {
+      this.pushMode = true;
+      try {
+        if (GMAIL_PUSH_OWN_WATCH) {
+          if (!GMAIL_PUBSUB_TOPIC) {
+            throw new Error(
+              'GMAIL_PUSH_OWN_WATCH=true but GMAIL_PUBSUB_TOPIC is unset',
+            );
+          }
+          await startWatch(this.gmail, GMAIL_PUBSUB_TOPIC, ['INBOX']);
+        } else {
+          await ensureHistoryIdBaseline(this.gmail);
+        }
+      } catch (err) {
+        logger.error(
+          { err, ownWatch: GMAIL_PUSH_OWN_WATCH, topic: GMAIL_PUBSUB_TOPIC },
+          'Gmail push bootstrap failed — falling back to legacy poll',
+        );
+        this.pushMode = false;
+      }
+    }
+
+    if (this.pushMode) {
+      logger.info(
+        {
+          safetyPollMs: GMAIL_PUSH_SAFETY_POLL_INTERVAL,
+          ownWatch: GMAIL_PUSH_OWN_WATCH,
+        },
+        'Gmail push mode active',
+      );
+      this.scheduleSafetyPoll();
+      if (GMAIL_PUSH_OWN_WATCH) this.startRenewalLoop();
+    } else {
+      this.schedulePoll();
+      this.startStallDetector();
+    }
   }
 
   async sendMessage(
@@ -151,7 +206,46 @@ export class GmailChannel implements Channel {
       clearInterval(this.stallDetector);
       this.stallDetector = null;
     }
+    if (this.renewalTimer) {
+      clearInterval(this.renewalTimer);
+      this.renewalTimer = null;
+    }
     logger.info('Gmail channel disconnected');
+  }
+
+  /**
+   * Entry point for Pub/Sub push notifications. Called by webhook-server when
+   * a push arrives for this mailbox. Serialized via pushQueue so overlapping
+   * notifications don't double-fetch.
+   */
+  async handlePushNotification(
+    emailAddress: string,
+    historyId: string,
+  ): Promise<void> {
+    if (!this.pushMode) {
+      logger.debug(
+        { emailAddress, historyId },
+        'Gmail push arrived but channel is not in push mode — ignoring',
+      );
+      return;
+    }
+    if (emailAddress !== GMAIL_MONITORED_EMAIL) {
+      logger.warn(
+        { emailAddress, expected: GMAIL_MONITORED_EMAIL },
+        'Gmail push for unexpected mailbox — ignoring',
+      );
+      return;
+    }
+    logger.info({ emailAddress, historyId }, 'Gmail push received');
+    this.pushQueue = this.pushQueue
+      .then(() => this.processPush(historyId))
+      .catch((err) => {
+        logger.error(
+          { err, emailAddress, historyId },
+          'Gmail push processing failed',
+        );
+      });
+    return this.pushQueue;
   }
 
   // --- Private ---
@@ -217,13 +311,25 @@ export class GmailChannel implements Channel {
     };
     if (query) listParams.q = query;
 
-    const listRes = await this.gmail.users.messages.list(listParams);
-    const messageRefs = listRes.data.messages || [];
+    // Paginate through all result pages (cap at 5 pages = 250 messages)
+    const messageRefs: gmail_v1.Schema$Message[] = [];
+    let pageToken: string | undefined;
+    const MAX_PAGES = 5;
 
-    if (listRes.data.nextPageToken) {
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const params = { ...listParams, pageToken };
+      const listRes = await this.gmail.users.messages.list(params);
+      const msgs = listRes.data.messages || [];
+      messageRefs.push(...msgs);
+
+      pageToken = listRes.data.nextPageToken ?? undefined;
+      if (!pageToken) break;
+    }
+
+    if (pageToken) {
       logger.warn(
-        { nextPageToken: listRes.data.nextPageToken },
-        'Gmail poll returned nextPageToken — some messages may be missed',
+        { pages: MAX_PAGES, totalRefs: messageRefs.length },
+        'Gmail poll hit page cap — oldest labeled emails not checked',
       );
     }
 
@@ -270,6 +376,15 @@ export class GmailChannel implements Channel {
     // Skip SENT and DRAFT messages
     const labels = msg.labelIds || [];
     if (labels.includes('SENT') || labels.includes('DRAFT')) {
+      this.processedIds.add(msg.id);
+      return false;
+    }
+
+    // In push mode, history.list has no labelId filter so it returns every
+    // messageAdded event — including ones Gmail routed straight to SPAM or
+    // TRASH. Mirror Hive's watch filter (labelIds: ['INBOX']) by only
+    // delivering messages currently in INBOX.
+    if (this.pushMode && !labels.includes('INBOX')) {
       this.processedIds.add(msg.id);
       return false;
     }
@@ -382,6 +497,123 @@ export class GmailChannel implements Channel {
       (l) => l.name?.toLowerCase() === labelName.toLowerCase(),
     );
     return match?.id || null;
+  }
+
+  // --- Push mode ---
+
+  /**
+   * Process a history delta from the stored historyId forward. Every new
+   * inbound message (excluding SENT/DRAFT, filtered in fetchAndProcess) is
+   * delivered to the mailman agent — Gru sorts what's relevant. No label
+   * filtering in NanoClaw; we trust the agent to triage.
+   * On HistoryExpiredError (historyId >7 days stale), resets to the notif's
+   * historyId and accepts the data loss window.
+   */
+  private async processPush(notifHistoryId: string): Promise<void> {
+    if (!this.gmail) return;
+
+    const start = getStoredHistoryId();
+    if (!start) {
+      // No baseline — first push ever. Seed from the notification and wait
+      // for the next one; we can't backfill without a previous anchor.
+      setStoredHistoryId(notifHistoryId);
+      logger.info(
+        { notifHistoryId },
+        'Gmail push: seeded baseline historyId from first notification',
+      );
+      return;
+    }
+
+    let result;
+    try {
+      result = await processHistoryDelta(this.gmail, start);
+    } catch (err) {
+      if (err instanceof HistoryExpiredError) {
+        logger.warn(
+          { start, notifHistoryId },
+          'Gmail history expired, resetting baseline (data loss window)',
+        );
+        setStoredHistoryId(notifHistoryId);
+        return;
+      }
+      throw err;
+    }
+
+    let newCount = 0;
+    for (const id of result.messageIds) {
+      if (this.processedIds.has(id)) continue;
+      try {
+        if (await this.fetchAndProcess(id)) newCount++;
+      } catch (err) {
+        logger.warn(
+          { err, messageId: id },
+          'Gmail push: fetchAndProcess failed',
+        );
+      }
+    }
+
+    // Advance stored historyId to max(notifHistoryId, lastHistoryId).
+    const advanced =
+      compareHistoryIds(notifHistoryId, result.lastHistoryId) > 0
+        ? notifHistoryId
+        : result.lastHistoryId;
+    setStoredHistoryId(advanced);
+
+    logger.info(
+      {
+        newCount,
+        scanned: result.messageIds.length,
+        start,
+        advanced,
+      },
+      'Gmail push processed',
+    );
+  }
+
+  /**
+   * Safety-net poll for push mode: runs every GMAIL_PUSH_SAFETY_POLL_INTERVAL
+   * to catch any notifications Pub/Sub may have dropped. Uses the same
+   * history-delta machinery as push handling.
+   */
+  private scheduleSafetyPoll(): void {
+    if (!this.connected) return;
+    this.pollTimer = setTimeout(async () => {
+      try {
+        const current = getStoredHistoryId();
+        if (current) {
+          await this.processPush(current);
+          this.lastPollCompletedAt = Date.now();
+        }
+      } catch (err) {
+        logger.error({ err }, 'Gmail safety poll error');
+      }
+      this.scheduleSafetyPoll();
+    }, GMAIL_PUSH_SAFETY_POLL_INTERVAL);
+  }
+
+  /** Hourly check: renew watch if expiration is within 24h. */
+  private startRenewalLoop(): void {
+    this.renewalTimer = setInterval(
+      () => {
+        this.maybeRenewWatch().catch((err) =>
+          logger.error({ err }, 'Gmail watch renewal failed'),
+        );
+      },
+      60 * 60 * 1000,
+    );
+  }
+
+  private async maybeRenewWatch(): Promise<void> {
+    if (!this.gmail || !this.pushMode) return;
+    const expiresAt = getWatchExpiresAt();
+    const remaining = expiresAt - Date.now();
+    // Renew when <24h remaining (watch max is 7 days).
+    if (remaining > 24 * 60 * 60 * 1000) return;
+    logger.info(
+      { remainingHours: (remaining / 3_600_000).toFixed(1) },
+      'Renewing Gmail watch',
+    );
+    await startWatch(this.gmail, GMAIL_PUBSUB_TOPIC, ['INBOX']);
   }
 }
 

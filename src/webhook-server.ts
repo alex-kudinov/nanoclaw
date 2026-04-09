@@ -63,6 +63,11 @@ export interface WebhookServerDeps {
   ) => Promise<import('./types.js').JobRunResult>;
   getHostJob?: (name: string) => import('./types.js').Job | undefined;
   handleEmailOpen?: (token: string, userAgent: string) => Promise<void>;
+  // Gmail Pub/Sub push receiver — called by POST /hook/gmail-push.
+  // Payload is decoded from message.data (base64 JSON).
+  handleGmailPush?: (emailAddress: string, historyId: string) => Promise<void>;
+  // Secret required on POST /hook/gmail-push. Falls back to globalSecret.
+  gmailPushSecret?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -343,6 +348,88 @@ export class WebhookServer {
 
       res.writeHead(202, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: 'started', job: jobName }));
+      return;
+    }
+
+    // POST /hook/gmail-push — Gmail Pub/Sub push receiver (via n8n forward).
+    // Body: { message: { data: base64(JSON({emailAddress, historyId})) } }
+    const gmailPushUrl = req.url?.split('?')[0];
+    if (req.method === 'POST' && gmailPushUrl === '/hook/gmail-push') {
+      const expectedSecret =
+        this.deps.gmailPushSecret || this.deps.globalSecret;
+      if (expectedSecret) {
+        if (req.headers['x-webhook-secret'] !== expectedSecret) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid secret' }));
+          return;
+        }
+      }
+
+      if (!this.deps.handleGmailPush) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({ error: 'Gmail push handler not configured' }),
+        );
+        return;
+      }
+
+      let body: Buffer;
+      try {
+        body = await readBody(req);
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Failed to read body' }));
+        return;
+      }
+
+      let envelope: { message?: { data?: string } };
+      try {
+        envelope = JSON.parse(body.toString('utf-8'));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+
+      const dataB64 = envelope?.message?.data;
+      if (!dataB64 || typeof dataB64 !== 'string') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing message.data' }));
+        return;
+      }
+
+      let payload: { emailAddress?: string; historyId?: string | number };
+      try {
+        payload = JSON.parse(Buffer.from(dataB64, 'base64').toString('utf-8'));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid message.data payload' }));
+        return;
+      }
+
+      const emailAddress = payload.emailAddress;
+      const historyId =
+        payload.historyId != null ? String(payload.historyId) : '';
+      if (!emailAddress || !historyId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({ error: 'Missing emailAddress or historyId' }),
+        );
+        return;
+      }
+
+      // Ack immediately — handler runs async. Pub/Sub retries on non-2xx.
+      res.writeHead(204);
+      res.end();
+
+      this.deps
+        .handleGmailPush(emailAddress, historyId)
+        .catch((err) =>
+          logger.error(
+            { err, emailAddress, historyId },
+            'Gmail push handler threw',
+          ),
+        );
       return;
     }
 

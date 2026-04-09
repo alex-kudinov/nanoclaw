@@ -103,6 +103,11 @@ const gmailEnv = readEnvFile([
   'GMAIL_POLL_INTERVAL',
   'GMAIL_TEST_RECIPIENT',
   'GMAIL_BCC',
+  'GMAIL_PUSH_ENABLED',
+  'GMAIL_PUSH_OWN_WATCH',
+  'GMAIL_PUBSUB_TOPIC',
+  'GMAIL_PUSH_WEBHOOK_SECRET',
+  'GMAIL_PUSH_SAFETY_POLL_INTERVAL',
 ]);
 
 export const GMAIL_POLL_INTERVAL = parseInt(
@@ -136,3 +141,39 @@ export const GMAIL_BCC =
 // Tracking pixel domain for email open tracking.
 export const TRACKING_DOMAIN =
   process.env.TRACKING_DOMAIN || 't.tandemcoach.co';
+
+// Gmail Pub/Sub push notifications (replaces fast polling when enabled).
+// When true: history.list fetches deltas on each push notification. Fast poll
+// is replaced with a slow safety-net poll (GMAIL_PUSH_SAFETY_POLL_INTERVAL)
+// to catch missed events.
+export const GMAIL_PUSH_ENABLED =
+  (process.env.GMAIL_PUSH_ENABLED || gmailEnv.GMAIL_PUSH_ENABLED) === 'true';
+
+// Whether NanoClaw owns the users.watch() lifecycle. Default false — used in
+// coexistence setups where another service (e.g. Hive) manages the watch and
+// NanoClaw is a passive subscriber on the same topic. Set true only when
+// NanoClaw is the sole consumer.
+export const GMAIL_PUSH_OWN_WATCH =
+  (process.env.GMAIL_PUSH_OWN_WATCH || gmailEnv.GMAIL_PUSH_OWN_WATCH) ===
+  'true';
+
+// Fully-qualified Pub/Sub topic, e.g. "projects/x/topics/hive-gmail-push".
+// Only used when GMAIL_PUSH_OWN_WATCH=true (passed to users.watch()).
+export const GMAIL_PUBSUB_TOPIC =
+  process.env.GMAIL_PUBSUB_TOPIC || gmailEnv.GMAIL_PUBSUB_TOPIC || '';
+
+// Secret required on POST /hook/gmail-push via X-Webhook-Secret header.
+// Falls back to WEBHOOK_SECRET if unset.
+export const GMAIL_PUSH_WEBHOOK_SECRET =
+  process.env.GMAIL_PUSH_WEBHOOK_SECRET ||
+  gmailEnv.GMAIL_PUSH_WEBHOOK_SECRET ||
+  '';
+
+// Safety-net poll interval when push is enabled (default 10 min). Catches
+// any notifications Pub/Sub may have dropped and verifies watch is alive.
+export const GMAIL_PUSH_SAFETY_POLL_INTERVAL = parseInt(
+  process.env.GMAIL_PUSH_SAFETY_POLL_INTERVAL ||
+    gmailEnv.GMAIL_PUSH_SAFETY_POLL_INTERVAL ||
+    '600000',
+  10,
+);

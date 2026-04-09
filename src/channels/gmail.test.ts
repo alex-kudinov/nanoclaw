@@ -15,12 +15,17 @@ vi.mock('../config.js', () => ({
   GMAIL_LABEL: 'TestLabel',
   GMAIL_MONITORED_EMAIL: 'test@example.com',
   GMAIL_POLL_INTERVAL: 1000, // 1s for fast tests
+  GMAIL_PUSH_ENABLED: false,
+  GMAIL_PUSH_OWN_WATCH: false,
+  GMAIL_PUBSUB_TOPIC: '',
+  GMAIL_PUSH_SAFETY_POLL_INTERVAL: 600000,
 }));
 
 // Mock db
 vi.mock('../db.js', () => ({
   getRouterState: vi.fn().mockReturnValue(String(Date.now())),
   setRouterState: vi.fn(),
+  getMessageIdsForJid: vi.fn().mockReturnValue([]),
 }));
 
 // Mock gmail-auth
