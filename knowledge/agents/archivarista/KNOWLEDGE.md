@@ -1,7 +1,7 @@
 # Tandem Coaching — Knowledge Base
 
-<!-- llms-full-hash: 12e9ff1a9119db5b910c53cd653a223f8aa2827427dbe6d07592365798311771 -->
-<!-- validated-at: 2026-03-28 -->
+<!-- llms-full-hash: 6f9dea1e4f01910d5820c2563de6bc76ca6d99d6b676ac0133036b92e7cfa635 -->
+<!-- validated-at: 2026-04-10 -->
 
 
 Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and executive coaching firm based in Dallas, TX. Co-founders: Cherie Silas and Alex Kudinov.
@@ -208,7 +208,7 @@ For coaches who need mentor coaching hours outside of a Tandem program. Already 
 
 | Package | Price | Hours | Format |
 |---------|-------|-------|--------|
-| ACC Renewal | $849 | 10 group | Group only |
+| ACC Renewal | $1,499 | 8 group + 3 individual (11 total) | Mixed |
 | PCC Credential | $1,799 | 8 group + 3 individual (11 total) | Mixed |
 | MCC Credential | $3,999 | 10 individual | 1-on-1 only |
 
@@ -309,3 +309,73 @@ Include `Reply: true` in `[HANDOFF: sales→mailman]` ONLY when responding to a 
 
 ### Booking Link vs Contact Form
 The `/contact-us` page is the contact form where leads submit new inquiries — do not send leads back there when they are ready to book a call. For scheduling a consultation call, use the direct booking calendar: https://booking.tandemcoach.co/booking?t=s&uuid=6bfbbeab-eaa1-4a3f-b5a7-a05546bad443
+
+---
+
+## Email Classification Taxonomy
+
+Mailman classifies every inbound email into exactly one canonical label from
+this taxonomy. Labels follow the pattern `class/{category}` or
+`class/{category}/{subcategory}`. Pick the most specific applicable label. If
+no label fits, use `class/other` and report it to chief so a new taxonomy
+entry can be added.
+
+The `hive_share_target` column indicates which humans care about this category
+(`alex`, `cherie`, or both). When set, classified emails are surfaced in the
+recipient's Hive view via Firestore assignment. The `digest_priority` column
+(0 / 1 / 2) controls whether the email appears in the daily digest — 0 skips,
+1 is normal, 2 is high priority.
+
+### Leads (prospective clients)
+- `class/lead/inquiry` — General coaching/program inquiry from a new prospect (hive: cherie+alex, priority 2)
+- `class/lead/offer` — Inbound RFP or paid engagement offer (hive: cherie+alex, priority 2)
+
+### Clients (current or past)
+- `class/client/active` — Email from a current paying client (hive: cherie+alex, priority 2)
+- `class/client/dormant` — Email from a past client who has not engaged recently (hive: cherie+alex, priority 1)
+
+### Financial
+- `class/financial/receipt` — Payment receipt, invoice confirmation, purchase acknowledgment (hive: cherie, priority 1)
+- `class/financial/bill` — Upcoming bill, subscription renewal, payment due notice (hive: cherie, priority 2)
+- `class/financial/refund` — Refund confirmation or credit note (hive: cherie, priority 1)
+
+### Vendors
+- `class/vendor/cold` — Unsolicited vendor outreach or cold sales email (no hive share, priority 0)
+- `class/vendor/warm` — Ongoing vendor conversation or follow-up from a known contact (hive: cherie, priority 1)
+
+### Procurement (RFPs from vendor portals)
+- `class/procurement/rfp` — Request for Proposal received via procurement channel (hive: cherie+alex, priority 2)
+- `class/procurement/rfq` — Request for Quotation received via procurement channel (hive: cherie+alex, priority 2)
+
+### Meeting assets
+- `class/meeting-assets/zoom` — Zoom meeting invitation, link, or access credential (no hive share, priority 0)
+- `class/meeting-assets/recording` — Zoom or video recording delivery notification (hive: alex, priority 1)
+
+### Internal
+- `class/internal/team` — Internal team communication from a known colleague (no hive share, priority 0)
+- `class/internal/cofounder` — Email from a co-founder or executive partner (hive: cherie+alex, priority 2)
+
+### Legal
+- `class/legal/contract` — Contract, agreement, or legal document (hive: cherie+alex, priority 2)
+- `class/legal/notice` — Legal notice, cease-and-desist, or compliance communication (hive: cherie+alex, priority 2)
+
+### Recruiting
+- `class/recruiting/applicant` — Job application or resume submission (hive: cherie, priority 1)
+- `class/recruiting/outreach` — Recruiter outreach or headhunting email (no hive share, priority 0)
+
+### Newsletters
+- `class/newsletter/general` — Newsletter or marketing email from an external sender (no hive share, priority 0)
+- `class/newsletter/digest` — Curated digest or roundup email from a known publication (no hive share, priority 0)
+
+### Notifications
+- `class/notification/system` — Automated system notification (CI/CD, monitoring, alerts) (no hive share, priority 0)
+- `class/notification/calendar` — Calendar invite, rescheduling notice, event confirmation (no hive share, priority 0)
+
+### Fallbacks
+- `class/personal` — Personal or family email unrelated to business operations (no hive share, priority 0)
+- `class/other` — Does not fit any defined category; triggers taxonomy review via chief (no hive share, priority 0)
+
+**Rules:**
+- Exactly one `class/*` label per message — the host enforces this via `replaceClassLabelsOnThread`.
+- If you corrected a prior classification, chief should route a `route_lesson` to mailman with a rule like: `"When sender is X, classify as class/Y"`. The host picks up the lesson and backfills matching past emails (up to 25 by default; over that triggers an approval request in `#gru-chief`).
+- Never invent labels outside this list. If something doesn't fit, use `class/other` and flag it.

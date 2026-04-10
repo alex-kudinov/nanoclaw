@@ -144,13 +144,29 @@ Output the complete knowledge base document. Nothing else.
 FOOTER
 
 # --- Call Claude via bridge (opus for large context) ---
-log "Calling bridge (model=opus, this may take a few minutes)..."
-json_body=$(python3 -c 'import json,sys; print(json.dumps({"prompt": sys.stdin.read(), "model": "opus"}))' < "$prompt_file")
+# Bridge enforces a 1MB prompt limit (server.js:169). Pre-check so we fail
+# loudly instead of hitting a silent "connection reset by peer" at curl time.
+prompt_bytes=$(wc -c < "$prompt_file" | tr -d ' ')
+BRIDGE_PROMPT_LIMIT=$((1024 * 1024))
+if (( prompt_bytes > BRIDGE_PROMPT_LIMIT )); then
+  log "ERROR: prompt is ${prompt_bytes} bytes, exceeds bridge 1MB limit (${BRIDGE_PROMPT_LIMIT} bytes)."
+  log "       Raise the limit in toolbox/shared/claude/bridge/server.js or trim llms-full.txt."
+  exit 1
+fi
+
+log "Calling bridge (model=opus, prompt=${prompt_bytes}B, this may take a few minutes)..."
+req_file=$(mktemp)
+trap 'rm -f "$prompt_file" "$req_file"; rm -rf "$LOCK_DIR"' EXIT SIGTERM SIGINT
+# Build request body to a file — never pass 1MB of JSON via -d "$var" because
+# the combined argv would exceed macOS ARG_MAX and curl would never execute
+# (silent exit 126). Use -d @file instead.
+python3 -c 'import json,sys; print(json.dumps({"prompt": sys.stdin.read(), "model": "opus"}))' \
+  < "$prompt_file" > "$req_file"
 
 bridge_response=$(curl -s --max-time 300 -X POST "$BRIDGE_URL" \
   -H "Content-Type: application/json" \
   -H "X-Bridge-Key: $BRIDGE_KEY" \
-  -d "$json_body" 2>/dev/null)
+  --data-binary "@$req_file" 2>/dev/null)
 curl_exit=$?
 if [[ $curl_exit -ne 0 ]]; then
   log "ERROR: bridge unreachable (curl exit $curl_exit)"
