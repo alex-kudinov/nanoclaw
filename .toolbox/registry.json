@@ -279,8 +279,7 @@
           ]
         }
       }
-    }
-  },
+    },
     "jobs": {
       "description": "El Campanero — job scheduler management",
       "tools": {
@@ -288,60 +287,126 @@
           "description": "Show all scheduled jobs with status, schedule, and last run",
           "script": "tools/campanero.sh",
           "args": [],
-          "positional_args": ["list"],
-          "examples": ["tool run jobs/list"]
+          "positional_args": [
+            "list"
+          ],
+          "examples": [
+            "tool run jobs/list"
+          ]
         },
         "status": {
           "description": "Detailed status for a specific job including recent runs",
           "script": "tools/campanero.sh",
           "args": [
-            {"name": "name", "type": "string", "required": true, "description": "Job name"}
+            {
+              "name": "name",
+              "type": "string",
+              "required": true,
+              "description": "Job name"
+            }
           ],
-          "positional_args": ["status"],
-          "examples": ["tool run jobs/status --name weekly-data-refresh"]
+          "positional_args": [
+            "status"
+          ],
+          "examples": [
+            "tool run jobs/status --name weekly-data-refresh"
+          ]
         },
         "pause": {
           "description": "Disable a job (stops cron scheduling)",
           "script": "tools/campanero.sh",
           "args": [
-            {"name": "name", "type": "string", "required": true, "description": "Job name to pause"}
+            {
+              "name": "name",
+              "type": "string",
+              "required": true,
+              "description": "Job name to pause"
+            }
           ],
-          "positional_args": ["pause"],
-          "examples": ["tool run jobs/pause --name newsletter-curation"]
+          "positional_args": [
+            "pause"
+          ],
+          "examples": [
+            "tool run jobs/pause --name newsletter-curation"
+          ]
         },
         "resume": {
           "description": "Re-enable a paused job",
           "script": "tools/campanero.sh",
           "args": [
-            {"name": "name", "type": "string", "required": true, "description": "Job name to resume"}
+            {
+              "name": "name",
+              "type": "string",
+              "required": true,
+              "description": "Job name to resume"
+            }
           ],
-          "positional_args": ["resume"],
-          "examples": ["tool run jobs/resume --name newsletter-curation"]
+          "positional_args": [
+            "resume"
+          ],
+          "examples": [
+            "tool run jobs/resume --name newsletter-curation"
+          ]
         },
         "run": {
           "description": "Trigger a job to run immediately via webhook",
           "script": "tools/campanero.sh",
           "args": [
-            {"name": "name", "type": "string", "required": true, "description": "Job name to trigger"}
+            {
+              "name": "name",
+              "type": "string",
+              "required": true,
+              "description": "Job name to trigger"
+            }
           ],
-          "positional_args": ["run"],
-          "examples": ["tool run jobs/run --name calendar-refresh"]
+          "positional_args": [
+            "run"
+          ],
+          "examples": [
+            "tool run jobs/run --name calendar-refresh"
+          ]
         },
         "logs": {
           "description": "Show run log history for a job",
           "script": "tools/campanero.sh",
           "args": [
-            {"name": "name", "type": "string", "required": true, "description": "Job name"},
-            {"name": "limit", "type": "integer", "required": false, "default": 10, "description": "Number of log entries"}
+            {
+              "name": "name",
+              "type": "string",
+              "required": true,
+              "description": "Job name"
+            },
+            {
+              "name": "limit",
+              "type": "integer",
+              "required": false,
+              "default": 10,
+              "description": "Number of log entries"
+            }
           ],
-          "positional_args": ["logs"],
-          "examples": ["tool run jobs/logs --name weekly-data-refresh --limit 5"]
+          "positional_args": [
+            "logs"
+          ],
+          "examples": [
+            "tool run jobs/logs --name weekly-data-refresh --limit 5"
+          ]
         }
       }
     }
   },
   "include_shared": [
     "things",
-    "claude"
+    "claude",
+    "elevenlabs",
+    "ecosystem",
+    "zoom",
+    "plutio",
+    "email",
+    "sertifier",
+    "trafft",
+    "context7",
+    "transcript",
+    "pushover",
+    "text"
   ]
 }
