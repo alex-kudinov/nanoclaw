@@ -15,10 +15,14 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 KNOWLEDGE="$PROJECT_ROOT/knowledge/shared/KNOWLEDGE.md"
 LLMS_FULL="$PROJECT_ROOT/knowledge/shared/llms-full.txt"
+LLMS_PIECES="$PROJECT_ROOT/knowledge/shared/llms-pieces"
+PIECES_STATE="$PROJECT_ROOT/knowledge/shared/.pieces-state.json"
 TANDEMWEB_LLMS="${HOME}/dev/tandemweb/llms-full.txt"
+TANDEMWEB_PIECES="${HOME}/dev/tandemweb/llms-pieces"
 MERGE_LOG="$PROJECT_ROOT/knowledge/shared/merge.log"
 LOCK_DIR="/tmp/nanoclaw-knowledge-merge.lock"
 COLLECT="$SCRIPT_DIR/collect-lessons.sh"
+HELPER="$SCRIPT_DIR/regen-kb-delta.py"
 AGENTS_DIR="$PROJECT_ROOT/knowledge/agents"
 
 # Bridge config — never call claude --print directly
@@ -63,7 +67,7 @@ acquire_lock() {
 
 acquire_lock
 
-# --- Copy llms-full.txt from tandemweb ---
+# --- Copy llms-full.txt + llms-pieces/ from tandemweb ---
 if [[ -f "$TANDEMWEB_LLMS" ]]; then
   cp "$TANDEMWEB_LLMS" "$LLMS_FULL"
   cp "$TANDEMWEB_LLMS" "$AGENTS_DIR/inbox/llms-full.txt" 2>/dev/null || true
@@ -72,158 +76,118 @@ else
   log "WARNING: $TANDEMWEB_LLMS not found, using existing $LLMS_FULL"
 fi
 
-if [[ ! -f "$LLMS_FULL" ]]; then
-  log "ERROR: No llms-full.txt available"
-  exit 1
-fi
-
-# --- Collect current lessons ---
-lessons=$("$COLLECT" 2>/dev/null) || true
-lesson_count=$(echo "$lessons" | grep -c '^-' 2>/dev/null || echo 0)
-log "Regenerating KNOWLEDGE.md from llms-full.txt with $lesson_count lesson(s)"
-
-# --- Extract current section headers for structure guidance ---
-if [[ -f "$KNOWLEDGE" ]]; then
-  section_headers=$(grep -E '^#{1,3} ' "$KNOWLEDGE" | head -30)
-  original_size=$(wc -c < "$KNOWLEDGE" | tr -d ' ')
+if [[ -d "$TANDEMWEB_PIECES" ]]; then
+  rm -rf "$LLMS_PIECES"
+  cp -R "$TANDEMWEB_PIECES" "$LLMS_PIECES"
+  piece_count=$(find "$LLMS_PIECES" -name '*.md' | wc -l | tr -d ' ')
+  log "Copied $piece_count pieces from tandemweb/llms-pieces"
 else
-  section_headers=""
-  original_size=0
-fi
-
-# --- Build prompt ---
-prompt_file=$(mktemp)
-trap 'rm -f "$prompt_file"; rm -rf "$LOCK_DIR"' EXIT SIGTERM SIGINT
-
-cat > "$prompt_file" <<'PROMPT_END'
-You are generating a structured knowledge base document from website source material.
-
-INSTRUCTIONS:
-- Extract all coaching programs, pricing, prerequisites, timelines, instructors, services, and FAQs
-- Organize into clear sections with markdown headers
-- Include specific prices, URLs, and requirements — do not generalize
-- Use tables for program comparisons
-- Do NOT include llms-full-hash or validated-at comments
-- Output a complete, standalone knowledge base document
-
-PROMPT_END
-
-if [[ -n "$section_headers" ]]; then
-  cat >> "$prompt_file" <<STRUCTURE_END
-
-PREFERRED SECTION STRUCTURE (preserve this hierarchy):
-$section_headers
-
-STRUCTURE_END
-fi
-
-if [[ -n "$lessons" ]]; then
-  cat >> "$prompt_file" <<LESSONS_END
-
-MANDATORY LESSONS (these are human-verified corrections that override source material):
-$lessons
-
-Incorporate these lessons into the appropriate sections. They take precedence over source material.
-
-LESSONS_END
-fi
-
-cat >> "$prompt_file" <<'SOURCE_HEADER'
-
-=== SOURCE MATERIAL ===
-
-SOURCE_HEADER
-
-cat "$LLMS_FULL" >> "$prompt_file"
-
-cat >> "$prompt_file" <<'FOOTER'
-
-=== END SOURCE ===
-
-Output the complete knowledge base document. Nothing else.
-FOOTER
-
-# --- Call Claude via bridge (opus for large context) ---
-# Bridge enforces a 1MB prompt limit (server.js:169). Pre-check so we fail
-# loudly instead of hitting a silent "connection reset by peer" at curl time.
-prompt_bytes=$(wc -c < "$prompt_file" | tr -d ' ')
-BRIDGE_PROMPT_LIMIT=$((1024 * 1024))
-if (( prompt_bytes > BRIDGE_PROMPT_LIMIT )); then
-  log "ERROR: prompt is ${prompt_bytes} bytes, exceeds bridge 1MB limit (${BRIDGE_PROMPT_LIMIT} bytes)."
-  log "       Raise the limit in toolbox/shared/claude/bridge/server.js or trim llms-full.txt."
+  log "ERROR: $TANDEMWEB_PIECES not found — run tandemweb generate-llms-full.py first"
   exit 1
 fi
 
-log "Calling bridge (model=opus, prompt=${prompt_bytes}B, this may take a few minutes)..."
-req_file=$(mktemp)
-trap 'rm -f "$prompt_file" "$req_file"; rm -rf "$LOCK_DIR"' EXIT SIGTERM SIGINT
-# Build request body to a file — never pass 1MB of JSON via -d "$var" because
-# the combined argv would exceed macOS ARG_MAX and curl would never execute
-# (silent exit 126). Use -d @file instead.
-python3 -c 'import json,sys; print(json.dumps({"prompt": sys.stdin.read(), "model": "opus"}))' \
-  < "$prompt_file" > "$req_file"
-
-bridge_response=$(curl -s --max-time 300 -X POST "$BRIDGE_URL" \
-  -H "Content-Type: application/json" \
-  -H "X-Bridge-Key: $BRIDGE_KEY" \
-  --data-binary "@$req_file" 2>/dev/null)
-curl_exit=$?
-if [[ $curl_exit -ne 0 ]]; then
-  log "ERROR: bridge unreachable (curl exit $curl_exit)"
+if [[ ! -f "$LLMS_PIECES/manifest.json" ]]; then
+  log "ERROR: No manifest.json in $LLMS_PIECES"
+  exit 1
+fi
+if [[ ! -f "$HELPER" ]]; then
+  log "ERROR: delta helper not found at $HELPER"
   exit 1
 fi
 
-bridge_ok=$(echo "$bridge_response" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("ok",""))' 2>/dev/null)
-if [[ "$bridge_ok" != "True" ]]; then
-  bridge_err=$(echo "$bridge_response" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("code",""), d.get("error","unknown"))' 2>/dev/null)
-  log "ERROR: bridge error: $bridge_err"
-  exit 1
-fi
-generated=$(echo "$bridge_response" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["data"]["result"])' 2>>"$MERGE_LOG") || {
-  log "ERROR: failed to parse bridge response"
-  exit 1
-}
+# --- Collect current lessons into a file for the helper ---
+lessons_file=$(mktemp)
+trap 'rm -f "$lessons_file"; rm -rf "$LOCK_DIR"' EXIT SIGTERM SIGINT
+"$COLLECT" > "$lessons_file" 2>/dev/null || true
+lesson_count=$(grep -c '^-' "$lessons_file" 2>/dev/null || echo 0)
 
-# --- Inject hash/date comments ---
-new_hash=$(shasum -a 256 "$LLMS_FULL" | cut -d' ' -f1)
-today=$(date '+%Y-%m-%d')
-header="# Tandem Coaching — Knowledge Base"$'\n\n'"<!-- llms-full-hash: $new_hash -->"$'\n'"<!-- validated-at: $today -->"
+# --- Snapshot current KB size for validation ---
+original_size=0
+[[ -f "$KNOWLEDGE" ]] && original_size=$(wc -c < "$KNOWLEDGE" | tr -d ' ')
 
-generated=$(echo "$generated" | sed '/<!-- llms-full-hash:/d' | sed '/<!-- validated-at:/d')
-generated=$(echo "$generated" | sed "1s|^# .*|$header|")
+log "Delta regeneration: manifest=$LLMS_PIECES/manifest.json lessons=$lesson_count"
 
-# --- Validate ---
-gen_size=${#generated}
+# --- Backup current KB before touching it (helper writes in place) ---
+[[ -f "$KNOWLEDGE" ]] && cp "$KNOWLEDGE" "$KNOWLEDGE.bak"
 
-if [[ -z "$generated" ]]; then
-  log "ERROR: Generated output is empty"
-  exit 1
-fi
+# --- Call helper: computes delta, chunks, calls bridge, writes KB + state ---
+helper_args=(
+  --knowledge "$KNOWLEDGE"
+  --manifest "$LLMS_PIECES/manifest.json"
+  --pieces-dir "$LLMS_PIECES"
+  --state "$PIECES_STATE"
+  --lessons-file "$lessons_file"
+  --bridge-url "$BRIDGE_URL"
+  --bridge-key "$BRIDGE_KEY"
+  --model opus
+)
+$dry_run && helper_args+=(--dry-run)
 
-if [[ $original_size -gt 0 ]]; then
-  min_size=$(( original_size / 2 ))
-  if [[ $gen_size -lt $min_size ]]; then
-    log "ERROR: Generated output too small (${gen_size} < ${min_size} min)"
-    exit 1
+set +e
+python3 "$HELPER" "${helper_args[@]}" 2>&1 | tee -a "$MERGE_LOG"
+helper_exit=${PIPESTATUS[0]}
+set -e
+
+if [[ $helper_exit -eq 99 ]]; then
+  log "NOCHANGE: all pieces match state — KNOWLEDGE.md already current"
+  # Restore backup (helper didn't touch KB, but remove the .bak noise)
+  [[ -f "$KNOWLEDGE.bak" ]] && rm -f "$KNOWLEDGE.bak"
+  # Run propagation anyway so agent copies stay in sync
+  if [[ -x "$SCRIPT_DIR/validate-knowledge.sh" ]]; then
+    "$SCRIPT_DIR/validate-knowledge.sh" --update 2>&1 | tee -a "$MERGE_LOG" || true
   fi
+  exit 0
+elif [[ $helper_exit -ne 0 ]]; then
+  log "ERROR: regen-kb-delta.py exited $helper_exit"
+  # Restore from backup if KB was corrupted mid-run
+  [[ -f "$KNOWLEDGE.bak" ]] && cp "$KNOWLEDGE.bak" "$KNOWLEDGE"
+  exit 1
 fi
 
-# --- Dry run or write ---
 if $dry_run; then
-  log "DRY RUN — output size: $gen_size bytes"
-  if [[ -f "$KNOWLEDGE" ]]; then
-    diff "$KNOWLEDGE" <(echo "$generated") | head -100 || true
-  fi
   log "DRY RUN complete. No files changed."
+  [[ -f "$KNOWLEDGE.bak" ]] && rm -f "$KNOWLEDGE.bak"
   exit 0
 fi
 
-# Backup
-[[ -f "$KNOWLEDGE" ]] && cp "$KNOWLEDGE" "$KNOWLEDGE.bak"
+# --- Validate written KB ---
+if [[ ! -f "$KNOWLEDGE" ]]; then
+  log "ERROR: KNOWLEDGE.md missing after regen"
+  exit 1
+fi
 
-# Write
-echo "$generated" > "$KNOWLEDGE"
-log "KNOWLEDGE.md regenerated (${gen_size} bytes, hash=$new_hash)"
+gen_size=$(wc -c < "$KNOWLEDGE" | tr -d ' ')
+if (( gen_size == 0 )); then
+  log "ERROR: KNOWLEDGE.md is empty after regen"
+  [[ -f "$KNOWLEDGE.bak" ]] && cp "$KNOWLEDGE.bak" "$KNOWLEDGE"
+  exit 1
+fi
+if (( original_size > 0 )) && (( gen_size < original_size / 2 )); then
+  log "ERROR: KNOWLEDGE.md shrunk too much (${gen_size} < ${original_size}/2) — reverting"
+  [[ -f "$KNOWLEDGE.bak" ]] && cp "$KNOWLEDGE.bak" "$KNOWLEDGE"
+  exit 1
+fi
+
+# --- Inject hash/date comments ---
+today=$(date '+%Y-%m-%d')
+manifest_hash=$(shasum -a 256 "$LLMS_PIECES/manifest.json" | cut -d' ' -f1)
+python3 - "$KNOWLEDGE" "$manifest_hash" "$today" <<'PYEOF'
+import re, sys
+path, mhash, today = sys.argv[1], sys.argv[2], sys.argv[3]
+t = open(path, encoding="utf-8").read()
+# Strip any existing hash/validated-at comment lines
+t = re.sub(r'^<!-- (llms-full-hash|manifest-hash|validated-at):[^\n]*-->\n', '', t, flags=re.MULTILINE)
+# Replace the first '# ...' heading with the new header block
+header = (
+    f"# Tandem Coaching — Knowledge Base\n\n"
+    f"<!-- manifest-hash: {mhash} -->\n"
+    f"<!-- validated-at: {today} -->"
+)
+t = re.sub(r'^# [^\n]*', header, t, count=1)
+open(path, 'w', encoding="utf-8").write(t)
+PYEOF
+
+log "KNOWLEDGE.md regenerated (${gen_size} bytes, manifest-hash=${manifest_hash:0:16}...)"
 
 # --- Redundancy detection ---
 if [[ $lesson_count -gt 0 ]] && [[ -n "$lessons" ]]; then
