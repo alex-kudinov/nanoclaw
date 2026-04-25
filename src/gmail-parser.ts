@@ -44,16 +44,40 @@ function decodeBase64Url(data: string): string {
 }
 
 function stripHtml(html: string): string {
-  return html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+  return (
+    html
+      // Remove style/script blocks (content + tags)
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      // Remove HTML comments (including Outlook conditionals)
+      .replace(/<!--[\s\S]*?-->/g, '')
+      // Structural → whitespace
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<\/tr>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      // Strip remaining tags
+      .replace(/<[^>]+>/g, '')
+      // Decode entities
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&rsquo;/g, '\u2019')
+      .replace(/&lsquo;/g, '\u2018')
+      .replace(/&rdquo;/g, '\u201C')
+      .replace(/&ldquo;/g, '\u201D')
+      .replace(/&mdash;/g, '\u2014')
+      .replace(/&ndash;/g, '\u2013')
+      .replace(/&#\d{1,5};/g, (m) =>
+        String.fromCharCode(parseInt(m.slice(2, -1))),
+      )
+      // Collapse excessive whitespace left by removed blocks
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/[ \t]{2,}/g, ' ')
+  );
 }
 
 /** Strip quoted replies and truncate. */
@@ -114,6 +138,7 @@ export function formatEmailForAgent(
   headers: ParsedHeaders,
   body: string,
   threadId?: string,
+  messageId?: string,
 ): string {
   const headerLines = [
     `From: ${headers.fromName} <${headers.from}>`,
@@ -121,5 +146,6 @@ export function formatEmailForAgent(
     `Date: ${headers.date}`,
   ];
   if (threadId) headerLines.push(`Thread-ID: ${threadId}`);
+  if (messageId) headerLines.push(`Message-ID: ${messageId}`);
   return headerLines.join('\n') + '\n\n' + body;
 }

@@ -9,7 +9,7 @@
  */
 
 import { query } from './business-db.js';
-import { getMessageById } from './db.js';
+import { getMessageById, getLatestInboundByThread } from './db.js';
 import { writeHostMessage } from './ipc-writer.js';
 import {
   removeLabelsFromThread,
@@ -131,7 +131,10 @@ async function maybeCreateAutoRule(
       );
     }
   } catch (err) {
-    logger.warn({ err, sender: data.sender_email }, 'classify: auto-rule insert failed');
+    logger.warn(
+      { err, sender: data.sender_email },
+      'classify: auto-rule insert failed',
+    );
   }
 }
 
@@ -151,13 +154,25 @@ async function routeAfterClassify(
   let body = '';
   let senderName = '';
   try {
-    const msg = getMessageById(data.gmail_message_id);
+    let msg = getMessageById(data.gmail_message_id);
+    // Guard: if the agent used the thread ID instead of the message ID,
+    // we'd find our own outbound email (is_from_me=1). Fall back to the
+    // latest inbound message on this thread.
+    if (msg && msg.is_from_me && data.gmail_thread_id) {
+      const inbound = getLatestInboundByThread(data.gmail_thread_id);
+      if (inbound) {
+        logger.warn(
+          { gmail_message_id: data.gmail_message_id, fallback_id: inbound.id },
+          'classify: gmail_message_id pointed to outbound, using inbound fallback',
+        );
+        msg = inbound;
+      }
+    }
     if (msg) {
       senderName = msg.sender_name || '';
       const blankLineIdx = msg.content.indexOf('\n\n');
-      body = blankLineIdx >= 0
-        ? msg.content.slice(blankLineIdx + 2)
-        : msg.content;
+      body =
+        blankLineIdx >= 0 ? msg.content.slice(blankLineIdx + 2) : msg.content;
     }
   } catch {
     // DB not available — route with whatever we have from the IPC payload
@@ -258,7 +273,10 @@ export async function handleClassifyLabelWrite(
   // Route through host-router for LLM-originated classifications.
   // The rules-runner path already calls routeClassifiedEmail() in gmail.ts,
   // so skip it here to avoid double-routing.
-  if (data.classifier_version !== 'rules-runner-v1' && !taxonomy?.auto_archive) {
+  if (
+    data.classifier_version !== 'rules-runner-v1' &&
+    !taxonomy?.auto_archive
+  ) {
     // Dedup check: skip if this (message_id, classifier_version) pair was already routed.
     let alreadyRouted = false;
     try {
@@ -268,7 +286,10 @@ export async function handleClassifyLabelWrite(
       );
       if (dedup.rows[0]?.routed_at) {
         logger.info(
-          { gmail_message_id: data.gmail_message_id, classifier_version: data.classifier_version },
+          {
+            gmail_message_id: data.gmail_message_id,
+            classifier_version: data.classifier_version,
+          },
           'classify-ipc: skipping duplicate route (already routed)',
         );
         alreadyRouted = true;

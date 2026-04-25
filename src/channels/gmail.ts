@@ -6,9 +6,13 @@
  * All inbound maps to a single mailbox JID: gmail:{monitored-email}.
  */
 
+import fs from 'fs';
+import path from 'path';
+
 import { gmail_v1 } from 'googleapis';
 
 import {
+  DATA_DIR,
   GMAIL_LABEL,
   GMAIL_MONITORED_EMAIL,
   GMAIL_POLL_INTERVAL,
@@ -19,6 +23,17 @@ import {
 } from '../config.js';
 import { getMessageIdsForJid, getRouterState, setRouterState } from '../db.js';
 import { getGmailClient } from '../gmail-auth.js';
+import {
+  handleClassifyLabelWrite,
+  isAutoArchiveLabel,
+} from '../classify-ipc-handlers.js';
+import {
+  extractSenderEmail,
+  matchRule,
+  recordRuleHit,
+} from '../classify-rules-runner.js';
+import { matchHardFilter, incrementDropCount } from '../hard-filters.js';
+import { routeClassifiedEmail } from '../host-router.js';
 import {
   formatEmailForAgent,
   parseEmailBody,
@@ -380,11 +395,13 @@ export class GmailChannel implements Channel {
       return false;
     }
 
-    // In push mode, history.list has no labelId filter so it returns every
-    // messageAdded event — including ones Gmail routed straight to SPAM or
-    // TRASH. Mirror Hive's watch filter (labelIds: ['INBOX']) by only
-    // delivering messages currently in INBOX.
-    if (this.pushMode && !labels.includes('INBOX')) {
+    // In push mode, history.list returns every messageAdded event including
+    // SPAM and TRASH. Exclude those explicitly rather than requiring INBOX —
+    // messages can legitimately lack INBOX (e.g. filter-archived, pre-classified).
+    if (
+      this.pushMode &&
+      (labels.includes('SPAM') || labels.includes('TRASH'))
+    ) {
       this.processedIds.add(msg.id);
       return false;
     }
@@ -399,7 +416,131 @@ export class GmailChannel implements Channel {
     }
 
     const threadId = msg.threadId || msg.id;
-    const content = formatEmailForAgent(headers, body, threadId);
+
+    // Pre-LLM classification: if a rule matches, apply the classification
+    // directly and skip mailman entirely. Saves one LLM call + one container
+    // spawn per matched message. Falls through to mailman on any error.
+    const senderEmail = extractSenderEmail(headers.from);
+    const headerMap: Record<string, string> = {};
+    for (const h of rawHeaders) {
+      if (h.name && h.value) headerMap[h.name.toLowerCase()] = h.value;
+    }
+    // Hard filters: drop known-unwanted emails before any classification
+    try {
+      const hardFilter = matchHardFilter({
+        senderEmail: senderEmail || '',
+        subject: headers.subject,
+        headers: headerMap,
+      });
+      if (hardFilter) {
+        logger.info(
+          {
+            messageId: msg.id,
+            filterId: hardFilter.id,
+            reason: hardFilter.reason,
+          },
+          'Gmail: hard filter drop',
+        );
+        try {
+          incrementDropCount(hardFilter.id);
+        } catch {
+          /* skip increment */
+        }
+        try {
+          const logLine = `${new Date().toISOString()} ${senderEmail} ${hardFilter.id} ${hardFilter.reason}\n`;
+          const logPath = path.join(DATA_DIR, 'hard-filter-drops.log');
+          fs.appendFileSync(logPath, logLine, 'utf-8');
+        } catch {
+          /* skip audit log */
+        }
+        this.processedIds.add(msg.id);
+        return false;
+      }
+    } catch (err) {
+      logger.error(
+        { err, messageId: msg.id },
+        'Gmail: hard filter error, proceeding',
+      );
+    }
+
+    const ruleMatch = await matchRule({
+      sender_email: senderEmail,
+      subject: headers.subject || null,
+      headers: headerMap,
+    });
+
+    if (ruleMatch) {
+      try {
+        await handleClassifyLabelWrite({
+          type: 'classify_label_write',
+          gmail_message_id: msg.id,
+          gmail_thread_id: threadId,
+          sender_email: senderEmail,
+          subject: headers.subject || null,
+          label: ruleMatch.target_label,
+          confidence: 0.95,
+          reasoning: `Matched rule #${ruleMatch.rule_id} (${ruleMatch.pattern_type}: ${ruleMatch.pattern_value})`,
+          classifier_version: 'rules-runner-v1',
+        });
+        await recordRuleHit(ruleMatch.rule_id);
+
+        // Only skip mailman for auto-archive labels (newsletters, notifications,
+        // receipts, etc.). Actionable labels (client, lead, procurement) still
+        // need mailman for routing to the correct minion.
+        const canSkipMailman = await isAutoArchiveLabel(ruleMatch.target_label);
+        if (canSkipMailman) {
+          logger.info(
+            {
+              messageId: msg.id,
+              ruleId: ruleMatch.rule_id,
+              label: ruleMatch.target_label,
+            },
+            'Gmail: pre-classified via rule runner, skipped mailman',
+          );
+          this.processedIds.add(msg.id);
+          return true;
+        }
+        // Actionable label — fall through to mailman for routing
+        logger.info(
+          {
+            messageId: msg.id,
+            ruleId: ruleMatch.rule_id,
+            label: ruleMatch.target_label,
+          },
+          'Gmail: pre-classified via rule runner, forwarding to mailman for routing',
+        );
+        // Gate 3: host-router dispatches classified email to target group
+        try {
+          const routeResult = await routeClassifiedEmail({
+            label: ruleMatch.target_label,
+            senderEmail: senderEmail || '',
+            senderName: headers.fromName || '',
+            subject: headers.subject || '',
+            body: body || '',
+            threadId,
+            messageId: msg.id,
+          });
+          if (routeResult.routed) {
+            this.processedIds.add(msg.id);
+            return true;
+          }
+          // else: fall through to formatEmailForAgent -> mailman path
+        } catch (routeErr) {
+          logger.error(
+            { err: routeErr, messageId: msg.id, label: ruleMatch.target_label },
+            'Gmail: host-router failed, falling through to mailman',
+          );
+        }
+      } catch (err) {
+        logger.error(
+          { err, messageId: msg.id, ruleId: ruleMatch.rule_id },
+          'classify-rules: pre-classification failed, falling through to mailman',
+        );
+        // Fall through to the onMessage path below.
+      }
+    }
+
+    const content = formatEmailForAgent(headers, body, threadId, msg.id);
 
     this.processedIds.add(msg.id);
 
@@ -577,15 +718,17 @@ export class GmailChannel implements Channel {
    */
   private scheduleSafetyPoll(): void {
     if (!this.connected) return;
-    this.pollTimer = setTimeout(async () => {
-      try {
-        const current = getStoredHistoryId();
-        if (current) {
-          await this.processPush(current);
-          this.lastPollCompletedAt = Date.now();
-        }
-      } catch (err) {
-        logger.error({ err }, 'Gmail safety poll error');
+    this.pollTimer = setTimeout(() => {
+      const current = getStoredHistoryId();
+      if (current) {
+        this.pushQueue = this.pushQueue
+          .then(() => this.processPush(current))
+          .then(() => {
+            this.lastPollCompletedAt = Date.now();
+          })
+          .catch((err) => {
+            logger.error({ err }, 'Gmail safety poll error');
+          });
       }
       this.scheduleSafetyPoll();
     }, GMAIL_PUSH_SAFETY_POLL_INTERVAL);

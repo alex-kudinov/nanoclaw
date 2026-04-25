@@ -474,6 +474,32 @@ export function getMessagesSince(
 }
 
 /**
+ * Look up a message by its ID (e.g. Gmail message ID).
+ * Used by classify-ipc-handlers to retrieve body/sender for routing.
+ */
+export function getMessageById(messageId: string): NewMessage | undefined {
+  return db
+    .prepare(
+      `SELECT id, chat_jid, sender, sender_name, content, timestamp, is_from_me, from_group, thread_ts
+       FROM messages WHERE id = ?`,
+    )
+    .get(messageId) as NewMessage | undefined;
+}
+
+export function getLatestInboundByThread(
+  threadTs: string,
+): NewMessage | undefined {
+  return db
+    .prepare(
+      `SELECT id, chat_jid, sender, sender_name, content, timestamp, is_from_me, from_group, thread_ts
+       FROM messages
+       WHERE thread_ts = ? AND is_from_me = 0
+       ORDER BY timestamp DESC LIMIT 1`,
+    )
+    .get(threadTs) as NewMessage | undefined;
+}
+
+/**
  * Get all message IDs stored for a given chat JID.
  * Used to seed in-memory dedup sets after restarts.
  */
@@ -1122,6 +1148,21 @@ export function insertTrackingPixel(
   ).run(trackingId, leadId, emailType, new Date().toISOString());
 }
 
+/** Look up a tracking token → lead_id. Used by unsubscribe handler. */
+export function lookupTrackingToken(
+  trackingId: string,
+): { lead_id: number; email_type: string } | null {
+  return (
+    (db
+      .prepare(
+        'SELECT lead_id, email_type FROM email_tracking WHERE tracking_id = ?',
+      )
+      .get(trackingId) as
+      | { lead_id: number; email_type: string }
+      | undefined) ?? null
+  );
+}
+
 export interface EmailOpenResult {
   leadId: number;
   emailType: string;
@@ -1136,7 +1177,7 @@ export function recordEmailOpen(
 ): EmailOpenResult | null {
   const row = db
     .prepare(
-      `SELECT lead_id, email_type, open_count, first_opened_at, last_notified_at
+      `SELECT lead_id, email_type, open_count, first_opened_at, last_notified_at, sent_at
        FROM email_tracking WHERE tracking_id = ?`,
     )
     .get(trackingId) as
@@ -1146,21 +1187,58 @@ export function recordEmailOpen(
         open_count: number;
         first_opened_at: string | null;
         last_notified_at: string | null;
+        sent_at: string;
       }
     | undefined;
 
   if (!row) return null;
 
   const now = new Date().toISOString();
+  const nowMs = Date.parse(now);
   const prevCount = row.open_count;
   const newCount = prevCount + 1;
   const firstOpened = row.first_opened_at || now;
   const ua = (userAgent || 'unknown').substring(0, 500);
 
+  // Suppress self-opens: ignore opens within 10 minutes of send time.
+  // These are almost always Gmail image prefetch, sender reviewing Sent
+  // folder, or BCC/CC self-opens. Both sender and recipient go through
+  // Gmail's image proxy (GoogleImageProxy UA) so we can't distinguish
+  // by UA or IP — timing is the only reliable signal.
+  const SELF_OPEN_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+  const sentMs = Date.parse(row.sent_at);
+  if (nowMs - sentMs < SELF_OPEN_WINDOW_MS) {
+    logger.debug(
+      {
+        trackingId,
+        leadId: row.lead_id,
+        secSinceSend: Math.round((nowMs - sentMs) / 1000),
+      },
+      'Email open suppressed: within self-open window',
+    );
+    // Still record the open in DB (for accurate count) but never notify
+    db.prepare(
+      `UPDATE email_tracking
+       SET first_opened_at = ?, last_opened_at = ?, open_count = ?,
+           last_user_agent = ?
+       WHERE tracking_id = ?`,
+    ).run(firstOpened, now, newCount, ua, trackingId);
+
+    return {
+      leadId: row.lead_id,
+      emailType: row.email_type,
+      openCount: newCount,
+      firstOpenedAt: firstOpened,
+      shouldNotify: false,
+    };
+  }
+
   // Throttle: decide whether to notify agents
   let shouldNotify = false;
-  if (prevCount === 0) {
-    // First open — always notify
+  if (!row.last_notified_at) {
+    // First real open (after self-open window) — always notify.
+    // Suppressed opens increment open_count but never set last_notified_at,
+    // so this fires on the first open that passes the window check above.
     shouldNotify = true;
   } else if (row.last_notified_at) {
     const sinceLastNotify =

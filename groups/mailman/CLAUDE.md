@@ -93,7 +93,7 @@ Persist the classification so the host can write the Gmail label, sync Hive, and
 ```json
 {
   "type": "classify_label_write",
-  "gmail_message_id": "{message_id from email header}",
+  "gmail_message_id": "{Message-ID from email header — NOT the Thread-ID}",
   "gmail_thread_id": "{thread_id from email header}",
   "sender_email": "{sender email}",
   "subject": "{subject}",
