@@ -14,8 +14,11 @@ import {
   GMAIL_MONITORED_EMAIL,
   GMAIL_TEST_RECIPIENT,
   TRACKING_DOMAIN,
+  UNSUBSCRIBE_BASE_URL,
 } from './config.js';
 import { insertTrackingPixel, storeMessageDirect } from './db.js';
+import { query } from './business-db.js';
+import { logOutboundEmailInteraction } from './email-interaction-log.js';
 import {
   replyToThread,
   sendEmail,
@@ -23,6 +26,7 @@ import {
   readEmail,
 } from './gmail-api.js';
 import { logger } from './logger.js';
+import { convertMarkdownToEmailHtml } from './markdown-to-email-html.js';
 
 /** Payload shape written by container MCP tools. */
 export interface GmailIpcPayload {
@@ -45,9 +49,65 @@ export interface GmailIpcPayload {
   // open tracking (gmail_send + gmail_reply)
   leadId?: number;
   emailType?: string;
+  // markdown conversion (gmail_send + gmail_reply)
+  markdown?: boolean;
 }
 
 const jid = `gmail:${GMAIL_MONITORED_EMAIL}`;
+
+/**
+ * Resolve a party ID when leadId is not provided in the IPC payload.
+ * Tries recipient email first, then falls back to thread history.
+ * Returns null if both lookups fail or find nothing.
+ */
+async function resolvePartyId(
+  to?: string,
+  threadId?: string,
+): Promise<number | null> {
+  if (to) {
+    try {
+      const result = await query<{ id: number | null }>(
+        'SELECT business_v2.best_party_by_email($1::citext) AS id',
+        [to],
+      );
+      if (result.rows[0]?.id) return result.rows[0].id;
+    } catch (err) {
+      logger.error({ to, err }, 'gmail-ipc: party lookup by email failed');
+    }
+  }
+  if (threadId) {
+    try {
+      const result = await query<{ party_id: number }>(
+        `SELECT party_id FROM business_v2.interactions
+         WHERE metadata->>'thread_id' = $1
+           AND channel = 'email' AND direction = 'outbound'
+         ORDER BY occurred_at DESC LIMIT 1`,
+        [threadId],
+      );
+      if (result.rows[0]?.party_id) return result.rows[0].party_id;
+    } catch (err) {
+      logger.error({ threadId, err }, 'gmail-ipc: party lookup by thread failed');
+    }
+  }
+  return null;
+}
+
+/** Build email footer with tracking pixel and optional unsubscribe link. */
+function buildEmailFooter(trackingId: string, emailType: string): string {
+  const pixel = `<img src="https://${TRACKING_DOMAIN}/t/${trackingId}" width="1" height="1" alt="" style="display:none">`;
+
+  // Only add unsubscribe link on follow-ups (not initial outreach)
+  if (emailType !== 'follow-up') {
+    return `\n${pixel}`;
+  }
+
+  const unsubUrl = `${UNSUBSCRIBE_BASE_URL}?t=${trackingId}`;
+  return (
+    `\n<div style="margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center;">` +
+    `<a href="${unsubUrl}" style="color:#999;">Unsubscribe</a> from follow-up emails</div>` +
+    `\n${pixel}`
+  );
+}
 
 export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
   if (!data.threadId || !data.body) {
@@ -55,13 +115,25 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
     return;
   }
 
-  // Inject tracking pixel for HTML replies with lead context
+  // Convert markdown to HTML if requested and html flag is not already set
+  if (data.markdown === true && data.html !== true) {
+    const converted = convertMarkdownToEmailHtml(data.body ?? '');
+    if (converted) {
+      data.body = converted;
+      data.html = true;
+      logger.debug({ groupFolder: data.groupFolder }, 'gmail-ipc: converted markdown to HTML');
+    } else {
+      logger.warn({ groupFolder: data.groupFolder }, 'gmail-ipc: markdown conversion returned empty, using raw body');
+    }
+  }
+
+  // Inject tracking pixel + unsubscribe footer for HTML replies with lead context
   let bodyForReply = data.body;
   if (data.html && data.leadId) {
     const trackingId = crypto.randomUUID();
     try {
       insertTrackingPixel(trackingId, data.leadId, data.emailType || 'reply');
-      bodyForReply += `\n<img src="https://${TRACKING_DOMAIN}/t/${trackingId}" width="1" height="1" alt="" style="display:none">`;
+      bodyForReply += buildEmailFooter(trackingId, data.emailType || 'reply');
     } catch (err) {
       logger.warn(
         { err, leadId: data.leadId },
@@ -91,15 +163,29 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
     thread_ts: data.threadId,
   });
 
-  // Write result back so mailman can store threadId in leads DB
-  if (data.leadId) {
-    writeInputMessage(data.groupFolder, {
-      type: 'gmail_send_result',
+  // Log the outbound interaction atomically so the sales follow-up cron
+  // sees an up-to-date last_interaction_at. Must not depend on mailman's
+  // LLM re-running psql — that round-trip silently drops rows.
+  const replyPartyId = data.leadId || (await resolvePartyId(undefined, data.threadId));
+  if (replyPartyId) {
+    if (!data.leadId) {
+      logger.warn(
+        { threadId: data.threadId, resolvedPartyId: replyPartyId },
+        'gmail-ipc: leadId missing, resolved via thread lookup',
+      );
+    }
+    await logOutboundEmailInteraction({
+      partyId: replyPartyId,
+      emailType: data.emailType || 'reply',
+      subject: data.subject || '',
       threadId: result.threadId,
       messageId: result.messageId,
-      leadId: data.leadId,
-      emailType: data.emailType,
     });
+  } else if (!data.leadId) {
+    logger.warn(
+      { threadId: data.threadId },
+      'gmail-ipc: reply leadId missing, no thread history for lookup',
+    );
   }
 
   logger.info(
@@ -172,13 +258,25 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
 
   const { effectiveTo, effectiveCc, originalTo } = applyTestRouting(data);
 
-  // Inject tracking pixel for HTML emails with lead context
+  // Convert markdown to HTML if requested and html flag is not already set
+  if (data.markdown === true && data.html !== true) {
+    const converted = convertMarkdownToEmailHtml(data.body ?? '');
+    if (converted) {
+      data.body = converted;
+      data.html = true;
+      logger.debug({ groupFolder: data.groupFolder }, 'gmail-ipc: converted markdown to HTML');
+    } else {
+      logger.warn({ groupFolder: data.groupFolder }, 'gmail-ipc: markdown conversion returned empty, using raw body');
+    }
+  }
+
+  // Inject tracking pixel + unsubscribe footer for HTML emails with lead context
   let bodyForSend = data.body;
   if (data.html && data.leadId) {
     const trackingId = crypto.randomUUID();
     try {
       insertTrackingPixel(trackingId, data.leadId, data.emailType || 'initial');
-      bodyForSend += `\n<img src="https://${TRACKING_DOMAIN}/t/${trackingId}" width="1" height="1" alt="" style="display:none">`;
+      bodyForSend += buildEmailFooter(trackingId, data.emailType || 'initial');
     } catch (err) {
       logger.warn(
         { err, leadId: data.leadId },
@@ -205,15 +303,29 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
     result.threadId,
   );
 
-  // Write result back so mailman can store threadId in leads DB for follow-ups
-  if (data.leadId) {
-    writeInputMessage(data.groupFolder, {
-      type: 'gmail_send_result',
+  // Log the outbound interaction atomically so the sales follow-up cron
+  // sees an up-to-date last_interaction_at. Must not depend on mailman's
+  // LLM re-running psql — that round-trip silently drops rows.
+  const sendPartyId = data.leadId || (await resolvePartyId(data.to, data.threadId));
+  if (sendPartyId) {
+    if (!data.leadId) {
+      logger.warn(
+        { to: data.to, resolvedPartyId: sendPartyId },
+        'gmail-ipc: leadId missing, resolved via party lookup',
+      );
+    }
+    await logOutboundEmailInteraction({
+      partyId: sendPartyId,
+      emailType: data.emailType || 'initial',
+      subject: data.subject,
       threadId: result.threadId,
       messageId: result.messageId,
-      leadId: data.leadId,
-      emailType: data.emailType,
     });
+  } else if (!data.leadId) {
+    logger.warn(
+      { to: data.to, threadId: data.threadId },
+      'gmail-ipc: party lookup returned null, skipping interaction log',
+    );
   }
 
   logger.info(

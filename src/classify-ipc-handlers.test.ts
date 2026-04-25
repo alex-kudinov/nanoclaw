@@ -1,0 +1,332 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+
+vi.mock('./config.js', () => ({
+  DATA_DIR: '',
+}));
+
+vi.mock('./business-db.js', () => ({
+  query: vi.fn(),
+}));
+
+vi.mock('./gmail-labels.js', () => ({
+  replaceClassLabelsOnThread: vi.fn().mockResolvedValue({
+    removed: [],
+    applied: 'MrGru/financial/receipt',
+  }),
+  removeLabelsFromThread: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('./hive-bridge.js', () => ({
+  recordClassification: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('./classify-rules-runner.js', () => ({
+  resetRulesCache: vi.fn(),
+}));
+
+vi.mock('./logger.js', () => ({
+  logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
+}));
+
+import * as configMod from './config.js';
+import { query } from './business-db.js';
+import {
+  replaceClassLabelsOnThread,
+  removeLabelsFromThread,
+} from './gmail-labels.js';
+import { recordClassification } from './hive-bridge.js';
+import {
+  isClassifyIpcType,
+  dispatchClassifyIpc,
+  handleClassifyLabelWrite,
+  handleClassifyBackfillConfirm,
+  handleClassifyBackfillPending,
+  handleClassifyCorrectionDetected,
+} from './classify-ipc-handlers.js';
+
+const mockQuery = query as unknown as ReturnType<typeof vi.fn>;
+const mockReplace = replaceClassLabelsOnThread as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockRemove = removeLabelsFromThread as unknown as ReturnType<typeof vi.fn>;
+const mockRecord = recordClassification as unknown as ReturnType<typeof vi.fn>;
+
+let tmpDir = '';
+
+function basePayload(overrides: Partial<Record<string, any>> = {}) {
+  return {
+    type: 'classify_label_write' as const,
+    gmail_message_id: 'msg-1',
+    gmail_thread_id: 'thr-1',
+    sender_email: 'alice@example.com',
+    subject: 'Receipt',
+    label: 'MrGru/financial/receipt',
+    confidence: 0.9,
+    reasoning: 'matches sender-known receipts pattern',
+    classifier_version: 'mailman-v2-2026-04-09',
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'classify-ipc-'));
+  (configMod as any).DATA_DIR = tmpDir;
+  mockQuery.mockReset();
+  mockReplace.mockReset();
+  mockRemove.mockReset();
+  mockRecord.mockReset();
+  mockReplace.mockResolvedValue({
+    removed: [],
+    applied: 'MrGru/financial/receipt',
+  });
+  mockRemove.mockResolvedValue(undefined);
+  mockRecord.mockResolvedValue(undefined);
+});
+
+describe('isClassifyIpcType', () => {
+  it('matches classify_* prefix', () => {
+    expect(isClassifyIpcType('classify_label_write')).toBe(true);
+    expect(isClassifyIpcType('classify_backfill_pending')).toBe(true);
+    expect(isClassifyIpcType('gmail_send')).toBe(false);
+    expect(isClassifyIpcType('')).toBe(false);
+  });
+});
+
+describe('handleClassifyLabelWrite', () => {
+  it('inserts the classification and applies label on fresh write', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }) // INSERT classification
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: false }],
+      }) // SELECT taxonomy
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 10 }] }) // INSERT auto-rule
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE routed_at
+    await handleClassifyLabelWrite(basePayload());
+    expect(mockQuery).toHaveBeenCalledTimes(5);
+    expect(mockReplace).toHaveBeenCalledWith(
+      'thr-1',
+      'MrGru/financial/receipt',
+    );
+    expect(mockRecord).not.toHaveBeenCalled();
+    expect(mockRemove).not.toHaveBeenCalled();
+  });
+
+  it('removes INBOX label when taxonomy.auto_archive is true', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }) // INSERT classification
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: true }],
+      }) // taxonomy
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }); // auto-rule (dup)
+    await handleClassifyLabelWrite(basePayload());
+    expect(mockRemove).toHaveBeenCalledWith('thr-1', ['INBOX']);
+  });
+
+  it('tolerates auto_archive failure without throwing', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }) // INSERT classification
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: true }],
+      }) // taxonomy
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }); // auto-rule
+    mockRemove.mockRejectedValueOnce(new Error('gmail 500'));
+    await expect(handleClassifyLabelWrite(basePayload())).resolves.not.toThrow();
+  });
+
+  it('passes non-null probation_until when auto_archive is true', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }) // INSERT classification
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: true }],
+      }) // taxonomy
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 10 }] }); // INSERT auto-rule
+    await handleClassifyLabelWrite(basePayload());
+    // The auto-rule INSERT is the 3rd query call (index 2)
+    const [sql, params] = mockQuery.mock.calls[2];
+    expect(sql).toMatch(/INSERT INTO classification_rules/);
+    expect(sql).toMatch(/probation_until/);
+    // probation_until should be a non-null ISO string ~7 days in the future
+    expect(params[2]).not.toBeNull();
+    const probation = new Date(params[2] as string);
+    const sixDays = Date.now() + 6 * 24 * 60 * 60 * 1000;
+    const eightDays = Date.now() + 8 * 24 * 60 * 60 * 1000;
+    expect(probation.getTime()).toBeGreaterThan(sixDays);
+    expect(probation.getTime()).toBeLessThan(eightDays);
+  });
+
+  it('passes null probation_until when auto_archive is false', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }) // INSERT classification
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: false }],
+      }) // taxonomy
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 10 }] }) // INSERT auto-rule
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE routed_at
+    await handleClassifyLabelWrite(basePayload());
+    const [sql, params] = mockQuery.mock.calls[2];
+    expect(sql).toMatch(/INSERT INTO classification_rules/);
+    expect(params[2]).toBeNull();
+  });
+
+  it('escalates to chief when confidence < 0.5 without touching DB', async () => {
+    await handleClassifyLabelWrite(basePayload({ confidence: 0.3 }));
+    expect(mockQuery).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
+    const chiefDir = path.join(tmpDir, 'ipc', 'chief', 'messages');
+    const files = fs.readdirSync(chiefDir);
+    expect(files.length).toBe(1);
+    const body = JSON.parse(
+      fs.readFileSync(path.join(chiefDir, files[0]), 'utf-8'),
+    );
+    expect(body.text).toMatch(/CLASSIFY-REVIEW/);
+  });
+
+  it('short-circuits when conflict returns rowCount 0 (idempotent)', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+    await handleClassifyLabelWrite(basePayload());
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('calls hive bridge + updates hive_synced when taxonomy has share target', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }) // INSERT classification
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: ['alex', 'cherie'], auto_archive: false }],
+      }) // taxonomy
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // auto-rule
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] }) // UPDATE routed_at
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE hive_synced
+    await handleClassifyLabelWrite(basePayload());
+    expect(mockRecord).toHaveBeenCalledWith(
+      'thr-1',
+      'MrGru/financial/receipt',
+      ['alex', 'cherie'],
+    );
+    expect(mockQuery).toHaveBeenCalledTimes(6);
+    const lastCall = mockQuery.mock.calls[5][0] as string;
+    expect(lastCall).toMatch(/UPDATE email_classifications SET hive_synced/);
+  });
+
+  it('tolerates Hive sync failures and leaves hive_synced false', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }) // INSERT classification
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: ['alex'], auto_archive: false }],
+      }) // taxonomy
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // auto-rule
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE routed_at
+    mockRecord.mockRejectedValueOnce(new Error('firestore 503'));
+    await handleClassifyLabelWrite(basePayload());
+    // No UPDATE hive_synced call — INSERT + taxonomy + auto-rule + dedup check + routed_at update
+    expect(mockQuery).toHaveBeenCalledTimes(5);
+  });
+});
+
+describe('handleClassifyCorrectionDetected', () => {
+  it('writes a CLASSIFY-CORRECTION message to chief', async () => {
+    await handleClassifyCorrectionDetected({
+      type: 'classify_correction_detected',
+      gmail_message_id: 'msg-9',
+      old_label: 'MrGru/newsletter/general',
+      new_label: 'MrGru/financial/receipt',
+      detected_at: '2026-04-09T12:00:00Z',
+    });
+    const chiefDir = path.join(tmpDir, 'ipc', 'chief', 'messages');
+    const files = fs.readdirSync(chiefDir);
+    expect(files.length).toBe(1);
+    const body = JSON.parse(
+      fs.readFileSync(path.join(chiefDir, files[0]), 'utf-8'),
+    );
+    expect(body.text).toMatch(/CLASSIFY-CORRECTION/);
+    expect(body.text).toContain('msg-9');
+  });
+});
+
+describe('handleClassifyBackfillPending', () => {
+  it('writes a BACKFILL-PENDING message to chief with pending_id', async () => {
+    await handleClassifyBackfillPending({
+      type: 'classify_backfill_pending',
+      pending_id: 42,
+      lesson_title: 'spark receipts',
+      match_count: 27,
+      target_label: 'MrGru/financial/receipt',
+      dry_run_summary: 'sample: msg-1, msg-2, msg-3',
+    });
+    const chiefDir = path.join(tmpDir, 'ipc', 'chief', 'messages');
+    const body = JSON.parse(
+      fs.readFileSync(
+        path.join(chiefDir, fs.readdirSync(chiefDir)[0]),
+        'utf-8',
+      ),
+    );
+    expect(body.text).toMatch(/BACKFILL-PENDING id=42/);
+    expect(body.text).toContain('27 past emails');
+  });
+});
+
+describe('handleClassifyBackfillConfirm', () => {
+  it('updates pending row to approved', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 1, rows: [] });
+    await handleClassifyBackfillConfirm({
+      type: 'classify_backfill_confirm',
+      pending_id: 7,
+      decision: 'approve',
+      resolved_by: 'U123',
+    });
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toMatch(/UPDATE classification_backfill_pending/);
+    expect(params).toEqual(['approved', 'U123', 7]);
+  });
+
+  it('updates pending row to rejected', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 1, rows: [] });
+    await handleClassifyBackfillConfirm({
+      type: 'classify_backfill_confirm',
+      pending_id: 8,
+      decision: 'reject',
+      resolved_by: 'auto-expired',
+    });
+    const [, params] = mockQuery.mock.calls[0];
+    expect(params).toEqual(['rejected', 'auto-expired', 8]);
+  });
+});
+
+describe('dispatchClassifyIpc', () => {
+  it('routes classify_label_write through the write handler', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }) // INSERT classification
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: false }],
+      }) // taxonomy
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // auto-rule
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE routed_at
+    await dispatchClassifyIpc(basePayload());
+    expect(mockReplace).toHaveBeenCalled();
+  });
+
+  it('logs and returns on unknown type', async () => {
+    await dispatchClassifyIpc({
+      type: 'classify_unknown' as any,
+    } as any);
+    // no throw, no db calls
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+});
