@@ -44,4 +44,7 @@ sqlite3 "$TCC_DB" "INSERT OR REPLACE INTO access (
   X'$CSREQ_HEX', 'UNUSED', 'UNUSED'
 );"
 
+# kill all instances for the permissions to take instantly
+killall tccd 2>/dev/null || true
+
 echo "TCC: granted FileProviderDomain to $NODE_BIN (cdhash ${CDHASH:0:12}...)"

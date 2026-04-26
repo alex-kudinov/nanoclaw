@@ -50,6 +50,21 @@ export const MAX_CONCURRENT_CONTAINERS = Math.max(
   1,
   parseInt(process.env.MAX_CONCURRENT_CONTAINERS || '5', 10) || 5,
 );
+// Slots reserved for new incoming messages during startup recovery.
+// Clamped to [0, MAX_CONCURRENT_CONTAINERS - 1] at runtime (see T08).
+export const RECOVERY_RESERVED_SLOTS = parseInt(
+  process.env.RECOVERY_RESERVED_SLOTS || '1',
+  10,
+);
+export const SPAWN_TIMEOUT = parseInt(process.env.SPAWN_TIMEOUT || '90000', 10); // 90s — fail fast if container produces no output markers
+export const LIVENESS_CHECK_INTERVAL_MS = parseInt(
+  process.env.LIVENESS_CHECK_INTERVAL_MS || '10000',
+  10,
+); // 10s — how often GroupQueue polls for dead/frozen containers
+export const STALE_OUTPUT_THRESHOLD_MS = parseInt(
+  process.env.STALE_OUTPUT_THRESHOLD_MS || '120000',
+  10,
+); // 2min — container is considered frozen if no IPC output in this window (XPC freeze catcher)
 
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -88,6 +103,7 @@ export const HEARTBEAT_INTERVAL_MS = parseInt(
 export const WEBHOOK_PORT = parseInt(process.env.WEBHOOK_PORT || '8088', 10);
 export const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
 export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
+export const HARD_FILTERS_FILE = path.join(DATA_DIR, 'hard-filters.json');
 
 // Job scheduling
 export const JOBS_FILE = path.join(DATA_DIR, 'jobs.json');
@@ -141,6 +157,11 @@ export const GMAIL_BCC =
 // Tracking pixel domain for email open tracking.
 export const TRACKING_DOMAIN =
   process.env.TRACKING_DOMAIN || 't.tandemcoach.co';
+
+// Public unsubscribe URL base — routed through n8n on webhooks subdomain.
+export const UNSUBSCRIBE_BASE_URL =
+  process.env.UNSUBSCRIBE_BASE_URL ||
+  'https://webhooks.tandemcoach.co/webhook/unsubscribe';
 
 // Gmail Pub/Sub push notifications (replaces fast polling when enabled).
 // When true: history.list fetches deltas on each push notification. Fast poll

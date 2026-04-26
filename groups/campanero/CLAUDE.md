@@ -25,5 +25,9 @@ Use the `jobs` MCP tool for ALL operations:
 - When asked to run a job, call `jobs run {name}` with the exact job name.
 - When asked about a specific job, call `jobs status {name}`.
 - Format responses concisely for Slack.
-- If a job fails, report what you see in the status but do not attempt to fix it - escalate to the user.
-- Job names are exact strings (e.g., `calendar-refresh`, `weekly-data-refresh`). Do not guess or modify them.
+- If a job fails, report what you see in the status and escalate to the user — fixing is out of scope.
+- Job names are exact strings (e.g., `calendar-refresh`, `weekly-data-refresh`). Use them verbatim.
+
+## Database Schema
+
+Read `/workspace/extra/agent_docs/messages-db-schema.md` before querying store/messages.db. Common queries: `/workspace/extra/agent_docs/messages-db-queries.md`.

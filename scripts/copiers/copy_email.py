@@ -2,6 +2,7 @@
 """Copy email exports from OneDrive Drop to Intake."""
 import logging
 import os
+import shutil
 from pathlib import Path
 
 HOME = Path.home()
@@ -22,9 +23,13 @@ def main():
         tmp = DST / (f.name + ".tmp")
         final = DST / f.name
         try:
-            data = open(f, "rb").read()
-            open(tmp, "wb").write(data)
-            if tmp.stat().st_size != len(data):
+            # shutil.copy2 uses macOS copyfile() syscall which properly
+            # materializes OneDrive cloud-placeholder files. Raw open().read()
+            # can fail with EDEADLK on placeholder files in launchd-spawned
+            # processes, leaving files stuck in the drop indefinitely.
+            shutil.copy2(str(f), str(tmp))
+            src_size = f.stat().st_size
+            if tmp.stat().st_size != src_size:
                 logging.warning("SIZE_MISMATCH %s", f.name)
                 tmp.unlink(missing_ok=True)
                 continue

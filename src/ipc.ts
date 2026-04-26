@@ -26,6 +26,15 @@ import {
   LearnLessonPayload,
   RouteLessonPayload,
 } from './learn-ipc-handler.js';
+import {
+  dispatchClassifyIpc,
+  isClassifyIpcType,
+  ClassifyIpcPayload,
+} from './classify-ipc-handlers.js';
+import {
+  handleClassificationLesson,
+  isClassificationLesson,
+} from './classify-backfill.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
@@ -49,6 +58,9 @@ export interface IpcDeps {
   // Job management — optional so existing callers don't need to change
   runHostJob?: (name: string, triggeredBy: string) => Promise<void>;
   setJobEnabled?: (name: string, enabled: boolean) => void;
+  // Container liveness wiring — optional so existing callers don't need to change
+  acknowledgePipedMessage?: (groupFolder: string, messageId: string) => void;
+  setLastOutputAt?: (groupFolder: string) => void;
 }
 
 let ipcWatcherRunning = false;
@@ -128,6 +140,11 @@ export function startIpcWatcher(deps: IpcDeps): void {
           const messageFiles = fs
             .readdirSync(messagesDir)
             .filter((f) => f.endsWith('.json'));
+          // Any output file from an active container is proof-of-life for
+          // the frozen-container watchdog. See GroupQueue.setLastOutputAt.
+          if (messageFiles.length > 0) {
+            deps.setLastOutputAt?.(sourceGroup);
+          }
           for (const file of messageFiles) {
             const filePath = path.join(messagesDir, file);
             try {
@@ -243,11 +260,74 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     'route_lesson rejected — only chief can route lessons',
                   );
                 } else {
-                  await handleRouteLesson({
+                  const routedPayload = {
                     ...data,
                     groupFolder: sourceGroup,
-                  } as RouteLessonPayload);
+                  } as RouteLessonPayload;
+                  await handleRouteLesson(routedPayload);
+                  // T12: if the lesson targets mailman and looks like a
+                  // classification rule, backfill past email_classifications
+                  // rows that match the pattern. Errors are swallowed — the
+                  // route_lesson path stays non-fatal.
+                  if (
+                    routedPayload.target_agents?.includes('mailman') &&
+                    isClassificationLesson(
+                      routedPayload.title,
+                      routedPayload.rule,
+                    )
+                  ) {
+                    try {
+                      await handleClassificationLesson(routedPayload);
+                    } catch (err) {
+                      logger.error(
+                        { err, lesson: routedPayload.title },
+                        'classification backfill failed',
+                      );
+                    }
+                  }
                   spawnMergeLessons();
+                }
+              } else if (isClassifyIpcType(data.type)) {
+                // T09: classify_* IPCs from mailman — host records the
+                // classification + applies the Gmail label + syncs to Hive.
+                if (sourceGroup !== 'mailman') {
+                  // Quarantine rather than delete for forensics
+                  const quarantineDir = path.join(
+                    DATA_DIR,
+                    'ipc',
+                    'quarantine',
+                    sourceGroup,
+                  );
+                  fs.mkdirSync(quarantineDir, { recursive: true });
+                  fs.renameSync(
+                    filePath,
+                    path.join(quarantineDir, path.basename(filePath)),
+                  );
+                  logger.warn(
+                    { sourceGroup, type: data.type },
+                    'classify_*: rejected non-mailman source, quarantined',
+                  );
+                  continue;
+                }
+                try {
+                  await dispatchClassifyIpc(data as ClassifyIpcPayload);
+                  fs.unlinkSync(filePath);
+                } catch (err) {
+                  logger.error(
+                    { err, filePath },
+                    'classify dispatch failed, moving to failed/',
+                  );
+                  const failedDir = path.join(
+                    DATA_DIR,
+                    'ipc',
+                    'failed',
+                    sourceGroup,
+                  );
+                  fs.mkdirSync(failedDir, { recursive: true });
+                  fs.renameSync(
+                    filePath,
+                    path.join(failedDir, path.basename(filePath)),
+                  );
                 }
               } else {
                 // Unknown type — delete to prevent infinite reprocessing
@@ -284,6 +364,9 @@ export function startIpcWatcher(deps: IpcDeps): void {
           const taskFiles = fs
             .readdirSync(tasksDir)
             .filter((f) => f.endsWith('.json'));
+          if (taskFiles.length > 0) {
+            deps.setLastOutputAt?.(sourceGroup);
+          }
           for (const file of taskFiles) {
             const filePath = path.join(tasksDir, file);
             try {
@@ -316,6 +399,9 @@ export function startIpcWatcher(deps: IpcDeps): void {
           const jobFiles = fs
             .readdirSync(jobsDir)
             .filter((f) => f.endsWith('.json'));
+          if (jobFiles.length > 0) {
+            deps.setLastOutputAt?.(sourceGroup);
+          }
           for (const file of jobFiles) {
             const filePath = path.join(jobsDir, file);
             try {
@@ -338,6 +424,65 @@ export function startIpcWatcher(deps: IpcDeps): void {
         }
       } catch (err) {
         logger.error({ err, sourceGroup }, 'Error reading IPC jobs directory');
+      }
+
+      // Process piped-message ack files from this group's IPC directory.
+      // The agent-runner writes an ack file after reading each piped input
+      // message; ipc.ts deletes it and notifies the GroupQueue to remove
+      // the message from its pipedMessages tracking Map.
+      const ackDir = path.join(ipcBaseDir, sourceGroup, 'ack');
+      try {
+        if (fs.existsSync(ackDir)) {
+          let ackFiles: string[];
+          try {
+            ackFiles = fs
+              .readdirSync(ackDir)
+              .filter((f) => f.endsWith('.json'));
+          } catch (err) {
+            logger.error(
+              { err, sourceGroup },
+              'Error reading IPC ack directory',
+            );
+            ackFiles = [];
+          }
+          // Seeing any ack file means the container recently produced output
+          if (ackFiles.length > 0) {
+            deps.setLastOutputAt?.(sourceGroup);
+          }
+          for (const file of ackFiles) {
+            const filePath = path.join(ackDir, file);
+            try {
+              const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+              if (data.message_id && deps.acknowledgePipedMessage) {
+                deps.acknowledgePipedMessage(sourceGroup, data.message_id);
+              }
+              try {
+                fs.unlinkSync(filePath);
+              } catch (unlinkErr: unknown) {
+                const code = (unlinkErr as NodeJS.ErrnoException | undefined)
+                  ?.code;
+                if (code !== 'ENOENT') {
+                  logger.warn(
+                    { file, sourceGroup, err: unlinkErr },
+                    'Failed to delete ack file',
+                  );
+                }
+              }
+            } catch (err) {
+              logger.error(
+                { file, sourceGroup, err },
+                'Error processing IPC ack',
+              );
+              try {
+                fs.unlinkSync(filePath);
+              } catch {
+                /* ignore */
+              }
+            }
+          }
+        }
+      } catch (err) {
+        logger.error({ err, sourceGroup }, 'Error reading IPC ack directory');
       }
     }
 

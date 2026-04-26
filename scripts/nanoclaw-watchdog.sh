@@ -9,6 +9,8 @@ STATE_FILE="$HOME/.local/state/nanoclaw-watchdog.json"
 HEARTBEAT_FILE="$PROJECT_ROOT/data/heartbeat.json"
 ERROR_LOG="$PROJECT_ROOT/logs/nanoclaw.error.log"
 DB_FILE="$PROJECT_ROOT/store/messages.db"
+KILL_SIGNAL_DIR="$PROJECT_ROOT/data/watchdog-kills"
+STARVATION_ALERT_WINDOW_SEC=600  # 10 min
 
 # Toolbox setup — required for pushover/send-message.sh
 export TOOLBOX_HOME="$HOME/dev/toolbox"
@@ -40,6 +42,23 @@ fi
 trap 'save_state; cleanup_lock' EXIT
 
 log() { echo "$(date -Iseconds) $*"; }
+
+# ---------------------------------------------------------------------------
+# T04: Write a Contract D kill signal file so NanoClaw's in-process queue
+# can reconcile with the actual container set. Atomic via .tmp + rename.
+# ---------------------------------------------------------------------------
+write_kill_signal() {
+  local cname="$1"
+  local age="$2"
+  local reason="$3"
+  mkdir -p "$KILL_SIGNAL_DIR" 2>/dev/null || true
+  local target="$KILL_SIGNAL_DIR/${cname}.json"
+  local tmp="${target}.tmp"
+  local now_ms=$(( $(date +%s) * 1000 ))
+  printf '{"killed_at_ms":%s,"container_name":"%s","age_sec":%s,"reason":"%s"}\n' \
+    "$now_ms" "$cname" "$age" "$reason" > "$tmp" 2>/dev/null \
+    && mv "$tmp" "$target" 2>/dev/null
+}
 
 # ---------------------------------------------------------------------------
 # State management
@@ -248,20 +267,82 @@ if command -v container &>/dev/null && ! $needs_restart; then
 fi
 
 # --- Check 7: Zombie containers (skip if runtime is down) ---
+# Combines T04 (signal NanoClaw on kill) with T07 (use health endpoint queue
+# data to detect zombies, queue/runtime mismatches, and starvation).
 if $container_runtime_ok && ! $needs_restart; then
-  jq -r '.[]? | select(.configuration.id | startswith("nanoclaw-")) | .configuration.id' \
-    /tmp/watchdog-container-ls.json 2>/dev/null \
-    | while read -r cname; do
+  # Build the actual list of running NanoClaw containers from container ls
+  running_containers=$(jq -r '.[]? | select(.configuration.id | startswith("nanoclaw-")) | .configuration.id' \
+    /tmp/watchdog-container-ls.json 2>/dev/null || echo "")
+
+  # Legacy zombie kill: timestamp parsed from container name suffix
+  while read -r cname; do
+    [[ -z "$cname" ]] && continue
     ts_part="${cname##*-}"
     if [[ "$ts_part" =~ ^[0-9]{10,13}$ ]]; then
       age_sec=$(( now_s - (ts_part / 1000) ))
       if (( age_sec > 3600 )); then
         container stop "$cname" 2>/dev/null || true
         container rm "$cname" 2>/dev/null || true
+        write_kill_signal "$cname" "$age_sec" "zombie_age"
         log "Killed zombie: $cname (${age_sec}s old)"
       fi
     fi
-  done
+  done <<< "$running_containers"
+
+  # T07: queue/runtime mismatch + zombie-by-age + starvation alerts
+  if [[ -n "$health" ]]; then
+    queue_active_count=$(echo "$health" | jq -r '.queue.activeCount // 0' 2>/dev/null || echo 0)
+    queue_max_concurrent=$(echo "$health" | jq -r '.queue.maxConcurrent // 0' 2>/dev/null || echo 0)
+    queue_waiting_count=$(echo "$health" | jq -r '(.queue.waitingGroups // []) | length' 2>/dev/null || echo 0)
+    [[ "$queue_active_count" =~ ^[0-9]+$ ]] || queue_active_count=0
+    [[ "$queue_max_concurrent" =~ ^[0-9]+$ ]] || queue_max_concurrent=0
+    [[ "$queue_waiting_count" =~ ^[0-9]+$ ]] || queue_waiting_count=0
+
+    # Per-group state inspection
+    while IFS=$'\t' read -r gname cname age_sec; do
+      [[ -z "$cname" || "$cname" == "null" ]] && continue
+      [[ "$age_sec" =~ ^[0-9]+$ ]] || age_sec=0
+      # Mismatch: queue thinks this container is alive but container ls disagrees
+      if ! grep -qx "$cname" <<< "$running_containers"; then
+        log "Queue/runtime mismatch: $cname (group=$gname) in queue but not in container ls"
+        write_kill_signal "$cname" "$age_sec" "queue_mismatch"
+        continue
+      fi
+      # Zombie by age (>1h) — kill via runtime AND signal NanoClaw
+      if (( age_sec > 3600 )); then
+        container stop "$cname" 2>/dev/null || true
+        container rm "$cname" 2>/dev/null || true
+        write_kill_signal "$cname" "$age_sec" "zombie_age"
+        log "Killed zombie via queue: $cname (group=$gname, ${age_sec}s old)"
+      fi
+    done < <(echo "$health" | jq -r '.queue.groupStates // {} | to_entries[] | "\(.key)\t\(.value.containerName // "null")\t\(.value.containerAgeSec // 0)"' 2>/dev/null || true)
+
+    # Starvation alert: full concurrency + waiting groups for >10 min
+    starvation_first_seen=$(jq -r '.starvation_first_seen // 0' "$STATE_FILE" 2>/dev/null || echo 0)
+    [[ "$starvation_first_seen" =~ ^[0-9]+$ ]] || starvation_first_seen=0
+    starvation_last_alert=$(jq -r '.starvation_last_alert // 0' "$STATE_FILE" 2>/dev/null || echo 0)
+    [[ "$starvation_last_alert" =~ ^[0-9]+$ ]] || starvation_last_alert=0
+
+    if (( queue_waiting_count > 0 )) && (( queue_active_count >= queue_max_concurrent )) && (( queue_max_concurrent > 0 )); then
+      if (( starvation_first_seen == 0 )); then
+        starvation_first_seen=$now_s
+      fi
+      starvation_duration=$(( now_s - starvation_first_seen ))
+      if (( starvation_duration >= STARVATION_ALERT_WINDOW_SEC )) \
+         && (( now_s - starvation_last_alert >= STARVATION_ALERT_WINDOW_SEC )); then
+        waiting_list=$(echo "$health" | jq -r '.queue.waitingGroups // [] | join(",")' 2>/dev/null || echo "?")
+        alert "Queue starvation: ${queue_active_count}/${queue_max_concurrent} active, ${queue_waiting_count} waiting for ${starvation_duration}s. Waiting: $waiting_list"
+        starvation_last_alert=$now_s
+      fi
+    else
+      starvation_first_seen=0
+    fi
+    # Persist starvation state
+    jq --arg fs "$starvation_first_seen" --arg la "$starvation_last_alert" \
+       '.starvation_first_seen = ($fs | tonumber) | .starvation_last_alert = ($la | tonumber)' \
+       "$STATE_FILE" > "$STATE_FILE.tmp" 2>/dev/null && mv "$STATE_FILE.tmp" "$STATE_FILE" || true
+  fi
+
   rm -f /tmp/watchdog-container-ls.json
 fi
 

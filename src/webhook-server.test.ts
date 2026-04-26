@@ -386,7 +386,10 @@ describe('WebhookServer — Gmail Pub/Sub push endpoint', () => {
         'x-webhook-secret': 'push-secret',
         'content-type': 'application/json',
       },
-      body: envelope({ emailAddress: 'info@tandemcoach.co', historyId: '4242' }),
+      body: envelope({
+        emailAddress: 'info@tandemcoach.co',
+        historyId: '4242',
+      }),
     });
     expect(res.status).toBe(204);
     // Handler is fire-and-forget; allow microtask flush.

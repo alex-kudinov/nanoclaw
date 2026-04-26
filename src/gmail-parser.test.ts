@@ -110,6 +110,57 @@ describe('parseEmailBody', () => {
     };
     expect(parseEmailBody(payload)).toBe('A & B < C > D "E" \'F\'');
   });
+
+  it('strips style blocks and their content', () => {
+    const html =
+      '<style>body { font-family: Arial; } .header { color: red; }</style><p>Invoice total: $500</p>';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/html',
+      body: { data: base64url(html) },
+    };
+    expect(parseEmailBody(payload)).toBe('Invoice total: $500');
+  });
+
+  it('strips script blocks and their content', () => {
+    const html = '<script>var x = 1;</script><p>Payment received</p>';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/html',
+      body: { data: base64url(html) },
+    };
+    expect(parseEmailBody(payload)).toBe('Payment received');
+  });
+
+  it('strips HTML comments including Outlook conditionals', () => {
+    const html =
+      '<!--[if mso]><table><tr><td><![endif]--><p>Content</p><!--[if mso]></td></tr></table><![endif]-->';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/html',
+      body: { data: base64url(html) },
+    };
+    expect(parseEmailBody(payload)).toBe('Content');
+  });
+
+  it('decodes numeric HTML entities', () => {
+    const html = '<p>Price: &#36;100 &#8212; paid</p>';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/html',
+      body: { data: base64url(html) },
+    };
+    expect(parseEmailBody(payload)).toBe('Price: $100 \u2014 paid');
+  });
+
+  it('collapses excessive whitespace from complex HTML emails', () => {
+    const html =
+      '<style>.x{color:red}</style>\n\n\n<p>Line 1</p>\n\n\n\n<p>Line 2</p>';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/html',
+      body: { data: base64url(html) },
+    };
+    const result = parseEmailBody(payload);
+    expect(result).not.toMatch(/\n{3,}/);
+    expect(result).toContain('Line 1');
+    expect(result).toContain('Line 2');
+  });
 });
 
 // --- parseEmailHeaders ---

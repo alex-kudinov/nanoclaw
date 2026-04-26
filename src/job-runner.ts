@@ -101,8 +101,11 @@ export async function runJob(
     return result;
   }
 
-  // 3. Build environment
+  // 3. Build environment (with usage-tracking metadata)
   const env = buildEnv(job.project_root);
+  env.NANOCLAW_MINION = job.project;
+  env.NANOCLAW_JOB = job.name;
+  env.NANOCLAW_ACTION = path.basename(job.script, path.extname(job.script));
 
   // 4. Determine executable and spawn
   const ext = path.extname(job.script);

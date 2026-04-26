@@ -26,6 +26,9 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.bridge import claude as _bridge_claude  # noqa: E402
+
 # ── Constants ────────────────────────────────────────────────────────────────
 
 CST = ZoneInfo("America/Chicago")
@@ -255,9 +258,6 @@ def match_initiative(
 
 # ── AI Agenda Classification ───────────────────────────────────────────────
 
-BRIDGE_URL = "http://100.115.115.206:40960/v1/print"
-ENV_SHARED = Path.home() / "dev" / ".env.shared"
-
 AGENDA_PROMPT_HEADER = """Classify each action item into the BEST matching agenda based on the item's content, not the source meeting.
 
 Available agendas (pick exactly one per item):
@@ -269,16 +269,6 @@ Available agendas (pick exactly one per item):
 6. Salesforce/CRM Architecture — CRM, win-back/AgentForce, CPQ, address validation, Pentana, Revenue Cloud, QSM
 7. E-Commerce Expansion — Gold Star, HPI, Hollander, CAP, Shop Central, WooCommerce
 8. Team & Talent Development — hiring, onboarding, team development, performance, delegation, workshops"""
-
-
-def _get_bridge_key() -> str:
-    if os.environ.get("CLAUDE_BRIDGE_KEY"):
-        return os.environ["CLAUDE_BRIDGE_KEY"]
-    if ENV_SHARED.exists():
-        for line in ENV_SHARED.read_text().splitlines():
-            if line.startswith("CLAUDE_BRIDGE_KEY="):
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
-    return ""
 
 
 def classify_items_by_agenda(
@@ -297,11 +287,6 @@ def classify_items_by_agenda(
     if not items:
         return []
 
-    key = _get_bridge_key()
-    if not key:
-        print("  WARN: No bridge key — using workstream fallback", file=sys.stderr)
-        return [fallback_agenda or ""] * len(items)
-
     item_lines = "\n".join(
         f"{i+1}. {it['owner']}: {it['action'][:120]}"
         if it.get("owner") else f"{i+1}. {it['action'][:120]}"
@@ -315,23 +300,13 @@ def classify_items_by_agenda(
         f'[{{"item": 1, "agenda": "exact agenda name"}}]'
     )
 
-    body = json.dumps({"prompt": prompt, "model": "haiku"}).encode()
-    req = urllib.request.Request(
-        BRIDGE_URL,
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "X-Bridge-Key": key,
-        },
-    )
-
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            result = json.loads(resp.read())
-        if not result.get("ok"):
-            raise RuntimeError(result.get("error", "Bridge error"))
-
-        text = result["data"]["result"]
+        text = _bridge_claude(
+            prompt,
+            model="haiku",
+            timeout=60,
+            meta={"action": "classify-agenda"},
+        )
         # Extract JSON from response (may be wrapped in ```json ... ```)
         json_match = re.search(r"\[.*\]", text, re.DOTALL)
         if not json_match:

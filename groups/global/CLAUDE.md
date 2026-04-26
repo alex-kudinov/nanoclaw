@@ -49,10 +49,10 @@ When you learn something important:
 
 ## Message Formatting
 
-NEVER use markdown. Slack renders its own formatting:
+Always use Slack's own formatting instead of markdown:
 - *single asterisks* for bold (NEVER **double asterisks**)
 - _underscores_ for italic
 - • bullet points
 - ```triple backticks``` for code
 
-No ## headings. No [links](url). No **double stars**.
+Always avoid: ## headings, [links](url), **double stars**.

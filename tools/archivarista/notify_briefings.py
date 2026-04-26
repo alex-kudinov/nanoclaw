@@ -60,13 +60,16 @@ def parse_briefing(filepath):
             highlight = h[:80] + "..." if len(h) > 80 else h
             break
 
-    filename = os.path.basename(filepath).replace(".md", "")
-    uri_file = filename.replace(" ", "%20")
+    # Build Obsidian URI — handle both flat and date-subfolder layouts
+    # Relative path from Briefings/ dir
+    rel = os.path.relpath(filepath, BRIEFINGS_DIR)
+    uri_path = rel.replace(".md", "").replace(" ", "%20").replace(os.sep, "%2F")
     obsidian_uri = (
         f"obsidian://open?vault={VAULT_NAME.replace(' ', '%20')}"
-        f"&file=Archivista%2FBriefings%2F{uri_file}"
+        f"&file=Archivista%2FBriefings%2F{uri_path}"
     )
 
+    filename = os.path.basename(filepath).replace(".md", "")
     return {
         "subject": fm.get("meeting-subject", filename),
         "posture": fm.get("posture", "Unknown"),
@@ -101,7 +104,12 @@ def post_slack(token, message):
 def main():
     target = sys.argv[1] if len(sys.argv) > 1 else date.today().isoformat()
 
-    files = sorted(glob.glob(os.path.join(BRIEFINGS_DIR, f"{target}*.md")))
+    # Check date subfolder first, fall back to flat layout
+    date_dir = os.path.join(BRIEFINGS_DIR, target)
+    if os.path.isdir(date_dir):
+        files = sorted(glob.glob(os.path.join(date_dir, "*.md")))
+    else:
+        files = sorted(glob.glob(os.path.join(BRIEFINGS_DIR, f"{target}*.md")))
     if not files:
         print(f"No briefings for {target}")
         return 0

@@ -1,0 +1,78 @@
+{
+  "exported_at": "2026-04-10T11:19:04.924Z",
+  "user": "me",
+  "count": 2,
+  "filters": [
+    {
+      "id": "ANe1BmiBe8xMZb7lTn9kFxGR6TJ_bMMs_HVzfJPWUn1PoniStxKipaIerqd4cka8kn4n_oPEpw",
+      "criteria": {
+        "to": "*@*"
+      },
+      "action": {
+        "forward": "alex@kudinov.com"
+      }
+    },
+    {
+      "id": "ANe1BmjksWqtsDwfJWD-0IchMDQ61O9-lvD6oKcP8xYbCTwiBmZ67ue9psBrmQN_Eiu4SMoWug",
+      "criteria": {
+        "to": "gru@tandemcoach.co"
+      },
+      "action": {
+        "addLabelIds": [
+          "Label_29"
+        ]
+      }
+    }
+  ],
+  "autoForwarding": {
+    "enabled": true,
+    "emailAddress": "cherie@tandemcoaching.academy",
+    "disposition": "leaveInInbox"
+  },
+  "forwardingAddresses": [
+    {
+      "forwardingEmail": "alex@kudinov.com",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "alex@kudinov.us",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "cherie+track@tandemcoaching.academy",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "cherie@tandemcoaching.academy",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "cherie@tcagile.com",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "colleenesposito@gmail.com",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "luciana@dartfrogconsulting.com",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "mattdkirilov@gmail.com",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "sherman@scrumadventures.com",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "tcagile@kudinov.com",
+      "verificationStatus": "accepted"
+    },
+    {
+      "forwardingEmail": "xbohdpukc@gmail.com",
+      "verificationStatus": "accepted"
+    }
+  ]
+}

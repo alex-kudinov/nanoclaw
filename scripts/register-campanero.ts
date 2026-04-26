@@ -22,6 +22,11 @@ setRegisteredGroup(JID, {
         containerPath: 'knowledge',
         readonly: true,
       },
+      {
+        hostPath: 'agent_docs',
+        containerPath: 'agent_docs',
+        readonly: true,
+      },
     ],
   },
   requiresTrigger: false,

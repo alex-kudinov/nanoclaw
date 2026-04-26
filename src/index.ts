@@ -11,7 +11,9 @@ import {
   IDLE_TIMEOUT,
   JOB_REPORT_CHANNEL,
   JOBS_FILE,
+  MAX_CONCURRENT_CONTAINERS,
   POLL_INTERVAL,
+  RECOVERY_RESERVED_SLOTS,
   SLACK_ONLY,
   TRIGGER_PATTERN,
   WEBHOOK_PORT,
@@ -57,6 +59,7 @@ import { GroupQueue } from './group-queue.js';
 import { startIpcWatcher } from './ipc.js';
 import { loadJobRegistry, watchJobRegistry } from './job-registry.js';
 import { handleEmailOpen as handleEmailOpenImpl } from './email-tracking.js';
+import { handleUnsubscribe as handleUnsubscribeImpl } from './email-unsubscribe.js';
 import { runJob } from './job-runner.js';
 import { writeJobsSnapshot } from './job-snapshot.js';
 import { WebhookServer } from './webhook-server.js';
@@ -71,6 +74,13 @@ import {
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { readEnvFile } from './env.js';
+import {
+  isCircuitOpen,
+  recordSuccess,
+  recordFailure,
+  setOnCooldownExpiry,
+} from './circuit-breaker.js';
+import { drainWatchdogKills, startWatchdogIpc } from './watchdog-ipc.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -193,6 +203,11 @@ async function processGroupMessages(
 
   if (missedMessages.length === 0) return true;
 
+  // Skip if all pending messages are from the bot — prevents no-op container
+  // spawns (e.g. after restart when from_group is lost from the in-memory map).
+  if (missedMessages.every((m) => m.sender_name === ASSISTANT_NAME))
+    return true;
+
   // For non-main groups, check if trigger is required and present.
   // Threaded replies (threadTs != null) skip the trigger requirement.
   if (!isMainGroup && group.requiresTrigger !== false && !threadTs) {
@@ -240,6 +255,10 @@ async function processGroupMessages(
     }, IDLE_TIMEOUT);
   };
 
+  // Expose the closure-local resetIdleTimer to GroupQueue.sendMessage so
+  // piped follow-up messages reset the idle countdown (T05).
+  queue.setResetIdleTimer(compositeKey, resetIdleTimer);
+
   await channel.setTyping?.(chatJid, true);
   let hadError = false;
   let outputSentToUser = false;
@@ -249,7 +268,10 @@ async function processGroupMessages(
     prompt,
     chatJid,
     async (result) => {
-      // Streaming output callback — called for each agent result
+      // Streaming output callback — called for each agent result.
+      // Any result (even a null one) is proof-of-life for the frozen-container
+      // detector. See GroupQueue.checkLiveness STALE_OUTPUT_THRESHOLD_MS.
+      queue.setLastOutputAt(compositeKey);
       if (result.result) {
         const raw =
           typeof result.result === 'string'
@@ -288,6 +310,7 @@ async function processGroupMessages(
   if (idleTimer) clearTimeout(idleTimer);
 
   if (output === 'error' || hadError) {
+    recordFailure(group.folder);
     if (outputSentToUser) {
       logger.warn(
         { group: group.name },
@@ -304,6 +327,7 @@ async function processGroupMessages(
     return false;
   }
 
+  recordSuccess(group.folder);
   return true;
 }
 
@@ -373,6 +397,13 @@ async function runAgent(
         queue.registerProcess(compositeKey, proc, containerName, group.folder);
       },
       wrappedOnOutput,
+      () => {
+        // Proof-of-life: any stdout chunk (incl. agent-runner heartbeat
+        // every 30s) keeps lastOutputAt fresh so the freeze detector
+        // doesn't kill agents that are busy waiting on a Claude call.
+        const compositeKey = `${chatJid}||${threadTs || 'root'}`;
+        queue.setLastOutputAt(compositeKey);
+      },
     );
 
     if (output.newSessionId) {
@@ -472,9 +503,18 @@ async function startMessageLoop(): Promise<void> {
 
           // Try piping to an active container first — follow-up messages
           // in an ongoing conversation don't require a trigger.
-          if (queue.sendMessage(compositeKey, formatted)) {
-            logger.debug(
-              { chatJid, threadTs, count: messagesToSend.length },
+          // sendMessage returns a PipedWriteResult — branch on .wrote, not
+          // on the object itself (any object is truthy).
+          const pipeResult = queue.sendMessage(compositeKey, formatted);
+          if (pipeResult.wrote) {
+            logger.info(
+              {
+                event: 'container.lifecycle.pipe.dispatch',
+                chatJid,
+                threadTs,
+                count: messagesToSend.length,
+                messageId: pipeResult.messageId,
+              },
               'Piped messages to active container',
             );
             lastAgentTimestamp[compositeKey] =
@@ -495,6 +535,15 @@ async function startMessageLoop(): Promise<void> {
             if (!hasTrigger) continue;
           }
 
+          // Circuit breaker: skip spawn if group is in cooldown after repeated failures
+          if (isCircuitOpen(group.folder)) {
+            logger.warn(
+              { group: group.name, chatJid },
+              'Circuit open, deferring messages until cooldown expires',
+            );
+            continue;
+          }
+
           // Enqueue for a new container (thread-aware)
           queue.enqueueMessageCheck(chatJid, threadTs);
         }
@@ -506,11 +555,25 @@ async function startMessageLoop(): Promise<void> {
   }
 }
 
+interface RecoveryCandidate {
+  chatJid: string;
+  threadTs: string | undefined;
+  group: RegisteredGroup;
+  pendingCount: number;
+  latestTimestamp: string;
+  priority: number;
+}
+
 /**
  * Startup recovery: check for unprocessed messages in registered groups.
  * Handles crash between advancing lastTimestamp and processing messages.
+ *
+ * Sorted by priority so high-value groups (always-on minions, recently
+ * active threads) spawn first. Limits the initial batch to leave at least
+ * RECOVERY_RESERVED_SLOTS free for new incoming messages.
  */
 function recoverPendingMessages(): void {
+  const candidates: RecoveryCandidate[] = [];
   for (const [chatJid, group] of Object.entries(registeredGroups)) {
     // Check root (non-threaded) messages
     const rootKey = `${chatJid}||root`;
@@ -521,28 +584,123 @@ function recoverPendingMessages(): void {
       ASSISTANT_NAME,
       group.folder,
     );
-    if (pending.length > 0) {
-      // Sub-group by thread for per-thread recovery
-      const threads = new Set<string | undefined>();
-      for (const m of pending) threads.add(m.thread_ts || undefined);
-      for (const threadTs of threads) {
-        const key = `${chatJid}||${threadTs || 'root'}`;
-        const threadSince = lastAgentTimestamp[key] || '';
-        const threadPending = pending.filter(
-          (m) =>
-            (m.thread_ts || undefined) === threadTs &&
-            m.timestamp > threadSince,
-        );
-        if (threadPending.length > 0) {
-          logger.info(
-            { group: group.name, threadTs, pendingCount: threadPending.length },
-            'Recovery: found unprocessed messages',
-          );
-          queue.enqueueMessageCheck(chatJid, threadTs);
-        }
-      }
+    if (pending.length === 0) continue;
+
+    // Sub-group by thread for per-thread recovery
+    const threads = new Set<string | undefined>();
+    for (const m of pending) threads.add(m.thread_ts || undefined);
+    for (const threadTs of threads) {
+      const key = `${chatJid}||${threadTs || 'root'}`;
+      const threadSince = lastAgentTimestamp[key] || '';
+      const threadPending = pending.filter(
+        (m) =>
+          (m.thread_ts || undefined) === threadTs && m.timestamp > threadSince,
+      );
+      if (threadPending.length === 0) continue;
+
+      // Skip recovery when all pending messages are from the bot itself —
+      // avoids no-op container spawns that just say "Ready." on restart.
+      // Note: after restart, the bot's own Slack messages may have
+      // from_group=NULL (pendingFromGroup map lost), so we also check
+      // sender_name to catch bot output that slipped past the SQL filter.
+      const hasHumanMessage = threadPending.some(
+        (m) => m.sender_name !== ASSISTANT_NAME,
+      );
+      if (!hasHumanMessage) continue;
+
+      // Priority 1: always-on agents (no trigger required) — keep these alive
+      // Priority 2: anyone else with pending messages, sorted by recency
+      // Priority 3: never (we filter out empty above)
+      const priority = group.requiresTrigger === false ? 1 : 2;
+      const latestTimestamp = threadPending[threadPending.length - 1].timestamp;
+      candidates.push({
+        chatJid,
+        threadTs,
+        group,
+        pendingCount: threadPending.length,
+        latestTimestamp,
+        priority,
+      });
     }
   }
+
+  if (candidates.length === 0) return;
+
+  // Sort: priority asc (1 first), then most recent timestamp desc
+  try {
+    candidates.sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return a.latestTimestamp < b.latestTimestamp ? 1 : -1;
+    });
+  } catch (err) {
+    logger.error(
+      { err, candidateCount: candidates.length },
+      'Recovery sort failed, falling back to unsorted order',
+    );
+  }
+
+  // Clamp reserved slots to a sensible range. If misconfigured higher than
+  // MAX_CONCURRENT_CONTAINERS, we'd never spawn anything during recovery.
+  let reservedSlots = RECOVERY_RESERVED_SLOTS;
+  if (reservedSlots < 0) {
+    logger.error(
+      { configured: RECOVERY_RESERVED_SLOTS },
+      'RECOVERY_RESERVED_SLOTS < 0, clamping to 0',
+    );
+    reservedSlots = 0;
+  } else if (reservedSlots >= MAX_CONCURRENT_CONTAINERS) {
+    logger.warn(
+      { configured: RECOVERY_RESERVED_SLOTS, max: MAX_CONCURRENT_CONTAINERS },
+      'RECOVERY_RESERVED_SLOTS >= MAX_CONCURRENT_CONTAINERS, clamping',
+    );
+    reservedSlots = Math.max(0, MAX_CONCURRENT_CONTAINERS - 1);
+  }
+  const initialBatch = Math.max(0, MAX_CONCURRENT_CONTAINERS - reservedSlots);
+
+  let spawned = 0;
+  let deferred = 0;
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i];
+    try {
+      const willSpawn = i < initialBatch;
+      logger.info(
+        {
+          group: candidate.group.name,
+          threadTs: candidate.threadTs,
+          pendingCount: candidate.pendingCount,
+          priority: candidate.priority,
+          batchPosition: i,
+          deferred: !willSpawn,
+        },
+        'Recovery: enqueuing unprocessed messages',
+      );
+      if (willSpawn) {
+        queue.enqueueMessageCheck(candidate.chatJid, candidate.threadTs);
+        spawned++;
+      } else {
+        // Park in waitingGroups so a slot stays reserved for new traffic;
+        // drainWaiting() picks them up as containers finish.
+        queue.deferMessageCheck(candidate.chatJid, candidate.threadTs);
+        deferred++;
+      }
+    } catch (err) {
+      logger.error(
+        { err, group: candidate.group.name },
+        'Recovery enqueue failed for candidate',
+      );
+    }
+  }
+
+  logger.info(
+    {
+      event: 'container.lifecycle.recovery_batch',
+      spawned,
+      deferred,
+      reservedSlots,
+      totalCandidates: candidates.length,
+    },
+    'Recovery batch enqueued',
+  );
 }
 
 function startWatchdog(): void {
@@ -610,10 +768,28 @@ async function main(): Promise<void> {
       } catch {
         /* container CLI unavailable */
       }
+      // T06: surface GroupQueue internals + circuit breaker so the watchdog
+      // can detect zombie containers, queue/runtime mismatches, and starvation.
+      let queueStatus;
+      try {
+        queueStatus = queue.getStatus();
+      } catch (err) {
+        logger.error({ err }, 'queue.getStatus threw');
+        queueStatus = { error: 'getStatus_failed' };
+      }
+      let circuitBreakerStatus;
+      try {
+        circuitBreakerStatus = queue.getCircuitBreakerStatus();
+      } catch (err) {
+        logger.error({ err }, 'getCircuitBreakerStatus threw');
+        circuitBreakerStatus = {};
+      }
       return {
         channels: channelHealth,
         activeContainers,
         lastMessageAt: getRouterState('last_timestamp') ?? null,
+        queue: queueStatus,
+        circuitBreaker: circuitBreakerStatus,
       };
     },
     runAgent: runContainerAgent,
@@ -670,6 +846,7 @@ async function main(): Promise<void> {
       };
       await handleEmailOpenImpl(token, ua, sendToInbox);
     },
+    handleUnsubscribe: handleUnsubscribeImpl,
     gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
     handleGmailPush: async (emailAddress: string, historyId: string) => {
       // Late-bound lookup: channels array is populated after webhook server
@@ -931,6 +1108,10 @@ async function main(): Promise<void> {
     addWebhook: (def) => webhookServer.addWebhook(def),
     removeWebhook: (id) => webhookServer.removeWebhook(id),
     listWebhooks: () => webhookServer.listWebhooks(),
+    acknowledgePipedMessage: (groupFolder, messageId) =>
+      queue.acknowledgePipedMessage(groupFolder, messageId),
+    setLastOutputAt: (groupFolder) =>
+      queue.setLastOutputAtByFolder(groupFolder),
     ...(JOB_REPORT_CHANNEL
       ? {
           runHostJob: async (
@@ -952,7 +1133,59 @@ async function main(): Promise<void> {
         }
       : {}),
   });
+
+  // Startup sequence (order matters — see plan T01/T04 startup verification):
+  // 1. setProcessMessagesFn — drainGroup needs this
+  // 2. setRollbackTimestampFn — dead-letter recovery uses this
+  // 3. setOnCooldownExpiry — circuit breaker auto-recheck (T10)
+  // 4. startLivenessChecker — must run AFTER all callbacks registered
+  // 5. drainWatchdogKills — clear stale kill signals BEFORE recovery
+  // 6. startWatchdogIpc — begin polling kill signal directory
+  // 7. recoverPendingMessages — re-enqueue groups with pending messages
+  // 8. startWatchdog — heartbeat writer
+  // 9. startMessageLoop — main message poll
   queue.setProcessMessagesFn(processGroupMessages);
+  queue.setRollbackTimestampFn((groupJid: string, isoTimestamp: string) => {
+    const previous = lastAgentTimestamp[groupJid] || '';
+    if (!previous || isoTimestamp < previous) {
+      lastAgentTimestamp[groupJid] = isoTimestamp;
+      saveState();
+      logger.info(
+        { groupJid, from: previous, to: isoTimestamp },
+        'Dead-letter rollback: lastAgentTimestamp moved back',
+      );
+    } else {
+      logger.debug(
+        { groupJid, current: previous, requested: isoTimestamp },
+        'Dead-letter rollback skipped — current cursor already earlier',
+      );
+    }
+  });
+  setOnCooldownExpiry((groupFolder: string) => {
+    // After circuit cooldown expires, re-check pending messages for any
+    // JID whose group folder matches. New incoming messages would already
+    // trigger this naturally; we cover the case where messages arrived
+    // during the open window and need a nudge to be processed.
+    try {
+      for (const [jid, group] of Object.entries(registeredGroups)) {
+        if (group.folder === groupFolder) {
+          queue.enqueueMessageCheck(jid);
+        }
+      }
+    } catch (err) {
+      logger.error({ err, groupFolder }, 'Cooldown expiry callback failed');
+      // Re-record the failure so the circuit reopens rather than getting
+      // stuck in half-open with a broken callback.
+      try {
+        recordFailure(groupFolder);
+      } catch {
+        /* ignore */
+      }
+    }
+  });
+  queue.startLivenessChecker();
+  drainWatchdogKills(queue);
+  startWatchdogIpc(queue);
   recoverPendingMessages();
   startWatchdog();
   startMessageLoop();

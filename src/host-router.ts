@@ -26,6 +26,16 @@ export type RouteResult = {
 
 // ── Formatter helpers ──────────────────────────────────────────────
 
+// Bookkeeper/archivarista handoffs don't need the full body — they only need
+// enough context to know what arrived. The agent fetches the full email via
+// gmail_read(threadId) when it needs to extract amount/due/vendor or transcripts.
+const HANDOFF_SNIPPET_CHARS = 300;
+
+function snippet(body: string, max = HANDOFF_SNIPPET_CHARS): string {
+  const flat = body.replace(/\s+/g, ' ').trim();
+  return flat.length > max ? `${flat.slice(0, max)}…` : flat;
+}
+
 function fmtLeadSales(p: RouteParams, match: PipelineMatch): string {
   return [
     '[HANDOFF: mailman\u2192sales]',
@@ -34,10 +44,10 @@ function fmtLeadSales(p: RouteParams, match: PipelineMatch): string {
     `Party ID: ${match.party_id}`,
     `Lead: ${match.display_name} (${match.stage})`,
     `Program: ${match.program_slug}`,
-    ...((() => {
+    ...(() => {
       const tid = match.thread_id ?? p.threadId;
       return tid ? [`Thread-ID: ${tid}`] : [];
-    })()),
+    })(),
     `From: ${p.senderEmail}`,
     `Subject: ${p.subject}`,
     `Body:\n${p.body}`,
@@ -71,7 +81,9 @@ function fmtContador(p: RouteParams): string {
     '[TYPE: invoice]',
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
-    `Body:\n${p.body}`,
+    `Thread-ID: ${p.threadId}`,
+    `Message-ID: ${p.messageId}`,
+    `Snippet: ${snippet(p.body)}`,
   ].join('\n');
 }
 
@@ -81,13 +93,18 @@ function fmtArchivarista(p: RouteParams): string {
     '[TYPE: meeting-assets]',
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
-    `Body:\n${p.body}`,
+    `Thread-ID: ${p.threadId}`,
+    `Message-ID: ${p.messageId}`,
+    `Snippet: ${snippet(p.body)}`,
   ].join('\n');
 }
 
 // ── IPC write wrapper ──────────────────────────────────────────────
 
-function safeWrite(group: string, payload: Record<string, unknown>): RouteResult {
+function safeWrite(
+  group: string,
+  payload: Record<string, unknown>,
+): RouteResult {
   try {
     writeHostMessage(group, payload);
     return { routed: true, action: 'ipc_written', target: group };
@@ -99,7 +116,11 @@ function safeWrite(group: string, payload: Record<string, unknown>): RouteResult
 }
 
 function writeMailman(text: string): RouteResult {
-  return safeWrite('mailman', { type: 'message', chatJid: 'host-router', text });
+  return safeWrite('mailman', {
+    type: 'message',
+    chatJid: 'host-router',
+    text,
+  });
 }
 
 function writeChief(text: string): RouteResult {
@@ -113,7 +134,9 @@ function writeChief(text: string): RouteResult {
 
 // ── Main dispatch ──────────────────────────────────────────────────
 
-export async function routeClassifiedEmail(params: RouteParams): Promise<RouteResult> {
+export async function routeClassifiedEmail(
+  params: RouteParams,
+): Promise<RouteResult> {
   // Strip namespace prefix (e.g. "MrGru/client/active" → "client/active").
   // Taxonomy labels have 2+ slashes when prefixed; bare labels have 0-1.
   const parts = params.label.split('/');
@@ -121,16 +144,24 @@ export async function routeClassifiedEmail(params: RouteParams): Promise<RouteRe
   const prefix = bare.split('/')[0];
 
   if (prefix === 'lead') return routeLead(params);
-  if (prefix === 'client') return writeChief(fmtChiefEscalation(params, 'host-router escalation'));
-  if (prefix === 'procurement') return { routed: true, action: 'classify_only', target: 'none' };
+  if (prefix === 'client')
+    return writeChief(fmtChiefEscalation(params, 'host-router escalation'));
+  if (prefix === 'procurement')
+    return { routed: true, action: 'classify_only', target: 'none' };
   if (bare === 'financial/bill') return writeMailman(fmtContador(params));
-  if (bare === 'financial/refund') return writeChief(fmtChiefEscalation(params, 'refund review'));
+  if (bare === 'financial/refund')
+    return writeChief(fmtChiefEscalation(params, 'refund review'));
   if (prefix === 'meeting-assets') return writeMailman(fmtArchivarista(params));
-  if (['legal', 'recruiting', 'internal'].includes(prefix)) return writeChief(fmtChiefEscalation(params, `${bare} review`));
-  if (bare === 'personal' || bare === 'other') return writeChief(fmtChiefEscalation(params, `${bare} review`));
+  if (['legal', 'recruiting', 'internal'].includes(prefix))
+    return writeChief(fmtChiefEscalation(params, `${bare} review`));
+  if (bare === 'personal' || bare === 'other')
+    return writeChief(fmtChiefEscalation(params, `${bare} review`));
 
   // Unrecognized label — chief fallback
-  logger.warn({ label: params.label }, 'host-router: unrecognized label, falling back to chief');
+  logger.warn(
+    { label: params.label },
+    'host-router: unrecognized label, falling back to chief',
+  );
   const result = writeChief(fmtChiefEscalation(params, 'unrecognized label'));
   return { ...result, reason: 'unrecognized label prefix' };
 }

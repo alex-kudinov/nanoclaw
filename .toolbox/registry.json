@@ -397,6 +397,7 @@
   "include_shared": [
     "things",
     "claude",
+    "db",
     "elevenlabs",
     "ecosystem",
     "zoom",

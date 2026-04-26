@@ -86,7 +86,10 @@ async function resolvePartyId(
       );
       if (result.rows[0]?.party_id) return result.rows[0].party_id;
     } catch (err) {
-      logger.error({ threadId, err }, 'gmail-ipc: party lookup by thread failed');
+      logger.error(
+        { threadId, err },
+        'gmail-ipc: party lookup by thread failed',
+      );
     }
   }
   return null;
@@ -121,9 +124,15 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
     if (converted) {
       data.body = converted;
       data.html = true;
-      logger.debug({ groupFolder: data.groupFolder }, 'gmail-ipc: converted markdown to HTML');
+      logger.debug(
+        { groupFolder: data.groupFolder },
+        'gmail-ipc: converted markdown to HTML',
+      );
     } else {
-      logger.warn({ groupFolder: data.groupFolder }, 'gmail-ipc: markdown conversion returned empty, using raw body');
+      logger.warn(
+        { groupFolder: data.groupFolder },
+        'gmail-ipc: markdown conversion returned empty, using raw body',
+      );
     }
   }
 
@@ -166,7 +175,8 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
   // Log the outbound interaction atomically so the sales follow-up cron
   // sees an up-to-date last_interaction_at. Must not depend on mailman's
   // LLM re-running psql — that round-trip silently drops rows.
-  const replyPartyId = data.leadId || (await resolvePartyId(undefined, data.threadId));
+  const replyPartyId =
+    data.leadId || (await resolvePartyId(undefined, data.threadId));
   if (replyPartyId) {
     if (!data.leadId) {
       logger.warn(
@@ -264,9 +274,15 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
     if (converted) {
       data.body = converted;
       data.html = true;
-      logger.debug({ groupFolder: data.groupFolder }, 'gmail-ipc: converted markdown to HTML');
+      logger.debug(
+        { groupFolder: data.groupFolder },
+        'gmail-ipc: converted markdown to HTML',
+      );
     } else {
-      logger.warn({ groupFolder: data.groupFolder }, 'gmail-ipc: markdown conversion returned empty, using raw body');
+      logger.warn(
+        { groupFolder: data.groupFolder },
+        'gmail-ipc: markdown conversion returned empty, using raw body',
+      );
     }
   }
 
@@ -306,7 +322,8 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
   // Log the outbound interaction atomically so the sales follow-up cron
   // sees an up-to-date last_interaction_at. Must not depend on mailman's
   // LLM re-running psql — that round-trip silently drops rows.
-  const sendPartyId = data.leadId || (await resolvePartyId(data.to, data.threadId));
+  const sendPartyId =
+    data.leadId || (await resolvePartyId(data.to, data.threadId));
   if (sendPartyId) {
     if (!data.leadId) {
       logger.warn(

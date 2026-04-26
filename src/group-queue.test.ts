@@ -390,9 +390,9 @@ describe('GroupQueue', () => {
       'test-group',
     );
 
-    // sendMessage should return false — user messages must not go to task containers
+    // sendMessage should return wrote: false — user messages must not go to task containers
     const result = queue.sendMessage('group1@g.us', 'hello');
-    expect(result).toBe(false);
+    expect(result.wrote).toBe(false);
 
     resolveTask!();
     await vi.advanceTimersByTimeAsync(10);

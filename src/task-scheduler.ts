@@ -123,6 +123,20 @@ async function runTask(
   }
   fs.mkdirSync(groupDir, { recursive: true });
 
+  // Advance next_run immediately to prevent re-fire while the container is running.
+  // The scheduler loop checks every 60s; containers can take 5+ minutes.
+  // Without this, getDueTasks() returns the same task on every tick.
+  if (task.schedule_type === 'cron') {
+    const interval = CronExpressionParser.parse(task.schedule_value, {
+      tz: TIMEZONE,
+    });
+    const nextRun = interval.next().toISOString();
+    updateTask(task.id, { next_run: nextRun });
+  } else if (task.schedule_type === 'interval') {
+    const ms = parseInt(task.schedule_value, 10);
+    updateTask(task.id, { next_run: new Date(Date.now() + ms).toISOString() });
+  }
+
   logger.info(
     { taskId: task.id, group: task.group_folder },
     'Running scheduled task',
@@ -217,6 +231,10 @@ async function runTask(
         if (streamedOutput.status === 'error') {
           error = streamedOutput.error || 'Unknown error';
         }
+      },
+      () => {
+        // Proof-of-life for the freeze detector — see runAgent in index.ts.
+        deps.queue.setLastOutputAt(task.chat_jid);
       },
     );
 

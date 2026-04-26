@@ -1,6 +1,7 @@
-"""Claude CLI wrapper — calls `claude --print` directly.
+"""Claude Print Bridge client — calls the HTTP bridge on Mac Mini.
 
-Claude manages its own auth tokens. No bridge server, no API keys.
+The bridge handles auth, concurrency, timeouts, and credential lifecycle.
+Never call `claude --print` directly from scripts.
 
 Usage:
     from lib.bridge import claude
@@ -9,72 +10,97 @@ Usage:
     print(result)
 """
 
-import subprocess
-import shutil
+import json
+import os
+import urllib.request
 
-_CLAUDE_BIN = None
-
-MODEL_MAP = {
-    "haiku": "claude-haiku-4-5-20251001",
-    "sonnet": "claude-sonnet-4-6",
-    "opus": "claude-opus-4-6",
-}
-
+_BRIDGE_URL = os.environ.get(
+    "CLAUDE_BRIDGE_URL", "http://100.115.115.206:40960/v1/print"
+)
 _TIMEOUT_S = 120
 
 
-def _find_claude():
-    global _CLAUDE_BIN
-    if _CLAUDE_BIN:
-        return _CLAUDE_BIN
+def _load_bridge_key():
+    key = os.environ.get("CLAUDE_BRIDGE_KEY", "")
+    if key:
+        return key
+    env_shared = os.path.expanduser("~/dev/.env.shared")
+    if os.path.exists(env_shared):
+        with open(env_shared) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("CLAUDE_BRIDGE_KEY="):
+                    return line.split("=", 1)[1].strip().strip("'\"")
+    raise RuntimeError(
+        "CLAUDE_BRIDGE_KEY not found in env or ~/dev/.env.shared"
+    )
 
-    # Common locations
-    for candidate in [
-        shutil.which("claude"),
-        "/opt/homebrew/bin/claude",
-        "/usr/local/bin/claude",
+
+def _auto_meta() -> dict:
+    """Build meta dict from NANOCLAW_* env vars. Zero-config for callers."""
+    meta = {}
+    for env_key, meta_key in [
+        ("NANOCLAW_MINION", "minion"),
+        ("NANOCLAW_ACTION", "action"),
+        ("NANOCLAW_JOB", "job"),
+        ("NANOCLAW_CALLER", "caller"),
     ]:
-        if candidate:
-            _CLAUDE_BIN = candidate
-            return _CLAUDE_BIN
+        val = os.environ.get(env_key)
+        if val:
+            meta[meta_key] = val
+    return meta
 
-    raise RuntimeError("claude CLI not found in PATH or common locations")
 
-
-def claude(prompt, model="haiku", system_prompt=None, **kwargs):
-    """Call Claude via `claude --print`. Returns the response text.
+def claude(prompt, model="haiku", system_prompt=None, timeout=None, **kwargs):
+    """Call Claude via the Print Bridge. Returns the response text.
 
     Args:
         prompt: The prompt string.
-        model: "haiku", "sonnet", or "opus" (or a full model ID).
-        system_prompt: Optional system prompt (passed via --system-prompt).
-        **kwargs: Ignored (kept for bridge API compatibility).
+        model: "haiku", "sonnet", or "opus".
+        system_prompt: Optional system prompt text.
+        timeout: Request timeout in seconds (default: 120).
+        **kwargs: Additional bridge params (output_format, max_turns, etc.).
+            Pass meta={"minion": ..., "action": ...} to tag the call,
+            or let NANOCLAW_* env vars provide it automatically.
 
     Raises:
-        RuntimeError: On CLI errors or timeouts.
+        RuntimeError: On bridge errors or timeouts.
     """
-    bin_path = _find_claude()
-    model_id = MODEL_MAP.get(model, model)
-
-    cmd = [bin_path, "--print", "--model", model_id]
+    key = _load_bridge_key()
+    body = {"prompt": prompt, "model": model}
     if system_prompt:
-        cmd.extend(["--system-prompt", system_prompt])
+        body["system_prompt"] = system_prompt
+
+    # Auto-inject metadata from env, allow explicit override
+    auto = _auto_meta()
+    explicit = kwargs.pop("meta", None)
+    if auto or explicit:
+        body["meta"] = {**auto, **(explicit or {})}
+
+    body.update(kwargs)
+
+    req = urllib.request.Request(
+        _BRIDGE_URL,
+        data=json.dumps(body).encode(),
+        headers={
+            "Content-Type": "application/json",
+            "X-Bridge-Key": key,
+        },
+    )
 
     try:
-        result = subprocess.run(
-            cmd,
-            input=prompt,
-            capture_output=True,
-            text=True,
-            timeout=_TIMEOUT_S,
+        with urllib.request.urlopen(req, timeout=timeout or _TIMEOUT_S) as resp:
+            result = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body_text = e.read().decode()[:500] if e.fp else ""
+        raise RuntimeError(f"Bridge HTTP {e.code}: {body_text}")
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"Bridge unreachable: {e.reason}")
+
+    if not result.get("ok"):
+        raise RuntimeError(
+            f"Bridge error ({result.get('code', 'UNKNOWN')}): "
+            f"{result.get('error', 'no details')}"
         )
-    except subprocess.TimeoutExpired:
-        raise RuntimeError(f"claude --print timed out after {_TIMEOUT_S}s")
-    except FileNotFoundError:
-        raise RuntimeError(f"claude CLI not found at {bin_path}")
 
-    if result.returncode != 0:
-        stderr = result.stderr.strip()[:500]
-        raise RuntimeError(f"claude --print failed (exit {result.returncode}): {stderr}")
-
-    return result.stdout.strip()
+    return result["data"]["result"]

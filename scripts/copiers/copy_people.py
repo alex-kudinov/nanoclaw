@@ -2,6 +2,7 @@
 """Copy people.json from OneDrive Drop to Intake (keeps source)."""
 import logging
 import os
+import shutil
 from pathlib import Path
 
 HOME = Path.home()
@@ -19,15 +20,19 @@ def main():
     tmp = DST_DIR / "people.json.tmp"
     final = DST_DIR / "people.json"
     try:
-        data = open(SRC, "rb").read()
-        open(tmp, "wb").write(data)
-        if tmp.stat().st_size != len(data):
+        # shutil.copy2 uses macOS copyfile() syscall which properly
+        # materializes OneDrive cloud-placeholder files. Raw open().read()
+        # can fail with EDEADLK on placeholder files in launchd-spawned
+        # processes, leaving files stuck in the drop indefinitely.
+        shutil.copy2(str(SRC), str(tmp))
+        src_size = SRC.stat().st_size
+        if tmp.stat().st_size != src_size:
             logging.warning("SIZE_MISMATCH people.json")
             tmp.unlink(missing_ok=True)
             return
         os.rename(str(tmp), str(final))
         # Do NOT delete source — people.json is kept in Drop
-        logging.info("COPIED people.json (%d bytes)", len(data))
+        logging.info("COPIED people.json (%d bytes)", src_size)
     except Exception as e:
         logging.warning("FAILED people.json: %s", e)
         tmp.unlink(missing_ok=True)

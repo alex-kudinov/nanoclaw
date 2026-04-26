@@ -39,7 +39,10 @@ export function rmContainer(name: string): string {
 /** Ensure the container runtime is running, starting it if needed. */
 export function ensureContainerRuntimeRunning(): void {
   try {
-    execSync(`${CONTAINER_RUNTIME_BIN} system status`, { stdio: 'pipe' });
+    execSync(`${CONTAINER_RUNTIME_BIN} system status`, {
+      stdio: 'pipe',
+      timeout: 10000,
+    });
     logger.debug('Container runtime already running');
   } catch {
     logger.info('Starting container runtime...');
@@ -101,14 +104,14 @@ export function cleanupOrphans(): void {
 
     for (const name of running) {
       try {
-        execSync(stopContainer(name), { stdio: 'pipe' });
+        execSync(stopContainer(name), { stdio: 'pipe', timeout: 10000 });
       } catch {
         /* already stopped */
       }
     }
     for (const name of stopped) {
       try {
-        execSync(rmContainer(name), { stdio: 'pipe' });
+        execSync(rmContainer(name), { stdio: 'pipe', timeout: 10000 });
       } catch {
         /* already removed */
       }

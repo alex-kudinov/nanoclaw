@@ -59,7 +59,9 @@ function groupListItems(lines: string[]): string[] {
 
   const flushList = () => {
     if (listBuffer.length > 0) {
-      result.push(`<ul>${listBuffer.map((item) => `<li>${item}</li>`).join('')}</ul>`);
+      result.push(
+        `<ul>${listBuffer.map((item) => `<li>${item}</li>`).join('')}</ul>`,
+      );
       listBuffer = [];
     }
   };
@@ -89,7 +91,9 @@ function processParagraph(block: string): string {
 export function convertMarkdownToEmailHtml(markdown: string): string {
   if (!markdown || typeof markdown !== 'string') return '';
   if (Buffer.byteLength(markdown, 'utf8') > MAX_INPUT_BYTES) {
-    logger.warn('convertMarkdownToEmailHtml: input exceeds 100KB limit, returning empty string');
+    logger.warn(
+      'convertMarkdownToEmailHtml: input exceeds 100KB limit, returning empty string',
+    );
     return '';
   }
 

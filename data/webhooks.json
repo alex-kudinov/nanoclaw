@@ -20,5 +20,27 @@
     "suppress_output": true,
     "created_at": "2026-03-06T00:00:00Z",
     "prompt_template": "Stripe payment received.\nstripe_id: {{payload.stripe_id}}\nevent_type: {{payload.event_type}}"
+  },
+  {
+    "id": "trafft",
+    "name": "Trafft Booking Events",
+    "group": "booking",
+    "chat_jid": "slack:C0ARE189RDE",
+    "secret": "b355d292ff272ded5767b6821b9c2df03eff6758863cffef",
+    "context_mode": "isolated",
+    "suppress_output": true,
+    "created_at": "2026-04-02T00:00:00Z",
+    "prompt_template": "[SOURCE: trafft] [PRIORITY: high] [TYPE: {{payload.event_type}}]\n\nRaw event payload:\n{{payload}}"
+  },
+  {
+    "id": "course-recap",
+    "name": "Course Session Recap",
+    "group": "courses",
+    "chat_jid": "slack:C0AR3K7QU85",
+    "secret": "ed43647461a200485b69ec48c2e00b243941a859ac678307",
+    "context_mode": "isolated",
+    "suppress_output": true,
+    "created_at": "2026-04-06T00:00:00Z",
+    "prompt_template": "[SOURCE: transcript-worker] [TYPE: session-recap] [PRIORITY: normal]\n\nEnrichment directory: {{payload.enrich_dir}}\nTranscript note: {{payload.transcript_note}}\nMeeting summary file: {{payload.summary_file}}\n\nProcess this session recap for review and distribution."
   }
 ]

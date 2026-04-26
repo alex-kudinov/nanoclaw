@@ -27,7 +27,9 @@ describe('convertMarkdownToEmailHtml', () => {
 
   // 2. Plain text wrapped in <p>
   it('wraps plain text in a paragraph', () => {
-    expect(convertMarkdownToEmailHtml('Hello world')).toBe('<p>Hello world</p>');
+    expect(convertMarkdownToEmailHtml('Hello world')).toBe(
+      '<p>Hello world</p>',
+    );
   });
 
   // 3. Bold
@@ -71,7 +73,9 @@ describe('convertMarkdownToEmailHtml', () => {
   // 7. Bare URL → <a href> with domain text
   it('converts bare https:// URL to anchor with domain text', () => {
     const result = convertMarkdownToEmailHtml('Visit https://example.com/page');
-    expect(result).toContain('<a href="https://example.com/page">example.com/page</a>');
+    expect(result).toContain(
+      '<a href="https://example.com/page">example.com/page</a>',
+    );
   });
 
   it('uses domain only when URL has no path', () => {
@@ -81,7 +85,9 @@ describe('convertMarkdownToEmailHtml', () => {
 
   // 8. Markdown link [text](url)
   it('converts markdown links to anchor tags', () => {
-    const result = convertMarkdownToEmailHtml('[Click here](https://example.com)');
+    const result = convertMarkdownToEmailHtml(
+      '[Click here](https://example.com)',
+    );
     expect(result).toBe('<p><a href="https://example.com">Click here</a></p>');
   });
 

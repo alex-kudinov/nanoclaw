@@ -1,0 +1,76 @@
+{
+  "id": "trafft-booking",
+  "name": "Trafft Booking → Gru Booking",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "trafft-booked", "responseMode": "onReceived", "options": {} },
+      "id": "trigger-booked", "name": "Trafft: Booked", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [240, 100], "webhookId": "trafft-booked"
+    },
+    {
+      "parameters": { "httpMethod": "POST", "path": "trafft-canceled", "responseMode": "onReceived", "options": {} },
+      "id": "trigger-canceled", "name": "Trafft: Canceled", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [240, 260], "webhookId": "trafft-canceled"
+    },
+    {
+      "parameters": { "httpMethod": "POST", "path": "trafft-rescheduled", "responseMode": "onReceived", "options": {} },
+      "id": "trigger-rescheduled", "name": "Trafft: Rescheduled", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [240, 420], "webhookId": "trafft-rescheduled"
+    },
+    {
+      "parameters": { "httpMethod": "POST", "path": "trafft-status-changed", "responseMode": "onReceived", "options": {} },
+      "id": "trigger-status", "name": "Trafft: Status Changed", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [240, 580], "webhookId": "trafft-status-changed"
+    },
+    {
+      "parameters": { "httpMethod": "POST", "path": "trafft-customer-created", "responseMode": "onReceived", "options": {} },
+      "id": "trigger-customer", "name": "Trafft: Customer Created", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [240, 740], "webhookId": "trafft-customer-created"
+    },
+    {
+      "parameters": { "jsCode": "const raw = $input.first().json;\nconst body = raw.body || raw;\nconst headers = raw.headers || {};\nconst auth = headers['authorization'] || headers['Authorization'] || '';\nconst token = auth.replace(/^Bearer\\s+/i, '');\nif (token !== '$1$c31e343e$49KNhYQ3U2i6WogVGgM6k1') { return []; }\nreturn [{ json: { ...body, event_type: 'booked' } }];" },
+      "id": "tag-booked", "name": "Tag: booked", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 100]
+    },
+    {
+      "parameters": { "jsCode": "const raw = $input.first().json;\nconst body = raw.body || raw;\nconst headers = raw.headers || {};\nconst auth = headers['authorization'] || headers['Authorization'] || '';\nconst token = auth.replace(/^Bearer\\s+/i, '');\nif (token !== '$1$c31e343e$49KNhYQ3U2i6WogVGgM6k1') { return []; }\nreturn [{ json: { ...body, event_type: 'canceled' } }];" },
+      "id": "tag-canceled", "name": "Tag: canceled", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 260]
+    },
+    {
+      "parameters": { "jsCode": "const raw = $input.first().json;\nconst body = raw.body || raw;\nconst headers = raw.headers || {};\nconst auth = headers['authorization'] || headers['Authorization'] || '';\nconst token = auth.replace(/^Bearer\\s+/i, '');\nif (token !== '$1$c31e343e$49KNhYQ3U2i6WogVGgM6k1') { return []; }\nreturn [{ json: { ...body, event_type: 'rescheduled' } }];" },
+      "id": "tag-rescheduled", "name": "Tag: rescheduled", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 420]
+    },
+    {
+      "parameters": { "jsCode": "const raw = $input.first().json;\nconst body = raw.body || raw;\nconst headers = raw.headers || {};\nconst auth = headers['authorization'] || headers['Authorization'] || '';\nconst token = auth.replace(/^Bearer\\s+/i, '');\nif (token !== '$1$c31e343e$49KNhYQ3U2i6WogVGgM6k1') { return []; }\nreturn [{ json: { ...body, event_type: 'status_changed' } }];" },
+      "id": "tag-status", "name": "Tag: status_changed", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 580]
+    },
+    {
+      "parameters": { "jsCode": "const raw = $input.first().json;\nconst body = raw.body || raw;\nconst headers = raw.headers || {};\nconst auth = headers['authorization'] || headers['Authorization'] || '';\nconst token = auth.replace(/^Bearer\\s+/i, '');\nif (token !== '$1$c31e343e$49KNhYQ3U2i6WogVGgM6k1') { return []; }\nreturn [{ json: { ...body, event_type: 'customer_created' } }];" },
+      "id": "tag-customer", "name": "Tag: customer_created", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 740]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://100.115.115.206:8088/hook/trafft",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "X-Webhook-Secret", "value": "b355d292ff272ded5767b6821b9c2df03eff6758863cffef" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "post-to-nanoclaw", "name": "POST to Gru Booking", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [740, 420]
+    }
+  ],
+  "connections": {
+    "Trafft: Booked":           { "main": [[{ "node": "Tag: booked",           "type": "main", "index": 0 }]] },
+    "Trafft: Canceled":         { "main": [[{ "node": "Tag: canceled",         "type": "main", "index": 0 }]] },
+    "Trafft: Rescheduled":      { "main": [[{ "node": "Tag: rescheduled",      "type": "main", "index": 0 }]] },
+    "Trafft: Status Changed":   { "main": [[{ "node": "Tag: status_changed",   "type": "main", "index": 0 }]] },
+    "Trafft: Customer Created": { "main": [[{ "node": "Tag: customer_created", "type": "main", "index": 0 }]] },
+    "Tag: booked":              { "main": [[{ "node": "POST to Gru Booking",   "type": "main", "index": 0 }]] },
+    "Tag: canceled":            { "main": [[{ "node": "POST to Gru Booking",   "type": "main", "index": 0 }]] },
+    "Tag: rescheduled":         { "main": [[{ "node": "POST to Gru Booking",   "type": "main", "index": 0 }]] },
+    "Tag: status_changed":      { "main": [[{ "node": "POST to Gru Booking",   "type": "main", "index": 0 }]] },
+    "Tag: customer_created":    { "main": [[{ "node": "POST to Gru Booking",   "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

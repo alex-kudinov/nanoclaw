@@ -20,6 +20,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+TOOLS_DIR = SCRIPT_DIR.parent
+sys.path.insert(0, str(TOOLS_DIR))
+from lib.bridge import claude as _bridge_claude  # noqa: E402
+
 DATA_DIR = SCRIPT_DIR / "data"
 CATALOG_PATH = DATA_DIR / "catalog.jsonl"
 TRIAGE_PATH = DATA_DIR / "triage.jsonl"
@@ -283,46 +287,13 @@ def cmd_classify(args):
             user_msg = "Classify these files:\n\n" + "\n\n".join(lines)
 
             try:
-                import urllib.request
-                bridge_url = os.environ.get(
-                    "CLAUDE_BRIDGE_URL",
-                    "http://100.115.115.206:40960/v1/print",
-                )
-                bridge_key = os.environ.get("CLAUDE_BRIDGE_KEY", "")
-                if not bridge_key:
-                    env_shared = os.path.expanduser("~/dev/.env.shared")
-                    if os.path.exists(env_shared):
-                        for ln in open(env_shared):
-                            if ln.strip().startswith("CLAUDE_BRIDGE_KEY="):
-                                bridge_key = ln.strip().split("=", 1)[1].strip("'\"")
-                                break
-
-                body = json.dumps({
-                    "prompt": user_msg,
-                    "model": args.model,
-                    "system_prompt": system_prompt,
-                }).encode()
-                req = urllib.request.Request(
-                    bridge_url,
-                    data=body,
-                    headers={
-                        "Content-Type": "application/json",
-                        "X-Bridge-Key": bridge_key,
-                    },
-                )
-                with urllib.request.urlopen(req, timeout=180) as resp:
-                    bridge_result = json.loads(resp.read())
-
-                if not bridge_result.get("ok"):
-                    print(
-                        f"  Batch {batch_num}: bridge error: "
-                        f"{bridge_result.get('error', 'unknown')[:100]}",
-                        file=sys.stderr,
-                    )
-                    fail += len(batch)
-                    continue
-
-                response = bridge_result["data"]["result"].strip()
+                response = _bridge_claude(
+                    user_msg,
+                    model=args.model,
+                    system_prompt=system_prompt,
+                    timeout=180,
+                    meta={"action": "onedrive-classify"},
+                ).strip()
                 start = response.find('[')
                 end = response.rfind(']') + 1
                 if start < 0 or end <= start:

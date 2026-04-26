@@ -12,6 +12,7 @@ vi.mock('../logger.js', () => ({
 
 // Mock config
 vi.mock('../config.js', () => ({
+  DATA_DIR: '/tmp/nanoclaw-test',
   GMAIL_LABEL: 'TestLabel',
   GMAIL_MONITORED_EMAIL: 'test@example.com',
   GMAIL_POLL_INTERVAL: 1000, // 1s for fast tests
@@ -19,6 +20,19 @@ vi.mock('../config.js', () => ({
   GMAIL_PUSH_OWN_WATCH: false,
   GMAIL_PUBSUB_TOPIC: '',
   GMAIL_PUSH_SAFETY_POLL_INTERVAL: 600000,
+}));
+
+// Mock hard-filters
+vi.mock('../hard-filters.js', () => ({
+  matchHardFilter: vi.fn().mockReturnValue(null),
+  incrementDropCount: vi.fn(),
+}));
+
+// Mock host-router
+vi.mock('../host-router.js', () => ({
+  routeClassifiedEmail: vi
+    .fn()
+    .mockResolvedValue({ routed: false, action: 'unhandled' }),
 }));
 
 // Mock db

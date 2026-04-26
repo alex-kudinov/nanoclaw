@@ -22,6 +22,8 @@ import { spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
+
+import { HEARTBEAT_MARKER } from './ipc-protocol.js';
 import { fileURLToPath } from 'url';
 
 interface ContainerInput {
@@ -44,10 +46,12 @@ interface ContainerOutput {
 
 const IPC_INPUT_DIR = '/workspace/ipc/input';
 const IPC_INPUT_CLOSE_SENTINEL = path.join(IPC_INPUT_DIR, '_close');
+const IPC_ACK_DIR = '/workspace/ipc/ack';
 const IPC_POLL_MS = 500;
 
 const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
 const OUTPUT_END_MARKER = '---NANOCLAW_OUTPUT_END---';
+const HEARTBEAT_INTERVAL_MS = 30_000;
 
 const ALLOWED_TOOLS = [
   'Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep',
@@ -89,6 +93,22 @@ function shouldClose(): boolean {
   return false;
 }
 
+function writeAckFile(messageId: string): void {
+  try {
+    fs.mkdirSync(IPC_ACK_DIR, { recursive: true });
+    const ackPath = path.join(IPC_ACK_DIR, `${messageId}.json`);
+    const tempPath = `${ackPath}.tmp`;
+    const payload = JSON.stringify({
+      message_id: messageId,
+      acked_at_ms: Date.now(),
+    });
+    fs.writeFileSync(tempPath, payload);
+    fs.renameSync(tempPath, ackPath);
+  } catch (err) {
+    log(`Failed to write ack file for ${messageId}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
 function drainIpcInput(): string[] {
   try {
     fs.mkdirSync(IPC_INPUT_DIR, { recursive: true });
@@ -104,6 +124,12 @@ function drainIpcInput(): string[] {
         fs.unlinkSync(filePath);
         if (data.type === 'message' && data.text) {
           messages.push(data.text);
+          // Ack fires on READ (before Claude responds). The host uses this
+          // to remove the message from dead-letter tracking. If message_id
+          // is missing (legacy format during rolling deploy), skip ack.
+          if (data.message_id) {
+            writeAckFile(data.message_id);
+          }
         }
       } catch (err) {
         log(`Failed to process input file ${file}: ${err instanceof Error ? err.message : String(err)}`);
@@ -137,9 +163,20 @@ function writeUserMessage(proc: ChildProcess, text: string): void {
 async function runAgent(
   containerInput: ContainerInput,
   env: Record<string, string | undefined>,
-): Promise<void> {
+): Promise<{ rateLimited: boolean }> {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const mcpServerPath = path.join(__dirname, 'ipc-mcp-stdio.js');
+
+  // Write non-auth secrets to /tmp/.nanoclaw-env so scripts can source them
+  // (claude --print may not pass process env to Bash tool commands)
+  const scriptSecrets = Object.entries(containerInput.secrets || {})
+    .filter(([k]) => !k.startsWith('CLAUDE_') && k !== 'CLAUDE_CONFIG_DIR')
+    .map(([k, v]) => `${k}=${v}`)
+    .join('\n');
+  if (scriptSecrets) {
+    fs.writeFileSync('/tmp/.nanoclaw-env', scriptSecrets, { mode: 0o600 });
+    log(`Wrote ${scriptSecrets.split('\n').length} secret(s) to /tmp/.nanoclaw-env`);
+  }
 
   // Write MCP config for --mcp-config
   const mcpConfig = {
@@ -220,10 +257,14 @@ async function runAgent(
     claude.on('close', code => resolve(code ?? 1));
   });
 
-  // Log stderr
+  // Log stderr and accumulate for rate-limit detection
+  let stderrBuf = '';
   const stderrRl = readline.createInterface({ input: claude.stderr! });
   stderrRl.on('line', line => {
     log(`[claude] ${line}`);
+    // Keep last 2KB for error pattern matching
+    stderrBuf += line + '\n';
+    if (stderrBuf.length > 2048) stderrBuf = stderrBuf.slice(-2048);
   });
 
   // Build initial prompt
@@ -258,6 +299,17 @@ async function runAgent(
     setTimeout(pollIpc, IPC_POLL_MS);
   };
   setTimeout(pollIpc, IPC_POLL_MS);
+
+  // Emit periodic heartbeat to stdout so host can distinguish
+  // "agent is working" from "agent is dead" during long tool-call sequences.
+  const heartbeatInterval = setInterval(() => {
+    try {
+      process.stdout.write(HEARTBEAT_MARKER + '\n');
+    } catch {
+      // Pipe broken — container shutting down, safe to ignore
+      clearInterval(heartbeatInterval);
+    }
+  }, HEARTBEAT_INTERVAL_MS);
 
   // Process streaming JSON output
   let newSessionId: string | undefined;
@@ -304,11 +356,17 @@ async function runAgent(
   }
 
   ipcPolling = false;
+  clearInterval(heartbeatInterval);
 
   const exitCode = await exitPromise;
   log(`Claude exited with code ${exitCode}. Messages: ${messageCount}, results: ${resultCount}`);
 
   if (exitCode !== 0 && resultCount === 0) {
+    // Check stderr for rate-limit indicators before writing output
+    const isRateLimit = /rate.?limit|limit.?reached|too many|overloaded|529/i.test(stderrBuf);
+    if (isRateLimit) {
+      return { rateLimited: true };
+    }
     writeOutput({
       status: 'error',
       result: null,
@@ -319,6 +377,7 @@ async function runAgent(
     // Exited cleanly but produced no result — emit empty success for host tracking
     writeOutput({ status: 'success', result: null, newSessionId });
   }
+  return { rateLimited: false };
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -379,11 +438,42 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // Parse token pool for rate-limit retry
+  let tokenPool: Array<{ name: string; token: string }> = [];
+  try {
+    if (cliEnv.CLAUDE_TOKEN_POOL) {
+      tokenPool = JSON.parse(cliEnv.CLAUDE_TOKEN_POOL);
+    }
+  } catch {
+    log('Failed to parse CLAUDE_TOKEN_POOL, retries disabled');
+  }
+  // Remove pool from env so it doesn't leak into claude subprocess
+  delete cliEnv.CLAUDE_TOKEN_POOL;
+
   fs.mkdirSync(IPC_INPUT_DIR, { recursive: true });
   try { fs.unlinkSync(IPC_INPUT_CLOSE_SENTINEL); } catch { /* ignore */ }
 
   try {
-    await runAgent(containerInput, cliEnv);
+    const result = await runAgent(containerInput, cliEnv);
+
+    if (result.rateLimited && tokenPool.length > 1) {
+      const currentToken = cliEnv.CLAUDE_CODE_OAUTH_TOKEN;
+      const remaining = tokenPool.filter(t => t.token !== currentToken);
+      for (const candidate of remaining) {
+        log(`Rate-limited, retrying with token: ${candidate.name}`);
+        cliEnv.CLAUDE_CODE_OAUTH_TOKEN = candidate.token;
+        const retry = await runAgent(containerInput, cliEnv);
+        if (!retry.rateLimited) return; // success or non-rate-limit error
+        log(`Token ${candidate.name} also rate-limited`);
+      }
+      log('All tokens exhausted — all rate-limited');
+      writeOutput({
+        status: 'error',
+        result: null,
+        error: 'All tokens rate-limited',
+      });
+      process.exit(1);
+    }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     log(`Agent error: ${errorMessage}`);

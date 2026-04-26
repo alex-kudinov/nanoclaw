@@ -145,9 +145,7 @@ describe('processHistoryDelta', () => {
             {
               id: '1002',
               // labelsAdded should be ignored — only new messages matter.
-              labelsAdded: [
-                { message: { id: 'm3', threadId: 't2' } },
-              ],
+              labelsAdded: [{ message: { id: 'm3', threadId: 't2' } }],
               messagesAdded: [{ message: { id: 'm2', threadId: 't1' } }], // dupe
             },
           ],

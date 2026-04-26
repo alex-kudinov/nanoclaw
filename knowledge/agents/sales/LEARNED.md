@@ -49,3 +49,51 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 ### Lesson 11: Untitled
 **Problem:** Lead #23 Nancy Hamilton - asked if there's a faster path to PCC
 **Rule:** When a lead asks about going faster through the program, mention that nothing prevents them from taking multiple modules simultaneously (multiple classes per week). We wouldn't recommend doubling up during Module 1 (it lays the foundation), but after that they can run modules in parallel to compress the timeline. New cohorts start regularly so there's flexibility to stack them.
+
+### Lesson 12: Untitled
+**Problem:** Lead #27, PCC/MCC exam prep inquiry — lead asked for free version after receiving paid link
+**Rule:** Free PCC/MCC exam prep is accessed via a form at the bottom of tandemcoach.co/icf-credentialing-exam/ — it sends a link to the free prep test. The paid version ($49) is at https://community.tandemcoaching.academy/invitation?code=FA9C52. Always direct leads to the page URL first, not just the paid enrollment link.
+
+### Lesson 13: Untitled
+**Problem:** Lead #29, ACTC inquiry from team/corporate coach in Italy who explicitly requested a consultation call
+**Rule:** When a lead explicitly asks for a consultation call, respond short and sweet with just the Cherie booking link — don't provide a full program breakdown they didn't ask for. The first draft included a detailed ACTC overview and clarifying question; Alex wanted just the call link. Honor the call request directly.
+
+### Lesson 14: Untitled
+**Problem:** Lead #30, ACC Module 1 enrollee asked how long the Coaching Foundations module is
+**Rule:** The Coaching Foundations module is self-paced and does not need to be completed before Module 1. It's a reference covering ICF competencies, ethics, and coaching basics that students can dip in and out of throughout the course. Do not imply it must be done upfront.
+
+### Lesson 15: Untitled
+**Problem:** Follow-up #2 drafts for multiple leads — Alex flagged this language pattern
+**Rule:** Never say 'I've reached out twice' or 'I've sent a couple of messages' in follow-up emails — it sounds rude and desperate. Instead, open by referencing what you sent them (e.g., 'Following up on the ACC details I shared') without counting the outreach attempts.
+
+### Lesson 16: Untitled
+**Problem:** Lead #34, ACC inquiry asking about learning format and accelerated options
+**Rule:** When a lead asks about acceleration, mention two mandatory constraints that set the floor on overall timeline: (1) mentor coaching requires 10 hours spread over a minimum of 3 months per ICF rules; (2) the ACC credential requires 100 coaching practice hours, which typically takes longer than the coursework itself. These are the real limiting factors, not the training modules.
+
+### Lesson 17: ACC program emails should mention self-paced online learning component
+**Problem:** Sales emails about the ACC program were not mentioning self-paced online learning, which is a significant part of the program format. Cherie flagged this as an omission when reviewing an email to a lead.
+**Rule:** When describing the ACC program format to leads, always mention that a significant portion of the learning is self-paced online content (not just live sessions). The ACC is a hybrid program: self-paced online modules plus live Zoom cohort sessions. Calling this out helps leads understand the flexibility and time commitment involved.
+
+### Lesson 18: Do not state 'April 13' or mid-month dates as ACC cohort start dates
+**Problem:** Two outbound emails to leads (Tonya Conley and Quetta Noble) incorrectly stated 'the next cohort starts April 13.' Cherie Silas flagged this as wrong. Cohorts start the first week of the month, not mid-month.
+**Rule:** Never state a specific mid-month date as a cohort start. ACC cohorts start in the first week of the month. If you do not have a confirmed upcoming cohort date, say 'cohorts run monthly — the next one starts in early May' or similar. Do not invent specific dates. For mentor coaching group sessions, the next confirmed cohort starts May 5, 2026.
+
+### Lesson 19: Untitled
+**Problem:** ACC inquiry, new coach worried about accumulating 100 coaching hours (75 paid) required for ACC credential
+**Rule:** Initial draft on Lead #37 described the 100-hour coaching requirement as difficult without mentioning how students actually solve it. Reviewer added that most students use Reciprocoach — a platform where coaches exchange sessions with each other for a nominal fee — to build their hours alongside others in the same position. Always mention Reciprocoach when addressing the 100-hour practice hour requirement for new coaches who are worried about finding clients.
+
+### Lesson 20: ACC instructor credentials — do not overstate in email copy
+**Problem:** A sales email for the ACC program claimed that 'our instructors hold the highest ICF credential,' implying all ACC instructors are MCCs. In fact, Kalina Terzieva and Karen Bruns (who teach ACC) hold the PCC credential, not MCC. Cherie flagged this as a bait-and-switch because students may expect MCC-level instructors but encounter PCC-level ones in the actual program.
+**Rule:** When describing ACC program instructors, never make blanket claims that all instructors hold the highest ICF credential (MCC). Accurately represent the instructor team: Cherie Silas and Alex Kudinov are MCCs; Kalina Terzieva and Karen Bruns are PCCs. The MCC-level distinction applies specifically to mentor coaching (included in the program), not to all instruction. Use the full instructor list accurately, or describe the program as taught by MCCs and PCCs, or simply list instructors by name and credential.
+
+### Lesson 21: Tandem does not keep individual class recordings
+**Problem:** A PCC/ACTC student asked where to find video recordings of his classes. The initial draft reply incorrectly suggested recordings exist and offered troubleshooting steps for finding them.
+**Rule:** Tandem Coaching does not keep individual class recordings. When a student asks about class recordings, clarify this and direct them to the class materials available in their course pages on the Community Tandem Coaching Academy (community.tandemcoaching.academy). If they cannot access their course materials, escalate to Alex or Cherie to check their enrollment access.
+
+### Lesson 22: New taxonomy label: MrGru/notification/monitoring — classify Labrika as monitoring
+**Problem:** Labrika (labrika.com) sends automated weekly SEO and site health audit reports for tandemcoach.co. These were previously classified as MrGru/vendor/cold and escalated, but Alex wants them classified as a monitoring report and surfaced in the daily digest without escalation.
+**Rule:** A new taxonomy label has been approved: `MrGru/notification/monitoring` — Automated site health, SEO audit, uptime, or performance reports (hive: alex, priority 1). Classify all emails from Labrika (info@labrika.com or any @labrika.com sender) as `MrGru/notification/monitoring`. Do not escalate these. They will appear in the daily digest for Alex's review. Also use this label for other automated site/uptime monitoring services (e.g. UptimeRobot, Pingdom, Google Search Console alerts).
+
+### Lesson 23: Lead with value, not price — price is the payoff, not the opener
+**Problem:** Email drafts consistently led with program prices (e.g., "Our ACC program is $3,999..."). While Tandem's prices are competitive, leading with them positions the program as "the affordable option" and invites price-comparison thinking before the lead understands what they're getting.
+**Rule:** Price must appear in every program response (transparency matters at this consideration level), but never in the opening sentence. Always establish at least one value prop specific to the lead's question before stating the price. Structure: answer their question → relevant value (ICF accreditation, MCC instructors, modular flexibility, included mentor coaching) → price as the payoff. The lead should read "all of that for $3,999" not "is $3,999 worth it?" Do not bury or hide price — just don't lead with it.

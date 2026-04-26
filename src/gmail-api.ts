@@ -11,6 +11,7 @@ import {
   GMAIL_MONITORED_EMAIL,
   GMAIL_REPLY_TO,
   GMAIL_SEND_AS,
+  TRACKING_DOMAIN,
 } from './config.js';
 import { getGmailClient } from './gmail-auth.js';
 import {
@@ -22,6 +23,31 @@ import { logger } from './logger.js';
 
 /** Strip CR/LF to prevent header injection in RFC 2822 fields. */
 const sanitizeHeader = (s: string): string => s.replace(/[\r\n]/g, '');
+
+/**
+ * Detect whether an email body contains an open-tracking pixel.
+ * Used to suppress self-BCC/CC, since opening the self-copy fires the
+ * tracker and pollutes lead engagement signals with our own opens.
+ */
+function hasTrackingPixel(body: string): boolean {
+  if (!body || !TRACKING_DOMAIN) return false;
+  return body.includes(`https://${TRACKING_DOMAIN}/t/`);
+}
+
+/**
+ * Filter tandemcoach.co addresses out of a comma-separated address list.
+ * Returns the cleaned string, or undefined if nothing remains.
+ */
+function stripTandemAddresses(
+  addrList: string | undefined,
+): string | undefined {
+  if (!addrList) return undefined;
+  const kept = addrList
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && !/tandemcoach\.co/i.test(s));
+  return kept.length > 0 ? kept.join(', ') : undefined;
+}
 
 /** Cached label ID for GMAIL_LABEL (resolved once per process). */
 let cachedLabelId: string | null = null;
@@ -64,12 +90,28 @@ export function buildRawMessage(opts: {
   inReplyTo?: string;
   references?: string;
 }): string {
+  // When the body carries an open-tracking pixel, never CC or BCC any
+  // tandemcoach.co address — the user inevitably opens the self-copy in
+  // their info@ inbox, which fires the tracker and pollutes lead signals.
+  const trackingPresent = hasTrackingPixel(opts.body);
+  const ccHeader = trackingPresent ? stripTandemAddresses(opts.cc) : opts.cc;
+  const bccHeader =
+    trackingPresent && GMAIL_BCC && /tandemcoach\.co/i.test(GMAIL_BCC)
+      ? undefined
+      : GMAIL_BCC;
+  if (trackingPresent && (opts.cc !== ccHeader || bccHeader !== GMAIL_BCC)) {
+    logger.debug(
+      { originalCc: opts.cc, strippedCc: ccHeader, bccDropped: !bccHeader },
+      'Tracking pixel detected — suppressed tandemcoach.co BCC/CC',
+    );
+  }
+
   const lines: string[] = [
     `From: ${sanitizeHeader(GMAIL_SEND_AS)}`,
     `To: ${sanitizeHeader(opts.to)}`,
   ];
-  if (opts.cc) lines.push(`Cc: ${sanitizeHeader(opts.cc)}`);
-  if (GMAIL_BCC) lines.push(`Bcc: ${sanitizeHeader(GMAIL_BCC)}`);
+  if (ccHeader) lines.push(`Cc: ${sanitizeHeader(ccHeader)}`);
+  if (bccHeader) lines.push(`Bcc: ${sanitizeHeader(bccHeader)}`);
   if (GMAIL_REPLY_TO) lines.push(`Reply-To: ${sanitizeHeader(GMAIL_REPLY_TO)}`);
   lines.push(`Subject: ${sanitizeHeader(opts.subject)}`);
   if (opts.inReplyTo) {

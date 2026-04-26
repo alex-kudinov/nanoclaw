@@ -32,11 +32,15 @@ if (!STRIPE_ID) {
 }
 const ID_TYPE = STRIPE_ID.startsWith('cs_') ? 'checkout' : 'payment_intent';
 
-const STRIPE_KEY = process.env.STRIPE_RESTRICTED_KEY;
-if (!STRIPE_KEY) {
-  console.error('ERROR: STRIPE_RESTRICTED_KEY not set');
+const STRIPE_KEYS = [
+  process.env.STRIPE_RESTRICTED_KEY,
+  process.env.STRIPE_SECRET_KEY_ALT,
+].filter(Boolean);
+if (STRIPE_KEYS.length === 0) {
+  console.error('ERROR: No Stripe API keys set (STRIPE_RESTRICTED_KEY / STRIPE_SECRET_KEY_ALT)');
   process.exit(1);
 }
+let STRIPE_KEY = STRIPE_KEYS[0];
 
 const SHEETS_PAYMENTS_ID = process.env.SHEETS_PAYMENTS_ID;
 const SHEETS_ROSTER_ID = process.env.SHEETS_ROSTER_ID;
@@ -266,17 +270,37 @@ function sqlEscape(str) {
 
 // ── Main Pipeline ───────────────────────────────────────────────────────────
 
-async function main() {
-  // 1. Fetch payment data from Stripe
+async function fetchPaymentWithKeyFallback() {
+  const debugLines = [];
+  debugLines.push(`keys=${STRIPE_KEYS.length}`);
+  for (let ki = 0; ki < STRIPE_KEYS.length; ki++) {
+    STRIPE_KEY = STRIPE_KEYS[ki];
+    debugLines.push(`try-${ki}=${STRIPE_KEY.slice(0, 10)}`);
+    try {
+      const result = await fetchPaymentData();
+      debugLines.push(`ok-${ki},name=${result.customerName},email=${result.customerEmail}`);
+      result._debug = debugLines.join(' | ');
+      return result;
+    } catch (err) {
+      debugLines.push(`fail-${ki}=${err.message.slice(0, 40)}`);
+      const isNotFound = /no such|resource_missing|invalid_request/i.test(err.message);
+      if (isNotFound && ki < STRIPE_KEYS.length - 1) {
+        continue; // try next key
+      }
+      throw err;
+    }
+  }
+}
+
+async function fetchPaymentData() {
   let productName, productId, customerEmail, customerName;
   let amountCents, currency, paymentStatus, eventType;
   let feeCents = 0;
   let refundedCents = 0;
   let lineItems = [];
-  let stripeCreatedAt = 0; // Unix timestamp from Stripe
+  let stripeCreatedAt = 0;
 
   if (ID_TYPE === 'checkout') {
-    // Checkout Session — expand line_items for structured product data
     const session = await stripeGet(
       `/v1/checkout/sessions/${STRIPE_ID}?expand[]=line_items.data.price.product&expand[]=customer_details`,
     );
@@ -284,15 +308,15 @@ async function main() {
     const firstItem = lineItems[0];
     productName = firstItem?.price?.product?.name || 'Unknown';
     productId = firstItem?.price?.product?.id || '';
-    customerEmail = session.customer_details?.email || session.customer_email || '';
-    customerName = session.customer_details?.name || 'Unknown';
+    const csMeta = session.metadata || {};
+    customerEmail = session.customer_details?.email || session.customer_email || csMeta.email || '';
+    customerName = session.customer_details?.name || csMeta.name || 'Unknown';
     amountCents = session.amount_total || 0;
     currency = (session.currency || 'usd').toUpperCase();
     paymentStatus = session.payment_status || 'unknown';
     eventType = 'checkout.session.completed';
     stripeCreatedAt = session.created || 0;
 
-    // Fetch fee and refund status from charge's balance_transaction
     if (session.payment_intent) {
       try {
         const pi = await stripeGet(`/v1/payment_intents/${session.payment_intent}`);
@@ -300,7 +324,6 @@ async function main() {
           const charge = await stripeGet(`/v1/charges/${pi.latest_charge}?expand[]=balance_transaction`);
           feeCents = charge.balance_transaction?.fee || 0;
           refundedCents = charge.amount_refunded || 0;
-          // Fallback: fill name from charge billing details if checkout didn't provide it
           if (customerName === 'Unknown' && charge.billing_details?.name) {
             customerName = charge.billing_details.name;
           }
@@ -308,7 +331,6 @@ async function main() {
       } catch { /* non-fatal */ }
     }
   } else {
-    // PaymentIntent (e.g., Heartbeat in-app payment) — product from description
     const pi = await stripeGet(`/v1/payment_intents/${STRIPE_ID}`);
     productName = pi.description || 'Unknown';
     productId = '';
@@ -318,7 +340,6 @@ async function main() {
     eventType = 'payment_intent.succeeded';
     stripeCreatedAt = pi.created || 0;
 
-    // Fetch charge (needed for fee, refund, and billing details)
     let charge = null;
     if (pi.latest_charge) {
       charge = await stripeGet(`/v1/charges/${pi.latest_charge}?expand[]=balance_transaction`);
@@ -326,7 +347,6 @@ async function main() {
       refundedCents = charge.amount_refunded || 0;
     }
 
-    // Resolve customer — try PI customer, then charge customer, then billing details
     const customerId = pi.customer || charge?.customer;
     if (customerId) {
       try {
@@ -337,9 +357,69 @@ async function main() {
     }
     if (!customerName && charge) customerName = charge.billing_details?.name || '';
     if (!customerEmail && charge) customerEmail = charge.billing_details?.email || '';
+    // Fallback: metadata and receipt_email (e.g. Heartbeat/WP custom checkout)
+    const meta = pi.metadata || {};
+    if (!customerName && meta.name) customerName = meta.name;
+    if (!customerEmail && meta.email) customerEmail = meta.email;
+    if (!customerEmail && pi.receipt_email) customerEmail = pi.receipt_email;
     if (!customerName) customerName = 'Unknown';
     if (!customerEmail) customerEmail = '';
   }
+
+  return {
+    productName, productId, customerEmail, customerName,
+    amountCents, currency, paymentStatus, eventType,
+    feeCents, refundedCents, lineItems, stripeCreatedAt,
+  };
+}
+
+/**
+ * Resolve exam routing: if student has modules on a program roster, write exam
+ * there (they're an enrolled student). Otherwise write to Prep Exam tab only.
+ */
+async function resolveExamRouting(allMatches, programTabs, email) {
+  const MODULE_HEADERS = new Set(['Full Program', 'M1', 'M2', 'M3', 'M4', 'Group Supervision', 'Group Mentoring', 'Individual Mentoring', 'Recording Review']);
+  const prepExamMatches = allMatches.filter((m) => m.tab === 'Prep Exam');
+  let studentHasModules = false;
+
+  for (const { tab } of programTabs) {
+    try {
+      const fullTab = await sheetsGet(SHEETS_ROSTER_ID, `'${tab}'`);
+      const tabRows = fullTab.values || [];
+      if (tabRows.length < 2) continue;
+      const headers = tabRows[0];
+      const moduleCols = headers.reduce((acc, h, i) => {
+        if (MODULE_HEADERS.has(h)) acc.push(i);
+        return acc;
+      }, []);
+      for (let i = 1; i < tabRows.length; i++) {
+        const row = tabRows[i];
+        if (!row[0] || row[0].toLowerCase() !== email.toLowerCase()) continue;
+        if (moduleCols.some((ci) => row[ci] && row[ci].trim())) {
+          studentHasModules = true;
+          break;
+        }
+      }
+    } catch { /* non-fatal */ }
+    if (studentHasModules) break;
+  }
+
+  if (studentHasModules) {
+    // Student has modules → write to program roster tabs, skip Prep Exam
+    return allMatches.filter((m) => m.tab !== 'Prep Exam');
+  }
+  // Exam-only buyer → write to Prep Exam only, skip program roster tabs
+  return prepExamMatches;
+}
+
+async function main() {
+  // 1. Fetch payment data from Stripe (tries each key until one works)
+  const fetchResult = await fetchPaymentWithKeyFallback();
+  const {
+    productName, productId, customerEmail, customerName,
+    amountCents, currency, paymentStatus, eventType,
+    feeCents, refundedCents, lineItems, stripeCreatedAt,
+  } = fetchResult;
 
   const fmtDate = (d) => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
   const fmtISO = (d) => d.toISOString().split('T')[0];
@@ -437,6 +517,16 @@ async function main() {
         .filter((r, i) => i > 0 && r[0] && r[0].toLowerCase() === productName.toLowerCase() && r[1] && r[2])
         .map((r) => ({ tab: r[1], column: r[2] }));
 
+      // Exam routing: when product maps to both a program roster AND Prep Exam,
+      // check if student already has modules on the program roster.
+      // If yes → keep program roster entry, skip Prep Exam.
+      // If no → use Prep Exam only, skip program roster.
+      const hasPrepExam = rosterMatches.some((m) => m.tab === 'Prep Exam');
+      const programTabs = rosterMatches.filter((m) => m.tab !== 'Prep Exam' && m.tab.endsWith(' Roster'));
+      if (hasPrepExam && programTabs.length > 0 && customerEmail) {
+        rosterMatches = await resolveExamRouting(rosterMatches, programTabs, customerEmail);
+      }
+
       if (rosterMatches.length > 0 && customerEmail) {
         const rosterResults = [];
         for (const { tab, column } of rosterMatches) {
@@ -526,7 +616,7 @@ async function main() {
 
   // 4. Output summary
   const lines = [
-    '[PAYMENT RECEIVED]',
+    `[PAYMENT RECEIVED] (v3-debug) ${fetchResult._debug || 'no-debug'}`,
     `Date: ${transactionDate} (recorded: ${recordedDate})`,
     `Customer: ${customerName} (${customerEmail})`,
     `Product: ${productName}`,

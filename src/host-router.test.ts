@@ -71,7 +71,11 @@ describe('host-router', () => {
 
   it('routes lead with no match to inbox via mailman', async () => {
     const r = await routeClassifiedEmail(makeParams({ label: 'lead/inquiry' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     expect(mockWrite).toHaveBeenCalledOnce();
     const [group, payload] = mockWrite.mock.calls[0];
     expect(group).toBe('mailman');
@@ -86,7 +90,11 @@ describe('host-router', () => {
   it('routes lead with match to sales via mailman using v2 fields', async () => {
     mockMatch.mockResolvedValue(proposalMatch);
     const r = await routeClassifiedEmail(makeParams({ label: 'lead/inquiry' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('[HANDOFF: mailman\u2192sales]');
     expect(text).toContain('Entry ID: 17');
@@ -98,8 +106,14 @@ describe('host-router', () => {
 
   it('uses inbound threadId as fallback when match has no thread_id', async () => {
     mockMatch.mockResolvedValue(noThreadMatch);
-    const r = await routeClassifiedEmail(makeParams({ label: 'lead/reply', threadId: 'thr-1' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'lead/reply', threadId: 'thr-1' }),
+    );
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('Thread-ID: thr-1');
     expect(text).not.toContain('Thread-ID: none');
@@ -108,8 +122,14 @@ describe('host-router', () => {
 
   it('omits Thread-ID when match.thread_id is null and params.threadId is absent', async () => {
     mockMatch.mockResolvedValue(noThreadMatch);
-    const r = await routeClassifiedEmail(makeParams({ label: 'lead/reply', threadId: '' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'lead/reply', threadId: '' }),
+    );
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).not.toContain('Thread-ID:');
     expect(text).toContain('Party ID: 10058');
@@ -117,23 +137,41 @@ describe('host-router', () => {
 
   it('uses inbound threadId as fallback in fmtLeadSales (null DB thread_id)', async () => {
     mockMatch.mockResolvedValue(noThreadMatch);
-    const r = await routeClassifiedEmail(makeParams({ label: 'lead/reply', threadId: '19dc2b05f1df06cf' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'lead/reply', threadId: '19dc2b05f1df06cf' }),
+    );
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('Thread-ID: 19dc2b05f1df06cf');
   });
 
   it('includes Thread-ID in inbox handoff when threadId is present', async () => {
-    const r = await routeClassifiedEmail(makeParams({ label: 'lead/inquiry', threadId: 'inbox-thr-42' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'lead/inquiry', threadId: 'inbox-thr-42' }),
+    );
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('[HANDOFF: mailman\u2192inbox]');
     expect(text).toContain('Thread-ID: inbox-thr-42');
   });
 
   it('omits Thread-ID from inbox handoff when threadId is empty', async () => {
-    const r = await routeClassifiedEmail(makeParams({ label: 'lead/inquiry', threadId: '' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'lead/inquiry', threadId: '' }),
+    );
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('[HANDOFF: mailman\u2192inbox]');
     expect(text).not.toContain('Thread-ID:');
@@ -177,7 +215,9 @@ describe('host-router', () => {
     // Should use "Thread-ID:" not bare "Thread:"
     expect(text).toContain('Thread-ID:');
     // Ensure there's no bare "Thread: " that isn't "Thread-ID: "
-    const threadLines = text.split('\n').filter((l: string) => l.startsWith('Thread'));
+    const threadLines = text
+      .split('\n')
+      .filter((l: string) => l.startsWith('Thread'));
     for (const line of threadLines) {
       expect(line).toMatch(/^Thread-ID:/);
     }
@@ -213,7 +253,9 @@ describe('host-router', () => {
   // ══════════════════════════════════════════════════════════════════
 
   it('routes client/* to chief with escalation', async () => {
-    const r = await routeClassifiedEmail(makeParams({ label: 'client/active' }));
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'client/active' }),
+    );
     expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
     const [group, payload] = mockWrite.mock.calls[0];
     expect(group).toBe('chief');
@@ -222,44 +264,85 @@ describe('host-router', () => {
   });
 
   it('returns classify_only for procurement/* without writing', async () => {
-    const r = await routeClassifiedEmail(makeParams({ label: 'procurement/rfp' }));
-    expect(r).toEqual({ routed: true, action: 'classify_only', target: 'none' });
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'procurement/rfp' }),
+    );
+    expect(r).toEqual({
+      routed: true,
+      action: 'classify_only',
+      target: 'none',
+    });
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
   it('routes financial/bill to contador via mailman', async () => {
-    const r = await routeClassifiedEmail(makeParams({ label: 'financial/bill' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'financial/bill' }),
+    );
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('[HANDOFF: mailman\u2192contador]');
     expect(text).toContain('[TYPE: invoice]');
   });
 
+  it('contador handoff carries Snippet + Thread-ID, not full Body', async () => {
+    const longBody = 'INVOICE LINE. '.repeat(200); // ~2.6 KB
+    await routeClassifiedEmail(
+      makeParams({ label: 'financial/bill', body: longBody, threadId: 'thr-x' }),
+    );
+    const text: string = mockWrite.mock.calls[0][1].text;
+    expect(text).toContain('Thread-ID: thr-x');
+    expect(text).toContain('Snippet: ');
+    expect(text).not.toContain('Body:');
+    // 300-char cap + ellipsis line \u2014 total handoff stays well under 1 KB.
+    expect(text.length).toBeLessThan(800);
+  });
+
   it('routes financial/refund to chief for review', async () => {
-    const r = await routeClassifiedEmail(makeParams({ label: 'financial/refund' }));
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'financial/refund' }),
+    );
     expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('Reason: refund review');
   });
 
   it('routes meeting-assets/* to archivarista via mailman', async () => {
-    const r = await routeClassifiedEmail(makeParams({ label: 'meeting-assets/recording' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'meeting-assets/recording' }),
+    );
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('[HANDOFF: mailman\u2192archivarista]');
     expect(text).toContain('[TYPE: meeting-assets]');
+    expect(text).toContain('Snippet: ');
+    expect(text).not.toContain('Body:');
   });
 
   it('routes legal/* to chief', async () => {
-    const r = await routeClassifiedEmail(makeParams({ label: 'legal/contract' }));
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'legal/contract' }),
+    );
     expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
-    expect(mockWrite.mock.calls[0][1].text).toContain('Reason: legal/contract review');
+    expect(mockWrite.mock.calls[0][1].text).toContain(
+      'Reason: legal/contract review',
+    );
   });
 
   it('routes personal to chief', async () => {
     const r = await routeClassifiedEmail(makeParams({ label: 'personal' }));
     expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
-    expect(mockWrite.mock.calls[0][1].text).toContain('Reason: personal review');
+    expect(mockWrite.mock.calls[0][1].text).toContain(
+      'Reason: personal review',
+    );
   });
 
   it('routes other to chief', async () => {
@@ -269,12 +352,17 @@ describe('host-router', () => {
   });
 
   it('falls back to chief for unrecognized labels', async () => {
-    const r = await routeClassifiedEmail(makeParams({ label: 'xyzzy/unknown' }));
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'xyzzy/unknown' }),
+    );
     expect(r.routed).toBe(true);
     expect(r.action).toBe('ipc_written');
     expect(r.target).toBe('chief');
     expect(r.reason).toBe('unrecognized label prefix');
-    expect(mockWrite).toHaveBeenCalledWith('chief', expect.objectContaining({ type: 'message' }));
+    expect(mockWrite).toHaveBeenCalledWith(
+      'chief',
+      expect.objectContaining({ type: 'message' }),
+    );
   });
 
   // ══════════════════════════════════════════════════════════════════
@@ -282,8 +370,12 @@ describe('host-router', () => {
   // ══════════════════════════════════════════════════════════════════
 
   it('returns error when writeHostMessage throws', async () => {
-    mockWrite.mockImplementation(() => { throw new Error('disk full'); });
-    const r = await routeClassifiedEmail(makeParams({ label: 'client/active' }));
+    mockWrite.mockImplementation(() => {
+      throw new Error('disk full');
+    });
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'client/active' }),
+    );
     expect(r).toEqual({ routed: false, action: 'error', reason: 'disk full' });
   });
 
@@ -311,24 +403,50 @@ describe('host-router', () => {
   // ══════════════════════════════════════════════════════════════════
 
   describe('MrGru/ namespaced labels (production format)', () => {
-    beforeEach(() => { mockWrite.mockReset(); mockMatch.mockReset(); mockMatch.mockResolvedValue(null); });
+    beforeEach(() => {
+      mockWrite.mockReset();
+      mockMatch.mockReset();
+      mockMatch.mockResolvedValue(null);
+    });
 
     it('routes MrGru/client/active to chief', async () => {
-      const r = await routeClassifiedEmail(makeParams({ label: 'MrGru/client/active' }));
-      expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
-      expect(mockWrite.mock.calls[0][1].text).toContain('Reason: host-router escalation');
+      const r = await routeClassifiedEmail(
+        makeParams({ label: 'MrGru/client/active' }),
+      );
+      expect(r).toEqual({
+        routed: true,
+        action: 'ipc_written',
+        target: 'chief',
+      });
+      expect(mockWrite.mock.calls[0][1].text).toContain(
+        'Reason: host-router escalation',
+      );
     });
 
     it('routes MrGru/lead/inquiry with no match to inbox', async () => {
-      const r = await routeClassifiedEmail(makeParams({ label: 'MrGru/lead/inquiry' }));
-      expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
-      expect(mockWrite.mock.calls[0][1].text).toContain('[HANDOFF: mailman\u2192inbox]');
+      const r = await routeClassifiedEmail(
+        makeParams({ label: 'MrGru/lead/inquiry' }),
+      );
+      expect(r).toEqual({
+        routed: true,
+        action: 'ipc_written',
+        target: 'mailman',
+      });
+      expect(mockWrite.mock.calls[0][1].text).toContain(
+        '[HANDOFF: mailman\u2192inbox]',
+      );
     });
 
     it('routes MrGru/lead/reply with match using v2 fields', async () => {
       mockMatch.mockResolvedValue(negotiatingMatch);
-      const r = await routeClassifiedEmail(makeParams({ label: 'MrGru/lead/reply' }));
-      expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+      const r = await routeClassifiedEmail(
+        makeParams({ label: 'MrGru/lead/reply' }),
+      );
+      expect(r).toEqual({
+        routed: true,
+        action: 'ipc_written',
+        target: 'mailman',
+      });
       const text: string = mockWrite.mock.calls[0][1].text;
       expect(text).toContain('Entry ID: 5');
       expect(text).toContain('Party ID: 10012');
@@ -336,31 +454,63 @@ describe('host-router', () => {
     });
 
     it('routes MrGru/procurement/rfp as classify_only', async () => {
-      const r = await routeClassifiedEmail(makeParams({ label: 'MrGru/procurement/rfp' }));
-      expect(r).toEqual({ routed: true, action: 'classify_only', target: 'none' });
+      const r = await routeClassifiedEmail(
+        makeParams({ label: 'MrGru/procurement/rfp' }),
+      );
+      expect(r).toEqual({
+        routed: true,
+        action: 'classify_only',
+        target: 'none',
+      });
       expect(mockWrite).not.toHaveBeenCalled();
     });
 
     it('routes MrGru/financial/bill to contador', async () => {
-      const r = await routeClassifiedEmail(makeParams({ label: 'MrGru/financial/bill' }));
-      expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
-      expect(mockWrite.mock.calls[0][1].text).toContain('[HANDOFF: mailman\u2192contador]');
+      const r = await routeClassifiedEmail(
+        makeParams({ label: 'MrGru/financial/bill' }),
+      );
+      expect(r).toEqual({
+        routed: true,
+        action: 'ipc_written',
+        target: 'mailman',
+      });
+      expect(mockWrite.mock.calls[0][1].text).toContain(
+        '[HANDOFF: mailman\u2192contador]',
+      );
     });
 
     it('routes MrGru/meeting-assets/recording to archivarista', async () => {
-      const r = await routeClassifiedEmail(makeParams({ label: 'MrGru/meeting-assets/recording' }));
-      expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
-      expect(mockWrite.mock.calls[0][1].text).toContain('[HANDOFF: mailman\u2192archivarista]');
+      const r = await routeClassifiedEmail(
+        makeParams({ label: 'MrGru/meeting-assets/recording' }),
+      );
+      expect(r).toEqual({
+        routed: true,
+        action: 'ipc_written',
+        target: 'mailman',
+      });
+      expect(mockWrite.mock.calls[0][1].text).toContain(
+        '[HANDOFF: mailman\u2192archivarista]',
+      );
     });
 
     it('routes MrGru/legal/contract to chief', async () => {
-      const r = await routeClassifiedEmail(makeParams({ label: 'MrGru/legal/contract' }));
-      expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
-      expect(mockWrite.mock.calls[0][1].text).toContain('Reason: legal/contract review');
+      const r = await routeClassifiedEmail(
+        makeParams({ label: 'MrGru/legal/contract' }),
+      );
+      expect(r).toEqual({
+        routed: true,
+        action: 'ipc_written',
+        target: 'chief',
+      });
+      expect(mockWrite.mock.calls[0][1].text).toContain(
+        'Reason: legal/contract review',
+      );
     });
 
     it('routes MrGru/notification/system as unrecognized → chief', async () => {
-      const r = await routeClassifiedEmail(makeParams({ label: 'MrGru/notification/system' }));
+      const r = await routeClassifiedEmail(
+        makeParams({ label: 'MrGru/notification/system' }),
+      );
       expect(r.routed).toBe(true);
       expect(r.target).toBe('chief');
       expect(r.reason).toBe('unrecognized label prefix');
@@ -407,7 +557,11 @@ describe('host-router', () => {
         messageId: 'msg-def456',
       });
       const r = await routeClassifiedEmail(p);
-      expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+      expect(r).toEqual({
+        routed: true,
+        action: 'ipc_written',
+        target: 'mailman',
+      });
       const text: string = mockWrite.mock.calls[0][1].text;
       expect(text).toContain('[HANDOFF: mailman\u2192inbox]');
       expect(text).toContain('From: Seana Fairchild <slfairch@outlook.com>');
@@ -433,7 +587,11 @@ describe('host-router', () => {
         body: 'Thanks for the information! What are the upcoming start dates?',
       });
       const r = await routeClassifiedEmail(p);
-      expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
+      expect(r).toEqual({
+        routed: true,
+        action: 'ipc_written',
+        target: 'mailman',
+      });
       const text: string = mockWrite.mock.calls[0][1].text;
       expect(text).toContain('[HANDOFF: mailman\u2192sales]');
       expect(text).toContain('[SOURCE: email-reply]');
@@ -453,9 +611,17 @@ describe('host-router', () => {
       // matchLead swallows errors and returns null → routes to inbox
       // But since matchLead catches internally, we mock it returning null
       mockMatch.mockResolvedValue(null);
-      const r = await routeClassifiedEmail(makeParams({ label: 'lead/inquiry' }));
-      expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'mailman' });
-      expect(mockWrite.mock.calls[0][1].text).toContain('[HANDOFF: mailman\u2192inbox]');
+      const r = await routeClassifiedEmail(
+        makeParams({ label: 'lead/inquiry' }),
+      );
+      expect(r).toEqual({
+        routed: true,
+        action: 'ipc_written',
+        target: 'mailman',
+      });
+      expect(mockWrite.mock.calls[0][1].text).toContain(
+        '[HANDOFF: mailman\u2192inbox]',
+      );
     });
 
     it('Scenario: multi-slash label (MrGru/lead/inquiry) strips namespace correctly', async () => {

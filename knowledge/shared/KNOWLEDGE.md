@@ -1,7 +1,8 @@
 # Tandem Coaching — Knowledge Base
 
-<!-- llms-full-hash: 6f9dea1e4f01910d5820c2563de6bc76ca6d99d6b676ac0133036b92e7cfa635 -->
-<!-- validated-at: 2026-04-10 -->
+<!-- manifest-hash: 2a7f63bd5b62478044b3243d5f3dad15178d8119dc708c03ec5535a0573a57bc -->
+<!-- validated-at: 2026-04-25 -->
+
 
 
 Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and executive coaching firm based in Dallas, TX. Co-founders: Cherie Silas and Alex Kudinov.
@@ -13,12 +14,12 @@ Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and exe
 Four programs for every stage of the coaching journey. Each is independently accredited by the International Coaching Federation.
 
 ### ACC — Associate Certified Coach (ICF Level 1)
-- **Price:** $3,999 full program (includes all 4 core modules, Coaching Foundations free module, mentor coaching, exam prep)
-- **Individual modules:** $399 each (free Coaching Foundations first, saves $600+ vs buying separately)
-- **ICF credential fees (paid to ICF, not Tandem):** $175 (ICF member) or $325 (non-member) — total investment ~$4,200–$4,400
+- **Price:** $3,999 full program (includes all 4 core modules, Coaching Foundations free module, group supervision, group mentoring, individual mentoring, exam prep, and Coaching Tools Plus access)
+- **Individual modules:** $399 each (free Coaching Foundations first)
+- **ICF credential fees (paid to ICF, not Tandem):** Application fee $175 (ICF member) or $325 (non-member); Credentialing Exam (CKA) fee $275; optional ICF membership $245/yr — total investment ~$4,200–$4,700 depending on membership status
 - **Education hours required:** 60+ coach-specific hours (ICF Level 1 program)
 - **Coaching experience required:** 100 hours total (75 paid minimum, 25 can be pro bono)
-- **Mentor coaching:** 10 hours over minimum 3 months (group + individual) — included in program
+- **Mentor coaching:** 10 hours over minimum 3 months (group + individual) — included in program. Starting in 2027, ICF requires all mentor coaches to hold the Mentor Coach Qualification (MCQ).
 - **Timeline:** 6–12 months total; training modules can be completed faster, main variable is accumulating 100 hours
 - **Prerequisites:** None — no prior coaching experience required
 - **Instructors:** Cherie Silas, Alex Kudinov, Kalina Terzieva, Karen Bruns
@@ -27,11 +28,27 @@ Four programs for every stage of the coaching journey. Each is independently acc
 **What's included:**
 - Free Coaching Foundations module (ICF competencies, ethics, coaching basics)
 - 4 core training modules
-- MCC-level mentor coaching (10 hrs)
+- Group Supervision (reflective practice with experienced coaching supervisors)
+- Group Mentoring (MCC-level mentor coaching in collaborative group setting)
+- Individual Mentoring (1-on-1 with MCC-level mentor)
 - ICF Exam Prep Course ($29 value, included)
 - Performance evaluation prep
+- Coaching Tools Plus access
+
+**Module breakdown (if buying individually):**
+- Free: Coaching Foundations (ICF Competencies & Ethics)
+- Module 1 – Coaching Fundamentals: $399
+- Module 2 – Critical Coaching Skills: $399
+- Module 3 – Coaching Client Mindset and Beliefs: $399
+- Module 4 – Advanced Coaching Techniques: $399
+- Group Supervision: $699
+- Group Mentoring: $699
+- Individual Mentoring: $1,199
+- ICF Exam Prep: $29
 
 **Modular structure:** Start with any upcoming cohort. Pause between modules at no cost. Progress never expires. Can buy modules individually.
+
+**Format:** Hybrid — self-paced online modules plus live instructor-led Zoom cohort sessions. A significant portion of learning is self-paced online content, with live sessions providing coaching practice, feedback, and interaction.
 
 **Refund policy:** Full refund if not satisfied after first session of a module. No refund after attending more than one session, but can complete with a future cohort.
 
@@ -60,13 +77,14 @@ Four programs for every stage of the coaching journey. Each is independently acc
 - Module 3 – Client Mindset & Beliefs
 - Module 4 – Advanced Techniques
 - Group Supervision
-- Mentor Coaching (group + individual)
+- Group Mentoring
+- Individual Mentoring
 - Performance Evaluation Prep
 - ICF Exam Prep Course
 - You earn ACC at the end of Phase 1 — a real milestone, not just a stepping stone
 
 **Phase 2 — Systems Coach Bridge (65+ hours, ICF Level 2):**
-- 2 free modules (ICF Competencies + Mastering Core Competencies)
+- 2 free modules (ICF Individual and Team Competencies + Mastering ICF Core Competencies)
 - Module 1 – System Coaching Mindset and Focus
 - Module 2 – Coaching Organizational and Team Systems
 - Module 3 – System Perception and Framing
@@ -75,6 +93,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 - Group Mentoring ($699 individually)
 - Individual Mentoring ($1,199 individually)
 - ICF Exam Prep Courses (individual $49 + team $59)
+- Coaching Tools Plus access
 - You earn PCC + ACTC at the end of Phase 2
 
 **How it works:** Start with Phase 1 (join the next ACC cohort). After earning ACC, move into Phase 2 on a flexible schedule. Phase 2 is the same curriculum as the standalone Systems Coach Program.
@@ -84,14 +103,14 @@ Four programs for every stage of the coaching journey. Each is independently acc
 ---
 
 ### Systems Coach Program — PCC + ACTC (ICF Level 2 Bridge)
-- **Price:** $3,999 full program (includes all core modules, mentoring, supervision, exam prep)
+- **Price:** $3,999 full program (includes all core modules, mentoring, supervision, exam prep, and Coaching Tools Plus access — saves over $700 vs buying individually)
 - **Individual modules:** $399 each for core training (two orientation modules are completely free)
 - **ICF credential fees:** $375 (ICF member) or $525 (non-member) — total ~$4,400–$4,800
 - **ICF credentials earned:** PCC + ACTC (dual credential)
 - **Education hours:** 65+ coach-specific hours (ICF Level 2 program)
 - **Coaching experience required:** 500 hours total (450 paid, minimum 25 clients over 24 months)
-- **Mentor coaching:** 10 hours with PCC or MCC-level coach — included
-- **Performance evaluation:** Two recorded coaching sessions + transcripts submitted to ICF
+- **Mentor coaching:** 10 hours with PCC or MCC-level coach — included. Starting in 2027, ICF requires mentor coaches to hold the MCQ at the PCC level or above for PCC candidates.
+- **Performance evaluation:** Two recorded coaching sessions + transcripts submitted to ICF (transitioning to formative evaluation through MCQ-qualified mentor coaches by April 1, 2027)
 - **ICF Credentialing Exam (CKA):** Required — program includes prep
 - **Timeline:** 6–12 months for training; 12–24 months total including coaching hours
 - **Prerequisites:** 60 hours of ICF-accredited coach training (ACC credential or equivalent)
@@ -118,14 +137,14 @@ Four programs for every stage of the coaching journey. Each is independently acc
 ---
 
 ### ACTC — Advanced Certified Team Coach (ICF)
-- **Price:** $2,499 full program (includes all training, supervision, recording review, exam prep)
+- **Price:** $2,499 full program (includes all training, supervision, recording review, exam prep, and Coaching Tools Plus access)
 - **ICF credential fees:** $250 (ICF member) or $350 (non-member) — total ~$2,749–$2,849
-- **Team coaching engagements required:** 5 engagements within past 5 years (each with intact team of 3+ members working toward shared goals). Can begin during training. Prior engagements count if they meet ICF criteria.
+- **Team coaching engagements required:** 5 engagements within past 5 years (each with intact team of 3+ members working toward shared goals). Can begin during training. Prior engagements count if they meet ICF criteria. For teams of 15+ members, a co-coach must be present.
 - **Supervision:** 5 hours of group coaching supervision — included (led by accredited supervisors)
 - **Format:** Self-paced intro module + live/self-paced hybrid core modules (50%+ live per ICF requirement)
 - **Timeline:** 4–6 months to complete program; 6–12 months total including engagements
-- **Prerequisites:** Existing ACC or PCC credential
-- **Instructors:** Cherie Silas, Kalina Terzieva
+- **Prerequisites:** Existing ACC or PCC or MCC credential
+- **Instructors:** Cherie Silas (MCC, ACTC), Kalina Terzieva (PCC)
 - **URL:** /icf/actc-team-coaching-training/
 
 **Module breakdown (if buying individually):**
@@ -142,6 +161,8 @@ Four programs for every stage of the coaching journey. Each is independently acc
 
 **What supervision is:** Reflective practice where a qualified supervisor helps examine coaching patterns, blind spots, development areas. Distinct from mentor coaching (skill-building) — supervision focuses on professional development and self-awareness.
 
+**Team coaching vs group coaching:** Team coaching works with an intact team that shares goals, outcomes, and accountability — the focus is on team dynamics and collective performance. Group coaching brings together individuals who may share a topic but don't work together day-to-day. The ACTC credential specifically validates ability to coach teams as systems.
+
 ---
 
 ## Program Comparison
@@ -151,28 +172,31 @@ Four programs for every stage of the coaching journey. Each is independently acc
 | ACC Coach Training | $3,999 | ACC | None | Aspiring coaches, HR pros, leaders |
 | Professional Coach Program | $7,499 | ACC + PCC + ACTC | None | Full journey from zero to PCC |
 | Systems Coach Program | $3,999 | PCC + ACTC | 60 hrs prior training (ACC) | ACC holders advancing to PCC |
-| ACTC Team Coaching | $2,499 | ACTC | Existing ACC or PCC | Team coaching specialization |
+| ACTC Team Coaching | $2,499 | ACTC | Existing ACC or PCC or MCC | Team coaching specialization |
+| Mentor Coaching Foundations | $299 (launch) / $397 | 10 CCE hours (MCQ education) | Active ICF credential | Coaches pursuing ICF Mentor Coach Qualification via CPL |
+| Evaluation Training | $49–$149 | MCQ evaluation instrument training | Active ICF credential | MCQ applicants needing BARS/Markers training |
 
 ---
 
 ## Instructors
 
-### Cherie Silas — MCC (ICF Master Certified Coach)
+### Cherie Silas — MCC, ACTC (ICF Master Certified Coach)
 - CEO & Managing Partner, Tandem Coaching
-- Credentials: ICF MCC, SA CEC, CPCC, EMCC ESIA (Accredited Coaching Supervisor — one of only 215 worldwide)
+- Credentials: ICF MCC (since 2017), ICF ACTC, SA CEC, CPCC, EMCC ESIA (Accredited Coaching Supervisor — one of only 215 worldwide)
 - 20+ years experience as corporate leader turned professional coach
 - Top 3.7% of 56,000+ credentialed coaches worldwide; named #16 most influential coach by Global Gurus
 - Co-author, *Enterprise Agile Coaching* book
-- Teaches: ACC, Systems Coach (PCC+ACTC), ACTC
+- One of the few coaches who holds both MCC and ACTC
+- Teaches: ACC, Systems Coach (PCC+ACTC), ACTC, Mentor Coaching Foundations (Modules 1, 3, 5), Evaluation Training
 - LinkedIn: linkedin.com/in/cheriesilas/
 
 ### Alex Kudinov — MCC (ICF Master Certified Coach)
 - Enterprise Coach & Managing Director, Tandem Coaching
-- Credentials: ICF MCC, Scrum Alliance CEC, Professional Scrum Trainer
+- Credentials: ICF MCC (since 2018), Scrum Alliance CEC, Professional Scrum Trainer
 - 20+ years in software development, product leadership, consulting (Oil & Gas, Investment Banking, Commodities Trading)
 - MBA, University of Texas at Austin
 - Co-author, *Enterprise Agile Coaching* book
-- Teaches: ACC only
+- Teaches: ACC, Mentor Coaching Foundations (Modules 2, 4, 6)
 - LinkedIn: linkedin.com/in/alexkudinov/
 
 ### Kalina Terzieva — PCC (ICF Professional Certified Coach)
@@ -196,12 +220,108 @@ Four programs for every stage of the coaching journey. Each is independently acc
 - Situational judgment format: coaching scenarios, select best response based on ICF core competencies and ethics
 - Scaled scoring: passing score 460/600
 - Time: 3 hours
+- Delivered online through Pearson VUE; can be taken at testing centers worldwide or via proctored online format
 - Tandem includes exam prep in all programs (ACC: $29 standalone, PCC individual: $49, team coaching: $59)
 - Vast majority of Tandem graduates pass on first attempt
 
 ---
 
 ## Other Services
+
+### Mentor Coaching Foundations (self-paced course)
+An asynchronous, self-paced course that provides the 10-hour education component required for the ICF **Mentor Coach Qualification (MCQ)** via the Credit for Prior Learning (CPL) path. This course teaches coaches how to BE a mentor coach — it is NOT mentor coaching sessions.
+
+- **Price:** $299 (launch price through September 30, 2026) / $397 regular
+- **Format:** Asynchronous, self-paced — 22 video lessons across 6 modules, 15 units
+- **Hours:** 10 ICF Continuing Coach Education (CCE) hours (Core Competency)
+- **Prerequisites:** Active ICF credential (ACC, PCC, or MCC)
+- **Completion time:** ~2 focused weeks (5 hrs/week), flexible pacing, lifetime access
+- **Instructors:** Cherie Silas (MCC) — Modules 1, 3, 5; Alex Kudinov (MCC) — Modules 2, 4, 6
+- **URL:** /mcq/mentor-coaching-foundations/
+- **Guarantee:** 14-day money-back refund (unavailable after certificate issuance)
+
+**What's included:**
+- 22 video lessons, 15 downloadable tools (templates, worksheets, frameworks)
+- 3 auto-scored quizzes (37 questions, ≥80% to pass, retakeable)
+- 6 instructor-graded written submissions (one revision each)
+- Full coaching recording for analysis and feedback practice
+- Certificate of Completion with instructor signatures
+- Attestation letter for graduates meeting CPL criteria (5+ mentees in past 3 years)
+
+**Course modules (aligned to 2024 ICF Mentor Coaching Competencies):**
+
+| Module | Hours | Topic | Competency |
+|--------|-------|-------|------------|
+| 1 | ~2 | Ethical Practice & Role Clarity | MC Competency 1 |
+| 2 | ~1.5 | MC Agreements & Engagement Structure | MC Competency 2 |
+| 3 | ~1.5 | Managing the MC Process | MC Competency 3 |
+| 4 | ~2 | Conducting Formative Appraisals | MC Competency 4 |
+| 5 | ~2 | Facilitating Skill Development | MC Competency 5 |
+| 6 | ~1 | Group Mentor Coaching | MC Competency 6 |
+
+**Target personas:**
+1. **CPL Renewer** — PCC/MCC/renewed ACC with 5+ mentees documented, seeking fastest MCQ route
+2. **Active Mentor Coach** — Currently mentoring candidates, needs formal CCE record before deadline
+3. **MCQ Renewer** — Planning to qualify in 2026 introductory window, wants CCE hours for three-year renewal
+
+**ICF accreditation status:** CCE accreditation currently pending review.
+
+**What this course does NOT include:** BARS/Markers training (taken separately — see Evaluation Training below), 1:1 mentor coaching sessions, or the standard-path synchronous hours. A companion Mentor Coaching Practicum (31 hrs blended) is planned for Q3 2026.
+
+> **⚠️ DO NOT CONFUSE with MCC Mentor Coaching ($3,999).** These are different products for different ICF pathways:
+> - **Mentor Coaching Foundations** ($299) = self-paced EDUCATION on how to be a mentor coach → for the ICF **Mentor Coach Qualification** (MCQ) CPL path
+> - **MCC Mentor Coaching** ($3,999) = live 1-on-1 SESSIONS receiving mentor coaching from MCCs → for coaches pursuing the **MCC credential** via the MCQ (Master Certified Coach Questionnaire) CPL path
+>
+> Both abbreviate to "MCQ" but refer to different ICF programs. Disambiguate by asking: "Are you looking to become a qualified mentor coach, or are you pursuing your MCC credential?"
+
+---
+
+### ICF Evaluation Training (MCQ BARS & Markers)
+Video-based evaluation instrument training for all three MCQ levels, required for the Mentor Coach Qualification. Taught by Cherie Silas, MCC. Includes worked scoring examples, practice exercises, quizzes, written assignments, downloadable scoring tools, and completion certificates.
+
+| Course | Price | Content |
+|--------|-------|---------|
+| ACC BARS | $49 | 5 units, 10 video lessons |
+| PCC Markers | $99 | 5 units, 12 video lessons |
+| MCC BARS | $49 | 5 units, 10 video lessons |
+| Complete Bundle (all three) | $149 | Save $48 vs individual |
+
+- **URL:** /mcq/evaluation-training/
+- **Format:** Self-paced video courses
+- **Important for CPL path:** Evaluation training is always separate and additional — it does NOT count toward the 10 hours of MC-aligned education. You need both the 10-hour education (Mentor Coaching Foundations) AND the BARS/Markers course for each MCQ level you seek.
+- **Important for Standard Path:** Evaluation training MAY be embedded within the 41 hours of education.
+
+---
+
+### ICF Mentor Coach Qualification (MCQ) — Hub Page
+Comprehensive guide to the MCQ requirement taking effect January 1, 2027. URL: /mcq/
+
+**Key dates:**
+- **January 1, 2027:** All ICF credential candidates must work with a mentor coach who holds the MCQ at the matching credential level
+- **April 1, 2027:** ICF Performance Evaluation (SPE) recording/transcript requirement for ACC and PCC Portfolio candidates replaced by formative evaluation through MCQ-qualified mentor coaches (Session Observation Forms + Competency Review Form)
+
+**Two paths to MCQ:**
+- **Standard Path:** 41+ hours MC-aligned education (50%+ synchronous) + BARS/Markers training (may be embedded in the 41 hours)
+- **Credit for Prior Learning (CPL):** 10 hours MC-aligned education (sync or async) + evidence of prior practice (5 credentialed mentees in 3 years or attestation letter) + BARS/Markers training (always separate)
+
+**MCQ levels:** MCQ-ACC, MCQ-PCC, MCQ-MCC — matched to the candidate's target credential. Safe harbor: ACC candidates may be mentored by MCQ-ACC or MCQ-PCC holders.
+
+**Application fees:**
+- Through March 31, 2027: $50 (ICF member) / $125 (non-member) — one fee covers all levels applied for simultaneously
+- From April 1, 2027: $125 (member) / $200 (non-member)
+- Renewal every 3 years: $100 (member) / $200 (non-member) + 10 hrs MC-aligned continuing education
+
+**Tandem MCQ programs:**
+1. Mentor Coaching Foundations ($299) — 10-hour CPL education (live now)
+2. Mentor Coaching Practicum (TBA) — 31-hour blended Standard Path companion (Q3 2026)
+3. Evaluation Training ($49–$149) — BARS and Markers courses (live now)
+
+**Additional MCQ resources:**
+- MCQ 2027 Decision Guide (free flipbook): /flipbook/?book=404bb6a3fc
+- Advanced Accreditation in Mentor Coaching info: /mcq/advanced-accreditation/
+- Mentor Coach Registry: planned for launch July 2026
+
+---
 
 ### ICF Mentor Coaching (standalone)
 For coaches who need mentor coaching hours outside of a Tandem program. Already in a Tandem program? Mentor coaching is included — no need to buy separately.
@@ -213,11 +333,12 @@ For coaches who need mentor coaching hours outside of a Tandem program. Already 
 | MCC Credential | $3,999 | 10 individual | 1-on-1 only |
 
 - **All sessions:** Live Zoom video calls
-- **Group sessions:** Run in 4-week cohorts throughout the year, 4 sessions × 2 hours each (next: May 5, 2026)
+- **Group sessions:** Run in 4-week cohorts throughout the year, 4 sessions × 2 hours each (next cohort: May 5, 2026)
 - **Individual sessions:** Scheduled directly with mentor based on mutual availability
 - **What's included:** Observation and feedback on coaching demonstrations, peer learning (group), personalized feedback (individual), certificate of completion for ICF applications
 - **Mentors:** Cherie Silas (MCC, ICF Credential Assessor, 20+ yrs) and Alex Kudinov (MCC, ICF Credential Assessor)
 - **ICF requirements:** Minimum 10 hours over 3+ months, at least 3 hours individual
+- **MCC via MCQ (Credit for Prior Learning) path:** The MCC Credential package ($3,999, 10 individual hours) fully satisfies the 10-hour Mentor Coach Education requirement for the ICF MCQ Credit for Prior Learning Path. A formal completion certificate is issued for ICF applications. Both mentors are ICF Credential Assessors who know exactly what the MCQ evaluation looks for.
 - URL: /icf/mentor-coaching-acc-pcc-mcc/
 
 **Do you need coaching clients for mentor coaching?** It depends on the format. Individual mentor coaching involves getting feedback on your real coaching sessions with actual clients — so yes, you need clients. Group mentoring (included in certification programs) is live coaching practice in a classroom setting where participants coach peers; no external clients required. If a lead asks whether they need clients before they can start, clarify: group mentoring uses peer practice, but individual mentor coaching requires actual coaching sessions to review.
@@ -230,7 +351,7 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 | Individual | From $189 | 60 minutes | 1:1 virtual sessions, monthly or as needed |
 | Group | From $89 | Per session | Small group (4–8 coaches), virtual, scheduled cohorts |
 
-- **Who it's for:** Credentialed coaches wanting ongoing professional development. ICF strongly recommends supervision for all credentialed coaches and requires it for ACTC. Up to 10 hours count as CCE units toward ICF recertification. EMCC requires it at Senior Practitioner level and above.
+- **Who it's for:** Credentialed coaches wanting ongoing professional development. ICF strongly recommends supervision for all credentialed coaches and requires it for ACTC. Up to 10 hours count as CCE units toward ICF recertification. EMCC requires it at Senior Practitioner level and above. Coaching supervision hours dedicated to mentor coaching practice can count toward MCQ renewal.
 - **Supervision vs. mentor coaching:** Mentor coaching focuses on developing ICF core competencies (skills-based, required for credentialing). Supervision is broader — addresses ethical challenges, client dynamics, wellbeing, and professional development.
 - **Do you need coaching clients for supervision?** Yes. Supervision is reflective practice about your actual work as a coach — sessions examine real client situations, patterns, and dynamics. A coach without active clients has no material to bring to supervision.
 - URL: /coaching-supervision/
@@ -263,7 +384,15 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 
 **Can I buy the Professional Coach Program if I already started ACC separately?** Contact Tandem — they can typically work out credit for prior ACC payments toward the full program.
 
+**What's the difference between Mentor Coaching Foundations ($299) and MCC Mentor Coaching ($3,999)?** Completely different products. Mentor Coaching Foundations is a self-paced online course that teaches you how to be a mentor coach — it satisfies the 10-hour education requirement for the ICF Mentor Coach Qualification (MCQ) via Credit for Prior Learning. MCC Mentor Coaching is 10 hours of live 1-on-1 sessions where you receive mentor coaching from an MCC — it satisfies the mentoring requirement for the MCC credential via the MCQ (Master Certified Coach Questionnaire) Credit for Prior Learning path. If the lead wants to become a qualified mentor coach → Foundations. If the lead wants MCC credential → MCC Mentor Coaching.
+
 **Do I need coaching clients to start mentor coaching or supervision?** Group mentoring (part of certification programs) uses peer practice in the classroom — no external clients needed. Individual mentor coaching and coaching supervision both require you to have actual coaching clients: individual mentor coaching reviews your real sessions, and supervision is reflective practice on your live work with clients.
+
+**Does Tandem keep individual class recordings?** No. Tandem does not keep individual class recordings. Students should access class materials through their course pages on the Community Tandem Coaching Academy (community.tandemcoaching.academy). If they cannot access course materials, escalate to Alex or Cherie to check enrollment access.
+
+**What is the ICF Mentor Coach Qualification (MCQ)?** A new individual qualification from ICF, effective January 1, 2027. It formally recognizes coaches qualified to provide mentor coaching to ICF credential candidates. Two paths: Standard Path (41+ hours education) or Credit for Prior Learning (10 hours education + evidence of prior practice). The MCQ is issued at three levels (ACC, PCC, MCC) matched to the credential level being mentored.
+
+**What changes April 1, 2027?** The ICF Performance Evaluation (SPE) recording-and-transcript requirement for ACC and PCC Portfolio candidates is replaced by formative evaluation through MCQ-qualified mentor coaches, using Session Observation Forms and a Competency Review Form.
 
 ---
 
@@ -280,6 +409,12 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 ---
 
 ## Agent Operations Notes
+
+### Price Positioning in Sales Emails
+Price must appear in every program response — transparency matters at this consideration level. But never lead with price. Always establish at least one value prop specific to the lead's question before stating the price. Structure: answer their question → relevant value (ICF accreditation, MCC instructors, modular flexibility, included mentor coaching) → price as the payoff. The lead should read "all of that for $3,999" not "is $3,999 worth it?"
+
+### Cohort Start Dates — How to Identify Them
+Each training module runs as a **4-session block** (one 2-hour live Zoom session per week for 4 consecutive weeks). A "cohort start" is the **first session** of a new 4-week block — that is when new students can join. The subsequent three weeks (weeks 2, 3, 4) are continuation sessions for students already enrolled in that cohort. When quoting the next available cohort to a lead, always use the start date of the next 4-week block from SCHEDULE.md. Never cite a mid-block date as a cohort start. If SCHEDULE.md is stale or you are unsure which date is a block start, use approximate language like "cohorts run monthly — the next one starts in early [month]" rather than guessing a specific date.
 
 ### Email Subject Lines
 Subject lines must contain only ASCII characters. Never use em dashes (—), en dashes (–), smart quotes (" " ' '), or any other non-ASCII character. Replace em dashes and en dashes with hyphens (-) and smart quotes with straight quotes. Non-ASCII characters are double-encoded by some mail clients, producing garbled output (e.g., `Ã¢Â€Â"`).
@@ -310,72 +445,84 @@ Include `Reply: true` in `[HANDOFF: sales→mailman]` ONLY when responding to a 
 ### Booking Link vs Contact Form
 The `/contact-us` page is the contact form where leads submit new inquiries — do not send leads back there when they are ready to book a call. For scheduling a consultation call, use the direct booking calendar: https://booking.tandemcoach.co/booking?t=s&uuid=6bfbbeab-eaa1-4a3f-b5a7-a05546bad443
 
+### ACC Instructor Credentials — Accurate Representation
+When describing ACC program instructors, never make blanket claims that all instructors hold the highest ICF credential (MCC). Accurately represent the instructor team: Cherie Silas and Alex Kudinov are MCCs; Kalina Terzieva and Karen Bruns are PCCs. The MCC-level distinction applies specifically to mentor coaching (included in the program), not to all instruction. Use the full instructor list accurately, or describe the program as taught by MCCs and PCCs.
+
+### ACC Program Format — Always Mention Self-Paced Component
+When describing the ACC program format to leads, always mention that a significant portion of the learning is self-paced online content (not just live sessions). The ACC is a hybrid program: self-paced online modules plus live Zoom cohort sessions.
+
 ---
 
 ## Email Classification Taxonomy
 
 Mailman classifies every inbound email into exactly one canonical label from
-this taxonomy. Labels follow the pattern `class/{category}` or
-`class/{category}/{subcategory}`. Pick the most specific applicable label. If
-no label fits, use `class/other` and report it to chief so a new taxonomy
+this taxonomy. Labels follow the pattern `MrGru/{category}` or
+`MrGru/{category}/{subcategory}`. Pick the most specific applicable label. If
+no label fits, use `MrGru/other` and report it to chief so a new taxonomy
 entry can be added.
 
 The `hive_share_target` column indicates which humans care about this category
 (`alex`, `cherie`, or both). When set, classified emails are surfaced in the
 recipient's Hive view via Firestore assignment. The `digest_priority` column
 (0 / 1 / 2) controls whether the email appears in the daily digest — 0 skips,
-1 is normal, 2 is high priority.
+1 is normal, 2 is high priority. The `auto_archive` flag (📪 = archive,
+📬 = stay in inbox) controls whether the host removes the `INBOX` label after
+classification — noise labels archive automatically so the main inbox stays
+focused on human-needs items.
 
 ### Leads (prospective clients)
-- `class/lead/inquiry` — General coaching/program inquiry from a new prospect (hive: cherie+alex, priority 2)
-- `class/lead/offer` — Inbound RFP or paid engagement offer (hive: cherie+alex, priority 2)
+- 📬 `MrGru/lead/inquiry` — General coaching/program inquiry from a new prospect (hive: cherie+alex, priority 2)
+- 📬 `MrGru/lead/offer` — Inbound RFP or paid engagement offer (hive: cherie+alex, priority 2)
 
 ### Clients (current or past)
-- `class/client/active` — Email from a current paying client (hive: cherie+alex, priority 2)
-- `class/client/dormant` — Email from a past client who has not engaged recently (hive: cherie+alex, priority 1)
+- 📬 `MrGru/client/active` — Email from a current paying client (hive: cherie+alex, priority 2)
+- 📬 `MrGru/client/dormant` — Email from a past client who has not engaged recently (hive: cherie+alex, priority 1)
 
 ### Financial
-- `class/financial/receipt` — Payment receipt, invoice confirmation, purchase acknowledgment (hive: cherie, priority 1)
-- `class/financial/bill` — Upcoming bill, subscription renewal, payment due notice (hive: cherie, priority 2)
-- `class/financial/refund` — Refund confirmation or credit note (hive: cherie, priority 1)
+- 📪 `MrGru/financial/receipt` — Payment receipt, invoice confirmation, purchase acknowledgment (hive: cherie, priority 1, archived)
+- 📬 `MrGru/financial/bill` — Upcoming bill, subscription renewal, payment due notice (hive: cherie, priority 2)
+- 📬 `MrGru/financial/refund` — Refund confirmation or credit note (hive: cherie, priority 1)
 
 ### Vendors
-- `class/vendor/cold` — Unsolicited vendor outreach or cold sales email (no hive share, priority 0)
-- `class/vendor/warm` — Ongoing vendor conversation or follow-up from a known contact (hive: cherie, priority 1)
+- 📪 `MrGru/vendor/cold` — Unsolicited vendor outreach or cold sales email (no hive share, priority 0, archived)
+- 📬 `MrGru/vendor/warm` — Ongoing vendor conversation or follow-up from a known contact (hive: cherie, priority 1)
 
 ### Procurement (RFPs from vendor portals)
-- `class/procurement/rfp` — Request for Proposal received via procurement channel (hive: cherie+alex, priority 2)
-- `class/procurement/rfq` — Request for Quotation received via procurement channel (hive: cherie+alex, priority 2)
+- 📪 `MrGru/procurement/rfp` — Request for Proposal received via procurement channel (hive: cherie+alex, priority 2, archived — procurement minion handles)
+- 📪 `MrGru/procurement/rfq` — Request for Quotation received via procurement channel (hive: cherie+alex, priority 2, archived — procurement minion handles)
 
 ### Meeting assets
-- `class/meeting-assets/zoom` — Zoom meeting invitation, link, or access credential (no hive share, priority 0)
-- `class/meeting-assets/recording` — Zoom or video recording delivery notification (hive: alex, priority 1)
+- 📪 `MrGru/meeting-assets/zoom` — Zoom meeting invitation, link, or access credential (no hive share, priority 0, archived)
+- 📬 `MrGru/meeting-assets/recording` — Zoom or video recording delivery notification (hive: alex, priority 1)
 
 ### Internal
-- `class/internal/team` — Internal team communication from a known colleague (no hive share, priority 0)
-- `class/internal/cofounder` — Email from a co-founder or executive partner (hive: cherie+alex, priority 2)
+- 📬 `MrGru/internal/team` — Internal team communication from a known colleague (no hive share, priority 0)
+- 📬 `MrGru/internal/cofounder` — Email from a co-founder or executive partner (hive: cherie+alex, priority 2)
 
 ### Legal
-- `class/legal/contract` — Contract, agreement, or legal document (hive: cherie+alex, priority 2)
-- `class/legal/notice` — Legal notice, cease-and-desist, or compliance communication (hive: cherie+alex, priority 2)
+- 📬 `MrGru/legal/contract` — Contract, agreement, or legal document (hive: cherie+alex, priority 2)
+- 📬 `MrGru/legal/notice` — Legal notice, cease-and-desist, or compliance communication (hive: cherie+alex, priority 2)
 
 ### Recruiting
-- `class/recruiting/applicant` — Job application or resume submission (hive: cherie, priority 1)
-- `class/recruiting/outreach` — Recruiter outreach or headhunting email (no hive share, priority 0)
+- 📬 `MrGru/recruiting/applicant` — Job application or resume submission (hive: cherie, priority 1)
+- 📪 `MrGru/recruiting/outreach` — Recruiter outreach or headhunting email (no hive share, priority 0, archived)
 
 ### Newsletters
-- `class/newsletter/general` — Newsletter or marketing email from an external sender (no hive share, priority 0)
-- `class/newsletter/digest` — Curated digest or roundup email from a known publication (no hive share, priority 0)
+- 📪 `MrGru/newsletter/general` — Newsletter or marketing email from an external sender (no hive share, priority 0, archived)
+- 📪 `MrGru/newsletter/digest` — Curated digest or roundup email from a known publication (no hive share, priority 0, archived)
 
 ### Notifications
-- `class/notification/system` — Automated system notification (CI/CD, monitoring, alerts) (no hive share, priority 0)
-- `class/notification/calendar` — Calendar invite, rescheduling notice, event confirmation (no hive share, priority 0)
+- 📪 `MrGru/notification/system` — Automated system notification (CI/CD, monitoring, alerts) (no hive share, priority 0, archived)
+- 📬 `MrGru/notification/calendar` — Calendar invite, rescheduling notice, event confirmation (no hive share, priority 0)
+- 📪 `MrGru/notification/monitoring` — Automated site health, SEO audit, uptime, or performance reports (hive: alex, priority 1, archived)
 
 ### Fallbacks
-- `class/personal` — Personal or family email unrelated to business operations (no hive share, priority 0)
-- `class/other` — Does not fit any defined category; triggers taxonomy review via chief (no hive share, priority 0)
+- 📬 `MrGru/personal` — Personal or family email unrelated to business operations (no hive share, priority 0)
+- 📬 `MrGru/other` — Does not fit any defined category; triggers taxonomy review via chief (no hive share, priority 0)
 
 **Rules:**
-- Exactly one `class/*` label per message — the host enforces this via `replaceClassLabelsOnThread`.
-- If you corrected a prior classification, chief should route a `route_lesson` to mailman with a rule like: `"When sender is X, classify as class/Y"`. The host picks up the lesson and backfills matching past emails (up to 25 by default; over that triggers an approval request in `#gru-chief`).
-- Never invent labels outside this list. If something doesn't fit, use `class/other` and flag it.
+- Exactly one `MrGru/*` label per message — the host enforces this via `replaceClassLabelsOnThread`.
+- If you corrected a prior classification, chief should route a `route_lesson` to mailman with a rule like: `"When sender is X, classify as MrGru/Y"`. The host picks up the lesson and backfills matching past emails (up to 25 by default; over that triggers an approval request in `#gru-chief`).
+- Never invent labels outside this list. If something doesn't fit, use `MrGru/other` and flag it.
+- Classify all emails from Labrika (info@labrika.com or any @labrika.com sender) as `MrGru/notification/monitoring`.
+- Classify all emails from Forwardly (any @forwardly.com sender or subject containing 'Forwardly') as `MrGru/notification/system`. Auto-archive. Do not escalate.

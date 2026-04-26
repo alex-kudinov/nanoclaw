@@ -59,8 +59,10 @@ fi
 echo "[3/5] Creating PostgreSQL role nanoclaw_contador..."
 
 PSQL="/opt/homebrew/Cellar/postgresql@16/16.13/bin/psql"
+# Connect via localhost — PG runs on the same machine as this script.
+# Containers reach PG via bridge IP (192.168.64.1), but deploy runs on the host.
 PGPASSWORD="${BUSINESS_DB_PASS_ADMIN:-8oABTYn3O58q16bct9nvZcyeVwaZi4kP}" $PSQL \
-  -h 192.168.64.1 -U nanoclaw_admin -d nanoclaw_business -c "
+  -h localhost -U nanoclaw_admin -d nanoclaw_business -c "
 DO \$\$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'nanoclaw_contador') THEN

@@ -196,6 +196,34 @@ Mode: DRY RUN (say "send it for real" to issue)
 Reply "Approved" to run dry-run, or reply with corrections.
 ```
 
+## Activity Logging (Plutio)
+
+After successful certificate issuance (Phase 4 — Live Send), log the activity to the recipient's Plutio profile. First, look up or create the person by email, then log the activity:
+
+```bash
+# Step 1: Upsert person to get PLUTIO_ID
+PLUTIO_RESULT=$(PATH=/workspace/extra/plutio/tools/plutio:$PATH \
+  TOOLBOX_LIB=/workspace/extra/toolbox-lib \
+  TOOLBOX_PROJECT_ROOT=/workspace/extra/plutio \
+  bash /workspace/extra/plutio/tools/plutio/upsert-person.sh \
+  --email "${RECIPIENT_EMAIL}" \
+  --first "${FIRST_NAME}" \
+  --last "${LAST_NAME}" 2>/dev/null) && \
+PLUTIO_ID=$(echo "$PLUTIO_RESULT" | grep -o '"_id":"[^"]*"' | cut -d'"' -f4)
+
+# Step 2: Log the certificate issuance
+if [ -n "$PLUTIO_ID" ]; then
+  PATH=/workspace/extra/plutio/tools/plutio:$PATH \
+    TOOLBOX_LIB=/workspace/extra/toolbox-lib \
+    TOOLBOX_PROJECT_ROOT=/workspace/extra/plutio \
+    bash /workspace/extra/plutio/tools/plutio/log-activity.sh \
+    --person-id "${PLUTIO_ID}" \
+    --entry "[CERTIFICATE] ${PRESET_CODE} issued" 2>/dev/null || true
+fi
+```
+
+Non-blocking — if Plutio fails, continue without error. Only log on `--send` (not `--dry-run`).
+
 ## Critical Rules
 
 1. ONLY use `issue-certificate.sh` to issue certificates. NEVER call lower-level API scripts directly (no `add-credentials.sh`, no `create-campaign.sh`, no raw curl).

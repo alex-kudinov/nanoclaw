@@ -1,10 +1,28 @@
 # NanoClaw
 
-Personal Claude assistant. See [README.md](README.md) for philosophy and setup. See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for architecture decisions.
+Personal Claude assistant. See [README.md](README.md) for philosophy and setup. See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for architecture decisions. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system map.
 
 ## Quick Context
 
 Single Node.js process with skill-based channel system. Channels (WhatsApp, Telegram, Slack, Discord, Gmail) are skills that self-register at startup. Messages route to Claude Agent SDK running in containers (Linux VMs). Each group has isolated filesystem and memory.
+
+Inbound Gmail messages flow through a **bidirectional classification pipeline**: mailman emits `classify_label_write` IPCs → host writes `email_classifications` rows → Gmail labels (`MrGru/*`) → INBOX removal for `auto_archive=true` taxonomy rows → Hive Firestore `conversations/{threadId}` doc (for labels with a `hive_share_target`) → per-recipient daily digest. Self-learning closes the loop: chief's `route_lesson` pipeline (Slack corrections) and `gmail-label-poll` (operator label drags) both feed `classify-backfill.ts`. See `~/.claude/projects/-Users-xbohdpukc-dev-NanoClaw/memory/project_bidirectional_classification.md`.
+
+## Database Discovery
+
+Three databases. Read the schema reference BEFORE writing any query — always look up column names from the schema file.
+
+| Database | Type | Schema Reference | Query Examples | Discovery |
+|----------|------|-----------------|----------------|-----------|
+| `store/messages.db` | SQLite | `agent_docs/messages-db-schema.md` | `agent_docs/messages-db-queries.md` | `mcp__toolbox__run_tool db/db-schema --db store/messages.db` |
+| `data/business/business.db` | SQLite | `agent_docs/business-db-schema.md` | — | `mcp__toolbox__run_tool db/db-schema --db data/business/business.db` |
+| `nanoclaw_business` | Postgres | `agent_docs/nanoclaw-business-pg-schema.md` | `agent_docs/business-pg-queries.md` | `psql nanoclaw_business -c '\dt+'` |
+
+**Rules:**
+- Read the relevant schema file before writing any query
+- If a schema file is missing or stale: regenerate with `db/db-schema --db <path> --refresh` (SQLite) or `pg_dump --schema-only` (Postgres)
+- Agents in containers: schema files are at `/workspace/extra/agent_docs/`
+
 
 ## Key Files
 
@@ -17,7 +35,18 @@ Single Node.js process with skill-based channel system. Channels (WhatsApp, Tele
 | `src/config.ts` | Trigger pattern, paths, intervals |
 | `src/container-runner.ts` | Spawns agent containers with mounts |
 | `src/task-scheduler.ts` | Runs scheduled tasks |
-| `src/db.ts` | SQLite operations |
+| `src/db.ts` | SQLite operations (router_state, registered_groups, messages, jobs) |
+| `src/business-db.ts` | Postgres wrapper for `nanoclaw_business` (role-based, pg.Pool) |
+| `src/classify-ipc-handlers.ts` | Inline handler for `classify_*` IPC namespace |
+| `src/gmail-labels.ts` | Gmail label CRUD (ensureLabel, replaceClassLabelsOnThread) |
+| `src/hive-bridge.ts` | Firebase Admin SDK wrapper for Hive Firestore; `HiveConversationNotFoundError` |
+| `src/classify-backfill.ts` | Lesson-driven backfill (sender/subject rules → email_classifications) |
+| `src/hive-sync-reaper.ts` | 15-min cron retry worker for failed Hive writes |
+| `src/gmail-label-poll.ts` | 5-min cron to detect Gmail-UI label drags → classify_correction_detected |
+| `src/digest-generator.ts` + `src/digest-delivery.ts` | Daily per-recipient email digest |
+| `data/business/classification-schema.sql` | Taxonomy + email_classifications DDL + 25-label seed |
+| `setup/gmail/CUTOVER-info-forwarding.md` | Operational runbook for retiring info@ forwarding |
+| `scripts/apply-gmail-filter.ts` | Export/apply/dry-run Gmail filter + auto-forwarding rollback |
 | `groups/{name}/CLAUDE.md` | Per-group memory (isolated) |
 | `container/skills/agent-browser.md` | Browser automation tool (available to all agents via Bash) |
 
@@ -34,7 +63,7 @@ Single Node.js process with skill-based channel system. Channels (WhatsApp, Tele
 
 ## Development
 
-Run commands directly—don't tell the user to run them.
+Run commands directly — execute them yourself rather than instructing the user.
 
 ```bash
 npm run dev          # Run with hot reload

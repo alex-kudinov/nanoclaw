@@ -1,0 +1,129 @@
+{
+  "id": "zoom-classes",
+  "name": "Zoom Classes → Gru Erudito",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zoom-classes",
+        "responseMode": "responseNode",
+        "options": { "rawBody": true }
+      },
+      "id": "trigger-zoom",
+      "name": "Zoom Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "zoom-classes"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst item = $input.first().json;\nconst headers = item.headers || {};\nconst signature = headers['x-zm-signature'];\nconst timestamp = headers['x-zm-request-timestamp'];\nconst body = item.body || {};\n\n// CRC challenges don't carry a signature — let them through\nif (body.event === 'endpoint.url_validation') {\n  return [{ json: item }];\n}\n\n// Reject if signature header is missing\nif (!signature || !timestamp) {\n  return [];\n}\n\n// Verify: v0=HMAC-SHA256(secret, \"v0:{timestamp}:{rawBody}\")\nconst secret = 'XaeazvMFRjC3qu6ddDOheQ';\nconst rawBody = typeof item.rawBody === 'string' ? item.rawBody : JSON.stringify(body);\nconst message = `v0:${timestamp}:${rawBody}`;\nconst expected = 'v0=' + crypto.createHmac('sha256', secret).update(message).digest('hex');\n\nif (signature !== expected) {\n  return [];\n}\n\n// Reject stale requests (>5 min old)\nconst now = Math.floor(Date.now() / 1000);\nif (Math.abs(now - parseInt(timestamp)) > 300) {\n  return [];\n}\n\nreturn [{ json: item }];"
+      },
+      "id": "validate-sig",
+      "name": "Validate Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "crc-check",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "endpoint.url_validation",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-crc",
+      "name": "Is CRC Challenge?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst body = $input.first().json.body || $input.first().json;\nconst plainToken = body.payload.plainToken;\nconst secret = 'XaeazvMFRjC3qu6ddDOheQ';\nconst hmac = crypto.createHmac('sha256', secret).update(plainToken).digest('hex');\nreturn [{ json: { plainToken, encryptedToken: hmac, hashAlgorithm: 'sha256' } }];"
+      },
+      "id": "compute-crc",
+      "name": "Compute HMAC",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond-crc",
+      "name": "CRC Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"received\"}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "respond-event",
+      "name": "ACK Event",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://100.115.115.206:8088/hook/zoom-class",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Webhook-Secret", "value": "d9f8ae0d9261b747ea78145101f4d5588d5c51006c86a34b" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body || $json) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "relay-to-nanoclaw",
+      "name": "Relay to NanoClaw",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 440]
+    }
+  ],
+  "connections": {
+    "Zoom Webhook": {
+      "main": [[{ "node": "Validate Signature", "type": "main", "index": 0 }]]
+    },
+    "Validate Signature": {
+      "main": [[{ "node": "Is CRC Challenge?", "type": "main", "index": 0 }]]
+    },
+    "Is CRC Challenge?": {
+      "main": [
+        [{ "node": "Compute HMAC", "type": "main", "index": 0 }],
+        [{ "node": "ACK Event", "type": "main", "index": 0 }]
+      ]
+    },
+    "Compute HMAC": {
+      "main": [[{ "node": "CRC Response", "type": "main", "index": 0 }]]
+    },
+    "ACK Event": {
+      "main": [[{ "node": "Relay to NanoClaw", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

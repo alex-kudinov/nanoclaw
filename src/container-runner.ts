@@ -16,6 +16,7 @@ import {
   DATA_DIR,
   GROUPS_DIR,
   IDLE_TIMEOUT,
+  SPAWN_TIMEOUT,
   TIMEZONE,
 } from './config.js';
 import { readEnvFile } from './env.js';
@@ -29,9 +30,54 @@ import {
 import { validateAdditionalMounts } from './mount-security.js';
 import { RegisteredGroup } from './types.js';
 
+/**
+ * Resolve an OAuth token from the token pool via round-robin rotation.
+ * Reads data/.token-pool.json (array of {name, token} entries) and
+ * data/.token-cursor (integer index). Each call advances the cursor
+ * so consecutive container spawns spread across all available tokens.
+ * Returns undefined if the pool file is missing/empty.
+ */
+export function resolveOAuthToken(): string | undefined {
+  const poolFile = path.join(process.cwd(), 'data', '.token-pool.json');
+  const cursorFile = path.join(process.cwd(), 'data', '.token-cursor');
+
+  try {
+    const raw = fs.readFileSync(poolFile, 'utf-8');
+    const pool: Array<{ name: string; token: string }> = JSON.parse(raw);
+    if (!pool.length) return undefined;
+
+    let cursor = 0;
+    try {
+      cursor = parseInt(fs.readFileSync(cursorFile, 'utf-8').trim(), 10) || 0;
+    } catch {
+      // first run — start at 0
+    }
+
+    const idx = cursor % pool.length;
+    const entry = pool[idx];
+    const next = (cursor + 1) % pool.length;
+
+    try {
+      fs.writeFileSync(cursorFile, String(next), 'utf-8');
+    } catch {
+      // non-fatal — rotation still works, just won't advance
+    }
+
+    logger.info(
+      { account: entry.name, index: idx, poolSize: pool.length },
+      'Token pool rotation',
+    );
+    return entry.token;
+  } catch (err) {
+    logger.debug({ err }, 'Token pool not available, will fall back to .env');
+  }
+  return undefined;
+}
+
 // Sentinel markers for robust output parsing (must match agent-runner)
 const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
 const OUTPUT_END_MARKER = '---NANOCLAW_OUTPUT_END---';
+const HEARTBEAT_MARKER = '---NANOCLAW_HEARTBEAT---';
 
 export interface ContainerInput {
   prompt: string;
@@ -201,6 +247,9 @@ function buildVolumeMounts(
   fs.mkdirSync(path.join(groupIpcDir, 'messages'), { recursive: true });
   fs.mkdirSync(path.join(groupIpcDir, 'tasks'), { recursive: true });
   fs.mkdirSync(path.join(groupIpcDir, 'input'), { recursive: true });
+  // ack/ — agent-runner writes one file per piped message it reads,
+  // so the host can remove the message from its dead-letter tracking.
+  fs.mkdirSync(path.join(groupIpcDir, 'ack'), { recursive: true });
   mounts.push({
     hostPath: groupIpcDir,
     containerPath: '/workspace/ipc',
@@ -262,10 +311,13 @@ function buildVolumeMounts(
 
 /**
  * Build secrets payload for the container.
- * Auth: CLAUDE_CODE_OAUTH_TOKEN from .env (long-lived setup-token).
+ * Auth: CLAUDE_CODE_OAUTH_TOKEN resolved from cctoken rotation
+ * (~/.shared/.claude-tokens.json), falling back to .env.
  * CLAUDE_CONFIG_DIR points to the mounted .claude dir for settings/skills.
  */
-function readSecrets(groupFolder?: string): Record<string, string> {
+async function readSecrets(
+  groupFolder?: string,
+): Promise<Record<string, string>> {
   const configured = readEnvFile([
     'CLAUDE_CODE_OAUTH_TOKEN',
     'BUSINESS_DB_HOST',
@@ -284,21 +336,49 @@ function readSecrets(groupFolder?: string): Record<string, string> {
     'BUSINESS_DB_ROLE_MAILMAN',
     'BUSINESS_DB_PASS_MAILMAN',
     'STRIPE_RESTRICTED_KEY',
+    'STRIPE_SECRET_KEY_ALT',
     'SHEETS_PAYMENTS_ID',
     'SHEETS_ROSTER_ID',
     'OBSIDIAN_API_KEY',
+    'BUSINESS_DB_ROLE_BOOKING',
+    'BUSINESS_DB_PASS_BOOKING',
+    'BUSINESS_DB_ROLE_PROCUREMENT',
+    'BUSINESS_DB_PASS_PROCUREMENT',
+    'TRAFFT_API_URL',
+    'TRAFFT_CLIENT_ID',
+    'TRAFFT_CLIENT_SECRET',
+    'PLUTIO_API_CLIENTID',
+    'PLUTIO_API_CLIENTSECRET',
+    'PLUTIO_SUBDOMAIN',
+    'BONFIRE_USERNAME',
+    'BONFIRE_PASSWORD',
+    'HEARTBEAT_API_KEY',
+    'EMAIL_USER',
+    'EMAIL_PASS',
   ]);
 
-  const oauthToken = configured.CLAUDE_CODE_OAUTH_TOKEN;
+  const oauthToken = resolveOAuthToken() || configured.CLAUDE_CODE_OAUTH_TOKEN;
   if (!oauthToken) {
     throw new Error(
-      'CLAUDE_CODE_OAUTH_TOKEN not set in .env — run `claude setup-token` and add the token to .env',
+      'CLAUDE_CODE_OAUTH_TOKEN not resolved — ensure ~/.shared/.claude-tokens.json exists (source ~/.shared/.shared_shell.sh) or set in .env',
     );
+  }
+
+  // Pass the full token pool so the container can retry on rate-limit
+  let tokenPool = '';
+  try {
+    tokenPool = fs.readFileSync(
+      path.join(process.cwd(), 'data', '.token-pool.json'),
+      'utf-8',
+    );
+  } catch {
+    // pool unavailable — single-token mode
   }
 
   const secrets: Record<string, string> = {
     CLAUDE_CONFIG_DIR: '/home/node/.claude',
     CLAUDE_CODE_OAUTH_TOKEN: oauthToken,
+    ...(tokenPool ? { CLAUDE_TOKEN_POOL: tokenPool } : {}),
   };
 
   // Add per-agent business DB credentials
@@ -331,10 +411,25 @@ function readSecrets(groupFolder?: string): Record<string, string> {
         role: configured.BUSINESS_DB_ROLE_MAILMAN || '',
         pass: configured.BUSINESS_DB_PASS_MAILMAN || '',
       },
+      booking: {
+        role: configured.BUSINESS_DB_ROLE_BOOKING || '',
+        pass: configured.BUSINESS_DB_PASS_BOOKING || '',
+      },
+      procurement: {
+        role: configured.BUSINESS_DB_ROLE_PROCUREMENT || '',
+        pass: configured.BUSINESS_DB_PASS_PROCUREMENT || '',
+      },
     };
     const creds = roleMap[groupFolder];
     if (creds?.role && creds?.pass) {
       secrets.BUSINESS_DB_URL = `postgresql://${creds.role}:${encodeURIComponent(creds.pass)}@${dbHost}:${dbPort || '5432'}/${dbName}`;
+      const agent = groupFolder ?? 'unknown';
+      if (!/^[a-z0-9_-]+$/i.test(agent)) {
+        throw new Error(`Unsafe groupFolder for PGOPTIONS: ${agent}`);
+      }
+      const q = (v: string) =>
+        `'${v.replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
+      secrets.PGOPTIONS = `-c app.current_agent=${q(agent)} -c app.current_agent_role=${q(creds.role)}`;
     }
   }
 
@@ -346,10 +441,95 @@ function readSecrets(groupFolder?: string): Record<string, string> {
     }
   }
 
+  // Inject Trafft API credentials for Booking Coordinator
+  if (groupFolder === 'booking') {
+    if (configured.TRAFFT_API_URL) {
+      secrets.TRAFFT_API_URL = configured.TRAFFT_API_URL;
+    }
+    if (configured.TRAFFT_CLIENT_ID) {
+      secrets.TRAFFT_CLIENT_ID = configured.TRAFFT_CLIENT_ID;
+    }
+    if (configured.TRAFFT_CLIENT_SECRET) {
+      secrets.TRAFFT_CLIENT_SECRET = configured.TRAFFT_CLIENT_SECRET;
+    }
+  }
+
+  // Inject credentials + path overrides for Course Session Coordinator
+  if (groupFolder === 'courses') {
+    const hbKey = configured.HEARTBEAT_API_KEY;
+    if (hbKey) secrets.HEARTBEAT_API_KEY = hbKey;
+    if (configured.EMAIL_USER) secrets.EMAIL_USER = configured.EMAIL_USER;
+    if (configured.EMAIL_PASS) secrets.EMAIL_PASS = configured.EMAIL_PASS;
+    // Container path overrides for distribute_session.py
+    secrets.INSTRUCTORS_DIR = '/workspace/extra/instructors';
+    secrets.EMAIL_TOOL = '/workspace/extra/email/send-email.sh';
+    secrets.TOOLBOX_ROOT = '/workspace/extra';
+  }
+
+  // Inject Plutio credentials for agents that use Plutio tools
+  if (['inbox', 'booking', 'sales', 'certifier'].includes(groupFolder || '')) {
+    for (const key of [
+      'PLUTIO_API_CLIENTID',
+      'PLUTIO_API_CLIENTSECRET',
+      'PLUTIO_SUBDOMAIN',
+    ] as const) {
+      if (configured[key]) secrets[key] = configured[key];
+    }
+  }
+
+  // Inject Bonfire credentials + browser stealth config for Procurement Scout
+  if (groupFolder === 'procurement') {
+    if (configured.BONFIRE_USERNAME) {
+      secrets.BONFIRE_USERNAME = configured.BONFIRE_USERNAME;
+    }
+    if (configured.BONFIRE_PASSWORD) {
+      secrets.BONFIRE_PASSWORD = configured.BONFIRE_PASSWORD;
+    }
+    // CDP bridge: connect to a real Chrome on the Mac Mini host.
+    // Chrome runs with a persistent profile (cookies, history, cache) which
+    // bypasses Cloudflare bot detection on Bonfire agency subdomains.
+    // Port 9250 is forwarded to the container network via socat.
+    // Fetch the dynamic WebSocket URL from Chrome's /json/version endpoint.
+    const CDP_HOST = '192.168.64.1';
+    const CDP_PORT = 9250;
+    let cdpUrl = '';
+    try {
+      const resp = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/version`);
+      const data = (await resp.json()) as { webSocketDebuggerUrl?: string };
+      cdpUrl = data.webSocketDebuggerUrl || '';
+    } catch {
+      logger.warn(
+        'Procurement CDP bridge unreachable — browser scraping will fall back to in-container',
+      );
+    }
+    if (cdpUrl) {
+      const procGroupDir = resolveGroupFolderPath(groupFolder);
+      const browserConfigPath = path.join(procGroupDir, 'agent-browser.json');
+      // Downloads save to the HOST filesystem (Chrome runs on host).
+      // Point to the host vault path so PDFs land where the container can read them.
+      const hostVaultPath = path.join(
+        os.homedir(),
+        'Vaults',
+        'My Notes',
+        'Tandem',
+        'Procurement',
+      );
+      fs.writeFileSync(
+        browserConfigPath,
+        JSON.stringify({ cdp: cdpUrl, downloadPath: hostVaultPath }, null, 2) +
+          '\n',
+      );
+      secrets.AGENT_BROWSER_CONFIG = '/workspace/group/agent-browser.json';
+    }
+  }
+
   // Inject Stripe + Sheets secrets for El Contador
   if (groupFolder === 'contador') {
     if (configured.STRIPE_RESTRICTED_KEY) {
       secrets.STRIPE_RESTRICTED_KEY = configured.STRIPE_RESTRICTED_KEY;
+    }
+    if (configured.STRIPE_SECRET_KEY_ALT) {
+      secrets.STRIPE_SECRET_KEY_ALT = configured.STRIPE_SECRET_KEY_ALT;
     }
     if (configured.SHEETS_PAYMENTS_ID) {
       secrets.SHEETS_PAYMENTS_ID = configured.SHEETS_PAYMENTS_ID;
@@ -402,6 +582,7 @@ export async function runContainerAgent(
   input: ContainerInput,
   onProcess: (proc: ChildProcess, containerName: string) => void,
   onOutput?: (output: ContainerOutput) => Promise<void>,
+  onActivity?: () => void,
 ): Promise<ContainerOutput> {
   const startTime = Date.now();
 
@@ -439,6 +620,9 @@ export async function runContainerAgent(
   const logsDir = path.join(groupDir, 'logs');
   fs.mkdirSync(logsDir, { recursive: true });
 
+  // Resolve secrets before spawning (async for CDP URL fetch)
+  const resolvedSecrets = await readSecrets(input.groupFolder);
+
   return new Promise((resolve) => {
     const container = spawn(CONTAINER_RUNTIME_BIN, containerArgs, {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -452,7 +636,7 @@ export async function runContainerAgent(
     let stderrTruncated = false;
 
     // Pass secrets via stdin (never written to disk or mounted as files)
-    input.secrets = readSecrets(input.groupFolder);
+    input.secrets = resolvedSecrets;
     container.stdin.write(JSON.stringify(input));
     container.stdin.end();
     // Remove secrets from input so they don't appear in logs
@@ -466,24 +650,54 @@ export async function runContainerAgent(
     container.stdout.on('data', (data) => {
       const chunk = data.toString();
 
-      // Always accumulate for logging
+      // Any stdout chunk (heartbeat, output, log line) is proof-of-life for
+      // the GroupQueue freeze detector. The agent-runner emits a heartbeat
+      // every 30s; this guarantees lastOutputAt updates well within the
+      // STALE_OUTPUT_THRESHOLD_MS window even when the agent is busy thinking.
+      if (onActivity) {
+        try {
+          onActivity();
+        } catch (err) {
+          logger.debug({ err }, 'onActivity callback threw');
+        }
+      }
+
+      // Strip heartbeat markers before accumulating into stdout (prevents log pollution)
+      const cleanChunk = chunk.replace(/---NANOCLAW_HEARTBEAT---\n?/g, '');
+
+      // Always accumulate for logging (using cleaned chunk)
       if (!stdoutTruncated) {
         const remaining = CONTAINER_MAX_OUTPUT_SIZE - stdout.length;
-        if (chunk.length > remaining) {
-          stdout += chunk.slice(0, remaining);
+        if (cleanChunk.length > remaining) {
+          stdout += cleanChunk.slice(0, remaining);
           stdoutTruncated = true;
           logger.warn(
             { group: group.name, size: stdout.length },
             'Container stdout truncated due to size limit',
           );
         } else {
-          stdout += chunk;
+          stdout += cleanChunk;
         }
       }
 
       // Stream-parse for output markers
       if (onOutput) {
         parseBuffer += chunk;
+
+        // Strip heartbeat markers and reset timers (proves agent is alive)
+        if (parseBuffer.includes(HEARTBEAT_MARKER)) {
+          parseBuffer = parseBuffer.split(HEARTBEAT_MARKER + '\n').join('');
+          if (!hadStreamingOutput && !spawnTimedOut) {
+            clearTimeout(spawnTimer);
+            spawnTimer = setTimeout(spawnTimeoutFn, spawnTimeoutMs);
+            logger.debug(
+              { group: group.name },
+              'Heartbeat received, reset spawn timer',
+            );
+          }
+          resetTimeout();
+        }
+
         let startIdx: number;
         while ((startIdx = parseBuffer.indexOf(OUTPUT_START_MARKER)) !== -1) {
           const endIdx = parseBuffer.indexOf(OUTPUT_END_MARKER, startIdx);
@@ -498,6 +712,9 @@ export async function runContainerAgent(
             const parsed: ContainerOutput = JSON.parse(jsonStr);
             if (parsed.newSessionId) {
               newSessionId = parsed.newSessionId;
+            }
+            if (!hadStreamingOutput) {
+              clearTimeout(spawnTimer);
             }
             hadStreamingOutput = true;
             // Activity detected — reset the hard timeout
@@ -538,6 +755,7 @@ export async function runContainerAgent(
     });
 
     let timedOut = false;
+    let spawnTimedOut = false;
     let hadStreamingOutput = false;
     const configTimeout = group.containerConfig?.timeout || CONTAINER_TIMEOUT;
     // Grace period: hard timeout must be at least IDLE_TIMEOUT + 30s so the
@@ -563,6 +781,25 @@ export async function runContainerAgent(
 
     let timeout = setTimeout(killOnTimeout, timeoutMs);
 
+    // Spawn timeout: fail fast if no output markers arrive within window.
+    // This catches containers that boot but never produce output (bad image,
+    // missing auth, agent-runner crash). Cleared on first streaming output
+    // or heartbeat. Per-group override via containerConfig.spawnTimeout.
+    const spawnTimeoutMs = group.containerConfig?.spawnTimeout || SPAWN_TIMEOUT;
+    const spawnTimeoutFn = () => {
+      if (!hadStreamingOutput) {
+        spawnTimedOut = true;
+        logger.error(
+          { group: group.name, containerName, spawnTimeoutMs },
+          'Spawn timeout — no output markers within window, killing container',
+        );
+        exec(stopContainer(containerName), { timeout: 15000 }, (err) => {
+          if (err) container.kill('SIGKILL');
+        });
+      }
+    };
+    let spawnTimer = setTimeout(spawnTimeoutFn, spawnTimeoutMs);
+
     // Reset the timeout whenever there's activity (streaming output)
     const resetTimeout = () => {
       clearTimeout(timeout);
@@ -571,7 +808,34 @@ export async function runContainerAgent(
 
     container.on('close', (code) => {
       clearTimeout(timeout);
+      clearTimeout(spawnTimer);
       const duration = Date.now() - startTime;
+
+      if (spawnTimedOut) {
+        const ts = new Date().toISOString().replace(/[:.]/g, '-');
+        fs.writeFileSync(
+          path.join(logsDir, `container-${ts}.log`),
+          [
+            `=== Container Run Log (SPAWN TIMEOUT) ===`,
+            `Timestamp: ${new Date().toISOString()}`,
+            `Group: ${group.name}`,
+            `Container: ${containerName}`,
+            `Duration: ${duration}ms`,
+            `Exit Code: ${code}`,
+            `Spawn Timeout: ${spawnTimeoutMs}ms`,
+          ].join('\n'),
+        );
+        logger.error(
+          { group: group.name, containerName, duration, code },
+          'Container killed by spawn timeout',
+        );
+        resolve({
+          status: 'error',
+          result: null,
+          error: `Container produced no output within ${spawnTimeoutMs}ms spawn window`,
+        });
+        return;
+      }
 
       if (timedOut) {
         const ts = new Date().toISOString().replace(/[:.]/g, '-');

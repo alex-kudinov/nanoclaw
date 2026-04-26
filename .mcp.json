@@ -1,3 +1,13 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "toolbox": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/Users/xbohdpukc/dev/toolbox/mcp-proxy/server.js",
+        "--registry",
+        "/Users/xbohdpukc/dev/NanoClaw/.toolbox/registry.json"
+      ]
+    }
+  }
 }

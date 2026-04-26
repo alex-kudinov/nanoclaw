@@ -63,6 +63,10 @@ export interface WebhookServerDeps {
   ) => Promise<import('./types.js').JobRunResult>;
   getHostJob?: (name: string) => import('./types.js').Job | undefined;
   handleEmailOpen?: (token: string, userAgent: string) => Promise<void>;
+  /** Process an unsubscribe click — looks up tracking token, sets party DND. */
+  handleUnsubscribe?: (
+    token: string,
+  ) => Promise<{ ok: boolean; name?: string }>;
   // Gmail Pub/Sub push receiver — called by POST /hook/gmail-push.
   // Payload is decoded from message.data (base64 JSON).
   handleGmailPush?: (emailAddress: string, historyId: string) => Promise<void>;
@@ -73,6 +77,14 @@ export interface WebhookServerDeps {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 function renderPrompt(template: string, payload: unknown): string {
   const json = JSON.stringify(payload, null, 2);
@@ -288,6 +300,42 @@ export class WebhookServer {
       return;
     }
 
+    // GET /unsubscribe/:token — lead opts out of follow-up emails
+    const unsubMatch =
+      req.method === 'GET' &&
+      req.url?.match(/^\/unsubscribe\/([a-zA-Z0-9_-]+)$/);
+    if (unsubMatch) {
+      const token = unsubMatch[1];
+      if (!this.deps.handleUnsubscribe) {
+        res.writeHead(503, { 'Content-Type': 'text/html' });
+        res.end('<p>Unsubscribe is not configured.</p>');
+        return;
+      }
+      try {
+        const result = await this.deps.handleUnsubscribe(token);
+        res.writeHead(200, {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
+        });
+        if (result.ok) {
+          res.end(
+            `<!DOCTYPE html><html><head><title>Unsubscribed</title></head><body style="font-family:system-ui,sans-serif;max-width:480px;margin:60px auto;text-align:center;"><h2>You've been unsubscribed</h2><p>${result.name ? `<strong>${escapeHtml(result.name)}</strong>, you` : 'You'} will no longer receive follow-up emails from Tandem Coaching.</p><p style="color:#666;margin-top:24px;">If this was a mistake, reply to any previous email from us and we'll re-enable communications.</p></body></html>`,
+          );
+        } else {
+          res.end(
+            '<!DOCTYPE html><html><head><title>Unsubscribe</title></head><body style="font-family:system-ui,sans-serif;max-width:480px;margin:60px auto;text-align:center;"><h2>Link not recognized</h2><p>This unsubscribe link is not valid. If you want to stop receiving emails, reply to any email from us with "unsubscribe".</p></body></html>',
+          );
+        }
+      } catch (err) {
+        logger.error({ err, token }, 'Unsubscribe handler failed');
+        res.writeHead(500, { 'Content-Type': 'text/html' });
+        res.end(
+          '<p>Something went wrong. Please try again or reply "unsubscribe" to any email from us.</p>',
+        );
+      }
+      return;
+    }
+
     // GET /hooks — list all webhooks (admin, guarded by global secret)
     if (req.method === 'GET' && req.url === '/hooks') {
       if (this.deps.globalSecret) {
@@ -367,9 +415,7 @@ export class WebhookServer {
 
       if (!this.deps.handleGmailPush) {
         res.writeHead(503, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({ error: 'Gmail push handler not configured' }),
-        );
+        res.end(JSON.stringify({ error: 'Gmail push handler not configured' }));
         return;
       }
 
@@ -412,9 +458,7 @@ export class WebhookServer {
         payload.historyId != null ? String(payload.historyId) : '';
       if (!emailAddress || !historyId) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({ error: 'Missing emailAddress or historyId' }),
-        );
+        res.end(JSON.stringify({ error: 'Missing emailAddress or historyId' }));
         return;
       }
 

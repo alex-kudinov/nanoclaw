@@ -1,0 +1,97 @@
+{
+  "id": "heartbeat-community",
+  "name": "Heartbeat Community \u2192 Slack",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "heartbeat-community",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "trigger-heartbeat-community",
+      "name": "Heartbeat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "heartbeat-community"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle Heartbeat webhook payloads and post to Slack #gru-community.\n//\n// Real Heartbeat payloads are minimal \u2014 just IDs. We discriminate trigger\n// type by field presence and enrich via Heartbeat API calls (thread content,\n// user names). Both GET /threads/{id} and GET /users/{id} are used.\n//\n// n8n Code nodes run in a VM sandbox \u2014 no global fetch, no process.env.\n// We access env via $env and use require('https') (works because\n// N8N_FUNCTION_ALLOW_BUILTIN=* is set on the container).\n\nconst https = require('https');\n\nconst HB_HOST = 'api.heartbeat.chat';\nconst HB_TOKEN = $env.HEARTBEAT_API_KEY || '';\nconst SLACK_CHANNEL = 'C0ASPB1L16D';\nconst COMMUNITY_BASE = 'https://community.tandemcoaching.academy';\n\nconst CHANNEL_MAP = {\n  '4195ece0-b05c-417a-9501-56b848826835': { name: 'Announcements', emoji: '\ud83d\udce3' },\n};\n\nfunction hbGet(path) {\n  return new Promise((resolve, reject) => {\n    const req = https.request(\n      {\n        host: HB_HOST,\n        port: 443,\n        path: `/v0${path}`,\n        method: 'GET',\n        headers: { Authorization: `Bearer ${HB_TOKEN}` },\n        timeout: 15000,\n      },\n      (res) => {\n        let chunks = '';\n        res.setEncoding('utf8');\n        res.on('data', (c) => (chunks += c));\n        res.on('end', () => {\n          if (res.statusCode >= 200 && res.statusCode < 300) {\n            try { resolve(JSON.parse(chunks)); }\n            catch (e) { reject(new Error(`parse ${path}: ${e.message}`)); }\n          } else {\n            reject(new Error(`Heartbeat ${path} \u2192 HTTP ${res.statusCode}`));\n          }\n        });\n      },\n    );\n    req.on('error', reject);\n    req.on('timeout', () => { req.destroy(); reject(new Error(`timeout ${path}`)); });\n    req.end();\n  });\n}\n\nfunction htmlToPreview(html, maxLen = 300) {\n  if (!html) return '';\n  const stripped = String(html)\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<\\/(p|h[1-6]|div|li)>/gi, '\\n')\n    .replace(/<[^>]+>/g, '')\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/\\ufeff/g, '')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .replace(/[ \\t]+/g, ' ')\n    .trim();\n  if (stripped.length <= maxLen) return stripped;\n  return stripped.slice(0, maxLen - 1).trimEnd() + '\u2026';\n}\n\nfunction userLabel(u) {\n  if (!u) return 'Unknown user';\n  return u.name || u.email || u.id || 'Unknown user';\n}\n\nasync function handleThreadCreate(body) {\n  const thread = await hbGet(`/threads/${body.id}`);\n  const ch = CHANNEL_MAP[thread.channelID];\n  if (!ch) return null;\n  const preview = htmlToPreview(thread.content) || '(no content)';\n  const author = userLabel(thread.user);\n  const url = thread.url || COMMUNITY_BASE;\n  return (\n    `:speech_balloon: *New post in ${ch.emoji} ${ch.name}* by *${author}*\\n` +\n    `>>>${preview}\\n` +\n    `<${url}|Open in community \u2192>`\n  );\n}\n\nasync function handleDirectMessage(body) {\n  const [sender, receiver] = await Promise.all([\n    hbGet(`/users/${body.senderUserID}`).catch(() => null),\n    hbGet(`/users/${body.receiverUserID}`).catch(() => null),\n  ]);\n  const senderName = userLabel(sender);\n  const receiverName = userLabel(receiver);\n  const url = `${COMMUNITY_BASE}/messages/${body.chatID}`;\n  return (\n    `:envelope: *New DM to ${receiverName}* from *${senderName}*\\n` +\n    `_(Heartbeat DMs don't include content in the webhook \u2014 click to read)_\\n` +\n    `<${url}|Open in community \u2192>`\n  );\n}\n\nconst raw = $input.first().json;\nconst body = raw.body || raw;\n\nlet text;\ntry {\n  if (body.chatMessageID && body.senderUserID) {\n    text = await handleDirectMessage(body);\n  } else if (body.id && body.channelID) {\n    text = await handleThreadCreate(body);\n  } else {\n    text =\n      `:question: *Unrecognized Heartbeat payload*\\n` +\n      `\\`\\`\\`${JSON.stringify(body).slice(0, 2000)}\\`\\`\\``;\n  }\n} catch (err) {\n  text =\n    `:warning: *Heartbeat webhook error:* ${err.message}\\n` +\n    `Payload: \\`\\`\\`${JSON.stringify(body).slice(0, 1500)}\\`\\`\\``;\n}\n\nif (!text) return [];\nreturn [{ json: { channel: SLACK_CHANNEL, text, unfurl_links: false } }];\n"
+      },
+      "id": "transform-heartbeat",
+      "name": "Transform \u2192 Slack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SLACK_BOT_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "post-to-slack",
+      "name": "POST to Slack chat.postMessage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Heartbeat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Transform \u2192 Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform \u2192 Slack": {
+      "main": [
+        [
+          {
+            "node": "POST to Slack chat.postMessage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

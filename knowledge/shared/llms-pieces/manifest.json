@@ -1,0 +1,765 @@
+{
+  "version": "1",
+  "generator": "generate-llms-full.py",
+  "generated_at": "2026-04-25T08:05:20Z",
+  "pieces": [
+    {
+      "id": "part-a/_00_header",
+      "path": "part-a/_00_header.md",
+      "order": 0,
+      "hash": "sha256:576bdca20724f23767012306929b97b2574d30053459c43bb376c0a258ef0a6c",
+      "bytes": 12,
+      "words": 3,
+      "source": {
+        "type": "section_header",
+        "title": "Key Pages"
+      }
+    },
+    {
+      "id": "part-a/homepage",
+      "path": "part-a/homepage.md",
+      "order": 1,
+      "hash": "sha256:86b4e8b45cf34ba42d65f32782b9d85ba3ca39bc1cf81de8bd78ba406b1cf6a1",
+      "bytes": 5291,
+      "words": 774,
+      "source": {
+        "type": "page",
+        "title": "Homepage",
+        "url": "https://tandemcoach.co/",
+        "local_dir": "pages/homepage"
+      }
+    },
+    {
+      "id": "part-a/_divider-icf-coach-certification-programs",
+      "path": "part-a/_divider-icf-coach-certification-programs.md",
+      "order": 2,
+      "hash": "sha256:5c187ba942cbc48ab08ce38356ac38703d3e23d635be72dfbed553f2df7c65e3",
+      "bytes": 35,
+      "words": 5,
+      "source": {
+        "type": "section_header",
+        "title": "ICF Coach Certification Programs"
+      }
+    },
+    {
+      "id": "part-a/acc",
+      "path": "part-a/acc.md",
+      "order": 3,
+      "hash": "sha256:9e93c9fde53e1e492563a16315430b2cb0296aa3b2c02165bb65b4ae82d242e4",
+      "bytes": 30402,
+      "words": 4380,
+      "source": {
+        "type": "page",
+        "title": "ACC Coach Certification - ICF Level 1",
+        "url": "https://tandemcoach.co/icf/acc-coach-certification-training/",
+        "local_dir": "pages/acc"
+      }
+    },
+    {
+      "id": "part-a/pcc",
+      "path": "part-a/pcc.md",
+      "order": 4,
+      "hash": "sha256:a5ef07005bd246ae11d0df9d2e762b5fa8edf275aa3a761d163f5d80a987d870",
+      "bytes": 37444,
+      "words": 5207,
+      "source": {
+        "type": "page",
+        "title": "PCC Coach Certification - ICF Level 2",
+        "url": "https://tandemcoach.co/icf/pcc-professional-coach-certification/",
+        "local_dir": "pages/pcc"
+      }
+    },
+    {
+      "id": "part-a/acc-pcc-certification",
+      "path": "part-a/acc-pcc-certification.md",
+      "order": 5,
+      "hash": "sha256:aaac78a781e49c0d6b48e687f7dac99c2b4d39e2ea7d0f3f60da7db16484bad6",
+      "bytes": 20127,
+      "words": 2966,
+      "source": {
+        "type": "page",
+        "title": "Professional Coach Program - ACC + PCC + ACTC",
+        "url": "https://tandemcoach.co/icf/acc-pcc-certification/",
+        "local_dir": "pages/acc-pcc-certification"
+      }
+    },
+    {
+      "id": "part-a/actc",
+      "path": "part-a/actc.md",
+      "order": 6,
+      "hash": "sha256:f6b5d435c38029055b709b2ccda66982eaaa3cdbaf46574dae15260047da515b",
+      "bytes": 28535,
+      "words": 3995,
+      "source": {
+        "type": "page",
+        "title": "ACTC Team Coaching Certification",
+        "url": "https://tandemcoach.co/icf/actc-team-coaching-training/",
+        "local_dir": "pages/actc"
+      }
+    },
+    {
+      "id": "part-a/icf-coaching",
+      "path": "part-a/icf-coaching.md",
+      "order": 7,
+      "hash": "sha256:394fe473dfc34d55ecfecbfb75cc55cfd8056068a0767a8e5fb516c9f556e7ff",
+      "bytes": 14170,
+      "words": 1972,
+      "source": {
+        "type": "page",
+        "title": "ICF Coaching Programs Overview",
+        "url": "https://tandemcoach.co/icf-coaching/",
+        "local_dir": "pages/icf-coaching"
+      }
+    },
+    {
+      "id": "part-a/mentor-coaching-acc-pcc-mcc",
+      "path": "part-a/mentor-coaching-acc-pcc-mcc.md",
+      "order": 8,
+      "hash": "sha256:fb83cc737aab7d6c2059356238044982b45bbdebaa2851ba8116c94416203683",
+      "bytes": 15217,
+      "words": 2252,
+      "source": {
+        "type": "page",
+        "title": "Mentor Coaching",
+        "url": "https://tandemcoach.co/icf/mentor-coaching-acc-pcc-mcc/",
+        "local_dir": "pages/mentor-coaching-acc-pcc-mcc"
+      }
+    },
+    {
+      "id": "part-a/mcq",
+      "path": "part-a/mcq.md",
+      "order": 9,
+      "hash": "sha256:df032eb13b4b582bcaa12e4f7880bb9c2224b3e724edfb006441759c8b09d646",
+      "bytes": 42956,
+      "words": 6446,
+      "source": {
+        "type": "page",
+        "title": "ICF Mentor Coach Qualification (MCQ)",
+        "url": "https://tandemcoach.co/mcq/",
+        "local_dir": "pages/mcq"
+      }
+    },
+    {
+      "id": "part-a/mentor-coaching-foundations",
+      "path": "part-a/mentor-coaching-foundations.md",
+      "order": 10,
+      "hash": "sha256:bc47684b6f7c3f9904893bb2d9c6f82309ccaf9a505d54dea340d248633238d3",
+      "bytes": 23516,
+      "words": 3596,
+      "source": {
+        "type": "page",
+        "title": "Mentor Coaching Foundations",
+        "url": "https://tandemcoach.co/mcq/mentor-coaching-foundations/",
+        "local_dir": "pages/mentor-coaching-foundations"
+      }
+    },
+    {
+      "id": "part-a/coaching-supervision",
+      "path": "part-a/coaching-supervision.md",
+      "order": 11,
+      "hash": "sha256:6dd2cabd404059dbe4959961ded8cfacf0d056b62d676f453f93601a58237a7e",
+      "bytes": 6444,
+      "words": 875,
+      "source": {
+        "type": "page",
+        "title": "Coaching Supervision",
+        "url": "https://tandemcoach.co/coaching-supervision/",
+        "local_dir": "pages/coaching-supervision"
+      }
+    },
+    {
+      "id": "part-a/_divider-coaching-services",
+      "path": "part-a/_divider-coaching-services.md",
+      "order": 12,
+      "hash": "sha256:1dc50d8ffb72fa4a519a0d33b7ab2ddaa60ec2496d8b7e080dadad06572f06f1",
+      "bytes": 20,
+      "words": 3,
+      "source": {
+        "type": "section_header",
+        "title": "Coaching Services"
+      }
+    },
+    {
+      "id": "part-a/executive-coaching",
+      "path": "part-a/executive-coaching.md",
+      "order": 13,
+      "hash": "sha256:efde26fbd2b79525548665438d61821dca22d82afe63dbde50308bd5bccf416e",
+      "bytes": 14560,
+      "words": 2048,
+      "source": {
+        "type": "page",
+        "title": "Executive Coaching Services",
+        "url": "https://tandemcoach.co/executive-coaching/",
+        "local_dir": "pages/executive-coaching"
+      }
+    },
+    {
+      "id": "part-a/adhd-executive-coach",
+      "path": "part-a/adhd-executive-coach.md",
+      "order": 14,
+      "hash": "sha256:29f4be4feea4b835a0cf5b8d380bcedc5c3c17fa62c3464d485bcd14bb205122",
+      "bytes": 16339,
+      "words": 2283,
+      "source": {
+        "type": "page",
+        "title": "ADHD Executive Coaching",
+        "url": "https://tandemcoach.co/adhd-executive-coach/",
+        "local_dir": "pages/adhd-executive-coach"
+      }
+    },
+    {
+      "id": "part-a/leadership-development",
+      "path": "part-a/leadership-development.md",
+      "order": 15,
+      "hash": "sha256:250029cfa1ec2686e0aaf1380ebec3782e17a21e7b877dff74647c9c2b07695c",
+      "bytes": 12094,
+      "words": 1679,
+      "source": {
+        "type": "page",
+        "title": "Leadership Development",
+        "url": "https://tandemcoach.co/leadership-development/",
+        "local_dir": "pages/leadership-development"
+      }
+    },
+    {
+      "id": "part-a/organizational-coach",
+      "path": "part-a/organizational-coach.md",
+      "order": 16,
+      "hash": "sha256:a99584f931a8ce613ae071a457edfc0414cb11a12e575bdadc8d9ae9467d9943",
+      "bytes": 12586,
+      "words": 1733,
+      "source": {
+        "type": "page",
+        "title": "Organizational Coaching",
+        "url": "https://tandemcoach.co/organizational-coach/",
+        "local_dir": "pages/organizational-coach"
+      }
+    },
+    {
+      "id": "part-a/coaching-engagements",
+      "path": "part-a/coaching-engagements.md",
+      "order": 17,
+      "hash": "sha256:7a3348cbe58713fb87d9352570b7426766132a908077ec284592a66ff2abec47",
+      "bytes": 12309,
+      "words": 1771,
+      "source": {
+        "type": "page",
+        "title": "Coaching Engagements",
+        "url": "https://tandemcoach.co/coaching-engagements/",
+        "local_dir": "pages/coaching-engagements"
+      }
+    },
+    {
+      "id": "part-a/_divider-about",
+      "path": "part-a/_divider-about.md",
+      "order": 18,
+      "hash": "sha256:121da4735106e9c915d573eed1e04e140ef1785e659c0c71857c5fefb380d085",
+      "bytes": 8,
+      "words": 2,
+      "source": {
+        "type": "section_header",
+        "title": "About"
+      }
+    },
+    {
+      "id": "part-a/about-us",
+      "path": "part-a/about-us.md",
+      "order": 19,
+      "hash": "sha256:c5f31ddc4879f26ee53c90770e87da7f5c6f72251ce2120e78e132af8f5f117f",
+      "bytes": 2927,
+      "words": 443,
+      "source": {
+        "type": "page",
+        "title": "About Tandem Coaching",
+        "url": "https://tandemcoach.co/about-us/",
+        "local_dir": "pages/about-us"
+      }
+    },
+    {
+      "id": "part-a/enterprise-agile-coaching-book",
+      "path": "part-a/enterprise-agile-coaching-book.md",
+      "order": 20,
+      "hash": "sha256:609f342cc6905e483496e40de1a2b7ea83ea73baba778569716ba6ed3dee88aa",
+      "bytes": 5722,
+      "words": 773,
+      "source": {
+        "type": "page",
+        "title": "Enterprise Agile Coaching Book",
+        "url": "https://tandemcoach.co/enterprise-agile-coaching-book/",
+        "local_dir": "pages/enterprise-agile-coaching-book"
+      }
+    },
+    {
+      "id": "part-a/testimonials",
+      "path": "part-a/testimonials.md",
+      "order": 21,
+      "hash": "sha256:bded85eeb00d9c9c08f0aa2d04d1cc0b8de2bdd1b4c9c999c45563523aeaac3c",
+      "bytes": 282,
+      "words": 31,
+      "source": {
+        "type": "page",
+        "title": "Testimonials",
+        "url": "https://tandemcoach.co/testimonials/",
+        "local_dir": "pages/testimonials"
+      }
+    },
+    {
+      "id": "part-b/executive-coaching",
+      "path": "part-b/executive-coaching.md",
+      "order": 22,
+      "hash": "sha256:4707fa8447817c48cd1c59e4c72720aa6781c54f8f315c2eafdf9bafc82ce949",
+      "bytes": 52715,
+      "words": 6487,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "executive-coaching",
+        "cluster_label": "Blog: Executive Coaching",
+        "hub_slug": "executive-coaching-guide",
+        "hub_url": "https://tandemcoach.co/executive-coaching-guide/",
+        "post_count": 45,
+        "supporting_count": 44
+      }
+    },
+    {
+      "id": "part-b/adhd-executive",
+      "path": "part-b/adhd-executive.md",
+      "order": 23,
+      "hash": "sha256:7f98e49f28eb562dc4e8a8deec58cd597c05af545ce639063ee23a458e6a27a0",
+      "bytes": 42866,
+      "words": 5646,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "adhd-executive",
+        "cluster_label": "Blog: ADHD Executive Coaching",
+        "hub_slug": "adhd-executive-function-leadership",
+        "hub_url": "https://tandemcoach.co/adhd-executive-function-leadership/",
+        "post_count": 20,
+        "supporting_count": 19
+      }
+    },
+    {
+      "id": "part-b/ai-career-navigator",
+      "path": "part-b/ai-career-navigator.md",
+      "order": 24,
+      "hash": "sha256:6d264ced698a7212ba25ea5033e2b3c8db961d462b1fcfa236e7afd34202e385",
+      "bytes": 33222,
+      "words": 4657,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "ai-career-navigator",
+        "cluster_label": "Blog: AI & Executive Careers",
+        "hub_slug": "ai-executive-careers-reality-2026",
+        "hub_url": "https://tandemcoach.co/ai-executive-careers-reality-2026/",
+        "post_count": 24,
+        "supporting_count": 23
+      }
+    },
+    {
+      "id": "part-b/change-management",
+      "path": "part-b/change-management.md",
+      "order": 25,
+      "hash": "sha256:fce713993bb6b3e258579f7389aafd833bce743a602d00da927a86f0d1fe4cf5",
+      "bytes": 44462,
+      "words": 6408,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "change-management",
+        "cluster_label": "Blog: Change Management",
+        "hub_slug": "what-expect-coaching-session",
+        "hub_url": "https://tandemcoach.co/what-expect-coaching-session/",
+        "post_count": 24,
+        "supporting_count": 23
+      }
+    },
+    {
+      "id": "part-b/coaching-supervision",
+      "path": "part-b/coaching-supervision.md",
+      "order": 26,
+      "hash": "sha256:9ad20d1027ae986e8256838084308dc1a90b851e3233c9c5b485850db511dee3",
+      "bytes": 48260,
+      "words": 6313,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "coaching-supervision",
+        "cluster_label": "Blog: Coaching Supervision",
+        "hub_slug": "coaching-supervision-reflective-practice",
+        "hub_url": "https://tandemcoach.co/coaching-supervision-reflective-practice/",
+        "post_count": 19,
+        "supporting_count": 18
+      }
+    },
+    {
+      "id": "part-b/executive-productivity",
+      "path": "part-b/executive-productivity.md",
+      "order": 27,
+      "hash": "sha256:21d9f387e4c6bff5537970cbe6c93d92e586f17c834c334e6d2e2e3f9546f0d7",
+      "bytes": 31956,
+      "words": 4237,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "executive-productivity",
+        "cluster_label": "Blog: Executive Productivity",
+        "hub_slug": "executive-productivity-systems-guide",
+        "hub_url": "https://tandemcoach.co/executive-productivity-systems-guide/",
+        "post_count": 10,
+        "supporting_count": 9
+      }
+    },
+    {
+      "id": "part-b/executive-presence",
+      "path": "part-b/executive-presence.md",
+      "order": 28,
+      "hash": "sha256:bf24bce449e64fd322eb64b466d03df72698f42538362b7085f885352807e9c8",
+      "bytes": 22157,
+      "words": 3199,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "executive-presence",
+        "cluster_label": "Blog: Executive Presence",
+        "hub_slug": "executive-presence-examples",
+        "hub_url": "https://tandemcoach.co/executive-presence-examples/",
+        "post_count": 6,
+        "supporting_count": 5
+      }
+    },
+    {
+      "id": "part-b/leadership-skills",
+      "path": "part-b/leadership-skills.md",
+      "order": 29,
+      "hash": "sha256:fb492a9b4162593653ff4086c6ed56130aa1ff82ff862a4832151ef2253aa475",
+      "bytes": 37325,
+      "words": 4513,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "leadership-skills",
+        "cluster_label": "Blog: Leadership Skills",
+        "hub_slug": "what-is-leadership-development",
+        "hub_url": "https://tandemcoach.co/what-is-leadership-development/",
+        "post_count": 12,
+        "supporting_count": 11
+      }
+    },
+    {
+      "id": "part-b/team-leadership",
+      "path": "part-b/team-leadership.md",
+      "order": 30,
+      "hash": "sha256:5d2503b7f358cea5463861808535565571f979d467a88678fd11bd345bdb1cc6",
+      "bytes": 59384,
+      "words": 8412,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "team-leadership",
+        "cluster_label": "Blog: Team & Leadership Coaching",
+        "hub_slug": "7-cornerstones-effective-team-coaching-icf-coaches",
+        "hub_url": "https://tandemcoach.co/7-cornerstones-effective-team-coaching-icf-coaches/",
+        "post_count": 33,
+        "supporting_count": 32
+      }
+    },
+    {
+      "id": "part-b/icf-certification",
+      "path": "part-b/icf-certification.md",
+      "order": 31,
+      "hash": "sha256:b2d472bc436e378c271603d24704eb0a4f9f46f780c30870c8a52044bf535ee1",
+      "bytes": 53381,
+      "words": 6272,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "icf-certification",
+        "cluster_label": "Blog: ICF Coaching Certification",
+        "hub_slug": "icf-life-coach-certification-explained",
+        "hub_url": "https://tandemcoach.co/icf-life-coach-certification-explained/",
+        "post_count": 61,
+        "supporting_count": 60
+      }
+    },
+    {
+      "id": "part-b/coaching-skills",
+      "path": "part-b/coaching-skills.md",
+      "order": 32,
+      "hash": "sha256:2425702a8426a1c57ec7dbd0fc17475f057a0448e6121abf714dfebb3d8f7dd1",
+      "bytes": 35103,
+      "words": 4975,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "coaching-skills",
+        "cluster_label": "Blog: Coaching Skills",
+        "hub_slug": "coaching-skills",
+        "hub_url": "https://tandemcoach.co/coaching-skills/",
+        "post_count": 26,
+        "supporting_count": 25
+      }
+    },
+    {
+      "id": "part-b/career-transition",
+      "path": "part-b/career-transition.md",
+      "order": 33,
+      "hash": "sha256:0e49d8f28375ab9fc4b8f412c8231696bfa8388e1de4c3734734429f54d15c1e",
+      "bytes": 21237,
+      "words": 2917,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "career-transition",
+        "cluster_label": "Blog: Career Transition",
+        "hub_slug": "psychological-readiness-career-change",
+        "hub_url": "https://tandemcoach.co/psychological-readiness-career-change/",
+        "post_count": 6,
+        "supporting_count": 5
+      }
+    },
+    {
+      "id": "part-b/coach-development",
+      "path": "part-b/coach-development.md",
+      "order": 34,
+      "hash": "sha256:0e980402adf3b97b2ea598c80f681f8a65092acac59513fbc53b5aedeff5b189",
+      "bytes": 26775,
+      "words": 3785,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "coach-development",
+        "cluster_label": "Blog: Coach Development",
+        "hub_slug": "adhd-work-life-balance-coaching-integration",
+        "hub_url": "https://tandemcoach.co/adhd-work-life-balance-coaching-integration/",
+        "post_count": 3,
+        "supporting_count": 2
+      }
+    },
+    {
+      "id": "part-b/coaching-business",
+      "path": "part-b/coaching-business.md",
+      "order": 35,
+      "hash": "sha256:deadd8790858e9abffd40f2a55bc8dba59edb9051295fb80a13ebee552063729",
+      "bytes": 27793,
+      "words": 4603,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "coaching-business",
+        "cluster_label": "Blog: Coaching Business",
+        "hub_slug": "we-are-hired-to-give-our-clients-solutions-that-work-arent-we",
+        "hub_url": "https://tandemcoach.co/we-are-hired-to-give-our-clients-solutions-that-work-arent-we/",
+        "post_count": 5,
+        "supporting_count": 4
+      }
+    },
+    {
+      "id": "part-b/agile-transformation",
+      "path": "part-b/agile-transformation.md",
+      "order": 36,
+      "hash": "sha256:8f1be05689fbbe7005a22b3cff00f1147c022b464a301c748612fc04fc183815",
+      "bytes": 13350,
+      "words": 1927,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "agile-transformation",
+        "cluster_label": "Blog: Agile Transformation",
+        "hub_slug": "agile-metrics-cfd-cycle-time",
+        "hub_url": "https://tandemcoach.co/agile-metrics-cfd-cycle-time/",
+        "post_count": 15,
+        "supporting_count": 14
+      }
+    },
+    {
+      "id": "part-b/agile-leadership",
+      "path": "part-b/agile-leadership.md",
+      "order": 37,
+      "hash": "sha256:b555c31fbb0813c1b37630ea1a3c303392a96af57d10e65c23ac3570e6577501",
+      "bytes": 72465,
+      "words": 12995,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "agile-leadership",
+        "cluster_label": "Blog: Agile Leadership",
+        "hub_slug": "agile-coaching-business",
+        "hub_url": "https://tandemcoach.co/agile-coaching-business/",
+        "post_count": 4,
+        "supporting_count": 3
+      }
+    },
+    {
+      "id": "part-b/scrum-practices",
+      "path": "part-b/scrum-practices.md",
+      "order": 38,
+      "hash": "sha256:64bc51f43d8b0adccf62f89de54a5c649b3eb08e9ec64a25b3308959b0b0dcb1",
+      "bytes": 18395,
+      "words": 2954,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "scrum-practices",
+        "cluster_label": "Blog: Scrum & Agile Practices",
+        "hub_slug": "house-scrum-transcript",
+        "hub_url": "https://tandemcoach.co/house-scrum-transcript/",
+        "post_count": 6,
+        "supporting_count": 5
+      }
+    },
+    {
+      "id": "part-b/none",
+      "path": "part-b/none.md",
+      "order": 39,
+      "hash": "sha256:aea01e0c923a4b5b1a881b982477a82c2599a735c343b785badab71ac2e6fd86",
+      "bytes": 32826,
+      "words": 4228,
+      "source": {
+        "type": "cluster",
+        "cluster_key": "none",
+        "cluster_label": "Blog: Additional Articles",
+        "hub_slug": "ceo-training-and-development",
+        "hub_url": null,
+        "post_count": 11,
+        "supporting_count": 10
+      }
+    },
+    {
+      "id": "part-c/_00_header",
+      "path": "part-c/_00_header.md",
+      "order": 40,
+      "hash": "sha256:9a77ae9c5f590aae4b905816452f5c13c8f0d715211358eac968f9115fc12836",
+      "bytes": 361,
+      "words": 47,
+      "source": {
+        "type": "tools_header",
+        "total_tools": 474
+      }
+    },
+    {
+      "id": "part-c/assessment-discovery",
+      "path": "part-c/assessment-discovery.md",
+      "order": 41,
+      "hash": "sha256:8f205fda3d5b00d209b565eec93a5d57b3642b773861a5cb1e0d27bcdf8c03e6",
+      "bytes": 60946,
+      "words": 8596,
+      "source": {
+        "type": "tool_category",
+        "category_key": "assessment-discovery",
+        "category_label": "Assessment & Discovery",
+        "tool_count": 61
+      }
+    },
+    {
+      "id": "part-c/goal-setting",
+      "path": "part-c/goal-setting.md",
+      "order": 42,
+      "hash": "sha256:7fc2f1a800ff8621a081b3c265c0dcac4679e74e69816300c2c7ea470432c61d",
+      "bytes": 47864,
+      "words": 7113,
+      "source": {
+        "type": "tool_category",
+        "category_key": "goal-setting",
+        "category_label": "Goal Setting",
+        "tool_count": 48
+      }
+    },
+    {
+      "id": "part-c/mindset-growth",
+      "path": "part-c/mindset-growth.md",
+      "order": 43,
+      "hash": "sha256:cdeb6a7327dcfabc909618b820fcec1a6a43c92151a68f1c4c2d48273f496d80",
+      "bytes": 64241,
+      "words": 8967,
+      "source": {
+        "type": "tool_category",
+        "category_key": "mindset-growth",
+        "category_label": "Mindset & Growth",
+        "tool_count": 63
+      }
+    },
+    {
+      "id": "part-c/communication-relationships",
+      "path": "part-c/communication-relationships.md",
+      "order": 44,
+      "hash": "sha256:b3a98dd18a248cadf1abd9022c1669a201051d0f64662445ce7eca2ea407faee",
+      "bytes": 24858,
+      "words": 3459,
+      "source": {
+        "type": "tool_category",
+        "category_key": "communication-relationships",
+        "category_label": "Communication & Relationships",
+        "tool_count": 24
+      }
+    },
+    {
+      "id": "part-c/career-professional",
+      "path": "part-c/career-professional.md",
+      "order": 45,
+      "hash": "sha256:5c9e0772d543559c52cc41748e5078529702ce3efd7bbaf41831d910fbf25b4b",
+      "bytes": 22951,
+      "words": 3377,
+      "source": {
+        "type": "tool_category",
+        "category_key": "career-professional",
+        "category_label": "Career & Professional",
+        "tool_count": 21
+      }
+    },
+    {
+      "id": "part-c/planning-organization",
+      "path": "part-c/planning-organization.md",
+      "order": 46,
+      "hash": "sha256:4e798fe0b574e6910586f0a5fd2c78cb50f8dfb2ec48218e6de2c7f4e74b8e0d",
+      "bytes": 58920,
+      "words": 8549,
+      "source": {
+        "type": "tool_category",
+        "category_key": "planning-organization",
+        "category_label": "Planning & Organization",
+        "tool_count": 57
+      }
+    },
+    {
+      "id": "part-c/reflection-journaling",
+      "path": "part-c/reflection-journaling.md",
+      "order": 47,
+      "hash": "sha256:a1a17d80ed880487475406d1e27004469b0eae6c4b0200a92ee947433914d6e5",
+      "bytes": 51008,
+      "words": 7234,
+      "source": {
+        "type": "tool_category",
+        "category_key": "reflection-journaling",
+        "category_label": "Reflection & Journaling",
+        "tool_count": 53
+      }
+    },
+    {
+      "id": "part-c/coach-facing",
+      "path": "part-c/coach-facing.md",
+      "order": 48,
+      "hash": "sha256:4758e41531ac9494ad60984960e075d811f2717e4b748fa93ca5dc6f0049af0d",
+      "bytes": 42806,
+      "words": 6056,
+      "source": {
+        "type": "tool_category",
+        "category_key": "coach-facing",
+        "category_label": "Coaching Practice",
+        "tool_count": 41
+      }
+    },
+    {
+      "id": "part-c/adhd",
+      "path": "part-c/adhd.md",
+      "order": 49,
+      "hash": "sha256:4b49a068d7e7365d58e525aceb71aa87fa8d0664e4c1904984bc4e56ee983966",
+      "bytes": 101596,
+      "words": 14233,
+      "source": {
+        "type": "tool_category",
+        "category_key": "adhd",
+        "category_label": "ADHD Executive Function",
+        "tool_count": 97
+      }
+    },
+    {
+      "id": "part-c/therapy-adjacent",
+      "path": "part-c/therapy-adjacent.md",
+      "order": 50,
+      "hash": "sha256:25fe1f0f500cf506d25138288a4d9a0be822de7815ffec41247f3d81ade5492e",
+      "bytes": 9896,
+      "words": 1384,
+      "source": {
+        "type": "tool_category",
+        "category_key": "therapy-adjacent",
+        "category_label": "Therapeutic Support",
+        "tool_count": 9
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 # Tandem Coaching — Knowledge Base
 
-<!-- llms-full-hash: 6f9dea1e4f01910d5820c2563de6bc76ca6d99d6b676ac0133036b92e7cfa635 -->
-<!-- validated-at: 2026-04-10 -->
+<!-- llms-full-hash: d13aa808a65787ca83fe3c225d58a3c6dcb17d6bced6f285ab09fc386cd2d747 -->
+<!-- validated-at: 2026-04-19 -->
 
 
 Tandem Coaching (tandemcoach.co) is an ICF-accredited coaching education and executive coaching firm based in Dallas, TX. Co-founders: Cherie Silas and Alex Kudinov.
@@ -152,6 +152,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 | Professional Coach Program | $7,499 | ACC + PCC + ACTC | None | Full journey from zero to PCC |
 | Systems Coach Program | $3,999 | PCC + ACTC | 60 hrs prior training (ACC) | ACC holders advancing to PCC |
 | ACTC Team Coaching | $2,499 | ACTC | Existing ACC or PCC | Team coaching specialization |
+| Mentor Coaching Foundations | $299 (launch) / $397 | 10 CCE hours (MCQ education) | Active ICF credential | Coaches pursuing ICF Mentor Coach Qualification via CPL |
 
 ---
 
@@ -203,6 +204,54 @@ Four programs for every stage of the coaching journey. Each is independently acc
 
 ## Other Services
 
+### Mentor Coaching Foundations (self-paced course) — NEW
+An asynchronous, self-paced course that provides the 10-hour education component required for the ICF **Mentor Coach Qualification (MCQ)** via the Credit for Prior Learning (CPL) path. This course teaches coaches how to BE a mentor coach — it is NOT mentor coaching sessions.
+
+- **Price:** $299 (launch price through September 30, 2026) / $397 regular
+- **Format:** Asynchronous, self-paced — 22 video lessons across 6 modules, 15 units
+- **Hours:** 10 ICF Continuing Coach Education (CCE) hours (Core Competency)
+- **Prerequisites:** Active ICF credential (ACC, PCC, or MCC)
+- **Completion time:** ~2 focused weeks (5 hrs/week), flexible pacing, lifetime access
+- **Instructors:** Cherie Silas (MCC) — Modules 1, 3, 5; Alex Kudinov (MCC) — Modules 2, 4, 6
+- **URL:** /mcq/mentor-coaching-foundations/
+- **Guarantee:** 14-day money-back refund (unavailable after certificate issuance)
+
+**What's included:**
+- 22 video lessons, 15 downloadable tools (templates, worksheets, frameworks)
+- 3 auto-scored quizzes (37 questions, ≥80% to pass, retakeable)
+- 6 instructor-graded written submissions (one revision each)
+- Full coaching recording for analysis and feedback practice
+- Certificate of Completion with instructor signatures
+- Attestation letter for graduates meeting CPL criteria (5+ mentees in past 3 years)
+
+**Course modules (aligned to 2024 ICF Mentor Coaching Competencies):**
+
+| Module | Hours | Topic | Competency |
+|--------|-------|-------|------------|
+| 1 | ~2 | Ethical Practice & Role Clarity | MC Competency 1 |
+| 2 | ~1.5 | MC Agreements & Engagement Structure | MC Competency 2 |
+| 3 | ~1.5 | Managing the MC Process | MC Competency 3 |
+| 4 | ~2 | Conducting Formative Appraisals | MC Competency 4 |
+| 5 | ~2 | Facilitating Skill Development | MC Competency 5 |
+| 6 | ~1 | Group Mentor Coaching | MC Competency 6 |
+
+**Target personas:**
+1. **CPL Renewer** — PCC/MCC/renewed ACC with 5+ mentees documented, seeking fastest MCQ route
+2. **Active Mentor Coach** — Currently mentoring candidates, needs formal CCE record before deadline
+3. **MCQ Renewer** — Planning to qualify in 2026 introductory window, wants CCE hours for three-year renewal
+
+**ICF accreditation status:** CCE accreditation currently pending review.
+
+**What this course does NOT include:** BARS/Markers training (taken separately through ICF), 1:1 mentor coaching sessions, or the standard-path synchronous hours. A companion Mentor Coaching Practicum (31 hrs blended) is planned for Q3 2026.
+
+> **⚠️ DO NOT CONFUSE with MCC Mentor Coaching ($3,999).** These are different products for different ICF pathways:
+> - **Mentor Coaching Foundations** ($299) = self-paced EDUCATION on how to be a mentor coach → for the ICF **Mentor Coach Qualification** (MCQ) CPL path
+> - **MCC Mentor Coaching** ($3,999) = live 1-on-1 SESSIONS receiving mentor coaching from MCCs → for coaches pursuing the **MCC credential** via the ICF MCQ (Master Certified Coach Questionnaire) CPL path
+>
+> Both abbreviate to "MCQ" but refer to different ICF programs. Disambiguate by asking: "Are you looking to become a qualified mentor coach, or are you pursuing your MCC credential?"
+
+---
+
 ### ICF Mentor Coaching (standalone)
 For coaches who need mentor coaching hours outside of a Tandem program. Already in a Tandem program? Mentor coaching is included — no need to buy separately.
 
@@ -213,11 +262,12 @@ For coaches who need mentor coaching hours outside of a Tandem program. Already 
 | MCC Credential | $3,999 | 10 individual | 1-on-1 only |
 
 - **All sessions:** Live Zoom video calls
-- **Group sessions:** Run in 4-week cohorts throughout the year, 4 sessions × 2 hours each (next: May 5, 2026)
+- **Group sessions:** Run in 4-week cohorts throughout the year, 4 sessions × 2 hours each (next cohort: May 5, 2026)
 - **Individual sessions:** Scheduled directly with mentor based on mutual availability
 - **What's included:** Observation and feedback on coaching demonstrations, peer learning (group), personalized feedback (individual), certificate of completion for ICF applications
 - **Mentors:** Cherie Silas (MCC, ICF Credential Assessor, 20+ yrs) and Alex Kudinov (MCC, ICF Credential Assessor)
 - **ICF requirements:** Minimum 10 hours over 3+ months, at least 3 hours individual
+- **MCC via MCQ (Credit for Prior Learning) path:** The MCC Credential package ($3,999, 10 individual hours) fully satisfies the 10-hour Mentor Coach Education requirement for the ICF MCQ Credit for Prior Learning Path. A formal completion certificate is issued for ICF applications. Both mentors are ICF Credential Assessors who know exactly what the MCQ evaluation looks for.
 - URL: /icf/mentor-coaching-acc-pcc-mcc/
 
 **Do you need coaching clients for mentor coaching?** It depends on the format. Individual mentor coaching involves getting feedback on your real coaching sessions with actual clients — so yes, you need clients. Group mentoring (included in certification programs) is live coaching practice in a classroom setting where participants coach peers; no external clients required. If a lead asks whether they need clients before they can start, clarify: group mentoring uses peer practice, but individual mentor coaching requires actual coaching sessions to review.
@@ -263,6 +313,8 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 
 **Can I buy the Professional Coach Program if I already started ACC separately?** Contact Tandem — they can typically work out credit for prior ACC payments toward the full program.
 
+**What's the difference between Mentor Coaching Foundations ($299) and MCC Mentor Coaching ($3,999)?** Completely different products. Mentor Coaching Foundations is a self-paced online course that teaches you how to be a mentor coach — it satisfies the 10-hour education requirement for the ICF Mentor Coach Qualification (MCQ) via Credit for Prior Learning. MCC Mentor Coaching is 10 hours of live 1-on-1 sessions where you receive mentor coaching from an MCC — it satisfies the mentoring requirement for the MCC credential via the MCQ (Master Certified Coach Questionnaire) Credit for Prior Learning path. If the lead wants to become a qualified mentor coach → Foundations. If the lead wants MCC credential → MCC Mentor Coaching.
+
 **Do I need coaching clients to start mentor coaching or supervision?** Group mentoring (part of certification programs) uses peer practice in the classroom — no external clients needed. Individual mentor coaching and coaching supervision both require you to have actual coaching clients: individual mentor coaching reviews your real sessions, and supervision is reflective practice on your live work with clients.
 
 ---
@@ -280,6 +332,12 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 ---
 
 ## Agent Operations Notes
+
+### Price Positioning in Sales Emails
+Price must appear in every program response — transparency matters at this consideration level. But never lead with price. Always establish at least one value prop specific to the lead's question before stating the price. Structure: answer their question → relevant value (ICF accreditation, MCC instructors, modular flexibility, included mentor coaching) → price as the payoff. The lead should read "all of that for $3,999" not "is $3,999 worth it?"
+
+### Cohort Start Dates — How to Identify Them
+Each training module runs as a **4-session block** (one 2-hour live Zoom session per week for 4 consecutive weeks). A "cohort start" is the **first session** of a new 4-week block — that is when new students can join. The subsequent three weeks (weeks 2, 3, 4) are continuation sessions for students already enrolled in that cohort. When quoting the next available cohort to a lead, always use the start date of the next 4-week block from SCHEDULE.md. Never cite a mid-block date as a cohort start. If SCHEDULE.md is stale or you are unsure which date is a block start, use approximate language like "cohorts run monthly — the next one starts in early [month]" rather than guessing a specific date.
 
 ### Email Subject Lines
 Subject lines must contain only ASCII characters. Never use em dashes (—), en dashes (–), smart quotes (" " ' '), or any other non-ASCII character. Replace em dashes and en dashes with hyphens (-) and smart quotes with straight quotes. Non-ASCII characters are double-encoded by some mail clients, producing garbled output (e.g., `Ã¢Â€Â"`).
@@ -315,67 +373,70 @@ The `/contact-us` page is the contact form where leads submit new inquiries — 
 ## Email Classification Taxonomy
 
 Mailman classifies every inbound email into exactly one canonical label from
-this taxonomy. Labels follow the pattern `class/{category}` or
-`class/{category}/{subcategory}`. Pick the most specific applicable label. If
-no label fits, use `class/other` and report it to chief so a new taxonomy
+this taxonomy. Labels follow the pattern `MrGru/{category}` or
+`MrGru/{category}/{subcategory}`. Pick the most specific applicable label. If
+no label fits, use `MrGru/other` and report it to chief so a new taxonomy
 entry can be added.
 
 The `hive_share_target` column indicates which humans care about this category
 (`alex`, `cherie`, or both). When set, classified emails are surfaced in the
 recipient's Hive view via Firestore assignment. The `digest_priority` column
 (0 / 1 / 2) controls whether the email appears in the daily digest — 0 skips,
-1 is normal, 2 is high priority.
+1 is normal, 2 is high priority. The `auto_archive` flag (📪 = archive,
+📬 = stay in inbox) controls whether the host removes the `INBOX` label after
+classification — noise labels archive automatically so the main inbox stays
+focused on human-needs items.
 
 ### Leads (prospective clients)
-- `class/lead/inquiry` — General coaching/program inquiry from a new prospect (hive: cherie+alex, priority 2)
-- `class/lead/offer` — Inbound RFP or paid engagement offer (hive: cherie+alex, priority 2)
+- 📬 `MrGru/lead/inquiry` — General coaching/program inquiry from a new prospect (hive: cherie+alex, priority 2)
+- 📬 `MrGru/lead/offer` — Inbound RFP or paid engagement offer (hive: cherie+alex, priority 2)
 
 ### Clients (current or past)
-- `class/client/active` — Email from a current paying client (hive: cherie+alex, priority 2)
-- `class/client/dormant` — Email from a past client who has not engaged recently (hive: cherie+alex, priority 1)
+- 📬 `MrGru/client/active` — Email from a current paying client (hive: cherie+alex, priority 2)
+- 📬 `MrGru/client/dormant` — Email from a past client who has not engaged recently (hive: cherie+alex, priority 1)
 
 ### Financial
-- `class/financial/receipt` — Payment receipt, invoice confirmation, purchase acknowledgment (hive: cherie, priority 1)
-- `class/financial/bill` — Upcoming bill, subscription renewal, payment due notice (hive: cherie, priority 2)
-- `class/financial/refund` — Refund confirmation or credit note (hive: cherie, priority 1)
+- 📪 `MrGru/financial/receipt` — Payment receipt, invoice confirmation, purchase acknowledgment (hive: cherie, priority 1, archived)
+- 📬 `MrGru/financial/bill` — Upcoming bill, subscription renewal, payment due notice (hive: cherie, priority 2)
+- 📬 `MrGru/financial/refund` — Refund confirmation or credit note (hive: cherie, priority 1)
 
 ### Vendors
-- `class/vendor/cold` — Unsolicited vendor outreach or cold sales email (no hive share, priority 0)
-- `class/vendor/warm` — Ongoing vendor conversation or follow-up from a known contact (hive: cherie, priority 1)
+- 📪 `MrGru/vendor/cold` — Unsolicited vendor outreach or cold sales email (no hive share, priority 0, archived)
+- 📬 `MrGru/vendor/warm` — Ongoing vendor conversation or follow-up from a known contact (hive: cherie, priority 1)
 
 ### Procurement (RFPs from vendor portals)
-- `class/procurement/rfp` — Request for Proposal received via procurement channel (hive: cherie+alex, priority 2)
-- `class/procurement/rfq` — Request for Quotation received via procurement channel (hive: cherie+alex, priority 2)
+- 📪 `MrGru/procurement/rfp` — Request for Proposal received via procurement channel (hive: cherie+alex, priority 2, archived — procurement minion handles)
+- 📪 `MrGru/procurement/rfq` — Request for Quotation received via procurement channel (hive: cherie+alex, priority 2, archived — procurement minion handles)
 
 ### Meeting assets
-- `class/meeting-assets/zoom` — Zoom meeting invitation, link, or access credential (no hive share, priority 0)
-- `class/meeting-assets/recording` — Zoom or video recording delivery notification (hive: alex, priority 1)
+- 📪 `MrGru/meeting-assets/zoom` — Zoom meeting invitation, link, or access credential (no hive share, priority 0, archived)
+- 📬 `MrGru/meeting-assets/recording` — Zoom or video recording delivery notification (hive: alex, priority 1)
 
 ### Internal
-- `class/internal/team` — Internal team communication from a known colleague (no hive share, priority 0)
-- `class/internal/cofounder` — Email from a co-founder or executive partner (hive: cherie+alex, priority 2)
+- 📬 `MrGru/internal/team` — Internal team communication from a known colleague (no hive share, priority 0)
+- 📬 `MrGru/internal/cofounder` — Email from a co-founder or executive partner (hive: cherie+alex, priority 2)
 
 ### Legal
-- `class/legal/contract` — Contract, agreement, or legal document (hive: cherie+alex, priority 2)
-- `class/legal/notice` — Legal notice, cease-and-desist, or compliance communication (hive: cherie+alex, priority 2)
+- 📬 `MrGru/legal/contract` — Contract, agreement, or legal document (hive: cherie+alex, priority 2)
+- 📬 `MrGru/legal/notice` — Legal notice, cease-and-desist, or compliance communication (hive: cherie+alex, priority 2)
 
 ### Recruiting
-- `class/recruiting/applicant` — Job application or resume submission (hive: cherie, priority 1)
-- `class/recruiting/outreach` — Recruiter outreach or headhunting email (no hive share, priority 0)
+- 📬 `MrGru/recruiting/applicant` — Job application or resume submission (hive: cherie, priority 1)
+- 📪 `MrGru/recruiting/outreach` — Recruiter outreach or headhunting email (no hive share, priority 0, archived)
 
 ### Newsletters
-- `class/newsletter/general` — Newsletter or marketing email from an external sender (no hive share, priority 0)
-- `class/newsletter/digest` — Curated digest or roundup email from a known publication (no hive share, priority 0)
+- 📪 `MrGru/newsletter/general` — Newsletter or marketing email from an external sender (no hive share, priority 0, archived)
+- 📪 `MrGru/newsletter/digest` — Curated digest or roundup email from a known publication (no hive share, priority 0, archived)
 
 ### Notifications
-- `class/notification/system` — Automated system notification (CI/CD, monitoring, alerts) (no hive share, priority 0)
-- `class/notification/calendar` — Calendar invite, rescheduling notice, event confirmation (no hive share, priority 0)
+- 📪 `MrGru/notification/system` — Automated system notification (CI/CD, monitoring, alerts) (no hive share, priority 0, archived)
+- 📬 `MrGru/notification/calendar` — Calendar invite, rescheduling notice, event confirmation (no hive share, priority 0)
 
 ### Fallbacks
-- `class/personal` — Personal or family email unrelated to business operations (no hive share, priority 0)
-- `class/other` — Does not fit any defined category; triggers taxonomy review via chief (no hive share, priority 0)
+- 📬 `MrGru/personal` — Personal or family email unrelated to business operations (no hive share, priority 0)
+- 📬 `MrGru/other` — Does not fit any defined category; triggers taxonomy review via chief (no hive share, priority 0)
 
 **Rules:**
-- Exactly one `class/*` label per message — the host enforces this via `replaceClassLabelsOnThread`.
-- If you corrected a prior classification, chief should route a `route_lesson` to mailman with a rule like: `"When sender is X, classify as class/Y"`. The host picks up the lesson and backfills matching past emails (up to 25 by default; over that triggers an approval request in `#gru-chief`).
-- Never invent labels outside this list. If something doesn't fit, use `class/other` and flag it.
+- Exactly one `MrGru/*` label per message — the host enforces this via `replaceClassLabelsOnThread`.
+- If you corrected a prior classification, chief should route a `route_lesson` to mailman with a rule like: `"When sender is X, classify as MrGru/Y"`. The host picks up the lesson and backfills matching past emails (up to 25 by default; over that triggers an approval request in `#gru-chief`).
+- Never invent labels outside this list. If something doesn't fit, use `MrGru/other` and flag it.

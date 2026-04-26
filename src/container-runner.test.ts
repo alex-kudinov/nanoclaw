@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { PassThrough } from 'stream';
 
 // Sentinel markers must match container-runner.ts
@@ -14,6 +17,7 @@ vi.mock('./config.js', () => ({
   DATA_DIR: '/tmp/nanoclaw-test-data',
   GROUPS_DIR: '/tmp/nanoclaw-test-groups',
   IDLE_TIMEOUT: 1800000, // 30min
+  SPAWN_TIMEOUT: 90000, // 90s
   TIMEZONE: 'America/Los_Angeles',
 }));
 
@@ -51,6 +55,33 @@ vi.mock('./mount-security.js', () => ({
   validateAdditionalMounts: vi.fn(() => []),
 }));
 
+// Mock env — provide CLAUDE_CODE_OAUTH_TOKEN so readSecrets doesn't throw
+// Includes business DB keys for PGOPTIONS tests
+vi.mock('./env.js', () => ({
+  readEnvFile: vi.fn(() => ({
+    CLAUDE_CODE_OAUTH_TOKEN: 'test-token-for-unit-tests',
+    BUSINESS_DB_HOST: '192.168.64.1',
+    BUSINESS_DB_PORT: '5432',
+    BUSINESS_DB_NAME: 'nanoclaw_business',
+    BUSINESS_DB_ROLE_INBOX: 'nanoclaw_inbox',
+    BUSINESS_DB_PASS_INBOX: 'inbox-pass',
+    BUSINESS_DB_ROLE_SALES: 'nanoclaw_sales',
+    BUSINESS_DB_PASS_SALES: 'sales-pass',
+    BUSINESS_DB_ROLE_CHIEF: 'nanoclaw_chief',
+    BUSINESS_DB_PASS_CHIEF: 'chief-pass',
+    BUSINESS_DB_ROLE_ADMIN: 'nanoclaw_admin',
+    BUSINESS_DB_PASS_ADMIN: 'admin-pass',
+    BUSINESS_DB_ROLE_CONTADOR: 'nanoclaw_contador',
+    BUSINESS_DB_PASS_CONTADOR: 'contador-pass',
+    BUSINESS_DB_ROLE_MAILMAN: 'nanoclaw_mailman',
+    BUSINESS_DB_PASS_MAILMAN: 'mailman-pass',
+    BUSINESS_DB_ROLE_BOOKING: 'nanoclaw_booking',
+    BUSINESS_DB_PASS_BOOKING: 'booking-pass',
+    BUSINESS_DB_ROLE_PROCUREMENT: 'nanoclaw_procurement',
+    BUSINESS_DB_PASS_PROCUREMENT: 'procurement-pass',
+  })),
+}));
+
 // Create a controllable fake ChildProcess
 function createFakeProcess() {
   const proc = new EventEmitter() as EventEmitter & {
@@ -86,7 +117,11 @@ vi.mock('child_process', async () => {
   };
 });
 
-import { runContainerAgent, ContainerOutput } from './container-runner.js';
+import {
+  runContainerAgent,
+  ContainerOutput,
+  resolveOAuthToken,
+} from './container-runner.js';
 import type { RegisteredGroup } from './types.js';
 
 const testGroup: RegisteredGroup = {
@@ -157,7 +192,7 @@ describe('container-runner timeout behavior', () => {
     );
   });
 
-  it('timeout with no output resolves as error', async () => {
+  it('spawn timeout with no output resolves as error', async () => {
     const onOutput = vi.fn(async () => {});
     const resultPromise = runContainerAgent(
       testGroup,
@@ -166,17 +201,17 @@ describe('container-runner timeout behavior', () => {
       onOutput,
     );
 
-    // No output emitted — fire the hard timeout
-    await vi.advanceTimersByTimeAsync(1830000);
+    // No output emitted — spawn timeout (90s) fires before hard timeout
+    await vi.advanceTimersByTimeAsync(90000);
 
-    // Emit close event
+    // Emit close event (as if container was stopped by spawn timeout)
     fakeProc.emit('close', 137);
 
     await vi.advanceTimersByTimeAsync(10);
 
     const result = await resultPromise;
     expect(result.status).toBe('error');
-    expect(result.error).toContain('timed out');
+    expect(result.error).toContain('no output');
     expect(onOutput).not.toHaveBeenCalled();
   });
 
@@ -206,5 +241,165 @@ describe('container-runner timeout behavior', () => {
     const result = await resultPromise;
     expect(result.status).toBe('success');
     expect(result.newSessionId).toBe('session-456');
+  });
+});
+
+describe('PGOPTIONS agent identity injection', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    fakeProc = createFakeProcess();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('sets PGOPTIONS with agent name and role for inbox group', async () => {
+    const inboxGroup: RegisteredGroup = {
+      name: 'Inbox',
+      folder: 'inbox',
+      trigger: '@Gru',
+      added_at: new Date().toISOString(),
+    };
+    const input = {
+      prompt: 'test',
+      groupFolder: 'inbox',
+      chatJid: 'test@g.us',
+      isMain: false,
+    };
+
+    const resultPromise = runContainerAgent(
+      inboxGroup,
+      input,
+      () => {},
+      async () => {},
+    );
+
+    // Capture stdin data
+    const chunks: Buffer[] = [];
+    fakeProc.stdin.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    // Let stdin write settle
+    await vi.advanceTimersByTimeAsync(50);
+
+    // Emit output + close to resolve the promise
+    emitOutputMarker(fakeProc, {
+      status: 'success',
+      result: 'ok',
+      newSessionId: 'sess-1',
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    fakeProc.emit('close', 0);
+    await vi.advanceTimersByTimeAsync(10);
+
+    await resultPromise;
+
+    const stdinData = Buffer.concat(chunks).toString();
+    const parsed = JSON.parse(stdinData);
+    expect(parsed.secrets.PGOPTIONS).toContain("-c app.current_agent='inbox'");
+    expect(parsed.secrets.PGOPTIONS).toContain(
+      "-c app.current_agent_role='nanoclaw_inbox'",
+    );
+    expect(parsed.secrets.BUSINESS_DB_URL).toContain('nanoclaw_inbox');
+  });
+});
+
+describe('resolveOAuthToken (token pool round-robin)', () => {
+  const mockFs = vi.mocked(fs);
+  const cwd = process.cwd();
+  const poolPath = path.join(cwd, 'data', '.token-pool.json');
+  const cursorPath = path.join(cwd, 'data', '.token-cursor');
+  const pool = [
+    { name: 'alex', token: 'tok-alex' },
+    { name: 'info', token: 'tok-info' },
+    { name: 'nanoclaw', token: 'tok-nc' },
+  ];
+
+  it('returns first token when cursor is 0', () => {
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (p === poolPath) return JSON.stringify(pool);
+      if (p === cursorPath) return '0';
+      return '';
+    });
+    mockFs.writeFileSync.mockImplementation(() => {});
+    expect(resolveOAuthToken()).toBe('tok-alex');
+  });
+
+  it('returns second token when cursor is 1', () => {
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (p === poolPath) return JSON.stringify(pool);
+      if (p === cursorPath) return '1';
+      return '';
+    });
+    mockFs.writeFileSync.mockImplementation(() => {});
+    expect(resolveOAuthToken()).toBe('tok-info');
+  });
+
+  it('returns third token when cursor is 2', () => {
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (p === poolPath) return JSON.stringify(pool);
+      if (p === cursorPath) return '2';
+      return '';
+    });
+    mockFs.writeFileSync.mockImplementation(() => {});
+    expect(resolveOAuthToken()).toBe('tok-nc');
+  });
+
+  it('wraps around: cursor 3 with 3 tokens returns first', () => {
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (p === poolPath) return JSON.stringify(pool);
+      if (p === cursorPath) return '3';
+      return '';
+    });
+    mockFs.writeFileSync.mockImplementation(() => {});
+    expect(resolveOAuthToken()).toBe('tok-alex');
+  });
+
+  it('advances cursor after each call', () => {
+    let written = '';
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (p === poolPath) return JSON.stringify(pool);
+      if (p === cursorPath) return '1';
+      return '';
+    });
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      if (_p === cursorPath) written = data as string;
+    });
+    resolveOAuthToken();
+    expect(written).toBe('2');
+  });
+
+  it('defaults to cursor 0 when cursor file is missing', () => {
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (p === poolPath) return JSON.stringify(pool);
+      if (p === cursorPath) throw new Error('ENOENT');
+      return '';
+    });
+    mockFs.writeFileSync.mockImplementation(() => {});
+    expect(resolveOAuthToken()).toBe('tok-alex');
+  });
+
+  it('returns undefined when pool file is missing', () => {
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (p === poolPath) throw new Error('ENOENT');
+      return '';
+    });
+    expect(resolveOAuthToken()).toBeUndefined();
+  });
+
+  it('returns undefined when pool is empty', () => {
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (p === poolPath) return '[]';
+      return '';
+    });
+    expect(resolveOAuthToken()).toBeUndefined();
+  });
+
+  it('returns undefined when pool JSON is invalid', () => {
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (p === poolPath) return 'not-json';
+      return '';
+    });
+    expect(resolveOAuthToken()).toBeUndefined();
   });
 });

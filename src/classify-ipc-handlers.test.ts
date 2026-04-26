@@ -52,7 +52,9 @@ const mockQuery = query as unknown as ReturnType<typeof vi.fn>;
 const mockReplace = replaceClassLabelsOnThread as unknown as ReturnType<
   typeof vi.fn
 >;
-const mockRemove = removeLabelsFromThread as unknown as ReturnType<typeof vi.fn>;
+const mockRemove = removeLabelsFromThread as unknown as ReturnType<
+  typeof vi.fn
+>;
 const mockRecord = recordClassification as unknown as ReturnType<typeof vi.fn>;
 
 let tmpDir = '';
@@ -138,7 +140,9 @@ describe('handleClassifyLabelWrite', () => {
       }) // taxonomy
       .mockResolvedValueOnce({ rowCount: 0, rows: [] }); // auto-rule
     mockRemove.mockRejectedValueOnce(new Error('gmail 500'));
-    await expect(handleClassifyLabelWrite(basePayload())).resolves.not.toThrow();
+    await expect(
+      handleClassifyLabelWrite(basePayload()),
+    ).resolves.not.toThrow();
   });
 
   it('passes non-null probation_until when auto_archive is true', async () => {
