@@ -292,7 +292,11 @@ describe('host-router', () => {
   it('contador handoff carries Snippet + Thread-ID, not full Body', async () => {
     const longBody = 'INVOICE LINE. '.repeat(200); // ~2.6 KB
     await routeClassifiedEmail(
-      makeParams({ label: 'financial/bill', body: longBody, threadId: 'thr-x' }),
+      makeParams({
+        label: 'financial/bill',
+        body: longBody,
+        threadId: 'thr-x',
+      }),
     );
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('Thread-ID: thr-x');
