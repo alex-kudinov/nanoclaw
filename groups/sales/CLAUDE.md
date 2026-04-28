@@ -45,9 +45,9 @@ Message contains "Approved" (case-insensitive). Execute final action.
 
 ## Processing Protocol
 
-1. Parse handoff. **Save Thread-ID** if present — must include in mailman handoff for threading.
+1. Parse handoff. **Save Thread-ID** if present — must include in mailman handoff for threading. **Save Known-To-Us** if present — drives draft posture (returning student vs stranger). If `Known-To-Us` is absent, also run a quick lookup yourself: `psql -c "SELECT * FROM business_v2.v_party_contact_card WHERE LOWER(primary_email) = LOWER('${email}');" --csv` — inbox should have done this, but double-check, especially for `chief→sales` handoffs.
 2. Read `/workspace/extra/knowledge/KNOWLEDGE.md`
-3. Match lead's need to programs/services (see table below)
+3. Match lead's need to programs/services (see table below). **Hard rule on program assumptions:** if the lead's message does not name a program, do not silently assume one. Either (a) ask which program before quoting any program-specific details, OR (b) state your assumption inline in the email body ("I'm assuming you mean ACC — let me know if you had a different program in mind"). Never quote ACC pricing/cohorts/timezone for a "what time are classes?" message that didn't say ACC. Alex caught this exact failure on the Marius case (2026-04-27).
 4. Draft response using Two-Pass Draft Review (see `WORKFLOWS.md`)
 5. Post audited draft as top-level message. **MUST include lead's original message verbatim in THEIR REQUEST section.**
 6. Update DB (use Entry ID from handoff):

@@ -42,9 +42,9 @@ describe('buildDisplayName', () => {
   });
 
   it('falls back to email when no name fields are present', () => {
-    expect(
-      buildDisplayName({ customerEmail: 'jamie@finvari.com' }),
-    ).toBe('jamie@finvari.com');
+    expect(buildDisplayName({ customerEmail: 'jamie@finvari.com' })).toBe(
+      'jamie@finvari.com',
+    );
   });
 
   it('handles whitespace-only name fields gracefully', () => {

@@ -14,7 +14,10 @@ describe('extractEventKey — trafft', () => {
 
   it('canceled mirrors booked shape', () => {
     expect(
-      extractEventKey('trafft', { event_type: 'canceled', appointmentId: '42' }),
+      extractEventKey('trafft', {
+        event_type: 'canceled',
+        appointmentId: '42',
+      }),
     ).toEqual({ event_id: 'appt:42:canceled', event_type: 'canceled' });
   });
 
@@ -55,9 +58,10 @@ describe('extractEventKey — trafft', () => {
   });
 
   it('returns null event_id when appointmentId is missing', () => {
-    expect(
-      extractEventKey('trafft', { event_type: 'booked' }),
-    ).toEqual({ event_id: null, event_type: 'booked' });
+    expect(extractEventKey('trafft', { event_type: 'booked' })).toEqual({
+      event_id: null,
+      event_type: 'booked',
+    });
   });
 
   it('returns NONE for non-object payload', () => {

@@ -97,7 +97,9 @@ function alertChief(deps: ReaperDeps, text: string): void {
 
 function loadWebhooks(filePath: string): WebhookDefinition[] {
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as WebhookDefinition[];
+    return JSON.parse(
+      fs.readFileSync(filePath, 'utf-8'),
+    ) as WebhookDefinition[];
   } catch {
     return [];
   }
@@ -118,10 +120,7 @@ function renderPrompt(template: string, payload: unknown): string {
     });
 }
 
-async function markDeadLettered(
-  id: number,
-  error: string,
-): Promise<void> {
+async function markDeadLettered(id: number, error: string): Promise<void> {
   await query(
     `UPDATE business_v2.webhook_inbox
         SET status = 'dead_lettered',

@@ -21,7 +21,10 @@ export interface ExtractedKey {
 
 const NONE: ExtractedKey = { event_id: null, event_type: null };
 
-export function extractEventKey(source: string, payload: unknown): ExtractedKey {
+export function extractEventKey(
+  source: string,
+  payload: unknown,
+): ExtractedKey {
   if (!payload || typeof payload !== 'object') return NONE;
   const p = payload as Payload;
   switch (source) {

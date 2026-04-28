@@ -663,10 +663,7 @@ export class WebhookServer {
         },
       )
       .then(() => {
-        logger.info(
-          { hookId, requestId, inboxId },
-          'Webhook agent completed',
-        );
+        logger.info({ hookId, requestId, inboxId }, 'Webhook agent completed');
         if (inboxId !== null && this.deps.markWebhookHandled) {
           this.deps
             .markWebhookHandled(inboxId, { handled_by: webhook.group })

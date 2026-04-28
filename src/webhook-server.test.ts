@@ -161,7 +161,9 @@ describe('WebhookServer', () => {
     const d = makeDeps({ archiveWebhook, markWebhookDispatched });
     const s = new WebhookServer(d);
     await s.start();
-    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [testWebhook];
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      testWebhook,
+    ];
     try {
       const res = await makeRequest(d.port, {
         path: '/hook/test-hook',
@@ -191,7 +193,9 @@ describe('WebhookServer', () => {
     const d = makeDeps({ archiveWebhook, runAgent });
     const s = new WebhookServer(d);
     await s.start();
-    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [testWebhook];
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      testWebhook,
+    ];
     try {
       const res = await makeRequest(d.port, {
         path: '/hook/test-hook',
@@ -219,7 +223,9 @@ describe('WebhookServer', () => {
     const d = makeDeps({ archiveWebhook, runAgent });
     const s = new WebhookServer(d);
     await s.start();
-    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [testWebhook];
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      testWebhook,
+    ];
     try {
       const res = await makeRequest(d.port, {
         path: '/hook/test-hook',

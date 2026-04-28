@@ -18,7 +18,9 @@ export interface ArchiveInput {
   event_id?: string | null;
   event_type?: string | null;
   delivery_path?: 'n8n' | 'direct' | 'sweep';
-  raw_headers: IncomingHttpHeaders | Record<string, string | string[] | undefined>;
+  raw_headers:
+    | IncomingHttpHeaders
+    | Record<string, string | string[] | undefined>;
   raw_body: unknown;
 }
 

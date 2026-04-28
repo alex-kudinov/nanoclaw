@@ -30,6 +30,25 @@ Call `mcp__nanoclaw__send_message` with ONLY the `text` parameter (no `target_gr
 
 Read `/workspace/extra/knowledge/KNOWLEDGE.md`. Determine if the lead matches any Tandem Coaching service.
 
+### Step 2.5 — Look up prior context (qualified leads only)
+
+Before writing, check whether this person is already known to us. The handoff to sales must carry whatever history exists — a stranger and a returning Coaching Foundations student deserve different first responses.
+
+```bash
+psql -c "SELECT * FROM business_v2.v_party_contact_card WHERE LOWER(primary_email) = LOWER('${EMAIL}');" --csv
+psql -c "SELECT channel, direction, subject, occurred_at FROM business_v2.interactions i JOIN business_v2.parties p ON p.id = i.party_id WHERE LOWER(p.primary_email) = LOWER('${EMAIL}') ORDER BY occurred_at DESC LIMIT 5;" --csv
+psql -c "SELECT role_key, started_at FROM business_v2.party_roles pr JOIN business_v2.parties p ON p.id = pr.party_id WHERE LOWER(p.primary_email) = LOWER('${EMAIL}') AND pr.ended_at IS NULL;" --csv
+```
+
+Build a `KNOWN_TO_US` line for the handoff in Step 5:
+
+- No party row OR no prior interactions → `KNOWN_TO_US=""` (omit the line in handoff)
+- Party exists with prior interactions/roles → one line summarizing what's relevant. Examples:
+  - `KNOWN_TO_US=Existing party 10063, since 2026-03-10. Active role: student. Last interaction: 2026-04-15 (course-progress, inbound).`
+  - `KNOWN_TO_US=Existing party 9871, since 2026-01-04. Active roles: prospect, student (Coaching Foundations). Last interaction: 2026-02-22 (email, outbound).`
+
+This step is purely informational — do not block on lookup failures. If psql errors, skip with empty `KNOWN_TO_US` and continue.
+
 ### Step 3 — Write to DB (qualified leads only)
 
 Store the FULL original message — never truncate. Use the four-step business_v2 write sequence. Resolve the program_id by slug first — never hardcode it.
@@ -107,6 +126,7 @@ Party ID: {party_id}
 Name: {name}
 Email: {email}
 Thread-ID: {Gmail thread ID if present in the incoming handoff — omit this line if not available}
+Known-To-Us: {KNOWN_TO_US line from Step 2.5 — omit this line if no prior context}
 Message: {FULL original message — copy it word for word}
 Source: {source from the incoming handoff, e.g. "email" or "contact-form"}
 ```

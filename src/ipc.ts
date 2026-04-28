@@ -65,6 +65,19 @@ export interface IpcDeps {
 
 let ipcWatcherRunning = false;
 
+// Mailman send-hold buffer. Held [HANDOFF: *→mailman] messages sit here
+// for MAILMAN_HOLD_MS so an in-flight [CANCEL: *→mailman] from the same
+// source can intercept the send. See project-mailman-approval-delay
+// memory + the Marius Braun case (2026-04-27) for the cancel-race
+// motivation. Set MAILMAN_HOLD_SECONDS=0 to disable.
+const MAILMAN_HOLD_MS =
+  (parseInt(process.env.MAILMAN_HOLD_SECONDS || '30', 10) || 0) * 1000;
+interface HeldMailmanHandoff {
+  timer: NodeJS.Timeout;
+  sourceGroup: string;
+}
+const heldMailmanHandoffs = new Map<string, HeldMailmanHandoff>();
+
 /**
  * Spawn merge-lessons.sh as a detached background process.
  * Called after both handleLearnLesson and handleRouteLesson to
@@ -170,6 +183,44 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     continue;
                   }
                 }
+                // [CANCEL: source→mailman] intercepts a held mailman handoff
+                // from the same source within the hold window. Drop the held
+                // file without forwarding; the cancel marker itself still
+                // routes through to mailman so it has an audit trail.
+                const cancelMatch = data.text.match(
+                  /\[CANCEL:\s*(\w+)→mailman\]/,
+                );
+                if (cancelMatch) {
+                  const cancelSource = cancelMatch[1];
+                  let cancelledCount = 0;
+                  for (const [
+                    heldPath,
+                    held,
+                  ] of heldMailmanHandoffs.entries()) {
+                    if (held.sourceGroup === cancelSource) {
+                      clearTimeout(held.timer);
+                      heldMailmanHandoffs.delete(heldPath);
+                      try {
+                        if (fs.existsSync(heldPath)) fs.unlinkSync(heldPath);
+                      } catch {
+                        /* held file already gone, race-safe */
+                      }
+                      cancelledCount++;
+                    }
+                  }
+                  if (cancelledCount > 0) {
+                    logger.info(
+                      { cancelSource, cancelledCount },
+                      'IPC mailman handoff(s) cancelled within hold window',
+                    );
+                  } else {
+                    logger.warn(
+                      { cancelSource },
+                      'IPC mailman cancel arrived but no held handoff to drop — send already left',
+                    );
+                  }
+                  // fall through: deliver the cancel to mailman for audit
+                }
                 // Deterministic handoff: [HANDOFF: source→target] routes to target group
                 const handoffMatch = data.text.match(
                   /\[HANDOFF:\s*\w+→(\w+)\]/,
@@ -180,32 +231,71 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     ([, g]) => g.folder === handoffTarget,
                   );
                   if (handoffEntry) {
-                    await deps.sendMessage(handoffEntry[0], data.text, {
-                      fromGroup: sourceGroup,
-                      threadTs: data.thread_ts,
-                    });
-                    // Store directly in DB — Slack doesn't reliably deliver
-                    // bot_message events back to the same app via Socket Mode.
-                    storeMessageDirect({
-                      id: `ipc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                      chat_jid: handoffEntry[0],
-                      sender: sourceGroup,
-                      sender_name: sourceGroup,
-                      content: data.text,
-                      timestamp: new Date().toISOString(),
-                      is_from_me: false,
-                      is_bot_message: true,
-                      from_group: sourceGroup,
-                      thread_ts: data.thread_ts,
-                    });
-                    logger.info(
-                      {
-                        handoffTarget,
-                        handoffJid: handoffEntry[0],
-                        sourceGroup,
-                      },
-                      'IPC handoff routed to target group',
-                    );
+                    const flushHandoff = async (): Promise<void> => {
+                      await deps.sendMessage(handoffEntry[0], data.text, {
+                        fromGroup: sourceGroup,
+                        threadTs: data.thread_ts,
+                      });
+                      // Store directly in DB — Slack doesn't reliably deliver
+                      // bot_message events back to the same app via Socket Mode.
+                      storeMessageDirect({
+                        id: `ipc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                        chat_jid: handoffEntry[0],
+                        sender: sourceGroup,
+                        sender_name: sourceGroup,
+                        content: data.text,
+                        timestamp: new Date().toISOString(),
+                        is_from_me: false,
+                        is_bot_message: true,
+                        from_group: sourceGroup,
+                        thread_ts: data.thread_ts,
+                      });
+                      logger.info(
+                        {
+                          handoffTarget,
+                          handoffJid: handoffEntry[0],
+                          sourceGroup,
+                        },
+                        'IPC handoff routed to target group',
+                      );
+                    };
+                    if (handoffTarget === 'mailman' && MAILMAN_HOLD_MS > 0) {
+                      // Hold the send so an in-flight cancel from the same
+                      // source can drop it. The file stays on disk during
+                      // the hold (so a daemon restart preserves the handoff
+                      // — it'll be re-picked up and re-held).
+                      const timer = setTimeout(() => {
+                        heldMailmanHandoffs.delete(filePath);
+                        flushHandoff()
+                          .then(() => {
+                            try {
+                              if (fs.existsSync(filePath))
+                                fs.unlinkSync(filePath);
+                            } catch (err) {
+                              logger.error(
+                                { err, filePath },
+                                'IPC held mailman handoff: unlink after flush failed',
+                              );
+                            }
+                          })
+                          .catch((err) => {
+                            logger.error(
+                              { err, filePath },
+                              'IPC held mailman handoff: flush failed',
+                            );
+                          });
+                      }, MAILMAN_HOLD_MS);
+                      heldMailmanHandoffs.set(filePath, { timer, sourceGroup });
+                      logger.info(
+                        {
+                          sourceGroup,
+                          holdMs: MAILMAN_HOLD_MS,
+                        },
+                        'IPC mailman handoff held for cancel window',
+                      );
+                      continue; // do NOT unlink yet — flush handles it
+                    }
+                    await flushHandoff();
                   } else {
                     logger.warn(
                       { handoffTarget, sourceGroup },

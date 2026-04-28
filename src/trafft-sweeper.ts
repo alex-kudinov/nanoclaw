@@ -186,7 +186,9 @@ async function readWatermark(): Promise<{
   );
   if (r.rows.length === 0) return { last_seen_at: null };
   return {
-    last_seen_at: r.rows[0].last_seen_at ? new Date(r.rows[0].last_seen_at) : null,
+    last_seen_at: r.rows[0].last_seen_at
+      ? new Date(r.rows[0].last_seen_at)
+      : null,
   };
 }
 
@@ -210,7 +212,13 @@ async function writeWatermark(opts: {
        last_run_error = EXCLUDED.last_run_error,
        last_run_recovered = EXCLUDED.last_run_recovered,
        last_run_failed = EXCLUDED.last_run_failed`,
-    [opts.last_seen_at, opts.status, opts.error ?? null, opts.recovered, opts.failed],
+    [
+      opts.last_seen_at,
+      opts.status,
+      opts.error ?? null,
+      opts.recovered,
+      opts.failed,
+    ],
   );
 }
 
@@ -259,9 +267,7 @@ async function waitForConvergence(
     const allTerminal = states.every((s) => TERMINAL.has(s.status));
     if (allTerminal) {
       const recovered = states.filter((s) => s.status === 'handled').length;
-      const failed = states.filter(
-        (s) => s.status === 'dead_lettered',
-      ).length;
+      const failed = states.filter((s) => s.status === 'dead_lettered').length;
       const failed_ids = states
         .filter((s) => s.status === 'dead_lettered')
         .map((s) => s.id);

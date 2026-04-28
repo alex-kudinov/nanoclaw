@@ -43,7 +43,9 @@ const chiefGroup = {
   added_at: '2026-01-01T00:00:00Z',
 };
 
-function makeDeps(runAgent = vi.fn(async () => ({ status: 'success', result: null }) as any)) {
+function makeDeps(
+  runAgent = vi.fn(async () => ({ status: 'success', result: null }) as any),
+) {
   vi.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify([testWebhook]));
   return {
     webhooksFile: '/tmp/webhooks.json',
@@ -91,7 +93,9 @@ describe('runReaper', () => {
     });
     mockQuery.mockResolvedValue({ rows: [] });
 
-    const runAgent = vi.fn(async () => ({ status: 'success', result: null }) as any);
+    const runAgent = vi.fn(
+      async () => ({ status: 'success', result: null }) as any,
+    );
     const deps = makeDeps(runAgent);
     const r = await runReaper(deps);
 
