@@ -400,10 +400,12 @@ Syncthing syncs NanoClaw source between machines. **Excluded from sync** (`.stig
 | Slack API | Chat channel | Bolt SDK, Socket Mode |
 | Claude Agent SDK | Agent execution | Inside containers |
 | Claude Print Bridge | External script → Claude calls | HTTP on Mini port 40960 |
-| Stripe API | Payment processing | Webhooks via n8n → contador |
-| Trafft API | Booking management | Webhooks via n8n → booking |
+| Stripe API | Payment processing | Webhooks via n8n → contador (see [WEBHOOK-RELIABILITY.md](WEBHOOK-RELIABILITY.md)) |
+| Trafft API | Booking management | Webhooks via n8n → booking (see [WEBHOOK-RELIABILITY.md](WEBHOOK-RELIABILITY.md)) |
 | Plutio API | CRM sync | `plutio-outbox-reaper.ts` |
 | Sertifier API | Certificate issuance | certifier agent |
+
+**Inbound webhook reliability** — All `/hook/*` receivers are governed by [WEBHOOK-RELIABILITY.md](WEBHOOK-RELIABILITY.md): single `webhook_inbox` archive, idempotency by `(source, event_id)`, 5-min reaper for failed dispatches, 6h sweepers per source for events that never arrived, dead-letter to `#gru-chief`. n8n stays as the security perimeter (no bypass).
 
 ---
 

@@ -15,6 +15,7 @@ import path from 'path';
 
 import { DATA_DIR } from './config.js';
 import { query } from './business-db.js';
+import { getAllRegisteredGroups } from './db.js';
 import { recordClassification } from './hive-bridge.js';
 import { logger } from './logger.js';
 
@@ -55,8 +56,30 @@ async function fetchStaleRows(): Promise<StaleRow[]> {
   return res.rows;
 }
 
-/** Drop a chief-bound message file; the daemon's IPC watcher routes it to Slack. */
+/** Drop a chief-bound message file; the daemon's IPC watcher routes it to Slack.
+ * IPC handler at src/ipc.ts:152 requires chatJid + text — look up chief's jid
+ * from the registered_groups SQLite table; drop the alert with a warn if chief
+ * isn't registered. */
 function alertChief(text: string): void {
+  let chiefJid: string | null = null;
+  try {
+    const groups = getAllRegisteredGroups();
+    const found = Object.entries(groups).find(([, g]) => g.folder === 'chief');
+    chiefJid = found?.[0] ?? null;
+  } catch (err) {
+    logger.warn(
+      { err, text },
+      'hive-sync-reaper: failed to resolve chief jid; alert dropped',
+    );
+    return;
+  }
+  if (!chiefJid) {
+    logger.warn(
+      { text },
+      'hive-sync-reaper: chief group not registered; alert dropped',
+    );
+    return;
+  }
   const dir = path.join(DATA_DIR, 'ipc', 'chief', 'messages');
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(
@@ -65,7 +88,7 @@ function alertChief(text: string): void {
   );
   fs.writeFileSync(
     file,
-    JSON.stringify({ type: 'message', text }, null, 2),
+    JSON.stringify({ type: 'message', chatJid: chiefJid, text }, null, 2),
     'utf-8',
   );
 }

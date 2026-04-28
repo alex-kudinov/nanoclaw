@@ -54,3 +54,14 @@ CLAUDE.sync-conflict-*
 .claude/settings.local.sync-conflict-*
 
 agents-sdk-docs
+# Build cache
+tsconfig.tsbuildinfo
+
+# Env backups (rotation artifacts)
+.env.bak*
+
+# Knowledge backups (regen artifacts)
+knowledge/shared/KNOWLEDGE.md.bak
+
+# Scratch query files
+_query-*.mjs

@@ -1,0 +1,60 @@
+{
+  "id": "shared-error-handler",
+  "name": "Shared Error Handler → #gru-chief",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.first().json;\nconst wf = err.workflow || {};\nconst exec = err.execution || {};\nconst error = err.execution?.error || {};\nconst lastNode = err.execution?.lastNodeExecuted || '(unknown)';\n\nconst preview = (() => {\n  try {\n    return JSON.stringify(err, null, 2).slice(0, 2000);\n  } catch (e) {\n    return String(err).slice(0, 2000);\n  }\n})();\n\nconst execUrl = exec.id\n  ? `https://ops.tandemcoach.co/workflow/${wf.id}/executions/${exec.id}`\n  : '(no execution id)';\n\nconst text = [\n  `:rotating_light: *n8n workflow failure*`,\n  `*Workflow:* ${wf.name || wf.id || '(unknown)'}`,\n  `*Failed node:* ${lastNode}`,\n  `*Error:* ${error.message || '(no message)'}`,\n  `*Execution:* ${execUrl}`,\n  '',\n  '```',\n  preview,\n  '```',\n].join('\\n');\n\nreturn [{ json: { channel: 'C0AHDHX1NBH', text } }];"
+      },
+      "id": "format",
+      "name": "Format alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SLACK_BOT_TOKEN }}"
+            },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "post-slack",
+      "name": "Slack: chat.postMessage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [[{ "node": "Format alert", "type": "main", "index": 0 }]]
+    },
+    "Format alert": {
+      "main": [[{ "node": "Slack: chat.postMessage", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null
+}

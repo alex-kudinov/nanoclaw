@@ -24,6 +24,7 @@ import { ChildProcess } from 'child_process';
 import { ContainerOutput } from './container-runner.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
+import { extractEventKey } from './webhook-extractors.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -72,6 +73,22 @@ export interface WebhookServerDeps {
   handleGmailPush?: (emailAddress: string, historyId: string) => Promise<void>;
   // Secret required on POST /hook/gmail-push. Falls back to globalSecret.
   gmailPushSecret?: string;
+  // Phase 1 webhook reliability — envelope archive + dispatch tracking.
+  // When provided, every accepted /hook/:id request is recorded in
+  // business_v2.webhook_inbox before agent dispatch. See docs/WEBHOOK-RELIABILITY.md.
+  archiveWebhook?: (
+    input: import('./webhook-inbox.js').ArchiveInput,
+  ) => Promise<import('./webhook-inbox.js').ArchiveResult>;
+  markWebhookDispatched?: (id: number) => Promise<void>;
+  markWebhookFailed?: (id: number, error: string) => Promise<void>;
+  markWebhookHandled?: (
+    id: number,
+    opts: {
+      handled_by: string;
+      party_id?: number | null;
+      related_entity?: unknown;
+    },
+  ) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -530,18 +547,67 @@ export class WebhookServer {
       (req.headers['x-callback-url'] as string | undefined) ||
       webhook.callback_url;
 
+    // Phase 1 — archive envelope before dispatch. Hard-fails the request if
+    // archive write errors so n8n / upstream sees the failure and we never
+    // dispatch an agent without a corresponding inbox row.
+    let inboxId: number | null = null;
+    if (this.deps.archiveWebhook) {
+      const { event_id, event_type } = extractEventKey(hookId, payload);
+      try {
+        const archived = await this.deps.archiveWebhook({
+          source: hookId,
+          event_id,
+          event_type,
+          raw_headers: req.headers,
+          raw_body: payload,
+          delivery_path: 'n8n',
+        });
+        inboxId = archived.id;
+        if (archived.isDuplicate) {
+          logger.info(
+            { hookId, inboxId },
+            'Webhook envelope is duplicate; skipping dispatch',
+          );
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({ webhook_inbox_id: inboxId, duplicate: true }),
+          );
+          return;
+        }
+      } catch (err) {
+        logger.error(
+          { hookId, err },
+          'Webhook envelope archive failed; refusing dispatch',
+        );
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'archive failed' }));
+        return;
+      }
+    }
+
     // Respond 202 immediately — agent runs async
     const requestId = crypto.randomUUID();
     res.writeHead(202, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ request_id: requestId }));
+    res.end(
+      JSON.stringify({
+        request_id: requestId,
+        webhook_inbox_id: inboxId,
+      }),
+    );
 
     const prompt = renderPrompt(webhook.prompt_template, payload);
     const isMain = group.isMain === true;
 
     logger.info(
-      { hookId, requestId, group: webhook.group },
+      { hookId, requestId, inboxId, group: webhook.group },
       'Webhook triggered',
     );
+
+    if (inboxId !== null && this.deps.markWebhookDispatched) {
+      await this.deps.markWebhookDispatched(inboxId).catch((err) => {
+        logger.error({ hookId, inboxId, err }, 'markWebhookDispatched failed');
+      });
+    }
 
     this.deps
       .runAgent(
@@ -597,10 +663,35 @@ export class WebhookServer {
         },
       )
       .then(() => {
-        logger.info({ hookId, requestId }, 'Webhook agent completed');
+        logger.info(
+          { hookId, requestId, inboxId },
+          'Webhook agent completed',
+        );
+        if (inboxId !== null && this.deps.markWebhookHandled) {
+          this.deps
+            .markWebhookHandled(inboxId, { handled_by: webhook.group })
+            .catch((err) =>
+              logger.error(
+                { hookId, inboxId, err },
+                'markWebhookHandled failed',
+              ),
+            );
+        }
       })
       .catch((err) => {
-        logger.error({ hookId, requestId, err }, 'Webhook agent error');
+        logger.error(
+          { hookId, requestId, inboxId, err },
+          'Webhook agent error',
+        );
+        if (inboxId !== null && this.deps.markWebhookFailed) {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.deps.markWebhookFailed(inboxId, msg).catch((e) => {
+            logger.error(
+              { hookId, inboxId, err: e },
+              'markWebhookFailed itself failed',
+            );
+          });
+        }
       });
   }
 }

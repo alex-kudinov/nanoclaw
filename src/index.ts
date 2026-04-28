@@ -63,6 +63,14 @@ import { handleUnsubscribe as handleUnsubscribeImpl } from './email-unsubscribe.
 import { runJob } from './job-runner.js';
 import { writeJobsSnapshot } from './job-snapshot.js';
 import { WebhookServer } from './webhook-server.js';
+import {
+  archiveWebhook as archiveWebhookImpl,
+  markDispatched as markDispatchedImpl,
+  markFailed as markFailedImpl,
+  markHandled as markHandledImpl,
+} from './webhook-inbox.js';
+import { runReaper as runWebhookInboxReaper } from './webhook-inbox-reaper.js';
+import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
 import { findChannel, formatMessages, formatOutbound } from './router.js';
 import { startSchedulerLoop } from './task-scheduler.js';
 import {
@@ -847,6 +855,10 @@ async function main(): Promise<void> {
       await handleEmailOpenImpl(token, ua, sendToInbox);
     },
     handleUnsubscribe: handleUnsubscribeImpl,
+    archiveWebhook: archiveWebhookImpl,
+    markWebhookDispatched: markDispatchedImpl,
+    markWebhookFailed: markFailedImpl,
+    markWebhookHandled: markHandledImpl,
     gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
     handleGmailPush: async (emailAddress: string, historyId: string) => {
       // Late-bound lookup: channels array is populated after webhook server
@@ -989,6 +1001,34 @@ async function main(): Promise<void> {
     logger.fatal('No channels connected');
     process.exit(1);
   }
+
+  // Webhook-inbox reaper — every 5 min, retries received/failed/stale-dispatched
+  // rows, dead-letters to #gru-chief after MAX_ATTEMPTS=5. See
+  // docs/WEBHOOK-RELIABILITY.md §3.4.
+  const WEBHOOK_INBOX_REAPER_INTERVAL_MS = 5 * 60 * 1000;
+  setInterval(() => {
+    logger.debug('webhook-inbox-reaper: tick');
+    runWebhookInboxReaper({
+      webhooksFile: WEBHOOKS_FILE,
+      getRegisteredGroups: () => registeredGroups,
+      runAgent: runContainerAgent,
+    }).catch((err) => {
+      logger.error({ err }, 'webhook-inbox-reaper: unhandled error');
+    });
+  }, WEBHOOK_INBOX_REAPER_INTERVAL_MS);
+
+  // Trafft sweeper — every 6h. Reconciles Trafft API state against
+  // webhook_inbox; synthesizes missing events; advances watermark only on
+  // full convergence. See docs/WEBHOOK-RELIABILITY.md §3.5.
+  const TRAFFT_SWEEPER_INTERVAL_MS = 6 * 60 * 60 * 1000;
+  setInterval(() => {
+    logger.debug('trafft-sweeper: tick');
+    runTrafftSweep({
+      getRegisteredGroups: () => registeredGroups,
+    }).catch((err) => {
+      logger.error({ err }, 'trafft-sweeper: unhandled error');
+    });
+  }, TRAFFT_SWEEPER_INTERVAL_MS);
 
   // Slack heartbeat — diagnostic signal for external watchdog.
   // Posts a status line every HEARTBEAT_INTERVAL_MS. Explicitly stored in DB

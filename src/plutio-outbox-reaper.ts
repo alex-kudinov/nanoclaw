@@ -15,6 +15,8 @@ import { promisify } from 'util';
 
 import { DATA_DIR } from './config.js';
 import { query, withAgentContext } from './business-db.js';
+import { getAllRegisteredGroups } from './db.js';
+import { readEnvFile } from './env.js';
 import { logger } from './logger.js';
 
 const execFileAsync = promisify(execFile);
@@ -67,6 +69,28 @@ async function markFailure(row: OutboxRow, errMsg: string): Promise<boolean> {
 }
 
 function alertChief(text: string): void {
+  // IPC handler at src/ipc.ts:152 requires chatJid + text to route a 'message'
+  // type to Slack. Look up chief group's jid from the registered_groups
+  // SQLite table; drop the alert with a warn if chief isn't registered.
+  let chiefJid: string | null = null;
+  try {
+    const groups = getAllRegisteredGroups();
+    const found = Object.entries(groups).find(([, g]) => g.folder === 'chief');
+    chiefJid = found?.[0] ?? null;
+  } catch (err) {
+    logger.warn(
+      { err, text },
+      'plutio-outbox-reaper: failed to resolve chief jid; alert dropped',
+    );
+    return;
+  }
+  if (!chiefJid) {
+    logger.warn(
+      { text },
+      'plutio-outbox-reaper: chief group not registered; alert dropped',
+    );
+    return;
+  }
   const dir = path.join(DATA_DIR, 'ipc', 'chief', 'messages');
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(
@@ -75,19 +99,33 @@ function alertChief(text: string): void {
   );
   fs.writeFileSync(
     file,
-    JSON.stringify({ type: 'message', text }, null, 2),
+    JSON.stringify({ type: 'message', chatJid: chiefJid, text }, null, 2),
     'utf-8',
   );
 }
 
 async function callPlutioTool(script: string, args: string[]): Promise<string> {
   const toolPath = path.join(PLUTIO_TOOL_DIR, script);
+  // env.ts deliberately keeps secrets off process.env. Inject Plutio creds
+  // explicitly here so the bash script's plutio_load_env (which only sources
+  // .env from cwd) finds them.
+  const plutioCreds = readEnvFile([
+    'PLUTIO_API_CLIENTID',
+    'PLUTIO_API_CLIENTSECRET',
+    'PLUTIO_SUBDOMAIN',
+  ]);
   const env = {
     ...process.env,
+    ...plutioCreds,
     TOOLBOX_LIB: path.join(TOOLBOX_DIR, 'lib'),
   };
+  // plutio_load_env auto-sources `.env` from cwd, which would pick up the
+  // daemon's NanoClaw/.env (unrelated to Plutio, contains bash-incompatible
+  // unquoted values). Force cwd to the toolbox plutio dir so its own .env is
+  // sourced instead.
   const { stdout } = await execFileAsync(toolPath, args, {
     env,
+    cwd: TOOLBOX_DIR,
     timeout: 30_000,
   });
   return stdout.trim();

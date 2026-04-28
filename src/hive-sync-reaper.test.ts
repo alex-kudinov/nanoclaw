@@ -34,6 +34,20 @@ vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('./db.js', () => ({
+  getAllRegisteredGroups: () => ({
+    'slack:C0AHDHX1NBH': {
+      jid: 'slack:C0AHDHX1NBH',
+      name: 'gru-chief',
+      folder: 'chief',
+      triggerPattern: '@Mr Gru',
+      addedAt: '2026-01-01',
+      requiresTrigger: false,
+      isMain: false,
+    },
+  }),
+}));
+
 import { runReaper } from './hive-sync-reaper.js';
 
 function staleRow(overrides: Record<string, any> = {}) {

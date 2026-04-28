@@ -155,6 +155,83 @@ describe('WebhookServer', () => {
     expect(typeof parsed.request_id).toBe('string');
   });
 
+  it('archives envelope before dispatch and includes inbox id in response', async () => {
+    const archiveWebhook = vi.fn(async () => ({ id: 42, isDuplicate: false }));
+    const markWebhookDispatched = vi.fn(async () => {});
+    const d = makeDeps({ archiveWebhook, markWebhookDispatched });
+    const s = new WebhookServer(d);
+    await s.start();
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [testWebhook];
+    try {
+      const res = await makeRequest(d.port, {
+        path: '/hook/test-hook',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+        body: JSON.stringify({ ping: 'pong' }),
+      });
+      expect(res.status).toBe(202);
+      const parsed = JSON.parse(res.body);
+      expect(parsed.webhook_inbox_id).toBe(42);
+      expect(archiveWebhook).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'test-hook', delivery_path: 'n8n' }),
+      );
+      // markDispatched runs after the 202 response; give it a beat
+      await new Promise((r) => setTimeout(r, 20));
+      expect(markWebhookDispatched).toHaveBeenCalledWith(42);
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  });
+
+  it('returns 200 + duplicate flag when archive reports duplicate; skips agent dispatch', async () => {
+    const archiveWebhook = vi.fn(async () => ({ id: 99, isDuplicate: true }));
+    const runAgent = vi.fn(async () => ({
+      status: 'success' as const,
+      result: null,
+    }));
+    const d = makeDeps({ archiveWebhook, runAgent });
+    const s = new WebhookServer(d);
+    await s.start();
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [testWebhook];
+    try {
+      const res = await makeRequest(d.port, {
+        path: '/hook/test-hook',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+      });
+      expect(res.status).toBe(200);
+      expect(JSON.parse(res.body)).toMatchObject({
+        webhook_inbox_id: 99,
+        duplicate: true,
+      });
+      expect(runAgent).not.toHaveBeenCalled();
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  });
+
+  it('returns 500 when archive fails; agent is not dispatched', async () => {
+    const archiveWebhook = vi.fn(async () => {
+      throw new Error('db down');
+    });
+    const runAgent = vi.fn(async () => ({
+      status: 'success' as const,
+      result: null,
+    }));
+    const d = makeDeps({ archiveWebhook, runAgent });
+    const s = new WebhookServer(d);
+    await s.start();
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [testWebhook];
+    try {
+      const res = await makeRequest(d.port, {
+        path: '/hook/test-hook',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+      });
+      expect(res.status).toBe(500);
+      expect(runAgent).not.toHaveBeenCalled();
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  });
+
   it('uses global secret fallback when webhook has no secret', async () => {
     const d = makeDeps({ globalSecret: 'global-secret' });
     const s = new WebhookServer(d);
