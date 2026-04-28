@@ -11,9 +11,15 @@
 
 import { logger } from '../src/logger.js';
 import { runSweep } from '../src/trafft-sweeper.js';
-import { getAllRegisteredGroups } from '../src/db.js';
+import { initDatabase, getAllRegisteredGroups } from '../src/db.js';
 
 async function main(): Promise<void> {
+  // Standalone scripts must init the SQLite layer before any
+  // db-backed call (the in-daemon path inits at startup, but this
+  // script doesn't share that context). Without this, alertChief on
+  // the freeze path throws TypeError at db.prepare and clobbers the
+  // sweep result.
+  initDatabase();
   logger.info('run-trafft-sweeper: starting');
   const result = await runSweep({
     getRegisteredGroups: () => getAllRegisteredGroups(),

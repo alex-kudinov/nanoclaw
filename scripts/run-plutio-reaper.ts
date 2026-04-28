@@ -9,9 +9,14 @@
  */
 
 import { runReaper } from '../src/plutio-outbox-reaper.js';
+import { initDatabase } from '../src/db.js';
 import { logger } from '../src/logger.js';
 
 async function main(): Promise<void> {
+  // SQLite must be init'd before alertChief can resolve the chief
+  // jid via getAllRegisteredGroups. Standalone script = fresh process
+  // = always needs init.
+  initDatabase();
   logger.info('run-plutio-reaper: starting');
   const result = await runReaper();
   logger.info(
