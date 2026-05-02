@@ -54,6 +54,16 @@ const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
 const OUTPUT_END_MARKER = '---NANOCLAW_OUTPUT_END---';
 const HEARTBEAT_INTERVAL_MS = 30_000;
 
+// Wrapper-side idle exit: bound container lifetime independently of the host's
+// `_close` sentinel mechanism. Cross-thread races (a newer container in the same
+// groupFolder unlinking `_close` before this one polls it) can otherwise leave
+// us waiting forever, holding a concurrency slot. Default 7 min, slightly longer
+// than the host's IDLE_TIMEOUT (5 min) so the host's clean shutdown path still
+// gets first chance.
+const WRAPPER_IDLE_TIMEOUT_MS = parseInt(
+  process.env.WRAPPER_IDLE_TIMEOUT_MS || '420000', 10,
+);
+
 const ALLOWED_TOOLS = [
   'Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep',
   'WebSearch', 'WebFetch',
@@ -258,6 +268,7 @@ async function runAgent(
 
   let sessionId: string | undefined = containerInput.sessionId;
   let turnCount = 0;
+  let lastActivityMs = Date.now();
 
   try {
     while (true) {
@@ -271,7 +282,12 @@ async function runAgent(
         const messages = drainIpcInput();
         if (messages.length > 0) {
           pendingPrompt = messages.join('\n');
+          lastActivityMs = Date.now();
         } else {
+          if (Date.now() - lastActivityMs > WRAPPER_IDLE_TIMEOUT_MS) {
+            log(`Wrapper idle timeout (${WRAPPER_IDLE_TIMEOUT_MS}ms) — exiting agent loop`);
+            break;
+          }
           await new Promise(r => setTimeout(r, IPC_POLL_MS));
           continue;
         }
@@ -422,6 +438,8 @@ async function runAgent(
       } else {
         writeOutput({ status: 'success', result: null, newSessionId: sessionId });
       }
+
+      lastActivityMs = Date.now();
     }
   } finally {
     clearInterval(heartbeatInterval);
