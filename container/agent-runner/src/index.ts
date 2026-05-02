@@ -281,72 +281,132 @@ async function runAgent(
       pendingPrompt = undefined;
       turnCount++;
 
-      const args = [...baseArgs];
-      if (sessionId) args.push('--resume', sessionId);
+      // One spawn attempt — captures everything we need to decide what to emit.
+      const runOnce = async (
+        useSessionId: string | undefined,
+      ): Promise<{
+        exitCode: number;
+        stdout: string;
+        stderrTail: string;
+        result: Record<string, unknown> | null;  // the parsed `type: "result"` event
+      }> => {
+        const args = [...baseArgs];
+        if (useSessionId) args.push('--resume', useSessionId);
 
-      log(`Turn ${turnCount}: spawning claude (${args.length} args, prompt ${prompt.length} chars${sessionId ? ', resume=' + sessionId : ''})`);
+        log(`Turn ${turnCount}: spawning claude (${args.length} args, prompt ${prompt.length} chars${useSessionId ? ', resume=' + useSessionId : ''})`);
 
-      const claude = spawn('claude', args, {
-        cwd: '/workspace/group',
-        env: env as Record<string, string>,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+        const claude = spawn('claude', args, {
+          cwd: '/workspace/group',
+          env: env as Record<string, string>,
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
 
-      // Stream stderr for visibility; keep last 4KB for rate-limit pattern detection.
-      let stderrBuf = '';
-      const stderrRl = readline.createInterface({ input: claude.stderr! });
-      stderrRl.on('line', line => {
-        log(`[claude] ${line}`);
-        stderrBuf += line + '\n';
-        if (stderrBuf.length > 4096) stderrBuf = stderrBuf.slice(-4096);
-      });
+        let stderrBuf = '';
+        const stderrRl = readline.createInterface({ input: claude.stderr! });
+        stderrRl.on('line', line => {
+          log(`[claude] ${line}`);
+          stderrBuf += line + '\n';
+          if (stderrBuf.length > 4096) stderrBuf = stderrBuf.slice(-4096);
+        });
 
-      // Collect stdout in full — claude --print --output-format json emits a single JSON object.
-      const stdoutChunks: Buffer[] = [];
-      claude.stdout!.on('data', chunk => stdoutChunks.push(chunk));
+        const stdoutChunks: Buffer[] = [];
+        claude.stdout!.on('data', chunk => stdoutChunks.push(chunk));
 
-      // Feed prompt via stdin
-      try {
-        claude.stdin!.write(prompt);
-        claude.stdin!.end();
-      } catch (err) {
-        log(`Failed to write prompt to claude stdin: ${err instanceof Error ? err.message : String(err)}`);
+        try {
+          claude.stdin!.write(prompt);
+          claude.stdin!.end();
+        } catch (err) {
+          log(`Failed to write prompt to claude stdin: ${err instanceof Error ? err.message : String(err)}`);
+        }
+
+        const exitCode: number = await new Promise(resolve => {
+          claude.on('close', code => resolve(code ?? 1));
+        });
+        const stdout = Buffer.concat(stdoutChunks).toString('utf8');
+        log(`Turn ${turnCount}: claude exited code=${exitCode} stdout_len=${stdout.length}`);
+
+        // claude --print --output-format json returns the stream as a JSON array
+        // of events. The last `type: "result"` event holds the final result, is_error,
+        // session_id, etc. Older builds may return a single result object — handle both.
+        let result: Record<string, unknown> | null = null;
+        let parsed: unknown;
+        try { parsed = JSON.parse(stdout); } catch { /* leave parsed undefined */ }
+        if (Array.isArray(parsed)) {
+          for (let i = parsed.length - 1; i >= 0; i--) {
+            const ev = parsed[i] as Record<string, unknown> | undefined;
+            if (ev && ev.type === 'result') { result = ev; break; }
+          }
+        } else if (parsed && typeof parsed === 'object') {
+          result = parsed as Record<string, unknown>;
+        }
+
+        // On non-zero exit with no parsed result, log a stdout snippet so we can
+        // diagnose without needing to reproduce the failure.
+        if (exitCode !== 0 && !result && stdout.trim()) {
+          log(`Turn ${turnCount}: stdout snippet (first 500): ${stdout.slice(0, 500)}`);
+        }
+
+        return { exitCode, stdout, stderrTail: stderrBuf.slice(-500), result };
+      };
+
+      let attempt = await runOnce(sessionId);
+
+      // --resume can fail with "No conversation found with session ID: <id>" when
+      // the session was created by a different account/container or has been
+      // garbage-collected. Drop sessionId and retry once before erroring out.
+      const combinedLower = (attempt.stdout + '\n' + attempt.stderrTail).toLowerCase();
+      const looksLikeMissingSession = sessionId && (
+        combinedLower.includes('no conversation found') ||
+        combinedLower.includes('session not found') ||
+        combinedLower.includes('session does not exist')
+      );
+      if (looksLikeMissingSession) {
+        log(`Stale session_id ${sessionId} — retrying without --resume`);
+        sessionId = undefined;
+        attempt = await runOnce(undefined);
       }
 
-      const exitCode: number = await new Promise(resolve => {
-        claude.on('close', code => resolve(code ?? 1));
-      });
-      const stdout = Buffer.concat(stdoutChunks).toString('utf8');
-      log(`Turn ${turnCount}: claude exited code=${exitCode} stdout_len=${stdout.length}`);
-
-      let data: Record<string, unknown> | null = null;
-      try { data = JSON.parse(stdout); } catch { /* leave null — non-JSON */ }
-
-      if (data?.session_id && typeof data.session_id === 'string') {
-        if (!sessionId) log(`Session initialized: ${data.session_id}`);
-        sessionId = data.session_id;
+      // Update sessionId from whichever attempt succeeded (or last attempt).
+      if (attempt.result && typeof attempt.result.session_id === 'string') {
+        if (!sessionId) log(`Session initialized: ${attempt.result.session_id}`);
+        sessionId = attempt.result.session_id;
       }
 
-      const textResult = typeof data?.result === 'string' ? (data.result as string) : null;
-      const isErrorResult = data?.is_error === true;
+      const textResult = attempt.result && typeof attempt.result.result === 'string'
+        ? (attempt.result.result as string)
+        : null;
+      const isErrorResult = attempt.result?.is_error === true;
 
-      // Rate-limit detection — surface either via result text or stderr.
-      if ((textResult && detectRateLimit(textResult)) || (exitCode !== 0 && detectRateLimit(stderrBuf))) {
-        const rateLimitMessage = textResult && detectRateLimit(textResult) ? textResult : undefined;
+      // Rate-limit detection — check the result text and stderr.
+      const limitFromResult = textResult ? detectRateLimit(textResult) : false;
+      const limitFromStderr = attempt.exitCode !== 0 && detectRateLimit(attempt.stderrTail);
+      if (limitFromResult || limitFromStderr) {
+        const rateLimitMessage = limitFromResult ? textResult ?? undefined : undefined;
         log(`Rate-limit detected on turn ${turnCount} — returning to outer rotation logic`);
         clearInterval(heartbeatInterval);
         return { rateLimited: true, rateLimitMessage };
       }
 
-      if (exitCode !== 0) {
+      // Build a meaningful error message when claude exits non-zero or returns is_error.
+      // Prefer the parsed JSON result (claude's actual error text) over raw stderr.
+      const buildErrorMsg = (): string => {
+        if (textResult) return textResult;
+        if (attempt.stderrTail.trim()) return attempt.stderrTail.trim();
+        if (!attempt.result && attempt.stdout.trim()) {
+          return `claude --print non-JSON stdout (exit ${attempt.exitCode}): ${attempt.stdout.slice(0, 500)}`;
+        }
+        return `claude --print exited with code ${attempt.exitCode}`;
+      };
+
+      if (attempt.exitCode !== 0) {
         writeOutput({
           status: 'error',
-          result: null,
+          result: textResult,
           newSessionId: sessionId,
-          error: `claude --print exited with code ${exitCode}: ${stderrBuf.slice(-500).trim()}`,
+          error: buildErrorMsg(),
         });
       } else if (isErrorResult) {
-        // Clean exit but is_error: true (e.g., auth, model error) — surface as error.
+        // Clean exit but is_error: true (e.g., "Not logged in", "No conversation found").
         writeOutput({
           status: 'error',
           result: textResult,
