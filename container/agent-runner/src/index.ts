@@ -18,12 +18,13 @@
  *   Each result wrapped in OUTPUT_START_MARKER / OUTPUT_END_MARKER pairs.
  */
 
-import { spawn, ChildProcess } from 'child_process';
+import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
 
 import { HEARTBEAT_MARKER } from './ipc-protocol.js';
+import { detectRateLimit } from './rate-limit.js';
 import { fileURLToPath } from 'url';
 
 interface ContainerInput {
@@ -143,27 +144,28 @@ function drainIpcInput(): string[] {
   }
 }
 
-// ── Claude --print via stdin streaming ──────────────────────────────────────
+// ── Claude --print, one-shot per IPC message ────────────────────────────────
+//
+// Each IPC message gets its own `claude --print --output-format json` invocation.
+// Session continuity across messages within a container: capture session_id from
+// the first run, pass --resume <id> on subsequent runs.
+//
+// This is the deliberate non-stream design. Stream-json mode kept claude alive
+// across turns but turned out to be a deadlock trap on rate-limit: claude does
+// not exit when it hits a usage cap (it streams the limit message and waits for
+// stdin), so the wrapper had no path back to the rotation logic in main().
+// Per-message spawn = claude exits naturally each turn, exit-code-driven
+// rotation works, no hidden "claude alive but doing nothing" state.
 
-function writeUserMessage(proc: ChildProcess, text: string): void {
-  if (proc.stdin!.destroyed) return;
-  const msg = {
-    type: 'user',
-    message: { role: 'user', content: text },
-    parent_tool_use_id: null,
-    session_id: '',
-  };
-  try {
-    proc.stdin!.write(JSON.stringify(msg) + '\n');
-  } catch {
-    // Process already exited
-  }
+interface RunAgentResult {
+  rateLimited: boolean;
+  rateLimitMessage?: string;
 }
 
 async function runAgent(
   containerInput: ContainerInput,
   env: Record<string, string | undefined>,
-): Promise<{ rateLimited: boolean }> {
+): Promise<RunAgentResult> {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const mcpServerPath = path.join(__dirname, 'ipc-mcp-stdio.js');
 
@@ -178,7 +180,7 @@ async function runAgent(
     log(`Wrote ${scriptSecrets.split('\n').length} secret(s) to /tmp/.nanoclaw-env`);
   }
 
-  // Write MCP config for --mcp-config
+  // Write MCP config for --mcp-config (read by claude on each spawn)
   const mcpConfig = {
     mcpServers: {
       nanoclaw: {
@@ -217,166 +219,154 @@ async function runAgent(
     globalClaudeMd = fs.readFileSync(globalClaudeMdPath, 'utf-8');
   }
 
-  // Build CLI args — claude --print runs locally in the container
-  // Auth via CLAUDE_CODE_OAUTH_TOKEN env var (managed by bridge token lifecycle)
-  const args: string[] = [
+  env.NANOCLAW_ASSISTANT_NAME = containerInput.assistantName || '';
+
+  // Base CLI args — claude exits after the result; --resume <session> attaches subsequent turns.
+  const baseArgs: string[] = [
     '--print',
-    '--output-format', 'stream-json',
-    '--input-format', 'stream-json',
+    '--output-format', 'json',
     '--verbose',
     '--dangerously-skip-permissions',
     '--model', 'sonnet',
     '--mcp-config', mcpConfigPath,
     '--allowedTools', ALLOWED_TOOLS.join(','),
   ];
+  if (globalClaudeMd) baseArgs.push('--append-system-prompt', globalClaudeMd);
+  for (const dir of extraDirs) baseArgs.push('--add-dir', dir);
 
-  if (containerInput.sessionId) {
-    args.push('--resume', containerInput.sessionId);
-  }
-
-  if (globalClaudeMd) {
-    args.push('--append-system-prompt', globalClaudeMd);
-  }
-
-  for (const dir of extraDirs) {
-    args.push('--add-dir', dir);
-  }
-
-  env.NANOCLAW_ASSISTANT_NAME = containerInput.assistantName || '';
-
-  log(`Spawning claude ${args.slice(0, 6).join(' ')} ... (${args.length} args)`);
-
-  const claude = spawn('claude', args, {
-    cwd: '/workspace/group',
-    env: env as Record<string, string>,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-
-  // Register close listener BEFORE the for-await loop to avoid race condition
-  const exitPromise = new Promise<number>(resolve => {
-    claude.on('close', code => resolve(code ?? 1));
-  });
-
-  // Log stderr and accumulate for rate-limit detection
-  let stderrBuf = '';
-  const stderrRl = readline.createInterface({ input: claude.stderr! });
-  stderrRl.on('line', line => {
-    log(`[claude] ${line}`);
-    // Keep last 2KB for error pattern matching
-    stderrBuf += line + '\n';
-    if (stderrBuf.length > 2048) stderrBuf = stderrBuf.slice(-2048);
-  });
-
-  // Build initial prompt
-  let prompt = containerInput.prompt;
-  if (containerInput.isScheduledTask) {
-    prompt = `[SCHEDULED TASK - The following message was sent automatically and is not coming directly from the user or group.]\n\n${prompt}`;
-  }
-  const pending = drainIpcInput();
-  if (pending.length > 0) {
-    log(`Draining ${pending.length} pending IPC messages into initial prompt`);
-    prompt += '\n' + pending.join('\n');
-  }
-
-  // Send initial prompt
-  writeUserMessage(claude, prompt);
-
-  // Poll IPC for follow-up messages during execution
-  let ipcPolling = true;
-  const pollIpc = () => {
-    if (!ipcPolling) return;
-    if (shouldClose()) {
-      log('Close sentinel detected, ending stdin');
-      try { claude.stdin!.end(); } catch { /* ignore */ }
-      ipcPolling = false;
-      return;
-    }
-    const messages = drainIpcInput();
-    for (const text of messages) {
-      log(`Piping IPC message into active query (${text.length} chars)`);
-      writeUserMessage(claude, text);
-    }
-    setTimeout(pollIpc, IPC_POLL_MS);
-  };
-  setTimeout(pollIpc, IPC_POLL_MS);
-
-  // Emit periodic heartbeat to stdout so host can distinguish
-  // "agent is working" from "agent is dead" during long tool-call sequences.
+  // Heartbeat to stdout so host knows the wrapper is alive between messages
+  // and during long claude runs. claude's stdout is on a separate pipe, so
+  // these markers don't interleave with claude's JSON output.
   const heartbeatInterval = setInterval(() => {
-    try {
-      process.stdout.write(HEARTBEAT_MARKER + '\n');
-    } catch {
-      // Pipe broken — container shutting down, safe to ignore
+    try { process.stdout.write(HEARTBEAT_MARKER + '\n'); } catch {
       clearInterval(heartbeatInterval);
     }
   }, HEARTBEAT_INTERVAL_MS);
 
-  // Process streaming JSON output
-  let newSessionId: string | undefined;
-  let messageCount = 0;
-  let resultCount = 0;
-
-  const stdoutRl = readline.createInterface({ input: claude.stdout! });
-  for await (const line of stdoutRl) {
-    if (!line.trim()) continue;
-    let msg: Record<string, unknown>;
-    try {
-      msg = JSON.parse(line);
-    } catch {
-      log(`Non-JSON stdout: ${line.slice(0, 200)}`);
-      continue;
+  // Build initial prompt (drained-IPC-included, scheduled-task prefix if needed)
+  let pendingPrompt: string | undefined = containerInput.prompt;
+  if (containerInput.isScheduledTask) {
+    pendingPrompt = `[SCHEDULED TASK - The following message was sent automatically and is not coming directly from the user or group.]\n\n${pendingPrompt}`;
+  }
+  {
+    const drained = drainIpcInput();
+    if (drained.length > 0) {
+      log(`Draining ${drained.length} pending IPC messages into initial prompt`);
+      pendingPrompt += '\n' + drained.join('\n');
     }
+  }
 
-    messageCount++;
-    const msgType = msg.type === 'system'
-      ? `system/${msg.subtype}`
-      : String(msg.type || 'unknown');
-    log(`[msg #${messageCount}] type=${msgType}`);
+  let sessionId: string | undefined = containerInput.sessionId;
+  let turnCount = 0;
 
-    if (msg.type === 'system' && msg.subtype === 'init') {
-      newSessionId = msg.session_id as string;
-      log(`Session initialized: ${newSessionId}`);
-    }
+  try {
+    while (true) {
+      // Wait for a prompt: either the queued one, or the next IPC message,
+      // or the close sentinel.
+      if (pendingPrompt === undefined) {
+        if (shouldClose()) {
+          log('Close sentinel detected, exiting agent loop');
+          break;
+        }
+        const messages = drainIpcInput();
+        if (messages.length > 0) {
+          pendingPrompt = messages.join('\n');
+        } else {
+          await new Promise(r => setTimeout(r, IPC_POLL_MS));
+          continue;
+        }
+      }
 
-    if (msg.type === 'system' && msg.subtype === 'task_notification') {
-      const tn = msg as Record<string, unknown>;
-      log(`Task notification: task=${tn.task_id} status=${tn.status} summary=${tn.summary}`);
-    }
+      const prompt = pendingPrompt;
+      pendingPrompt = undefined;
+      turnCount++;
 
-    if (msg.type === 'result') {
-      resultCount++;
-      const textResult = (msg.result as string) ?? null;
-      log(`Result #${resultCount}: subtype=${msg.subtype}${textResult ? ` text=${textResult.slice(0, 200)}` : ''}`);
-      writeOutput({
-        status: 'success',
-        result: textResult,
-        newSessionId,
+      const args = [...baseArgs];
+      if (sessionId) args.push('--resume', sessionId);
+
+      log(`Turn ${turnCount}: spawning claude (${args.length} args, prompt ${prompt.length} chars${sessionId ? ', resume=' + sessionId : ''})`);
+
+      const claude = spawn('claude', args, {
+        cwd: '/workspace/group',
+        env: env as Record<string, string>,
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
+
+      // Stream stderr for visibility; keep last 4KB for rate-limit pattern detection.
+      let stderrBuf = '';
+      const stderrRl = readline.createInterface({ input: claude.stderr! });
+      stderrRl.on('line', line => {
+        log(`[claude] ${line}`);
+        stderrBuf += line + '\n';
+        if (stderrBuf.length > 4096) stderrBuf = stderrBuf.slice(-4096);
+      });
+
+      // Collect stdout in full — claude --print --output-format json emits a single JSON object.
+      const stdoutChunks: Buffer[] = [];
+      claude.stdout!.on('data', chunk => stdoutChunks.push(chunk));
+
+      // Feed prompt via stdin
+      try {
+        claude.stdin!.write(prompt);
+        claude.stdin!.end();
+      } catch (err) {
+        log(`Failed to write prompt to claude stdin: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      const exitCode: number = await new Promise(resolve => {
+        claude.on('close', code => resolve(code ?? 1));
+      });
+      const stdout = Buffer.concat(stdoutChunks).toString('utf8');
+      log(`Turn ${turnCount}: claude exited code=${exitCode} stdout_len=${stdout.length}`);
+
+      let data: Record<string, unknown> | null = null;
+      try { data = JSON.parse(stdout); } catch { /* leave null — non-JSON */ }
+
+      if (data?.session_id && typeof data.session_id === 'string') {
+        if (!sessionId) log(`Session initialized: ${data.session_id}`);
+        sessionId = data.session_id;
+      }
+
+      const textResult = typeof data?.result === 'string' ? (data.result as string) : null;
+      const isErrorResult = data?.is_error === true;
+
+      // Rate-limit detection — surface either via result text or stderr.
+      if ((textResult && detectRateLimit(textResult)) || (exitCode !== 0 && detectRateLimit(stderrBuf))) {
+        const rateLimitMessage = textResult && detectRateLimit(textResult) ? textResult : undefined;
+        log(`Rate-limit detected on turn ${turnCount} — returning to outer rotation logic`);
+        clearInterval(heartbeatInterval);
+        return { rateLimited: true, rateLimitMessage };
+      }
+
+      if (exitCode !== 0) {
+        writeOutput({
+          status: 'error',
+          result: null,
+          newSessionId: sessionId,
+          error: `claude --print exited with code ${exitCode}: ${stderrBuf.slice(-500).trim()}`,
+        });
+      } else if (isErrorResult) {
+        // Clean exit but is_error: true (e.g., auth, model error) — surface as error.
+        writeOutput({
+          status: 'error',
+          result: textResult,
+          newSessionId: sessionId,
+          error: textResult ?? 'claude returned is_error',
+        });
+      } else if (textResult !== null) {
+        writeOutput({
+          status: 'success',
+          result: textResult,
+          newSessionId: sessionId,
+        });
+      } else {
+        writeOutput({ status: 'success', result: null, newSessionId: sessionId });
+      }
     }
+  } finally {
+    clearInterval(heartbeatInterval);
   }
 
-  ipcPolling = false;
-  clearInterval(heartbeatInterval);
-
-  const exitCode = await exitPromise;
-  log(`Claude exited with code ${exitCode}. Messages: ${messageCount}, results: ${resultCount}`);
-
-  if (exitCode !== 0 && resultCount === 0) {
-    // Check stderr for rate-limit indicators before writing output
-    const isRateLimit = /rate.?limit|limit.?reached|too many|overloaded|529/i.test(stderrBuf);
-    if (isRateLimit) {
-      return { rateLimited: true };
-    }
-    writeOutput({
-      status: 'error',
-      result: null,
-      newSessionId,
-      error: `claude --print exited with code ${exitCode}`,
-    });
-  } else if (resultCount === 0) {
-    // Exited cleanly but produced no result — emit empty success for host tracking
-    writeOutput({ status: 'success', result: null, newSessionId });
-  }
   return { rateLimited: false };
 }
 
@@ -459,18 +449,26 @@ async function main(): Promise<void> {
     if (result.rateLimited && tokenPool.length > 1) {
       const currentToken = cliEnv.CLAUDE_CODE_OAUTH_TOKEN;
       const remaining = tokenPool.filter(t => t.token !== currentToken);
+      // Sessions are scoped to the Claude account that issued the OAT, so
+      // resuming with a different account's token would 404. Drop the
+      // sessionId before retrying — the prompt is re-sent fresh anyway.
+      containerInput.sessionId = undefined;
+      let lastLimitMessage = result.rateLimitMessage;
       for (const candidate of remaining) {
         log(`Rate-limited, retrying with token: ${candidate.name}`);
         cliEnv.CLAUDE_CODE_OAUTH_TOKEN = candidate.token;
         const retry = await runAgent(containerInput, cliEnv);
         if (!retry.rateLimited) return; // success or non-rate-limit error
+        if (retry.rateLimitMessage) lastLimitMessage = retry.rateLimitMessage;
         log(`Token ${candidate.name} also rate-limited`);
       }
       log('All tokens exhausted — all rate-limited');
       writeOutput({
         status: 'error',
-        result: null,
-        error: 'All tokens rate-limited',
+        result: lastLimitMessage ?? null,
+        error: lastLimitMessage
+          ? `All Claude accounts rate-limited. Latest: ${lastLimitMessage}`
+          : 'All Claude accounts rate-limited',
       });
       process.exit(1);
     }
