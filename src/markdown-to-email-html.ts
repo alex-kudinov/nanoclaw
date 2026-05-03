@@ -81,11 +81,30 @@ function groupListItems(lines: string[]): string[] {
 function processParagraph(block: string): string {
   const lines = block.split('\n');
   const processed = groupListItems(lines);
-  return processed
-    .map((chunk) =>
-      chunk.startsWith('<ul>') ? chunk : chunk.replace(/\n/g, '<br>'),
-    )
-    .join('<br>');
+  // Within a paragraph, single newlines are soft wraps — fold them into a
+  // single space (CommonMark behavior). Agents and humans both naturally
+  // wrap prose at ~70 chars; preserving those as <br> turns a normal
+  // paragraph into a column of stuttered lines in the rendered email.
+  // Use \n\n to start a new paragraph; emit explicit <br> for hard breaks
+  // (e.g., signature blocks) only when needed.
+  const parts: string[] = [];
+  let textBuffer: string[] = [];
+  const flushText = () => {
+    if (textBuffer.length > 0) {
+      parts.push(textBuffer.join(' '));
+      textBuffer = [];
+    }
+  };
+  for (const chunk of processed) {
+    if (chunk.startsWith('<ul>')) {
+      flushText();
+      parts.push(chunk);
+    } else {
+      textBuffer.push(chunk);
+    }
+  }
+  flushText();
+  return parts.join('');
 }
 
 export function convertMarkdownToEmailHtml(markdown: string): string {

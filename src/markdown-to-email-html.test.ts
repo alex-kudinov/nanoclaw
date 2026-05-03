@@ -63,11 +63,22 @@ describe('convertMarkdownToEmailHtml', () => {
     expect(result).toBe('<p>First paragraph</p><p>Second paragraph</p>');
   });
 
-  // 6. Single line break → <br>
-  it('converts single newlines within a paragraph to <br>', () => {
+  // 6. Soft wrap: single newlines within a paragraph fold into a space
+  // (CommonMark behavior). This is what makes agent-generated prose render
+  // correctly when Claude naturally hard-wraps lines at ~70 chars.
+  it('folds single newlines within a paragraph into a space', () => {
     const input = 'Line one\nLine two';
     const result = convertMarkdownToEmailHtml(input);
-    expect(result).toBe('<p>Line one<br>Line two</p>');
+    expect(result).toBe('<p>Line one Line two</p>');
+  });
+
+  it('reflows a hard-wrapped paragraph into one continuous line', () => {
+    const input =
+      'Your access has been updated — you should now see the Mentor Coaching\ncourses listed under the Courses section in the platform.';
+    const result = convertMarkdownToEmailHtml(input);
+    expect(result).toBe(
+      '<p>Your access has been updated - you should now see the Mentor Coaching courses listed under the Courses section in the platform.</p>',
+    );
   });
 
   // 7. Bare URL → <a href> with domain text
