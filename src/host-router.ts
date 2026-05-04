@@ -65,6 +65,18 @@ function fmtInbox(p: RouteParams): string {
   ].join('\n');
 }
 
+function fmtClientResponse(p: RouteParams): string {
+  return [
+    '[HANDOFF: mailman\u2192sales]',
+    '[SOURCE: email-active-client]',
+    `[CONTEXT: ${p.label} \u2014 already-paid client, draft customer-success response, not a sales pitch]`,
+    `From: ${p.senderName} <${p.senderEmail}>`,
+    `Subject: ${p.subject}`,
+    ...(p.threadId ? [`Thread-ID: ${p.threadId}`] : []),
+    `Body:\n${p.body}`,
+  ].join('\n');
+}
+
 function fmtChiefEscalation(p: RouteParams, reason: string): string {
   return [
     `[ESCALATION] ${p.label}`,
@@ -144,8 +156,7 @@ export async function routeClassifiedEmail(
   const prefix = bare.split('/')[0];
 
   if (prefix === 'lead') return routeLead(params);
-  if (prefix === 'client')
-    return writeChief(fmtChiefEscalation(params, 'host-router escalation'));
+  if (prefix === 'client') return writeMailman(fmtClientResponse(params));
   if (prefix === 'procurement')
     return { routed: true, action: 'classify_only', target: 'none' };
   if (bare === 'financial/bill') return writeMailman(fmtContador(params));

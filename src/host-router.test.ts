@@ -252,15 +252,22 @@ describe('host-router', () => {
   // 5. Non-lead routes (unchanged behavior)
   // ══════════════════════════════════════════════════════════════════
 
-  it('routes client/* to chief with escalation', async () => {
+  it('routes client/* to sales via mailman for response drafting', async () => {
     const r = await routeClassifiedEmail(
       makeParams({ label: 'client/active' }),
     );
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
     const [group, payload] = mockWrite.mock.calls[0];
-    expect(group).toBe('chief');
-    expect(payload.targetGroupFolder).toBe('chief');
-    expect(payload.text).toContain('Reason: host-router escalation');
+    expect(group).toBe('mailman');
+    const text: string = payload.text;
+    expect(text).toContain('[HANDOFF: mailman→sales]');
+    expect(text).toContain('[SOURCE: email-active-client]');
+    expect(text).toContain('already-paid client');
+    expect(text).toContain('Body:');
   });
 
   it('returns classify_only for procurement/* without writing', async () => {
@@ -378,7 +385,7 @@ describe('host-router', () => {
       throw new Error('disk full');
     });
     const r = await routeClassifiedEmail(
-      makeParams({ label: 'client/active' }),
+      makeParams({ label: 'client/dormant' }),
     );
     expect(r).toEqual({ routed: false, action: 'error', reason: 'disk full' });
   });
@@ -413,18 +420,18 @@ describe('host-router', () => {
       mockMatch.mockResolvedValue(null);
     });
 
-    it('routes MrGru/client/active to chief', async () => {
+    it('routes MrGru/client/active to sales via mailman', async () => {
       const r = await routeClassifiedEmail(
         makeParams({ label: 'MrGru/client/active' }),
       );
       expect(r).toEqual({
         routed: true,
         action: 'ipc_written',
-        target: 'chief',
+        target: 'mailman',
       });
-      expect(mockWrite.mock.calls[0][1].text).toContain(
-        'Reason: host-router escalation',
-      );
+      const text: string = mockWrite.mock.calls[0][1].text;
+      expect(text).toContain('[HANDOFF: mailman→sales]');
+      expect(text).toContain('[SOURCE: email-active-client]');
     });
 
     it('routes MrGru/lead/inquiry with no match to inbox', async () => {
