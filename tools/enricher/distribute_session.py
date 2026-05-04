@@ -25,7 +25,7 @@ INSTRUCTORS_DIR = Path(os.environ.get("INSTRUCTORS_DIR", str(TANDEMWEB / "data/i
 TOOLBOX_ROOT = Path(os.environ.get("TOOLBOX_ROOT", str(Path.home() / "dev/toolbox")))
 EMAIL_TOOL = Path(os.environ.get("EMAIL_TOOL", str(TOOLBOX_ROOT / "shared/email/tools/email/send-email.sh")))
 TEMPLATE_FILE = SCRIPT_DIR / "email-template.html"
-FREE_COURSE_JSON = TANDEMWEB / "courses/community/icf/free-icf-competencies/course.json"
+FREE_COURSE_JSON = Path.home() / "dev/courses/community/icf/free-icf-competencies/course.json"
 
 
 # Free course permalink (static — not derived from course.json)

@@ -24,7 +24,7 @@ from datetime import datetime
 SCRIPT_DIR = Path(__file__).parent
 BRIDGE_URL = os.environ.get("CLAUDE_BRIDGE_URL", "http://100.115.115.206:40960/v1/print")
 ARTICLE_INDEX = SCRIPT_DIR / "article-index.json"
-FREE_COURSE = Path.home() / "dev/tandemweb/courses/community/icf/free-icf-competencies/course.json"
+FREE_COURSE = Path.home() / "dev/courses/community/icf/free-icf-competencies/course.json"
 
 # Bridge payload limit — truncate transcript if needed
 MAX_TRANSCRIPT_CHARS = 40000
