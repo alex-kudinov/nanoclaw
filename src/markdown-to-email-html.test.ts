@@ -64,12 +64,15 @@ describe('convertMarkdownToEmailHtml', () => {
   });
 
   // 6. Soft wrap: single newlines within a paragraph fold into a space
-  // (CommonMark behavior). This is what makes agent-generated prose render
-  // correctly when Claude naturally hard-wraps lines at ~70 chars.
-  it('folds single newlines within a paragraph into a space', () => {
-    const input = 'Line one\nLine two';
+  // when the paragraph contains long-line wrapped prose. Short-line blocks
+  // (sigs, addresses) keep <br>. See sig-block tests below.
+  it('folds single newlines within a long-line paragraph into a space', () => {
+    const input =
+      'This is a sufficiently long first line that exceeds the threshold\nand continues onto a second line with more wrapped prose.';
     const result = convertMarkdownToEmailHtml(input);
-    expect(result).toBe('<p>Line one Line two</p>');
+    expect(result).toBe(
+      '<p>This is a sufficiently long first line that exceeds the threshold and continues onto a second line with more wrapped prose.</p>',
+    );
   });
 
   it('reflows a hard-wrapped paragraph into one continuous line', () => {
@@ -78,6 +81,22 @@ describe('convertMarkdownToEmailHtml', () => {
     const result = convertMarkdownToEmailHtml(input);
     expect(result).toBe(
       '<p>Your access has been updated - you should now see the Mentor Coaching courses listed under the Courses section in the platform.</p>',
+    );
+  });
+
+  it('preserves hard breaks in short-line signature blocks', () => {
+    // A two-line sig: both lines are short, treat as intentional hard breaks.
+    const input = 'Best,\nTandem Coaching';
+    const result = convertMarkdownToEmailHtml(input);
+    expect(result).toBe('<p>Best,<br>Tandem Coaching</p>');
+  });
+
+  it('preserves hard breaks in multi-line address-style blocks', () => {
+    const input =
+      'Love Rutledge\nExecutive Coach\nHost, FedUpward Podcast\n(202) 297-5238';
+    const result = convertMarkdownToEmailHtml(input);
+    expect(result).toBe(
+      '<p>Love Rutledge<br>Executive Coach<br>Host, FedUpward Podcast<br>(202) 297-5238</p>',
     );
   });
 

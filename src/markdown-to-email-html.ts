@@ -78,20 +78,29 @@ function groupListItems(lines: string[]): string[] {
   return result;
 }
 
+// Lines this short are almost always intentional hard breaks (signature blocks,
+// addresses, contact lines) — not wrapped prose. Above this threshold, treat
+// adjacent lines as soft-wrapped prose and fold with spaces.
+const SIG_LINE_LENGTH_THRESHOLD = 40;
+
 function processParagraph(block: string): string {
   const lines = block.split('\n');
   const processed = groupListItems(lines);
-  // Within a paragraph, single newlines are soft wraps — fold them into a
-  // single space (CommonMark behavior). Agents and humans both naturally
-  // wrap prose at ~70 chars; preserving those as <br> turns a normal
-  // paragraph into a column of stuttered lines in the rendered email.
-  // Use \n\n to start a new paragraph; emit explicit <br> for hard breaks
-  // (e.g., signature blocks) only when needed.
+  // Heuristic: if every text line in the paragraph is short (≤40 chars), this
+  // is a signature/address block where each newline IS intentional — keep as
+  // <br>. Otherwise, single newlines are soft wraps from word-wrapping; fold
+  // into a single space (CommonMark behavior). Use \n\n for new paragraphs.
+  const textLines = processed.filter((c) => !c.startsWith('<ul>'));
+  const isSigBlock =
+    textLines.length > 0 &&
+    textLines.every((l) => l.length <= SIG_LINE_LENGTH_THRESHOLD);
+  const joiner = isSigBlock ? '<br>' : ' ';
+
   const parts: string[] = [];
   let textBuffer: string[] = [];
   const flushText = () => {
     if (textBuffer.length > 0) {
-      parts.push(textBuffer.join(' '));
+      parts.push(textBuffer.join(joiner));
       textBuffer = [];
     }
   };

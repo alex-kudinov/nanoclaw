@@ -163,8 +163,21 @@ describe('handleGmailSend', () => {
       );
     });
 
-    it('passes html:undefined when not set', async () => {
+    it('defaults to markdown→HTML conversion when neither html nor markdown is set', async () => {
+      // Plain prose body should still be converted (folds soft wraps so the
+      // email doesn't render as a column of stuttered lines in Gmail).
       const data = makePayload();
+      delete data.html;
+      delete data.markdown;
+      await handleGmailSend(data);
+
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ html: true }),
+      );
+    });
+
+    it('skips conversion when caller explicitly opts out (markdown:false)', async () => {
+      const data = makePayload({ markdown: false });
       delete data.html;
       await handleGmailSend(data);
 

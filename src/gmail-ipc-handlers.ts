@@ -118,8 +118,13 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
     return;
   }
 
-  // Convert markdown to HTML if requested and html flag is not already set
-  if (data.markdown === true && data.html !== true) {
+  // Convert body through the markdown→HTML pipeline by default. The pipeline
+  // handles both real markdown and plain prose; for plain prose its main job
+  // is folding soft-wrap newlines into spaces so Gmail doesn't render them as
+  // hard breaks. Skip only when the caller explicitly opts out
+  // (markdown:false) or already passes raw HTML (html:true).
+  const shouldConvert = data.html !== true && data.markdown !== false;
+  if (shouldConvert) {
     const converted = convertMarkdownToEmailHtml(data.body ?? '');
     if (converted) {
       data.body = converted;
@@ -268,8 +273,13 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
 
   const { effectiveTo, effectiveCc, originalTo } = applyTestRouting(data);
 
-  // Convert markdown to HTML if requested and html flag is not already set
-  if (data.markdown === true && data.html !== true) {
+  // Convert body through the markdown→HTML pipeline by default. The pipeline
+  // handles both real markdown and plain prose; for plain prose its main job
+  // is folding soft-wrap newlines into spaces so Gmail doesn't render them as
+  // hard breaks. Skip only when the caller explicitly opts out
+  // (markdown:false) or already passes raw HTML (html:true).
+  const shouldConvert = data.html !== true && data.markdown !== false;
+  if (shouldConvert) {
     const converted = convertMarkdownToEmailHtml(data.body ?? '');
     if (converted) {
       data.body = converted;
