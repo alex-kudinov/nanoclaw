@@ -4,9 +4,10 @@ _Lessons extracted from email delivery issues. Updated manually._
 
 ---
 
-### Lesson 1: Sanitize subject lines for ASCII
-**Problem:** A subject containing an em dash (—) was double-encoded to garbled characters (Ã¢Â€Â") in the recipient's email client.
-**Rule:** Before sending, scan the Subject for non-ASCII characters and replace them: em dashes → hyphens, en dashes → hyphens, smart quotes → straight quotes.
+### Lesson 1: Subject encoding handled by the host (no sanitization needed)
+**Status (2026-05-06):** Fixed at the system level. `src/gmail-api.ts::encodeHeaderValue` RFC 2047-encodes any non-ASCII Subject before the message hits Gmail's `messages.send`, so em dashes, en dashes, smart quotes, and accented characters arrive intact.
+**Original problem (resolved):** A subject containing an em dash (—) was double-encoded to garbled characters (Ã¢Â€Â") in the recipient's email client.
+**Rule:** Pass the Subject through as written. Do NOT preemptively replace em dashes or smart quotes — that was a workaround for the now-fixed encoding bug.
 
 ### Lesson 2: Always include the original message
 **Problem:** Emails were sent without the lead's original inquiry, so recipients had no context for the response.

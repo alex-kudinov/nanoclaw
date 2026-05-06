@@ -16,7 +16,18 @@ vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
 }));
 
-import { buildRawMessage } from './gmail-api.js';
+import { buildRawMessage, encodeHeaderValue } from './gmail-api.js';
+
+function decodeEncodedWord(headerValue: string): string {
+  const parts = headerValue.split(/\r\n /);
+  return parts
+    .map((part) => {
+      const m = part.match(/^=\?UTF-8\?B\?(.*)\?=$/);
+      if (!m) return part;
+      return Buffer.from(m[1], 'base64').toString('utf-8');
+    })
+    .join('');
+}
 
 function decodeRaw(raw: string): string {
   const base64 = raw.replace(/-/g, '+').replace(/_/g, '/');
@@ -120,5 +131,85 @@ describe('buildRawMessage', () => {
     });
     const decoded = decodeRaw(raw);
     expect(decoded).toMatch(/^Cc: info@tandemcoach\.co$/m);
+  });
+
+  it('passes ASCII subjects through unchanged', () => {
+    const raw = buildRawMessage({
+      to: 'a@example.com',
+      subject: 'PCC Certification Path - Tandem Coaching',
+      body: 'Hi',
+    });
+    const decoded = decodeRaw(raw);
+    expect(decoded).toMatch(
+      /^Subject: PCC Certification Path - Tandem Coaching$/m,
+    );
+  });
+
+  it('RFC 2047-encodes subjects containing non-ASCII (em dash)', () => {
+    const subject = 'How to choose — Tandem';
+    const raw = buildRawMessage({
+      to: 'a@example.com',
+      subject,
+      body: 'Hi',
+    });
+    const decoded = decodeRaw(raw);
+    const subjLine =
+      decoded.split('\r\n').find((l) => l.startsWith('Subject:')) || '';
+    expect(subjLine).toMatch(/^Subject: =\?UTF-8\?B\?[A-Za-z0-9+/=]+\?=/);
+    expect(decodeEncodedWord(subjLine.slice('Subject: '.length))).toBe(subject);
+    // Raw bytes for em dash (E2 80 94) must NOT appear in the on-the-wire
+    // header — that's exactly what triggers Latin-1 mojibake on receive.
+    const subjBytes = Buffer.from(subjLine, 'utf-8');
+    expect(subjBytes.includes(Buffer.from([0xe2, 0x80, 0x94]))).toBe(false);
+  });
+
+  it('encodes smart quotes, en dashes, and accented characters', () => {
+    for (const subject of [
+      'Welcome – let’s get started',
+      'Café Olé',
+      '“Quoted” phrase',
+    ]) {
+      const raw = buildRawMessage({
+        to: 'a@example.com',
+        subject,
+        body: 'Hi',
+      });
+      const decoded = decodeRaw(raw);
+      const subjLine =
+        decoded.split('\r\n').find((l) => l.startsWith('Subject:')) || '';
+      expect(subjLine).toMatch(/=\?UTF-8\?B\?/);
+      expect(decodeEncodedWord(subjLine.slice('Subject: '.length))).toBe(
+        subject,
+      );
+    }
+  });
+
+  it('splits long non-ASCII subjects into multiple encoded-words on codepoint boundaries', () => {
+    // Build a subject long enough to need ≥2 encoded-words (>45 UTF-8 bytes).
+    // Each ñ is 2 bytes — 30 of them = 60 bytes, forcing a split.
+    const subject = 'ñ'.repeat(30);
+    const value = encodeHeaderValue(subject);
+    const words = value.split(/\r\n /);
+    expect(words.length).toBeGreaterThanOrEqual(2);
+    for (const w of words) {
+      expect(w).toMatch(/^=\?UTF-8\?B\?[A-Za-z0-9+/=]+\?=$/);
+    }
+    expect(decodeEncodedWord(value)).toBe(subject);
+  });
+
+  it('strips CRLF from non-ASCII subjects before encoding (header-injection guard)', () => {
+    const subject = 'Hi —\r\nBcc: evil@attacker.com';
+    const raw = buildRawMessage({
+      to: 'a@example.com',
+      subject,
+      body: 'Hi',
+    });
+    const decoded = decodeRaw(raw);
+    expect(decoded).not.toMatch(/^Bcc: evil@attacker\.com$/m);
+    const subjLine =
+      decoded.split('\r\n').find((l) => l.startsWith('Subject:')) || '';
+    expect(decodeEncodedWord(subjLine.slice('Subject: '.length))).toBe(
+      'Hi —Bcc: evil@attacker.com',
+    );
   });
 });

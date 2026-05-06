@@ -25,6 +25,39 @@ import { logger } from './logger.js';
 const sanitizeHeader = (s: string): string => s.replace(/[\r\n]/g, '');
 
 /**
+ * RFC 2047-encode a header value when it contains non-ASCII characters.
+ * Address headers stay routable as 7-bit; free-text headers like Subject
+ * survive MUAs that mis-decode raw UTF-8 bytes as Latin-1 (the source of
+ * the classic em-dash → "Ã¢Â€Â" mojibake). Splits at codepoint boundaries
+ * so multi-byte sequences are never cut. CR/LF is stripped first to keep
+ * the header-injection guard.
+ */
+export function encodeHeaderValue(s: string): string {
+  const stripped = s.replace(/[\r\n]/g, '');
+  if (/^[\x20-\x7E]*$/.test(stripped) && !stripped.includes('=?')) {
+    return stripped;
+  }
+  const chunks: string[] = [];
+  let buf = '';
+  let bufLen = 0;
+  for (const ch of stripped) {
+    const chBytes = Buffer.byteLength(ch, 'utf-8');
+    if (bufLen + chBytes > 45) {
+      chunks.push(buf);
+      buf = ch;
+      bufLen = chBytes;
+    } else {
+      buf += ch;
+      bufLen += chBytes;
+    }
+  }
+  if (buf) chunks.push(buf);
+  return chunks
+    .map((c) => `=?UTF-8?B?${Buffer.from(c, 'utf-8').toString('base64')}?=`)
+    .join('\r\n ');
+}
+
+/**
  * Detect whether an email body contains an open-tracking pixel.
  * Used to suppress self-BCC/CC, since opening the self-copy fires the
  * tracker and pollutes lead engagement signals with our own opens.
@@ -113,7 +146,7 @@ export function buildRawMessage(opts: {
   if (ccHeader) lines.push(`Cc: ${sanitizeHeader(ccHeader)}`);
   if (bccHeader) lines.push(`Bcc: ${sanitizeHeader(bccHeader)}`);
   if (GMAIL_REPLY_TO) lines.push(`Reply-To: ${sanitizeHeader(GMAIL_REPLY_TO)}`);
-  lines.push(`Subject: ${sanitizeHeader(opts.subject)}`);
+  lines.push(`Subject: ${encodeHeaderValue(opts.subject)}`);
   if (opts.inReplyTo) {
     lines.push(`In-Reply-To: ${opts.inReplyTo}`);
     lines.push(`References: ${opts.references || opts.inReplyTo}`);
