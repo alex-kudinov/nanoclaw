@@ -73,6 +73,14 @@ export class SlackChannel implements Channel {
   // NEVER call app.stop() then app.start() on the same instance — the deferred
   // WebSocket close event creates zombie connections (see Session 5 postmortem).
   private static readonly NUCLEAR_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
+  // A healthy socket never fails to send. Clustered send failures mean the
+  // WebSocket is half-open — still receiving events (which keep lastActivityAt
+  // fresh, so the staleness check never fires) but unable to ACK or reply.
+  private wsSendFailures = 0;
+  private lastWsFailureAt = 0;
+  private recreating = false;
+  private static readonly WS_FAILURE_THRESHOLD = 3;
+  private static readonly WS_FAILURE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
   private opts: SlackChannelOpts;
 
@@ -99,15 +107,8 @@ export class SlackChannel implements Channel {
       logLevel: LogLevel.ERROR,
     });
 
-    // Log Bolt app errors. Do NOT trigger reconnect from here —
-    // @slack/socket-mode has built-in auto-reconnect that handles WebSocket drops.
-    // Manual intervention (recreateApp) is only triggered by the health check
-    // after 15 min of silence, avoiding the stop/start race condition.
     this.app.error(async (error) => {
-      logger.warn(
-        { err: error },
-        'Slack app error (library will auto-reconnect)',
-      );
+      await this.handleAppError(error as Error);
     });
 
     this.setupEventHandlers();
@@ -305,8 +306,13 @@ export class SlackChannel implements Channel {
    * creating zombie connections that poison the socket pool.
    */
   private async recreateApp(): Promise<void> {
+    // Re-entrancy guard: the health check and the error handler can both
+    // trigger a recreate, and a burst of errors fires the handler repeatedly.
+    if (this.recreating) return;
+    this.recreating = true;
     logger.warn('Slack: recreating App instance (nuclear fallback)');
     this.connected = false;
+    this.wsSendFailures = 0;
 
     // Stop old app — best effort with timeout so we don't hang forever
     try {
@@ -323,6 +329,7 @@ export class SlackChannel implements Channel {
     if (!env.SLACK_BOT_TOKEN || !env.SLACK_APP_TOKEN) {
       logger.error('Slack: cannot recreate — tokens missing from .env');
       this.reconnectAttempts++;
+      this.recreating = false;
       return;
     }
 
@@ -335,10 +342,7 @@ export class SlackChannel implements Channel {
     });
 
     this.app.error(async (error) => {
-      logger.warn(
-        { err: error },
-        'Slack app error (library will auto-reconnect)',
-      );
+      await this.handleAppError(error as Error);
     });
 
     this.setupEventHandlers();
@@ -361,6 +365,42 @@ export class SlackChannel implements Channel {
         { err, attempt: this.reconnectAttempts },
         'Slack: recreateApp failed, will retry',
       );
+    }
+    this.recreating = false;
+  }
+
+  /**
+   * Bolt app error handler. @slack/socket-mode has built-in auto-reconnect for
+   * normal drops, so most errors are just logged. But a cluster of "client not
+   * ready" send failures means the socket is half-open and that auto-reconnect
+   * has stalled — the staleness check can't see this because inbound events
+   * still arrive and keep lastActivityAt fresh. Force a recreate in that case.
+   */
+  private async handleAppError(error: Error): Promise<void> {
+    logger.warn({ err: error }, 'Slack app error');
+
+    const msg = String(error?.message ?? error).toLowerCase();
+    const isSendFailure =
+      msg.includes('is not ready') || msg.includes('no active connection');
+    if (!isSendFailure) return;
+
+    const now = Date.now();
+    if (now - this.lastWsFailureAt > SlackChannel.WS_FAILURE_WINDOW_MS) {
+      this.wsSendFailures = 0;
+    }
+    this.lastWsFailureAt = now;
+    this.wsSendFailures++;
+
+    if (
+      this.wsSendFailures >= SlackChannel.WS_FAILURE_THRESHOLD &&
+      this.connected &&
+      !this.recreating
+    ) {
+      logger.warn(
+        { failures: this.wsSendFailures },
+        'Slack: WebSocket send failures clustered — forcing recreate',
+      );
+      await this.recreateApp();
     }
   }
 

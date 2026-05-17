@@ -1154,49 +1154,45 @@ describe('SlackChannel', () => {
       expect(channel.isConnected()).toBe(true);
     });
 
-    it('triggers reconnect when auth.test fails', async () => {
+    it('does not reconnect on auth.test failure alone', async () => {
       vi.useFakeTimers();
       try {
         const opts = createTestOpts();
         const channel = new SlackChannel(opts);
         await channel.connect();
 
-        const app = currentApp();
-        const stopSpy = vi.spyOn(app, 'stop');
-        const startSpy = vi.spyOn(app, 'start');
+        const oldApp = currentApp();
+        const stopSpy = vi.spyOn(oldApp, 'stop');
 
-        // Make auth.test fail on next health check
-        app.client.auth.test = vi
+        // auth.test is only an HTTP sanity check — its failure does not by
+        // itself force a recreate (the staleness check owns that decision).
+        oldApp.client.auth.test = vi
           .fn()
-          .mockRejectedValueOnce(new Error('connection lost'))
-          .mockResolvedValue({ user_id: 'U_BOT_123' });
+          .mockRejectedValue(new Error('connection lost'));
 
-        // Advance one health check interval + 3s reconnect delay
         await vi.advanceTimersByTimeAsync(60_000 + 3_000);
 
-        expect(stopSpy).toHaveBeenCalled();
-        expect(startSpy).toHaveBeenCalled();
+        expect(stopSpy).not.toHaveBeenCalled();
       } finally {
         vi.useRealTimers();
       }
     });
 
-    it('triggers reconnect when WebSocket is stale (no events for 5 min)', async () => {
+    it('triggers reconnect when WebSocket is stale (no events for 15 min)', async () => {
       vi.useFakeTimers();
       try {
         const opts = createTestOpts();
         const channel = new SlackChannel(opts);
         await channel.connect();
 
-        const app = currentApp();
-        const stopSpy = vi.spyOn(app, 'stop');
-        const startSpy = vi.spyOn(app, 'start');
+        const oldApp = currentApp();
+        const stopSpy = vi.spyOn(oldApp, 'stop');
 
-        // Advance past the 5-minute staleness threshold + health check interval
-        await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 60_000 + 3_000);
+        // Advance past the 15-minute staleness threshold + a health check tick
+        await vi.advanceTimersByTimeAsync(15 * 60 * 1000 + 60_000 + 3_000);
 
         expect(stopSpy).toHaveBeenCalled();
-        expect(startSpy).toHaveBeenCalled();
+        expect(currentApp()).not.toBe(oldApp);
       } finally {
         vi.useRealTimers();
       }
@@ -1227,32 +1223,58 @@ describe('SlackChannel', () => {
       }
     });
 
-    it('triggers reconnect on WebSocket error via app.error handler', async () => {
+    it('reconnects only after WebSocket send failures cluster', async () => {
       vi.useFakeTimers();
       try {
         const opts = createTestOpts();
         const channel = new SlackChannel(opts);
         await channel.connect();
 
-        const app = currentApp();
-        const stopSpy = vi.spyOn(app, 'stop');
-        const startSpy = vi.spyOn(app, 'start');
+        const oldApp = currentApp();
+        const stopSpy = vi.spyOn(oldApp, 'stop');
 
-        // Simulate the WebSocket error that Bolt fires
-        if (app.errorHandler) {
-          // Don't await — reconnect has internal setTimeout
-          app.errorHandler(
-            new Error(
-              'Failed to send a WebSocket message as the client is not ready',
-            ),
-          );
-        }
+        const wsError = new Error(
+          'Failed to send a WebSocket message as the client is not ready',
+        );
 
-        // Advance past the 3s reconnect delay
+        // A single failure is below threshold — the library auto-reconnects.
+        await oldApp.errorHandler!(wsError);
+        expect(stopSpy).not.toHaveBeenCalled();
+
+        // Once 3 failures cluster within the window, force a recreate.
+        await oldApp.errorHandler!(wsError);
+        await oldApp.errorHandler!(wsError);
         await vi.advanceTimersByTimeAsync(3_500);
 
         expect(stopSpy).toHaveBeenCalled();
-        expect(startSpy).toHaveBeenCalled();
+        expect(currentApp()).not.toBe(oldApp);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('resets the WebSocket failure count after the window elapses', async () => {
+      vi.useFakeTimers();
+      try {
+        const opts = createTestOpts();
+        const channel = new SlackChannel(opts);
+        await channel.connect();
+
+        const oldApp = currentApp();
+        const stopSpy = vi.spyOn(oldApp, 'stop');
+
+        const wsError = new Error(
+          'Failed to send a message as the client has no active connection',
+        );
+
+        // Two failures, then a gap longer than the 10-min window resets the
+        // count — so the third failure does not reach the threshold of 3.
+        await oldApp.errorHandler!(wsError);
+        await oldApp.errorHandler!(wsError);
+        await vi.advanceTimersByTimeAsync(11 * 60 * 1000);
+        await oldApp.errorHandler!(wsError);
+
+        expect(stopSpy).not.toHaveBeenCalled();
       } finally {
         vi.useRealTimers();
       }
