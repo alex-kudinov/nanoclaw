@@ -71,7 +71,17 @@ import {
 } from './webhook-inbox.js';
 import { runReaper as runWebhookInboxReaper } from './webhook-inbox-reaper.js';
 import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
-import { findChannel, formatMessages, formatOutbound } from './router.js';
+import { runNameReaper } from './contador-name-reaper.js';
+import { runChaosReconcile } from './chaos-reconciler.js';
+import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
+import {
+  findChannel,
+  formatMessages,
+  formatOutbound,
+  excludeOwnGroupMessages,
+  isUntaggedBotNoise,
+} from './router.js';
+import { isStatusCommand, formatPipelineStatus } from './pipeline-status.js';
 import { startSchedulerLoop } from './task-scheduler.js';
 import {
   Channel,
@@ -211,9 +221,10 @@ async function processGroupMessages(
 
   if (missedMessages.length === 0) return true;
 
-  // Skip if all pending messages are from the bot — prevents no-op container
-  // spawns (e.g. after restart when from_group is lost from the in-memory map).
-  if (missedMessages.every((m) => m.sender_name === ASSISTANT_NAME))
+  // Skip if all pending messages are untagged bot noise — prevents no-op
+  // container spawns (e.g. after restart when from_group is lost). A bot
+  // message carrying a from_group is a cross-group handoff and must spawn.
+  if (missedMessages.every((m) => isUntaggedBotNoise(m, ASSISTANT_NAME)))
     return true;
 
   // For non-main groups, check if trigger is required and present.
@@ -268,6 +279,24 @@ async function processGroupMessages(
   queue.setResetIdleTimer(compositeKey, resetIdleTimer);
 
   await channel.setTyping?.(chatJid, true);
+
+  // Mechanical processing message — opt-in per group. Replaces the agent's
+  // First-Response ack. Tagged fromGroup so the spawn guard drops it.
+  const processingMessage = group.containerConfig?.processingMessage;
+  if (processingMessage) {
+    try {
+      await channel.sendMessage(chatJid, `[PROCESSING] ${processingMessage}`, {
+        fromGroup: group.folder,
+        threadTs,
+      });
+    } catch (err) {
+      logger.error(
+        { err, group: group.folder },
+        '[ERROR] processing-message post failed',
+      );
+    }
+  }
+
   let hadError = false;
   let outputSentToUser = false;
 
@@ -479,8 +508,9 @@ async function startMessageLoop(): Promise<void> {
           if (!group) continue;
 
           // Filter out messages from this group's own agent
-          const relevantMessages = threadMessages.filter(
-            (m) => !m.from_group || m.from_group !== group.folder,
+          const relevantMessages = excludeOwnGroupMessages(
+            threadMessages,
+            group.folder,
           );
           if (relevantMessages.length === 0) continue;
 
@@ -489,6 +519,35 @@ async function startMessageLoop(): Promise<void> {
             console.log(
               `Warning: no channel owns JID ${chatJid}, skipping messages`,
             );
+            continue;
+          }
+
+          // Host-handled introspection — answer `status` without spawning a
+          // container so a latency report never pays the spawn cost it reports.
+          const statusMsg = relevantMessages.find((m) =>
+            isStatusCommand(m.content, ASSISTANT_NAME),
+          );
+          if (statusMsg) {
+            try {
+              const report = formatPipelineStatus({
+                queue: queue.getStatus(),
+                circuitBreaker: queue.getCircuitBreakerStatus(),
+                channels: channels.map((ch) => ({
+                  name: ch.name,
+                  connected: ch.isConnected(),
+                  lastActivitySec: ch.getLastActivitySec?.() ?? null,
+                })),
+                lastMessageAt: getRouterState('last_timestamp') ?? null,
+                registeredGroups,
+                nowMs: Date.now(),
+              });
+              await channel.sendMessage(chatJid, report, { threadTs });
+            } catch (err) {
+              logger.error({ err, chatJid }, 'status command failed');
+            }
+            lastAgentTimestamp[compositeKey] =
+              relevantMessages[relevantMessages.length - 1].timestamp;
+            saveState();
             continue;
           }
 
@@ -505,8 +564,12 @@ async function startMessageLoop(): Promise<void> {
             group.folder,
             threadTs,
           );
+          // The threadMessages fallback is unfiltered by from_group; reuse
+          // relevantMessages (already own-group-filtered above) so a host
+          // echo tagged from_group=group.folder is never piped into the
+          // group's own live container.
           const messagesToSend =
-            allPending.length > 0 ? allPending : threadMessages;
+            allPending.length > 0 ? allPending : relevantMessages;
           const formatted = formatMessages(messagesToSend);
 
           // Try piping to an active container first — follow-up messages
@@ -606,15 +669,14 @@ function recoverPendingMessages(): void {
       );
       if (threadPending.length === 0) continue;
 
-      // Skip recovery when all pending messages are from the bot itself —
-      // avoids no-op container spawns that just say "Ready." on restart.
-      // Note: after restart, the bot's own Slack messages may have
-      // from_group=NULL (pendingFromGroup map lost), so we also check
-      // sender_name to catch bot output that slipped past the SQL filter.
-      const hasHumanMessage = threadPending.some(
-        (m) => m.sender_name !== ASSISTANT_NAME,
+      // Skip recovery only when every pending message is untagged bot noise
+      // (a self-echo whose from_group was lost on restart). A human message,
+      // or a bot message carrying a from_group (a cross-group handoff that
+      // arrived before the crash), is actionable and must be recovered.
+      const hasActionableMessage = threadPending.some(
+        (m) => !isUntaggedBotNoise(m, ASSISTANT_NAME),
       );
-      if (!hasHumanMessage) continue;
+      if (!hasActionableMessage) continue;
 
       // Priority 1: always-on agents (no trigger required) — keep these alive
       // Priority 2: anyone else with pending messages, sorted by recency
@@ -736,6 +798,21 @@ function ensureContainerSystemRunning(): void {
   cleanupOrphans();
 }
 
+/**
+ * One chaos-reconciler invocation. Exported so the daemon-wireup test can
+ * exercise the interval/startup callback without booting the daemon.
+ */
+export async function chaosReconcilerTick(
+  deps: ChaosReconcilerDeps,
+): Promise<void> {
+  logger.debug('chaos-reconciler: tick');
+  const res = await runChaosReconcile(deps);
+  logger.info(
+    { result: res },
+    `chaos-reconciler end ${JSON.stringify(res.status)}`,
+  );
+}
+
 async function main(): Promise<void> {
   ensureContainerSystemRunning();
 
@@ -801,6 +878,10 @@ async function main(): Promise<void> {
       };
     },
     runAgent: runContainerAgent,
+    enqueueAgentTask: (groupJid, taskId, fn) =>
+      queue.enqueueTask(groupJid, taskId, fn),
+    registerProcess: (groupJid, proc, containerName, groupFolder) =>
+      queue.registerProcess(groupJid, proc, containerName, groupFolder),
     sendMessage: async (jid, rawText, opts) => {
       const channel = findChannel(channels, jid);
       if (!channel) {
@@ -840,6 +921,9 @@ async function main(): Promise<void> {
         }
       : {}),
     handleEmailOpen: async (token: string, ua: string) => {
+      // TODO: handleEmailOpenImpl no longer routes to the inbox agent (T04);
+      // this sendToInbox closure is now unused and can be removed once the
+      // 2-arg WebhookServerDeps.handleEmailOpen signature is confirmed stable.
       const sendToInbox = async (msg: string) => {
         const inboxEntry = Object.entries(registeredGroups).find(
           ([, g]) => g.folder === 'inbox',
@@ -1029,6 +1113,46 @@ async function main(): Promise<void> {
       logger.error({ err }, 'trafft-sweeper: unhandled error');
     });
   }, TRAFFT_SWEEPER_INTERVAL_MS);
+
+  // Contador name reaper — every 30 min + one-shot 90s after startup. Repairs
+  // student names that lost the Heartbeat subscription-creation race (Stripe
+  // populates customer.name AFTER firing payment_intent.succeeded). Idempotent;
+  // patches the payments table + Student Roster. See
+  // tools/contador/backfill-names.cjs.
+  const NAME_REAPER_INTERVAL_MS = 30 * 60 * 1000;
+  setInterval(() => {
+    logger.debug('contador-name-reaper: tick');
+    runNameReaper().catch((err) => {
+      logger.error({ err }, 'contador-name-reaper: unhandled error');
+    });
+  }, NAME_REAPER_INTERVAL_MS);
+  setTimeout(() => {
+    runNameReaper().catch((err) => {
+      logger.error({ err }, 'contador-name-reaper: startup invocation failed');
+    });
+  }, 90 * 1000);
+
+  // Chaos reconciler — every 24h. Reconciles Chaos verified-visitor state
+  // against business_v2; synthesizes sweep webhook_inbox rows for any visitor
+  // missing a party; advances watermark only on full convergence. Backstop for
+  // the push path (Chaos forward queue → n8n → /hook/chaos).
+  const CHAOS_RECONCILER_INTERVAL_MS = 24 * 60 * 60 * 1000;
+  const chaosReconcilerDeps: ChaosReconcilerDeps = {
+    getRegisteredGroups: () => registeredGroups,
+  };
+  setInterval(() => {
+    chaosReconcilerTick(chaosReconcilerDeps).catch((err) => {
+      logger.error({ err }, 'chaos-reconciler: unhandled error');
+    });
+  }, CHAOS_RECONCILER_INTERVAL_MS);
+  // Required one-shot 60s after startup. Its own .catch swallows a startup-time
+  // failure (toolbox .env missing, TOOLBOX_DIR unresolvable, Chaos unreachable)
+  // so it can never crash or abort daemon boot — the 24h tick retries.
+  setTimeout(() => {
+    chaosReconcilerTick(chaosReconcilerDeps).catch((err) => {
+      logger.error({ err }, 'chaos-reconciler: startup invocation failed');
+    });
+  }, 60 * 1000);
 
   // Slack heartbeat — diagnostic signal for external watchdog.
   // Posts a status line every HEARTBEAT_INTERVAL_MS. Explicitly stored in DB

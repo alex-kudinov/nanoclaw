@@ -3,7 +3,7 @@ URL: https://tandemcoach.co/icf/actc-team-coaching-training/
 
 ICF ACTC Accredited Program
 
-## Become an ICF Certified Team Coach – Led by an MCC Who Holds the ACTC
+## ICF Advanced Certification in Team Coaching (ACTC) - Become an ICF Certified Team Coach Led by an MCC
 
 Our International Coaching Federation (ICF) accredited team coaching certification program gives you everything you need to earn your Advanced Certification in Team Coaching (ACTC) credential – with the rare advantage of learning from an instructor who holds both MCC and ACTC, coaching teams at the highest level.
 
@@ -213,7 +213,7 @@ ACTC certification guide
 
 ### How to Get Your ICF ACTC Certification: Requirements & Process
 
-#### What Is the ICF ACTC Certification?
+#### What Is the ICF Advanced Certification in Team Coaching (ACTC)?
 
 The ICF Advanced Certification in Team Coaching (ACTC) is a specialized credential from the **International Coaching Federation (ICF)** that recognizes coaches trained to work with teams as systems. Unlike individual coaching credentials such as the ACC, PCC, or MCC, the ACTC specifically validates your ability to coach intact teams, cross-functional groups, and leadership teams – addressing how people collaborate, make decisions, and perform together.
 
@@ -221,7 +221,7 @@ The ICF introduced the ACTC to meet growing demand for qualified team coaches. O
 
 To earn the ACTC, you must complete ICF-accredited team coaching education, demonstrate team coaching experience, receive coaching supervision, and pass the ICF Team Coaching certification exam. You must also already hold an individual coaching credential (ACC, PCC, or MCC). Tandem’s [ICF](https://coachingfederation.org/)-accredited ACTC program helps you meet ICF requirements for team coaching certification in one integrated pathway – with all education, supervision, and exam prep included.
 
-**Q: ACTC Certification Requirements – Overview**
+**Q: ICF ACTC Certification Requirements & ICF Credential Overview**
 
 To earn the ACTC credential, the ICF requires you to meet five core criteria. Here’s what each one involves:
 
@@ -240,7 +240,7 @@ A computer-based exam covering the ICF Team Coaching Competencies, ethics, and t
 **Prerequisite: ACC, PCC, or MCC Credential**
 The ACTC is an advanced credential. You must already hold a current ACC, PCC, or MCC before applying – it builds on your individual coaching foundation.
 
-**Q: Team Coaching Education Requirements**
+**Q: ICF Team Coaching Competencies & Education Requirements**
 
 The ICF requires at least 60 hours of team coaching education that covers all eight ICF Team Coaching Competencies. Key requirements include:
 
@@ -251,7 +251,7 @@ The ICF requires at least 60 hours of team coaching education that covers all ei
 
 Tandem’s program provides 60+ hours that exceed these requirements, with a carefully designed mix of live modules led by MCC-level instructors and self-paced learning that lets you apply concepts between sessions. You’ll practice coaching real teams, not just study theory.
 
-**Q: Team Coaching Experience Requirements**
+**Q: Team Coaching Experience: Becoming a Certified Team Coach**
 
 You need five team coaching engagements completed within the past five years. The ICF has specific criteria for what counts:
 
@@ -263,7 +263,7 @@ You need five team coaching engagements completed within the past five years. Th
 
 This is one area where planning ahead pays off. Many coaches start identifying team coaching opportunities early in their training so they can build their engagement portfolio in parallel with their education.
 
-**Q: Coaching Supervision Requirements**
+**Q: Coaching Supervision in This Accredited Program**
 
 The ICF requires five hours of coaching supervision with a qualified supervisor. Supervision is distinct from mentor coaching – it focuses on your development as a reflective practitioner, not just skill-building:
 
@@ -274,7 +274,7 @@ The ICF requires five hours of coaching supervision with a qualified supervisor.
 
 Tandem includes supervision hours as part of the full program, so you won’t need to source a supervisor separately.
 
-**Q: The ICF Team Coaching Certification Exam**
+**Q: The ICF Team Coaching Certification Exam & Competency Model**
 
 The final step is passing the ICF Team Coaching certification exam. Here’s what to expect:
 
@@ -310,7 +310,7 @@ Transparency matters when you’re investing in your coaching career. Here’s t
 
 Tandem’s program includes all training modules, group supervision hours, and access to exam prep materials in one bundled price. There are no hidden fees or surprise add-ons beyond the ICF application fee, which is paid directly to the ICF when you apply for the credential.
 
-**Q: Do I Need ACC or PCC Before ACTC?**
+**Q: Do I Need ACC or PCC Before the ACTC Team Coaching Program?**
 
 Yes. The ACTC is an advanced team coaching credential that builds on individual coaching foundations. The ICF requires that you hold a **current ACC, PCC, or MCC credential** before you can apply for the ACTC.
 
@@ -325,7 +325,7 @@ The distinction matters for ACTC certification – and for your coaching practic
 - **Team dynamics** are central to team coaching – how members interact, make decisions, navigate conflict, and build trust as a unit
 - **Group dynamics** matter in group coaching, but the focus is individual growth supported by peer learning, not collective performance
 - Team coaching addresses **systemic patterns** – how the team functions as more than the sum of its parts
-- Team coaches help teams navigate complexity together, building their capacity to **lead themselves** over time
+- Team coaches help teams foster trust and navigate complexity together, building their capacity to **lead themselves** over time
 
 The ACTC credential specifically validates your ability to coach teams as systems. If your practice focuses on group coaching (cohort programs, mastermind groups), you may use some overlapping skills, but the ACTC is designed for coaches working with intact organizational teams.
 
@@ -335,8 +335,8 @@ If you’ve been coaching teams informally – perhaps as a leader, consultant, 
 
 - **Team coaching engagements** can include work from the past 5 years, even before you started formal training
 - Your engagements must meet ICF criteria (intact team, 3+ members, documented hours), but they don’t have to be labeled “team coaching” at the time
-- **Education hours** must come from an ICF-accredited program – prior team facilitation workshops or non-ICF training don’t transfer
-- If you hold credentials from other bodies (EMCC, etc.), some supervision hours may apply – check with your program
+- **Coach education** hours must come from an ICF-accredited program – prior team facilitation workshops or non-ICF training don’t transfer
+- **Certified coaches** who hold credentials from other bodies (EMCC, etc.) may find some supervision hours apply – check with your program
 
 The key takeaway: your experience building high-performance teams is valuable, and the ACTC helps you formalize it with a globally recognized credential. You’re not starting from zero – you’re adding structure and credibility to expertise you’ve already developed.
 
@@ -352,7 +352,7 @@ Our full ACTC program ($2,499) includes everything you need – supervision, exa
 
 ← Scroll to compare →
 
-| Feature | Recommended Tandem Full Program $2,499 – all included | Typical Programs Other team coaching training | DIY Path Self-assembled route |
+| Feature | Tandem Full Program $2,499 – all included | Typical Programs Other team coaching training | DIY Path Self-assembled route |
 | --- | --- | --- | --- |
 | Instructor Holds ACTC | Yes (MCC + ACTC) | Varies | N/A |
 | Free Trial Module | Yes – start before paying | No | N/A |
@@ -466,7 +466,7 @@ Not sure if ACTC is your next step? Book a free consultation and we’ll help yo
 
 [Book a Consultation](https://tandemcoach.co/contact-us/)
 
-[Get the Program Guide — curriculum, pricing & credential pathways](#)
+[Get the Program Guide - curriculum, pricing & credential pathways](#)
 
 Or enroll in individual modules
 
@@ -536,8 +536,8 @@ Your progress will be lost.
 
 #### What were you hoping to find?
 
-Quick question before you go — helps us improve this page.
+Quick question before you go - helps us improve this page.
 
-Thanks — that helps.
+Thanks - that helps.
 
 ---

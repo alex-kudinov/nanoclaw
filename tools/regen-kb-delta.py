@@ -201,7 +201,7 @@ def build_prompt(current_kb: str, pieces_batch: list[dict], pieces_dir: Path,
 # ─── Bridge call ─────────────────────────────────────────────────────────────
 
 def call_bridge(prompt: str, bridge_url: str, bridge_key: str, model: str,
-                timeout: int = 540) -> str:
+                timeout: int = 1500) -> str:
     """POST to Claude Print Bridge, return result text. Raises on error."""
     body = json.dumps({"prompt": prompt, "model": model}).encode("utf-8")
     if len(body) > BRIDGE_CAP:

@@ -1,7 +1,12 @@
 # Tandem Coaching — Knowledge Base
 
-<!-- manifest-hash: 2a7f63bd5b62478044b3243d5f3dad15178d8119dc708c03ec5535a0573a57bc -->
-<!-- validated-at: 2026-04-25 -->
+<!-- manifest-hash: c786ce56daef037b7b807ef6554eeb713a1b2bcf01c0fb0335e813c0f7a19567 -->
+<!-- validated-at: 2026-06-06 -->
+
+
+
+
+
 
 
 
@@ -19,7 +24,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 - **ICF credential fees (paid to ICF, not Tandem):** Application fee $175 (ICF member) or $325 (non-member); Credentialing Exam (CKA) fee $275; optional ICF membership $245/yr — total investment ~$4,200–$4,700 depending on membership status
 - **Education hours required:** 60+ coach-specific hours (ICF Level 1 program)
 - **Coaching experience required:** 100 hours total (75 paid minimum, 25 can be pro bono)
-- **Mentor coaching:** 10 hours over minimum 3 months (group + individual) — included in program. Starting in 2027, ICF requires all mentor coaches to hold the Mentor Coach Qualification (MCQ).
+- **Mentor coaching:** 10 hours over minimum 3 months (group + individual) — included in program. Starting in 2027, ICF requires all mentor coaches to hold the Mentor Coach Specialization (MCS, formerly MCQ).
 - **Timeline:** 6–12 months total; training modules can be completed faster, main variable is accumulating 100 hours
 - **Prerequisites:** None — no prior coaching experience required
 - **Instructors:** Cherie Silas, Alex Kudinov, Kalina Terzieva, Karen Bruns
@@ -109,8 +114,8 @@ Four programs for every stage of the coaching journey. Each is independently acc
 - **ICF credentials earned:** PCC + ACTC (dual credential)
 - **Education hours:** 65+ coach-specific hours (ICF Level 2 program)
 - **Coaching experience required:** 500 hours total (450 paid, minimum 25 clients over 24 months)
-- **Mentor coaching:** 10 hours with PCC or MCC-level coach — included. Starting in 2027, ICF requires mentor coaches to hold the MCQ at the PCC level or above for PCC candidates.
-- **Performance evaluation:** Two recorded coaching sessions + transcripts submitted to ICF (transitioning to formative evaluation through MCQ-qualified mentor coaches by April 1, 2027)
+- **Mentor coaching:** 10 hours with PCC or MCC-level coach — included. Starting in 2027, ICF requires mentor coaches to hold the MCS at the PCC level or above for PCC candidates.
+- **Performance evaluation:** Two recorded coaching sessions + transcripts submitted to ICF (transitioning to formative evaluation through MCS-qualified mentor coaches by April 1, 2027)
 - **ICF Credentialing Exam (CKA):** Required — program includes prep
 - **Timeline:** 6–12 months for training; 12–24 months total including coaching hours
 - **Prerequisites:** 60 hours of ICF-accredited coach training (ACC credential or equivalent)
@@ -173,8 +178,9 @@ Four programs for every stage of the coaching journey. Each is independently acc
 | Professional Coach Program | $7,499 | ACC + PCC + ACTC | None | Full journey from zero to PCC |
 | Systems Coach Program | $3,999 | PCC + ACTC | 60 hrs prior training (ACC) | ACC holders advancing to PCC |
 | ACTC Team Coaching | $2,499 | ACTC | Existing ACC or PCC or MCC | Team coaching specialization |
-| Mentor Coaching Foundations | $299 (launch) / $397 | 10 CCE hours (MCQ education) | Active ICF credential | Coaches pursuing ICF Mentor Coach Qualification via CPL |
-| Evaluation Training | $49–$149 | MCQ evaluation instrument training | Active ICF credential | MCQ applicants needing BARS/Markers training |
+| Mentor Coaching Foundations | $299 (launch) / $397 | 10 CCE hours (MCS education) | Active ICF credential | Coaches pursuing ICF Mentor Coach Specialization via CPL |
+| Mentor Coach Training | $1,997 (founding) / $2,497 (list) | MCS via Standard Path (41 CCE hrs) | Active ICF credential | Coaches pursuing MCS via Standard Path |
+| Evaluation Training (ACC BARS / PCC Markers / MCC BARS) | RETIRED — not sold separately | Embedded in Mentor Coach Training cohort only; ICF-recognized eval training comes from ICF directly | — | — |
 
 ---
 
@@ -182,12 +188,12 @@ Four programs for every stage of the coaching journey. Each is independently acc
 
 ### Cherie Silas — MCC, ACTC (ICF Master Certified Coach)
 - CEO & Managing Partner, Tandem Coaching
-- Credentials: ICF MCC (since 2017), ICF ACTC, SA CEC, CPCC, EMCC ESIA (Accredited Coaching Supervisor — one of only 215 worldwide)
+- Credentials: ICF MCC (since 2017), ICF ACTC, SA CEC, CPCC, EMCC MC (Master Coach), EMCC ESIA (Accredited Coaching Supervisor — one of very few supervisors worldwide who holds both ICF MCC and EMCC Master Coach with ESIA Supervisor accreditation)
 - 20+ years experience as corporate leader turned professional coach
 - Top 3.7% of 56,000+ credentialed coaches worldwide; named #16 most influential coach by Global Gurus
 - Co-author, *Enterprise Agile Coaching* book
 - One of the few coaches who holds both MCC and ACTC
-- Teaches: ACC, Systems Coach (PCC+ACTC), ACTC, Mentor Coaching Foundations (Modules 1, 3, 5), Evaluation Training
+- Teaches: ACC, Systems Coach (PCC+ACTC), ACTC, Mentor Coaching Foundations (Modules 1, 3, 5), Mentor Coach Training (sole instructor, all 10 live classes), Evaluation Training (ACC BARS, PCC Markers, MCC BARS)
 - LinkedIn: linkedin.com/in/cheriesilas/
 
 ### Alex Kudinov — MCC (ICF Master Certified Coach)
@@ -229,7 +235,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 ## Other Services
 
 ### Mentor Coaching Foundations (self-paced course)
-An asynchronous, self-paced course that provides the 10-hour education component required for the ICF **Mentor Coach Qualification (MCQ)** via the Credit for Prior Learning (CPL) path. This course teaches coaches how to BE a mentor coach — it is NOT mentor coaching sessions.
+An asynchronous, self-paced course that provides the 10-hour education component required for the ICF **Mentor Coach Specialization (MCS, formerly MCQ)** via the Credit for Prior Learning (CPL) path. This course teaches coaches how to BE a mentor coach — it is NOT mentor coaching sessions.
 
 - **Price:** $299 (launch price through September 30, 2026) / $397 regular
 - **Format:** Asynchronous, self-paced — 22 video lessons across 6 modules, 15 units
@@ -240,13 +246,17 @@ An asynchronous, self-paced course that provides the 10-hour education component
 - **URL:** /mcq/mentor-coaching-foundations/
 - **Guarantee:** 14-day money-back refund (unavailable after certificate issuance)
 
+**Standard Path candidate?** Foundations is the 10-hour CPL course. The full Standard Path runs through the 41-hour live cohort — Foundations is included as just-in-time pre-work in that program, no separate purchase needed. See Mentor Coach Training below.
+
 **What's included:**
 - 22 video lessons, 15 downloadable tools (templates, worksheets, frameworks)
 - 3 auto-scored quizzes (37 questions, ≥80% to pass, retakeable)
 - 6 instructor-graded written submissions (one revision each)
 - Full coaching recording for analysis and feedback practice
 - Certificate of Completion with instructor signatures
-- Attestation letter for graduates meeting CPL criteria (5+ mentees in past 3 years)
+- Attestation letter for graduates meeting CPL criteria (5+ mentees in past 3 years through Tandem)
+
+**Free preview:** Two lessons (1.1 — What Is Mentor Coaching?, and 4.1 — Why Formative, Not Summative) are available free to any registered community user at community.tandemcoaching.academy. No purchase or credit card required.
 
 **Course modules (aligned to 2024 ICF Mentor Coaching Competencies):**
 
@@ -259,67 +269,117 @@ An asynchronous, self-paced course that provides the 10-hour education component
 | 5 | ~2 | Facilitating Skill Development | MC Competency 5 |
 | 6 | ~1 | Group Mentor Coaching | MC Competency 6 |
 
+**Note:** One coaching recording (Recording A) threads through Modules 4 and 5. You analyze it for competency demonstration in Module 4, then write developmental feedback for it in Module 5.
+
 **Target personas:**
-1. **CPL Renewer** — PCC/MCC/renewed ACC with 5+ mentees documented, seeking fastest MCQ route
+1. **CPL Renewer** — PCC/MCC/renewed ACC with 5+ mentees documented, seeking fastest MCS route
 2. **Active Mentor Coach** — Currently mentoring candidates, needs formal CCE record before deadline
-3. **MCQ Renewer** — Planning to qualify in 2026 introductory window, wants CCE hours for three-year renewal
+3. **MCS Renewer** — Planning to qualify in 2026 introductory window, wants CCE hours for three-year renewal
 
 **ICF accreditation status:** CCE accreditation currently pending review.
 
-**What this course does NOT include:** BARS/Markers training (taken separately — see Evaluation Training below), 1:1 mentor coaching sessions, or the standard-path synchronous hours. A companion Mentor Coaching Practicum (31 hrs blended) is planned for Q3 2026.
+**What this course does NOT include:** BARS/Markers evaluation training (obtained from ICF directly — Tandem's standalone evaluation courses are retired as of 2026-06-03), 1:1 mentor coaching sessions, or the standard-path synchronous hours. Live synchronous hours, group practicum, and formative evaluation are in the Standard Path program, Mentor Coach Training (41 CCE hours, founding cohort $1,997).
+
+**Should I buy Foundations or the live cohort?** Buy Foundations ($299) if you are taking the **Credit for Prior Learning** path — you have an active credential, documented prior mentor coaching practice, and you only need the 10-hour course. Buy the **live cohort** ($1,997 founding / $2,497 list) if you are taking the **Standard Path** — you need the full 41 hours with at least 50% synchronous, group practicum, and formative evaluation. Foundations content is included as just-in-time pre-work inside the cohort, so do not buy it separately.
 
 > **⚠️ DO NOT CONFUSE with MCC Mentor Coaching ($3,999).** These are different products for different ICF pathways:
-> - **Mentor Coaching Foundations** ($299) = self-paced EDUCATION on how to be a mentor coach → for the ICF **Mentor Coach Qualification** (MCQ) CPL path
-> - **MCC Mentor Coaching** ($3,999) = live 1-on-1 SESSIONS receiving mentor coaching from MCCs → for coaches pursuing the **MCC credential** via the MCQ (Master Certified Coach Questionnaire) CPL path
+> - **Mentor Coaching Foundations** ($299) = self-paced EDUCATION on how to be a mentor coach → for the ICF **Mentor Coach Specialization** (MCS) CPL path
+> - **MCC Mentor Coaching** ($3,999) = live 1-on-1 SESSIONS receiving mentor coaching from MCCs → for coaches pursuing the **MCC credential** via the Credit for Prior Learning path
 >
-> Both abbreviate to "MCQ" but refer to different ICF programs. Disambiguate by asking: "Are you looking to become a qualified mentor coach, or are you pursuing your MCC credential?"
+> Disambiguate by asking: "Are you looking to become a qualified mentor coach, or are you pursuing your MCC credential?"
 
 ---
 
-### ICF Evaluation Training (MCQ BARS & Markers)
-Video-based evaluation instrument training for all three MCQ levels, required for the Mentor Coach Qualification. Taught by Cherie Silas, MCC. Includes worked scoring examples, practice exercises, quizzes, written assignments, downloadable scoring tools, and completion certificates.
+### Mentor Coach Training (Standard Path — live cohort)
+The full Standard Path program for the ICF Mentor Coach Specialization (MCS). A blended cohort that satisfies the Standard Path's 41+ hour requirement with at least 50% synchronous delivery. Also called "MCS Path." Foundations content is included as just-in-time pre-work — do not purchase Foundations separately if enrolling in this cohort.
 
-| Course | Price | Content |
-|--------|-------|---------|
-| ACC BARS | $49 | 5 units, 10 video lessons |
-| PCC Markers | $99 | 5 units, 12 video lessons |
-| MCC BARS | $49 | 5 units, 10 video lessons |
-| Complete Bundle (all three) | $149 | Save $48 vs individual |
+- **Price:** $1,997 (founding cohort, first 6 seats) / $2,497 (list price thereafter)
+- **Format:** 41 CCE hours total — 21 synchronous + 20 asynchronous (51% sync, meets ICF Standard Path 50% floor). 10 live classes over 10 weeks, led by Cherie Silas, MCC.
+- **Includes:** Mentor Coaching Foundations (10 hrs async as pre-work) + ACC BARS Training (5 hrs async) + PCC Markers Training (5 hrs async) + 10 live classes (20 hrs sync) + sync orientation (1 hr sync)
+- **MCC bonus:** MCC BARS Training included free as self-paced bonus for MCC-credentialed coaches (not part of live cohort, not on certificate)
+- **Prerequisites:** Active ICF credential (MCC, PCC, or renewed ACC). PCC and MCC do not require renewal as a prerequisite; ACC must be in renewed status.
+- **Cohort size:** 9–12 people
+- **Time commitment:** 3–8 hours/week including live class and field work
+- **Cohort schedule:** First two cohorts in Q2 and Q3 2026 — one Europe-friendly (US morning), one Americas/Asia-Pacific-friendly (US evening). Exact dates announced to waitlist first.
+- **Certificate:** Single Tandem certificate of completion — 41 CCE hours aligned with 2024 ICF Mentor Coaching Competencies, for ICF MCS Standard Path application
+- **CCE accreditation:** Pending. Certificates will be retroactively credited at time of ICF approval.
+- **URL:** /mcs/mentor-coach-training/
 
-- **URL:** /mcq/evaluation-training/
-- **Format:** Self-paced video courses
-- **Important for CPL path:** Evaluation training is always separate and additional — it does NOT count toward the 10 hours of MC-aligned education. You need both the 10-hour education (Mentor Coaching Foundations) AND the BARS/Markers course for each MCQ level you seek.
-- **Important for Standard Path:** Evaluation training MAY be embedded within the 41 hours of education.
+**What's included:**
+- Mentor Coaching Foundations curriculum (6 modules, 22 video lessons, 15 tools, quizzes, written submissions) — delivered as just-in-time pre-work
+- ACC BARS and PCC Markers evaluation training inside the cohort
+- 10 live Zoom classes × 2 hours, weekly, led by Cherie Silas, MCC
+- Stable peer role-chain: 4 roles assigned in Class 1 (Coach, Coaching Client, Mentor, Mentee) held for entire cohort
+- 6 coaching recordings delivered (3 ACC-level at 30 minutes, 3 PCC-level at 45 minutes), 6 recordings evaluated using Tandem ICF-aligned Session Observation Form (ACC) and Competency Review Form (PCC), with Tandem Three-Cycle Tracking Forms maintained across each cycle
+- 6 live mentor coaching feedback sessions delivered to peer Mentee
+- 3 live Group Mentor Coaching sessions (Classes 8–10)
+- Formative evaluation using Tandem ICF-aligned forms across multiple live sessions
+
+**The 10-class arc:**
+- Class 1: Program kickoff, role assignments, Foundations Modules 1 & 2 review. How mentor coaching is changing under the 2026 standards. The six MC role distinctions. Orientation to the 2024 ICF Mentor Coaching Competencies.
+- Class 2: Mentoring agreement & plan, Foundations Modules 3 & 4 review. Draft engagement agreement and mentoring plan with assigned Mentee.
+- Classes 3–5: ACC BARS deep-dive, live BARS-identification practice, 3 ACC mentor coaching cycles delivered live with Mentee, Design Ethics and Data Security strategy.
+- Classes 6–7: PCC Markers framework and feedback form, 3 PCC mentor coaching cycles delivered live with Mentee, bias identification practice tuned to PCC-level traps.
+- Classes 8–10: Foundations Modules 5 & 6 (Facilitates Client Skill Development; Manages Group Mentor Coaching), 3 live Group Mentor Coaching sessions, closing review, MCS certification Q&A.
+
+**Free preview lessons:** Two lessons available free at community.tandemcoaching.academy — Foundations Lesson 1.1.2 "Six Roles You Must Not Confuse" (8 min, Module 1) and ACC BARS Training Lesson 7.1.1 "Introduction to ACC BARS" (8 min, cohort's first evaluation framework).
+
+**Applied practice beyond the 41 hours:** Between classes, participants deliver and evaluate peer mentor coaching sessions. This applied work is required for graduation but is not counted on the certificate as additional CCE — the 41 hours on the certificate is the clean ICF match.
+
+**What MCS Path is not:** Does not file your MCS application (you file with ICF using the certificate). Does not include the ICF MCS application fee. Tandem only writes attestation letters for graduates who go on to mentor coach inside Tandem programs — attestation is a CPL-path artifact.
+
+**Best for:** Coaches pursuing MCS via the Standard Path who need the full 41+ hours with synchronous delivery, group practicum, and formative evaluation.
 
 ---
 
-### ICF Mentor Coach Qualification (MCQ) — Hub Page
-Comprehensive guide to the MCQ requirement taking effect January 1, 2027. URL: /mcq/
+### ICF Evaluation Training (MCS BARS & Markers) — RETIRED (2026-06-03)
+**Do NOT offer, quote, or sell these as standalone products.** The standalone evaluation courses — ACC BARS, PCC Markers, MCC BARS, and the Complete Evaluation Training bundle — were discontinued and removed from the Tandem catalog per ICF guidance. They cannot be purchased separately at any price (former pricing $49–$149 is void).
+
+**Where the training lives now:**
+- **ACC BARS + PCC Markers:** delivered only inside the **Mentor Coach Training** cohort (MCS Standard Path — $1,997 founding / $2,497 list), in alignment with the ICF Facilitator Guide. Not separable from the cohort.
+- **MCC BARS:** included only as a free self-paced bonus for MCC-credentialed coaches enrolled in that cohort (not on the certificate).
+- **Coaches who need ICF-recognized evaluation training for their MCS application** obtain ACC BARS / PCC Markers / MCC BARS from **ICF directly** (ICF Learning Portal), for each level they seek.
+
+If a prospect asks to buy BARS or Markers training on its own, tell them it is no longer available separately — it is part of the full MCS Standard Path program (Mentor Coach Training) — and route MCS pricing/availability questions to chief if unsure.
+
+---
+
+### ICF Mentor Coach Specialization (MCS) — Hub Page
+Comprehensive guide to the MCS requirement (formerly MCQ) taking effect January 1, 2027. URL: /mcs/
 
 **Key dates:**
-- **January 1, 2027:** All ICF credential candidates must work with a mentor coach who holds the MCQ at the matching credential level
-- **April 1, 2027:** ICF Performance Evaluation (SPE) recording/transcript requirement for ACC and PCC Portfolio candidates replaced by formative evaluation through MCQ-qualified mentor coaches (Session Observation Forms + Competency Review Form)
+- **January 1, 2027:** All ICF credential candidates must work with a mentor coach who holds the MCS at the matching credential level
+- **April 1, 2027:** ICF Performance Evaluation (SPE) recording/transcript requirement for ACC and PCC Portfolio candidates replaced by formative evaluation through MCS-qualified mentor coaches (Session Observation Forms + Competency Review Form)
 
-**Two paths to MCQ:**
+**Two paths to MCS:**
 - **Standard Path:** 41+ hours MC-aligned education (50%+ synchronous) + BARS/Markers training (may be embedded in the 41 hours)
 - **Credit for Prior Learning (CPL):** 10 hours MC-aligned education (sync or async) + evidence of prior practice (5 credentialed mentees in 3 years or attestation letter) + BARS/Markers training (always separate)
 
-**MCQ levels:** MCQ-ACC, MCQ-PCC, MCQ-MCC — matched to the candidate's target credential. Safe harbor: ACC candidates may be mentored by MCQ-ACC or MCQ-PCC holders.
+**MCS levels:** MCS-ACC, MCS-PCC, MCS-MCC — matched to the candidate's target credential. Safe harbor: ACC candidates may be mentored by MCS-ACC or MCS-PCC holders.
 
 **Application fees:**
 - Through March 31, 2027: $50 (ICF member) / $125 (non-member) — one fee covers all levels applied for simultaneously
 - From April 1, 2027: $125 (member) / $200 (non-member)
 - Renewal every 3 years: $100 (member) / $200 (non-member) + 10 hrs MC-aligned continuing education
 
-**Tandem MCQ programs:**
+**Tandem MCS programs:**
 1. Mentor Coaching Foundations ($299) — 10-hour CPL education (live now)
-2. Mentor Coaching Practicum (TBA) — 31-hour blended Standard Path companion (Q3 2026)
-3. Evaluation Training ($49–$149) — BARS and Markers courses (live now)
+2. Mentor Coach Training ($1,997 founding / $2,497 list) — 41 CCE hour live cohort for Standard Path (live now)
+3. Mentor Coaching Practicum (TBA) — 31-hour blended Standard Path companion (Q3 2026)
+4. Evaluation Training — RETIRED (not sold separately; ACC BARS + PCC Markers now delivered only inside Mentor Coach Training; ICF-recognized eval training comes from ICF directly)
 
-**Additional MCQ resources:**
-- MCQ 2027 Decision Guide (free flipbook): /flipbook/?book=404bb6a3fc
-- Advanced Accreditation in Mentor Coaching info: /mcq/advanced-accreditation/
+**Additional MCS resources:**
+- MCS Decision Guide (free flipbook): /flipbook/?book=404bb6a3fc
+- Advanced Accreditation in Mentor Coaching info: /mcs/advanced-accreditation/
 - Mentor Coach Registry: planned for launch July 2026
+
+**Enhanced mentor coaching and formative evaluation:** The MCS replaces the one-moment Performance Evaluation snapshot with formative evaluation over time. Two standardized ICF forms structure the process:
+- **Session Observation Form:** Used after each 1:1 mentor coaching session where a coaching recording is reviewed. Captures observed performance, mentor coach feedback, and client reflections.
+- **Competency Review Form:** Used once at the end of the engagement as a cumulative review. Captures proficiency, remaining gaps, ethics verification, and overall readiness.
+
+These forms replace the previously required SPE recording and transcript for ACC and PCC Portfolio candidates (effective April 1, 2027). The ICF assessor role for ACC and PCC will be retired. Forms apply to 1:1 mentor coaching only — group sessions do not require Session Observation Forms.
+
+**ICF Advanced Accreditation in Mentor Coaching:** A new voluntary accreditation for education programs (not individuals), announced April 13, 2026 alongside the MCS launch. Applications expected to open mid-2026; specific requirements not yet published. Separate from existing Level 1/Level 2/Level 3 program accreditation and from CCE approval. Programs with this accreditation create a "direct pathway" for learners pursuing the MCS. Tandem is actively monitoring and evaluating this for the Mentor Coaching Foundations program. URL: /mcs/advanced-accreditation/
 
 ---
 
@@ -338,31 +398,58 @@ For coaches who need mentor coaching hours outside of a Tandem program. Already 
 - **What's included:** Observation and feedback on coaching demonstrations, peer learning (group), personalized feedback (individual), certificate of completion for ICF applications
 - **Mentors:** Cherie Silas (MCC, ICF Credential Assessor, 20+ yrs) and Alex Kudinov (MCC, ICF Credential Assessor)
 - **ICF requirements:** Minimum 10 hours over 3+ months, at least 3 hours individual
-- **MCC via MCQ (Credit for Prior Learning) path:** The MCC Credential package ($3,999, 10 individual hours) fully satisfies the 10-hour Mentor Coach Education requirement for the ICF MCQ Credit for Prior Learning Path. A formal completion certificate is issued for ICF applications. Both mentors are ICF Credential Assessors who know exactly what the MCQ evaluation looks for.
+- **MCC via Credit for Prior Learning path:** The MCC Credential package ($3,999, 10 individual hours) fully satisfies the 10-hour Mentor Coach Education requirement for the ICF MCS Credit for Prior Learning Path. A formal completion certificate is issued for ICF applications. Both mentors are ICF Credential Assessors who know exactly what the MCS evaluation looks for.
 - URL: /icf/mentor-coaching-acc-pcc-mcc/
 
 **Do you need coaching clients for mentor coaching?** It depends on the format. Individual mentor coaching involves getting feedback on your real coaching sessions with actual clients — so yes, you need clients. Group mentoring (included in certification programs) is live coaching practice in a classroom setting where participants coach peers; no external clients required. If a lead asks whether they need clients before they can start, clarify: group mentoring uses peer practice, but individual mentor coaching requires actual coaching sessions to review.
 
 ### Coaching Supervision (standalone)
-Reflective practice for working coaches — not evaluation, but guided self-examination of coaching patterns, blind spots, and development areas. Supervisor: Cherie Silas (EMCC ESIA Accredited Coaching Supervisor — one of only 215 worldwide).
+Reflective practice for working coaches — not evaluation, but guided self-examination of coaching patterns, blind spots, and development areas. Supervisor: Cherie Silas (ICF MCC, EMCC MC — Master Coach, EMCC ESIA — Accredited Coaching Supervisor; one of very few supervisors worldwide who holds both ICF MCC and EMCC Master Coach with ESIA Supervisor accreditation).
 
 | Format | Price | Duration | Details |
 |--------|-------|----------|---------|
 | Individual | From $189 | 60 minutes | 1:1 virtual sessions, monthly or as needed |
 | Group | From $89 | Per session | Small group (4–8 coaches), virtual, scheduled cohorts |
 
-- **Who it's for:** Credentialed coaches wanting ongoing professional development. ICF strongly recommends supervision for all credentialed coaches and requires it for ACTC. Up to 10 hours count as CCE units toward ICF recertification. EMCC requires it at Senior Practitioner level and above. Coaching supervision hours dedicated to mentor coaching practice can count toward MCQ renewal.
+- **Who it's for:** Credentialed coaches wanting ongoing professional development. ICF strongly recommends supervision for all credentialed coaches and requires it for ACTC. Up to 10 hours count as CCE units toward ICF recertification. EMCC requires it at Senior Practitioner level and above. Coaching supervision hours dedicated to mentor coaching practice can count toward MCS renewal.
 - **Supervision vs. mentor coaching:** Mentor coaching focuses on developing ICF core competencies (skills-based, required for credentialing). Supervision is broader — addresses ethical challenges, client dynamics, wellbeing, and professional development.
 - **Do you need coaching clients for supervision?** Yes. Supervision is reflective practice about your actual work as a coach — sessions examine real client situations, patterns, and dynamics. A coach without active clients has no material to bring to supervision.
 - URL: /coaching-supervision/
 
 ### Executive Coaching (for leaders/organizations)
-- MCC-credentialed coaches
+- MCC-credentialed coaches leading engagements, team of 9 ICF-credentialed coaches
 - Specialties: executive, ADHD, women in leadership, team coaching, healthcare, legal, communications, presence
+- ASPIRE framework: Assess, Strategize, Plan, Inspire, Reflect, Evaluate
+- Validated assessment tools: ProfileXT, Genos EQ, 360-degree feedback, LEAD Now!
+- Engagement models: 1-on-1 executive coaching, executive team coaching, leadership development cohort programs
 - URL: /executive-coaching/
+- Coaching engagements page: /coaching-engagements/
 
 ### ADHD Executive Coaching (high-traffic specialty)
+- Led by Cherie Silas (MCC, lived ADHD experience), backed by team of 9 ICF-credentialed coaches
+- Engagements typically 6–12 months, bi-weekly 60-minute sessions
+- Uses ProfileXT, Genos EQ, 360-degree feedback assessments adapted for neurodivergent leaders
+- Follows ASPIRE framework
+- Investment range: $15,000–$50,000+ depending on scope, duration, assessments
 - URL: /adhd-executive-coach/
+
+---
+
+## Blog & Content Resources
+
+### What 400+ Coaching Articles Reveal About How Buyers Actually Search
+- **URL:** /coaching-search-data-study/
+- **Data source:** Google Search Console, 389 indexed coaching articles, 28-day window ending 2026-05-07
+- **Key findings:**
+  - 6 of 389 articles = 50% of clicks (Pareto distribution twice as steep as standard 80/20)
+  - 60% of articles drew zero clicks across the window (9.3% of impression volume converting nothing)
+  - ICF credentialing draws 31.8% of all coaching search impressions — more than executive coaching, change management, and team coaching combined
+  - Branded queries convert at 9.7% CTR vs 1.0% unbranded (10x ratio on just 4% of impression volume)
+  - CTR collapses from 5.27% at positions 1–3 to 0.51% at positions 4–7 (~10x decline at the position-4 cliff)
+  - Long-tail queries (under 50 impressions) account for 8.79% of impressions but 56.88% of clicks
+  - Cost pages are high-impression, low-CTR battlegrounds but rank in the top 5 click-driving articles due to sheer impression volume
+- **Editorial implications:** Defend the head of the distribution; push page-1 articles into top 3; capture long-tail at scale; build cluster depth over topical breadth; invest in brand-building that compounds outside the algorithm
+- **Related internal links referenced:** /icf-certification-cost/, /executive-coaching-cost/, /coaching-industry-statistics/, /icf-exam-sample-questions/, /organizational-change-examples/, /trends-in-executive-coaching/, /building-a-successful-coaching-practice-expert-insights-for-attracting-and-retaining-clients/
 
 ---
 
@@ -384,15 +471,31 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 
 **Can I buy the Professional Coach Program if I already started ACC separately?** Contact Tandem — they can typically work out credit for prior ACC payments toward the full program.
 
-**What's the difference between Mentor Coaching Foundations ($299) and MCC Mentor Coaching ($3,999)?** Completely different products. Mentor Coaching Foundations is a self-paced online course that teaches you how to be a mentor coach — it satisfies the 10-hour education requirement for the ICF Mentor Coach Qualification (MCQ) via Credit for Prior Learning. MCC Mentor Coaching is 10 hours of live 1-on-1 sessions where you receive mentor coaching from an MCC — it satisfies the mentoring requirement for the MCC credential via the MCQ (Master Certified Coach Questionnaire) Credit for Prior Learning path. If the lead wants to become a qualified mentor coach → Foundations. If the lead wants MCC credential → MCC Mentor Coaching.
+**What's the difference between Mentor Coaching Foundations ($299) and MCC Mentor Coaching ($3,999)?** Completely different products. Mentor Coaching Foundations is a self-paced online course that teaches you how to be a mentor coach — it satisfies the 10-hour education requirement for the ICF Mentor Coach Specialization (MCS) via Credit for Prior Learning. MCC Mentor Coaching is 10 hours of live 1-on-1 sessions where you receive mentor coaching from an MCC — it satisfies the mentoring requirement for the MCC credential via the Credit for Prior Learning path. If the lead wants to become a qualified mentor coach → Foundations. If the lead wants MCC credential → MCC Mentor Coaching.
+
+**Should I buy Foundations ($299) or the Mentor Coach Training live cohort ($1,997)?** Depends on your application path. Buy Foundations if you are taking the **Credit for Prior Learning** path — you have an active credential, documented prior mentor coaching practice, and you only need the 10-hour course. Buy the **live cohort** ($1,997 founding / $2,497 list) if you are taking the **Standard Path** — you need the full 41 hours with at least 50% synchronous, group practicum, and formative evaluation. Foundations content is included as just-in-time pre-work inside the cohort, so do not buy it separately.
 
 **Do I need coaching clients to start mentor coaching or supervision?** Group mentoring (part of certification programs) uses peer practice in the classroom — no external clients needed. Individual mentor coaching and coaching supervision both require you to have actual coaching clients: individual mentor coaching reviews your real sessions, and supervision is reflective practice on your live work with clients.
 
 **Does Tandem keep individual class recordings?** No. Tandem does not keep individual class recordings. Students should access class materials through their course pages on the Community Tandem Coaching Academy (community.tandemcoaching.academy). If they cannot access course materials, escalate to Alex or Cherie to check enrollment access.
 
-**What is the ICF Mentor Coach Qualification (MCQ)?** A new individual qualification from ICF, effective January 1, 2027. It formally recognizes coaches qualified to provide mentor coaching to ICF credential candidates. Two paths: Standard Path (41+ hours education) or Credit for Prior Learning (10 hours education + evidence of prior practice). The MCQ is issued at three levels (ACC, PCC, MCC) matched to the credential level being mentored.
+**What is the ICF Mentor Coach Specialization (MCS)?** A new individual specialization from ICF (formerly called Mentor Coach Qualification / MCQ), effective January 1, 2027. It formally recognizes coaches qualified to provide mentor coaching to ICF credential candidates. Two paths: Standard Path (41+ hours education) or Credit for Prior Learning (10 hours education + evidence of prior practice). The MCS is issued at three levels (ACC, PCC, MCC) matched to the credential level being mentored.
 
-**What changes April 1, 2027?** The ICF Performance Evaluation (SPE) recording-and-transcript requirement for ACC and PCC Portfolio candidates is replaced by formative evaluation through MCQ-qualified mentor coaches, using Session Observation Forms and a Competency Review Form.
+**What changes April 1, 2027?** The ICF Performance Evaluation (SPE) recording-and-transcript requirement for ACC and PCC Portfolio candidates is replaced by formative evaluation through MCS-qualified mentor coaches, using Session Observation Forms and a Competency Review Form. The ICF assessor role for ACC and PCC will be retired.
+
+**What is the attestation letter, and can Tandem write one?** The attestation letter is accepted by ICF as evidence of prior mentor coaching practice under the CPL path — in lieu of documenting five specific candidates who earned credentials. Per ICF, any ICF accredited coaching education provider can write one, verifying that you have provided mentor coaching to at least five students in the past three years. Graduates of Tandem Coaching Academy who meet the threshold can request the attestation letter on submission of their MCS application.
+
+**Can I use the Foundations 10 hours toward MCS renewal?** Yes. ICF's MCS renewal cycle requires 10 hours of MC-aligned continuing education within each three-year window. The 10 CCE hours from Foundations satisfy that requirement once — so you can use them for initial MCS application or for renewal, but not both.
+
+**What are Session Observation and Competency Review Forms?** Two standardized ICF forms used by qualified mentor coaches to document formative evaluation. The Session Observation Form captures level of mentor coaching, observed performance against credential-level minimum skill requirements, mentor coach feedback, and reflection prompts — completed per 1:1 session where a coaching recording is reviewed. The Competency Review Form is a cumulative summary at the end of the engagement covering proficiency (skills demonstrated, remaining gaps, ethics verification), mentor coach feedback, and client reflection. Both forms apply to 1:1 mentor coaching only — group mentor coaching sessions are not covered by the new documentation model.
+
+**How is the Mentor Coach Training (MCS Path) different from buying Foundations alone?** Foundations is 10 hours of asynchronous education — enough for the CPL path, not enough for the Standard Path. Mentor Coach Training includes the full Foundations curriculum AND the live cohort (10 classes), AND ACC BARS / PCC Markers evaluation training, AND structured peer mentor coaching field work. Foundations is one component of MCS Path. MCS Path is the complete Standard Path program.
+
+**How is Mentor Coach Training different from the standalone Mentor Coaching ACC/PCC/MCC packages?** Those packages are mentor coaching *services* — you hire a Tandem Mentor Coach to mentor coach you toward your own credential application. Mentor Coach Training is mentor coaching *training* — it teaches you to become a mentor coach so you can mentor coach other credential candidates. Different audience, different outcome, different artifact: those packages produce your performance evaluation; Mentor Coach Training produces a 41-hour CCE certificate that supports your MCS application.
+
+**What happens if I cannot commit to weekly attendance in MCS Path?** The course is rigorous, and everyone's success depends on full cohort participation. Tandem requires that participants have the ability to focus for the entire 10-week cycle. Students must commit to completing the field work between sessions and to being present in the live sessions. Participants who cannot meet this requirement should plan to attend a future cohort when they can fully commit. Missing classes or field work may result in removal from the current cohort, with the opportunity to retake the program with a future cohort.
+
+**Does completion of MCS Path issue the ICF Mentor Coach Specialization?** No. ICF issues the MCS specialization, not Tandem. MCS Path produces the certificate of completion and the documented hours that satisfy the MCS Standard Path education requirement — the artifact you upload to your ICF MCS application. The application is filed by you, with ICF, and ICF reviews and issues the specialization. Note: ICF describes MCS as a *specialization* rather than a credential. The credentials are ACC, PCC, and MCC. MCS is a designation that layers on top of an existing credential.
 
 ---
 
@@ -417,7 +520,7 @@ Price must appear in every program response — transparency matters at this con
 Each training module runs as a **4-session block** (one 2-hour live Zoom session per week for 4 consecutive weeks). A "cohort start" is the **first session** of a new 4-week block — that is when new students can join. The subsequent three weeks (weeks 2, 3, 4) are continuation sessions for students already enrolled in that cohort. When quoting the next available cohort to a lead, always use the start date of the next 4-week block from SCHEDULE.md. Never cite a mid-block date as a cohort start. If SCHEDULE.md is stale or you are unsure which date is a block start, use approximate language like "cohorts run monthly — the next one starts in early [month]" rather than guessing a specific date.
 
 ### Email Subject Lines
-Subject lines must contain only ASCII characters. Never use em dashes (—), en dashes (–), smart quotes (" " ' '), or any other non-ASCII character. Replace em dashes and en dashes with hyphens (-) and smart quotes with straight quotes. Non-ASCII characters are double-encoded by some mail clients, producing garbled output (e.g., `Ã¢Â€Â"`).
+Subject line encoding is handled automatically by the host system (`encodeHeaderValue` RFC 2047-encodes any non-ASCII characters before the message hits Gmail). Pass the Subject through as written — do NOT preemptively replace em dashes, en dashes, smart quotes, or other non-ASCII characters. The previous workaround (ASCII-only subjects) was for a now-fixed encoding bug.
 
 ### Email Context — Including the Original Message
 Every outbound email responding to a lead must include the lead's original inquiry as a quoted block below the response. If the original message is unavailable in the handoff, block the email and report to chief before sending. Recipients have no context for a reply without seeing what they originally asked.
@@ -473,6 +576,7 @@ focused on human-needs items.
 ### Leads (prospective clients)
 - 📬 `MrGru/lead/inquiry` — General coaching/program inquiry from a new prospect (hive: cherie+alex, priority 2)
 - 📬 `MrGru/lead/offer` — Inbound RFP or paid engagement offer (hive: cherie+alex, priority 2)
+- 📪 `MrGru/lead/declined` — Explicit opt-out, unsubscribe, or "not interested" reply from a lead or prospect (no hive share, priority 0, archived). When a lead sends a clear decline, classify as MrGru/lead/declined and suppress all future automated outreach to that email address.
 
 ### Clients (current or past)
 - 📬 `MrGru/client/active` — Email from a current paying client (hive: cherie+alex, priority 2)
@@ -490,6 +594,9 @@ focused on human-needs items.
 ### Procurement (RFPs from vendor portals)
 - 📪 `MrGru/procurement/rfp` — Request for Proposal received via procurement channel (hive: cherie+alex, priority 2, archived — procurement minion handles)
 - 📪 `MrGru/procurement/rfq` — Request for Quotation received via procurement channel (hive: cherie+alex, priority 2, archived — procurement minion handles)
+
+### Associations (professional organizations)
+- 📬 `MrGru/association/event` — Correspondence from ICF, EMCC, Scrum Alliance, or other professional associations about events, conferences, proposals, or membership (hive: cherie+alex, priority 1)
 
 ### Meeting assets
 - 📪 `MrGru/meeting-assets/zoom` — Zoom meeting invitation, link, or access credential (no hive share, priority 0, archived)
@@ -526,3 +633,5 @@ focused on human-needs items.
 - Never invent labels outside this list. If something doesn't fit, use `MrGru/other` and flag it.
 - Classify all emails from Labrika (info@labrika.com or any @labrika.com sender) as `MrGru/notification/monitoring`.
 - Classify all emails from Forwardly (any @forwardly.com sender or subject containing 'Forwardly') as `MrGru/notification/system`. Auto-archive. Do not escalate.
+- Classify internal Tandem calendar invite updates and forwards (from cherie@tandemcoaching.academy or alex@tandemcoach.co) as `MrGru/notification/calendar`, not `MrGru/other`.
+- Classify Heartbeat community event reminders (from events@heartbeat.chat or The Hearth) as `MrGru/notification/system`. Auto-archive.

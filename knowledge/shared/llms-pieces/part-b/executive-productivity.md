@@ -3,9 +3,21 @@
 ## Executive Productivity Systems: The Complete Guide
 URL: https://tandemcoach.co/executive-productivity-systems-guide/
 
+### What are the best productivity systems for executives?
+
+Standard productivity systems fail executives because they were built for individual contributors. The Productivity Stack Architecture works: four integrated layers handling capture, execution, leverage, and intelligence. Align contexts to board prep and stakeholder management, not phone or computer. Batch similar cognitive work, protect deep thinking blocks, and automate every repeated decision into a documented framework.
+
 You're running a $50M technology company, managing 200 people across three time zones, preparing for next week's board meeting, and your phone just buzzed with another "urgent" Slack message. Meanwhile, that strategic planning document you promised yourself you'd finish last month sits untouched, buried under seventeen other priorities that somehow all became critical yesterday. Sound familiar?
 
 Here's what nobody tells you about executive productivity: the systems that got you here are actively sabotaging you now. That GTD system you mastered as a senior developer? It crumbles under the weight of board obligations and stakeholder complexity. The time-blocking method that worked perfectly when you managed a team of twelve? It falls apart when every hour contains three parallel crises and your calendar looks like someone played Tetris with your life.
+
+#### Key Takeaways
+
+- The productivity systems that made you a star individual contributor are architected for the wrong scale — executive complexity demands a new stack entirely.
+- Poor executive productivity isn't a personal discipline failure; it's a systems failure with a measurable, organization-wide cost multiplier.
+- Delegation without decision frameworks just trains your team to escalate — true leverage requires transferring authority, not just tasks.
+- Energy alignment matters as much as time blocking; the right work done at the wrong cognitive moment is still wasted capacity.
+- Recovery speed after system collapse separates sustainable executives from burned-out ones — build the reset protocol before you need it.
 
 ### The $2.1 Million Problem Nobody Talks About
 
@@ -211,14 +223,14 @@ The systems exist. The path is clear. The only question is: When will you start?
 
 ### Related Articles
 
-- [30-Day Executive Productivity Transformation Guide](https://tandemcoach.co/30-day-productivity-transformation/): This 30-day sequence fits within the Evolve phase of the ASPIRE coaching framework — for context on what that full engagement looks like, [what a full executive coaching engagement involves](/executive-coaching-guide/) covers the arc from assessment through sustainability design.
-- [Context Switching Solutions: Save $3M in Executive Focus](https://tandemcoach.co/context-switching-cost-solutions/): Jennifer pulled up her calendar during our session last week.
-- [Executive Productivity Audit: The 7-Day Assessment Tool](https://tandemcoach.co/productivity-audit-assessment-tool/): Here's a troubling statistic: The average executive spends only 23% of their time on activities they were actually hired to do.
-- [Executive Tool Stack: Beat the $50K Productivity Tax](https://tandemcoach.co/productivity-tools-tech-stack/): Last month, a VP of Engineering showed me his productivity setup: seventeen different tools, three AI assistants, and a Zapier account with forty-seven active workflows.
-- [Executive Work Rhythms: Optimize Your Chronotype](https://tandemcoach.co/optimal-work-rhythm-chronotypes/): The behavioral patterns that chronotype work reveals often connect to development priorities identified in coaching assessments.
-- [From Maker to Multiplier: The Executive Delegation Framework That Actually Works](https://tandemcoach.co/delegation-productivity-system/): Here's the number that makes executives go quiet: after optimizing every personal productivity system perfectly, you'll cap at about 3x improvement.
+- [30-Day Executive Productivity Transformation Guide](https://tandemcoach.co/30-day-productivity-transformation/): Four weeks, four phases: pre-implementation stakeholder alignment and digital bankruptcy in Week 0; three non-negotiable habits generating 20% gains in Week 1; system integration through the Day 11 Re
+- [Context Switching Solutions: Save $3M in Executive Focus](https://tandemcoach.co/context-switching-cost-solutions/): Research puts the number at 40% productivity loss for executives switching every 11 minutes.
+- [Executive Productivity Audit: The 7-Day Assessment Tool](https://tandemcoach.co/productivity-audit-assessment-tool/): Run the audit on a normal week, not during quarterly planning or vacation.
+- [Executive Tool Stack: Beat the $50K Productivity Tax](https://tandemcoach.co/productivity-tools-tech-stack/): Executives beat the productivity tax by consolidating to three foundation tools — one calendar, one task system, one knowledge repository — then choosing a single communication platform with enforced boundaries.
+- [Executive Work Rhythms: Optimize Your Chronotype](https://tandemcoach.co/optimal-work-rhythm-chronotypes/): Identify your two daily peak windows through a three-day hourly energy audit.
+- [From Maker to Multiplier: The Executive Delegation Framework That Actually Works](https://tandemcoach.co/delegation-productivity-system/): Use the Executive Delegation Matrix to categorize every decision by impact and reversibility, then advance people through the five-level Progressive Delegation Ladder — from task offloading to strategic ownership.
 - [GTD Fundamentals: Quick Start Guide for Modern Professionals](https://tandemcoach.co/gtd-fundamentals-modern-executive/): You've heard about Getting Things Done.
-- [GTD for Executives: Adapt David Allen's System for Leadership](https://tandemcoach.co/gtd-for-executives/): Here's what David Allen couldn't have known when he wrote Getting Things Done: Executive work doesn't fit into next actions.
-- [Mastering Time Management and Productivity with Coaching](https://tandemcoach.co/mastering-time-management-productivity-coaching/): Time is every executive’s most precious — and scarcest — resource.
+- [GTD for Executives: Adapt David Allen's System for Leadership](https://tandemcoach.co/gtd-for-executives/): GTD breaks at five executive failure points: physical contexts, the two-minute rule, project definition, weekly review math, and single-player assumption.
+- [Mastering Time Management and Productivity with Coaching](https://tandemcoach.co/mastering-time-management-productivity-coaching/): Coaching closes the gap between knowing time management principles and applying them.
 
 ---

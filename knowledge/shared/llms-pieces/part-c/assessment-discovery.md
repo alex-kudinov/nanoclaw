@@ -1,4 +1,4 @@
-## Assessment & Discovery (61 tools)
+## Assessment & Discovery (63 tools)
 
 ### Action Priority Matrix
 URL: https://tandemcoach.co/coaching-tools/action-priority-matrix/
@@ -287,6 +287,12 @@ Coaching scenarios (5):
 - Recently divorced parent rebuilding life while managing demanding job
 - ADHD professional whose coping strategies stopped working after promotion
 Pairs with: Goal-Setting Across Life Domains, Self-Care Intentions, Wheel of Life Assessment, Self-Care Assessment
+
+### Motivation Mapping
+URL: https://tandemcoach.co/coaching-tools/motivation-mapping/
+When to use: A stuck-mid-career client who can't name what would unstick them and is investing time in low-energy work | A coaching engagement that needs to surface the avoidance signal underneath the stated pattern | A client whose energy maps look obvious but whose Deceptive Draws section is where the real data lives
+Format: assessment | Time: 30 min | Moment: between-sessions
+Produces: energy-time gap reading, avoidance pattern map, Deceptive Draws inventory
 
 ### Operational Systems Audit
 URL: https://tandemcoach.co/coaching-tools/operational-systems-audit/
@@ -648,6 +654,12 @@ Coaching scenarios (3):
 - Naming the Source of Persistent Imbalance Across Multiple Reviews
 - Connecting Life Imbalance to Leadership Depletion
 Pairs with: Goal-Setting Across Life Domains, Wheel of Wellness, Wellness Self-Rating Assessment, Wheel of Life Assessment
+
+### Wheel of Life — Caregiving Context
+URL: https://tandemcoach.co/coaching-tools/wheel-of-life-caregiving/
+When to use: A returner after caregiving who needs to surface what the caregiving years gave them and what is now underserved | A coaching engagement that needs to hold ratings as NOW data rather than target inducing | A client whose Wheel of Life would default to generic life-balance framing without the caregiving-context adjustment
+Format: assessment | Time: 30 min | Moment: between-sessions
+Produces: domain-by-domain caregiving-context rating, current-vs-importance gap reading
 
 ### Wheel of Wellness
 URL: https://tandemcoach.co/coaching-tools/wheel-of-wellness/

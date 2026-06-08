@@ -2,6 +2,7 @@ import http from 'http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { WebhookServer, WebhookServerDeps } from './webhook-server.js';
+import { recordFailure, recordSuccess } from './circuit-breaker.js';
 import { WebhookDefinition } from './types.js';
 
 vi.mock('./logger.js', () => ({
@@ -79,6 +80,11 @@ function makeDeps(overrides?: Partial<WebhookServerDeps>): WebhookServerDeps {
     heartbeatPath: '/tmp/nanoclaw-heartbeat.json',
     getRegisteredGroups: () => ({ 'slack:C123': testGroup }),
     runAgent: vi.fn(async () => ({ status: 'success' as const, result: null })),
+    // Stub of GroupQueue.enqueueTask: run the task fn immediately, as the
+    // real queue does when no container is active for the group.
+    enqueueAgentTask: vi.fn((_groupJid, _taskId, fn: () => Promise<void>) => {
+      void fn();
+    }),
     sendMessage: vi.fn(async () => {}),
     getHealth: () => ({
       channels: {},
@@ -351,7 +357,9 @@ describe('WebhookServer', () => {
         headers: { 'x-webhook-secret': 'hook-secret' },
       });
       await new Promise((r) => setTimeout(r, 20));
-      expect(sendMessage).toHaveBeenCalledWith('slack:C123', 'Agent done');
+      expect(sendMessage).toHaveBeenCalledWith('slack:C123', 'Agent done', {
+        fromGroup: 'main',
+      });
     } finally {
       await s.stop().catch(() => {});
     }
@@ -380,7 +388,9 @@ describe('WebhookServer', () => {
         headers: { 'x-webhook-secret': 'hook-secret' },
       });
       await new Promise((r) => setTimeout(r, 20));
-      expect(sendMessage).toHaveBeenCalledWith('slack:C123', 'Visible text');
+      expect(sendMessage).toHaveBeenCalledWith('slack:C123', 'Visible text', {
+        fromGroup: 'main',
+      });
     } finally {
       await s.stop().catch(() => {});
     }
@@ -576,5 +586,297 @@ describe('WebhookServer — Gmail Pub/Sub push endpoint', () => {
       body: envelope({ emailAddress: 'a@b.c', historyId: '1' }),
     });
     expect(res.status).toBe(204);
+  });
+});
+
+describe('WebhookServer — [PROCESSING] message (T02)', () => {
+  afterEach(() => vi.clearAllMocks());
+
+  async function fire(group: Record<string, unknown>) {
+    const d = makeDeps({
+      getRegisteredGroups: () => ({ 'slack:C123': group as never }),
+    });
+    const s = new WebhookServer(d);
+    await s.start();
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      testWebhook,
+    ];
+    try {
+      const res = await makeRequest(d.port, {
+        path: '/hook/test-hook',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+        body: JSON.stringify({ ping: 'pong' }),
+      });
+      expect(res.status).toBe(202);
+      // let the async dispatch run
+      await new Promise((r) => setTimeout(r, 30));
+    } finally {
+      await s.stop().catch(() => {});
+    }
+    return d;
+  }
+
+  it('posts exactly one [PROCESSING] line for a flagged group', async () => {
+    const d = await fire({
+      ...testGroup,
+      containerConfig: { processingMessage: 'Working on it' },
+    });
+    const processingCalls = (
+      d.sendMessage as ReturnType<typeof vi.fn>
+    ).mock.calls.filter(
+      (c) => typeof c[1] === 'string' && c[1].startsWith('[PROCESSING]'),
+    );
+    expect(processingCalls).toHaveLength(1);
+    expect(processingCalls[0][1]).toBe('[PROCESSING] Working on it');
+    expect(processingCalls[0][2]).toMatchObject({ fromGroup: 'main' });
+    // agent still dispatched exactly once
+    expect(d.runAgent).toHaveBeenCalledTimes(1);
+  });
+
+  it('posts no [PROCESSING] line for an unflagged group', async () => {
+    const d = await fire({ ...testGroup });
+    const processingCalls = (
+      d.sendMessage as ReturnType<typeof vi.fn>
+    ).mock.calls.filter(
+      (c) => typeof c[1] === 'string' && c[1].startsWith('[PROCESSING]'),
+    );
+    expect(processingCalls).toHaveLength(0);
+    expect(d.runAgent).toHaveBeenCalledTimes(1);
+  });
+});
+
+vi.mock('./booking-host-write.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('./booking-host-write.js')
+  >('./booking-host-write.js');
+  return { ...actual, bookingHostWrite: vi.fn() };
+});
+
+import { bookingHostWrite } from './booking-host-write.js';
+import bookedFixture from './fixtures/booked-webhook.json' with { type: 'json' };
+
+describe('WebhookServer — host-side booking write (T03b)', () => {
+  const trafftWebhook: WebhookDefinition = {
+    ...testWebhook,
+    id: 'trafft',
+    group: 'booking',
+    chat_jid: 'slack:CBOOKING',
+    secret: 'hook-secret',
+  };
+  const bookingGroup = {
+    name: 'Booking',
+    folder: 'booking',
+    trigger: '@Gru',
+    added_at: '2026-01-01T00:00:00Z',
+  };
+  const chiefGroup = {
+    name: 'Chief',
+    folder: 'chief',
+    trigger: '@Gru',
+    added_at: '2026-01-01T00:00:00Z',
+  };
+  const mockBookingWrite = bookingHostWrite as ReturnType<typeof vi.fn>;
+
+  afterEach(() => vi.clearAllMocks());
+
+  async function fireTrafft(
+    body: unknown,
+    deps: WebhookServerDeps,
+  ): Promise<void> {
+    const s = new WebhookServer(deps);
+    await s.start();
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      trafftWebhook,
+    ];
+    try {
+      const res = await makeRequest(deps.port, {
+        path: '/hook/trafft',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+        body: JSON.stringify(body),
+      });
+      expect(res.status).toBe(202);
+      await new Promise((r) => setTimeout(r, 40));
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  }
+
+  it('host-writes a valid booked event with no agent spawn', async () => {
+    mockBookingWrite.mockResolvedValue({
+      booking_row_id: 9001,
+      party_id: 4242,
+      interaction_id: 9001,
+    });
+    const markWebhookHandled = vi.fn(async () => {});
+    const d = makeDeps({
+      getRegisteredGroups: () => ({ 'slack:CBOOKING': bookingGroup }),
+      archiveWebhook: vi.fn(async () => ({ id: 77, isDuplicate: false })),
+      markWebhookHandled,
+    });
+    await fireTrafft(bookedFixture, d);
+
+    expect(mockBookingWrite).toHaveBeenCalledTimes(1);
+    expect(d.runAgent).not.toHaveBeenCalled();
+    const sent = (d.sendMessage as ReturnType<typeof vi.fn>).mock.calls;
+    expect(sent).toHaveLength(1);
+    expect(sent[0][0]).toBe('slack:CBOOKING');
+    expect(sent[0][1]).toContain('[BOOKING]');
+    expect(sent[0][1]).toContain('party 4242 · interaction 9001');
+    expect(sent[0][2]).toMatchObject({ fromGroup: 'booking' });
+    expect(markWebhookHandled).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ handled_by: 'booking:host-write' }),
+    );
+    // no [PROCESSING] line for a host-written booked event
+    expect(
+      sent.filter(
+        (c) => typeof c[1] === 'string' && c[1].startsWith('[PROCESSING]'),
+      ),
+    ).toHaveLength(0);
+  });
+
+  it('escalates to chief and skips the agent when the host write throws', async () => {
+    mockBookingWrite.mockRejectedValue(new Error('db down'));
+    const markWebhookFailed = vi.fn(async () => {});
+    const d = makeDeps({
+      getRegisteredGroups: () => ({
+        'slack:CBOOKING': bookingGroup,
+        'slack:CCHIEF': chiefGroup,
+      }),
+      archiveWebhook: vi.fn(async () => ({ id: 78, isDuplicate: false })),
+      markWebhookFailed,
+    });
+    await fireTrafft(bookedFixture, d);
+
+    expect(d.runAgent).not.toHaveBeenCalled();
+    expect(markWebhookFailed).toHaveBeenCalledTimes(1);
+    const escalations = (
+      d.sendMessage as ReturnType<typeof vi.fn>
+    ).mock.calls.filter(
+      (c) => typeof c[1] === 'string' && c[1].startsWith('[ESCALATION]'),
+    );
+    expect(escalations).toHaveLength(1);
+    expect(escalations[0][0]).toBe('slack:CCHIEF');
+    expect(escalations[0][2]).toMatchObject({ fromGroup: 'chief' });
+  });
+
+  it('falls back to the agent on a malformed booked payload', async () => {
+    const malformed = { ...bookedFixture } as Record<string, unknown>;
+    delete malformed.appointmentId;
+    const markWebhookHandled = vi.fn(async () => {});
+    const d = makeDeps({
+      getRegisteredGroups: () => ({ 'slack:CBOOKING': bookingGroup }),
+      markWebhookHandled,
+    });
+    await fireTrafft(malformed, d);
+
+    expect(mockBookingWrite).not.toHaveBeenCalled();
+    expect(d.runAgent).toHaveBeenCalledTimes(1);
+    expect(markWebhookHandled).not.toHaveBeenCalled();
+  });
+
+  // The webhook dispatch path spawns agent containers directly, bypassing the
+  // GroupQueue. Without a breaker, a group with persistently failing containers
+  // gets a storm of concurrent doomed spawns from back-to-back deliveries.
+  describe('circuit breaker — webhook dispatch', () => {
+    // circuit-breaker module state is process-global; reset 'main' each test.
+    beforeEach(() => recordSuccess('main'));
+    afterEach(() => recordSuccess('main'));
+
+    it('skips dispatch and marks the inbox row failed while the circuit is open', async () => {
+      recordFailure('main');
+      recordFailure('main');
+      recordFailure('main'); // FAILURE_THRESHOLD reached → circuit open
+      const runAgent = vi.fn(async () => ({
+        status: 'success' as const,
+        result: null,
+      }));
+      const archiveWebhook = vi.fn(async () => ({
+        id: 77,
+        isDuplicate: false,
+      }));
+      const markWebhookFailed = vi.fn(async () => {});
+      const d = makeDeps({ runAgent, archiveWebhook, markWebhookFailed });
+      const s = new WebhookServer(d);
+      await s.start();
+      (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+        testWebhook,
+      ];
+      try {
+        const res = await makeRequest(d.port, {
+          path: '/hook/test-hook',
+          headers: { 'x-webhook-secret': 'hook-secret' },
+          body: JSON.stringify({ k: 'v' }),
+        });
+        expect(res.status).toBe(202);
+        await new Promise((r) => setTimeout(r, 25));
+        expect(runAgent).not.toHaveBeenCalled();
+        expect(markWebhookFailed).toHaveBeenCalledWith(
+          77,
+          expect.stringContaining('circuit open'),
+        );
+      } finally {
+        await s.stop().catch(() => {});
+      }
+    });
+
+    it('dispatches normally while the circuit is closed', async () => {
+      const runAgent = vi.fn(async () => ({
+        status: 'success' as const,
+        result: null,
+      }));
+      const d = makeDeps({ runAgent });
+      const s = new WebhookServer(d);
+      await s.start();
+      (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+        testWebhook,
+      ];
+      try {
+        await makeRequest(d.port, {
+          path: '/hook/test-hook',
+          headers: { 'x-webhook-secret': 'hook-secret' },
+          body: JSON.stringify({ k: 'v' }),
+        });
+        await new Promise((r) => setTimeout(r, 25));
+        expect(runAgent).toHaveBeenCalledTimes(1);
+      } finally {
+        await s.stop().catch(() => {});
+      }
+    });
+
+    it('opens the circuit after repeated errored runs so later deliveries are skipped', async () => {
+      const runAgent = vi.fn(async () => ({
+        status: 'error' as const,
+        result: null,
+        error: 'spawn timeout',
+      }));
+      const d = makeDeps({ runAgent });
+      const s = new WebhookServer(d);
+      await s.start();
+      (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+        testWebhook,
+      ];
+      try {
+        for (let i = 0; i < 3; i++) {
+          await makeRequest(d.port, {
+            path: '/hook/test-hook',
+            headers: { 'x-webhook-secret': 'hook-secret' },
+            body: JSON.stringify({ n: i }),
+          });
+          await new Promise((r) => setTimeout(r, 25));
+        }
+        expect(runAgent).toHaveBeenCalledTimes(3);
+        // Fourth delivery — circuit is now open, dispatch must be skipped.
+        await makeRequest(d.port, {
+          path: '/hook/test-hook',
+          headers: { 'x-webhook-secret': 'hook-secret' },
+          body: JSON.stringify({ n: 3 }),
+        });
+        await new Promise((r) => setTimeout(r, 25));
+        expect(runAgent).toHaveBeenCalledTimes(3);
+      } finally {
+        await s.stop().catch(() => {});
+      }
+    });
   });
 });

@@ -25,6 +25,7 @@ import readline from 'readline';
 
 import { HEARTBEAT_MARKER } from './ipc-protocol.js';
 import { detectRateLimit } from './rate-limit.js';
+import { resolveModel, formatUsageLine } from './model-util.js';
 import { fileURLToPath } from 'url';
 
 interface ContainerInput {
@@ -36,6 +37,7 @@ interface ContainerInput {
   isScheduledTask?: boolean;
   assistantName?: string;
   secrets?: Record<string, string>;
+  model?: string;
 }
 
 interface ContainerOutput {
@@ -237,12 +239,14 @@ async function runAgent(
     '--output-format', 'json',
     '--verbose',
     '--dangerously-skip-permissions',
-    '--model', 'sonnet',
+    '--model', resolveModel(containerInput.model),
     '--mcp-config', mcpConfigPath,
     '--allowedTools', ALLOWED_TOOLS.join(','),
   ];
   if (globalClaudeMd) baseArgs.push('--append-system-prompt', globalClaudeMd);
   for (const dir of extraDirs) baseArgs.push('--add-dir', dir);
+
+  log('Resolved model: ' + resolveModel(containerInput.model));
 
   // Heartbeat to stdout so host knows the wrapper is alive between messages
   // and during long claude runs. claude's stdout is on a separate pipe, so
@@ -386,6 +390,16 @@ async function runAgent(
       if (attempt.result && typeof attempt.result.session_id === 'string') {
         if (!sessionId) log(`Session initialized: ${attempt.result.session_id}`);
         sessionId = attempt.result.session_id;
+      }
+
+      // Emit per-turn token usage so the host can measure consumption.
+      if (attempt.result && typeof attempt.result.usage === 'object' && attempt.result.usage) {
+        const usage = attempt.result.usage as Record<string, unknown>;
+        const numTurns =
+          typeof attempt.result.num_turns === 'number'
+            ? attempt.result.num_turns
+            : turnCount;
+        log(formatUsageLine(turnCount, resolveModel(containerInput.model), usage, numTurns));
       }
 
       const textResult = attempt.result && typeof attempt.result.result === 'string'

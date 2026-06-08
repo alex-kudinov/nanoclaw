@@ -61,9 +61,6 @@ export class SlackChannel implements Channel {
   }> = [];
   private flushing = false;
   private userNameCache = new Map<string, string>();
-  // Maps Slack message ts → fromGroup for bot messages we sent.
-  // The event handler looks this up to set from_group on stored messages.
-  private pendingFromGroup = new Map<string, string>();
   private lastActivityAt = Date.now();
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
   private reconnectAttempts = 0;
@@ -179,7 +176,15 @@ export class SlackChannel implements Channel {
       const groups = this.opts.registeredGroups();
       if (!groups[jid]) return;
 
-      const isBotMessage = !!msg.bot_id || msg.user === this.botUserId;
+      // Our own outbound is persisted synchronously by storeOutbound() at
+      // send time, with from_group. Slack also echoes it back as a
+      // bot_message event — re-storing it here is redundant, and after a
+      // restart (when the in-process send context is gone) would overwrite
+      // the good row's from_group with null, breaking handoff routing.
+      if (msg.user === this.botUserId) return;
+
+      // Own messages already returned above; a remaining bot_id is another app.
+      const isBotMessage = !!msg.bot_id;
 
       let senderName: string;
       if (isBotMessage) {
@@ -212,13 +217,6 @@ export class SlackChannel implements Channel {
         if (inlined) content += inlined;
       }
 
-      // Look up from_group for bot messages we sent via sendMessage(jid, text, fromGroup)
-      let fromGroup: string | undefined;
-      if (isBotMessage) {
-        fromGroup = this.pendingFromGroup.get(msg.ts);
-        if (fromGroup) this.pendingFromGroup.delete(msg.ts);
-      }
-
       this.opts.onMessage(jid, {
         id: msg.ts,
         chat_jid: jid,
@@ -226,9 +224,9 @@ export class SlackChannel implements Channel {
         sender_name: senderName,
         content,
         timestamp,
-        is_from_me: msg.user === this.botUserId,
+        is_from_me: false,
         is_bot_message: isBotMessage,
-        from_group: fromGroup,
+        from_group: undefined,
         thread_ts: threadTs,
       });
     });
@@ -439,17 +437,9 @@ export class SlackChannel implements Channel {
           ...baseOpts,
           text: displayText,
         });
-        if (fromGroup && result.ts) {
-          this.pendingFromGroup.set(result.ts, fromGroup);
-          if (this.pendingFromGroup.size > 1000) {
-            this.pendingFromGroup.delete(
-              this.pendingFromGroup.keys().next().value!,
-            );
-          }
-        }
-        // Store immediately — Socket Mode doesn't reliably deliver bot_message
-        // events back to the same app, so the parent message may not reach the
-        // DB before a thread reply triggers getThreadParent.
+        // storeOutbound is the sole persistence path for our own messages —
+        // Socket Mode doesn't reliably echo bot_message events back, and the
+        // event handler skips the ones it does receive.
         if (result.ts) {
           this.storeOutbound(jid, result.ts, text, fromGroup, threadTs);
         }
@@ -460,14 +450,6 @@ export class SlackChannel implements Channel {
             ...baseOpts,
             text: chunk,
           });
-          if (fromGroup && result.ts) {
-            this.pendingFromGroup.set(result.ts, fromGroup);
-            if (this.pendingFromGroup.size > 1000) {
-              this.pendingFromGroup.delete(
-                this.pendingFromGroup.keys().next().value!,
-              );
-            }
-          }
           if (result.ts) {
             this.storeOutbound(jid, result.ts, chunk, fromGroup, threadTs);
           }
@@ -680,9 +662,6 @@ export class SlackChannel implements Channel {
         if (item.opts?.threadTs) postOpts.thread_ts = item.opts.threadTs;
 
         const result = await this.app.client.chat.postMessage(postOpts);
-        if (item.opts?.fromGroup && result.ts) {
-          this.pendingFromGroup.set(result.ts, item.opts.fromGroup);
-        }
         if (result.ts) {
           this.storeOutbound(
             item.jid,

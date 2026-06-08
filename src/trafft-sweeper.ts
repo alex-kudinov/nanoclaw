@@ -46,6 +46,13 @@ interface TrafftCustomer {
   first_name: string;
   last_name: string;
   email: string;
+  phone_number?: string | null;
+}
+
+interface TrafftEmployee {
+  id: number;
+  first_name: string;
+  last_name: string;
 }
 
 interface TrafftAppt {
@@ -54,6 +61,7 @@ interface TrafftAppt {
   start_date_time: string;
   created_at: string;
   service?: { name?: string };
+  employees?: TrafftEmployee[];
   bookings?: Array<{ customer?: TrafftCustomer }>;
 }
 
@@ -128,9 +136,18 @@ export function custEventId(c: TrafftCustomer): string {
   return `cust:${c.id}:created`;
 }
 
+function fullName(first?: string, last?: string): string | undefined {
+  const n = [first, last].filter(Boolean).join(' ').trim();
+  return n || undefined;
+}
+
 /** Exported for unit tests. */
-export function buildApptRawBody(a: TrafftAppt): Record<string, unknown> {
+export function buildApptRawBody(
+  a: TrafftAppt,
+  customerPhone?: string | null,
+): Record<string, unknown> {
   const cust = a.bookings?.[0]?.customer;
+  const emp = a.employees?.[0];
   return {
     event_type: 'booked',
     appointmentId: String(a.id),
@@ -141,6 +158,11 @@ export function buildApptRawBody(a: TrafftAppt): Record<string, unknown> {
     customerEmail: cust?.email,
     customerFirstName: cust?.first_name,
     customerLastName: cust?.last_name,
+    customerFullName: fullName(cust?.first_name, cust?.last_name),
+    customerPhone: customerPhone ?? undefined,
+    employeeFirstName: emp?.first_name,
+    employeeLastName: emp?.last_name,
+    employeeFullName: fullName(emp?.first_name, emp?.last_name),
     _synthetic: true,
   };
 }
@@ -366,8 +388,12 @@ export async function runSweep(deps: TrafftSweeperDeps): Promise<SweepResult> {
     // which is enough for identity-join to resolve/create the party. The
     // walk-in case (customer registered in Trafft without booking yet) is
     // captured by the live customer_created webhook only. The `customers`
-    // pagination is kept for future cross-checks but not synthesized.
-    void customers;
+    // pagination is used to enrich synthesized bookings with customer phone,
+    // since the appointment's embedded customer object omits phone_number.
+    const phoneById = new Map<number, string>();
+    for (const c of customers) {
+      if (c.phone_number) phoneById.set(c.id, c.phone_number);
+    }
 
     // Synthesize missing booked events
     for (const a of recentAppts) {
@@ -394,7 +420,7 @@ export async function runSweep(deps: TrafftSweeperDeps): Promise<SweepResult> {
         const inboxId = await insertEnvelope({
           event_id,
           event_type: 'booked',
-          raw_body: buildApptRawBody(a),
+          raw_body: buildApptRawBody(a, phoneById.get(cust.id)),
           party_id: partyId,
         });
         synthesizedIds.push(inboxId);

@@ -46,9 +46,9 @@ beforeEach(() => {
 
 describe('extractCid', () => {
   it('finds the cid field case-insensitively and trims it', () => {
-    expect(extractCid({ customFields: [{ label: 'CID', value: ' fp9 ' }] })).toBe(
-      'fp9',
-    );
+    expect(
+      extractCid({ customFields: [{ label: 'CID', value: ' fp9 ' }] }),
+    ).toBe('fp9');
   });
   it('returns undefined when no cid field is present', () => {
     expect(

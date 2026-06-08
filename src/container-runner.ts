@@ -88,6 +88,7 @@ export interface ContainerInput {
   isScheduledTask?: boolean;
   assistantName?: string;
   secrets?: Record<string, string>;
+  model?: string;
 }
 
 export interface ContainerOutput {
@@ -622,6 +623,17 @@ export async function runContainerAgent(
 
   // Resolve secrets before spawning (async for CDP URL fetch)
   const resolvedSecrets = await readSecrets(input.groupFolder);
+
+  // Per-group model override (T11). Resolution lives ONLY here — the host-side
+  // and agent-runner runAgent never resolve it.
+  if (group.containerConfig?.model) {
+    input.model = group.containerConfig.model;
+  }
+
+  // Coerce empty/whitespace model to undefined so the agent-runner default applies
+  if (typeof input.model === 'string' && input.model.trim() === '') {
+    delete input.model;
+  }
 
   return new Promise((resolve) => {
     const container = spawn(CONTAINER_RUNTIME_BIN, containerArgs, {

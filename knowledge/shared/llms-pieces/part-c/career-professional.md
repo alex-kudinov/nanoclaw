@@ -1,4 +1,10 @@
-## Career & Professional (21 tools)
+## Career & Professional (25 tools)
+
+### Career Anchor Sort
+URL: https://tandemcoach.co/coaching-tools/career-anchor-sort/
+When to use: A pivoter who needs to read which career anchors are live and which are dormant before scoping the pivot | A mid-career client whose career anchors have shifted over the last 3-5 years without being named | A coach who wants to use Schein's anchors without administering them as a typology assessment
+Format: assessment | Time: 30 min | Moment: between-sessions
+Produces: current-state anchor sort, anchor-conflict observation, shift-from-prior-self reading
 
 ### Career Branding Workbook
 URL: https://tandemcoach.co/coaching-tools/career-branding-workbook/
@@ -220,6 +226,18 @@ Coaching scenarios (3):
 - The professional who has a clear 10-year vision but whose near-term actions bear no relationship to it
 Pairs with: Skills and Strengths Inventory (Professional), Competitive Landscape Analysis, Business Structure Chart, Products and Services Map
 
+### Returner Re-Anchor Worksheet
+URL: https://tandemcoach.co/coaching-tools/returner-re-anchor/
+When to use: A returner after caregiving who needs to distinguish what shifted during the years away from formal work | A coaching engagement holding against the 'you have transferable skills' reassurance pull | A client deciding whether the re-entry is going back to who they were or going forward into who they are now
+Format: worksheet | Time: 45+ min | Moment: between-sessions
+Produces: caregiving-years self-reading, alive-vs-atrophied operational capacity reading, going-back-vs-forward distinction
+
+### Sector-Line Translation Map
+URL: https://tandemcoach.co/coaching-tools/sector-line-translation-map/
+When to use: A nonprofit executive director transitioning to a corporate role and facing the mission-identity grief plus translation work | A for-profit professional transitioning to nonprofit on heart-calling grounds and facing values-clarification + step-down compensation work | A coaching engagement that needs to gate the consulting work to a sector specialist while holding the coaching discipline
+Format: framework | Time: 45+ min | Moment: between-sessions
+Produces: experience-to-sector translation reading, referral-out specialist map, sector-readiness vs translation-readiness distinction
+
 ### Skills and Strengths Inventory (Professional)
 URL: https://tandemcoach.co/coaching-tools/skills-and-strengths-inventory-professional/
 When to use: A client needs a clear-eyed picture of where they're strong and where they're exposed professionally | Someone filling four SWOT quadrants with specific capabilities, gaps, opportunities, and competitive threats | Identifying the one strength-opportunity pairing worth pressing and the one weakness-threat pairing to address
@@ -243,3 +261,9 @@ Coaching scenarios (3):
 - The client who knows she spends too much but can't name the category that's doing the most damage
 - The client whose financial stress is real but who has been avoiding looking at the numbers
 Pairs with: Monthly Budget Planner, Personal Budget Tracker, Debt Payoff Tracker, Financial Planning Suite
+
+### Three Horizons Mapping
+URL: https://tandemcoach.co/coaching-tools/three-horizons-mapping/
+When to use: A pivoter who says they're considering a change but has invested zero time in scoping it | A mid-career client whose attention is consumed by Horizon 1 work while Horizon 2 stays sketched | A coaching engagement that needs to surface the gap between described direction and weekly attention
+Format: framework | Time: 30 min | Moment: between-sessions
+Produces: three-horizon attention map, time-allocation honesty reading

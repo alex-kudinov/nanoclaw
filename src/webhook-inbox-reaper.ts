@@ -24,6 +24,8 @@ import { logger } from './logger.js';
 import type { ContainerOutput } from './container-runner.js';
 import type { RegisteredGroup, WebhookDefinition } from './types.js';
 import { markFailed, markHandled } from './webhook-inbox.js';
+import { handleChaosActivity } from './chaos-activity.js';
+import { handleStripePayment } from './stripe-payment-host.js';
 
 const MAX_ATTEMPTS = 5;
 const BATCH_SIZE = 20;
@@ -169,6 +171,21 @@ async function dispatchRow(row: InboxRow, deps: ReaperDeps): Promise<void> {
     throw new Error(
       `webhook config '${row.source}' not found; cannot redispatch inbox #${row.id}`,
     );
+  }
+  // Chaos is a mechanical host handler, never an agent — re-run it directly.
+  // A retry is idempotent (returning-visitor path) and spends zero tokens.
+  // This also covers the chaos-reconciler's synthesized sweep rows.
+  if (row.source === 'chaos') {
+    await handleChaosActivity(row.raw_body);
+    await markHandled(row.id, { handled_by: 'chaos:reaper' });
+    return;
+  }
+  // Stripe payments are mechanical too — re-run process-payment.cjs directly.
+  // Idempotent (Sheets upsert + Postgres ON CONFLICT), zero LLM.
+  if (row.source === 'stripe-payment') {
+    await handleStripePayment(row.raw_body);
+    await markHandled(row.id, { handled_by: 'stripe:reaper' });
+    return;
   }
   const groups = deps.getRegisteredGroups();
   const group = Object.values(groups).find((g) => g.folder === webhook.group);

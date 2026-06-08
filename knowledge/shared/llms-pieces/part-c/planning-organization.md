@@ -1,4 +1,4 @@
-## Planning & Organization (57 tools)
+## Planning & Organization (58 tools)
 
 ### 30-Day Self-Care Challenge
 URL: https://tandemcoach.co/coaching-tools/30-day-self-care-challenge/
@@ -166,6 +166,12 @@ Coaching scenarios (3):
 - Client who overthinks between sessions and cannot hold a focus
 - Client preparing to address a specific difficult situation
 Pairs with: Habit Tracker, Decision Analysis Worksheet, Daily Action Checklist, Weekly Reflection Planner
+
+### Constraint Mapping
+URL: https://tandemcoach.co/coaching-tools/constraint-mapping/
+When to use: A client in a high-cost-of-staying engagement where the constraints are real and unmovable | A coaching engagement that needs to design experiments inside the constraint rather than around it | A coach who needs to hold the discipline of NOT coaching the leaving question while the constraints are active
+Format: framework | Time: 30 min | Moment: between-sessions
+Produces: named constraint inventory, constraint horizon timeline, design-inside-the-constraint map
 
 ### Daily Action Checklist
 URL: https://tandemcoach.co/coaching-tools/daily-action-checklist/

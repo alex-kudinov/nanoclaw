@@ -116,7 +116,10 @@ export async function recordChaosBooking(
     const trimmed = stdout.trim();
     const start = trimmed.search(/[[{]/);
     if (start < 0) {
-      return { status: 'degraded', reason: trimmed.slice(0, 200) || 'no output' };
+      return {
+        status: 'degraded',
+        reason: trimmed.slice(0, 200) || 'no output',
+      };
     }
     const parsed = JSON.parse(trimmed.slice(start)) as Record<string, unknown>;
     if (parsed.degraded) {

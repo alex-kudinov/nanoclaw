@@ -2,7 +2,7 @@
 
 Execute this workflow when triggered by "Run daily procurement scan" (scheduled) or `rescan` (manual).
 
-Post progress to Slack via `mcp__nanoclaw__send_message` at each milestone. Never go more than 60 seconds without a progress update.
+Run the scan silently. Do NOT post per-step or per-keyword progress to Slack — the host already posts a mechanical processing message when you start. Post to Slack only for a blocking error (Step 1) or the final new-opportunity results (Step 6).
 
 ---
 
@@ -43,7 +43,7 @@ Keywords (one search at a time):
 8. `team coaching`
 9. `talent development`
 
-For each: enter keyword, wait for results, post progress ("Searching '{keyword}' — {N} results..."), extract opportunities, paginate if total < 50 (first 2 pages if > 50), clear search, next keyword.
+For each: enter keyword, wait for results, extract opportunities, paginate if total < 50 (first 2 pages if > 50), clear search, next keyword.
 
 De-duplicate results across searches (same opportunity may match multiple keywords).
 

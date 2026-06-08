@@ -1,0 +1,71 @@
+{
+  "id": "unsubscribe",
+  "name": "Unsubscribe → NanoClaw",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "unsubscribe",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Unsubscribe Click",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "unsub-v1"
+    },
+    {
+      "parameters": {
+        "url": "=http://100.115.115.206:8088/unsubscribe/{{ $json.query.t }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "forward-to-nanoclaw",
+      "name": "Forward to NanoClaw",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.data }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode || 200 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-html",
+      "name": "Return HTML Page",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [700, 300]
+    }
+  ],
+  "connections": {
+    "Unsubscribe Click": {
+      "main": [
+        [{ "node": "Forward to NanoClaw", "type": "main", "index": 0 }]
+      ]
+    },
+    "Forward to NanoClaw": {
+      "main": [
+        [{ "node": "Return HTML Page", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

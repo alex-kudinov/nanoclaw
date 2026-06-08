@@ -220,17 +220,23 @@ async function dispatchRow(row: OutboxRow): Promise<void> {
       }
     }
 
+    // Plutio create-* scripts accept a single `--data JSON` argument that
+    // gets POSTed as the body. Build the document body here rather than
+    // shelling per-flag — the scripts have no flag-based parser.
     if (kind === 'proposal' && document_id) {
-      const amountCents = (payload.amount_cents as number) || 0;
-      const args = [
-        '--title',
-        `Proposal #${document_id}`,
-        '--amount',
-        String(amountCents / 100),
-      ];
-      if (plutioPersonId) args.push('--contributor', plutioPersonId);
+      const amount = ((payload.amount_cents as number) || 0) / 100;
+      const body: Record<string, unknown> = {
+        title: `Proposal #${document_id}`,
+      };
+      if (plutioPersonId) body.to = plutioPersonId;
+      if (amount > 0) {
+        body.items = [{ description: `Proposal #${document_id}`, amount }];
+      }
       const output = JSON.parse(
-        await callPlutioTool('create-proposal.sh', args),
+        await callPlutioTool('create-proposal.sh', [
+          '--data',
+          JSON.stringify(body),
+        ]),
       );
       if (output._id) {
         await savePlutioRef('document', document_id, output._id);
@@ -239,16 +245,19 @@ async function dispatchRow(row: OutboxRow): Promise<void> {
     }
 
     if (kind === 'invoice' && document_id) {
-      const amountCents = (payload.amount_cents as number) || 0;
-      const args = [
-        '--title',
-        `Invoice #${document_id}`,
-        '--amount',
-        String(amountCents / 100),
-      ];
-      if (plutioPersonId) args.push('--contributor', plutioPersonId);
+      const amount = ((payload.amount_cents as number) || 0) / 100;
+      const body: Record<string, unknown> = {
+        title: `Invoice #${document_id}`,
+      };
+      if (plutioPersonId) body.to = plutioPersonId;
+      if (amount > 0) {
+        body.items = [{ description: `Invoice #${document_id}`, amount }];
+      }
       const output = JSON.parse(
-        await callPlutioTool('create-invoice.sh', args),
+        await callPlutioTool('create-invoice.sh', [
+          '--data',
+          JSON.stringify(body),
+        ]),
       );
       if (output._id) {
         await savePlutioRef('document', document_id, output._id);
@@ -257,10 +266,15 @@ async function dispatchRow(row: OutboxRow): Promise<void> {
     }
 
     if (kind === 'contract' && document_id) {
-      const args = ['--title', `Contract #${document_id}`];
-      if (plutioPersonId) args.push('--contributor', plutioPersonId);
+      const body: Record<string, unknown> = {
+        title: `Contract #${document_id}`,
+      };
+      if (plutioPersonId) body.to = plutioPersonId;
       const output = JSON.parse(
-        await callPlutioTool('create-contract.sh', args),
+        await callPlutioTool('create-contract.sh', [
+          '--data',
+          JSON.stringify(body),
+        ]),
       );
       if (output._id) {
         await savePlutioRef('document', document_id, output._id);
@@ -344,7 +358,16 @@ export async function runReaper(): Promise<ReaperResult> {
       await markSuccess(row.id);
       result.succeeded++;
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
+      // execFile errors carry the real failure reason in `stderr`. Without
+      // appending it, the chief dead-letter alert says only "Command failed:
+      // <cmd>" with no clue why — masking issues like CLI-flag mismatches
+      // or Plutio API rejections.
+      const baseMsg = err instanceof Error ? err.message : String(err);
+      const stderr =
+        err && typeof err === 'object' && 'stderr' in err
+          ? String((err as { stderr?: unknown }).stderr || '').trim()
+          : '';
+      const errMsg = stderr ? `${baseMsg} :: ${stderr}` : baseMsg;
       logger.warn(
         { outboxId: row.id, operation: row.operation, kind: row.kind, err },
         'plutio-reaper: dispatch failed',

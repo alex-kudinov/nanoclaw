@@ -29,7 +29,7 @@ The Real Challenge
 **I hear variations of these from nearly every executive I work with.**
 If you recognize yourself in even two or three, you’re in the right place.
 
-— Cherie Silas, MCC
+- Cherie Silas, MCC
 
 “I have brilliant ideas but can’t execute them consistently.”
 

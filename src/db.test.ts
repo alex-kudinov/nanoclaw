@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import {
   _initTestDatabase,
+  insertTrackingPixel,
+  recordEmailOpen,
   createTask,
   deleteTask,
   getAllChats,
@@ -769,6 +771,40 @@ describe('getRunningJobNames', () => {
     const names = getRunningJobNames();
     expect(names).not.toContain('done-job');
   });
+
+  it('ignores orphan running rows older than timeout + grace', () => {
+    upsertJobDefinition({
+      name: 'orphan-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 60000,
+      lockfile: null,
+      enabled: true,
+    });
+
+    // A 'running' row from 1h ago — far beyond timeout_ms (60s) + 5m grace.
+    // Its process is long dead; treating it as live would skip the job forever.
+    insertJobRunLog({
+      id: 'run-orphan',
+      job_name: 'orphan-job',
+      triggered_by: 'cron',
+      started_at: new Date(Date.now() - 3_600_000).toISOString(),
+      status: 'running',
+      pid: null,
+      retry_attempt: 0,
+    });
+
+    const names = getRunningJobNames();
+    expect(names).not.toContain('orphan-job');
+  });
 });
 
 describe('markStaleRunsAsFailed', () => {
@@ -882,5 +918,20 @@ describe('registered group isMain', () => {
     const group = groups['group@g.us'];
     expect(group).toBeDefined();
     expect(group.isMain).toBeUndefined();
+  });
+});
+
+describe('recordEmailOpen (T04)', () => {
+  it('returns null for an unknown tracking token', () => {
+    expect(recordEmailOpen('no-such-token', 'UA')).toBeNull();
+  });
+
+  it('records an open and returns the result for a known token', () => {
+    insertTrackingPixel('trk-1', 42, 'follow-up');
+    const r = recordEmailOpen('trk-1', 'Mozilla/5.0');
+    expect(r).not.toBeNull();
+    expect(r?.leadId).toBe(42);
+    expect(r?.emailType).toBe('follow-up');
+    expect(r?.openCount).toBe(1);
   });
 });

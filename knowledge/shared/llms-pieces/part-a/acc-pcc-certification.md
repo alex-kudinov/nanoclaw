@@ -3,9 +3,9 @@ URL: https://tandemcoach.co/icf/acc-pcc-certification/
 
 ICF Level 2 Accredited Program
 
-## Become an ICF Professional Certified Coach (PCC) — Three Credentials, One Program
+## Become an ICF Professional Certified Coach (PCC) - Three Credentials, One Program
 
-The complete path from zero experience to Professional Certified Coach (PCC) credential. Earn your ACC, PCC, and ACTC certifications through the International Coaching Federation (ICF) in a single enrollment — 125+ hours of coach education, mentoring, supervision, and exam prep for $7,499.
+The complete path from zero experience to Professional Certified Coach (PCC) credential. Earn your ACC, PCC, and ACTC certifications through the International Coaching Federation (ICF) in a single enrollment - 125+ hours of coach education, mentoring, supervision, and exam prep for $7,499.
 
 With **Cherie Silas, MCC**, **Alex Kudinov, MCC** & team
 
@@ -22,30 +22,30 @@ Led by **MCC & PCC Coaching Team**
 
 We understand
 
-### You Know You Want PCC — But the Path Feels Fragmented
+### You Know You Want PCC - But the Path Feels Fragmented
 
-You’ve decided coaching is your career. Not a side interest — a real commitment. You want PCC-level credentialing, maybe even ACTC for team coaching. **But every program you find only covers one piece.**
+You’ve decided coaching is your career. Not a side interest - a real commitment. You want PCC-level credentialing, maybe even ACTC for team coaching. **But every program you find only covers one piece.**
 
-One program gives you ACC. Another gets you from ACC to PCC. A third covers team coaching. Three enrollments, three schedules, three payment plans — and no guarantee the pieces actually fit together. You end up coordinating between programs, repeating prerequisite content, and spending months figuring out *what comes next* instead of developing your coaching skills.
+One program gives you ACC. Another gets you from ACC to PCC. A third covers team coaching. Three enrollments, three schedules, three payment plans - and no guarantee the pieces actually fit together. You end up coordinating between programs, repeating prerequisite content, and spending months figuring out *what comes next* instead of developing your coaching skills.
 
 Maybe you’re also wondering whether the investment is worth it. Buying ACC and PCC training separately costs more and takes longer. And you still have to find a team coaching certification on top of that.
 
 **That’s exactly why we built the Professional Coach Program.**
-One enrollment, one integrated curriculum, one price. You start with foundational coaching, advance through systems and team coaching, and finish with three ICF credentials — all guided by Master Certified Coaches who have been there.
+One enrollment, one integrated curriculum, one price. You start with foundational coaching, advance through systems and team coaching, and finish with three ICF credentials - all guided by Master Certified Coaches who have been there.
 
 Why Tandem
 
 ### What Makes This Program Different
 
-The Professional Coach Program is designed for people who want PCC-level coaching ability — not just the credential.
+The Professional Coach Program is designed for people who want PCC-level coaching ability - not just the credential.
 
 #### MCC-Led Throughout
 
-Cherie Silas and Alex Kudinov — both Master Certified Coaches — lead your training alongside a team of PCC-credentialed instructors. You learn from coaches who actively coach Fortune 500 leaders.
+Cherie Silas and Alex Kudinov - both Master Certified Coaches - lead your training alongside a team of PCC-credentialed instructors. You learn from coaches who actively coach Fortune 500 leaders.
 
 #### Three Credentials, One Enrollment
 
-ACC, PCC, and ACTC in a single integrated curriculum. No re-enrollments, no coordinating between programs. $7,499 — saving $499 vs. enrolling in ACC and Systems Coach separately.
+ACC, PCC, and ACTC in a single integrated curriculum. No re-enrollments, no coordinating between programs. $7,499 - saving $499 vs. enrolling in ACC and Systems Coach separately.
 
 #### Individual + Systems Coaching
 
@@ -61,7 +61,7 @@ Start at your own pace with the free Foundations module. Phase 1 runs sequential
 
 #### Exam Prep & ICF Application Support
 
-ICF Coach Knowledge Assessment prep is built in. When you finish, you get documentation, guidance on the application process, and support through credentialing — not just a certificate.
+ICF Coach Knowledge Assessment prep is built in. When you finish, you get documentation, guidance on the application process, and support through credentialing - not just a certificate.
 
 Who this is for
 
@@ -85,13 +85,13 @@ You already use coaching skills in your leadership role and want formal ICF cred
 
 Your path to PCC
 
-### Two Phases, Three Credentials — Everything Included
+### Two Phases, Three Credentials - Everything Included
 
 Start Free
 
 #### Coaching Foundations: ICF Competencies & Ethics
 
-Self-paced orientation covering the ICF framework, core competencies, and ethical standards. Experience our teaching style and meet the community — no cost, no commitment.
+Self-paced orientation covering the ICF framework, core competencies, and ethical standards. Experience our teaching style and meet the community - no cost, no commitment.
 
 [Start Free](https://community.tandemcoaching.academy/invitation?code=8JB28E)
 $0 – No credit card
@@ -104,7 +104,7 @@ ICF Level 1
 
 Build your coaching foundation through four core modules covering session structure, contracting, listening, powerful questioning, direct communication, cognitive reframing, and advanced techniques. Includes group supervision, mentor coaching, and exam prep.
 
-You earn your ACC credential at the end of Phase 1 — a real milestone, not just a stepping stone.
+You earn your ACC credential at the end of Phase 1 - a real milestone, not just a stepping stone.
 
 - Module 1 – Coaching Fundamentals
 - Module 2 – Critical Coaching Skills
@@ -123,7 +123,7 @@ ICF Level 2 – PCC + ACTC
 
 Advance beyond individual coaching into systems dynamics, team coaching, and organizational-level work. Builds directly on Phase 1 skills. You finish Phase 2 with PCC and ACTC credentials.
 
-This is the same curriculum as our standalone [Systems Coach Program](/icf/pcc-professional-coach-certification/) — but you enter it seamlessly as a Professional Coach Program student.
+This is the same curriculum as our standalone [Systems Coach Program](/icf/pcc-professional-coach-certification/) - but you enter it seamlessly as a Professional Coach Program student.
 
 - Systems Coaching Methodology
 - Team Coaching Competencies
@@ -136,17 +136,17 @@ Upcoming Cohort Dates
 
 [program\_dates program="acc"]
 
-You start with Phase 1 (ACC training) — join the next available ACC cohort and progress sequentially through the program. Phase 2 (Systems Coach) follows on a flexible schedule.
+You start with Phase 1 (ACC training) - join the next available ACC cohort and progress sequentially through the program. Phase 2 (Systems Coach) follows on a flexible schedule.
 
 [program\_dates program="acc" view="schedule"]
 
 Phase 2 – Systems Coach Schedule
 
-Phase 2 modules run on a flexible schedule — start with any module, in any order. View all upcoming Systems Coach dates on the PCC bridge program page.
+Phase 2 modules run on a flexible schedule - start with any module, in any order. View all upcoming Systems Coach dates on the PCC bridge program page.
 
 [View Phase 2 Dates](/icf/pcc-professional-coach-certification/#dates-and-pricing)
 
-#### Professional Coach Program — $7,499
+#### Professional Coach Program - $7,499
 
 All training, mentoring, supervision, exam prep, and [Coaching Tools Plus](/coaching-tools/) access included. Three ICF credentials (ACC + PCC + ACTC) in one enrollment. Save $499 vs. buying ACC and Systems Coach separately.
 
@@ -156,7 +156,7 @@ Your coaching team
 
 ### Learn from Master Certified Coaches
 
-Our instructors don’t just teach coaching — they coach Fortune 500 leaders, design coaching programs for global organizations, and train other coaches to do the same.
+Our instructors don’t just teach coaching - they coach Fortune 500 leaders, design coaching programs for global organizations, and train other coaches to do the same.
 
 [instructor\_listing]
 
@@ -188,7 +188,7 @@ SP
 
 Sarah P.
 
-PCC, ACTC — Team Coach
+PCC, ACTC - Team Coach
 
 1,000+
 
@@ -220,15 +220,15 @@ Instead of enrolling in separate programs for each credential, you get a continu
 
 Three ICF credentials – each a globally recognized coaching certification:
 
-- **ACC (Associate Certified Coach)** — earned after completing Phase 1 (60 hours). The ICF’s entry-level professional credential.
-- **PCC (Professional Certified Coach)** — earned after completing Phase 2 (65+ additional hours). The mid-tier credential most professional coaches hold.
-- **ACTC (Advanced Certification in Team Coaching)** — earned alongside PCC through the systems coaching curriculum. A specialized credential for team and group coaching.
+- **ACC (Associate Certified Coach)** - earned after completing Phase 1 (60 hours). The ICF’s entry-level professional credential.
+- **PCC (Professional Certified Coach)** - earned after completing Phase 2 (65+ additional hours). The mid-tier credential most professional coaches hold.
+- **ACTC (Advanced Certification in Team Coaching)** - earned alongside PCC through the systems coaching curriculum. A specialized credential for team and group coaching.
 
 Each credential is applied for separately through the International Coaching Federation after meeting the education, mentoring, and experience requirements. Holding all three positions you as a certified professional coach with both individual and team coaching expertise.
 
 **Q: How Does It Compare to Buying Separately?**
 
-Tandem offers the same training content through two standalone programs: the [ACC Certification Program](/icf/acc-coach-certification-training/) ($3,999) and the [Systems Coach Program](/icf/pcc-professional-coach-certification/) ($3,999). The Professional Coach Program bundles both for $7,499 — saving $499.
+Tandem offers the same training content through two standalone programs: the [ACC Certification Program](/icf/acc-coach-certification-training/) ($3,999) and the [Systems Coach Program](/icf/pcc-professional-coach-certification/) ($3,999). The Professional Coach Program bundles both for $7,499 - saving $499.
 
 ##### Cost Comparison
 
@@ -250,7 +250,7 @@ Beyond the cost savings, the bundled program provides a single enrollment, coord
 
 No. The Professional Coach Program is designed for people with no prior coach training. Phase 1 starts with foundational concepts and builds from there.
 
-If you already have ACC certification or 60+ hours of ICF-accredited training, the [Systems Coach Program](/icf/pcc-professional-coach-certification/) (bridge from ACC to PCC + ACTC) is the right fit — you don’t need to repeat Level 1 training.
+If you already have ACC certification or 60+ hours of ICF-accredited training, the [Systems Coach Program](/icf/pcc-professional-coach-certification/) (bridge from ACC to PCC + ACTC) is the right fit - you don’t need to repeat Level 1 training.
 
 **Q: How Long Does the Program Take?**
 
@@ -289,9 +289,9 @@ Choose the path that matches where you are and where you want to go.
 | Credentials earned | ACC | ACC + PCC + ACTC | PCC + ACTC | ACTC |
 | Training hours | 60 hours | 125+ hours | 65+ hours | 60+ hours |
 | ICF accreditation level | Level 1 | Level 1 + Level 2 | Level 2 | Team Coaching |
-| 1-on-1 coaching skills | ✓ | ✓ | ✓ | — |
-| Systems & team coaching | — | ✓ | ✓ | ✓ |
-| Mentor coaching included | ✓ | ✓ | ✓ | — |
+| 1-on-1 coaching skills | ✓ | ✓ | ✓ | - |
+| Systems & team coaching | - | ✓ | ✓ | ✓ |
+| Mentor coaching included | ✓ | ✓ | ✓ | - |
 | Supervision included | ✓ | ✓ | ✓ | ✓ |
 | Exam prep included | ✓ | ✓ | ✓ | ✓ |
 | Price | $3,999 | **$7,499** | $3,999 | $2,499 |
@@ -354,7 +354,7 @@ Yes. Phase 2 of the Professional Coach Program is the same systems coaching curr
 
 **Q: What is the format? Is it online or in-person?**
 
-The program is **blended** — live Zoom sessions combined with self-paced coursework on our learning platform. All live sessions are interactive, not lectures. You practice coaching in breakout rooms with peers and get real-time feedback from instructors.
+The program is **blended** - live Zoom sessions combined with self-paced coursework on our learning platform. All live sessions are interactive, not lectures. You practice coaching in breakout rooms with peers and get real-time feedback from instructors.
 
 **Q: Who teaches the program?**
 
@@ -362,7 +362,7 @@ The program is led by **Cherie Silas, MCC** and **Alex Kudinov, MCC**, along wit
 
 **Q: Is there a free trial or way to experience the program first?**
 
-Yes. The [Coaching Foundations module](https://community.tandemcoaching.academy/invitation?code=8JB28E) is completely free — no credit card, no commitment. It covers ICF competencies and ethics and gives you a feel for our teaching style and community before you invest.
+Yes. The [Coaching Foundations module](https://community.tandemcoaching.academy/invitation?code=8JB28E) is completely free - no credit card, no commitment. It covers ICF competencies and ethics and gives you a feel for our teaching style and community before you invest.
 
 Get started
 
@@ -380,7 +380,7 @@ All training, mentoring, supervision, exam prep, and [Coaching Tools Plus](/coac
 
 #### Start Free
 
-Begin with Coaching Foundations — ICF competencies & ethics. No cost, no credit card, no commitment. Experience our teaching style first.
+Begin with Coaching Foundations - ICF competencies & ethics. No cost, no credit card, no commitment. Experience our teaching style first.
 
 [Start Free Now](https://community.tandemcoaching.academy/invitation?code=8JB28E)
 
@@ -390,7 +390,7 @@ Book a free consultation and we’ll help you figure out whether the full progra
 
 [Book a Consultation](https://tandemcoach.co/contact-us/)
 
-[Get the Program Guide — curriculum, pricing & credential pathways](#)
+[Get the Program Guide - curriculum, pricing & credential pathways](#)
 
 Before you go
 
@@ -448,8 +448,8 @@ Your progress will be lost.
 
 #### What were you hoping to find?
 
-Quick question before you go — helps us improve this page.
+Quick question before you go - helps us improve this page.
 
-Thanks — that helps.
+Thanks - that helps.
 
 ---

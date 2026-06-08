@@ -36,6 +36,12 @@ export function extractEventKey(
       return extractCourseRecap(p);
     case 'contact-form':
       return extractContactForm(p);
+    case 'zoom-class':
+      return extractZoomClass(p);
+    case 'chaos':
+      return extractChaos(p);
+    case 'form-submitted':
+      return extractFormSubmitted(p);
     default:
       return NONE;
   }
@@ -124,4 +130,82 @@ function extractCourseRecap(p: Payload): ExtractedKey {
  */
 function extractContactForm(_p: Payload): ExtractedKey {
   return { event_id: null, event_type: 'lead-submission' };
+}
+
+/**
+ * Zoom recording.completed — n8n forwards the Zoom envelope verbatim
+ * ({ event, payload: { account_id, object: { uuid, ... } } }), so the
+ * recording UUID lives at p.payload.object.uuid. The recording UUID is
+ * stable per recording and survives Zoom's at-least-once redelivery,
+ * so it's the right idempotency key for the push-mode sweeper lane.
+ */
+/**
+ * Chaos verified-visitor event id. Exported so the push path (extractChaos)
+ * and the reconciler sweep path (chaos-reconciler.ts) build a byte-identical
+ * key — a JSON-number visitor_id and a jq-emitted string visitor_id must
+ * collapse to the same string or the reaper's event_id dedup would not fire.
+ */
+export function chaosVisitorEventId(visitorId: unknown): string | null {
+  const n = Math.trunc(Number(visitorId));
+  return Number.isFinite(n) && n > 0 ? `chaos:visitor:${n}:verified` : null;
+}
+
+const CHAOS_EVENT_TYPES = new Set([
+  'form_contact',
+  'form_lead_magnet',
+  'form_newsletter',
+  'verified',
+]);
+
+/**
+ * Chaos: a verified website visitor pushed via Chaos forward queue → n8n.
+ * Payload carries visitor_id (int) and form_event_type (string|null). The
+ * idempotency key is per visitor — a visitor verifies exactly once — so a
+ * re-delivered forward row collapses to the same event_id. event_type is the
+ * form category, coerced to 'verified' when absent or unrecognized.
+ */
+function extractChaos(p: Payload): ExtractedKey {
+  const event_id = chaosVisitorEventId(p.visitor_id);
+  const raw = asStr(p.form_event_type) ?? 'verified';
+  const event_type = CHAOS_EVENT_TYPES.has(raw) ? raw : 'verified';
+  return { event_id, event_type };
+}
+
+/**
+ * Generic form-submitted (chaos-tracker "any form was submitted" pipe).
+ * Chaos-tracker mints a fresh submission_id per click, so a triple-click sends
+ * three envelopes with three distinct submission_ids — keying on submission_id
+ * alone would not dedup them. The user-intent key is (visitor, form, minute):
+ * the same visitor hitting the same form within a minute is one logical
+ * submission. The minute bucket is UTC, computed from received_at if present
+ * else now(); a submission landing across a minute boundary at most causes one
+ * extra row, which is acceptable.
+ */
+function extractFormSubmitted(p: Payload): ExtractedKey {
+  const visitor = asStr(p.visitor_id);
+  const subtype =
+    asStr(p.form_event_subtype) ?? asStr(p.form_page) ?? 'unknown';
+  if (!visitor) return { event_id: null, event_type: 'form-submitted' };
+  const tsRaw = asStr(p.received_at) ?? asStr(p.submitted_at);
+  const ms = tsRaw ? Date.parse(tsRaw) : Date.now();
+  const bucket = Math.floor((Number.isFinite(ms) ? ms : Date.now()) / 60000);
+  return {
+    event_id: `form:${visitor}:${subtype}:${bucket}`,
+    event_type: 'form-submitted',
+  };
+}
+
+function extractZoomClass(p: Payload): ExtractedKey {
+  const inner =
+    p.payload && typeof p.payload === 'object' ? (p.payload as Payload) : p;
+  const obj =
+    inner.object && typeof inner.object === 'object'
+      ? (inner.object as Payload)
+      : null;
+  const uuid = asStr(obj?.uuid ?? null);
+  const event_type =
+    asStr(p.event) ?? asStr(inner.event) ?? 'recording.completed';
+  return uuid
+    ? { event_id: `recording:${uuid}`, event_type }
+    : { event_id: null, event_type };
 }

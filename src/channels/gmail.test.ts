@@ -78,7 +78,7 @@ vi.mock('./registry.js', () => ({
   registerChannel: vi.fn(),
 }));
 
-import { GmailChannel } from './gmail.js';
+import { GmailChannel, isOwnOutbound } from './gmail.js';
 import { logger } from '../logger.js';
 
 function createTestOpts() {
@@ -98,6 +98,27 @@ describe('GmailChannel', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  describe('isOwnOutbound', () => {
+    it('skips pure outbound — SENT without INBOX', () => {
+      expect(isOwnOutbound(['SENT'])).toBe(true);
+      expect(isOwnOutbound(['DRAFT'])).toBe(true);
+      expect(isOwnOutbound(['SENT', 'CATEGORY_PERSONAL'])).toBe(true);
+    });
+
+    it('processes self-addressed inbound — SENT plus INBOX', () => {
+      // Website contact-form mail sent from a send-as alias to the
+      // monitored mailbox carries both labels and is real inbound.
+      expect(isOwnOutbound(['SENT', 'INBOX'])).toBe(false);
+      expect(isOwnOutbound(['UNREAD', 'SENT', 'INBOX'])).toBe(false);
+      expect(isOwnOutbound(['DRAFT', 'INBOX'])).toBe(false);
+    });
+
+    it('processes ordinary inbound — no SENT/DRAFT', () => {
+      expect(isOwnOutbound(['INBOX', 'UNREAD'])).toBe(false);
+      expect(isOwnOutbound([])).toBe(false);
+    });
   });
 
   describe('poll stall detection', () => {

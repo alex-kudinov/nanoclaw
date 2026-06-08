@@ -14,6 +14,12 @@ Read `/workspace/extra/knowledge/KNOWLEDGE.md` before processing any payment. It
 - `psql` for business DB — pre-configured, no credentials needed
 - `mcp__nanoclaw__send_message` — post to this channel
 
+## Output Discipline
+
+Do not narrate, acknowledge, or summarize. Emit only the structured output token or nothing. The host posts a mechanical processing message on your behalf — a pre-work acknowledgment from you is redundant token cost.
+
+**Ignore host-generated mechanical lines.** A message whose entire content is a `→ Routed to …`, `[PROCESSING] …`, or `[EMAIL SENT] …` line is host noise — no action, no response.
+
 ## How You Get Triggered
 
 You run in 2 situations. Read the incoming `<messages>` block to determine which:
@@ -38,15 +44,7 @@ If no valid ID is found, post an error and stop:
 [EL CONTADOR] ERROR — No Stripe ID (cs_... or pi_...) found in webhook payload
 ```
 
-### Step 2 — Acknowledge
-
-Call `mcp__nanoclaw__send_message` with ONLY the `text` parameter:
-
-```
-[EL CONTADOR] Processing payment STRIPE_ID
-```
-
-### Step 3 — Run Payment Pipeline
+### Step 2 — Run Payment Pipeline
 
 Run the deterministic payment script. This handles everything: Stripe API fetch, Google Sheets writes (Payment Log + Student Roster), and PostgreSQL insert. It auto-detects whether the ID is a checkout session or payment intent.
 
@@ -56,7 +54,7 @@ node /workspace/extra/tools/process-payment.cjs "$STRIPE_ID"
 
 Capture the output.
 
-### Step 4 — Post Summary
+### Step 3 — Post Summary
 
 Call `mcp__nanoclaw__send_message` with the script output as the `text` parameter. Do not modify the output — post it verbatim.
 
@@ -93,14 +91,7 @@ If `Amount` or `Due Date` are not in the snippet, fetch the full email — call 
 
 If a vendor looks suspicious (numbered company, no service description, first time seen), set `Warning` to a one-line note for chief.
 
-### Step 2 — Acknowledge
-
-Post to this channel:
-```
-[EL CONTADOR] Invoice received — {Vendor}, {Amount}
-```
-
-### Step 3 — Log to DB
+### Step 2 — Log to DB
 
 Run as two sequential statements:
 
@@ -112,11 +103,13 @@ psql -c "SELECT business_v2.fn_create_party('org', '{vendor_name}', '{sender_ema
 Capture the returned `party_id`, then:
 
 ```bash
-# 2. Record the invoice document + interaction + outbox entry atomically
-psql -c "SELECT business_v2.fn_issue_document({party_id}, 'invoice', {amount_cents_or_null}, 'USD', '{\"vendor\": \"{vendor}\", \"due_date\": \"{due_date}\", \"source_email\": \"{sender_email}\", \"subject\": \"{subject}\"}'::jsonb);"
+# 2. Record the invoice document + interaction atomically
+psql -c "SELECT business_v2.fn_issue_document({party_id}, 'invoice', {amount_cents_or_null}, 'USD', '{\"direction\": \"inbound\", \"vendor\": \"{vendor}\", \"due_date\": \"{due_date}\", \"source_email\": \"{sender_email}\", \"subject\": \"{subject}\"}'::jsonb);"
 ```
 
 `amount_cents` is the parsed dollar amount × 100 (integer), or `NULL` if no amount was found. `due_date` is ISO 8601 or empty string if absent.
+
+**`"direction": "inbound"` is required.** This is a vendor bill we received, not an invoice we issued. Without that field the document is treated as outbound and gets enqueued to Plutio's `/invoices` endpoint, which would create a customer-facing invoice in Plutio under the vendor's name — wrong direction.
 
 If the DB call fails, post to chief:
 ```
@@ -125,7 +118,7 @@ Vendor: {vendor} | Amount: {amount} | Due: {due_date}
 ```
 And skip to Step 4.
 
-### Step 4 — Notify chief with payment reminder
+### Step 3 — Notify chief with payment reminder
 
 Post via `send_message` with `target_group` set to `chief`:
 
@@ -138,7 +131,7 @@ Subject: {subject}
 Action needed: Review and pay by {due date}.
 ```
 
-### Step 5 — Schedule reminder (if due date exists)
+### Step 4 — Schedule reminder (if due date exists)
 
 If a due date was parsed, create a reminder task. Write a JSON file to `/workspace/ipc/messages/`:
 ```json

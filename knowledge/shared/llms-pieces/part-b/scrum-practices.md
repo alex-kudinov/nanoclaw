@@ -97,7 +97,7 @@ Definition of Done is a completely another topic and deserves absolutely separat
 
 ### Related Articles
 
-- [Coaching - It’s more than just asking questions](https://tandemcoach.co/coaching-its-more-than-just-asking-questions/): A common belief is that the difference between coaching and managing is simply asking questions rather than giving orders.
+- [Coaching - It’s more than just asking questions](https://tandemcoach.co/coaching-its-more-than-just-asking-questions/): Coaching demands professional skills, techniques, and models that asking questions alone cannot provide.
 - [Definition of Done – More Than a Checklist](https://tandemcoach.co/definition-of-done-more-than-a-checklist/): This is Mark.
 - [How Scrum Master Can Enhance Daily Scrum](https://tandemcoach.co/how-scrum-master-can-enhance-daily-scrum/): Best Agile Articles 2018 is a collection of the articles from a variety of authors published on topics of all things Agile in 2018.
 - [On Scrum Mastering](https://tandemcoach.co/on-scrum-mastering/): Mastering anything is hard and laborious.

@@ -3,6 +3,18 @@
 ## The Work-Life Harmony Blueprint – ADHD Coaching for Work-Life Integration and Balance
 URL: https://tandemcoach.co/adhd-work-life-balance-coaching-integration/
 
+### How do I balance work and life with ADHD?
+
+Stop chasing balance and build intentional integration instead. Your ADHD brain needs concrete boundaries, not vague rules. Use 15-minute transition buffers between work and home, create bookend rituals that signal domain shifts, and manage energy patterns rather than clock time. Structure works with your brain, not against it.
+
+#### Key Takeaways
+
+- Work-life "balance" sets ADHD professionals up to fail; intentional integration — honoring both domains without forcing equal time — actually works.
+- Time blindness is neurological, not a character flaw; transition buffers and shutdown rituals bridge the gap traditional boundary advice ignores.
+- Energy management beats time management for ADHD brains — scheduling tasks to match natural peak states delivers more than grinding through off-peak hours.
+- Burnout hits before most ADHD professionals recognize it; identifying personal early-warning signs turns reactive recovery into proactive protection.
+- Generic strategies fail ADHD professionals because ADHD isn't generic — sustainable work-life integration requires personalization, not willpower.
+
 ### When Work Consumes Everything: The ADHD Work-Life Challenge
 
 As someone who coaches professionals with ADHD, I've heard countless variations of the same struggle: "I'm either all-in at work and neglecting my personal life, or I'm trying to focus on family but constantly distracted by work thoughts. There's never a balance." Coaches who want to serve this population effectively will find practical skill-building in [boosting your coaching skills](/boost-your-coaching-skills-strategies-to-elevate-icf-competencies/) — and should examine the assumption explored in [whether clients actually hire coaches for ready-made solutions](/we-are-hired-to-give-our-clients-solutions-that-work-arent-we/).
@@ -259,7 +271,7 @@ Don't let burnout or imbalance derail your career or personal life. Your future 
 
 ### Related Articles
 
-- [3 Books Every Coach Must Read](https://tandemcoach.co/three-books-every-coach-must-read/): Becoming a coach is a journey of self-transformation and self-improving.
-- [Coaching Confidence Boost: Develop Essential Skills and Thrive in Your Coaching Practice](https://tandemcoach.co/coaching-confidence-boost-develop-essential-skills-and-thrive-in-your-coaching-practice/): For [every coach](/three-books-every-coach-must-read/), confidence is the invisible thread that connects expertise to effective practice.
+- [3 Books Every Coach Must Read](https://tandemcoach.co/three-books-every-coach-must-read/): Three books stand out.
+- [Coaching Confidence Boost: Develop Essential Skills and Thrive in Your Coaching Practice](https://tandemcoach.co/coaching-confidence-boost-develop-essential-skills-and-thrive-in-your-coaching-practice/): Coaching confidence builds through six deliberate actions: continuous education keeps your skills current, peer feedback reveals blind spots, consistent practice sharpens your instincts, a support network sustains momentum, celebrating small wins reinforces capability, and regular self-reflection deepens self-awareness.
 
 ---

@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
@@ -70,13 +71,37 @@ let ipcWatcherRunning = false;
 // source can intercept the send. See project-mailman-approval-delay
 // memory + the Marius Braun case (2026-04-27) for the cancel-race
 // motivation. Set MAILMAN_HOLD_SECONDS=0 to disable.
+//
+// NOTE: read at module-load time from process.env (NOT config.ts) on purpose —
+// ipc-handoff-echo.test.ts re-imports this module with a fresh env per test to
+// exercise hold/no-hold paths. Centralizing into config.ts breaks that contract
+// because the test mocks config.js. pipeline-status.ts mirrors this expression
+// for display only.
 const MAILMAN_HOLD_MS =
   (parseInt(process.env.MAILMAN_HOLD_SECONDS || '30', 10) || 0) * 1000;
 interface HeldMailmanHandoff {
   timer: NodeJS.Timeout;
   sourceGroup: string;
+  dedupKey: string;
 }
 const heldMailmanHandoffs = new Map<string, HeldMailmanHandoff>();
+
+// Content hashes of mailman handoffs currently held or in-flight. A burst of
+// byte-identical [HANDOFF: *→mailman] messages — e.g. an upstream re-trigger
+// loop emitting the same handoff repeatedly — must collapse to ONE delivery.
+// Without this, each duplicate file gets its own hold timer and its own flush.
+const inFlightMailmanHandoffs = new Set<string>();
+
+function mailmanHandoffKey(text: string): string {
+  return crypto.createHash('sha256').update(text).digest('hex');
+}
+
+// A handoff whose text carries an escalation/emergency marker is itself an
+// urgent alert — the tidy "→ Routed to X" echo would be inappropriate noise,
+// so it is suppressed for those.
+export function isEmergencyToken(text: string): boolean {
+  return /\[(ESCALATION|EMERGENCY)\]/i.test(text);
+}
 
 /**
  * Spawn merge-lessons.sh as a detached background process.
@@ -160,6 +185,17 @@ export function startIpcWatcher(deps: IpcDeps): void {
           }
           for (const file of messageFiles) {
             const filePath = path.join(messagesDir, file);
+            // Skip files already in the mailman send-hold buffer. Without
+            // this guard, every 1s poll re-reads the held file and starts
+            // another setTimeout, leaking ~30 timers over the 30s hold and
+            // causing 30 duplicate flushes when the hold expires.
+            if (heldMailmanHandoffs.has(filePath)) continue;
+            // Validation is by CONTENT, not filename: the parse + dispatch
+            // below routes recognized data.type values and the final else
+            // deletes unknown types, while the catch moves malformed files
+            // to errors/. Sanctioned IPC producers legitimately use varied
+            // filenames (classify-{ts}.json, lesson-*.json, trafft-sweeper-*),
+            // so a filename allowlist here only quarantines real commands.
             try {
               const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
               if (data.type === 'message' && data.chatJid && data.text) {
@@ -200,6 +236,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     if (held.sourceGroup === cancelSource) {
                       clearTimeout(held.timer);
                       heldMailmanHandoffs.delete(heldPath);
+                      inFlightMailmanHandoffs.delete(held.dedupKey);
                       try {
                         if (fs.existsSync(heldPath)) fs.unlinkSync(heldPath);
                       } catch {
@@ -236,20 +273,24 @@ export function startIpcWatcher(deps: IpcDeps): void {
                         fromGroup: sourceGroup,
                         threadTs: data.thread_ts,
                       });
-                      // Store directly in DB — Slack doesn't reliably deliver
-                      // bot_message events back to the same app via Socket Mode.
-                      storeMessageDirect({
-                        id: `ipc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                        chat_jid: handoffEntry[0],
-                        sender: sourceGroup,
-                        sender_name: sourceGroup,
-                        content: data.text,
-                        timestamp: new Date().toISOString(),
-                        is_from_me: false,
-                        is_bot_message: true,
-                        from_group: sourceGroup,
-                        thread_ts: data.thread_ts,
-                      });
+                      // Slack persists its own outbound via storeOutbound — a
+                      // second store here would duplicate the row. Only direct-
+                      // store for non-Slack targets (e.g. mailman's gmail jid),
+                      // whose channel does not self-persist.
+                      if (!handoffEntry[0].startsWith('slack:')) {
+                        storeMessageDirect({
+                          id: `ipc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                          chat_jid: handoffEntry[0],
+                          sender: sourceGroup,
+                          sender_name: sourceGroup,
+                          content: data.text,
+                          timestamp: new Date().toISOString(),
+                          is_from_me: false,
+                          is_bot_message: true,
+                          from_group: sourceGroup,
+                          thread_ts: data.thread_ts,
+                        });
+                      }
                       logger.info(
                         {
                           handoffTarget,
@@ -260,6 +301,24 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       );
                     };
                     if (handoffTarget === 'mailman' && MAILMAN_HOLD_MS > 0) {
+                      // Collapse byte-identical mailman handoffs to a single
+                      // delivery. An upstream re-trigger loop can emit the same
+                      // [HANDOFF: *→mailman] dozens of times; without this each
+                      // duplicate gets its own hold timer and its own flush.
+                      const dedupKey = mailmanHandoffKey(data.text);
+                      if (inFlightMailmanHandoffs.has(dedupKey)) {
+                        logger.warn(
+                          { sourceGroup },
+                          'Duplicate mailman handoff dropped — identical handoff already in flight',
+                        );
+                        try {
+                          fs.unlinkSync(filePath);
+                        } catch {
+                          /* race-safe: file already gone */
+                        }
+                        continue;
+                      }
+                      inFlightMailmanHandoffs.add(dedupKey);
                       // Hold the send so an in-flight cancel from the same
                       // source can drop it. The file stays on disk during
                       // the hold (so a daemon restart preserves the handoff
@@ -283,9 +342,16 @@ export function startIpcWatcher(deps: IpcDeps): void {
                               { err, filePath },
                               'IPC held mailman handoff: flush failed',
                             );
+                          })
+                          .finally(() => {
+                            inFlightMailmanHandoffs.delete(dedupKey);
                           });
                       }, MAILMAN_HOLD_MS);
-                      heldMailmanHandoffs.set(filePath, { timer, sourceGroup });
+                      heldMailmanHandoffs.set(filePath, {
+                        timer,
+                        sourceGroup,
+                        dedupKey,
+                      });
                       logger.info(
                         {
                           sourceGroup,
@@ -329,10 +395,31 @@ export function startIpcWatcher(deps: IpcDeps): void {
               } else if (isGmailIpcType(data.type)) {
                 // Gmail IPC: reply, send, search, read
                 fs.unlinkSync(filePath);
-                await dispatchGmailIpc({
-                  ...data,
-                  groupFolder: sourceGroup,
-                } as GmailIpcPayload);
+                // Build postToChief so a successful send posts a mechanical
+                // [EMAIL SENT] line (fromGroup='chief' → no chief retrigger).
+                const chiefEntry = Object.entries(registeredGroups).find(
+                  ([, g]) => g.folder === 'chief',
+                );
+                const postToChief = chiefEntry
+                  ? async (text: string, threadTs?: string): Promise<void> => {
+                      await deps.sendMessage(chiefEntry[0], text, {
+                        fromGroup: 'chief',
+                        threadTs,
+                      });
+                    }
+                  : undefined;
+                if (!chiefEntry) {
+                  logger.error(
+                    '[ERROR] gmail [EMAIL SENT]: chief group not registered',
+                  );
+                }
+                await dispatchGmailIpc(
+                  {
+                    ...data,
+                    groupFolder: sourceGroup,
+                  } as GmailIpcPayload,
+                  postToChief,
+                );
               } else if (isLearnIpcType(data.type)) {
                 // Learning loop: append lesson to LEARNED.md
                 fs.unlinkSync(filePath);

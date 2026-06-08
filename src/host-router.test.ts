@@ -6,7 +6,11 @@ vi.mock('./logger.js', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
-import { routeClassifiedEmail, type RouteParams } from './host-router.js';
+import {
+  routeClassifiedEmail,
+  formatBookedNotice,
+  type RouteParams,
+} from './host-router.js';
 import { writeHostMessage } from './ipc-writer.js';
 import { matchLead } from './lead-matcher.js';
 import type { PipelineMatch } from './lead-matcher.js';
@@ -317,8 +321,16 @@ describe('host-router', () => {
     const r = await routeClassifiedEmail(
       makeParams({ label: 'financial/refund' }),
     );
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
+    // Delivered as a mailman→chief handoff (written to the mailman source
+    // folder) so an idle chief spawns instead of self-echo-filtering it.
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
+    expect(mockWrite.mock.calls[0][0]).toBe('mailman');
     const text: string = mockWrite.mock.calls[0][1].text;
+    expect(text).toContain('[HANDOFF: mailman→chief]');
     expect(text).toContain('Reason: refund review');
   });
 
@@ -342,7 +354,15 @@ describe('host-router', () => {
     const r = await routeClassifiedEmail(
       makeParams({ label: 'legal/contract' }),
     );
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
+    expect(mockWrite.mock.calls[0][0]).toBe('mailman');
+    expect(mockWrite.mock.calls[0][1].text).toContain(
+      '[HANDOFF: mailman→chief]',
+    );
     expect(mockWrite.mock.calls[0][1].text).toContain(
       'Reason: legal/contract review',
     );
@@ -350,7 +370,14 @@ describe('host-router', () => {
 
   it('routes personal to chief', async () => {
     const r = await routeClassifiedEmail(makeParams({ label: 'personal' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
+    expect(mockWrite.mock.calls[0][1].text).toContain(
+      '[HANDOFF: mailman→chief]',
+    );
     expect(mockWrite.mock.calls[0][1].text).toContain(
       'Reason: personal review',
     );
@@ -358,7 +385,14 @@ describe('host-router', () => {
 
   it('routes other to chief', async () => {
     const r = await routeClassifiedEmail(makeParams({ label: 'other' }));
-    expect(r).toEqual({ routed: true, action: 'ipc_written', target: 'chief' });
+    expect(r).toEqual({
+      routed: true,
+      action: 'ipc_written',
+      target: 'mailman',
+    });
+    expect(mockWrite.mock.calls[0][1].text).toContain(
+      '[HANDOFF: mailman→chief]',
+    );
     expect(mockWrite.mock.calls[0][1].text).toContain('Reason: other review');
   });
 
@@ -368,11 +402,14 @@ describe('host-router', () => {
     );
     expect(r.routed).toBe(true);
     expect(r.action).toBe('ipc_written');
-    expect(r.target).toBe('chief');
+    expect(r.target).toBe('mailman');
     expect(r.reason).toBe('unrecognized label prefix');
     expect(mockWrite).toHaveBeenCalledWith(
-      'chief',
+      'mailman',
       expect.objectContaining({ type: 'message' }),
+    );
+    expect(mockWrite.mock.calls[0][1].text).toContain(
+      '[HANDOFF: mailman→chief]',
     );
   });
 
@@ -511,8 +548,12 @@ describe('host-router', () => {
       expect(r).toEqual({
         routed: true,
         action: 'ipc_written',
-        target: 'chief',
+        target: 'mailman',
       });
+      expect(mockWrite.mock.calls[0][0]).toBe('mailman');
+      expect(mockWrite.mock.calls[0][1].text).toContain(
+        '[HANDOFF: mailman→chief]',
+      );
       expect(mockWrite.mock.calls[0][1].text).toContain(
         'Reason: legal/contract review',
       );
@@ -523,8 +564,11 @@ describe('host-router', () => {
         makeParams({ label: 'MrGru/notification/system' }),
       );
       expect(r.routed).toBe(true);
-      expect(r.target).toBe('chief');
+      expect(r.target).toBe('mailman');
       expect(r.reason).toBe('unrecognized label prefix');
+      expect(mockWrite.mock.calls[0][1].text).toContain(
+        '[HANDOFF: mailman→chief]',
+      );
     });
   });
 
@@ -642,5 +686,50 @@ describe('host-router', () => {
       const text: string = mockWrite.mock.calls[0][1].text;
       expect(text).toContain('[HANDOFF: mailman\u2192sales]');
     });
+  });
+});
+
+describe('formatBookedNotice', () => {
+  it('produces a What/Who/When headline with the bookkeeping tail', () => {
+    const out = formatBookedNotice({
+      customer_name: 'Jordan Rivera',
+      service: 'Mentor Coaching',
+      start_time: '2026-05-19 8:00 am',
+      party_id: 4242,
+      booking_row_id: 9001,
+    });
+    expect(out).toContain('[BOOKING] Mentor Coaching — Jordan Rivera');
+    expect(out).toContain('Who:    Jordan Rivera');
+    expect(out).toContain('When:   2026-05-19 8:00 am');
+    expect(out).toContain('party 4242 · interaction 9001');
+    // No custom fields → no Why/Source lines.
+    expect(out).not.toContain('Why:');
+    expect(out).not.toContain('Source:');
+  });
+
+  it('surfaces the reason (Why) and source from appointment custom fields', () => {
+    const out = formatBookedNotice({
+      customer_name: 'Sarah El-Hagagi',
+      customer_email: 'sarah@example.com',
+      customer_phone: '+201025151083',
+      service: 'Consultation Call',
+      start_time: '2026-06-19 1:30 pm',
+      employee: 'Cherie Silas',
+      status: 'Approved',
+      party_id: 10,
+      booking_row_id: 56,
+      customFields: [
+        { label: 'What would you like to discuss?', value: 'PCC Exam Review' },
+        { label: 'How did you learn about Tandem?', value: 'Agile community' },
+      ],
+    });
+    expect(out).toContain('[BOOKING] Consultation Call — Sarah El-Hagagi');
+    expect(out).toContain(
+      'Who:    Sarah El-Hagagi · sarah@example.com · +201025151083',
+    );
+    expect(out).toContain('When:   2026-06-19 1:30 pm · Cherie Silas');
+    expect(out).toContain('Why:    PCC Exam Review');
+    expect(out).toContain('Source: Agile community');
+    expect(out).toContain('Approved · party 10 · interaction 56');
   });
 });

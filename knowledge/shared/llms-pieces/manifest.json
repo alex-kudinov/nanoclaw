@@ -1,7 +1,7 @@
 {
   "version": "1",
   "generator": "generate-llms-full.py",
-  "generated_at": "2026-04-25T08:05:20Z",
+  "generated_at": "2026-06-06T08:08:08Z",
   "pieces": [
     {
       "id": "part-a/_00_header",
@@ -45,9 +45,9 @@
       "id": "part-a/acc",
       "path": "part-a/acc.md",
       "order": 3,
-      "hash": "sha256:9e93c9fde53e1e492563a16315430b2cb0296aa3b2c02165bb65b4ae82d242e4",
-      "bytes": 30402,
-      "words": 4380,
+      "hash": "sha256:437015a38afa636a47405e0f548d2bca7da511618c0d7eaf78bed2334938a82f",
+      "bytes": 31997,
+      "words": 4625,
       "source": {
         "type": "page",
         "title": "ACC Coach Certification - ICF Level 1",
@@ -59,9 +59,9 @@
       "id": "part-a/pcc",
       "path": "part-a/pcc.md",
       "order": 4,
-      "hash": "sha256:a5ef07005bd246ae11d0df9d2e762b5fa8edf275aa3a761d163f5d80a987d870",
-      "bytes": 37444,
-      "words": 5207,
+      "hash": "sha256:81f6860c15676b5ee33d1d740252ee0ef2a0391c21afe57953a3902120880f42",
+      "bytes": 41583,
+      "words": 5811,
       "source": {
         "type": "page",
         "title": "PCC Coach Certification - ICF Level 2",
@@ -73,8 +73,8 @@
       "id": "part-a/acc-pcc-certification",
       "path": "part-a/acc-pcc-certification.md",
       "order": 5,
-      "hash": "sha256:aaac78a781e49c0d6b48e687f7dac99c2b4d39e2ea7d0f3f60da7db16484bad6",
-      "bytes": 20127,
+      "hash": "sha256:26b32d967068a1d378a1a7d12bfcb7d531f4aa44209e6da348a6fb53b2fbfd71",
+      "bytes": 20059,
       "words": 2966,
       "source": {
         "type": "page",
@@ -87,9 +87,9 @@
       "id": "part-a/actc",
       "path": "part-a/actc.md",
       "order": 6,
-      "hash": "sha256:f6b5d435c38029055b709b2ccda66982eaaa3cdbaf46574dae15260047da515b",
-      "bytes": 28535,
-      "words": 3995,
+      "hash": "sha256:8a2727d9278c3d9e0d8759c48ab6a62e7cc99d9a1ec39fb18b586dfab330de24",
+      "bytes": 28736,
+      "words": 4027,
       "source": {
         "type": "page",
         "title": "ACTC Team Coaching Certification",
@@ -101,8 +101,8 @@
       "id": "part-a/icf-coaching",
       "path": "part-a/icf-coaching.md",
       "order": 7,
-      "hash": "sha256:394fe473dfc34d55ecfecbfb75cc55cfd8056068a0767a8e5fb516c9f556e7ff",
-      "bytes": 14170,
+      "hash": "sha256:b0107be2eb36868c3f9c0db69884b7c46b6fba5c23a8789c91f4320f97b925ff",
+      "bytes": 14168,
       "words": 1972,
       "source": {
         "type": "page",
@@ -115,9 +115,9 @@
       "id": "part-a/mentor-coaching-acc-pcc-mcc",
       "path": "part-a/mentor-coaching-acc-pcc-mcc.md",
       "order": 8,
-      "hash": "sha256:fb83cc737aab7d6c2059356238044982b45bbdebaa2851ba8116c94416203683",
-      "bytes": 15217,
-      "words": 2252,
+      "hash": "sha256:c5fe2595336cad4852fdd23f874229e7be22cabbf894f5602de54d712e303351",
+      "bytes": 15195,
+      "words": 2270,
       "source": {
         "type": "page",
         "title": "Mentor Coaching",
@@ -126,26 +126,26 @@
       }
     },
     {
-      "id": "part-a/mcq",
-      "path": "part-a/mcq.md",
+      "id": "part-a/mcs",
+      "path": "part-a/mcs.md",
       "order": 9,
-      "hash": "sha256:df032eb13b4b582bcaa12e4f7880bb9c2224b3e724edfb006441759c8b09d646",
-      "bytes": 42956,
-      "words": 6446,
+      "hash": "sha256:e7a44031b2869385dbde8e6c4830d05e01c64d62032e47e21b05b0db589074e6",
+      "bytes": 43383,
+      "words": 6523,
       "source": {
         "type": "page",
-        "title": "ICF Mentor Coach Qualification (MCQ)",
-        "url": "https://tandemcoach.co/mcq/",
-        "local_dir": "pages/mcq"
+        "title": "ICF Mentor Coach Specialization (MCS) - Hub",
+        "url": "https://tandemcoach.co/mcs/",
+        "local_dir": "pages/mcs"
       }
     },
     {
       "id": "part-a/mentor-coaching-foundations",
       "path": "part-a/mentor-coaching-foundations.md",
       "order": 10,
-      "hash": "sha256:bc47684b6f7c3f9904893bb2d9c6f82309ccaf9a505d54dea340d248633238d3",
-      "bytes": 23516,
-      "words": 3596,
+      "hash": "sha256:68bbbe0ec6a941fd1745a07de8bb7d8c6b028bcdf13a754e3acd6f8934a577a0",
+      "bytes": 26040,
+      "words": 3975,
       "source": {
         "type": "page",
         "title": "Mentor Coaching Foundations",
@@ -154,12 +154,40 @@
       }
     },
     {
+      "id": "part-a/mcs-mentor-coach-training",
+      "path": "part-a/mcs-mentor-coach-training.md",
+      "order": 11,
+      "hash": "sha256:c3d8e191ccab5d213efc2f2df9d8a3981b000ede218423078700dd89c350827b",
+      "bytes": 22191,
+      "words": 3433,
+      "source": {
+        "type": "page",
+        "title": "MCS Mentor Coach Training (Standard Path)",
+        "url": "https://tandemcoach.co/mcs/mentor-coach-training/",
+        "local_dir": "pages/mcs-mentor-coach-training"
+      }
+    },
+    {
+      "id": "part-a/mcs-evaluation-training",
+      "path": "part-a/mcs-evaluation-training.md",
+      "order": 12,
+      "hash": "sha256:7daaac0bb8e1025695de7b6d848750c973f05b5120bdc4cbecbfdf4ab158e5d4",
+      "bytes": 12294,
+      "words": 1837,
+      "source": {
+        "type": "page",
+        "title": "MCS Evaluation Training (BARS & Markers)",
+        "url": "https://tandemcoach.co/mcs/evaluation-training/",
+        "local_dir": "pages/mcs-evaluation-training"
+      }
+    },
+    {
       "id": "part-a/coaching-supervision",
       "path": "part-a/coaching-supervision.md",
-      "order": 11,
-      "hash": "sha256:6dd2cabd404059dbe4959961ded8cfacf0d056b62d676f453f93601a58237a7e",
-      "bytes": 6444,
-      "words": 875,
+      "order": 13,
+      "hash": "sha256:057735adfe0fae3b7f84eeaa9363a0c76b45b7ba6c24b78bab2afa690d8ba27d",
+      "bytes": 7266,
+      "words": 995,
       "source": {
         "type": "page",
         "title": "Coaching Supervision",
@@ -170,7 +198,7 @@
     {
       "id": "part-a/_divider-coaching-services",
       "path": "part-a/_divider-coaching-services.md",
-      "order": 12,
+      "order": 14,
       "hash": "sha256:1dc50d8ffb72fa4a519a0d33b7ab2ddaa60ec2496d8b7e080dadad06572f06f1",
       "bytes": 20,
       "words": 3,
@@ -182,10 +210,10 @@
     {
       "id": "part-a/executive-coaching",
       "path": "part-a/executive-coaching.md",
-      "order": 13,
-      "hash": "sha256:efde26fbd2b79525548665438d61821dca22d82afe63dbde50308bd5bccf416e",
-      "bytes": 14560,
-      "words": 2048,
+      "order": 15,
+      "hash": "sha256:b65a2cc68380450d25b6b0483971b4be85451c222e05cd104e64882c7fc83a1f",
+      "bytes": 23708,
+      "words": 3362,
       "source": {
         "type": "page",
         "title": "Executive Coaching Services",
@@ -196,9 +224,9 @@
     {
       "id": "part-a/adhd-executive-coach",
       "path": "part-a/adhd-executive-coach.md",
-      "order": 14,
-      "hash": "sha256:29f4be4feea4b835a0cf5b8d380bcedc5c3c17fa62c3464d485bcd14bb205122",
-      "bytes": 16339,
+      "order": 16,
+      "hash": "sha256:cfd381e7151c5750e71e81b6129edc1790a2901b7ad44e925160ea7f24e52e6c",
+      "bytes": 16337,
       "words": 2283,
       "source": {
         "type": "page",
@@ -210,7 +238,7 @@
     {
       "id": "part-a/leadership-development",
       "path": "part-a/leadership-development.md",
-      "order": 15,
+      "order": 17,
       "hash": "sha256:250029cfa1ec2686e0aaf1380ebec3782e17a21e7b877dff74647c9c2b07695c",
       "bytes": 12094,
       "words": 1679,
@@ -224,7 +252,7 @@
     {
       "id": "part-a/organizational-coach",
       "path": "part-a/organizational-coach.md",
-      "order": 16,
+      "order": 18,
       "hash": "sha256:a99584f931a8ce613ae071a457edfc0414cb11a12e575bdadc8d9ae9467d9943",
       "bytes": 12586,
       "words": 1733,
@@ -238,10 +266,10 @@
     {
       "id": "part-a/coaching-engagements",
       "path": "part-a/coaching-engagements.md",
-      "order": 17,
-      "hash": "sha256:7a3348cbe58713fb87d9352570b7426766132a908077ec284592a66ff2abec47",
-      "bytes": 12309,
-      "words": 1771,
+      "order": 19,
+      "hash": "sha256:2e719ecc94e0118767c18622bd9b1fdd2d07773e6abf8e79403ce10928d60720",
+      "bytes": 12299,
+      "words": 1795,
       "source": {
         "type": "page",
         "title": "Coaching Engagements",
@@ -252,7 +280,7 @@
     {
       "id": "part-a/_divider-about",
       "path": "part-a/_divider-about.md",
-      "order": 18,
+      "order": 20,
       "hash": "sha256:121da4735106e9c915d573eed1e04e140ef1785e659c0c71857c5fefb380d085",
       "bytes": 8,
       "words": 2,
@@ -264,7 +292,7 @@
     {
       "id": "part-a/about-us",
       "path": "part-a/about-us.md",
-      "order": 19,
+      "order": 21,
       "hash": "sha256:c5f31ddc4879f26ee53c90770e87da7f5c6f72251ce2120e78e132af8f5f117f",
       "bytes": 2927,
       "words": 443,
@@ -278,7 +306,7 @@
     {
       "id": "part-a/enterprise-agile-coaching-book",
       "path": "part-a/enterprise-agile-coaching-book.md",
-      "order": 20,
+      "order": 22,
       "hash": "sha256:609f342cc6905e483496e40de1a2b7ea83ea73baba778569716ba6ed3dee88aa",
       "bytes": 5722,
       "words": 773,
@@ -292,7 +320,7 @@
     {
       "id": "part-a/testimonials",
       "path": "part-a/testimonials.md",
-      "order": 21,
+      "order": 23,
       "hash": "sha256:bded85eeb00d9c9c08f0aa2d04d1cc0b8de2bdd1b4c9c999c45563523aeaac3c",
       "bytes": 282,
       "words": 31,
@@ -306,10 +334,10 @@
     {
       "id": "part-b/executive-coaching",
       "path": "part-b/executive-coaching.md",
-      "order": 22,
-      "hash": "sha256:4707fa8447817c48cd1c59e4c72720aa6781c54f8f315c2eafdf9bafc82ce949",
-      "bytes": 52715,
-      "words": 6487,
+      "order": 24,
+      "hash": "sha256:1dec78c48b49bcd471caf29e48a67e99c0f7e16538d9b7a5f410552b53d5f0ae",
+      "bytes": 53810,
+      "words": 6731,
       "source": {
         "type": "cluster",
         "cluster_key": "executive-coaching",
@@ -323,33 +351,33 @@
     {
       "id": "part-b/adhd-executive",
       "path": "part-b/adhd-executive.md",
-      "order": 23,
-      "hash": "sha256:7f98e49f28eb562dc4e8a8deec58cd597c05af545ce639063ee23a458e6a27a0",
-      "bytes": 42866,
-      "words": 5646,
+      "order": 25,
+      "hash": "sha256:946a00c143c824809d76908fe9e5b64537e1e69d1225ec7b9ce2e88faafb90b7",
+      "bytes": 47441,
+      "words": 6257,
       "source": {
         "type": "cluster",
         "cluster_key": "adhd-executive",
         "cluster_label": "Blog: ADHD Executive Coaching",
         "hub_slug": "adhd-executive-function-leadership",
         "hub_url": "https://tandemcoach.co/adhd-executive-function-leadership/",
-        "post_count": 20,
-        "supporting_count": 19
+        "post_count": 22,
+        "supporting_count": 21
       }
     },
     {
       "id": "part-b/ai-career-navigator",
       "path": "part-b/ai-career-navigator.md",
-      "order": 24,
-      "hash": "sha256:6d264ced698a7212ba25ea5033e2b3c8db961d462b1fcfa236e7afd34202e385",
-      "bytes": 33222,
-      "words": 4657,
+      "order": 26,
+      "hash": "sha256:2fa8f5904c169fba92f13f5b7990952081096cf07a1642c69b114fe2e9c49a09",
+      "bytes": 37616,
+      "words": 5265,
       "source": {
         "type": "cluster",
         "cluster_key": "ai-career-navigator",
         "cluster_label": "Blog: AI & Executive Careers",
-        "hub_slug": "ai-executive-careers-reality-2026",
-        "hub_url": "https://tandemcoach.co/ai-executive-careers-reality-2026/",
+        "hub_slug": "four-executive-career-paths-ai",
+        "hub_url": "https://tandemcoach.co/four-executive-career-paths-ai/",
         "post_count": 24,
         "supporting_count": 23
       }
@@ -357,10 +385,10 @@
     {
       "id": "part-b/change-management",
       "path": "part-b/change-management.md",
-      "order": 25,
-      "hash": "sha256:fce713993bb6b3e258579f7389aafd833bce743a602d00da927a86f0d1fe4cf5",
-      "bytes": 44462,
-      "words": 6408,
+      "order": 27,
+      "hash": "sha256:9f86110f01cb626863eebbe60d0d299a0e78f022d350007dd16f7f64450cff4a",
+      "bytes": 46444,
+      "words": 6672,
       "source": {
         "type": "cluster",
         "cluster_key": "change-management",
@@ -374,16 +402,16 @@
     {
       "id": "part-b/coaching-supervision",
       "path": "part-b/coaching-supervision.md",
-      "order": 26,
-      "hash": "sha256:9ad20d1027ae986e8256838084308dc1a90b851e3233c9c5b485850db511dee3",
-      "bytes": 48260,
-      "words": 6313,
+      "order": 28,
+      "hash": "sha256:89776f20d121ed72f859adb152f2f563be97d9294176370b15499dcc212ec09c",
+      "bytes": 46501,
+      "words": 6303,
       "source": {
         "type": "cluster",
         "cluster_key": "coaching-supervision",
         "cluster_label": "Blog: Coaching Supervision",
-        "hub_slug": "coaching-supervision-reflective-practice",
-        "hub_url": "https://tandemcoach.co/coaching-supervision-reflective-practice/",
+        "hub_slug": "embodying-coaching-mindset-icf-team-coaching",
+        "hub_url": "https://tandemcoach.co/embodying-coaching-mindset-icf-team-coaching/",
         "post_count": 19,
         "supporting_count": 18
       }
@@ -391,10 +419,10 @@
     {
       "id": "part-b/executive-productivity",
       "path": "part-b/executive-productivity.md",
-      "order": 27,
-      "hash": "sha256:21d9f387e4c6bff5537970cbe6c93d92e586f17c834c334e6d2e2e3f9546f0d7",
-      "bytes": 31956,
-      "words": 4237,
+      "order": 29,
+      "hash": "sha256:1459cf128fb690b45a3af4908bfe7ee98da12ed1803fa04036c0b4ba561235d9",
+      "bytes": 33186,
+      "words": 4408,
       "source": {
         "type": "cluster",
         "cluster_key": "executive-productivity",
@@ -408,10 +436,10 @@
     {
       "id": "part-b/executive-presence",
       "path": "part-b/executive-presence.md",
-      "order": 28,
-      "hash": "sha256:bf24bce449e64fd322eb64b466d03df72698f42538362b7085f885352807e9c8",
-      "bytes": 22157,
-      "words": 3199,
+      "order": 30,
+      "hash": "sha256:7b84b0d3a5188a86e08e71075775affc7009e216fde41635859b973ca84f4d85",
+      "bytes": 22613,
+      "words": 3267,
       "source": {
         "type": "cluster",
         "cluster_key": "executive-presence",
@@ -425,10 +453,10 @@
     {
       "id": "part-b/leadership-skills",
       "path": "part-b/leadership-skills.md",
-      "order": 29,
-      "hash": "sha256:fb492a9b4162593653ff4086c6ed56130aa1ff82ff862a4832151ef2253aa475",
-      "bytes": 37325,
-      "words": 4513,
+      "order": 31,
+      "hash": "sha256:41054c0f67029292ee03c575bfd2589d72d07e1338349601153bd09b35fac986",
+      "bytes": 39527,
+      "words": 4816,
       "source": {
         "type": "cluster",
         "cluster_key": "leadership-skills",
@@ -442,10 +470,10 @@
     {
       "id": "part-b/team-leadership",
       "path": "part-b/team-leadership.md",
-      "order": 30,
-      "hash": "sha256:5d2503b7f358cea5463861808535565571f979d467a88678fd11bd345bdb1cc6",
-      "bytes": 59384,
-      "words": 8412,
+      "order": 32,
+      "hash": "sha256:dbd2f11b9a28d2095f2639657125cd3ae940a470f930906b6fbdbb782712ef55",
+      "bytes": 61956,
+      "words": 8714,
       "source": {
         "type": "cluster",
         "cluster_key": "team-leadership",
@@ -459,10 +487,10 @@
     {
       "id": "part-b/icf-certification",
       "path": "part-b/icf-certification.md",
-      "order": 31,
-      "hash": "sha256:b2d472bc436e378c271603d24704eb0a4f9f46f780c30870c8a52044bf535ee1",
-      "bytes": 53381,
-      "words": 6272,
+      "order": 33,
+      "hash": "sha256:aea824c32dc3cb8c3ebcedb73a14e2c26e2a2017a6d135c99ccbc4a09399a863",
+      "bytes": 53138,
+      "words": 6758,
       "source": {
         "type": "cluster",
         "cluster_key": "icf-certification",
@@ -476,10 +504,10 @@
     {
       "id": "part-b/coaching-skills",
       "path": "part-b/coaching-skills.md",
-      "order": 32,
-      "hash": "sha256:2425702a8426a1c57ec7dbd0fc17475f057a0448e6121abf714dfebb3d8f7dd1",
-      "bytes": 35103,
-      "words": 4975,
+      "order": 34,
+      "hash": "sha256:4fc96f751b266345c866318ce141220f8663799b35395c7217792178ebc4116f",
+      "bytes": 36555,
+      "words": 5139,
       "source": {
         "type": "cluster",
         "cluster_key": "coaching-skills",
@@ -493,10 +521,10 @@
     {
       "id": "part-b/career-transition",
       "path": "part-b/career-transition.md",
-      "order": 33,
-      "hash": "sha256:0e49d8f28375ab9fc4b8f412c8231696bfa8388e1de4c3734734429f54d15c1e",
-      "bytes": 21237,
-      "words": 2917,
+      "order": 35,
+      "hash": "sha256:77568cd96d58665dfc3e1ca893ce121e9ce27f1c6321eac937e991691f42772b",
+      "bytes": 22500,
+      "words": 3113,
       "source": {
         "type": "cluster",
         "cluster_key": "career-transition",
@@ -510,10 +538,10 @@
     {
       "id": "part-b/coach-development",
       "path": "part-b/coach-development.md",
-      "order": 34,
-      "hash": "sha256:0e980402adf3b97b2ea598c80f681f8a65092acac59513fbc53b5aedeff5b189",
-      "bytes": 26775,
-      "words": 3785,
+      "order": 36,
+      "hash": "sha256:ae765c929e7f39f15cfc1a9bdb11fe9e8e024a0f85957a07c5c4093569cc7c1e",
+      "bytes": 28074,
+      "words": 3968,
       "source": {
         "type": "cluster",
         "cluster_key": "coach-development",
@@ -527,10 +555,10 @@
     {
       "id": "part-b/coaching-business",
       "path": "part-b/coaching-business.md",
-      "order": 35,
-      "hash": "sha256:deadd8790858e9abffd40f2a55bc8dba59edb9051295fb80a13ebee552063729",
-      "bytes": 27793,
-      "words": 4603,
+      "order": 37,
+      "hash": "sha256:d70b2a56760a12d5bb0472a84757daecfb7012ab62272433286943f7d26e9505",
+      "bytes": 28907,
+      "words": 4778,
       "source": {
         "type": "cluster",
         "cluster_key": "coaching-business",
@@ -544,10 +572,10 @@
     {
       "id": "part-b/agile-transformation",
       "path": "part-b/agile-transformation.md",
-      "order": 36,
-      "hash": "sha256:8f1be05689fbbe7005a22b3cff00f1147c022b464a301c748612fc04fc183815",
-      "bytes": 13350,
-      "words": 1927,
+      "order": 38,
+      "hash": "sha256:edd3732851ebbf7ead22541342c6ba70997372d4e71f6ef8a634c0239c431b98",
+      "bytes": 13593,
+      "words": 1956,
       "source": {
         "type": "cluster",
         "cluster_key": "agile-transformation",
@@ -561,10 +589,10 @@
     {
       "id": "part-b/agile-leadership",
       "path": "part-b/agile-leadership.md",
-      "order": 37,
-      "hash": "sha256:b555c31fbb0813c1b37630ea1a3c303392a96af57d10e65c23ac3570e6577501",
-      "bytes": 72465,
-      "words": 12995,
+      "order": 39,
+      "hash": "sha256:d210ca69ec15c54421833142d0e4854ed87842f7332f38cd0a49f949ce65da57",
+      "bytes": 72354,
+      "words": 12975,
       "source": {
         "type": "cluster",
         "cluster_key": "agile-leadership",
@@ -578,10 +606,10 @@
     {
       "id": "part-b/scrum-practices",
       "path": "part-b/scrum-practices.md",
-      "order": 38,
-      "hash": "sha256:64bc51f43d8b0adccf62f89de54a5c649b3eb08e9ec64a25b3308959b0b0dcb1",
-      "bytes": 18395,
-      "words": 2954,
+      "order": 40,
+      "hash": "sha256:9653fb67e7ca9be2362b6cf839fd202bb55d4a31502cb35c421c40f54bd6f372",
+      "bytes": 18377,
+      "words": 2948,
       "source": {
         "type": "cluster",
         "cluster_key": "scrum-practices",
@@ -595,50 +623,50 @@
     {
       "id": "part-b/none",
       "path": "part-b/none.md",
-      "order": 39,
-      "hash": "sha256:aea01e0c923a4b5b1a881b982477a82c2599a735c343b785badab71ac2e6fd86",
-      "bytes": 32826,
-      "words": 4228,
+      "order": 41,
+      "hash": "sha256:8c8a97b453095f4149583d6e0cf6cf679acd73e24e6bbaa5af559c6d9b80ddbb",
+      "bytes": 41749,
+      "words": 6263,
       "source": {
         "type": "cluster",
         "cluster_key": "none",
         "cluster_label": "Blog: Additional Articles",
-        "hub_slug": "ceo-training-and-development",
-        "hub_url": null,
-        "post_count": 11,
-        "supporting_count": 10
+        "hub_slug": "coaching-search-data-study",
+        "hub_url": "https://tandemcoach.co/coaching-search-data-study/",
+        "post_count": 16,
+        "supporting_count": 15
       }
     },
     {
       "id": "part-c/_00_header",
       "path": "part-c/_00_header.md",
-      "order": 40,
-      "hash": "sha256:9a77ae9c5f590aae4b905816452f5c13c8f0d715211358eac968f9115fc12836",
+      "order": 42,
+      "hash": "sha256:114846d405e554a5452cf0647044555f52823ce7f97dbf704bd008c7eaad234f",
       "bytes": 361,
       "words": 47,
       "source": {
         "type": "tools_header",
-        "total_tools": 474
+        "total_tools": 482
       }
     },
     {
       "id": "part-c/assessment-discovery",
       "path": "part-c/assessment-discovery.md",
-      "order": 41,
-      "hash": "sha256:8f205fda3d5b00d209b565eec93a5d57b3642b773861a5cb1e0d27bcdf8c03e6",
-      "bytes": 60946,
-      "words": 8596,
+      "order": 43,
+      "hash": "sha256:42b46757e61c605185d364c3dd07b7263258f63cb1e6f7157a65acf5364b6553",
+      "bytes": 62095,
+      "words": 8754,
       "source": {
         "type": "tool_category",
         "category_key": "assessment-discovery",
         "category_label": "Assessment & Discovery",
-        "tool_count": 61
+        "tool_count": 63
       }
     },
     {
       "id": "part-c/goal-setting",
       "path": "part-c/goal-setting.md",
-      "order": 42,
+      "order": 44,
       "hash": "sha256:7fc2f1a800ff8621a081b3c265c0dcac4679e74e69816300c2c7ea470432c61d",
       "bytes": 47864,
       "words": 7113,
@@ -652,7 +680,7 @@
     {
       "id": "part-c/mindset-growth",
       "path": "part-c/mindset-growth.md",
-      "order": 43,
+      "order": 45,
       "hash": "sha256:cdeb6a7327dcfabc909618b820fcec1a6a43c92151a68f1c4c2d48273f496d80",
       "bytes": 64241,
       "words": 8967,
@@ -666,7 +694,7 @@
     {
       "id": "part-c/communication-relationships",
       "path": "part-c/communication-relationships.md",
-      "order": 44,
+      "order": 46,
       "hash": "sha256:b3a98dd18a248cadf1abd9022c1669a201051d0f64662445ce7eca2ea407faee",
       "bytes": 24858,
       "words": 3459,
@@ -680,49 +708,49 @@
     {
       "id": "part-c/career-professional",
       "path": "part-c/career-professional.md",
-      "order": 45,
-      "hash": "sha256:5c9e0772d543559c52cc41748e5078529702ce3efd7bbaf41831d910fbf25b4b",
-      "bytes": 22951,
-      "words": 3377,
+      "order": 47,
+      "hash": "sha256:0bce057f5bc41c781d6328c17d4cc65338b3757aae7258ee60ca9373da315d3d",
+      "bytes": 25347,
+      "words": 3691,
       "source": {
         "type": "tool_category",
         "category_key": "career-professional",
         "category_label": "Career & Professional",
-        "tool_count": 21
+        "tool_count": 25
       }
     },
     {
       "id": "part-c/planning-organization",
       "path": "part-c/planning-organization.md",
-      "order": 46,
-      "hash": "sha256:4e798fe0b574e6910586f0a5fd2c78cb50f8dfb2ec48218e6de2c7f4e74b8e0d",
-      "bytes": 58920,
-      "words": 8549,
+      "order": 48,
+      "hash": "sha256:946ed1c5742f82385ca0846abb303f6e28687c8d0da59c2ea01ae46b249d6a91",
+      "bytes": 59485,
+      "words": 8624,
       "source": {
         "type": "tool_category",
         "category_key": "planning-organization",
         "category_label": "Planning & Organization",
-        "tool_count": 57
+        "tool_count": 58
       }
     },
     {
       "id": "part-c/reflection-journaling",
       "path": "part-c/reflection-journaling.md",
-      "order": 47,
-      "hash": "sha256:a1a17d80ed880487475406d1e27004469b0eae6c4b0200a92ee947433914d6e5",
-      "bytes": 51008,
-      "words": 7234,
+      "order": 49,
+      "hash": "sha256:cd7cdad64c265f53f64b6ca7e025509f8248378a3a17dcc36fefb708c2cbca30",
+      "bytes": 51544,
+      "words": 7302,
       "source": {
         "type": "tool_category",
         "category_key": "reflection-journaling",
         "category_label": "Reflection & Journaling",
-        "tool_count": 53
+        "tool_count": 54
       }
     },
     {
       "id": "part-c/coach-facing",
       "path": "part-c/coach-facing.md",
-      "order": 48,
+      "order": 50,
       "hash": "sha256:4758e41531ac9494ad60984960e075d811f2717e4b748fa93ca5dc6f0049af0d",
       "bytes": 42806,
       "words": 6056,
@@ -736,7 +764,7 @@
     {
       "id": "part-c/adhd",
       "path": "part-c/adhd.md",
-      "order": 49,
+      "order": 51,
       "hash": "sha256:4b49a068d7e7365d58e525aceb71aa87fa8d0664e4c1904984bc4e56ee983966",
       "bytes": 101596,
       "words": 14233,
@@ -750,7 +778,7 @@
     {
       "id": "part-c/therapy-adjacent",
       "path": "part-c/therapy-adjacent.md",
-      "order": 50,
+      "order": 52,
       "hash": "sha256:25fe1f0f500cf506d25138288a4d9a0be822de7815ffec41247f3d81ade5492e",
       "bytes": 9896,
       "words": 1384,

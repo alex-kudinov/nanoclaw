@@ -318,24 +318,22 @@ describe('SlackChannel', () => {
       );
     });
 
-    it('detects bot messages by matching bot user ID', async () => {
+    it("skips the bot's own echoed messages — storeOutbound already persisted them", async () => {
       const opts = createTestOpts();
       const channel = new SlackChannel(opts);
       await channel.connect();
 
+      // Slack echoes our own outbound back as a message event. storeOutbound
+      // already wrote that row (with from_group) synchronously at send time;
+      // re-delivering here is redundant and, after a restart, would overwrite
+      // the row's from_group with null and break handoff routing.
       const event = createMessageEvent({
         user: 'U_BOT_123',
         text: 'Self message',
       });
       await triggerMessageEvent(event);
 
-      expect(opts.onMessage).toHaveBeenCalledWith(
-        'slack:C0123456789',
-        expect.objectContaining({
-          is_from_me: true,
-          is_bot_message: true,
-        }),
-      );
+      expect(opts.onMessage).not.toHaveBeenCalled();
     });
 
     it('identifies IM channel type as non-group', async () => {

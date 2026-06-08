@@ -10,18 +10,20 @@ Inbound Gmail messages flow through a **bidirectional classification pipeline**:
 
 ## Database Discovery
 
-Three databases. Read the schema reference BEFORE writing any query — always look up column names from the schema file.
+Two databases. Read the schema reference BEFORE writing any query — always look up column names from the schema file. Never guess which database a table lives in.
 
-| Database | Type | Schema Reference | Query Examples | Discovery |
-|----------|------|-----------------|----------------|-----------|
-| `store/messages.db` | SQLite | `agent_docs/messages-db-schema.md` | `agent_docs/messages-db-queries.md` | `mcp__toolbox__run_tool db/db-schema --db store/messages.db` |
-| `data/business/business.db` | SQLite | `agent_docs/business-db-schema.md` | — | `mcp__toolbox__run_tool db/db-schema --db data/business/business.db` |
-| `nanoclaw_business` | Postgres | `agent_docs/nanoclaw-business-pg-schema.md` | `agent_docs/business-pg-queries.md` | `psql nanoclaw_business -c '\dt+'` |
+| Database | Type | Schema Reference | Owns (examples) |
+|----------|------|-----------------|-----------------|
+| `store/messages.db` | SQLite | `agent_docs/messages-db-schema.md` | `messages`, `chats`, `registered_groups`, `router_state`, `jobs`, `scheduled_tasks`, `sessions` |
+| `nanoclaw_business` | Postgres | `agent_docs/nanoclaw-business-pg-schema.md` | `email_classifications`, `taxonomy`, `booking_events`, all business CRM tables, all `business_v2.*` views/functions |
 
 **Rules:**
-- Read the relevant schema file before writing any query
-- If a schema file is missing or stale: regenerate with `db/db-schema --db <path> --refresh` (SQLite) or `pg_dump --schema-only` (Postgres)
-- Agents in containers: schema files are at `/workspace/extra/agent_docs/`
+- Read the relevant schema file before writing any query. If a table is not in `messages-db-schema.md`, it is in Postgres — check `nanoclaw-business-pg-schema.md`.
+- `data/business/*.sql` (`classification-schema.sql`, `schema-pg.sql`, `migrations/`) are **Postgres DDL** applied to `nanoclaw_business` — despite their location, they do NOT define any SQLite schema. The SQLite file `data/business/business.db` is dead (empty legacy tables) — do not query it.
+- SQLite access: `mcp__toolbox__run_tool db/db-schema --db store/messages.db`.
+- Postgres access from the host: `/opt/homebrew/opt/postgresql@16/bin/psql nanoclaw_business` — the `psql` binary is not on the default non-interactive SSH PATH, always use the full path.
+- If a schema file is stale: regenerate with `tools/refresh-schemas.sh`.
+- Agents in containers: schema files are at `/workspace/extra/agent_docs/`.
 
 
 ## Key Files
@@ -44,6 +46,9 @@ Three databases. Read the schema reference BEFORE writing any query — always l
 | `src/hive-sync-reaper.ts` | 15-min cron retry worker for failed Hive writes |
 | `src/gmail-label-poll.ts` | 5-min cron to detect Gmail-UI label drags → classify_correction_detected |
 | `src/digest-generator.ts` + `src/digest-delivery.ts` | Daily per-recipient email digest |
+| `src/contador-name-reaper.ts` | 30-min cron: repairs "Unknown" student names (Heartbeat sets Stripe `customer.name` after the payment webhook fires) via `backfill-names.cjs` |
+| `tools/contador/process-payment.cjs` | Deterministic Stripe→Sheets(roster+payment log)→Postgres payment pipeline; `fetchCustomerWithName()` retries the customer-name race |
+| `tools/contador/backfill-names.cjs` | Idempotent name reconciler (3 phases): `payments` table (A), Student Roster (B), Payment Log/transaction sheet (C). Re-resolves Stripe `customer.name` for Unknown rows; `--apply`, dry-run default |
 | `data/business/classification-schema.sql` | Taxonomy + email_classifications DDL + 25-label seed |
 | `setup/gmail/CUTOVER-info-forwarding.md` | Operational runbook for retiring info@ forwarding |
 | `scripts/apply-gmail-filter.ts` | Export/apply/dry-run Gmail filter + auto-forwarding rollback |
@@ -105,8 +110,9 @@ External callers (tandemweb scripts, PHP recommender) use the HTTP bridge instea
 - Bridge service: `toolbox/shared/claude/bridge/server.js` on Mac Mini (port 40960)
 - Listens on Tailscale IP (100.115.115.206), auth via `X-Bridge-Key`
 - `POST /v1/print` wraps `claude --print` with safe-execution allowlist
-- `GET /health` for monitoring
+- `GET /health` returns `rotation` block (`active_account`, `available_accounts`, `accounts_in_cooldown`)
 - Managed via launchd: `com.claude-proxy.print-bridge`
+- **Token rotation (since 2026-05-01):** bridge reads `~/.shared/.claude-active-token` and `~/.shared/.claude-tokens.json` (3 accounts: alex/info/cnpc) per spawn. On Sonnet usage-limit, auto-falls-back to the next available account; cooldowns the exhausted one until reset. Manual swap via shell function `cctoken [alex|info|cnpc]` from `~/.shared/.shared_shell.sh` — takes effect on next request, no restart needed. Mac Studio's bridge plist is **disabled**; only Mac Mini and the VPS run a Print Bridge. VPS bridge has the pre-rotation code (not yet patched).
 
 ### Related Projects
 

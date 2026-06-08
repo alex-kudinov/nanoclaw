@@ -73,7 +73,7 @@ What’s Included
 
 Everything you need to know about each mentor coaching package
 
-**Q: ACC Renewal Mentoring — $1,499**
+**Q: ACC Renewal Mentoring - $1,499**
 
 ##### What You Get
 
@@ -93,7 +93,7 @@ This package exceeds ICF ACC renewal requirements: 11 hours total (8 group + 3 i
 - Coaches who want to refresh their skills while meeting requirements
 - Those who want both group learning and personalized attention
 
-**Q: PCC Credential Mentoring — $1,799**
+**Q: PCC Credential Mentoring - $1,799**
 
 ##### What You Get
 
@@ -113,9 +113,9 @@ This package exceeds ICF requirements for initial PCC credentialing: minimum 10 
 - Those who completed training elsewhere and need standalone mentoring
 - Coaches who want both group learning and personalized attention
 
-*Note: Tandem’s [Professional Coach Program](/icf/acc-pcc-certification/) and [Systems Coach Program](/icf/pcc-professional-coach-certification/) include mentor coaching — no separate purchase needed.*
+*Note: Tandem’s [Professional Coach Program](/icf/acc-pcc-certification/) and [Systems Coach Program](/icf/pcc-professional-coach-certification/) include mentor coaching - no separate purchase needed.*
 
-**Q: MCC Credential Mentoring — $3,999**
+**Q: MCC Credential Mentoring - $3,999**
 
 ##### What You Get
 
@@ -127,7 +127,7 @@ This package exceeds ICF requirements for initial PCC credentialing: minimum 10 
 
 ##### ICF Compliance
 
-This package exceeds ICF requirements. While ICF only requires 3 hours minimum individual, we provide all 10 hours as individual mentoring—the premium path for coaches pursuing the highest credential.
+This package exceeds ICF requirements. While ICF only requires 3 hours minimum individual, we provide all 10 hours as individual mentoring - the premium path for coaches pursuing the highest credential.
 
 ##### Who This Is For
 
@@ -161,22 +161,22 @@ Join live Zoom sessions via links in the community. For individual sessions, boo
 
 #### Get Certified
 
-Submit your completion and receive your certificate—ready to include with your ICF credential application.
+Submit your completion and receive your certificate - ready to include with your ICF credential application.
 
 **Group Sessions**
-Run on a set schedule—check the community calendar after enrollment
+Run on a set schedule - check the community calendar after enrollment
 
 **Individual Sessions**
 Scheduled directly with your MCC mentor based on mutual availability
 
 **All Sessions via Zoom**
-Live video calls—no travel required, participate from anywhere
+Live video calls - no travel required, participate from anywhere
 
 Your Mentors
 
 ### Learn from Master Certified Coaches
 
-All mentor coaching is delivered by our MCC-credentialed faculty—the highest level of ICF certification
+All mentor coaching is delivered by our MCC-credentialed faculty - the highest level of ICF certification
 
 #### Cherie Silas, MCC
 
@@ -200,13 +200,13 @@ Alex combines MCC-level coaching mastery with extensive experience in organizati
 
 ##### Why MCC Mentors Matter
 
-MCC (Master Certified Coach) is ICF’s highest credential, requiring 2,500+ coaching hours and rigorous evaluation. Both Cherie and Alex also serve as ICF credential assessors—they know exactly what it takes to demonstrate coaching competence at every level.
+MCC (Master Certified Coach) is ICF’s highest credential, requiring 2,500+ coaching hours and rigorous evaluation. Both Cherie and Alex also serve as ICF credential assessors - they know exactly what it takes to demonstrate coaching competence at every level.
 
 ICF Standards
 
 ### ICF Mentor Coaching Requirements
 
-Understand exactly what ICF requires—and how our packages meet those standards
+Understand exactly what ICF requires - and how our packages meet those standards
 
 #### Earning Your First Credential
 
@@ -388,7 +388,7 @@ If you have a unique situation with partial hours from another provider, [contac
 
 **Individual sessions:** Scheduled directly with your MCC mentor (Cherie or Alex) using the booking calendar in the community. You choose times that work for both of you.
 
-All sessions are live via Zoom—no travel required.
+All sessions are live via Zoom - no travel required.
 
 **Q: Will I receive documentation for my ICF application?**
 
@@ -405,8 +405,8 @@ This is exactly what ICF requires for your credential application or renewal sub
 
 All mentor coaching is provided by our MCC-credentialed faculty:
 
-- **Cherie Silas, MCC** — Master Certified Coach, ICF Credential Assessor, 20+ years coaching experience
-- **Alex Kudinov, MCC** — Master Certified Coach, ICF Credential Assessor, enterprise coaching leader
+- **Cherie Silas, MCC** - Master Certified Coach, ICF Credential Assessor, 20+ years coaching experience
+- **Alex Kudinov, MCC** - Master Certified Coach, ICF Credential Assessor, enterprise coaching leader
 
 MCC is ICF’s highest credential. Both Cherie and Alex also serve as ICF credential assessors, so they know exactly what evaluators look for.
 
@@ -420,7 +420,7 @@ These standalone packages are designed for coaches who:
 - Are renewing their ACC credential
 - Are pursuing MCC and need premium 1-on-1 mentoring
 
-If you’re a current Tandem program student, check with us before purchasing—you may already have what you need.
+If you’re a current Tandem program student, check with us before purchasing - you may already have what you need.
 
 **Q: How long does the mentor coaching take to complete?**
 
@@ -434,16 +434,16 @@ Our group session schedules are designed to meet this timeline. For individual s
 
 Choose the package that matches your credential path and enroll today.
 
-[ACC Renewal — $1,499](https://buy.stripe.com/bJe8wR2QR1Ld3tv4ew1kA06)
-[Earn PCC — $1,799](https://book.stripe.com/8x2cN7gHH4Xp1lnaCU1kA03)
-[Earn MCC — $3,999](https://buy.stripe.com/eVq00l777gG70hjcL21kA07)
+[ACC Renewal - $1,499](https://buy.stripe.com/bJe8wR2QR1Ld3tv4ew1kA06)
+[Earn PCC - $1,799](https://book.stripe.com/8x2cN7gHH4Xp1lnaCU1kA03)
+[Earn MCC - $3,999](https://buy.stripe.com/eVq00l777gG70hjcL21kA07)
 
 Questions? [Contact us](/contact-us/) and we’ll help you find the right package.
 
 #### What were you hoping to find?
 
-Quick question before you go — helps us improve this page.
+Quick question before you go - helps us improve this page.
 
-Thanks — that helps.
+Thanks - that helps.
 
 ---

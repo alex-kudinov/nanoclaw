@@ -3,6 +3,10 @@
 ## Executive Presence Examples: What Coaches See in Practice
 URL: https://tandemcoach.co/executive-presence-examples/
 
+### What does executive presence look like in practice?
+
+Executive presence shows up as behavior matched to what the moment requires. A board presenter pauses before answering a skeptical question — the pause signals authority. A crisis leader slows down, summarizes others before speaking, asks one reframing question. A cross-functional influencer maps each stakeholder's real priorities. The behavior fits the context precisely.
+
 You have read the definitions. You know that executive presence involves confidence, communication, and composure. Now you want to know what it actually looks like in a meeting room, in a board presentation, in a crisis—and what it looks like when it is missing.
 
 The challenge with most executive presence examples is that they describe traits, not behaviors. “Projects confidence” or “commands respect” tells you what the endpoint should look like without showing you the path from here to there. The examples in this article work differently. They are drawn from coaching practice, organized around the specific types of presence gaps that [assessment data reveals](/what-is-executive-presence/), and designed to help you recognize your own situation rather than an idealized version of someone else’s.
@@ -159,10 +163,10 @@ The most reliable indicator is 360-degree stakeholder feedback analyzed for patt
 
 ### Related Articles
 
-- [12 Executive Presence Exercises by Gap Type](https://tandemcoach.co/executive-presence-exercises/): Most executive presence advice stops at *tips*.
-- [Executive Presence Assessment: How to Measure the Gap](https://tandemcoach.co/executive-presence-assessment/): Most executive presence development starts without a measurement.
-- [Executive Presence Training: A Buyer’s Guide for HR Leaders](https://tandemcoach.co/executive-presence-training/): A senior leader in your organization has received feedback about executive presence.
-- [Executive Presence in Virtual Meetings: Where the Gaps Get Harder](https://tandemcoach.co/executive-presence-virtual-meetings/): Most advice about [executive presence](/what-is-executive-presence/) in virtual settings targets the surface layer: improve your lighting, position the camera at eye level, mute yourself when others are talking.
-- [Sylvia Hewlett’s Executive Presence Model: What It Gets Right, Where It Falls Short](https://tandemcoach.co/sylvia-hewlett-executive-presence/): Sylvia Ann Hewlett’s research produced the most widely cited framework for executive presence in the corporate world.
+- [12 Executive Presence Exercises by Gap Type](https://tandemcoach.co/executive-presence-exercises/): Match your exercise to your feedback signal.
+- [Executive Presence Assessment: How to Measure the Gap](https://tandemcoach.co/executive-presence-assessment/): Run a 360-degree feedback instrument with presence-specific dimensions, disaggregated by rater group.
+- [Executive Presence Training: A Buyer’s Guide for HR Leaders](https://tandemcoach.co/executive-presence-training/): Diagnose the gap type first.
+- [Executive Presence in Virtual Meetings: Where the Gaps Get Harder](https://tandemcoach.co/executive-presence-virtual-meetings/): Virtual settings strip the ambient signal layer physical rooms carry — how a leader moves, positions themselves, responds nonverbally before speaking.
+- [Sylvia Hewlett’s Executive Presence Model: What It Gets Right, Where It Falls Short](https://tandemcoach.co/sylvia-hewlett-executive-presence/): Hewlett's model gave the field a shared vocabulary — gravitas (67%), communication (28%), appearance (5%) — backed by data from 4,000 professionals, creating a business case for presence development where none existed.
 
 ---

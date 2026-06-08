@@ -49,9 +49,11 @@ SELECT * FROM public.procurement_opportunities WHERE ...;
 
 All commands referencing `procurement_opportunities` must use the `public.` prefix (or omit it — `public` is the default search_path, but explicit is clearer). Never move procurement opportunity data into `business_v2`. See `SCHEMA.md` for database references.
 
-## First Response
+## Output Discipline
 
-FIRST action on every invocation: send acknowledgment via `mcp__nanoclaw__send_message` ("Scanning...", "Processing command...", etc.) BEFORE any browser or DB work.
+Do not narrate, acknowledge, or summarize. Emit only the structured output token or nothing. The host posts a mechanical processing message on your behalf — a pre-work acknowledgment from you is redundant token cost.
+
+**Ignore host-generated mechanical lines.** A message whose entire content is a `→ Routed to …`, `[PROCESSING] …`, or `[EMAIL SENT] …` line is host noise — no action, no response.
 
 ## Email RFP Intake
 
@@ -59,27 +61,25 @@ When you receive `[HANDOFF: mailman→procurement]` with `[SOURCE: email]`:
 
 This is an RFP, RFQ, or bid opportunity forwarded from an inbound email. Process it like a portal-discovered opportunity but with source `email`:
 
-1. **Acknowledge** — post to this channel: "Evaluating emailed RFP — {subject}"
+1. **Read KNOWLEDGE.md** — `/workspace/extra/knowledge/KNOWLEDGE.md` for relevance criteria.
 
-2. **Read KNOWLEDGE.md** — `/workspace/extra/knowledge/KNOWLEDGE.md` for relevance criteria.
-
-3. **Check for duplicates** — the same opportunity may already exist from a portal scan:
+2. **Check for duplicates** — the same opportunity may already exist from a portal scan:
    ```bash
-   psql -t -A -c "SELECT id, bonfire_id, title, source, status FROM procurement_opportunities WHERE title ILIKE '%{key_phrase}%' OR organization ILIKE '%{org_name}%' LIMIT 5"
+   psql -t -A -c "SELECT id, bonfire_id, title, source, status FROM procurement_opportunities WHERE title ILIKE '%{key_phrase}%' OR agency ILIKE '%{org_name}%' LIMIT 5"
    ```
 
-4. **Store in DB** (if no duplicate):
+3. **Store in DB** (if no duplicate). Email opportunities have no portal ID, so synthesize a `bonfire_id` of the form `email-{epoch_seconds}`. `raw_snapshot` is `jsonb` — wrap the email body with `jsonb_build_object`. `first_seen_at` defaults to `now()`, so do not set it:
    ```bash
-   psql -c "INSERT INTO procurement_opportunities (title, organization, source, source_url, deadline, status, raw_description, created_at) VALUES ('{title}', '{organization}', 'email', '{sender_email}', {deadline_or_null}, 'new', $${email_body}$$, NOW()) RETURNING id, title;"
+   psql -c "INSERT INTO procurement_opportunities (bonfire_id, title, agency, source, bonfire_url, close_date, status, raw_snapshot) VALUES ('email-' || extract(epoch FROM now())::bigint, '{title}', '{organization}', 'email', '{sender_email}', {close_date_or_null}, 'new', jsonb_build_object('body', $${email_body}$$, 'sender', '{sender_email}')) RETURNING id, title;"
    ```
 
-5. **Evaluate relevance** — apply the same criteria as portal scans. Does this match coaching, leadership development, organizational development, or related services that Tandem provides?
+4. **Evaluate relevance** — apply the same criteria as portal scans. Does this match coaching, leadership development, organizational development, or related services that Tandem provides?
 
-6. **Post result** to this channel:
+5. **Post result** to this channel:
    - If relevant: standard new-opportunity format with recommendation (process, drop, or needs-info)
    - If not relevant: `[DROPPED] {title} — {reason}. Source: email from {sender}`
 
-7. **If the email requests a registration or pre-proposal conference**, note the deadline and action needed. Post to chief if human action is required (e.g., registering for a conference portal).
+6. **If the email requests a registration or pre-proposal conference**, note the deadline and action needed. Post to chief if human action is required (e.g., registering for a conference portal).
 
 ## Commands
 

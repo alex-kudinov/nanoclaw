@@ -26,6 +26,7 @@ import { getGmailClient } from '../gmail-auth.js';
 import {
   handleClassifyLabelWrite,
   isAutoArchiveLabel,
+  markClassificationRouted,
 } from '../classify-ipc-handlers.js';
 import {
   extractSenderEmail,
@@ -61,6 +62,18 @@ import { registerChannel, RegisterGroupFn } from './registry.js';
 
 const STATE_KEY_LAST_CHECK = 'gmail_last_check';
 const GMAIL_GROUP_FOLDER = 'mailman';
+
+/**
+ * True when a message is our own outbound and must be skipped: it carries
+ * SENT or DRAFT but is NOT in the inbox. Self-addressed inbound — e.g.
+ * website contact-form mail sent from a send-as alias to the monitored
+ * mailbox — carries both SENT and INBOX, and is legitimate inbound that
+ * must still be classified.
+ */
+export function isOwnOutbound(labelIds: string[]): boolean {
+  const isSentOrDraft = labelIds.includes('SENT') || labelIds.includes('DRAFT');
+  return isSentOrDraft && !labelIds.includes('INBOX');
+}
 
 export class GmailChannel implements Channel {
   name = 'gmail';
@@ -388,9 +401,11 @@ export class GmailChannel implements Channel {
     const msg = res.data;
     if (!msg.payload || !msg.id) return false;
 
-    // Skip SENT and DRAFT messages
+    // Skip our own outbound (SENT/DRAFT not in inbox). Self-addressed
+    // inbound (contact-form mail from a send-as alias) keeps INBOX and is
+    // processed normally.
     const labels = msg.labelIds || [];
-    if (labels.includes('SENT') || labels.includes('DRAFT')) {
+    if (isOwnOutbound(labels)) {
       this.processedIds.add(msg.id);
       return false;
     }
@@ -521,6 +536,7 @@ export class GmailChannel implements Channel {
             messageId: msg.id,
           });
           if (routeResult.routed) {
+            await markClassificationRouted(msg.id, 'rules-runner-v1');
             this.processedIds.add(msg.id);
             return true;
           }

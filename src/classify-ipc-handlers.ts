@@ -138,6 +138,40 @@ async function maybeCreateAutoRule(
   }
 }
 
+// ---------- Routed-audit helper ----------
+
+/**
+ * Mark an email_classifications row as routed.
+ *
+ * Called by:
+ *   - handleClassifyLabelWrite after the LLM path runs routeAfterClassify
+ *   - gmail.ts after the rules-runner path's direct routeClassifiedEmail succeeds
+ *
+ * Without this, daily follow-up checks treat the reply as "never routed" even
+ * though the host-router successfully delivered the [HANDOFF: mailman→sales]
+ * IPC — producing false-positive "unprocessed reply" alerts.
+ */
+export async function markClassificationRouted(
+  gmailMessageId: string,
+  classifierVersion: string,
+): Promise<void> {
+  try {
+    await query(
+      'UPDATE email_classifications SET routed_at = NOW() WHERE gmail_message_id = $1 AND classifier_version = $2',
+      [gmailMessageId, classifierVersion],
+    );
+  } catch (err) {
+    logger.warn(
+      {
+        gmail_message_id: gmailMessageId,
+        classifier_version: classifierVersion,
+        err,
+      },
+      'classify-ipc: failed to set routed_at',
+    );
+  }
+}
+
 // ---------- Post-classify routing ----------
 
 /**
@@ -303,17 +337,10 @@ export async function handleClassifyLabelWrite(
 
     if (!alreadyRouted) {
       await routeAfterClassify(data);
-      try {
-        await query(
-          'UPDATE email_classifications SET routed_at = NOW() WHERE gmail_message_id = $1 AND classifier_version = $2',
-          [data.gmail_message_id, data.classifier_version],
-        );
-      } catch (err) {
-        logger.warn(
-          { gmail_message_id: data.gmail_message_id, err },
-          'classify-ipc: failed to set routed_at',
-        );
-      }
+      await markClassificationRouted(
+        data.gmail_message_id,
+        data.classifier_version,
+      );
     }
   }
 

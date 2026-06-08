@@ -1,0 +1,70 @@
+[
+  {
+    "id": "chaos-relay",
+    "name": "Chaos Verified Visitor → NanoClaw",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "chaos",
+          "responseMode": "responseNode",
+          "authentication": "none",
+          "options": {}
+        },
+        "id": "chaos-webhook",
+        "name": "Chaos Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [240, 300],
+        "webhookId": "chaos"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://100.115.115.206:8088/hook/chaos",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              { "name": "X-Webhook-Secret", "value": "ed43647461a200485b69ec48c2e00b243941a859ac678307" },
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "X-Delivery-Path", "value": "n8n" }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json.body) }}",
+          "options": { "timeout": 10000 }
+        },
+        "id": "post-to-nanoclaw",
+        "name": "POST to NanoClaw",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [480, 300],
+        "continueOnFail": false,
+        "onError": "stopWorkflow"
+      },
+      {
+        "parameters": { "options": {} },
+        "id": "respond-to-chaos",
+        "name": "Respond to Chaos",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [720, 300]
+      }
+    ],
+    "connections": {
+      "Chaos Webhook": {
+        "main": [[{ "node": "POST to NanoClaw", "type": "main", "index": 0 }]]
+      },
+      "POST to NanoClaw": {
+        "main": [[{ "node": "Respond to Chaos", "type": "main", "index": 0 }]]
+      }
+    },
+    "settings": { "executionOrder": "v1" },
+    "staticData": null,
+    "meta": null,
+    "pinData": null
+  }
+]

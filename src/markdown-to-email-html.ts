@@ -19,7 +19,15 @@ function convertMarkdownLinks(text: string): string {
 }
 
 function convertBold(text: string): string {
-  return text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Agents draft in Slack markup, where *bold* (single asterisk) means bold —
+  // and Gmail's own plain-text renderer treated it the same. Since plain-text
+  // bodies now route through this HTML converter (commit 63e294d), a single
+  // asterisk pair left untouched renders as a literal "*" in the email. Handle
+  // both forms: **bold** first, then the remaining *bold* pairs. The content
+  // class excludes newlines so emphasis never spans a line break.
+  return text
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>');
 }
 
 function urlAnchorText(url: string): string {
@@ -56,19 +64,28 @@ function sanitizeText(text: string): string {
 function groupListItems(lines: string[]): string[] {
   const result: string[] = [];
   let listBuffer: string[] = [];
+  let listType: 'ul' | 'ol' | null = null;
 
   const flushList = () => {
-    if (listBuffer.length > 0) {
+    if (listBuffer.length > 0 && listType) {
+      const tag = listType;
       result.push(
-        `<ul>${listBuffer.map((item) => `<li>${item}</li>`).join('')}</ul>`,
+        `<${tag}>${listBuffer.map((item) => `<li>${item}</li>`).join('')}</${tag}>`,
       );
       listBuffer = [];
+      listType = null;
     }
   };
 
   for (const line of lines) {
     if (/^[-•] /.test(line)) {
+      if (listType !== 'ul') flushList();
+      listType = 'ul';
       listBuffer.push(line.replace(/^[-•] /, ''));
+    } else if (/^\d+\.\s+/.test(line)) {
+      if (listType !== 'ol') flushList();
+      listType = 'ol';
+      listBuffer.push(line.replace(/^\d+\.\s+/, ''));
     } else {
       flushList();
       result.push(line);
@@ -90,7 +107,9 @@ function processParagraph(block: string): string {
   // is a signature/address block where each newline IS intentional — keep as
   // <br>. Otherwise, single newlines are soft wraps from word-wrapping; fold
   // into a single space (CommonMark behavior). Use \n\n for new paragraphs.
-  const textLines = processed.filter((c) => !c.startsWith('<ul>'));
+  const textLines = processed.filter(
+    (c) => !c.startsWith('<ul>') && !c.startsWith('<ol>'),
+  );
   const isSigBlock =
     textLines.length > 0 &&
     textLines.every((l) => l.length <= SIG_LINE_LENGTH_THRESHOLD);
@@ -105,7 +124,7 @@ function processParagraph(block: string): string {
     }
   };
   for (const chunk of processed) {
-    if (chunk.startsWith('<ul>')) {
+    if (chunk.startsWith('<ul>') || chunk.startsWith('<ol>')) {
       flushText();
       parts.push(chunk);
     } else {

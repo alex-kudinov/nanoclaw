@@ -210,3 +210,72 @@ packed 8 pieces into 1 chunk(s) (base=47717B, budget=900000B)
 OK: wrote /Users/xbohdpukc/dev/NanoClaw/knowledge/shared/KNOWLEDGE.md (38095 chars) and /Users/xbohdpukc/dev/NanoClaw/knowledge/shared/.pieces-state.json
 [2026-04-25 07:13:31] KNOWLEDGE.md regenerated (38492 bytes, manifest-hash=2a7f63bd5b624780...)
 [2026-04-25 07:13:31] Regeneration complete
+[2026-05-10 12:26:28] Copied llms-full.txt from tandemweb
+[2026-05-10 12:26:28] Copied 54 pieces from tandemweb/llms-pieces
+[2026-05-10 12:26:28] Delta regeneration: manifest=/Users/xbohdpukc/dev/NanoClaw/knowledge/shared/llms-pieces/manifest.json lessons=0
+0
+delta: +4 added / ~8 changed / -0 removed / =42 unchanged
+packed 12 pieces into 1 chunk(s) (base=62600B, budget=900000B)
+  chunk 1/1: 12 pieces, 429611 bytes
+DRY RUN — no bridge calls, no writes
+[2026-05-10 12:26:28] DRY RUN complete. No files changed.
+[2026-05-10 12:26:37] Copied llms-full.txt from tandemweb
+[2026-05-10 12:26:37] Copied 54 pieces from tandemweb/llms-pieces
+[2026-05-10 12:26:37] Delta regeneration: manifest=/Users/xbohdpukc/dev/NanoClaw/knowledge/shared/llms-pieces/manifest.json lessons=0
+0
+delta: +4 added / ~8 changed / -0 removed / =42 unchanged
+packed 12 pieces into 1 chunk(s) (base=62600B, budget=900000B)
+  chunk 1/1: 12 pieces, 429611 bytes
+  calling bridge chunk 1/1 (prompt=489699B, pieces=12)...
+Traceback (most recent call last):
+  File "/Users/xbohdpukc/dev/NanoClaw/tools/regen-kb-delta.py", line 356, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/xbohdpukc/dev/NanoClaw/tools/regen-kb-delta.py", line 331, in main
+    result = call_bridge(
+        prompt, args.bridge_url, args.bridge_key, args.model,
+    )
+  File "/Users/xbohdpukc/dev/NanoClaw/tools/regen-kb-delta.py", line 223, in call_bridge
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 487, in open
+    response = self._open(req, data)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 464, in _call_chain
+    result = func(*args)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 1350, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 1325, in do_open
+    r = h.getresponse()
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/http/client.py", line 1450, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/http/client.py", line 297, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/socket.py", line 725, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+TimeoutError: timed out
+[2026-05-10 12:35:37] ERROR: regen-kb-delta.py exited 1
+[2026-05-10 12:36:20] Copied llms-full.txt from tandemweb
+[2026-05-10 12:36:20] Copied 54 pieces from tandemweb/llms-pieces
+[2026-05-10 12:36:20] Delta regeneration: manifest=/Users/xbohdpukc/dev/NanoClaw/knowledge/shared/llms-pieces/manifest.json lessons=0
+0
+delta: +4 added / ~8 changed / -0 removed / =42 unchanged
+packed 12 pieces into 1 chunk(s) (base=62600B, budget=900000B)
+  chunk 1/1: 12 pieces, 429611 bytes
+  calling bridge chunk 1/1 (prompt=489699B, pieces=12)...
+  chunk 1 done (new KB: 50844B)
+OK: wrote /Users/xbohdpukc/dev/NanoClaw/knowledge/shared/KNOWLEDGE.md (50376 chars) and /Users/xbohdpukc/dev/NanoClaw/knowledge/shared/.pieces-state.json
+[2026-05-10 12:45:15] KNOWLEDGE.md regenerated (50844 bytes, manifest-hash=df110d7ece163333...)
+[2026-05-10 12:45:16] Regeneration complete

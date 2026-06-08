@@ -46,6 +46,7 @@ import {
   handleClassifyBackfillConfirm,
   handleClassifyBackfillPending,
   handleClassifyCorrectionDetected,
+  markClassificationRouted,
 } from './classify-ipc-handlers.js';
 
 const mockQuery = query as unknown as ReturnType<typeof vi.fn>;
@@ -281,6 +282,27 @@ describe('handleClassifyBackfillPending', () => {
     );
     expect(body.text).toMatch(/BACKFILL-PENDING id=42/);
     expect(body.text).toContain('27 past emails');
+  });
+});
+
+describe('markClassificationRouted', () => {
+  it('issues UPDATE keyed by gmail_message_id + classifier_version', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 1, rows: [] });
+    await markClassificationRouted('msg-77', 'rules-runner-v1');
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toMatch(/UPDATE email_classifications SET routed_at = NOW\(\)/);
+    expect(sql).toMatch(
+      /WHERE gmail_message_id = \$1 AND classifier_version = \$2/,
+    );
+    expect(params).toEqual(['msg-77', 'rules-runner-v1']);
+  });
+
+  it('swallows DB errors so callers can keep processing', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('pg pool drained'));
+    await expect(
+      markClassificationRouted('msg-66', 'rules-runner-v1'),
+    ).resolves.toBeUndefined();
   });
 });
 

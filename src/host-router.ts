@@ -5,6 +5,10 @@
 
 import { writeHostMessage } from './ipc-writer.js';
 import { matchLead, type PipelineMatch } from './lead-matcher.js';
+import {
+  classifyCustomFields,
+  type TrafftCustomField,
+} from './trafft-custom-fields.js';
 import { logger } from './logger.js';
 
 export type RouteParams = {
@@ -79,6 +83,14 @@ function fmtClientResponse(p: RouteParams): string {
 
 function fmtChiefEscalation(p: RouteParams, reason: string): string {
   return [
+    // The handoff marker is load-bearing. The IPC watcher routes
+    // [HANDOFF: src→X] to group X tagged with from_group=src; without it the
+    // message falls to the "normal message" branch and is posted to the chief
+    // channel with from_group=chief, which router.ts filters as a same-group
+    // self-echo — so an idle chief never spawns and the email is dropped.
+    // mailman→chief makes from_group=mailman, so chief spawns. (Mirrors
+    // fmtContador / fmtArchivarista.)
+    '[HANDOFF: mailman→chief]',
     `[ESCALATION] ${p.label}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
@@ -111,6 +123,50 @@ function fmtArchivarista(p: RouteParams): string {
   ].join('\n');
 }
 
+// Mechanical notice for a host-written Trafft `booked` event (T03a/T03b).
+// Scannable What / Who / When / Why layout: the headline is WHAT (service),
+// then WHO (customer), WHEN (time + employee), WHY (the "what would you like
+// to discuss?" custom field), then SOURCE and the bookkeeping ids. Reason and
+// source come from the appointment custom fields Trafft flattens onto the
+// payload (parsed by trafft-custom-fields.ts) — previously dropped entirely.
+export function formatBookedNotice(args: {
+  customer_name: string;
+  customer_email?: string;
+  customer_phone?: string;
+  service: string;
+  start_time: string;
+  employee?: string;
+  status?: string;
+  party_id: number;
+  booking_row_id: number;
+  customFields?: TrafftCustomField[];
+}): string {
+  const cf = classifyCustomFields(args.customFields ?? []);
+  const who = [args.customer_name, args.customer_email, args.customer_phone]
+    .filter(Boolean)
+    .join(' · ');
+  const when = [args.start_time, args.employee].filter(Boolean).join(' · ');
+
+  const lines = [
+    `[BOOKING] ${args.service} — ${args.customer_name}`,
+    `Who:    ${who}`,
+    `When:   ${when}`,
+  ];
+  if (cf.reason) lines.push(`Why:    ${cf.reason.value}`);
+  if (cf.source) lines.push(`Source: ${cf.source.value}`);
+  for (const f of cf.other) lines.push(`${f.label}: ${f.value}`);
+
+  const tail = [
+    args.status,
+    `party ${args.party_id}`,
+    `interaction ${args.booking_row_id}`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  lines.push(`— ${tail}`);
+  return lines.join('\n');
+}
+
 // ── IPC write wrapper ──────────────────────────────────────────────
 
 function safeWrite(
@@ -135,11 +191,16 @@ function writeMailman(text: string): RouteResult {
   });
 }
 
+// Chief escalations are delivered as a mailman→chief handoff (the text carries
+// the [HANDOFF: mailman→chief] marker). The IPC file is therefore written to
+// the mailman source folder, NOT chief's own — a file under ipc/chief/ would
+// be delivered with from_group=chief and filtered out as a self-echo, so an
+// idle chief would never spawn. RouteResult.target is reported as 'mailman'
+// (the source folder), consistent with every other handoff route.
 function writeChief(text: string): RouteResult {
-  return safeWrite('chief', {
+  return safeWrite('mailman', {
     type: 'message',
     chatJid: 'host-router',
-    targetGroupFolder: 'chief',
     text,
   });
 }

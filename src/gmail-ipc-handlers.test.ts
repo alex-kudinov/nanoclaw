@@ -67,6 +67,8 @@ vi.mock('fs', async () => {
   };
 });
 
+import fs from 'fs';
+
 import { sendEmail } from './gmail-api.js';
 import { storeMessageDirect } from './db.js';
 import { logOutboundEmailInteraction } from './email-interaction-log.js';
@@ -74,6 +76,8 @@ import { query } from './business-db.js';
 import {
   handleGmailReply,
   handleGmailSend,
+  handleGmailSearch,
+  handleGmailRead,
   GmailIpcPayload,
 } from './gmail-ipc-handlers.js';
 import { convertMarkdownToEmailHtml } from './markdown-to-email-html.js';
@@ -368,5 +372,72 @@ describe('outbound email interaction logging', () => {
     });
 
     expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+  });
+});
+
+describe('mechanical [EMAIL SENT] to chief (T06)', () => {
+  it('handleGmailSend posts exactly one [EMAIL SENT] line via postToChief', async () => {
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+    await handleGmailSend(
+      makePayload({ to: 'lead@example.com', subject: 'Your ACC inquiry' }),
+      postToChief,
+    );
+    expect(postToChief).toHaveBeenCalledTimes(1);
+    expect(postToChief.mock.calls[0][0]).toBe(
+      '[EMAIL SENT] to=lead@example.com subject=Your ACC inquiry',
+    );
+  });
+
+  it('handleGmailReply posts one [EMAIL SENT] line via postToChief', async () => {
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thr-9',
+        subject: 'Re: ACC',
+        body: '<p>reply</p>',
+      }),
+      postToChief,
+    );
+    expect(postToChief).toHaveBeenCalledTimes(1);
+    expect(postToChief.mock.calls[0][0]).toContain('[EMAIL SENT]');
+    expect(postToChief.mock.calls[0][0]).toContain('subject=Re: ACC');
+  });
+
+  it('does not throw when postToChief is omitted', async () => {
+    await expect(handleGmailSend(makePayload())).resolves.toBeUndefined();
+  });
+});
+
+describe('gmail_search / gmail_read result delivery', () => {
+  // Regression guard: the agent-runner's drainIpcInput() only surfaces input
+  // files with type:'message'. A result written under any other type is read,
+  // discarded, and deleted — so the agent never sees it.
+  it('handleGmailSearch delivers results as a type:message follow-up', async () => {
+    await handleGmailSearch({
+      type: 'gmail_search',
+      groupFolder: 'chief',
+      timestamp: '2026-05-18T12:00:00Z',
+      query: 'from:susan',
+    });
+    const call = vi.mocked(fs.writeFileSync).mock.calls.at(-1);
+    expect(call).toBeDefined();
+    const payload = JSON.parse(call![1] as string);
+    expect(payload.type).toBe('message');
+    expect(payload.text).toContain('gmail_search results');
+  });
+
+  it('handleGmailRead delivers the email as a type:message follow-up', async () => {
+    await handleGmailRead({
+      type: 'gmail_read',
+      groupFolder: 'chief',
+      timestamp: '2026-05-18T12:00:00Z',
+      messageId: 'msg-789',
+    });
+    const call = vi.mocked(fs.writeFileSync).mock.calls.at(-1);
+    expect(call).toBeDefined();
+    const payload = JSON.parse(call![1] as string);
+    expect(payload.type).toBe('message');
+    expect(payload.text).toContain('msg-789');
   });
 });

@@ -88,6 +88,25 @@ export function extractSenderEmail(from: string | null): string | null {
   return email || null;
 }
 
+/**
+ * A `Re:`-prefixed subject signals a human reply. Sender rules (sender_exact /
+ * sender_regex) are blind to content, so a sender that BOTH sends automated
+ * mail and relays human replies — Encharge's `no-reply@encharge.io` is the
+ * canonical trap — would auto-archive a real lead. When the subject looks like
+ * a human reply, sender rules are skipped so the message falls through to the
+ * mailman LLM classifier, which reads the body. Subject/header rules are
+ * unaffected: they already match on content the operator chose deliberately.
+ */
+export function isHumanReplySubject(subject: string | null): boolean {
+  return subject != null && /^\s*re:\s/i.test(subject);
+}
+
+function isSenderRule(rule: ClassificationRule): boolean {
+  return (
+    rule.pattern_type === 'sender_exact' || rule.pattern_type === 'sender_regex'
+  );
+}
+
 function toMatch(rule: ClassificationRule): ClassificationMatch {
   return {
     rule_id: rule.id,
@@ -139,9 +158,22 @@ export async function matchRule(
   const rules = await loadEnabledRules();
   const senderLower = extractSenderEmail(input.sender_email);
 
+  const humanReply = isHumanReplySubject(input.subject);
+
   for (const rule of rules) {
     try {
       if (evalRule(rule, input, senderLower)) {
+        if (humanReply && isSenderRule(rule)) {
+          logger.info(
+            {
+              ruleId: rule.id,
+              patternType: rule.pattern_type,
+              subject: input.subject,
+            },
+            'classify-rules: sender rule suppressed — human reply (Re:) subject; routing to mailman',
+          );
+          continue;
+        }
         return toMatch(rule);
       }
     } catch (err) {

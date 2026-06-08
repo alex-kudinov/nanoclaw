@@ -39,6 +39,30 @@ describe('convertMarkdownToEmailHtml', () => {
     );
   });
 
+  it('converts single-asterisk *bold* to <strong> (Slack-style)', () => {
+    expect(
+      convertMarkdownToEmailHtml('*One clarification first.* Then more'),
+    ).toBe('<p><strong>One clarification first.</strong> Then more</p>');
+  });
+
+  it('handles multiple single-asterisk pairs in one paragraph', () => {
+    expect(
+      convertMarkdownToEmailHtml(
+        'an accreditation for *programs*, not a *credential*',
+      ),
+    ).toBe(
+      '<p>an accreditation for <strong>programs</strong>, not a <strong>credential</strong></p>',
+    );
+  });
+
+  it('leaves no literal asterisks when both ** and * are present', () => {
+    const result = convertMarkdownToEmailHtml('**double** and *single* here');
+    expect(result).not.toContain('*');
+    expect(result).toBe(
+      '<p><strong>double</strong> and <strong>single</strong> here</p>',
+    );
+  });
+
   // 4. List items grouped into <ul><li>
   it('converts list items into ul/li elements', () => {
     const input = '- Alpha\n- Beta\n- Gamma';
@@ -54,6 +78,48 @@ describe('convertMarkdownToEmailHtml', () => {
     const result = convertMarkdownToEmailHtml(input);
     expect(result).toContain('<ul><li>Item1</li><li>Item2</li></ul>');
     expect(result).toContain('Not a list');
+  });
+
+  // 4b. Numbered lists → <ol><li> (chief drafts often use 1. 2. 3. format)
+  it('converts numbered list items into ol/li elements', () => {
+    const input = '1. First\n2. Second\n3. Third';
+    const result = convertMarkdownToEmailHtml(input);
+    expect(result).toContain(
+      '<ol><li>First</li><li>Second</li><li>Third</li></ol>',
+    );
+  });
+
+  it('preserves long numbered list items as separate <li>', () => {
+    const input =
+      '1. First, we schedule a 30-minute discovery call\n2. Then we co-design the engagement scope\n3. Finally we kick off with a chemistry session';
+    const result = convertMarkdownToEmailHtml(input);
+    expect(result).toContain('<ol>');
+    expect(result).toContain(
+      '<li>First, we schedule a 30-minute discovery call</li>',
+    );
+    expect(result).toContain('<li>Then we co-design the engagement scope</li>');
+    expect(result).toContain(
+      '<li>Finally we kick off with a chemistry session</li>',
+    );
+    expect(result).not.toMatch(/1\. First.*2\. Then/);
+  });
+
+  it('handles prose followed by a numbered list in one paragraph', () => {
+    const input =
+      'Here are the next steps to get you started with the program:\n1. Schedule the discovery call\n2. Sign the engagement letter\n3. Kick off';
+    const result = convertMarkdownToEmailHtml(input);
+    expect(result).toContain(
+      '<ol><li>Schedule the discovery call</li><li>Sign the engagement letter</li><li>Kick off</li></ol>',
+    );
+    expect(result).toContain('Here are the next steps');
+    expect(result).not.toMatch(/1\. Schedule.*2\. Sign/);
+  });
+
+  it('splits adjacent bulleted and numbered lists into separate ul/ol blocks', () => {
+    const input = '- Bullet1\n- Bullet2\n1. Step1\n2. Step2';
+    const result = convertMarkdownToEmailHtml(input);
+    expect(result).toContain('<ul><li>Bullet1</li><li>Bullet2</li></ul>');
+    expect(result).toContain('<ol><li>Step1</li><li>Step2</li></ol>');
   });
 
   // 5. Multiple paragraphs

@@ -9,6 +9,7 @@ import {
   insertJobRunLog,
   updateJobRunLog,
   updateJobRunState,
+  updateJobNextRun,
   getJob,
 } from './db.js';
 import { computeNextRunFrom } from './job-registry.js';
@@ -24,6 +25,9 @@ export interface JobRunnerDeps {
 
 function shouldReport(job: Job, status: JobRunResult['status']): boolean {
   if (job.alert_level === 'silent') return false;
+  // A skipped run (a prior instance is still in flight) is a benign no-op —
+  // never worth a Slack message, regardless of alert_level.
+  if (status === 'already_running') return false;
   if (job.alert_level === 'warn' && status === 'ok') return false;
   return true;
 }
@@ -42,6 +46,10 @@ export async function runJob(
   try {
     const running = getRunningJobNames();
     if (running.includes(job.name)) {
+      // The previous run is still in flight. Advance next_run so the scheduler
+      // stops re-firing — and re-skipping — this job on every poll tick.
+      const nextRun = computeNextRunFrom(job.cron, job.timezone);
+      if (nextRun) updateJobNextRun(job.name, nextRun);
       const result: JobRunResult = {
         name: job.name,
         status: 'already_running',
@@ -95,6 +103,10 @@ export async function runJob(
       finished_at: new Date().toISOString(),
       duration_ms: result.duration_ms,
     });
+    // Advance next_run — without this a missing-script job re-fires (and
+    // re-errors) on every poll tick.
+    const nextRun = computeNextRunFrom(job.cron, job.timezone);
+    if (nextRun) updateJobNextRun(job.name, nextRun);
     if (shouldReport(job, result.status)) {
       await reportJobResult(result, deps.reportChannel, deps.sendMessage);
     }

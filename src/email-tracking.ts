@@ -1,7 +1,8 @@
 /**
  * Email open tracking handler.
- * Called by webhook server when a tracking pixel is loaded.
- * Delegates DB operations to db.ts, sends notifications to inbox.
+ * Called by the webhook server when a tracking pixel is loaded.
+ * Records the open in the DB only — email opens no longer spawn an inbox
+ * agent (the notification turn was pure token cost with no action taken).
  */
 
 import { recordEmailOpen } from './db.js';
@@ -10,33 +11,17 @@ import { logger } from './logger.js';
 export async function handleEmailOpen(
   token: string,
   userAgent: string,
-  sendToInbox: (msg: string) => Promise<void>,
+  // Retained only so the index.ts wiring still type-checks; email opens no
+  // longer route to the inbox agent. Unused.
+  _sendToInbox: (msg: string) => Promise<void>,
 ): Promise<void> {
   const result = recordEmailOpen(token, userAgent);
   if (!result) {
-    logger.debug({ token }, 'Email open: unknown tracking token');
+    logger.debug(
+      { token },
+      'Email open: unknown tracking token or record failed',
+    );
     return;
   }
-
-  const { leadId, emailType, openCount, firstOpenedAt, shouldNotify } = result;
-  if (shouldNotify) {
-    const msg = [
-      '[EMAIL-OPENED]',
-      `Lead ID: ${leadId}`,
-      `Email: ${emailType}`,
-      `Opens: ${openCount} (first: ${firstOpenedAt})`,
-      `Tracking: ${token}`,
-    ].join('\n');
-
-    try {
-      await sendToInbox(msg);
-    } catch (err) {
-      logger.warn({ err, leadId }, 'Failed to send email open notification');
-    }
-
-    logger.info(
-      { leadId, emailType, openCount },
-      'Email open notification sent',
-    );
-  }
+  // Open recorded in email_tracking — no inbox message, no agent spawn.
 }

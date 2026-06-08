@@ -1,4 +1,4 @@
-## Reflection & Journaling (53 tools)
+## Reflection & Journaling (54 tools)
 
 ### 10 Questions for Clarity
 URL: https://tandemcoach.co/coaching-tools/10-questions-for-clarity/
@@ -99,6 +99,12 @@ Coaching scenarios (3):
 - Client with a recognized emotional trigger they cannot stop activating
 - Client developing emotional self-management as a regular practice
 Pairs with: Emotional Intelligence Assessment, Wheel of Emotions, Daily Reflection Journal, Daily Emotions Log
+
+### Encore Statement
+URL: https://tandemcoach.co/coaching-tools/encore-statement/
+When to use: A client in the late-career encore window who needs to write their encore commitment as a contract with themselves | A coaching engagement closing on the encore-design capstone deliverable from M6.3.2 | A coach who needs to hold the discipline of inward-facing vs positioning-facing
+Format: worksheet | Time: 30 min | Moment: between-sessions
+Produces: encore-statement paragraph, what-you're-not-building boundary, revisit-date commitment
 
 ### End-of-Year Review and New Year Planning
 URL: https://tandemcoach.co/coaching-tools/end-of-year-review-and-new-year-planning/

@@ -264,6 +264,30 @@ It starts with a conversation. We learn about your goals, challenges, and contex
 
 There’s no obligation and no pressure. If coaching isn’t the right answer for your situation, we’ll tell you.
 
+**Q: What kind of leader benefits most from executive coaching?**
+
+Executive coaching works best for leaders facing a real challenge they can’t think their way through alone – a new role, a stalled team, a hard decision, a difficult colleague, or a gap between how they want to lead and how they actually show up under pressure. It works less well when the leader wants validation, or when the real issue is structural (wrong role fit, wrong company) rather than developmental.
+
+Our typical clients are VPs, SVPs, and C-suite leaders in the middle of a leadership stretch – promotion, scope expansion, post-restructure leadership, M&A integration, or succession planning.
+
+**Q: Is executive coaching confidential? What does my employer see?**
+
+Sessions are fully confidential. If your employer sponsors the engagement, they see only what you choose to share, plus high-level engagement structure: that sessions are happening, that goals were set against agreed business outcomes, and whether the engagement is producing change.
+
+We use a three-way conversation at the start to align goals between you, your sponsor, and the coach, then sessions are private. Mid-engagement check-ins (without session content) and a closing conversation round out the structure. ICF ethics require this confidentiality – it’s not optional, and it’s the foundation that makes real coaching work.
+
+**Q: What’s the difference between MCC and PCC credentials?**
+
+Both are ICF credentials, awarded at different levels of demonstrated mastery. PCC (Professional Certified Coach) requires 500+ hours of coaching experience and passes the ICF assessment at the professional level. MCC (Master Certified Coach) is the highest credential – fewer than 5% of ICF coaches hold it, and it requires 2,500+ hours, more rigorous performance assessment, and demonstrated mastery across all eleven ICF core competencies.
+
+For executive coaching, the difference matters because senior leaders bring complex situations – power dynamics, strategic ambiguity, stakeholder politics – where an MCC’s depth of experience and assessment skill changes the quality of the conversation. We staff every senior executive engagement with an MCC or PCC coach.
+
+**Q: Can executive coaching help with a specific transition like a new role or scope change?**
+
+Yes – transition coaching is one of the most common engagements. New-role coaching focuses on building context fast, mapping stakeholders, and avoiding the common new-leader traps (overcorrecting from day one, hiring too quickly, breaking the team you inherited).
+
+Promotion or scope-expansion coaching helps a leader actually operate at the new level instead of doing the previous job better. These engagements often run 4–6 months – shorter than standard ones because the inflection point is concrete and the success criteria are observable in months, not years.
+
 Have a question that’s not answered here?
 
 [Get in Touch](https://tandemcoach.co/contact-us/)
@@ -272,7 +296,7 @@ Executive Coaching Guide
 
 ### Choosing the Right Executive Coaching for Your Situation
 
-Executive coaching comes in many forms. Here’s what you should know before making a decision.
+Executive coaching comes in many forms. Here’s what you should know before making a decision. For the full picture – what happens in sessions, what it costs, how to measure results, how credentials work – see our [definitive guide to executive coaching](/executive-coaching-guide/).
 
 #### Executive Coaching vs. Leadership Coaching vs. Life Coaching
 
@@ -305,6 +329,62 @@ Start with credentials. ICF MCC is the highest coaching credential in the world,
 Ask about structure. A firm with a defined methodology (like our ASPIRE® framework) will deliver more consistent results than one that relies on each coach’s individual style. Ask about assessments, stakeholder involvement, and how progress is measured. If the firm can’t articulate how they track outcomes, keep looking.
 
 [See what makes the best executive coaches stand out](/best-executive-coaches/)
+
+#### Executive Coaching Services for Organizations
+
+For HR and L&D leaders procuring coaching at the organization level, the first decision is structural: a boutique coaching firm with vetted, credentialed coaches, or a marketplace platform that matches you from a pool of hundreds. The two models look similar in a deck and produce different outcomes in the room. A platform optimizes for breadth of coach inventory and self-serve matching; a firm optimizes for engagement design, coach-to-leader fit, and outcome accountability the buyer can defend in a budget review.
+
+Which fits depends on what you are actually buying – a credential-checked coaching transaction, or a coaching engagement with a thesis. We walk through the firm-vs-platform trade-off, what credentials matter, and the three questions that filter out the vague providers.
+
+[How HR and L&D evaluate executive coaching services](/executive-coaching-services/)
+
+#### Executive Coaching for Senior Leaders
+
+Coaching for senior leaders – VPs, SVPs, and division heads with P&L accountability – works differently from coaching emerging managers. The stakes are bigger, the visibility is higher, and the typical challenge isn’t a skill gap. It’s the gap between technical mastery and the political, strategic, and stakeholder demands of senior leadership.
+
+Senior-leader engagements often focus on stakeholder mapping, board and executive-team dynamics, strategic decision-making under uncertainty, and the shift from running a function to influencing across one. The right coach has actually sat in those rooms – not just studied them.
+
+[How high-performance coaching works for senior executives](/high-performance-coaching/)
+
+#### CEO Coaching
+
+CEO coaching is its own engagement category, not a more expensive version of senior-leader coaching. The CEO seat carries a structural isolation that distorts every relationship in the business – direct reports filter what they share, board members operate as evaluators rather than peers, and the people who knew the leader before the title are no longer in the room. A coach is often the one relationship in the CEO’s professional life with no agenda other than the CEO’s effectiveness.
+
+What the engagement looks like, what it costs, and how to evaluate a CEO coach without falling for the credential-or-charisma trap – we cover it in depth in the CEO coaching guide.
+
+[What happens when the person at the top gets a coach](/ceo-coaching/)
+
+#### Executive Coaching for Healthcare Leaders
+
+Healthcare executives operate in one of the most complex leadership environments in any industry – clinical accountability, regulatory pressure, mission-driven culture, and consolidation dynamics that reshape org charts every few years. Coaching for healthcare leaders has to hold both the patient-care frame and the business frame at the same time.
+
+We work with physician leaders moving into administrative roles, hospital system executives navigating M&A integration, and senior nursing and operations leaders being asked to scale across geographies. The work is the same disciplined coaching engagement – what changes is the context the coach is fluent in.
+
+[Talk to a coach about leading in healthcare](/contact-us/)
+
+#### Executive Coaching for Purpose-Driven Leaders
+
+Some leaders are running a business. Others are running a mission. Purpose-driven executives – in nonprofits, mission-led for-profits, and impact-focused organizations – face a particular leadership tension: the work matters more than the title, but the title’s demands are still real. Stakeholders include funders, beneficiaries, and a team that signed up for meaning, not just paychecks.
+
+Coaching for purpose-driven leaders surfaces the values that drive the work, then translates them into decisions, boundaries, and an operating rhythm that’s sustainable. Burnout in purpose-driven leadership rarely comes from working too hard – it comes from the mismatch between mission and the daily work required to deliver it.
+
+[How coaching helps purpose-driven leaders find clarity](/finding-your-purpose-how-a-coach-helps-tech-leaders-thrive/)
+
+#### Leadership Development Consulting
+
+A leadership development consultant works upstream of the curriculum decision. Before you choose a vendor, run a cohort, or buy a platform license, the consultant’s job is to translate the business outcome you want into the program design, facilitator standards, and measurement framework that will actually produce it. That’s a different role from the consultancy that sells you the program they already built.
+
+Independent consulting matters when the design problem is yours, not the vendor’s – when you need someone whose recommendation is not constrained by what they happen to have on their shelf. The boutique vs. big-firm trade-off shows up here too, and the right answer depends on whether the program needs depth on a specific transition (new-VP, post-acquisition, ICs-to-managers) or breadth across an enterprise rollout.
+
+[What an independent leadership development consultant actually does](/leadership-development-consultant/)
+
+#### Leadership Coaching and Development Programs
+
+Most leadership development programs deliver content; coaching delivers behavior change. The two work best when they’re designed together rather than bolted on. A cohort program produces a shared vocabulary and a peer network; individual coaching turns the framework into the leader’s actual decisions, with someone watching the gap between what was taught and what gets practiced.
+
+Designed together, leadership coaching and development becomes a tier-by-tier system – emerging managers, mid-level leaders, executives – with each tier’s curriculum, coaching cadence, and measurement framework chosen for the leadership transition that tier is actually living through. That’s a different conversation from “buy our LMS and add coaches.”
+
+[How cohort programs and individual coaching work as one engagement](/leadership-coaching-and-development/)
 
 ### Ready to Lead Differently?
 

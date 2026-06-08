@@ -36,3 +36,17 @@ _Lessons extracted from email delivery issues. Updated manually._
 ### Lesson 8: New taxonomy entries: MrGru/lead/declined and MrGru/association/event
 **Problem:** Two email types lack taxonomy entries: (1) Explicit opt-out/decline replies from leads (e.g. 'No thank you') were classified as MrGru/other. (2) Professional association correspondence (e.g. ICF Converge proposal decisions) has no category.
 **Rule:** Two new labels approved: (1) MrGru/lead/declined — Explicit opt-out, unsubscribe, or 'not interested' reply from a lead or prospect. Auto-archive. No hive share, priority 0. When a lead sends a clear decline, classify as MrGru/lead/declined and suppress all future automated outreach to that email address. (2) MrGru/association/event — Correspondence from ICF, EMCC, Scrum Alliance, or other professional associations about events, conferences, proposals, or membership. Hive: cherie+alex, priority 1. Also: classify internal Tandem calendar invite updates and forwards (from cherie@tandemcoaching.academy or alex@tandemcoach.co) as MrGru/notification/calendar, not MrGru/other. Heartbeat community event reminders (from events@heartbeat.chat or The Hearth) should be MrGru/notification/system, auto-archived.
+
+<!--
+Lesson 9 (2026-05-25): "Always dress up approved replies" — REMOVED.
+It contradicted mailman's VERBATIM RULE (groups/mailman/CLAUDE.md:49) and would
+have caused mailman to start altering sales drafts. The Ken Kelling polishing
+failure is being fixed upstream: chief now drafts a polished email from
+operator intent and runs its own draft/approve loop before handing off to
+mailman. Mailman remains a verbatim sender — never alter handoff body content.
+-->
+
+
+### Lesson 9: Sent-mail echoes from info@tandemcoach.co must be suppressed, not escalated
+**Problem:** Mailman classified a sent-mail echo from info@tandemcoach.co as MrGru/internal/team and escalated to chief. This was an outbound email sent by mailman itself, reflected back as an inbound message. No action is needed on these.
+**Rule:** Emails arriving from info@tandemcoach.co, info@tandemcoaching.academy, or any @tandemcoach.co / @tandemcoaching.academy address are sent-mail echoes. Classify as MrGru/internal/team, auto-archive, and do NOT escalate to chief. The existing suppression rule (@tandemcoach.co/@tandemcoaching.academy never inbound) applies — treat these as noise, not escalations.

@@ -3,9 +3,9 @@ URL: https://tandemcoach.co/icf/pcc-professional-coach-certification/
 
 ACC to PCC + ACTC Bridge
 
-## Become a Professional Certified Coach — PCC + ACTC Bridge
+## Become an ICF Professional Certified Coach - PCC Coach Certification Program + ACTC Bridge
 
-For coaches with 60+ hours of International Coaching Federation (ICF) accredited coach education. Earn your Professional Certified Coach (PCC) credential and Advanced Certification in Team Coaching (ACTC) through systems coaching methodology. Designed and delivered by an MCC & PCC coaching team.
+For coaches with 60+ hours of International Coaching Federation (ICF) accredited coach education. Earn your Professional Certified Coach (PCC) credential and Advanced Certification in Team Coaching (ACTC) through a systems coaching methodology coach training program. Designed and delivered by an MCC & PCC coaching team.
 
 With **Cherie Silas, MCC** & team
 
@@ -22,11 +22,11 @@ Led by **MCC & PCC Coaching Team**
 
 We understand
 
-### You’ve Done the Work – Now It’s Time for the Credential to Match
+### You’ve Done the Work – Time for Your Professional Certified Coach Credential to Match
 
 You’re already coaching. You’ve got hundreds of hours of experience, maybe even an ACC. But you know the PCC credential would change the game – better clients, bigger contracts, organizational credibility. The question isn’t whether to pursue it. It’s finding a program that *actually advances your skills*, not just checks boxes.
 
-The requirements for Professional Certified Coach are more demanding than ACC – **125 hours of coach-specific education, 500 coaching experience hours, a performance evaluation with two recorded sessions**. And now there’s the Level 2 pathway vs. portfolio pathway to figure out. Most programs teach you the same foundational content you already know. You need advanced training that meets you where you are.
+The requirements for Professional Certified Coach are more demanding than ACC – **125 hours of coach-specific education, 500 coaching experience hours, a performance evaluation with two recorded sessions**. And now there’s the Level 2 pathway vs. portfolio pathway to figure out. Most programs teach you the same foundational content you’ve already mastered as a coaching professional. You need advanced training that meets you where you are.
 
 And then there’s the “after training” gap. Who helps you navigate the ICF application, prepare for the credentialing exam, and make sure your recorded sessions meet PCC-level standards? Most programs hand you a certificate and wish you luck.
 
@@ -65,7 +65,7 @@ Training is just one piece. We help you with **mentor coaching hours, performanc
 
 Is this for you
 
-### Who Should Pursue ICF PCC Certification?
+### Who Should Pursue the ICF PCC Credential?
 
 ACC-Certified Coaches
 
@@ -92,7 +92,7 @@ Your path to PCC
 
 ### Everything You Need for Your ICF PCC & ACTC Credentials – In One Program
 
-**This program requires 60 hours of ICF-accredited coach training** (such as our ACC Level 1 program or equivalent). Starting from scratch? The [Professional Coach Program ($7,499)](/icf/acc-pcc-certification/) includes everything — ACC training through PCC + ACTC credentials — in one enrollment.
+**This program requires 60 hours of ICF-accredited coach training** (such as our ACC Level 1 program or equivalent). Starting from scratch? The [Professional Coach Program ($7,499)](/icf/acc-pcc-certification/) includes everything - ACC training through PCC + ACTC credentials - in one enrollment.
 
 [See Professional Coach Program →](/icf/acc-pcc-certification/)
 
@@ -286,11 +286,35 @@ Certification guide
 
 #### What Is the ICF Professional Certified Coach (PCC) Credential?
 
-The Professional Certified Coach (PCC) is the intermediate credential level awarded by the **International Coaching Federation (ICF)** – the largest and most recognized professional coaching organization in the world, representing over 50,000 members across more than 140 countries. The PCC represents a significant advancement beyond the [ACC (Associate Certified Coach)](/icf/acc-coach-certification-training/), requiring substantially more coach-specific education, coaching experience, and demonstrated mastery of the **ICF Core Competencies**.
+The Professional Certified Coach (PCC) is the intermediate credential level awarded by the **International Coaching Federation (ICF)** - founded in 1995 as the International Coach Federation and now the largest professional coaching organization in the world, representing over 50,000 members across more than 140 countries. The PCC represents a significant advancement beyond the [ACC (Associate Certified Coach)](/icf/acc-coach-certification-training/), requiring substantially more coach-specific education, coaching experience, and demonstrated mastery of the **ICF Core Competencies**.
 
 Of the three ICF credential levels – ACC, PCC, and MCC (Master Certified Coach) – the PCC is where most certified professional coaches establish themselves for long-term career growth. Earning your PCC credential signals to clients, organizations, and employers that you have completed **125+ hours of advanced coaching education**, logged **500+ hours of coaching experience**, and demonstrated competency at a professional level through a rigorous performance evaluation and the [ICF Credentialing Exam](https://coachingfederation.org/credentials-and-standards/credentialing-exam).
 
-For coaches who already hold an ACC, the PCC is the natural next step – unlocking higher-fee coaching sessions, organizational coaching contracts, and leadership development roles that require PCC-level credentials or above. Many certified professional coaches report a significant increase in their earning potential after achieving PCC, with executive coaching engagements and corporate contracts becoming accessible. It’s also an essential credential if you want to become a recognized expert in your coaching practice and build a sustainable coaching business.
+For coaches who already hold an ACC, the PCC is the natural next step – unlocking higher-fee coaching sessions, organizational coaching contracts, and leadership development roles that require PCC-level credentials or above. Many certified professional coaches report a significant increase in their earning potential after achieving PCC, with executive coaching engagements and corporate coaching services contracts becoming accessible. It’s also an essential credential if you want to become a recognized expert in the coaching profession and build a sustainable coaching business.
+
+### PCC Coach Certification: Your Path to ICF Level 2 Credential
+
+PCC coach certification is structured around three pillars: an ICF-accredited **coach training program** at Level 2 (125+ hours of coach-specific education), supervised coaching experience (500+ hours), and a performance evaluation conducted against the ICF Core Competencies. A Level 2 program is designed to build advanced coaching skills on top of the foundational competency you proved at the ACC level - so you spend your time on systems coaching, complex contracting, and presence under pressure rather than re-learning the basics.
+
+Tandem’s professional coach certification program is delivered by an MCC-led team and combines live cohort training, recorded mentor coaching review, exam preparation, and one-on-one supervision. The program also includes an **ACTC team coaching credential** bridge, so you graduate with both individual and team coaching credentials - a positioning that’s rare in the certified professional coach training market and increasingly required for organizational contracts.
+
+### How Tandem’s Coach Training Program Compares
+
+Most PCC programs treat Level 2 as “more of the same” - additional hours of foundational content stretched over a longer calendar. We treat Level 2 as a different conversation: senior coaches deserve advanced craft, not repetition. Our coach training program includes systems coaching methodology, MCC-level mentor coaching, and a built-in ACTC bridge so you finish the year as a credentialed individual coach *and* a credentialed team coach.
+
+For practitioners coming from a **life coach** practice, an internal HR role, or an independent consulting business, the program is designed to formalize your existing experience under ICF’s Level 2 standards rather than treat you as a beginner. You also gain access to our continuing coach education calendar - a year-round series of master classes, supervision groups, and ethics intensives that keep your CCEUs current after credentialing.
+
+### Continuing Coach Education for PCC Renewal
+
+PCC renewal requires **40 Continuing Coach Education Units (CCEUs)** every three years, with at least 24 hours in Core Competencies. Tandem alumni earn the majority of their CCEUs through our supervision groups, mentor coaching circles, and advanced master classes - all included in alumni community access for active credential holders. This makes Tandem one of the few coach training programs in the U.S. where your renewal pathway is built into your initial training community, not sold separately.
+
+### From Associate Certified Coach to Master Certified Coach: Your ICF PCC Career Path
+
+The PCC sits at the middle of the three-tier ICF credential hierarchy. Most coaches start their journey by training for the [**Associate Certified Coach (ACC)**](/icf/acc-coach-certification-training/) credential at the PCC level, then return for PCC training once they’ve logged enough coaching experience hours. From PCC, the next step is **Master Certified Coach (MCC)** - the highest credential ICF awards, requiring 2,500 hours of paid coaching experience and a much more rigorous evaluation. Tandem’s MCC-level instructors actively maintain their credentials and bring that lens to every cohort.
+
+### Mentor Coach Hours: Meeting ICF Credential Requirements at PCC Level
+
+Every ICF credential at PCC level and above requires **10 hours of mentor coaching** with a credentialed mentor coach. At Tandem, those 10 hours are bundled into the program rather than billed separately - and they’re delivered by MCC-level mentors who can prepare you for the real demands of the PCC performance evaluation. The program is structured so your mentor coach hours, supervised practice, and ICF credential application paperwork all happen together as one integrated pathway, not three separate purchases.
 
 ##### Download the Full PCC Program Catalog
 
@@ -363,8 +387,6 @@ At the PCC level, evaluators assess whether you demonstrate these competencies w
 
 ICF offers multiple application paths to earn your PCC credential, but the two most common are the **Level 2 pathway** and the **Portfolio pathway**. Understanding the difference can save you significant time and complexity.
 
-Recommended
-
 ##### Level 2 Pathway
 
 Complete an ICF Level 2 accredited program (like Tandem’s). Your program certificate is the primary document you submit to ICF – no need to collect paperwork from multiple providers. Education, mentor coaching, and performance evaluation preparation are all included. Application review typically takes **4 weeks**.
@@ -431,9 +453,9 @@ Still have questions about PCC certification or whether this program is right fo
 
 Compare your options
 
-### How Tandem’s PCC Program Compares
+### How Tandem’s Certified Coach Training Compares to Other PCC Programs
 
-See how our Level 2 program stacks up against typical PCC training programs.
+See how our Level 2 certification program stacks up against typical PCC training programs and other coach training options.
 
 ← Scroll to compare →
 
@@ -463,7 +485,7 @@ The Professional Certified Coach (PCC) is the intermediate credential level awar
 
 **Q: What are the ICF PCC certification requirements?**
 
-To earn your PCC credential, you need: **(1)** 125+ hours of coach-specific education through an ICF-accredited Level 2 program, **(2)** 500 hours of coaching experience with at least 450 paid hours and 25+ clients over 24 months, **(3)** 10 hours of mentor coaching with a [MCQ-qualified](/mcq/) coach at the PCC level or above, **(4)** a performance evaluation with two recorded coaching sessions and transcripts, and **(5)** a passing score on the ICF Credentialing Exam (CKA). Tandem’s program covers requirements 1, 3, 4, and 5 – coaching hours are accumulated through your own practice.
+To earn your PCC credential, you need: **(1)** 125+ hours of coach-specific education through an ICF-accredited Level 2 program, **(2)** 500 hours of coaching experience with at least 450 paid hours and 25+ clients over 24 months, **(3)** 10 hours of mentor coaching with an [MCS-PCC qualified](/mcs/) coach (the Mentor Coach Specialization, formerly MCQ), **(4)** a performance evaluation with two recorded coaching sessions and transcripts, and **(5)** a passing score on the ICF Credentialing Exam (CKA). Tandem’s program covers requirements 1, 3, 4, and 5 – coaching hours are accumulated through your own practice.
 
 **Q: How much does ICF PCC certification cost?**
 
@@ -510,7 +532,7 @@ Still have a question we didn’t cover?
 
 Get started
 
-### Start Your PCC Certification Journey
+### Start Your Professional Coach Certification Journey
 
 Choose the path that fits your goals and budget. Every option includes our MCC-led instruction and supportive coaching community.
 
@@ -534,7 +556,7 @@ Book a free consultation and we’ll help you figure out the best next step for 
 
 [Book a Consultation](https://tandemcoach.co/contact-us/)
 
-[Get the Program Guide — curriculum, pricing & credential pathways](#)
+[Get the Program Guide - curriculum, pricing & credential pathways](#)
 
 Or enroll in individual modules
 
@@ -604,8 +626,8 @@ Your progress will be lost.
 
 #### What were you hoping to find?
 
-Quick question before you go — helps us improve this page.
+Quick question before you go - helps us improve this page.
 
-Thanks — that helps.
+Thanks - that helps.
 
 ---

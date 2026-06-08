@@ -56,6 +56,13 @@ export interface GmailIpcPayload {
 const jid = `gmail:${GMAIL_MONITORED_EMAIL}`;
 
 /**
+ * Posts a mechanical [EMAIL SENT] summary to the chief channel. Supplied by
+ * ipc.ts (which has sendMessage + registeredGroups in scope). Optional so
+ * non-IPC callers and tests can omit it.
+ */
+export type PostToChief = (text: string, threadTs?: string) => Promise<void>;
+
+/**
  * Resolve a party ID when leadId is not provided in the IPC payload.
  * Tries recipient email first, then falls back to thread history.
  * Returns null if both lookups fail or find nothing.
@@ -112,7 +119,10 @@ function buildEmailFooter(trackingId: string, emailType: string): string {
   );
 }
 
-export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
+export async function handleGmailReply(
+  data: GmailIpcPayload,
+  postToChief?: PostToChief,
+): Promise<void> {
   if (!data.threadId || !data.body) {
     logger.warn({ data }, 'gmail_reply: missing threadId or body');
     return;
@@ -211,6 +221,16 @@ export async function handleGmailReply(data: GmailIpcPayload): Promise<void> {
     },
     'gmail_reply processed',
   );
+
+  if (postToChief) {
+    try {
+      await postToChief(
+        `[EMAIL SENT] to=${data.to ?? '(thread reply)'} subject=${data.subject ?? '(re: thread)'}`,
+      );
+    } catch (err) {
+      logger.error({ err }, '[ERROR] gmail [EMAIL SENT] post failed');
+    }
+  }
 }
 
 /** Apply test routing: override to/cc when GMAIL_TEST_RECIPIENT is set. */
@@ -265,7 +285,10 @@ function storeOutboundEmail(
   });
 }
 
-export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
+export async function handleGmailSend(
+  data: GmailIpcPayload,
+  postToChief?: PostToChief,
+): Promise<void> {
   if (!data.to || !data.subject || !data.body) {
     logger.warn({ data }, 'gmail_send: missing to, subject, or body');
     return;
@@ -366,6 +389,16 @@ export async function handleGmailSend(data: GmailIpcPayload): Promise<void> {
     },
     'gmail_send processed',
   );
+
+  if (postToChief) {
+    try {
+      await postToChief(
+        `[EMAIL SENT] to=${originalTo} subject=${data.subject}`,
+      );
+    } catch (err) {
+      logger.error({ err }, '[ERROR] gmail [EMAIL SENT] post failed');
+    }
+  }
 }
 
 export async function handleGmailSearch(data: GmailIpcPayload): Promise<void> {
@@ -379,11 +412,12 @@ export async function handleGmailSearch(data: GmailIpcPayload): Promise<void> {
     maxResults: data.maxResults,
   });
 
-  // Write results back to agent's input dir as a follow-up message
+  // Deliver results back as a follow-up message. The agent-runner's
+  // drainIpcInput() only surfaces files with type:'message' — any other type
+  // is read, discarded, and deleted, so the result must be a plain message.
   writeInputMessage(data.groupFolder, {
-    type: 'gmail_search_results',
-    content: results,
-    query: data.query,
+    type: 'message',
+    text: `[gmail_search results — query: ${data.query}]\n\n${results}`,
   });
 
   logger.info(
@@ -400,11 +434,11 @@ export async function handleGmailRead(data: GmailIpcPayload): Promise<void> {
 
   const content = await readEmail(data.messageId);
 
-  // Write results back to agent's input dir
+  // Deliver the email back as a follow-up message. type:'message' is the only
+  // shape the agent-runner's drainIpcInput() surfaces (see handleGmailSearch).
   writeInputMessage(data.groupFolder, {
-    type: 'gmail_read_result',
-    content,
-    messageId: data.messageId,
+    type: 'message',
+    text: `[gmail_read result — message ${data.messageId}]\n\n${content}`,
   });
 
   logger.info(
@@ -435,13 +469,16 @@ export function isGmailIpcType(type: string): boolean {
 }
 
 /** Dispatch a Gmail IPC payload to the appropriate handler. */
-export async function dispatchGmailIpc(data: GmailIpcPayload): Promise<void> {
+export async function dispatchGmailIpc(
+  data: GmailIpcPayload,
+  postToChief?: PostToChief,
+): Promise<void> {
   switch (data.type) {
     case 'gmail_reply':
-      await handleGmailReply(data);
+      await handleGmailReply(data, postToChief);
       break;
     case 'gmail_send':
-      await handleGmailSend(data);
+      await handleGmailSend(data, postToChief);
       break;
     case 'gmail_search':
       await handleGmailSearch(data);

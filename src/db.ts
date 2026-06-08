@@ -1027,9 +1027,21 @@ export function getJobRunLogs(jobName: string, limit = 10): JobRunLog[] {
 }
 
 export function getRunningJobNames(): string[] {
+  // A row stuck at 'running' beyond the job's timeout (plus a 5-minute grace)
+  // is an orphan — its process was killed or the daemon restarted before the
+  // close handler logged completion. runJob guarantees a real run is killed
+  // and closed within timeout_ms, so such rows cannot be a live run. Treating
+  // them as running would skip the job forever.
   const rows = db
     .prepare(
-      "SELECT DISTINCT job_name FROM job_run_logs WHERE status = 'running'",
+      `
+    SELECT DISTINCT jrl.job_name
+    FROM job_run_logs jrl
+    JOIN jobs j ON j.name = jrl.job_name
+    WHERE jrl.status = 'running'
+      AND (julianday('now') - julianday(jrl.started_at)) * 86400000
+          < j.timeout_ms + 300000
+  `,
     )
     .all() as Array<{ job_name: string }>;
   return rows.map((r) => r.job_name);
@@ -1172,6 +1184,23 @@ export interface EmailOpenResult {
 }
 
 export function recordEmailOpen(
+  trackingId: string,
+  userAgent: string,
+): EmailOpenResult | null {
+  try {
+    return recordEmailOpenUnsafe(trackingId, userAgent);
+  } catch (err) {
+    // A DB-write failure must not throw out of the tracking-pixel path —
+    // the open is simply not recorded. Tagged for ops filtering.
+    logger.error(
+      { err, event: 'email_open_record_failed', tracking_id: trackingId },
+      '[ERROR] recordEmailOpen failed',
+    );
+    return null;
+  }
+}
+
+function recordEmailOpenUnsafe(
   trackingId: string,
   userAgent: string,
 ): EmailOpenResult | null {

@@ -12,6 +12,7 @@ vi.mock('./logger.js', () => ({
 import { query } from './business-db.js';
 import {
   extractSenderEmail,
+  isHumanReplySubject,
   matchRule,
   recordRuleHit,
   resetRulesCache,
@@ -261,6 +262,67 @@ describe('matchRule', () => {
       subject: '',
     });
     expect(match?.rule_id).toBe(10);
+  });
+});
+
+describe('isHumanReplySubject', () => {
+  it('detects Re: prefixed subjects', () => {
+    expect(isHumanReplySubject('Re: Reserve your seat')).toBe(true);
+    expect(isHumanReplySubject('  re: lowercase and spaced')).toBe(true);
+  });
+  it('does not flag non-reply subjects', () => {
+    expect(isHumanReplySubject('Reserve your seat')).toBe(false);
+    expect(isHumanReplySubject('Email validation failed')).toBe(false);
+    expect(isHumanReplySubject('Repair request')).toBe(false); // not "Re: "
+    expect(isHumanReplySubject(null)).toBe(false);
+  });
+});
+
+describe('matchRule — human-reply guard', () => {
+  const enchargeRule = {
+    id: 21,
+    pattern_type: 'sender_exact' as const,
+    pattern_value: 'no-reply@encharge.io',
+    target_label: 'MrGru/notification/system',
+    source: 'seed',
+  };
+
+  it('suppresses a sender rule when the subject is a human reply (Re:)', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 1, rows: [enchargeRule] });
+    const match = await matchRule({
+      sender_email: 'no-reply@encharge.io',
+      subject: 'Re: Reserve your seat in the inaugural MCS cohort',
+    });
+    expect(match).toBeNull();
+  });
+
+  it('still matches the same sender rule on a non-reply subject', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 1, rows: [enchargeRule] });
+    const match = await matchRule({
+      sender_email: 'no-reply@encharge.io',
+      subject: 'Your campaign was delivered',
+    });
+    expect(match?.rule_id).toBe(21);
+  });
+
+  it('does NOT suppress subject_regex rules on a Re: subject', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [
+        {
+          id: 30,
+          pattern_type: 'subject_regex',
+          pattern_value: 'cohort',
+          target_label: 'MrGru/newsletter/general',
+          source: 'manual',
+        },
+      ],
+    });
+    const match = await matchRule({
+      sender_email: 'x@y.com',
+      subject: 'Re: the cohort thread',
+    });
+    expect(match?.rule_id).toBe(30);
   });
 });
 

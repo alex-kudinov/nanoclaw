@@ -154,7 +154,7 @@ For corporate clients, an ICF credential is often a requirement in coaching RFPs
 
 If you’re new to coaching or don’t yet hold an ICF credential, start with the [ACC program (Level 1)](/icf/acc-coach-certification-training/). It covers foundational coaching skills and qualifies you for the ACC credential.
 
-If you already know you want PCC, the [Professional Coach Program ($7,499)](/icf/acc-pcc-certification/) bundles ACC training + the Level 2 Bridge into one enrollment — three credentials (ACC + PCC + ACTC) at a $499 savings vs. enrolling separately.
+If you already know you want PCC, the [Professional Coach Program ($7,499)](/icf/acc-pcc-certification/) bundles ACC training + the Level 2 Bridge into one enrollment - three credentials (ACC + PCC + ACTC) at a $499 savings vs. enrolling separately.
 
 If you already hold an ACC (or equivalent 60 hours of ICF-accredited training), the [Level 2 Bridge ($3,999)](/icf/pcc-professional-coach-certification/) bridges you to PCC + ACTC credentials.
 

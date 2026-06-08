@@ -5,7 +5,7 @@ Coaching Engagements
 
 ## Structured Coaching That Delivers Measurable Results
 
-Every engagement is designed around your goals, grounded in validated assessments, and led by credentialed coaches with real executive experience. No generic programs—just coaching that fits how your leaders actually work.
+Every engagement is designed around your goals, grounded in validated assessments, and led by credentialed coaches with real executive experience. No generic programs - just coaching that fits how your leaders actually work.
 
 [Schedule a Discovery Call →](/contact-us/)
 [See Engagement Models](#engagement-models)
@@ -146,7 +146,7 @@ Group Size
 
 #### Not Sure Which Model Fits?
 
-Talk it through with one of our Master Certified Coaches—no commitment required.
+Talk it through with one of our Master Certified Coaches - no commitment required.
 
 [Schedule a Discovery Call →](/contact-us/)
 
@@ -160,7 +160,7 @@ A
 
 #### Assess
 
-Validated assessments—ProfileXT, Genos EQ, 360 feedback, LEAD Now!—create a clear baseline. You see where you are, not where you think you are.
+Validated assessments - ProfileXT, Genos EQ, 360 feedback, LEAD Now! - create a clear baseline. You see where you are, not where you think you are.
 
 Weeks 1–3
 
@@ -176,7 +176,7 @@ P
 
 #### Partner
 
-We match you with a coach based on industry experience, leadership level, and development focus. If the fit isn’t right, you can request a change—no friction.
+We match you with a coach based on industry experience, leadership level, and development focus. If the fit isn’t right, you can request a change - no friction.
 
 Week 4
 
@@ -208,13 +208,13 @@ Assessment Tools
 
 ### Data-Driven Coaching Starts Here
 
-We use validated instruments—not guesswork. Each tool measures something different, giving your coach and your organization a complete picture.
+We use validated instruments - not guesswork. Each tool measures something different, giving your coach and your organization a complete picture.
 
 #### ProfileXT
 
 Talent Alignment
 
-Measures thinking style, behavioral traits, and interests against the demands of a specific role. Identifies where a leader’s natural strengths align—and where friction occurs.
+Measures thinking style, behavioral traits, and interests against the demands of a specific role. Identifies where a leader’s natural strengths align - and where friction occurs.
 
 Online assessment · 60 minutes · Individual report + debrief
 
@@ -222,7 +222,7 @@ Online assessment · 60 minutes · Individual report + debrief
 
 EQ Assessment
 
-Measures how effectively a leader demonstrates emotionally intelligent workplace behavior—self-awareness, empathy, and emotional reasoning under pressure.
+Measures how effectively a leader demonstrates emotionally intelligent workplace behavior - self-awareness, empathy, and emotional reasoning under pressure.
 
 Online assessment · 20 minutes · Self + rater comparison report
 
@@ -282,7 +282,7 @@ These are representative structures. Every engagement is customized to your orga
 | Coaching sessions | 6–8 sessions | 12 sessions | 24 sessions |
 | Session frequency | Bi-weekly | Bi-weekly | Bi-weekly |
 | Initial assessment | 360 feedback | 360 + ProfileXT or Genos EQ | Full assessment battery |
-| Closing assessment | — | 360 reassessment | Full reassessment |
+| Closing assessment | - | 360 reassessment | Full reassessment |
 | Stakeholder check-ins | 1 (midpoint) | 2 (quarterly) | 3–4 (quarterly) |
 | Progress reporting | Summary report | Mid & final reports | Quarterly reports |
 | Best for | Specific transition or challenge | Targeted development | Deep leadership transformation |
@@ -293,11 +293,11 @@ Your Coaching Team
 
 ### Credentialed Coaches with Executive Experience
 
-Every Tandem coach holds an ICF credential, has been vetted by our MCCs, and brings real leadership experience—not just coaching theory.
+Every Tandem coach holds an ICF credential, has been vetted by our MCCs, and brings real leadership experience - not just coaching theory.
 
 #### Led by Two Master Certified Coaches
 
-Cherie Silas, MCC, and Alex Kudinov, MCC, personally lead engagements and oversee every coaching relationship. Both hold the highest ICF credential—earned by fewer than 1,300 coaches worldwide.
+Cherie Silas, MCC, and Alex Kudinov, MCC, personally lead engagements and oversee every coaching relationship. Both hold the highest ICF credential - earned by fewer than 1,300 coaches worldwide.
 
 2
 
@@ -316,13 +316,13 @@ Coaching Hours
 #### How We Match Coaches
 
 - 1
-  **Understand the context** — your industry, leadership level, and specific development goals
+  **Understand the context** - your industry, leadership level, and specific development goals
 - 2
-  **Match on experience** — coach has relevant background in your sector or challenge area
+  **Match on experience** - coach has relevant background in your sector or challenge area
 - 3
-  **Chemistry conversation** — a no-commitment call between coach and coachee to confirm the fit
+  **Chemistry conversation** - a no-commitment call between coach and coachee to confirm the fit
 - 4
-  **Your choice** — if it isn’t the right match, we reassign with no questions asked
+  **Your choice** - if it isn’t the right match, we reassign with no questions asked
 
 We will tell you honestly if we are not the right fit for your organization. Not every challenge requires coaching, and we would rather recommend the right solution than sell you the wrong one.
 
@@ -358,7 +358,7 @@ We match based on industry experience, leadership level, and development goals. 
 
 **Q: What happens during the discovery call?**
 
-A 30-minute conversation to understand your goals, the leaders you want to develop, and the outcomes you are looking for. We share how our engagements work and recommend a path forward—or tell you honestly if we are not the right fit. No pressure, no sales pitch.
+A 30-minute conversation to understand your goals, the leaders you want to develop, and the outcomes you are looking for. We share how our engagements work and recommend a path forward - or tell you honestly if we are not the right fit. No pressure, no sales pitch.
 
 Success Stories
 
@@ -380,7 +380,7 @@ Get Started
 
 ### Ready to Explore a Coaching Engagement?
 
-Schedule a 30-minute discovery call with one of our Master Certified Coaches. We will learn about your goals and recommend an approach—or tell you honestly if we are not the right fit.
+Schedule a 30-minute discovery call with one of our Master Certified Coaches. We will learn about your goals and recommend an approach - or tell you honestly if we are not the right fit.
 
 [Schedule a Discovery Call →](/contact-us/)
 

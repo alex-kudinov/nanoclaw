@@ -48,33 +48,47 @@ const SA_PATH =
   process.env.SHEETS_SA_JSON ||
   '/workspace/extra/service-accounts/sheets-service-account.json';
 
+// ── HTTP timeout guard ──────────────────────────────────────────────────────
+// Node's https has NO default socket timeout: a stalled/half-open connection
+// hangs forever. This script chains ~15-20 sequential calls whose only backstop
+// is the caller's 120s process-level kill — so one quiet socket hangs the whole
+// pipeline. Abort any request idle for HTTP_TIMEOUT_MS so the failure is fast
+// and retryable (the webhook-inbox-reaper re-runs the idempotent pipeline).
+const HTTP_TIMEOUT_MS = 20000;
+
+function attachTimeout(req, label) {
+  req.setTimeout(HTTP_TIMEOUT_MS, () => {
+    req.destroy(new Error(`${label} timed out after ${HTTP_TIMEOUT_MS}ms`));
+  });
+}
+
 // ── Stripe API ──────────────────────────────────────────────────────────────
 
 function stripeGet(path) {
   return new Promise((resolve, reject) => {
     const auth = Buffer.from(`${STRIPE_KEY}:`).toString('base64');
-    https
-      .get(
-        {
-          hostname: 'api.stripe.com',
-          path,
-          headers: { Authorization: `Basic ${auth}` },
-        },
-        (res) => {
-          let data = '';
-          res.on('data', (chunk) => (data += chunk));
-          res.on('end', () => {
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.error) reject(new Error(parsed.error.message));
-              else resolve(parsed);
-            } catch (e) {
-              reject(new Error(`Stripe response parse error: ${data.slice(0, 200)}`));
-            }
-          });
-        },
-      )
-      .on('error', reject);
+    const req = https.get(
+      {
+        hostname: 'api.stripe.com',
+        path,
+        headers: { Authorization: `Basic ${auth}` },
+      },
+      (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) reject(new Error(parsed.error.message));
+            else resolve(parsed);
+          } catch (e) {
+            reject(new Error(`Stripe response parse error: ${data.slice(0, 200)}`));
+          }
+        });
+      },
+    );
+    req.on('error', reject);
+    attachTimeout(req, 'Stripe request');
   });
 }
 
@@ -268,6 +282,30 @@ function sqlEscape(str) {
   return (str || '').replace(/'/g, "''");
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Heartbeat (course/community platform) creates the Stripe customer and fires
+// payment_intent.succeeded BEFORE writing customer.name onto the Customer, and
+// charge.billing_details.name is null for these — so an immediate read often
+// gets no name and the roster records "Unknown". Poll the customer a few times
+// to win the race in the common case; backfill-names.cjs is the straggler
+// backstop for anything slower than this window.
+const NAME_RETRY_ATTEMPTS = 4;
+const NAME_RETRY_DELAY_MS = 3000;
+
+/** Fetch customer.name, retrying while empty (subscription-creation race). */
+async function fetchCustomerWithName(customerId) {
+  let last = {};
+  for (let attempt = 0; attempt < NAME_RETRY_ATTEMPTS; attempt++) {
+    try {
+      last = await stripeGet(`/v1/customers/${customerId}`);
+    } catch { /* non-fatal — keep prior result, retry */ }
+    if ((last.name || '').trim()) break;
+    if (attempt < NAME_RETRY_ATTEMPTS - 1) await sleep(NAME_RETRY_DELAY_MS);
+  }
+  return last;
+}
+
 // ── Main Pipeline ───────────────────────────────────────────────────────────
 
 async function fetchPaymentWithKeyFallback() {
@@ -334,6 +372,27 @@ async function fetchPaymentData() {
     const pi = await stripeGet(`/v1/payment_intents/${STRIPE_ID}`);
     productName = pi.description || 'Unknown';
     productId = '';
+    // Subscription / installment payments carry a useless PI description
+    // ("Subscription creation"); the real product is on the invoice line item.
+    // Follow pi.invoice → invoice line → product so the Product Map lookup and
+    // roster update work for payment-plan students (e.g. MCS).
+    if (pi.invoice) {
+      try {
+        const inv = await stripeGet(`/v1/invoices/${pi.invoice}`);
+        const line = (inv.lines && inv.lines.data && inv.lines.data[0]) || {};
+        const prodId =
+          (line.pricing && line.pricing.price_details && line.pricing.price_details.product) ||
+          (line.price && line.price.product) ||
+          '';
+        if (prodId) {
+          const prod = await stripeGet(`/v1/products/${prodId}`);
+          if (prod.name) {
+            productName = prod.name;
+            productId = prodId;
+          }
+        }
+      } catch { /* non-fatal — fall back to pi.description */ }
+    }
     amountCents = pi.amount || 0;
     currency = (pi.currency || 'usd').toUpperCase();
     paymentStatus = pi.status || 'unknown';
@@ -349,11 +408,9 @@ async function fetchPaymentData() {
 
     const customerId = pi.customer || charge?.customer;
     if (customerId) {
-      try {
-        const cust = await stripeGet(`/v1/customers/${customerId}`);
-        customerEmail = cust.email || '';
-        customerName = cust.name || '';
-      } catch { /* non-fatal */ }
+      const cust = await fetchCustomerWithName(customerId);
+      customerEmail = cust.email || '';
+      customerName = cust.name || '';
     }
     if (!customerName && charge) customerName = charge.billing_details?.name || '';
     if (!customerEmail && charge) customerEmail = charge.billing_details?.email || '';
@@ -562,8 +619,15 @@ async function main() {
                   [transactionDate],
                 ]);
                 try {
-                  const nameCheck = await sheetsGet(SHEETS_ROSTER_ID, `${tab}!B${sheetRow}`);
-                  if (!nameCheck.values?.[0]?.[0]) {
+                  // Fill the name when the cell is blank OR a stale "Unknown"
+                  // (a prior webhook lost the customer.name race and a replay
+                  // would otherwise leave it stuck forever). Never clobber a
+                  // real name, and only write a real name ourselves.
+                  const existingName = (
+                    (await sheetsGet(SHEETS_ROSTER_ID, `${tab}!B${sheetRow}`)).values?.[0]?.[0] || ''
+                  ).trim();
+                  const fillable = !existingName || existingName.toLowerCase() === 'unknown';
+                  if (fillable && customerName && customerName !== 'Unknown') {
                     await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!B${sheetRow}`, [
                       [customerName],
                     ]);

@@ -8,12 +8,9 @@ DB_SCHEMA=/Users/xbohdpukc/dev/toolbox/shared/db/tools/db/db-schema.sh
 
 mkdir -p agent_docs
 
-# SQLite schemas (safe temp-file pattern)
+# SQLite schema (safe temp-file pattern)
 "$DB_SCHEMA" --db store/messages.db --refresh > /tmp/nc-messages-schema.tmp
 test -s /tmp/nc-messages-schema.tmp && mv /tmp/nc-messages-schema.tmp agent_docs/messages-db-schema.md
-
-"$DB_SCHEMA" --db data/business/business.db --refresh > /tmp/nc-business-schema.tmp
-test -s /tmp/nc-business-schema.tmp && mv /tmp/nc-business-schema.tmp agent_docs/business-db-schema.md
 
 # Postgres schema via node (no psql binary on host)
 /opt/homebrew/bin/node -e '
@@ -34,15 +31,17 @@ const pool = new Pool({
 });
 (async () => {
   const { rows } = await pool.query(
-    "SELECT table_name, column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema = '"'"'public'"'"' ORDER BY table_name, ordinal_position"
+    "SELECT table_schema, table_name, column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema IN ('"'"'public'"'"', '"'"'business_v2'"'"') ORDER BY table_schema DESC, table_name, ordinal_position"
   );
-  let out = "# Schema: nanoclaw_business (Postgres)\n\nGenerated: " + new Date().toISOString() + "\n";
+  let out = "# Schema: nanoclaw_business (Postgres)\n\nGenerated: " + new Date().toISOString() + "\n\nCovers the public.* and business_v2.* schemas. business_v2 tables are\nheaded with their schema prefix; access them via business_v2.v_* views and\nbusiness_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.\n";
   let tbl = "";
   for (const r of rows) {
-    if (r.table_name !== tbl) {
+    const key = r.table_schema + "." + r.table_name;
+    if (key !== tbl) {
       if (tbl) out += "\x60\x60\x60\n";
-      out += "\n## " + r.table_name + "\n\n\x60\x60\x60\n";
-      tbl = r.table_name;
+      const heading = r.table_schema === "public" ? r.table_name : r.table_schema + "." + r.table_name;
+      out += "\n## " + heading + "\n\n\x60\x60\x60\n";
+      tbl = key;
     }
     const nl = r.is_nullable === "YES" ? "" : " NOT NULL";
     const def = r.column_default ? " DEFAULT=" + r.column_default : "";

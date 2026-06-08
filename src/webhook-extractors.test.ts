@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractEventKey } from './webhook-extractors.js';
+import { extractEventKey, chaosVisitorEventId } from './webhook-extractors.js';
 
 describe('extractEventKey — trafft', () => {
   it('booked event keys on (appointmentId, event_type)', () => {
@@ -151,11 +151,114 @@ describe('extractEventKey — contact-form', () => {
   });
 });
 
+describe('extractEventKey — zoom-class', () => {
+  it('keys on the Zoom recording UUID inside payload.payload.object', () => {
+    expect(
+      extractEventKey('zoom-class', {
+        event: 'recording.completed',
+        payload: {
+          account_id: 'lUifeHH8RtylIUQyDNiDEQ',
+          object: {
+            uuid: 'ogU81J1kQXOXZXC+I6Uzgw==',
+            id: 9459738533,
+            host_email: 'cherie@tandemcoach.co',
+          },
+        },
+      }),
+    ).toEqual({
+      event_id: 'recording:ogU81J1kQXOXZXC+I6Uzgw==',
+      event_type: 'recording.completed',
+    });
+  });
+
+  it('falls back to event=recording.completed when not provided', () => {
+    expect(
+      extractEventKey('zoom-class', {
+        payload: { object: { uuid: 'abc==' } },
+      }),
+    ).toEqual({
+      event_id: 'recording:abc==',
+      event_type: 'recording.completed',
+    });
+  });
+
+  it('returns null event_id when uuid is missing', () => {
+    expect(extractEventKey('zoom-class', { payload: { object: {} } })).toEqual({
+      event_id: null,
+      event_type: 'recording.completed',
+    });
+  });
+});
+
+describe('extractEventKey — chaos', () => {
+  it('keys on visitor_id with form_contact event type', () => {
+    expect(
+      extractEventKey('chaos', {
+        visitor_id: 412,
+        form_event_type: 'form_contact',
+        email: 'lead@example.com',
+      }),
+    ).toEqual({
+      event_id: 'chaos:visitor:412:verified',
+      event_type: 'form_contact',
+    });
+  });
+
+  it('carries form_lead_magnet event type', () => {
+    expect(
+      extractEventKey('chaos', {
+        visitor_id: 7,
+        form_event_type: 'form_lead_magnet',
+      }),
+    ).toEqual({
+      event_id: 'chaos:visitor:7:verified',
+      event_type: 'form_lead_magnet',
+    });
+  });
+
+  it('carries form_newsletter event type', () => {
+    expect(
+      extractEventKey('chaos', {
+        visitor_id: 99,
+        form_event_type: 'form_newsletter',
+      }),
+    ).toEqual({
+      event_id: 'chaos:visitor:99:verified',
+      event_type: 'form_newsletter',
+    });
+  });
+
+  it('defaults event_type to verified when form_event_type is null', () => {
+    expect(
+      extractEventKey('chaos', { visitor_id: 5, form_event_type: null }),
+    ).toEqual({ event_id: 'chaos:visitor:5:verified', event_type: 'verified' });
+  });
+
+  it('coerces an unrecognized form_event_type to verified', () => {
+    expect(
+      extractEventKey('chaos', { visitor_id: 5, form_event_type: 'form_junk' }),
+    ).toEqual({ event_id: 'chaos:visitor:5:verified', event_type: 'verified' });
+  });
+
+  it('returns null event_id for a missing/invalid visitor_id', () => {
+    expect(
+      extractEventKey('chaos', { form_event_type: 'form_contact' }),
+    ).toEqual({ event_id: null, event_type: 'form_contact' });
+    expect(extractEventKey('chaos', { visitor_id: 0 }).event_id).toBeNull();
+    expect(extractEventKey('chaos', { visitor_id: -3 }).event_id).toBeNull();
+    expect(extractEventKey('chaos', { visitor_id: 'abc' }).event_id).toBeNull();
+  });
+
+  it('push and sweep paths produce a byte-identical event_id', () => {
+    expect(chaosVisitorEventId(123)).toEqual(chaosVisitorEventId('123'));
+    expect(chaosVisitorEventId(123)).toBe('chaos:visitor:123:verified');
+  });
+});
+
 describe('extractEventKey — unknown sources', () => {
   it('returns NONE for unregistered source ids', () => {
-    expect(extractEventKey('zoom-class', { foo: 'bar' })).toEqual({
-      event_id: null,
-      event_type: null,
-    });
+    expect(extractEventKey('something-not-registered', { foo: 'bar' })).toEqual(
+      { event_id: null, event_type: null },
+    );
   });
 });

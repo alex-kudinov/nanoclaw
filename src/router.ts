@@ -19,6 +19,30 @@ export function formatMessages(messages: NewMessage[]): string {
   return `<messages>\n${lines.join('\n')}\n</messages>`;
 }
 
+// Drop messages tagged with this group's own folder — host-posted echoes
+// (handoff confirmations, [PROCESSING] lines) carry from_group=<own folder>
+// and must never re-enter the group as inbound context or a live-container pipe.
+export function excludeOwnGroupMessages(
+  messages: NewMessage[],
+  folder: string,
+): NewMessage[] {
+  return messages.filter((m) => !m.from_group || m.from_group !== folder);
+}
+
+// A message is "untagged bot noise" only if the assistant sent it AND it
+// carries no from_group. Such rows are self-echoes whose from_group was lost
+// on restart — spawning a container for them is a no-op.
+// A bot message that DOES carry a from_group is a deliberate cross-group
+// handoff ([HANDOFF: inbox→sales] etc.) and must spawn the target agent.
+// Callers pass batches already stripped of this group's own from_group, so
+// any surviving from_group belongs to another group.
+export function isUntaggedBotNoise(
+  message: NewMessage,
+  assistantName: string,
+): boolean {
+  return message.sender_name === assistantName && !message.from_group;
+}
+
 export function stripInternalTags(text: string): string {
   return text.replace(/<internal>[\s\S]*?<\/internal>/g, '').trim();
 }

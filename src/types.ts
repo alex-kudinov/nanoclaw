@@ -31,6 +31,11 @@ export interface ContainerConfig {
   additionalMounts?: AdditionalMount[];
   timeout?: number; // Default: 300000 (5 minutes)
   spawnTimeout?: number; // Default: 90000 (90 seconds) — time for first output marker
+  // When set, the host posts "[PROCESSING] <msg>" to the channel before the
+  // container cold-starts, so the agent need not emit a First-Response ack.
+  processingMessage?: string;
+  // Per-group claude model override (e.g. 'haiku'). Unset → agent-runner sonnet.
+  model?: string;
 }
 
 export interface RegisteredGroup {

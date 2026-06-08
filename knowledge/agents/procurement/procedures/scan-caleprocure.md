@@ -39,10 +39,9 @@ For each keyword:
 1. Clear any previous search
 2. Enter keyword in the search field
 3. Wait for results to load (AJAX — watch for table/list to populate)
-4. Post progress: "CaleProcure: Searching '{keyword}' — {N} results..."
-5. Extract opportunities from results
-6. If paginated (>25 results), navigate first 2 pages
-7. Clear search, next keyword
+4. Extract opportunities from results
+5. If paginated (>25 results), navigate first 2 pages
+6. Clear search, next keyword
 
 **Alternative:** If the search supports UNSPSC code filtering, also try:
 - `86132001` — Executive coaching service

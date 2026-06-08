@@ -63,6 +63,49 @@ describe('buildApptRawBody', () => {
     });
   });
 
+  it('maps employee + customer full name and phone', () => {
+    const body = buildApptRawBody(
+      {
+        id: 70,
+        status: 'approved',
+        start_date_time: '2026-05-19T09:30:00-05:00',
+        created_at: '2026-05-16T04:00:00+00:00',
+        service: { name: 'Consultation Call' },
+        employees: [{ id: 5, first_name: 'Cherie', last_name: 'Silas' }],
+        bookings: [
+          {
+            customer: {
+              id: 46,
+              first_name: 'Angelo',
+              last_name: 'Argentieri',
+              email: 'angelo@akasearchgroup.com',
+            },
+          },
+        ],
+      } as any,
+      '+17164325422',
+    );
+    expect(body).toMatchObject({
+      employeeFirstName: 'Cherie',
+      employeeLastName: 'Silas',
+      employeeFullName: 'Cherie Silas',
+      customerFullName: 'Angelo Argentieri',
+      customerPhone: '+17164325422',
+    });
+  });
+
+  it('omits employee + phone when absent', () => {
+    const body = buildApptRawBody({
+      id: 71,
+      status: 'approved',
+      start_date_time: '2026-05-19T09:30:00-05:00',
+      created_at: '2026-05-16T04:00:00+00:00',
+      bookings: [{ customer: { id: 1, first_name: 'A', last_name: 'B' } }],
+    } as any);
+    expect(body.employeeFullName).toBeUndefined();
+    expect(body.customerPhone).toBeUndefined();
+  });
+
   it('handles missing customer gracefully', () => {
     const body = buildApptRawBody({
       id: 99,

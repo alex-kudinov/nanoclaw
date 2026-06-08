@@ -405,9 +405,11 @@
     "email",
     "sertifier",
     "trafft",
+    "chaos",
     "context7",
     "transcript",
     "pushover",
-    "text"
+    "text",
+    "stripe"
   ]
 }

@@ -304,6 +304,136 @@ describe('PGOPTIONS agent identity injection', () => {
   });
 });
 
+describe('per-group model threading (T10)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    fakeProc = createFakeProcess();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function captureStdinModel(
+    input: Record<string, unknown>,
+  ): Promise<unknown> {
+    const resultPromise = runContainerAgent(
+      testGroup,
+      input as never,
+      () => {},
+      async () => {},
+    );
+    const chunks: Buffer[] = [];
+    fakeProc.stdin.on('data', (chunk: Buffer) => chunks.push(chunk));
+    await vi.advanceTimersByTimeAsync(50);
+    emitOutputMarker(fakeProc, {
+      status: 'success',
+      result: 'ok',
+      newSessionId: 'sess-1',
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    fakeProc.emit('close', 0);
+    await vi.advanceTimersByTimeAsync(10);
+    await resultPromise;
+    const parsed = JSON.parse(Buffer.concat(chunks).toString());
+    return parsed.model;
+  }
+
+  it('passes an explicit model into the agent-runner payload', async () => {
+    const model = await captureStdinModel({
+      prompt: 'test',
+      groupFolder: 'test-group',
+      chatJid: 'test@g.us',
+      isMain: false,
+      model: 'haiku',
+    });
+    expect(model).toBe('haiku');
+  });
+
+  it('omits model when not specified (agent-runner defaults to sonnet)', async () => {
+    const model = await captureStdinModel({
+      prompt: 'test',
+      groupFolder: 'test-group',
+      chatJid: 'test@g.us',
+      isMain: false,
+    });
+    expect(model).toBeUndefined();
+  });
+
+  it('coerces an empty/whitespace model to undefined', async () => {
+    const model = await captureStdinModel({
+      prompt: 'test',
+      groupFolder: 'test-group',
+      chatJid: 'test@g.us',
+      isMain: false,
+      model: '   ',
+    });
+    expect(model).toBeUndefined();
+  });
+});
+
+describe('per-group model config (T11)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    fakeProc = createFakeProcess();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function captureModelForGroup(
+    group: RegisteredGroup,
+  ): Promise<unknown> {
+    const resultPromise = runContainerAgent(
+      group,
+      {
+        prompt: 'test',
+        groupFolder: group.folder,
+        chatJid: 'test@g.us',
+        isMain: false,
+      } as never,
+      () => {},
+      async () => {},
+    );
+    const chunks: Buffer[] = [];
+    fakeProc.stdin.on('data', (chunk: Buffer) => chunks.push(chunk));
+    await vi.advanceTimersByTimeAsync(50);
+    emitOutputMarker(fakeProc, {
+      status: 'success',
+      result: 'ok',
+      newSessionId: 'sess-1',
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    fakeProc.emit('close', 0);
+    await vi.advanceTimersByTimeAsync(10);
+    await resultPromise;
+    return JSON.parse(Buffer.concat(chunks).toString()).model;
+  }
+
+  it('resolves group.containerConfig.model onto ContainerInput.model', async () => {
+    const haikuGroup: RegisteredGroup = {
+      name: 'Archivarista',
+      folder: 'archivarista',
+      trigger: '@Gru',
+      added_at: new Date().toISOString(),
+      containerConfig: { model: 'haiku' },
+    };
+    expect(await captureModelForGroup(haikuGroup)).toBe('haiku');
+  });
+
+  it('omits model when the group has no model config (agent-runner → sonnet)', async () => {
+    const plainGroup: RegisteredGroup = {
+      name: 'Sales',
+      folder: 'sales',
+      trigger: '@Gru',
+      added_at: new Date().toISOString(),
+      containerConfig: { timeout: 600000 },
+    };
+    expect(await captureModelForGroup(plainGroup)).toBeUndefined();
+  });
+});
+
 describe('resolveOAuthToken (token pool round-robin)', () => {
   const mockFs = vi.mocked(fs);
   const cwd = process.cwd();

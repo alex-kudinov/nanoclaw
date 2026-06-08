@@ -1,6 +1,10 @@
 # Schema: nanoclaw_business (Postgres)
 
-Generated: 2026-04-26T08:00:34.813Z
+Generated: 2026-05-31T08:00:03.957Z
+
+Covers the public.* and business_v2.* schemas. business_v2 tables are
+headed with their schema prefix; access them via business_v2.v_* views and
+business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ## booking_events
 
@@ -253,4 +257,524 @@ Generated: 2026-04-26T08:00:34.813Z
   notes                         text                
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.attachments
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.attachments_id_seq'::regclass)
+  interaction_id                bigint               NOT NULL
+  filename                      text                
+  mime_type                     text                
+  size_bytes                    bigint              
+  storage_provider              text                
+  storage_url                   text                
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.contact_roles
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.document_kinds
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.document_line_items
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.document_line_items_id_seq'::regclass)
+  document_id                   bigint               NOT NULL
+  line_order                    integer              NOT NULL
+  description                   text                
+  quantity                      numeric              NOT NULL DEFAULT=1
+  unit_price_cents              integer              NOT NULL DEFAULT=0
+  subtotal_cents                integer              NOT NULL DEFAULT=0
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+```
+
+## business_v2.document_statuses
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.documents
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.documents_id_seq'::regclass)
+  party_id                      bigint               NOT NULL
+  kind                          text                 NOT NULL
+  status                        text                 NOT NULL
+  issued_at                     timestamp with time zone
+  due_at                        timestamp with time zone
+  amount_cents                  integer             
+  currency                      text                 NOT NULL DEFAULT='USD'::text
+  document_number               text                
+  source_provider               text                
+  source_id                     text                
+  interaction_id                bigint              
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
+```
+
+## business_v2.engagement_kinds
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.engagement_participants
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.engagement_participants_id_seq'::regclass)
+  engagement_id                 bigint               NOT NULL
+  party_id                      bigint               NOT NULL
+  participant_role              text                 NOT NULL
+  started_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  ended_at                      timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.engagements
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.engagements_id_seq'::regclass)
+  kind                          text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='active'::text
+  program_variant_id            bigint              
+  started_at                    timestamp with time zone
+  ended_at                      timestamp with time zone
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
+```
+
+## business_v2.interaction_channels
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.interactions
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.interactions_id_seq'::regclass)
+  party_id                      bigint              
+  engagement_id                 bigint              
+  channel                       text                 NOT NULL
+  direction                     text                 NOT NULL
+  subject                       text                
+  body                          text                
+  occurred_at                   timestamp with time zone NOT NULL
+  source_provider               text                
+  source_id                     text                
+  source_thread_id              text                
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
+```
+
+## business_v2.lost_reasons
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.participant_roles
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.parties
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.parties_id_seq'::regclass)
+  party_type                    text                 NOT NULL
+  display_name                  text                 NOT NULL
+  legal_name                    text                
+  primary_email                 USER-DEFINED        
+  notes                         text                
+  source_provider               text                
+  source_id                     text                
+  merged_into                   bigint              
+  merged_at                     timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
+  dnd_at                        timestamp with time zone
+```
+
+## business_v2.party_contact_roles
+
+```
+  party_id                      bigint               NOT NULL
+  contact_role                  text                 NOT NULL
+  for_party_id                  bigint               NOT NULL
+```
+
+## business_v2.party_emails
+
+```
+  party_id                      bigint               NOT NULL
+  email                         USER-DEFINED         NOT NULL
+  is_primary                    boolean              NOT NULL DEFAULT=false
+  verified_at                   timestamp with time zone
+```
+
+## business_v2.party_relationships
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_relationships_id_seq'::regclass)
+  from_party_id                 bigint               NOT NULL
+  to_party_id                   bigint               NOT NULL
+  relationship_type             text                 NOT NULL
+  started_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  ended_at                      timestamp with time zone
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.party_roles
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_roles_id_seq'::regclass)
+  party_id                      bigint               NOT NULL
+  role_type                     text                 NOT NULL
+  started_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  ended_at                      timestamp with time zone
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.pipeline_entries
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.pipeline_entries_id_seq'::regclass)
+  party_id                      bigint               NOT NULL
+  program_id                    bigint               NOT NULL
+  stage                         text                 NOT NULL
+  amount_cents                  integer             
+  currency                      text                 NOT NULL DEFAULT='USD'::text
+  dedupe_key                    text                
+  entered_stage_at              timestamp with time zone NOT NULL DEFAULT=now()
+  expected_close_date           date                
+  notes                         text                
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
+```
+
+## business_v2.pipeline_stage_history
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.pipeline_stage_history_id_seq'::regclass)
+  pipeline_entry_id             bigint               NOT NULL
+  from_stage                    text                
+  to_stage                      text                 NOT NULL
+  transitioned_at               timestamp with time zone NOT NULL DEFAULT=now()
+  transitioned_by               text                 NOT NULL DEFAULT='unknown'::text
+  reason                        text                 NOT NULL DEFAULT='unspecified'::text
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.pipeline_stages
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  sort_order                    integer              NOT NULL
+  is_terminal                   boolean              NOT NULL DEFAULT=false
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.plutio_outbox
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.plutio_outbox_id_seq'::regclass)
+  operation                     text                 NOT NULL
+  kind                          text                 NOT NULL
+  party_id                      bigint              
+  engagement_id                 bigint              
+  document_id                   bigint              
+  payload                       jsonb                NOT NULL
+  status                        text                 NOT NULL DEFAULT='pending'::text
+  attempts                      integer              NOT NULL DEFAULT=0
+  last_attempted_at             timestamp with time zone
+  last_error                    text                
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
+```
+
+## business_v2.plutio_outbox_operations
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.plutio_outbox_statuses
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  is_terminal                   boolean              NOT NULL DEFAULT=false
+  sort_order                    integer              NOT NULL
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.plutio_refs
+
+```
+  entity_type                   text                 NOT NULL
+  entity_id                     bigint               NOT NULL
+  plutio_entity_type            text                 NOT NULL
+  plutio_id                     text                 NOT NULL
+  plutio_url                    text                
+  last_pushed_at                timestamp with time zone
+  last_pulled_at                timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.program_kinds
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.program_variants
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.program_variants_id_seq'::regclass)
+  program_id                    bigint               NOT NULL
+  variant_key                   text                 NOT NULL
+  display_name                  text                 NOT NULL
+  capacity                      integer             
+  price_cents                   integer             
+  currency                      text                 NOT NULL DEFAULT='USD'::text
+  is_active                     boolean              NOT NULL DEFAULT=true
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.programs
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.programs_id_seq'::regclass)
+  slug                          USER-DEFINED         NOT NULL
+  kind                          text                 NOT NULL
+  display_name                  text                 NOT NULL
+  description                   text                
+  is_active                     boolean              NOT NULL DEFAULT=true
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
+```
+
+## business_v2.relationship_types
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.role_types
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  category                      text                 NOT NULL
+  is_person_only                boolean              NOT NULL DEFAULT=false
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.source_providers
+
+```
+  key                           text                 NOT NULL
+  label                         text                 NOT NULL
+  description                   text                 NOT NULL DEFAULT=''::text
+  enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.sweeper_watermarks
+
+```
+  source                        text                 NOT NULL
+  last_seen_id                  text                
+  last_seen_at                  timestamp with time zone
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_run_at                   timestamp with time zone
+  last_run_status               text                
+  last_run_error                text                
+  last_run_recovered            integer              NOT NULL DEFAULT=0
+  last_run_failed               integer              NOT NULL DEFAULT=0
+```
+
+## business_v2.v_active_engagements
+
+```
+  participant_id                bigint              
+  engagement_id                 bigint              
+  engagement_kind               text                
+  engagement_status             text                
+  party_id                      bigint              
+  display_name                  text                
+  participant_role              text                
+  started_at                    timestamp with time zone
+  program_variant_id            bigint              
+  variant_name                  text                
+  program_id                    bigint              
+  program_slug                  USER-DEFINED        
+  program_name                  text                
+```
+
+## business_v2.v_active_pipeline
+
+```
+  pipeline_entry_id             bigint              
+  party_id                      bigint              
+  display_name                  text                
+  program_id                    bigint              
+  program_slug                  USER-DEFINED        
+  program_name                  text                
+  stage                         text                
+  amount_cents                  integer             
+  currency                      text                
+  entered_stage_at              timestamp with time zone
+  expected_close_date           date                
+  dedupe_key                    text                
+  notes                         text                
+  last_interaction_at           timestamp with time zone
+```
+
+## business_v2.v_client_status
+
+```
+  party_id                      bigint              
+  display_name                  text                
+  client_status                 text                
+  last_engagement_ended_at      timestamp with time zone
+```
+
+## business_v2.v_party_contact_card
+
+```
+  party_id                      bigint              
+  display_name                  text                
+  party_type                    text                
+  primary_email                 USER-DEFINED        
+  legal_name                    text                
+  source_provider               text                
+  active_roles                  ARRAY               
+  last_interaction_at           timestamp with time zone
+```
+
+## business_v2.v_party_timeline
+
+```
+  party_id                      bigint              
+  interaction_id                bigint              
+  occurred_at                   timestamp with time zone
+  channel                       text                
+  direction                     text                
+  subject                       text                
+  source_provider               text                
+  source_id                     text                
+  engagement_id                 bigint              
+  pipeline_entry_id             bigint              
+  document_id                   bigint              
+  document_kind                 text                
+  document_status               text                
+```
+
+## business_v2.v_program_variant_seats
+
+```
+  program_variant_id            bigint              
+  variant_name                  text                
+  program_slug                  USER-DEFINED        
+  seats_total                   integer             
+  seats_filled                  bigint              
+  seats_remaining               bigint              
+```
+
+## business_v2.variant_enrollments
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.variant_enrollments_id_seq'::regclass)
+  variant_id                    bigint               NOT NULL
+  engagement_id                 bigint               NOT NULL
+  started_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  ended_at                      timestamp with time zone
+  status                        text                 NOT NULL DEFAULT='active'::text
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.webhook_inbox
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.webhook_inbox_id_seq'::regclass)
+  source                        text                 NOT NULL
+  event_id                      text                
+  event_type                    text                
+  received_at                   timestamp with time zone NOT NULL DEFAULT=now()
+  delivery_path                 text                 NOT NULL DEFAULT='n8n'::text
+  raw_headers                   jsonb               
+  raw_body                      jsonb                NOT NULL
+  status                        text                 NOT NULL DEFAULT='received'::text
+  attempts                      integer              NOT NULL DEFAULT=0
+  last_error                    text                
+  last_attempted_at             timestamp with time zone
+  handled_at                    timestamp with time zone
+  handled_by                    text                
+  party_id                      bigint              
+  related_entity                jsonb               
 ```

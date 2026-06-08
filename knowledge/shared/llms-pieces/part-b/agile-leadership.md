@@ -148,8 +148,8 @@ Yeah, I'm so there's an audience at every level. The question is, what audience 
 
 ### Related Articles
 
-- [5 Steps to Establishing Effective Coaching Agreements with Agile Leaders](https://tandemcoach.co/5-steps-to-establishing-effective-coaching-agreements-with-agile-leaders/): Here are five steps to create an effective coaching agreement that fosters clarity, trust, and progress — each grounded in the framework of [mastering ICF core competencies](/unlocking-coaching-excellence-a-guide-to-mastering-icf-core-competencies/).
-- [Beyond Solutions: Empowering Agile Leaders Through Person-Centered Coaching](https://tandemcoach.co/beyond-solutions-empowering-agile-leaders-through-person-centered-coaching/): Inspired by the insights of Marcia Reynolds, we're moving beyond the confines of problem-solving to embrace a more holistic approach: coaching the person, not just the problem.
-- [Dealing with Difficult Stakeholders](https://tandemcoach.co/best-agile-articles-2018-roman-pichler-dealing-with-difficult-stakeholders/): Best Agile Articles 2018 is a collection of the articles from a variety of authors published on topics of all things Agile in 2018.
+- [5 Steps to Establishing Effective Coaching Agreements with Agile Leaders](https://tandemcoach.co/5-steps-to-establishing-effective-coaching-agreements-with-agile-leaders/): Five steps establish the agreement: clarify the leader's specific objectives, define scope and boundaries for both parties, set communication frequency and methods, outline the feedback and adjustment process, and agree on confidentiality and ethical standards.
+- [Beyond Solutions: Empowering Agile Leaders Through Person-Centered Coaching](https://tandemcoach.co/beyond-solutions-empowering-agile-leaders-through-person-centered-coaching/): Person-centered coaching shifts agile leaders from problem-solving mode to self-discovery.
+- [Dealing with Difficult Stakeholders](https://tandemcoach.co/best-agile-articles-2018-roman-pichler-dealing-with-difficult-stakeholders/): Roman Pichler addressed stakeholder management directly in the Best Agile Articles 2018 workshop.
 
 ---

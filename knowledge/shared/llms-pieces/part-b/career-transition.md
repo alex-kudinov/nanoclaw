@@ -3,11 +3,23 @@
 ## Executive Psychological Readiness Assessment for Career Change
 URL: https://tandemcoach.co/psychological-readiness-career-change/
 
+### How can I assess my readiness for a career change?
+
+Three dimensions determine actual readiness: financial runway in months, psychological readiness scored across identity investment and uncertainty tolerance, and network strength. The psychological dimension is what executives skip. Ask yourself what disappears from your self-concept if your title changes tomorrow, what happens in your body imagining no certain next role, and what version of yourself you need to release.
+
 Before a transition coaching engagement begins, the [assessment tools executive coaches use](/executive-coaching-tools/) — ProfileXT, Genos EQ, 360-degree feedback, and LEAD NOW! — establish the behavioral baseline that makes readiness visible in data rather than just in feeling. For the full engagement structure that follows, the [executive coaching guide](/executive-coaching-guide/) covers every phase from intake to sustainability. Two in the morning. Phone in hand, scrolling job listings that don't quite fit. Calculator app minimized behind LinkedIn, showing severance math you've run four times already. A question keeps forming but won't finish itself - something about whether you're actually ready for what comes next, or just tired of what is.
 
 You've done the financial analysis. You know what transfers. You've mapped your network. But there's something else you haven't examined yet, something that explains why some executives who look perfectly positioned for change stay frozen while others with fewer advantages move decisively.
 
 That something is psychological readiness - the factor most executives skip because it doesn't fit in a spreadsheet and because examining it honestly requires a kind of vulnerability that feels foreign after years of projecting certainty.
+
+#### Key Takeaways
+
+- Psychological readiness is as determinative as financial runway — skipping it explains why well-resourced executives freeze while less-prepared ones move.
+- High identity investment in role isn't weakness; unexamined identity investment is what derails transitions.
+- You can grieve something you chose to release — bypassing that grief doesn't eliminate it, it relocates it.
+- Genuine unreadiness names a specific, addressable gap; resistance keeps moving the goalposts every time one condition is met.
+- Uncertainty tolerance is domain-specific — thriving in organizational ambiguity doesn't mean you'll handle personal career ambiguity the same way.
 
 ### The Assessment Most Executives Skip
 
@@ -39,7 +51,7 @@ This is the difference between high and low identity investment in role - and it
 
 Identity investment isn't weakness. It's natural, particularly for executives who've spent decades excelling at something demanding and specific. When you're introduced at industry events by your title, when your social calendar centers on professional gatherings, when your sense of contribution to the world runs through your organizational role - that's identity investment accumulating. The problem isn't the investment itself. It's not examining how much you've accumulated and what releasing it would actually require.
 
-Research on [professional identity and [career transitions](/career-transitions-executive-coaching/)](https://www.annualreviews.org/content/journals/10.1146/annurev-orgpsych-020924-071546) confirms what coaches observe in practice: major career shifts involve identity reconstruction, not just skill transfer — what we call [the formation-based identity that resists career change](/professional-identity-leadership/). This isn't psychological jargon. It's the recognition that "who you are" and "what you do" become intertwined over time, and separating them requires deliberate effort.
+Research on [professional identity and career transitions](https://www.annualreviews.org/content/journals/10.1146/annurev-orgpsych-020924-071546) confirms what coaches observe in practice: major career shifts involve identity reconstruction, not just skill transfer — what we call [the formation-based identity that resists career change](/professional-identity-leadership/). This isn't psychological jargon. It's the recognition that "who you are" and "what you do" become intertwined over time, and separating them requires deliberate effort.
 
 The [identity investment in tasks](/purpose-audit-executive-roles) you've made affects how much identity work a transition will require. Executives who've built careers around specific functions - I *am* finance, I *am* marketing - face steeper psychological climbs than those whose identity centers on purpose that happens to express through a function.
 
@@ -169,10 +181,10 @@ Working with someone experienced in [navigating career transitions](https://tand
 
 ### Related Articles
 
-- [Executive Career Decision Framework | TRANSITION BRIDGE™ Criteria](https://tandemcoach.co/transition-bridge-decision-framework/): The executive who can articulate exactly why Transform, Pivot, Reinvent, and Portfolio each make sense for someone usually can't decide which one makes sense for them.
-- [Executive Career Pivot Strategy: Framework for Adjacent Moves](https://tandemcoach.co/executive-career-pivot-ai/): Every executive considering a pivot makes one of two mistakes.
-- [Executive Career Reinvention: When Starting Over Makes Sense](https://tandemcoach.co/executive-career-reinvent/): There's a particular kind of thought that surfaces when everything else quiets down - during a late-night flight home, or in those still moments before sleep finally arrives.
-- [Executive Transition Runway Calculator | How Long Can You Really Last?](https://tandemcoach.co/executive-financial-runway-calculator/): Once the financial timing is clear, the coaching engagement that follows relies on [assessment tools executive coaches use](/executive-coaching-tools/) to establish a behavioral baseline before transition work begins.
-- [Need a Career Transition Coach? Read This Guide First](https://tandemcoach.co/career-transition-coach/): Navigating a [career change](/psychological-readiness-career-change/) can often be overwhelming.
+- [Executive Career Decision Framework | TRANSITION BRIDGE™ Criteria](https://tandemcoach.co/transition-bridge-decision-framework/): Stop weighing paths against each other and start weighing them against your actual situation.
+- [Executive Career Pivot Strategy: Framework for Adjacent Moves](https://tandemcoach.co/executive-career-pivot-ai/): Score your top options using the Transferability Quotient across three dimensions: Capability Match at 40%, Access Reality at 30%, and Market Timing at 30%.
+- [Executive Career Reinvention: When Starting Over Makes Sense](https://tandemcoach.co/executive-career-reinvent/): Start over when three conditions are simultaneously present: genuine pull toward a specific field you can describe in unglamorous detail, 18 to 24 months of living expenses accessible without stress, and psychological readiness to dismantle the professional identity you spent decades building.
+- [Executive Transition Runway Calculator | How Long Can You Really Last?](https://tandemcoach.co/executive-financial-runway-calculator/): Your runway is the shortest of three distances: financial, psychological, and network.
+- [Need a Career Transition Coach? Read This Guide First](https://tandemcoach.co/career-transition-coach/): Three signals make coaching the right call: repeated career moves that did not deliver what you expected, a layoff or restructuring that cut your trajectory short, or circling the same role at different companies without growing.
 
 ---

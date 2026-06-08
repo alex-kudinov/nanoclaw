@@ -1,20 +1,24 @@
 # Mentor Coaching Foundations
 URL: https://tandemcoach.co/mcq/mentor-coaching-foundations/
 
-Mentor Coach Qualification · Foundations
-CCE accreditation pending
+Mentor Coach Specialization · Foundations
+ICF CCE Approved
 
-## The fastest 10 hours to your ICF Mentor Coach Qualification
+## The fastest 10 hours to your ICF Mentor Coach Specialization
 
 An asynchronous, MCC-built program designed for the Credit for Prior Learning path - 10 hours of CCE-aligned education, 22 video lessons, 6 instructor-graded submissions, all 6 ICF Mentor Coaching Competencies. Created by Cherie Silas, MCC and Alex Kudinov, MCC.
 
-$397
+Regular $397
 $299
 USD · 14-day money-back guarantee
 
 [Enroll - $299](#enroll)
 
-MCQ required for every credentialed mentor coach as of **January 1, 2027**.
+MCS required for every credentialed mentor coach as of **January 1, 2027**.
+
+**Standard Path candidate?**
+Foundations is the 10-hour CPL course. Standard Path candidates take our 70-hour live cohort built to the new ICF [Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation/) standard - Foundations is included inside the cohort as just-in-time pre-work, no separate purchase.
+[See the live cohort →](/mcs/mentor-coach-training/)
 
 **10 hours** async, self-paced
 
@@ -22,19 +26,19 @@ MCQ required for every credentialed mentor coach as of **January 1, 2027**.
 
 Built by **two ICF MCCs**
 
-ICF CCE Accreditation: **Pending Review**
+ICF CCE Accreditation: **Approved**
 
 Why this exists, and why now
 
 ### January 1, 2027 changes who can mentor coach for ICF.
 
-Right now, any ICF-credentialed coach can sign off on the 10 mentor coaching hours that go into a candidate's ACC, PCC, or MCC application. Starting January 1, 2027, that signature only counts if you hold the new **ICF Mentor Coach Qualification (MCQ)** at the matching credential level.
+Right now, any ICF-credentialed coach can sign off on the 10 mentor coaching hours that go into a candidate's ACC, PCC, or MCC application. Starting January 1, 2027, that signature only counts if you hold the new **ICF Mentor Coach Specialization (MCS)** at the matching credential level.
 
 The two paths
 
 #### 41 hours, or 10.
 
-Both paths lead to the same MCQ designation. The difference is how you demonstrate readiness.
+Both paths lead to the same MCS designation. The difference is how you demonstrate readiness.
 
 41
 
@@ -56,7 +60,7 @@ April 2026 Update
 
 Four changes that redefine mentor coaching for every credential candidate after January 1, 2027.
 
-- **New MCQ designation.**
+- **New MCS designation.**
 
   Coaches who mentor credential candidates need formal qualification at ACC, PCC, or MCC level.
 - **Two paths to qualify.**
@@ -64,12 +68,12 @@ Four changes that redefine mentor coaching for every credential candidate after 
   Standard Path (41 hours + BARS / Markers) or Credit for Prior Learning (10 hours + practice evidence).
 - **SPE evaluation replaced.**
 
-  From April 1, 2027 the SPE recording requirement for ACC and PCC Portfolio is replaced by formative evaluation through MCQ-qualified mentor coaches.
+  From April 1, 2027 the SPE recording requirement for ACC and PCC Portfolio is replaced by formative evaluation through MCS-qualified mentor coaches.
 - **Renewable every 3 years.**
 
   10 hours of MC-aligned continuing education plus an active credential at the matching level.
 
-[Read the full MCQ guide](/mcq/)
+[Read the full MCS guide](/mcs/)
 
 Who this program is for
 
@@ -85,7 +89,7 @@ PCC, MCC, or renewed ACC who has mentored 5+ credential candidates over the last
 
 - You can document five credentialed mentees - or you qualify for an attestation letter from an accredited program.
 - You need 10 hours of MC-aligned education to complete CPL, plus separate BARS / Markers training for each level.
-- You want the fastest credible route to MCQ before January 1, 2027.
+- You want the fastest credible route to MCS before January 1, 2027.
 
 [This is me - enroll](#enroll)
 
@@ -95,7 +99,7 @@ Persona 2
 
 You're already mentoring credential candidates today - Foundations gives you the formal CCE record before the deadline.
 
-- Your credential clients depend on your sign-off - that signature must come from an MCQ holder starting January 1, 2027.
+- Your credential clients depend on your sign-off - that signature must come from an MCS holder starting January 1, 2027.
 - You want education that mirrors the work you actually do, not theory disconnected from practice.
 - Async fits your practice - you cannot block a 41-hour synchronous training cohort.
 
@@ -103,7 +107,7 @@ You're already mentoring credential candidates today - Foundations gives you the
 
 Persona 3
 
-#### The MCQ renewer
+#### The MCS renewer
 
 You'll qualify under the introductory window in 2026 and want CCE hours that count toward the three-year renewal cycle.
 
@@ -113,7 +117,7 @@ You'll qualify under the introductory window in 2026 and want CCE hours that cou
 
 [This is me - enroll](#enroll)
 
-Not sure which persona fits? Read the [free MCQ Decision Guide](/flipbook/?book=404bb6a3fc) - eight questions, a flowchart, and a sample attestation request you can copy.
+Not sure which persona fits? Read the [free MCS Decision Guide](/flipbook/?book=404bb6a3fc) - eight questions, a flowchart, and a sample attestation request you can copy.
 
 What you actually get
 
@@ -248,7 +252,7 @@ Revisit modules during the renewal cycle and as ICF updates the MC competency fr
 
 Your faculty
 
-### Both instructors hold ICF MCC. Both built mentor coaching practices before MCQ existed.
+### Both instructors hold ICF MCC. Both built mentor coaching practices before MCS existed.
 
 Cherie Silas and Alex Kudinov are co-founders of Tandem Coaching Academy and two of the few coach educators credentialed at ICF's highest level. Every module of Foundations is taught by one of them - Cherie leads Modules 1, 3, 5; Alex leads Modules 2, 4, 6. The recording you analyze in Modules 4 and 5 is reviewed by both.
 
@@ -283,6 +287,28 @@ Module 6 - Group Mentor Coaching
 
 Both instructors mentor and supervise active credential candidates today. Every framework in this program is in use in their live mentor coaching practices - it isn't drawn from a textbook.
 
+Try Two Lessons Free
+
+### See the program before you decide.
+
+Two lessons from the Foundations course are unlocked for any registered community user. Sign up below — no purchase, no credit card. You'll land in the Tandem community with **Mentor Coaching Foundations** on your sidebar and lessons 1.1 and 4.1 ready to watch.
+
+Lesson 1.1 · 7 minutes
+
+#### What Is Mentor Coaching?
+
+The opening of Module 1. Cherie names the work — what mentor coaching is, what it isn't, and the role distinction every credentialed coach has to hold under the 2026 ICF standards.
+
+Lesson 4.1 · 7 minutes
+
+#### Why Formative, Not Summative
+
+The Module 4 opener that names the shift behind the MCS deadline: ICF retiring the SPE in favor of formative evaluation, the 67% proficiency threshold, and what it means for every mentor coach engagement after April 2027.
+
+#### Get free preview access
+
+Enter your name and email. We'll create your community account and send you sign-in details. Lessons 1.1 and 4.1 will be open as soon as you log in.
+
 Verification & Certificate
 
 ### 10 CCE hours - earned, not granted.
@@ -310,14 +336,14 @@ Written work reviewed by Cherie or Alex against an ICF-aligned rubric. One revis
 
 #### Your Certificate of Completion
 
-Issued only after all verification is complete. Upload directly to your ICF MCQ application.
+Issued only after all verification is complete. Upload directly to your ICF MCS application.
 
 - **10 CCE hours** - asynchronous, Core Competency classification
 - **Aligned with the 2024 ICF Mentor Coaching Competencies** - all 6 competencies covered
 - Your name as it appears on your ICF credential
 - Course title, completion date, and unique certificate ID
 - Instructor signatures from Cherie Silas, MCC and Alex Kudinov, MCC
-- ICF CCE accreditation reference number (added once ICF approval lands)
+- Confirmation of ICF CCE approval - 10 CCEUs
 
 Enroll today
 
@@ -329,9 +355,9 @@ Launch pricing through September 30, 2026
 
 #### Mentor Coaching Foundations
 
-Program A · 10-hour async CCE program for the MCQ Credit for Prior Learning path.
+Program A · 10-hour async CCE program for the MCS Credit for Prior Learning path.
 
-$397
+Regular $397
 $299
 USD
 
@@ -348,10 +374,14 @@ USD
 
 ##### What's not included
 
-- ICF MCQ application fee (paid directly to ICF: $50 / $125 USD through March 31, 2027)
-- BARS or Markers evaluation training - available separately from Tandem starting at $49. [See Evaluation Training courses →](/mcq/evaluation-training/)
-- Live mentor coaching practice hours (those are in our Standard Path companion program, [Mentor Coaching Practicum](/mcq/), opening Q3 2026)
+- ICF MCS application fee (paid directly to ICF: $50 / $125 USD through March 31, 2027)
+- BARS or Markers evaluation tool training - complete this through the [ICF Learning Portal](https://coachingfederation.org/credentials-and-standards/credentials/mentor-coach-specialization) for the level(s) you are applying to
+- Live synchronous hours, group practicum, and formative evaluation - those are in our Standard Path program, [Mentor Coach Training](/mcs/mentor-coach-training/) (68 hours, founding cohort $1,997)
 - 1:1 mentor coaching sessions - Tandem's individual mentor coaching is purchased separately
+
+**On the Standard Path?**
+Foundations alone won't qualify you - the Standard Path requires 41 hours total with at least 50% synchronous. Our 68-hour live cohort includes Foundations as just-in-time pre-work. Buy the cohort, not Foundations.
+[See Mentor Coach Training - $1,997 →](/mcs/mentor-coach-training/)
 
 **14-day money-back guarantee**
 
@@ -366,39 +396,49 @@ Frequently asked
 
 ### Twelve questions Tandem coaches ask before they enroll.
 
-Pulled from real conversations with credentialed coaches navigating the MCQ rollout. If your question isn't here, email [hello@tandemcoach.co](mailto:hello@tandemcoach.co) - we will answer in writing.
+Pulled from real conversations with credentialed coaches navigating the MCS rollout. If your question isn't here, email [hello@tandemcoach.co](mailto:hello@tandemcoach.co) - we will answer in writing.
 
-**Q: What is the ICF Mentor Coach Qualification (MCQ)?**
+**Q: Should I buy Foundations or the live cohort?**
 
-The MCQ is an individual qualification from the International Coaching Federation - announced in April 2026 and effective January 1, 2027. It formally recognizes coaches who are qualified to provide mentor coaching to ICF credential candidates at a specific level (ACC, PCC, or MCC). The MCQ is evaluated against the 2024 ICF Mentor Coaching Competencies and is separate from your own ACC, PCC, or MCC credential.
+Depends on your application path.
+
+**Buy Foundations ($299) if** you are taking the **Credit for Prior Learning** path - you have an active ACC/PCC/MCC credential, documented prior mentor coaching practice, and you only need the 10-hour MCS competencies course to complete your CPL submission before September 30, 2026.
+
+**Buy our live cohort ($1,997) if** you are taking the **Standard Path** - you need the full 41 hours with at least 50% synchronous, group practicum, and formative evaluation. Foundations content is included as just-in-time pre-work inside the cohort, so do not buy it separately.
+
+[**See Mentor Coach Training - $1,997 founding cohort →**](/mcs/mentor-coach-training/)
+
+**Q: What is the ICF Mentor Coach Specialization (MCS)?**
+
+The MCS is an individual specialization from the International Coaching Federation - announced in April 2026 and effective January 1, 2027. It formally recognizes coaches who are qualified to provide mentor coaching to ICF credential candidates at a specific level (ACC, PCC, or MCC). The MCS is evaluated against the 2024 ICF Mentor Coaching Competencies and is separate from your own ACC, PCC, or MCC credential.
 
 **Q: Why does ICF require it now, and what's the January 1, 2027 deadline really?**
 
-Two dates matter. On **January 1, 2027**, every mentor coach who signs off on the 10 mentor coaching hours in an ACC, PCC, or MCC application must hold the MCQ at the candidate's credential level. On **April 1, 2027**, the ICF Performance Evaluation (SPE) recording-and-transcript requirement for ACC and PCC Portfolio candidates is replaced by formative evaluation through MCQ-qualified mentor coaches. The change is live, not theoretical - candidates submitting applications after January 1, 2027 will need MCQ-qualified mentor signatures.
+Two dates matter. On **January 1, 2027**, every mentor coach who signs off on the 10 mentor coaching hours in an ACC, PCC, or MCC application must hold the MCS at the candidate's credential level. On **April 1, 2027**, the ICF Performance Evaluation (SPE) recording-and-transcript requirement for ACC and PCC Portfolio candidates is replaced by formative evaluation through MCS-qualified mentor coaches. The change is live, not theoretical - candidates submitting applications after January 1, 2027 will need MCS-qualified mentor signatures.
 
 **Q: What's the Credit for Prior Learning (CPL) path versus the Standard Path?**
 
-Both paths lead to the same MCQ designation with the same standing. The **Standard Path** requires a minimum of 41 hours of MC-aligned education with at least 50% delivered synchronously. **Credit for Prior Learning (CPL)** requires 10 hours of MC-aligned education (synchronous or asynchronous) plus evidence of prior practice - either five mentor coaching clients who earned credentials in the past three years, or an attestation letter from an ICF accredited coaching education provider verifying mentor coaching to at least five students in the past three years.
+Both paths lead to the same MCS designation with the same standing. The **Standard Path** requires a minimum of 41 hours of MC-aligned education with at least 50% delivered synchronously. **Credit for Prior Learning (CPL)** requires 10 hours of MC-aligned education (synchronous or asynchronous) plus evidence of prior practice - either five mentor coaching clients who earned credentials in the past three years, or an attestation letter from an ICF accredited coaching education provider verifying mentor coaching to at least five students in the past three years.
 
 **Q: Does this program count toward CPL?**
 
-Yes - that's the design. Mentor Coaching Foundations delivers all 10 MC-aligned education hours required under CPL, fully aligned with the 2024 ICF Mentor Coaching Competencies. ICF CCE accreditation is currently submitted and pending review. Your certificate is issued only after you complete every quiz and submission, so it stands up to ICF documentation requirements.
+Yes - that's the design. Mentor Coaching Foundations delivers all 10 MC-aligned education hours required under CPL, fully aligned with the 2024 ICF Mentor Coaching Competencies. This program is ICF CCE approved. Your certificate is issued only after you complete every quiz and submission, so it stands up to ICF documentation requirements.
 
 **Q: Do I still need to take ICF's BARS or PCC Markers separately?**
 
-For the CPL path, evaluation training (ACC BARS, PCC Markers, MCC BARS) is always separate and additional - it does not count toward the 10 hours. You take it directly through ICF for each level you want MCQ at. Foundations is the 10 MC-aligned hours; BARS / Markers is the level-specific evaluation training.
+For the CPL path, evaluation training (ACC BARS, PCC Markers, MCC BARS) is always separate and additional - it does not count toward the 10 hours. You take it directly through ICF for each level you want MCS at. Foundations is the 10 MC-aligned hours; BARS / Markers is the level-specific evaluation training.
 
 **Q: What's the attestation letter, and can Tandem write one for me?**
 
-The attestation letter is accepted by ICF as evidence of prior mentor coaching practice under the CPL path - in lieu of documenting five specific candidates who earned credentials. Per ICF, any ICF accredited coaching education provider can write one, verifying that you have provided mentor coaching to at least five students in the past three years. Graduates of Tandem Coaching Academy who meet the threshold can request the attestation letter on submission of their MCQ application.
+The attestation letter is accepted by ICF as evidence of prior mentor coaching practice under the CPL path - in lieu of documenting five specific candidates who earned credentials. Per ICF, any ICF accredited coaching education provider can write one, verifying that you have provided mentor coaching to at least five students in the past three years. Graduates of Tandem Coaching Academy who meet the threshold can request the attestation letter on submission of their MCS application.
 
-**Q: Can I use this 10 hours toward MCQ renewal three years from now?**
+**Q: Can I use this 10 hours toward MCS renewal three years from now?**
 
-Yes. ICF's MCQ renewal cycle requires 10 hours of MC-aligned continuing education within each three-year window. The 10 CCE hours from Foundations satisfy that requirement once - so you can use them for initial MCQ qualification or for renewal, but not both. Most coaches use it for initial qualification and complete different MC-aligned education for the renewal cycle.
+Yes. ICF's MCS renewal cycle requires 10 hours of MC-aligned continuing education within each three-year window. The 10 CCE hours from Foundations satisfy that requirement once - so you can use them for initial MCS application or for renewal, but not both. Most coaches use it for initial application and complete different MC-aligned education for the renewal cycle.
 
 **Q: How long do I have to complete the program?**
 
-You have lifetime access. Most credentialed coaches finish in two focused weeks at ~5 hours per week, but you can spread it across a quarter or longer. The only constraint is the January 1, 2027 deadline if you want your MCQ application to be processed under the introductory fee window - and you'll want to allow time for ICF to review your CPL submission.
+You have lifetime access. Most credentialed coaches finish in two focused weeks at ~5 hours per week, but you can spread it across a quarter or longer. The only constraint is the January 1, 2027 deadline if you want your MCS application to be processed under the introductory fee window - and you'll want to allow time for ICF to review your CPL submission.
 
 **Q: What if I fail a quiz or my submission needs revision?**
 
@@ -406,15 +446,15 @@ The three quizzes are retakeable unlimited times - you need 80% to pass. Each wr
 
 **Q: What does the certificate look like?**
 
-A PDF certificate with: your name as it appears on your ICF credential, the program title, completion date, a unique certificate ID, the 10 CCE hours (Core Competency, asynchronous, aligned with the 2024 Mentor Coaching Competencies), instructor signatures from Cherie Silas, MCC and Alex Kudinov, MCC, and the ICF CCE accreditation reference number (added once ICF approval lands). You upload it directly to your ICF MCQ application.
+A PDF certificate with: your name as it appears on your ICF credential, the program title, completion date, a unique certificate ID, the 10 CCE hours (Core Competency, asynchronous, aligned with the 2024 Mentor Coaching Competencies), instructor signatures from Cherie Silas, MCC and Alex Kudinov, MCC, and confirmation of ICF CCE approval for 10 CCEUs. You upload it directly to your ICF MCS application.
 
-**Q: Are Cherie and Alex MCQ-qualified themselves?**
+**Q: Are Cherie and Alex MCS-qualified themselves?**
 
-Both Cherie and Alex hold ICF MCC and have provided mentor coaching to dozens of credential candidates over the past several years. Both will apply for MCQ at the MCC level under the CPL path during the introductory fee window. Their teaching of Foundations does not depend on the qualification - they have been doing this work for years - but they will hold MCQ-MCC formally as soon as ICF processes their applications.
+Both Cherie and Alex hold ICF MCC and have provided mentor coaching to dozens of credential candidates over the past several years. Both will apply for MCS at the MCC level under the CPL path during the introductory fee window. Their teaching of Foundations does not depend on the specialization - they have been doing this work for years - but they will hold MCS-MCC formally as soon as ICF processes their applications.
 
 **Q: When does Program B (Practicum) open, and what will it cost?**
 
-**Mentor Coaching Practicum** opens in Q3 2026. It's a 31-hour blended program (10 async + 21 synchronous) designed to satisfy the Standard Path's "at least 50% synchronous" requirement when paired with Foundations. Together: 41 hours = Standard Path complete. Tuition is TBA. Your enrollment in Foundations counts toward the 41-hour total when you continue into Practicum - you don't repeat the 10 hours. [Join the Practicum waitlist on the MCQ hub](/mcq/#our-programs) for launch pricing and an early look at the syllabus.
+**Mentor Coaching Practicum** opens in Q3 2026. It's a 31-hour blended program (10 async + 21 synchronous) designed to satisfy the Standard Path's "at least 50% synchronous" requirement when paired with Foundations. Together: 41 hours = Standard Path complete. Tuition is TBA. Your enrollment in Foundations counts toward the 41-hour total when you continue into Practicum - you don't repeat the 10 hours. [Join the Practicum waitlist on the MCS hub](/mcs/#our-programs) for launch pricing and an early look at the syllabus.
 
 Cohort 1 enrollment open
 
@@ -430,7 +470,7 @@ Secure Stripe checkout
 
 Instant Learning Portal access
 
-CCE Pending
+ICF CCE Approved
 
 Mentor Coaching
 Foundations
@@ -444,17 +484,17 @@ Take it with you
 
 ### The 8-page program brochure - everything in one PDF.
 
-For coaches who want to read offline, share with a colleague, or take to a procurement decision: the full Mentor Coaching Foundations brochure. Curriculum, pricing, faculty, verification design, what's included, and how the program slots into your MCQ application.
+For coaches who want to read offline, share with a colleague, or take to a procurement decision: the full Mentor Coaching Foundations brochure. Curriculum, pricing, faculty, verification design, what's included, and how the program slots into your MCS application.
 
 - Six modules at a glance with capability milestones and ICF MC competency mapping
 - Full faculty bios with credentials and teaching history
 - Pricing detail, refund policy, and CCE hour breakdown
-- Sample certificate fields and what ICF expects in your MCQ submission
+- Sample certificate fields and what ICF expects in your MCS submission
 
 Opens on this site - your copy lands in your inbox so you can share it later.
 
-**MCQ required January 1, 2027.**
-Foundations - 10 hours, $299 launch (was $397), 14-day money back.
+**MCS required January 1, 2027.**
+Foundations - 10 hours, $299 launch (regular $397), 14-day money back.
 
 [Enroll - $299](#enroll)
 

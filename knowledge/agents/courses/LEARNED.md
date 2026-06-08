@@ -119,3 +119,28 @@ INSTRUCTORS_DIR=/workspace/extra/instructors
 4. *Sena listed first-name-only* — Scena Webb is in Heartbeat (scena.webb@outlook.com). Use full name "Scena Webb" in meeting summaries going forward.
 
 5. *Concurrent agent runs* — two Gru sessions ran simultaneously and caused conflicting distributions. Meeting summaries should include full names to prevent ambiguous first-name matching under any version of heartbeat.py.
+
+## Session: 2026-05-05 Level 2 Module 3 Class 1 (distributed 2026-05-12)
+
+- Session title: Coaching Frames for Team Coaching (Kalina Terzieva, PCC)
+- 3 recipients: Zara Hughes, Robin Nordmeyer, Thomas Goldstein
+- Enrichment dir: 2026-05-05-1458
+- lib/ directory was missing on container restart — recreated heartbeat.py from memory (standard procedure)
+- No matching issues; all three students resolved cleanly
+
+## Session: 2026-05-11 Module 2 — Coaching Presence and the Power of Silence (distributed 2026-05-12)
+
+- Instructor: Karen Bruns, PCC
+- Enrichment dir: 2026-05-11-1448
+- 10 recipients: Kayla Bigerton, Pharri Kenwood, Rachel Bari Keane, Aradhana Goel, Misha E., Chong Chen, Jackie Epler, Edward Utz, Richard Dean (Rick), Karen Fenstermacher
+- lib/ directory missing on container restart — recreated heartbeat.py from scratch (standard procedure)
+
+### Issues Encountered
+
+1. *Karen Fenstermacher incorrectly included* — "Karen (Tandem Instructor)" in attendee list normalizes to "karen" (single token, parens stripped). SKIP_NAMES had "karen bruns" but not "karen". Single-token match scored Karen Fenstermacher 0.70 (first-name match). She received the email in error.
+   - Fix: heartbeat.py now checks raw_name for "instructor"/"admin"/"facilitator" marker BEFORE normalizing — those attendees are skipped entirely
+   - Rule: meeting summaries should always list instructor as "Karen Bruns (Tandem Instructor)" not just "Karen (Tandem Instructor)" to give the instructor name for SKIP_NAMES exclusion — but the raw-name marker check is now the primary guard
+
+2. *Ed Utz and Rick (Richard Dean) matched correctly* — they were listed as unmatched in the preview (which ran with a different/earlier heartbeat.py). On final distribution, Ed Utz matched by full name and Rick matched via _NICKNAMES rick→richard.
+
+3. *Preview vs. final count mismatch* — Preview showed 7; final distribution sent to 10. Discrepancy due to heartbeat.py being rebuilt for each cold start without a persistent canonical copy. The preview was generated in a prior container session with a different heartbeat.py version.

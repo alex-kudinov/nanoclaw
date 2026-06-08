@@ -3,6 +3,10 @@
 ## We are hired to give our clients solutions that work. Aren’t we?
 URL: https://tandemcoach.co/we-are-hired-to-give-our-clients-solutions-that-work-arent-we/
 
+### Are we really delivering solutions that work?
+
+Consultant-delivered solutions produce compliance, not sustainable change. The single biggest problem: solutions are ours, not theirs. Clients revert the moment we leave, then hire the next consultant to fix them again. That vicious loop is wasteful proof the answers we hand over do not stick without the thinking behind them.
+
 > *`Make yourself look good and you'll have a job and an army of ill-wishers; highlight and exploit your client’s brilliance and you’ll have a job and an army of fans.`*
 >
 > - Quoting myself.
@@ -14,6 +18,14 @@ Fair enough, there’s a rhyme and reason to that view. And it is a deeply flawe
 Let’s get this one misunderstanding out of the way first and foremost – coaching is NOT about asking powerful questions. It is true that masterful coaches ask questions that are short, simple, go to the heart of the matter and thus wield immense power of evoking awareness for the client. However, mastery does not end, nor does it start here.
 
 True mastery is rooted in the deep understanding of coaching competencies. True mastery is agile and varied enough to be highly useful to coaching clients in a broad range of situations. A directive telling approach might leave the client in awe of the consultant’s depth and breadth of knowledge; a coaching approach will leave behind a more capable, stronger, and resilient client who can implement a more sustainable change.
+
+#### Key Takeaways
+
+- Clients who co-design solutions implement them — and own them when the coach leaves.
+- Coaching mastery isn't asking questions; it's knowing exactly when to ask, when to share, and when to teach.
+- Fixing clients on their behalf builds dependency, not capability — and turns the coach into an expensive crutch.
+- The sixth discipline is fluency across all coaching stances: the coach who only has a hammer turns every client into a nail.
+- Sustainable change lives in the client's context; solutions imported wholesale from elsewhere rarely survive contact with reality.
 
 ### **Chicken and egg problem**
 
@@ -157,9 +169,9 @@ There is a huge and wonderful world of coaching well beyond powerful questions. 
 
 ### Related Articles
 
-- [Building a Successful Coaching Practice: Expert Insights for Attracting and Retaining Clients](https://tandemcoach.co/building-a-successful-coaching-practice-expert-insights-for-attracting-and-retaining-clients/): Hello again, it's Cherie!
-- [Coaching Supervision and Ethical Dilemmas: A Practitioner’s Framework](https://tandemcoach.co/coaching-supervision-handling-ethical-dilemmas/): The coach paused mid-sentence.
-- [Coaching Supervision for Internal vs. External Coaches](https://tandemcoach.co/coaching-supervision-internal-vs-external-coaches/): Most organizations that invest in internal coaching programs eventually ask the right question: should our coaches have supervision?
-- [The Real Benefits of Coaching Supervision](https://tandemcoach.co/coaching-supervision-top-benefits/): There’s a shift that happens in coaches who’ve been in supervision for a while – not overnight, and not dramatically.
+- [Building a Successful Coaching Practice: Expert Insights for Attracting and Retaining Clients](https://tandemcoach.co/building-a-successful-coaching-practice-expert-insights-for-attracting-and-retaining-clients/): Define a clear niche so the right clients find you.
+- [Coaching Supervision and Ethical Dilemmas: A Practitioner’s Framework](https://tandemcoach.co/coaching-supervision-handling-ethical-dilemmas/): Use the five-step framework: name the tension precisely, identify all stakeholders, examine your own pull toward a resolution, apply the peer test, then make a provisional decision with explicit conditions for revisiting it.
+- [Coaching Supervision for Internal vs. External Coaches](https://tandemcoach.co/coaching-supervision-internal-vs-external-coaches/): External coaches bring their full practice to supervision.
+- [The Real Benefits of Coaching Supervision](https://tandemcoach.co/coaching-supervision-top-benefits/): Supervision shifts a coach's self-attention from client outcomes to what's happening inside them during sessions.
 
 ---
