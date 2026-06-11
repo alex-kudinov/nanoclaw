@@ -31,8 +31,13 @@ const CHAOS_RECORD_TOOL = path.join(
   'shared/chaos/tools/chaos/record-external-event.sh',
 );
 
-/** Label of the hidden Trafft custom field that carries the Chaos fingerprint. */
-const CID_LABEL = 'cid';
+/**
+ * Trafft custom-field labels that carry the Chaos fingerprint (cid).
+ * The live booking form names the hidden field "Tandem Customer ID" (the value
+ * the tandemcoach.co booking-link decoration writes from `?cid=`); older configs
+ * and unit fixtures used the bare "cid" label. Match either, case-insensitively.
+ */
+const CID_LABELS = ['tandem customer id', 'cid'];
 
 export type ChaosBookingStatus =
   | 'recorded'
@@ -51,11 +56,12 @@ export interface ChaosBookingResult {
 export function extractCid(
   booking: Pick<BookedInput, 'customFields'>,
 ): string | undefined {
-  const field = booking.customFields.find(
-    (cf) => cf.label.trim().toLowerCase() === CID_LABEL,
+  const field = booking.customFields.find((cf) =>
+    CID_LABELS.includes(cf.label.trim().toLowerCase()),
   );
   const value = field?.value?.trim();
-  return value ? value : undefined;
+  // Trafft renders an empty hidden field as "/"; treat that as no cid.
+  return value && value !== '/' ? value : undefined;
 }
 
 /** Shape the booking detail stored as the Chaos event's data_json. */

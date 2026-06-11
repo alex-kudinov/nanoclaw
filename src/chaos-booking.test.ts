@@ -60,6 +60,21 @@ describe('extractCid', () => {
       extractCid({ customFields: [{ label: 'cid', value: '   ' }] }),
     ).toBeUndefined();
   });
+  it('finds the live "Tandem Customer ID" label', () => {
+    expect(
+      extractCid({
+        customFields: [
+          { label: 'How did you learn about Tandem?', value: 'Chat gpt' },
+          { label: 'Tandem Customer ID', value: '1xbt0c96bpt' },
+        ],
+      }),
+    ).toBe('1xbt0c96bpt');
+  });
+  it('treats Trafft empty-field "/" as no cid', () => {
+    expect(
+      extractCid({ customFields: [{ label: 'Tandem Customer ID', value: '/' }] }),
+    ).toBeUndefined();
+  });
 });
 
 describe('buildChaosData', () => {
