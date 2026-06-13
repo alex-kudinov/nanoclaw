@@ -348,7 +348,9 @@ async function resolveProcurementCdpUrl(
  * Read the OAuth token pool, falling back to a single .env token when the pool
  * file is absent. Feeds cooldown-aware selection.
  */
-function readTokenPool(envToken?: string): Array<{ name: string; token: string }> {
+function readTokenPool(
+  envToken?: string,
+): Array<{ name: string; token: string }> {
   try {
     const raw = fs.readFileSync(
       path.join(process.cwd(), 'data', '.token-pool.json'),
@@ -434,7 +436,12 @@ async function readSecrets(
   const dataDir = path.join(process.cwd(), 'data');
   const pool = readTokenPool(configured.CLAUDE_CODE_OAUTH_TOKEN);
   const policy = tokenPolicyFor(groupFolder, policyOverride);
-  const sel = selectTokenOrder(pool, readCooldowns(dataDir), policy, Date.now());
+  const sel = selectTokenOrder(
+    pool,
+    readCooldowns(dataDir),
+    policy,
+    Date.now(),
+  );
   const apiKey = configured.ANTHROPIC_API_KEY;
 
   if (!sel.primary && !apiKey) {
@@ -1109,7 +1116,10 @@ export async function runContainerAgent(
           const marker = '---NANOCLAW_TOKEN_STATE---';
           const mIdx = stdout.lastIndexOf(marker);
           if (mIdx !== -1) {
-            const line = stdout.slice(mIdx + marker.length).split('\n')[0].trim();
+            const line = stdout
+              .slice(mIdx + marker.length)
+              .split('\n')[0]
+              .trim();
             const events = JSON.parse(line);
             if (Array.isArray(events) && events.length) {
               const dir = path.join(process.cwd(), 'data');
@@ -1120,7 +1130,10 @@ export async function runContainerAgent(
             }
           }
         } catch (e) {
-          logger.warn({ group: group.name, err: e }, 'token cooldown update skipped');
+          logger.warn(
+            { group: group.name, err: e },
+            'token cooldown update skipped',
+          );
         }
 
         resolve(output);

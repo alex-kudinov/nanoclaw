@@ -70,10 +70,7 @@ export function writeCooldowns(dataDir: string, map: CooldownMap): void {
   fs.renameSync(tmp, cooldownPath(dataDir)); // atomic swap
 }
 
-export function isParked(
-  cd: TokenCooldown | undefined,
-  now: number,
-): boolean {
+export function isParked(cd: TokenCooldown | undefined, now: number): boolean {
   return cd !== undefined && cd.until > now;
 }
 
@@ -114,7 +111,10 @@ export function applyTokenEvents(
     if (ev.ok) {
       delete next[ev.name];
     } else if (ev.reason) {
-      next[ev.name] = { until: now + COOLDOWN_MS[ev.reason], reason: ev.reason };
+      next[ev.name] = {
+        until: now + COOLDOWN_MS[ev.reason],
+        reason: ev.reason,
+      };
     }
   }
   return next;

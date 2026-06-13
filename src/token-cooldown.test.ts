@@ -82,7 +82,10 @@ describe('selectTokenOrder', () => {
 describe('applyTokenEvents', () => {
   it('parks a failed token for the reason-appropriate duration', () => {
     const out = applyTokenEvents({}, [{ name: 'alex', reason: 'credit' }], NOW);
-    expect(out.alex).toEqual({ until: NOW + COOLDOWN_MS.credit, reason: 'credit' });
+    expect(out.alex).toEqual({
+      until: NOW + COOLDOWN_MS.credit,
+      reason: 'credit',
+    });
   });
 
   it('clears a token cooldown on success (renewal propagates to lazy minions)', () => {
@@ -94,21 +97,31 @@ describe('applyTokenEvents', () => {
   it('latest event wins: failure then success un-parks', () => {
     const out = applyTokenEvents(
       {},
-      [{ name: 'alex', reason: 'rate' }, { name: 'alex', ok: true }],
+      [
+        { name: 'alex', reason: 'rate' },
+        { name: 'alex', ok: true },
+      ],
       NOW,
     );
     expect(out.alex).toBeUndefined();
   });
 
   it('never parks the api-key sentinel', () => {
-    const out = applyTokenEvents({}, [{ name: 'api-key', reason: 'auth' }], NOW);
+    const out = applyTokenEvents(
+      {},
+      [{ name: 'api-key', reason: 'auth' }],
+      NOW,
+    );
     expect(out['api-key']).toBeUndefined();
   });
 
   it('different reasons get different durations', () => {
     const out = applyTokenEvents(
       {},
-      [{ name: 'alex', reason: 'rate' }, { name: 'info', reason: 'auth' }],
+      [
+        { name: 'alex', reason: 'rate' },
+        { name: 'info', reason: 'auth' },
+      ],
       NOW,
     );
     expect(out.alex.until).toBe(NOW + COOLDOWN_MS.rate);
@@ -119,7 +132,8 @@ describe('applyTokenEvents', () => {
 describe('readCooldowns / writeCooldowns', () => {
   const dirs: string[] = [];
   afterEach(() => {
-    for (const d of dirs.splice(0)) fs.rmSync(d, { recursive: true, force: true });
+    for (const d of dirs.splice(0))
+      fs.rmSync(d, { recursive: true, force: true });
   });
 
   it('round-trips a cooldown map', () => {
