@@ -257,18 +257,51 @@ export async function replyToThread(opts: {
     throw new Error(`Thread ${opts.threadId} has no messages`);
   }
 
+  // Anchor threading (In-Reply-To / References / Subject) to the genuine last
+  // message, but address the reply to the most recent EXTERNAL party — not
+  // simply the last sender. When our own outbound is the newest message in the
+  // thread (a prior reply, or a forward to a colleague), replying to its From
+  // self-addresses the email to info@tandemcoach.co and the customer never
+  // receives it. See the Liz Dobbins login thread, 2026-06-13.
+  const header = (
+    hs: gmail_v1.Schema$MessagePartHeader[],
+    name: string,
+  ): string =>
+    hs.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value || '';
+  const headersOf = (m: gmail_v1.Schema$Message) => m.payload?.headers || [];
+
   const lastMsg = messages[messages.length - 1];
-  const headers = lastMsg.payload?.headers || [];
-  const get = (name: string) =>
-    headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ||
-    '';
+  const originalSubject = header(headersOf(lastMsg), 'Subject');
+  const originalMessageId = header(headersOf(lastMsg), 'Message-ID');
 
-  const originalFrom = get('From');
-  const originalSubject = get('Subject');
-  const originalMessageId = get('Message-ID');
+  const owned = ownedAddresses();
+  const isExternal = (addr: string): boolean =>
+    addr.length > 0 && !owned.has(bareAddress(addr).toLowerCase());
 
-  // Reply goes to the original sender
-  const to = originalFrom;
+  // Newest message whose sender is not one of our own addresses.
+  let to = '';
+  for (let i = messages.length - 1; i >= 0 && !to; i--) {
+    const from = header(headersOf(messages[i]), 'From');
+    if (isExternal(from)) to = from;
+  }
+  if (!to) {
+    // Whole thread is ours — reply to the last external recipient we wrote to.
+    for (let i = messages.length - 1; i >= 0 && !to; i--) {
+      const ext = header(headersOf(messages[i]), 'To')
+        .split(',')
+        .map((s) => s.trim())
+        .find(isExternal);
+      if (ext) to = ext;
+    }
+  }
+  if (!to) {
+    to = header(headersOf(lastMsg), 'From');
+    logger.warn(
+      { threadId: opts.threadId },
+      'reply: no external party in thread; self-addressing as last resort',
+    );
+  }
+
   const subject = originalSubject.startsWith('Re:')
     ? originalSubject
     : `Re: ${originalSubject}`;
@@ -323,6 +356,63 @@ export async function searchEmails(opts: {
   }
 
   return results.join('\n---\n');
+}
+
+/** Strip a leading display name, leaving the bare address. */
+function bareAddress(to: string): string {
+  const angle = /<([^>]+)>/.exec(to);
+  return (angle ? angle[1] : to).trim();
+}
+
+/**
+ * Lowercased bare addresses this mailbox sends as, replies as, BCCs, or
+ * monitors. A reply must never be addressed to one of these — doing so
+ * boomerangs the email into our own inbox and the real recipient never
+ * receives it. Drives external-party selection in replyToThread.
+ */
+function ownedAddresses(): Set<string> {
+  return new Set(
+    [GMAIL_SEND_AS, GMAIL_REPLY_TO, GMAIL_BCC, GMAIL_MONITORED_EMAIL]
+      .filter(Boolean)
+      .flatMap((v) => v.split(','))
+      .map((v) => bareAddress(v).toLowerCase())
+      .filter((v) => v.length > 0),
+  );
+}
+
+/** Strip leading Re:/Fwd: prefixes, returning the base subject. */
+function baseSubject(subject: string): string {
+  return subject.replace(/^\s*((re|fwd?):\s*)+/i, '').trim();
+}
+
+/**
+ * Recover the Gmail thread a reply belongs to when its Thread-ID was lost
+ * upstream. Scoped to the recipient AND the base subject (Re:/Fwd: stripped),
+ * newest first, so it re-attaches to the right conversation rather than any
+ * recent thread. Returns null when nothing confidently matches — callers then
+ * fall back to a standalone send. See the Carol Del Priore refund (2026-06-09):
+ * a dropped Thread-ID made a refund reply start a detached thread.
+ */
+export async function findThreadForReply(opts: {
+  to: string;
+  subject: string;
+}): Promise<string | null> {
+  const base = baseSubject(opts.subject);
+  const addr = bareAddress(opts.to);
+  if (!base || !addr) return null;
+  const gmail = getGmailClient();
+  const q = `subject:"${base.replace(/"/g, '')}" {to:${addr} from:${addr}}`;
+  try {
+    const res = await gmail.users.threads.list({
+      userId: 'me',
+      q,
+      maxResults: 1,
+    });
+    return res.data.threads?.[0]?.id || null;
+  } catch (err) {
+    logger.warn({ to: addr, err }, 'findThreadForReply lookup failed');
+    return null;
+  }
 }
 
 /** Read a single email by message ID. Returns formatted content. */

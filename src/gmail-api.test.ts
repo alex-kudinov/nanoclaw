@@ -5,6 +5,7 @@ vi.mock('./config.js', () => ({
   GMAIL_SEND_AS: 'Tandem Coaching <info@tandemcoach.co>',
   GMAIL_REPLY_TO: 'info@tandemcoach.co',
   GMAIL_BCC: 'info@tandemcoach.co',
+  GMAIL_LABEL: '',
   TRACKING_DOMAIN: 't.tandemcoach.co',
 }));
 
@@ -16,7 +17,13 @@ vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
 }));
 
-import { buildRawMessage, encodeHeaderValue } from './gmail-api.js';
+import {
+  buildRawMessage,
+  encodeHeaderValue,
+  findThreadForReply,
+  replyToThread,
+} from './gmail-api.js';
+import { getGmailClient } from './gmail-auth.js';
 
 function decodeEncodedWord(headerValue: string): string {
   const parts = headerValue.split(/\r\n /);
@@ -211,5 +218,142 @@ describe('buildRawMessage', () => {
     expect(decodeEncodedWord(subjLine.slice('Subject: '.length))).toBe(
       'Hi —Bcc: evil@attacker.com',
     );
+  });
+});
+
+describe('findThreadForReply', () => {
+  function mockThreadsList(threads: Array<{ id: string }> | undefined) {
+    const list = vi.fn().mockResolvedValue({ data: { threads } });
+    vi.mocked(getGmailClient).mockReturnValue({
+      users: { threads: { list } },
+    } as never);
+    return list;
+  }
+
+  it('queries scoped to recipient + base subject and returns the newest thread', async () => {
+    const list = mockThreadsList([{ id: 'thread-19dd' }]);
+    const result = await findThreadForReply({
+      to: 'Carol Del Priore <pink.coaching.usa@gmail.com>',
+      subject: 'Re: Mentor Coach Evaluation Training - Tandem Coaching',
+    });
+
+    expect(result).toBe('thread-19dd');
+    const q = list.mock.calls[0][0].q as string;
+    expect(q).toContain(
+      'subject:"Mentor Coach Evaluation Training - Tandem Coaching"',
+    );
+    expect(q).toContain('to:pink.coaching.usa@gmail.com');
+    expect(q).toContain('from:pink.coaching.usa@gmail.com');
+  });
+
+  it('returns null when no thread matches', async () => {
+    mockThreadsList([]);
+    const result = await findThreadForReply({
+      to: 'nobody@example.com',
+      subject: 'Re: Nothing here',
+    });
+    expect(result).toBeNull();
+  });
+
+  it('returns null when the base subject is empty after stripping Re:', async () => {
+    const list = mockThreadsList([{ id: 'should-not-be-used' }]);
+    const result = await findThreadForReply({
+      to: 'a@example.com',
+      subject: 'Re: ',
+    });
+    expect(result).toBeNull();
+    expect(list).not.toHaveBeenCalled();
+  });
+
+  it('returns null and does not throw when the Gmail API errors', async () => {
+    const list = vi.fn().mockRejectedValue(new Error('quota exceeded'));
+    vi.mocked(getGmailClient).mockReturnValue({
+      users: { threads: { list } },
+    } as never);
+    const result = await findThreadForReply({
+      to: 'a@example.com',
+      subject: 'Re: Boom',
+    });
+    expect(result).toBeNull();
+  });
+});
+
+describe('replyToThread external-party addressing', () => {
+  type Hdr = { name: string; value: string };
+  const msg = (headers: Hdr[]) => ({ payload: { headers } });
+
+  function mockGmail(messages: ReturnType<typeof msg>[]) {
+    const send = vi.fn().mockResolvedValue({ data: { id: 'sent-1' } });
+    vi.mocked(getGmailClient).mockReturnValue({
+      users: {
+        threads: { get: vi.fn().mockResolvedValue({ data: { messages } }) },
+        messages: { send },
+      },
+    } as never);
+    return send;
+  }
+
+  const toLine = (send: ReturnType<typeof vi.fn>): string => {
+    const raw = send.mock.calls[0][0].requestBody.raw as string;
+    return (
+      decodeRaw(raw)
+        .split('\r\n')
+        .find((l) => l.startsWith('To:')) || ''
+    );
+  };
+
+  it('addresses the reply to the customer, not our own last outbound', async () => {
+    // Thread whose NEWEST message is our own send to Liz — the old code
+    // boomeranged the reply back to info@tandemcoach.co.
+    const send = mockGmail([
+      msg([
+        { name: 'From', value: 'Liz Dobbins <liz@propelogy.com>' },
+        { name: 'To', value: 'info@tandemcoach.co' },
+        { name: 'Subject', value: 'Re: Log in to Tandem Coaching Community' },
+        { name: 'Message-ID', value: '<m2>' },
+      ]),
+      msg([
+        { name: 'From', value: 'Tandem Coaching <info@tandemcoach.co>' },
+        { name: 'To', value: 'liz@propelogy.com' },
+        { name: 'Subject', value: 'Re: Log in to Tandem Coaching Community' },
+        { name: 'Message-ID', value: '<m3>' },
+      ]),
+    ]);
+    await replyToThread({ threadId: 't1', body: 'Hi Liz' });
+    const to = toLine(send);
+    expect(to).toContain('liz@propelogy.com');
+    expect(to).not.toMatch(/info@tandemcoach\.co/i);
+  });
+
+  it('falls back to the last external recipient when the whole thread is ours', async () => {
+    const send = mockGmail([
+      msg([
+        { name: 'From', value: 'Tandem Coaching <info@tandemcoach.co>' },
+        { name: 'To', value: 'liz@propelogy.com' },
+        { name: 'Subject', value: 'Welcome' },
+        { name: 'Message-ID', value: '<a>' },
+      ]),
+      msg([
+        { name: 'From', value: 'Tandem Coaching <info@tandemcoach.co>' },
+        { name: 'To', value: 'liz@propelogy.com' },
+        { name: 'Subject', value: 'Re: Welcome' },
+        { name: 'Message-ID', value: '<b>' },
+      ]),
+    ]);
+    await replyToThread({ threadId: 't2', body: 'Following up' });
+    expect(toLine(send)).toContain('liz@propelogy.com');
+  });
+
+  it('replies to the original sender on a normal inbound-last thread', async () => {
+    const send = mockGmail([
+      msg([
+        { name: 'From', value: 'Carl Customer <carl@acme.com>' },
+        { name: 'To', value: 'info@tandemcoach.co' },
+        { name: 'Subject', value: 'Question about ACC' },
+        { name: 'Message-ID', value: '<x>' },
+      ]),
+    ]);
+    await replyToThread({ threadId: 't3', body: 'Answer' });
+    expect(toLine(send)).toContain('carl@acme.com');
   });
 });
