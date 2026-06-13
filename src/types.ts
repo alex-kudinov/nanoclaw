@@ -36,6 +36,10 @@ export interface ContainerConfig {
   processingMessage?: string;
   // Per-group claude model override (e.g. 'haiku'). Unset → agent-runner sonnet.
   model?: string;
+  // Token-exhaustion probe policy. 'eager' tries every account (incl. cooled-down
+  // ones, as a free renewal probe) before the paid API key; 'lazy' (default)
+  // trusts the cooldown. Overrides config.EAGER_TOKEN_PROBE_GROUPS for this group.
+  tokenPolicy?: 'eager' | 'lazy';
 }
 
 export interface RegisteredGroup {

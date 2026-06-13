@@ -20,6 +20,13 @@ import {
   TIMEZONE,
 } from './config.js';
 import { readEnvFile } from './env.js';
+import { EAGER_TOKEN_PROBE_GROUPS } from './config.js';
+import {
+  readCooldowns,
+  writeCooldowns,
+  selectTokenOrder,
+  applyTokenEvents,
+} from './token-cooldown.js';
 import { resolveGroupFolderPath, resolveGroupIpcPath } from './group-folder.js';
 import { logger } from './logger.js';
 import {
@@ -311,16 +318,78 @@ function buildVolumeMounts(
 }
 
 /**
+ * Resolve the procurement Chrome CDP WebSocket URL. Chrome runs on this host,
+ * so fetch via loopback — the container-facing bridge IP (192.168.64.1) only
+ * exists while a container is running, which is never true for the first
+ * container spawned on an idle host. The returned URL is rewritten to the
+ * bridge IP so the container reaches Chrome through the socat bridge.
+ */
+async function resolveProcurementCdpUrl(
+  bridgeHost: string,
+  port: number,
+): Promise<string> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const resp = await fetch(`http://127.0.0.1:${port}/json/version`, {
+        signal: AbortSignal.timeout(3000),
+      });
+      const data = (await resp.json()) as { webSocketDebuggerUrl?: string };
+      const url = data.webSocketDebuggerUrl || '';
+      if (url) return url.replace('127.0.0.1', bridgeHost);
+    } catch {
+      // Chrome may be mid-restart (launchd KeepAlive) — retry below.
+    }
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 2000));
+  }
+  return '';
+}
+
+/**
+ * Read the OAuth token pool, falling back to a single .env token when the pool
+ * file is absent. Feeds cooldown-aware selection.
+ */
+function readTokenPool(envToken?: string): Array<{ name: string; token: string }> {
+  try {
+    const raw = fs.readFileSync(
+      path.join(process.cwd(), 'data', '.token-pool.json'),
+      'utf-8',
+    );
+    const pool = JSON.parse(raw) as Array<{ name: string; token: string }>;
+    if (Array.isArray(pool) && pool.length) return pool;
+  } catch {
+    // pool unavailable — fall back to the single .env token below
+  }
+  return envToken ? [{ name: 'env', token: envToken }] : [];
+}
+
+/**
+ * Resolve a minion's token-probe policy: an explicit per-group override wins,
+ * else the heavy-minion set in config, else 'lazy'.
+ */
+function tokenPolicyFor(
+  groupFolder?: string,
+  override?: 'eager' | 'lazy',
+): 'eager' | 'lazy' {
+  if (override) return override;
+  return groupFolder && EAGER_TOKEN_PROBE_GROUPS.includes(groupFolder)
+    ? 'eager'
+    : 'lazy';
+}
+
+/**
  * Build secrets payload for the container.
- * Auth: CLAUDE_CODE_OAUTH_TOKEN resolved from cctoken rotation
- * (~/.shared/.claude-tokens.json), falling back to .env.
- * CLAUDE_CONFIG_DIR points to the mounted .claude dir for settings/skills.
+ * Auth: cooldown-aware OAuth pool selection (prefers live accounts so prepaid
+ * credit is exhausted before the metered API key), with the API key staged inert
+ * as ANTHROPIC_API_KEY_FALLBACK. CLAUDE_CONFIG_DIR points to the mounted .claude
+ * dir for settings/skills.
  */
 async function readSecrets(
   groupFolder?: string,
+  policyOverride?: 'eager' | 'lazy',
 ): Promise<Record<string, string>> {
   const configured = readEnvFile([
     'CLAUDE_CODE_OAUTH_TOKEN',
+    'ANTHROPIC_API_KEY',
     'BUSINESS_DB_HOST',
     'BUSINESS_DB_PORT',
     'BUSINESS_DB_NAME',
@@ -358,28 +427,38 @@ async function readSecrets(
     'EMAIL_PASS',
   ]);
 
-  const oauthToken = resolveOAuthToken() || configured.CLAUDE_CODE_OAUTH_TOKEN;
-  if (!oauthToken) {
-    throw new Error(
-      'CLAUDE_CODE_OAUTH_TOKEN not resolved — ensure ~/.shared/.claude-tokens.json exists (source ~/.shared/.shared_shell.sh) or set in .env',
-    );
-  }
+  // Cooldown-aware token selection. Live (non-parked) accounts are preferred so
+  // the prepaid Agent SDK credit is exhausted before the metered API key. Eager
+  // minions additionally retry parked accounts (a free renewal probe) before the
+  // key; lazy minions trust the cooldown and skip them. See token-cooldown.ts.
+  const dataDir = path.join(process.cwd(), 'data');
+  const pool = readTokenPool(configured.CLAUDE_CODE_OAUTH_TOKEN);
+  const policy = tokenPolicyFor(groupFolder, policyOverride);
+  const sel = selectTokenOrder(pool, readCooldowns(dataDir), policy, Date.now());
+  const apiKey = configured.ANTHROPIC_API_KEY;
 
-  // Pass the full token pool so the container can retry on rate-limit
-  let tokenPool = '';
-  try {
-    tokenPool = fs.readFileSync(
-      path.join(process.cwd(), 'data', '.token-pool.json'),
-      'utf-8',
+  if (!sel.primary && !apiKey) {
+    throw new Error(
+      'No Claude credential available: token pool empty or all parked, and no ANTHROPIC_API_KEY set',
     );
-  } catch {
-    // pool unavailable — single-token mode
   }
 
   const secrets: Record<string, string> = {
     CLAUDE_CONFIG_DIR: '/home/node/.claude',
-    CLAUDE_CODE_OAUTH_TOKEN: oauthToken,
-    ...(tokenPool ? { CLAUDE_TOKEN_POOL: tokenPool } : {}),
+    // First account to use + the ordered list the container rotates through.
+    // Omitted entirely when every account is parked and a lazy minion goes
+    // straight to the staged key.
+    ...(sel.primary
+      ? {
+          CLAUDE_CODE_OAUTH_TOKEN: sel.primary.token,
+          CLAUDE_TOKEN_POOL: JSON.stringify(sel.ordered),
+        }
+      : {}),
+    // Pay-as-you-go API key, staged under an INERT name. The agent-runner only
+    // promotes it to ANTHROPIC_API_KEY after every OAuth token is exhausted (or
+    // up front if no live token was handed). The key outranks OAuth in the CLI,
+    // so an active name would divert all traffic to paid billing immediately.
+    ...(apiKey ? { ANTHROPIC_API_KEY_FALLBACK: apiKey } : {}),
   };
 
   // Add per-agent business DB credentials
@@ -490,22 +569,12 @@ async function readSecrets(
     // Chrome runs with a persistent profile (cookies, history, cache) which
     // bypasses Cloudflare bot detection on Bonfire agency subdomains.
     // Port 9250 is forwarded to the container network via socat.
-    // Fetch the dynamic WebSocket URL from Chrome's /json/version endpoint.
     const CDP_HOST = '192.168.64.1';
     const CDP_PORT = 9250;
-    let cdpUrl = '';
-    try {
-      const resp = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/version`);
-      const data = (await resp.json()) as { webSocketDebuggerUrl?: string };
-      cdpUrl = data.webSocketDebuggerUrl || '';
-    } catch {
-      logger.warn(
-        'Procurement CDP bridge unreachable — browser scraping will fall back to in-container',
-      );
-    }
+    const cdpUrl = await resolveProcurementCdpUrl(CDP_HOST, CDP_PORT);
+    const procGroupDir = resolveGroupFolderPath(groupFolder);
+    const browserConfigPath = path.join(procGroupDir, 'agent-browser.json');
     if (cdpUrl) {
-      const procGroupDir = resolveGroupFolderPath(groupFolder);
-      const browserConfigPath = path.join(procGroupDir, 'agent-browser.json');
       // Downloads save to the HOST filesystem (Chrome runs on host).
       // Point to the host vault path so PDFs land where the container can read them.
       const hostVaultPath = path.join(
@@ -521,6 +590,15 @@ async function readSecrets(
           '\n',
       );
       secrets.AGENT_BROWSER_CONFIG = '/workspace/group/agent-browser.json';
+    } else {
+      // A leftover config from a previous run holds a dead browser UUID —
+      // Chrome 404s the WebSocket upgrade and agent-browser auto-discovers
+      // the file even without AGENT_BROWSER_CONFIG. No config is the honest
+      // state; the agent then reports the browser as unavailable.
+      fs.rmSync(browserConfigPath, { force: true });
+      logger.warn(
+        'Procurement Chrome CDP unreachable on loopback after retries — removed stale agent-browser.json, falling back to in-container browser',
+      );
     }
   }
 
@@ -622,7 +700,10 @@ export async function runContainerAgent(
   fs.mkdirSync(logsDir, { recursive: true });
 
   // Resolve secrets before spawning (async for CDP URL fetch)
-  const resolvedSecrets = await readSecrets(input.groupFolder);
+  const resolvedSecrets = await readSecrets(
+    input.groupFolder,
+    group.containerConfig?.tokenPolicy,
+  );
 
   // Per-group model override (T11). Resolution lives ONLY here — the host-side
   // and agent-runner runAgent never resolve it.
@@ -1019,6 +1100,28 @@ export async function runContainerAgent(
           },
           'Container completed',
         );
+
+        // Fold the container's per-token outcomes into cooldown state: a success
+        // clears (renewal), a failure parks. Best-effort, never blocks the result.
+        // This is what lets a heavy (eager) minion's renewal probe propagate to
+        // every lazy minion without waiting out their cooldown.
+        try {
+          const marker = '---NANOCLAW_TOKEN_STATE---';
+          const mIdx = stdout.lastIndexOf(marker);
+          if (mIdx !== -1) {
+            const line = stdout.slice(mIdx + marker.length).split('\n')[0].trim();
+            const events = JSON.parse(line);
+            if (Array.isArray(events) && events.length) {
+              const dir = path.join(process.cwd(), 'data');
+              writeCooldowns(
+                dir,
+                applyTokenEvents(readCooldowns(dir), events, Date.now()),
+              );
+            }
+          }
+        } catch (e) {
+          logger.warn({ group: group.name, err: e }, 'token cooldown update skipped');
+        }
 
         resolve(output);
       } catch (err) {

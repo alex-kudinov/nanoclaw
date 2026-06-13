@@ -15,6 +15,7 @@ vi.mock('./config.js', () => ({
   CONTAINER_MAX_OUTPUT_SIZE: 10485760,
   CONTAINER_TIMEOUT: 1800000, // 30min
   DATA_DIR: '/tmp/nanoclaw-test-data',
+  EAGER_TOKEN_PROBE_GROUPS: [],
   GROUPS_DIR: '/tmp/nanoclaw-test-groups',
   IDLE_TIMEOUT: 1800000, // 30min
   SPAWN_TIMEOUT: 90000, // 90s

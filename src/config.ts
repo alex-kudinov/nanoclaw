@@ -1,3 +1,4 @@
+import os from 'os';
 import path from 'path';
 
 import { readEnvFile } from './env.js';
@@ -21,7 +22,7 @@ export const SCHEDULER_POLL_INTERVAL = 60000;
 
 // Absolute paths needed for container mounts
 const PROJECT_ROOT = process.cwd();
-const HOME_DIR = process.env.HOME || '/Users/user';
+const HOME_DIR = process.env.HOME || os.homedir();
 
 // Mount security: allowlist stored OUTSIDE project root, never mounted into containers
 export const MOUNT_ALLOWLIST_PATH = path.join(
@@ -33,6 +34,19 @@ export const MOUNT_ALLOWLIST_PATH = path.join(
 export const STORE_DIR = path.resolve(PROJECT_ROOT, 'store');
 export const GROUPS_DIR = path.resolve(PROJECT_ROOT, 'groups');
 export const DATA_DIR = path.resolve(PROJECT_ROOT, 'data');
+
+// Minions that run complex skills / large jobs. Before falling back to the paid
+// API key, these probe every account (incl. cooled-down ones — a free renewal
+// check) so an expensive job never hits metered billing while prepaid credit
+// quietly renewed. Everyone else trusts the 6h cooldown ('lazy'). Retune freely;
+// per-group containerConfig.tokenPolicy overrides this list.
+export const EAGER_TOKEN_PROBE_GROUPS = [
+  'procurement',
+  'chief',
+  'newsroom',
+  'archivarista',
+  'courses',
+];
 
 export const CONTAINER_IMAGE =
   process.env.CONTAINER_IMAGE || 'nanoclaw-agent:latest';

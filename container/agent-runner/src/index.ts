@@ -24,7 +24,7 @@ import path from 'path';
 import readline from 'readline';
 
 import { HEARTBEAT_MARKER } from './ipc-protocol.js';
-import { detectRateLimit } from './rate-limit.js';
+import { detectRateLimit, detectAuthFailure } from './rate-limit.js';
 import { resolveModel, formatUsageLine } from './model-util.js';
 import { fileURLToPath } from 'url';
 
@@ -55,6 +55,20 @@ const IPC_POLL_MS = 500;
 const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
 const OUTPUT_END_MARKER = '---NANOCLAW_OUTPUT_END---';
 const HEARTBEAT_INTERVAL_MS = 30_000;
+
+// Out-of-band channel reporting per-token outcomes to the host for cooldown
+// bookkeeping. Emitted once on process exit so it survives every return/exit
+// path in main(). Reason strings are a plain contract shared with the host's
+// token-cooldown module ('rate' | 'credit' | 'auth'); 'ok' clears a cooldown.
+const TOKEN_STATE_MARKER = '---NANOCLAW_TOKEN_STATE---';
+const tokenEvents: Array<{ name: string; ok?: boolean; reason?: 'rate' | 'credit' | 'auth' }> = [];
+process.on('exit', () => {
+  if (tokenEvents.length) {
+    // fs.writeSync (not process.stdout.write) — stdout is a pipe to the host, and
+    // only synchronous writes are guaranteed to flush inside an 'exit' handler.
+    fs.writeSync(1, `\n${TOKEN_STATE_MARKER}${JSON.stringify(tokenEvents)}\n`);
+  }
+});
 
 // Wrapper-side idle exit: bound container lifetime independently of the host's
 // `_close` sentinel mechanism. Cross-thread races (a newer container in the same
@@ -172,6 +186,11 @@ function drainIpcInput(): string[] {
 interface RunAgentResult {
   rateLimited: boolean;
   rateLimitMessage?: string;
+  // Credential is dead (auth rejected / billing-credit exhausted / permission
+  // revoked) — distinct from a recoverable rate-limit. Triggers rotation past
+  // this token and, once the pool is exhausted, fallback to the API key.
+  authFailed?: boolean;
+  authFailMessage?: string;
 }
 
 async function runAgent(
@@ -184,7 +203,7 @@ async function runAgent(
   // Write non-auth secrets to /tmp/.nanoclaw-env so scripts can source them
   // (claude --print may not pass process env to Bash tool commands)
   const scriptSecrets = Object.entries(containerInput.secrets || {})
-    .filter(([k]) => !k.startsWith('CLAUDE_') && k !== 'CLAUDE_CONFIG_DIR')
+    .filter(([k]) => !k.startsWith('CLAUDE_') && !k.startsWith('ANTHROPIC_') && k !== 'CLAUDE_CONFIG_DIR')
     .map(([k, v]) => `${k}=${v}`)
     .join('\n');
   if (scriptSecrets) {
@@ -417,6 +436,27 @@ async function runAgent(
         return { rateLimited: true, rateLimitMessage };
       }
 
+      // Credential-failure detection (auth rejected / billing-credit exhausted /
+      // permission revoked). Only on turns that already failed, so a successful
+      // reply mentioning "unauthorized" or "402" is never misclassified.
+      if (attempt.exitCode !== 0 || isErrorResult) {
+        const authText =
+          textResult && detectAuthFailure(textResult)
+            ? textResult
+            : detectAuthFailure(attempt.stderrTail)
+              ? attempt.stderrTail
+              : null;
+        if (authText) {
+          log(`Credential failure detected on turn ${turnCount} — returning to rotation/fallback`);
+          clearInterval(heartbeatInterval);
+          return {
+            rateLimited: false,
+            authFailed: true,
+            authFailMessage: authText.trim() || undefined,
+          };
+        }
+      }
+
       // Build a meaningful error message when claude exits non-zero or returns is_error.
       // Prefer the parsed JSON result (claude's actual error text) over raw stderr.
       const buildErrorMsg = (): string => {
@@ -510,12 +550,15 @@ async function main(): Promise<void> {
     if (val) cliEnv[key] = val;
   }
 
-  // Verify auth token is present
-  if (!cliEnv.CLAUDE_CODE_OAUTH_TOKEN) {
+  // Auth: prefer the OAuth pool, but the host may legitimately hand no live token
+  // (lazy minion, every account parked) and expect the staged API key to take
+  // over. Hard-fail only when NEITHER an OAuth token nor an API-key fallback is
+  // present.
+  if (!cliEnv.CLAUDE_CODE_OAUTH_TOKEN && !cliEnv.ANTHROPIC_API_KEY_FALLBACK) {
     writeOutput({
       status: 'error',
       result: null,
-      error: 'CLAUDE_CODE_OAUTH_TOKEN not set — check bridge token lifecycle',
+      error: 'No Claude credential: neither an OAuth token nor an API-key fallback was provided',
     });
     process.exit(1);
   }
@@ -532,35 +575,92 @@ async function main(): Promise<void> {
   // Remove pool from env so it doesn't leak into claude subprocess
   delete cliEnv.CLAUDE_TOKEN_POOL;
 
+  // Stage the API key OUT of the claude subprocess env until we deliberately
+  // promote it. It outranks OAuth in the CLI, so leaving it set would divert all
+  // traffic to paid billing immediately (see auth precedence). Only promoted
+  // after every OAuth token is exhausted — or up front if the host handed none.
+  const apiKeyFallback = cliEnv.ANTHROPIC_API_KEY_FALLBACK;
+  delete cliEnv.ANTHROPIC_API_KEY_FALLBACK;
+
+  // Resolve a token value back to its pool name for cooldown reporting.
+  const nameOf = (tokenValue: string | undefined): string =>
+    tokenPool.find((t) => t.token === tokenValue)?.name ?? 'unknown';
+
+  // Lazy minion with every account parked: the host handed no OAuth token. Promote
+  // the key up front rather than waste a guaranteed-failing tokenless run.
+  if (!cliEnv.CLAUDE_CODE_OAUTH_TOKEN && apiKeyFallback) {
+    log('No live OAuth token provided — using Anthropic API key (metered billing)');
+    cliEnv.ANTHROPIC_API_KEY = apiKeyFallback;
+  }
+
   fs.mkdirSync(IPC_INPUT_DIR, { recursive: true });
   try { fs.unlinkSync(IPC_INPUT_CLOSE_SENTINEL); } catch { /* ignore */ }
 
   try {
-    const result = await runAgent(containerInput, cliEnv);
+    const tokenFailed = (r: RunAgentResult): boolean =>
+      r.rateLimited || r.authFailed === true;
+    // Post-2026-06-15 the dominant credential failure is credit-pool exhaustion,
+    // so a non-rate auth failure is recorded as 'credit' (re-probed on the lazy
+    // cadence). A true revocation gets the same treatment — harmless, since a
+    // re-probe is free and simply re-parks it.
+    const reasonOf = (r: RunAgentResult): 'rate' | 'credit' =>
+      r.rateLimited ? 'rate' : 'credit';
 
-    if (result.rateLimited && tokenPool.length > 1) {
-      const currentToken = cliEnv.CLAUDE_CODE_OAUTH_TOKEN;
-      const remaining = tokenPool.filter(t => t.token !== currentToken);
-      // Sessions are scoped to the Claude account that issued the OAT, so
-      // resuming with a different account's token would 404. Drop the
-      // sessionId before retrying — the prompt is re-sent fresh anyway.
+    const result = await runAgent(containerInput, cliEnv);
+    if (cliEnv.CLAUDE_CODE_OAUTH_TOKEN) {
+      tokenEvents.push(
+        tokenFailed(result)
+          ? { name: nameOf(cliEnv.CLAUDE_CODE_OAUTH_TOKEN), reason: reasonOf(result) }
+          : { name: nameOf(cliEnv.CLAUDE_CODE_OAUTH_TOKEN), ok: true },
+      );
+    }
+
+    if (tokenFailed(result)) {
+      // A credential failed (rate-limit or exhausted credit). Rotate through any
+      // other tokens the host provided; sessions are account-scoped so the
+      // sessionId is dropped before each retry (the prompt is re-sent fresh).
+      const remaining = tokenPool.filter(
+        (t) => t.token !== cliEnv.CLAUDE_CODE_OAUTH_TOKEN,
+      );
       containerInput.sessionId = undefined;
-      let lastLimitMessage = result.rateLimitMessage;
+      let lastMessage = result.rateLimitMessage ?? result.authFailMessage;
+
       for (const candidate of remaining) {
-        log(`Rate-limited, retrying with token: ${candidate.name}`);
+        log(`Credential failed, retrying with token: ${candidate.name}`);
         cliEnv.CLAUDE_CODE_OAUTH_TOKEN = candidate.token;
         const retry = await runAgent(containerInput, cliEnv);
-        if (!retry.rateLimited) return; // success or non-rate-limit error
-        if (retry.rateLimitMessage) lastLimitMessage = retry.rateLimitMessage;
-        log(`Token ${candidate.name} also rate-limited`);
+        tokenEvents.push(
+          tokenFailed(retry)
+            ? { name: candidate.name, reason: reasonOf(retry) }
+            : { name: candidate.name, ok: true },
+        );
+        if (!tokenFailed(retry)) return; // success or genuine agent error — already written
+        lastMessage = retry.rateLimitMessage ?? retry.authFailMessage ?? lastMessage;
+        log(`Token ${candidate.name} also failed`);
       }
-      log('All tokens exhausted — all rate-limited');
+
+      // Every OAuth token is exhausted/rejected. Fall back to the staged API key
+      // if one is present and not already promoted (the no-live-token path above
+      // may have promoted it up front). The key outranks OAuth, so setting it and
+      // clearing the OAuth token routes this retry through metered billing.
+      if (apiKeyFallback && !cliEnv.ANTHROPIC_API_KEY) {
+        log('All OAuth tokens exhausted — falling back to Anthropic API key (metered billing)');
+        cliEnv.ANTHROPIC_API_KEY = apiKeyFallback;
+        delete cliEnv.CLAUDE_CODE_OAUTH_TOKEN;
+        containerInput.sessionId = undefined;
+        const keyRetry = await runAgent(containerInput, cliEnv);
+        if (!tokenFailed(keyRetry)) return; // success or genuine agent error — already written
+        lastMessage = keyRetry.rateLimitMessage ?? keyRetry.authFailMessage ?? lastMessage;
+        log('Anthropic API key fallback also failed');
+      }
+
+      log('All credentials exhausted');
       writeOutput({
         status: 'error',
-        result: lastLimitMessage ?? null,
-        error: lastLimitMessage
-          ? `All Claude accounts rate-limited. Latest: ${lastLimitMessage}`
-          : 'All Claude accounts rate-limited',
+        result: lastMessage ?? null,
+        error: lastMessage
+          ? `All Claude credentials exhausted${apiKeyFallback ? ' (API key fallback also failed)' : '; no API key fallback staged'}. Latest: ${lastMessage}`
+          : 'All Claude credentials exhausted; no working credential',
       });
       process.exit(1);
     }
