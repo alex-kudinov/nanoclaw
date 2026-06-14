@@ -189,10 +189,13 @@ describe('withRetry', () => {
 
 describe('describeExecError', () => {
   it('surfaces the tool stderr instead of the opaque "Command failed"', () => {
-    const execErr = Object.assign(new Error('Command failed: list-customers.sh'), {
-      stderr: 'ERR API_ERROR HTTP 502: bad gateway\n',
-      stdout: '',
-    });
+    const execErr = Object.assign(
+      new Error('Command failed: list-customers.sh'),
+      {
+        stderr: 'ERR API_ERROR HTTP 502: bad gateway\n',
+        stdout: '',
+      },
+    );
     const out = describeExecError(execErr, 'list-customers.sh --page 2');
     expect(out.message).toBe(
       'trafft list-customers.sh --page 2: ERR API_ERROR HTTP 502: bad gateway',
@@ -205,11 +208,15 @@ describe('describeExecError', () => {
       stdout: 'ERR VALIDATION bad page\n',
     });
     const out = describeExecError(execErr, 'list-appointments.sh');
-    expect(out.message).toBe('trafft list-appointments.sh: ERR VALIDATION bad page');
+    expect(out.message).toBe(
+      'trafft list-appointments.sh: ERR VALIDATION bad page',
+    );
   });
 
   it('flags timeouts via the killed signal', () => {
-    const execErr = Object.assign(new Error('Command failed'), { killed: true });
+    const execErr = Object.assign(new Error('Command failed'), {
+      killed: true,
+    });
     const out = describeExecError(execErr, 'list-customers.sh --page 1');
     expect(out.message).toContain('(timed out)');
   });

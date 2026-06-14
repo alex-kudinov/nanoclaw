@@ -153,26 +153,29 @@ export async function withRetry<T>(
 async function callTrafft(script: string, args: string[]): Promise<unknown> {
   const env = { ...process.env, TOOLBOX_LIB: path.join(TOOLBOX_DIR, 'lib') };
   const label = `${script} ${args.join(' ')}`.trim();
-  return withRetry(async () => {
-    try {
-      const { stdout } = await execFileAsync(
-        path.join(TRAFFT_TOOL_DIR, script),
-        args,
-        { env, timeout: 60_000, maxBuffer: 10 * 1024 * 1024 },
-      );
-      const trimmed = stdout.trim();
-      if (trimmed.startsWith('ERR ')) {
-        throw new Error(`trafft ${script} failed: ${trimmed}`);
+  return withRetry(
+    async () => {
+      try {
+        const { stdout } = await execFileAsync(
+          path.join(TRAFFT_TOOL_DIR, script),
+          args,
+          { env, timeout: 60_000, maxBuffer: 10 * 1024 * 1024 },
+        );
+        const trimmed = stdout.trim();
+        if (trimmed.startsWith('ERR ')) {
+          throw new Error(`trafft ${script} failed: ${trimmed}`);
+        }
+        const jsonStart = trimmed.indexOf('{');
+        if (jsonStart < 0) {
+          throw new Error(`trafft ${script}: no JSON in response`);
+        }
+        return JSON.parse(trimmed.slice(jsonStart));
+      } catch (err) {
+        throw describeExecError(err, label);
       }
-      const jsonStart = trimmed.indexOf('{');
-      if (jsonStart < 0) {
-        throw new Error(`trafft ${script}: no JSON in response`);
-      }
-      return JSON.parse(trimmed.slice(jsonStart));
-    } catch (err) {
-      throw describeExecError(err, label);
-    }
-  }, { label });
+    },
+    { label },
+  );
 }
 
 interface PagedResp<T> {
