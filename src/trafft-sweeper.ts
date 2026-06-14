@@ -41,6 +41,15 @@ const CONVERGENCE_DEADLINE_MS = 30 * 60 * 1000; // 30 min
 const CONVERGENCE_POLL_MS = 30 * 1000; // 30 s
 const PAGE_LIMIT = 50;
 
+// Transient Trafft API failures (5xx, 429, network blips, token-endpoint
+// hiccups, per-page timeouts) must NOT abort the whole sweep — a single blip
+// would otherwise freeze the watermark until the next 6h run (and often the
+// run after that). Retry each page with bounded exponential backoff; only a
+// genuinely persistent failure (all attempts exhausted) propagates and freezes
+// the watermark, preserving the convergence-in-one-run contract.
+const MAX_RETRIES = 3; // 4 attempts total
+const RETRY_BASE_MS = 1000; // backoff: 1s, 2s, 4s
+
 interface TrafftCustomer {
   id: number;
   first_name: string;
@@ -78,20 +87,92 @@ export interface SweepResult {
   failed_inbox_ids: number[];
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Turn execFile's opaque "Command failed: <path>" rejection into an actionable
+ * error carrying the tool's actual stderr/stdout (e.g. "HTTP 502: ...") so the
+ * frozen-watermark error and chief alert say *why* it failed.
+ * Exported for unit tests.
+ */
+export function describeExecError(err: unknown, label: string): Error {
+  if (err instanceof Error) {
+    const e = err as Error & {
+      stderr?: string;
+      stdout?: string;
+      killed?: boolean;
+    };
+    const detail = (e.stderr || e.stdout || '').trim().slice(0, 500);
+    const timedOut = e.killed ? ' (timed out)' : '';
+    if (detail) return new Error(`trafft ${label}${timedOut}: ${detail}`);
+    return new Error(`trafft ${label}${timedOut}: ${e.message}`);
+  }
+  return new Error(`trafft ${label}: ${String(err)}`);
+}
+
+/**
+ * Bounded exponential-backoff retry. Exported for unit tests (inject sleepFn to
+ * avoid real delays).
+ */
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  opts: {
+    label: string;
+    maxRetries?: number;
+    baseMs?: number;
+    sleepFn?: (ms: number) => Promise<void>;
+  },
+): Promise<T> {
+  const maxRetries = opts.maxRetries ?? MAX_RETRIES;
+  const baseMs = opts.baseMs ?? RETRY_BASE_MS;
+  const sleepFn = opts.sleepFn ?? sleep;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxRetries) {
+        logger.warn(
+          {
+            label: opts.label,
+            attempt,
+            err: err instanceof Error ? err.message : String(err),
+          },
+          'trafft-sweeper: API call failed, retrying',
+        );
+        await sleepFn(baseMs * 2 ** attempt);
+      }
+    }
+  }
+  throw lastErr;
+}
+
 async function callTrafft(script: string, args: string[]): Promise<unknown> {
   const env = { ...process.env, TOOLBOX_LIB: path.join(TOOLBOX_DIR, 'lib') };
-  const { stdout } = await execFileAsync(
-    path.join(TRAFFT_TOOL_DIR, script),
-    args,
-    { env, timeout: 60_000, maxBuffer: 10 * 1024 * 1024 },
-  );
-  const trimmed = stdout.trim();
-  if (trimmed.startsWith('ERR ')) {
-    throw new Error(`trafft ${script} failed: ${trimmed}`);
-  }
-  const jsonStart = trimmed.indexOf('{');
-  if (jsonStart < 0) throw new Error(`trafft ${script}: no JSON in response`);
-  return JSON.parse(trimmed.slice(jsonStart));
+  const label = `${script} ${args.join(' ')}`.trim();
+  return withRetry(async () => {
+    try {
+      const { stdout } = await execFileAsync(
+        path.join(TRAFFT_TOOL_DIR, script),
+        args,
+        { env, timeout: 60_000, maxBuffer: 10 * 1024 * 1024 },
+      );
+      const trimmed = stdout.trim();
+      if (trimmed.startsWith('ERR ')) {
+        throw new Error(`trafft ${script} failed: ${trimmed}`);
+      }
+      const jsonStart = trimmed.indexOf('{');
+      if (jsonStart < 0) {
+        throw new Error(`trafft ${script}: no JSON in response`);
+      }
+      return JSON.parse(trimmed.slice(jsonStart));
+    } catch (err) {
+      throw describeExecError(err, label);
+    }
+  }, { label });
 }
 
 interface PagedResp<T> {
@@ -241,6 +322,26 @@ async function writeWatermark(opts: {
       opts.recovered,
       opts.failed,
     ],
+  );
+}
+
+/**
+ * Records a clean run that synthesized nothing, without advancing last_seen_at
+ * (no new events to checkpoint past). Clears any stale error/frozen status from
+ * a prior failed run so the watermark table reflects current health — otherwise
+ * a single transient failure would leave last_run_status='error' indefinitely,
+ * since empty runs are the common case and never reach the convergence path.
+ */
+async function recordEmptyRun(): Promise<void> {
+  await query(
+    `UPDATE business_v2.sweeper_watermarks
+        SET last_run_at = NOW(),
+            last_run_status = 'success',
+            last_run_error = NULL,
+            last_run_recovered = 0,
+            last_run_failed = 0,
+            updated_at = NOW()
+      WHERE source = 'trafft'`,
   );
 }
 
@@ -441,8 +542,9 @@ export async function runSweep(deps: TrafftSweeperDeps): Promise<SweepResult> {
     );
 
     if (synthesizedIds.length === 0) {
-      // No new events — still update last_run timestamps + maybe advance watermark
-      // to current Trafft latest if we want. Skip advance on empty for simplicity.
+      // No new events — record run health (clears any stale error/frozen status)
+      // but don't advance last_seen_at: there's nothing new to checkpoint past.
+      await recordEmptyRun();
       logger.info('trafft-sweeper: no new events found');
       return result;
     }
