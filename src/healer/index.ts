@@ -43,6 +43,9 @@ async function main(): Promise<void> {
 }
 
 // Run only when invoked directly, not when imported by tests.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   void main();
 }

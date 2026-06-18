@@ -102,7 +102,8 @@ export async function collectJobLogs(): Promise<number> {
     return 0;
   }
   for (const row of rows) await upsertIncident(jobRowToSeed(row));
-  if (rows.length) await setState('job_logs_watermark', rows[rows.length - 1].started_at);
+  if (rows.length)
+    await setState('job_logs_watermark', rows[rows.length - 1].started_at);
   return rows.length;
 }
 

@@ -66,7 +66,9 @@ describe('upsertIncident', () => {
     });
     expect(res).toBe('inserted');
     const [sql, params] = query.mock.calls[0];
-    expect(sql).toContain("ON CONFLICT (fingerprint) WHERE status NOT IN ('resolved', 'wont_fix')");
+    expect(sql).toContain(
+      "ON CONFLICT (fingerprint) WHERE status NOT IN ('resolved', 'wont_fix')",
+    );
     expect(params[0]).toBe('job:x');
   });
 

@@ -899,7 +899,9 @@ describe('WebhookServer — form-submitted observed suppression', () => {
   ): Promise<void> {
     const s = new WebhookServer(deps);
     await s.start();
-    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [formWebhook];
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      formWebhook,
+    ];
     try {
       await makeRequest(deps.port, {
         path: '/hook/form-submitted',
@@ -929,14 +931,18 @@ describe('WebhookServer — form-submitted observed suppression', () => {
       d,
     );
 
-    const formPosts = (d.sendMessage as ReturnType<typeof vi.fn>).mock.calls.filter(
+    const formPosts = (
+      d.sendMessage as ReturnType<typeof vi.fn>
+    ).mock.calls.filter(
       (c) => typeof c[1] === 'string' && c[1].startsWith('[form]'),
     );
     expect(formPosts).toHaveLength(0);
     expect(d.runAgent).not.toHaveBeenCalled();
     expect(markWebhookHandled).toHaveBeenCalledWith(
       501,
-      expect.objectContaining({ handled_by: 'form-submitted:observed-suppressed' }),
+      expect.objectContaining({
+        handled_by: 'form-submitted:observed-suppressed',
+      }),
     );
   });
 
@@ -957,7 +963,9 @@ describe('WebhookServer — form-submitted observed suppression', () => {
       d,
     );
 
-    const formPosts = (d.sendMessage as ReturnType<typeof vi.fn>).mock.calls.filter(
+    const formPosts = (
+      d.sendMessage as ReturnType<typeof vi.fn>
+    ).mock.calls.filter(
       (c) => typeof c[1] === 'string' && c[1].startsWith('[form]'),
     );
     expect(formPosts).toHaveLength(1);

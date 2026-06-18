@@ -486,7 +486,10 @@ export class WebhookServer {
           p.thread_ts ? { threadTs: p.thread_ts } : undefined,
         );
       } catch (err) {
-        logger.error({ err, channel: p.channel }, '/api/post sendMessage failed');
+        logger.error(
+          { err, channel: p.channel },
+          '/api/post sendMessage failed',
+        );
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'send failed' }));
         return;

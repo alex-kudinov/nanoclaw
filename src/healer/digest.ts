@@ -33,8 +33,7 @@ function truncate(text: string, max: number): string {
 }
 
 function detailOf(ctx: Record<string, unknown>): string {
-  const v =
-    ctx.err_message ?? ctx.error ?? ctx.last_run_error ?? ctx.msg ?? '';
+  const v = ctx.err_message ?? ctx.error ?? ctx.last_run_error ?? ctx.msg ?? '';
   return typeof v === 'string' ? v : '';
 }
 

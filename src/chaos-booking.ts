@@ -52,7 +52,9 @@ export function extractCid(
   // The cid rides through Trafft as the internal "Tandem Customer ID" (or bare
   // "cid") custom field — the same labels classifyCustomFields suppresses from
   // operator-facing notices. Single source of truth: trafft-custom-fields.ts.
-  const field = booking.customFields.find((cf) => isInternalCustomField(cf.label));
+  const field = booking.customFields.find((cf) =>
+    isInternalCustomField(cf.label),
+  );
   const value = field?.value?.trim();
   // Trafft renders an empty hidden field as "/"; treat that as no cid.
   return value && value !== '/' ? value : undefined;

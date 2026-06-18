@@ -37,7 +37,10 @@ import {
   reportFreshIncidents,
 } from './collector.js';
 
-const tmpJsonl = path.join(os.tmpdir(), `healer-collector-${process.pid}.jsonl`);
+const tmpJsonl = path.join(
+  os.tmpdir(),
+  `healer-collector-${process.pid}.jsonl`,
+);
 
 beforeEach(() => {
   query.mockReset();
@@ -112,9 +115,27 @@ describe('reportFreshIncidents', () => {
     store.getState.mockResolvedValue(40);
     query.mockResolvedValue({
       rows: [
-        { id: 41, source: 'minion:sales', severity: 'error', occurrences: 1, raw_context: { err_message: 'boom' } },
-        { id: 42, source: 'sweeper:trafft', severity: 'warn', occurrences: 1, raw_context: {} },
-        { id: 43, source: 'daemon', severity: 'critical', occurrences: 1, raw_context: {} },
+        {
+          id: 41,
+          source: 'minion:sales',
+          severity: 'error',
+          occurrences: 1,
+          raw_context: { err_message: 'boom' },
+        },
+        {
+          id: 42,
+          source: 'sweeper:trafft',
+          severity: 'warn',
+          occurrences: 1,
+          raw_context: {},
+        },
+        {
+          id: 43,
+          source: 'daemon',
+          severity: 'critical',
+          occurrences: 1,
+          raw_context: {},
+        },
       ],
     });
     const n = await reportFreshIncidents();
@@ -136,7 +157,15 @@ describe('reportFreshIncidents', () => {
   it('leaves the watermark unadvanced when the Slack post fails (retry next run)', async () => {
     store.getState.mockResolvedValue(0);
     query.mockResolvedValue({
-      rows: [{ id: 5, source: 'job:x', severity: 'error', occurrences: 1, raw_context: {} }],
+      rows: [
+        {
+          id: 5,
+          source: 'job:x',
+          severity: 'error',
+          occurrences: 1,
+          raw_context: {},
+        },
+      ],
     });
     postIncidents.mockResolvedValue(false);
     expect(await reportFreshIncidents()).toBe(0);
@@ -146,7 +175,15 @@ describe('reportFreshIncidents', () => {
   it('advances the watermark even when only warn/info are fresh (no post)', async () => {
     store.getState.mockResolvedValue(10);
     query.mockResolvedValue({
-      rows: [{ id: 11, source: 'sweeper:gf', severity: 'warn', occurrences: 1, raw_context: {} }],
+      rows: [
+        {
+          id: 11,
+          source: 'sweeper:gf',
+          severity: 'warn',
+          occurrences: 1,
+          raw_context: {},
+        },
+      ],
     });
     expect(await reportFreshIncidents()).toBe(0);
     expect(postIncidents).not.toHaveBeenCalled();
@@ -189,7 +226,9 @@ describe('checkDaemon', () => {
 
   it('returns false and resolves any open daemon incident when fresh', async () => {
     query
-      .mockResolvedValueOnce({ rows: [{ last_beat: new Date().toISOString() }] }) // SELECT
+      .mockResolvedValueOnce({
+        rows: [{ last_beat: new Date().toISOString() }],
+      }) // SELECT
       .mockResolvedValueOnce({ rows: [] }); // resolve UPDATE
     expect(await checkDaemon()).toBe(false);
     expect(execFile).not.toHaveBeenCalled();

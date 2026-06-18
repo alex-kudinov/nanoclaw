@@ -63,13 +63,11 @@ function makeDeps(
 ): ProposalFollowupDeps {
   return {
     listOpenProposals: vi.fn().mockResolvedValue([makeProposal()]),
-    resolveRecipient: vi
-      .fn()
-      .mockResolvedValue({
-        email: 'k@x.com',
-        firstName: 'Katie',
-        lastName: 'D',
-      }),
+    resolveRecipient: vi.fn().mockResolvedValue({
+      email: 'k@x.com',
+      firstName: 'Katie',
+      lastName: 'D',
+    }),
     generateEmail: vi
       .fn()
       .mockResolvedValue({ subject: 'Re: proposal', body: 'Hi Katie' }),

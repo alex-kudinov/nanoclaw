@@ -52,7 +52,10 @@ export async function writeHeartbeat(version = getVersion()): Promise<void> {
 /** Beat once immediately, then every 30s. Returns the interval handle. */
 export function startHeartbeat(): NodeJS.Timeout {
   void writeHeartbeat();
-  const handle = setInterval(() => void writeHeartbeat(), HEARTBEAT_DB_INTERVAL_MS);
+  const handle = setInterval(
+    () => void writeHeartbeat(),
+    HEARTBEAT_DB_INTERVAL_MS,
+  );
   handle.unref?.();
   logger.info({ interval_ms: HEARTBEAT_DB_INTERVAL_MS }, 'heartbeat: started');
   return handle;

@@ -70,8 +70,12 @@ let ipcWatcherRunning = false;
 // "→" or the ASCII "->" interchangeably; a "→"-only matcher silently misrouted
 // ASCII handoffs (e.g. [HANDOFF: booking->sales]) to the source's own channel.
 const HANDOFF_ARROW = '(?:→|->)';
-const HANDOFF_RE = new RegExp(`\\[HANDOFF:\\s*\\w+\\s*${HANDOFF_ARROW}\\s*(\\w+)\\]`);
-const CANCEL_RE = new RegExp(`\\[CANCEL:\\s*(\\w+)\\s*${HANDOFF_ARROW}\\s*mailman\\]`);
+const HANDOFF_RE = new RegExp(
+  `\\[HANDOFF:\\s*\\w+\\s*${HANDOFF_ARROW}\\s*(\\w+)\\]`,
+);
+const CANCEL_RE = new RegExp(
+  `\\[CANCEL:\\s*(\\w+)\\s*${HANDOFF_ARROW}\\s*mailman\\]`,
+);
 
 // Mailman send-hold buffer. Held [HANDOFF: *→mailman] messages sit here
 // for MAILMAN_HOLD_MS so an in-flight [CANCEL: *→mailman] from the same

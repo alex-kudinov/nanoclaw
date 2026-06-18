@@ -33,7 +33,10 @@ function buildStream(): pino.MultiStreamRes {
   if (jsonl) {
     try {
       fs.mkdirSync(path.dirname(jsonl), { recursive: true });
-      streams.push({ level, stream: fs.createWriteStream(jsonl, { flags: 'a' }) });
+      streams.push({
+        level,
+        stream: fs.createWriteStream(jsonl, { flags: 'a' }),
+      });
     } catch {
       // Unwritable JSON sink — keep pretty-only; never block logging.
     }

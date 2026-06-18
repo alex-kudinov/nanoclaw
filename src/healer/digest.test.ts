@@ -33,7 +33,13 @@ describe('formatDigest', () => {
 
   it('lists incidents with source, severity, occurrences and detail', () => {
     const out = formatDigest(
-      [row({ source: 'minion:sales', occurrences: 3, raw_context: { err_message: 'kaboom' } })],
+      [
+        row({
+          source: 'minion:sales',
+          occurrences: 3,
+          raw_context: { err_message: 'kaboom' },
+        }),
+      ],
       '2026-06-13',
     );
     expect(out).toContain('1 open since 2026-06-13');

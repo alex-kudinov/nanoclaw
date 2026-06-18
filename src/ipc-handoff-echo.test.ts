@@ -175,9 +175,9 @@ describe('IPC handoff routing', () => {
       expect.objectContaining({ fromGroup: 'chief' }),
     );
     // Never echoed to the source channel ('slack:UNUSED' from writeHandoffFile).
-    expect(
-      sendMessage.mock.calls.some((c) => c[0] === 'slack:UNUSED'),
-    ).toBe(false);
+    expect(sendMessage.mock.calls.some((c) => c[0] === 'slack:UNUSED')).toBe(
+      false,
+    );
   });
 
   it('holds then delivers a mailman handoff on the deferred path', async () => {

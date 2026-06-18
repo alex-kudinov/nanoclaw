@@ -4,7 +4,8 @@ import { parseBriefItem } from './brief-promote.js';
 
 describe('parseBriefItem', () => {
   it('parses a posted brief item with title, domain, and ISO due', () => {
-    const text = '🔥 *Estimated Tax Payment — Q2 (1040-ES)*\npersonal · due 2026-06-15\n_due in 1d_';
+    const text =
+      '🔥 *Estimated Tax Payment — Q2 (1040-ES)*\npersonal · due 2026-06-15\n_due in 1d_';
     const item = parseBriefItem(text);
     expect(item).not.toBeNull();
     expect(item!.title).toBe('Estimated Tax Payment — Q2 (1040-ES)');
@@ -13,7 +14,9 @@ describe('parseBriefItem', () => {
   });
 
   it('parses an item with no due date', () => {
-    const item = parseBriefItem('🗓 *Render Phase 5 resource PDFs*\ndev\n_courses — in-progress_');
+    const item = parseBriefItem(
+      '🗓 *Render Phase 5 resource PDFs*\ndev\n_courses — in-progress_',
+    );
     expect(item).not.toBeNull();
     expect(item!.domain).toBe('dev');
     expect(item!.due).toBeUndefined();
@@ -24,7 +27,9 @@ describe('parseBriefItem', () => {
   });
 
   it('returns null when there is a title but no known domain', () => {
-    expect(parseBriefItem('*Some random bolded note* with no domain word')).toBeNull();
+    expect(
+      parseBriefItem('*Some random bolded note* with no domain word'),
+    ).toBeNull();
   });
 
   it('ignores Slack markup and caps title length', () => {

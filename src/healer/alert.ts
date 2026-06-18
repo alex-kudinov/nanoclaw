@@ -15,7 +15,15 @@ import { logger } from '../logger.js';
 function alertScriptPath(): string {
   return (
     process.env.HEALER_ALERT_SH ||
-    path.join(os.homedir(), 'dev', 'toolbox', 'shared', 'claude', 'lib', 'alert.sh')
+    path.join(
+      os.homedir(),
+      'dev',
+      'toolbox',
+      'shared',
+      'claude',
+      'lib',
+      'alert.sh',
+    )
   );
 }
 

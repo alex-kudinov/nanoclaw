@@ -5,7 +5,11 @@
  * without touching files, SQLite, or Postgres.
  */
 
-import { fingerprint, type IncidentSeed, type Severity } from './incident-store.js';
+import {
+  fingerprint,
+  type IncidentSeed,
+  type Severity,
+} from './incident-store.js';
 
 interface PinoLine {
   level?: number;

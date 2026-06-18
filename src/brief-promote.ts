@@ -60,7 +60,10 @@ export async function promoteBriefItem(text: string): Promise<boolean> {
       logger.warn({ status: res.status }, 'things-bridge returned non-ok');
       return false;
     }
-    logger.info({ title: item.title, domain: item.domain }, 'Promoted brief item to Things');
+    logger.info(
+      { title: item.title, domain: item.domain },
+      'Promoted brief item to Things',
+    );
     return true;
   } catch (err) {
     logger.warn({ err }, 'things-bridge call failed');
