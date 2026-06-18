@@ -46,3 +46,17 @@ export async function callPlutioTool(
   });
   return stdout.trim();
 }
+
+/**
+ * Plutio toolbox scripts prefix stdout with a status token (`OK [...]` /
+ * `OK {...}` on success, `ERR ...` on failure). Slice from the first JSON
+ * bracket so the status word doesn't break JSON.parse. Returns '' when there is
+ * no JSON (e.g. an ERR line) — JSON.parse('') then throws, surfacing the error.
+ */
+export function stripToJson(raw: string): string {
+  const s = (raw || '').trim();
+  const arr = s.indexOf('[');
+  const obj = s.indexOf('{');
+  const start = arr === -1 ? obj : obj === -1 ? arr : Math.min(arr, obj);
+  return start === -1 ? '' : s.slice(start);
+}

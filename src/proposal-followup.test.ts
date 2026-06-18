@@ -156,6 +156,22 @@ describe('runProposalFollowup', () => {
     expect(r.drafted).toBe(0);
   });
 
+  it('stops entirely once the proposal is closed out (declined/skipped)', async () => {
+    const deps = makeDeps({
+      store: fakeStore({
+        ...EMPTY_STATE,
+        lastSentSequence: 1, // mid-sequence
+        firstFollowupAt: new Date(2026, 5, 1),
+        lastSentAt: new Date(2026, 5, 1),
+        closedOut: true,
+        existingSequences: new Set([1, 5]),
+      }),
+    });
+    const r = await runProposalFollowup(deps);
+    expect(r.drafted).toBe(0);
+    expect(deps.generateEmail).not.toHaveBeenCalled();
+  });
+
   it('does not re-draft a sequence that already has a row', async () => {
     const deps = makeDeps({
       store: fakeStore({
@@ -237,7 +253,7 @@ describe('handleProposalApproval', () => {
     const claimed = await handleProposalApproval('ts-1', 'Alex', deps);
     expect(claimed).toBe(true);
     expect(deps.sendEmail).toHaveBeenCalledWith(pending);
-    expect(deps.markSent).toHaveBeenCalledWith(7, 'm1');
+    expect(deps.markSent).toHaveBeenCalledWith(7, 'm1', 't1');
     expect(deps.postThread.mock.calls[0][1]).toContain('Sent to k@x.com');
   });
 

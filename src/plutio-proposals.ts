@@ -8,7 +8,7 @@
  */
 
 import { PROPOSAL_PUBLIC_URL_BASE } from './config.js';
-import { callPlutioTool } from './plutio-cli.js';
+import { callPlutioTool, stripToJson } from './plutio-cli.js';
 
 export interface OpenProposal {
   id: string; // Plutio _id
@@ -33,19 +33,6 @@ export function resolveProposalUrl(plutioId: string): string {
 export function resolveProposalEditUrl(plutioId: string): string {
   const origin = new URL(PROPOSAL_PUBLIC_URL_BASE).origin;
   return `${origin}/proposals/${plutioId}/edit`;
-}
-
-/**
- * The Plutio toolbox scripts prefix output with a status token (e.g. `OK [...]`
- * on success, `ERR ...` on failure). Slice from the first JSON bracket so the
- * status word doesn't break JSON.parse. Returns '' when there's no JSON.
- */
-function stripToJson(raw: string): string {
-  const s = (raw || '').trim();
-  const arr = s.indexOf('[');
-  const obj = s.indexOf('{');
-  const start = arr === -1 ? obj : obj === -1 ? arr : Math.min(arr, obj);
-  return start === -1 ? '' : s.slice(start);
 }
 
 /** Tolerate both a bare array and a `{ data: [...] }` envelope. */
@@ -119,6 +106,25 @@ export async function listOpenProposals(): Promise<OpenProposal[]> {
     '200',
   ]);
   return parseProposals(raw);
+}
+
+/**
+ * Set a proposal's status in Plutio. The status field is writable even on a
+ * pending (otherwise read-only) proposal. Use 'declined' for a client decline,
+ * 'cancelled' to withdraw. Returns true if the status read back as expected.
+ */
+export async function setProposalStatus(
+  plutioId: string,
+  status: string,
+): Promise<boolean> {
+  const raw = await callPlutioTool('update-proposal.sh', [
+    '--id',
+    plutioId,
+    '--data',
+    JSON.stringify({ status }),
+  ]);
+  const parsed = JSON.parse(stripToJson(raw)) as { status?: string };
+  return parsed?.status === status;
 }
 
 export async function resolveRecipient(

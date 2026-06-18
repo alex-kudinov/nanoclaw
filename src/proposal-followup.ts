@@ -117,6 +117,7 @@ async function draftDue(
   deps: ProposalFollowupDeps,
   now: Date,
 ): Promise<boolean> {
+  if (s.closedOut) return false; // declined / 👎-skipped / closed out → stop entirely
   const touch = selectNextTouch({
     pendingAt: p.pendingAt,
     firstFollowupAt: s.firstFollowupAt,
@@ -225,7 +226,7 @@ export interface PendingDraft {
 export interface ApprovalDeps {
   getPendingByTs(slackTs: string): Promise<PendingDraft | null>;
   sendEmail(d: PendingDraft): Promise<{ messageId: string; threadId: string }>;
-  markSent(id: number, messageId: string): Promise<void>;
+  markSent(id: number, messageId: string, threadId?: string): Promise<void>;
   postThread(slackTs: string, text: string): Promise<void>;
 }
 
@@ -243,7 +244,7 @@ export async function handleProposalApproval(
   if (!row) return false;
   try {
     const sent = await deps.sendEmail(row);
-    await deps.markSent(row.id, sent.messageId);
+    await deps.markSent(row.id, sent.messageId, sent.threadId);
     await deps.postThread(
       slackTs,
       `✅ Sent to ${row.recipientEmail} (approved by ${reactor}).`,

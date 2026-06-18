@@ -156,12 +156,17 @@ export async function markCancelled(id: number): Promise<void> {
   );
 }
 
-/** Mark a draft sent after the email goes out. */
-export async function markSent(id: number, messageId: string): Promise<void> {
+/** Mark a draft sent after the email goes out (stores Gmail ids for reply match). */
+export async function markSent(
+  id: number,
+  messageId: string,
+  threadId?: string,
+): Promise<void> {
   await query(
     `UPDATE business_v2.proposal_followups
-        SET status = 'sent', sent_at = NOW(), gmail_message_id = $2
+        SET status = 'sent', sent_at = NOW(),
+            gmail_message_id = $2, thread_id = $3
       WHERE id = $1`,
-    [id, messageId || null],
+    [id, messageId || null, threadId || null],
   );
 }

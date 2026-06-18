@@ -321,10 +321,10 @@ async function resolveSendThreadId(
 export async function handleGmailSend(
   data: GmailIpcPayload,
   postToChief?: PostToChief,
-): Promise<void> {
+): Promise<{ messageId: string; threadId: string } | undefined> {
   if (!data.to || !data.subject || !data.body) {
     logger.warn({ data }, 'gmail_send: missing to, subject, or body');
-    return;
+    return undefined;
   }
 
   const { effectiveTo, effectiveCc, originalTo } = applyTestRouting(data);
@@ -438,6 +438,8 @@ export async function handleGmailSend(
       logger.error({ err }, '[ERROR] gmail [EMAIL SENT] post failed');
     }
   }
+
+  return { messageId: result.messageId, threadId: result.threadId };
 }
 
 export async function handleGmailSearch(data: GmailIpcPayload): Promise<void> {

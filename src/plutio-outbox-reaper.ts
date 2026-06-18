@@ -18,6 +18,7 @@ import { query, withAgentContext } from './business-db.js';
 import { getAllRegisteredGroups } from './db.js';
 import { readEnvFile } from './env.js';
 import { logger } from './logger.js';
+import { stripToJson } from './plutio-cli.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -193,7 +194,7 @@ async function dispatchRow(row: OutboxRow): Promise<void> {
     const args = ['--email', email, '--first', first];
     if (last) args.push('--last', last);
     const output = callPlutioTool('upsert-person.sh', args);
-    const result = JSON.parse(await output);
+    const result = JSON.parse(stripToJson(await output));
     if (result._id) {
       await savePlutioRef('party', party_id, result._id);
     }
@@ -212,7 +213,7 @@ async function dispatchRow(row: OutboxRow): Promise<void> {
       const personArgs = ['--email', email, '--first', first];
       if (last) personArgs.push('--last', last);
       const personOut = JSON.parse(
-        await callPlutioTool('upsert-person.sh', personArgs),
+        stripToJson(await callPlutioTool('upsert-person.sh', personArgs)),
       );
       plutioPersonId = personOut._id;
       if (plutioPersonId) {
@@ -233,10 +234,12 @@ async function dispatchRow(row: OutboxRow): Promise<void> {
         body.items = [{ description: `Proposal #${document_id}`, amount }];
       }
       const output = JSON.parse(
-        await callPlutioTool('create-proposal.sh', [
-          '--data',
-          JSON.stringify(body),
-        ]),
+        stripToJson(
+          await callPlutioTool('create-proposal.sh', [
+            '--data',
+            JSON.stringify(body),
+          ]),
+        ),
       );
       if (output._id) {
         await savePlutioRef('document', document_id, output._id);
@@ -254,10 +257,12 @@ async function dispatchRow(row: OutboxRow): Promise<void> {
         body.items = [{ description: `Invoice #${document_id}`, amount }];
       }
       const output = JSON.parse(
-        await callPlutioTool('create-invoice.sh', [
-          '--data',
-          JSON.stringify(body),
-        ]),
+        stripToJson(
+          await callPlutioTool('create-invoice.sh', [
+            '--data',
+            JSON.stringify(body),
+          ]),
+        ),
       );
       if (output._id) {
         await savePlutioRef('document', document_id, output._id);
@@ -271,10 +276,12 @@ async function dispatchRow(row: OutboxRow): Promise<void> {
       };
       if (plutioPersonId) body.to = plutioPersonId;
       const output = JSON.parse(
-        await callPlutioTool('create-contract.sh', [
-          '--data',
-          JSON.stringify(body),
-        ]),
+        stripToJson(
+          await callPlutioTool('create-contract.sh', [
+            '--data',
+            JSON.stringify(body),
+          ]),
+        ),
       );
       if (output._id) {
         await savePlutioRef('document', document_id, output._id);

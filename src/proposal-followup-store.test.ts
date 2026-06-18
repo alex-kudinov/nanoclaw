@@ -133,12 +133,13 @@ describe('getPendingByTs / markSent', () => {
     expect(d).toMatchObject({ id: 7, proposalId: 'pid1', sequence: 2 });
   });
 
-  it('markSent updates status and message id', async () => {
+  it('markSent updates status, message id, and thread id', async () => {
     mockQuery.mockResolvedValue({ rows: [], rowCount: 1 });
-    await markSent(7, 'm1');
+    await markSent(7, 'm1', 't1');
     const [sql, params] = mockQuery.mock.calls[0];
     expect(sql).toContain("status = 'sent'");
-    expect(params).toEqual([7, 'm1']);
+    expect(sql).toContain('thread_id');
+    expect(params).toEqual([7, 'm1', 't1']);
   });
 
   it('markCancelled cancels only a pending draft', async () => {

@@ -485,8 +485,11 @@ describe('mechanical [EMAIL SENT] to chief (T06)', () => {
     expect(postToChief.mock.calls[0][0]).toContain('subject=Re: ACC');
   });
 
-  it('does not throw when postToChief is omitted', async () => {
-    await expect(handleGmailSend(makePayload())).resolves.toBeUndefined();
+  it('returns the sent message + thread ids when postToChief is omitted', async () => {
+    await expect(handleGmailSend(makePayload())).resolves.toMatchObject({
+      messageId: expect.any(String),
+      threadId: expect.any(String),
+    });
   });
 });
 

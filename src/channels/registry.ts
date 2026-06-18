@@ -14,6 +14,15 @@ export interface ChannelOpts {
   onBotJoinedChannel?: OnBotJoinedChannel;
   registerGroup?: RegisterGroupFn;
   registeredGroups: () => Record<string, RegisteredGroup>;
+  /**
+   * Gmail-only host hook: inspect an inbound email before it routes (e.g. to
+   * detect a proposal reply). Best-effort side effect; never swallows the email.
+   */
+  onInboundReply?: (input: {
+    senderEmail: string;
+    threadId?: string;
+    body: string;
+  }) => Promise<void>;
 }
 
 export type ChannelFactory = (opts: ChannelOpts) => Channel | null;

@@ -83,8 +83,26 @@ import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
 import { query } from './business-db.js';
 import { SlackChannel } from './channels/slack.js';
 import { handleGmailSend } from './gmail-ipc-handlers.js';
-import { listOpenProposals, resolveRecipient } from './plutio-proposals.js';
+import {
+  listOpenProposals,
+  resolveRecipient,
+  setProposalStatus,
+} from './plutio-proposals.js';
 import { generateFollowupEmail } from './proposal-followup-email.js';
+import { classifyReply, handleInboundReply } from './proposal-reply.js';
+import {
+  handleDeclineApproval,
+  handleDeclineDismissal,
+} from './proposal-reply-actions.js';
+import {
+  findReplyCandidates,
+  getActionByTs,
+  hasOpenAction,
+  markActionDismissed,
+  markActionDone,
+  recordDeclineAction,
+  stopFollowups,
+} from './proposal-reply-store.js';
 import {
   getPendingByTs,
   markCancelled,
@@ -1088,6 +1106,40 @@ async function main(): Promise<void> {
     },
     registerGroup,
     registeredGroups: () => registeredGroups,
+    onInboundReply: PROPOSAL_FOLLOWUP_ENABLED
+      ? async ({
+          senderEmail,
+          threadId,
+          body,
+        }: {
+          senderEmail: string;
+          threadId?: string;
+          body: string;
+        }) => {
+          const slack = channels.find(
+            (c): c is SlackChannel => c instanceof SlackChannel,
+          );
+          if (!slack) return;
+          const jid = PROPOSAL_FOLLOWUP_CHANNEL_JID;
+          const outcome = await handleInboundReply(
+            { senderEmail, threadId, body },
+            {
+              findCandidates: findReplyCandidates,
+              classify: (b, cands) => classifyReply(b, cands),
+              hasOpenAction,
+              recordDeclineAction,
+              stopFollowups,
+              postCard: (text) => slack.postTracked(jid, text),
+              postNotice: async (text) => {
+                await slack.sendMessage(jid, text);
+              },
+            },
+          );
+          if (outcome !== 'none') {
+            logger.info({ senderEmail, outcome }, 'proposal-reply: processed');
+          }
+        }
+      : undefined,
   };
 
   // Create and connect all registered channels.
@@ -1227,7 +1279,7 @@ async function main(): Promise<void> {
         handleProposalApproval(ts, reactor, {
           getPendingByTs,
           sendEmail: async (d) => {
-            await handleGmailSend({
+            const sent = await handleGmailSend({
               type: 'gmail_send',
               groupFolder: 'sales',
               timestamp: new Date().toISOString(),
@@ -1238,7 +1290,10 @@ async function main(): Promise<void> {
               emailType: 'follow-up',
               leadId: d.partyId ?? undefined,
             });
-            return { messageId: '', threadId: '' };
+            return {
+              messageId: sent?.messageId ?? '',
+              threadId: sent?.threadId ?? '',
+            };
           },
           markSent,
           postThread: async (slackTs, text) => {
@@ -1256,6 +1311,26 @@ async function main(): Promise<void> {
             await slack.sendMessage(channelJid, text, { threadTs: slackTs });
           },
         }),
+      );
+
+      // Inbound proposal replies: a decline card's ✅ sets Plutio = declined +
+      // stops follow-ups; 👎 dismisses it.
+      const declineDeps = {
+        getActionByTs,
+        setDeclined: (proposalId: string) =>
+          setProposalStatus(proposalId, 'declined'),
+        stopFollowups,
+        markActionDone,
+        markActionDismissed,
+        postThread: async (slackTs: string, text: string) => {
+          await slack.sendMessage(channelJid, text, { threadTs: slackTs });
+        },
+      };
+      slack.registerApprovalListener((ts, reactor) =>
+        handleDeclineApproval(ts, reactor, declineDeps),
+      );
+      slack.registerRejectListener((ts, reactor) =>
+        handleDeclineDismissal(ts, reactor, declineDeps),
       );
 
       // Hourly tick; the pass itself runs once per day at/after the target hour.

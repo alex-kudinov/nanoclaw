@@ -96,17 +96,28 @@ export class GmailChannel implements Channel {
   private onChatMetadata: OnChatMetadata;
   private registerGroup?: RegisterGroupFn;
   private registeredGroups: () => Record<string, RegisteredGroup>;
+  private onInboundReply?: (input: {
+    senderEmail: string;
+    threadId?: string;
+    body: string;
+  }) => Promise<void>;
 
   constructor(opts: {
     onMessage: OnInboundMessage;
     onChatMetadata: OnChatMetadata;
     registerGroup?: RegisterGroupFn;
     registeredGroups: () => Record<string, RegisteredGroup>;
+    onInboundReply?: (input: {
+      senderEmail: string;
+      threadId?: string;
+      body: string;
+    }) => Promise<void>;
   }) {
     this.onMessage = opts.onMessage;
     this.onChatMetadata = opts.onChatMetadata;
     this.registerGroup = opts.registerGroup;
     this.registeredGroups = opts.registeredGroups;
+    this.onInboundReply = opts.onInboundReply;
     this.jid = `gmail:${GMAIL_MONITORED_EMAIL}`;
   }
 
@@ -476,6 +487,21 @@ export class GmailChannel implements Channel {
         { err, messageId: msg.id },
         'Gmail: hard filter error, proceeding',
       );
+    }
+
+    // Proposal-reply detector: if this sender has an open proposal we followed
+    // up on, classify their reply (decline/accept) and act. Best-effort side
+    // effect (posts a card/notice); does NOT swallow the email — it still flows
+    // to the normal pipeline so a human can respond.
+    if (this.onInboundReply && senderEmail) {
+      try {
+        await this.onInboundReply({ senderEmail, threadId, body: body || '' });
+      } catch (err) {
+        logger.error(
+          { err, messageId: msg.id },
+          'Gmail: inbound-reply hook error',
+        );
+      }
     }
 
     const ruleMatch = await matchRule({
