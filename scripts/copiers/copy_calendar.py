@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy calendar exports from OneDrive Drop to Intake."""
+import ctypes
 import logging
 import os
 import shutil
@@ -11,6 +12,22 @@ SRC = HOME / "Library/CloudStorage/OneDrive-SoleraHoldings,Inc/Drop/Calendar"
 DST = HOME / "Vaults/My Notes/Intake/Calendar"
 LOG = HOME / ".local/log/copy_calendar.log"
 
+# launchd-spawned processes can run with dataless-file materialization
+# disabled, so ANY read of a OneDrive cloud placeholder fails with EDEADLK
+# ([Errno 11] Resource deadlock avoided) — including shutil.copy2. Opt in
+# process-wide: setiopolicy_np(IOPOL_TYPE_VFS_MATERIALIZE_DATALESS_FILES=3,
+# IOPOL_SCOPE_PROCESS=0, IOPOL_MATERIALIZE_DATALESS_FILES_ON=2).
+try:
+    ctypes.CDLL("/usr/lib/libSystem.B.dylib", use_errno=True).setiopolicy_np(3, 0, 2)
+except Exception:
+    pass
+
+# Rotate the log if it grew past 10 MB — a persistent failure loop once
+# grew it to 2.5 GB and filled the disk.
+if LOG.exists() and LOG.stat().st_size > 10_000_000:
+    LOG.rename(LOG.parent / (LOG.name + ".1"))
+
+LOG.parent.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=str(LOG), level=logging.INFO,
                     format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 

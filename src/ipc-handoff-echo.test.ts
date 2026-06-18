@@ -158,6 +158,28 @@ describe('IPC handoff routing', () => {
     expect(storeMessageDirect).not.toHaveBeenCalled();
   });
 
+  it('routes an ASCII-arrow handoff (->) to the target, not the source channel', async () => {
+    // Regression: agents emit [HANDOFF: booking->sales] with an ASCII arrow.
+    // A "→"-only matcher dropped these to the source's own channel — booking
+    // handoffs piled up in #gru-booking and sales never received them.
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    writeHandoffFile('chief', '[HANDOFF: chief->sales] new lead', 'thr-ascii');
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      '[HANDOFF: chief->sales] new lead',
+      expect.objectContaining({ fromGroup: 'chief' }),
+    );
+    // Never echoed to the source channel ('slack:UNUSED' from writeHandoffFile).
+    expect(
+      sendMessage.mock.calls.some((c) => c[0] === 'slack:UNUSED'),
+    ).toBe(false);
+  });
+
   it('holds then delivers a mailman handoff on the deferred path', async () => {
     process.env.MAILMAN_HOLD_SECONDS = '30';
     const { startIpcWatcher } = await import('./ipc.js');

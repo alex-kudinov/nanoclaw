@@ -281,7 +281,7 @@
       }
     },
     "jobs": {
-      "description": "El Campanero — job scheduler management",
+      "description": "El Campanero \u2014 job scheduler management",
       "tools": {
         "list": {
           "description": "Show all scheduled jobs with status, schedule, and last run",
@@ -410,6 +410,7 @@
     "transcript",
     "pushover",
     "text",
-    "stripe"
+    "stripe",
+    "agenticflow"
   ]
 }

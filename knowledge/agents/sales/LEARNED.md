@@ -296,3 +296,35 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 ### Lesson 72: Untitled
 **Problem:** Portfolio path ACC inquiry — lead wanted to know which Tandem modules to purchase; initial draft recommended Group Mentor Coaching + Module 1 without first understanding his existing CCE hours or mentor coaching status
 **Rule:** For portfolio path ACC inquiries, do not jump straight to module recommendations. First ask what the lead already has in their portfolio — CCE hours, mentor coaching progress, existing credentials — so recommendations are gap-specific rather than generic. Alex corrected a draft that recommended specific modules without understanding the lead's existing training.
+
+### Lesson 73: Duplicate handoff prevention — deduplicate before emitting [HANDOFF: sales→mailman]
+**Problem:** On 2026-06-08, sales emitted an identical [HANDOFF: sales→mailman] for Entry #363 / Party #10423 twice — same Entry ID, Party ID, recipient, and body — at 12:05 UTC and again at 15:51 UTC. Chief blocked the second send, but the duplicate handoff should never have been emitted. A lesson was already routed on 2026-06-02 about checking the timeline before re-queuing the same Thread-ID; the duplicate recurred anyway, so the rule needs to be stronger.
+**Rule:** Before emitting any [HANDOFF: sales→mailman], query the party's interaction timeline (business_v2.v_party_timeline WHERE party_id = <id> ORDER BY occurred_at DESC) and confirm no outbound email with the same subject or to the same recipient has been logged in the last 24 hours. If an identical or near-identical outbound interaction already exists for this party and thread, suppress the handoff entirely — do NOT re-emit it. Log a one-line [DUPLICATE-SUPPRESSED] note instead so chief can audit. This check is mandatory for every handoff, regardless of trigger source.
+
+### Lesson 74: Untitled
+**Problem:** MCS inquiry — lead asked about a BARS/Markers bundle with Foundations. CPL vs Standard path explained in email.
+**Rule:** Initial draft included the Cherie direct booking link per the MCS ambiguity rule (path unclear). Alex removed it — the email explanation of CPL vs Standard path was sufficient and self-contained. Reserve the Cherie consult link for cases where path ambiguity cannot be resolved in writing (complex background, multiple credentials, entangled history), not merely because two paths exist.
+
+### Lesson 75: Untitled
+**Problem:** New aspiring coach (Noah Rice) asking to 'become a life coach' — said 'I would love to talk with someone.' Initial draft omitted Cherie link per no-consultation rule; Alex added it back.
+**Rule:** When a lead explicitly says they want to 'talk with someone' or requests human contact, include Cherie's direct booking link even for standard program inquiries. The general 'no consultation calls' rule applies to unsolicited suggestions; when the lead directly asks for a conversation, honor that by offering the booking link.
+
+### Lesson 76: Untitled
+**Problem:** Mentor Coaching Foundations ($299), CPL path — lead asked about MCS mentor documentation criteria, ICF application process, and what the 6 written submissions entail
+**Rule:** MCS CPL documentation criteria depend on HOW the coach mentored: if through a school/program, the school writes a letter and mentees do not need to have achieved ICF credentials; if independently, mentees must have achieved ICF credentials after mentorship, and ACC renewal hours do not count. Initial draft incorrectly applied the independent-path rule to all cases. Also, Mentor Coaching Foundations graded assessments are a mix of quizzes and written assignments per module — not all instructor-graded written assignments. Avoid detailed module-by-module breakdowns when a summary suffices.
+
+### Lesson 77: Untitled
+**Problem:** Systems Coach Program (PCC) inquiry; lead had ACC and was asking when the next Module 1 starts because August conflicted with her schedule.
+**Rule:** For the Systems Coach Program (PCC/ACTC), modules are drop-in and can be taken in any order — students are not required to start at Module 1 or follow a sequential path. When a lead asks about a specific module start date, clarify this flexibility. Additionally, never offer to personally notify a lead when new cohort dates are available — dates are published to the program page; direct leads there instead.
+
+### Lesson 78: Untitled
+**Problem:** Active student (Liz Dobbins, Module 4 Mentor Coach Training) reporting login issue via form submission.
+**Rule:** Initial draft for a login support request asked the student what email they used to register — an overly cautious response that assumed the issue was an unknown email. The correct approach: check the account first (party lookup confirmed liz@propelogy.com is in good standing), then provide the actual solution — direct the student to community.tandemcoaching.academy, enter their email, and use the magic link login email. Never ask for information already known from the handoff.
+
+### Lesson 79: Untitled
+**Problem:** Existing student (Liz Dobbins) unable to access Module 4 Assignment Part 2 in community.tandemcoaching.academy — technical support reply, not a new sales inquiry.
+**Rule:** Initial draft for a community access/login issue separated the magic link step and the troubleshooting questions into two alternative paths. Reviewer wanted both combined in one email: lead with the actionable fix (magic link) first, then ask for details only if the fix doesn't work. This keeps the email action-oriented while still collecting diagnostic info if needed.
+
+### Lesson 80: Untitled
+**Problem:** Community platform login support — lead could not log in because email was entered with capital L (Liz@) instead of all-lowercase (liz@propelogy.com)
+**Rule:** Initial draft did not account for the case sensitivity of the community platform login. The lead reported 'No results for Liz@propelogy.com' — the issue was that she used a capital L. The correct approach is to identify the exact casing error and tell the lead to use all-lowercase when the platform login is case-sensitive.

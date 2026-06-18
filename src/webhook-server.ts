@@ -21,6 +21,7 @@ import path from 'path';
 import { ChildProcess } from 'child_process';
 
 // MAIN_GROUP_FOLDER was removed from config; use group.isMain instead
+import { BRIEF_POST_SECRET } from './config.js';
 import { ContainerOutput } from './container-runner.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
@@ -447,6 +448,54 @@ export class WebhookServer {
       return;
     }
 
+    // POST /api/post — post literal text to a channel (used by the Studio's
+    // daily decision-brief poster). Auth: BRIEF_POST_SECRET (file-loaded; the
+    // process.env-based globalSecret is empty on this deployment). No agent.
+    if (req.method === 'POST' && req.url?.split('?')[0] === '/api/post') {
+      const secret = req.headers['x-webhook-secret'] as string;
+      if (!BRIEF_POST_SECRET || !secret || secret !== BRIEF_POST_SECRET) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Unauthorized' }));
+        return;
+      }
+      let body: Buffer;
+      try {
+        body = await readBody(req);
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Failed to read body' }));
+        return;
+      }
+      let p: { channel?: string; text?: string; thread_ts?: string };
+      try {
+        p = JSON.parse(body.toString('utf-8'));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      if (!p.channel || !p.text) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing channel or text' }));
+        return;
+      }
+      try {
+        await this.deps.sendMessage(
+          p.channel,
+          p.text,
+          p.thread_ts ? { threadTs: p.thread_ts } : undefined,
+        );
+      } catch (err) {
+        logger.error({ err, channel: p.channel }, '/api/post sendMessage failed');
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'send failed' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
     // POST /hook/gmail-push — Gmail Pub/Sub push receiver (via n8n forward).
     // Body: { message: { data: base64(JSON({emailAddress, historyId})) } }
     const gmailPushUrl = req.url?.split('?')[0];
@@ -786,6 +835,33 @@ export class WebhookServer {
         }
         const extrasPart = extras.length ? ` - ${extras.join('/')}` : '';
         const emailPart = email ? ` (${email})` : '';
+
+        // 'observed' = an anonymous page/form view with no identity captured —
+        // the highest-volume, lowest-signal Chaos event, and the same person
+        // re-fires it on every page view. Suppress the Slack post (pure noise;
+        // 'verified' hits and the [chaos] dispositions still surface) but still
+        // mark the event handled so it reaches a terminal state and the inbox
+        // reaper does not retry it. Operator decision 2026-06-17.
+        if (identity === 'observed') {
+          if (inboxId !== null && this.deps.markWebhookHandled) {
+            await this.deps
+              .markWebhookHandled(inboxId, {
+                handled_by: 'form-submitted:observed-suppressed',
+              })
+              .catch((err) =>
+                logger.error(
+                  { hookId, inboxId, err },
+                  'markWebhookHandled failed',
+                ),
+              );
+          }
+          logger.info(
+            { hookId, inboxId, identity, subtype: action },
+            'Form submission observed-only — suppressed (no Slack post)',
+          );
+          return;
+        }
+
         const message = `[form] ${name} - ${action}${extrasPart} - ${identity}${emailPart}`;
 
         await this.deps.sendMessage(webhook.chat_jid, message, {

@@ -880,3 +880,92 @@ describe('WebhookServer — host-side booking write (T03b)', () => {
     });
   });
 });
+
+describe('WebhookServer — form-submitted observed suppression', () => {
+  const formWebhook: WebhookDefinition = {
+    id: 'form-submitted',
+    name: 'Form Submitted',
+    group: 'main',
+    chat_jid: 'slack:C123',
+    prompt_template: '{{payload}}',
+    secret: 'hook-secret',
+    context_mode: 'isolated',
+    created_at: '2026-01-01T00:00:00Z',
+  };
+
+  async function fireForm(
+    body: unknown,
+    deps: WebhookServerDeps,
+  ): Promise<void> {
+    const s = new WebhookServer(deps);
+    await s.start();
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [formWebhook];
+    try {
+      await makeRequest(deps.port, {
+        path: '/hook/form-submitted',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+        body: JSON.stringify(body),
+      });
+      await new Promise((r) => setTimeout(r, 40));
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  }
+
+  it('suppresses the Slack post for an observed-only event but marks it handled', async () => {
+    const markWebhookHandled = vi.fn(async () => {});
+    const d = makeDeps({
+      archiveWebhook: vi.fn(async () => ({ id: 501, isDuplicate: false })),
+      markWebhookHandled,
+    });
+    await fireForm(
+      {
+        display_name: 'Hanne',
+        email: 'hanne@example.com',
+        identity_status: 'observed',
+        form_event_subtype: 'mcqf-brochure',
+        form_page: '/mcs/mentor-coaching-foundations/',
+      },
+      d,
+    );
+
+    const formPosts = (d.sendMessage as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (c) => typeof c[1] === 'string' && c[1].startsWith('[form]'),
+    );
+    expect(formPosts).toHaveLength(0);
+    expect(d.runAgent).not.toHaveBeenCalled();
+    expect(markWebhookHandled).toHaveBeenCalledWith(
+      501,
+      expect.objectContaining({ handled_by: 'form-submitted:observed-suppressed' }),
+    );
+  });
+
+  it('still posts a verified form event', async () => {
+    const markWebhookHandled = vi.fn(async () => {});
+    const d = makeDeps({
+      archiveWebhook: vi.fn(async () => ({ id: 502, isDuplicate: false })),
+      markWebhookHandled,
+    });
+    await fireForm(
+      {
+        display_name: 'Hanne',
+        email: 'hanne@example.com',
+        identity_status: 'verified',
+        form_event_subtype: 'mcqf-brochure',
+        form_page: '/mcs/mentor-coaching-foundations/',
+      },
+      d,
+    );
+
+    const formPosts = (d.sendMessage as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (c) => typeof c[1] === 'string' && c[1].startsWith('[form]'),
+    );
+    expect(formPosts).toHaveLength(1);
+    expect(formPosts[0][1]).toContain('verified');
+    expect(formPosts[0][2]).toMatchObject({ fromGroup: 'main' });
+    expect(markWebhookHandled).toHaveBeenCalledWith(
+      502,
+      expect.objectContaining({ handled_by: 'form-submitted:host-handler' }),
+    );
+  });
+});

@@ -21,6 +21,7 @@ import os from 'os';
 import path from 'path';
 
 import type { BookedInput } from './booking-host-write.js';
+import { isInternalCustomField } from './trafft-custom-fields.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -30,14 +31,6 @@ const CHAOS_RECORD_TOOL = path.join(
   TOOLBOX_DIR,
   'shared/chaos/tools/chaos/record-external-event.sh',
 );
-
-/**
- * Trafft custom-field labels that carry the Chaos fingerprint (cid).
- * The live booking form names the hidden field "Tandem Customer ID" (the value
- * the tandemcoach.co booking-link decoration writes from `?cid=`); older configs
- * and unit fixtures used the bare "cid" label. Match either, case-insensitively.
- */
-const CID_LABELS = ['tandem customer id', 'cid'];
 
 export type ChaosBookingStatus =
   | 'recorded'
@@ -56,9 +49,10 @@ export interface ChaosBookingResult {
 export function extractCid(
   booking: Pick<BookedInput, 'customFields'>,
 ): string | undefined {
-  const field = booking.customFields.find((cf) =>
-    CID_LABELS.includes(cf.label.trim().toLowerCase()),
-  );
+  // The cid rides through Trafft as the internal "Tandem Customer ID" (or bare
+  // "cid") custom field — the same labels classifyCustomFields suppresses from
+  // operator-facing notices. Single source of truth: trafft-custom-fields.ts.
+  const field = booking.customFields.find((cf) => isInternalCustomField(cf.label));
   const value = field?.value?.trim();
   // Trafft renders an empty hidden field as "/"; treat that as no cid.
   return value && value !== '/' ? value : undefined;

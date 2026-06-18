@@ -29,7 +29,7 @@ PEOPLE_DIRS = ["Solera/People", "Tandem/People", "CNPC/People"]
 DOMAIN_DIRS = {"Solera/People": "solera", "Tandem/People": "tandem", "CNPC/People": "cnpc"}
 DOMAIN_PRIORITY = {"solera": 3, "tandem": 2, "cnpc": 1}
 DEST_MAP = {"solera": "Solera/Calendar", "tandem": "Tandem/Calendar", "cnpc": "CNPC/Calendar"}
-REQUIRED_FIELDS = {"event_id", "subject", "start_time", "end_time"}
+REQUIRED_FIELDS = {"event_id", "start_time", "end_time"}
 SANITIZE_RE = re.compile(r'[/:\\*?"<>|]')
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 
@@ -512,6 +512,14 @@ def process_one(
     if result is None:
         return
     meta, body_text = result
+
+    # Empty-subject events (recurring instances, blocked/focus time) carry no
+    # briefing value. Skip them cleanly instead of erroring — they once flooded
+    # Intake/Calendar/errors/ with 2,000+ files and starved the meeting briefer.
+    if not meta.get("subject", "").strip():
+        report["skipped"] += 1
+        move_to_processed(path, vault_root)
+        return
 
     event_id = meta["event_id"]
     action = should_process(

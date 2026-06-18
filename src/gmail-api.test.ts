@@ -344,6 +344,58 @@ describe('replyToThread external-party addressing', () => {
     expect(toLine(send)).toContain('liz@propelogy.com');
   });
 
+  it('honors Reply-To over a relay From (Encharge no-reply)', async () => {
+    // Encharge relays the customer's message but stamps its own bounce address
+    // in From; the real human is in Reply-To. Replying to From dead-letters.
+    const send = mockGmail([
+      msg([
+        { name: 'From', value: 'Mavrita Franklin <no-reply@encharge.com>' },
+        { name: 'Reply-To', value: 'Mavrita Franklin <mavrita@example.com>' },
+        { name: 'To', value: 'info@tandemcoach.co' },
+        { name: 'Subject', value: 'Interested in coaching' },
+        { name: 'Message-ID', value: '<enc-1>' },
+      ]),
+    ]);
+    await replyToThread({ threadId: 't4', body: 'Hi Mavrita' });
+    const to = toLine(send);
+    expect(to).toContain('mavrita@example.com');
+    expect(to).not.toMatch(/no-reply@encharge\.com/i);
+  });
+
+  it('skips a mailer-daemon bounce and honors the relay Reply-To beneath it', async () => {
+    // Marvita's real thread, 2026-06-16: relay inbound, our bounced reply,
+    // then a mailer-daemon failure notice on top. Must resolve to her real
+    // address, not the relay and not mailer-daemon.
+    const send = mockGmail([
+      msg([
+        { name: 'From', value: 'Marvita Franklin <no-reply@encharge.io>' },
+        { name: 'Reply-To', value: 'marvitafranklin@mac.com' },
+        { name: 'To', value: 'info@tandemcoach.co' },
+        { name: 'Subject', value: 'Re: ICF Mentor Coaching [Circling Back]' },
+        { name: 'Message-ID', value: '<mf-1>' },
+      ]),
+      msg([
+        { name: 'From', value: 'Tandem Coaching <info@tandemcoach.co>' },
+        { name: 'To', value: 'Marvita Franklin <no-reply@encharge.io>' },
+        { name: 'Subject', value: 'Re: ICF Mentor Coaching [Circling Back]' },
+        { name: 'Message-ID', value: '<mf-2>' },
+      ]),
+      msg([
+        {
+          name: 'From',
+          value: 'Mail Delivery Subsystem <mailer-daemon@googlemail.com>',
+        },
+        { name: 'To', value: 'info@tandemcoaching.academy' },
+        { name: 'Subject', value: 'Delivery Status Notification (Failure)' },
+        { name: 'Message-ID', value: '<mf-3>' },
+      ]),
+    ]);
+    await replyToThread({ threadId: 't5', body: 'Hi Marvita' });
+    const to = toLine(send);
+    expect(to).toContain('marvitafranklin@mac.com');
+    expect(to).not.toMatch(/encharge|mailer-daemon/i);
+  });
+
   it('replies to the original sender on a normal inbound-last thread', async () => {
     const send = mockGmail([
       msg([

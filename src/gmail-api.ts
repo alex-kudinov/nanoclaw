@@ -249,7 +249,7 @@ export async function replyToThread(opts: {
     userId: 'me',
     id: opts.threadId,
     format: 'metadata',
-    metadataHeaders: ['From', 'To', 'Subject', 'Message-ID'],
+    metadataHeaders: ['From', 'To', 'Reply-To', 'Subject', 'Message-ID'],
   });
 
   const messages = thread.data.messages || [];
@@ -278,11 +278,29 @@ export async function replyToThread(opts: {
   const isExternal = (addr: string): boolean =>
     addr.length > 0 && !owned.has(bareAddress(addr).toLowerCase());
 
-  // Newest message whose sender is not one of our own addresses.
+  // Bounce/system senders (mailer-daemon, postmaster) are "external" but must
+  // never be a reply target — a failed delivery notification lands as the
+  // newest message in the thread, and replying to it just dead-letters again.
+  // See the Marvita Franklin thread, 2026-06-16: our reply bounced off the
+  // Encharge relay, and the resulting mailer-daemon message would otherwise
+  // capture the next reply.
+  const isBounceAddress = (addr: string): boolean =>
+    /^(mailer-daemon|postmaster)@/i.test(bareAddress(addr));
+  const isAddressable = (addr: string): boolean =>
+    isExternal(addr) && !isBounceAddress(addr);
+
+  // Where a message wants replies sent: honor its Reply-To if present, else
+  // fall back to From. Relays (Encharge, list servers) put their own bounce
+  // address in From (no-reply@encharge.com) and the real human in Reply-To —
+  // replying to From sends into a black hole.
+  const replyTargetOf = (m: gmail_v1.Schema$Message): string =>
+    header(headersOf(m), 'Reply-To') || header(headersOf(m), 'From');
+
+  // Newest message whose reply target is an addressable external party.
   let to = '';
   for (let i = messages.length - 1; i >= 0 && !to; i--) {
-    const from = header(headersOf(messages[i]), 'From');
-    if (isExternal(from)) to = from;
+    const target = replyTargetOf(messages[i]);
+    if (isAddressable(target)) to = target;
   }
   if (!to) {
     // Whole thread is ours — reply to the last external recipient we wrote to.
@@ -290,7 +308,7 @@ export async function replyToThread(opts: {
       const ext = header(headersOf(messages[i]), 'To')
         .split(',')
         .map((s) => s.trim())
-        .find(isExternal);
+        .find(isAddressable);
       if (ext) to = ext;
     }
   }

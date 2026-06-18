@@ -46,6 +46,7 @@ vi.mock('./gmail-api.js', () => ({
     .mockResolvedValue({ messageId: 'reply-msg-456', threadId: 'thread-abc' }),
   searchEmails: vi.fn().mockResolvedValue('No results found.'),
   readEmail: vi.fn().mockResolvedValue('Email content here'),
+  findThreadForReply: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('./markdown-to-email-html.js', () => ({
@@ -69,7 +70,7 @@ vi.mock('fs', async () => {
 
 import fs from 'fs';
 
-import { sendEmail } from './gmail-api.js';
+import { sendEmail, findThreadForReply } from './gmail-api.js';
 import { storeMessageDirect } from './db.js';
 import { logOutboundEmailInteraction } from './email-interaction-log.js';
 import { query } from './business-db.js';
@@ -248,6 +249,86 @@ describe('handleGmailSend', () => {
       const data = makePayload({ body: undefined });
       await handleGmailSend(data);
       expect(sendEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  // Regression: Carol Del Priore refund (2026-06-09). A dropped Thread-ID on a
+  // Re: subject made gmail_send start a detached thread. The host re-resolves
+  // the recipient's thread so the reply re-attaches.
+  describe('thread-loss safety net', () => {
+    it('re-resolves and threads a Re: send that arrived without a threadId', async () => {
+      vi.mocked(findThreadForReply).mockResolvedValueOnce(
+        'recovered-thread-xyz',
+      );
+      const data = makePayload({
+        subject: 'Re: Mentor Coach Evaluation Training',
+      });
+      delete data.threadId;
+      await handleGmailSend(data);
+
+      expect(findThreadForReply).toHaveBeenCalledWith({
+        to: 'prospect@example.com',
+        subject: 'Re: Mentor Coach Evaluation Training',
+      });
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ threadId: 'recovered-thread-xyz' }),
+      );
+    });
+
+    it('falls back to a standalone send when no matching thread is found', async () => {
+      vi.mocked(findThreadForReply).mockResolvedValueOnce(null);
+      const data = makePayload({ subject: 'Re: Some Old Thread' });
+      delete data.threadId;
+      await handleGmailSend(data);
+
+      expect(findThreadForReply).toHaveBeenCalled();
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ threadId: undefined }),
+      );
+    });
+
+    it('does not re-resolve a first-contact subject (no Re: prefix)', async () => {
+      const data = makePayload({
+        subject: 'ACC Certification Path - Tandem Coaching',
+      });
+      delete data.threadId;
+      await handleGmailSend(data);
+
+      expect(findThreadForReply).not.toHaveBeenCalled();
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ threadId: undefined }),
+      );
+    });
+
+    it('never overrides an explicit threadId already in the payload', async () => {
+      const data = makePayload({
+        subject: 'Re: Mentor Coach Evaluation Training',
+        threadId: 'explicit-thread-123',
+      });
+      await handleGmailSend(data);
+
+      expect(findThreadForReply).not.toHaveBeenCalled();
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ threadId: 'explicit-thread-123' }),
+      );
+    });
+
+    it('uses the original recipient (not the test override) for thread lookup', async () => {
+      testRecipient = 'test@tandemcoach.co';
+      vi.mocked(findThreadForReply).mockResolvedValueOnce(
+        'recovered-thread-xyz',
+      );
+      const data = makePayload({
+        to: 'real-prospect@example.com',
+        subject: 'Re: Their Inquiry',
+      });
+      delete data.threadId;
+      await handleGmailSend(data);
+
+      expect(findThreadForReply).toHaveBeenCalledWith({
+        to: 'real-prospect@example.com',
+        subject: 'Re: Their Inquiry',
+      });
     });
   });
 });

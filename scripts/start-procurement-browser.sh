@@ -97,7 +97,13 @@ while true; do
   # any duplicate socats (two listeners on the same port with reuseaddr cause
   # intermittent connection failures, which break the host's single-shot CDP
   # fetch at container spawn).
-  N=$(pgrep -f "$SOCAT_MATCH" | wc -l | tr -d ' ')
+  # pgrep exits 1 when nothing matches; with `set -e`+pipefail that non-zero
+  # would abort the whole supervisor at this assignment (it did — Chrome would
+  # reach "ready", then the script died here before ever spawning socat, so
+  # launchd crash-looped Chrome forever and the bridge never came up). The
+  # trailing `|| true` keeps "no socat yet" as the normal pre-spawn state; wc
+  # still emits 0 on empty input, so N is correct.
+  N=$(pgrep -f "$SOCAT_MATCH" | wc -l | tr -d ' ' || true)
   if ! curl -sf --max-time 3 "http://${BRIDGE_IP}:${CDP_PORT}/json/version" >/dev/null 2>&1 || [ "$N" -ne 1 ]; then
     pkill -f "$SOCAT_MATCH" 2>/dev/null || true
     sleep 1

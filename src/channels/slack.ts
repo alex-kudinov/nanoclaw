@@ -1,10 +1,17 @@
 import { App, LogLevel } from '@slack/bolt';
 import type { GenericMessageEvent, BotMessageEvent } from '@slack/types';
 
+import { promoteBriefItem } from '../brief-promote.js';
 import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
 import { updateChatName } from '../db.js';
 import { readEnvFile } from '../env.js';
 import { logger } from '../logger.js';
+import {
+  buildApprovalContent,
+  isApprovalOnlyText,
+  isCheckReaction,
+  isThumbsDownReaction,
+} from '../slack-approval.js';
 import {
   Channel,
   OnBotJoinedChannel,
@@ -80,6 +87,20 @@ export class SlackChannel implements Channel {
   private static readonly WS_FAILURE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
   private opts: SlackChannelOpts;
+
+  // Host-side approval listeners. A ✅ on a Mr Gru message is offered to each
+  // listener; if one claims it (returns true), the normal agent-approval
+  // injection is suppressed so a host-owned draft (e.g. a proposal follow-up)
+  // doesn't also wake the channel's container.
+  private approvalListeners: Array<
+    (ts: string, reactor: string) => Promise<boolean>
+  > = [];
+
+  // Host-side rejection listeners. A 👎 on a Mr Gru message is offered to each;
+  // a listener that owns the message (returns true) handles the skip.
+  private rejectListeners: Array<
+    (ts: string, reactor: string) => Promise<boolean>
+  > = [];
 
   constructor(opts: SlackChannelOpts) {
     this.opts = opts;
@@ -217,6 +238,13 @@ export class SlackChannel implements Channel {
         if (inlined) content += inlined;
       }
 
+      // A message that is nothing but a check-mark (✅/☑️/✔️) is a bare
+      // approval — normalize to explicit text so every minion reads it
+      // uniformly (mirrors the ✅-reaction path below).
+      if (!isBotMessage && isApprovalOnlyText(msg.text || '')) {
+        content = buildApprovalContent({});
+      }
+
       this.opts.onMessage(jid, {
         id: msg.ts,
         chat_jid: jid,
@@ -230,6 +258,128 @@ export class SlackChannel implements Channel {
         thread_ts: threadTs,
       });
     });
+
+    // Check-mark reaction (✅/☑️/✔️) on a Mr Gru message = approval, in ANY
+    // registered channel. Injected into the normal message pipeline so every
+    // minion (and the healer) reads it identically — no per-minion changes.
+    // Anyone in-channel may approve; only reactions on the bot's OWN messages
+    // count, so a ✅ on a human message does nothing.
+    this.app.event('reaction_added', async ({ event }) => {
+      this.lastActivityAt = Date.now();
+      if (!isCheckReaction(event.reaction)) return;
+      if (event.item?.type !== 'message') return;
+      if (event.user === this.botUserId) return; // ignore the bot's own reactions
+      if (event.item_user !== this.botUserId) return; // only on Mr Gru's messages
+
+      const channelId = event.item.channel;
+      const jid = `slack:${channelId}`;
+      if (!this.opts.registeredGroups()[jid]) return;
+
+      const reactor =
+        (await this.resolveUserName(event.user)) || event.user || 'someone';
+
+      // Offer the approval to host-side listeners first (e.g. proposal
+      // follow-ups). If a listener claims this message, suppress the normal
+      // agent-approval injection so a host-owned draft doesn't also wake the
+      // channel's container.
+      for (const listener of this.approvalListeners) {
+        try {
+          if (await listener(event.item.ts, reactor)) return;
+        } catch (err) {
+          logger.warn({ err }, 'Slack: approval listener threw');
+        }
+      }
+
+      const eventTs =
+        (event as { event_ts?: string }).event_ts || event.item.ts;
+      const quoted = await this.fetchMessageText(channelId, event.item.ts);
+
+      this.opts.onMessage(jid, {
+        id: `reaction-${eventTs}`,
+        chat_jid: jid,
+        sender: event.user,
+        sender_name: reactor,
+        content: buildApprovalContent({ reactor, quoted }),
+        timestamp: new Date(parseFloat(eventTs) * 1000).toISOString(),
+        is_from_me: false,
+        is_bot_message: false,
+        from_group: undefined,
+        thread_ts: event.item.ts, // thread under the approved bot message
+      });
+    });
+
+    // 📌 (pushpin) reaction on a Mr Gru decision-brief item = promote it into
+    // Things 3 on the Studio. Isolated from the approval path above; parsing
+    // guards (needs *bold title* + a domain word) mean a 📌 on any other bot
+    // message is a no-op. On success we add a ✅ so the user sees it landed.
+    this.app.event('reaction_added', async ({ event }) => {
+      if (event.reaction !== 'pushpin') return;
+      if (event.item?.type !== 'message') return;
+      if (event.user === this.botUserId) return;
+      if (event.item_user !== this.botUserId) return; // only on Mr Gru's messages
+
+      const channelId = event.item.channel;
+      if (!this.opts.registeredGroups()[`slack:${channelId}`]) return;
+
+      const text = await this.fetchMessageText(channelId, event.item.ts);
+      if (!text) return;
+      const ok = await promoteBriefItem(text);
+      if (!ok) return;
+      try {
+        await this.app.client.reactions.add({
+          channel: channelId,
+          timestamp: event.item.ts,
+          name: 'white_check_mark',
+        });
+      } catch (err) {
+        logger.warn({ err }, 'Slack: failed to add promote-confirm reaction');
+      }
+    });
+
+    // 👎 reaction on a Mr Gru message = explicit "skip", offered to host-side
+    // reject listeners (e.g. proposal follow-ups). Mirrors the approval path.
+    this.app.event('reaction_added', async ({ event }) => {
+      if (!isThumbsDownReaction(event.reaction)) return;
+      if (event.item?.type !== 'message') return;
+      if (event.user === this.botUserId) return;
+      if (event.item_user !== this.botUserId) return; // only on Mr Gru's messages
+
+      const channelId = event.item.channel;
+      if (!this.opts.registeredGroups()[`slack:${channelId}`]) return;
+      const reactor =
+        (await this.resolveUserName(event.user)) || event.user || 'someone';
+      for (const listener of this.rejectListeners) {
+        try {
+          if (await listener(event.item.ts, reactor)) return;
+        } catch (err) {
+          logger.warn({ err }, 'Slack: reject listener threw');
+        }
+      }
+    });
+  }
+
+  /** Fetch a single message's text by ts (for quoting the approved message). */
+  private async fetchMessageText(
+    channel: string,
+    ts: string,
+  ): Promise<string | undefined> {
+    try {
+      const res = await this.app.client.conversations.history({
+        channel,
+        latest: ts,
+        oldest: ts,
+        inclusive: true,
+        limit: 1,
+      });
+      const m = (res.messages as { text?: string }[] | undefined)?.[0];
+      return m?.text || undefined;
+    } catch (err) {
+      logger.warn(
+        { err, channel, ts },
+        'Slack: failed to fetch reacted message text',
+      );
+      return undefined;
+    }
   }
 
   async connect(): Promise<void> {
@@ -467,6 +617,58 @@ export class SlackChannel implements Channel {
         'Failed to send Slack message, queued',
       );
     }
+  }
+
+  /**
+   * Register a host-side approval listener. Invoked for every ✅ on a Mr Gru
+   * message; return true to claim it (suppressing the agent-approval path).
+   */
+  registerApprovalListener(
+    fn: (ts: string, reactor: string) => Promise<boolean>,
+  ): void {
+    this.approvalListeners.push(fn);
+  }
+
+  /**
+   * Register a host-side rejection (👎) listener. Invoked for every 👎 on a Mr
+   * Gru message; return true to claim it.
+   */
+  registerRejectListener(
+    fn: (ts: string, reactor: string) => Promise<boolean>,
+  ): void {
+    this.rejectListeners.push(fn);
+  }
+
+  /**
+   * Post a message and return its Slack ts (sendMessage returns void). Host
+   * features that must later match a reaction to the exact message they posted
+   * use this. Persists via storeOutbound like the normal send path.
+   */
+  async postTracked(
+    jid: string,
+    text: string,
+    threadTs?: string,
+  ): Promise<string | undefined> {
+    if (!this.connected) {
+      logger.warn({ jid }, 'postTracked: slack disconnected, dropping');
+      return undefined;
+    }
+    const channelId = jid.replace(/^slack:/, '');
+    const postOpts: { channel: string; text: string; thread_ts?: string } = {
+      channel: channelId,
+      text: text.slice(0, MAX_MESSAGE_LENGTH),
+    };
+    if (threadTs) postOpts.thread_ts = threadTs;
+    try {
+      const result = await this.app.client.chat.postMessage(postOpts);
+      if (result.ts) {
+        this.storeOutbound(jid, result.ts, text, undefined, threadTs);
+        return result.ts;
+      }
+    } catch (err) {
+      logger.warn({ jid, err }, 'postTracked: send failed');
+    }
+    return undefined;
   }
 
   isConnected(): boolean {

@@ -119,6 +119,21 @@ export const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
 export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
 export const HARD_FILTERS_FILE = path.join(DATA_DIR, 'hard-filters.json');
 
+// Things bridge — HTTP service on the Mac Studio (the only machine with Things
+// 3). A 📌 reaction on a Mr Gru decision-brief item POSTs the parsed item here
+// to create a real Things to-do. See ~/.claude/hooks/things_bridge.py.
+export const THINGS_BRIDGE_URL =
+  process.env.THINGS_BRIDGE_URL || 'http://100.115.115.12:40961';
+export const THINGS_BRIDGE_KEY = process.env.THINGS_BRIDGE_KEY || '';
+
+// Secret guarding POST /api/post (the Studio's daily brief autopost). Loaded
+// from the .env FILE via readEnvFile — env.ts intentionally keeps secrets out
+// of process.env, so the process.env-based WEBHOOK_SECRET above is empty on
+// this deployment. Falls back to the file's WEBHOOK_SECRET value.
+const briefSecretEnv = readEnvFile(['BRIEF_POST_SECRET', 'WEBHOOK_SECRET']);
+export const BRIEF_POST_SECRET =
+  briefSecretEnv.BRIEF_POST_SECRET || briefSecretEnv.WEBHOOK_SECRET || '';
+
 // Job scheduling
 export const JOBS_FILE = path.join(DATA_DIR, 'jobs.json');
 export const JOB_REPORT_CHANNEL =
@@ -167,6 +182,57 @@ export const GMAIL_REPLY_TO =
 // BCC all outbound emails to this address (empty string = disabled).
 export const GMAIL_BCC =
   process.env.GMAIL_BCC || gmailEnv.GMAIL_BCC || 'info@tandemcoach.co';
+
+// Proposal follow-up — daily approval-gated nudges for open (pending) Plutio
+// proposals. See docs/PROPOSAL-FOLLOWUP-DESIGN.md.
+const proposalEnv = readEnvFile([
+  'PROPOSAL_FOLLOWUP_ENABLED',
+  'PROPOSAL_FOLLOWUP_CHANNEL_JID',
+  'PROPOSAL_PUBLIC_URL_BASE',
+  'PROPOSAL_FOLLOWUP_SENDER',
+  'PROPOSAL_FOLLOWUP_MAX_PER_RUN',
+  'PROPOSAL_FOLLOWUP_HOUR',
+  'PROPOSAL_FOLLOWUP_EXPIRE_DAYS',
+]);
+export const PROPOSAL_FOLLOWUP_ENABLED =
+  (process.env.PROPOSAL_FOLLOWUP_ENABLED ||
+    proposalEnv.PROPOSAL_FOLLOWUP_ENABLED) !== 'false';
+// Where draft nudges are posted for ✅ approval. Defaults to #gru-sales.
+export const PROPOSAL_FOLLOWUP_CHANNEL_JID =
+  process.env.PROPOSAL_FOLLOWUP_CHANNEL_JID ||
+  proposalEnv.PROPOSAL_FOLLOWUP_CHANNEL_JID ||
+  'slack:C0AHV1SGT6W';
+// Client-facing proposal link base; the Plutio _id is appended.
+export const PROPOSAL_PUBLIC_URL_BASE =
+  process.env.PROPOSAL_PUBLIC_URL_BASE ||
+  proposalEnv.PROPOSAL_PUBLIC_URL_BASE ||
+  'https://business.tandemcoaching.academy/p/proposal';
+// Name signed at the bottom of each follow-up email.
+export const PROPOSAL_FOLLOWUP_SENDER =
+  process.env.PROPOSAL_FOLLOWUP_SENDER ||
+  proposalEnv.PROPOSAL_FOLLOWUP_SENDER ||
+  'the Tandem Coaching team';
+// Cap drafts per daily run so a large backlog drains gradually.
+export const PROPOSAL_FOLLOWUP_MAX_PER_RUN = parseInt(
+  process.env.PROPOSAL_FOLLOWUP_MAX_PER_RUN ||
+    proposalEnv.PROPOSAL_FOLLOWUP_MAX_PER_RUN ||
+    '8',
+  10,
+);
+// Local hour (0-23) at/after which the daily pass runs, once per day.
+export const PROPOSAL_FOLLOWUP_HOUR = parseInt(
+  process.env.PROPOSAL_FOLLOWUP_HOUR ||
+    proposalEnv.PROPOSAL_FOLLOWUP_HOUR ||
+    '9',
+  10,
+);
+// Days a drafted-but-unapproved nudge stays live before it is expired.
+export const PROPOSAL_FOLLOWUP_EXPIRE_DAYS = parseInt(
+  process.env.PROPOSAL_FOLLOWUP_EXPIRE_DAYS ||
+    proposalEnv.PROPOSAL_FOLLOWUP_EXPIRE_DAYS ||
+    '7',
+  10,
+);
 
 // Tracking pixel domain for email open tracking.
 export const TRACKING_DOMAIN =

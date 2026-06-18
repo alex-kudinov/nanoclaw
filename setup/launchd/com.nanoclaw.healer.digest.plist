@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nanoclaw.healer.digest</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/node</string>
+        <string>/Users/xbohdpukc/dev/NanoClaw/dist/healer/index.js</string>
+        <string>digest</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/xbohdpukc/dev/NanoClaw</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/opt/homebrew/opt/postgresql@16/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>TZ</key>
+        <string>America/Chicago</string>
+        <key>NANOCLAW_JSONL_PATH</key>
+        <string>/Users/xbohdpukc/dev/NanoClaw/logs/healer.jsonl</string>
+        <key>HEALER_DAEMON_JSONL</key>
+        <string>/Users/xbohdpukc/dev/NanoClaw/logs/nanoclaw.jsonl</string>
+    </dict>
+    <!-- 18:00 America/Chicago daily -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>18</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>TimeOut</key>
+    <integer>120</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/xbohdpukc/.local/log/healer.digest.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/xbohdpukc/.local/log/healer.digest.stderr.log</string>
+</dict>
+</plist>

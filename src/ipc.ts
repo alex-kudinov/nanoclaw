@@ -66,6 +66,13 @@ export interface IpcDeps {
 
 let ipcWatcherRunning = false;
 
+// Handoff/cancel markers tolerate either arrow form. Agents emit the Unicode
+// "→" or the ASCII "->" interchangeably; a "→"-only matcher silently misrouted
+// ASCII handoffs (e.g. [HANDOFF: booking->sales]) to the source's own channel.
+const HANDOFF_ARROW = '(?:→|->)';
+const HANDOFF_RE = new RegExp(`\\[HANDOFF:\\s*\\w+\\s*${HANDOFF_ARROW}\\s*(\\w+)\\]`);
+const CANCEL_RE = new RegExp(`\\[CANCEL:\\s*(\\w+)\\s*${HANDOFF_ARROW}\\s*mailman\\]`);
+
 // Mailman send-hold buffer. Held [HANDOFF: *→mailman] messages sit here
 // for MAILMAN_HOLD_MS so an in-flight [CANCEL: *→mailman] from the same
 // source can intercept the send. See project-mailman-approval-delay
@@ -223,9 +230,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 // from the same source within the hold window. Drop the held
                 // file without forwarding; the cancel marker itself still
                 // routes through to mailman so it has an audit trail.
-                const cancelMatch = data.text.match(
-                  /\[CANCEL:\s*(\w+)→mailman\]/,
-                );
+                const cancelMatch = data.text.match(CANCEL_RE);
                 if (cancelMatch) {
                   const cancelSource = cancelMatch[1];
                   let cancelledCount = 0;
@@ -258,10 +263,13 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   }
                   // fall through: deliver the cancel to mailman for audit
                 }
-                // Deterministic handoff: [HANDOFF: source→target] routes to target group
-                const handoffMatch = data.text.match(
-                  /\[HANDOFF:\s*\w+→(\w+)\]/,
-                );
+                // Deterministic handoff: [HANDOFF: source→target] routes to
+                // target group. Accept either arrow form — agents (LLMs) emit
+                // the Unicode "→" OR the ASCII "->" interchangeably; matching
+                // only "→" silently dropped ASCII handoffs to the source's own
+                // channel (booking→sales never reached sales — they piled up in
+                // #gru-booking instead). See HANDOFF_ARROW.
+                const handoffMatch = data.text.match(HANDOFF_RE);
                 if (handoffMatch) {
                   const handoffTarget = handoffMatch[1];
                   const handoffEntry = Object.entries(registeredGroups).find(

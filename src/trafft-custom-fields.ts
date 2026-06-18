@@ -92,7 +92,26 @@ const REASON_RE = /discuss|reason|help|topic|interest|goal|\bneed/i;
 const SOURCE_RE =
   /how did you|hear|learn about|find us|found us|source|referr/i;
 
-/** Split custom fields into reason / source / other by label semantics. */
+/**
+ * Internal/hidden Trafft custom fields that must never surface in a channel
+ * posting. "Tandem Customer ID" carries the Chaos fingerprint (cid) the
+ * tandemcoach.co booking-link decoration writes; "cid" is the bare-label form
+ * used by older configs and unit fixtures. These are plumbing, not customer
+ * answers — chaos-booking.ts consumes them; the operator-facing notice must not.
+ */
+export const INTERNAL_FIELD_LABELS = ['tandem customer id', 'cid'];
+
+/** True when a custom-field label is internal plumbing, not a customer answer. */
+export function isInternalCustomField(label: string): boolean {
+  return INTERNAL_FIELD_LABELS.includes(label.trim().toLowerCase());
+}
+
+/**
+ * Split customer-facing custom fields into reason / source / other by label
+ * semantics. Internal fields (see INTERNAL_FIELD_LABELS) are dropped entirely so
+ * they never leak into a posting; `other` carries every remaining custom field,
+ * so a new booking-form question shows up automatically without a code change.
+ */
 export function classifyCustomFields(
   fields: TrafftCustomField[],
 ): ClassifiedCustomFields {
@@ -100,6 +119,7 @@ export function classifyCustomFields(
   let source: TrafftCustomField | undefined;
   const other: TrafftCustomField[] = [];
   for (const f of fields) {
+    if (isInternalCustomField(f.label)) continue;
     if (!source && SOURCE_RE.test(f.label)) source = f;
     else if (!reason && REASON_RE.test(f.label)) reason = f;
     else other.push(f);

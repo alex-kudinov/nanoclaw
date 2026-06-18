@@ -13,6 +13,11 @@ import {
   JOBS_FILE,
   MAX_CONCURRENT_CONTAINERS,
   POLL_INTERVAL,
+  PROPOSAL_FOLLOWUP_CHANNEL_JID,
+  PROPOSAL_FOLLOWUP_ENABLED,
+  PROPOSAL_FOLLOWUP_EXPIRE_DAYS,
+  PROPOSAL_FOLLOWUP_HOUR,
+  PROPOSAL_FOLLOWUP_MAX_PER_RUN,
   RECOVERY_RESERVED_SLOTS,
   SLACK_ONLY,
   TRIGGER_PATTERN,
@@ -71,9 +76,27 @@ import {
 } from './webhook-inbox.js';
 import { runReaper as runWebhookInboxReaper } from './webhook-inbox-reaper.js';
 import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
+import { startHeartbeat } from './heartbeat.js';
 import { runNameReaper } from './contador-name-reaper.js';
 import { runChaosReconcile } from './chaos-reconciler.js';
 import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
+import { query } from './business-db.js';
+import { SlackChannel } from './channels/slack.js';
+import { handleGmailSend } from './gmail-ipc-handlers.js';
+import { listOpenProposals, resolveRecipient } from './plutio-proposals.js';
+import { generateFollowupEmail } from './proposal-followup-email.js';
+import {
+  getPendingByTs,
+  markCancelled,
+  markSent,
+  pgFollowupStore,
+} from './proposal-followup-store.js';
+import {
+  handleProposalApproval,
+  handleProposalRejection,
+  proposalFollowupTick,
+  type ProposalFollowupDeps,
+} from './proposal-followup.js';
 import {
   findChannel,
   formatMessages,
@@ -592,7 +615,9 @@ async function startMessageLoop(): Promise<void> {
               messagesToSend[messagesToSend.length - 1].timestamp;
             saveState();
             // Show typing indicator while the container processes the piped message
-            channel.setTyping?.(chatJid, true);
+            channel
+              .setTyping?.(chatJid, true)
+              ?.catch((err) => logger.warn({ err }, 'setTyping failed'));
             continue;
           }
 
@@ -1086,6 +1111,11 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // Daemon liveness beacon — upserts business_v2.daemon_heartbeat every 30s so
+  // the self-healing healer (separate process) can detect a crashed daemon.
+  // See docs/SELF-HEALING-DESIGN.md §4.2.
+  startHeartbeat();
+
   // Webhook-inbox reaper — every 5 min, retries received/failed/stale-dispatched
   // rows, dead-letters to #gru-chief after MAX_ATTEMPTS=5. See
   // docs/WEBHOOK-RELIABILITY.md §3.4.
@@ -1153,6 +1183,109 @@ async function main(): Promise<void> {
       logger.error({ err }, 'chaos-reconciler: startup invocation failed');
     });
   }, 60 * 1000);
+
+  // Proposal follow-up — daily approval-gated nudges for open (pending) Plutio
+  // proposals that have gone unsigned. Drafts post to #gru-sales; a ✅ reaction
+  // sends via the Gmail path. A cold proposal is auto-cancelled in our records a
+  // week after the breakup email. See docs/PROPOSAL-FOLLOWUP-DESIGN.md.
+  if (PROPOSAL_FOLLOWUP_ENABLED) {
+    const slack = channels.find(
+      (c): c is SlackChannel => c instanceof SlackChannel,
+    );
+    if (!slack) {
+      logger.warn('proposal-followup: no Slack channel; feature disabled');
+    } else {
+      const channelJid = PROPOSAL_FOLLOWUP_CHANNEL_JID;
+      const proposalDeps: ProposalFollowupDeps = {
+        listOpenProposals,
+        resolveRecipient,
+        generateEmail: (ctx) => generateFollowupEmail(ctx),
+        resolvePartyId: async (email) => {
+          try {
+            const res = await query<{ id: number | null }>(
+              'SELECT business_v2.best_party_by_email($1::citext) AS id',
+              [email],
+            );
+            return res.rows[0]?.id ?? null;
+          } catch (err) {
+            logger.warn({ err }, 'proposal-followup: party lookup failed');
+            return null;
+          }
+        },
+        postDraft: (text) => slack.postTracked(channelJid, text),
+        postNotice: async (text) => {
+          await slack.sendMessage(channelJid, text);
+        },
+        store: pgFollowupStore,
+        maxPerRun: PROPOSAL_FOLLOWUP_MAX_PER_RUN,
+        expireDays: PROPOSAL_FOLLOWUP_EXPIRE_DAYS,
+      };
+
+      // ✅ on a proposal draft → send the email via the Gmail path (which logs
+      // the outbound interaction + tracking pixel), then mark it sent.
+      slack.registerApprovalListener((ts, reactor) =>
+        handleProposalApproval(ts, reactor, {
+          getPendingByTs,
+          sendEmail: async (d) => {
+            await handleGmailSend({
+              type: 'gmail_send',
+              groupFolder: 'sales',
+              timestamp: new Date().toISOString(),
+              to: d.recipientEmail,
+              subject: d.subject,
+              body: d.body,
+              markdown: true,
+              emailType: 'follow-up',
+              leadId: d.partyId ?? undefined,
+            });
+            return { messageId: '', threadId: '' };
+          },
+          markSent,
+          postThread: async (slackTs, text) => {
+            await slack.sendMessage(channelJid, text, { threadTs: slackTs });
+          },
+        }),
+      );
+
+      // 👎 on a proposal draft → skip it (stop follow-ups for that proposal).
+      slack.registerRejectListener((ts, reactor) =>
+        handleProposalRejection(ts, reactor, {
+          getPendingByTs,
+          markCancelled,
+          postThread: async (slackTs, text) => {
+            await slack.sendMessage(channelJid, text, { threadTs: slackTs });
+          },
+        }),
+      );
+
+      // Hourly tick; the pass itself runs once per day at/after the target hour.
+      const PROPOSAL_FOLLOWUP_TICK_MS = 60 * 60 * 1000;
+      setInterval(() => {
+        proposalFollowupTick(proposalDeps, PROPOSAL_FOLLOWUP_HOUR).catch(
+          (err) => {
+            logger.error({ err }, 'proposal-followup: tick error');
+          },
+        );
+      }, PROPOSAL_FOLLOWUP_TICK_MS);
+      // First pass ~60s after startup (still gated to once/day at/after the
+      // target hour by proposalFollowupTick), so a deploy is validated promptly
+      // instead of waiting up to an hour for the first interval.
+      setTimeout(() => {
+        proposalFollowupTick(proposalDeps, PROPOSAL_FOLLOWUP_HOUR).catch(
+          (err) => {
+            logger.error(
+              { err },
+              'proposal-followup: startup invocation failed',
+            );
+          },
+        );
+      }, 60 * 1000);
+      logger.info(
+        { channelJid, hour: PROPOSAL_FOLLOWUP_HOUR },
+        'proposal-followup: scheduled',
+      );
+    }
+  }
 
   // Slack heartbeat — diagnostic signal for external watchdog.
   // Posts a status line every HEARTBEAT_INTERVAL_MS. Explicitly stored in DB
@@ -1352,7 +1485,10 @@ async function main(): Promise<void> {
   startWatchdogIpc(queue);
   recoverPendingMessages();
   startWatchdog();
-  startMessageLoop();
+  startMessageLoop().catch((err) => {
+    logger.fatal({ err }, 'startMessageLoop crashed');
+    process.exit(1);
+  });
 }
 
 // Guard: only run when executed directly, not when imported by tests

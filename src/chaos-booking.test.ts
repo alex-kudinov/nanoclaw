@@ -72,7 +72,9 @@ describe('extractCid', () => {
   });
   it('treats Trafft empty-field "/" as no cid', () => {
     expect(
-      extractCid({ customFields: [{ label: 'Tandem Customer ID', value: '/' }] }),
+      extractCid({
+        customFields: [{ label: 'Tandem Customer ID', value: '/' }],
+      }),
     ).toBeUndefined();
   });
 });

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nanoclaw.healer.fast</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/node</string>
+        <string>/Users/xbohdpukc/dev/NanoClaw/dist/healer/index.js</string>
+        <string>fast</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/xbohdpukc/dev/NanoClaw</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/opt/homebrew/opt/postgresql@16/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>TZ</key>
+        <string>America/Chicago</string>
+        <!-- Healer logs to its OWN jsonl so the collector never ingests the healer's
+             own log lines (loop-prevention). The collector scrapes the daemon's. -->
+        <key>NANOCLAW_JSONL_PATH</key>
+        <string>/Users/xbohdpukc/dev/NanoClaw/logs/healer.jsonl</string>
+        <key>HEALER_DAEMON_JSONL</key>
+        <string>/Users/xbohdpukc/dev/NanoClaw/logs/nanoclaw.jsonl</string>
+    </dict>
+    <key>StartInterval</key>
+    <integer>300</integer>
+    <key>TimeOut</key>
+    <integer>120</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/xbohdpukc/.local/log/healer.fast.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/xbohdpukc/.local/log/healer.fast.stderr.log</string>
+</dict>
+</plist>

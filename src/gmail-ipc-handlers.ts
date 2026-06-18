@@ -24,6 +24,7 @@ import {
   sendEmail,
   searchEmails,
   readEmail,
+  findThreadForReply,
 } from './gmail-api.js';
 import { logger } from './logger.js';
 import { convertMarkdownToEmailHtml } from './markdown-to-email-html.js';
@@ -285,6 +286,38 @@ function storeOutboundEmail(
   });
 }
 
+/**
+ * Recover a dropped Thread-ID before a standalone send. A `Re:` subject means
+ * the agent intends a reply; if no threadId came through (e.g. lost across a
+ * multi-turn Slack approval — Carol Del Priore refund, 2026-06-09), gmail_send
+ * would start a detached thread. Re-resolve the recipient's matching thread so
+ * the reply lands in the conversation it belongs to. Returns the original
+ * threadId untouched when present, undefined for a genuine first-contact (a
+ * new-lead subject never starts with `Re:`).
+ */
+async function resolveSendThreadId(
+  threadId: string | undefined,
+  to: string,
+  subject: string,
+  groupFolder: string,
+): Promise<string | undefined> {
+  if (threadId) return threadId;
+  if (!/^\s*re:/i.test(subject)) return undefined;
+  const recovered = await findThreadForReply({ to, subject });
+  if (recovered) {
+    logger.warn(
+      { to, subject, recoveredThreadId: recovered, groupFolder },
+      'gmail_send: Thread-ID missing on Re: subject — re-attached to existing thread (safety net)',
+    );
+    return recovered;
+  }
+  logger.warn(
+    { to, subject, groupFolder },
+    'gmail_send: Re: subject with no Thread-ID and no matching thread — sending standalone',
+  );
+  return undefined;
+}
+
 export async function handleGmailSend(
   data: GmailIpcPayload,
   postToChief?: PostToChief,
@@ -295,6 +328,12 @@ export async function handleGmailSend(
   }
 
   const { effectiveTo, effectiveCc, originalTo } = applyTestRouting(data);
+  const effectiveThreadId = await resolveSendThreadId(
+    data.threadId,
+    originalTo,
+    data.subject,
+    data.groupFolder,
+  );
 
   // Convert body through the markdown→HTML pipeline by default. The pipeline
   // handles both real markdown and plain prose; for plain prose its main job
@@ -340,7 +379,7 @@ export async function handleGmailSend(
     body: bodyForSend,
     cc: effectiveCc,
     html: data.html,
-    threadId: data.threadId,
+    threadId: effectiveThreadId,
   });
 
   storeOutboundEmail(
@@ -356,7 +395,7 @@ export async function handleGmailSend(
   // sees an up-to-date last_interaction_at. Must not depend on mailman's
   // LLM re-running psql — that round-trip silently drops rows.
   const sendPartyId =
-    data.leadId || (await resolvePartyId(data.to, data.threadId));
+    data.leadId || (await resolvePartyId(data.to, effectiveThreadId));
   if (sendPartyId) {
     if (!data.leadId) {
       logger.warn(

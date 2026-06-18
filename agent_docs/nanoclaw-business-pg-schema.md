@@ -1,6 +1,6 @@
 # Schema: nanoclaw_business (Postgres)
 
-Generated: 2026-05-31T08:00:03.957Z
+Generated: 2026-06-14T08:00:37.905Z
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and

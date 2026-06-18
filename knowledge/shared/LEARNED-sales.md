@@ -272,3 +272,31 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 **Problem:** All Evaluation Training courses (ACC BARS $49, PCC Markers $99, MCC BARS $49, Complete Bundle $149) were listed as purchasable standalone products. Per ICF guidance, these cannot be sold separately. All products have been taken down from the site.
 **Rule:** Do NOT offer, quote, or reference Evaluation Training as a standalone purchasable product. All eval training (ACC BARS, PCC Markers, MCC BARS, Complete Bundle) has been removed from the catalog per ICF guidance — they cannot be sold outside of the MCS Standard Path. These are now embedded in Mentor Coach Training (MCS Standard Path cohort) only. Remove all Evaluation Training pricing ($49–$149) from any sales drafts. If a prospect asks specifically about BARS or Markers training as a standalone purchase, inform them these are no longer available separately — they are included in the full MCS Standard Path program ($1,997 founding / $2,497 list).
 **Context:** Alex Kudinov confirmed June 3, 2026: all eval training taken down, cannot be sold outside of MCS Standard Path.
+
+### Lesson 67: Untitled
+**Problem:** Hajnalka Segal — MCS qualification at both PCC and MCC levels; asked what training covers both
+**Rule:** Initial draft described Tandem's Mentor Coach Training as a '41-hour Standard Path' with 'PCC Markers embedded' and 'MCC BARS as self-paced bonus.' Cherie corrected: Tandem is doing the AMCS-aligned practicum, not the 41-hour MCS Standard Path, and BARS/Markers training (ACC, PCC, MCC) must come from ICF directly — not from Tandem's program or described as embedded. Correct framing: two paths (CPL for experienced mentors, practicum for others), with BARS/Markers as a separate ICF requirement entirely.
+
+### Lesson 68: Untitled
+**Problem:** Mentor Coach Training (Standard Path), $1,698 net (list $1,997 minus $299 Foundations credit). Lead asked to split payment due to MacBook crash / solopreneur cash flow.
+**Rule:** When a lead requests a split payment and the standard $500x3 plan doesn't align with the agreed net price, do not propose a flat 3-equal-installment split. Instead, flag the mismatch and ask for guidance before drafting. Alex's preferred structure for Deborah's $1,698 was two unequal installments: $699 today and $999 one month later — not three equal payments.
+
+### Lesson 69: Untitled
+**Problem:** Justin Speaks, existing student paying Invoice TCA-358-PL for Mentor Coach Training (MCS Standard Path, Inaugural Cohort A) at $1,997.
+**Rule:** Initial draft for a payment-help email said 'the invoice should include a payment link' — too vague. Alex had a direct payment link and wanted it included verbatim with step-by-step instructions (Pay Now button → credit card → p-card). Always ask for or surface the specific payment link when available rather than directing the lead to find it themselves. Secondary lesson: cut 'You'll hear from us once that's confirmed' from closure lines — creates an expectation of a follow-up that may not happen.
+
+### Lesson 70: Untitled
+**Problem:** Mentor Coach Specialization inquiry (MCS) — ACC-credentialed internal coach at pharma; unclear whether corporate mentorship qualified as ICF credential-specific; two-path response (Standard Path $1,997 / CPL $299)
+**Rule:** Initial draft for an MCS-path inquiry omitted the option to book a consult with Cherie. Alex added it back via feedback. For MCS / mentor coach specialization inquiries — where path selection (Standard vs CPL) requires nuanced assessment — always include the Cherie direct booking link alongside the written path guidance.
+
+### Lesson 71: Untitled
+**Problem:** ACC Level 1 inquiry — new prospect, no prior coaching background indicated, expressed intent to enroll in Level 1
+**Rule:** When a lead asks about ACC (Level 1) and no prior credential pathway is mentioned, proactively mention the Professional Coach Program (ACC + PCC + ACTC, $7,499) as an option for those thinking about going all the way to PCC — same start dates, saves $499 vs buying separately. Alex added this via feedback on the Saba Khalid case. Don't wait for the lead to ask about PCC; surface it as a brief note at the end of the ACC response.
+
+### Lesson 72: Untitled
+**Problem:** Portfolio path ACC inquiry — lead wanted to know which Tandem modules to purchase; initial draft recommended Group Mentor Coaching + Module 1 without first understanding his existing CCE hours or mentor coaching status
+**Rule:** For portfolio path ACC inquiries, do not jump straight to module recommendations. First ask what the lead already has in their portfolio — CCE hours, mentor coaching progress, existing credentials — so recommendations are gap-specific rather than generic. Alex corrected a draft that recommended specific modules without understanding the lead's existing training.
+
+### Lesson 73: Duplicate handoff prevention — deduplicate before emitting [HANDOFF: sales→mailman]
+**Problem:** On 2026-06-08, sales emitted an identical [HANDOFF: sales→mailman] for Entry #363 / Party #10423 twice — same Entry ID, Party ID, recipient, and body — at 12:05 UTC and again at 15:51 UTC. Chief blocked the second send, but the duplicate handoff should never have been emitted. A lesson was already routed on 2026-06-02 about checking the timeline before re-queuing the same Thread-ID; the duplicate recurred anyway, so the rule needs to be stronger.
+**Rule:** Before emitting any [HANDOFF: sales→mailman], query the party's interaction timeline (business_v2.v_party_timeline WHERE party_id = <id> ORDER BY occurred_at DESC) and confirm no outbound email with the same subject or to the same recipient has been logged in the last 24 hours. If an identical or near-identical outbound interaction already exists for this party and thread, suppress the handoff entirely — do NOT re-emit it. Log a one-line [DUPLICATE-SUPPRESSED] note instead so chief can audit. This check is mandatory for every handoff, regardless of trigger source.

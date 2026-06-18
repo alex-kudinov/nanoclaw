@@ -87,4 +87,24 @@ describe('classifyCustomFields', () => {
     expect(c.source).toBeUndefined();
     expect(c.other).toEqual([{ label: 'Company size', value: '50' }]);
   });
+
+  it('drops internal fields (Tandem Customer ID / cid) from all buckets', () => {
+    const c = classifyCustomFields([
+      { label: 'What would you like to discuss?', value: 'PCC exam' },
+      { label: 'How did you learn about Tandem?', value: 'LinkedIn' },
+      { label: 'Tandem Customer ID', value: '3gx1h2m1uc' },
+      { label: 'cid', value: 'abc123' },
+    ]);
+    expect(c.reason?.value).toBe('PCC exam');
+    expect(c.source?.value).toBe('LinkedIn');
+    expect(c.other).toEqual([]);
+  });
+
+  it('keeps a new customer-facing question in other (auto-surfaced)', () => {
+    const c = classifyCustomFields([
+      { label: 'Company size', value: '50' },
+      { label: 'Tandem Customer ID', value: '/' },
+    ]);
+    expect(c.other).toEqual([{ label: 'Company size', value: '50' }]);
+  });
 });
