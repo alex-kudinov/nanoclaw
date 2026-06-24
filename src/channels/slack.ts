@@ -610,8 +610,15 @@ export class SlackChannel implements Channel {
         // Socket Mode doesn't reliably echo bot_message events back, and the
         // event handler skips the ones it does receive.
         if (result.ts) {
-          this.storeOutbound(jid, result.ts, text, fromGroup, effectiveThreadTs);
-          if (keyToAnchor) recordThreadAnchor(channelId, keyToAnchor, result.ts);
+          this.storeOutbound(
+            jid,
+            result.ts,
+            text,
+            fromGroup,
+            effectiveThreadTs,
+          );
+          if (keyToAnchor)
+            recordThreadAnchor(channelId, keyToAnchor, result.ts);
         }
       } else {
         for (let i = 0; i < displayText.length; i += MAX_MESSAGE_LENGTH) {
