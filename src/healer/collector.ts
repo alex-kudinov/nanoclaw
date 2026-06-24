@@ -29,8 +29,13 @@ import {
   type IncidentSeed,
 } from './incident-store.js';
 import { postIncidents } from './slack.js';
+import { runDiagnose } from './orchestrator.js';
+import { runRemediate } from './remediate.js';
+import { runApprovals } from './approval.js';
+import { runImplement } from './implement.js';
 import { formatIncidentLine, type DigestRow } from './digest.js';
 import {
+  isRestartNoise,
   isStale,
   jobRowToSeed,
   parseJsonlErrors,
@@ -42,6 +47,14 @@ import {
 const HEARTBEAT_STALE_MS = 120_000; // 4 missed 30s beats
 const MAX_RESTARTS = 2;
 const FAST_REPORT_MAX_LINES = 12;
+
+// The synthetic "daemon down" incident's fingerprint. `source='daemon'` is
+// OVERLOADED — parseJsonlErrors tags every groupless error as source=daemon too,
+// so the heartbeat-recovery auto-resolve / restart-attempt logic MUST key on this
+// fingerprint, not on source alone. Otherwise a fresh heartbeat silently marks
+// real daemon-level errors (e.g. a failed cron) resolved/verified_fixed before
+// they're ever diagnosed.
+const HEARTBEAT_FP = fingerprint('daemon', 'heartbeat stale');
 
 function daemonJsonlPath(): string {
   return (
@@ -89,7 +102,7 @@ export async function collectJobLogs(): Promise<number> {
     db.pragma('busy_timeout = 3000');
     rows = db
       .prepare(
-        `SELECT job_name, status, exit_code, error, started_at
+        `SELECT job_name, status, exit_code, error, output, started_at
            FROM job_run_logs
           WHERE status NOT IN ('ok', 'running', 'already_running')
             AND started_at > ?
@@ -101,10 +114,17 @@ export async function collectJobLogs(): Promise<number> {
     logger.warn({ err }, 'healer: job_run_logs read failed');
     return 0;
   }
-  for (const row of rows) await upsertIncident(jobRowToSeed(row));
+  let seeded = 0;
+  for (const row of rows) {
+    if (isRestartNoise(row.error ?? row.output)) continue; // restart collateral
+    await upsertIncident(jobRowToSeed(row));
+    seeded++;
+  }
+  // Advance the watermark past every row read (incl. skipped noise) so suppressed
+  // restart rows don't re-scan forever.
   if (rows.length)
     await setState('job_logs_watermark', rows[rows.length - 1].started_at);
-  return rows.length;
+  return seeded;
 }
 
 /** Source 3: frozen/errored sweeper watermarks. */
@@ -147,17 +167,20 @@ function restartDaemon(): Promise<void> {
 async function daemonRestartAttempts(): Promise<number> {
   const r = await query<{ restart_attempts: number }>(
     `SELECT restart_attempts FROM business_v2.incidents
-      WHERE source = 'daemon' AND status NOT IN ('resolved', 'wont_fix')
+      WHERE fingerprint = $1 AND status NOT IN ('resolved', 'wont_fix')
       ORDER BY last_seen DESC LIMIT 1`,
+    [HEARTBEAT_FP],
   );
   return r.rows[0]?.restart_attempts ?? 0;
 }
 
+/** Resolve ONLY the heartbeat-down incident on recovery — never other daemon errors. */
 async function resolveDaemonIncident(): Promise<void> {
   await query(
     `UPDATE business_v2.incidents
         SET status = 'resolved', outcome = 'verified_fixed', updated_at = now()
-      WHERE source = 'daemon' AND status NOT IN ('resolved', 'wont_fix')`,
+      WHERE fingerprint = $1 AND status NOT IN ('resolved', 'wont_fix')`,
+    [HEARTBEAT_FP],
   );
 }
 
@@ -184,7 +207,8 @@ export async function checkDaemon(): Promise<boolean> {
     await restartDaemon();
     await query(
       `UPDATE business_v2.incidents SET restart_attempts = restart_attempts + 1, updated_at = now()
-        WHERE source = 'daemon' AND status NOT IN ('resolved', 'wont_fix')`,
+        WHERE fingerprint = $1 AND status NOT IN ('resolved', 'wont_fix')`,
+      [HEARTBEAT_FP],
     );
     await notify(
       'critical',
@@ -240,15 +264,33 @@ export async function reportFreshIncidents(): Promise<number> {
   return toPost.length;
 }
 
-/** Fast-loop entrypoint: collect every source, report new, check liveness. */
+/** Fast-loop entrypoint: collect, report, check liveness, then diagnose → act → approve. */
 export async function runFast(): Promise<void> {
   const jsonl = await collectJsonl();
   const jobs = await collectJobLogs();
   const sweepers = await collectWatermarks();
   const reported = await reportFreshIncidents();
   const daemonDown = await checkDaemon();
+  // Phase 1-2: diagnose new incidents, act on/verify remediations, apply approvals.
+  // Each is best-effort and self-contained — a brain (router) or Slack outage
+  // degrades to "collect-only" without crashing the run.
+  const diagnosed = await runDiagnose();
+  const { acted, closed } = await runRemediate();
+  const approved = await runApprovals();
+  const implemented = await runImplement(); // Phase 3: 🔧 → dev-pipeline → draft PR
   logger.info(
-    { jsonl, jobs, sweepers, reported, daemonDown },
+    {
+      jsonl,
+      jobs,
+      sweepers,
+      reported,
+      daemonDown,
+      diagnosed,
+      acted,
+      closed,
+      approved,
+      implemented,
+    },
     'healer: fast run complete',
   );
 }

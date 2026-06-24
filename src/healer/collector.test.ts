@@ -36,6 +36,7 @@ import {
   checkDaemon,
   reportFreshIncidents,
 } from './collector.js';
+import { fingerprint } from './incident-store.js'; // real (mock keeps actual)
 
 const tmpJsonl = path.join(
   os.tmpdir(),
@@ -224,7 +225,7 @@ describe('checkDaemon', () => {
     expect(postIncidents).toHaveBeenCalled();
   });
 
-  it('returns false and resolves any open daemon incident when fresh', async () => {
+  it('on a fresh heartbeat resolves ONLY the heartbeat incident (scoped by fingerprint, not all daemon errors)', async () => {
     query
       .mockResolvedValueOnce({
         rows: [{ last_beat: new Date().toISOString() }],
@@ -232,6 +233,10 @@ describe('checkDaemon', () => {
       .mockResolvedValueOnce({ rows: [] }); // resolve UPDATE
     expect(await checkDaemon()).toBe(false);
     expect(execFile).not.toHaveBeenCalled();
-    expect(query.mock.calls[1][0]).toMatch(/SET status = 'resolved'/);
+    const [sql, params] = query.mock.calls[1];
+    expect(sql).toMatch(/SET status = 'resolved'/);
+    expect(sql).toMatch(/fingerprint = \$1/); // scoped, not a blanket source='daemon'
+    expect(sql).not.toMatch(/WHERE source = 'daemon'/);
+    expect(params).toEqual([fingerprint('daemon', 'heartbeat stale')]);
   });
 });

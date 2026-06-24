@@ -5,7 +5,38 @@ import {
   jobRowToSeed,
   watermarkRowToSeed,
   isStale,
+  isRestartNoise,
 } from './sources.js';
+
+describe('isRestartNoise', () => {
+  it('matches restart-interruption collateral', () => {
+    expect(isRestartNoise('Interrupted by restart')).toBe(true);
+    expect(isRestartNoise('Interrupted by daemon restart')).toBe(true);
+    expect(isRestartNoise('job killed on restart')).toBe(true);
+  });
+  it('does not match real failures or empty input', () => {
+    expect(isRestartNoise('Script not found: /x/npx')).toBe(false);
+    expect(isRestartNoise('429 Too Many Requests')).toBe(false);
+    expect(isRestartNoise(null)).toBe(false);
+    expect(isRestartNoise('')).toBe(false);
+  });
+});
+
+describe('parseJsonlErrors restart suppression', () => {
+  it('skips restart-collateral error lines', () => {
+    const buf = [
+      JSON.stringify({
+        level: 50,
+        msg: 'Interrupted by daemon restart',
+        group: 'main',
+      }),
+      JSON.stringify({ level: 50, msg: 'real crash', group: 'main' }),
+    ].join('\n');
+    const seeds = parseJsonlErrors(buf);
+    expect(seeds).toHaveLength(1);
+    expect(seeds[0].raw_context.msg).toBe('real crash');
+  });
+});
 
 describe('parseJsonlErrors', () => {
   it('keeps level>=50, maps group->source, skips info and garbled lines', () => {
@@ -48,11 +79,46 @@ describe('jobRowToSeed', () => {
       status: 'fail',
       exit_code: 1,
       error: 'oops',
+      output: null,
       started_at: '2026-06-14T00:00:00Z',
     });
     expect(s.source).toBe('job:digest');
     expect(s.severity).toBe('error');
     expect(s.raw_context.exit_code).toBe(1);
+    expect(s.raw_context.error).toBe('oops');
+  });
+
+  it('falls back to output when error is NULL (plain non-zero exit)', () => {
+    const s = jobRowToSeed({
+      job_name: 'calendar-refresh',
+      status: 'fail',
+      exit_code: 1,
+      error: null,
+      output:
+        'Batch purge failed (HTTP 401)\nFAIL 1 /tmp/tandem-err/tandem-IbswPK.json',
+      started_at: '2026-06-18T00:00:00Z',
+    });
+    expect(s.raw_context.error).toContain('HTTP 401');
+  });
+
+  it('fingerprints on status+exit_code, not the volatile output blob', () => {
+    const base = {
+      job_name: 'calendar-refresh',
+      status: 'fail',
+      exit_code: 1,
+      error: null,
+      started_at: '2026-06-18T00:00:00Z',
+    };
+    // Same logical failure, different random temp filename in the output tail.
+    const a = jobRowToSeed({
+      ...base,
+      output: '... /tmp/tandem-err/tandem-IbswPK.json',
+    });
+    const b = jobRowToSeed({
+      ...base,
+      output: '... /tmp/tandem-err/tandem-Zq9aBc.json',
+    });
+    expect(a.fingerprint).toBe(b.fingerprint);
   });
 });
 

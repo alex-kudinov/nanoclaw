@@ -42,3 +42,70 @@ export async function postIncidents(text: string): Promise<boolean> {
     return false;
   }
 }
+
+/** Like postIncidents but returns the message ref so callers can poll approvals. */
+export async function postIncidentsRef(
+  text: string,
+): Promise<{ channel: string; ts: string } | null> {
+  const client = getClient();
+  if (!client) return null;
+  try {
+    const r = await client.chat.postMessage({
+      channel: INCIDENTS_CHANNEL,
+      text,
+    });
+    return r.ts ? { channel: INCIDENTS_CHANNEL, ts: r.ts } : null;
+  } catch (err) {
+    logger.warn({ err }, 'healer: slack post (ref) failed');
+    return null;
+  }
+}
+
+/** Reactions on a message: array of { name, users[] }. [] on any failure. */
+export async function getReactions(
+  channel: string,
+  ts: string,
+): Promise<Array<{ name: string; users: string[] }>> {
+  const client = getClient();
+  if (!client) return [];
+  try {
+    const r = await client.reactions.get({
+      channel,
+      timestamp: ts,
+      full: true,
+    });
+    const reactions = (
+      r.message as { reactions?: Array<{ name?: string; users?: string[] }> }
+    )?.reactions;
+    return (reactions ?? []).map((x) => ({
+      name: x.name ?? '',
+      users: x.users ?? [],
+    }));
+  } catch (err) {
+    logger.warn({ err }, 'healer: reactions.get failed');
+    return [];
+  }
+}
+
+/** Thread replies (excluding the parent): { user, text }[]. [] on any failure. */
+export async function getReplies(
+  channel: string,
+  ts: string,
+): Promise<Array<{ user: string; text: string }>> {
+  const client = getClient();
+  if (!client) return [];
+  try {
+    const r = await client.conversations.replies({ channel, ts, limit: 50 });
+    const msgs = (r.messages ?? []) as Array<{
+      ts?: string;
+      user?: string;
+      text?: string;
+    }>;
+    return msgs
+      .filter((m) => m.ts !== ts && m.user)
+      .map((m) => ({ user: m.user ?? '', text: m.text ?? '' }));
+  } catch (err) {
+    logger.warn({ err }, 'healer: conversations.replies failed');
+    return [];
+  }
+}

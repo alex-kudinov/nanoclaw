@@ -24,6 +24,7 @@ export interface JobLogRow {
   status: string;
   exit_code: number | null;
   error: string | null;
+  output: string | null;
   started_at: string;
 }
 
@@ -35,6 +36,22 @@ export interface WatermarkRow {
 
 function levelToSeverity(level: number): Severity {
   return level >= 60 ? 'critical' : 'error';
+}
+
+/**
+ * True if a failure is just collateral of a daemon/process restart — a job or
+ * container killed mid-run when the daemon bounced (deploys, watchdog, manual
+ * restart), not a real fault. These are the design's "quiet window" noise: they
+ * flooded the queue with non-incidents (e.g. "Interrupted by daemon restart")
+ * and waste Phase-1 diagnosis. Suppressed at collection, never an incident.
+ */
+export function isRestartNoise(text: string | null | undefined): boolean {
+  return (
+    !!text &&
+    /interrupted by (?:a )?(?:daemon |process )?restart|killed (?:by|on) restart/i.test(
+      text,
+    )
+  );
 }
 
 /** Parse a JSONL log buffer into seeds (pino level >= 50 only). */
@@ -51,6 +68,7 @@ export function parseJsonlErrors(buffer: string): IncidentSeed[] {
     if (typeof rec.level !== 'number' || rec.level < 50) continue;
     const source = rec.group ? `minion:${rec.group}` : 'daemon';
     const msg = rec.err?.message || rec.msg || 'unknown error';
+    if (isRestartNoise(msg)) continue; // restart collateral, not an incident
     seeds.push({
       source,
       severity: levelToSeverity(rec.level),
@@ -68,7 +86,13 @@ export function parseJsonlErrors(buffer: string): IncidentSeed[] {
 
 export function jobRowToSeed(row: JobLogRow): IncidentSeed {
   const source = `job:${row.job_name}`;
-  const detail = row.error || `status=${row.status}`;
+  // Fingerprint on a STABLE key (status + exit code) — never the script output.
+  // The job-runner stores a failure's text in `output` (and leaves `error` NULL
+  // on a plain non-zero exit), and that output routinely contains volatile
+  // tokens (mktemp filenames, ids) that normalize() can't fully scrub. Hashing
+  // it would mint a fresh incident every run and defeat dedup. The diagnostic
+  // body still rides along in raw_context for triage / Phase-1 diagnosis.
+  const detail = `status=${row.status} exit=${row.exit_code ?? 'none'}`;
   return {
     source,
     severity: 'error',
@@ -76,7 +100,10 @@ export function jobRowToSeed(row: JobLogRow): IncidentSeed {
     raw_context: {
       status: row.status,
       exit_code: row.exit_code,
-      error: row.error,
+      // Surface the actual failure text: `error` for spawn errors, else the
+      // captured stdout/stderr tail. Without this the incident reads "status=fail"
+      // with no cause.
+      error: row.error ?? row.output ?? null,
       started_at: row.started_at,
     },
   };
