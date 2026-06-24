@@ -54,7 +54,9 @@ beforeEach(() => {
   rem.loadOpen.mockReset().mockResolvedValue([base]);
   rem.saveDiagnosis.mockReset();
   rem.setStatus.mockReset();
-  rem.postIncidentThread.mockReset().mockResolvedValue({ channel: 'C1', ts: '1.0' });
+  rem.postIncidentThread
+    .mockReset()
+    .mockResolvedValue({ channel: 'C1', ts: '1.0' });
   delete process.env.HEALER_QUIET;
   delete process.env.HEALER_DIAGNOSE_ENABLED;
 });

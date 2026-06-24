@@ -131,7 +131,10 @@ export async function runApprovals(): Promise<number> {
       acted++;
     } else if (verdict === 'reject') {
       await setStatus(inc.id, 'wont_fix', 'escalated');
-      await postIncidentThread(inc, `:x: Dismissed proposal for *${inc.source}*.`);
+      await postIncidentThread(
+        inc,
+        `:x: Dismissed proposal for *${inc.source}*.`,
+      );
       acted++;
     }
   }

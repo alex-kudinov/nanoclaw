@@ -37,7 +37,9 @@ beforeEach(() => {
   rem.recordAction.mockReset();
   rem.runShell.mockReset().mockResolvedValue({ ok: true, out: 'ok' });
   rem.setStatus.mockReset();
-  rem.postIncidentThread.mockReset().mockResolvedValue({ channel: 'C1', ts: '1.3' });
+  rem.postIncidentThread
+    .mockReset()
+    .mockResolvedValue({ channel: 'C1', ts: '1.3' });
   delete process.env.HEALER_OPERATOR_UID;
 });
 

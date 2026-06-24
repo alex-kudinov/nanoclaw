@@ -82,7 +82,9 @@ beforeEach(() => {
   approval.replyVerdict.mockReset().mockReturnValue(null);
   rem.recordAction.mockReset();
   rem.setStatus.mockReset();
-  rem.postIncidentThread.mockReset().mockResolvedValue({ channel: 'C1', ts: '1.2' });
+  rem.postIncidentThread
+    .mockReset()
+    .mockResolvedValue({ channel: 'C1', ts: '1.2' });
   spawn.mockReset().mockReturnValue({ unref: vi.fn() });
   fsm.writeFileSync.mockReset();
   fsm.readFileSync.mockReset().mockImplementation(tokenFiles);
