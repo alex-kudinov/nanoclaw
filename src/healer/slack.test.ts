@@ -38,4 +38,20 @@ describe('postIncidents', () => {
     postMessage.mockRejectedValueOnce(new Error('channel_not_found'));
     expect(await postIncidents('x')).toBe(false);
   });
+
+  it('replies in-thread when threadTs is given', async () => {
+    readEnvFile.mockReturnValue({ SLACK_BOT_TOKEN: 'xoxb-test' });
+    postMessage.mockResolvedValue({ ok: true });
+    await postIncidents('reply', { threadTs: '123.45' });
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'reply', thread_ts: '123.45' }),
+    );
+  });
+
+  it('omits thread_ts for a top-level post', async () => {
+    readEnvFile.mockReturnValue({ SLACK_BOT_TOKEN: 'xoxb-test' });
+    postMessage.mockResolvedValue({ ok: true });
+    await postIncidents('top');
+    expect(postMessage.mock.calls[0][0]).not.toHaveProperty('thread_ts');
+  });
 });

@@ -9,8 +9,9 @@
 
 import { query } from '../business-db.js';
 import { logger } from '../logger.js';
-import { postIncidents, getReactions, getReplies } from './slack.js';
+import { getReactions, getReplies } from './slack.js';
 import {
+  postIncidentThread,
   recordAction,
   runShell,
   setStatus,
@@ -73,11 +74,14 @@ interface PendingRow {
   proposal_channel: string;
   proposal_ts: string;
   proposed_fix: ProposedFix | null;
+  thread_ts: string | null;
+  thread_channel: string | null;
 }
 
 async function loadPending(): Promise<PendingRow[]> {
   const r = await query<PendingRow>(
-    `SELECT id, source, proposal_channel, proposal_ts, proposed_fix
+    `SELECT id, source, proposal_channel, proposal_ts, proposed_fix,
+            thread_ts, thread_channel
        FROM business_v2.incidents
       WHERE status = 'awaiting_approval'
         AND proposal_channel IS NOT NULL AND proposal_ts IS NOT NULL`,
@@ -100,7 +104,8 @@ async function applyApproved(inc: PendingRow): Promise<void> {
     at: new Date().toISOString(),
   });
   await setStatus(inc.id, 'remediating');
-  await postIncidents(
+  await postIncidentThread(
+    inc,
     `:white_check_mark: Applied fix for *${inc.source}* — ${res.ok ? 'ran ok' : 'command errored'}. Verifying…`,
   );
 }
@@ -126,7 +131,7 @@ export async function runApprovals(): Promise<number> {
       acted++;
     } else if (verdict === 'reject') {
       await setStatus(inc.id, 'wont_fix', 'escalated');
-      await postIncidents(`:x: Dismissed proposal for *${inc.source}*.`);
+      await postIncidentThread(inc, `:x: Dismissed proposal for *${inc.source}*.`);
       acted++;
     }
   }

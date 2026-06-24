@@ -21,6 +21,8 @@ function inc(over: Partial<OpenIncident> = {}): OpenIncident {
     confidence: 'high',
     cause_or_symptom: 'root_cause',
     evidence: ['trafft-sweeper.ts:88 — 401 on token refresh'],
+    thread_ts: null,
+    thread_channel: null,
     last_seen: '2026-06-23T00:00:00Z',
     ...over,
   };

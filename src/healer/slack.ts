@@ -30,12 +30,24 @@ function getClient(): WebClient | null {
   return cached;
 }
 
+export interface PostOpts {
+  /** Reply in this thread (the incident's root ts) instead of posting top-level. */
+  threadTs?: string;
+}
+
 /** Post text to #gru-incidents. Returns false (never throws) on any failure. */
-export async function postIncidents(text: string): Promise<boolean> {
+export async function postIncidents(
+  text: string,
+  opts: PostOpts = {},
+): Promise<boolean> {
   const client = getClient();
   if (!client) return false;
   try {
-    await client.chat.postMessage({ channel: INCIDENTS_CHANNEL, text });
+    await client.chat.postMessage({
+      channel: INCIDENTS_CHANNEL,
+      text,
+      ...(opts.threadTs ? { thread_ts: opts.threadTs } : {}),
+    });
     return true;
   } catch (err) {
     logger.warn({ err }, 'healer: slack post failed');
@@ -46,6 +58,7 @@ export async function postIncidents(text: string): Promise<boolean> {
 /** Like postIncidents but returns the message ref so callers can poll approvals. */
 export async function postIncidentsRef(
   text: string,
+  opts: PostOpts = {},
 ): Promise<{ channel: string; ts: string } | null> {
   const client = getClient();
   if (!client) return null;
@@ -53,6 +66,7 @@ export async function postIncidentsRef(
     const r = await client.chat.postMessage({
       channel: INCIDENTS_CHANNEL,
       text,
+      ...(opts.threadTs ? { thread_ts: opts.threadTs } : {}),
     });
     return r.ts ? { channel: INCIDENTS_CHANNEL, ts: r.ts } : null;
   } catch (err) {

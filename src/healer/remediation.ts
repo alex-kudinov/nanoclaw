@@ -62,12 +62,14 @@ export interface OpenIncident {
   confidence: Confidence | null;
   cause_or_symptom: CauseKind | null;
   evidence: string[] | null;
+  thread_ts: string | null;
+  thread_channel: string | null;
   last_seen: string;
 }
 
 const COLS = `id, source, severity, occurrences, status, raw_context,
   remediation_class, diagnosis, proposed_fix, confidence, cause_or_symptom,
-  evidence, last_seen::text AS last_seen`;
+  evidence, thread_ts, thread_channel, last_seen::text AS last_seen`;
 
 /** Open incidents in a given status, worst-first, capped. */
 export async function loadOpen(
@@ -169,14 +171,48 @@ function proposalStatus(inc: OpenIncident, actionable: boolean): string {
   return isTrustworthy(inc) ? 'diagnosed' : 'needs_human';
 }
 
+/** The minimal incident shape the thread helper needs (id + the thread root). */
+export interface ThreadAnchor {
+  id: number;
+  thread_ts?: string | null;
+  thread_channel?: string | null;
+}
+
 /**
- * Post the diagnosis + proposed fix to #gru-incidents and set the post-proposal
- * status. Actionable fixes arm the approval poll; manual-but-trustworthy fixes
- * stay 'diagnosed'; untrustworthy ones go 'needs_human' (no false "✅ to apply").
+ * Post to an incident's THREAD so its whole lifecycle (investigate → diagnose →
+ * apply/implement → resolve) stays under one root message instead of a flat list.
+ * The first post becomes the root (its ts persisted on the incident); every later
+ * post replies in-thread. Mutates `inc` so in-flight callers reuse the root.
+ * Never throws — returns the message ref (or null on Slack failure).
+ */
+export async function postIncidentThread(
+  inc: ThreadAnchor,
+  text: string,
+): Promise<{ channel: string; ts: string } | null> {
+  if (inc.thread_ts) return postIncidentsRef(text, { threadTs: inc.thread_ts });
+  const ref = await postIncidentsRef(text);
+  if (ref) {
+    await query(
+      `UPDATE business_v2.incidents
+          SET thread_ts = $2, thread_channel = $3, updated_at = now()
+        WHERE id = $1`,
+      [inc.id, ref.ts, ref.channel],
+    );
+    inc.thread_ts = ref.ts;
+    inc.thread_channel = ref.channel;
+  }
+  return ref;
+}
+
+/**
+ * Post the diagnosis + proposed fix to the incident's thread and set the
+ * post-proposal status. Actionable fixes arm the approval poll; manual-but-
+ * trustworthy fixes stay 'diagnosed'; untrustworthy ones go 'needs_human'
+ * (no false "✅ to apply"). proposal_ts is the (threaded) proposal message we poll.
  */
 export async function proposeFix(inc: OpenIncident): Promise<boolean> {
   const actionable = isActionable(inc);
-  const ref = await postIncidentsRef(proposalText(inc, actionable));
+  const ref = await postIncidentThread(inc, proposalText(inc, actionable));
   if (!ref) {
     logger.warn({ id: inc.id }, 'healer: proposal post failed');
     return false;

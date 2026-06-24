@@ -17,13 +17,13 @@
 import { logger } from '../logger.js';
 import {
   loadOpen,
+  postIncidentThread,
   saveDiagnosis,
   setStatus,
   type OpenIncident,
 } from './remediation.js';
 import { route, triage } from './diagnose.js';
 import { investigate, refute } from './investigate.js';
-import { postIncidents } from './slack.js';
 import {
   isTrustworthy,
   type DiagnosisResult,
@@ -97,9 +97,11 @@ export async function synthesize(
 async function diagnose(inc: OpenIncident): Promise<Synthesis | null> {
   if (escalates(inc)) {
     await setStatus(inc.id, 'investigating');
-    // Heads-up: an agentic investigation runs minutes, so tell the operator the
-    // healer has picked it up and is working it — silence shouldn't read as "ignored".
-    await postIncidents(
+    // Heads-up + thread ROOT: an agentic investigation runs minutes, so tell the
+    // operator the healer picked it up — and root the incident's thread here so the
+    // diagnosis/proposal/outcome all reply under it instead of a flat list.
+    await postIncidentThread(
+      inc,
       `:mag: Investigating *${inc.source}* (#${inc.id}, ${inc.severity}) — agentic diagnosis under way; verdict in a few minutes.`,
     );
     const dx = await investigate(inc);

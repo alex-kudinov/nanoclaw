@@ -10,7 +10,11 @@ const approval = vi.hoisted(() => ({
   emojiVerdict: vi.fn(),
   replyVerdict: vi.fn(),
 }));
-const rem = vi.hoisted(() => ({ recordAction: vi.fn(), setStatus: vi.fn() }));
+const rem = vi.hoisted(() => ({
+  recordAction: vi.fn(),
+  setStatus: vi.fn(),
+  postIncidentThread: vi.fn(),
+}));
 const { spawn } = vi.hoisted(() => ({ spawn: vi.fn() }));
 const fsm = vi.hoisted(() => ({
   writeFileSync: vi.fn(),
@@ -62,6 +66,8 @@ const codeBug: OpenIncident & {
   confidence: 'high',
   cause_or_symptom: 'root_cause',
   evidence: ['trafft-sweeper.ts:120 — no Retry-After handling'],
+  thread_ts: null,
+  thread_channel: null,
   last_seen: '2026-06-23T00:00:00Z',
   proposal_channel: 'C1',
   proposal_ts: '1.1',
@@ -76,6 +82,7 @@ beforeEach(() => {
   approval.replyVerdict.mockReset().mockReturnValue(null);
   rem.recordAction.mockReset();
   rem.setStatus.mockReset();
+  rem.postIncidentThread.mockReset().mockResolvedValue({ channel: 'C1', ts: '1.2' });
   spawn.mockReset().mockReturnValue({ unref: vi.fn() });
   fsm.writeFileSync.mockReset();
   fsm.readFileSync.mockReset().mockImplementation(tokenFiles);
@@ -145,7 +152,8 @@ describe('dispatch on operator 👍 (same approval signal as everything else)', 
     });
     expect(await runImplement()).toBe(0);
     expect(spawn).not.toHaveBeenCalled();
-    expect(slack.postIncidents).toHaveBeenCalledWith(
+    expect(rem.postIncidentThread).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 42 }),
       expect.stringContaining('no active Claude token'),
     );
   });
@@ -165,7 +173,8 @@ describe('pollResults', () => {
     );
     await runImplement();
     expect(rem.setStatus).toHaveBeenCalledWith(42, 'awaiting_approval');
-    expect(slack.postIncidents).toHaveBeenCalledWith(
+    expect(rem.postIncidentThread).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 42 }),
       expect.stringContaining('/pull/9'),
     );
   });

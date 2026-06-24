@@ -11,6 +11,7 @@ vi.mock('../logger.js', () => ({
 }));
 
 import {
+  postIncidentThread,
   proposeFix,
   saveDiagnosis,
   setStatus,
@@ -32,6 +33,8 @@ function inc(over: Partial<OpenIncident> = {}): OpenIncident {
     confidence: 'high',
     cause_or_symptom: 'root_cause',
     evidence: ['trafft-sweeper.ts:88 — 401 on token refresh'],
+    thread_ts: '88.0',
+    thread_channel: 'C1',
     last_seen: '2026-06-23T00:00:00Z',
     ...over,
   };
@@ -104,6 +107,26 @@ describe('proposeFix', () => {
     expect(text).toContain('Needs a human look');
     expect(text).not.toContain('to apply');
     expect(text).not.toContain('auto-implement');
+  });
+});
+
+describe('postIncidentThread', () => {
+  it('creates the thread root on first post and persists + mutates the incident', async () => {
+    const anchor = { id: 9, thread_ts: null, thread_channel: null };
+    const ref = await postIncidentThread(anchor, 'root msg');
+    expect(postIncidentsRef).toHaveBeenCalledWith('root msg'); // no threadTs → top-level
+    expect(query.mock.calls[0][1]).toEqual([9, '99.1', 'C1']); // persist root ts+channel
+    expect(anchor.thread_ts).toBe('99.1'); // mutated for in-flight callers
+    expect(ref).toEqual({ channel: 'C1', ts: '99.1' });
+  });
+
+  it('replies in-thread once a root exists (no extra DB write)', async () => {
+    const anchor = { id: 9, thread_ts: '50.0', thread_channel: 'C1' };
+    await postIncidentThread(anchor, 'reply msg');
+    expect(postIncidentsRef).toHaveBeenCalledWith('reply msg', {
+      threadTs: '50.0',
+    });
+    expect(query).not.toHaveBeenCalled();
   });
 });
 

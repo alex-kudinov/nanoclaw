@@ -6,13 +6,12 @@ const rem = vi.hoisted(() => ({
   loadOpen: vi.fn(),
   saveDiagnosis: vi.fn(),
   setStatus: vi.fn(),
+  postIncidentThread: vi.fn(),
 }));
-const { postIncidents } = vi.hoisted(() => ({ postIncidents: vi.fn() }));
 
 vi.mock('./investigate.js', () => inv);
 vi.mock('./diagnose.js', () => diag);
 vi.mock('./remediation.js', () => rem);
-vi.mock('./slack.js', () => ({ postIncidents }));
 vi.mock('../logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
@@ -33,6 +32,8 @@ const base = {
   confidence: null,
   cause_or_symptom: null,
   evidence: null,
+  thread_ts: null,
+  thread_channel: null,
   last_seen: '2026-06-24T00:00:00Z',
 };
 const verdict: DiagnosisResult = {
@@ -53,7 +54,7 @@ beforeEach(() => {
   rem.loadOpen.mockReset().mockResolvedValue([base]);
   rem.saveDiagnosis.mockReset();
   rem.setStatus.mockReset();
-  postIncidents.mockReset().mockResolvedValue(true);
+  rem.postIncidentThread.mockReset().mockResolvedValue({ channel: 'C1', ts: '1.0' });
   delete process.env.HEALER_QUIET;
   delete process.env.HEALER_DIAGNOSE_ENABLED;
 });
@@ -87,16 +88,17 @@ describe('diagnoseIncident — escalation policy (design §4)', () => {
     expect(diag.triage).toHaveBeenCalled();
   });
 
-  it('posts a heads-up when it picks up an escalated incident (but not for info)', async () => {
+  it('roots the incident thread with a heads-up on escalation (but not for info)', async () => {
     inv.investigate.mockResolvedValue(verdict);
     await diagnoseIncident(base);
-    expect(postIncidents).toHaveBeenCalledWith(
+    expect(rem.postIncidentThread).toHaveBeenCalledWith(
+      base,
       expect.stringContaining('Investigating'),
     );
-    postIncidents.mockClear();
+    rem.postIncidentThread.mockClear();
     diag.triage.mockResolvedValue(verdict);
     await diagnoseIncident({ ...base, severity: 'info' });
-    expect(postIncidents).not.toHaveBeenCalled();
+    expect(rem.postIncidentThread).not.toHaveBeenCalled();
   });
 
   it('returns false (no persist) when neither brain yields a verdict', async () => {

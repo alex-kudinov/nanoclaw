@@ -10,6 +10,7 @@ const rem = vi.hoisted(() => ({
   recordAction: vi.fn(),
   runShell: vi.fn(),
   setStatus: vi.fn(),
+  postIncidentThread: vi.fn(),
 }));
 vi.mock('../business-db.js', () => ({ query }));
 vi.mock('./slack.js', () => slack);
@@ -36,6 +37,7 @@ beforeEach(() => {
   rem.recordAction.mockReset();
   rem.runShell.mockReset().mockResolvedValue({ ok: true, out: 'ok' });
   rem.setStatus.mockReset();
+  rem.postIncidentThread.mockReset().mockResolvedValue({ channel: 'C1', ts: '1.3' });
   delete process.env.HEALER_OPERATOR_UID;
 });
 

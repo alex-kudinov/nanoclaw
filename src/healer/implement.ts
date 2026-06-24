@@ -19,10 +19,15 @@ import path from 'path';
 
 import { logger } from '../logger.js';
 import { activeOAuthToken } from './agentic.js';
-import { getReactions, getReplies, postIncidents } from './slack.js';
+import { getReactions, getReplies } from './slack.js';
 import { emojiVerdict, replyVerdict } from './approval.js';
 import { query } from '../business-db.js';
-import { recordAction, setStatus, type OpenIncident } from './remediation.js';
+import {
+  postIncidentThread,
+  recordAction,
+  setStatus,
+  type OpenIncident,
+} from './remediation.js';
 
 const BRANCH_PREFIX = 'healer/fix-';
 const DONE_MARKER = 'HEALER_IMPLEMENT_DONE:';
@@ -77,8 +82,8 @@ async function loadImplementable(): Promise<OpenIncident[]> {
   >(
     `SELECT id, source, severity, occurrences, status, raw_context,
             remediation_class, diagnosis, proposed_fix, confidence,
-            cause_or_symptom, evidence, last_seen::text AS last_seen,
-            proposal_channel, proposal_ts
+            cause_or_symptom, evidence, thread_ts, thread_channel,
+            last_seen::text AS last_seen, proposal_channel, proposal_ts
        FROM business_v2.incidents
       WHERE status = 'diagnosed' AND remediation_class = 'code_bug'
         AND proposal_channel IS NOT NULL AND proposal_ts IS NOT NULL
@@ -133,7 +138,8 @@ function spawnPipeline(inc: OpenIncident, branch: string, token: string): void {
 async function dispatch(inc: OpenIncident): Promise<boolean> {
   const token = activeOAuthToken();
   if (!token) {
-    await postIncidents(
+    await postIncidentThread(
+      inc,
       `:warning: Can't auto-implement *${inc.source}* (#${inc.id}) — no active Claude token. Left as a manual fix.`,
     );
     return false; // don't spawn a guaranteed-401 run; leave status 'diagnosed'
@@ -147,7 +153,8 @@ async function dispatch(inc: OpenIncident): Promise<boolean> {
     at: new Date().toISOString(),
   });
   await setStatus(inc.id, 'remediating');
-  await postIncidents(
+  await postIncidentThread(
+    inc,
     `:wrench: Implementing *${inc.source}* (#${inc.id}) on \`${branch}\` via the dev-pipeline — draft PR to follow.`,
   );
   return true;
@@ -155,8 +162,13 @@ async function dispatch(inc: OpenIncident): Promise<boolean> {
 
 /** Detached pipelines stamp DONE_MARKER on exit; report PR/outcome once seen. */
 async function pollResults(): Promise<number> {
-  const r = await query<{ id: number; source: string }>(
-    `SELECT id, source FROM business_v2.incidents
+  const r = await query<{
+    id: number;
+    source: string;
+    thread_ts: string | null;
+    thread_channel: string | null;
+  }>(
+    `SELECT id, source, thread_ts, thread_channel FROM business_v2.incidents
       WHERE status = 'remediating' AND applied_action->>'kind' = 'implement_dispatched'`,
   );
   let reported = 0;
@@ -172,12 +184,14 @@ async function pollResults(): Promise<number> {
     const pr = extractPrUrl(out);
     if (ok && pr) {
       await setStatus(row.id, 'awaiting_approval');
-      await postIncidents(
+      await postIncidentThread(
+        row,
         `:white_check_mark: Draft PR ready for *${row.source}* (#${row.id}): ${pr}`,
       );
     } else {
       await setStatus(row.id, 'recurring', 'still_failing');
-      await postIncidents(
+      await postIncidentThread(
+        row,
         `:warning: Implement run for *${row.source}* (#${row.id}) finished without a green PR — needs a look.`,
       );
     }

@@ -38,6 +38,8 @@ const inc: OpenIncident = {
   confidence: null,
   cause_or_symptom: null,
   evidence: null,
+  thread_ts: null,
+  thread_channel: null,
   last_seen: '2026-06-24T00:00:00Z',
 };
 
