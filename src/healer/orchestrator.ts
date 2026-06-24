@@ -24,7 +24,11 @@ import {
 import { route, triage } from './diagnose.js';
 import { investigate, refute } from './investigate.js';
 import { postIncidents } from './slack.js';
-import { isTrustworthy, type DiagnosisResult, type Refutation } from './trust.js';
+import {
+  isTrustworthy,
+  type DiagnosisResult,
+  type Refutation,
+} from './trust.js';
 
 // Synchronous base (design §7): each agentic run is awaited, so the cap is kept
 // LOW — Task 10 adds the concurrency guard. 2 keeps a 5-min loop from overrunning.

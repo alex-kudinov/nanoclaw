@@ -20,7 +20,11 @@ function trustLine(inc: OpenIncident): string {
 function evidenceBlock(evidence: string[] | null): string {
   if (!evidence?.length) return '';
   return (
-    '*Evidence:*\n' + evidence.slice(0, 8).map((e) => `• ${e}`).join('\n')
+    '*Evidence:*\n' +
+    evidence
+      .slice(0, 8)
+      .map((e) => `• ${e}`)
+      .join('\n')
   );
 }
 
@@ -33,7 +37,15 @@ function needsHumanText(inc: OpenIncident): string {
   const sug = `*Possible fix (manual):* ${fix?.summary ?? '(none)'}`;
   const why =
     '_Low-confidence or symptom-level — no auto-apply offered; investigate before acting._';
-  return [head, cause, klass, trustLine(inc), evidenceBlock(inc.evidence), sug, why]
+  return [
+    head,
+    cause,
+    klass,
+    trustLine(inc),
+    evidenceBlock(inc.evidence),
+    sug,
+    why,
+  ]
     .filter(Boolean)
     .join('\n');
 }
@@ -61,5 +73,7 @@ function trustedText(inc: OpenIncident, actionable: boolean): string {
 
 /** The proposal message text, trust-gated. */
 export function proposalText(inc: OpenIncident, actionable: boolean): string {
-  return isTrustworthy(inc) ? trustedText(inc, actionable) : needsHumanText(inc);
+  return isTrustworthy(inc)
+    ? trustedText(inc, actionable)
+    : needsHumanText(inc);
 }

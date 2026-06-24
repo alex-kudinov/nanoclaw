@@ -24,7 +24,10 @@ function tokenFiles(p: string): string {
 /** A spawn() stub whose stdout emits `out` then closes with `code`. */
 function fakeChild(code: number, out: string) {
   return {
-    stdout: { on: (e: string, cb: (d: Buffer) => void) => e === 'data' && cb(Buffer.from(out)) },
+    stdout: {
+      on: (e: string, cb: (d: Buffer) => void) =>
+        e === 'data' && cb(Buffer.from(out)),
+    },
     stderr: { on: () => {} },
     on: (e: string, cb: (arg: number) => void) => e === 'close' && cb(code),
   };

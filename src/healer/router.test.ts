@@ -24,11 +24,9 @@ beforeEach(() => {
 describe('askRouter', () => {
   it('returns the trimmed result on ok', async () => {
     envWith({ ROUTER_SECRET: 'k' });
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue({
-        json: async () => ({ ok: true, data: { result: '  hi  ' } }),
-      });
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ ok: true, data: { result: '  hi  ' } }),
+    });
     vi.stubGlobal('fetch', fetchMock);
     expect(await askRouter('p')).toBe('hi');
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -40,11 +38,9 @@ describe('askRouter', () => {
     envWith({ ROUTER_SECRET: 'k' });
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue({
-          json: async () => ({ ok: false, code: 'RATE_LIMITED' }),
-        }),
+      vi.fn().mockResolvedValue({
+        json: async () => ({ ok: false, code: 'RATE_LIMITED' }),
+      }),
     );
     expect(await askRouter('p')).toBeNull();
   });
@@ -66,11 +62,9 @@ describe('askRouter', () => {
   it('falls back to CLAUDE_BRIDGE_KEY and honors HEALER_DIAGNOSE_MODEL', async () => {
     envWith({ CLAUDE_BRIDGE_KEY: 'legacy', HEALER_DIAGNOSE_MODEL: 'gpt5' });
     expect(diagnoseModel()).toBe('gpt5');
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue({
-        json: async () => ({ ok: true, data: { result: 'x' } }),
-      });
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ ok: true, data: { result: 'x' } }),
+    });
     vi.stubGlobal('fetch', fetchMock);
     await askRouter('p', { model: 'kimi' });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).model).toBe('kimi');

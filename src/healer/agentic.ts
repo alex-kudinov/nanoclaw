@@ -76,7 +76,8 @@ function acquireSlot(): Promise<void> {
 
 function releaseSlot(): void {
   const next = waiters.shift();
-  if (next) next(); // hand the slot straight to the next waiter (active unchanged)
+  if (next)
+    next(); // hand the slot straight to the next waiter (active unchanged)
   else active--;
 }
 

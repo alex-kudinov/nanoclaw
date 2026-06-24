@@ -162,7 +162,10 @@ export function parseDiagnosis(text: string): DiagnosisResult | null {
 }
 
 /** Route a parsed verdict by class, carrying its trust fields onto the incident. */
-export async function route(inc: OpenIncident, p: DiagnosisResult): Promise<void> {
+export async function route(
+  inc: OpenIncident,
+  p: DiagnosisResult,
+): Promise<void> {
   if (p.klass === 'transient') return; // remediate.ts auto-handles 'diagnosed'
   if (p.klass === 'external_outage') {
     await setStatus(inc.id, 'wont_fix', 'escalated');
@@ -186,7 +189,9 @@ export async function route(inc: OpenIncident, p: DiagnosisResult): Promise<void
  * open files, so parseDiagnosis defaults its trust fields to low/unknown unless
  * the model self-reports concrete evidence — i.e. triage rarely earns the 👍.
  */
-export async function triage(inc: OpenIncident): Promise<DiagnosisResult | null> {
+export async function triage(
+  inc: OpenIncident,
+): Promise<DiagnosisResult | null> {
   const ctx = await gatherContext(inc);
   const reply = await askRouter(buildPrompt(inc, ctx), {
     systemPrompt: SYSTEM_PROMPT,

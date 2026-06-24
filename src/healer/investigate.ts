@@ -104,7 +104,10 @@ export async function investigate(
 }
 
 /** The adversarial second look — investigate independently, try to DISPROVE. */
-export function buildRefutePrompt(inc: OpenIncident, dx: DiagnosisResult): string {
+export function buildRefutePrompt(
+  inc: OpenIncident,
+  dx: DiagnosisResult,
+): string {
   return (
     `You are a SKEPTICAL senior SRE doing an INDEPENDENT second look at NanoClaw ` +
     `incident #${inc.id} (source: ${inc.source}). The repo root is your CURRENT ` +
@@ -134,7 +137,10 @@ export function parseRefutation(text: string): Refutation {
   if (start < 0 || end <= start)
     return { refuted: false, reason: 'unparseable refutation' };
   try {
-    const obj = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
+    const obj = JSON.parse(text.slice(start, end + 1)) as Record<
+      string,
+      unknown
+    >;
     const better =
       typeof obj.better_cause === 'string' && obj.better_cause
         ? { better_cause: obj.better_cause }

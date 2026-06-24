@@ -149,7 +149,9 @@ describe('saveDiagnosis / setStatus', () => {
       { review: { refuted: true, reason: 'symptom' }, investigation_log: '/l' },
     );
     const params = query.mock.calls[0][1];
-    expect(params[7]).toBe(JSON.stringify({ refuted: true, reason: 'symptom' }));
+    expect(params[7]).toBe(
+      JSON.stringify({ refuted: true, reason: 'symptom' }),
+    );
     expect(params[8]).toBe('/l');
   });
 

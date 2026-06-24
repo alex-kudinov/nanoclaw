@@ -64,7 +64,9 @@ describe('diagnoseIncident — escalation policy (design §4)', () => {
     expect(await diagnoseIncident(base)).toBe(true);
     expect(inv.investigate).toHaveBeenCalledTimes(1);
     expect(inv.refute).toHaveBeenCalledWith(base, verdict);
-    expect(rem.saveDiagnosis).toHaveBeenCalledWith(1, verdict, { review: HOLDS });
+    expect(rem.saveDiagnosis).toHaveBeenCalledWith(1, verdict, {
+      review: HOLDS,
+    });
     expect(diag.route).toHaveBeenCalledWith(base, verdict);
     expect(diag.triage).not.toHaveBeenCalled();
   });
@@ -136,7 +138,10 @@ describe('synthesize — adversarial reconciliation', () => {
   it('refuted + confident tie-breaker → finding holds (adopts tie-breaker verdict)', async () => {
     const tieBreaker = { ...verdict, root_cause: 'rc-confirmed' };
     inv.investigate.mockResolvedValue(tieBreaker);
-    const r = await synthesize(base, verdict, { refuted: true, reason: 'symptom?' });
+    const r = await synthesize(base, verdict, {
+      refuted: true,
+      reason: 'symptom?',
+    });
     expect(inv.investigate).toHaveBeenCalledTimes(1);
     expect(r.verdict).toBe(tieBreaker);
     expect(r.verdict.confidence).toBe('high');
@@ -152,7 +157,9 @@ describe('synthesize — adversarial reconciliation', () => {
     expect(r.verdict.confidence).toBe('low');
     expect(r.verdict.cause_or_symptom).toBe('unknown');
     expect(r.verdict.evidence).toContain('REFUTED: it is a symptom');
-    expect(r.verdict.evidence).toContain('BETTER_CAUSE: missing /dev/null mount');
+    expect(r.verdict.evidence).toContain(
+      'BETTER_CAUSE: missing /dev/null mount',
+    );
     expect(r.review).toEqual({
       refuted: true,
       reason: 'it is a symptom',
@@ -166,7 +173,10 @@ describe('synthesize — adversarial reconciliation', () => {
       confidence: 'low',
       cause_or_symptom: 'symptom',
     });
-    const r = await synthesize(base, verdict, { refuted: true, reason: 'symptom' });
+    const r = await synthesize(base, verdict, {
+      refuted: true,
+      reason: 'symptom',
+    });
     expect(r.verdict.confidence).toBe('low');
     expect(r.verdict.cause_or_symptom).toBe('unknown');
   });

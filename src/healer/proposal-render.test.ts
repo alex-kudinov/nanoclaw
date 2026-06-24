@@ -13,7 +13,11 @@ function inc(over: Partial<OpenIncident> = {}): OpenIncident {
     raw_context: {},
     remediation_class: 'config',
     diagnosis: 'token expired',
-    proposed_fix: { kind: 'command', summary: 'rerun the sweep', command: 'echo hi' },
+    proposed_fix: {
+      kind: 'command',
+      summary: 'rerun the sweep',
+      command: 'echo hi',
+    },
     confidence: 'high',
     cause_or_symptom: 'root_cause',
     evidence: ['trafft-sweeper.ts:88 — 401 on token refresh'],

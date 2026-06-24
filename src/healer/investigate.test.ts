@@ -47,7 +47,9 @@ const goodVerdict = JSON.stringify({
   fix: { kind: 'diff', summary: 'resolve path relative to repo root' },
   confidence: 'high',
   cause_or_symptom: 'root_cause',
-  evidence: ['tools/contador/backfill-names.cjs:12 — hardcoded /workspace/extra'],
+  evidence: [
+    'tools/contador/backfill-names.cjs:12 — hardcoded /workspace/extra',
+  ],
 });
 
 beforeEach(() => {
@@ -108,14 +110,19 @@ describe('investigate', () => {
   });
 
   it('returns null when the run succeeds but output is unparseable', async () => {
-    runAgenticClaude.mockResolvedValue({ ok: true, stdout: 'I think it broke' });
+    runAgenticClaude.mockResolvedValue({
+      ok: true,
+      stdout: 'I think it broke',
+    });
     expect(await investigate(inc)).toBeNull();
   });
 
   it('is read-only by default; opts into Bash only with HEALER_INVESTIGATE_BASH=1', async () => {
     runAgenticClaude.mockResolvedValue({ ok: true, stdout: goodVerdict });
     await investigate(inc);
-    expect(runAgenticClaude.mock.calls[0][1].allowedTools).toBe('Read Grep Glob');
+    expect(runAgenticClaude.mock.calls[0][1].allowedTools).toBe(
+      'Read Grep Glob',
+    );
 
     runAgenticClaude.mockClear();
     process.env.HEALER_INVESTIGATE_BASH = '1';
@@ -138,8 +145,14 @@ const dx: DiagnosisResult = {
 describe('parseRefutation', () => {
   it('reads a refuting verdict with a better cause', () => {
     expect(
-      parseRefutation('{"refuted":true,"reason":"it is a symptom","better_cause":"missing mount"}'),
-    ).toEqual({ refuted: true, reason: 'it is a symptom', better_cause: 'missing mount' });
+      parseRefutation(
+        '{"refuted":true,"reason":"it is a symptom","better_cause":"missing mount"}',
+      ),
+    ).toEqual({
+      refuted: true,
+      reason: 'it is a symptom',
+      better_cause: 'missing mount',
+    });
   });
   it('reads a confirming verdict (refuted=false)', () => {
     expect(parseRefutation('{"refuted":false,"reason":"holds up"}')).toEqual({
@@ -148,10 +161,14 @@ describe('parseRefutation', () => {
     });
   });
   it('defaults to NOT refuted on unparseable output (verdict stands)', () => {
-    expect(parseRefutation('the diagnosis seems fine to me').refuted).toBe(false);
+    expect(parseRefutation('the diagnosis seems fine to me').refuted).toBe(
+      false,
+    );
   });
   it('omits better_cause when not a non-empty string', () => {
-    expect(parseRefutation('{"refuted":true,"reason":"x","better_cause":""}')).toEqual({
+    expect(
+      parseRefutation('{"refuted":true,"reason":"x","better_cause":""}'),
+    ).toEqual({
       refuted: true,
       reason: 'x',
     });
