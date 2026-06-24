@@ -226,7 +226,7 @@ export async function handleGmailReply(
   if (postToChief) {
     try {
       await postToChief(
-        `[EMAIL SENT] to=${data.to ?? '(thread reply)'} subject=${data.subject ?? '(re: thread)'}`,
+        `[EMAIL SENT] to=${result.to || data.to || '(unknown)'} subject=${result.subject || data.subject || '(no subject)'}`,
       );
     } catch (err) {
       logger.error({ err }, '[ERROR] gmail [EMAIL SENT] post failed');

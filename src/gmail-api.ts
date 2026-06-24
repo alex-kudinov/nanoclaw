@@ -241,7 +241,12 @@ export async function replyToThread(opts: {
   body: string;
   html?: boolean;
   cc?: string;
-}): Promise<{ messageId: string; threadId: string }> {
+}): Promise<{
+  messageId: string;
+  threadId: string;
+  to: string;
+  subject: string;
+}> {
   const gmail = getGmailClient();
 
   // Fetch the thread to get the last message's headers for In-Reply-To
@@ -346,7 +351,7 @@ export async function replyToThread(opts: {
     { threadId: opts.threadId, to, messageId: sentId },
     'Gmail: reply sent',
   );
-  return { messageId: sentId, threadId: opts.threadId };
+  return { messageId: sentId, threadId: opts.threadId, to, subject };
 }
 
 /** Search emails. Returns formatted results for agent consumption. */

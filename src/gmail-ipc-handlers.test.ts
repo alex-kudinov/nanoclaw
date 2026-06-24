@@ -41,9 +41,12 @@ vi.mock('./gmail-api.js', () => ({
   sendEmail: vi
     .fn()
     .mockResolvedValue({ messageId: 'sent-msg-123', threadId: 'thread-abc' }),
-  replyToThread: vi
-    .fn()
-    .mockResolvedValue({ messageId: 'reply-msg-456', threadId: 'thread-abc' }),
+  replyToThread: vi.fn().mockResolvedValue({
+    messageId: 'reply-msg-456',
+    threadId: 'thread-abc',
+    to: 'sender@external.com',
+    subject: 'Re: ACC inquiry',
+  }),
   searchEmails: vi.fn().mockResolvedValue('No results found.'),
   readEmail: vi.fn().mockResolvedValue('Email content here'),
   findThreadForReply: vi.fn().mockResolvedValue(null),
@@ -469,20 +472,22 @@ describe('mechanical [EMAIL SENT] to chief (T06)', () => {
     );
   });
 
-  it('handleGmailReply posts one [EMAIL SENT] line via postToChief', async () => {
+  it('handleGmailReply lists the resolved recipient + subject (not placeholders)', async () => {
     const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+    // No to/subject on the reply payload — they must come from replyToThread's
+    // resolved result, NOT the old useless "to=(thread reply) subject=(re: thread)".
     await handleGmailReply(
       makePayload({
         type: 'gmail_reply',
         threadId: 'thr-9',
-        subject: 'Re: ACC',
         body: '<p>reply</p>',
       }),
       postToChief,
     );
     expect(postToChief).toHaveBeenCalledTimes(1);
-    expect(postToChief.mock.calls[0][0]).toContain('[EMAIL SENT]');
-    expect(postToChief.mock.calls[0][0]).toContain('subject=Re: ACC');
+    expect(postToChief.mock.calls[0][0]).toBe(
+      '[EMAIL SENT] to=sender@external.com subject=Re: ACC inquiry',
+    );
   });
 
   it('returns the sent message + thread ids when postToChief is omitted', async () => {
