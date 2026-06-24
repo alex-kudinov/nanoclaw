@@ -79,6 +79,7 @@ function writeHandoffFile(
   sourceGroup: string,
   text: string,
   threadTs?: string,
+  threadKey?: string,
 ) {
   const dir = path.join(tmpRoot, 'ipc', sourceGroup, 'messages');
   fs.mkdirSync(dir, { recursive: true });
@@ -93,6 +94,7 @@ function writeHandoffFile(
       chatJid: 'slack:UNUSED',
       text,
       thread_ts: threadTs,
+      thread_key: threadKey,
     }),
   );
   return file;
@@ -156,6 +158,26 @@ describe('IPC handoff routing', () => {
     expect(echoCalls()).toHaveLength(0);
     // Slack target self-persists via storeOutbound — no duplicate direct store
     expect(storeMessageDirect).not.toHaveBeenCalled();
+  });
+
+  it('plumbs thread_key through to the target sendMessage (entity threading)', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    writeHandoffFile(
+      'chief',
+      '[HANDOFF: chief→sales] new lead',
+      undefined,
+      'sales:entry:42',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      '[HANDOFF: chief→sales] new lead',
+      expect.objectContaining({ threadKey: 'sales:entry:42' }),
+    );
   });
 
   it('routes an ASCII-arrow handoff (->) to the target, not the source channel', async () => {

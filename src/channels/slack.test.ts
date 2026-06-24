@@ -21,6 +21,8 @@ vi.mock('../logger.js', () => ({
 // Mock db
 vi.mock('../db.js', () => ({
   updateChatName: vi.fn(),
+  resolveThreadAnchor: vi.fn(() => undefined),
+  recordThreadAnchor: vi.fn(),
 }));
 
 // --- @slack/bolt mock ---
@@ -85,7 +87,11 @@ vi.mock('../env.js', () => ({
 }));
 
 import { SlackChannel, SlackChannelOpts } from './slack.js';
-import { updateChatName } from '../db.js';
+import {
+  updateChatName,
+  resolveThreadAnchor,
+  recordThreadAnchor,
+} from '../db.js';
 import { readEnvFile } from '../env.js';
 
 // --- Test helpers ---
@@ -1324,6 +1330,68 @@ describe('SlackChannel', () => {
     it('has name "slack"', () => {
       const channel = new SlackChannel(createTestOpts());
       expect(channel.name).toBe('slack');
+    });
+  });
+
+  // --- Entity-keyed threading (cross-minion threading) ---
+
+  describe('threadKey anchoring', () => {
+    const JID = 'slack:C0123456789';
+
+    async function connected() {
+      const channel = new SlackChannel(createTestOpts());
+      await channel.connect();
+      return channel;
+    }
+
+    it('first post for a new key starts a root and records its ts', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+      const channel = await connected();
+
+      await channel.sendMessage(JID, 'cert issued', {
+        threadKey: 'certifier:cert:jane|pcc',
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      // No thread_ts on the root post — it BECOMES the thread.
+      expect(post.mock.calls[0][0].thread_ts).toBeUndefined();
+      expect(resolveThreadAnchor).toHaveBeenCalledWith(
+        'C0123456789',
+        'certifier:cert:jane|pcc',
+      );
+      expect(recordThreadAnchor).toHaveBeenCalledWith(
+        'C0123456789',
+        'certifier:cert:jane|pcc',
+        '1704067200.000100',
+      );
+    });
+
+    it('later post for a known key replies under the recorded root', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue('1700000000.000001');
+      const channel = await connected();
+
+      await channel.sendMessage(JID, 'cert resent', {
+        threadKey: 'certifier:cert:jane|pcc',
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBe('1700000000.000001');
+      // Already anchored — do not overwrite the root.
+      expect(recordThreadAnchor).not.toHaveBeenCalled();
+    });
+
+    it('an explicit threadTs wins over threadKey (no anchor lookup)', async () => {
+      const channel = await connected();
+
+      await channel.sendMessage(JID, 'reply', {
+        threadTs: '1699999999.000009',
+        threadKey: 'sales:entry:42',
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBe('1699999999.000009');
+      expect(resolveThreadAnchor).not.toHaveBeenCalled();
+      expect(recordThreadAnchor).not.toHaveBeenCalled();
     });
   });
 });

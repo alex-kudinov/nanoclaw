@@ -68,6 +68,10 @@ export interface NewMessage {
 export interface SendMessageOpts {
   fromGroup?: string;
   threadTs?: string;
+  // Entity anchor (Slack only). All posts to a channel sharing the same
+  // threadKey collapse into one thread: the first post becomes the root, later
+  // posts reply under it. An explicit threadTs always wins over threadKey.
+  threadKey?: string;
 }
 
 export type SendMessageFn = (

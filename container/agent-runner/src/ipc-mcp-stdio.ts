@@ -47,6 +47,7 @@ server.tool(
     sender: z.string().optional().describe('Your role/identity name (e.g. "Researcher"). When set, messages appear from a dedicated bot in Telegram.'),
     target_group: z.string().optional().describe('Send to a different group by folder name (e.g. "sales", "chief"). Defaults to your own group. The target must be a registered group.'),
     thread_ts: z.string().regex(/^\d+\.\d+$/).optional().describe('Slack thread timestamp to reply in a specific thread. Get this from the thread_ts attribute on incoming <message> XML tags.'),
+    thread_key: z.string().optional().describe('Work-unit anchor (e.g. "sales:entry:42", "booking:appt:12345"). Every message you send with the SAME thread_key collapses into ONE Slack thread, so all updates about one lead/cert/booking stay together instead of scattering across the channel. Use a stable per-entity key (see your CLAUDE.md for the convention); omit for one-off chatter. Ignored if thread_ts is set.'),
   },
   async (args) => {
     const data: Record<string, string | undefined> = {
@@ -57,6 +58,7 @@ server.tool(
       groupFolder,
       targetGroupFolder: args.target_group || undefined,
       thread_ts: args.thread_ts || undefined,
+      thread_key: args.thread_key || undefined,
       timestamp: new Date().toISOString(),
     };
 

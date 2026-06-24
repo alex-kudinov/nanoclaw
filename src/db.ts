@@ -76,6 +76,18 @@ function createSchema(database: Database.Database): void {
       group_folder TEXT PRIMARY KEY,
       session_id TEXT NOT NULL
     );
+    -- Entity-anchored Slack threading: maps a minion work-unit key
+    -- (e.g. "sales:entry:42") to the ts of the FIRST message posted about it,
+    -- so every later post with the same key threads under one root instead of
+    -- scattering across the channel. Generalizes the healer's incidents.thread_ts
+    -- to all minions. Per-channel: Slack threads cannot span channels.
+    CREATE TABLE IF NOT EXISTS slack_thread_anchors (
+      channel TEXT NOT NULL,
+      thread_key TEXT NOT NULL,
+      thread_ts TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (channel, thread_key)
+    );
     CREATE TABLE IF NOT EXISTS registered_groups (
       jid TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -672,6 +684,38 @@ export function setRouterState(key: string, value: string): void {
   db.prepare(
     'INSERT OR REPLACE INTO router_state (key, value) VALUES (?, ?)',
   ).run(key, value);
+}
+
+// --- Slack thread anchors (entity-keyed threading) ---
+
+/** The thread root ts for a (channel, entity key), or undefined if none yet. */
+export function resolveThreadAnchor(
+  channel: string,
+  threadKey: string,
+): string | undefined {
+  const row = db
+    .prepare(
+      'SELECT thread_ts FROM slack_thread_anchors WHERE channel = ? AND thread_key = ?',
+    )
+    .get(channel, threadKey) as { thread_ts: string } | undefined;
+  return row?.thread_ts;
+}
+
+/**
+ * Record the root ts for a (channel, entity key). The FIRST post about a key
+ * wins: ON CONFLICT DO NOTHING keeps the original root, so a race (two posts
+ * with the same new key) can never split a work-unit across two threads.
+ */
+export function recordThreadAnchor(
+  channel: string,
+  threadKey: string,
+  threadTs: string,
+): void {
+  db.prepare(
+    `INSERT INTO slack_thread_anchors (channel, thread_key, thread_ts, created_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(channel, thread_key) DO NOTHING`,
+  ).run(channel, threadKey, threadTs, new Date().toISOString());
 }
 
 // --- Session accessors ---

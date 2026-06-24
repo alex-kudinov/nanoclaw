@@ -17,6 +17,8 @@ import {
   getTaskById,
   insertJobRunLog,
   markStaleRunsAsFailed,
+  recordThreadAnchor,
+  resolveThreadAnchor,
   setJobEnabled,
   setRegisteredGroup,
   storeChatMetadata,
@@ -933,5 +935,29 @@ describe('recordEmailOpen (T04)', () => {
     expect(r?.leadId).toBe(42);
     expect(r?.emailType).toBe('follow-up');
     expect(r?.openCount).toBe(1);
+  });
+});
+
+describe('slack thread anchors', () => {
+  it('returns undefined for an unknown key', () => {
+    expect(resolveThreadAnchor('C123', 'sales:entry:42')).toBeUndefined();
+  });
+
+  it('records then resolves the root ts', () => {
+    recordThreadAnchor('C123', 'sales:entry:42', '1700.0001');
+    expect(resolveThreadAnchor('C123', 'sales:entry:42')).toBe('1700.0001');
+  });
+
+  it('scopes anchors per channel — same key in two channels is independent', () => {
+    recordThreadAnchor('C123', 'booking:appt:7', '1700.0001');
+    recordThreadAnchor('C999', 'booking:appt:7', '1800.0002');
+    expect(resolveThreadAnchor('C123', 'booking:appt:7')).toBe('1700.0001');
+    expect(resolveThreadAnchor('C999', 'booking:appt:7')).toBe('1800.0002');
+  });
+
+  it('keeps the first root on conflict — a race never splits a work-unit', () => {
+    recordThreadAnchor('C123', 'cert:jane|pcc', '1700.0001');
+    recordThreadAnchor('C123', 'cert:jane|pcc', '1700.9999');
+    expect(resolveThreadAnchor('C123', 'cert:jane|pcc')).toBe('1700.0001');
   });
 });

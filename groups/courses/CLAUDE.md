@@ -18,7 +18,7 @@ Read `/workspace/extra/knowledge/LEARNED.md` if it exists — it contains lesson
 - Run bash commands (Python scripts in `/workspace/extra/enricher/`)
 - Email sending via toolbox (`/workspace/extra/email/send-email.sh`)
 - File read/write on enrichment dir (`/workspace/extra/enrichment/`)
-- `mcp__nanoclaw__send_message` — send a message to this Slack channel
+- `mcp__nanoclaw__send_message` — send a message to this Slack channel. **Thread per session:** pass `thread_key=courses:session:{course}-{date}` (e.g. `courses:session:mcs-2026-06-20`) and reuse the exact same key for every post about one session (preview → edits → send) so they collapse into one thread instead of scattering. Omit only for one-off chatter.
 
 ### Key Scripts
 

@@ -284,6 +284,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       await deps.sendMessage(handoffEntry[0], data.text, {
                         fromGroup: sourceGroup,
                         threadTs: data.thread_ts,
+                        threadKey: data.thread_key,
                       });
                       // Slack persists its own outbound via storeOutbound — a
                       // second store here would duplicate the row. Only direct-
@@ -387,6 +388,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     await deps.sendMessage(targetJid, data.text, {
                       fromGroup: sourceGroup,
                       threadTs: data.thread_ts,
+                      threadKey: data.thread_key,
                     });
                     logger.info(
                       {

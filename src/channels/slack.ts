@@ -3,7 +3,11 @@ import type { GenericMessageEvent, BotMessageEvent } from '@slack/types';
 
 import { promoteBriefItem } from '../brief-promote.js';
 import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
-import { updateChatName } from '../db.js';
+import {
+  recordThreadAnchor,
+  resolveThreadAnchor,
+  updateChatName,
+} from '../db.js';
 import { readEnvFile } from '../env.js';
 import { logger } from '../logger.js';
 import {
@@ -560,6 +564,7 @@ export class SlackChannel implements Channel {
     const channelId = jid.replace(/^slack:/, '');
     const fromGroup = opts?.fromGroup;
     const threadTs = opts?.threadTs;
+    const threadKey = opts?.threadKey;
 
     if (!this.connected) {
       this.outgoingQueue.push({ jid, text, opts });
@@ -568,6 +573,20 @@ export class SlackChannel implements Channel {
         'Slack disconnected, message queued',
       );
       return;
+    }
+
+    // Entity-anchored threading: a threadKey collapses repeated posts about the
+    // same work-unit into one thread. Resolve an existing anchor → reply under
+    // it; the first post about the key becomes the root and is recorded from
+    // its ts after sending. An explicit threadTs always wins (the caller already
+    // knows the thread). Resolved at send time so a queued-then-flushed post
+    // still threads correctly.
+    let effectiveThreadTs = threadTs;
+    let keyToAnchor: string | undefined;
+    if (threadKey && !effectiveThreadTs) {
+      const existing = resolveThreadAnchor(channelId, threadKey);
+      if (existing) effectiveThreadTs = existing;
+      else keyToAnchor = threadKey;
     }
 
     try {
@@ -579,7 +598,7 @@ export class SlackChannel implements Channel {
       const baseOpts: { channel: string; thread_ts?: string } = {
         channel: channelId,
       };
-      if (threadTs) baseOpts.thread_ts = threadTs;
+      if (effectiveThreadTs) baseOpts.thread_ts = effectiveThreadTs;
 
       // Slack limits messages to ~4000 characters; split if needed
       if (displayText.length <= MAX_MESSAGE_LENGTH) {
@@ -591,7 +610,8 @@ export class SlackChannel implements Channel {
         // Socket Mode doesn't reliably echo bot_message events back, and the
         // event handler skips the ones it does receive.
         if (result.ts) {
-          this.storeOutbound(jid, result.ts, text, fromGroup, threadTs);
+          this.storeOutbound(jid, result.ts, text, fromGroup, effectiveThreadTs);
+          if (keyToAnchor) recordThreadAnchor(channelId, keyToAnchor, result.ts);
         }
       } else {
         for (let i = 0; i < displayText.length; i += MAX_MESSAGE_LENGTH) {
@@ -601,13 +621,28 @@ export class SlackChannel implements Channel {
             text: chunk,
           });
           if (result.ts) {
-            this.storeOutbound(jid, result.ts, chunk, fromGroup, threadTs);
+            this.storeOutbound(
+              jid,
+              result.ts,
+              chunk,
+              fromGroup,
+              effectiveThreadTs,
+            );
+            // First chunk of a new-key post becomes the root; pin the rest of
+            // the chunks (and the recorded anchor) under it so a split message
+            // stays in one thread.
+            if (keyToAnchor) {
+              recordThreadAnchor(channelId, keyToAnchor, result.ts);
+              effectiveThreadTs = result.ts;
+              baseOpts.thread_ts = result.ts;
+              keyToAnchor = undefined;
+            }
           }
         }
       }
       this.lastActivityAt = Date.now();
       logger.info(
-        { jid, length: text.length, fromGroup, threadTs },
+        { jid, length: text.length, fromGroup, threadTs: effectiveThreadTs },
         'Slack message sent',
       );
     } catch (err) {

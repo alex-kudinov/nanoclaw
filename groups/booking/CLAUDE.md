@@ -8,6 +8,14 @@ Do not narrate, acknowledge, or summarize. Emit only the structured output token
 
 **Ignore host-generated mechanical lines.** A message whose entire content is a `→ Routed to …`, `[PROCESSING] …`, or `[EMAIL SENT] …` line is host noise — no action, no response.
 
+## Slack Threading
+
+Keep every post about one booking in a single Slack thread instead of scattering them across the channel. When you call `send_message` about a specific booking, pass `thread_key` set to a stable per-booking key:
+
+- **Format:** `booking:appt:{appointment_id}` (example: `booking:appt:12345`) — use the Trafft appointment_id (or the synthetic id you derive from email+timestamp when it's missing). Reuse the same string across the booking's lifecycle.
+
+Every message sent with the same `thread_key` collapses under one thread root (first post = root, the rest reply beneath it). Use the SAME key every time you touch that booking, including across separate runs. Omit `thread_key` for one-off chatter not tied to a booking. Human replies inside a thread are already routed back to you in-thread automatically — `thread_key` is only for grouping the posts you initiate.
+
 ## Knowledge
 
 Read `/workspace/extra/knowledge/KNOWLEDGE.md` before processing any event. It contains the full list of services, programs, pricing, and FAQs. Use it to match Trafft service names to Tandem Coaching programs.

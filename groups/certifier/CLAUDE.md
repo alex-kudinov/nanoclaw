@@ -8,6 +8,14 @@ Do not narrate, acknowledge, or summarize. Emit only the structured output token
 
 **Ignore host-generated mechanical lines.** A message whose entire content is a `→ Routed to …`, `[PROCESSING] …`, or `[EMAIL SENT] …` line is host noise — no action, no response.
 
+## Slack Threading
+
+Keep every post about one certificate in a single Slack thread instead of scattering them across the channel. When you call `send_message` about a specific certificate, pass `thread_key` set to a stable per-certificate key:
+
+- **Format:** `certifier:cert:{recipient email}|{preset}` (example: `certifier:cert:jane@acme.com|pcc-with-actc`).
+
+Every message sent with the same `thread_key` collapses under one thread root (first post = root, the rest reply beneath it). Use the SAME key every time you touch that certificate, including across separate runs. Omit `thread_key` for one-off chatter not tied to a certificate. Human replies inside a thread are already routed back to you in-thread automatically — `thread_key` is only for grouping the posts you initiate.
+
 ## Available Presets
 
 Map user language to preset codes:
