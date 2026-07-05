@@ -274,7 +274,7 @@ An asynchronous, self-paced course that provides the 10-hour education component
 2. **Active Mentor Coach** — Currently mentoring candidates, needs formal CCE record before deadline
 3. **MCS Renewer** — Planning to qualify in 2026 introductory window, wants CCE hours for three-year renewal
 
-**ICF accreditation status:** CCE accreditation currently pending review.
+**ICF accreditation status:** ICF CCE accreditation **granted**. The course is live — enrollment gives immediate access and the ICF CCE certificate is issued on completion (no pending caveat).
 
 **What this course does NOT include:** BARS/Markers evaluation training (obtained from ICF directly — Tandem's standalone evaluation courses are retired as of 2026-06-03), 1:1 mentor coaching sessions, or the standard-path synchronous hours. Live synchronous hours, group practicum, and formative evaluation are in the Standard Path program, Mentor Coach Training (41 CCE hours, founding cohort $1,997).
 
@@ -350,7 +350,7 @@ Comprehensive guide to the MCS requirement (formerly MCQ) taking effect January 
 - **Standard Path:** 41+ hours MC-aligned education (50%+ synchronous) + BARS/Markers training (may be embedded in the 41 hours)
 - **Credit for Prior Learning (CPL):** 10 hours MC-aligned education (sync or async) + evidence of prior practice (5 credentialed mentees in 3 years or attestation letter) + BARS/Markers training (always separate)
 
-**MCS levels:** MCS-ACC, MCS-PCC, MCS-MCC — matched to the candidate's target credential. Safe harbor: ACC candidates may be mentored by MCS-ACC or MCS-PCC holders.
+**MCS levels:** MCS-ACC, MCS-PCC, MCS-MCC — matched to the candidate's target credential. MCS is strictly per-level: mentoring **ACC** candidates requires an **MCS-ACC** holder specifically — an MCS-PCC holder does NOT qualify to mentor ACC candidates. (An earlier "safe harbor" reading that allowed MCS-PCC holders to mentor ACC candidates was incorrect.)
 
 **Application fees:**
 - Through March 31, 2027: $50 (ICF member) / $125 (non-member) — one fee covers all levels applied for simultaneously
@@ -374,7 +374,7 @@ Comprehensive guide to the MCS requirement (formerly MCQ) taking effect January 
 
 These forms replace the previously required SPE recording and transcript for ACC and PCC Portfolio candidates (effective April 1, 2027). The ICF assessor role for ACC and PCC will be retired. Forms apply to 1:1 mentor coaching only — group sessions do not require Session Observation Forms.
 
-**ICF Advanced Accreditation in Mentor Coaching:** A new voluntary accreditation for education programs (not individuals), announced April 13, 2026 alongside the MCS launch. Applications expected to open mid-2026; specific requirements not yet published. Separate from existing Level 1/Level 2/Level 3 program accreditation and from CCE approval. Programs with this accreditation create a "direct pathway" for learners pursuing the MCS. Tandem is actively monitoring and evaluating this for the Mentor Coaching Foundations program. URL: /mcs/advanced-accreditation/
+**ICF Advanced Accreditation in Mentor Coaching (AAMC):** A voluntary accreditation for education programs (not individuals), announced April 13, 2026 alongside the MCS launch. Separate from existing Level 1/Level 2/Level 3 program accreditation and from CCE approval. Programs holding it create a "direct pathway" for learners pursuing the MCS. **Status: GRANTED** for Tandem's Mentor Coaching Practicum — Tandem is the **first and only AAMC-accredited program in North America** as of July 2026. URL: /mcs/advanced-accreditation/
 
 ---
 

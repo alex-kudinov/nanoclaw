@@ -106,7 +106,7 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 
 ### Lesson 25: MCS is strictly per-level; BARS/Markers come from ICF directly
 **Problem:** MCS CPL path inquiry; experienced mentor coach with PCC credential, MCC application submitted, 5+ years as mentor coach faculty
-**Rule:** MCS credentials are strictly per-level: MCS-PCC does NOT cover mentoring ACC candidates — that requires MCS-ACC separately. For a coach wanting to mentor at both levels, they need both ACC BARS (for MCS-ACC) and PCC Markers (for MCS-PCC). These are obtained from ICF directly — Tandem's standalone Evaluation Training courses are retired (see Lessons 65-66). Do not describe MCS-PCC as covering ACC candidates even when citing the KB 'safe harbor' language.
+**Rule:** MCS credentials are strictly per-level: MCS-PCC does NOT cover mentoring ACC candidates — that requires MCS-ACC separately. For a coach wanting to mentor at both levels, they need both ACC BARS (for MCS-ACC) and PCC Markers (for MCS-PCC). These are obtained from ICF directly — Tandem's standalone Evaluation Training courses are retired (see Lesson 35). Do not describe MCS-PCC as covering ACC candidates even when citing the KB 'safe harbor' language.
 
 ### Lesson 26: Onboarding completeness in confirmation/welcome emails
 **Problem:** Consolidates prior lessons on including onboarding steps in enrollment confirmations and welcome emails (former Lessons 44, 60).
@@ -148,9 +148,12 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 **Problem:** Consolidates prior lessons on the retirement of standalone Evaluation Training products (former Lessons 65, 66).
 **Rule:** Evaluation Training (ACC BARS, PCC Markers, MCC BARS, and the former $149 Complete Bundle) is RETIRED (2026-06-03) and cannot be sold or quoted as a standalone product at any price ($49–$149 pricing is void). ACC BARS + PCC Markers are now delivered only inside the Mentor Coach Training cohort (MCS Standard Path); coaches who need ICF-recognized evaluation training obtain it from ICF directly. If a prospect asks to buy BARS/Markers standalone, tell them it's no longer available separately and route MCS pricing questions to chief if unsure. (Also fully documented in KNOWLEDGE.md — this lesson is the reinforcing guard.)
 
-### Lesson 36: Tandem practicum framing; BARS/Markers not 'embedded' (Cherie correction)
+### Lesson 36: BARS/Markers delivery is path-scoped — embedded for Standard Path/Practicum, from ICF for CPL
 **Problem:** Hajnalka Segal — MCS qualification at both PCC and MCC levels; asked what training covers both
-**Rule:** Initial draft described Tandem's Mentor Coach Training as a '41-hour Standard Path' with 'PCC Markers embedded' and 'MCC BARS as self-paced bonus.' Cherie corrected: Tandem is doing the AMCS-aligned practicum, not the 41-hour MCS Standard Path, and BARS/Markers training (ACC, PCC, MCC) must come from ICF directly — not from Tandem's program or described as embedded. Correct framing: two paths (CPL for experienced mentors, practicum for others), with BARS/Markers as a separate ICF requirement entirely.
+**Rule:** BARS/Markers evaluation training delivery depends on the lead's MCS path — never state it as a blanket rule:
+- **Standard Path & Practicum** students: ACC BARS + PCC Markers are delivered *inside* the Mentor Coach Training cohort (embedded — see Lesson 35). Tandem runs two Standard-Path deliveries: the 41-hour Mentor Coach Training cohort and the AMCS-aligned Practicum companion (31-hour blended, Q3 2026).
+- **CPL path** students (Mentor Coaching Foundations, $299): Tandem does NOT provide BARS/Markers; the coach obtains them *from ICF directly*, separately.
+Cherie's original correction ("BARS/Markers must come from ICF, never embedded") applies to the **CPL** context only — it was over-generalized. Never tell a Standard-Path/Practicum lead that evaluation training is separate, and never tell a CPL lead that Tandem provides it.
 
 ### Lesson 37: Custom net-price split → flag mismatch, ask before drafting
 **Problem:** Mentor Coach Training (Standard Path), $1,698 net (list $1,997 minus $299 Foundations credit). Lead asked to split payment due to MacBook crash / solopreneur cash flow.
