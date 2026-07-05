@@ -24,17 +24,24 @@ import {
   sendEmail,
   searchEmails,
   readEmail,
+  getThread,
   findThreadForReply,
 } from './gmail-api.js';
 import { logger } from './logger.js';
 import { convertMarkdownToEmailHtml } from './markdown-to-email-html.js';
+import { checkRecipient } from './email-recipient-guard.js';
 
 /** Payload shape written by container MCP tools. */
 export interface GmailIpcPayload {
-  type: 'gmail_reply' | 'gmail_send' | 'gmail_search' | 'gmail_read';
+  type:
+    | 'gmail_reply'
+    | 'gmail_send'
+    | 'gmail_search'
+    | 'gmail_read'
+    | 'gmail_get_thread';
   groupFolder: string;
   timestamp: string;
-  // gmail_reply
+  // gmail_reply + gmail_get_thread
   threadId?: string;
   body?: string;
   // gmail_send
@@ -101,6 +108,29 @@ async function resolvePartyId(
     }
   }
   return null;
+}
+
+/**
+ * The set of addresses we know belong to a party (primary_email + party_emails),
+ * lowercased. Used to reject an agent-fabricated recipient before sending. Fails
+ * open (empty set) on error so a DB hiccup can't block legitimate mail — the
+ * reserved-domain check in checkRecipient still applies.
+ */
+async function getPartyEmails(partyId: number): Promise<Set<string>> {
+  try {
+    const res = await query<{ email: string }>(
+      `SELECT lower(primary_email::text) AS email FROM business_v2.parties
+         WHERE id = $1 AND primary_email IS NOT NULL
+       UNION
+       SELECT lower(email::text) AS email FROM business_v2.party_emails
+         WHERE party_id = $1`,
+      [partyId],
+    );
+    return new Set(res.rows.map((r) => r.email).filter(Boolean));
+  } catch (err) {
+    logger.error({ err, partyId }, 'gmail-ipc: party email lookup failed');
+    return new Set();
+  }
 }
 
 /** Build email footer with tracking pixel and optional unsubscribe link. */
@@ -327,6 +357,33 @@ export async function handleGmailSend(
     return undefined;
   }
 
+  // Recipient guard: an agent composes the To: for contact-form replies (no
+  // thread to reply into), so it can fabricate a placeholder or wrong address —
+  // the tina@example.com incident (2026-06-29). Validate against reserved
+  // domains always, and against the party's known emails when we have a Party ID.
+  // A failure is NOT sent; it is surfaced to chief for a human to correct.
+  const knownEmails = data.leadId
+    ? await getPartyEmails(data.leadId)
+    : undefined;
+  const recipientCheck = checkRecipient(data.to, knownEmails);
+  if (!recipientCheck.ok) {
+    logger.error(
+      {
+        to: data.to,
+        leadId: data.leadId,
+        subject: data.subject,
+        reason: recipientCheck.reason,
+      },
+      'gmail_send BLOCKED: recipient failed validation',
+    );
+    if (postToChief) {
+      await postToChief(
+        `🚫 [EMAIL BLOCKED] to=${data.to} subject=${data.subject} — ${recipientCheck.reason}. NOT sent; verify the recipient and resend.`,
+      );
+    }
+    return undefined;
+  }
+
   const { effectiveTo, effectiveCc, originalTo } = applyTestRouting(data);
   const effectiveThreadId = await resolveSendThreadId(
     data.threadId,
@@ -488,6 +545,29 @@ export async function handleGmailRead(data: GmailIpcPayload): Promise<void> {
   );
 }
 
+export async function handleGmailGetThread(
+  data: GmailIpcPayload,
+): Promise<void> {
+  if (!data.threadId) {
+    logger.warn({ data }, 'gmail_get_thread: missing threadId');
+    return;
+  }
+
+  const content = await getThread(data.threadId);
+
+  // type:'message' is the only shape the agent-runner surfaces (see
+  // handleGmailSearch).
+  writeInputMessage(data.groupFolder, {
+    type: 'message',
+    text: `[gmail_get_thread result — thread ${data.threadId}]\n\n${content}`,
+  });
+
+  logger.info(
+    { threadId: data.threadId, groupFolder: data.groupFolder },
+    'gmail_get_thread processed',
+  );
+}
+
 /** Write a follow-up message to the agent's IPC input directory. */
 function writeInputMessage(
   groupFolder: string,
@@ -526,6 +606,9 @@ export async function dispatchGmailIpc(
       break;
     case 'gmail_read':
       await handleGmailRead(data);
+      break;
+    case 'gmail_get_thread':
+      await handleGmailGetThread(data);
       break;
     default:
       logger.warn({ type: data.type }, 'Unknown Gmail IPC type');

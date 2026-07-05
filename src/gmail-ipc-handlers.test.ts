@@ -93,7 +93,7 @@ function makePayload(
     type: 'gmail_send',
     groupFolder: 'mailman',
     timestamp: '2026-03-03T12:00:00Z',
-    to: 'prospect@example.com',
+    to: 'prospect@external.com',
     subject: 'Coaching Inquiry Follow-up',
     body: '<p>Hello, thanks for reaching out!</p>',
     ...overrides,
@@ -112,7 +112,7 @@ describe('handleGmailSend', () => {
       await handleGmailSend(data);
 
       expect(sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({ to: 'prospect@example.com' }),
+        expect.objectContaining({ to: 'prospect@external.com' }),
       );
     });
 
@@ -130,12 +130,12 @@ describe('handleGmailSend', () => {
     it('stores original recipient in DB, not the test override', async () => {
       testRecipient = 'test@tandemcoach.co';
 
-      const data = makePayload({ to: 'real-prospect@example.com' });
+      const data = makePayload({ to: 'real-prospect@external.com' });
       await handleGmailSend(data);
 
       expect(storeMessageDirect).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: expect.stringContaining('To: real-prospect@example.com'),
+          content: expect.stringContaining('To: real-prospect@external.com'),
         }),
       );
     });
@@ -143,7 +143,7 @@ describe('handleGmailSend', () => {
     it('clears cc when GMAIL_TEST_RECIPIENT is set', async () => {
       testRecipient = 'test@tandemcoach.co';
 
-      const data = makePayload({ cc: 'real-cc@example.com' });
+      const data = makePayload({ cc: 'real-cc@external.com' });
       await handleGmailSend(data);
 
       expect(sendEmail).toHaveBeenCalledWith(
@@ -152,11 +152,11 @@ describe('handleGmailSend', () => {
     });
 
     it('preserves cc when GMAIL_TEST_RECIPIENT is not set', async () => {
-      const data = makePayload({ cc: 'colleague@example.com' });
+      const data = makePayload({ cc: 'colleague@external.com' });
       await handleGmailSend(data);
 
       expect(sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({ cc: 'colleague@example.com' }),
+        expect.objectContaining({ cc: 'colleague@external.com' }),
       );
     });
   });
@@ -270,7 +270,7 @@ describe('handleGmailSend', () => {
       await handleGmailSend(data);
 
       expect(findThreadForReply).toHaveBeenCalledWith({
-        to: 'prospect@example.com',
+        to: 'prospect@external.com',
         subject: 'Re: Mentor Coach Evaluation Training',
       });
       expect(sendEmail).toHaveBeenCalledWith(
@@ -322,14 +322,14 @@ describe('handleGmailSend', () => {
         'recovered-thread-xyz',
       );
       const data = makePayload({
-        to: 'real-prospect@example.com',
+        to: 'real-prospect@external.com',
         subject: 'Re: Their Inquiry',
       });
       delete data.threadId;
       await handleGmailSend(data);
 
       expect(findThreadForReply).toHaveBeenCalledWith({
-        to: 'real-prospect@example.com',
+        to: 'real-prospect@external.com',
         subject: 'Re: Their Inquiry',
       });
     });
@@ -342,7 +342,7 @@ describe('outbound email interaction logging', () => {
       type: 'gmail_send',
       groupFolder: 'mailman',
       timestamp: '2026-04-16T09:00:00Z',
-      to: 'prospect@example.com',
+      to: 'prospect@external.com',
       subject: 'ACC Program Details',
       body: '<p>Thanks for reaching out.</p>',
       leadId: 42,
@@ -363,7 +363,7 @@ describe('outbound email interaction logging', () => {
       type: 'gmail_send',
       groupFolder: 'mailman',
       timestamp: '2026-04-16T09:00:00Z',
-      to: 'prospect@example.com',
+      to: 'prospect@external.com',
       subject: 'Re: ACC Program Details',
       body: '<p>Checking back in.</p>',
       leadId: 42,
@@ -403,7 +403,7 @@ describe('outbound email interaction logging', () => {
       type: 'gmail_send',
       groupFolder: 'mailman',
       timestamp: '2026-04-16T09:00:00Z',
-      to: 'vendor@example.com',
+      to: 'vendor@external.com',
       subject: 'Invoice',
       body: '<p>Attached.</p>',
     });
@@ -418,7 +418,7 @@ describe('outbound email interaction logging', () => {
       type: 'gmail_send',
       groupFolder: 'mailman',
       timestamp: '2026-04-16T09:00:00Z',
-      to: 'found@example.com',
+      to: 'found@external.com',
       subject: 'Hello',
       body: '<p>Hi.</p>',
     });
@@ -463,12 +463,12 @@ describe('mechanical [EMAIL SENT] to chief (T06)', () => {
   it('handleGmailSend posts exactly one [EMAIL SENT] line via postToChief', async () => {
     const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
     await handleGmailSend(
-      makePayload({ to: 'lead@example.com', subject: 'Your ACC inquiry' }),
+      makePayload({ to: 'lead@external.com', subject: 'Your ACC inquiry' }),
       postToChief,
     );
     expect(postToChief).toHaveBeenCalledTimes(1);
     expect(postToChief.mock.calls[0][0]).toBe(
-      '[EMAIL SENT] to=lead@example.com subject=Your ACC inquiry',
+      '[EMAIL SENT] to=lead@external.com subject=Your ACC inquiry',
     );
   });
 
@@ -495,6 +495,46 @@ describe('mechanical [EMAIL SENT] to chief (T06)', () => {
       messageId: expect.any(String),
       threadId: expect.any(String),
     });
+  });
+});
+
+describe('recipient guard (tina@example.com incident)', () => {
+  it('blocks a reserved/placeholder recipient: no send, alerts chief, returns undefined', async () => {
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+    const result = await handleGmailSend(
+      makePayload({ to: 'tina@example.com', subject: 'X' }),
+      postToChief,
+    );
+    expect(result).toBeUndefined();
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(postToChief).toHaveBeenCalledTimes(1);
+    expect(postToChief.mock.calls[0][0]).toMatch(/EMAIL BLOCKED.*tina@example\.com/);
+  });
+
+  it('blocks a deliverable address that is not among the party’s known emails', async () => {
+    // leadId triggers the party-email lookup; party 10099 knows only the gmail addr.
+    vi.mocked(query).mockResolvedValueOnce({
+      rows: [{ email: 'eqcoach.tina@gmail.com' }],
+    } as any);
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+    const result = await handleGmailSend(
+      makePayload({ to: 'tina@gmial.com', leadId: 10099 }),
+      postToChief,
+    );
+    expect(result).toBeUndefined();
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(postToChief.mock.calls[0][0]).toMatch(/EMAIL BLOCKED.*not among/);
+  });
+
+  it('allows the party-verified recipient through', async () => {
+    vi.mocked(query).mockResolvedValueOnce({
+      rows: [{ email: 'eqcoach.tina@gmail.com' }],
+    } as any);
+    const result = await handleGmailSend(
+      makePayload({ to: 'eqcoach.tina@gmail.com', leadId: 10099 }),
+    );
+    expect(sendEmail).toHaveBeenCalled();
+    expect(result).toMatchObject({ messageId: expect.any(String) });
   });
 });
 
