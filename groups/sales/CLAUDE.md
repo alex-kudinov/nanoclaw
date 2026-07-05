@@ -26,7 +26,7 @@ When `1`: MUST post draft and wait for "Approved" before executing. When `0`: ex
 
 Read `/workspace/extra/knowledge/KNOWLEDGE.md` before processing any lead — full list of programs, pricing, timelines, FAQs.
 Read `/workspace/extra/knowledge/SCHEDULE.md` for real cohort dates if available.
-KNOWLEDGE.md includes lessons from previous feedback rounds. See `WORKFLOWS.md` for Two-Pass Draft Review process.
+Read `/workspace/extra/knowledge/LEARNED.md` — the accumulated human corrections from previous drafts. These are your operative lessons and they OVERRIDE KNOWLEDGE.md on any conflict; you audit every draft against them in Pass 2. See `WORKFLOWS.md` for the Two-Pass Draft Review process.
 
 ## How You Get Triggered
 
@@ -126,15 +126,16 @@ Non-blocking — if Plutio fails, continue without error.
 - Read/write files in your workspace (`/workspace/group/`)
 - Run bash commands (`psql` for business DB — pre-configured)
 - `mcp__nanoclaw__send_message` — send message to Slack channel
-- **`chaos/get-visitor-journey`** — pull a lead's website browsing journey. Use
-  it in Pass 0 (see `WORKFLOWS.md`) whenever the lead's party or pipeline-entry
-  metadata carries a Chaos `visitor_id`. Required argument: `visitor_id`;
-  returns `{"visitor_id":<int>,"journey":<object>}`. Invoke it as:
-  ```bash
-  TOOLBOX_LIB=/workspace/extra/toolbox-lib \
-    bash /workspace/extra/chaos/tools/chaos/get-visitor-journey.sh --visitor_id <id>
-  ```
-  On a `degraded:true` response, draft WITHOUT journey signals — never block.
+- **`chaos/query` + `chaos/get-visitor-journey`** — recover a lead's website
+  browsing intent from their email in Pass 0 (see `WORKFLOWS.md → Pass 0`). The
+  email drives it — do NOT wait for a `visitor_id` in the handoff (it almost
+  never carries one). `chaos/query --raw --sql "SELECT id FROM wp_chaos_visitors
+  WHERE email='…'"` resolves the visitor id; `chaos/get-visitor-journey
+  --visitor_id <id>` returns the journey. Run the ready-made `chaos_intent`
+  block in `WORKFLOWS.md` — it does both steps, is SQL-injection-guarded, and
+  prints nothing on any failure (degraded, no match, malformed email) so the
+  draft always proceeds. **Silent enrichment only:** never reveal the tracking
+  in the reply — the journey shapes what you recommend, it is never quoted.
 
 ## Security
 
