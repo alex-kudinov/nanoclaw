@@ -128,11 +128,18 @@ log "Calling bridge (model=sonnet)..."
 # Build JSON body from prompt file — pipe directly to avoid ARG_MAX on large prompts
 json_body=$(python3 -c 'import json,sys; print(json.dumps({"prompt": sys.stdin.read(), "model": "sonnet"}))' < "$prompt_file")
 
-bridge_response=$(curl -s --max-time 130 -X POST "$BRIDGE_URL" \
+# A full-KB rewrite incorporating every lesson runs well past 2 minutes; give curl
+# the same headroom as the bridge (BRIDGE_TIMEOUT_MS=600000). And drop out of `set -e`
+# for the call: as a `$(...)` assignment a non-zero curl (e.g. a timeout) aborts the
+# whole script BEFORE the curl_exit branch below, leaving "Calling bridge..." as the
+# last log line with no error — the exact silent failure this loop must never have.
+set +e
+bridge_response=$(curl -s --max-time 600 -X POST "$BRIDGE_URL" \
   -H "Content-Type: application/json" \
   -H "X-Bridge-Key: $BRIDGE_KEY" \
   -d "$json_body" 2>/dev/null)
 curl_exit=$?
+set -e
 if [[ $curl_exit -ne 0 ]]; then
   log "ERROR: bridge unreachable (curl exit $curl_exit)"
   exit 1
