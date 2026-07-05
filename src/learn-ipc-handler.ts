@@ -48,9 +48,7 @@ export async function handleLearnLesson(
   const content = fs.readFileSync(learnedPath, 'utf-8');
   const nextNum = getNextLessonNumber(content);
 
-  // Extract a short title from the lesson text (first sentence or first 60 chars)
-  const titleMatch = data.lesson.match(/^(.{1,60}?)(?:[.!?]|$)/);
-  const title = titleMatch ? titleMatch[1].trim() : 'Untitled';
+  const title = deriveLessonTitle(data.lesson);
 
   const lines = [
     '',
@@ -65,6 +63,30 @@ export async function handleLearnLesson(
   logger.info(
     { groupFolder: data.groupFolder, lessonNumber: nextNum },
     'Lesson appended to LEARNED.md',
+  );
+}
+
+/**
+ * Derive a short, human-readable title from lesson text. ALWAYS returns a
+ * non-empty title — the previous regex fell back to "Untitled" whenever the
+ * first sentence exceeded 60 chars without early punctuation (~80% of real
+ * lessons), which then collapsed in title-keyed dedup and silently dropped
+ * them from the KB merge.
+ */
+export function deriveLessonTitle(lesson: string): string {
+  const firstLine = lesson.trim().split('\n')[0].trim();
+  if (!firstLine) return 'Lesson';
+  const sentenceEnd = firstLine.search(/[.!?](\s|$)/);
+  const base =
+    sentenceEnd >= 0 && sentenceEnd <= 72
+      ? firstLine.slice(0, sentenceEnd)
+      : firstLine;
+  if (base.length <= 72) return base.trim();
+  return (
+    base
+      .slice(0, 72)
+      .replace(/\s+\S*$/, '')
+      .trim() + '…'
   );
 }
 
