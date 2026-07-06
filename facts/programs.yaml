@@ -1,0 +1,44 @@
+# Curated authoritative program facts — the drift guard's source of truth.
+#
+# Claude-maintained. When products.json or a program page changes such that
+# these facts no longer hold, `program-facts-drift` (data/jobs.json, daily)
+# posts a Slack alert. A human reconciles: update THIS file + the sales KB,
+# or fix the source. The guard never auto-overwrites (either side can be stale).
+#
+# Checks per program (src/program-facts-drift.ts):
+#   price_usd     == tandemweb products.json price_cents for each products_ids entry (and active)
+#   kb_present[]  strings that MUST appear in knowledge/agents/sales/KNOWLEDGE.md
+#   kb_absent[]   stale strings that must NOT appear in KNOWLEDGE.md
+#
+# Sources: tandemcoach.co/mcs/* (facts) + products.json (prices). See memory
+# reference-mcs-program-facts. Verified 2026-07-05.
+
+programs:
+  mcs-practicum:
+    name: Mentor Coach Training (MCS Practicum)
+    source_url: https://tandemcoach.co/mcs/mentor-coach-training/
+    price_usd: 2997
+    products_ids:
+      - mcs-cohort-sept-thursday
+      - mcs-cohort-sept-friday
+    kb_present:
+      - "$2,997"
+      - "71 hours"
+      - "AAMC"
+      - "July 1, 2026"
+    kb_absent:
+      - "$1,997"
+      - "$2,497"
+      - "41 CCE"
+      - "31-hour"
+
+  foundations:
+    name: Mentor Coaching Foundations
+    source_url: https://tandemcoach.co/mcs/mentor-coaching-foundations/
+    price_usd: 299
+    products_ids:
+      - mcq-program-a-foundations
+    kb_present:
+      - "$299"
+      - "10 CCE hours"
+    kb_absent: []
