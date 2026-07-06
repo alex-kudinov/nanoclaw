@@ -96,7 +96,13 @@ function activeSection(
   const lines = [`ACTIVE CONTAINERS (${active.length})`];
   for (const [key, s] of active) {
     const tags = [
-      s.isTaskContainer ? 'task' : s.idleWaiting ? 'idle-wait' : 'processing',
+      s.isTaskContainer
+        ? 'task'
+        : s.idleWaiting
+          ? 'idle-wait'
+          : s.adopted
+            ? `adopted (state unknown; quiet ${ageStr(s.lastOutputAgeSec)}; evictable at capacity)`
+            : 'processing',
     ];
     if (s.pipedMessageCount > 0) tags.push(`piped:${s.pipedMessageCount}`);
     if (s.retryCount > 0) tags.push(`retry:${s.retryCount}`);

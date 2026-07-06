@@ -49,6 +49,8 @@ export interface GroupStatusEntry {
   isTaskContainer: boolean;
   retryCount: number;
   idleForSec: number;
+  adopted: boolean;
+  lastOutputAgeSec: number;
 }
 
 export interface QueueStatus {
@@ -86,6 +88,13 @@ interface GroupState {
   adopted?: boolean;
   adoptedPid?: number;
 }
+
+/** An adopted container with no IPC output for this long is treated as idle
+ *  (its real state is invisible — no stdout wrapper) and becomes evictable. */
+const ADOPTED_STALE_OUTPUT_MS = parseInt(
+  process.env.ADOPTED_STALE_OUTPUT_MS || '120000',
+  10,
+);
 
 export class GroupQueue {
   private groups = new Map<string, GroupState>();
@@ -486,9 +495,26 @@ export class GroupQueue {
     let victimJid: string | null = null;
     let victimState: GroupState | null = null;
     let oldest = Infinity;
+    const now = Date.now();
     for (const [jid, s] of this.groups) {
-      if (!s.active || !s.idleWaiting || s.isTaskContainer) continue;
-      const since = s.idleSinceMs ?? s.activeSinceMs ?? 0;
+      if (!s.active || s.isTaskContainer) continue;
+      let since: number;
+      if (s.idleWaiting) {
+        since = s.idleSinceMs ?? s.activeSinceMs ?? 0;
+      } else if (
+        s.adopted &&
+        now - (s.lastOutputAt ?? now) > ADOPTED_STALE_OUTPUT_MS
+      ) {
+        // An adopted container has no stdout wrapper, so the daemon never
+        // sees its working→idle transition — it reads as "processing"
+        // forever while sitting in its in-container idle linger, holding a
+        // slot uneviectable for up to IDLE_TIMEOUT (the 2026-07-06 4/4
+        // capacity starvation). No IPC output for ADOPTED_STALE_OUTPUT_MS =
+        // idle or wedged; either way it is the right victim at capacity.
+        since = s.lastOutputAt ?? 0;
+      } else {
+        continue;
+      }
       if (since < oldest) {
         oldest = since;
         victimJid = jid;
@@ -501,11 +527,27 @@ export class GroupQueue {
         event: 'container.lifecycle.evict',
         victim: victimJid,
         containerName: victimState.containerName,
+        adopted: victimState.adopted === true,
         idleForMs: Date.now() - oldest,
         reason,
       },
       'Evicting longest-idle warm container to free a slot',
     );
+    if (victimState.adopted) {
+      // No stdin pipe to close — stop the container; the adoption tail's
+      // PID poll sees the exit and calls finalizeAdopted to free the slot.
+      const name = victimState.containerName;
+      if (name) {
+        exec(stopContainer(name), { timeout: 15000 }, (err) => {
+          if (err)
+            logger.warn(
+              { err, name },
+              'Adopted-container evict: stop command failed',
+            );
+        });
+      }
+      return true;
+    }
     this.closeStdin(victimJid);
     // Un-mark so back-to-back starvation events pick distinct victims while
     // this one is still winding down.
@@ -1140,6 +1182,10 @@ export class GroupQueue {
               : 0,
             isTaskContainer: state.isTaskContainer,
             retryCount: state.retryCount,
+            adopted: state.adopted === true,
+            lastOutputAgeSec: state.lastOutputAt
+              ? Math.max(0, Math.floor((now - state.lastOutputAt) / 1000))
+              : 0,
           };
         } catch (err) {
           logger.error({ groupJid, err }, 'getStatus entry build failed');
