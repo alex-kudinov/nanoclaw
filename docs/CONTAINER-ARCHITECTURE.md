@@ -76,17 +76,29 @@ exists). Benefits: hot groups (grader mid-session) keep their warm session
 and skip the cold start; nothing squats, because eviction is on demand, not
 on a timer. This dissolves the 30 s-vs-5 min tension entirely.
 
-### Phase 2 — host-process runtime for trusted minions (the big win)
+### Phase 2 — right-size the VM allocation per group
 
-Per-group flag `containerConfig.runtime: 'host' | 'container'`. Trusted,
-first-party minions (grader, contador — they run our prompts with our
-tools against our own repos) run as plain host processes: ~120 MB each,
-zero cold start beyond SDK init, concurrency 20+ inside today's headroom.
-Confine with per-group working dirs + the existing mount-allowlist logic
-(enforced as path checks) or `sandbox-exec` profiles. The container path
-remains the default for anything untrusted or experimental. This removes
-the RAM ceiling AND most cold-start cost in one move, with the isolation
-spent only where it buys something.
+REJECTED ALTERNATIVE, kept for the record: "host-process runtime for
+trusted minions" was proposed and dropped. There is no trusted minion —
+the minion's code is ours, but its INPUT is adversarial-capable (student
+docx files, inbound email, webhooks), and an LLM agent's behavior is a
+function of its input. The VM + mount-allowlist boundary is what enforces
+"minions only communicate through host-mediated channels" by topology
+rather than convention; a host process running as the login user could
+read keys, other minions' folders, and the DB. Every minion keeps its VM.
+
+Instead, fix the economics inside the isolation model: 768 MB was chosen
+as ~8.5× measured IDLE; nobody has measured PEAK under real load (docx
+conversion is the fattest grader step). Measure the high-water mark over
+a few real runs per group, then set per-group `containerConfig.memory` —
+chatty minions at 384–512 MB, heavy ones at peak+margin. At 512 MB the
+same 5–6 GB headroom runs 10–12 VMs instead of 4–5.
+
+Caveat that stays true regardless: the VM confines prompt-injection blast
+radius to the minion's mounts; it does not eliminate it. Mount minimalism
+plus git/Syncthing history is the defense inside that boundary. And the
+hard ceiling on the mini is the 18–19 GB base load — a diet pass there
+buys more slots than any container tuning.
 
 ### Phase 3 — decouple container lifetime from daemon lifetime (only if
 dev-restart churn stays high)
