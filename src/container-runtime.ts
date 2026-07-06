@@ -3,21 +3,40 @@
  * All runtime-specific logic lives here so swapping runtimes means changing one file.
  */
 import { execSync } from 'child_process';
+import fs from 'fs';
 
 import { logger } from './logger.js';
 
 /** The container runtime binary name. */
 export const CONTAINER_RUNTIME_BIN = 'container';
 
+/** True only if the path exists AND is a directory. */
+function isDirectorySource(hostPath: string): boolean {
+  try {
+    return fs.statSync(hostPath).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 /** Returns CLI args for a readonly bind mount.
- *  Uses -v when the path contains commas (e.g. OneDrive-SoleraHoldings,Inc)
- *  because --mount uses commas as field separators and can't escape them.
+ *  Uses -v (not --mount) when:
+ *   - the source is NOT a directory — e.g. /dev/null shadowing .env. Apple
+ *     Container's `--mount type=bind` requires a directory source and rejects
+ *     file/device sources with "path '…' is not a directory", which crash-loops
+ *     the container; `-v host:container:ro` mounts files/devices correctly.
+ *   - the path contains commas (e.g. OneDrive-SoleraHoldings,Inc) — `--mount`
+ *     uses commas as field separators and can't escape them.
  */
 export function readonlyMountArgs(
   hostPath: string,
   containerPath: string,
 ): string[] {
-  if (hostPath.includes(',') || containerPath.includes(',')) {
+  const useShortForm =
+    hostPath.includes(',') ||
+    containerPath.includes(',') ||
+    !isDirectorySource(hostPath);
+  if (useShortForm) {
     return ['-v', `${hostPath}:${containerPath}:ro`];
   }
   return [
@@ -84,7 +103,7 @@ export function ensureContainerRuntimeRunning(): void {
 }
 
 /** Kill orphaned NanoClaw containers from previous runs. */
-export function cleanupOrphans(): void {
+export function cleanupOrphans(spare?: Set<string>): void {
   try {
     const output = execSync(`${CONTAINER_RUNTIME_BIN} ls --format json`, {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -95,9 +114,13 @@ export function cleanupOrphans(): void {
     const ncContainers = containers.filter((c) =>
       c.configuration.id.startsWith('nanoclaw-'),
     );
+    // `spare` = containers that are NOT orphans: detached message containers
+    // with a live sidecar (boot: about to be adopted) or still actively owned
+    // by the queue (shutdown: left running for the next daemon to adopt).
     const running = ncContainers
       .filter((c) => c.status === 'running')
-      .map((c) => c.configuration.id);
+      .map((c) => c.configuration.id)
+      .filter((name) => !spare?.has(name));
     const stopped = ncContainers
       .filter((c) => c.status === 'stopped')
       .map((c) => c.configuration.id);

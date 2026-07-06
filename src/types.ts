@@ -43,8 +43,15 @@ export interface ContainerConfig {
   // before releasing it. Overrides the global IDLE_TIMEOUT. Set LOW for
   // per-submission workers (e.g. the grader) that expect no follow-ups, so slots
   // free promptly and the next job starts sooner; leave unset for conversational
-  // groups that benefit from staying warm between turns.
+  // groups that benefit from staying warm between turns. Warm containers do not
+  // squat: the queue evicts the longest-idle one when a slot is needed.
   idleTimeout?: number;
+  // Per-group VM resource caps (Apple Container `-m` / `-c`). Unset → the
+  // CONTAINER_MEMORY / CONTAINER_CPUS env defaults (768M / 2). Size from the
+  // peak_memory log lines the runner emits per run, plus margin — an OOM kill
+  // mid-run corrupts the work unit, so round up.
+  memory?: string;
+  cpus?: number;
   // Per-group claude model override (e.g. 'haiku'). Unset → agent-runner sonnet.
   model?: string;
   // Token-exhaustion probe policy. 'eager' tries every account (incl. cooled-down

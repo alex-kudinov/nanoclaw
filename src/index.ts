@@ -1,5 +1,6 @@
-import { execSync } from 'child_process';
+import { exec, execSync } from 'child_process';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 import {
@@ -33,6 +34,8 @@ import {
 } from './channels/registry.js';
 import {
   ContainerOutput,
+  ContainerSidecar,
+  containersStateDir,
   runContainerAgent,
   writeGroupsSnapshot,
   writeTasksSnapshot,
@@ -40,7 +43,9 @@ import {
 import {
   cleanupOrphans,
   ensureContainerRuntimeRunning,
+  stopContainer,
 } from './container-runtime.js';
+import { LogTail, createOutputParser } from './log-tail.js';
 import {
   getAllChats,
   getAllRegisteredGroups,
@@ -546,6 +551,13 @@ async function runAgent(
         const compositeKey = `${chatJid}||${threadTs || 'root'}`;
         queue.setLastOutputAt(compositeKey);
       },
+      // Adoption identity: lets a future daemon re-attach to this container
+      // (spawned detached, stdout in a file) if we die before it finishes.
+      {
+        compositeKey: `${chatJid}||${threadTs || 'root'}`,
+        threadTs,
+        sessionKey,
+      },
     );
 
     if (output.newSessionId) {
@@ -793,6 +805,176 @@ async function startMessageLoop(): Promise<void> {
   }
 }
 
+// ── Container adoption (detached lifetime) ─────────────────────────────────
+// Message containers are spawned detached with stdout in a file and identity
+// in a sidecar (see runContainerAgent). They keep working while the daemon is
+// down; on boot we re-attach: claim a slot, tail output from the last routed
+// offset, and post results to the original thread. Dead sidecars are swept —
+// their threads fall through to recoverPendingMessages.
+
+function pidAlive(pid: number | null | undefined): boolean {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Sidecars whose container CLI is still alive: [sidecar, sidecarPath]. */
+function listLiveSidecars(): Array<[ContainerSidecar, string]> {
+  const stateDir = containersStateDir();
+  const live: Array<[ContainerSidecar, string]> = [];
+  let entries: string[] = [];
+  try {
+    entries = fs.readdirSync(stateDir).filter((f) => f.endsWith('.json'));
+  } catch {
+    return live;
+  }
+  for (const file of entries) {
+    const sidecarPath = path.join(stateDir, file);
+    // File-sync artifacts are not sidecars; a foreign host's sidecar must
+    // never be adopted (its PID is meaningless here and could collide).
+    if (file.includes('.sync-conflict-')) {
+      try {
+        fs.unlinkSync(sidecarPath);
+      } catch {
+        /* ignore */
+      }
+      continue;
+    }
+    try {
+      const sc = JSON.parse(
+        fs.readFileSync(sidecarPath, 'utf-8'),
+      ) as ContainerSidecar;
+      if (sc.host && sc.host !== os.hostname()) continue;
+      if (pidAlive(sc.pid)) live.push([sc, sidecarPath]);
+      else sweepSidecar(sc, sidecarPath);
+    } catch {
+      try {
+        fs.unlinkSync(sidecarPath);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  return live;
+}
+
+function sweepSidecar(sc: ContainerSidecar, sidecarPath: string): void {
+  try {
+    exec(stopContainer(sc.containerName), { timeout: 10_000 }, () => undefined);
+  } catch {
+    /* ignore */
+  }
+  for (const f of [sidecarPath, sc.outLog, sc.errLog]) {
+    try {
+      fs.unlinkSync(f);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function adoptOrphanContainers(): number {
+  let adopted = 0;
+  for (const [sc, sidecarPath] of listLiveSidecars()) {
+    if (adoptSidecarContainer(sc, sidecarPath)) adopted++;
+  }
+  return adopted;
+}
+
+function adoptSidecarContainer(
+  sc: ContainerSidecar,
+  sidecarPath: string,
+): boolean {
+  const group = registeredGroups[sc.chatJid];
+  const channel = findChannel(channels, sc.chatJid);
+  if (!group || !channel) {
+    sweepSidecar(sc, sidecarPath);
+    return false;
+  }
+  queue.adoptContainer(
+    sc.compositeKey,
+    sc.containerName,
+    sc.groupFolder,
+    sc.pid!,
+    sc.startedMs,
+  );
+  const parser = createOutputParser({
+    onActivity: () => queue.setLastOutputAt(sc.compositeKey),
+    onOutput: (parsed) => {
+      void routeAdoptedOutput(sc, channel, parsed as ContainerOutput);
+    },
+  });
+  const tail: LogTail = new LogTail(sc.outLog, (chunk) => {
+    parser.feed(chunk);
+    try {
+      sc.outOffset = Math.max(0, tail.getOffset() - parser.pendingBytes());
+      fs.writeFileSync(sidecarPath, JSON.stringify(sc, null, 2));
+    } catch {
+      /* best-effort */
+    }
+  });
+  tail.start(sc.outOffset || 0);
+  // Adoption owns the lifecycle: poll the CLI PID, final-drain on death,
+  // release the slot. (The liveness checker skips adopted states.)
+  const poll = setInterval(() => {
+    if (pidAlive(sc.pid)) return;
+    clearInterval(poll);
+    tail.drainNow();
+    tail.stop();
+    queue.finalizeAdopted(sc.compositeKey);
+    for (const f of [sidecarPath, sc.outLog, sc.errLog]) {
+      try {
+        fs.unlinkSync(f);
+      } catch {
+        /* ignore */
+      }
+    }
+    logger.info(
+      {
+        event: 'container.lifecycle.adopt_finalized',
+        containerName: sc.containerName,
+        group: sc.groupName,
+      },
+      'Adopted container finished',
+    );
+  }, 5_000);
+  return true;
+}
+
+async function routeAdoptedOutput(
+  sc: ContainerSidecar,
+  channel: Channel,
+  o: ContainerOutput,
+): Promise<void> {
+  if (o.newSessionId) {
+    sessions[sc.sessionKey] = o.newSessionId;
+    setSession(sc.sessionKey, o.newSessionId);
+  }
+  if (!o.result) {
+    queue.notifyIdle(sc.compositeKey);
+    return;
+  }
+  const raw = typeof o.result === 'string' ? o.result : JSON.stringify(o.result);
+  const text = raw.replace(/<internal>[\s\S]*?<\/internal>/g, '').trim();
+  logger.info(
+    { group: sc.groupName, adopted: true },
+    `Agent output: ${raw.slice(0, 200)}`,
+  );
+  if (!text) return;
+  try {
+    await channel.sendMessage(sc.chatJid, text, {
+      fromGroup: sc.groupFolder,
+      threadTs: sc.threadTs ?? undefined,
+    });
+  } catch (err) {
+    logger.error({ err, group: sc.groupName }, 'Adopted output post failed');
+  }
+}
+
 interface RecoveryCandidate {
   chatJid: string;
   threadTs: string | undefined;
@@ -1014,7 +1196,9 @@ function startWatchdog(): void {
 
 function ensureContainerSystemRunning(): void {
   ensureContainerRuntimeRunning();
-  cleanupOrphans();
+  // Containers with a live sidecar are survivors of the previous daemon, not
+  // orphans — adoptOrphanContainers re-attaches to them right after boot.
+  cleanupOrphans(new Set(listLiveSidecars().map(([sc]) => sc.containerName)));
 }
 
 /**
@@ -1220,7 +1404,8 @@ async function main(): Promise<void> {
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutdown signal received');
     await queue.shutdown(10000);
-    cleanupOrphans();
+    // Message containers stay running (detached) for the next daemon to adopt.
+    cleanupOrphans(queue.getAdoptableContainerNames());
     for (const ch of channels) await ch.disconnect();
     await webhookServer.stop().catch(() => {});
     process.exit(0);
@@ -1747,6 +1932,10 @@ async function main(): Promise<void> {
   queue.startLivenessChecker();
   drainWatchdogKills(queue);
   startWatchdogIpc(queue);
+  const adoptedCount = adoptOrphanContainers();
+  if (adoptedCount > 0) {
+    logger.info({ adoptedCount }, 'Adopted containers from previous daemon');
+  }
   recoverPendingMessages();
   startWatchdog();
   startMessageLoop().catch((err) => {

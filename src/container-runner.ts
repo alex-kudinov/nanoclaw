@@ -16,9 +16,11 @@ import {
   DATA_DIR,
   GROUPS_DIR,
   IDLE_TIMEOUT,
+  MEMORY_SAMPLE_INTERVAL_MS,
   SPAWN_TIMEOUT,
   TIMEZONE,
 } from './config.js';
+import { LogTail } from './log-tail.js';
 import { readEnvFile } from './env.js';
 import { EAGER_TOKEN_PROBE_GROUPS } from './config.js';
 import {
@@ -631,6 +633,7 @@ async function readSecrets(
 function buildContainerArgs(
   mounts: VolumeMount[],
   containerName: string,
+  group: RegisteredGroup,
 ): string[] {
   const args: string[] = ['run', '-i', '--rm', '--name', containerName];
 
@@ -640,13 +643,29 @@ function buildContainerArgs(
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
 
+  // Own name → the agent-runner honors a targeted `_close-<name>` sentinel,
+  // so closing one container of a multi-container folder can't race another.
+  args.push('-e', `CONTAINER_NAME=${containerName}`);
+
+  // Wrapper idle self-exit is the backstop ABOVE the host's idle window, so
+  // the host's graceful close (idle timer or LRU eviction) always fires first.
+  const hostIdleMs = group.containerConfig?.idleTimeout ?? IDLE_TIMEOUT;
+  args.push('-e', `WRAPPER_IDLE_TIMEOUT_MS=${hostIdleMs + 120_000}`);
+
   // Cap VM resources. Apple Container defaults to 1024 MB / 4 CPU per container,
   // but a Claude Code agent idles at ~90 MB (node RSS ~46 MB, measured). Uncapped,
   // a burst of 1 GB VMs oversubscribes host RAM and thrashes (the box hung at 4
-  // concurrent on 24 GB). Cap to a safe multiple of observed usage; override via
-  // CONTAINER_MEMORY / CONTAINER_CPUS env (plist) to tune without a rebuild.
-  args.push('-m', process.env.CONTAINER_MEMORY || '768M');
-  args.push('-c', process.env.CONTAINER_CPUS || '2');
+  // concurrent on 24 GB). Per-group override via containerConfig.memory/cpus —
+  // size those from the container.lifecycle.peak_memory log lines; the
+  // CONTAINER_MEMORY / CONTAINER_CPUS envs (plist) are the global defaults.
+  args.push(
+    '-m',
+    group.containerConfig?.memory || process.env.CONTAINER_MEMORY || '768M',
+  );
+  args.push(
+    '-c',
+    String(group.containerConfig?.cpus ?? process.env.CONTAINER_CPUS ?? '2'),
+  );
 
   // Run as host user so bind-mounted files are accessible.
   // Skip when running as root (uid 0), as the container's node user (uid 1000),
@@ -671,12 +690,49 @@ function buildContainerArgs(
   return args;
 }
 
+/** Identity a message container needs to be adoptable after a daemon restart. */
+export interface AdoptInfo {
+  compositeKey: string;
+  threadTs?: string;
+  sessionKey: string;
+}
+
+/**
+ * State file written next to a detached container's logs. A daemon that
+ * starts while the container is still running uses it to re-attach: claim a
+ * queue slot, tail outLog from outOffset, route outputs to the right thread.
+ */
+export interface ContainerSidecar {
+  containerName: string;
+  /** os.hostname() of the machine that spawned it. Sidecars are host-local
+   *  runtime state; a foreign-host sidecar (e.g. arrived via file sync)
+   *  must never be adopted — its PID belongs to another machine. */
+  host: string;
+  compositeKey: string;
+  chatJid: string;
+  threadTs: string | null;
+  groupFolder: string;
+  groupName: string;
+  sessionKey: string;
+  outLog: string;
+  errLog: string;
+  pid: number | null;
+  startedMs: number;
+  /** Bytes of outLog already parsed AND routed — adoption resumes here. */
+  outOffset: number;
+}
+
+export function containersStateDir(): string {
+  return path.join(DATA_DIR, 'containers');
+}
+
 export async function runContainerAgent(
   group: RegisteredGroup,
   input: ContainerInput,
   onProcess: (proc: ChildProcess, containerName: string) => void,
   onOutput?: (output: ContainerOutput) => Promise<void>,
   onActivity?: () => void,
+  adopt?: AdoptInfo,
 ): Promise<ContainerOutput> {
   const startTime = Date.now();
 
@@ -686,7 +742,7 @@ export async function runContainerAgent(
   const mounts = buildVolumeMounts(group, input.isMain);
   const safeName = group.folder.replace(/[^a-zA-Z0-9-]/g, '-');
   const containerName = `nanoclaw-${safeName}-${Date.now()}`;
-  const containerArgs = buildContainerArgs(mounts, containerName);
+  const containerArgs = buildContainerArgs(mounts, containerName, group);
 
   logger.debug(
     {
@@ -732,11 +788,72 @@ export async function runContainerAgent(
   }
 
   return new Promise((resolve) => {
+    // stdout/stderr go to FILES, not pipes, and the child runs detached (its
+    // own process group): a pipe dies with its reader, so a daemon restart
+    // used to kill every in-flight run. With files + detached + launchd's
+    // AbandonProcessGroup, the container finishes its work across restarts
+    // and the next daemon adopts it via the sidecar (adoptOrphanContainers).
+    const stateDir = containersStateDir();
+    fs.mkdirSync(stateDir, { recursive: true });
+    const outLogPath = path.join(stateDir, `${containerName}.out.log`);
+    const errLogPath = path.join(stateDir, `${containerName}.err.log`);
+    const sidecarPath = path.join(stateDir, `${containerName}.json`);
+    const outFd = fs.openSync(outLogPath, 'a');
+    const errFd = fs.openSync(errLogPath, 'a');
     const container = spawn(CONTAINER_RUNTIME_BIN, containerArgs, {
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ['pipe', outFd, errFd],
+      detached: true,
     });
+    fs.closeSync(outFd);
+    fs.closeSync(errFd);
 
     onProcess(container, containerName);
+
+    let sidecar: ContainerSidecar | null = null;
+    if (adopt) {
+      sidecar = {
+        containerName,
+        host: os.hostname(),
+        compositeKey: adopt.compositeKey,
+        chatJid: input.chatJid,
+        threadTs: adopt.threadTs ?? null,
+        groupFolder: input.groupFolder,
+        groupName: group.name,
+        sessionKey: adopt.sessionKey,
+        outLog: outLogPath,
+        errLog: errLogPath,
+        pid: container.pid ?? null,
+        startedMs: startTime,
+        outOffset: 0,
+      };
+      try {
+        fs.writeFileSync(sidecarPath, JSON.stringify(sidecar, null, 2));
+      } catch (err) {
+        logger.warn({ containerName, err }, 'Sidecar write failed');
+      }
+    }
+
+    // Peak-memory high-water mark — the data that sizes containerConfig.memory.
+    let peakMemMb = 0;
+    const memSampler =
+      MEMORY_SAMPLE_INTERVAL_MS > 0
+        ? setInterval(() => {
+            exec(
+              `${CONTAINER_RUNTIME_BIN} exec ${containerName} cat /proc/meminfo`,
+              { timeout: 10_000 },
+              (err, out) => {
+                if (err || !out) return;
+                const total = /MemTotal:\s+(\d+)/.exec(out);
+                const avail = /MemAvailable:\s+(\d+)/.exec(out);
+                if (!total || !avail) return;
+                const usedMb = Math.round(
+                  (Number(total[1]) - Number(avail[1])) / 1024,
+                );
+                if (usedMb > peakMemMb) peakMemMb = usedMb;
+              },
+            );
+          }, MEMORY_SAMPLE_INTERVAL_MS)
+        : null;
 
     let stdout = '';
     let stderr = '';
@@ -745,8 +862,8 @@ export async function runContainerAgent(
 
     // Pass secrets via stdin (never written to disk or mounted as files)
     input.secrets = resolvedSecrets;
-    container.stdin.write(JSON.stringify(input));
-    container.stdin.end();
+    container.stdin!.write(JSON.stringify(input));
+    container.stdin!.end();
     // Remove secrets from input so they don't appear in logs
     delete input.secrets;
 
@@ -755,8 +872,7 @@ export async function runContainerAgent(
     let newSessionId: string | undefined;
     let outputChain = Promise.resolve();
 
-    container.stdout.on('data', (data) => {
-      const chunk = data.toString();
+    const handleStdoutChunk = (chunk: string): void => {
 
       // Any stdout chunk (heartbeat, output, log line) is proof-of-life for
       // the GroupQueue freeze detector. The agent-runner emits a heartbeat
@@ -830,6 +946,9 @@ export async function runContainerAgent(
             // Call onOutput for all markers (including null results)
             // so idle timers start even for "silent" query completions.
             outputChain = outputChain.then(() => onOutput(parsed));
+            // Persist the consumed offset so adoption after a daemon restart
+            // resumes AFTER already-routed outputs (no duplicate posts).
+            if (sidecar) persistSidecarOffset();
           } catch (err) {
             logger.warn(
               { group: group.name, error: err },
@@ -838,29 +957,21 @@ export async function runContainerAgent(
           }
         }
       }
-    });
+    };
 
-    container.stderr.on('data', (data) => {
-      const chunk = data.toString();
-      const lines = chunk.trim().split('\n');
-      for (const line of lines) {
-        if (line) logger.debug({ container: group.folder }, line);
-      }
-      // Don't reset timeout on stderr — SDK writes debug logs continuously.
-      // Timeout only resets on actual output (OUTPUT_MARKER in stdout).
-      if (stderrTruncated) return;
-      const remaining = CONTAINER_MAX_OUTPUT_SIZE - stderr.length;
-      if (chunk.length > remaining) {
-        stderr += chunk.slice(0, remaining);
-        stderrTruncated = true;
-        logger.warn(
-          { group: group.name, size: stderr.length },
-          'Container stderr truncated due to size limit',
+    const outTail = new LogTail(outLogPath, handleStdoutChunk);
+    const persistSidecarOffset = (): void => {
+      if (!sidecar) return;
+      try {
+        sidecar.outOffset = Math.max(
+          0,
+          outTail.getOffset() - Buffer.byteLength(parseBuffer),
         );
-      } else {
-        stderr += chunk;
+        fs.writeFileSync(sidecarPath, JSON.stringify(sidecar, null, 2));
+      } catch {
+        /* best-effort */
       }
-    });
+    };
 
     let timedOut = false;
     let spawnTimedOut = false;
@@ -914,9 +1025,77 @@ export async function runContainerAgent(
       timeout = setTimeout(killOnTimeout, timeoutMs);
     };
 
+    // Start consuming the container's stdout file. Poll-based tail: cheap,
+    // survives anything, and identical machinery to what adoption uses.
+    outTail.start();
+
     container.on('close', (code) => {
       clearTimeout(timeout);
       clearTimeout(spawnTimer);
+      // Read whatever the container wrote in the last poll window, then stop.
+      outTail.drainNow();
+      outTail.stop();
+      if (memSampler) clearInterval(memSampler);
+      if (peakMemMb > 0) {
+        logger.info(
+          {
+            event: 'container.lifecycle.peak_memory',
+            group: group.name,
+            containerName,
+            peakMemMb,
+            durationMs: Date.now() - startTime,
+          },
+          'Container peak memory (sizes containerConfig.memory)',
+        );
+      }
+      // stderr lives in a file now (pipes die with the daemon; files
+      // survive for adoption). Pull the tail of it for error logs.
+      try {
+        const errSize = fs.statSync(errLogPath).size;
+        const readFrom = Math.max(0, errSize - CONTAINER_MAX_OUTPUT_SIZE);
+        stderrTruncated = readFrom > 0;
+        const errReadFd = fs.openSync(errLogPath, 'r');
+        try {
+          const buf = Buffer.alloc(
+            Math.min(errSize, CONTAINER_MAX_OUTPUT_SIZE),
+          );
+          const n = fs.readSync(errReadFd, buf, 0, buf.length, readFrom);
+          stderr = buf.toString('utf-8', 0, n);
+        } finally {
+          fs.closeSync(errReadFd);
+        }
+      } catch {
+        /* no stderr file — fine */
+      }
+      // Lifecycle litter: targeted close sentinel, sidecar, log files.
+      try {
+        fs.unlinkSync(
+          path.join(
+            resolveGroupIpcPath(input.groupFolder),
+            'input',
+            `_close-${containerName}`,
+          ),
+        );
+      } catch {
+        /* absent */
+      }
+      try {
+        fs.unlinkSync(sidecarPath);
+      } catch {
+        /* absent */
+      }
+      // Log files are consumed (stdout accumulated, stderr tail read above);
+      // failure details go to logsDir via the branches below.
+      try {
+        fs.unlinkSync(outLogPath);
+      } catch {
+        /* absent */
+      }
+      try {
+        fs.unlinkSync(errLogPath);
+      } catch {
+        /* absent */
+      }
       const duration = Date.now() - startTime;
 
       if (spawnTimedOut) {

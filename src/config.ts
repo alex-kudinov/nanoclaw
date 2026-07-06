@@ -59,7 +59,15 @@ export const CONTAINER_MAX_OUTPUT_SIZE = parseInt(
   10,
 ); // 10MB default
 export const IPC_POLL_INTERVAL = 1000;
-export const IDLE_TIMEOUT = parseInt(process.env.IDLE_TIMEOUT || '300000', 10); // 5min default — how long to keep container alive after last result
+// How long a finished container stays warm before the host closes it. Warm
+// containers keep their Claude session hot (follow-ups skip the ~10s cold
+// start) and no longer squat: the queue evicts the longest-idle warm container
+// whenever a slot is needed (container.lifecycle.evict). Per-group override
+// via containerConfig.idleTimeout (the grader sets 30s — one-shot threads).
+export const IDLE_TIMEOUT = parseInt(
+  process.env.IDLE_TIMEOUT || '1200000',
+  10,
+); // 20min default
 // Entity-keyed Slack threading: once a work-unit thread has been idle this long,
 // a new post about it starts a FRESH root at the bottom of the channel instead
 // of resurrecting the dormant (possibly days-old) thread. Measured from the
@@ -86,6 +94,13 @@ export const RECOVERY_LOOKBACK_MS = parseInt(
   process.env.RECOVERY_LOOKBACK_MS || String(48 * 60 * 60 * 1000),
   10,
 ); // 48h
+// Peak-memory sampling cadence for running containers (container exec +
+// /proc/meminfo). Feeds the container.lifecycle.peak_memory log line used to
+// right-size per-group containerConfig.memory. 0 disables sampling.
+export const MEMORY_SAMPLE_INTERVAL_MS = parseInt(
+  process.env.MEMORY_SAMPLE_INTERVAL_MS || '20000',
+  10,
+);
 export const SPAWN_TIMEOUT = parseInt(process.env.SPAWN_TIMEOUT || '90000', 10); // 90s — fail fast if container produces no output markers
 export const LIVENESS_CHECK_INTERVAL_MS = parseInt(
   process.env.LIVENESS_CHECK_INTERVAL_MS || '10000',

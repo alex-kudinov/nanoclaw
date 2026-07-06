@@ -48,6 +48,7 @@ export interface GroupStatusEntry {
   pipedMessageCount: number;
   isTaskContainer: boolean;
   retryCount: number;
+  idleForSec: number;
 }
 
 export interface QueueStatus {
@@ -77,6 +78,13 @@ interface GroupState {
   activeSinceMs?: number;
   deadLetterProcessed?: boolean;
   lastOutputAt?: number;
+  /** When the container went idle (notifyIdle). Cleared when work arrives. */
+  idleSinceMs?: number;
+  /** True for a container adopted from a previous daemon process. Its
+   *  lifecycle (PID poll, finalize) is owned by the adoption tail in
+   *  index.ts, so the liveness checker must not double-clean it. */
+  adopted?: boolean;
+  adoptedPid?: number;
 }
 
 export class GroupQueue {
@@ -189,6 +197,9 @@ export class GroupQueue {
         },
         'At concurrency limit, message queued',
       );
+      // LRU eviction: reclaim the longest-idle warm container. Its exit frees
+      // the slot and drainGroup → drainWaiting picks this group up.
+      this.evictLongestIdle('messages');
       return;
     }
 
@@ -253,6 +264,7 @@ export class GroupQueue {
         },
         'At concurrency limit, task queued',
       );
+      this.evictLongestIdle('task');
       return;
     }
 
@@ -276,11 +288,14 @@ export class GroupQueue {
 
   /**
    * Mark the container as idle-waiting (finished work, waiting for IPC input).
-   * If tasks are pending, preempt the idle container immediately.
+   * If tasks are pending, preempt the idle container immediately. Otherwise it
+   * stays warm — session hot, follow-ups skip the cold start — until its idle
+   * timer fires or the queue evicts it to free a slot (evictLongestIdle).
    */
   notifyIdle(groupJid: string): void {
     const state = this.getGroup(groupJid);
     state.idleWaiting = true;
+    state.idleSinceMs = Date.now();
     if (state.pendingTasks.length > 0) {
       this.closeStdin(groupJid);
     }
@@ -300,6 +315,7 @@ export class GroupQueue {
     if (!state.active || !state.groupFolder || state.isTaskContainer)
       return { wrote: false };
     state.idleWaiting = false; // Agent is about to receive work, no longer idle
+    state.idleSinceMs = undefined;
 
     const inputDir = path.join(DATA_DIR, 'ipc', state.groupFolder, 'input');
     try {
@@ -418,6 +434,14 @@ export class GroupQueue {
 
   /**
    * Signal the active container to wind down by writing a close sentinel.
+   *
+   * The bare `_close` is consumed by WHICHEVER same-folder container polls
+   * first (documented race in agent-runner), so a targeted
+   * `_close-<containerName>` is written for runners that know their own name
+   * (CONTAINER_NAME env). The bare sentinel is only added when this is the
+   * folder's sole active container — a safe fallback for agent-runner copies
+   * that predate targeting. The runner deletes what it consumes; the host
+   * deletes the targeted file on container exit (runContainerAgent).
    */
   closeStdin(groupJid: string): void {
     const state = this.getGroup(groupJid);
@@ -426,10 +450,68 @@ export class GroupQueue {
     const inputDir = path.join(DATA_DIR, 'ipc', state.groupFolder, 'input');
     try {
       fs.mkdirSync(inputDir, { recursive: true });
-      fs.writeFileSync(path.join(inputDir, '_close'), '');
+      if (state.containerName) {
+        fs.writeFileSync(
+          path.join(inputDir, `_close-${state.containerName}`),
+          '',
+        );
+      }
+      if (
+        !state.containerName ||
+        this.countActiveByFolder(state.groupFolder) === 1
+      ) {
+        fs.writeFileSync(path.join(inputDir, '_close'), '');
+      }
     } catch {
       // ignore
     }
+  }
+
+  private countActiveByFolder(folder: string): number {
+    let n = 0;
+    for (const [, s] of this.groups) {
+      if (s.active && s.groupFolder === folder) n++;
+    }
+    return n;
+  }
+
+  /**
+   * Evict the longest-idle warm container so a waiting group gets its slot.
+   * Only idle message containers are eligible — busy work is never preempted.
+   * Best-effort: an agent-runner that predates targeted `_close` and shares
+   * its folder with another active container won't see the sentinel; its own
+   * idle timer (host) or wrapper idle exit (container) still bounds it.
+   */
+  private evictLongestIdle(reason: string): boolean {
+    let victimJid: string | null = null;
+    let victimState: GroupState | null = null;
+    let oldest = Infinity;
+    for (const [jid, s] of this.groups) {
+      if (!s.active || !s.idleWaiting || s.isTaskContainer) continue;
+      const since = s.idleSinceMs ?? s.activeSinceMs ?? 0;
+      if (since < oldest) {
+        oldest = since;
+        victimJid = jid;
+        victimState = s;
+      }
+    }
+    if (!victimJid || !victimState) return false;
+    logger.info(
+      {
+        event: 'container.lifecycle.evict',
+        victim: victimJid,
+        containerName: victimState.containerName,
+        idleForMs: Date.now() - oldest,
+        reason,
+      },
+      'Evicting longest-idle warm container to free a slot',
+    );
+    this.closeStdin(victimJid);
+    // Un-mark so back-to-back starvation events pick distinct victims while
+    // this one is still winding down.
+    victimState.idleWaiting = false;
+    victimState.idleSinceMs = undefined;
+    return true;
   }
 
   private async runForGroup(
@@ -439,6 +521,7 @@ export class GroupQueue {
     const state = this.getGroup(groupJid);
     state.active = true;
     state.idleWaiting = false;
+    state.idleSinceMs = undefined;
     state.isTaskContainer = false;
     state.pendingMessages = false;
     state.activeSinceMs = Date.now();
@@ -493,6 +576,8 @@ export class GroupQueue {
       state.resetIdleTimer = undefined;
       state.activeSinceMs = undefined;
       state.lastOutputAt = undefined;
+      state.idleWaiting = false;
+      state.idleSinceMs = undefined;
       this.drainGroup(groupJid);
     }
   }
@@ -501,6 +586,7 @@ export class GroupQueue {
     const state = this.getGroup(groupJid);
     state.active = true;
     state.idleWaiting = false;
+    state.idleSinceMs = undefined;
     state.isTaskContainer = true;
     state.activeSinceMs = Date.now();
     state.lastOutputAt = Date.now();
@@ -527,6 +613,8 @@ export class GroupQueue {
       state.resetIdleTimer = undefined;
       state.activeSinceMs = undefined;
       state.lastOutputAt = undefined;
+      state.idleWaiting = false;
+      state.idleSinceMs = undefined;
       this.drainGroup(groupJid);
     }
   }
@@ -653,6 +741,10 @@ export class GroupQueue {
     if (this.shuttingDown) return;
     const now = Date.now();
     for (const [groupJid, state] of this.groups) {
+      // Adopted containers are lifecycle-owned by the adoption tail in
+      // index.ts (PID poll + finalizeAdopted) — double-cleaning here would
+      // free the slot twice.
+      if (state.adopted) continue;
       if (!state.active || !state.process) continue;
 
       // Primary check: PID liveness (catches normal death, OOM, crash)
@@ -804,6 +896,7 @@ export class GroupQueue {
       this.activeCount--;
     }
     state.idleWaiting = false;
+    state.idleSinceMs = undefined;
     state.isTaskContainer = false;
     state.process = null;
     state.containerName = null;
@@ -811,6 +904,8 @@ export class GroupQueue {
     state.resetIdleTimer = undefined;
     state.activeSinceMs = undefined;
     state.lastOutputAt = undefined;
+    state.adopted = undefined;
+    state.adoptedPid = undefined;
     state.retryCount = 0;
 
     this.drainGroup(groupJid);
@@ -942,6 +1037,75 @@ export class GroupQueue {
   }
 
   /**
+   * Adopt a container that survived a daemon restart (spawned detached by the
+   * previous process). Claims a concurrency slot and registers folder/name so
+   * piping (sendMessage), eviction (targeted _close), and status all work.
+   * The caller (index.ts adoption tail) owns lifecycle: it polls the CLI PID
+   * and calls finalizeAdopted when the container exits.
+   */
+  adoptContainer(
+    groupJid: string,
+    containerName: string,
+    groupFolder: string,
+    pid: number,
+    startedMs: number,
+  ): void {
+    const state = this.getGroup(groupJid);
+    state.active = true;
+    state.adopted = true;
+    state.adoptedPid = pid;
+    state.idleWaiting = false;
+    state.idleSinceMs = undefined;
+    state.isTaskContainer = false;
+    state.containerName = containerName;
+    state.groupFolder = groupFolder;
+    state.activeSinceMs = startedMs;
+    state.lastOutputAt = Date.now();
+    this.activeCount++;
+    logger.info(
+      {
+        event: 'container.lifecycle.adopt',
+        groupJid,
+        containerName,
+        pid,
+        ageSec: Math.floor((Date.now() - startedMs) / 1000),
+      },
+      'Adopted running container from previous daemon',
+    );
+  }
+
+  /** Names of active message containers a successor daemon can adopt. */
+  getAdoptableContainerNames(): Set<string> {
+    const names = new Set<string>();
+    for (const [, state] of this.groups) {
+      if (state.active && !state.isTaskContainer && state.containerName) {
+        names.add(state.containerName);
+      }
+    }
+    return names;
+  }
+
+  /** Release the slot of an adopted container after it exits. */
+  finalizeAdopted(groupJid: string): void {
+    const state = this.groups.get(groupJid);
+    if (!state || !state.adopted) return;
+    if (state.active) {
+      state.active = false;
+      this.activeCount--;
+    }
+    state.adopted = undefined;
+    state.adoptedPid = undefined;
+    state.process = null;
+    state.containerName = null;
+    state.groupFolder = null;
+    state.idleWaiting = false;
+    state.idleSinceMs = undefined;
+    state.activeSinceMs = undefined;
+    state.lastOutputAt = undefined;
+    this.drainGroup(groupJid);
+  }
+
+  /**
    * Return a snapshot of queue state for the health endpoint. Tolerates
    * per-entry errors and always returns 200 OK data. Errors on individual
    * groups are captured in the top-level `error` field.
@@ -965,6 +1129,10 @@ export class GroupQueue {
             containerName: state.containerName,
             containerAgeSec,
             idleWaiting: state.idleWaiting,
+            idleForSec:
+              state.idleWaiting && state.idleSinceMs
+                ? Math.max(0, Math.floor((now - state.idleSinceMs) / 1000))
+                : 0,
             pendingMessages: state.pendingMessages,
             pendingTaskCount: state.pendingTasks.length,
             pipedMessageCount: state.pipedMessages
@@ -996,24 +1164,43 @@ export class GroupQueue {
     this.shuttingDown = true;
     this.stopLivenessChecker();
 
+    // Message containers are spawned detached with a sidecar state file and
+    // SURVIVE daemon exit — the next daemon adopts them (adoptContainer) and
+    // their in-flight work completes instead of being killed and re-run.
+    // Only task containers are stopped: their work is an in-process closure
+    // that cannot be adopted, and the scheduler re-runs them.
     const activeContainers: { name: string; proc: ChildProcess }[] = [];
+    let leftRunning = 0;
     for (const [, state] of this.groups) {
       if (state.process && !state.process.killed && state.containerName) {
-        activeContainers.push({
-          name: state.containerName,
-          proc: state.process,
-        });
+        if (state.isTaskContainer) {
+          activeContainers.push({
+            name: state.containerName,
+            proc: state.process,
+          });
+        } else {
+          leftRunning++;
+        }
+      } else if (state.adopted && state.containerName) {
+        leftRunning++;
       }
     }
 
+    if (leftRunning > 0) {
+      logger.info(
+        { leftRunning },
+        'GroupQueue shutdown: leaving message containers running for adoption',
+      );
+    }
+
     if (activeContainers.length === 0) {
-      logger.info('GroupQueue shutting down (no active containers)');
+      logger.info('GroupQueue shutting down (no task containers to stop)');
       return;
     }
 
     logger.info(
       { activeCount: activeContainers.length, gracePeriodMs },
-      'GroupQueue shutting down — stopping active containers',
+      'GroupQueue shutting down — stopping task containers',
     );
 
     // Graceful stop with timeout, then SIGKILL stragglers

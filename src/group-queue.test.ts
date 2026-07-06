@@ -446,4 +446,119 @@ describe('GroupQueue', () => {
     resolveProcess!();
     await vi.advanceTimersByTimeAsync(10);
   });
+
+  // --- LRU eviction (warm containers yield slots on demand) ---
+
+  it('evicts the longest-idle warm container when a slot is needed', async () => {
+    const fs = await import('fs');
+    const writeSpy = vi.mocked(fs.default.writeFileSync);
+    writeSpy.mockClear();
+
+    const completion: Record<string, () => void> = {};
+    const processMessages = vi.fn(async (chatJid: string) => {
+      await new Promise<void>((resolve) => {
+        completion[chatJid] = resolve;
+      });
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+
+    // Fill both slots (MAX_CONCURRENT_CONTAINERS = 2)
+    queue.enqueueMessageCheck('groupA@g.us');
+    queue.enqueueMessageCheck('groupB@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+
+    // Register container identities (closeStdin targets by name)
+    queue.registerProcess(
+      'groupA@g.us||root',
+      { pid: 111, killed: false, exitCode: null } as never,
+      'nanoclaw-a-1',
+      'folder-a',
+    );
+    queue.registerProcess(
+      'groupB@g.us||root',
+      { pid: 222, killed: false, exitCode: null } as never,
+      'nanoclaw-b-1',
+      'folder-b',
+    );
+
+    // A goes idle first, then B
+    queue.notifyIdle('groupA@g.us||root');
+    await vi.advanceTimersByTimeAsync(5);
+    queue.notifyIdle('groupB@g.us||root');
+
+    // Third group arrives — should park AND evict A (longest idle)
+    queue.enqueueMessageCheck('groupC@g.us');
+    await vi.advanceTimersByTimeAsync(5);
+
+    const closeWrites = writeSpy.mock.calls
+      .map((c) => String(c[0]))
+      .filter((f) => f.includes('_close'));
+    expect(closeWrites.some((f) => f.includes('_close-nanoclaw-a-1'))).toBe(
+      true,
+    );
+    expect(closeWrites.some((f) => f.includes('_close-nanoclaw-b-1'))).toBe(
+      false,
+    );
+    expect(queue.getStatus().waitingGroups).toContain('groupC@g.us||root');
+
+    // Victim exits -> slot frees -> C runs
+    completion['groupA@g.us']();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(processMessages).toHaveBeenCalledTimes(3);
+  });
+
+  it('never evicts a busy container', async () => {
+    const fs = await import('fs');
+    const writeSpy = vi.mocked(fs.default.writeFileSync);
+    writeSpy.mockClear();
+
+    const processMessages = vi.fn(async () => {
+      await new Promise<void>(() => undefined); // never completes
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+
+    queue.enqueueMessageCheck('groupA@g.us');
+    queue.enqueueMessageCheck('groupB@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+    // Neither goes idle. Third group must park without any _close write.
+    queue.enqueueMessageCheck('groupC@g.us');
+    await vi.advanceTimersByTimeAsync(5);
+
+    const closeWrites = writeSpy.mock.calls
+      .map((c) => String(c[0]))
+      .filter((f) => f.includes('_close'));
+    expect(closeWrites).toHaveLength(0);
+    expect(queue.getStatus().waitingGroups).toContain('groupC@g.us||root');
+  });
+
+  // --- Adoption accounting ---
+
+  it('adoptContainer claims a slot and finalizeAdopted releases it', () => {
+    queue.adoptContainer(
+      'chat@g.us||1234.5678',
+      'nanoclaw-grader-99',
+      'grader',
+      4242,
+      Date.now() - 60_000,
+    );
+    let status = queue.getStatus();
+    expect(status.activeCount).toBe(1);
+    expect(status.groupStates['chat@g.us||1234.5678'].active).toBe(true);
+    expect(status.groupStates['chat@g.us||1234.5678'].containerName).toBe(
+      'nanoclaw-grader-99',
+    );
+
+    queue.finalizeAdopted('chat@g.us||1234.5678');
+    status = queue.getStatus();
+    expect(status.activeCount).toBe(0);
+    expect(status.groupStates['chat@g.us||1234.5678'].active).toBe(false);
+  });
+
+  it('finalizeAdopted is a no-op for non-adopted groups', () => {
+    queue.finalizeAdopted('never-adopted@g.us||root');
+    expect(queue.getStatus().activeCount).toBe(0);
+  });
+
 });

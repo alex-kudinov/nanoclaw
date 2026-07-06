@@ -63,20 +63,33 @@ Written 2026-07-06, immediately after the noop-swarm incident (see commit
 - **buildkit squats 4 GB forever** once any image build runs. Stop it after
   builds (`container builder stop`); it restarts on demand.
 
-## Target design — lean, in phases
+## Target design — lean, in phases (ALL THREE IMPLEMENTED 2026-07-06)
 
 Keep the daemon, the queue, the DB, the session model. Change the unit of
-execution, not the orchestration.
+execution, not the orchestration. Status: shipped and live-verified on the
+mini the night of 2026-07-06 (eviction test, mid-run daemon kill + adoption
+drill in #gru-heartbeat, pipe-into-adopted, finalize-on-exit).
 
-### Phase 1 — LRU eviction instead of idle timers (small patch)
+### Phase 1 — warm containers + LRU eviction (SHIPPED)
 
-Let containers stay warm indefinitely; when the queue needs a slot and none
-is free, evict the longest-idle container (the `notifyIdle` hook already
-exists). Benefits: hot groups (grader mid-session) keep their warm session
-and skip the cold start; nothing squats, because eviction is on demand, not
-on a timer. This dissolves the 30 s-vs-5 min tension entirely.
+Default idle window is now 20 min (IDLE_TIMEOUT default; the 30s plist
+override was removed — the grader keeps its per-group 30s for one-shot
+threads). Warm containers no longer squat: at the concurrency limit the
+queue evicts the longest-idle warm container (container.lifecycle.evict)
+and the parked group takes the slot when it exits. Busy containers are
+never preempted. Closing is per-container now: the host writes a targeted
+`_close-<containerName>` sentinel (CONTAINER_NAME env tells the runner its
+own name), with the bare `_close` only as a folder-sole fallback — the
+cross-thread close race is gone. The container-side wrapper idle backstop
+follows the host window (+2 min) instead of a fixed 7 min.
 
-### Phase 2 — right-size the VM allocation per group
+### Phase 2 — right-size the VM allocation per group (PLUMBING SHIPPED)
+
+`containerConfig.memory` / `containerConfig.cpus` per group now feed `-m` /
+`-c` (global defaults still CONTAINER_MEMORY/CONTAINER_CPUS envs → 768M/2).
+Every run samples /proc/meminfo every 20s (MEMORY_SAMPLE_INTERVAL_MS) and
+logs `container.lifecycle.peak_memory` at exit — collect a week of peaks,
+then set per-group values with margin. Numbers deliberately NOT guessed.
 
 REJECTED ALTERNATIVE, kept for the record: "host-process runtime for
 trusted minions" was proposed and dropped. There is no trusted minion —
@@ -100,13 +113,27 @@ plus git/Syncthing history is the defense inside that boundary. And the
 hard ceiling on the mini is the 18–19 GB base load — a diet pass there
 buys more slots than any container tuning.
 
-### Phase 3 — decouple container lifetime from daemon lifetime (only if
-dev-restart churn stays high)
+### Phase 3 — detached container lifetime + adopt-on-boot (SHIPPED)
 
-Run containers detached; the daemon re-attaches by name on boot (IPC is
-already file-based under `data/ipc/`). Restarts stop killing in-flight
-grades, which removes the cursor-rollback/recovery-herd class of problems
-at the root rather than compensating for it.
+Containers spawn detached (own process group; launchd AbandonProcessGroup)
+with stdout/stderr in FILES under `data/containers/` and a sidecar JSON
+carrying their identity (compositeKey, thread, session, log paths, pid,
+routed-output offset). The daemon tails the file (LogTail) instead of a
+pipe — identical parsing, but the stream survives daemon death. On boot,
+`adoptOrphanContainers()` re-attaches to live sidecars: claims a queue
+slot, resumes the tail from the last routed offset (no duplicate posts),
+routes outputs to the original thread, and finalizes when the CLI PID
+dies. Dead sidecars are swept; `cleanupOrphans` spares adoptables (boot)
+and queue-owned message containers (shutdown). Task containers are still
+stopped at shutdown — their work is an in-process closure, and the
+scheduler re-runs them. Restarts no longer kill in-flight work, which
+removes the cursor-rollback/recovery-herd class of problems at the root.
+
+Sidecars are HOST-LOCAL: hostname-stamped, foreign-host and sync-conflict
+files ignored, and `data/`, `store/`, `logs/` are excluded from Syncthing
+at the ~/dev folder root (the nested NanoClaw/.stignore was inert — only
+folder-root ignores count). Update the other machines' ~/dev/.stignore the
+same way.
 
 ### Non-goals
 

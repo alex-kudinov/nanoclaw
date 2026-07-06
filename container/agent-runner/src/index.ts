@@ -49,6 +49,14 @@ interface ContainerOutput {
 
 const IPC_INPUT_DIR = '/workspace/ipc/input';
 const IPC_INPUT_CLOSE_SENTINEL = path.join(IPC_INPUT_DIR, '_close');
+// Targeted close: the host writes `_close-<containerName>` when it wants THIS
+// container to exit — the bare `_close` is consumed by whichever same-folder
+// container polls first (the documented cross-thread race), so the host only
+// writes it when this folder has a single active container.
+const CONTAINER_NAME = process.env.CONTAINER_NAME || '';
+const IPC_INPUT_CLOSE_TARGETED = CONTAINER_NAME
+  ? path.join(IPC_INPUT_DIR, `_close-${CONTAINER_NAME}`)
+  : null;
 const IPC_ACK_DIR = '/workspace/ipc/ack';
 const IPC_POLL_MS = 500;
 
@@ -113,6 +121,10 @@ async function readStdin(): Promise<string> {
 // ── IPC helpers ──────────────────────────────────────────────────────────────
 
 function shouldClose(): boolean {
+  if (IPC_INPUT_CLOSE_TARGETED && fs.existsSync(IPC_INPUT_CLOSE_TARGETED)) {
+    try { fs.unlinkSync(IPC_INPUT_CLOSE_TARGETED); } catch { /* ignore */ }
+    return true;
+  }
   if (fs.existsSync(IPC_INPUT_CLOSE_SENTINEL)) {
     try { fs.unlinkSync(IPC_INPUT_CLOSE_SENTINEL); } catch { /* ignore */ }
     return true;
@@ -595,6 +607,9 @@ async function main(): Promise<void> {
 
   fs.mkdirSync(IPC_INPUT_DIR, { recursive: true });
   try { fs.unlinkSync(IPC_INPUT_CLOSE_SENTINEL); } catch { /* ignore */ }
+  if (IPC_INPUT_CLOSE_TARGETED) {
+    try { fs.unlinkSync(IPC_INPUT_CLOSE_TARGETED); } catch { /* ignore */ }
+  }
 
   try {
     const tokenFailed = (r: RunAgentResult): boolean =>

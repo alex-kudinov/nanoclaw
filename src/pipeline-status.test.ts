@@ -55,6 +55,7 @@ function baseInput(
           containerName: 'nanoclaw-sales',
           containerAgeSec: 14,
           idleWaiting: false,
+        idleForSec: 0,
           pendingMessages: false,
           pendingTaskCount: 0,
           pipedMessageCount: 1,
