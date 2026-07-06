@@ -130,7 +130,7 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 
 ### Lesson 31: Payment plan — only when explicitly asked
 **Problem:** Consolidates prior lessons on not offering the payment plan by default (former Lessons 58, 59, 82).
-**Rule:** Never offer the $500/mo × 3 payment plan proactively — surface it only when the lead explicitly asks for a payment plan; it is a last resort, not a default. When a lead asks about payment flexibility generally, offer module-by-module enrollment ($399/module) as the flexible alternative. In ready-to-enroll replies, direct to the program page only — no unprompted payment-plan mention.
+**Rule:** Never offer the monthly payment plan proactively — surface it only when the lead explicitly asks for a payment plan; it is a last resort, not a default. The plan is **program-specific** — take the current terms from the program page / products.json `installments`, never a remembered figure (e.g., the MCS Practicum is 3 × $999; ACC has no plan). When a lead asks about payment flexibility generally, offer module-by-module enrollment ($399/module) as the flexible alternative. In ready-to-enroll replies, direct to the program page only — no unprompted payment-plan mention.
 
 ### Lesson 32: CPL-path lead → drop Standard Path comparison noise entirely
 **Problem:** MCS / Mentor Coaching Foundations ($299, CPL path, self-paced) — experienced mentor coach with ACC, PCC, MCC mentoring background asking about cost and self-paced options.
@@ -157,7 +157,7 @@ Cherie's original correction ("BARS/Markers must come from ICF, never embedded")
 
 ### Lesson 37: Custom net-price split → flag mismatch, ask before drafting
 **Problem:** Mentor Coach Training (Standard Path), $1,698 net (list $1,997 minus $299 Foundations credit). Lead asked to split payment due to MacBook crash / solopreneur cash flow.
-**Rule:** When a lead requests a split payment and the standard $500x3 plan doesn't align with the agreed net price, do not propose a flat 3-equal-installment split. Instead, flag the mismatch and ask for guidance before drafting. Alex's preferred structure for Deborah's $1,698 was two unequal installments: $699 today and $999 one month later — not three equal payments.
+**Rule:** When a lead requests a split payment and the standard installment plan doesn't align with the agreed net price, do not propose a flat 3-equal-installment split. Instead, flag the mismatch and ask for guidance before drafting. Alex's preferred structure for Deborah's $1,698 was two unequal installments: $699 today and $999 one month later — not three equal payments.
 
 ### Lesson 38: Payment-help — surface the exact payment link verbatim; cut 'you'll hear from us'
 **Problem:** Justin Speaks, existing student paying Invoice TCA-358-PL for Mentor Coach Training (MCS Standard Path, Inaugural Cohort A) at $1,997.
