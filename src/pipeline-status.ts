@@ -106,8 +106,9 @@ function activeSection(
     ];
     if (s.pipedMessageCount > 0) tags.push(`piped:${s.pipedMessageCount}`);
     if (s.retryCount > 0) tags.push(`retry:${s.retryCount}`);
+    const what = s.spawnSnippet ? `  — "${s.spawnSnippet}"` : '';
     lines.push(
-      `  • ${nameForKey(key, groups).padEnd(14)} age ${ageStr(s.containerAgeSec)}  ${tags.join('  ')}`,
+      `  • ${nameForKey(key, groups).padEnd(14)} age ${ageStr(s.containerAgeSec)}  ${tags.join('  ')}${what}`,
     );
   }
   return lines;

@@ -85,10 +85,7 @@ import {
 import { runReaper as runWebhookInboxReaper } from './webhook-inbox-reaper.js';
 import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
 import { startHeartbeat } from './heartbeat.js';
-import {
-  handleVetoReaction,
-  startAutonomySweep,
-} from './autonomy-hold.js';
+import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
 import { runNameReaper } from './contador-name-reaper.js';
 import { runChaosReconcile } from './chaos-reconciler.js';
 import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
@@ -798,8 +795,14 @@ async function startMessageLoop(): Promise<void> {
               );
           }
 
-          // Enqueue for a new container (thread-aware)
-          queue.enqueueMessageCheck(chatJid, threadTs);
+          // Enqueue for a new container (thread-aware). The triggering
+          // message's text becomes the status-line snippet ("what is this
+          // container working on").
+          queue.enqueueMessageCheck(
+            chatJid,
+            threadTs,
+            relevantMessages[relevantMessages.length - 1]?.content,
+          );
         }
       }
     } catch (err) {
@@ -1558,8 +1561,11 @@ async function main(): Promise<void> {
     );
     if (slackForAutonomy) {
       const autonomyDeps = {
-        sendMessage: (jid: string, text: string, opts?: { threadTs?: string }) =>
-          slackForAutonomy.sendMessage(jid, text, opts),
+        sendMessage: (
+          jid: string,
+          text: string,
+          opts?: { threadTs?: string },
+        ) => slackForAutonomy.sendMessage(jid, text, opts),
         injectMessage: (msg: NewMessage) => storeMessage(msg),
         registeredGroups: () => registeredGroups,
       };

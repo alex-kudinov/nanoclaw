@@ -51,6 +51,7 @@ export interface GroupStatusEntry {
   idleForSec: number;
   adopted: boolean;
   lastOutputAgeSec: number;
+  spawnSnippet: string | null;
 }
 
 export interface QueueStatus {
@@ -87,6 +88,9 @@ interface GroupState {
    *  index.ts, so the liveness checker must not double-clean it. */
   adopted?: boolean;
   adoptedPid?: number;
+  /** Snippet of the message that spawned (or was last piped into) this
+   *  container — shown in pipeline status so "processing" says WHAT. */
+  spawnSnippet?: string;
 }
 
 /** An adopted container with no IPC output for this long is treated as idle
@@ -95,6 +99,19 @@ const ADOPTED_STALE_OUTPUT_MS = parseInt(
   process.env.ADOPTED_STALE_OUTPUT_MS || '120000',
   10,
 );
+
+/** One status-line-friendly snippet of a triggering message: markers and
+ *  whitespace collapsed, hard-capped. */
+export function makeSnippet(text: string, max = 56): string {
+  const clean = text
+    .replace(/\[HANDOFF:[^\]]*\]/g, '')
+    .replace(/\[SOURCE:[^\]]*\]/g, '')
+    .replace(/^✅ Approved by ([^.]+)\..*$/s, '✅ approved by $1')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (clean.length <= max) return clean;
+  return clean.slice(0, max).replace(/\s+\S*$/, '') + '…';
+}
 
 export class GroupQueue {
   private groups = new Map<string, GroupState>();
@@ -179,11 +196,18 @@ export class GroupQueue {
    * Enqueue a message check for a (chatJid, threadTs) pair.
    * Internal key: `${chatJid}||${threadTs || 'root'}`.
    */
-  enqueueMessageCheck(chatJid: string, threadTs?: string): void {
+  enqueueMessageCheck(
+    chatJid: string,
+    threadTs?: string,
+    spawnSnippet?: string,
+  ): void {
     const groupJid = `${chatJid}||${threadTs || 'root'}`;
     if (this.shuttingDown) return;
 
     const state = this.getGroup(groupJid);
+    // What this container is working on, for pipeline status. The triggering
+    // message at spawn; refreshed by each piped message while running.
+    if (spawnSnippet) state.spawnSnippet = makeSnippet(spawnSnippet);
 
     if (state.active) {
       state.pendingMessages = true;
@@ -352,6 +376,7 @@ export class GroupQueue {
         timestampMs,
         ipcPath: filepath,
       });
+      state.spawnSnippet = makeSnippet(text);
 
       // Reset idle timer so the container isn't closed while processing
       // freshly piped work. Wrap in try/catch: if the callback throws
@@ -614,6 +639,7 @@ export class GroupQueue {
       }
       state.process = null;
       state.containerName = null;
+    state.spawnSnippet = undefined;
       state.groupFolder = null;
       state.resetIdleTimer = undefined;
       state.activeSinceMs = undefined;
@@ -651,6 +677,7 @@ export class GroupQueue {
       state.isTaskContainer = false;
       state.process = null;
       state.containerName = null;
+    state.spawnSnippet = undefined;
       state.groupFolder = null;
       state.resetIdleTimer = undefined;
       state.activeSinceMs = undefined;
@@ -942,6 +969,7 @@ export class GroupQueue {
     state.isTaskContainer = false;
     state.process = null;
     state.containerName = null;
+    state.spawnSnippet = undefined;
     state.groupFolder = null;
     state.resetIdleTimer = undefined;
     state.activeSinceMs = undefined;
@@ -1139,6 +1167,7 @@ export class GroupQueue {
     state.adoptedPid = undefined;
     state.process = null;
     state.containerName = null;
+    state.spawnSnippet = undefined;
     state.groupFolder = null;
     state.idleWaiting = false;
     state.idleSinceMs = undefined;
@@ -1186,6 +1215,7 @@ export class GroupQueue {
             lastOutputAgeSec: state.lastOutputAt
               ? Math.max(0, Math.floor((now - state.lastOutputAt) / 1000))
               : 0,
+            spawnSnippet: state.spawnSnippet ?? null,
           };
         } catch (err) {
           logger.error({ groupJid, err }, 'getStatus entry build failed');

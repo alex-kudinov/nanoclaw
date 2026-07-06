@@ -58,6 +58,7 @@ function baseInput(
           idleForSec: 0,
           adopted: false,
           lastOutputAgeSec: 0,
+          spawnSnippet: 'rerun this submission for Justin',
           pendingMessages: false,
           pendingTaskCount: 0,
           pipedMessageCount: 1,
