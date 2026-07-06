@@ -153,6 +153,48 @@ function createSchema(database: Database.Database): void {
       last_user_agent TEXT,
       last_notified_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS autonomy_trust (
+      group_folder TEXT NOT NULL,
+      category TEXT NOT NULL,
+      level INTEGER NOT NULL DEFAULT 1,
+      streak INTEGER NOT NULL DEFAULT 0,
+      drafts INTEGER NOT NULL DEFAULT 0,
+      approved_clean INTEGER NOT NULL DEFAULT 0,
+      corrected INTEGER NOT NULL DEFAULT 0,
+      vetoed INTEGER NOT NULL DEFAULT 0,
+      auto_approved INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT,
+      PRIMARY KEY (group_folder, category)
+    );
+
+    CREATE TABLE IF NOT EXISTS autonomy_draft_events (
+      draft_id TEXT PRIMARY KEY,
+      chat_jid TEXT NOT NULL,
+      group_folder TEXT NOT NULL,
+      category TEXT NOT NULL,
+      outcome TEXT NOT NULL DEFAULT 'pending',
+      draft_ts TEXT NOT NULL,
+      thread_ts TEXT,
+      resolved_ts TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_autonomy_events_pending
+      ON autonomy_draft_events(outcome, group_folder);
+
+    CREATE TABLE IF NOT EXISTS autonomy_pending (
+      draft_id TEXT PRIMARY KEY,
+      chat_jid TEXT NOT NULL,
+      group_folder TEXT NOT NULL,
+      category TEXT NOT NULL,
+      thread_ts TEXT,
+      draft_ts TEXT NOT NULL,
+      notice_ts TEXT,
+      expires_at TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_autonomy_pending_status
+      ON autonomy_pending(status, expires_at);
   `);
 
   // Add context_mode column if it doesn't exist (migration for existing DBs)
@@ -1439,4 +1481,236 @@ function recordEmailOpenUnsafe(
     firstOpenedAt: firstOpened,
     shouldNotify,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Autonomy ladder (per-category trust + L2 hold-and-send). Logic lives in
+// autonomy-ledger.ts / autonomy-hold.ts; only the SQL lives here.
+// ---------------------------------------------------------------------------
+
+export interface AutonomyTrustRow {
+  group_folder: string;
+  category: string;
+  level: number;
+  streak: number;
+  drafts: number;
+  approved_clean: number;
+  corrected: number;
+  vetoed: number;
+  auto_approved: number;
+  updated_at: string | null;
+}
+
+export interface AutonomyDraftEventRow {
+  draft_id: string;
+  chat_jid: string;
+  group_folder: string;
+  category: string;
+  outcome: string;
+  draft_ts: string;
+  thread_ts: string | null;
+  resolved_ts: string | null;
+}
+
+export interface AutonomyPendingRow {
+  draft_id: string;
+  chat_jid: string;
+  group_folder: string;
+  category: string;
+  thread_ts: string | null;
+  draft_ts: string;
+  notice_ts: string | null;
+  expires_at: string;
+  status: string;
+  created_at: string;
+}
+
+export function getAutonomyTrust(
+  groupFolder: string,
+  category: string,
+): AutonomyTrustRow | undefined {
+  return db
+    .prepare(
+      'SELECT * FROM autonomy_trust WHERE group_folder = ? AND category = ?',
+    )
+    .get(groupFolder, category) as AutonomyTrustRow | undefined;
+}
+
+export function listAutonomyTrust(): AutonomyTrustRow[] {
+  return db
+    .prepare('SELECT * FROM autonomy_trust ORDER BY group_folder, category')
+    .all() as AutonomyTrustRow[];
+}
+
+export function upsertAutonomyTrust(row: AutonomyTrustRow): void {
+  db.prepare(
+    `INSERT OR REPLACE INTO autonomy_trust
+     (group_folder, category, level, streak, drafts, approved_clean,
+      corrected, vetoed, auto_approved, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    row.group_folder,
+    row.category,
+    row.level,
+    row.streak,
+    row.drafts,
+    row.approved_clean,
+    row.corrected,
+    row.vetoed,
+    row.auto_approved,
+    row.updated_at,
+  );
+}
+
+export function insertAutonomyDraftEvent(ev: AutonomyDraftEventRow): void {
+  db.prepare(
+    `INSERT OR IGNORE INTO autonomy_draft_events
+     (draft_id, chat_jid, group_folder, category, outcome, draft_ts, thread_ts, resolved_ts)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    ev.draft_id,
+    ev.chat_jid,
+    ev.group_folder,
+    ev.category,
+    ev.outcome,
+    ev.draft_ts,
+    ev.thread_ts,
+    ev.resolved_ts,
+  );
+}
+
+export function hasAutonomyDraftEvent(draftId: string): boolean {
+  return (
+    db
+      .prepare('SELECT 1 FROM autonomy_draft_events WHERE draft_id = ?')
+      .get(draftId) !== undefined
+  );
+}
+
+export function getPendingAutonomyDraftEvents(
+  groupFolder: string,
+): AutonomyDraftEventRow[] {
+  return db
+    .prepare(
+      `SELECT * FROM autonomy_draft_events
+       WHERE outcome = 'pending' AND group_folder = ?
+       ORDER BY draft_ts`,
+    )
+    .all(groupFolder) as AutonomyDraftEventRow[];
+}
+
+export function resolveAutonomyDraftEvent(
+  draftId: string,
+  outcome: string,
+  resolvedTs: string,
+): void {
+  db.prepare(
+    `UPDATE autonomy_draft_events
+     SET outcome = ?, resolved_ts = ?
+     WHERE draft_id = ? AND outcome = 'pending'`,
+  ).run(outcome, resolvedTs, draftId);
+}
+
+export function createAutonomyPending(row: AutonomyPendingRow): void {
+  db.prepare(
+    `INSERT OR IGNORE INTO autonomy_pending
+     (draft_id, chat_jid, group_folder, category, thread_ts, draft_ts,
+      notice_ts, expires_at, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    row.draft_id,
+    row.chat_jid,
+    row.group_folder,
+    row.category,
+    row.thread_ts,
+    row.draft_ts,
+    row.notice_ts,
+    row.expires_at,
+    row.status,
+    row.created_at,
+  );
+}
+
+export function setAutonomyPendingStatus(
+  draftId: string,
+  status: string,
+): void {
+  db.prepare(
+    `UPDATE autonomy_pending SET status = ? WHERE draft_id = ? AND status = 'pending'`,
+  ).run(status, draftId);
+}
+
+export function setAutonomyPendingNotice(
+  draftId: string,
+  noticeTs: string,
+): void {
+  db.prepare('UPDATE autonomy_pending SET notice_ts = ? WHERE draft_id = ?').run(
+    noticeTs,
+    draftId,
+  );
+}
+
+export function getOpenAutonomyPendings(): AutonomyPendingRow[] {
+  return db
+    .prepare(
+      `SELECT * FROM autonomy_pending WHERE status = 'pending' ORDER BY expires_at`,
+    )
+    .all() as AutonomyPendingRow[];
+}
+
+export function findAutonomyPendingByTs(
+  ts: string,
+): AutonomyPendingRow | undefined {
+  return db
+    .prepare(
+      `SELECT * FROM autonomy_pending
+       WHERE status = 'pending' AND (draft_id = ? OR notice_ts = ?)`,
+    )
+    .get(ts, ts) as AutonomyPendingRow | undefined;
+}
+
+/**
+ * Thread-scoped scan used by the autonomy ledger to resolve a draft's
+ * outcome. threadTs null = root-level messages of the chat (drafts posted
+ * outside an entity thread). Includes bot flags — unlike getMessagesSince.
+ */
+export function getAutonomyThreadMessagesAfter(
+  chatJid: string,
+  threadTs: string | null,
+  afterTs: string,
+): NewMessage[] {
+  const threadCond =
+    threadTs === null ? 'thread_ts IS NULL' : '(thread_ts = ? OR id = ?)';
+  const params: unknown[] =
+    threadTs === null
+      ? [chatJid, afterTs]
+      : [chatJid, afterTs, threadTs, threadTs];
+  return db
+    .prepare(
+      `SELECT id, chat_jid, sender, sender_name, content, timestamp,
+              is_from_me, is_bot_message, from_group, thread_ts
+       FROM messages
+       WHERE chat_jid = ? AND timestamp > ? AND ${threadCond}
+       ORDER BY timestamp`,
+    )
+    .all(...params) as NewMessage[];
+}
+
+/**
+ * Bot draft posts in a channel since a watermark — the ledger's new-draft
+ * discovery query. Marker filtering happens in the ledger (policy, not SQL).
+ */
+export function getBotMessagesSince(
+  chatJid: string,
+  sinceTimestamp: string,
+): NewMessage[] {
+  return db
+    .prepare(
+      `SELECT id, chat_jid, sender, sender_name, content, timestamp,
+              is_from_me, is_bot_message, from_group, thread_ts
+       FROM messages
+       WHERE chat_jid = ? AND timestamp > ? AND is_from_me = 1
+       ORDER BY timestamp`,
+    )
+    .all(chatJid, sinceTimestamp) as NewMessage[];
 }

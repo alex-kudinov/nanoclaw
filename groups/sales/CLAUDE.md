@@ -22,6 +22,8 @@ REQUIRE_APPROVAL=1
 
 When `1`: MUST post draft and wait for "Approved" before executing. When `0`: execute after posting summary.
 
+Every draft post MUST carry a `Category: {slug}` line (see WORKFLOWS.md Draft Format) — the host's autonomy ladder tracks approval streaks per category, and a missing or wrong category corrupts the trust ledger. An approval reading "✅ Auto-approved (autonomy L2 …)" is a valid approval: proceed with the normal handoff flow, but if that draft was already sent or superseded, reply `[ALREADY-HANDLED]` instead of sending again.
+
 ## Knowledge
 
 Read `/workspace/extra/knowledge/KNOWLEDGE.md` before processing any lead — full list of programs, pricing, timelines, FAQs.

@@ -85,6 +85,10 @@ import {
 import { runReaper as runWebhookInboxReaper } from './webhook-inbox-reaper.js';
 import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
 import { startHeartbeat } from './heartbeat.js';
+import {
+  handleVetoReaction,
+  startAutonomySweep,
+} from './autonomy-hold.js';
 import { runNameReaper } from './contador-name-reaper.js';
 import { runChaosReconcile } from './chaos-reconciler.js';
 import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
@@ -1541,6 +1545,29 @@ async function main(): Promise<void> {
       (c): c is SlackChannel => c instanceof SlackChannel,
     );
     slackForIncidents?.registerApprovalListener((ts) => isIncidentProposal(ts));
+  }
+
+  // Autonomy ladder — per-category trust ledger + L2 hold-and-send. The
+  // 60s sweep derives draft outcomes from stored messages, promotes/demotes
+  // categories, and auto-approves held L2 drafts after the veto window.
+  // 👎 on a held draft vetoes it and demotes the category. See
+  // autonomy-policy.ts for the ladder rules.
+  {
+    const slackForAutonomy = channels.find(
+      (c): c is SlackChannel => c instanceof SlackChannel,
+    );
+    if (slackForAutonomy) {
+      const autonomyDeps = {
+        sendMessage: (jid: string, text: string, opts?: { threadTs?: string }) =>
+          slackForAutonomy.sendMessage(jid, text, opts),
+        injectMessage: (msg: NewMessage) => storeMessage(msg),
+        registeredGroups: () => registeredGroups,
+      };
+      slackForAutonomy.registerRejectListener((ts, reactor) =>
+        handleVetoReaction(autonomyDeps, ts, reactor),
+      );
+      startAutonomySweep(autonomyDeps);
+    }
   }
 
   // Webhook-inbox reaper — every 5 min, retries received/failed/stale-dispatched

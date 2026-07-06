@@ -30,6 +30,7 @@ import {
 import { logger } from './logger.js';
 import { convertMarkdownToEmailHtml } from './markdown-to-email-html.js';
 import { checkRecipient } from './email-recipient-guard.js';
+import { checkContent } from './email-content-guard.js';
 
 /** Payload shape written by container MCP tools. */
 export interface GmailIpcPayload {
@@ -156,6 +157,22 @@ export async function handleGmailReply(
 ): Promise<void> {
   if (!data.threadId || !data.body) {
     logger.warn({ data }, 'gmail_reply: missing threadId or body');
+    return;
+  }
+
+  // Content guard (P2): discount offers, non-whitelisted links, unfilled
+  // placeholders. Runs on the agent's raw composition, before conversion.
+  const replyContentCheck = checkContent(data.subject || '', data.body);
+  if (!replyContentCheck.ok) {
+    logger.error(
+      { threadId: data.threadId, violations: replyContentCheck.violations },
+      'gmail_reply BLOCKED: content failed validation',
+    );
+    if (postToChief) {
+      await postToChief(
+        `🚫 [EMAIL BLOCKED] reply thread=${data.threadId} — content guard: ${replyContentCheck.violations.join('; ')}. NOT sent; fix the draft and resend.`,
+      );
+    }
     return;
   }
 
@@ -379,6 +396,26 @@ export async function handleGmailSend(
     if (postToChief) {
       await postToChief(
         `🚫 [EMAIL BLOCKED] to=${data.to} subject=${data.subject} — ${recipientCheck.reason}. NOT sent; verify the recipient and resend.`,
+      );
+    }
+    return undefined;
+  }
+
+  // Content guard (P2): discount offers, non-whitelisted links, unfilled
+  // placeholders. Runs on the agent's raw composition, before conversion.
+  const contentCheck = checkContent(data.subject, data.body);
+  if (!contentCheck.ok) {
+    logger.error(
+      {
+        to: data.to,
+        subject: data.subject,
+        violations: contentCheck.violations,
+      },
+      'gmail_send BLOCKED: content failed validation',
+    );
+    if (postToChief) {
+      await postToChief(
+        `🚫 [EMAIL BLOCKED] to=${data.to} subject=${data.subject} — content guard: ${contentCheck.violations.join('; ')}. NOT sent; fix the draft and resend.`,
       );
     }
     return undefined;

@@ -9,6 +9,10 @@ import fs from 'fs';
 import path from 'path';
 
 import { logger } from './logger.js';
+import {
+  checkLessonConflict,
+  type ConflictNotifier,
+} from './lesson-conflict.js';
 
 // ---------------------------------------------------------------------------
 // learn_lesson — existing single-agent handler
@@ -28,6 +32,7 @@ export function isLearnIpcType(type: string): boolean {
 
 export async function handleLearnLesson(
   data: LearnLessonPayload,
+  notify?: ConflictNotifier,
 ): Promise<void> {
   if (!data.lesson) {
     logger.warn({ data }, 'learn_lesson: missing lesson text');
@@ -63,6 +68,15 @@ export async function handleLearnLesson(
   logger.info(
     { groupFolder: data.groupFolder, lessonNumber: nextNum },
     'Lesson appended to LEARNED.md',
+  );
+
+  // Contradiction check — fire-and-forget; the lesson is already captured.
+  void checkLessonConflict(
+    data.groupFolder,
+    nextNum,
+    title,
+    data.lesson,
+    notify,
   );
 }
 
@@ -134,6 +148,7 @@ function formatAgentName(folder: string): string {
 
 export async function handleRouteLesson(
   data: RouteLessonPayload,
+  notify?: ConflictNotifier,
 ): Promise<{ updated: string[]; created: string[]; failed: string[] }> {
   const result = {
     updated: [] as string[],
@@ -208,6 +223,9 @@ export async function handleRouteLesson(
       { agent, lessonNumber: nextNum, title: data.title },
       'Lesson routed to agent LEARNED.md',
     );
+
+    // Contradiction check — fire-and-forget; the lesson is already captured.
+    void checkLessonConflict(agent, nextNum, data.title, data.rule, notify);
   }
 
   return result;

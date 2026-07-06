@@ -437,10 +437,25 @@ export function startIpcWatcher(deps: IpcDeps): void {
               } else if (isLearnIpcType(data.type)) {
                 // Learning loop: append lesson to LEARNED.md
                 fs.unlinkSync(filePath);
-                await handleLearnLesson({
-                  ...data,
-                  groupFolder: sourceGroup,
-                } as LearnLessonPayload);
+                // Conflict notifier: post adjudication asks to the lesson
+                // target's own channel (falls back to log-only when the
+                // group has no registered channel).
+                const notifyConflict = async (
+                  agentFolder: string,
+                  text: string,
+                ): Promise<void> => {
+                  const entry = Object.entries(registeredGroups).find(
+                    ([, g]) => g.folder === agentFolder,
+                  );
+                  if (entry) await deps.sendMessage(entry[0], text);
+                };
+                await handleLearnLesson(
+                  {
+                    ...data,
+                    groupFolder: sourceGroup,
+                  } as LearnLessonPayload,
+                  notifyConflict,
+                );
                 spawnMergeLessons();
               } else if (isRouteLessonType(data.type)) {
                 // Knowledge management: chief routes lessons to target agents
@@ -455,7 +470,16 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     ...data,
                     groupFolder: sourceGroup,
                   } as RouteLessonPayload;
-                  await handleRouteLesson(routedPayload);
+                  const notifyRouteConflict = async (
+                    agentFolder: string,
+                    text: string,
+                  ): Promise<void> => {
+                    const entry = Object.entries(registeredGroups).find(
+                      ([, g]) => g.folder === agentFolder,
+                    );
+                    if (entry) await deps.sendMessage(entry[0], text);
+                  };
+                  await handleRouteLesson(routedPayload, notifyRouteConflict);
                   // T12: if the lesson targets mailman and looks like a
                   // classification rule, backfill past email_classifications
                   // rows that match the pattern. Errors are swallowed — the
