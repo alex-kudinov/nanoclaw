@@ -77,8 +77,10 @@ The user says "calibrate <assignment>" or the assignment's `calibration_status` 
 **Step 1 - Gather.** You need the student name, the assignment reference, and the
 submission text (pasted or attached). If any is missing, ask and stop. Never guess.
 
-**Step 2 - Resolve + load record.** Match the reference against `registry.json` codes
-and `aliases`. If ambiguous (e.g. "acc eval" could be `acc-bars` or `eval-feedback`),
+**Step 2 - Resolve + load record.** Read `registry.json` AND
+`GRADING/students/<slug>/record.json` in the SAME turn (parallel tool calls —
+the slug comes from the student name, no need to wait for the registry).
+Match the reference against `registry.json` codes and `aliases`. If ambiguous (e.g. "acc eval" could be `acc-bars` or `eval-feedback`),
 list the candidates and ask. Compute `<slug>` (lowercased name, spaces to hyphens) and
 read `GRADING/students/<slug>/record.json` (it may not exist yet).
 - Prior attempt with `latest_verdict: NO PASS` -> this is a RESUBMITTAL. Load the prior
@@ -86,8 +88,13 @@ read `GRADING/students/<slug>/record.json` (it may not exist yet).
   remediation. NEVER grade a resubmit without reading the prior fail_criteria first.
 - Prior attempt `PASS` -> confirm with the user before re-grading.
 
-**Step 3 - Load context.** Read the grader, assignment, calibration, and (only if a
-call is close) the specific rubric section, per "The GRADING system" list above. If
+**Step 3 - Load context.** ONE read: `GRADING/packs/<code>.md` — it bundles the
+voice rules, grader calibration, assignment prompt, course material, and
+precedent. Do NOT open the voice/grader/assignment/material files separately
+unless the pack is missing (then fall back per "The GRADING system" list).
+Only a close call justifies additionally opening the specific rubric section.
+Latency is a feature here: every avoidable tool round-trip is ~15s the student
+waits; batch independent reads into one turn throughout. If
 `self_contained` is false (a recording-referenced assignment), grade structure /
 calibration / language / internal evidence-anchoring from the submission alone, and
 note that evidence accuracy was not verified against the source unless a reference
@@ -100,10 +107,12 @@ are not fail criteria. On a resubmittal, also mark each prior criterion `remedia
 or `open`; PASS only when all prior gaps close and nothing new fails. Before finalizing
 a NO PASS, second-pass check: no invented requirement in the resubmit instructions.
 
-**Step 5 - Write verdict, persist, log.** Post the verdict + feedback to Slack (verdict
-on its own line; voice per `grading-voice.md` - glows and grows with its substance bar: never
-praise requirement compliance, no superficial grows, short by default,
-no em dashes, no bullets). Then write to `GRADING/students/<slug>/`:
+**Step 5 - Write verdict, persist, log.** Post the verdict + feedback to Slack FIRST
+(verdict on its own line; voice per the pack's grading-voice section - glows and
+grows with its substance bar: never praise requirement compliance, no superficial
+grows, short by default, no em dashes, no bullets). THEN persist - batch all four
+writes plus the `courses.json` completion-check read into a single turn (parallel
+tool calls). Write to `GRADING/students/<slug>/`:
 - `<code>__r<N>__submission.md` (the raw submission)
 - `<code>__r<N>__result.md` (verdict + feedback + internal grading notes)
 - update `record.json` (append the attempt; set `status`, `latest_verdict`,

@@ -873,7 +873,6 @@ export async function runContainerAgent(
     let outputChain = Promise.resolve();
 
     const handleStdoutChunk = (chunk: string): void => {
-
       // Any stdout chunk (heartbeat, output, log line) is proof-of-life for
       // the GroupQueue freeze detector. The agent-runner emits a heartbeat
       // every 30s; this guarantees lastOutputAt updates well within the
@@ -1213,6 +1212,12 @@ export async function runContainerAgent(
           stdout,
         );
       } else {
+        // Turn-by-turn agent-runner lines from stderr — the answer to "where
+        // did those 5 minutes go" survives even though the stderr file is
+        // deleted below.
+        const turnLines = stderr
+          .split('\n')
+          .filter((l) => l.includes('[agent-runner]'));
         logLines.push(
           `=== Input Summary ===`,
           `Prompt length: ${input.prompt.length} chars`,
@@ -1224,6 +1229,9 @@ export async function runContainerAgent(
             .join('\n'),
           ``,
         );
+        if (turnLines.length > 0) {
+          logLines.push(`=== Agent Turns ===`, ...turnLines, ``);
+        }
       }
 
       fs.writeFileSync(logFile, logLines.join('\n'));
