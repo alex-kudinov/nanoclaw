@@ -177,7 +177,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 | Systems Coach Program | $3,999 | PCC + ACTC | 60 hrs prior training (ACC) | ACC holders advancing to PCC |
 | ACTC Team Coaching | $2,499 | ACTC | Existing ACC or PCC or MCC | Team coaching specialization |
 | Mentor Coaching Foundations | $299 (launch) / $397 | 10 CCE hours (MCS education) | Active ICF credential | Coaches pursuing ICF Mentor Coach Specialization via CPL |
-| Mentor Coach Training | $1,997 (founding) / $2,497 (list) | MCS via Standard Path (41 CCE hrs) | Active ICF credential | Coaches pursuing MCS via Standard Path |
+| Mentor Coach Training (MCS Practicum) | $2,997 | MCS Standard Path — 71-hr AAMC-accredited practicum (41 sync + 30 async) | Active ICF credential (ACC+renewal, PCC, or MCC) | Coaches pursuing MCS via Standard Path |
 | Evaluation Training (ACC BARS / PCC Markers / MCC BARS) | RETIRED — not sold separately | Embedded in Mentor Coach Training cohort only; ICF-recognized eval training comes from ICF directly | — | — |
 
 ---
@@ -191,7 +191,7 @@ Four programs for every stage of the coaching journey. Each is independently acc
 - Top 3.7% of 56,000+ credentialed coaches worldwide; named #16 most influential coach by Global Gurus
 - Co-author, *Enterprise Agile Coaching* book
 - One of the few coaches who holds both MCC and ACTC
-- Teaches: ACC, Systems Coach (PCC+ACTC), ACTC, Mentor Coaching Foundations (Modules 1, 3, 5), Mentor Coach Training (sole instructor, all 10 live classes), Evaluation Training (ACC BARS, PCC Markers, MCC BARS)
+- Teaches: ACC, Systems Coach (PCC+ACTC), ACTC, Mentor Coaching Foundations (Modules 1, 3, 5), Mentor Coach Training (sole instructor, all 12 live classes), Evaluation Training (ACC BARS, PCC Markers, MCC BARS)
 - LinkedIn: linkedin.com/in/cheriesilas/
 
 ### Alex Kudinov — MCC (ICF Master Certified Coach)
@@ -244,7 +244,7 @@ An asynchronous, self-paced course that provides the 10-hour education component
 - **URL:** /mcq/mentor-coaching-foundations/
 - **Guarantee:** 14-day money-back refund (unavailable after certificate issuance)
 
-**Standard Path candidate?** Foundations is the 10-hour CPL course. The full Standard Path runs through the 41-hour live cohort — Foundations is included as just-in-time pre-work in that program, no separate purchase needed. See Mentor Coach Training below.
+**Standard Path candidate?** Foundations is the 10-hour CPL course. The full Standard Path runs through the 71-hour Mentor Coach Training cohort (MCS Practicum) — Foundations is included as just-in-time pre-work in that program, no separate purchase needed. See Mentor Coach Training below.
 
 **What's included:**
 - 22 video lessons, 15 downloadable tools (templates, worksheets, frameworks)
@@ -276,9 +276,9 @@ An asynchronous, self-paced course that provides the 10-hour education component
 
 **ICF accreditation status:** ICF CCE accreditation **granted**. The course is live — enrollment gives immediate access and the ICF CCE certificate is issued on completion (no pending caveat).
 
-**What this course does NOT include:** BARS/Markers evaluation training (obtained from ICF directly — Tandem's standalone evaluation courses are retired as of 2026-06-03), 1:1 mentor coaching sessions, or the standard-path synchronous hours. Live synchronous hours, group practicum, and formative evaluation are in the Standard Path program, Mentor Coach Training (41 CCE hours, founding cohort $1,997).
+**What this course does NOT include:** BARS/Markers evaluation training (obtained from ICF directly — Tandem's standalone evaluation courses are retired as of 2026-06-03), 1:1 mentor coaching sessions, or the standard-path synchronous hours. Live synchronous hours, group practicum, and formative evaluation are in the Standard Path program, Mentor Coach Training / MCS Practicum (71 hours, $2,997).
 
-**Should I buy Foundations or the live cohort?** Buy Foundations ($299) if you are taking the **Credit for Prior Learning** path — you have an active credential, documented prior mentor coaching practice, and you only need the 10-hour course. Buy the **live cohort** ($1,997 founding / $2,497 list) if you are taking the **Standard Path** — you need the full 41 hours with at least 50% synchronous, group practicum, and formative evaluation. Foundations content is included as just-in-time pre-work inside the cohort, so do not buy it separately.
+**Should I buy Foundations or the live cohort?** Buy Foundations ($299) if you are taking the **Credit for Prior Learning** path — you have an active credential, documented prior mentor coaching practice, and you only need the 10-hour course. Buy the **live cohort** ($2,997) if you are taking the **Standard Path** — you need the full 71-hour AAMC-accredited program (41 sync + 30 async), group practicum, and formative evaluation. Foundations content is included as just-in-time pre-work inside the cohort, so do not buy it separately.
 
 > **⚠️ DO NOT CONFUSE with MCC Mentor Coaching ($3,999).** These are different products for different ICF pathways:
 > - **Mentor Coaching Foundations** ($299) = self-paced EDUCATION on how to be a mentor coach → for the ICF **Mentor Coach Specialization** (MCS) CPL path
@@ -288,42 +288,36 @@ An asynchronous, self-paced course that provides the 10-hour education component
 
 ---
 
-### Mentor Coach Training (Standard Path — live cohort)
-The full Standard Path program for the ICF Mentor Coach Specialization (MCS). A blended cohort that satisfies the Standard Path's 41+ hour requirement with at least 50% synchronous delivery. Also called "MCS Path." Foundations content is included as just-in-time pre-work — do not purchase Foundations separately if enrolling in this cohort.
+### Mentor Coach Training — Mentor Coaching Specialization – Practicum (Standard Path, live cohort)
+Official name **"Mentor Coaching Specialization – Practicum"**; marketed as **Mentor Coach Training** — MCT and the Practicum are the SAME program. Tandem's 71-hour live cohort built to the ICF Advanced Accreditation in Mentor Coaching (AAMC) standard — the full ICF MCS **Standard Path** program. Foundations content is included as just-in-time pre-work — do not purchase Foundations separately if enrolling in this cohort.
 
-- **Price:** $1,997 (founding cohort, first 6 seats) / $2,497 (list price thereafter)
-- **Format:** 41 CCE hours total — 21 synchronous + 20 asynchronous (51% sync, meets ICF Standard Path 50% floor). 10 live classes over 10 weeks, led by Cherie Silas, MCC.
-- **Includes:** Mentor Coaching Foundations (10 hrs async as pre-work) + ACC BARS Training (5 hrs async) + PCC Markers Training (5 hrs async) + 10 live classes (20 hrs sync) + sync orientation (1 hr sync)
-- **MCC bonus:** MCC BARS Training included free as self-paced bonus for MCC-credentialed coaches (not part of live cohort, not on certificate)
-- **Prerequisites:** Active ICF credential (MCC, PCC, or renewed ACC)
+- **Accreditation:** **AAMC GRANTED** — ICF Coaching Education granted Tandem the Advanced Accreditation in Mentor Coaching (AAMC) on **July 1, 2026, valid through July 2029**. Tandem is the **first and only AAMC-accredited program in North America**.
+- **Price:** **$2,997** for the full 71-hour cohort. Payment plan: 3 monthly payments of $999 (surface only if the lead asks).
+- **Format:** **71 hours total — 41 synchronous + 30 asynchronous** (58% sync, exceeds the 50% AAMC floor). **12 weekly live classes × 2 hours over 12 weeks**, led by Cherie Silas, MCC.
+- **Includes:** Mentor Coaching Foundations as pre-work (22 video lessons, 15 tools, 3 quizzes, 6 graded submissions) + ACC BARS (5 hrs async) + PCC Markers (8 hrs async) delivered from the ICF Facilitator Guide inside the cohort + 5 observed mentor coaching sessions (written feedback on 3 recorded, live feedback on 2 group) + 5 hrs mentoring-on-mentoring + two-part capstone
+- **Prerequisites:** Active ICF credential — ACC (with one renewal), PCC, or MCC
 - **Cohort size:** 9–12 people
 - **Time commitment:** 3–8 hours/week including live class and field work
-- **Cohort schedule:** First two cohorts in Q2 and Q3 2026 — one Europe-friendly (US morning), one Americas/Asia-Pacific-friendly (US evening). Exact dates announced to waitlist first.
-- **Certificate:** Single Tandem certificate of completion — 41 CCE hours aligned with 2024 ICF Mentor Coaching Competencies, for ICF MCS Standard Path application
-- **CCE accreditation:** Pending. Certificates will be retroactively credited at time of ICF approval.
+- **Cohorts (Fall 2026):** Thursdays 6:00 PM ET — Sep 24–Dec 10, 2026; or Fridays 10:00 AM ET — Sep 25–Dec 11, 2026.
+- **MCC bonus:** free 5-hour MCC BARS self-paced module for MCC-credentialed enrollees (not counted in the 71 hours).
+- **Certificate:** Single Tandem certificate of completion documenting **all 71 program hours** (41 sync + 30 async), aligned with the 2024 ICF Mentor Coaching Competencies and the AAMC required components — supports the ICF MCS Standard Path application.
+- **CCE fallback:** a participant who does not complete the full program can still complete individual components and earn ICF **CCE hours** for the hours attended, counting toward the MCS.
 - **URL:** /mcs/mentor-coach-training/
 
-**What's included:**
-- Mentor Coaching Foundations curriculum (6 modules, 22 video lessons, 15 tools, quizzes, written submissions) — delivered as just-in-time pre-work
-- ACC BARS and PCC Markers evaluation training inside the cohort
-- 10 live Zoom classes × 2 hours, weekly, led by Cherie Silas, MCC
-- Stable peer role-chain: 4 roles assigned in Class 1 (Coach, Coaching Client, Mentor, Mentee) held for entire cohort
-- 6 coaching recordings delivered (3 ACC-level, 3 PCC-level), 6 recordings evaluated using Session Observation and Competency Review Forms
-- 3 live Group Mentor Coaching sessions (Classes 8–10)
-- Formative evaluation using Tandem ICF-aligned forms across multiple live sessions
+**Program structure:**
+- Mentor Coaching Foundations curriculum delivered as just-in-time pre-work (15 units, 22 video lessons, 15 tools, 3 quizzes, 6 graded submissions)
+- ACC BARS (5 hrs async) + PCC Markers (8 hrs async) evaluation training inside the cohort, from the ICF Facilitator Guide (pre-class weeks 3–4)
+- 12 weekly live Zoom classes × 2 hours, led by Cherie Silas, MCC
+- 5 observed mentor coaching sessions per participant — written feedback on 3 recorded sessions (ACC, PCC, capstone); live feedback on 2 Group Mentor Coaching sessions
+- 5 hours of mentoring-on-mentoring (1:1 feedback reviews + group sessions)
+- Two-part capstone: Part 1 portfolio due Class 9 (ethics/data-security policies, agreements, session forms, recordings); Part 2 a 10–15 minute live readiness presentation in Classes 11–12
+- Formative evaluation using Tandem ICF-aligned Session Observation and Competency Review Forms across live sessions
 
-**The 10-class arc:**
-- Class 1: Program kickoff, role assignments, Foundations Modules 1 & 2 review
-- Class 2: Mentoring agreement & plan, Foundations Modules 3 & 4 review
-- Classes 3–5: ACC BARS deep-dive, live BARS practice, 3 ACC mentor coaching cycles, ethics & data security
-- Classes 6–7: PCC Markers framework, 3 PCC mentor coaching cycles, bias identification practice
-- Classes 8–10: Foundations Modules 5 & 6, 3 live Group Mentor Coaching sessions, closing review, MCS certification Q&A
-
-**Applied practice beyond the 41 hours:** Between classes, participants deliver and evaluate peer mentor coaching sessions. This applied work is required for graduation but is not counted on the certificate as additional CCE — the 41 hours on the certificate is the clean ICF match.
+**Applied practice:** Between classes, participants deliver and evaluate peer mentor coaching sessions. This observed practice is part of the 71 program hours and required for graduation.
 
 **What MCS Path is not:** Does not file your MCS application (you file with ICF using the certificate). Does not include the ICF MCS application fee. Tandem only writes attestation letters for graduates who go on to mentor coach inside Tandem programs — attestation is a CPL-path artifact.
 
-**Best for:** Coaches pursuing MCS via the Standard Path who need the full 41+ hours with synchronous delivery, group practicum, and formative evaluation.
+**Best for:** Coaches pursuing MCS via the Standard Path who need the full accredited 71-hour program with synchronous delivery, observed mentor coaching, and formative evaluation.
 
 ---
 
@@ -331,7 +325,7 @@ The full Standard Path program for the ICF Mentor Coach Specialization (MCS). A 
 **Do NOT offer, quote, or sell these as standalone products.** The standalone evaluation courses — ACC BARS, PCC Markers, MCC BARS, and the Complete Evaluation Training bundle — were discontinued and removed from the Tandem catalog per ICF guidance. They cannot be purchased separately at any price (former pricing $49–$149 is void).
 
 **Where the training lives now:**
-- **ACC BARS + PCC Markers:** delivered only inside the **Mentor Coach Training** cohort (MCS Standard Path — $1,997 founding / $2,497 list), in alignment with the ICF Facilitator Guide. Not separable from the cohort.
+- **ACC BARS + PCC Markers:** delivered only inside the **Mentor Coach Training** cohort (MCS Practicum — $2,997), in alignment with the ICF Facilitator Guide. Not separable from the cohort.
 - **MCC BARS:** included only as a free self-paced bonus for MCC-credentialed coaches enrolled in that cohort (not on the certificate).
 - **Coaches who need ICF-recognized evaluation training for their MCS application** obtain ACC BARS / PCC Markers / MCC BARS from **ICF directly** (ICF Learning Portal), for each level they seek.
 
@@ -359,9 +353,8 @@ Comprehensive guide to the MCS requirement (formerly MCQ) taking effect January 
 
 **Tandem MCS programs:**
 1. Mentor Coaching Foundations ($299) — 10-hour CPL education (live now)
-2. Mentor Coach Training ($1,997 founding / $2,497 list) — 41 CCE hour live cohort for Standard Path (live now)
-3. Mentor Coaching Practicum (TBA) — 31-hour blended Standard Path companion (Q3 2026)
-4. Evaluation Training — RETIRED (not sold separately; ACC BARS + PCC Markers now delivered only inside Mentor Coach Training; ICF-recognized eval training comes from ICF directly)
+2. Mentor Coach Training — the "Mentor Coaching Specialization – Practicum" ($2,997) — 71-hour AAMC-accredited Standard-Path live cohort (Fall 2026). MCT and the Practicum are the SAME program.
+3. Evaluation Training — RETIRED (not sold separately; ACC BARS + PCC Markers now delivered only inside the MCS Practicum; ICF-recognized eval training comes from ICF directly)
 
 **Additional MCS resources:**
 - MCS Decision Guide (free flipbook): /flipbook/?book=404bb6a3fc
@@ -374,7 +367,7 @@ Comprehensive guide to the MCS requirement (formerly MCQ) taking effect January 
 
 These forms replace the previously required SPE recording and transcript for ACC and PCC Portfolio candidates (effective April 1, 2027). The ICF assessor role for ACC and PCC will be retired. Forms apply to 1:1 mentor coaching only — group sessions do not require Session Observation Forms.
 
-**ICF Advanced Accreditation in Mentor Coaching (AAMC):** A voluntary accreditation for education programs (not individuals), announced April 13, 2026 alongside the MCS launch. Separate from existing Level 1/Level 2/Level 3 program accreditation and from CCE approval. Programs holding it create a "direct pathway" for learners pursuing the MCS. **Status: GRANTED** for Tandem's Mentor Coaching Practicum — Tandem is the **first and only AAMC-accredited program in North America** as of July 2026. URL: /mcs/advanced-accreditation/
+**ICF Advanced Accreditation in Mentor Coaching (AAMC):** A voluntary accreditation for education programs (not individuals), announced April 13, 2026 alongside the MCS launch. Separate from existing Level 1/Level 2/Level 3 program accreditation and from CCE approval. Programs holding it create a "direct pathway" for learners pursuing the MCS. **Status: GRANTED** — ICF Coaching Education granted Tandem the AAMC on **July 1, 2026, valid through July 2029**, for the 71-hour Mentor Coaching Specialization – Practicum (Mentor Coach Training). Tandem is the **first and only AAMC-accredited program in North America**. URL: /mcs/advanced-accreditation/
 
 ---
 
@@ -450,7 +443,7 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 
 **What's the difference between Mentor Coaching Foundations ($299) and MCC Mentor Coaching ($3,999)?** Completely different products. Mentor Coaching Foundations is a self-paced online course that teaches you how to be a mentor coach — it satisfies the 10-hour education requirement for the ICF Mentor Coach Specialization (MCS) via Credit for Prior Learning. MCC Mentor Coaching is 10 hours of live 1-on-1 sessions where you receive mentor coaching from an MCC — it satisfies the mentoring requirement for the MCC credential via the Credit for Prior Learning path. If the lead wants to become a qualified mentor coach → Foundations. If the lead wants MCC credential → MCC Mentor Coaching.
 
-**Should I buy Foundations ($299) or the Mentor Coach Training live cohort ($1,997)?** Depends on your application path. Buy Foundations if you are taking the **Credit for Prior Learning** path — you have an active credential, documented prior mentor coaching practice, and you only need the 10-hour course. Buy the **live cohort** ($1,997 founding / $2,497 list) if you are taking the **Standard Path** — you need the full 41 hours with at least 50% synchronous, group practicum, and formative evaluation. Foundations content is included as just-in-time pre-work inside the cohort, so do not buy it separately.
+**Should I buy Foundations ($299) or the Mentor Coach Training live cohort ($2,997)?** Depends on your application path. Buy Foundations if you are taking the **Credit for Prior Learning** path — you have an active credential, documented prior mentor coaching practice, and you only need the 10-hour course. Buy the **live cohort** ($2,997) if you are taking the **Standard Path** — you need the full 71-hour AAMC-accredited program (41 sync + 30 async), group practicum, and formative evaluation. Foundations content is included as just-in-time pre-work inside the cohort, so do not buy it separately.
 
 **Do I need coaching clients to start mentor coaching or supervision?** Group mentoring (part of certification programs) uses peer practice in the classroom — no external clients needed. Individual mentor coaching and coaching supervision both require you to have actual coaching clients: individual mentor coaching reviews your real sessions, and supervision is reflective practice on your live work with clients.
 
@@ -466,9 +459,9 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 
 **What are Session Observation and Competency Review Forms?** Two standardized ICF forms used by qualified mentor coaches to document formative evaluation. The Session Observation Form captures level of mentor coaching, observed performance against credential-level minimum skill requirements, mentor coach feedback, and reflection prompts — completed per 1:1 session where a coaching recording is reviewed. The Competency Review Form is a cumulative summary at the end of the engagement covering proficiency (skills demonstrated, remaining gaps, ethics verification), mentor coach feedback, and client reflection. Both forms apply to 1:1 mentor coaching only — group mentor coaching sessions are not covered by the new documentation model.
 
-**How is the Mentor Coach Training (MCS Path) different from buying Foundations alone?** Foundations is 10 hours of asynchronous education — enough for the CPL path, not enough for the Standard Path. Mentor Coach Training includes the full Foundations curriculum AND the live cohort (10 classes), AND ACC BARS / PCC Markers evaluation training, AND structured peer mentor coaching field work. Foundations is one component of MCS Path. MCS Path is the complete Standard Path program.
+**How is the Mentor Coach Training (MCS Path) different from buying Foundations alone?** Foundations is 10 hours of asynchronous education — enough for the CPL path, not enough for the Standard Path. Mentor Coach Training includes the full Foundations curriculum AND the live cohort (12 classes), AND ACC BARS / PCC Markers evaluation training, AND structured peer mentor coaching field work. Foundations is one component of MCS Path. MCS Path is the complete Standard Path program.
 
-**How is Mentor Coach Training different from the standalone Mentor Coaching ACC/PCC/MCC packages?** Those packages are mentor coaching *services* — you hire a Tandem Mentor Coach to mentor coach you toward your own credential application. Mentor Coach Training is mentor coaching *training* — it teaches you to become a mentor coach so you can mentor coach other credential candidates. Different audience, different outcome, different artifact: those packages produce your performance evaluation; Mentor Coach Training produces a 41-hour CCE certificate that supports your MCS application.
+**How is Mentor Coach Training different from the standalone Mentor Coaching ACC/PCC/MCC packages?** Those packages are mentor coaching *services* — you hire a Tandem Mentor Coach to mentor coach you toward your own credential application. Mentor Coach Training is mentor coaching *training* — it teaches you to become a mentor coach so you can mentor coach other credential candidates. Different audience, different outcome, different artifact: those packages produce your performance evaluation; Mentor Coach Training produces a Tandem certificate documenting all 71 program hours (AAMC-accredited) that supports your MCS application.
 
 ---
 

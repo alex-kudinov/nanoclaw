@@ -134,7 +134,7 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 
 ### Lesson 32: CPL-path lead → drop Standard Path comparison noise entirely
 **Problem:** MCS / Mentor Coaching Foundations ($299, CPL path, self-paced) — experienced mentor coach with ACC, PCC, MCC mentoring background asking about cost and self-paced options.
-**Rule:** Initial draft included a comparison paragraph explaining that the 41-hour Mentor Coach Training cohort is live/synchronous (not self-paced) to distinguish it from Foundations. For a CPL-path lead, this paragraph is irrelevant and adds noise — the Standard Path program (and its practicum) should not appear at all in a CPL-focused response. Remove any mention of the Standard Path cohort when the lead is confirmed on CPL path.
+**Rule:** Initial draft included a comparison paragraph explaining that the 71-hour Mentor Coach Training cohort is live/synchronous (not self-paced) to distinguish it from Foundations. For a CPL-path lead, this paragraph is irrelevant and adds noise — the Standard Path program (and its practicum) should not appear at all in a CPL-focused response. Remove any mention of the Standard Path cohort when the lead is confirmed on CPL path.
 
 ### Lesson 33: MCF accreditation granted — state course live, cert on completion, no caveats
 **Problem:** Mentor Coaching Foundations (CPL path) — lead asked if course is ready to start immediately on enrollment
@@ -151,7 +151,7 @@ _Lessons extracted from feedback on draft emails. Updated automatically on appro
 ### Lesson 36: BARS/Markers delivery is path-scoped — embedded for Standard Path/Practicum, from ICF for CPL
 **Problem:** Hajnalka Segal — MCS qualification at both PCC and MCC levels; asked what training covers both
 **Rule:** BARS/Markers evaluation training delivery depends on the lead's MCS path — never state it as a blanket rule:
-- **Standard Path & Practicum** students: ACC BARS + PCC Markers are delivered *inside* the Mentor Coach Training cohort (embedded — see Lesson 35). Tandem runs two Standard-Path deliveries: the 41-hour Mentor Coach Training cohort and the AMCS-aligned Practicum companion (31-hour blended, Q3 2026).
+- **Standard Path** students (the **Mentor Coaching Specialization – Practicum**, marketed as "Mentor Coach Training" — MCT and the Practicum are the SAME 71-hour AAMC-accredited program, $2,997): ACC BARS (5 hrs async) + PCC Markers (8 hrs async) are delivered *inside* the program (embedded — see Lesson 35).
 - **CPL path** students (Mentor Coaching Foundations, $299): Tandem does NOT provide BARS/Markers; the coach obtains them *from ICF directly*, separately.
 Cherie's original correction ("BARS/Markers must come from ICF, never embedded") applies to the **CPL** context only — it was over-generalized. Never tell a Standard-Path/Practicum lead that evaluation training is separate, and never tell a CPL lead that Tandem provides it.
 
