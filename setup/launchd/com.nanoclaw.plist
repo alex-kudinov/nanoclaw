@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AbandonProcessGroup</key>
+	<true/>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>/Users/xbohdpukc</string>
+		<key>MAX_CONCURRENT_CONTAINERS</key>
+		<string>10</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/Users/xbohdpukc/.local/bin</string>
+	</dict>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>com.nanoclaw</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/opt/homebrew/bin/node</string>
+		<string>/Users/xbohdpukc/dev/NanoClaw/dist/index.js</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/Users/xbohdpukc/dev/NanoClaw/logs/nanoclaw.error.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/xbohdpukc/dev/NanoClaw/logs/nanoclaw.log</string>
+	<key>WorkingDirectory</key>
+	<string>/Users/xbohdpukc/dev/NanoClaw</string>
+</dict>
+</plist>
