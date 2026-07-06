@@ -173,6 +173,12 @@ the `calibrate` skill in Claude Code/Opus (`lock --by opus` = confirmed); you MA
 --by sonnet` (stamps `provisional`, pending Opus review). Never deliver a held verdict
 before `release` (see `calibration/README.md`).
 
+Pack staleness after calibration: your calibration writes make `packs/<code>.md`
+stale. The host rebuilds packs automatically (a file watcher, worst case within
+the hour), so do NOT rebuild yourself. Until then, for THIS assignment only,
+load context from the individual files (voice, grader, assignment, material)
+instead of the pack.
+
 ## Critical Rules
 
 1. Never invent a rubric, requirement, or evidence. Everything traces to a file under
