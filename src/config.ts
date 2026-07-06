@@ -64,10 +64,7 @@ export const IPC_POLL_INTERVAL = 1000;
 // start) and no longer squat: the queue evicts the longest-idle warm container
 // whenever a slot is needed (container.lifecycle.evict). Per-group override
 // via containerConfig.idleTimeout (the grader sets 30s — one-shot threads).
-export const IDLE_TIMEOUT = parseInt(
-  process.env.IDLE_TIMEOUT || '1200000',
-  10,
-); // 20min default
+export const IDLE_TIMEOUT = parseInt(process.env.IDLE_TIMEOUT || '1200000', 10); // 20min default
 // Entity-keyed Slack threading: once a work-unit thread has been idle this long,
 // a new post about it starts a FRESH root at the bottom of the channel instead
 // of resurrecting the dormant (possibly days-old) thread. Measured from the

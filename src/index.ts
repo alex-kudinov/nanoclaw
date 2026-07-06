@@ -958,7 +958,8 @@ async function routeAdoptedOutput(
     queue.notifyIdle(sc.compositeKey);
     return;
   }
-  const raw = typeof o.result === 'string' ? o.result : JSON.stringify(o.result);
+  const raw =
+    typeof o.result === 'string' ? o.result : JSON.stringify(o.result);
   const text = raw.replace(/<internal>[\s\S]*?<\/internal>/g, '').trim();
   logger.info(
     { group: sc.groupName, adopted: true },
