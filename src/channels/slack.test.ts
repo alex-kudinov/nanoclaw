@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 vi.mock('../config.js', () => ({
   ASSISTANT_NAME: 'Jonesy',
   TRIGGER_PATTERN: /^@Jonesy\b/i,
+  SLACK_THREAD_TTL_MS: 28800000, // 8h
 }));
 
 // Mock logger
@@ -23,6 +24,8 @@ vi.mock('../db.js', () => ({
   updateChatName: vi.fn(),
   resolveThreadAnchor: vi.fn(() => undefined),
   recordThreadAnchor: vi.fn(),
+  rollThreadAnchor: vi.fn(),
+  touchThreadAnchor: vi.fn(),
 }));
 
 // --- @slack/bolt mock ---
@@ -91,6 +94,8 @@ import {
   updateChatName,
   resolveThreadAnchor,
   recordThreadAnchor,
+  rollThreadAnchor,
+  touchThreadAnchor,
 } from '../db.js';
 import { readEnvFile } from '../env.js';
 
@@ -1353,8 +1358,10 @@ describe('SlackChannel', () => {
       });
 
       const post = currentApp().client.chat.postMessage;
-      // No thread_ts on the root post — it BECOMES the thread.
+      // No thread_ts on the root post — it BECOMES the thread. A root is already
+      // top-level, so it must not broadcast.
       expect(post.mock.calls[0][0].thread_ts).toBeUndefined();
+      expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
       expect(resolveThreadAnchor).toHaveBeenCalledWith(
         'C0123456789',
         'certifier:cert:jane|pcc',
@@ -1366,8 +1373,11 @@ describe('SlackChannel', () => {
       );
     });
 
-    it('later post for a known key replies under the recorded root', async () => {
-      vi.mocked(resolveThreadAnchor).mockReturnValue('1700000000.000001');
+    it('a post under a still-fresh anchor replies in-thread, broadcasts, and touches it', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1700000000.000001',
+        lastActivityAt: new Date().toISOString(), // just active → fresh
+      });
       const channel = await connected();
 
       await channel.sendMessage(JID, 'cert resent', {
@@ -1376,7 +1386,42 @@ describe('SlackChannel', () => {
 
       const post = currentApp().client.chat.postMessage;
       expect(post.mock.calls[0][0].thread_ts).toBe('1700000000.000001');
-      // Already anchored — do not overwrite the root.
+      // A reply under an active anchor broadcasts so it lands at the channel
+      // bottom too, not just inside the thread.
+      expect(post.mock.calls[0][0].reply_broadcast).toBe(true);
+      // Active anchor — keep the root, bump its activity, never roll.
+      expect(recordThreadAnchor).not.toHaveBeenCalled();
+      expect(rollThreadAnchor).not.toHaveBeenCalled();
+      expect(touchThreadAnchor).toHaveBeenCalledWith(
+        'C0123456789',
+        'certifier:cert:jane|pcc',
+      );
+    });
+
+    it('a post under a STALE anchor rolls over to a fresh top-level root', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1700000000.000001',
+        // 3 days idle — past the TTL, must not resurrect the dormant thread.
+        lastActivityAt: new Date(Date.now() - 3 * 86400_000).toISOString(),
+      });
+      const channel = await connected();
+
+      await channel.sendMessage(JID, 'lead re-engaged', {
+        threadKey: 'sales:entry:622',
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      // Fresh root: no thread_ts, no broadcast — it's a top-level post at the
+      // channel bottom, NOT a reply into the old thread.
+      expect(post.mock.calls[0][0].thread_ts).toBeUndefined();
+      expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
+      // The anchor is repointed at the new root.
+      expect(rollThreadAnchor).toHaveBeenCalledWith(
+        'C0123456789',
+        'sales:entry:622',
+        '1704067200.000100',
+      );
+      expect(touchThreadAnchor).not.toHaveBeenCalled();
       expect(recordThreadAnchor).not.toHaveBeenCalled();
     });
 
@@ -1390,6 +1435,9 @@ describe('SlackChannel', () => {
 
       const post = currentApp().client.chat.postMessage;
       expect(post.mock.calls[0][0].thread_ts).toBe('1699999999.000009');
+      // A conversational threadTs reply (human is watching that thread) stays
+      // quiet — only anchor-resolved replies broadcast.
+      expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
       expect(resolveThreadAnchor).not.toHaveBeenCalled();
       expect(recordThreadAnchor).not.toHaveBeenCalled();
     });

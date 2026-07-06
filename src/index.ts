@@ -18,6 +18,7 @@ import {
   PROPOSAL_FOLLOWUP_EXPIRE_DAYS,
   PROPOSAL_FOLLOWUP_HOUR,
   PROPOSAL_FOLLOWUP_MAX_PER_RUN,
+  RECOVERY_LOOKBACK_MS,
   RECOVERY_RESERVED_SLOTS,
   SLACK_ONLY,
   TRIGGER_PATTERN,
@@ -49,6 +50,7 @@ import {
   getMessagesSince,
   getNewMessages,
   getThreadParent,
+  getLatestGroupResponse,
   getRouterState,
   initDatabase,
   markStaleRunsAsFailed,
@@ -66,6 +68,7 @@ import { loadJobRegistry, watchJobRegistry } from './job-registry.js';
 import { handleEmailOpen as handleEmailOpenImpl } from './email-tracking.js';
 import { handleUnsubscribe as handleUnsubscribeImpl } from './email-unsubscribe.js';
 import { runJob } from './job-runner.js';
+import { isIncidentProposal } from './healer/remediation.js';
 import { writeJobsSnapshot } from './job-snapshot.js';
 import { WebhookServer } from './webhook-server.js';
 import {
@@ -123,6 +126,11 @@ import {
   isUntaggedBotNoise,
 } from './router.js';
 import { isStatusCommand, formatPipelineStatus } from './pipeline-status.js';
+import {
+  isSeoCommand,
+  seoCommandReply,
+  SEO_COMMAND_FOLDER,
+} from './seo-stats.js';
 import { startSchedulerLoop } from './task-scheduler.js';
 import {
   Channel,
@@ -147,7 +155,25 @@ export { escapeXml, formatMessages } from './router.js';
 let lastTimestamp = '';
 let sessions: Record<string, string> = {};
 let registeredGroups: Record<string, RegisteredGroup> = {};
+
+// Thread key for grouping a message into a run. Threaded posts keep their
+// thread_ts; for threadPerMessage groups a root post becomes its own thread
+// (keyed by its own ts) so concurrent submissions never share a container and
+// each reply threads under the post that triggered it; everyone else shares the
+// 'root' bucket (unchanged behaviour).
+function threadKeyFor(
+  msg: NewMessage,
+  group: RegisteredGroup | undefined,
+): string {
+  if (msg.thread_ts) return msg.thread_ts;
+  return group?.containerConfig?.threadPerMessage ? msg.id : 'root';
+}
 let lastAgentTimestamp: Record<string, string> = {};
+
+// Composite keys whose "[PROCESSING]" ack was already posted at dispatch time,
+// so a submission waiting for a container slot across loop ticks only acks once.
+// Cleared when the container finally spawns (processGroupMessages).
+const ackedSpawns = new Set<string>();
 let messageLoopRunning = false;
 
 const channels: Channel[] = [];
@@ -251,14 +277,42 @@ async function processGroupMessages(
   const isMainGroup = group.isMain === true;
   const compositeKey = `${chatJid}||${threadTs || 'root'}`;
 
+  // Consume the dispatch-ack marker up front — every spawn-check consumes it,
+  // including ones that find nothing to do. Consuming only on the spawn path
+  // (as before) leaked the key on early returns, permanently suppressing the
+  // next legitimate ack for root-bucket groups.
+  const dispatchAcked = ackedSpawns.delete(compositeKey);
+
   const sinceTimestamp = lastAgentTimestamp[compositeKey] || '';
-  const missedMessages = getMessagesSince(
+  let missedMessages = getMessagesSince(
     chatJid,
     sinceTimestamp,
     ASSISTANT_NAME,
     group.folder,
     threadTs,
   );
+
+  // threadPerMessage root rescue: a first-time submission posted as a root message
+  // has thread_ts=NULL, so the thread-filtered query above never returns it. Without
+  // a follow-up reply (whose thread_ts DOES match) such a submission is never graded
+  // — the early-return below fires and getThreadParent is never reached. (This is the
+  // Susan M1P2 incident: a pasted-text submission sat stuck ~19min until a manual
+  // "rerun this" reply triggered it; attachment submissions were masked by their
+  // re-processing path.) If nothing matched but the thread's own root is newer than
+  // our cursor and isn't our own echo, treat the root as the pending message.
+  // Idempotent: once graded the cursor advances to the root's timestamp, so the
+  // `root.timestamp > sinceTimestamp` guard prevents any re-processing.
+  if (missedMessages.length === 0 && threadTs) {
+    const root = getThreadParent(chatJid, threadTs);
+    if (
+      root &&
+      root.timestamp > sinceTimestamp &&
+      root.from_group !== group.folder &&
+      !isUntaggedBotNoise(root, ASSISTANT_NAME)
+    ) {
+      missedMessages = [root];
+    }
+  }
 
   if (missedMessages.length === 0) return true;
 
@@ -287,7 +341,14 @@ async function processGroupMessages(
     }
   }
 
-  const prompt = formatMessages(messagesToFormat);
+  // Strip this group's own host-posted echoes (the "[PROCESSING]" ack carries
+  // from_group=<folder>) from the container's INPUT context. Since the ack is now
+  // posted at dispatch, it lands in the thread before the container reads context;
+  // without this filter it leaks into the agent's <messages> and derails it
+  // (e.g. the grader reacting to "[PROCESSING]" instead of grading the submission).
+  const prompt = formatMessages(
+    excludeOwnGroupMessages(messagesToFormat, group.folder),
+  );
 
   // Advance cursor so the piping path in startMessageLoop won't re-fetch
   // these messages. Save the old cursor so we can roll back on error.
@@ -312,7 +373,7 @@ async function processGroupMessages(
         'Idle timeout, closing container stdin',
       );
       queue.closeStdin(compositeKey);
-    }, IDLE_TIMEOUT);
+    }, group.containerConfig?.idleTimeout ?? IDLE_TIMEOUT);
   };
 
   // Expose the closure-local resetIdleTimer to GroupQueue.sendMessage so
@@ -321,21 +382,24 @@ async function processGroupMessages(
 
   await channel.setTyping?.(chatJid, true);
 
-  // Mechanical processing message — opt-in per group. Replaces the agent's
-  // First-Response ack. Tagged fromGroup so the spawn guard drops it.
+  // Mechanical processing message — opt-in per group. Normally posted at DISPATCH
+  // time (in the message loop) so it's instant even when all container slots are
+  // busy; `dispatchAcked` (consumed at function entry) is true when that already
+  // happened. Only spawns that did NOT dispatch-ack (recovery/scheduled paths)
+  // post it here as a fallback. Tagged fromGroup so the spawn guard drops the echo.
   const processingMessage = group.containerConfig?.processingMessage;
-  if (processingMessage) {
-    try {
-      await channel.sendMessage(chatJid, `[PROCESSING] ${processingMessage}`, {
+  if (processingMessage && !dispatchAcked) {
+    channel
+      .sendMessage(chatJid, `[PROCESSING] ${processingMessage}`, {
         fromGroup: group.folder,
         threadTs,
-      });
-    } catch (err) {
-      logger.error(
-        { err, group: group.folder },
-        '[ERROR] processing-message post failed',
+      })
+      .catch((err) =>
+        logger.error(
+          { err, group: group.folder },
+          '[ERROR] processing-message post failed',
+        ),
       );
-    }
   }
 
   let hadError = false;
@@ -529,10 +593,11 @@ async function startMessageLoop(): Promise<void> {
         lastTimestamp = newTimestamp;
         saveState();
 
-        // Group by (chat_jid, thread_ts) for thread-aware dispatch
+        // Group by (chat_jid, thread) for thread-aware dispatch. threadPerMessage
+        // groups split each root post into its own thread (see threadKeyFor).
         const messagesByThread = new Map<string, NewMessage[]>();
         for (const msg of messages) {
-          const key = `${msg.chat_jid}||${msg.thread_ts || 'root'}`;
+          const key = `${msg.chat_jid}||${threadKeyFor(msg, registeredGroups[msg.chat_jid])}`;
           const existing = messagesByThread.get(key);
           if (existing) {
             existing.push(msg);
@@ -592,6 +657,31 @@ async function startMessageLoop(): Promise<void> {
             continue;
           }
 
+          // Host-handled SEO stats for #gru-seo — zero-LLM, no container spawn
+          // (mirrors the `status` command above). Answers `gsc` / `scoreboard`
+          // / `seo` from the SEO data files the rescue/drain jobs maintain.
+          if (group.folder === SEO_COMMAND_FOLDER) {
+            const cmd = relevantMessages.find((m) =>
+              isSeoCommand(m.content, ASSISTANT_NAME),
+            );
+            if (cmd) {
+              try {
+                const reply = seoCommandReply(cmd.content, ASSISTANT_NAME);
+                if (reply)
+                  await channel.sendMessage(chatJid, reply, {
+                    threadTs,
+                    fromGroup: group.folder,
+                  });
+              } catch (err) {
+                logger.error({ err, chatJid }, 'seo command failed');
+              }
+              lastAgentTimestamp[compositeKey] =
+                relevantMessages[relevantMessages.length - 1].timestamp;
+              saveState();
+              continue;
+            }
+          }
+
           const isMainGroup = group.isMain === true;
           const needsTrigger =
             !isMainGroup && group.requiresTrigger !== false && !threadTs;
@@ -608,9 +698,22 @@ async function startMessageLoop(): Promise<void> {
           // The threadMessages fallback is unfiltered by from_group; reuse
           // relevantMessages (already own-group-filtered above) so a host
           // echo tagged from_group=group.folder is never piped into the
-          // group's own live container.
-          const messagesToSend =
+          // group's own live container. Untagged bot noise (host-posted
+          // status reports, echoes that lost their tag) is also dropped —
+          // piping a "*NanoClaw pipeline status*" into a container mid-grade
+          // derails the agent. A noise-only batch is consumed (cursor
+          // advance) without piping, spawning, or acking.
+          const rawToSend =
             allPending.length > 0 ? allPending : relevantMessages;
+          const messagesToSend = rawToSend.filter(
+            (m) => !isUntaggedBotNoise(m, ASSISTANT_NAME),
+          );
+          if (messagesToSend.length === 0) {
+            lastAgentTimestamp[compositeKey] =
+              rawToSend[rawToSend.length - 1].timestamp;
+            saveState();
+            continue;
+          }
           const formatted = formatMessages(messagesToSend);
 
           // Try piping to an active container first — follow-up messages
@@ -658,6 +761,27 @@ async function startMessageLoop(): Promise<void> {
             continue;
           }
 
+          // Post the "[PROCESSING]" ack HERE, at dispatch — not from the spawn
+          // path — so it lands instantly even when every container slot is busy
+          // (posting a Slack message needs no slot). Guarded by ackedSpawns so a
+          // submission that waits across loop ticks for a slot only acks once;
+          // cleared when the container spawns. Fire-and-forget to keep the loop fast.
+          const pm = group.containerConfig?.processingMessage;
+          if (pm && !ackedSpawns.has(compositeKey)) {
+            ackedSpawns.add(compositeKey);
+            channel
+              .sendMessage(chatJid, `[PROCESSING] ${pm}`, {
+                fromGroup: group.folder,
+                threadTs,
+              })
+              .catch((err) =>
+                logger.error(
+                  { err, group: group.folder },
+                  'dispatch processing-ack failed',
+                ),
+              );
+          }
+
           // Enqueue for a new container (thread-aware)
           queue.enqueueMessageCheck(chatJid, threadTs);
         }
@@ -689,37 +813,89 @@ interface RecoveryCandidate {
 function recoverPendingMessages(): void {
   const candidates: RecoveryCandidate[] = [];
   for (const [chatJid, group] of Object.entries(registeredGroups)) {
-    // Check root (non-threaded) messages
+    // Check root (non-threaded) messages. Cap the scan window: for
+    // threadPerMessage groups every message maps to its own thread key, so the
+    // root-bucket cursor never advances again after the switch — without a
+    // floor, recovery re-scans the channel's entire history on every restart.
+    // Anything older than the lookback that is genuinely unhandled needs a
+    // human nudge anyway (grading is idempotent), so the floor is safe.
     const rootKey = `${chatJid}||root`;
     const sinceTimestamp = lastAgentTimestamp[rootKey] || '';
+    const lookbackFloor = new Date(
+      Date.now() - RECOVERY_LOOKBACK_MS,
+    ).toISOString();
     const pending = getMessagesSince(
       chatJid,
-      sinceTimestamp,
+      sinceTimestamp > lookbackFloor ? sinceTimestamp : lookbackFloor,
       ASSISTANT_NAME,
       group.folder,
     );
     if (pending.length === 0) continue;
 
-    // Sub-group by thread for per-thread recovery
-    const threads = new Set<string | undefined>();
-    for (const m of pending) threads.add(m.thread_ts || undefined);
-    for (const threadTs of threads) {
-      const key = `${chatJid}||${threadTs || 'root'}`;
+    // Sub-group by thread for per-thread recovery (threadPerMessage groups split
+    // each root post into its own thread, mirroring the live loop).
+    const threadKeys = new Set<string>();
+    for (const m of pending) threadKeys.add(threadKeyFor(m, group));
+    for (const threadKey of threadKeys) {
+      const threadTs = threadKey === 'root' ? undefined : threadKey;
+      const key = `${chatJid}||${threadKey}`;
       const threadSince = lastAgentTimestamp[key] || '';
       const threadPending = pending.filter(
         (m) =>
-          (m.thread_ts || undefined) === threadTs && m.timestamp > threadSince,
+          threadKeyFor(m, group) === threadKey && m.timestamp > threadSince,
       );
       if (threadPending.length === 0) continue;
 
       // Skip recovery only when every pending message is untagged bot noise
-      // (a self-echo whose from_group was lost on restart). A human message,
-      // or a bot message carrying a from_group (a cross-group handoff that
-      // arrived before the crash), is actionable and must be recovered.
-      const hasActionableMessage = threadPending.some(
+      // (a self-echo whose from_group was lost on restart, or a host-posted
+      // status report). A human message, or a bot message carrying a
+      // from_group (a cross-group handoff that arrived before the crash), is
+      // actionable and must be recovered.
+      const actionablePending = threadPending.filter(
         (m) => !isUntaggedBotNoise(m, ASSISTANT_NAME),
       );
-      if (!hasActionableMessage) continue;
+      if (actionablePending.length === 0) continue;
+
+      // Skip a thread the group has already answered. If its latest REAL response
+      // (own output, not the "[PROCESSING]" ack) is newer than the newest actionable
+      // inbound, the work is done — re-enqueuing here would spawn a noop container
+      // that steals a slot + 768 MB from real work on every restart (the swarm that
+      // buried chi-m3/Susan). Uses the minion's own reply as the completion signal,
+      // so it covers the container path AND inline handlers whose work the per-thread
+      // cursor never records (e.g. contador handling a webhook/handoff). A genuinely
+      // unhandled thread — including an ungraded fresh root — has no real response
+      // yet, so the root-rescue (processGroupMessages) still fires for it.
+      // latestInbound is derived from ACTIONABLE messages only — an untagged
+      // bot row (a host-posted status report landing in the thread after the
+      // group's verdict) must not make an answered thread look pending again.
+      const latestInbound =
+        actionablePending[actionablePending.length - 1].timestamp;
+      // Look up the group's response in the RIGHT scope. threadPerMessage groups
+      // (grader) thread their replies under the ROOT post id — not the individual
+      // message id that threadKeyFor produces — so resolve the thread root
+      // (thread_ts of a reply, or id of the root itself). Non-threadPerMessage
+      // groups (contador) post at channel root, so look channel-wide (undefined).
+      const pm = actionablePending[0];
+      const responseThreadTs = group.containerConfig?.threadPerMessage
+        ? pm.thread_ts || pm.id
+        : undefined;
+      const lastResponse = getLatestGroupResponse(
+        chatJid,
+        group.folder,
+        responseThreadTs,
+      );
+      // >= not >: the group's own latest response often shares the exact timestamp
+      // of the newest thing recovery counts as "pending" (a self-referential ack like
+      // "duplicate trigger - already handled"). At-or-after the newest actionable msg
+      // means the thread is handled. A genuinely-new inbound always lands strictly
+      // AFTER the last response, so this never skips real pending work.
+      if (lastResponse && lastResponse >= latestInbound) {
+        logger.info(
+          { group: group.name, threadTs, lastResponse, latestInbound },
+          'Recovery: skipping already-answered thread',
+        );
+        continue;
+      }
 
       // Priority 1: always-on agents (no trigger required) — keep these alive
       // Priority 2: anyone else with pending messages, sorted by recency
@@ -1167,6 +1343,19 @@ async function main(): Promise<void> {
   // the self-healing healer (separate process) can detect a crashed daemon.
   // See docs/SELF-HEALING-DESIGN.md §4.2.
   startHeartbeat();
+
+  // Healer incidents own their own approval polling (the healer's
+  // runApprovals/runImplement read Slack reactions directly). Claim ✅/👍 on an
+  // incident proposal so the daemon's generic agent-approval injection does NOT
+  // also wake #gru-incidents' agent into a confused "noted — anything else?"
+  // chit-chat. Returning true only suppresses that injection; the healer's
+  // polling still performs the real approve/implement. See incident #561606.
+  {
+    const slackForIncidents = channels.find(
+      (c): c is SlackChannel => c instanceof SlackChannel,
+    );
+    slackForIncidents?.registerApprovalListener((ts) => isIncidentProposal(ts));
+  }
 
   // Webhook-inbox reaper — every 5 min, retries received/failed/stale-dispatched
   // rows, dead-letters to #gru-chief after MAX_ATTEMPTS=5. See

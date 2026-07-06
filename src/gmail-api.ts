@@ -354,6 +354,53 @@ export async function replyToThread(opts: {
   return { messageId: sentId, threadId: opts.threadId, to, subject };
 }
 
+/**
+ * Fetch an entire Gmail thread by ID and format every message for the agent.
+ *
+ * `thread:<id>` is NOT a valid Gmail SEARCH operator — messages.list treats it
+ * as free text and returns zero matches. The only way to pull a thread by id is
+ * threads.get. searchEmails() routes any `thread:` query here, and the
+ * gmail_get_thread tool calls this directly. Returns a not-found string (never
+ * throws) so callers degrade gracefully.
+ */
+export async function getThread(threadId: string): Promise<string> {
+  const gmail = getGmailClient();
+  let messages: gmail_v1.Schema$Message[] = [];
+  try {
+    const res = await gmail.users.threads.get({
+      userId: 'me',
+      id: threadId,
+      format: 'full',
+    });
+    messages = res.data.messages || [];
+  } catch (err) {
+    logger.warn({ threadId, err }, 'getThread: thread fetch failed');
+    return `No thread found for ID ${threadId}.`;
+  }
+  if (messages.length === 0) return `No thread found for ID ${threadId}.`;
+
+  const parts = messages.map((m) => {
+    const headers = parseEmailHeaders(m.payload?.headers || []);
+    const body = m.payload ? parseEmailBody(m.payload) : '';
+    return formatEmailForAgent(
+      headers,
+      body,
+      m.threadId || threadId,
+      m.id || undefined,
+    );
+  });
+  return (
+    `Thread ${threadId} — ${messages.length} message(s):\n\n` +
+    parts.join('\n---\n')
+  );
+}
+
+/** Extract a thread id from a `thread:<id>` token, ignoring case and quotes. */
+export function extractThreadQuery(query: string): string | null {
+  const m = /(?:^|\s)thread:("?)([^\s"]+)\1/i.exec(query);
+  return m ? m[2] : null;
+}
+
 /** Search emails. Returns formatted results for agent consumption. */
 export async function searchEmails(opts: {
   query: string;
@@ -361,6 +408,13 @@ export async function searchEmails(opts: {
 }): Promise<string> {
   const gmail = getGmailClient();
   const maxResults = opts.maxResults || 10;
+
+  // `thread:<id>` is not a Gmail search operator — left as-is it returns zero
+  // results and the caller (e.g. the sales follow-up run) silently drafts blind
+  // or invents an "account mismatch". Route it to threads.get instead. See the
+  // 5-lead follow-up false alarm, 2026-06-26.
+  const threadId = extractThreadQuery(opts.query);
+  if (threadId) return getThread(threadId);
 
   const listRes = await gmail.users.messages.list({
     userId: 'me',

@@ -14,7 +14,10 @@ export function formatMessages(messages: NewMessage[]): string {
     const threadAttr = m.thread_ts
       ? ` thread_ts="${escapeXml(m.thread_ts)}"`
       : '';
-    return `<message sender="${escapeXml(m.sender_name)}" time="${m.timestamp}"${threadAttr}>${escapeXml(m.content)}</message>`;
+    // ts = this message's own timestamp/id. Reply with it as thread_ts to thread
+    // under this exact post (used by threadPerMessage groups like the grader).
+    const tsAttr = m.id ? ` ts="${escapeXml(m.id)}"` : '';
+    return `<message sender="${escapeXml(m.sender_name)}" time="${m.timestamp}"${tsAttr}${threadAttr}>${escapeXml(m.content)}</message>`;
   });
   return `<messages>\n${lines.join('\n')}\n</messages>`;
 }

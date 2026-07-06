@@ -86,6 +86,7 @@ function createSchema(database: Database.Database): void {
       thread_key TEXT NOT NULL,
       thread_ts TEXT NOT NULL,
       created_at TEXT NOT NULL,
+      last_activity_at TEXT NOT NULL DEFAULT '',
       PRIMARY KEY (channel, thread_key)
     );
     CREATE TABLE IF NOT EXISTS registered_groups (
@@ -158,6 +159,19 @@ function createSchema(database: Database.Database): void {
   try {
     database.exec(
       `ALTER TABLE scheduled_tasks ADD COLUMN context_mode TEXT DEFAULT 'isolated'`,
+    );
+  } catch {
+    /* column already exists */
+  }
+
+  // Add last_activity_at to slack_thread_anchors (staleness rollover). Backfill
+  // existing rows to created_at so a dormant anchor rolls over on next touch.
+  try {
+    database.exec(
+      `ALTER TABLE slack_thread_anchors ADD COLUMN last_activity_at TEXT NOT NULL DEFAULT ''`,
+    );
+    database.exec(
+      `UPDATE slack_thread_anchors SET last_activity_at = created_at WHERE last_activity_at = ''`,
     );
   } catch {
     /* column already exists */
@@ -452,6 +466,12 @@ export function getMessagesSince(
   excludeGroup?: string,
   threadTs?: string | null,
 ): NewMessage[] {
+  // conditions and params MUST stay in lockstep — placeholders bind
+  // positionally. (A past version pushed excludeGroup before botPrefix while
+  // the conditions listed them in the opposite order, which bound the folder
+  // name to `content NOT LIKE` and 'Bot:%' to `from_group !=` — silently
+  // disabling the own-group exclusion and turning every ack/reply echo into
+  // phantom pending work: the noop-container swarm of 2026-07-05.)
   const conditions = [
     'chat_jid = ?',
     'timestamp > ?',
@@ -459,14 +479,12 @@ export function getMessagesSince(
     "content != ''",
     'content IS NOT NULL',
   ];
-  const params: unknown[] = [chatJid, sinceTimestamp];
+  const params: unknown[] = [chatJid, sinceTimestamp, `${botPrefix}:%`];
 
   if (excludeGroup) {
     conditions.push('(from_group IS NULL OR from_group != ?)');
     params.push(excludeGroup);
   }
-
-  params.push(`${botPrefix}:%`);
 
   // Thread filter: undefined = no filter, null = root only, string = specific thread
   if (threadTs === null) {
@@ -536,6 +554,42 @@ export function getThreadParent(
        FROM messages WHERE chat_jid = ? AND id = ?`,
     )
     .get(chatJid, threadTs) as NewMessage | undefined;
+}
+
+/**
+ * Latest timestamp at which `fromGroup` posted a REAL response — its own output,
+ * excluding the host-posted "[PROCESSING]" ack — in a chat/thread. Recovery uses
+ * this as a completion signal: if the group already answered after the last inbound
+ * message, the thread is handled, and re-spawning it on restart would just gum the
+ * pipeline with a noop that steals a slot + memory from real work. Reads the minion's
+ * own reply, so it covers BOTH the container path and inline handlers (e.g. contador
+ * handling a webhook/handoff without spawning a container — the case the per-thread
+ * cursor never covers). threadTs semantics mirror getMessagesSince: undefined = any
+ * thread, null = root only, string = that specific thread.
+ */
+export function getLatestGroupResponse(
+  chatJid: string,
+  fromGroup: string,
+  threadTs?: string | null,
+): string | undefined {
+  const conditions = [
+    'chat_jid = ?',
+    'from_group = ?',
+    "content NOT LIKE '[PROCESSING]%'",
+  ];
+  const params: unknown[] = [chatJid, fromGroup];
+  if (threadTs === null) {
+    conditions.push('thread_ts IS NULL');
+  } else if (threadTs !== undefined) {
+    conditions.push('thread_ts = ?');
+    params.push(threadTs);
+  }
+  const row = db
+    .prepare(
+      `SELECT timestamp FROM messages WHERE ${conditions.join(' AND ')} ORDER BY timestamp DESC LIMIT 1`,
+    )
+    .get(...params) as { timestamp: string } | undefined;
+  return row?.timestamp;
 }
 
 export function createTask(
@@ -688,17 +742,27 @@ export function setRouterState(key: string, value: string): void {
 
 // --- Slack thread anchors (entity-keyed threading) ---
 
-/** The thread root ts for a (channel, entity key), or undefined if none yet. */
+export interface ThreadAnchor {
+  threadTs: string;
+  /** ISO timestamp of the most recent post into this thread. */
+  lastActivityAt: string;
+}
+
+/** The current anchor for a (channel, entity key), or undefined if none yet. */
 export function resolveThreadAnchor(
   channel: string,
   threadKey: string,
-): string | undefined {
+): ThreadAnchor | undefined {
   const row = db
     .prepare(
-      'SELECT thread_ts FROM slack_thread_anchors WHERE channel = ? AND thread_key = ?',
+      'SELECT thread_ts, last_activity_at FROM slack_thread_anchors WHERE channel = ? AND thread_key = ?',
     )
-    .get(channel, threadKey) as { thread_ts: string } | undefined;
-  return row?.thread_ts;
+    .get(channel, threadKey) as
+    | { thread_ts: string; last_activity_at: string }
+    | undefined;
+  return row
+    ? { threadTs: row.thread_ts, lastActivityAt: row.last_activity_at }
+    : undefined;
 }
 
 /**
@@ -711,11 +775,39 @@ export function recordThreadAnchor(
   threadKey: string,
   threadTs: string,
 ): void {
+  const now = new Date().toISOString();
   db.prepare(
-    `INSERT INTO slack_thread_anchors (channel, thread_key, thread_ts, created_at)
-       VALUES (?, ?, ?, ?)
+    `INSERT INTO slack_thread_anchors (channel, thread_key, thread_ts, created_at, last_activity_at)
+       VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(channel, thread_key) DO NOTHING`,
-  ).run(channel, threadKey, threadTs, new Date().toISOString());
+  ).run(channel, threadKey, threadTs, now, now);
+}
+
+/**
+ * Repoint an existing anchor at a NEW root ts (staleness rollover): the prior
+ * thread had gone dormant, so a fresh top-level post becomes the new root.
+ * Unlike recordThreadAnchor this overwrites — the caller has already decided the
+ * old thread is stale, so there is no work-unit to protect.
+ */
+export function rollThreadAnchor(
+  channel: string,
+  threadKey: string,
+  threadTs: string,
+): void {
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO slack_thread_anchors (channel, thread_key, thread_ts, created_at, last_activity_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(channel, thread_key)
+       DO UPDATE SET thread_ts = excluded.thread_ts, last_activity_at = excluded.last_activity_at`,
+  ).run(channel, threadKey, threadTs, now, now);
+}
+
+/** Bump last_activity_at so an actively-used thread never goes stale. */
+export function touchThreadAnchor(channel: string, threadKey: string): void {
+  db.prepare(
+    `UPDATE slack_thread_anchors SET last_activity_at = ? WHERE channel = ? AND thread_key = ?`,
+  ).run(new Date().toISOString(), channel, threadKey);
 }
 
 // --- Session accessors ---

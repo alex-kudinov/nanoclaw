@@ -19,6 +19,8 @@ import {
   markStaleRunsAsFailed,
   recordThreadAnchor,
   resolveThreadAnchor,
+  rollThreadAnchor,
+  touchThreadAnchor,
   setJobEnabled,
   setRegisteredGroup,
   storeChatMetadata,
@@ -239,6 +241,91 @@ describe('getMessagesSince', () => {
       'Gru',
     );
     expect(msgs).toHaveLength(0);
+  });
+
+  // Regression: 2026-07-05 noop-swarm incident. conditions/params were built
+  // in different orders, so passing excludeGroup bound the folder name to
+  // `content NOT LIKE` and the bot prefix to `from_group !=` — the own-group
+  // exclusion silently matched nothing and every ack/reply the group posted
+  // came back as phantom pending work.
+  it('excludes the group own messages when excludeGroup is passed', () => {
+    storeMessage({
+      id: 'own1',
+      chat_jid: 'group@g.us',
+      sender: 'Bot@s.whatsapp.net',
+      sender_name: 'Gru',
+      content: '[PROCESSING] on it',
+      timestamp: '2024-01-01T00:00:06.000Z',
+      is_from_me: true,
+      is_bot_message: true,
+      from_group: 'grader',
+    });
+    storeMessage({
+      id: 'other1',
+      chat_jid: 'group@g.us',
+      sender: 'Bot@s.whatsapp.net',
+      sender_name: 'Gru',
+      content: '[HANDOFF] please grade',
+      timestamp: '2024-01-01T00:00:07.000Z',
+      is_from_me: true,
+      is_bot_message: true,
+      from_group: 'inbox',
+    });
+    const msgs = getMessagesSince(
+      'group@g.us',
+      '2024-01-01T00:00:05.000Z',
+      'Gru',
+      'grader',
+    );
+    // Own row excluded; cross-group handoff (from_group=inbox) retained.
+    expect(msgs.map((m) => m.id)).toEqual(['other1']);
+  });
+
+  it('keeps the bot-prefix backstop working alongside excludeGroup', () => {
+    store({
+      id: 'legacy1',
+      chat_jid: 'group@g.us',
+      sender: 'Bot@s.whatsapp.net',
+      sender_name: 'Bot',
+      content: 'Gru: legacy prefixed reply',
+      timestamp: '2024-01-01T00:00:06.000Z',
+    });
+    const msgs = getMessagesSince(
+      'group@g.us',
+      '2024-01-01T00:00:05.000Z',
+      'Gru',
+      'grader',
+    );
+    expect(msgs).toHaveLength(0);
+  });
+
+  it('binds threadTs correctly when excludeGroup is also passed', () => {
+    store({
+      id: 'root1',
+      chat_jid: 'group@g.us',
+      sender: 'Alice@s.whatsapp.net',
+      sender_name: 'Alice',
+      content: 'a submission',
+      timestamp: '2024-01-01T00:00:06.000Z',
+    });
+    storeMessage({
+      id: 'reply1',
+      chat_jid: 'group@g.us',
+      sender: 'Alice@s.whatsapp.net',
+      sender_name: 'Alice',
+      content: 'threaded follow-up',
+      timestamp: '2024-01-01T00:00:07.000Z',
+      is_from_me: false,
+      thread_ts: 'root1',
+    });
+    const msgs = getMessagesSince(
+      'group@g.us',
+      '2024-01-01T00:00:05.000Z',
+      'Gru',
+      'grader',
+      'root1',
+    );
+    expect(msgs.map((m) => m.id)).toEqual(['reply1']);
   });
 });
 
@@ -943,21 +1030,55 @@ describe('slack thread anchors', () => {
     expect(resolveThreadAnchor('C123', 'sales:entry:42')).toBeUndefined();
   });
 
-  it('records then resolves the root ts', () => {
+  it('records then resolves the root ts with a last-activity stamp', () => {
     recordThreadAnchor('C123', 'sales:entry:42', '1700.0001');
-    expect(resolveThreadAnchor('C123', 'sales:entry:42')).toBe('1700.0001');
+    const a = resolveThreadAnchor('C123', 'sales:entry:42');
+    expect(a?.threadTs).toBe('1700.0001');
+    expect(a?.lastActivityAt).toBeTruthy();
   });
 
   it('scopes anchors per channel — same key in two channels is independent', () => {
     recordThreadAnchor('C123', 'booking:appt:7', '1700.0001');
     recordThreadAnchor('C999', 'booking:appt:7', '1800.0002');
-    expect(resolveThreadAnchor('C123', 'booking:appt:7')).toBe('1700.0001');
-    expect(resolveThreadAnchor('C999', 'booking:appt:7')).toBe('1800.0002');
+    expect(resolveThreadAnchor('C123', 'booking:appt:7')?.threadTs).toBe(
+      '1700.0001',
+    );
+    expect(resolveThreadAnchor('C999', 'booking:appt:7')?.threadTs).toBe(
+      '1800.0002',
+    );
   });
 
   it('keeps the first root on conflict — a race never splits a work-unit', () => {
     recordThreadAnchor('C123', 'cert:jane|pcc', '1700.0001');
     recordThreadAnchor('C123', 'cert:jane|pcc', '1700.9999');
-    expect(resolveThreadAnchor('C123', 'cert:jane|pcc')).toBe('1700.0001');
+    expect(resolveThreadAnchor('C123', 'cert:jane|pcc')?.threadTs).toBe(
+      '1700.0001',
+    );
+  });
+
+  it('rollThreadAnchor repoints a dormant anchor at a fresh root', () => {
+    recordThreadAnchor('C123', 'sales:entry:9', '1700.0001');
+    rollThreadAnchor('C123', 'sales:entry:9', '1900.5555');
+    expect(resolveThreadAnchor('C123', 'sales:entry:9')?.threadTs).toBe(
+      '1900.5555',
+    );
+  });
+
+  it('rollThreadAnchor creates the anchor when none exists', () => {
+    rollThreadAnchor('C123', 'sales:entry:new', '2000.0001');
+    expect(resolveThreadAnchor('C123', 'sales:entry:new')?.threadTs).toBe(
+      '2000.0001',
+    );
+  });
+
+  it('touchThreadAnchor advances last_activity_at without moving the root', () => {
+    recordThreadAnchor('C123', 'sales:entry:11', '1700.0001');
+    const before = resolveThreadAnchor('C123', 'sales:entry:11');
+    touchThreadAnchor('C123', 'sales:entry:11');
+    const after = resolveThreadAnchor('C123', 'sales:entry:11');
+    expect(after?.threadTs).toBe('1700.0001');
+    expect(
+      Date.parse(after!.lastActivityAt) >= Date.parse(before!.lastActivityAt),
+    ).toBe(true);
   });
 });

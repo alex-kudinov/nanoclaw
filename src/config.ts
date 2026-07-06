@@ -60,6 +60,15 @@ export const CONTAINER_MAX_OUTPUT_SIZE = parseInt(
 ); // 10MB default
 export const IPC_POLL_INTERVAL = 1000;
 export const IDLE_TIMEOUT = parseInt(process.env.IDLE_TIMEOUT || '300000', 10); // 5min default — how long to keep container alive after last result
+// Entity-keyed Slack threading: once a work-unit thread has been idle this long,
+// a new post about it starts a FRESH root at the bottom of the channel instead
+// of resurrecting the dormant (possibly days-old) thread. Measured from the
+// anchor's last activity. 8h default keeps an active same-session flow threaded
+// but rolls over a re-engagement after the conversation has gone quiet.
+export const SLACK_THREAD_TTL_MS = parseInt(
+  process.env.SLACK_THREAD_TTL_MS || '28800000',
+  10,
+); // 8h
 export const MAX_CONCURRENT_CONTAINERS = Math.max(
   1,
   parseInt(process.env.MAX_CONCURRENT_CONTAINERS || '5', 10) || 5,
@@ -70,6 +79,13 @@ export const RECOVERY_RESERVED_SLOTS = parseInt(
   process.env.RECOVERY_RESERVED_SLOTS || '1',
   10,
 );
+// How far back startup recovery scans for unhandled messages. Needed because
+// threadPerMessage groups never advance their root-bucket cursor, so without
+// a floor the recovery window grows unboundedly with channel history.
+export const RECOVERY_LOOKBACK_MS = parseInt(
+  process.env.RECOVERY_LOOKBACK_MS || String(48 * 60 * 60 * 1000),
+  10,
+); // 48h
 export const SPAWN_TIMEOUT = parseInt(process.env.SPAWN_TIMEOUT || '90000', 10); // 90s — fail fast if container produces no output markers
 export const LIVENESS_CHECK_INTERVAL_MS = parseInt(
   process.env.LIVENESS_CHECK_INTERVAL_MS || '10000',

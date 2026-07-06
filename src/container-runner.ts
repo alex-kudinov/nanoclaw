@@ -640,6 +640,14 @@ function buildContainerArgs(
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
 
+  // Cap VM resources. Apple Container defaults to 1024 MB / 4 CPU per container,
+  // but a Claude Code agent idles at ~90 MB (node RSS ~46 MB, measured). Uncapped,
+  // a burst of 1 GB VMs oversubscribes host RAM and thrashes (the box hung at 4
+  // concurrent on 24 GB). Cap to a safe multiple of observed usage; override via
+  // CONTAINER_MEMORY / CONTAINER_CPUS env (plist) to tune without a rebuild.
+  args.push('-m', process.env.CONTAINER_MEMORY || '768M');
+  args.push('-c', process.env.CONTAINER_CPUS || '2');
+
   // Run as host user so bind-mounted files are accessible.
   // Skip when running as root (uid 0), as the container's node user (uid 1000),
   // or when getuid is unavailable (native Windows without WSL).

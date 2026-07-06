@@ -53,6 +53,29 @@ export function isApprovalOnlyText(text: string): boolean {
   return t.trim().length === 0;
 }
 
+/**
+ * Decide which thread a reaction-approval should route into.
+ *
+ * A `reaction_added` event carries only the reacted message's own ts. Using that
+ * as the injected message's `thread_ts` keys a fresh, EMPTY session (`group||<ts>`)
+ * and the agent loses everything said before the reaction — e.g. a certificate
+ * request made just before the operator 👍'd the email-lookup prompt. Instead we
+ * resume the thread the reacted message actually lives in, taken from its stored
+ * row: `undefined` (root) for a top-level message — which resumes the root
+ * session that produced it, where the pre-reaction request still lives — or the
+ * parent thread for a threaded reply. Falls back to the reacted ts only when the
+ * message isn't in our store (nothing better to key on).
+ */
+export function resolveApprovalThreadTs(
+  reacted: { chat_jid: string; thread_ts?: string } | undefined,
+  jid: string,
+  reactedTs: string,
+): string | undefined {
+  if (reacted && reacted.chat_jid === jid)
+    return reacted.thread_ts || undefined;
+  return reactedTs;
+}
+
 /** Build the explicit, agent-unambiguous approval message body. */
 export function buildApprovalContent(opts: {
   reactor?: string;

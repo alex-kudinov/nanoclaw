@@ -5,6 +5,7 @@ import {
   isThumbsDownReaction,
   isApprovalOnlyText,
   buildApprovalContent,
+  resolveApprovalThreadTs,
 } from './slack-approval.js';
 
 describe('isCheckReaction', () => {
@@ -72,5 +73,40 @@ describe('buildApprovalContent', () => {
     const out = buildApprovalContent({ quoted: 'x'.repeat(400) });
     expect(out).toContain('…');
     expect(out.length).toBeLessThan(360);
+  });
+});
+
+describe('resolveApprovalThreadTs', () => {
+  const jid = 'slack:C0AKPNJ7MDW';
+  const reactedTs = '1782870547.453979';
+
+  it('routes to root when the reacted message is a root message', () => {
+    // The regression: a certificate request + the bot email-ask both live in the
+    // root session; the reaction must resume root, not fork a new `group||<ts>`.
+    const reacted = { chat_jid: jid, thread_ts: undefined };
+    expect(resolveApprovalThreadTs(reacted, jid, reactedTs)).toBeUndefined();
+  });
+
+  it('routes to the parent thread when the reacted message is a reply', () => {
+    const reacted = { chat_jid: jid, thread_ts: '1700000000.000001' };
+    expect(resolveApprovalThreadTs(reacted, jid, reactedTs)).toBe(
+      '1700000000.000001',
+    );
+  });
+
+  it('never keys on the reacted message own ts when the row is known', () => {
+    const reacted = { chat_jid: jid, thread_ts: undefined };
+    expect(resolveApprovalThreadTs(reacted, jid, reactedTs)).not.toBe(
+      reactedTs,
+    );
+  });
+
+  it('falls back to the reacted ts when the message is not in our store', () => {
+    expect(resolveApprovalThreadTs(undefined, jid, reactedTs)).toBe(reactedTs);
+  });
+
+  it('falls back to the reacted ts when the stored row is from another chat', () => {
+    const reacted = { chat_jid: 'slack:OTHER', thread_ts: undefined };
+    expect(resolveApprovalThreadTs(reacted, jid, reactedTs)).toBe(reactedTs);
   });
 });

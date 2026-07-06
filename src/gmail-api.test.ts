@@ -20,8 +20,11 @@ vi.mock('./logger.js', () => ({
 import {
   buildRawMessage,
   encodeHeaderValue,
+  extractThreadQuery,
   findThreadForReply,
+  getThread,
   replyToThread,
+  searchEmails,
 } from './gmail-api.js';
 import { getGmailClient } from './gmail-auth.js';
 
@@ -407,5 +410,125 @@ describe('replyToThread external-party addressing', () => {
     ]);
     await replyToThread({ threadId: 't3', body: 'Answer' });
     expect(toLine(send)).toContain('carl@acme.com');
+  });
+});
+
+describe('extractThreadQuery', () => {
+  it('pulls the id from a bare thread: query', () => {
+    expect(extractThreadQuery('thread:19e0daefe7cea171')).toBe(
+      '19e0daefe7cea171',
+    );
+  });
+
+  it('pulls the id when thread: is combined with other operators', () => {
+    expect(
+      extractThreadQuery('subject:"Just a heads up" thread:19e9de839df5c5a5'),
+    ).toBe('19e9de839df5c5a5');
+  });
+
+  it('handles a quoted id', () => {
+    expect(extractThreadQuery('thread:"19abc"')).toBe('19abc');
+  });
+
+  it('returns null for an ordinary search with no thread token', () => {
+    expect(extractThreadQuery('from:carl@acme.com OR to:carl@acme.com')).toBe(
+      null,
+    );
+  });
+});
+
+describe('getThread', () => {
+  function mockThreadGet(
+    messages:
+      | Array<{
+          payload: { headers: Array<{ name: string; value: string }> };
+          id?: string;
+          threadId?: string;
+        }>
+      | undefined,
+    reject = false,
+  ) {
+    const get = reject
+      ? vi.fn().mockRejectedValue(new Error('not found'))
+      : vi.fn().mockResolvedValue({ data: { messages } });
+    vi.mocked(getGmailClient).mockReturnValue({
+      users: { threads: { get } },
+    } as never);
+    return get;
+  }
+
+  it('formats every message in the thread', async () => {
+    mockThreadGet([
+      {
+        id: 'm1',
+        threadId: 't1',
+        payload: {
+          headers: [
+            { name: 'From', value: 'Carl <carl@acme.com>' },
+            { name: 'Subject', value: 'Question about ACC' },
+            { name: 'Date', value: 'Mon, 1 Jun 2026' },
+          ],
+        },
+      },
+      {
+        id: 'm2',
+        threadId: 't1',
+        payload: {
+          headers: [
+            { name: 'From', value: 'Tandem <info@tandemcoach.co>' },
+            { name: 'Subject', value: 'Re: Question about ACC' },
+            { name: 'Date', value: 'Tue, 2 Jun 2026' },
+          ],
+        },
+      },
+    ]);
+    const out = await getThread('t1');
+    expect(out).toContain('Thread t1 — 2 message(s)');
+    expect(out).toContain('carl@acme.com');
+    expect(out).toContain('info@tandemcoach.co');
+    expect(out).toContain('Message-ID: m2');
+  });
+
+  it('returns a not-found string for an empty thread', async () => {
+    mockThreadGet([]);
+    expect(await getThread('missing')).toBe('No thread found for ID missing.');
+  });
+
+  it('returns a not-found string (never throws) when the API errors', async () => {
+    mockThreadGet(undefined, true);
+    expect(await getThread('boom')).toBe('No thread found for ID boom.');
+  });
+});
+
+describe('searchEmails thread: routing', () => {
+  it('routes a thread: query to threads.get, not messages.list', async () => {
+    const threadsGet = vi.fn().mockResolvedValue({ data: { messages: [] } });
+    const messagesList = vi.fn();
+    vi.mocked(getGmailClient).mockReturnValue({
+      users: {
+        threads: { get: threadsGet },
+        messages: { list: messagesList },
+      },
+    } as never);
+
+    await searchEmails({ query: 'thread:19e0daefe7cea171' });
+
+    expect(threadsGet).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '19e0daefe7cea171' }),
+    );
+    expect(messagesList).not.toHaveBeenCalled();
+  });
+
+  it('routes an ordinary query through messages.list', async () => {
+    const messagesList = vi.fn().mockResolvedValue({ data: { messages: [] } });
+    vi.mocked(getGmailClient).mockReturnValue({
+      users: { messages: { list: messagesList } },
+    } as never);
+
+    await searchEmails({ query: 'from:carl@acme.com' });
+
+    expect(messagesList).toHaveBeenCalledWith(
+      expect.objectContaining({ q: 'from:carl@acme.com' }),
+    );
   });
 });

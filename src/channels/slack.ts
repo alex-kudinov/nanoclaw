@@ -1,11 +1,27 @@
+import { execFile } from 'node:child_process';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { promisify } from 'node:util';
+
 import { App, LogLevel } from '@slack/bolt';
 import type { GenericMessageEvent, BotMessageEvent } from '@slack/types';
+import type { ChatPostMessageArguments } from '@slack/web-api';
+
+const execFileP = promisify(execFile);
 
 import { promoteBriefItem } from '../brief-promote.js';
-import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
 import {
+  ASSISTANT_NAME,
+  SLACK_THREAD_TTL_MS,
+  TRIGGER_PATTERN,
+} from '../config.js';
+import {
+  getMessageById,
   recordThreadAnchor,
   resolveThreadAnchor,
+  rollThreadAnchor,
+  touchThreadAnchor,
   updateChatName,
 } from '../db.js';
 import { readEnvFile } from '../env.js';
@@ -15,6 +31,7 @@ import {
   isApprovalOnlyText,
   isCheckReaction,
   isThumbsDownReaction,
+  resolveApprovalThreadTs,
 } from '../slack-approval.js';
 import {
   Channel,
@@ -50,6 +67,70 @@ const MAX_FILE_DOWNLOAD_SIZE = 100 * 1024;
 
 // MIME types and extensions we'll inline as text attachments
 const TEXT_FILE_TYPES = new Set(['csv', 'text', 'plain', 'tsv', 'txt']);
+
+// Office/PDF documents we convert to markdown via markitdown so the container
+// agent gets clean text regardless of its own tooling (students submit grading
+// work as pdf/docx/xlsx/pptx). markitdown dispatches by extension to its handlers
+// (pdfminer / mammoth / openpyxl / python-pptx). On failure we inline a note
+// rather than silently dropping the file.
+const DOC_FILE_TYPES = new Set([
+  'pdf',
+  'docx',
+  'xlsx',
+  'pptx',
+  'doc',
+  'xls',
+  'ppt',
+]);
+const DOC_MIME_RE =
+  /pdf|officedocument|ms-excel|msword|ms-powerpoint|powerpoint/;
+const MAX_DOC_DOWNLOAD_SIZE = 25 * 1024 * 1024; // 25 MB
+const MARKITDOWN_BIN =
+  process.env.NANOCLAW_MARKITDOWN_BIN ||
+  join(homedir(), '.nanoclaw-venvs', 'markitdown', 'bin', 'markitdown');
+const MARKITDOWN_TIMEOUT_MS = 90_000;
+const MARKITDOWN_MAX_OUTPUT = 20 * 1024 * 1024; // 20 MB of extracted text
+
+function escapeAttr(s: string): string {
+  return s.replace(/[<>"&]/g, '_');
+}
+
+function attachedFileTag(name: string, body: string, type?: string): string {
+  const t = type ? ` type="${escapeAttr(type)}"` : '';
+  return `\n<attached_file name="${escapeAttr(name)}"${t}>\n${body}\n</attached_file>`;
+}
+
+function attachedFileNote(name: string, note: string): string {
+  return `\n<attached_file name="${escapeAttr(name)}" note="${escapeAttr(note)}" />`;
+}
+
+/**
+ * Convert a pdf/office document buffer to markdown via the markitdown CLI.
+ * Writes the buffer to a temp file (markitdown dispatches on extension), runs
+ * the converter with a timeout, and always cleans up. Returns null on failure.
+ */
+async function convertViaMarkitdown(
+  buf: Buffer,
+  ext: string,
+  id: string,
+): Promise<string | null> {
+  let dir: string | undefined;
+  try {
+    dir = await mkdtemp(join(tmpdir(), 'nanoclaw-att-'));
+    const fp = join(dir, `${id}.${ext}`);
+    await writeFile(fp, buf);
+    const { stdout } = await execFileP(MARKITDOWN_BIN, [fp], {
+      timeout: MARKITDOWN_TIMEOUT_MS,
+      maxBuffer: MARKITDOWN_MAX_OUTPUT,
+    });
+    return stdout.trim() || null;
+  } catch (err) {
+    logger.warn({ id, ext, err }, 'markitdown conversion failed');
+    return null;
+  } finally {
+    if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
 
 export interface SlackChannelOpts {
   onMessage: OnInboundMessage;
@@ -235,10 +316,11 @@ export class SlackChannel implements Channel {
         }
       }
 
-      // Download text file attachments (CSV, TXT) and inline them
+      // Download attachments (text inlined verbatim; pdf/office docs converted
+      // to markdown via markitdown) and append them to the message content.
       const files = (msg as { files?: SlackFile[] }).files;
       if (files && !isBotMessage) {
-        const inlined = await this.downloadTextFiles(files);
+        const inlined = await this.downloadAndInlineFiles(files);
         if (inlined) content += inlined;
       }
 
@@ -298,6 +380,15 @@ export class SlackChannel implements Channel {
         (event as { event_ts?: string }).event_ts || event.item.ts;
       const quoted = await this.fetchMessageText(channelId, event.item.ts);
 
+      // Route the approval into the SAME thread the reacted message lives in, so
+      // it resumes that message's session/context instead of forking a brand-new
+      // one (see resolveApprovalThreadTs).
+      const routeThreadTs = resolveApprovalThreadTs(
+        getMessageById(event.item.ts),
+        jid,
+        event.item.ts,
+      );
+
       this.opts.onMessage(jid, {
         id: `reaction-${eventTs}`,
         chat_jid: jid,
@@ -308,7 +399,7 @@ export class SlackChannel implements Channel {
         is_from_me: false,
         is_bot_message: false,
         from_group: undefined,
-        thread_ts: event.item.ts, // thread under the approved bot message
+        thread_ts: routeThreadTs,
       });
     });
 
@@ -576,17 +667,32 @@ export class SlackChannel implements Channel {
     }
 
     // Entity-anchored threading: a threadKey collapses repeated posts about the
-    // same work-unit into one thread. Resolve an existing anchor → reply under
-    // it; the first post about the key becomes the root and is recorded from
-    // its ts after sending. An explicit threadTs always wins (the caller already
-    // knows the thread). Resolved at send time so a queued-then-flushed post
-    // still threads correctly.
+    // same work-unit into one thread. An explicit threadTs always wins (the
+    // caller already knows the thread). Resolved at send time so a queued-then-
+    // flushed post still threads correctly. Three outcomes for a threadKey:
+    //   - no anchor yet      → this post becomes the root (recordThreadAnchor)
+    //   - anchor, still fresh → reply under it + broadcast (touchThreadAnchor)
+    //   - anchor, gone stale  → don't resurrect; fresh root at the channel
+    //                           bottom, repoint the anchor (rollThreadAnchor)
     let effectiveThreadTs = threadTs;
-    let keyToAnchor: string | undefined;
+    let keyToAnchor: string | undefined; // brand-new key → INSERT (race-safe)
+    let keyToRoll: string | undefined; // dormant key → repoint to fresh root
+    let keyToTouch: string | undefined; // active key → bump last activity
+    let anchoredReply = false;
     if (threadKey && !effectiveThreadTs) {
       const existing = resolveThreadAnchor(channelId, threadKey);
-      if (existing) effectiveThreadTs = existing;
-      else keyToAnchor = threadKey;
+      if (!existing) {
+        keyToAnchor = threadKey;
+      } else {
+        const idleMs = Date.now() - Date.parse(existing.lastActivityAt);
+        if (Number.isNaN(idleMs) || idleMs > SLACK_THREAD_TTL_MS) {
+          keyToRoll = threadKey;
+        } else {
+          effectiveThreadTs = existing.threadTs;
+          anchoredReply = true;
+          keyToTouch = threadKey;
+        }
+      }
     }
 
     try {
@@ -595,17 +701,28 @@ export class SlackChannel implements Channel {
         fromGroup && !text.startsWith('[') ? `[${fromGroup}]\n` : '';
       const displayText = prefix + text;
 
-      const baseOpts: { channel: string; thread_ts?: string } = {
+      const baseOpts: {
+        channel: string;
+        thread_ts?: string;
+        reply_broadcast?: boolean;
+      } = {
         channel: channelId,
       };
       if (effectiveThreadTs) baseOpts.thread_ts = effectiveThreadTs;
+      // A reply under a still-active anchor threads under it, but a quiet
+      // threaded reply can scroll off in a busy channel. Broadcast it so it also
+      // lands at the channel bottom AND stays grouped in the thread. New/rolled
+      // roots already post top-level; conversational threadTs replies (a human is
+      // actively watching that thread) are left quiet. (Stale anchors don't reach
+      // here — they roll over to a fresh top-level root above.)
+      if (anchoredReply) baseOpts.reply_broadcast = true;
 
       // Slack limits messages to ~4000 characters; split if needed
       if (displayText.length <= MAX_MESSAGE_LENGTH) {
         const result = await this.app.client.chat.postMessage({
           ...baseOpts,
           text: displayText,
-        });
+        } as ChatPostMessageArguments);
         // storeOutbound is the sole persistence path for our own messages —
         // Socket Mode doesn't reliably echo bot_message events back, and the
         // event handler skips the ones it does receive.
@@ -619,6 +736,8 @@ export class SlackChannel implements Channel {
           );
           if (keyToAnchor)
             recordThreadAnchor(channelId, keyToAnchor, result.ts);
+          else if (keyToRoll) rollThreadAnchor(channelId, keyToRoll, result.ts);
+          else if (keyToTouch) touchThreadAnchor(channelId, keyToTouch);
         }
       } else {
         for (let i = 0; i < displayText.length; i += MAX_MESSAGE_LENGTH) {
@@ -626,7 +745,7 @@ export class SlackChannel implements Channel {
           const result = await this.app.client.chat.postMessage({
             ...baseOpts,
             text: chunk,
-          });
+          } as ChatPostMessageArguments);
           if (result.ts) {
             this.storeOutbound(
               jid,
@@ -635,16 +754,26 @@ export class SlackChannel implements Channel {
               fromGroup,
               effectiveThreadTs,
             );
-            // First chunk of a new-key post becomes the root; pin the rest of
-            // the chunks (and the recorded anchor) under it so a split message
-            // stays in one thread.
-            if (keyToAnchor) {
-              recordThreadAnchor(channelId, keyToAnchor, result.ts);
+            // First chunk of a new/rolled-root post becomes the root; pin the
+            // rest of the chunks (and the recorded anchor) under it so a split
+            // message stays in one thread.
+            if (keyToAnchor || keyToRoll) {
+              if (keyToAnchor)
+                recordThreadAnchor(channelId, keyToAnchor, result.ts);
+              else if (keyToRoll)
+                rollThreadAnchor(channelId, keyToRoll, result.ts);
               effectiveThreadTs = result.ts;
               baseOpts.thread_ts = result.ts;
               keyToAnchor = undefined;
+              keyToRoll = undefined;
+            } else if (keyToTouch) {
+              touchThreadAnchor(channelId, keyToTouch);
+              keyToTouch = undefined;
             }
           }
+          // Only the first chunk of a multi-part anchored reply broadcasts to
+          // the channel — the rest stay quiet in the thread.
+          if (baseOpts.reply_broadcast) baseOpts.reply_broadcast = false;
         }
       }
       this.lastActivityAt = Date.now();
@@ -789,57 +918,106 @@ export class SlackChannel implements Channel {
    * Returns a string like "\n<attached_file name="data.csv">...contents...</attached_file>"
    * or empty string if no downloadable text files.
    */
-  private async downloadTextFiles(files: SlackFile[]): Promise<string> {
+  /**
+   * Download attachments and return them as inline content. Plain text/CSV is
+   * inlined verbatim; pdf/office docs are converted to markdown via markitdown
+   * so the container agent gets readable text for every format. Each attachment
+   * becomes an <attached_file> block (or a note if it could not be read).
+   */
+  private async downloadAndInlineFiles(files: SlackFile[]): Promise<string> {
     const parts: string[] = [];
-
     for (const file of files) {
+      if (!file.url_private_download) continue;
       const ext = (file.filetype || '').toLowerCase();
       const isText =
         TEXT_FILE_TYPES.has(ext) ||
         file.mimetype?.startsWith('text/') ||
         file.mimetype === 'application/csv';
-
-      if (!isText || !file.url_private_download) continue;
-      if (file.size > MAX_FILE_DOWNLOAD_SIZE) {
-        logger.warn(
-          { fileId: file.id, name: file.name, size: file.size },
-          'Slack file too large to inline, skipping',
-        );
-        continue;
-      }
-
-      try {
-        // Slack file downloads require the bot token with files:read scope.
-        // The token must be passed as Authorization header (not query param).
-        const resp = await fetch(file.url_private_download, {
-          headers: { Authorization: `Bearer ${this.botToken}` },
-        });
-
-        if (!resp.ok) {
-          logger.warn(
-            { fileId: file.id, status: resp.status },
-            'Failed to download Slack file',
-          );
-          continue;
-        }
-        const text = await resp.text();
-        const safeName = file.name.replace(/[<>"&]/g, '_');
-        parts.push(
-          `\n<attached_file name="${safeName}">\n${text}\n</attached_file>`,
-        );
-        logger.debug(
-          { fileId: file.id, name: file.name, bytes: text.length },
-          'Inlined Slack file attachment',
-        );
-      } catch (err) {
-        logger.warn(
-          { fileId: file.id, name: file.name, err },
-          'Error downloading Slack file',
-        );
+      if (isText) {
+        parts.push(await this.inlineTextFile(file));
+      } else if (
+        DOC_FILE_TYPES.has(ext) ||
+        DOC_MIME_RE.test(file.mimetype || '')
+      ) {
+        parts.push(await this.inlineDocFile(file, ext || 'bin'));
       }
     }
-
     return parts.join('');
+  }
+
+  /** Download a Slack file with the bot token; null on non-OK response. */
+  private async fetchFile(file: SlackFile): Promise<Response | null> {
+    // Slack downloads require the bot token (files:read) as an Authorization header.
+    const resp = await fetch(file.url_private_download as string, {
+      headers: { Authorization: `Bearer ${this.botToken}` },
+    });
+    if (!resp.ok) {
+      logger.warn(
+        { fileId: file.id, status: resp.status },
+        'Failed to download Slack file',
+      );
+      return null;
+    }
+    return resp;
+  }
+
+  /** Inline a plain-text/CSV attachment verbatim (100 KB cap). */
+  private async inlineTextFile(file: SlackFile): Promise<string> {
+    if (file.size > MAX_FILE_DOWNLOAD_SIZE) {
+      logger.warn(
+        { fileId: file.id, size: file.size },
+        'Text file too large to inline, skipping',
+      );
+      return '';
+    }
+    try {
+      const resp = await this.fetchFile(file);
+      if (!resp) return '';
+      return attachedFileTag(file.name, await resp.text());
+    } catch (err) {
+      logger.warn(
+        { fileId: file.id, name: file.name, err },
+        'Error downloading text file',
+      );
+      return '';
+    }
+  }
+
+  /** Download a pdf/office doc and inline its markitdown-extracted markdown. */
+  private async inlineDocFile(file: SlackFile, ext: string): Promise<string> {
+    if (file.size > MAX_DOC_DOWNLOAD_SIZE) {
+      logger.warn(
+        { fileId: file.id, size: file.size },
+        'Document too large to convert, skipping',
+      );
+      return attachedFileNote(
+        file.name,
+        'too large to convert; paste key parts as text',
+      );
+    }
+    try {
+      const resp = await this.fetchFile(file);
+      if (!resp) return attachedFileNote(file.name, 'download failed');
+      const buf = Buffer.from(await resp.arrayBuffer());
+      const md = await convertViaMarkitdown(buf, ext, file.id);
+      if (md) {
+        logger.debug(
+          { fileId: file.id, name: file.name, chars: md.length },
+          'Converted attachment via markitdown',
+        );
+        return attachedFileTag(file.name, md, ext);
+      }
+      return attachedFileNote(
+        file.name,
+        'could not extract text; ask sender to paste it',
+      );
+    } catch (err) {
+      logger.warn(
+        { fileId: file.id, name: file.name, err },
+        'Error converting document attachment',
+      );
+      return attachedFileNote(file.name, 'conversion error');
+    }
   }
 
   private async resolveUserName(userId: string): Promise<string | undefined> {

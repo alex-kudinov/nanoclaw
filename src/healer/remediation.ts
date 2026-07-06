@@ -147,6 +147,23 @@ export async function recordAction(
 }
 
 /**
+ * True if a Slack message ts is a healer incident proposal. The daemon's
+ * generic ✅/👍 approval handler uses this to CLAIM (and thereby suppress) the
+ * reaction — incident approvals are owned by the healer's own reaction polling
+ * (runApprovals/runImplement), so the generic agent-injection must not also
+ * fire and wake #gru-incidents' agent into a confused chit-chat reply.
+ */
+export async function isIncidentProposal(ts: string): Promise<boolean> {
+  const r = await query<{ exists: boolean }>(
+    `SELECT EXISTS(
+        SELECT 1 FROM business_v2.incidents WHERE proposal_ts = $1
+      ) AS exists`,
+    [ts],
+  );
+  return r.rows[0]?.exists ?? false;
+}
+
+/**
  * A fix the healer may execute via a raw shell on ✅. Restricted to
  * command/rerun fixes that are NOT code_bug: a code change needs the full
  * build/test/deploy cycle (Phase 3), so shell-running it (e.g. a proposed

@@ -11,6 +11,7 @@ vi.mock('../logger.js', () => ({
 }));
 
 import {
+  isIncidentProposal,
   postIncidentThread,
   proposeFix,
   saveDiagnosis,
@@ -195,5 +196,23 @@ describe('runShell', () => {
       cb(new Error('x'), '', 'stderr'),
     );
     expect(await runShell('bad')).toEqual({ ok: false, out: 'stderr' });
+  });
+});
+
+describe('isIncidentProposal', () => {
+  it('returns true when a row owns that proposal_ts', async () => {
+    query.mockResolvedValueOnce({ rows: [{ exists: true }] });
+    expect(await isIncidentProposal('99.1')).toBe(true);
+    expect(query.mock.calls[0][1]).toEqual(['99.1']);
+  });
+
+  it('returns false when no incident owns the ts', async () => {
+    query.mockResolvedValueOnce({ rows: [{ exists: false }] });
+    expect(await isIncidentProposal('12.3')).toBe(false);
+  });
+
+  it('returns false on an empty result', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    expect(await isIncidentProposal('0.0')).toBe(false);
   });
 });

@@ -34,6 +34,17 @@ export interface ContainerConfig {
   // When set, the host posts "[PROCESSING] <msg>" to the channel before the
   // container cold-starts, so the agent need not emit a First-Response ack.
   processingMessage?: string;
+  // When true, each root (non-threaded) post becomes its own thread, keyed by
+  // its own ts: a dedicated container + reply thread per post. Keeps concurrent
+  // submissions from sharing a run and threads every reply under the post that
+  // triggered it (e.g. the grader — one thread per graded submission).
+  threadPerMessage?: boolean;
+  // Idle time (ms) a finished container stays warm holding a concurrency slot
+  // before releasing it. Overrides the global IDLE_TIMEOUT. Set LOW for
+  // per-submission workers (e.g. the grader) that expect no follow-ups, so slots
+  // free promptly and the next job starts sooner; leave unset for conversational
+  // groups that benefit from staying warm between turns.
+  idleTimeout?: number;
   // Per-group claude model override (e.g. 'haiku'). Unset → agent-runner sonnet.
   model?: string;
   // Token-exhaustion probe policy. 'eager' tries every account (incl. cooled-down
