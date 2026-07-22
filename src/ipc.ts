@@ -77,6 +77,27 @@ const CANCEL_RE = new RegExp(
   `\\[CANCEL:\\s*(\\w+)\\s*${HANDOFF_ARROW}\\s*mailman\\]`,
 );
 
+// A [SALES REVIEW] approval card is operator-facing content for the source's
+// own channel (#gru-sales) — never a routing directive. Its "ACTION ON
+// APPROVAL" footer literally contains "[HANDOFF: sales→mailman]", and the
+// unanchored HANDOFF_RE above matches that embedded marker: honoring it
+// misrouted the whole card to mailman, which silently no-op'd it as "a preview,
+// not an instruction" and stranded the lead with no visible/approvable draft
+// (Bernard Suman silent stall, 2026-07-22). We key on the marker, NOT on
+// position: 57 legitimate sends in the corpus prefix "Lead #N approved. "
+// before the handoff marker, so an anchored regex would drop real emails.
+const SALES_REVIEW_RE = /\[SALES REVIEW\]/;
+
+/**
+ * True when text is a sales approval card (operator-facing, destined for the
+ * source group's own channel for human approval) rather than a routing
+ * directive. Used to suppress handoff routing on a card whose footer embeds a
+ * mailman handoff marker. See SALES_REVIEW_RE.
+ */
+export function isSalesReviewCard(text: string): boolean {
+  return SALES_REVIEW_RE.test(text);
+}
+
 // Mailman send-hold buffer. Held [HANDOFF: *→mailman] messages sit here
 // for MAILMAN_HOLD_MS so an in-flight [CANCEL: *→mailman] from the same
 // source can intercept the send. See project-mailman-approval-delay
@@ -274,6 +295,38 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 // channel (booking→sales never reached sales — they piled up in
                 // #gru-booking instead). See HANDOFF_ARROW.
                 const handoffMatch = data.text.match(HANDOFF_RE);
+                // GUARD: a [SALES REVIEW] approval card must reach the source's
+                // own channel for human approval — never mailman — even though
+                // its "ACTION ON APPROVAL" footer embeds "[HANDOFF: →mailman]".
+                // Honoring that embedded marker misrouted the card to mailman,
+                // which silently dropped it, leaving the lead with no approvable
+                // draft (Bernard Suman, 2026-07-22). Force it to #gru-sales
+                // regardless of the target the agent addressed. A genuine send
+                // ("Lead #7 approved. [HANDOFF: sales→mailman] To:… Body:…")
+                // carries no [SALES REVIEW] marker and still routes below.
+                if (handoffMatch && isSalesReviewCard(data.text)) {
+                  const sourceEntry = Object.entries(registeredGroups).find(
+                    ([, g]) => g.folder === sourceGroup,
+                  );
+                  if (sourceEntry) {
+                    await deps.sendMessage(sourceEntry[0], data.text, {
+                      fromGroup: sourceGroup,
+                      threadTs: data.thread_ts,
+                      threadKey: data.thread_key,
+                    });
+                    logger.warn(
+                      { sourceGroup, handoffTarget: handoffMatch[1] },
+                      'IPC guard: [SALES REVIEW] card carried an embedded handoff marker — routing suppressed, delivered to source channel for approval',
+                    );
+                  } else {
+                    logger.error(
+                      { sourceGroup },
+                      'IPC guard: [SALES REVIEW] card but source group not registered — dropped',
+                    );
+                  }
+                  fs.unlinkSync(filePath);
+                  continue;
+                }
                 if (handoffMatch) {
                   const handoffTarget = handoffMatch[1];
                   const handoffEntry = Object.entries(registeredGroups).find(

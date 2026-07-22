@@ -286,6 +286,59 @@ describe('IPC handoff routing', () => {
     expect(fs.existsSync(injected)).toBe(false);
   });
 
+  it('GUARD: a [SALES REVIEW] card with an embedded mailman handoff marker goes to #gru-sales, never mailman (Bernard Suman, 2026-07-22)', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '30';
+    const { startIpcWatcher } = await import('./ipc.js');
+    // The agent posts the approval card; its ACTION-ON-APPROVAL footer embeds
+    // "[HANDOFF: sales→mailman]". The unanchored matcher hijacked the whole
+    // card to mailman, which silently dropped it — the lead got no approvable
+    // draft. The guard forces the card to the source's own channel instead.
+    const card =
+      '[SALES REVIEW] Lead #882\nCategory: program-content\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nHi Bernard, here are the details.\n---\n\n' +
+      'ACTION ON APPROVAL:\n→ [HANDOFF: sales→mailman] Entry 882 | Reply: false';
+    writeHandoffFile('sales', card, 'thr-882', 'sales:entry:882');
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(35_000);
+
+    // Delivered to the source's own channel for approval...
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringContaining('[SALES REVIEW] Lead #882'),
+      expect.objectContaining({
+        fromGroup: 'sales',
+        threadKey: 'sales:entry:882',
+      }),
+    );
+    // ...and NEVER routed to mailman (the silent-stall bug).
+    expect(sendMessage.mock.calls.some((c) => c[0] === 'slack:MAILMAN')).toBe(
+      false,
+    );
+  });
+
+  it('a genuine "Lead #N approved. [HANDOFF: sales→mailman]" send (no review marker) still routes to mailman', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '30';
+    const { startIpcWatcher } = await import('./ipc.js');
+    // Regression guard: 57 real sends in the corpus prefix "Lead #N approved. "
+    // before the marker. The guard must key on the [SALES REVIEW] marker, not
+    // on marker position — an anchored regex would drop these real emails.
+    writeHandoffFile(
+      'sales',
+      'Lead #7 approved.  [HANDOFF: sales→mailman]\nTo: a@b.com\nBody: reply',
+      'thr-7legit',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(35_000);
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:MAILMAN',
+      expect.stringContaining('[HANDOFF: sales→mailman]'),
+      expect.objectContaining({ fromGroup: 'sales' }),
+    );
+  });
+
   it('drops a held handoff when a cancel arrives in the window', async () => {
     process.env.MAILMAN_HOLD_SECONDS = '30';
     const { startIpcWatcher } = await import('./ipc.js');
