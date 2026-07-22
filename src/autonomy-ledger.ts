@@ -108,7 +108,8 @@ function ingestNewDrafts(
     if (!m.content || !isDraftMessage(m.content)) continue;
     if (m.from_group && m.from_group !== g.folder) continue;
     if (hasAutonomyDraftEvent(m.id)) continue;
-    const category = parseDraftCategory(m.content) ?? heuristicCategory(m.content);
+    const category =
+      parseDraftCategory(m.content) ?? heuristicCategory(m.content);
     insertAutonomyDraftEvent({
       draft_id: m.id,
       chat_jid: g.jid,
@@ -154,7 +155,9 @@ export function classifyOutcome(
     }
     if (isApprovalMessage(text)) {
       return {
-        outcome: isAutoApprovalMessage(text) ? 'auto_approved' : 'approved_clean',
+        outcome: isAutoApprovalMessage(text)
+          ? 'auto_approved'
+          : 'approved_clean',
         at: m.timestamp,
       };
     }

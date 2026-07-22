@@ -48,4 +48,16 @@ describe('checkContent', () => {
     expect(r.ok).toBe(false);
     expect(r.violations.length).toBeGreaterThanOrEqual(3);
   });
+
+  it('blocks AI-tells and labels them', () => {
+    const r = checkContent(
+      'Pricing',
+      'Hi Vishal,\n\nThank you for reaching out. I hope this helps!',
+    );
+    expect(r.ok).toBe(false);
+    expect(r.violations.some((v) => v.includes('AI-ism'))).toBe(true);
+    expect(
+      r.violations.some((v) => v.includes('thank you for reaching out')),
+    ).toBe(true);
+  });
 });

@@ -95,7 +95,12 @@ export async function checkLessonConflict(
   notify?: ConflictNotifier,
 ): Promise<void> {
   try {
-    const learnedPath = path.resolve('knowledge', 'agents', agent, 'LEARNED.md');
+    const learnedPath = path.resolve(
+      'knowledge',
+      'agents',
+      agent,
+      'LEARNED.md',
+    );
     if (!fs.existsSync(learnedPath)) return;
     const content = fs.readFileSync(learnedPath, 'utf-8');
     // Exclude the lesson under test from its own comparison corpus.
@@ -126,7 +131,12 @@ export async function checkLessonConflict(
       );
     }
     logger.warn(
-      { agent, lessonNum, conflicts: verdict.conflicts, domain: verdict.domain },
+      {
+        agent,
+        lessonNum,
+        conflicts: verdict.conflicts,
+        domain: verdict.domain,
+      },
       'lesson-conflict: contradiction detected',
     );
   } catch (err) {

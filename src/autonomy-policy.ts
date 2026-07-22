@@ -104,16 +104,24 @@ export function isAutoApprovalMessage(text: string): boolean {
 export function heuristicCategory(text: string): Category {
   const t = text.toLowerCase();
   if (text.includes('DRAFT FOLLOW-UP:')) return 'followup';
-  if (/refund|failed payment|declined|split payment|installment|invoice/.test(t))
+  if (
+    /refund|failed payment|declined|split payment|installment|invoice/.test(t)
+  )
     return 'payment-issue';
   if (/\$\d|price|pricing|cost|payment plan|how much/.test(t)) return 'pricing';
   if (/login|log in|access|password|community\.tandem|course material/.test(t))
     return 'account-access';
   if (/cohort|enroll|waitlist|seat|register|sign.?up|start date/.test(t))
     return 'enrollment';
-  if (/class time|reschedul|make.?up|missed class|calendar|session time/.test(t))
+  if (
+    /class time|reschedul|make.?up|missed class|calendar|session time/.test(t)
+  )
     return 'scheduling';
-  if (/icf|accredit|curriculum|hours|bars|markers|mcs|acc\b|pcc\b|mentor coach|practicum|credential/.test(t))
+  if (
+    /icf|accredit|curriculum|hours|bars|markers|mcs|acc\b|pcc\b|mentor coach|practicum|credential/.test(
+      t,
+    )
+  )
     return 'program-content';
   return 'other';
 }

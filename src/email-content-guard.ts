@@ -12,10 +12,15 @@
  *   2. No links outside the domain whitelist (an agent must never send a
  *      customer to an unknown destination).
  *   3. No unfilled template placeholders ([insert …], {{name}}, TBD, …).
+ *   4. No AI-tells — the standard anti-AI-ism check (see ai-tells.ts). The
+ *      banned phrases/words that read as "a machine wrote this" and must never
+ *      reach a client, enforced here instead of trusting the agent to self-edit.
  *
  * Violations BLOCK the send; the [EMAIL BLOCKED] echo goes to chief with the
  * reasons so an operator can fix and resend. Zero-LLM, false-positive-averse.
  */
+
+import { scanAiTells } from './ai-tells.js';
 
 export interface ContentCheckResult {
   ok: boolean;
@@ -74,7 +79,9 @@ function checkDiscounts(text: string, violations: string[]): void {
   for (const re of DISCOUNT_RES) {
     const m = text.match(re);
     if (m) {
-      violations.push(`numeric discount offer "${m[0].trim()}" (discounts are human-only)`);
+      violations.push(
+        `numeric discount offer "${m[0].trim()}" (discounts are human-only)`,
+      );
       return;
     }
   }
@@ -94,12 +101,22 @@ function checkPlaceholders(text: string, violations: string[]): void {
   }
 }
 
+function checkAiTells(text: string, violations: string[]): void {
+  for (const label of scanAiTells(text)) {
+    violations.push(`AI-ism "${label}" (banned client-facing phrasing)`);
+  }
+}
+
 /** Run all content predicates over subject + body. */
-export function checkContent(subject: string, body: string): ContentCheckResult {
+export function checkContent(
+  subject: string,
+  body: string,
+): ContentCheckResult {
   const violations: string[] = [];
   const text = `${subject || ''}\n${body || ''}`;
   checkLinks(text, violations);
   checkDiscounts(text, violations);
   checkPlaceholders(text, violations);
+  checkAiTells(text, violations);
   return { ok: violations.length === 0, violations };
 }

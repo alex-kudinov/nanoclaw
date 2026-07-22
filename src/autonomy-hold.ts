@@ -105,7 +105,11 @@ async function holdNewL2Draft(
 
 /** Operator activity since the draft = the hold must not fire. */
 function threadHasOperatorActivity(p: AutonomyPendingRow): boolean {
-  const msgs = getAutonomyThreadMessagesAfter(p.chat_jid, p.thread_ts, p.draft_ts);
+  const msgs = getAutonomyThreadMessagesAfter(
+    p.chat_jid,
+    p.thread_ts,
+    p.draft_ts,
+  );
   return msgs.some((m) => {
     const text = (m.content || '').trim();
     if (!text || m.is_from_me) return false;

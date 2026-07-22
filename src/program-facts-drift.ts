@@ -71,7 +71,14 @@ export function resolveKbPath(): string {
 export function resolveProductsPath(): string {
   return (
     process.env.PRODUCTS_JSON_PATH ??
-    path.join(os.homedir(), 'dev', 'tandemweb', 'data', 'checkout', 'products.json')
+    path.join(
+      os.homedir(),
+      'dev',
+      'tandemweb',
+      'data',
+      'checkout',
+      'products.json',
+    )
   );
 }
 
@@ -92,11 +99,19 @@ function checkPrice(
   for (const id of spec.products_ids) {
     const entry = products[id];
     if (!entry) {
-      out.push({ program, kind: 'product_missing', detail: `products.json has no entry "${id}"` });
+      out.push({
+        program,
+        kind: 'product_missing',
+        detail: `products.json has no entry "${id}"`,
+      });
       continue;
     }
     if (entry.active === false) {
-      out.push({ program, kind: 'product_inactive', detail: `products.json "${id}" is inactive (active:false)` });
+      out.push({
+        program,
+        kind: 'product_inactive',
+        detail: `products.json "${id}" is inactive (active:false)`,
+      });
     }
     if (entry.price_cents !== expectCents) {
       out.push({
@@ -110,16 +125,28 @@ function checkPrice(
 }
 
 /** KB check: required strings present, stale strings absent. */
-function checkKb(program: string, spec: ProgramSpec, kb: string): DriftFinding[] {
+function checkKb(
+  program: string,
+  spec: ProgramSpec,
+  kb: string,
+): DriftFinding[] {
   const out: DriftFinding[] = [];
   for (const s of spec.kb_present ?? []) {
     if (!kb.includes(s)) {
-      out.push({ program, kind: 'kb_missing_fact', detail: `sales KB missing expected "${s}"` });
+      out.push({
+        program,
+        kind: 'kb_missing_fact',
+        detail: `sales KB missing expected "${s}"`,
+      });
     }
   }
   for (const s of spec.kb_absent ?? []) {
     if (kb.includes(s)) {
-      out.push({ program, kind: 'kb_stale_value', detail: `sales KB still contains stale "${s}"` });
+      out.push({
+        program,
+        kind: 'kb_stale_value',
+        detail: `sales KB still contains stale "${s}"`,
+      });
     }
   }
   return out;
@@ -142,7 +169,9 @@ export function detectDrift(
 }
 
 export async function runProgramFactsDrift(): Promise<DriftResult> {
-  const facts = parseYaml(fs.readFileSync(resolveFactsPath(), 'utf-8')) as FactsFile;
+  const facts = parseYaml(
+    fs.readFileSync(resolveFactsPath(), 'utf-8'),
+  ) as FactsFile;
   const kb = fs.readFileSync(resolveKbPath(), 'utf-8');
 
   let products: Record<string, ProductEntry> = {};
@@ -155,7 +184,11 @@ export async function runProgramFactsDrift(): Promise<DriftResult> {
 
   const result = detectDrift(facts, kb, products);
   if (productsError) {
-    result.findings.push({ program: '(all)', kind: 'product_missing', detail: productsError });
+    result.findings.push({
+      program: '(all)',
+      kind: 'product_missing',
+      detail: productsError,
+    });
   }
   return result;
 }

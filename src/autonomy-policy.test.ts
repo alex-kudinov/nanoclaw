@@ -47,7 +47,16 @@ describe('draft/approval detection', () => {
   });
 
   it('recognizes whole-message typed approvals, rejects mixed feedback', () => {
-    for (const t of ['approved', 'Approved', 'approve', 'yes, send it', 'go ahead', 'send it', 'ok to send', '👍']) {
+    for (const t of [
+      'approved',
+      'Approved',
+      'approve',
+      'yes, send it',
+      'go ahead',
+      'send it',
+      'ok to send',
+      '👍',
+    ]) {
       expect(isOperatorApprovalText(t), t).toBe(true);
     }
     for (const t of [
@@ -70,9 +79,9 @@ describe('heuristicCategory (backfill)', () => {
       'payment-issue',
     );
     expect(heuristicCategory('the program costs $3,999 total')).toBe('pricing');
-    expect(heuristicCategory('the next cohort starts in September, enroll')).toBe(
-      'enrollment',
-    );
+    expect(
+      heuristicCategory('the next cohort starts in September, enroll'),
+    ).toBe('enrollment');
   });
 });
 

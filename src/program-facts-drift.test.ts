@@ -25,10 +25,16 @@ describe('detectDrift', () => {
   });
 
   it('flags a products.json price mismatch', () => {
-    const products = { ...goodProducts, 'mcs-thu': { price_cents: 199700, active: true } };
+    const products = {
+      ...goodProducts,
+      'mcs-thu': { price_cents: 199700, active: true },
+    };
     const r = detectDrift(facts, goodKb, products);
     expect(r.findings).toHaveLength(1);
-    expect(r.findings[0]).toMatchObject({ program: 'mcs-practicum', kind: 'price_mismatch' });
+    expect(r.findings[0]).toMatchObject({
+      program: 'mcs-practicum',
+      kind: 'price_mismatch',
+    });
     expect(r.findings[0].detail).toContain('$1,997');
   });
 
@@ -39,22 +45,37 @@ describe('detectDrift', () => {
   });
 
   it('flags an inactive (retired) product', () => {
-    const products = { ...goodProducts, 'mcs-fri': { price_cents: 299700, active: false } };
+    const products = {
+      ...goodProducts,
+      'mcs-fri': { price_cents: 299700, active: false },
+    };
     const r = detectDrift(facts, goodKb, products);
     expect(r.findings.some((f) => f.kind === 'product_inactive')).toBe(true);
   });
 
   it('flags a KB missing a required fact', () => {
-    const r = detectDrift(facts, 'Program is $2,997 for the 71 hours.', goodProducts);
+    const r = detectDrift(
+      facts,
+      'Program is $2,997 for the 71 hours.',
+      goodProducts,
+    );
     expect(r.findings).toEqual([
-      { program: 'mcs-practicum', kind: 'kb_missing_fact', detail: 'sales KB missing expected "AAMC"' },
+      {
+        program: 'mcs-practicum',
+        kind: 'kb_missing_fact',
+        detail: 'sales KB missing expected "AAMC"',
+      },
     ]);
   });
 
   it('flags a KB carrying a stale value', () => {
     const staleKb = goodKb + ' Old price was $1,997.';
     const r = detectDrift(facts, staleKb, goodProducts);
-    expect(r.findings.some((f) => f.kind === 'kb_stale_value' && f.detail.includes('$1,997'))).toBe(true);
+    expect(
+      r.findings.some(
+        (f) => f.kind === 'kb_stale_value' && f.detail.includes('$1,997'),
+      ),
+    ).toBe(true);
   });
 
   it('skips price checks (no false product_missing) when products is empty', () => {
