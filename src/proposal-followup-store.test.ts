@@ -106,6 +106,32 @@ describe('pgFollowupStore', () => {
     );
     expect(params).toEqual(['pid1', 5]);
   });
+
+  it('recordSuppression upserts the de-dup row keyed by proposal id', async () => {
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+    await pgFollowupStore.recordSuppression({
+      proposalId: 'pid1',
+      partyId: 42,
+      email: 'k@x.com',
+    });
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toContain(
+      'INSERT INTO business_v2.email_followup_suppressions',
+    );
+    expect(sql).toContain('ON CONFLICT (proposal_plutio_id) DO UPDATE');
+    expect(sql).toContain('last_seen_open_at = NOW()');
+    expect(params).toEqual(['pid1', 42, 'k@x.com']);
+  });
+
+  it('recordSuppression stores null email when blank', async () => {
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+    await pgFollowupStore.recordSuppression({
+      proposalId: 'pid2',
+      partyId: null,
+      email: '',
+    });
+    expect(mockQuery.mock.calls[0][1]).toEqual(['pid2', null, null]);
+  });
 });
 
 describe('getPendingByTs / markSent', () => {

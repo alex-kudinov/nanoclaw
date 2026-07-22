@@ -24,14 +24,22 @@ const EMPTY_STATE: FollowupState = {
   existingSequences: new Set<number>(),
 };
 
-function fakeStore(
-  state: FollowupState = EMPTY_STATE,
-): FollowupStore & { drafts: unknown[]; closeouts: string[] } {
+function fakeStore(state: FollowupState = EMPTY_STATE): FollowupStore & {
+  drafts: unknown[];
+  closeouts: string[];
+  suppressions: { proposalId: string; partyId: number | null; email: string }[];
+} {
   const drafts: unknown[] = [];
   const closeouts: string[] = [];
+  const suppressions: {
+    proposalId: string;
+    partyId: number | null;
+    email: string;
+  }[] = [];
   return {
     drafts,
     closeouts,
+    suppressions,
     async getState() {
       return state;
     },
@@ -40,6 +48,9 @@ function fakeStore(
     },
     async recordCloseout(id) {
       closeouts.push(id);
+    },
+    async recordSuppression(s) {
+      suppressions.push(s);
     },
     async expireStale() {
       return 3;
@@ -95,6 +106,64 @@ describe('runProposalFollowup', () => {
     });
     expect((deps.store as ReturnType<typeof fakeStore>).drafts).toHaveLength(1);
     expect(deps.postDraft).toHaveBeenCalledOnce();
+  });
+
+  it('records an open-proposal suppression for every scanned proposal', async () => {
+    const store = fakeStore();
+    const deps = makeDeps({
+      store,
+      listOpenProposals: vi
+        .fn()
+        .mockResolvedValue([
+          makeProposal(),
+          makeProposal({ id: 'pid2', clientId: 'client2' }),
+        ]),
+    });
+    await runProposalFollowup(deps);
+    expect(store.suppressions).toEqual([
+      { proposalId: 'pid1', partyId: 42, email: 'k@x.com' },
+      { proposalId: 'pid2', partyId: 42, email: 'k@x.com' },
+    ]);
+  });
+
+  it('suppresses a cold proposal too (de-dup must not be capped by draft state)', async () => {
+    const store = fakeStore({
+      ...EMPTY_STATE,
+      lastSentSequence: 4,
+      firstFollowupAt: new Date(2026, 5, 1),
+      lastSentAt: new Date(2026, 5, 8),
+    });
+    const deps = makeDeps({ store });
+    await runProposalFollowup(deps);
+    expect(store.closeouts).toEqual(['pid1']);
+    expect(store.suppressions).toEqual([
+      { proposalId: 'pid1', partyId: 42, email: 'k@x.com' },
+    ]);
+  });
+
+  it('lowercases the suppression email and skips proposals with no recipient', async () => {
+    const store = fakeStore();
+    const deps = makeDeps({
+      store,
+      resolveRecipient: vi
+        .fn()
+        .mockResolvedValueOnce({
+          email: 'Big@CASE.com',
+          firstName: 'B',
+          lastName: 'C',
+        })
+        .mockResolvedValueOnce(null),
+      listOpenProposals: vi
+        .fn()
+        .mockResolvedValue([
+          makeProposal(),
+          makeProposal({ id: 'pid2', clientId: 'client2' }),
+        ]),
+    });
+    await runProposalFollowup(deps);
+    expect(store.suppressions).toEqual([
+      { proposalId: 'pid1', partyId: 42, email: 'big@case.com' },
+    ]);
   });
 
   it('auto-cancels a cold proposal a week after the breakup', async () => {

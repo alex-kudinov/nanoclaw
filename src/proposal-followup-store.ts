@@ -12,6 +12,7 @@ import type {
   FollowupState,
   FollowupStore,
   PendingDraft,
+  SuppressionRecord,
 } from './proposal-followup.js';
 
 interface StateRow {
@@ -108,6 +109,21 @@ export const pgFollowupStore: FollowupStore = {
       [days],
     );
     return res.rowCount ?? 0;
+  },
+
+  async recordSuppression(s: SuppressionRecord): Promise<void> {
+    // Upsert keyed by proposal so a signed/declined proposal stops being
+    // refreshed and ages out of the de-dup window (view uses last_seen_open_at).
+    await query(
+      `INSERT INTO business_v2.email_followup_suppressions
+         (proposal_plutio_id, party_id, email, reason, last_seen_open_at)
+       VALUES ($1, $2, $3, 'open_proposal', NOW())
+       ON CONFLICT (proposal_plutio_id) DO UPDATE
+         SET party_id = EXCLUDED.party_id,
+             email = EXCLUDED.email,
+             last_seen_open_at = NOW()`,
+      [s.proposalId, s.partyId, s.email || null],
+    );
   },
 };
 

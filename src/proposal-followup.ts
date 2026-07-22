@@ -50,11 +50,20 @@ export interface DraftRecord {
   slackTs: string;
 }
 
+/** One open-proposal recipient to shield from sales email follow-up nudges. */
+export interface SuppressionRecord {
+  proposalId: string;
+  partyId: number | null;
+  email: string; // lowercased
+}
+
 export interface FollowupStore {
   expireStale(days: number): Promise<number>;
   getState(proposalId: string): Promise<FollowupState>;
   recordDraft(d: DraftRecord): Promise<void>;
   recordCloseout(proposalId: string): Promise<void>;
+  /** Upsert the open-proposal de-dup row (email_followup_suppressions). */
+  recordSuppression(s: SuppressionRecord): Promise<void>;
 }
 
 export interface ProposalFollowupDeps {
@@ -166,12 +175,44 @@ async function draftDue(
   return true;
 }
 
+/**
+ * Refresh the email-followup suppression set from the live open-proposal list,
+ * so anyone with an unsigned Plutio proposal is shielded from the sales email
+ * follow-up cron. Runs for EVERY open proposal — independent of whether a nudge
+ * is due or the maxPerRun cap — because the de-dup must be complete, not capped.
+ * Best-effort: a single failure never aborts the run.
+ */
+async function refreshSuppressions(
+  proposals: OpenProposal[],
+  deps: ProposalFollowupDeps,
+): Promise<void> {
+  for (const p of proposals) {
+    if (!p.clientId) continue;
+    try {
+      const recipient = await deps.resolveRecipient(p.clientId);
+      if (!recipient?.email) continue;
+      const partyId = await deps.resolvePartyId(recipient.email);
+      await deps.store.recordSuppression({
+        proposalId: p.id,
+        partyId,
+        email: recipient.email.toLowerCase(),
+      });
+    } catch (err) {
+      logger.warn(
+        { err, proposal: p.number },
+        'proposal-followup: suppression refresh failed',
+      );
+    }
+  }
+}
+
 export async function runProposalFollowup(
   deps: ProposalFollowupDeps,
 ): Promise<RunResult> {
   const now = deps.now?.() ?? new Date();
   const expired = await deps.store.expireStale(deps.expireDays);
   const proposals = await deps.listOpenProposals();
+  await refreshSuppressions(proposals, deps);
   const result: RunResult = {
     scanned: proposals.length,
     drafted: 0,
