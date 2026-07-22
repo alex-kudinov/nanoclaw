@@ -360,10 +360,19 @@ export class GroupQueue {
       const filename = `${messageId}.json`;
       const filepath = path.join(inputDir, filename);
       const tempPath = `${filepath}.tmp`;
+      // Address the payload to THIS session's container. The input dir is shared
+      // per groupFolder (ipc/<folder>/input), so with concurrent same-group
+      // containers (thread-per-message + MAX_CONCURRENT_CONTAINERS) a bare
+      // message is consumed by whichever container polls first — which may hold
+      // a DIFFERENT session's context. That mis-delivery sent a stale draft on
+      // 2026-07-21 (a thread-scoped approval eaten by the root container). The
+      // agent-runner drains only files whose target_container matches its own
+      // CONTAINER_NAME; others it leaves. Mirrors the `_close-<name>` targeting.
       const payload = JSON.stringify({
         type: 'message',
         message_id: messageId,
         timestamp_ms: timestampMs,
+        target_container: state.containerName ?? undefined,
         text,
       });
       fs.writeFileSync(tempPath, payload);
@@ -639,7 +648,7 @@ export class GroupQueue {
       }
       state.process = null;
       state.containerName = null;
-    state.spawnSnippet = undefined;
+      state.spawnSnippet = undefined;
       state.groupFolder = null;
       state.resetIdleTimer = undefined;
       state.activeSinceMs = undefined;
@@ -677,7 +686,7 @@ export class GroupQueue {
       state.isTaskContainer = false;
       state.process = null;
       state.containerName = null;
-    state.spawnSnippet = undefined;
+      state.spawnSnippet = undefined;
       state.groupFolder = null;
       state.resetIdleTimer = undefined;
       state.activeSinceMs = undefined;

@@ -7,7 +7,10 @@ import fs from 'fs';
 vi.mock('./config.js', async () => {
   const { tmpdir } = await import('os');
   const { join } = await import('path');
-  return { DATA_DIR: join(tmpdir(), `label-poll-test-${process.pid}`) };
+  return {
+    DATA_DIR: join(tmpdir(), `label-poll-test-${process.pid}`),
+    GMAIL_DELIVERY_STATE_KEY: 'gmail_last_delivery_ms',
+  };
 });
 
 const TMP_DATA_DIR = path.join(os.tmpdir(), `label-poll-test-${process.pid}`);

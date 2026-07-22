@@ -508,7 +508,9 @@ describe('recipient guard (tina@example.com incident)', () => {
     expect(result).toBeUndefined();
     expect(sendEmail).not.toHaveBeenCalled();
     expect(postToChief).toHaveBeenCalledTimes(1);
-    expect(postToChief.mock.calls[0][0]).toMatch(/EMAIL BLOCKED.*tina@example\.com/);
+    expect(postToChief.mock.calls[0][0]).toMatch(
+      /EMAIL BLOCKED.*tina@example\.com/,
+    );
   });
 
   it('blocks a deliverable address that is not among the party’s known emails', async () => {

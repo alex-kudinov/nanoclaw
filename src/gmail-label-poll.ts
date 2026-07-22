@@ -19,7 +19,7 @@ import path from 'path';
 import type { gmail_v1 } from 'googleapis';
 
 import { query } from './business-db.js';
-import { DATA_DIR } from './config.js';
+import { DATA_DIR, GMAIL_DELIVERY_STATE_KEY } from './config.js';
 import { getRouterState, setRouterState } from './db.js';
 import { getGmailClient } from './gmail-auth.js';
 import { logger } from './logger.js';
@@ -220,6 +220,10 @@ export async function runLabelChangePoll(): Promise<LabelPollResult> {
   }
 
   setRouterState(HISTORY_STATE_KEY, lastHistoryId);
+  // Delivery-liveness heartbeat: reaching here means we walked Gmail history
+  // end-to-end this cycle, so inbound Gmail is provably reachable regardless of
+  // the n8n push relay. The healer pages only when this goes stale (>20 min).
+  setRouterState(GMAIL_DELIVERY_STATE_KEY, String(Date.now()));
   logger.info(
     {
       processed: result.processed,

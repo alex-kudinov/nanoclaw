@@ -52,7 +52,9 @@ import {
   getAllSessions,
   getAllTasks,
   getJob,
+  getMessageById,
   getMessagesSince,
+  getThreadContext,
   getNewMessages,
   getThreadParent,
   getLatestGroupResponse,
@@ -89,7 +91,8 @@ import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
 import { runNameReaper } from './contador-name-reaper.js';
 import { runChaosReconcile } from './chaos-reconciler.js';
 import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
-import { query } from './business-db.js';
+import { query, withAgentContext } from './business-db.js';
+import { handleFollowupDrop } from './followup-drop.js';
 import { SlackChannel } from './channels/slack.js';
 import { handleGmailSend } from './gmail-ipc-handlers.js';
 import {
@@ -161,6 +164,11 @@ export { escapeXml, formatMessages } from './router.js';
 let lastTimestamp = '';
 let sessions: Record<string, string> = {};
 let registeredGroups: Record<string, RegisteredGroup> = {};
+
+// When a threaded reply spawns a fresh container, seed its <messages> with up to
+// this many of the thread's most recent posts (root + replies) so the agent sees
+// the pending draft it's being asked to change even if its Claude session rotated.
+const THREAD_CONTEXT_LIMIT = 25;
 
 // Thread key for grouping a message into a run. Threaded posts keep their
 // thread_ts; for threadPerMessage groups a root post becomes its own thread
@@ -290,12 +298,21 @@ async function processGroupMessages(
   const dispatchAcked = ackedSpawns.delete(compositeKey);
 
   const sinceTimestamp = lastAgentTimestamp[compositeKey] || '';
+  // Scope the fetch to THIS bucket. For a root spawn threadTs is `undefined`,
+  // which getMessagesSince reads as "no thread filter — ALL messages". Since
+  // minions began threading their own posts (8a0b11b), the channel is full of
+  // threaded messages, and the root cursor only advances on root-message
+  // processing — so an unfiltered root fetch replays every OTHER thread's
+  // already-handled messages into a fresh root container (the "re-processing a
+  // prior command" regression). `undefined -> null` restricts the root bucket to
+  // root messages (thread_ts IS NULL); a real thread ts passes through unchanged.
+  const threadFilter = threadTs ?? null;
   let missedMessages = getMessagesSince(
     chatJid,
     sinceTimestamp,
     ASSISTANT_NAME,
     group.folder,
-    threadTs,
+    threadFilter,
   );
 
   // threadPerMessage root rescue: a first-time submission posted as a root message
@@ -337,24 +354,37 @@ async function processGroupMessages(
     if (!hasTrigger) return true;
   }
 
-  // For threaded replies, prepend the parent message so the agent has full context.
-  // The parent (root) message has thread_ts IS NULL and won't be in the thread-filtered query.
-  let messagesToFormat = missedMessages;
+  // Assemble the container's INPUT context.
+  //
+  // Root spawns (threadTs undefined): just the new messages, own-group echoes
+  // stripped — the group's prior output lives in its resumed Claude session.
+  //
+  // Threaded replies (threadTs set): seed the WHOLE thread (bounded), including
+  // the group's OWN prior posts. An operator's reply is a response to the pending
+  // draft, which is the agent's own post — relying on session memory alone drops
+  // it when the session rotated (Travis Rose sales thread, 2026-07-06: two operator
+  // replies to a pending draft were silently dropped as "status updates" because
+  // the fresh session never saw the draft). We still strip the host's "[PROCESSING]"
+  // ack and untagged bot echoes so they never re-enter as context (the grader
+  // reacting to "[PROCESSING]" instead of the submission).
+  let messagesToFormat: NewMessage[];
   if (threadTs) {
-    const parent = getThreadParent(chatJid, threadTs);
-    if (parent && !missedMessages.some((m) => m.id === parent.id)) {
-      messagesToFormat = [parent, ...missedMessages];
-    }
+    const threadCtx = getThreadContext(chatJid, threadTs, THREAD_CONTEXT_LIMIT);
+    const seen = new Set(threadCtx.map((m) => m.id));
+    const merged = [...threadCtx];
+    for (const m of missedMessages) if (!seen.has(m.id)) merged.push(m);
+    merged.sort((a, b) =>
+      a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0,
+    );
+    messagesToFormat = merged.filter(
+      (m) =>
+        !m.content.startsWith('[PROCESSING]') &&
+        !isUntaggedBotNoise(m, ASSISTANT_NAME),
+    );
+  } else {
+    messagesToFormat = excludeOwnGroupMessages(missedMessages, group.folder);
   }
-
-  // Strip this group's own host-posted echoes (the "[PROCESSING]" ack carries
-  // from_group=<folder>) from the container's INPUT context. Since the ack is now
-  // posted at dispatch, it lands in the thread before the container reads context;
-  // without this filter it leaks into the agent's <messages> and derails it
-  // (e.g. the grader reacting to "[PROCESSING]" instead of grading the submission).
-  const prompt = formatMessages(
-    excludeOwnGroupMessages(messagesToFormat, group.folder),
-  );
+  const prompt = formatMessages(messagesToFormat);
 
   // Advance cursor so the piping path in startMessageLoop won't re-fetch
   // these messages. Save the old cursor so we can roll back on error.
@@ -700,13 +730,17 @@ async function startMessageLoop(): Promise<void> {
             !isMainGroup && group.requiresTrigger !== false && !threadTs;
 
           // Pull all messages since lastAgentTimestamp so non-trigger
-          // context that accumulated between triggers is included.
+          // context that accumulated between triggers is included. Scope to
+          // this bucket: `threadTs ?? null` keeps a root spawn to root messages
+          // (thread_ts IS NULL) instead of ALL messages — an unscoped root
+          // fetch replays other threads' already-handled posts into the
+          // container (see processGroupMessages for the full rationale).
           const allPending = getMessagesSince(
             chatJid,
             lastAgentTimestamp[compositeKey] || '',
             ASSISTANT_NAME,
             group.folder,
-            threadTs,
+            threadTs ?? null,
           );
           // The threadMessages fallback is unfiltered by from_group; reuse
           // relevantMessages (already own-group-filtered above) so a host
@@ -1574,6 +1608,44 @@ async function main(): Promise<void> {
       );
       startAutonomySweep(autonomyDeps);
     }
+  }
+
+  // Follow-up drop — a 👎 on a `[FOLLOW-UP …] Lead #N` card moves entry N to the
+  // `nurture` hold stage so the daily sales-followup cron stops re-drafting it.
+  // Registered as an OBSERVER (not a claim-chain listener) so it always fires and
+  // never preempts the autonomy veto that may need to cancel the same draft's
+  // pending auto-send. See followup-drop.ts. Reversible: qualifying re-enables.
+  {
+    const slackForDrop = channels.find(
+      (c): c is SlackChannel => c instanceof SlackChannel,
+    );
+    slackForDrop?.registerRejectObserver((ts, reactor) =>
+      handleFollowupDrop(ts, reactor, {
+        getCard: (id) => {
+          const m = getMessageById(id);
+          if (!m) return undefined;
+          return {
+            content: m.content,
+            from_group: m.from_group,
+            chat_jid: m.chat_jid,
+          };
+        },
+        moveToNurture: async (entryId, reason) => {
+          await withAgentContext('operator-drop', (client) =>
+            client.query(
+              'SELECT business_v2.fn_advance_pipeline_stage($1, $2, $3)',
+              [entryId, 'nurture', reason],
+            ),
+          );
+        },
+        postThread: async (jid, slackTs, text) => {
+          await slackForDrop.sendMessage(jid, text, { threadTs: slackTs });
+        },
+      }).then((acted) => {
+        if (acted)
+          logger.info({ ts, reactor }, 'followup-drop: lead moved to nurture');
+      }),
+    );
   }
 
   // Webhook-inbox reaper — every 5 min, retries received/failed/stale-dispatched

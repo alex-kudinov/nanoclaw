@@ -1067,16 +1067,34 @@ export async function runContainerAgent(
         /* no stderr file — fine */
       }
       // Lifecycle litter: targeted close sentinel, sidecar, log files.
+      const inputDir = path.join(
+        resolveGroupIpcPath(input.groupFolder),
+        'input',
+      );
       try {
-        fs.unlinkSync(
-          path.join(
-            resolveGroupIpcPath(input.groupFolder),
-            'input',
-            `_close-${containerName}`,
-          ),
-        );
+        fs.unlinkSync(path.join(inputDir, `_close-${containerName}`));
       } catch {
         /* absent */
+      }
+      // Sweep any piped payloads addressed to THIS (now-exited) container.
+      // The agent-runner leaves target_container-tagged files it doesn't own, so
+      // a message addressed to a container that dies before draining it would
+      // orphan forever (no sibling will claim it). Dead-letter recovery rolls
+      // the cursor back and re-delivers a fresh copy, so removing the orphan
+      // here also prevents a duplicate. Best-effort.
+      try {
+        for (const f of fs.readdirSync(inputDir)) {
+          if (!f.endsWith('.json')) continue;
+          const fp = path.join(inputDir, f);
+          try {
+            const d = JSON.parse(fs.readFileSync(fp, 'utf-8'));
+            if (d.target_container === containerName) fs.unlinkSync(fp);
+          } catch {
+            /* unreadable/racing unlink — leave it */
+          }
+        }
+      } catch {
+        /* input dir absent */
       }
       try {
         fs.unlinkSync(sidecarPath);

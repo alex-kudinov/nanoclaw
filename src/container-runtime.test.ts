@@ -33,11 +33,28 @@ beforeEach(() => {
 // --- Pure functions ---
 
 describe('readonlyMountArgs', () => {
-  it('returns --mount flag for normal paths', () => {
-    const args = readonlyMountArgs('/host/path', '/container/path');
+  it('returns --mount flag for a real directory source', () => {
+    const dir = process.cwd(); // a real directory
+    const args = readonlyMountArgs(dir, '/container/path');
     expect(args).toEqual([
       '--mount',
-      'type=bind,source=/host/path,target=/container/path,readonly',
+      `type=bind,source=${dir},target=/container/path,readonly`,
+    ]);
+  });
+
+  it('returns -v flag for a file/device source (e.g. /dev/null shadow)', () => {
+    // --mount type=bind rejects non-directory sources on Apple Container;
+    // /dev/null (used to shadow .env) must mount via -v or the container fails.
+    expect(readonlyMountArgs('/dev/null', '/workspace/project/.env')).toEqual([
+      '-v',
+      '/dev/null:/workspace/project/.env:ro',
+    ]);
+  });
+
+  it('returns -v flag for a non-existent source', () => {
+    expect(readonlyMountArgs('/no/such/path', '/c')).toEqual([
+      '-v',
+      '/no/such/path:/c:ro',
     ]);
   });
 

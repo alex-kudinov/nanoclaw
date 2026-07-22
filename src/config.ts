@@ -306,3 +306,11 @@ export const GMAIL_PUSH_SAFETY_POLL_INTERVAL = parseInt(
     '600000',
   10,
 );
+
+// router_state key: epoch-ms of the last time inbound Gmail delivery was proven
+// alive — written when the 5-min label-poll cron completes a full history walk
+// (i.e. the Mini reached Gmail directly, independent of the n8n push relay). The
+// healer reads this to page only when delivery is *sustained*-stalled, so a
+// transient push-relay wedge (which the poll backstops) never alerts. See
+// src/healer/gmail-liveness.ts.
+export const GMAIL_DELIVERY_STATE_KEY = 'gmail_last_delivery_ms';

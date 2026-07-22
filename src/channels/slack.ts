@@ -187,6 +187,15 @@ export class SlackChannel implements Channel {
     (ts: string, reactor: string) => Promise<boolean>
   > = [];
 
+  // Host-side rejection OBSERVERS. Unlike listeners, every observer runs on each
+  // 👎 regardless of what the claim-chain does — a side effect that must not
+  // preempt the listeners (e.g. dropping a follow-up lead while the autonomy
+  // listener still cancels the same draft's pending auto-send). Return value
+  // ignored.
+  private rejectObservers: Array<
+    (ts: string, reactor: string) => Promise<void>
+  > = [];
+
   constructor(opts: SlackChannelOpts) {
     this.opts = opts;
 
@@ -378,13 +387,24 @@ export class SlackChannel implements Channel {
 
       const eventTs =
         (event as { event_ts?: string }).event_ts || event.item.ts;
-      const quoted = await this.fetchMessageText(channelId, event.item.ts);
+
+      // Prefer the STORED message body for the approval quote. fetchMessageText
+      // uses conversations.history, which does not return threaded replies —
+      // so a reaction on a threaded draft yielded an empty "Approved message"
+      // and left the resumed agent without the text it was approving, a factor
+      // in the 2026-07-21 stale-draft send. The store holds full text for both
+      // root and threaded messages; fall back to the API only when the message
+      // isn't in our store yet.
+      const reacted = getMessageById(event.item.ts);
+      const quoted =
+        reacted?.content ||
+        (await this.fetchMessageText(channelId, event.item.ts));
 
       // Route the approval into the SAME thread the reacted message lives in, so
       // it resumes that message's session/context instead of forking a brand-new
       // one (see resolveApprovalThreadTs).
       const routeThreadTs = resolveApprovalThreadTs(
-        getMessageById(event.item.ts),
+        reacted,
         jid,
         event.item.ts,
       );
@@ -443,6 +463,14 @@ export class SlackChannel implements Channel {
       if (!this.opts.registeredGroups()[`slack:${channelId}`]) return;
       const reactor =
         (await this.resolveUserName(event.user)) || event.user || 'someone';
+      // Observers first — they always run, independent of the claim-chain below.
+      for (const observer of this.rejectObservers) {
+        try {
+          await observer(event.item.ts, reactor);
+        } catch (err) {
+          logger.warn({ err }, 'Slack: reject observer threw');
+        }
+      }
       for (const listener of this.rejectListeners) {
         try {
           if (await listener(event.item.ts, reactor)) return;
@@ -808,6 +836,19 @@ export class SlackChannel implements Channel {
     fn: (ts: string, reactor: string) => Promise<boolean>,
   ): void {
     this.rejectListeners.push(fn);
+  }
+
+  /**
+   * Register a host-side rejection (👎) OBSERVER. Invoked for every 👎 on a Mr
+   * Gru message and always runs, independent of the claim-chain (unlike a
+   * listener, its return is ignored and it never suppresses other handlers).
+   * Use for side effects that must coexist with a listener — e.g. dropping a
+   * follow-up lead while the autonomy listener still cancels its auto-send.
+   */
+  registerRejectObserver(
+    fn: (ts: string, reactor: string) => Promise<void>,
+  ): void {
+    this.rejectObservers.push(fn);
   }
 
   /**

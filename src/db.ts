@@ -599,6 +599,35 @@ export function getThreadParent(
 }
 
 /**
+ * Full thread history for context injection: the root (id == threadTs) plus every
+ * reply (thread_ts == threadTs), oldest→newest, capped to the most recent `limit`.
+ *
+ * Unlike getMessagesSince, this deliberately does NOT exclude the group's own posts.
+ * An operator's threaded reply is a response to the agent's OWN pending draft, so
+ * that draft must be visible even after the group's Claude session rotated and lost
+ * it from memory — otherwise the agent goes blind and drops the reply as an
+ * unrelated "status update" (Travis Rose sales thread, 2026-07-06). Callers strip
+ * mechanical noise ("[PROCESSING]" acks, untagged bot echoes) before formatting.
+ */
+export function getThreadContext(
+  chatJid: string,
+  threadTs: string,
+  limit: number,
+): NewMessage[] {
+  const rows = db
+    .prepare(
+      `SELECT id, chat_jid, sender, sender_name, content, timestamp, is_from_me, from_group, thread_ts
+       FROM messages
+       WHERE chat_jid = ? AND (id = ? OR thread_ts = ?)
+         AND content IS NOT NULL AND content != ''
+       ORDER BY timestamp DESC
+       LIMIT ?`,
+    )
+    .all(chatJid, threadTs, threadTs, limit) as NewMessage[];
+  return rows.reverse();
+}
+
+/**
  * Latest timestamp at which `fromGroup` posted a REAL response — its own output,
  * excluding the host-posted "[PROCESSING]" ack — in a chat/thread. Recovery uses
  * this as a completion signal: if the group already answered after the last inbound
@@ -1644,10 +1673,9 @@ export function setAutonomyPendingNotice(
   draftId: string,
   noticeTs: string,
 ): void {
-  db.prepare('UPDATE autonomy_pending SET notice_ts = ? WHERE draft_id = ?').run(
-    noticeTs,
-    draftId,
-  );
+  db.prepare(
+    'UPDATE autonomy_pending SET notice_ts = ? WHERE draft_id = ?',
+  ).run(noticeTs, draftId);
 }
 
 export function getOpenAutonomyPendings(): AutonomyPendingRow[] {

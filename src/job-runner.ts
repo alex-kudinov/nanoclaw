@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
+import { injectClaudeToken } from './claude-token.js';
 import { DATA_DIR } from './config.js';
 import {
   getRunningJobNames,
@@ -385,6 +386,14 @@ function buildEnv(projectRoot: string): NodeJS.ProcessEnv {
   if (fs.existsSync(venvBin)) {
     env.PATH = `${venvBin}:${env.PATH || ''}`;
   }
+
+  // Jobs that shell `claude -p` (e.g. tandemweb's seo-rescue) need a live
+  // subscription token. The daemon's own env carries none, so bare `claude -p`
+  // 401s on the stale ~/.claude/.credentials.json. Inject the rotated OAuth
+  // token the Print Bridge uses — applied last so it wins over any stale
+  // ANTHROPIC_API_KEY a project .env might carry. See incident #561606
+  // (seo-rescue-run 401), 2026-06-26.
+  injectClaudeToken(env);
 
   return env;
 }

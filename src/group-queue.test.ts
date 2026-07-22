@@ -371,6 +371,38 @@ describe('GroupQueue', () => {
     await vi.advanceTimersByTimeAsync(10);
   });
 
+  it('sendMessage addresses the piped payload to the target container (prevents cross-session theft)', async () => {
+    const fs = await import('fs');
+    // adoptContainer marks a container active synchronously (no fake-timer
+    // dance), giving sendMessage a live target to pipe into.
+    queue.adoptContainer(
+      'group1@g.us',
+      'nanoclaw-sales-42',
+      'sales',
+      12345,
+      Date.now(),
+    );
+
+    const writeFileSync = vi.mocked(fs.default.writeFileSync);
+    writeFileSync.mockClear();
+    const result = queue.sendMessage('group1@g.us', 'hello');
+    expect(result.wrote).toBe(true);
+
+    // The message payload (a .json write, not the _close sentinel) must carry
+    // target_container so the agent-runner only lets the owning session drain it.
+    const payloadCall = writeFileSync.mock.calls.find(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].endsWith('.json.tmp') &&
+        typeof call[1] === 'string' &&
+        call[1].includes('"type":"message"'),
+    );
+    expect(payloadCall).toBeDefined();
+    const payload = JSON.parse(payloadCall![1] as string);
+    expect(payload.target_container).toBe('nanoclaw-sales-42');
+    expect(payload.text).toBe('hello');
+  });
+
   it('sendMessage returns false for task containers so user messages queue up', async () => {
     let resolveTask: () => void;
 
@@ -560,5 +592,4 @@ describe('GroupQueue', () => {
     queue.finalizeAdopted('never-adopted@g.us||root');
     expect(queue.getStatus().activeCount).toBe(0);
   });
-
 });

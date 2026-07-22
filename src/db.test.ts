@@ -12,7 +12,9 @@ import {
   getJob,
   getJobRunLogs,
   getMessagesSince,
+  getThreadContext,
   getNewMessages,
+  storeMessageDirect,
   getRunningJobNames,
   getTaskById,
   insertJobRunLog,
@@ -326,6 +328,140 @@ describe('getMessagesSince', () => {
       'root1',
     );
     expect(msgs.map((m) => m.id)).toEqual(['reply1']);
+  });
+
+  // Regression: root-bucket cross-thread bleed. After minions began threading
+  // their own posts (8a0b11b), a root spawn passing threadTs=undefined pulled in
+  // every OTHER thread's messages since the (independently-advancing) root
+  // cursor, replaying already-handled work into a fresh container (Nitin Goyal's
+  // cert re-examined when Namrata Kohli's was requested, 2026-07-16). A root
+  // spawn must pass `null` (root only), not `undefined` (no filter).
+  it('scopes root fetches to root messages when threadTs is null', () => {
+    store({
+      id: 'rootcmd',
+      chat_jid: 'group@g.us',
+      sender: 'Alice@s.whatsapp.net',
+      sender_name: 'Alice',
+      content: 'new root command',
+      timestamp: '2024-01-01T00:00:08.000Z',
+    });
+    storeMessage({
+      id: 'otherthreadreply',
+      chat_jid: 'group@g.us',
+      sender: 'Bob@s.whatsapp.net',
+      sender_name: 'Bob',
+      content: 'send',
+      timestamp: '2024-01-01T00:00:09.000Z',
+      is_from_me: false,
+      thread_ts: 'someoldcert',
+    });
+    // undefined = no thread filter: the stale thread reply bleeds in.
+    const unscoped = getMessagesSince(
+      'group@g.us',
+      '2024-01-01T00:00:07.000Z',
+      'Gru',
+      'grader',
+    );
+    expect(unscoped.map((m) => m.id).sort()).toEqual([
+      'otherthreadreply',
+      'rootcmd',
+    ]);
+    // null = root only: the other thread's reply is excluded.
+    const scoped = getMessagesSince(
+      'group@g.us',
+      '2024-01-01T00:00:07.000Z',
+      'Gru',
+      'grader',
+      null,
+    );
+    expect(scoped.map((m) => m.id)).toEqual(['rootcmd']);
+  });
+});
+
+// --- getThreadContext ---
+
+describe('getThreadContext', () => {
+  // Reproduces the Travis Rose sales thread (2026-07-06): the agent's own pending
+  // draft (from_group=sales) must survive into the injected context so an operator
+  // reply lands with the draft it responds to.
+  const CHAT = 'slack:C0AHV1SGT6W';
+  const ROOT = '1783366424.764419';
+
+  beforeEach(() => {
+    storeChatMetadata(CHAT, '2026-07-06T00:00:00.000Z');
+    // Root: the agent's "New Lead" post (own group).
+    storeMessageDirect({
+      id: ROOT,
+      chat_jid: CHAT,
+      sender: 'bot',
+      sender_name: 'Mr Gru',
+      content: 'New Lead | Travis Rose — Entry 705',
+      timestamp: '2026-07-06T19:33:44.000Z',
+      is_from_me: true,
+      is_bot_message: true,
+      from_group: 'sales',
+    });
+    // The pending draft reply — also the agent's own post.
+    storeMessageDirect({
+      id: '1783366984.433769',
+      chat_jid: CHAT,
+      sender: 'bot',
+      sender_name: 'Mr Gru',
+      content: 'DRAFT (REQUIRE_APPROVAL=1) Thread-ID: 19f38ee3bae4adec',
+      timestamp: '2026-07-06T19:43:04.000Z',
+      is_from_me: true,
+      is_bot_message: true,
+      from_group: 'sales',
+      thread_ts: ROOT,
+    });
+    // Host mechanical ack — must be filterable by the caller.
+    storeMessageDirect({
+      id: '1783366987.072419',
+      chat_jid: CHAT,
+      sender: 'bot',
+      sender_name: 'Mr Gru',
+      content: '[PROCESSING] drafting…',
+      timestamp: '2026-07-06T19:43:07.000Z',
+      is_from_me: true,
+      is_bot_message: true,
+      from_group: 'sales',
+      thread_ts: ROOT,
+    });
+    // The operator's threaded reply.
+    storeMessageDirect({
+      id: '1783381432.189439',
+      chat_jid: CHAT,
+      sender: 'alex',
+      sender_name: 'Alex Kudinov',
+      content: 'unfortunately alex is not available for new engagements',
+      timestamp: '2026-07-06T23:43:52.000Z',
+      is_from_me: false,
+      from_group: undefined,
+      thread_ts: ROOT,
+    });
+  });
+
+  it('includes the root and the agent OWN draft (not stripped by from_group)', () => {
+    const ctx = getThreadContext(CHAT, ROOT, 25);
+    const ids = ctx.map((m) => m.id);
+    expect(ids).toContain(ROOT);
+    expect(ids).toContain('1783366984.433769'); // the pending draft
+    expect(ids).toContain('1783381432.189439'); // operator reply
+  });
+
+  it('returns oldest→newest so the draft precedes the reply', () => {
+    const ctx = getThreadContext(CHAT, ROOT, 25);
+    const ids = ctx.map((m) => m.id);
+    expect(ids.indexOf('1783366984.433769')).toBeLessThan(
+      ids.indexOf('1783381432.189439'),
+    );
+  });
+
+  it('caps to the most recent `limit` posts', () => {
+    const ctx = getThreadContext(CHAT, ROOT, 2);
+    expect(ctx).toHaveLength(2);
+    // Newest two, still in ascending order.
+    expect(ctx[ctx.length - 1].id).toBe('1783381432.189439');
   });
 });
 
