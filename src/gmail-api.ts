@@ -114,6 +114,95 @@ async function applyLabel(
 }
 
 /** Build an RFC 2822 message and base64url-encode it. */
+/**
+ * Fold a structured header value (e.g. References — a space-separated list of
+ * msg-ids) so no physical line exceeds RFC 5322 §2.2.3's limit. Breaks only at
+ * token boundaries (never inside a msg-id); continuation lines begin with a
+ * space (folding whitespace). An over-long unfolded References line makes some
+ * MTAs reject or truncate it, which detaches the thread in the recipient's
+ * client. Short values return unfolded.
+ */
+export function foldHeaderValue(name: string, value: string): string {
+  const tokens = value.split(/\s+/).filter(Boolean);
+  const out: string[] = [];
+  let line = `${name}:`;
+  for (const t of tokens) {
+    if (line !== `${name}:` && line.length + 1 + t.length > 78) {
+      out.push(line);
+      line = ` ${t}`;
+    } else {
+      line += ` ${t}`;
+    }
+  }
+  out.push(line);
+  return out.join('\r\n');
+}
+
+/**
+ * Build RFC 5322 threading headers from a Gmail thread's messages so a reply
+ * threads in BOTH Gmail's UI and the recipient's external client. `inReplyTo`
+ * is the NEWEST message that actually carries a Message-ID — we walk back past
+ * any message missing the header, because an empty Message-ID on the last
+ * message makes buildRawMessage's `if (opts.inReplyTo)` guard falsy and
+ * silently drops both threading headers: the reply then threads via the Gmail
+ * threadId alone (Gmail's own UI) but DETACHES in external clients — the
+ * recurring "went out under a different header" symptom. `references` is the
+ * full ordered chain of every Message-ID present (external clients thread on
+ * References). Returns {} only when the thread exposes NO Message-ID at all
+ * (logged at error — that reply may detach).
+ */
+export function threadHeaders(
+  messages: gmail_v1.Schema$Message[],
+  threadId: string,
+): { inReplyTo?: string; references?: string } {
+  const ids: string[] = [];
+  for (const m of messages) {
+    const v = (m.payload?.headers || []).find(
+      (h) => h.name?.toLowerCase() === 'message-id',
+    )?.value;
+    if (v && v.trim()) ids.push(v.trim());
+  }
+  if (ids.length === 0) {
+    logger.error(
+      { threadId },
+      'Gmail threading: thread exposes no Message-ID — reply threads in Gmail but may detach in external clients',
+    );
+    return {};
+  }
+  return { inReplyTo: ids[ids.length - 1], references: ids.join(' ') };
+}
+
+/**
+ * Fetch a thread's threading headers for the outbound send path, with one retry
+ * on a transient Gmail error so a flaky metadata fetch does not silently ship a
+ * detached email.
+ */
+async function fetchThreadHeaders(
+  gmail: gmail_v1.Gmail,
+  threadId: string,
+): Promise<{ inReplyTo?: string; references?: string }> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const thread = await gmail.users.threads.get({
+        userId: 'me',
+        id: threadId,
+        format: 'metadata',
+        metadataHeaders: ['Message-ID'],
+      });
+      return threadHeaders(thread.data.messages || [], threadId);
+    } catch (err) {
+      if (attempt === 1) {
+        logger.error(
+          { threadId, err },
+          'Gmail threading: thread fetch failed after retry — reply may detach',
+        );
+        return {};
+      }
+    }
+  }
+  return {};
+}
+
 export function buildRawMessage(opts: {
   to: string;
   subject: string;
@@ -149,7 +238,9 @@ export function buildRawMessage(opts: {
   lines.push(`Subject: ${encodeHeaderValue(opts.subject)}`);
   if (opts.inReplyTo) {
     lines.push(`In-Reply-To: ${opts.inReplyTo}`);
-    lines.push(`References: ${opts.references || opts.inReplyTo}`);
+    lines.push(
+      foldHeaderValue('References', opts.references || opts.inReplyTo),
+    );
   }
 
   const contentType = opts.html ? 'text/html' : 'text/plain';
@@ -177,35 +268,18 @@ export async function sendEmail(opts: {
 }): Promise<{ messageId: string; threadId: string }> {
   const gmail = getGmailClient();
 
-  // When threading into an existing conversation, fetch In-Reply-To for proper threading
+  // When threading into an existing conversation, derive the RFC In-Reply-To /
+  // References from the thread so the reply threads in the recipient's external
+  // client too — the Gmail threadId alone only threads Gmail's own UI. Robust
+  // to an empty last-message Message-ID and a transient fetch failure (see
+  // threadHeaders / fetchThreadHeaders).
   let inReplyTo: string | undefined;
   let references: string | undefined;
   if (opts.threadId) {
-    try {
-      const thread = await gmail.users.threads.get({
-        userId: 'me',
-        id: opts.threadId,
-        format: 'metadata',
-        metadataHeaders: ['Message-ID'],
-      });
-      const messages = thread.data.messages || [];
-      if (messages.length > 0) {
-        const lastMsg = messages[messages.length - 1];
-        const headers = lastMsg.payload?.headers || [];
-        const msgId = headers.find(
-          (h) => h.name?.toLowerCase() === 'message-id',
-        )?.value;
-        if (msgId) {
-          inReplyTo = msgId;
-          references = msgId;
-        }
-      }
-    } catch (err) {
-      logger.warn(
-        { threadId: opts.threadId, err },
-        'Failed to fetch thread for In-Reply-To, sending without threading headers',
-      );
-    }
+    ({ inReplyTo, references } = await fetchThreadHeaders(
+      gmail,
+      opts.threadId,
+    ));
   }
 
   const raw = buildRawMessage({
@@ -277,7 +351,6 @@ export async function replyToThread(opts: {
 
   const lastMsg = messages[messages.length - 1];
   const originalSubject = header(headersOf(lastMsg), 'Subject');
-  const originalMessageId = header(headersOf(lastMsg), 'Message-ID');
 
   const owned = ownedAddresses();
   const isExternal = (addr: string): boolean =>
@@ -335,8 +408,10 @@ export async function replyToThread(opts: {
     body: opts.body,
     cc: opts.cc,
     html: opts.html,
-    inReplyTo: originalMessageId,
-    references: originalMessageId,
+    // Full RFC threading chain from the thread's Message-IDs, resilient to an
+    // empty last-message Message-ID (walks back) — so the reply threads in the
+    // recipient's external client, not only Gmail's UI.
+    ...threadHeaders(messages, opts.threadId),
   });
 
   const res = await gmail.users.messages.send({

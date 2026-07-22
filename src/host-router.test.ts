@@ -105,7 +105,26 @@ describe('host-router', () => {
     expect(text).toContain('Party ID: 10042');
     expect(text).toContain('Lead: Alice Corp (proposal)');
     expect(text).toContain('Program: coaching-inquiry');
-    expect(text).toContain('Thread-ID: 18f1a2b3c4d5e6f7');
+    // The INBOUND message's thread (params.threadId='thr-1') wins over the DB's
+    // most-recent-outbound thread (match.thread_id='18f1a2b3c4d5e6f7').
+    expect(text).toContain('Thread-ID: thr-1');
+  });
+
+  it('replies on the INBOUND thread, not the stale most-recent-outbound thread (Charlotte Dover regression, 2026-07-22)', async () => {
+    // match.thread_id (lead-matcher `thread` CTE) is the party's most-recent-
+    // OUTBOUND thread. When the customer wrote on a different/newer thread, the
+    // reply MUST go on the inbound thread they used — otherwise the answer ships
+    // under the wrong subject, detached from their question. Charlotte's inbound
+    // was 19f8b347…; her stale outbound thread was 19f80878… and the reply
+    // wrongly went there.
+    mockMatch.mockResolvedValue(proposalMatch); // DB thread_id: 18f1a2b3c4d5e6f7 (stale outbound)
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'lead/reply', threadId: '19f8b3473f733592' }),
+    );
+    expect(r.target).toBe('mailman');
+    const text: string = mockWrite.mock.calls[0][1].text;
+    expect(text).toContain('Thread-ID: 19f8b3473f733592'); // inbound thread wins
+    expect(text).not.toContain('Thread-ID: 18f1a2b3c4d5e6f7'); // stale DB thread never used
   });
 
   it('uses inbound threadId as fallback when match has no thread_id', async () => {
@@ -640,6 +659,9 @@ describe('host-router', () => {
         senderName: 'Seana Fairchild',
         subject: 'Re: ACC vs Professional Coach Program - Tandem Coaching',
         body: 'Thanks for the information! What are the upcoming start dates?',
+        // A normal in-thread reply: the inbound message's thread IS the
+        // conversation thread (matches the DB's most-recent-outbound thread).
+        threadId: '1a2b3c4d5e6f7890',
       });
       const r = await routeClassifiedEmail(p);
       expect(r).toEqual({

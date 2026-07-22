@@ -22,10 +22,22 @@ import {
   encodeHeaderValue,
   extractThreadQuery,
   findThreadForReply,
+  foldHeaderValue,
   getThread,
   replyToThread,
   searchEmails,
+  threadHeaders,
 } from './gmail-api.js';
+import type { gmail_v1 } from 'googleapis';
+
+/** Minimal Gmail message with a Message-ID header (or none when msgId is null). */
+function msgWithId(msgId: string | null): gmail_v1.Schema$Message {
+  return {
+    payload: {
+      headers: msgId === null ? [] : [{ name: 'Message-ID', value: msgId }],
+    },
+  } as gmail_v1.Schema$Message;
+}
 import { getGmailClient } from './gmail-auth.js';
 
 function decodeEncodedWord(headerValue: string): string {
@@ -44,7 +56,66 @@ function decodeRaw(raw: string): string {
   return Buffer.from(base64, 'base64').toString('utf-8');
 }
 
+describe('threadHeaders (Layer 2 — reliable RFC threading)', () => {
+  it('uses the last message as In-Reply-To and the full chain as References', () => {
+    const h = threadHeaders(
+      [msgWithId('<a@x>'), msgWithId('<b@x>'), msgWithId('<c@x>')],
+      'thr-1',
+    );
+    expect(h.inReplyTo).toBe('<c@x>');
+    expect(h.references).toBe('<a@x> <b@x> <c@x>');
+  });
+
+  it('walks back past an empty last Message-ID (the FM6 silent-detach)', () => {
+    // Last message has no Message-ID — must NOT drop threading; use the newest
+    // message that has one.
+    const h = threadHeaders([msgWithId('<a@x>'), msgWithId(null)], 'thr-1');
+    expect(h.inReplyTo).toBe('<a@x>');
+    expect(h.references).toBe('<a@x>');
+  });
+
+  it('returns no headers only when the thread exposes zero Message-IDs', () => {
+    const h = threadHeaders([msgWithId(null), msgWithId(null)], 'thr-1');
+    expect(h.inReplyTo).toBeUndefined();
+    expect(h.references).toBeUndefined();
+  });
+});
+
+describe('foldHeaderValue', () => {
+  it('leaves a short value unfolded', () => {
+    expect(foldHeaderValue('References', '<a@x>')).toBe('References: <a@x>');
+  });
+
+  it('folds a long chain so no physical line exceeds the RFC limit', () => {
+    const ids = Array.from(
+      { length: 40 },
+      (_, i) => `<msg-${i}-aaaaaaaaaaaaaaaaaaaa@example.com>`,
+    );
+    const folded = foldHeaderValue('References', ids.join(' '));
+    const lines = folded.split('\r\n');
+    expect(lines.length).toBeGreaterThan(1);
+    for (const l of lines) expect(l.length).toBeLessThanOrEqual(998);
+    // Continuation lines begin with folding whitespace.
+    for (const l of lines.slice(1)) expect(l.startsWith(' ')).toBe(true);
+    // Every id is preserved, none split.
+    for (const id of ids) expect(folded).toContain(id);
+  });
+});
+
 describe('buildRawMessage', () => {
+  it('emits In-Reply-To and a folded References when threading', () => {
+    const raw = buildRawMessage({
+      to: 't@example.com',
+      subject: 'Re: Hi',
+      body: 'Hello',
+      inReplyTo: '<c@x>',
+      references: '<a@x> <b@x> <c@x>',
+    });
+    const decoded = decodeRaw(raw);
+    expect(decoded).toContain('In-Reply-To: <c@x>');
+    expect(decoded).toContain('References: <a@x> <b@x> <c@x>');
+  });
+
   it('uses text/plain content type by default', () => {
     const raw = buildRawMessage({
       to: 'test@example.com',

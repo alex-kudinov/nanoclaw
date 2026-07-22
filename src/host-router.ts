@@ -49,7 +49,19 @@ function fmtLeadSales(p: RouteParams, match: PipelineMatch): string {
     `Lead: ${match.display_name} (${match.stage})`,
     `Program: ${match.program_slug}`,
     ...(() => {
-      const tid = match.thread_id ?? p.threadId;
+      // Reply on the thread the CUSTOMER actually wrote on — the inbound
+      // message's own threadId (p.threadId) — NOT the most-recent-outbound
+      // thread from the DB (match.thread_id, from lead-matcher's `thread`
+      // CTE). When a lead has more than one thread (replied to an older
+      // marketing email, or opened a fresh thread), the most-recent-outbound
+      // thread is a DIFFERENT conversation; replying there lands our answer
+      // under the wrong subject, detached from their question. p.threadId is
+      // authoritative for a reply — the DB thread is only a fallback for when
+      // the inbound somehow carries none. (Charlotte Dover, 2026-07-22:
+      // inbound on 19f8b347…, stale outbound 19f80878… → answer shipped under
+      // the wrong subject "Re: Mentor Coach Training" instead of her CSS
+      // question thread.)
+      const tid = p.threadId ?? match.thread_id;
       return tid ? [`Thread-ID: ${tid}`] : [];
     })(),
     `From: ${p.senderEmail}`,
