@@ -44,10 +44,31 @@ server.tool(
   "Send a message to the user or group immediately while you're still running. Use this for progress updates or to send multiple messages. You can call this multiple times. Note: when running as a scheduled task, your final output is NOT sent to the user — use this tool if you need to communicate with the user or group.",
   {
     text: z.string().describe('The message text to send'),
-    sender: z.string().optional().describe('Your role/identity name (e.g. "Researcher"). When set, messages appear from a dedicated bot in Telegram.'),
-    target_group: z.string().optional().describe('Send to a different group by folder name (e.g. "sales", "chief"). Defaults to your own group. The target must be a registered group.'),
-    thread_ts: z.string().regex(/^\d+\.\d+$/).optional().describe('Slack thread timestamp to reply in a specific thread. Get this from the thread_ts attribute on incoming <message> XML tags.'),
-    thread_key: z.string().optional().describe('Work-unit anchor (e.g. "sales:entry:42", "booking:appt:12345"). Every message you send with the SAME thread_key collapses into ONE Slack thread, so all updates about one lead/cert/booking stay together instead of scattering across the channel. Use a stable per-entity key (see your CLAUDE.md for the convention); omit for one-off chatter. Ignored if thread_ts is set.'),
+    sender: z
+      .string()
+      .optional()
+      .describe(
+        'Your role/identity name (e.g. "Researcher"). When set, messages appear from a dedicated bot in Telegram.',
+      ),
+    target_group: z
+      .string()
+      .optional()
+      .describe(
+        'Send to a different group by folder name (e.g. "sales", "chief"). Defaults to your own group. The target must be a registered group.',
+      ),
+    thread_ts: z
+      .string()
+      .regex(/^\d+\.\d+$/)
+      .optional()
+      .describe(
+        'Slack thread timestamp to reply in a specific thread. Get this from the thread_ts attribute on incoming <message> XML tags.',
+      ),
+    thread_key: z
+      .string()
+      .optional()
+      .describe(
+        'Work-unit anchor (e.g. "sales:entry:42", "booking:appt:12345"). Every message you send with the SAME thread_key collapses into ONE Slack thread, so all updates about one lead/cert/booking stay together instead of scattering across the channel. Use a stable per-entity key (see your CLAUDE.md for the convention); omit for one-off chatter. Ignored if thread_ts is set.',
+      ),
   },
   async (args) => {
     const data: Record<string, string | undefined> = {
@@ -64,7 +85,16 @@ server.tool(
 
     writeIpcFile(MESSAGES_DIR, data);
 
-    return { content: [{ type: 'text' as const, text: args.target_group ? `Message sent to ${args.target_group}.` : 'Message sent.' }] };
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: args.target_group
+            ? `Message sent to ${args.target_group}.`
+            : 'Message sent.',
+        },
+      ],
+    };
   },
 );
 
@@ -92,11 +122,33 @@ SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
 \u2022 interval: Milliseconds between runs (e.g., "300000" for 5 minutes, "3600000" for 1 hour)
 \u2022 once: Local time WITHOUT "Z" suffix (e.g., "2026-02-01T15:30:00"). Do NOT use UTC/Z suffix.`,
   {
-    prompt: z.string().describe('What the agent should do when the task runs. For isolated mode, include all necessary context here.'),
-    schedule_type: z.enum(['cron', 'interval', 'once']).describe('cron=recurring at specific times, interval=recurring every N ms, once=run once at specific time'),
-    schedule_value: z.string().describe('cron: "*/5 * * * *" | interval: milliseconds like "300000" | once: local timestamp like "2026-02-01T15:30:00" (no Z suffix!)'),
-    context_mode: z.enum(['group', 'isolated']).default('group').describe('group=runs with chat history and memory, isolated=fresh session (include context in prompt)'),
-    target_group_jid: z.string().optional().describe('(Main group only) JID of the group to schedule the task for. Defaults to the current group.'),
+    prompt: z
+      .string()
+      .describe(
+        'What the agent should do when the task runs. For isolated mode, include all necessary context here.',
+      ),
+    schedule_type: z
+      .enum(['cron', 'interval', 'once'])
+      .describe(
+        'cron=recurring at specific times, interval=recurring every N ms, once=run once at specific time',
+      ),
+    schedule_value: z
+      .string()
+      .describe(
+        'cron: "*/5 * * * *" | interval: milliseconds like "300000" | once: local timestamp like "2026-02-01T15:30:00" (no Z suffix!)',
+      ),
+    context_mode: z
+      .enum(['group', 'isolated'])
+      .default('group')
+      .describe(
+        'group=runs with chat history and memory, isolated=fresh session (include context in prompt)',
+      ),
+    target_group_jid: z
+      .string()
+      .optional()
+      .describe(
+        '(Main group only) JID of the group to schedule the task for. Defaults to the current group.',
+      ),
   },
   async (args) => {
     // Validate schedule_value before writing IPC
@@ -105,7 +157,12 @@ SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
         CronExpressionParser.parse(args.schedule_value);
       } catch {
         return {
-          content: [{ type: 'text' as const, text: `Invalid cron: "${args.schedule_value}". Use format like "0 9 * * *" (daily 9am) or "*/5 * * * *" (every 5 min).` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Invalid cron: "${args.schedule_value}". Use format like "0 9 * * *" (daily 9am) or "*/5 * * * *" (every 5 min).`,
+            },
+          ],
           isError: true,
         };
       }
@@ -113,28 +170,47 @@ SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
       const ms = parseInt(args.schedule_value, 10);
       if (isNaN(ms) || ms <= 0) {
         return {
-          content: [{ type: 'text' as const, text: `Invalid interval: "${args.schedule_value}". Must be positive milliseconds (e.g., "300000" for 5 min).` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Invalid interval: "${args.schedule_value}". Must be positive milliseconds (e.g., "300000" for 5 min).`,
+            },
+          ],
           isError: true,
         };
       }
     } else if (args.schedule_type === 'once') {
-      if (/[Zz]$/.test(args.schedule_value) || /[+-]\d{2}:\d{2}$/.test(args.schedule_value)) {
+      if (
+        /[Zz]$/.test(args.schedule_value) ||
+        /[+-]\d{2}:\d{2}$/.test(args.schedule_value)
+      ) {
         return {
-          content: [{ type: 'text' as const, text: `Timestamp must be local time without timezone suffix. Got "${args.schedule_value}" — use format like "2026-02-01T15:30:00".` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Timestamp must be local time without timezone suffix. Got "${args.schedule_value}" — use format like "2026-02-01T15:30:00".`,
+            },
+          ],
           isError: true,
         };
       }
       const date = new Date(args.schedule_value);
       if (isNaN(date.getTime())) {
         return {
-          content: [{ type: 'text' as const, text: `Invalid timestamp: "${args.schedule_value}". Use local time format like "2026-02-01T15:30:00".` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Invalid timestamp: "${args.schedule_value}". Use local time format like "2026-02-01T15:30:00".`,
+            },
+          ],
           isError: true,
         };
       }
     }
 
     // Non-main groups can only schedule for themselves
-    const targetJid = isMain && args.target_group_jid ? args.target_group_jid : chatJid;
+    const targetJid =
+      isMain && args.target_group_jid ? args.target_group_jid : chatJid;
 
     const data = {
       type: 'schedule_task',
@@ -150,7 +226,12 @@ SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
     const filename = writeIpcFile(TASKS_DIR, data);
 
     return {
-      content: [{ type: 'text' as const, text: `Task scheduled (${filename}): ${args.schedule_type} - ${args.schedule_value}` }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Task scheduled (${filename}): ${args.schedule_type} - ${args.schedule_value}`,
+        },
+      ],
     };
   },
 );
@@ -164,30 +245,56 @@ server.tool(
 
     try {
       if (!fs.existsSync(tasksFile)) {
-        return { content: [{ type: 'text' as const, text: 'No scheduled tasks found.' }] };
+        return {
+          content: [
+            { type: 'text' as const, text: 'No scheduled tasks found.' },
+          ],
+        };
       }
 
       const allTasks = JSON.parse(fs.readFileSync(tasksFile, 'utf-8'));
 
       const tasks = isMain
         ? allTasks
-        : allTasks.filter((t: { groupFolder: string }) => t.groupFolder === groupFolder);
+        : allTasks.filter(
+            (t: { groupFolder: string }) => t.groupFolder === groupFolder,
+          );
 
       if (tasks.length === 0) {
-        return { content: [{ type: 'text' as const, text: 'No scheduled tasks found.' }] };
+        return {
+          content: [
+            { type: 'text' as const, text: 'No scheduled tasks found.' },
+          ],
+        };
       }
 
       const formatted = tasks
         .map(
-          (t: { id: string; prompt: string; schedule_type: string; schedule_value: string; status: string; next_run: string }) =>
+          (t: {
+            id: string;
+            prompt: string;
+            schedule_type: string;
+            schedule_value: string;
+            status: string;
+            next_run: string;
+          }) =>
             `- [${t.id}] ${t.prompt.slice(0, 50)}... (${t.schedule_type}: ${t.schedule_value}) - ${t.status}, next: ${t.next_run || 'N/A'}`,
         )
         .join('\n');
 
-      return { content: [{ type: 'text' as const, text: `Scheduled tasks:\n${formatted}` }] };
+      return {
+        content: [
+          { type: 'text' as const, text: `Scheduled tasks:\n${formatted}` },
+        ],
+      };
     } catch (err) {
       return {
-        content: [{ type: 'text' as const, text: `Error reading tasks: ${err instanceof Error ? err.message : String(err)}` }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error reading tasks: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
       };
     }
   },
@@ -208,7 +315,14 @@ server.tool(
 
     writeIpcFile(TASKS_DIR, data);
 
-    return { content: [{ type: 'text' as const, text: `Task ${args.task_id} pause requested.` }] };
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: `Task ${args.task_id} pause requested.`,
+        },
+      ],
+    };
   },
 );
 
@@ -227,7 +341,14 @@ server.tool(
 
     writeIpcFile(TASKS_DIR, data);
 
-    return { content: [{ type: 'text' as const, text: `Task ${args.task_id} resume requested.` }] };
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: `Task ${args.task_id} resume requested.`,
+        },
+      ],
+    };
   },
 );
 
@@ -246,7 +367,14 @@ server.tool(
 
     writeIpcFile(TASKS_DIR, data);
 
-    return { content: [{ type: 'text' as const, text: `Task ${args.task_id} cancellation requested.` }] };
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: `Task ${args.task_id} cancellation requested.`,
+        },
+      ],
+    };
   },
 );
 
@@ -256,15 +384,28 @@ server.tool(
 
 Use available_groups.json to find the JID for a group. The folder name must be channel-prefixed: "{channel}_{group-name}" (e.g., "whatsapp_family-chat", "telegram_dev-team", "discord_general"). Use lowercase with hyphens for the group name part.`,
   {
-    jid: z.string().describe('The chat JID (e.g., "120363336345536173@g.us", "tg:-1001234567890", "dc:1234567890123456")'),
+    jid: z
+      .string()
+      .describe(
+        'The chat JID (e.g., "120363336345536173@g.us", "tg:-1001234567890", "dc:1234567890123456")',
+      ),
     name: z.string().describe('Display name for the group'),
-    folder: z.string().describe('Channel-prefixed folder name (e.g., "whatsapp_family-chat", "telegram_dev-team")'),
+    folder: z
+      .string()
+      .describe(
+        'Channel-prefixed folder name (e.g., "whatsapp_family-chat", "telegram_dev-team")',
+      ),
     trigger: z.string().describe('Trigger word (e.g., "@Andy")'),
   },
   async (args) => {
     if (!isMain) {
       return {
-        content: [{ type: 'text' as const, text: 'Only the main group can register new groups.' }],
+        content: [
+          {
+            type: 'text' as const,
+            text: 'Only the main group can register new groups.',
+          },
+        ],
         isError: true,
       };
     }
@@ -281,7 +422,12 @@ Use available_groups.json to find the JID for a group. The folder name must be c
     writeIpcFile(TASKS_DIR, data);
 
     return {
-      content: [{ type: 'text' as const, text: `Group "${args.name}" registered. It will start receiving messages immediately.` }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Group "${args.name}" registered. It will start receiving messages immediately.`,
+        },
+      ],
     };
   },
 );
@@ -294,10 +440,16 @@ server.tool(
   {
     thread_id: z.string().describe('Gmail thread ID to reply to'),
     body: z.string().describe('Reply body (plain text or HTML)'),
-    html: z.boolean().optional().describe('Set to true when body contains HTML'),
+    html: z
+      .boolean()
+      .optional()
+      .describe('Set to true when body contains HTML'),
     cc: z.string().optional().describe('CC recipients (comma-separated)'),
     lead_id: z.number().optional().describe('Lead ID for open tracking'),
-    email_type: z.string().optional().describe('Email type: initial, follow-up, or reply'),
+    email_type: z
+      .string()
+      .optional()
+      .describe('Email type: initial, follow-up, or reply'),
   },
   async (args) => {
     writeIpcFile(MESSAGES_DIR, {
@@ -313,7 +465,12 @@ server.tool(
     });
 
     return {
-      content: [{ type: 'text' as const, text: `Reply queued for thread ${args.thread_id}.` }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Reply queued for thread ${args.thread_id}.`,
+        },
+      ],
     };
   },
 );
@@ -326,10 +483,21 @@ server.tool(
     subject: z.string().describe('Email subject line'),
     body: z.string().describe('Email body (plain text or HTML)'),
     cc: z.string().optional().describe('CC recipients (comma-separated)'),
-    html: z.boolean().optional().describe('Set to true when body contains HTML'),
-    thread_id: z.string().optional().describe('Gmail thread ID to send within an existing thread (keeps your custom subject while threading the email in the same conversation)'),
+    html: z
+      .boolean()
+      .optional()
+      .describe('Set to true when body contains HTML'),
+    thread_id: z
+      .string()
+      .optional()
+      .describe(
+        'Gmail thread ID to send within an existing thread (keeps your custom subject while threading the email in the same conversation)',
+      ),
     lead_id: z.number().optional().describe('Lead ID for open tracking'),
-    email_type: z.string().optional().describe('Email type: initial, follow-up, or reply'),
+    email_type: z
+      .string()
+      .optional()
+      .describe('Email type: initial, follow-up, or reply'),
   },
   async (args) => {
     writeIpcFile(MESSAGES_DIR, {
@@ -356,8 +524,17 @@ server.tool(
   'gmail_search',
   'Search emails using Gmail search syntax. Results are delivered as a follow-up message.',
   {
-    query: z.string().describe('Gmail search query (e.g., "from:john subject:invoice", "newer_than:7d")'),
-    max_results: z.number().min(1).max(50).default(10).describe('Maximum results to return'),
+    query: z
+      .string()
+      .describe(
+        'Gmail search query (e.g., "from:john subject:invoice", "newer_than:7d")',
+      ),
+    max_results: z
+      .number()
+      .min(1)
+      .max(50)
+      .default(10)
+      .describe('Maximum results to return'),
   },
   async (args) => {
     writeIpcFile(MESSAGES_DIR, {
@@ -369,7 +546,12 @@ server.tool(
     });
 
     return {
-      content: [{ type: 'text' as const, text: `Search queued: "${args.query}". Results will arrive as a follow-up message.` }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Search queued: "${args.query}". Results will arrive as a follow-up message.`,
+        },
+      ],
     };
   },
 );
@@ -389,7 +571,37 @@ server.tool(
     });
 
     return {
-      content: [{ type: 'text' as const, text: `Read queued for message ${args.message_id}. Content will arrive as a follow-up message.` }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Read queued for message ${args.message_id}. Content will arrive as a follow-up message.`,
+        },
+      ],
+    };
+  },
+);
+
+server.tool(
+  'gmail_get_thread',
+  'Fetch an entire Gmail thread (all messages, full bodies) by thread ID. Use this to load a conversation — do NOT pass thread:<id> to gmail_search, which is not a real Gmail operator. Result is delivered as a follow-up message.',
+  {
+    thread_id: z.string().describe('Gmail thread ID (e.g., 19e0daefe7cea171)'),
+  },
+  async (args) => {
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'gmail_get_thread',
+      threadId: args.thread_id,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: `Thread fetch queued for ${args.thread_id}. Messages will arrive as a follow-up message.`,
+        },
+      ],
     };
   },
 );
@@ -400,8 +612,13 @@ server.tool(
   'jobs',
   'Manage host-level scheduled jobs. Use list to see all jobs, status to inspect a specific job, run to trigger it immediately, pause to disable it, or resume to re-enable it.',
   {
-    action: z.enum(['list', 'run', 'status', 'pause', 'resume']).describe('Action to perform'),
-    name: z.string().optional().describe('Job name (required for run, status, pause, resume)'),
+    action: z
+      .enum(['list', 'run', 'status', 'pause', 'resume'])
+      .describe('Action to perform'),
+    name: z
+      .string()
+      .optional()
+      .describe('Job name (required for run, status, pause, resume)'),
   },
   async (args) => {
     const jobsFile = path.join(IPC_DIR, 'current_jobs.json');
@@ -409,20 +626,39 @@ server.tool(
     if (args.action === 'list') {
       try {
         if (!fs.existsSync(jobsFile)) {
-          return { content: [{ type: 'text' as const, text: 'No jobs found.' }] };
+          return {
+            content: [{ type: 'text' as const, text: 'No jobs found.' }],
+          };
         }
         const snapshot = JSON.parse(fs.readFileSync(jobsFile, 'utf-8'));
-        return { content: [{ type: 'text' as const, text: snapshot.job_list_text || 'No jobs registered.' }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: snapshot.job_list_text || 'No jobs registered.',
+            },
+          ],
+        };
       } catch (err) {
         return {
-          content: [{ type: 'text' as const, text: `Error reading jobs: ${err instanceof Error ? err.message : String(err)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Error reading jobs: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
         };
       }
     }
 
     if (!args.name) {
       return {
-        content: [{ type: 'text' as const, text: `Action "${args.action}" requires a job name.` }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Action "${args.action}" requires a job name.`,
+          },
+        ],
         isError: true,
       };
     }
@@ -430,23 +666,38 @@ server.tool(
     if (args.action === 'status') {
       try {
         if (!fs.existsSync(jobsFile)) {
-          return { content: [{ type: 'text' as const, text: 'No jobs found.' }] };
+          return {
+            content: [{ type: 'text' as const, text: 'No jobs found.' }],
+          };
         }
         const snapshot = JSON.parse(fs.readFileSync(jobsFile, 'utf-8'));
         const text = snapshot.job_status?.[args.name] ?? 'Job not found.';
         return { content: [{ type: 'text' as const, text: text }] };
       } catch (err) {
         return {
-          content: [{ type: 'text' as const, text: `Error reading jobs: ${err instanceof Error ? err.message : String(err)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Error reading jobs: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
         };
       }
     }
 
     // run, pause, resume — write IPC files
-    const filename = writeIpcFile(JOBS_DIR, { action: args.action, name: args.name });
+    const filename = writeIpcFile(JOBS_DIR, {
+      action: args.action,
+      name: args.name,
+    });
 
     return {
-      content: [{ type: 'text' as const, text: `Job "${args.name}" ${args.action} requested (${filename}).` }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Job "${args.name}" ${args.action} requested (${filename}).`,
+        },
+      ],
     };
   },
 );

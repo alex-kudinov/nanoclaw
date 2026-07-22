@@ -26,6 +26,7 @@ import readline from 'readline';
 import { HEARTBEAT_MARKER } from './ipc-protocol.js';
 import { detectRateLimit, detectAuthFailure } from './rate-limit.js';
 import { resolveModel, formatUsageLine } from './model-util.js';
+import { payloadIsForThisContainer } from './ipc-input-filter.js';
 import { fileURLToPath } from 'url';
 
 interface ContainerInput {
@@ -158,8 +159,26 @@ function drainIpcInput(): string[] {
     const messages: string[] = [];
     for (const file of files) {
       const filePath = path.join(IPC_INPUT_DIR, file);
+      let data: { type?: string; text?: string; message_id?: string; target_container?: string };
       try {
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      } catch (err) {
+        log(`Failed to process input file ${file}: ${err instanceof Error ? err.message : String(err)}`);
+        try { fs.unlinkSync(filePath); } catch { /* ignore */ }
+        continue;
+      }
+      // The input dir is shared by every container of this groupFolder. A
+      // payload addressed to a DIFFERENT container (target_container set and not
+      // ours) belongs to a sibling session — leave it in place for the right
+      // container to drain. Consuming+acking it here would steal a message meant
+      // for another session and act on it with the wrong context (the
+      // 2026-07-21 stale-draft send). Untargeted payloads (legacy / rolling
+      // deploy) are consumed as before. Orphans whose target container has since
+      // exited are swept by the host on that container's close.
+      if (!payloadIsForThisContainer(data.target_container, CONTAINER_NAME)) {
+        continue;
+      }
+      try {
         fs.unlinkSync(filePath);
         if (data.type === 'message' && data.text) {
           messages.push(data.text);
