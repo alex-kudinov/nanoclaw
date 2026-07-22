@@ -144,3 +144,43 @@ INSTRUCTORS_DIR=/workspace/extra/instructors
 2. *Ed Utz and Rick (Richard Dean) matched correctly* — they were listed as unmatched in the preview (which ran with a different/earlier heartbeat.py). On final distribution, Ed Utz matched by full name and Rick matched via _NICKNAMES rick→richard.
 
 3. *Preview vs. final count mismatch* — Preview showed 7; final distribution sent to 10. Discrepancy due to heartbeat.py being rebuilt for each cold start without a persistent canonical copy. The preview was generated in a prior container session with a different heartbeat.py version.
+
+## Session: 2026-06-19-1758 — ICF MCS Enrollment Consultation with Debbie Harbec (skipped)
+
+- Instructor: Cherie Silas
+- Type: 1-on-1 enrollment consultation (prospective student)
+- No distribution — not a group class, no student cohort
+- recap.md flagged correctly: pipeline noted the session format doesn't map to a class recap
+- Precedent: same disposition as 2026-05-19 (Ed Millermaier consultation)
+
+## Session: 2026-06-30-1400 — ACTC Team Coaching Program Inquiry Call (skipped)
+
+- Instructor: Cherie Silas
+- Attendee: Emilie Mcgrath (prospective student, holds PCC)
+- Type: 1-on-1 program inquiry call (ACTC program structure, scheduling, pricing)
+- No distribution — not a group class, single prospective student
+- Note: meta.json listed session_type "class" but meeting summary had meeting-type "1on1" and purpose "prospective student inquiry" — content disposition takes precedence over meta.json session_type field
+
+## Session: 2026-07-01-1144 — Contract Exit, MCC Review, and Supervision Course Prep (skipped)
+
+- Participants: internal staff (contract/staffing/logistics discussion)
+- Type: internal 1-on-1 operational meeting
+- No distribution — no students, no teaching, no coaching concepts
+- Pipeline flagged correctly in recap.md; 2 extractions also failed (consistent with non-class content)
+- meta.json listed session_type "class" — recap.md content disposition takes precedence
+
+## Session: 2026-07-10-1136 — ICF Session Observation Form Redesign and Coach Grader (skipped)
+
+- Participants: Alex + colleague (internal operational meeting)
+- Type: internal 1-on-1 — form redesign on tools.tandemcoach.co, Coach Grader workflow, product strategy
+- No distribution — no students, no instructional content
+- Pipeline flagged correctly in recap.md; 1 extraction failed (free-course, consistent with non-class content)
+- meta.json listed session_type "class" — recap.md content disposition takes precedence
+
+## Session: 2026-07-10-1202 — Polish ICF Foundation Course Licensing Discussion with Pavel (skipped)
+
+- Participants: Cherie, Alex, Pavel (vendor/partner)
+- Type: licensing and translation partnership discussion — not a coaching class
+- No distribution — no students, no instructional content
+- Pipeline flagged correctly in recap.md; 2 of 5 extractions failed (consistent with non-class content)
+- meta.json listed session_type "class" — recap.md content disposition takes precedence

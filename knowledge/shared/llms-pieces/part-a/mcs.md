@@ -7,10 +7,10 @@ Required January 1, 2027
 
 If you hold an ACC, PCC, or MCC and you mentor - or want to mentor - credentialing candidates, this page walks through what the new ICF Mentor Coach Specialization (MCS, formerly Mentor Coach Qualification or MCQ) requires, how the Standard Path and Credit for Prior Learning compare, and how to earn your MCS before the deadline. Built from ICF's April 2026 announcement and the Mentor Coach Specialization Handbook.
 
-[See the live cohort - $1,997](/mcs/mentor-coach-training/)
-[Get the MCS 2027 Decision Guide](#decision-guide)
+[Find your path →](#which-path)
+[Get the 2027 Decision Guide](#decision-guide)
 
-Founding cohort · first 6 seats · led by Cherie Silas, MCC. [Compare all our programs →](#our-programs)
+Two routes to MCS, from $299 · live cohort led by Cherie Silas, MCC. [See the September cohort - $2,997 →](/mcs/advanced-accreditation-mentor-coaching/)
 
 **2 MCC** Mentor Coaches on Faculty
 
@@ -55,6 +55,41 @@ Not the focus
 
 If you are a candidate looking to *receive* 10 hours of mentor coaching as part of your ACC, PCC, or MCC application, this page is not the fit. Start with our [candidate mentor coaching service](/icf/mentor-coaching-acc-pcc-mcc/).
 
+Start here
+
+### Which route to MCS is yours?
+
+ICF offers two application paths, and where you start depends on your situation - not just your credential. Pick the one that sounds like you, and we will point you to the right next step.
+
+You already mentor
+
+##### I mentor coaches already and can document it
+
+You hold an active PCC, MCC, or renewed ACC, and you have mentored five or more coaches to their credential in the past three years - or you can get an attestation letter from an accredited program. Credit for Prior Learning is your fastest route: 10 hours of education plus your evidence of practice.
+
+Credit for Prior Learning · from $299
+[See the CPL route →](/mcs/mentor-coaching-foundations/)
+
+You want the full training
+
+##### I want structured training to mentor ACC and PCC candidates
+
+Whether you are new to mentor coaching or you simply prefer guided, observed practice, the Standard Path takes you from foundations through a two-part capstone in one live cohort - accredited under the ICF AAMC standard, led by Cherie Silas, MCC.
+
+Live cohort · $2,997
+[See the live cohort →](/mcs/advanced-accreditation-mentor-coaching/)
+
+You are still deciding
+
+##### I am working out whether MCS applies to me
+
+Not sure if the 2027 requirement affects you, which level you would serve, or which path fits your history? Start with the free 2027 Decision Guide, then compare the two paths side by side further down this page.
+
+Free guide
+[Get the Decision Guide →](#decision-guide)
+
+Both Tandem programs are built by two MCC mentor coaches, Cherie Silas and Alex Kudinov; the live cohort is led by Cherie Silas, MCC. [Compare the two paths in full →](#two-paths)
+
 What changes and when
 
 ### The 2027 deadline and the transition timeline
@@ -73,11 +108,11 @@ April 2026
 
 ICF publishes the Mentor Coach Specialization Handbook with two application pathways, confirms the January 1, 2027 compliance date, and previews the Session Observation and Competency Review forms used for formative evaluation.
 
-Coming months
+June 2026
 
 ##### Advanced accreditations open
 
-Applications are expected to open for the [Advanced Accreditation in Mentor Coaching](/mcs/advanced-accreditation/) and the Advanced Accreditation in Coaching Supervision - separate from the individual MCS and from standard program accreditation. ICF has not yet announced a specific date.
+ICF published the full standards for the [Advanced Accreditation in Mentor Coaching](/mcs/advanced-accreditation-mentor-coaching/) on May 27, 2026 and opened applications in June 2026 - separate from the individual MCS and from standard program accreditation. Tandem submitted its application in the first window, on June 11, 2026, and was granted the accreditation on July 1, 2026.
 
 January 1, 2027
 
@@ -442,31 +477,30 @@ Tandem Coaching Academy
 
 ### Two programs - complete MCS preparation
 
-A live cohort built to the new ICF Advanced Accreditation in Mentor Coaching (AAMC) standard, and an asynchronous Foundations program for Credit for Prior Learning. Created by two MCC mentor coaches, Cherie Silas and Alex Kudinov.
+A live cohort accredited under the ICF Advanced Accreditation in Mentor Coaching (AAMC), and an asynchronous Foundations program for Credit for Prior Learning. Created by two MCC mentor coaches, Cherie Silas and Alex Kudinov.
 
-Founding cohort · AAMC standard
+Live cohort · ICF-accredited (AAMC)
 
 #### Mentor Coach Training
 
-The 70-hour live cohort built to the new ICF [Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation/) standard. Foundations + Practicum + evaluation training in a single 12-week cohort.
+The 71-hour live cohort accredited under the ICF [Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation-mentor-coaching/). Foundations, supervised mentor coaching practice, and evaluation training in a single 12-week cohort.
 
 $2,997
-$1,997
 USD
 
-Founding cohort price for the first 6 seats. List price $2,997 thereafter.
+September cohorts - Thursday and Friday weekly slots. Enroll directly.
 
-- **70 CCE hours** - 41 synchronous (12 cohort sessions + observed mentor coaching practice) and 29 asynchronous, exceeding the AAMC sync floor
-- **9 students per cohort** - 5 observed mentor coaching sessions per participant, with written feedback on 3
+- **71 CCE hours** - 41 synchronous (12 cohort sessions + observed mentor coaching practice) and 30 asynchronous, exceeding the AAMC sync floor
+- **5 observed mentor coaching sessions** per participant, with written feedback on 3
 - **Mentor Coaching Foundations included** as just-in-time pre-work - no separate purchase
 - **ACC BARS and PCC Markers training included** as part of the cohort. MCC BARS available as an optional add-on
 - **Two-part capstone** - portfolio submission plus a live readiness review demonstrating you are ready to mentor ACC and PCC candidates
-- **Led by Cherie Silas, MCC** across all 12 classes, with Kalina Terzieva and Alex Kudinov, MCC, assisting
+- **Led by Cherie Silas, MCC** across all 12 classes
 
-Built to the AAMC standard · Cohort dates: Q3 2026
+ICF-accredited (AAMC) · September cohorts: Thu Sep 24 / Fri Sep 25
 
-[See the cohort - $1,997](/mcs/mentor-coach-training/)
-Founding pricing locks at enrollment for the first 6 seats.
+[See the cohort - $2,997](/mcs/advanced-accreditation-mentor-coaching/)
+Two weekly slots - Thursday or Friday. Enroll directly.
 
 Live now · Credit for Prior Learning
 
@@ -491,7 +525,7 @@ ICF CCE Approved · 10 CCEUs
 
 [Enroll - $299](/mcs/mentor-coaching-foundations/)
 
-**Standard Path students:** Mentor Coach Training is the single SKU - you do not need to purchase Mentor Coaching Foundations separately. Foundations is built into the cohort as just-in-time pre-work for the live sessions. The cohort is built to the AAMC standard; Tandem is preparing to apply when ICF opens the portal in mid-June 2026.
+**Standard Path students:** Mentor Coach Training is the single SKU - you do not need to purchase Mentor Coaching Foundations separately. Foundations is built into the cohort as just-in-time pre-work for the live sessions. The cohort is ICF-accredited under the Advanced Accreditation in Mentor Coaching (AAMC), granted July 1, 2026.
 
 Free
 
@@ -540,7 +574,7 @@ Both paths lead to the same MCS designation with the same standing. The **Standa
 
 **Q: What is the Advanced Accreditation in Mentor Coaching (AAMC), and does Tandem hold it?**
 
-The **Advanced Accreditation in Mentor Coaching (AAMC)** is an ICF accreditation that organizations apply for to deliver Standard Path mentor coaching programs. ICF published the AAMC standards on May 27, 2026 and is opening applications mid-June 2026. Tandem is preparing to submit in the first window. Until accreditation is granted, our [Mentor Coach Training](/mcs/mentor-coach-training/) cohort is offered as a rigorous coach-education program built to the AAMC standard, led by an MCC instructor of record; certificates of completion document the 70 program hours and the components delivered (5 observed mentor coaching sessions with written feedback on 3, two-part capstone, ICF Facilitator Guide-led ACC BARS and PCC Markers training).
+The **Advanced Accreditation in Mentor Coaching (AAMC)** is an ICF accreditation that organizations hold to deliver Standard Path mentor coaching programs. ICF published the AAMC standards on May 27, 2026 and opened applications in June 2026. **Tandem Coaching Academy was granted the AAMC on July 1, 2026** (valid through July 2029) - our [Mentor Coach Training](/mcs/advanced-accreditation-mentor-coaching/) cohort is the accredited program, led by an MCC instructor of record; certificates of completion document the 71 program hours and the components delivered (5 observed mentor coaching sessions with written feedback on 3, two-part capstone, ICF Facilitator Guide-led ACC BARS and PCC Markers training).
 
 **Q: Does my ACC BARS or PCC Markers training count toward the 41 or 10 hours?**
 
@@ -601,7 +635,7 @@ Everything on this page is built from ICF's own published materials - the Mentor
   Detailed walkthrough of a mentor coaching engagement - intake, session structure, closing, development planning.
 - [Coaching Supervision vs Mentor Coaching](/coaching-supervision-vs-coaching-mentoring/)
   Role-distinction deep dive. Mentor coaching focuses on skill development; coaching supervision focuses on the self of the coach. The two are complementary, not interchangeable.
-- [ICF Advanced Accreditation in Mentor Coaching](/mcs/advanced-accreditation/)
+- [ICF Advanced Accreditation in Mentor Coaching](/mcs/advanced-accreditation-mentor-coaching/)
   What ICF has announced about the new program-level accreditation for mentor coaching education, the confirmed timeline, and how it connects to the MCS.
 - [The ICF Core Competencies](/icf-core-competencies/)
   The foundational framework every mentor coach evaluates against. The 2025 ICF Core Competencies are the current reference for credential-level skill demonstration.
@@ -632,14 +666,6 @@ Co-branded info sessions on MCS for your members - we travel (virtually) to chap
 #### Mentor Coaching Foundations brochure
 
 8 pages on the curriculum, pricing, and how the program fits the Credit for Prior Learning path. Delivered on screen - your copy lands in your inbox.
-
-#### Mentor Coaching Practicum waitlist
-
-Be the first to hear when enrollment opens in Q3 2026. Waitlist members get launch pricing and an early look at the syllabus.
-
-##### You're on the list.
-
-Thank you - you've been added to the Mentor Coaching Practicum waitlist. We'll be in touch when Program B opens for enrollment, and you'll hear first about launch pricing.
 
 **MCS required January 1, 2027.**
 Mentor Coaching Foundations - 10-hour program for the CPL path - $299.

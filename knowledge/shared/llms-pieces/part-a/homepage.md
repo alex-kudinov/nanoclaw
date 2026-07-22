@@ -22,7 +22,7 @@ Whether you’re an individual leader seeking a thinking partner, an executive t
 
 One-on-one coaching for senior leaders who want a partner, not a playbook. We challenge your thinking and help you act on what you discover.
 
-Learn more](/executive-coaching-solutions/)
+Learn more](/executive-coaching/)
 
 [#### Leadership Development
 

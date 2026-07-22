@@ -148,13 +148,13 @@ Expert review of your recorded team coaching sessions. Get detailed feedback on 
 [Enroll](https://community.tandemcoaching.academy/invitation?code=99E5FE)
 
 8
-$59
+Free
 
 #### ICF Team Coaching Test Prep
 
-Targeted preparation for the ICF Team Coaching certification exam. Walk into your exam confident and ready.
+The full prep course for the ICF Team Coaching certification exam – 27 knowledge questions and 35 best/worst scenarios with detailed explanations. Yours free.
 
-[Enroll](https://community.tandemcoaching.academy/invitation?code=4E78A9)
+[Start Free](https://community.tandemcoaching.academy/invitation?code=248E2D)
 
 Upcoming Cohort Dates
 
@@ -221,6 +221,12 @@ The ICF introduced the ACTC to meet growing demand for qualified team coaches. O
 
 To earn the ACTC, you must complete ICF-accredited team coaching education, demonstrate team coaching experience, receive coaching supervision, and pass the ICF Team Coaching certification exam. You must also already hold an individual coaching credential (ACC, PCC, or MCC). Tandem’s [ICF](https://coachingfederation.org/)-accredited ACTC program helps you meet ICF requirements for team coaching certification in one integrated pathway – with all education, supervision, and exam prep included.
 
+#### What ACTC Coaching Involves – and Why Demand Is Rising
+
+ACTC coaching is different from coaching one leader at a time. As an ACTC-credentialed team coach, your client is the **whole team as a living system** – you work with the relationships, decision-making patterns, and collective behavior that decide whether a team performs or stalls. A team coaching engagement typically runs across several months and blends full-team sessions, sub-group work, and individual conversations, using a systemic lens (Tandem trains the 7-Eyed model) to surface what a team cannot see about itself.
+
+The ICF launched the ACTC in 2023 in direct response to organizational demand: companies increasingly ask for coaches who can move a leadership team, a cross-functional squad, or a newly merged department forward together – not just develop individuals in isolation. That shift is why an [accredited team coaching](/team-coaching/) credential now carries a premium, and why coaches who already hold an ACC, PCC, or MCC are adding the ACTC to serve organizational clients. If you are weighing the practice itself, it helps to understand [how team coaching differs from group coaching](/team-coaching-vs-group-coaching/) and how organizations measure [team coaching ROI](/team-coaching-roi-metrics/) before you position your services.
+
 **Q: ICF ACTC Certification Requirements & ICF Credential Overview**
 
 To earn the ACTC credential, the ICF requires you to meet five core criteria. Here’s what each one involves:
@@ -283,7 +289,7 @@ The final step is passing the ICF Team Coaching certification exam. Here’s wha
 - **Multiple-choice format** covering team coaching scenarios, best practices, and ethical dilemmas
 - You schedule the exam **when you feel ready** – no fixed exam dates
 
-Tandem offers a dedicated **test prep module ($59)** that walks you through the competency framework, provides practice questions, and helps you identify areas that need additional review before sitting for the exam.
+Tandem offers a dedicated **free test prep module** that walks you through the competency framework, provides practice questions, and helps you identify areas that need additional review before sitting for the exam.
 
 **Q: How Long Does ACTC Certification Take?**
 
@@ -405,7 +411,7 @@ Coaching supervision is a reflective practice where a qualified supervisor helps
 
 **Q: What is the ICF Team Coaching certification exam?**
 
-The exam is a computer-based assessment administered through the ICF portal. It tests your knowledge of the ICF Team Coaching Competencies and ethical standards specific to team coaching. The format is multiple-choice. Our [test prep module ($59)](#program-overview) prepares you specifically for this exam.
+The exam is a computer-based assessment administered through the ICF portal. It tests your knowledge of the ICF Team Coaching Competencies and ethical standards specific to team coaching. The format is multiple-choice. Our [test prep module (free)](#program-overview) prepares you specifically for this exam.
 
 **Q: How much does ACTC certification cost all-in?**
 
@@ -476,7 +482,7 @@ Or enroll in individual modules
 [Module 4 $399](https://community.tandemcoaching.academy/invitation?code=A8GCDG)
 [Group Supervision $699](https://community.tandemcoaching.academy/invitation?code=CBD262)
 [Recording Review $349](https://community.tandemcoaching.academy/invitation?code=99E5FE)
-[Exam Prep $59](https://community.tandemcoaching.academy/invitation?code=4E78A9)
+[Exam Prep Free](https://community.tandemcoaching.academy/invitation?code=248E2D)
 
 Already pursuing PCC? See our [Systems Coach Program](/icf/pcc-professional-coach-certification/) or [Professional Coach Program](/icf/acc-pcc-certification/) to earn PCC + ACTC together.
 

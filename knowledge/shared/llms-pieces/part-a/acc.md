@@ -180,13 +180,13 @@ One-on-one mentoring with an MCC-level mentor for personalized feedback on your 
 [Enroll](https://community.tandemcoaching.academy/invitation?code=C7DGEF)
 
 9
-$29
+Free
 
 #### ICF Exam Prep Course
 
-Targeted preparation for the ICF Coach Knowledge Assessment. Walk into your exam confident and ready.
+The full prep course for the ICF Coach Knowledge Assessment – the complete scenario bank with detailed explanations and progress tracking. Yours free.
 
-[Enroll](https://community.tandemcoaching.academy/invitation?code=FA9C52)
+[Start Free](https://community.tandemcoaching.academy/invitation?code=J4548J)
 
 Upcoming Cohort Dates
 
@@ -206,7 +206,7 @@ Your Coaching Team
 
 ### Learn From Coaches at the Top of the Profession
 
-Our program is designed and led by Master Certified Coaches – the highest credential ICF awards – with a team of MCC and PCC instructors who bring diverse expertise across executive, leadership, and organizational coaching.
+Our program is designed and led by Master Certified Coaches – the highest credential ICF awards – with a team of MCC and PCC instructors who bring diverse expertise across executive, leadership, and organizational coaching. Cherie Silas and Alex Kudinov also hold ICF’s Mentor Coach Specialization (MCS) at all three levels – so the mentor coaching built into your ACC certification already meets ICF’s January 2027 requirement that mentor coaches hold it.
 
 [instructor\_listing programs="acc"]
 
@@ -286,7 +286,7 @@ Get the complete ACC Level 1 program details, schedule, and pricing in a conveni
 
 **Q: ICF ACC Certification Requirements**
 
-The ICF ACC requirements are set by the International Coaching Federation’s credentials standards. To qualify for an ACC credential, you need to submit evidence of each of the following five criteria – including education and experience requirements – through your ICF application. These standards ensure that every Associate Certified Coach has the education, practice hours, ability to coach competently, and ethical foundation to coach professionally.
+The [ICF ACC requirements](/icf-acc-requirements/) are set by the International Coaching Federation’s credentials standards. To qualify for an ACC credential, you need to submit evidence of each of the following five criteria – including education and experience requirements – through your ICF application. These standards ensure that every Associate Certified Coach has the education, practice hours, ability to coach competently, and ethical foundation to coach professionally.
 
 **At Least 60 Hours of Coach-Specific Training**
 Initial coach training completed through an ICF-accredited coaching program (Level 1 or Level 2) covering the ICF Core Competencies, ethics, and practical coaching skills.
@@ -321,7 +321,7 @@ Tandem’s ACC program follows the Level 1 pathway – meaning everything you ne
 
 The ICF Credentialing Exam (CKA) is designed to test your application of ICF Core Competencies and ethics, not just memorization. The exam is designed around situational judgment scenarios – you’re given coaching situations and asked to choose the response that best reflects ICF standards. There are 155 scored questions delivered online via Pearson VUE, with a passing score of 460 out of 600.
 
-Effective exam preparation goes beyond reading the competencies. Many coaches who started their coach training without exam-specific prep struggle with the format, even when they understand the content. Tandem’s [$29 Exam Prep Course](#program-overview) walks you through the question types, common pitfalls, and a practice scenario set so the actual exam feels familiar. Your ACC credential may be granted only after you pass this assessment, so deliberate practice pays off.
+Effective exam preparation goes beyond reading the competencies. Many coaches who started their coach training without exam-specific prep struggle with the format, even when they understand the content. Tandem’s [free Exam Prep Course](#program-overview) walks you through the question types, common pitfalls, and a practice scenario set so the actual exam feels familiar. Your ACC credential may be granted only after you pass this assessment, so deliberate practice pays off.
 
 **Q: How Long Does It Take to Get ACC Certified?**
 
@@ -364,7 +364,7 @@ See how our ACC program stacks up against typical coach training programs and th
 | Free Trial Module | Yes – no cost, no CC | No | N/A |
 | Modular Pricing | Buy as you go | Full upfront | N/A |
 | Mentoring Included | Group + Individual | Sometimes | Arrange separately |
-| Exam Prep Course | Included ($29) | Sometimes extra | Find separately |
+| Exam Prep Course | Included (free) | Sometimes extra | Find separately |
 | ICF Application Support | Fully guided | Varies | On your own |
 | Application Path | Level 1 (simplest) | Level 1 or varies | Portfolio (complex) |
 | ICF Review Timeline | ~4 weeks | 4 – 14 weeks | Up to 14 weeks |
@@ -392,7 +392,7 @@ Most coaches complete the full process in 6 to 12 months. The training modules t
 
 **Q: What is the ICF ACC credentialing exam format?**
 
-The ICF Credentialing Exam (also called the Coach Knowledge Assessment or CKA) is a written exam delivered online through Pearson VUE. It includes 155 scored questions (plus 20 unscored pre-test items) in situational judgment format – you’ll be given coaching scenarios and asked to select the best response based on ICF Core Competencies and ethics. You schedule your exam appointment through the Pearson VUE testing platform after your ACC application is approved. The exam uses scaled scoring with a passing score of 460 out of 600, and you have 3 hours to complete it. Tandem’s [Exam Prep Course ($29)](#program-overview) specifically prepares you for this format.
+The ICF Credentialing Exam (also called the Coach Knowledge Assessment or CKA) is a written exam delivered online through Pearson VUE. It includes 155 scored questions (plus 20 unscored pre-test items) in situational judgment format – you’ll be given coaching scenarios and asked to select the best response based on ICF Core Competencies and ethics. You schedule your exam appointment through the Pearson VUE testing platform after your ACC application is approved. The exam uses scaled scoring with a passing score of 460 out of 600, and you have 3 hours to complete it. Tandem’s [Exam Prep Course (free)](#program-overview) specifically prepares you for this format.
 
 **Q: Do I need coaching experience before starting the program?**
 
@@ -424,7 +424,7 @@ The Level 1 pathway (Tandem’s approach) means you complete an ICF-accredited p
 
 **Q: Will this program prepare me for the credentialing exam?**
 
-Yes. The core training modules are built around ICF’s core competencies and ethics – the exact framework the exam tests. On top of that, we offer a dedicated ICF Exam Prep Course for just $29 (included in the full program) that covers the situational judgment format, common pitfalls, and practice scenarios. Our goal is that you walk into the exam feeling confident, not anxious. The vast majority of Tandem graduates pass the exam on their first attempt.
+Yes. The core training modules are built around ICF’s core competencies and ethics – the exact framework the exam tests. On top of that, we offer a dedicated ICF Exam Prep Course for free (included in the full program) that covers the situational judgment format, common pitfalls, and practice scenarios. Our goal is that you walk into the exam feeling confident, not anxious. The vast majority of Tandem graduates pass the exam on their first attempt.
 
 **Q: Can I use this training toward a PCC credential later?**
 
@@ -482,7 +482,7 @@ Or enroll in individual modules
 [Group Supervision $699](https://community.tandemcoaching.academy/invitation?code=D4AB43)
 [Group Mentoring $699](https://community.tandemcoaching.academy/invitation?code=58AG35)
 [Individual Mentoring $1,199](https://community.tandemcoaching.academy/invitation?code=C7DGEF)
-[Exam Prep $29](https://community.tandemcoaching.academy/invitation?code=FA9C52)
+[Exam Prep Free](https://community.tandemcoaching.academy/invitation?code=J4548J)
 
 Before you go
 

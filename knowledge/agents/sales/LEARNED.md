@@ -186,3 +186,23 @@ Cherie's original correction ("BARS/Markers must come from ICF, never embedded")
 ### Lesson 44: Bare topic inquiry → one short clarifier, not a program list
 **Problem:** New lead, no program named, inquiry was 'Pricing and payment plans'
 **Rule:** When a lead's message is a bare topic ('Pricing and payment plans') with no program named, a clarifying question is needed — but it should be a single short sentence ('Which program are you considering?'), not a bulleted list of all programs. The list adds noise and length that isn't warranted when the sole purpose is to clarify.
+
+### Lesson 45: Initial draft opened with 'To answer directly:' (AI-ism) and the first…
+**Problem:** ACC inquiry from pharma/biotech exec asking if non-IT background would be a mismatch given IT-heavy alumni community
+**Rule:** Initial draft opened with 'To answer directly:' (AI-ism) and the first revision still opened with 'Thank you for reaching out' (banned opener). Alex asked for a full rewrite in Cherie's voice: kill the opener entirely, strip all AI-isms, jump straight into the answer, end with a warm natural invitation. The correct pattern: answer the question first sentence, no validation or acknowledgment preamble, no AI-sounding transitional phrases anywhere in the body.
+
+### Lesson 46: When a lead raises genuine language accessibility concerns, the initial…
+**Problem:** MCF/CPL pathway — French PCC-level coach asking about subtitle/transcript availability and translation tool acceptability for written submissions
+**Rule:** When a lead raises genuine language accessibility concerns, the initial draft deferred the subtitle question with 'let me confirm.' The reviewer provided the answer (English transcripts exist) but also redirected the lead to a French-language alternative (PI-Coach.Pro from ICF educators forum) due to learning quality concerns with constant translation. When language barriers could undermine the learning experience, be willing to honestly redirect to a better-fit alternative — even at the cost of a sale. Always surface the Tandem option as still available if they choose it.
+
+### Lesson 47: Initial draft routed a non-coaching, stress-test assessment request to…
+**Problem:** Rich Atkins — one-day stress-test workshop to surface top performers among 10 construction leaders in NYC. No coaching program involved.
+**Rule:** Initial draft routed a non-coaching, stress-test assessment request to Cherie for discovery. Alex clarified Tandem will not take this type of engagement at all. When an organizational request is fundamentally outside Tandem's service model (e.g., talent differentiation exercises, high-stakes assessment design), the correct response is a clean, polite decline — not a Cherie routing. The exec coaching routing rule applies to legitimate coaching/leadership development work; it does not apply to assessments or exercises designed to rank/eliminate employees.
+
+### Lesson 48: Do not assume a lead's diploma is ICF-accredited just because they…
+**Problem:** ACC/PCC path inquiry — lead had a Level 1 diploma from a third-party school and asked whether it reduced training hours/cost. Initial draft assumed ICF accreditation; Alex corrected to request the certificate first.
+**Rule:** Do not assume a lead's diploma is ICF-accredited just because they state it is. Always ask for the certificate before advising on transfer credits or PCC path eligibility. Non-accredited hours either don't transfer or transfer at a reduced rate (roughly 1 hour per 3 completed).
+
+### Lesson 49: Initial draft assumed the MCT payment plan was unavailable at checkout…
+**Problem:** Charlotte Dover — Mentor Coach Training, payment plan not showing at checkout + supervision combined pathway question
+**Rule:** Initial draft assumed the MCT payment plan was unavailable at checkout and routed Charlotte to an invoice workaround — but the checkout had already been fixed by the time we drafted. Before drafting a permanent workaround for a technical gap a lead reports, treat it as potentially transient; the correct approach is to note the gap to operators and let them confirm current status rather than committing to a different flow in the email. Additionally, when operators share uncertainty about a future product (supervision), surface the positive angle they do know (possible student discounts) rather than just restating TBD.

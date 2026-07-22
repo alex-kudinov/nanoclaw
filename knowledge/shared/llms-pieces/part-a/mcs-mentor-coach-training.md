@@ -2,35 +2,41 @@
 URL: https://tandemcoach.co/mcs/mentor-coach-training/
 
 Mentor Coach Specialization · Standard Path
-AAMC application planned
+ICF-Accredited · AAMC
 
-## The 70-hour live cohort built to the new ICF Advanced Accreditation standard
+## The 71-hour live cohort accredited under ICF’s Advanced Accreditation in Mentor Coaching
 
 Twelve weeks. Nine students per cohort. 5 observed mentor coaching sessions per participant with written feedback. ICF Facilitator Guide-led ACC BARS and PCC Markers training. A two-part capstone (portfolio + live readiness review) demonstrating you are ready to mentor ACC and PCC candidates. Led by Cherie Silas, MCC.
 
-Founding cohort
-$1,997
-List $2,997
-USD · First 6 seats lock at this price
+Tuition
+$2,997
+USD · per seat · pay in 3× $999
 
-[Reserve a founding-cohort seat](#pricing)
+[Reserve your seat](#pricing)
 [See what is included](#what-you-get)
 
 MCS required for every credentialed mentor coach as of **January 1, 2027**.
 
-**70 program hours** · 41 sync + 29 async
+**71 program hours** · 41 sync + 30 async
 
 **12 live classes** · 2hr each · weekly
 
 Led by **Cherie Silas, MCC**
 
-**9 students** · built to the AAMC standard
+**9 students** · ICF-accredited (AAMC)
+
+**Graduate the full 71 hours**Earn Tandem’s certificate under ICF’s *Advanced Accreditation in Mentor Coaching (AAMC)* — the direct pathway to the MCS.
+
+**Or take part of it**Complete individual components and earn *ICF Continuing Coach Education (CCE)* hours that still count toward your MCS.
+
+**ICF-Accredited Mentor Coach Training** · $2,997 · reserve your seat below
+[Reserve a seat](#pricing)
 
 What you get
 
-### A single 70-hour program. Every component of the AAMC standard in one cohort.
+### A single 71-hour program. Every component of the AAMC standard in one cohort.
 
-The ICF [Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation/) requires 60+ student contact hours with at least 80% Mentor Coaching-Specific Education, a 50% sync floor, ICF-anchored evaluation tool training, 5 observed mentor coaching sessions per participant, 5 hours of mentoring-on-mentoring, and a final assignment. This cohort is built to that spec - 70 hours total, 41 sync and 29 async (59% sync) - so what you submit to ICF is a clean match to what the accreditation asks for. Foundations, ICF Facilitator Guide-led evaluation training, supervised mentor coaching practice, and a two-part capstone in a single 12-week cohort. Nothing to assemble from multiple courses.
+The ICF [Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation-mentor-coaching/) requires 60+ student contact hours with at least 80% Mentor Coaching-Specific Education, a 50% sync floor, ICF-anchored evaluation tool training, 5 observed mentor coaching sessions per participant, 5 hours of mentoring-on-mentoring, and a final assignment. This cohort is accredited to that standard - 71 hours total, 41 sync and 30 async (58% sync) - so what you submit to ICF is a clean match to what the accreditation asks for. Foundations, ICF Facilitator Guide-led evaluation training, supervised mentor coaching practice, and a two-part capstone in a single 12-week cohort. Nothing to assemble from multiple courses.
 
 01
 
@@ -42,7 +48,7 @@ The full Foundations curriculum - six modules across Ethical Practice, Engagemen
 
 #### ACC BARS and PCC Markers evaluation training
 
-ACC Behaviorally Anchored Rating Scales (BARS) and PCC Markers evaluation training delivered inside the cohort in alignment with the ICF Facilitator Guide for equivalent training. Pre-class delivery before the live classes that apply them, with structured practice on session recordings, scoring algorithm walkthroughs, and bias-management work calibrated against the 2026 ACC + PCC Minimum Skills Requirements. MCC-credentialed enrollees receive a self-paced Tandem MCC BARS bonus module - not part of the accredited 70 hours.
+ACC Behaviorally Anchored Rating Scales (BARS) and PCC Markers evaluation training delivered inside the cohort in alignment with the ICF Facilitator Guide for equivalent training. Pre-class delivery before the live classes that apply them, with structured practice on session recordings, scoring algorithm walkthroughs, and bias-management work calibrated against the 2026 ACC + PCC Minimum Skills Requirements. MCC-credentialed enrollees receive a self-paced Tandem MCC BARS bonus module - not part of the accredited 71 hours.
 
 03
 
@@ -66,7 +72,7 @@ You deliver three ACC-level mentor coaching sessions and three PCC-level mentor 
 
 #### Tandem certificate of completion
 
-On completion you receive a single Tandem certificate of completion documenting all 70 program hours (29 async + 41 sync) aligned with the 2024 ICF Mentor Coaching Competencies and the AAMC required components - 5 observed mentor coaching sessions, 5 hours of mentoring-on-mentoring, and the two-part capstone. This is the artifact you upload to your ICF MCS application.
+On completion you receive a single Tandem certificate of completion documenting all 71 program hours (30 async + 41 sync) aligned with the 2024 ICF Mentor Coaching Competencies and the AAMC required components - 5 observed mentor coaching sessions, 5 hours of mentoring-on-mentoring, and the two-part capstone. This is the artifact you upload to your ICF MCS application.
 
 Inside the cohort
 
@@ -110,21 +116,21 @@ Faculty
 
 ### An MCC mentor coach running the program she built.
 
-Cherie Silas holds the ICF Master Certified Coach credential and qualifies for the Mentor Coach Specialization herself. She has been mentor coaching in accredited training programs since 2013 and built this cohort curriculum from scratch against the published ICF Advanced Accreditation in Mentor Coaching (AAMC) standard, the 2024 ICF Mentor Coaching Competencies, and the 2026 Minimum Skills Requirements.
+Cherie Silas holds the ICF Master Certified Coach credential and the ICF Mentor Coach Specialization (MCS) at all three levels. She has been mentor coaching in accredited training programs since 2013 and built this cohort curriculum from scratch against the published ICF Advanced Accreditation in Mentor Coaching (AAMC) standard, the 2024 ICF Mentor Coaching Competencies, and the 2026 Minimum Skills Requirements.
 
-#### Cherie Silas, MCC
+#### Cherie Silas, MCC, MCS
 
 Lead facilitator · Program author · Mentor Coaching Foundations · ACC BARS · PCC Markers · MCC BARS
 
 Master Certified Coach, mentor coach, and coach educator. Cherie has been mentor coaching in accredited training programs since 2013, supporting candidates through credential applications at ACC, PCC, and MCC level. She is the lead facilitator on every cohort - Class 1 through Class 12 - and the evaluator on the recordings used in the ACC BARS, PCC Markers, and MCC BARS training. Co-founder of Tandem Coaching Academy.
 
-Built to the AAMC standard
+Accredited to the AAMC standard
 
 ### Every Advanced Accreditation requirement, mapped to what you actually do.
 
-The ICF [Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation/) standard, published 2026-05-27, requires 60+ student contact hours with at least 80% Mentor Coaching-Specific Education, a 50% synchronous floor, evaluation tool training from ICF's facilitation guides, 5 observed mentor coaching sessions per participant with written feedback on at least 3, 5 hours of mentoring-on-mentoring, and a final assignment demonstrating readiness. Tandem's cohort is built to that spec - 70 program hours, 59% sync, all Core Competency, ICF Facilitator Guide-led evaluation training, a two-part capstone - so what you submit to ICF after graduation is a clean match to what the accreditation asks for.
+The ICF [Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation-mentor-coaching/) standard, published 2026-05-27, requires 60+ student contact hours with at least 80% Mentor Coaching-Specific Education, a 50% synchronous floor, evaluation tool training from ICF's facilitation guides, 5 observed mentor coaching sessions per participant with written feedback on at least 3, 5 hours of mentoring-on-mentoring, and a final assignment demonstrating readiness. Tandem's cohort is accredited to that standard - 71 program hours, 58% sync, all Core Competency, ICF Facilitator Guide-led evaluation training, a two-part capstone - so what you submit to ICF after graduation is a clean match to what the accreditation asks for.
 
-70
+71
 
 Program hours
 
@@ -136,13 +142,13 @@ Synchronous hours
 
 12 live classes + supervised mentor coaching
 
-29
+30
 
 Asynchronous hours
 
 Foundations + ICF Facilitator Guide eval training + fieldwork
 
-59%
+58%
 
 Sync ratio
 
@@ -150,9 +156,9 @@ Above the AAMC 50% floor
 
 | AAMC requirement | How this cohort delivers it | Hours |
 | --- | --- | --- |
-| **60+ total student contact hours** | 12-week cohort: pre-class async (14 hrs) + 12 live classes (24 sync) + interleaved fieldwork (16 async + 12 sync) + ad-hoc 1:1 written-feedback debriefs (3 sync) + 1 hr orientation. | 70 |
-| **80% Mentor Coaching-Specific Education (≥48 Core Competency hours)** | All 70 hours map to the ICF Mentor Coaching Competencies (2024) and Core Competency Deep Dive. 0 Resource Development hours. | 70 CC |
-| **50% synchronous floor** | 41 sync / 29 async = **59% sync**. Above the floor with intentional cushion if you miss a class. | 41 sync |
+| **60+ total student contact hours** | 12-week cohort: pre-class async (14 hrs) + 12 live classes (24 sync) + interleaved fieldwork (16 async + 12 sync) + ad-hoc 1:1 written-feedback debriefs (3 sync) + orientation and pre-class coaching recordings (2 sync). | 71 |
+| **80% Mentor Coaching-Specific Education (≥48 Core Competency hours)** | All 71 hours map to the ICF Mentor Coaching Competencies (2024) and Core Competency Deep Dive. 0 Resource Development hours. | 71 CC |
+| **50% synchronous floor** | 41 sync / 30 async = **58% sync**. Above the floor with intentional cushion if you miss a class. | 41 sync |
 | **Evaluation Tool Training via ICF facilitation guides** | ACC BARS Training (5 hrs async) + PCC Markers Training (8 hrs async), both **delivered from the ICF Facilitator Guide** in pre-class weeks 3-4. | 13 hrs |
 | **5 observed mentor coaching sessions (written feedback on ≥3)** | **Written feedback on 3 recorded mentoring sessions** (ACC arc, PCC arc, and capstone portfolio) + **live feedback on 2 observed Group Mentor Coaching sessions** in Classes 8-10. | 5 sessions |
 | **5 hours of mentoring-on-mentoring** | The live debrief of each written feedback: 3 hrs of 1:1 review sessions across the ACC arc, the PCC arc, and the capstone + 2 hrs of mentoring-on-mentoring delivered live inside the observed Group MC sessions in Classes 8-10. | 5 hrs |
@@ -163,9 +169,9 @@ Above the AAMC 50% floor
 | **Eval Tool Training aligned with the level prepared for** | ACC + PCC declared. ACC BARS + PCC Markers from the ICF Facilitator Guide. | covered |
 | **Faculty: ACC+1 renewal, PCC, or MCC; MCS by first renewal** | Cherie Silas, MCC (lead, all 12 classes) + Kalina Terzieva (assist) + Alex Kudinov, MCC (assist). MCS held by the first AAMC renewal. | - |
 
-**Free bonus for MCC-credentialed coaches.** If you hold an active MCC credential, 5 hours of MCC BARS training is included with your enrollment as a self-paced bonus. It is not counted toward the 70 AAMC program hours and is not part of the AAMC application, but it gives MCC-credentialed coaches the evaluation-instrument fluency to mentor at the MCC level on their own terms.
+**Free bonus for MCC-credentialed coaches.** If you hold an active MCC credential, 5 hours of MCC BARS training is included with your enrollment as a self-paced bonus. It is not counted toward the 71 AAMC program hours and is not part of the AAMC application, but it gives MCC-credentialed coaches the evaluation-instrument fluency to mentor at the MCC level on their own terms.
 
-**Where Tandem's accreditation stands.** ICF released the AAMC standards on 2026-05-27 and is opening applications mid-June 2026. Tandem is preparing to submit in the first window. Until the application is granted, the program is offered as a rigorous coach-education cohort led by an MCC instructor of record; the certificate of completion documents the 70 program hours and the components delivered (5 observed sessions, capstone, ICF Facilitator Guide-led evaluation training, mentoring-on-mentoring).
+**Tandem holds this accreditation.** ICF Coaching Education granted Tandem Coaching Academy the Advanced Accreditation in Mentor Coaching (AAMC) on July 1, 2026, valid through July 2029. This 71-hour cohort is the accredited program: every requirement above is delivered and evaluated inside it, and your certificate of completion documents all 71 program hours and the components delivered (5 observed sessions, capstone, ICF Facilitator Guide-led evaluation training, mentoring-on-mentoring).
 
 **What this cohort is not.** The cohort does not file your [MCS application](/mcs/) with ICF - you file it, with your certificate of completion. The cohort also does not include the ICF MCS application fee ($50 member intro / $125 non-member intro through April 2027; $125 / $200 thereafter), which is paid directly to ICF. We do not provide attestation letters confirming you have mentor coached external candidates - attestation is a CPL-path artifact and Tandem only writes attestation letters for graduates who go on to mentor coach inside Tandem programs.
 
@@ -173,40 +179,39 @@ Upcoming cohorts
 
 ### Regularly scheduled cohorts. Twelve weeks each.
 
-Each cohort runs 12 weekly live classes over 12 weeks, led by Cherie Silas, MCC. The founding cohort opens Q3 2026 at $1,997. Subsequent cohorts run at the $2,997 list price.
+Each cohort runs 12 weekly live classes over 12 weeks, led by Cherie Silas, MCC. The cohort opens in Q3 2026. Tuition is $2,997 per seat.
 
 [program\_dates program="mcs-practicum"]
 
-Exact cohort dates are released to the founding-cohort waitlist first. [Reserve a seat](#pricing) to get the start date and the locked $1,997 founding-cohort price by email.
+Exact cohort dates are released to the waitlist first. [Reserve a seat](#pricing) to get the start date by email.
 
-Pricing & founding cohort
+Pricing
 
-### $1,997 for the founding cohort. $2,997 thereafter.
+### $2,997 for the Mentor Coach Training cohort.
 
-The first Mentor Coach Training cohort opens in Q3 2026 with seats locked at the founding price of $1,997. Subsequent cohorts list at $2,997. The founding-cohort price is not a temporary discount - it is a one-time founding-cohort rate that does not return.
+The Mentor Coach Training cohort runs at $2,997 per seat, payable in full or in three monthly payments of $999. Each cohort is capped at nine participants.
 
-Founding cohort · First 6 seats
+Live cohort · 9 seats
 
 #### Mentor Coach Training
 
-$1,997
-List $2,997
+$2,997
 USD
 
-- One Tandem certificate of completion - 70 program hours, built to the ICF AAMC standard
+- One Tandem certificate of completion - 71 program hours, accredited under the ICF AAMC standard
 - 12 live classes × 2 hours over 12 weeks, led by Cherie Silas, MCC (with Kalina Terzieva and Alex Kudinov, MCC, assisting)
 - Mentor Coaching Foundations + ICF Facilitator Guide-led ACC BARS + PCC Markers training included
 - 5 observed mentor coaching sessions with written feedback on the ACC arc, PCC arc, and capstone
 - Two-part capstone: portfolio (due Class 9) + live readiness presentation (Classes 11-12)
-- MCC BARS Training (5 hrs async) included free for MCC-credentialed coaches as a bonus module (self-paced, outside the 70 AAMC hours)
+- MCC BARS Training (5 hrs async) included free for MCC-credentialed coaches as a bonus module (self-paced, outside the 71 AAMC hours)
 
-Founding cohort opens Q3 2026. Time-zone windows balance worldwide participation - one Europe-friendly (US morning) and one Americas/Asia-Pacific-friendly (US evening). Exact dates announced to the waitlist first.
+Cohorts open in Q3 2026. Time-zone windows balance worldwide participation - one Europe-friendly (US morning) and one Americas/Asia-Pacific-friendly (US evening). Exact dates announced to the waitlist first.
 
-#### Reserve a founding-cohort seat
+#### Reserve your seat
 
-Founding-cohort seats are filled from the waitlist in order. Add your name and email and you will receive the cohort start date, the seat-reservation link, and the locked $1,997 price as soon as enrollment opens.
+Seats are filled from the waitlist in order. Add your name and email and you will receive the cohort start date and the seat-reservation link as soon as enrollment opens.
 
-No payment now. The $1,997 founding-cohort price locks when you reserve from the waitlist.
+No payment now. Reserve your seat from the waitlist and we will send your enrollment link.
 
 FAQ
 
@@ -216,7 +221,7 @@ FAQ
 
 If you already meet the CPL requirements (current credential, 5 mentor coaching clients credentialed in the past 3 years OR an attestation letter from an accredited program where you actively mentor coach, plus 10 hours of MC-aligned education), the CPL path satisfies MCS without the Standard Path cohort. The 10-hour education requirement for CPL is satisfied by Tandem's [Mentor Coaching Foundations](/mcs/mentor-coaching-foundations/) async course - $299, finish in two weeks.
 
-If you do not meet the CPL evidence requirements, you need the Standard Path. This cohort is built to the new ICF [Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation/) standard - 70 program hours, 59% sync, 5 observed mentor coaching sessions, a two-part capstone, and ICF Facilitator Guide-led evaluation training. Graduating produces the certificate of completion you upload to your MCS application.
+If you do not meet the CPL evidence requirements, you need the Standard Path. This cohort is accredited under the ICF [Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation-mentor-coaching/) standard - 71 program hours, 58% sync, 5 observed mentor coaching sessions, a two-part capstone, and ICF Facilitator Guide-led evaluation training. Graduating produces the certificate of completion you upload to your MCS application.
 
 **Q: What is the prerequisite to enroll?**
 
@@ -224,11 +229,11 @@ An ICF MCC, PCC, or renewed ACC credential. ACC must be in renewed status; PCC a
 
 **Q: How is Mentor Coach Training different from buying the Foundations course alone?**
 
-Mentor Coaching Foundations is 10 hours of asynchronous education - enough for the CPL path, not enough for the Standard Path. This cohort includes the full Foundations curriculum AND 12 live classes, AND ICF Facilitator Guide-led ACC BARS / PCC Markers training, AND structured supervised mentor coaching, AND a two-part capstone. Foundations is one component; the cohort is the complete 70-hour AAMC-aligned program.
+Mentor Coaching Foundations is 10 hours of asynchronous education - enough for the CPL path, not enough for the Standard Path. This cohort includes the full Foundations curriculum AND 12 live classes, AND ICF Facilitator Guide-led ACC BARS / PCC Markers training, AND structured supervised mentor coaching, AND a two-part capstone. Foundations is one component; the cohort is the complete 71-hour ICF-accredited (AAMC) program.
 
 **Q: How is Mentor Coach Training different from the existing Mentor Coaching ACC/PCC/MCC packages on Tandem?**
 
-Those packages are mentor coaching *services* - you hire a Tandem Mentor Coach to mentor coach you toward your own credential application. This cohort is mentor coaching *training* - it teaches you to become a mentor coach so you can mentor coach other credential candidates. Different audience, different outcome, different artifact: those packages produce your performance evaluation; this cohort produces a 70-hour certificate of completion built to the AAMC standard that supports your MCS application.
+Those packages are mentor coaching *services* - you hire a Tandem Mentor Coach to mentor coach you toward your own credential application. This cohort is mentor coaching *training* - it teaches you to become a mentor coach so you can mentor coach other credential candidates. Different audience, different outcome, different artifact: those packages produce your performance evaluation; this cohort produces a 71-hour certificate of completion accredited under the AAMC standard that supports your MCS application.
 
 **Q: What is the time commitment per week?**
 
@@ -240,7 +245,7 @@ Tandem runs cohorts of 9 students and builds each cohort directly from the waitl
 
 **Q: When does the first cohort start?**
 
-The founding cohort opens in Q3 2026. Cohorts run in two time-zone windows to balance worldwide participation - one Europe-friendly (US morning), one Americas/Asia-Pacific-friendly (US evening). Exact dates are announced to the waitlist first. Reserve a founding-cohort seat in the Pricing section above and check the time zones that work for you - we use that signal to build the right cohort balance.
+The cohort opens in Q3 2026. Cohorts run in two time-zone windows to balance worldwide participation - one Europe-friendly (US morning), one Americas/Asia-Pacific-friendly (US evening). Exact dates are announced to the waitlist first. Reserve a founding-cohort seat in the Pricing section above and check the time zones that work for you - we use that signal to build the right cohort balance.
 
 **Q: Does completion of Mentor Coach Training issue the ICF Mentor Coach Specialization?**
 
@@ -258,6 +263,6 @@ The course is rigorous, and everyone's success depends on full cohort participat
 
 **Q: Is Mentor Coach Training ICF accredited?**
 
-The program is built to the published [ICF Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation/) standard. ICF released the AAMC standards on 2026-05-27 and is opening applications mid-June 2026. Tandem is preparing to submit in the first window. Until accreditation is granted, the program is offered as a rigorous coach-education cohort led by an MCC instructor of record; certificates of completion document 70 program hours and the components delivered (5 observed mentor coaching sessions, capstone, ICF Facilitator Guide-led ACC BARS and PCC Markers training).
+The program is accredited under the [ICF Advanced Accreditation in Mentor Coaching (AAMC)](/mcs/advanced-accreditation-mentor-coaching/) standard. ICF Coaching Education granted Tandem Coaching Academy the AAMC on July 1, 2026, valid through July 2029; this 71-hour cohort is the accredited program. Certificates of completion document 71 program hours and the components delivered (5 observed mentor coaching sessions, capstone, ICF Facilitator Guide-led ACC BARS and PCC Markers training).
 
 ---

@@ -292,6 +292,8 @@ ICF defines mentor coaching as:
 
 > “A process where a coach receives guidance and feedback from a more experienced coach to enhance their coaching skills and performance.”
 
+For a fuller primer on the practice itself, see our guide to [what ICF mentor coaching involves](/icf-mentor-coaching/).
+
 **Key elements:**
 
 - Must be with an ICF-credentialed mentor coach (ACC recertified, PCC, or MCC)
@@ -370,6 +372,20 @@ Common Questions
 
 ICF allows both formats to count toward mentor coaching requirements. The key difference is the level of personalized attention and flexibility.
 
+**Q: How much does ICF mentor coaching cost?**
+
+Cost depends on the credential level and session format. Our complete, ICF-compliant mentor coaching packages range from **$1,499** for ACC renewal (8 group + 3 individual hours) to **$1,799** for the PCC package to **$3,999** for MCC (10 hours, all 1-on-1).
+
+Every package exceeds ICF’s 10-hour minimum and includes the completion documentation you submit with your credential application. Because each mentor coach is a Master Certified Coach *and* an ICF credential assessor, you’re receiving feedback from someone who evaluates real credential submissions rather than merely meeting an hours requirement.
+
+**Q: Is mentor coaching the same as coaching supervision?**
+
+**No.** ICF treats mentor coaching and [coaching supervision](/coaching-supervision-vs-coaching-mentoring/) as separate categories.
+
+**Mentor coaching** gives you feedback on your coaching against the ICF Core Competencies to earn or renew a credential. It is competency- and evaluation-focused, and it is what ICF requires for credentialing.
+
+**Coaching supervision** is ongoing reflective practice on your work as a coach: your cases, ethics, and development. It is valuable, but it does *not* satisfy the ICF mentor coaching requirement. If your goal is a credential or renewal, mentor coaching is what you need.
+
 **Q: Do I need individual mentor coaching for ACC renewal?**
 
 **Yes.** ICF requires 10 hours of mentor coaching for ACC renewal, with at least 3 hours delivered as individual (1-on-1) sessions.
@@ -412,7 +428,7 @@ MCC is ICF’s highest credential. Both Cherie and Alex also serve as ICF creden
 
 **Q: What if I’m enrolled in a Tandem ACC or PCC program?**
 
-Tandem’s ACC, Systems Coach (PCC bridge), and Professional Coach programs already include mentor coaching as part of the program.
+Tandem’s [ICF certification programs](/icf-coaching/), including ACC, Systems Coach (the PCC bridge), and Professional Coach, already include mentor coaching as part of the program.
 
 These standalone packages are designed for coaches who:
 

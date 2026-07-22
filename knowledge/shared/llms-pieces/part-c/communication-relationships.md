@@ -208,7 +208,7 @@ Coaching scenarios (5):
 - Client preparing to re-engage a colleague after a public falling-out
 - Couple in life coaching stuck in the same weekly argument with no resolution
 - Mid-level manager rebuilding trust after breaking a commitment to a direct report
-Pairs with: Feel Wheel, Healthy Anger Expression, When I Feel Angry
+Pairs with: Feelings Wheel, Healthy Anger Expression Guide
 
 ### Relationship Skills Action Plan
 URL: https://tandemcoach.co/coaching-tools/relationship-skills-action-plan/

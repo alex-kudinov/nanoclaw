@@ -3,16 +3,16 @@
 ## Executive Function Strategies for ADHD Leaders: Working Memory, Impulse Control & Flexibility
 URL: https://tandemcoach.co/adhd-executive-function-leadership/
 
-### How can ADHD leaders improve their executive function?
+### How can ADHD leaders improve their [executive function](/executive-function-coaching/)?
 
 ADHD leaders strengthen executive function through three targeted areas: working memory, impulse control, and cognitive flexibility. External capture systems replace reliance on faulty working memory. Strategic pausing techniques interrupt reactive decisions. Transition rituals and task batching support cognitive flexibility. The goal is building scaffolding that works with the brain's wiring, not against it.
 
 #### Key Takeaways
 
-- External memory systems aren't crutches — they're infrastructure. Leaders who stop relying on recall and start relying on systems outperform those who don't.
+- External memory systems aren't crutches - they're infrastructure. Leaders who stop relying on recall and start relying on systems outperform those who don't.
 - ADHD's impulse control challenges and decisive leadership are the same trait. Context determines whether it's a liability or an advantage.
 - Working memory strain is a design problem, not a character flaw. Redesign the environment before trying to rewire the brain.
-- Strategic pausing — even five seconds — is a learnable skill that separates reactive executives from responsive ones.
+- Strategic pausing - even five seconds - is a learnable skill that separates reactive executives from responsive ones.
 - Cognitive flexibility improves with structure, not despite it. Transition rituals, task batching, and buffer time create the conditions for adaptability.
 
 ### The Executive Function Challenge for Leaders with ADHD
@@ -21,7 +21,7 @@ As I sat across from a brilliant technology CEO during a coaching session, he sh
 
 This paradox sits at the heart of leadership with ADHD. The same brain wiring that can create extraordinary capabilities in innovation, crisis management, and creative problem-solving often presents challenges in the executive functions that support day-to-day leadership effectiveness.
 
-Through my years coaching executives with ADHD, I've found that three core executive functions present both the greatest challenges and the most significant opportunities for transformation: working memory, impulse control, and cognitive flexibility. When leaders develop strategies to strengthen these areas, they don't just compensate for challenges—they often discover unique advantages that enhance their leadership effectiveness.
+Through my years coaching executives with ADHD, I've found that three core executive functions present both the greatest challenges and the most significant opportunities for transformation: working memory, impulse control, and cognitive flexibility. When leaders develop strategies to strengthen these areas, they don't just compensate for challenges - they often discover unique advantages that enhance their leadership effectiveness.
 
 The prioritization struggle isn't unique to leaders with ADHD. It just lands harder. A [2026 C-Suite Stress Index from Sentry Insurance and Wakefield Research](https://riskandinsurance.com/3-business-ending-risks-u-s-executives-arent-prioritizing-enough-in-2026/) surveying 1,250 U.S. executives documented what researchers called a "classic prioritization gap": leaders were consumed by daily operational pressures (supply chain at 45%, economic uncertainty at 44%, tariff policy at 39%) while systematically under-prioritizing low-frequency, high-severity risks capable of ending their companies. Ninety-three percent had been impacted by litigation in the previous five years, yet only 17% listed lawsuits among their top threats for the year ahead. Ninety-two percent had experienced severe weather disruption; only 32% ranked natural catastrophes as a top risk. That is what prioritization collapse looks like at scale - not a personal failing, but a predictable response to cognitive load exceeding capacity. For a leader with ADHD, the baseline pull toward the urgent and the immediately visible is sharper, which means the external scaffolding needed to protect attention for the less-urgent-but-company-ending threats has to be more deliberate, not less.
 
@@ -29,7 +29,7 @@ The prioritization struggle isn't unique to leaders with ADHD. It just lands har
 
 Before diving into specific strategies, it's important to understand what executive functions are and how they're affected by ADHD. Executive functions are the cognitive processes that help us plan, focus attention, remember instructions, juggle multiple tasks, and regulate our behavior. They're essentially the "management system" of the brain.
 
-[Research from the National Institutes of Health indicates that ADHD involves differences in brain development and activity](https://www.nimh.nih.gov/news/science-updates/2007/brain-matures-a-few-years-late-in-adhd-but-follows-normal-pattern), particularly in areas responsible for executive functions. These differences aren't deficits in intelligence or capability—they're variations in how the brain processes and manages information.
+[Research from the National Institutes of Health indicates that ADHD involves differences in brain development and activity](https://www.nimh.nih.gov/news/science-updates/2007/brain-matures-a-few-years-late-in-adhd-but-follows-normal-pattern), particularly in areas responsible for executive functions. These differences aren't deficits in intelligence or capability - they're variations in how the brain processes and manages information.
 
 For leaders with ADHD, these differences can manifest in several ways:
 
@@ -37,17 +37,11 @@ For leaders with ADHD, these differences can manifest in several ways:
 - **Impulse control variations** can lead to interrupting others or making quick decisions without full consideration, though they can also enable decisive action in crisis situations.
 - **Cognitive flexibility differences** might make transitions between tasks or perspectives challenging, while potentially enhancing hyperfocus and deep expertise in areas of interest.
 
-As explored in our article on [Leading with ADHD – Executive Coaching Strategies for Leadership Excellence](https://tandemcoach.co/adhd-leadership-coaching-executive-strategies/), these executive function differences shape both the challenges and strengths of ADHD leaders. The key is developing strategies that work with your brain's natural wiring rather than against it.
-
-When Is Your Executive Function Strongest?
-
-Executive function fluctuates with energy. Discover your peak cognitive windows and learn to align demanding tasks with your brain's natural rhythms.
-
-[Find Your Peak Windows →](https://tco.ac/adhdefpa)
+As explored in our article on [Leading with ADHD - Executive Coaching Strategies for Leadership Excellence](https://tandemcoach.co/adhd-leadership-coaching-executive-strategies/), these executive function differences shape both the challenges and strengths of ADHD leaders. The key is developing strategies that work with your brain's natural wiring rather than against it.
 
 ### Working Memory: From Challenge to Leadership Asset
 
-Working memory is our brain's ability to hold information temporarily while working with it. Think of it as your mental workspace—the cognitive equivalent of having multiple documents open on your computer desktop that you're actively using.
+Working memory is our brain's ability to hold information temporarily while working with it. Think of it as your mental workspace - the cognitive equivalent of having multiple documents open on your computer desktop that you're actively using.
 
 #### How Working Memory Challenges Manifest in Leadership
 
@@ -59,7 +53,7 @@ For executives with ADHD, working memory challenges can appear in several ways:
 - **Challenges with sequential tasks** that require remembering multiple steps
 - **Inconsistent follow-through** on intentions and plans
 
-A financial services executive I coached described it perfectly: "I'll have a brilliant insight during a meeting, but by the time there's a pause in the conversation, I've forgotten what I wanted to say. Or I'll make a commitment to a team member and then completely forget about it—not because I don't care, but because it literally disappeared from my mental workspace."
+A financial services executive I coached described it perfectly: "I'll have a brilliant insight during a meeting, but by the time there's a pause in the conversation, I've forgotten what I wanted to say. Or I'll make a commitment to a team member and then completely forget about it - not because I don't care, but because it literally disappeared from my mental workspace."
 
 #### Strategies to Strengthen Working Memory
 
@@ -74,7 +68,7 @@ The most effective strategy is often creating reliable external systems that red
 - **Voice memo capabilities** for capturing thoughts on the go
 - **Dedicated executive assistant support** focused on commitment tracking
 
-A technology leader I worked with developed what he called his "second brain"—a digital system that captured all commitments, ideas, and follow-ups in one searchable place. "I stopped trying to remember everything," he explained, "and instead focused on having a reliable system for capturing and retrieving information when needed."
+A technology leader I worked with developed what he called his "second brain" - a digital system that captured all commitments, ideas, and follow-ups in one searchable place. "I stopped trying to remember everything," he explained, "and instead focused on having a reliable system for capturing and retrieving information when needed."
 
 ##### 2. Meeting Effectiveness Protocols
 
@@ -85,7 +79,7 @@ Since meetings often present significant working memory challenges, specific pro
 - **Immediate post-meeting processing** to capture commitments and insights
 - **Meeting summaries and action items** documented and shared
 
-One healthcare executive transformed her meeting effectiveness by implementing a simple "bookend" practice—five minutes of preparation before each meeting and five minutes of processing afterward. "This small change has dramatically improved my ability to contribute effectively and follow through on commitments," she shared.
+One healthcare executive transformed her meeting effectiveness by implementing a simple "bookend" practice - five minutes of preparation before each meeting and five minutes of processing afterward. "This small change has dramatically improved my ability to contribute effectively and follow through on commitments," she shared.
 
 ##### 3. Strategic Information Chunking
 
@@ -118,7 +112,7 @@ When properly supported, what appears as a working memory challenge can become a
 - **Creating innovative systems** that benefit the entire organization
 - **Delegating effectively** by necessity, often leading to stronger team development
 
-As one CEO put it: "I've built an organization that doesn't depend on my memory—it depends on systems that make information visible and accessible to everyone. What started as a compensation strategy for my ADHD has become a competitive advantage for our entire company."
+As one CEO put it: "I've built an organization that doesn't depend on my memory - it depends on systems that make information visible and accessible to everyone. What started as a compensation strategy for my ADHD has become a competitive advantage for our entire company."
 
 ### Impulse Control: From Reactivity to Responsive Leadership
 
@@ -144,12 +138,12 @@ Through coaching partnerships with ADHD leaders, I've identified several approac
 
 Creating intentional pauses between stimulus and response can dramatically improve impulse control:
 
-- **The 5-second rule** – counting to five before responding in important conversations
+- **The 5-second rule** - counting to five before responding in important conversations
 - **Physical cues** like touching a ring or watch as a reminder to pause
 - **Note-taking as a pause mechanism** during meetings and discussions
 - **Breathing techniques** that create space between thought and action
 
-A senior executive I coached developed what she called her "pause practice"—a simple breathing technique she used before responding in high-stakes situations. "This tiny pause gives me just enough space to choose my response rather than react automatically," she explained. "It's transformed my leadership presence."
+A senior executive I coached developed what she called her "pause practice" - a simple breathing technique she used before responding in high-stakes situations. "This tiny pause gives me just enough space to choose my response rather than react automatically," she explained. "It's transformed my leadership presence."
 
 ##### 2. Decision-Making Frameworks
 
@@ -193,7 +187,7 @@ When properly channeled, what appears as impulse control challenges can become s
 - **Creative thinking** that isn't constrained by conventional approaches
 - **Entrepreneurial risk-taking** that leads to innovation
 
-As explored in our article on [Emotional Intelligence on Overdrive – ADHD Coaching for Better Emotional Regulation in Leadership](https://tandemcoach.co/adhd-emotional-intelligence-leadership-coaching/), many ADHD leaders develop exceptional emotional intelligence precisely because they've had to become aware of and manage their impulses.
+As explored in our article on [Emotional Intelligence on Overdrive - ADHD Coaching for Better Emotional Regulation in Leadership](https://tandemcoach.co/adhd-emotional-intelligence-leadership-coaching/), many ADHD leaders develop exceptional emotional intelligence precisely because they've had to become aware of and manage their impulses.
 
 One CEO I worked with came to recognize his quick decision-making as a strategic advantage in his fast-moving industry. "In crisis situations, my ability to assess information quickly and act decisively is exactly what's needed," he noted. "The key was learning when to leverage this ability and when to intentionally slow down."
 
@@ -226,7 +220,7 @@ Intentional approaches to transitions can significantly improve cognitive flexib
 - **Visual cues** that support context changes
 - **Physical movement** during transitions to reset the brain
 
-A financial services leader I coached developed what he called "transition bridges"—short rituals that helped him move between different types of work. "I take three deep breaths, jot down any loose ends from the previous task, and briefly visualize what I'm moving into," he explained. "This simple practice has transformed my ability to shift gears effectively."
+A financial services leader I coached developed what he called "transition bridges" - short rituals that helped him move between different types of work. "I take three deep breaths, jot down any loose ends from the previous task, and briefly visualize what I'm moving into," he explained. "This simple practice has transformed my ability to shift gears effectively."
 
 ##### 2. Perspective-Taking Practices
 
@@ -237,7 +231,7 @@ Deliberate perspective-taking exercises can enhance cognitive flexibility:
 - **Scenario planning** that explores multiple possible futures
 - **Regular exposure to diverse viewpoints** and approaches
 
-One technology leader implemented what she called "perspective rounds" in her team's decision-making process. "Before finalizing any important decision, we explicitly consider it from multiple stakeholder perspectives. This practice has not only improved our decisions but has also enhanced my ability to shift viewpoints more naturally."
+One technology leader implemented what she called "perspective rounds" in her team's decision-making process. "Before finalizing any important decision, we explicitly consider it from multiple stakeholder perspectives. This practice has improved our decisions and sharpened my ability to shift viewpoints more naturally."
 
 ##### 3. Work Structure and Scheduling
 
@@ -288,7 +282,7 @@ While we've explored working memory, impulse control, and cognitive flexibility 
 
 #### The Three-Level Integration Approach
 
-Based on my work with hundreds of executives through our [ADHD Coaching for Executive & Professional Success](https://tandemcoach.co/adhd-coaching-executive-success/) program, I've developed a three-level framework for executive function integration:
+Based on my work with hundreds of executives through our [ADHD leadership development](https://tandemcoach.co/adhd-coaching-executive-success/) program, I've developed a three-level framework for executive function integration:
 
 ##### Level 1: Personal Practices
 
@@ -300,7 +294,7 @@ These are daily habits and approaches that strengthen executive function:
 - **Energy management** throughout the day
 - **Evening reflection** to capture insights and prepare for the next day
 
-A technology leader I coached developed what he called his "executive function maintenance plan"—a set of daily practices that kept his brain operating at its best. "Just like I maintain my car or my home, I've learned that my brain needs regular maintenance to perform optimally," he explained.
+A technology leader I coached developed what he called his "executive function maintenance plan" - a set of daily practices that kept his brain operating at its best. "Just like I maintain my car or my home, I've learned that my brain needs regular maintenance to perform optimally," he explained.
 
 ##### Level 2: Systems and Structures
 
@@ -324,7 +318,7 @@ These involve how you work with others to leverage strengths and support challen
 - **Feedback loops** that provide awareness of blind spots
 - **Leadership team composition** that ensures cognitive diversity
 
-A healthcare CEO transformed her effectiveness by deliberately building what she called "executive function partnerships" throughout her organization. "I've created relationships where different cognitive styles complement each other," she explained. "This approach has not only made me more effective but has created a more innovative and adaptive organization."
+A healthcare CEO transformed her effectiveness by deliberately building what she called "executive function partnerships" throughout her organization. "I've created relationships where different cognitive styles complement each other," she explained. "This approach has made me more effective and built a more innovative, adaptive organization."
 
 ### The Executive Function Self-Assessment
 
@@ -392,7 +386,7 @@ Perhaps the most crucial element of executive function coaching is providing str
 - Troubleshooting obstacles as they arise
 - Celebrating progress and successes
 
-As explored in our article on [Productivity Unleashed – ADHD Coaching Tips to Boost Productivity for Busy Professionals](https://tandemcoach.co/adhd-productivity-coaching-work-strategies/), accountability and implementation support are often the missing pieces that allow new strategies to become sustainable habits.
+As explored in our article on [Productivity Unleashed - ADHD Coaching Tips to Boost Productivity for Busy Professionals](https://tandemcoach.co/adhd-productivity-coaching-work-strategies/), accountability and implementation support are often the missing pieces that allow new strategies to become sustainable habits.
 
 #### 4. Environmental Optimization
 
@@ -414,7 +408,7 @@ Executive function coaching is most effective when integrated with broader leade
 - Connecting executive function development to career goals
 - Supporting work-life integration
 
-As detailed in our article on [The Work-Life Harmony Blueprint – ADHD Coaching for Work-Life Integration and Balance](https://tandemcoach.co/adhd-work-life-balance-coaching-integration/), sustainable executive function development requires a holistic approach that addresses all aspects of a leader's life.
+As detailed in our article on [The Work-Life Harmony Blueprint - ADHD Coaching for Work-Life Integration and Balance](https://tandemcoach.co/adhd-work-life-balance-coaching-integration/), sustainable executive function development requires a holistic approach that addresses all aspects of a leader's life.
 
 ### Case Study: Transforming Leadership Through Executive Function Development
 
@@ -432,7 +426,7 @@ To illustrate how these approaches work in practice, consider this composite cas
 
 **The Transformation:** Within six months, Michael's leadership effectiveness had dramatically improved. His team reported better meeting experiences, more consistent follow-through, and improved decision-making. Board feedback shifted from concerns about his "management style" to appreciation for his unique leadership approach. Most importantly, Michael himself felt more confident and less stressed.
 
-"I'm still the same visionary thinker I've always been," he shared, "but now I have systems and strategies that allow me to express that vision effectively while ensuring nothing falls through the cracks. I'm not trying to be a different kind of leader—I'm being the best version of my natural leadership style."
+"I'm still the same visionary thinker I've always been," he shared, "but now I have systems and strategies that allow me to express that vision effectively while ensuring nothing falls through the cracks. I'm not trying to be a different kind of leader - I'm being the best version of my natural leadership style."
 
 ### Frequently Asked Questions
 
@@ -442,25 +436,33 @@ Executive function challenges exist on a spectrum, and everyone experiences them
 
 **Q: Can executive functions actually improve with practice, or am I stuck with my current capabilities?**
 
-[Research shows that executive functions can indeed improve with targeted strategies and practice.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8458564/) While there may be neurological differences in how the ADHD brain processes information, neuroplasticity—the brain’s ability to form new neural pathways—means that consistent practice of executive function skills can lead to meaningful improvements. However, the most effective approach typically combines skill development with environmental modifications and support systems. Rather than trying to “fix” executive function challenges through sheer effort, successful leaders create ecosystems that support their brain’s natural functioning while gradually strengthening specific capabilities through practice. This combined approach leads to sustainable improvement rather than exhausting compensation.
+[Research shows that executive functions can indeed improve with targeted strategies and practice.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8458564/) While there may be neurological differences in how the ADHD brain processes information, neuroplasticity - the brain’s ability to form new neural pathways - means that consistent practice of executive function skills can lead to meaningful improvements. However, the most effective approach typically combines skill development with environmental modifications and support systems. Rather than trying to “fix” executive function challenges through sheer effort, successful leaders create ecosystems that support their brain’s natural functioning while gradually strengthening specific capabilities through practice. This combined approach leads to sustainable improvement rather than exhausting compensation.
 
 **Q: How do I balance authenticity as an ADHD leader with the need to manage executive function challenges?**
 
-This is perhaps the most important question for ADHD leaders. The goal isn’t to mask your natural thinking style or pretend to be neurotypical—it’s to express your authentic leadership while managing potential challenges. The most successful ADHD leaders I’ve coached are open about how their brains work differently (though not necessarily disclosing a diagnosis) and have developed systems that support their effectiveness. They view their executive function strategies not as “fixing” something broken but as tools that allow their natural strengths to shine. As one executive told me: “I’m not hiding my ADHD—I’m creating structures that let me be my best self as a leader.”
+This is perhaps the most important question for ADHD leaders. The goal isn’t to mask your natural thinking style or pretend to be neurotypical - it’s to express your authentic leadership while managing potential challenges. The most successful ADHD leaders I’ve coached are open about how their brains work differently (though not necessarily disclosing a diagnosis) and have developed systems that support their effectiveness. They view their executive function strategies not as “fixing” something broken but as tools that allow their natural strengths to shine. As one executive told me: “I’m not hiding my ADHD - I’m creating structures that let me be my best self as a leader.”
 
 **Q: What's the relationship between executive functions and emotional regulation for ADHD leaders?**
 
-Executive functions and emotional regulation are deeply interconnected. Working memory helps us maintain perspective during emotional situations. Impulse control enables us to pause before reacting emotionally. Cognitive flexibility allows us to shift from an emotional reaction to a more balanced perspective. For many ADHD leaders, emotional intensity can be both a challenge and a strength—leading to passionate engagement but sometimes to reactivity. The strategies we’ve discussed for executive function development also support emotional regulation. Additionally, practices like mindfulness, physical exercise, and adequate sleep significantly impact both executive function and emotional regulation. Our article on [Emotional Intelligence on Overdrive](https://tandemcoach.co/adhd-emotional-intelligence-leadership-coaching/) explores this connection in greater depth.
+Executive functions and emotional regulation are deeply interconnected. Working memory helps us maintain perspective during emotional situations. Impulse control enables us to pause before reacting emotionally. Cognitive flexibility allows us to shift from an emotional reaction to a more balanced perspective. For many ADHD leaders, emotional intensity can be both a challenge and a strength - leading to passionate engagement but sometimes to reactivity. The strategies we’ve discussed for executive function development also support emotional regulation. Additionally, practices like mindfulness, physical exercise, and adequate sleep significantly impact both executive function and emotional regulation. Our article on [Emotional Intelligence on Overdrive](https://tandemcoach.co/adhd-emotional-intelligence-leadership-coaching/) explores this connection in greater depth.
 
 **Q: How do I help my team understand and work effectively with my executive function differences?**
 
 Open, non-defensive communication is key. You don’t need to disclose an ADHD diagnosis if you’re not comfortable doing so, but sharing your working style can be incredibly helpful. For example: “I process information most effectively visually, so I appreciate getting materials in advance,” or “I sometimes generate ideas rapidly, so please let me know if I’m moving too quickly.” Most importantly, demonstrate that you’re taking responsibility for your effectiveness by implementing strategies and systems. Teams are generally understanding of different working styles when leaders are self-aware and proactive. Many executives I’ve coached have found that being open about their thinking style actually strengthened team relationships and created space for others to share their own needs and preferences.
 
-Executive functions and emotional regulation are deeply interconnected. Working memory helps us maintain perspective during emotional situations. Impulse control enables us to pause before reacting emotionally. Cognitive flexibility allows us to shift from an emotional reaction to a more balanced perspective. For many ADHD leaders, emotional intensity can be both a challenge and a strength—leading to passionate engagement but sometimes to reactivity. The strategies we've discussed for executive function development also support emotional regulation. Additionally, practices like mindfulness, physical exercise, and adequate sleep significantly impact both executive function and emotional regulation. Our article on [Emotional Intelligence on Overdrive](https://tandemcoach.co/adhd-emotional-intelligence-leadership-coaching/) explores this connection in greater depth.
+**Q: What external systems help ADHD leaders manage executive function?**
+
+The most useful external systems offload memory and decisions onto reliable structures: a single capture tool for every commitment, visual management boards that make work visible, decision templates that pre-set criteria, and a workspace designed to remove friction. The leader’s attention then goes to judgment and relationships, where it adds the most value.
+
+**Q: What is executive function scaffolding for ADHD leaders?**
+
+Scaffolding is the set of external supports that carry executive-function load so it does not depend on willpower or memory in the moment: recurring reminders, checklists, templates, routines, and accountability partners. Like scaffolding on a building, it holds the structure while the work happens, and it stays in place as permanent infrastructure rather than a temporary patch.
+
+Executive functions and emotional regulation are deeply interconnected. Working memory helps us maintain perspective during emotional situations. Impulse control enables us to pause before reacting emotionally. Cognitive flexibility allows us to shift from an emotional reaction to a more balanced perspective. For many ADHD leaders, emotional intensity can be both a challenge and a strength - leading to passionate engagement but sometimes to reactivity. The strategies we've discussed for executive function development also support emotional regulation. Additionally, practices like mindfulness, physical exercise, and adequate sleep significantly impact both executive function and emotional regulation. Our article on [Emotional Intelligence on Overdrive](https://tandemcoach.co/adhd-emotional-intelligence-leadership-coaching/) explores this connection in greater depth.
 
 ### Your Next Step: From Insight to Action
 
-Understanding executive functions is just the beginning—the real transformation comes through implementing targeted strategies and systems. If you recognize your experience in what we've discussed, consider these next steps:
+Understanding executive functions is just the beginning - the real transformation comes through implementing targeted strategies and systems. If you recognize your experience in what we've discussed, consider these next steps:
 
 1. **Self-Assessment:** Complete the executive function self-assessment to identify your specific profile of strengths and challenges.
 2. **Strategy Selection:** Choose one strategy from each executive function area (working memory, impulse control, and cognitive flexibility) to implement over the next 30 days.
@@ -472,15 +474,15 @@ At [Tandem Coaching](https://tandemcoach.co/adhd-coaching-executive-success/), 
 
 **Ready to transform your executive function challenges into leadership strengths?** [Schedule a complimentary consultation](https://tandemcoach.co/contact-us/) to explore how ADHD-informed executive coaching can enhance your leadership effectiveness. During this session, we'll discuss your specific challenges and goals, and determine if our approach aligns with your needs.
 
-The most successful leaders don't try to overcome their brain's natural wiring—they develop strategies that work with it. Let's discover how your unique thinking style can become your greatest leadership asset.
+The most successful leaders don't try to overcome their brain's natural wiring - they develop strategies that work with it. Let's discover how your unique thinking style can become your greatest leadership asset.
 
 ### Related Articles
 
 - [ADHD & Emotional Intelligence in Leadership](https://tandemcoach.co/adhd-emotional-intelligence-leadership-coaching/): ADHD impairs emotional regulation through prefrontal cortex differences, producing stronger reactions, faster emotional firing before rational processing engages, difficulty shifting between emotional states, and lost perspective under pressure.
 - [ADHD Crisis Leadership: Why ADHD Leaders Are Good in Crisis](https://tandemcoach.co/adhd-crisis-leadership-resilience/): ADHD brains are understimulated by routine work and finally get the neurochemical environment they need when crisis hits.
-- [ADHD Executive Coaching: A 2026 Leadership Playbook](https://tandemcoach.co/adhd-coaching-executive-success/): [ADHD coaching](/adhd-executive-coach/) helps executives build a leadership system around how their brain actually works.
+- [ADHD Executive Coaching: What It Is and How It Works](https://tandemcoach.co/adhd-coaching-executive-success/): ADHD executive coaching is coaching built around how the ADHD brain actually works – calendar architecture, task decomposition, and decision-load management, paired with clinical care.
 - [ADHD Executive Workspace: Environmental & Admin Supports](https://tandemcoach.co/adhd-executive-environmental-administrative-supports/): ADHD executives need six environmental levers: desk positioning away from windows and foot traffic, adjustable warm LED lighting replacing fluorescents, acoustic zones with white noise masking, visual
-- [ADHD Meeting Mastery: 6 Executive Strategies](https://tandemcoach.co/adhd-meeting-mastery-executive-strategies/): ADHD brains fail in meetings because traditional formats maximize cognitive load while minimizing perceptual engagement — a documented performance killer for ADHD.
+- [ADHD Meeting Mastery: 6 Executive Strategies](https://tandemcoach.co/adhd-meeting-mastery-executive-strategies/): ADHD brains fail in meetings because traditional formats maximize cognitive load while minimizing perceptual engagement - a documented performance killer for ADHD.
 - [ADHD Mentorship: Support Networks That Work](https://tandemcoach.co/adhd-executive-mentorship-support-networks/): ADHD executives build three-circle networks: inner circle of 3-5 people offering crisis support and deep understanding, middle circle of 5-10 specialized advisors, and outer circle of 10-20 broader community members.
 - [ADHD Productivity: 9 Work Strategies That Stick](https://tandemcoach.co/adhd-productivity-coaching-work-strategies/): Strategies that work for adults with ADHD share three properties: they impose external structure (calendars, capture systems, designated places for items), they decompose large work into the smallest possible action, and they protect daily anchors like sleep and meals.
 - [ADHD Strategic Planning: Frameworks for Visionary Leaders](https://tandemcoach.co/adhd-strategic-planning-frameworks/): Three frameworks work: the Strategic Canvas divides a large visual space into vision, current state, bridge strategies, opportunity radar, and risk indicators.
@@ -492,9 +494,9 @@ The most successful leaders don't try to overcome their brain's natural wiring�
 - [Coaching Session Blueprints: What ADHD-Informed Executive Coaching Really Looks Like](https://tandemcoach.co/adhd-executive-coaching-session-process/): ADHD-informed executive coaching follows a four-part session structure: brain-dump landing to transition attention, accountability review without judgment, deep coaching work adapted to your energy in real time, and 1-3 concrete actions with ADHD-proof backup plans.
 - [Disclosure and Accommodation: A Practical Guide for ADHD Executives](https://tandemcoach.co/adhd-executive-disclosure-accommodation-guide/): Disclose strategically using the four-step framework: clarify your goal, assess your workplace culture, choose timing after establishing credibility, then weigh benefits against risks.
 - [Group vs Individual ADHD Coaching: Which Works?](https://tandemcoach.co/group-individual-adhd-coaching/): Neither is universally better.
-- [Leading with ADHD – Executive Coaching Strategies for Leadership Excellence](https://tandemcoach.co/adhd-leadership-coaching-executive-strategies/): Stop fighting your ADHD wiring and build systems that work with it.
+- [Leading With ADHD: Executive Leadership Strategies That Work](https://tandemcoach.co/adhd-leadership-coaching-executive-strategies/): Stop fighting your ADHD wiring and build systems that work with it.
 - [Measuring Progress in ADHD Executive Coaching: Complete Guide](https://tandemcoach.co/adhd-coaching-progress-measurement/): Progress tracking requires three parallel frameworks: executive function development (working memory systems, attention regulation, emotional resilience), leadership impact assessment (strategic communication, team performance, organizational influence), and sustainability measurement (system durability, cross-domain transfer, coaching independence).
-- [Organize Your Success – ADHD Coaching to Master Organizational Skills](https://tandemcoach.co/adhd-organization-skills-professional-coaching/): Build one external brain — a single capture point where everything goes — then add scheduled review times and a morning or evening bookend routine.
+- [Organize Your Success – ADHD Coaching to Master Organizational Skills](https://tandemcoach.co/adhd-organization-skills-professional-coaching/): Build one external brain - a single capture point where everything goes - then add scheduled review times and a morning or evening bookend routine.
 - [Remote vs In-Person ADHD Coaching: The Research](https://tandemcoach.co/remote-in-person-adhd-coaching-comparison/): Both formats deliver real results for ADHD executives.
 - [Technology Tools for ADHD Executive Success: Complete Guide](https://tandemcoach.co/adhd-executive-technology-tools-apps-guide/): The article identifies six categories: focus audio tools like Brain.fm and Focus@Will, automatic time tracking via RescueTime, task management through Todoist or NotePlan, meeting transcription via Otter.ai, scheduling automation through Calendly, and body-doubling accountability platforms like Flow Club.
 

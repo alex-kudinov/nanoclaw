@@ -76,7 +76,7 @@ Coaching scenarios (3):
 - Client who cannot explain why their week felt off
 - Client whose emotional states are affecting their professional performance
 - Client building emotional awareness as a leadership development priority
-Pairs with: Daily Reflection Journal, Mindful Senses Walk, Mindfulness Check-In, Wheel of Emotions
+Pairs with: Daily Reflection Journal, Mindful Senses Walk, Wheel of Emotions
 
 ### Daily Reflection Journal
 URL: https://tandemcoach.co/coaching-tools/daily-reflection-journal/

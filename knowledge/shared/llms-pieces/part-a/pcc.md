@@ -3,7 +3,7 @@ URL: https://tandemcoach.co/icf/pcc-professional-coach-certification/
 
 ACC to PCC + ACTC Bridge
 
-## Become an ICF Professional Certified Coach - PCC Coach Certification Program + ACTC Bridge
+## Become a Professional Certified Coach - ICF PCC Certification + ACTC Bridge
 
 For coaches with 60+ hours of International Coaching Federation (ICF) accredited coach education. Earn your Professional Certified Coach (PCC) credential and Advanced Certification in Team Coaching (ACTC) through a systems coaching methodology coach training program. Designed and delivered by an MCC & PCC coaching team.
 
@@ -184,13 +184,13 @@ One-on-one mentoring with an MCC-level mentor for personalized feedback on your 
 [Enroll](https://community.tandemcoaching.academy/invitation?code=4F55DA)
 
 10
-$49–$59
+Free
 
 #### ICF Exam Prep Courses
 
-Targeted preparation for the ICF credentialing exam. Individual coaching prep ($49) and team coaching prep ($59) available.
+Targeted preparation for the ICF credentialing exam – full scenario bank, detailed explanations, and progress tracking. Both individual coaching and team coaching prep are now free.
 
-[Individual Prep ($49)](https://community.tandemcoaching.academy/invitation?code=FA9C52)
+[Individual Prep (Free)](https://community.tandemcoaching.academy/invitation?code=8G9E4E)
 
 Upcoming Cohort Dates
 
@@ -208,7 +208,7 @@ Your Coaching Team
 
 ### Learn From Coaches at the Top of the Profession
 
-Our Level 2 program is designed by Master Certified Coaches and delivered by an MCC & PCC team who bring decades of executive, leadership, and organizational coaching experience to every session.
+Our Level 2 program is designed by Master Certified Coaches and delivered by an MCC & PCC team who bring decades of executive, leadership, and organizational coaching experience to every session. Cherie Silas and Alex Kudinov also hold ICF’s Mentor Coach Specialization (MCS) at all three levels – so the mentor coaching built into your PCC certification already meets ICF’s January 2027 requirement that mentor coaches hold it.
 
 [instructor\_listing programs="pcc"]
 
@@ -280,9 +280,9 @@ Verified Review
 [Read All 271 Reviews](/testimonials/)
 [Start Free – Join 1,000+ Coaches](https://community.tandemcoaching.academy/invitation?code=8JB28E)
 
-Certification guide
+Coach training program
 
-### Your Complete Guide to ICF PCC Certification
+### Your Guide to ICF PCC Coach Training at Level 2
 
 #### What Is the ICF Professional Certified Coach (PCC) Credential?
 
@@ -292,9 +292,11 @@ Of the three ICF credential levels – ACC, PCC, and MCC (Master Certified Coach
 
 For coaches who already hold an ACC, the PCC is the natural next step – unlocking higher-fee coaching sessions, organizational coaching contracts, and leadership development roles that require PCC-level credentials or above. Many certified professional coaches report a significant increase in their earning potential after achieving PCC, with executive coaching engagements and corporate coaching services contracts becoming accessible. It’s also an essential credential if you want to become a recognized expert in the coaching profession and build a sustainable coaching business.
 
-### PCC Coach Certification: Your Path to ICF Level 2 Credential
+### ICF PCC Coach Training: Your Path to the Level 2 Credential
 
-PCC coach certification is structured around three pillars: an ICF-accredited **coach training program** at Level 2 (125+ hours of coach-specific education), supervised coaching experience (500+ hours), and a performance evaluation conducted against the ICF Core Competencies. A Level 2 program is designed to build advanced coaching skills on top of the foundational competency you proved at the ACC level - so you spend your time on systems coaching, complex contracting, and presence under pressure rather than re-learning the basics.
+ICF PCC coach training is structured around three pillars: an ICF-accredited **coach training program** at Level 2 (125+ hours of coach-specific education), supervised coaching experience (500+ hours), and a performance evaluation conducted against the ICF Core Competencies. A Level 2 program is designed to build advanced coaching skills on top of the foundational competency you proved at the ACC level - so you spend your time on systems coaching, complex contracting, and presence under pressure rather than re-learning the basics.
+
+What makes this **PCC coach training** rather than a credential-prep shortcut is the weekly live practice. Each cohort meets in small groups where you coach, get observed by an MCC-level instructor, and debrief against the ICF Core Competencies in real time - the same lens the PCC performance evaluation uses. Between live blocks you review recorded coaching, submit segments for mentor feedback, and rebuild specific skills - contracting, evoking awareness, presence under pressure - before the next session. That rhythm is built for working coaches who need the craft to hold up in front of paying clients, not just on an exam.
 
 Tandem’s professional coach certification program is delivered by an MCC-led team and combines live cohort training, recorded mentor coaching review, exam preparation, and one-on-one supervision. The program also includes an **ACTC team coaching credential** bridge, so you graduate with both individual and team coaching credentials - a positioning that’s rare in the certified professional coach training market and increasingly required for organizational contracts.
 
@@ -310,7 +312,7 @@ PCC renewal requires **40 Continuing Coach Education Units (CCEUs)** every three
 
 ### From Associate Certified Coach to Master Certified Coach: Your ICF PCC Career Path
 
-The PCC sits at the middle of the three-tier ICF credential hierarchy. Most coaches start their journey by training for the [**Associate Certified Coach (ACC)**](/icf/acc-coach-certification-training/) credential at the PCC level, then return for PCC training once they’ve logged enough coaching experience hours. From PCC, the next step is **Master Certified Coach (MCC)** - the highest credential ICF awards, requiring 2,500 hours of paid coaching experience and a much more rigorous evaluation. Tandem’s MCC-level instructors actively maintain their credentials and bring that lens to every cohort.
+The PCC sits at the middle of the three-tier ICF credential hierarchy. Most coaches start their journey by training for the [**Associate Certified Coach (ACC)**](/icf/acc-coach-certification-training/) credential at Level 1, then return for PCC training once they’ve logged enough coaching experience hours. From PCC, the next step is **Master Certified Coach (MCC)** - the highest credential ICF awards, requiring 2,500 hours of paid coaching experience and a much more rigorous evaluation. Tandem’s MCC-level instructors actively maintain their credentials and bring that lens to every cohort.
 
 ### Mentor Coach Hours: Meeting ICF Credential Requirements at PCC Level
 
@@ -403,7 +405,7 @@ The **Coach Knowledge Assessment (CKA)** is the standardized credentialing exam 
 
 The exam is computer-based and can be taken at testing centers worldwide or online through a proctored format. It uses **scaled scoring**, with a passing score of 460 out of 600. Most coaches who have completed a structured training program pass on their first attempt, but targeted preparation makes a meaningful difference.
 
-Tandem’s program includes dedicated **exam prep modules** – both for individual coaching ($49) and team coaching ($59). These cover the most commonly tested scenarios, help you recognize the ICF-aligned answer patterns, and give you practice with the exam format. Many of our graduates report feeling well-prepared and confident on exam day.
+Tandem’s program includes dedicated **exam prep modules** – for both individual coaching and team coaching, and both are free. These cover the most commonly tested scenarios, help you recognize the ICF-aligned answer patterns, and give you practice with the exam format. Many of our graduates report feeling well-prepared and confident on exam day.
 
 **Q: PCC Performance Evaluation: Recorded Sessions**
 
@@ -467,7 +469,7 @@ See how our Level 2 certification program stacks up against typical PCC training
 | Full Program Price | $3,999 | $5,000 – $15,000 |
 | Module-by-Module Option | Yes – $399/module | Usually no |
 | Mentor Coaching Included | Group + Individual | Sometimes extra |
-| Exam Prep Course | Included ($49 – $59) | Usually extra |
+| Exam Prep Course | Included (free) | Usually extra |
 | Format | Online, flexible cohorts | Varies |
 
 Experience the difference yourself – start with two free modules, no commitment required.
@@ -505,7 +507,7 @@ Most coaches complete the full process in **12 to 24 months**. If you already ha
 
 **Q: What is the ICF credentialing exam (CKA)?**
 
-The Coach Knowledge Assessment (CKA) is a computer-based exam covering ICF Core Competencies, coaching ethics, and the boundaries of professional coaching. It uses **situational judgment format** with 155 scored questions plus 20 unscored pre-test items. The passing score is 460 out of 600 on a scaled scoring system. The same exam is used for both ACC and PCC credentials. Tandem’s program includes dedicated exam prep modules – $49 for individual coaching and $59 for team coaching – to help you feel confident on exam day.
+The Coach Knowledge Assessment (CKA) is a computer-based exam covering ICF Core Competencies, coaching ethics, and the boundaries of professional coaching. It uses **situational judgment format** with 155 scored questions plus 20 unscored pre-test items. The passing score is 460 out of 600 on a scaled scoring system. The same exam is used for both ACC and PCC credentials. Tandem’s program includes dedicated exam prep modules – free for both individual coaching and team coaching – to help you feel confident on exam day.
 
 **Q: Can I get PCC certification online?**
 
@@ -567,8 +569,8 @@ Or enroll in individual modules
 [Group Supervision $699](https://community.tandemcoaching.academy/invitation?code=CBD262)
 [Group Mentoring $699](https://community.tandemcoaching.academy/invitation?code=CG8JBB)
 [Individual Mentoring $1,199](https://community.tandemcoaching.academy/invitation?code=4F55DA)
-[Individual Exam Prep $49](https://community.tandemcoaching.academy/invitation?code=FA9C52)
-[Team Exam Prep $59](https://community.tandemcoaching.academy/invitation?code=4E78A9)
+[Individual Exam Prep Free](https://community.tandemcoaching.academy/invitation?code=8G9E4E)
+[Team Exam Prep Free](https://community.tandemcoaching.academy/invitation?code=248E2D)
 
 Before you go
 

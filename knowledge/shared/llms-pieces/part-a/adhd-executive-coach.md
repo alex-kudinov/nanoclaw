@@ -243,7 +243,7 @@ ADHD executive coaching accounts for how your brain processes information, manag
 
 The coaching process and goals are the same – better leadership, stronger teams, measurable professional success – but the approach is personalized for how you actually think and work.
 
-[Read more: ADHD Coaching for Executive Success →](https://tandemcoach.co/adhd-coaching-executive-success/)
+[Read more: how ADHD-informed coaching works in practice →](https://tandemcoach.co/adhd-coaching-executive-success/)
 
 **Q: Do I need an ADHD diagnosis to work with you?**
 
@@ -277,25 +277,27 @@ Our ADHD coaching practice is led by Cherie Silas, MCC – the highest credentia
 
 Yes – in fact, they’re inseparable. ADHD shapes how you lead: how you make decisions, manage time, run meetings, delegate, communicate, and manage energy. We don’t coach ADHD and leadership as separate tracks. We coach you as a leader whose brain works differently, and we build skills and strategies that leverage both.
 
-[Read more: Leading with ADHD – Executive Coaching Strategies →](https://tandemcoach.co/adhd-leadership-coaching-executive-strategies/)
+[Read more: adaptive ADHD leadership strategies →](https://tandemcoach.co/adaptive-adhd-leadership-strategies/)
 
 Have a question that’s not answered here?
 
 [Get in Touch →](https://tandemcoach.co/contact-us/)
 
-ADHD Coaching Guide
+Choosing Your Coach
 
-### Understanding ADHD Executive Coaching
+### Choosing an ADHD Executive Coach
 
 If you’re evaluating coaching for the first time – or comparing your options – here’s what matters.
 
-#### What Is ADHD Executive Coaching?
+Quick answer
 
-ADHD executive coaching is a structured development partnership between a credentialed coach and a senior leader with Attention Deficit Hyperactivity Disorder (ADHD). Unlike general productivity coaching, it addresses the specific executive function challenges that shape how neurodivergent leaders think, decide, and perform – working memory, time management, sustained focus, and emotional regulation.
+Choosing an ADHD executive coach comes down to three things: a senior ICF credential (PCC or MCC), real experience coaching leaders with ADHD, and a structured method with named assessments instead of generic productivity advice. At Tandem, engagements are led by MCC- and PCC-credentialed coaches, use tools like ProfileXT and Genos EQ adapted for neurodivergent leaders, and run 6–12 months. If you’re still mapping the basics, our hub guide covers [what ADHD executive coaching is and how it works](https://tandemcoach.co/adhd-coaching-executive-success/).
 
-The goal isn’t to “fix” ADHD. It’s to build personalized systems and strategies that turn ADHD traits into consistent leadership strengths – so you achieve your professional goals without burning out.
+#### What to Look for in an ADHD Executive Coach
 
-[Read more: ADHD Coaching for Executive & Professional Success →](https://tandemcoach.co/adhd-coaching-executive-success/)
+Not every executive coach is equipped for ADHD. When you’re comparing coaches, look past the marketing and check three things: the credential (a PCC or MCC from the International Coaching Federation signals thousands of assessed coaching hours), direct experience with ADHD and neurodivergent leaders, and a defined method – assessments, session structure, and accountability systems built for how your brain works, not bolted on afterward.
+
+Every Tandem engagement is led by a credentialed coach experienced with ADHD leaders, and several of our coaches navigate ADHD themselves. That combination – credential plus lived experience – is rare, and it’s what lets us adapt the work instead of handing you neurotypical advice.
 
 #### ADHD Executive Coaching vs. General Executive Coaching
 

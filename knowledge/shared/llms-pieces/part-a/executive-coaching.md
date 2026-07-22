@@ -3,7 +3,7 @@ URL: https://tandemcoach.co/executive-coaching/
 
 Executive Coaching
 
-## Coaching for Leaders Who Want Results, Not Just Advice
+## Executive Coaching for Leaders Who Want Results, Not Just Advice
 
 MCC-led executive coaching that helps senior leaders think more clearly, lead more effectively, and deliver measurable business outcomes – backed by a proprietary framework and real assessment tools.
 

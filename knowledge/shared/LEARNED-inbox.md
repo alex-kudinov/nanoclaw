@@ -18,3 +18,7 @@ _Each entry approved by a human before being added._
 ### Lesson 3: Tandem does not keep individual class recordings
 **Problem:** A PCC/ACTC student asked where to find video recordings of his classes. The initial draft reply incorrectly suggested recordings exist and offered troubleshooting steps for finding them.
 **Rule:** Tandem Coaching does not keep individual class recordings. When a student asks about class recordings, clarify this and direct them to the class materials available in their course pages on the Community Tandem Coaching Academy (community.tandemcoaching.academy). If they cannot access their course materials, escalate to Alex or Cherie to check their enrollment access.
+
+### Lesson 4: Expired community link — self-service re-send
+**Problem:** Escalated expired community.tandemcoaching.academy link as requiring Alex/Cherie to check enrollment, when students can self-serve a new link without any human action.
+**Rule:** When a student reports their community.tandemcoaching.academy access link has expired and they cannot log in, direct them to self-serve: go to community.tandemcoaching.academy, enter their email address on the sign-in page, and a new magic link will be sent immediately. No action from Alex or Cherie is required for an expired link. Only escalate to Alex/Cherie if the self-service re-send fails or if the student reports they are not enrolled at all (not found in the system).

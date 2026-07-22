@@ -409,7 +409,7 @@ Coaching scenarios (5):
 - Executive under HR performance improvement plan referred to coaching
 - New coach completing first paid client engagement, over-managing the container
 - Mid-engagement reset after goals have shifted significantly
-Pairs with: Discovery Call Script, Client Analysis Worksheet, Business Focus Planner
+Pairs with: Discovery Call Script & Framework, Client Analysis Worksheet, Business Focus Planner
 
 ### Services and Offerings Design
 URL: https://tandemcoach.co/coaching-tools/services-and-offerings-design/

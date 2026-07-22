@@ -1,11 +1,11 @@
 # Leadership Development
 URL: https://tandemcoach.co/leadership-development/
 
-Leadership Development
+Corporate Leadership Development
 
 ## Your Leaders Don’t Need More Training. They Need Better Coaching.
 
-MCC-led coaching and development programs for executive teams and emerging leaders – with measurable outcomes from day one.
+MCC-led corporate leadership development for executive teams and senior leaders – with measurable outcomes from day one, backed by 360 assessments at the start and end of every program.
 
 [Book a Discovery Call →](/contact-us/)
 [Explore Our Programs](#programs)
@@ -20,9 +20,9 @@ Dallas & **Nationwide**
 
 Our Programs
 
-### Three Paths to Stronger Leadership
+### Three Paths to Corporate Leadership Development
 
-Whether you need coaching for a single executive, a leadership team, or a cohort of rising leaders – we have a structured program designed for that.
+Whether you need senior leadership development coaching for one executive, team coaching for a leadership group, or a cohort program for rising leaders – there’s a structured corporate leadership development program built for it.
 
 1:1
 
@@ -83,7 +83,7 @@ The gap between knowing your leaders need development and actually investing in 
 
 Executive Team Coaching
 
-### Align Your Executive Team Around What Matters
+### Executive Team Development Coaching That Builds Alignment
 
 For executive teams that need to move from individual performers to a cohesive leadership unit. An 8-month engagement with measurable progress at every stage.
 
@@ -124,7 +124,7 @@ Completion Certificate
 
 Leadership Development Program
 
-### Develop Your Next Generation of Leaders
+### A 9-Month Leadership Development Program
 
 A 9-month cohort program for groups of 5 or more leaders. Combines 360 assessments, bi-monthly coaching, and mastermind group sessions – with measurable results at the start and end.
 
@@ -184,7 +184,7 @@ Minimum cohort size: 5 participants. Programs can be customized for your organiz
 
 Why Tandem
 
-### What Sets Our Programs Apart
+### What Sets Our Leadership Development Apart
 
 Not all leadership development is created equal. Here’s what makes working with us different from workshops, seminars, and generic coaching engagements.
 

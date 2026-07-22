@@ -156,7 +156,7 @@ Your coaching team
 
 ### Learn from Master Certified Coaches
 
-Our instructors don’t just teach coaching - they coach Fortune 500 leaders, design coaching programs for global organizations, and train other coaches to do the same.
+Our instructors don’t just teach coaching - they coach Fortune 500 leaders, design coaching programs for global organizations, and train other coaches to do the same. Cherie Silas and Alex Kudinov also hold ICF’s Mentor Coach Specialization (MCS) at all three levels, so the mentor coaching built into this program already meets ICF’s January 2027 requirement for mentor coaches.
 
 [instructor\_listing]
 

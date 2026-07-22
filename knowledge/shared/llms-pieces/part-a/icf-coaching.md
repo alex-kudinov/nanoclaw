@@ -1,11 +1,11 @@
 # ICF Coaching Programs Overview
 URL: https://tandemcoach.co/icf-coaching/
 
-ICF Coaching Programs
+ICF Certification Programs
 
-## Your Path to ICF Coaching Certification
+## Choose Your ICF Coach Certification Program
 
-International Coaching Federation (ICF) accredited coaching certification programs led by Master Certified Coaches. Whether you want to become a certified coach or advance your career to PCC and ACTC – find the right program for where you are.
+Compare and enroll in ICF-accredited coach certification programs led by Master Certified Coaches – ACC (Level 1), PCC (Level 2), and ACTC team coaching. Find the right program for where you are, and start with a free module.
 
 [Explore Programs](#programs)
 [Book a Consultation](/contact-us/)
@@ -15,7 +15,7 @@ Choose Your Path
 
 ### ICF-Accredited Coaching Programs
 
-Four programs for every stage of your coaching journey. Each is independently accredited by the International Coaching Federation.
+Compare Tandem’s four ICF certification programs – one for every stage of your coaching journey. Each is an independent, ICF-accredited coach training program at its credential level.
 
 ICF Level 1
 
@@ -261,7 +261,7 @@ The total investment for ICF coaching certification varies by credential level a
 
 The right program depends on where you are in your coaching journey. New coaches who want to become certified should start with a Level 1 (ACC) program that provides comprehensive foundational education. If you know you want PCC from the start, the [Professional Coach Program](/icf/acc-pcc-certification/) bundles ACC + PCC + ACTC into one enrollment – the best value for coaches committed to building a full coaching practice. Experienced coaches with an ACC ready to advance should look at the [Systems Coach bridge program](/icf/pcc-professional-coach-certification/) that builds on your existing skills and experience.
 
-When evaluating programs, look for ICF accreditation (not just “aligned” programs), instructor credentials (what level of coaches are teaching?), and whether the program includes the mentor coaching and supervision hours you’ll need for credentialing. The best programs help you develop coaching skills you can use with real clients from day one.
+When evaluating programs, look for ICF accreditation (not just “aligned” programs), instructor credentials (what level of coaches are teaching?), and whether the program includes the mentor coaching and supervision hours you’ll need for credentialing. The best programs help you develop coaching skills you can use with real clients from day one. For a deeper framework, see our guide to [choosing an ICF-accredited coaching program](/icf-accredited-coaching-programs/).
 
 Ready to explore ICF-accredited training programs at every level?
 
