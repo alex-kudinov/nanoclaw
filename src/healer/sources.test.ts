@@ -139,6 +139,21 @@ describe('watermarkRowToSeed', () => {
     expect(errSeed.severity).toBe('error');
     expect(errSeed.source).toBe('sweeper:trafft');
   });
+
+  it('carries last_run_at as evidence and keeps fingerprint stable', () => {
+    const base = {
+      source: 'trafft',
+      last_run_status: 'error',
+      last_run_error: 'x',
+    };
+    const withRun = watermarkRowToSeed({
+      ...base,
+      last_run_at: '2026-06-26T10:59:00Z',
+    });
+    expect(withRun.raw_context.last_run_at).toBe('2026-06-26T10:59:00Z');
+    // last_run_at must not shift the fingerprint (else a re-run forks a dup).
+    expect(withRun.fingerprint).toBe(watermarkRowToSeed(base).fingerprint);
+  });
 });
 
 describe('isStale', () => {

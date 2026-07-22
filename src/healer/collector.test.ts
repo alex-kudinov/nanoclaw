@@ -109,6 +109,20 @@ describe('collectWatermarks', () => {
     expect(await collectWatermarks()).toBe(1);
     expect(store.upsertIncident).toHaveBeenCalledOnce();
   });
+
+  it('escalates a chronically-failing sweeper to critical (first_seen-gated)', async () => {
+    query.mockResolvedValue({
+      rows: [
+        { source: 'trafft', last_run_status: 'error', last_run_error: 'boom' },
+      ],
+    });
+    await collectWatermarks();
+    const sqls = query.mock.calls.map((c) => c[0] as string);
+    const escalation = sqls.find((s) => /SET severity = 'critical'/.test(s));
+    expect(escalation).toBeDefined();
+    expect(escalation).toMatch(/first_seen < now\(\) - INTERVAL '2 days'/);
+    expect(escalation).toMatch(/severity <> 'critical'/);
+  });
 });
 
 describe('reportFreshIncidents', () => {

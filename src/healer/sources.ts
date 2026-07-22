@@ -32,6 +32,7 @@ export interface WatermarkRow {
   source: string;
   last_run_status: string;
   last_run_error: string | null;
+  last_run_at?: string | null;
 }
 
 function levelToSeverity(level: number): Severity {
@@ -112,13 +113,19 @@ export function jobRowToSeed(row: JobLogRow): IncidentSeed {
 export function watermarkRowToSeed(row: WatermarkRow): IncidentSeed {
   const source = `sweeper:${row.source}`;
   const detail = row.last_run_error || `status=${row.last_run_status}`;
+  const severity: Severity = row.last_run_status === 'error' ? 'error' : 'warn';
   return {
     source,
-    severity: row.last_run_status === 'error' ? 'error' : 'warn',
+    severity,
     fingerprint: fingerprint(source, detail),
     raw_context: {
       last_run_status: row.last_run_status,
       last_run_error: row.last_run_error,
+      // Run recency, not last_seen_at: the watermark legitimately stays put when
+      // webhooks already delivered everything (sweep finds nothing to synthesize),
+      // so last_seen_at age is NOT a failure signal. Chronicity is judged from the
+      // incident's own first_seen age in the collector instead.
+      last_run_at: row.last_run_at ?? null,
     },
   };
 }

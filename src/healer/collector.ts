@@ -17,7 +17,7 @@ import path from 'path';
 
 import Database from 'better-sqlite3';
 
-import { STORE_DIR } from '../config.js';
+import { GMAIL_DELIVERY_STATE_KEY, STORE_DIR } from '../config.js';
 import { query } from '../business-db.js';
 import { logger } from '../logger.js';
 import { alert, type AlertLevel } from './alert.js';
@@ -34,6 +34,11 @@ import { runRemediate } from './remediate.js';
 import { runApprovals } from './approval.js';
 import { runImplement } from './implement.js';
 import { formatIncidentLine, type DigestRow } from './digest.js';
+import {
+  GMAIL_DELIVERY_FP,
+  gmailDeliverySeed,
+  isGmailDeliveryStale,
+} from './gmail-liveness.js';
 import {
   isRestartNoise,
   isStale,
@@ -130,12 +135,80 @@ export async function collectJobLogs(): Promise<number> {
 /** Source 3: frozen/errored sweeper watermarks. */
 export async function collectWatermarks(): Promise<number> {
   const r = await query<WatermarkRow>(
-    `SELECT source, last_run_status, last_run_error
+    `SELECT source, last_run_status, last_run_error, last_run_at::text
        FROM business_v2.sweeper_watermarks
       WHERE last_run_status IN ('frozen', 'error')`,
   );
-  for (const row of r.rows) await upsertIncident(watermarkRowToSeed(row));
+  for (const row of r.rows) {
+    const seed = watermarkRowToSeed(row);
+    await upsertIncident(seed);
+    // A sweeper that has been failing for days isn't self-healing — escalate it
+    // to critical so it surfaces loudly instead of rotting in the digest as a
+    // recurring `error`. Keyed on the incident's own first_seen age (reliable),
+    // NOT the watermark gap (which legitimately stays old). Idempotent: the
+    // severity<>'critical' guard means it fires exactly once per incident.
+    await escalateChronic(seed.fingerprint);
+  }
   return r.rows.length;
+}
+
+/** Raise a sweeper incident open >2d to critical once (no-op otherwise). */
+async function escalateChronic(fp: string): Promise<void> {
+  await query(
+    `UPDATE business_v2.incidents SET severity = 'critical', updated_at = now()
+      WHERE fingerprint = $1
+        AND status NOT IN ('resolved', 'wont_fix')
+        AND severity <> 'critical'
+        AND first_seen < now() - INTERVAL '2 days'`,
+    [fp],
+  );
+}
+
+/** Read the Gmail delivery-liveness heartbeat (epoch ms) from router_state. */
+function readGmailHeartbeat(): number | null {
+  const dbPath = path.join(STORE_DIR, 'messages.db');
+  try {
+    const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+    db.pragma('busy_timeout = 3000');
+    const row = db
+      .prepare('SELECT value FROM router_state WHERE key = ?')
+      .get(GMAIL_DELIVERY_STATE_KEY) as { value: string } | undefined;
+    db.close();
+    if (!row) return null;
+    const n = Number.parseInt(row.value, 10);
+    return Number.isFinite(n) ? n : null;
+  } catch (err) {
+    logger.warn({ err }, 'healer: gmail heartbeat read failed');
+    return null;
+  }
+}
+
+/** Resolve ONLY the gmail-delivery incident on recovery. */
+async function resolveGmailDeliveryIncident(): Promise<void> {
+  await query(
+    `UPDATE business_v2.incidents
+        SET status = 'resolved', outcome = 'verified_fixed', updated_at = now()
+      WHERE fingerprint = $1 AND status NOT IN ('resolved', 'wont_fix')`,
+    [GMAIL_DELIVERY_FP],
+  );
+}
+
+/**
+ * Source 5: Gmail inbound-delivery liveness. The label-poll writes a heartbeat on
+ * every successful history walk; a stale heartbeat (>20 min) means the direct poll
+ * AND the push relay are both dry — a genuine inbound-mail outage the log-tailing
+ * collector can't otherwise see (relay failures happen on the VPS). A fresh (or
+ * absent) heartbeat resolves any open incident.
+ */
+export async function collectGmailDelivery(): Promise<boolean> {
+  const lastMs = readGmailHeartbeat();
+  const now = Date.now();
+  if (!isGmailDeliveryStale(lastMs, now)) {
+    await resolveGmailDeliveryIncident();
+    return false;
+  }
+  await upsertIncident(gmailDeliverySeed(lastMs, now));
+  return true;
 }
 
 async function notify(
@@ -269,6 +342,7 @@ export async function runFast(): Promise<void> {
   const jsonl = await collectJsonl();
   const jobs = await collectJobLogs();
   const sweepers = await collectWatermarks();
+  const gmailStalled = await collectGmailDelivery();
   const reported = await reportFreshIncidents();
   const daemonDown = await checkDaemon();
   // Phase 1-2: diagnose new incidents, act on/verify remediations, apply approvals.
@@ -283,6 +357,7 @@ export async function runFast(): Promise<void> {
       jsonl,
       jobs,
       sweepers,
+      gmailStalled,
       reported,
       daemonDown,
       diagnosed,
