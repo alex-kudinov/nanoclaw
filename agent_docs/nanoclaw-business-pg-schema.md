@@ -1,6 +1,6 @@
 # Schema: nanoclaw_business (Postgres)
 
-Generated: 2026-06-14T08:00:37.905Z
+Generated: 2026-07-19T08:00:34.483Z
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -273,6 +273,14 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
+## business_v2.collector_state
+
+```
+  key                           text                 NOT NULL
+  value                         jsonb                NOT NULL DEFAULT='{}'::jsonb
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.contact_roles
 
 ```
@@ -280,6 +288,16 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   label                         text                 NOT NULL
   description                   text                 NOT NULL DEFAULT=''::text
   enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.daemon_heartbeat
+
+```
+  name                          text                 NOT NULL
+  last_beat                     timestamp with time zone NOT NULL DEFAULT=now()
+  pid                           integer             
+  version                       text                
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.document_kinds
@@ -334,6 +352,17 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
 ```
 
+## business_v2.email_followup_suppressions
+
+```
+  proposal_plutio_id            text                 NOT NULL
+  party_id                      bigint              
+  email                         text                
+  reason                        text                 NOT NULL DEFAULT='open_proposal'::text
+  last_seen_open_at             timestamp with time zone NOT NULL DEFAULT=now()
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.engagement_kinds
 
 ```
@@ -368,6 +397,38 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
   last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
+```
+
+## business_v2.incidents
+
+```
+  id                            bigint               NOT NULL
+  source                        text                 NOT NULL
+  fingerprint                   text                 NOT NULL
+  severity                      text                 NOT NULL DEFAULT='error'::text
+  status                        text                 NOT NULL DEFAULT='new'::text
+  occurrences                   integer              NOT NULL DEFAULT=1
+  first_seen                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_seen                     timestamp with time zone NOT NULL DEFAULT=now()
+  raw_context                   jsonb                NOT NULL DEFAULT='{}'::jsonb
+  remediation_class             text                
+  diagnosis                     text                
+  proposed_fix                  jsonb               
+  applied_action                jsonb               
+  outcome                       text                
+  origin                        text                 NOT NULL DEFAULT='collector'::text
+  restart_attempts              integer              NOT NULL DEFAULT=0
+  proposal_channel              text                
+  proposal_ts                   text                
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  confidence                    text                
+  cause_or_symptom              text                
+  evidence                      jsonb               
+  review                        jsonb               
+  investigation_log             text                
+  thread_ts                     text                
+  thread_channel                text                
 ```
 
 ## business_v2.interaction_channels
@@ -613,6 +674,44 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
 ```
 
+## business_v2.proposal_actions
+
+```
+  id                            bigint               NOT NULL
+  proposal_plutio_id            text                 NOT NULL
+  proposal_number               text                
+  action                        text                 NOT NULL
+  recipient_email               text                
+  party_id                      bigint              
+  reply_summary                 text                
+  slack_ts                      text                
+  status                        text                 NOT NULL DEFAULT='pending'::text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  resolved_at                   timestamp with time zone
+```
+
+## business_v2.proposal_followups
+
+```
+  id                            bigint               NOT NULL
+  proposal_plutio_id            text                 NOT NULL
+  proposal_number               text                
+  sequence_no                   smallint             NOT NULL
+  recipient_email               text                
+  recipient_name                text                
+  party_id                      bigint              
+  thread_id                     text                
+  subject                       text                 NOT NULL
+  body                          text                 NOT NULL
+  proposal_url                  text                
+  slack_channel                 text                
+  slack_ts                      text                
+  gmail_message_id              text                
+  status                        text                 NOT NULL DEFAULT='pending_approval'::text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  sent_at                       timestamp with time zone
+```
+
 ## business_v2.relationship_types
 
 ```
@@ -742,6 +841,24 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   seats_total                   integer             
   seats_filled                  bigint              
   seats_remaining               bigint              
+```
+
+## business_v2.v_sales_followup_queue
+
+```
+  pipeline_entry_id             bigint              
+  party_id                      bigint              
+  display_name                  text                
+  primary_email                 USER-DEFINED        
+  stage                         text                
+  program_name                  text                
+  last_interaction_at           timestamp with time zone
+  follow_up_count               bigint              
+  thread_id                     text                
+  original_subject              text                
+  inquiry_source                text                
+  inquiry_text                  text                
+  interest_page                 text                
 ```
 
 ## business_v2.variant_enrollments

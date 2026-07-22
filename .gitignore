@@ -65,3 +65,11 @@ knowledge/shared/KNOWLEDGE.md.bak
 
 # Scratch query files
 _query-*.mjs
+
+# Build-artifact & sync backups (never commit)
+dist.wip-bak-*/
+.stignore.bak
+
+# Operational backups — binary dumps / may contain secrets (sanitize before any commit)
+setup/vps/*.dump
+setup/vps/n8n-*-backup-*.json

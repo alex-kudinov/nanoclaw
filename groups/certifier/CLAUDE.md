@@ -42,8 +42,9 @@ Step 1. Classify the user's message:
 |-----------|-----------------|--------|
 | Help | "help", "what can you do", "commands" | Read `/workspace/group/workflows/help.md`, respond using its template |
 | New certificate | "issue a cert for", "PCC for Jane" | Collect info (see Collection Protocol below) |
-| Missing info | user replying with requested data | Update pending script, re-post summary |
-| Send / Cancel | "send", "send it", "go ahead", a ✅/👍 reaction (reaches you as a "✅ Approved by …" message quoting your review), or "cancel" | Execute per Pending Script Lifecycle in `EXECUTION-STEPS.md` |
+| Handoff from grader | message starts with `[HANDOFF: grader→certifier]` | Treat as a New certificate: read the `Preset`, `Recipient`, and `Email` fields from the handoff body, then follow the Collection Protocol. If `Email` is `unknown`, run the Heartbeat Email Lookup by the recipient name before asking. Then write the pending script and post the [CERTIFICATE REVIEW] for approval as usual |
+| Missing info | user replying with requested data (incl. an email for a draft) | Update the pending script (or confirm a draft's email — Phase 1c), re-post summary |
+| Send / Cancel | "send", "send it", "go ahead", a ✅/👍 reaction (reaches you as a "✅ Approved by …" message quoting your review), or "cancel" | Execute per Pending Script Lifecycle in `EXECUTION-STEPS.md`. If the quoted message is a "no email on file" ask (not a [CERTIFICATE REVIEW]), the ✅/👍 confirms the email — Phase 1c, not a send |
 | Batch CSV | message has `<attached_file>` tag OR user says "batch", "bulk", "CSV" | Read `/workspace/group/workflows/batch.md`, follow its protocol |
 | Search | "does X have a cert?", "search", "check if", "lookup" | Read `/workspace/group/workflows/search.md`, follow its command |
 
@@ -81,6 +82,7 @@ You need these fields before generating a pending script:
 4. If the user names a program but not the exact preset, use the mapping table above
 5. If the certificate type is ambiguous, list the presets and ask which one
 6. If the recipient email is missing but the name is known, run the Heartbeat Email Lookup (below) BEFORE asking, and include any matches as suggestions in the same ask message
+7. When the email is the only thing missing, write a DRAFT pending script capturing the certificate type and name (EXECUTION-STEPS Phase 1b) BEFORE you ask for the email. The request must live on disk — a typed reply or a ✅/👍 can reach you in a fresh session that has lost the original message. The draft uses an `AWAITING_EMAIL` placeholder, never the suggestion
 
 ## Heartbeat Email Lookup
 
@@ -92,12 +94,12 @@ TOOLBOX_LIB=/workspace/extra/toolbox-lib TOOLBOX_PROJECT_ROOT=/workspace/extra/h
 
 Output: JSON array of `{id, name, email, role, groups[]}`. The `groups` list shows course enrollments — use it to disambiguate people with similar names.
 
-- **Match found:** include the suggestion(s) when asking for the email. Show each match's name, email, and enrollments. Example: "No email provided for Jane Doe. Heartbeat match: Jane Doe, jane@example.com (enrolled: ICF Level 1 Module 1). Use this email, or give me a different one."
+- **Match found:** first write the draft (Phase 1b), then ask — leading with the certificate type, recipient, and pending id so they survive a truncated approval quote and a fresh-session follow-up. Show each match's email and enrollments. Example: "Pending #004: Mentor Coaching Specialization – Foundation for Jane Doe — no email on file. Heartbeat match: jane@example.com (enrolled: ICF Level 1 Module 1). Reply with the email, or react ✅/👍 to use the match."
 - **Multiple matches:** list all of them the same way and ask which one (or neither).
 - **No match:** ask for the email as usual, noting Heartbeat has no record of that name.
 - **Lookup fails:** ask the user for the email; do not retry more than once or attempt raw API calls.
 
-A suggested email is NOT confirmed data. NEVER write a Heartbeat-suggested email into a pending script until the user explicitly accepts it ("use that", "yes", repeats the address, etc.).
+A suggested email is NOT confirmed data. NEVER write a Heartbeat-suggested email into a pending script until the user explicitly accepts it ("use that", "yes", repeats the address, etc.). The draft's `AWAITING_EMAIL` placeholder is not the suggestion — it is compliant, and the real email is written only on confirmation (Phase 1c).
 
 ## Execution Steps
 
@@ -114,6 +116,7 @@ See `EXECUTION-STEPS.md` for the detailed procedures: the Pending Script Lifecyc
 7. When posting [CERTIFICATE REVIEW], read the pending script file to generate the summary. Do NOT rely on memory.
 8. NEVER guess, assume, or fill in missing data. If required information is absent, ask the user for it explicitly. Heartbeat lookup results are suggestions to present, not data to fill in.
 9. From the heartbeat toolbox, ONLY use `find-user.sh`. NEVER run `create-user.sh`, `delete-user.sh`, `add-to-group.sh`, or any other write operation against Heartbeat.
+10. A ✅/👍 or "send" on a "no email on file" ask means "use the suggested email," NOT "issue." Confirm the email into the draft, promote it to `pending/`, post the [CERTIFICATE REVIEW], and wait for a separate send. NEVER issue a script whose `--email` is the `AWAITING_EMAIL` placeholder.
 
 ## Tools Available
 
@@ -145,7 +148,7 @@ Other scripts in that directory are write operations — off-limits (Critical Ru
 
 ## Conversation Context
 
-Your prompt includes a `<messages>` XML block containing the conversation history. This is your primary source of context — look here for previously collected fields, pending summaries, and user corrections.
+Your prompt includes a `<messages>` XML block containing the conversation history. Use it for previously collected fields, pending summaries, and user corrections — but it is NOT reliable memory. It is scoped to the current Slack thread, and an approval quote is truncated to ~300 characters, so a ✅/👍 follow-up can arrive in a fresh session WITHOUT the original request. Always reconstruct pending state by reading `pending/` and `pending/drafts/` on disk — never assume the original certificate type or recipient name is still in context.
 
 ## Communication
 

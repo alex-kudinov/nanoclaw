@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>MAX_LOG_MB</key>
+		<string>200</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>TZ</key>
+		<string>America/Chicago</string>
+	</dict>
+	<key>Label</key>
+	<string>com.nanoclaw.repo-hygiene</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/xbohdpukc/dev/NanoClaw/tools/clean-sync-conflicts.sh</string>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>/Users/xbohdpukc/.local/log/nanoclaw-repo-hygiene.stderr.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/xbohdpukc/.local/log/nanoclaw-repo-hygiene.stdout.log</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>4</integer>
+		<key>Minute</key>
+		<integer>0</integer>
+	</dict>
+	<key>TimeOut</key>
+	<integer>300</integer>
+	<key>WorkingDirectory</key>
+	<string>/Users/xbohdpukc/dev/NanoClaw</string>
+</dict>
+</plist>

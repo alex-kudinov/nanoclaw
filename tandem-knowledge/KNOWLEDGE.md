@@ -135,6 +135,22 @@ Standalone mentor coaching for coaches who need ICF-required mentor coaching hou
 
 - URL: /icf/mentor-coaching-acc-pcc-mcc/
 
+### Mentor Coach Specialization (MCS) — becoming a qualified mentor coach
+For coaches who want to **become** mentor coaches (i.e., mentor other coaches toward their credentials), not coaches getting their own mentor coaching hours. The MCS (formerly Mentor Coach Qualification / MCQ) is a new ICF specialization. **As of January 1, 2027, mentor coaches must hold the MCS** at the appropriate level. Distinct from "ICF Mentor Coaching (standalone)" above — that is for getting your own hours; this is for qualifying to deliver mentor coaching.
+
+Two routes (hub at /mcs/):
+
+| Route | Program | Format | Price | URL |
+|-------|---------|--------|-------|-----|
+| Credit for Prior Learning (CPL) | Mentor Coaching Foundations | 10-hr async ICF CCE course | $299 | /mcs/mentor-coaching-foundations/ |
+| Standard Path | Mentor Coach Training | 71-hr live cohort, built to the ICF Advanced Accreditation in Mentor Coaching (AAMC) standard | $2,997 | /mcs/advanced-accreditation-mentor-coaching/ |
+
+**Standard Path cohorts:** 12 weekly live classes, led by Cherie Silas, MCC. The inaugural July cohort is full; two September cohorts are open — a Thursday cohort (starts Sep 24, 2026, 6pm ET) and a Friday cohort (starts Sep 25, 2026, 10am ET). Same curriculum, choose by time zone. Enroll directly (Stripe checkout), no waitlist.
+
+**Accreditation status:** ICF published the AAMC standards May 27, 2026 and opened applications June 2026. Tandem applied in the first window (June 11, 2026); the decision is pending. The cohort is offered as an MCC-led coach-education program built to the published standard; graduates receive a certificate documenting all 71 hours to submit with their ICF MCS application.
+
+- Hub URL: /mcs/
+
 ### Coaching Supervision
 - Reflective practice with experienced supervisors
 - URL: /coaching-supervision/

@@ -9,10 +9,11 @@
  *   (single)        --id <pi_/cs_/ch_>  resolve the refund(s) for one payment;
  *                   used by the host Stripe refund webhook handler.
  *
- * For each match it sets the status column (K) to "refunded" and records the
- * Stripe refund id (re_) in the Refund ID column (L). Dry-run by default —
- * pass --apply to write. Re-runs are idempotent and backfill a blank column L
- * on rows already marked "refunded".
+ * For each match it sets the status column (K) to "refunded", records the
+ * Stripe refund id (re_) in the Refund ID column (L), and the actual refunded
+ * dollar amount (partial refunds are common) in the Refunded Amount column (M).
+ * Dry-run by default — pass --apply to write. Re-runs are idempotent and
+ * backfill a blank column L or M on rows already marked "refunded".
  *
  * Env (self-loaded from ~/dev/.env.shared then ./.env, project .env wins):
  *   STRIPE_RESTRICTED_KEY  — primary account (read)
@@ -48,6 +49,8 @@ const CREATED_AFTER = Math.floor(Date.now() / 1000) - LOOKBACK_DAYS * 86400;
 const ID_COL_INDEX = 9; // column J (0-indexed) holds the Stripe id
 const REFUND_COL_INDEX = 11; // column L (0-indexed) holds the Refund ID
 const REFUND_HEADER = 'Refund ID';
+const REFUND_AMT_COL_INDEX = 12; // column M (0-indexed) holds the Refunded Amount ($)
+const REFUND_AMT_HEADER = 'Refunded Amount';
 
 function loadEnv(keys) {
   const wanted = new Set(keys);
@@ -348,12 +351,13 @@ async function buildRefundIndex() {
 async function main() {
   const refundIndex = await buildRefundIndex();
 
-  const resp = await sheetsGet('Payment Log!A:L');
+  const resp = await sheetsGet('Payment Log!A:M');
   const rows = resp.values || [];
   const headerHasRefundCol = (rows[0] || [])[REFUND_COL_INDEX] === REFUND_HEADER;
+  const headerHasAmtCol = (rows[0] || [])[REFUND_AMT_COL_INDEX] === REFUND_AMT_HEADER;
 
-  const toMark = []; // status not yet refunded → set K + L
-  const toBackfill = []; // already refunded but L blank → set L only
+  const toMark = []; // status not yet refunded → set K + L + M
+  const toBackfill = []; // already refunded but L or M blank → set L + M
   const seenIds = new Set();
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
@@ -369,10 +373,11 @@ async function main() {
       id,
       status: (row[10] || '').trim(),
       existingRefundId: (row[REFUND_COL_INDEX] || '').trim(),
+      existingAmt: (row[REFUND_AMT_COL_INDEX] || '').toString().trim(),
       refund: refundIndex.get(id),
     };
     if (rec.status.toLowerCase() === 'refunded') {
-      if (!rec.existingRefundId) toBackfill.push(rec);
+      if (!rec.existingRefundId || !rec.existingAmt) toBackfill.push(rec);
     } else {
       toMark.push(rec);
     }
@@ -415,17 +420,23 @@ async function main() {
 
   // ── Apply ──
   if (!headerHasRefundCol) await sheetsUpdate('Payment Log!L1', [[REFUND_HEADER]]);
+  if (!headerHasAmtCol) await sheetsUpdate('Payment Log!M1', [[REFUND_AMT_HEADER]]);
+  const amt = (cents) => (cents / 100).toFixed(2);
   let marked = 0;
   for (const m of toMark) {
-    await sheetsUpdate(`Payment Log!K${m.rowNum}:L${m.rowNum}`, [['refunded', m.refund.refundId]]);
+    await sheetsUpdate(`Payment Log!K${m.rowNum}:M${m.rowNum}`, [
+      ['refunded', m.refund.refundId, amt(m.refund.amount)],
+    ]);
     marked++;
   }
   let backfilled = 0;
   for (const m of toBackfill) {
-    await sheetsUpdate(`Payment Log!L${m.rowNum}`, [[m.refund.refundId]]);
+    await sheetsUpdate(`Payment Log!L${m.rowNum}:M${m.rowNum}`, [
+      [m.refund.refundId, amt(m.refund.amount)],
+    ]);
     backfilled++;
   }
-  console.log(`\nAPPLIED — marked ${marked} refunded, backfilled ${backfilled} Refund ID(s).`);
+  console.log(`\nAPPLIED — marked ${marked} refunded, backfilled ${backfilled} Refund ID/Amount(s).`);
 }
 
 main().catch((e) => {

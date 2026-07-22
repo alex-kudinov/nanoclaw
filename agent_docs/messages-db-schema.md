@@ -1,6 +1,78 @@
 # Schema: messages.db
 
-Generated: 2026-06-14T08:00:37Z
+Generated: 2026-07-19T08:00:33Z
+
+## autonomy_draft_events
+
+```
+  draft_id                  TEXT         PK
+  chat_jid                  TEXT         NOT NULL
+  group_folder              TEXT         NOT NULL
+  category                  TEXT         NOT NULL
+  outcome                   TEXT         NOT NULL DEFAULT='pending'
+  draft_ts                  TEXT         NOT NULL
+  thread_ts                 TEXT        
+  resolved_ts               TEXT        
+```
+
+Indexes:
+  idx_autonomy_events_pending (outcome,group_folder)
+  sqlite_autoindex_autonomy_draft_events_1 (draft_id) UNIQUE
+
+Sample row:
+```
+draft_id           chat_jid           group_folder  category  outcome     draft_ts                  thread_ts  resolved_ts             
+-----------------  -----------------  ------------  --------  ----------  ------------------------  ---------  ------------------------
+1783346879.237869  slack:C0AHV1SGT6W  sales         followup  superseded  2026-07-06T14:07:59.237Z             2026-07-06T14:08:11.529Z
+```
+
+## autonomy_pending
+
+```
+  draft_id                  TEXT         PK
+  chat_jid                  TEXT         NOT NULL
+  group_folder              TEXT         NOT NULL
+  category                  TEXT         NOT NULL
+  thread_ts                 TEXT        
+  draft_ts                  TEXT         NOT NULL
+  notice_ts                 TEXT        
+  expires_at                TEXT         NOT NULL
+  status                    TEXT         NOT NULL DEFAULT='pending'
+  created_at                TEXT         NOT NULL
+```
+
+Indexes:
+  idx_autonomy_pending_status (status,expires_at)
+  sqlite_autoindex_autonomy_pending_1 (draft_id) UNIQUE
+
+Sample row:
+```
+```
+
+## autonomy_trust
+
+```
+  group_folder              TEXT         PK NOT NULL
+  category                  TEXT         PK NOT NULL
+  level                     INTEGER      NOT NULL DEFAULT=1
+  streak                    INTEGER      NOT NULL DEFAULT=0
+  drafts                    INTEGER      NOT NULL DEFAULT=0
+  approved_clean            INTEGER      NOT NULL DEFAULT=0
+  corrected                 INTEGER      NOT NULL DEFAULT=0
+  vetoed                    INTEGER      NOT NULL DEFAULT=0
+  auto_approved             INTEGER      NOT NULL DEFAULT=0
+  updated_at                TEXT        
+```
+
+Indexes:
+  sqlite_autoindex_autonomy_trust_1 (group_folder,category) UNIQUE
+
+Sample row:
+```
+group_folder  category  level  streak  drafts  approved_clean  corrected  vetoed  auto_approved  updated_at              
+------------  --------  -----  ------  ------  --------------  ---------  ------  -------------  ------------------------
+sales         pricing   1      1       4       2               1          0       0              2026-07-14T01:07:21.123Z
+```
 
 ## chats
 
@@ -17,23 +89,12 @@ Indexes:
 
 Sample row:
 ```
-jid                name         last_message_time         channel  is_group
------------------  -----------  ------------------------  -------  --------
-slack:C0AHEJM92KY  general-gru  2026-03-01T19:21:23.293Z  slack    1       
+  (empty table)
 ```
 
 ## email_tracking
 
 ```
-  tracking_id               TEXT         PK
-  lead_id                   INTEGER      NOT NULL
-  email_type                TEXT         NOT NULL DEFAULT='initial'
-  sent_at                   TEXT         NOT NULL
-  first_opened_at           TEXT        
-  last_opened_at            TEXT        
-  open_count                INTEGER      DEFAULT=0
-  last_user_agent           TEXT        
-  last_notified_at          TEXT        
 ```
 
 Indexes:
@@ -407,28 +468,34 @@ Indexes:
 
 Sample row:
 ```
-name              description                                                                    project    project_root                    script                     args  cron       timezone         retries  retry_delay_ms  alert_level  timeout_ms  lockfile  enabled  next_run                  last_run                  last_result  last_duration_ms  last_output                                                                                                             run_interval_days
-----------------  -----------------------------------------------------------------------------  ---------  ------------------------------  -------------------------  ----  ---------  ---------------  -------  --------------  -----------  ----------  --------  -------  ------------------------  ------------------------  -----------  ----------------  ----------------------------------------------------------------------------------------------------------------------  -----------------
-calendar-refresh  Refresh Google Calendar caches for all program pages (ACC, PCC, ACTC, Mentor)  tandemweb  /Users/xbohdpukc/dev/tandemweb  tools/update-calendars.sh  []    0 6 * * *  America/Chicago  1        60000           alert        300000                1        2026-06-14T11:00:00.000Z  2026-06-13T11:01:44.678Z  fail         2948              Refreshing calendar caches...                                                                                                            
-                                                                                                                                                                                                                                                                                                                                                                   acc: OK                                                                                                                                
-                                                                                                                                                                                                                                                                                                                                                                   pcc: OK                                                                                                                                
-                                                                                                                                                                                                                                                                                                                                                                   actc: OK                                                                                                                               
-                                                                                                                                                                                                                                                                                                                                                                   mentor: OK                                                                                                                             
-                                                                                                                                                                                                                                                                                                                                                                   mcs-practicum: OK                                                                                                                      
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
-                                                                                                                                                                                                                                                                                                                                                                 Purging page caches...                                                                                                                   
-                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/acc-coach-certification-training/                                                                                    
-                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/acc-pcc-certification/                                                                                               
-                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/pcc-professional-coach-certification/                                                                                
-                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/actc-team-coaching-training/                                                                                         
-                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/mentor-coaching-acc-pcc-mcc/                                                                                         
-                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /mcs/mentor-coach-training/                                                                                               
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
-                                                                                                                                                                                                                                                                                                                                                                 Purging Cloudflare edge cache...                                                                                                         
-                                                                                                                                                                                                                                                                                                                                                                   Purging 6 URL(s) from Cloudflare edge cache...                                                                                         
-                                                                                                                                                                                                                                                                                                                                                                     WARNING: Batch purge failed (HTTP 401)                                                                                               
-                                                                                                                                                                                                                                                                                                                                                                     Response: {"result":null,"success":false,"errors":[{"code":10000,"message":"Authentication error"}],"messages":[]}                   
-                                                                                                                                                                                                                                                                                                                                                                   FAIL 1 /tmp/tandem-err/tandem-PLHgky.json                                                                                              
+name              description                                                                    project    project_root                    script                     args  cron       timezone         retries  retry_delay_ms  alert_level  timeout_ms  lockfile  enabled  next_run                  last_run                  last_result  last_duration_ms  last_output                                                                     run_interval_days
+----------------  -----------------------------------------------------------------------------  ---------  ------------------------------  -------------------------  ----  ---------  ---------------  -------  --------------  -----------  ----------  --------  -------  ------------------------  ------------------------  -----------  ----------------  ------------------------------------------------------------------------------  -----------------
+calendar-refresh  Refresh Google Calendar caches for all program pages (ACC, PCC, ACTC, Mentor)  tandemweb  /Users/xbohdpukc/dev/tandemweb  tools/update-calendars.sh  []    0 6 * * *  America/Chicago  1        60000           alert        300000                1        2026-07-19T11:00:00.000Z  2026-07-18T11:00:28.080Z  ok           6580              Refreshing calendar caches...                                                                    
+                                                                                                                                                                                                                                                                                                                                                                   acc: OK                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                   pcc: OK                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                   actc: OK                                                                                       
+                                                                                                                                                                                                                                                                                                                                                                   mentor: OK                                                                                     
+                                                                                                                                                                                                                                                                                                                                                                   mcs-practicum: OK                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                 Purging page caches...                                                                           
+                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/acc-coach-certification-training/                                            
+                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/acc-pcc-certification/                                                       
+                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/pcc-professional-coach-certification/                                        
+                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/actc-team-coaching-training/                                                 
+                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /icf/mentor-coaching-acc-pcc-mcc/                                                 
+                                                                                                                                                                                                                                                                                                                                                                   Purged (LS): /mcs/advanced-accreditation-mentor-coaching/                                      
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                 Purging Cloudflare edge cache...                                                                 
+                                                                                                                                                                                                                                                                                                                                                                   Purging 6 URL(s) from Cloudflare edge cache...                                                 
+                                                                                                                                                                                                                                                                                                                                                                     Purged: https://tandemcoach.co/icf/acc-coach-certification-training/                         
+                                                                                                                                                                                                                                                                                                                                                                     Purged: https://tandemcoach.co/icf/acc-pcc-certification/                                    
+                                                                                                                                                                                                                                                                                                                                                                     Purged: https://tandemcoach.co/icf/pcc-professional-coach-certification/                     
+                                                                                                                                                                                                                                                                                                                                                                     Purged: https://tandemcoach.co/icf/actc-team-coaching-training/                              
+                                                                                                                                                                                                                                                                                                                                                                     Purged: https://tandemcoach.co/icf/mentor-coaching-acc-pcc-mcc/                              
+                                                                                                                                                                                                                                                                                                                                                                     Purged: https://tandemcoach.co/mcs/advanced-accreditation-mentor-coaching/                   
+                                                                                                                                                                                                                                                                                                                                                                   OK purged=6                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                 Done. Changes should be visible immediately.                                                     
 ```
 
 ## messages
@@ -526,16 +593,11 @@ Indexes:
 
 Sample row:
 ```
-id                   group_folder  chat_jid           prompt                                                                                                                                                                                                                                                            schedule_type  schedule_value  next_run                  last_run                  last_result                                             status  created_at                 context_mode
--------------------  ------------  -----------------  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -------------  --------------  ------------------------  ------------------------  ------------------------------------------------------  ------  -------------------------  ------------
-task-followup-daily  sales         slack:C0AHV1SGT6W  Daily follow-up check. Query the DB for leads needing follow-up per your Follow-Up Processing section. For each lead that qualifies, post a separate follow-up draft as a top-level message. If no leads need follow-up, post: No leads pending follow-up today.  cron           0 9 * * 1-5     2026-06-15T14:00:00.000Z  2026-06-12T14:12:32.317Z  <internal>                                              active  2026-03-26T10:00:00-05:00  isolated    
-                                                                                                                                                                                                                                                                                                                                                                                                           Today's run summary:                                                                                   
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                                                                                                                                                                                           COLD (DB advanced to lost):                                                                            
-                                                                                                                                                                                                                                                                                                                                                                                                           - Lead #110 Michele Meek — 14 days, 3 outbound emails                                                  
-                                                                                                                                                                                                                                                                                                                                                                                                           - Lead #264 Wahida Saeedi — 14 days, 3 outbound emails                                                 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                                                                                                                                                                                           Flagged (non-standard, no fol                                                                          
+id                   group_folder  chat_jid           prompt                                                                                                                                                                                                                                                            schedule_type  schedule_value  next_run                  last_run                  last_result                                                                                                                            status  created_at                 context_mode
+-------------------  ------------  -----------------  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -------------  --------------  ------------------------  ------------------------  -------------------------------------------------------------------------------------------------------------------------------------  ------  -------------------------  ------------
+task-followup-daily  sales         slack:C0AHV1SGT6W  Daily follow-up check. Query the DB for leads needing follow-up per your Follow-Up Processing section. For each lead that qualifies, post a separate follow-up draft as a top-level message. If no leads need follow-up, post: No leads pending follow-up today.  cron           0 9 * * 1-5     2026-07-20T14:00:00.000Z  2026-07-17T14:10:29.569Z  All 5 threads now have corrected drafts. Summary of what changed:                                                                      active  2026-03-26T10:00:00-05:00  isolated    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                                                                                                           - *Lead #194 (Nicole)* — Revised FU#2: drops repeated cohort dates, leads with AAMC confirmation as new value. Flagged pricing discre                                                 
 ```
 
 ## sessions
@@ -553,6 +615,26 @@ Sample row:
 group_folder      session_id                          
 ----------------  ------------------------------------
 feature-requests  764c7ad3-b1a1-41aa-a7a8-d57f5ef03591
+```
+
+## slack_thread_anchors
+
+```
+  channel                   TEXT         PK NOT NULL
+  thread_key                TEXT         PK NOT NULL
+  thread_ts                 TEXT         NOT NULL
+  created_at                TEXT         NOT NULL
+  last_activity_at          TEXT         NOT NULL DEFAULT=''
+```
+
+Indexes:
+  sqlite_autoindex_slack_thread_anchors_1 (channel,thread_key) UNIQUE
+
+Sample row:
+```
+channel      thread_key                              thread_ts          created_at                last_activity_at        
+-----------  --------------------------------------  -----------------  ------------------------  ------------------------
+C0ARE189RDE  booking:customer:info@rachelbamber.com  1782319073.064819  2026-06-24T16:37:53.060Z  2026-06-24T16:37:53.060Z
 ```
 
 ## task_run_logs
