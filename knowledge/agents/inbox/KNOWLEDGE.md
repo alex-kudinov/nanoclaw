@@ -608,3 +608,26 @@ focused on human-needs items.
 - Classify all emails from Forwardly (any @forwardly.com sender or subject containing 'Forwardly') as `MrGru/notification/system`. Auto-archive. Do not escalate.
 - Classify internal Tandem calendar invite updates and forwards (from cherie@tandemcoaching.academy or alex@tandemcoach.co) as `MrGru/notification/calendar`, not `MrGru/other`.
 - Classify Heartbeat community event reminders (from events@heartbeat.chat or The Hearth) as `MrGru/notification/system`. Auto-archive.
+
+---
+
+## Coaching Supervisor Specialization (CSS) & "Coaching Supervision Mastery"
+
+**A valid Tandem service** (route supervisor-training leads to sales). **Different from the standalone Group Supervision service** ($89–$699, a coach *receiving* supervision) — this is the training program to *become* a coaching supervisor.
+
+### Keep the two acronyms straight
+- **CSS = Coach Supervisor Specialization** — an ICF **individual** designation (formerly "CSQ"), earned by a coach. Eligibility: **active PCC or MCC** + **41+ hours** of coaching-supervision training (≥50% live), aligned to ICF's 8 Coaching Supervision Competencies. Valid 3 years.
+- **AACS = Advanced Accreditation in Coaching Supervision** — an ICF accreditation for the **program/school** (not a person). The **$1,500** fee is what the *school pays ICF*, NOT a student price. An AACS program *prepares* a coach for CSS.
+
+### Tandem's program — "Coaching Supervision Mastery" (AACS track)
+- **Who it's for:** Experienced ICF coaches — **active PCC or MCC** — becoming coaching supervisors. (Prerequisite: PCC/MCC. If a lead is not yet PCC, the right first step is the ACC/PCC credential, not CSS.)
+- **What:** ~60–70 contact hours, ~50% live / ~50% self-paced, 8 competency modules + practicum (observed supervision + supervision-on-supervision) + final reflective portfolio. Faculty: **Cherie Silas** (MCC, EMCC ESIA, ACTC).
+- **Status:** **PRE-LAUNCH — founding cohort forming.** No public student price. Capture interest and route to sales; do NOT quote a price and never cite the $1,500 org fee as a student cost.
+- **Demand:** From **Jan 2027** CSS becomes the standard for validating renewal/ACTC supervision hours + a new ICF Coaching Supervisor Registry.
+
+### Qualification / routing
+Signals: "coaching supervisor", "become a supervisor", "supervision training/qualification", "CSS", "CSQ", "AACS", "supervise coaches", "supervisor certification" → **QUALIFIED** (Coaching Supervision Mastery, CSS track). Note the PCC/MCC prerequisite in the handoff. Route to sales as a supervisor-training lead.
+
+### Links
+- CSS explainer: https://tandemcoach.co/coaching-supervisor-specialization-css/
+- Supervisor-training / interest landing: https://tandemcoach.co/coaching-supervisor-training/

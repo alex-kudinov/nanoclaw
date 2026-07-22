@@ -608,3 +608,12 @@ focused on human-needs items.
 - Classify all emails from Forwardly (any @forwardly.com sender or subject containing 'Forwardly') as `MrGru/notification/system`. Auto-archive. Do not escalate.
 - Classify internal Tandem calendar invite updates and forwards (from cherie@tandemcoaching.academy or alex@tandemcoach.co) as `MrGru/notification/calendar`, not `MrGru/other`.
 - Classify Heartbeat community event reminders (from events@heartbeat.chat or The Hearth) as `MrGru/notification/system`. Auto-archive.
+
+---
+
+## Coaching Supervisor Specialization (CSS) & "Coaching Supervision Mastery"
+
+New pre-launch offering — route supervisor-training escalations/inquiries to sales.
+- **CSS = Coach Supervisor Specialization** — ICF **individual** designation (formerly CSQ), earned by a coach (active **PCC or MCC** + 41+ hrs supervision training, ≥50% live).
+- **AACS = Advanced Accreditation in Coaching Supervision** — ICF accreditation for the **program/school**; **$1,500 is the school's fee to ICF, never a student price**. An AACS program prepares a coach for CSS.
+- **Tandem's program = "Coaching Supervision Mastery"** (AACS track, ~60–70h, faculty Cherie Silas) — **PRE-LAUNCH, founding cohort forming, no public student price.** Prerequisite: PCC/MCC. Distinct from the standalone Group Supervision service ($89–$699). Don't quote a price; capture interest. Pages: `/coaching-supervisor-specialization-css/`, `/coaching-supervisor-training/`.

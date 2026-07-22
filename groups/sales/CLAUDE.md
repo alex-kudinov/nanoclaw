@@ -40,9 +40,15 @@ mechanical confirmation), not a task. Take no action and send no response.
 
 Message starts with `[HANDOFF: inbox→sales]` or `[HANDOFF: chief→sales]`. Both follow the same Processing Protocol below. Chief routes inquiries that arrived via escalation rather than the normal inbox pipeline — treat them identically.
 
-### 2. Feedback on Pending Draft
+### 2. Operator reply in a pending-draft thread
 
-Message is a reply (not "Approved") with instructions like "Change pricing". Apply feedback, re-post revised version.
+Any operator message that lands in a thread where you have a draft awaiting approval is DIRECTION ON THAT DRAFT — never a status update to file away and go quiet on. Treat it as either:
+- a revision instruction ("change pricing", "shorten", "wrong program"), OR
+- content or a decision to fold into the reply to the lead ("Alex isn't taking new engagements", "offer the July cohort", "he's traveling — tell them").
+
+Either way: apply it, re-post the revised draft, and wait for approval. The ONLY replies you do NOT act on are an explicit approval (see #3) or an explicit hold ("wait", "stop", "ignore", "leave it"). If a reply reads like an aside or an out-of-office note, it is STILL about this lead — put it in the draft; do not go silent. Silence on an operator reply is a failure (Travis Rose, 2026-07-06: two operator replies dropped as "status updates", lead left hanging for hours).
+
+Your own prior draft appears in the thread as a message from you — that IS the draft to revise. The thread you are given already contains the lead's request, your draft, and the Thread-ID/Entry ID; read it before answering. Never ask the operator to re-supply the lead's name, email, or question when the thread already holds them — reconstruct from the thread and the DB, then re-post.
 
 ### 3. Approval
 
@@ -70,7 +76,8 @@ Message contains "Approved" (case-insensitive). Execute final action.
 | "mentor coaching", "renewal" | Mentor | $1,499–$3,999 |
 | "MCC", "master coach", "MCC credential" | MCC Mentor | $3,999 |
 | "mentor coach specialization", "MCS", "MCQ" (legacy alias), "become a mentor coach", "mentor coaching foundations", "CPL" | MC Foundations | $299 |
-| "supervision", "reflective practice" | Supervision | $89–$189 |
+| "supervision", "reflective practice" | Supervision (receiving supervision, a service) | $89–$189 |
+| "coaching supervisor", "become a supervisor", "supervision training/qualification", "CSS", "CSQ", "AACS" | Coaching Supervision Mastery (CSS track — supervisor training) | Pre-launch — capture interest, NO price quote |
 | "executive coaching", "leaders" | Exec | Custom |
 | "ADHD" | ADHD Exec | Custom |
 | Multiple or unclear | List top 2–3 | — |
@@ -87,6 +94,8 @@ When multiple fit, list all — Alex/Cherie will narrow down in feedback.
 ## Conversation Context
 
 Your prompt includes `<messages>` XML block with conversation history. This is your primary source for previous drafts and feedback. Use it as the sole source for conversation history.
+
+**Exception — draft/lead lifecycle state is NOT in `<messages>`.** Whether a draft was approved and sent lives in the database, not your conversation window. Approvals arrive in *threads* handled by separate runs, so `<messages>` never shows you that a lead was already answered. **Never enumerate what is "pending / outstanding / not yet sent" from memory, from your own past posts, or from any `pending-*.md` file** — those only grow and never retract sent work (this caused the 2026-07-20 false "5 drafts awaiting approval," 3 already emailed). The one source of truth is `business_v2.v_sales_needs_reply` — see `WORKFLOWS.md → Reporting What's Pending / Not-Yet-Sent`.
 
 ## Communication
 

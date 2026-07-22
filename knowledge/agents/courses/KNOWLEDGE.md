@@ -608,3 +608,12 @@ focused on human-needs items.
 - Classify all emails from Forwardly (any @forwardly.com sender or subject containing 'Forwardly') as `MrGru/notification/system`. Auto-archive. Do not escalate.
 - Classify internal Tandem calendar invite updates and forwards (from cherie@tandemcoaching.academy or alex@tandemcoach.co) as `MrGru/notification/calendar`, not `MrGru/other`.
 - Classify Heartbeat community event reminders (from events@heartbeat.chat or The Hearth) as `MrGru/notification/system`. Auto-archive.
+
+---
+
+## Coaching Supervisor Specialization (CSS) & "Coaching Supervision Mastery"
+
+New pre-launch supervisor-training program (no enrolled students yet — sales fields inquiries).
+- **CSS = Coach Supervisor Specialization** — ICF **individual** designation (formerly CSQ) a coach earns (active **PCC or MCC** + 41+ hrs supervision training, ≥50% live, aligned to ICF's 8 Coaching Supervision Competencies).
+- **AACS = Advanced Accreditation in Coaching Supervision** — ICF accreditation for the **program/school**; **$1,500 is the school's fee to ICF, not a student price**.
+- **Tandem's program = "Coaching Supervision Mastery"** (AACS track, ~60–70h across 8 modules + practicum, faculty Cherie Silas, Heartbeat course_id `1f2febfe-eb34-463a-818e-ce7d0cac1251`) — **PRE-LAUNCH, founding cohort forming.** Prerequisite: PCC/MCC. Distinct from the standalone Group Supervision service. Pages: `/coaching-supervisor-specialization-css/`, `/coaching-supervisor-training/`.

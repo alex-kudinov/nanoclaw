@@ -423,6 +423,49 @@ Reflective practice for working coaches — not evaluation, but guided self-exam
 
 ---
 
+## Practitioner Series (self-paced CCE specialization courses)
+A pathway of **7 self-paced specialization courses** authored end-to-end by two Master Certified Coaches (Cherie Silas, MCC and Alex Kudinov, MCC) for **already-credentialed** ICF coaches (ACC/PCC/MCC/ACTC) who want to deepen a niche skill and earn **Continuing Coach Education (CCE) hours toward credential renewal** — without an expensive live cohort. This is **not a certification** and awards no new credential; hours count toward renewal of an existing ICF credential.
+
+- **Courses:** 7 (all live now)
+- **Total hours:** 141+ CCE hours across the full pathway
+- **Format:** Fully self-paced, asynchronous, **lifetime access** (single-course and bundle purchases)
+- **Certificate:** Certificate of completion issued automatically; the CC/RD hour split displays once ICF accreditation lands
+- **Prerequisites:** Assumes coaching foundations. Pre-credential learners are welcome but should start with the **free Coaching Foundations module on the ACC (Level 1) program page** first.
+- **Renewal context (sales hook):** ICF credentials require **40 CCE every 3 years — ≥24 Core Competency (CC) + 16 Resource Development (RD)**. The series is built to fill that requirement affordably.
+- **URL:** /practitioner-series/ (course list at /practitioner-series/#courses)
+
+**Pricing (three ways to buy):**
+| Option | Price | Details |
+|--------|-------|---------|
+| **À la carte** | **$79–$499 / course** | Single course, lifetime access, yours forever |
+| **One-time bundle** | **$949** | All 7 current courses, lifetime access, no renewal |
+| **All-Access (annual)** | **$349 / year** | 7-day free trial, every course + future additions; subscription (renews annually) |
+
+**The 7 courses:**
+| # | Course | Author | Hours | Price | CC/RD split (pending) | Focus |
+|---|--------|--------|-------|-------|------------------------|-------|
+| 1 | Setting Up Your Coaching Practice | Alex Kudinov, MCC | ~30 h (171 lessons) | $79 | not yet stated | Legal, tax, insurance, financial & operational layer of a practice |
+| 2 | Running a Coaching Business | Alex Kudinov, MCC | 40 h | $449 | 14 CC + 26 RD | Pre-revenue → running practice; discovery-as-coaching; three-party contracting; ethics |
+| 3 | Coaching Tools Mastery | Cherie Silas, MCC | 20 h | $199 | 14 CC + 6 RD | Right Tool, Right Mind; choosing/sequencing tools; 498-tool library, 105 tool-chains |
+| 4 | AI for Coaches | Alex Kudinov, MCC | 20 h | $149 | 6 CC + 14 RD | Where AI belongs in practice; ethics, augmentation, disclosure, presence |
+| 5 | Career & Transition Coaching | Alex Kudinov, MCC | 20 h | $349 | 14 CC + 6 RD | Five transitions: layoffs, pivots, stuck mid-career, returns after caregiving, late-career encore |
+| 6 | ADHD Coaching | Cherie Silas, MCC | 20 h | $399 | 14 CC + 6 RD | ADHD-informed coaching across life, executive & entrepreneur lenses |
+| 7 | Systemic Coaching for Executive Teams | Cherie Silas, MCC | 20 h | $499 | 16 CC + 4 RD | Coach the system, not personalities; read structural collision; ACTC-adjacent |
+
+**Enrollment:** Browse the course page → pick a single course, the bundle, or All-Access → checkout (about a minute). All-Access starts with a **7-day free trial** (no certificate issued during the trial; cancel anytime in the trial). No enrollment deadlines and **no completion deadline** — partial progress is preserved indefinitely.
+
+> **⚠️ ACCREDITATION IS PENDING — quote carefully.** ICF CCE accreditation is **pending per course** (not yet granted). Do **not** tell a lead the CCE hours are ICF-accredited. Say: *"Certificate of completion is issued now; ICF CCE accreditation is pending, and the CC/RD hours display once it lands."* Tandem offers a **full refund if a course does not earn its CCE designation.** (Contrast: Mentor Coaching Foundations and the Level 1/2/ACTC/MCS programs are already accredited.)
+
+**Disambiguation (avoid these mix-ups):**
+- **Practitioner Series ≠ certification.** It's CCE for *renewal* of an existing credential. Coaches seeking a *new* credential need the ACC/PCC/ACTC certification programs; coaches pursuing the Mentor Coach Specialization need MCS. Route accordingly.
+- **"ADHD Coaching" (course, $399, self-paced CCE) ≠ "ADHD Executive Coaching" (service, $15k–$50k+ client engagement).** If a lead mentions ADHD, ask whether they want to *learn* ADHD-informed coaching (the course) or *hire* an ADHD coach for a leader (the service).
+- **"AI for Coaches" ($149)** is a Practitioner Series course, not a certification track.
+- All-Access ($349/yr) is a **subscription**; the $949 bundle and à-la-carte courses are **one-time, lifetime**.
+
+**Instructors:** Same two MCCs wrote every course end-to-end — Cherie Silas, MCC (Coaching Tools Mastery, ADHD Coaching, Systemic Coaching for Executive Teams) and Alex Kudinov, MCC (Setting Up Your Coaching Practice, Running a Coaching Business, AI for Coaches, Career & Transition Coaching). See Instructors section above for full credentials.
+
+---
+
 ## Key FAQs
 
 **Does ACC experience count toward PCC?** Yes — ACC training hours count toward PCC education requirement. Graduates can advance via the Systems Coach Program ($3,999) or start fresh with the Professional Coach Program ($7,499) which bundles everything.
@@ -520,20 +563,27 @@ When describing ACC program instructors, never make blanket claims that all inst
 ### ACC Program Format — Always Mention Self-Paced Component
 When describing the ACC program format to leads, always mention that a significant portion of the learning is self-paced online content (not just live sessions). The ACC is a hybrid program: self-paced online modules plus live Zoom cohort sessions.
 
-### Chaos Visitor Journey — `chaos/get-visitor-journey` Tool
-Leads originating from the Chaos analytics tracker carry a Chaos `visitor_id`
-in their `business_v2` party (and pipeline-entry) metadata. The `chaos`
-toolbox integration exposes `get-visitor-journey` — a tool that returns that
-visitor's website browsing journey (pages viewed, repeat visits, event
-sequence). It takes one required argument, `visitor_id`, and returns
-`{ "visitor_id": <int>, "journey": <object> }`. The toolbox is mounted at
-`/workspace/extra/chaos`; invoke it as:
-`TOOLBOX_LIB=/workspace/extra/toolbox-lib bash /workspace/extra/chaos/tools/chaos/get-visitor-journey.sh --visitor_id <id>`.
-Use it in Pass 0 of the Two-Pass Draft Review (see `WORKFLOWS.md`) whenever a
-`visitor_id` is present, and weave concrete intent signals into the draft.
-Degraded-mode rule: if the tool returns `degraded:true`, the Chaos API is
-unreachable — draft WITHOUT journey signals rather than blocking. Chaos
-journey data is an enhancement, never a hard dependency.
+### Chaos Browsing Intent — email-driven Pass 0
+A contact-form lead arrives with only a few words and no browsing context. Before
+drafting, recover what they were researching on the site and let it shape the
+reply. The lookup is keyed on the lead's **email**, not on a `visitor_id` — the
+old "run it whenever metadata carries a visitor_id" rule was effectively dead
+because the contact-form → inbox → sales path never delivers a visitor_id. Instead:
+`wp_chaos_visitors.email` → visitor id (`chaos/query --raw`), then that id →
+journey (`chaos/get-visitor-journey`). The exact, copy-ready `chaos_intent` block
+lives in `WORKFLOWS.md → Pass 0`; run it and read its one-line `CHAOS_INTENT`
+output (highest-hit pages first).
+
+Two hard rules:
+- **Best-effort, never a dependency.** The block prints nothing on any failure —
+  degraded API, no visitor row (anonymous/incognito/tracker-blocked — the common
+  case), or a malformed/unsafe email. When it prints nothing, draft from the
+  message alone. Never block, never surface the miss.
+- **Silent enrichment.** Use the journey to pick the right program and pre-empt
+  the lead's likely question, but NEVER reveal you tracked them ("I saw you
+  viewed…" is banned). It shapes the substance of the reply; it is never quoted.
+  The written message stays primary; the program-assumption rule (lead with a
+  recommendation they can redirect, not a settled fact) still applies.
 
 ---
 
@@ -616,3 +666,40 @@ focused on human-needs items.
 - Classify all emails from Forwardly (any @forwardly.com sender or subject containing 'Forwardly') as `MrGru/notification/system`. Auto-archive. Do not escalate.
 - Classify internal Tandem calendar invite updates and forwards (from cherie@tandemcoaching.academy or alex@tandemcoach.co) as `MrGru/notification/calendar`, not `MrGru/other`.
 - Classify Heartbeat community event reminders (from events@heartbeat.chat or The Hearth) as `MrGru/notification/system`. Auto-archive.
+
+---
+
+## Coaching Supervisor Specialization (CSS) & "Coaching Supervision Mastery"
+
+**Different from the "Coaching Supervision (standalone)" / Group Supervision service above.** That service ($89–$699) is a coach *receiving* supervision. This is the **training program to *become* a coaching supervisor.** Do not conflate them.
+
+### Keep the two acronyms straight
+- **CSS = Coach Supervisor Specialization** — an ICF **individual** designation (formerly "CSQ"), earned by a coach. ICF eligibility: **active PCC or MCC** + **41+ hours** of coaching-supervision training (≥50% delivered live/synchronous), aligned to ICF's 8 Coaching Supervision Competencies (published Sept 2024). Valid 3 years; renewal = 10h professional development including 5h of *receiving* supervision.
+- **AACS = Advanced Accreditation in Coaching Supervision** — an ICF accreditation for the **education program/school** (not a person), against a 60+ hour competency-based standard. The **$1,500 USD** fee is what the *school pays ICF* for a 3-year accreditation cycle (applications open mid-June 2026). An AACS-accredited program *prepares* a coach for CSS; it does not itself confer CSS.
+
+### Tandem's program — "Coaching Supervision Mastery" (AACS track)
+- **What it is:** Tandem's coaching-supervisor training, built on the AACS standard + the 8 ICF Coaching Supervision Competencies. Completing it gives a coach the education required to apply for the **CSS** designation.
+- **Who it's for:** Experienced ICF coaches — **active PCC or MCC** — who want to become qualified coaching supervisors. (Add ACTC / a team-coaching credential if they'll supervise ACTC applicants.)
+- **Prerequisite:** Active **PCC or MCC**. No prior supervision experience required.
+- **Hours / format:** roughly **60–70 contact hours** (well above the 41h CSS floor and the 60h AACS expectation), **~50% live / ~50% self-paced**. 8 competency modules (foundations & role/scope, ethics & boundaries, contracting & CLEAR, reflective practice & use-of-self, supportive environment, facilitating reflection incl. the **Seven-Eyed Model**, coach development across levels, group supervision) + a **practicum** (5 observed supervision sessions, written feedback on ≥3; ~5 supervision hours = 2h receiving supervision + 3h supervision-on-supervision) + a final reflective portfolio / case analysis.
+- **Faculty:** **Cherie Silas** (MCC, EMCC ESIA, ACTC) — sole faculty of record on the AACS submission.
+- **Demand / why now:** ICF built the supervisor pathway 2024–2026; from **Jan 2027**, CSS becomes the standard for validating renewal/ACTC supervision hours (ACTC supervision must come from a CSS-qualified supervisor), plus a new ICF Coaching Supervisor Registry — real and growing pull for the credential.
+
+### ⚠️ Guardrails — READ before quoting anything
+- **The program is PRE-LAUNCH / in development — a founding cohort is forming.** The public pages capture interest; they do not sell a seat yet.
+- **Do NOT quote a student price — none is public.** If asked cost: say founding-cohort pricing is being finalized and offer to add them to the interest list and notify them when enrollment opens.
+- **Never quote $1,500 as the student cost** — that is the ICF *accreditation application fee the school pays ICF*, not a participant price.
+- Don't conflate **CSS** (what the lead earns) with **AACS** (the accreditation Tandem holds), and don't confuse either with the standalone Group Supervision service.
+
+### How to field a CSS / supervisor-training inquiry
+1. Confirm they hold (or are near) **PCC or MCC** — the hard prerequisite. If not yet PCC, the right first step is the credential (ACC/PCC), not CSS.
+2. Explain the CSS pathway and that Tandem's AACS-track program (~60–70h, live + self-paced, Cherie Silas faculty) provides the education to qualify.
+3. **Capture founding-cohort interest — no date, no price promised.**
+4. Advance/route as a supervisor-training lead.
+
+### Links
+- CSS explainer: https://tandemcoach.co/coaching-supervisor-specialization-css/
+- Supervisor-training / interest landing: https://tandemcoach.co/coaching-supervisor-training/
+
+### Program-match trigger
+Signals: "coaching supervisor", "become a supervisor", "supervision training/qualification", "CSS", "CSQ", "AACS", "supervise coaches", "supervisor certification" → **Coaching Supervision Mastery (CSS track)**. Prereq: PCC/MCC. Status: founding cohort / interest capture — no price quote.
