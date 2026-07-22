@@ -152,6 +152,7 @@ async function getAccessToken() {
       },
     );
     req.on('error', reject);
+    attachTimeout(req, 'Sheets token request');
     req.write(body);
     req.end();
   });
@@ -182,6 +183,7 @@ function sheetsRequest(sheetId, method, path, body) {
           });
         });
         req.on('error', reject);
+        attachTimeout(req, 'Sheets request');
         if (body) req.write(JSON.stringify(body));
         req.end();
       }),
@@ -234,6 +236,7 @@ function sheetsBatchUpdate(spreadsheetId, requests) {
           },
         );
         req.on('error', reject);
+        attachTimeout(req, 'Sheets batchUpdate');
         req.write(body);
         req.end();
       }),
@@ -244,24 +247,24 @@ function getSheetMetadata(spreadsheetId) {
   return getAccessToken().then(
     (token) =>
       new Promise((resolve, reject) => {
-        https
-          .get(
-            {
-              hostname: 'sheets.googleapis.com',
-              path: `/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`,
-              headers: { Authorization: `Bearer ${token}` },
-            },
-            (res) => {
-              let data = '';
-              res.on('data', (chunk) => (data += chunk));
-              res.on('end', () => {
-                if (res.statusCode >= 400)
-                  reject(new Error(`Sheets metadata ${res.statusCode}: ${data}`));
-                else resolve(JSON.parse(data));
-              });
-            },
-          )
-          .on('error', reject);
+        const req = https.get(
+          {
+            hostname: 'sheets.googleapis.com',
+            path: `/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`,
+            headers: { Authorization: `Bearer ${token}` },
+          },
+          (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              if (res.statusCode >= 400)
+                reject(new Error(`Sheets metadata ${res.statusCode}: ${data}`));
+              else resolve(JSON.parse(data));
+            });
+          },
+        );
+        req.on('error', reject);
+        attachTimeout(req, 'Sheets metadata request');
       }),
   );
 }
@@ -528,10 +531,27 @@ async function main() {
       } else {
         const appendResult = await sheetsAppend(SHEETS_PAYMENTS_ID, 'Payment Log!A:K', [logRow]);
         results.sheets_log = 'OK';
-        // Extend BasicFilter to include newly appended row
+        // Extend BasicFilter to include newly appended row.
+        // endColumnIndex MUST span every per-row column (A:O) so they all sort
+        // as a unit: Refund ID (L) + Refunded Amount (M) from mark-refunds, the
+        // operator-editable Defer Month (N), and Payout Month (O). A filter that
+        // stops short leaves a column outside the sort range, so a re-sort
+        // reshuffles the rest while it stays frozen — orphaning that data from
+        // its row (Status in K stays correct, masking the bug — that's how the
+        // Refund ID column got scrambled). Keep at 15 (A:O). Payout (O) is a
+        // PER-ROW formula (= same-row Defer + 6mo), not an ARRAYFORMULA, so it
+        // sorts with its row and recomputes when Defer is edited — verified to
+        // survive sorts. Do NOT make O a whole-column ARRAYFORMULA again.
         try {
           const rowMatch = (appendResult.updates?.updatedRange || '').match(/:.*?(\d+)$/);
           if (rowMatch) {
+            const newRow = parseInt(rowMatch[1], 10);
+            // Seed the operator-editable Defer Month (col N) = sale month (first
+            // of month) and the Payout formula (col O) = Defer + 6. The operator
+            // overrides Defer for future cohorts; Payout + the ladder recount.
+            const deferMonth = `${txnDateObj.getFullYear()}-${String(txnDateObj.getMonth() + 1).padStart(2, '0')}-01`;
+            const payoutFormula = `=IF(N${newRow}="","",IFERROR(EDATE(DATE(YEAR(N${newRow}),MONTH(N${newRow}),1),6),""))`;
+            await sheetsUpdate(SHEETS_PAYMENTS_ID, `Payment Log!N${newRow}:O${newRow}`, [[deferMonth, payoutFormula]]);
             const meta = await getSheetMetadata(SHEETS_PAYMENTS_ID);
             const tab = meta.sheets?.find((s) => s.properties.title === 'Payment Log');
             if (tab) {
@@ -542,8 +562,8 @@ async function main() {
                       sheetId: tab.properties.sheetId,
                       startRowIndex: 0,
                       startColumnIndex: 0,
-                      endRowIndex: parseInt(rowMatch[1], 10),
-                      endColumnIndex: 11,
+                      endRowIndex: newRow,
+                      endColumnIndex: 15,
                     },
                   },
                 },
@@ -653,7 +673,44 @@ async function main() {
         }
         results.sheets_roster = rosterResults.join('; ');
       } else if (rosterMatches.length === 0) {
-        results.sheets_roster = 'unrecognized product — skipped';
+        // Unrecognized product — no exact Product Map row. This is the case for
+        // sales-closed deals paid via a Plutio/Stripe invoice (description is
+        // unique per deal, e.g. "Invoice #tca-371-pl from Tandem Coaching
+        // Partners LLC (...)"), a bare "Unknown", or a not-yet-mapped product.
+        // These would otherwise land on NO roster tab ("skipped") even though
+        // the Payment Log records the transaction. Capture them on the catch-all
+        // "Sales" tab so sales-closed deals appear in the students log too.
+        // Idempotent: upsert by Stripe ID (col F) so webhook retries / reaper
+        // re-runs don't duplicate the row (mirrors the Payment Log upsert).
+        if (customerEmail) {
+          try {
+            const salesRow = [
+              customerEmail,
+              customerName,
+              productName,
+              amountDollars,
+              transactionDate,
+              STRIPE_ID,
+            ];
+            const salesIds = await sheetsGet(SHEETS_ROSTER_ID, 'Sales!F:F');
+            const salesIdCol = salesIds.values || [];
+            const existingSales = salesIdCol.findIndex(
+              (r, i) => i > 0 && r[0] === STRIPE_ID,
+            );
+            if (existingSales >= 0) {
+              const sheetRow = existingSales + 1;
+              await sheetsUpdate(SHEETS_ROSTER_ID, `Sales!A${sheetRow}:F${sheetRow}`, [salesRow]);
+              results.sheets_roster = 'Sales tab: OK (updated existing)';
+            } else {
+              await sheetsAppend(SHEETS_ROSTER_ID, 'Sales!A:F', [salesRow]);
+              results.sheets_roster = 'Sales tab: OK (unmapped product)';
+            }
+          } catch (e) {
+            results.sheets_roster = `Sales tab ERROR: ${e.message.slice(0, 100)}`;
+          }
+        } else {
+          results.sheets_roster = 'unrecognized product, no email — skipped';
+        }
       } else {
         results.sheets_roster = 'no customer email — skipped';
       }
@@ -686,7 +743,7 @@ async function main() {
     `Product: ${productName}`,
     `Amount: $${amountDollars} ${currency} (fee: $${feeDollars}, net: $${netDollars})${refundedCents > 0 ? ` [REFUNDED $${(refundedCents / 100).toFixed(2)}]` : ''}`,
     `Stripe ID: ${STRIPE_ID} (${ID_TYPE})`,
-    `Roster: ${rosterMatches.length > 0 ? rosterMatches.map(m => `${m.tab} → ${m.column}`).join(', ') : 'unrecognized product — skipped'}`,
+    `Roster: ${rosterMatches.length > 0 ? rosterMatches.map(m => `${m.tab} → ${m.column}`).join(', ') : '→ Sales tab (unmapped product)'}`,
     `Payment Log: ${results.sheets_log}`,
     `Student Roster: ${results.sheets_roster}`,
     `DB: ${results.db}`,
