@@ -15,7 +15,7 @@ We are hired to give our clients solutions that work, not to ask endless questio
 
 Fair enough, there’s a rhyme and reason to that view. And it is a deeply flawed one. Here is why.
 
-Let’s get this one misunderstanding out of the way first and foremost – coaching is NOT about asking powerful questions. It is true that masterful coaches ask questions that are short, simple, go to the heart of the matter and thus wield immense power of evoking awareness for the client. However, mastery does not end, nor does it start here.
+Let’s get this one misunderstanding out of the way first and foremost – coaching is NOT about [asking powerful questions](/coaching-transformational-questions/). It is true that masterful coaches ask questions that are short, simple, go to the heart of the matter and thus wield immense power of evoking awareness for the client. However, mastery does not end, nor does it start here.
 
 True mastery is rooted in the deep understanding of coaching competencies. True mastery is agile and varied enough to be highly useful to coaching clients in a broad range of situations. A directive telling approach might leave the client in awe of the consultant’s depth and breadth of knowledge; a coaching approach will leave behind a more capable, stronger, and resilient client who can implement a more sustainable change.
 

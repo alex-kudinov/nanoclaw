@@ -97,7 +97,7 @@ describe('ensureContainerRuntimeRunning', () => {
     expect(mockExecSync).toHaveBeenCalledTimes(1);
     expect(mockExecSync).toHaveBeenCalledWith(
       `${CONTAINER_RUNTIME_BIN} system status`,
-      { stdio: 'pipe' },
+      { stdio: 'pipe', timeout: 10000 },
     );
     expect(logger.debug).toHaveBeenCalledWith(
       'Container runtime already running',
@@ -155,17 +155,17 @@ describe('cleanupOrphans', () => {
     expect(mockExecSync).toHaveBeenNthCalledWith(
       2,
       `${CONTAINER_RUNTIME_BIN} stop nanoclaw-group1-111`,
-      { stdio: 'pipe' },
+      { stdio: 'pipe', timeout: 10000 },
     );
     expect(mockExecSync).toHaveBeenNthCalledWith(
       3,
       `${CONTAINER_RUNTIME_BIN} stop nanoclaw-group3-333`,
-      { stdio: 'pipe' },
+      { stdio: 'pipe', timeout: 10000 },
     );
     expect(mockExecSync).toHaveBeenNthCalledWith(
       4,
       `${CONTAINER_RUNTIME_BIN} rm nanoclaw-group2-222`,
-      { stdio: 'pipe' },
+      { stdio: 'pipe', timeout: 10000 },
     );
     expect(logger.info).toHaveBeenCalledWith(
       { running: 2, stopped: 1 },
@@ -232,12 +232,12 @@ describe('cleanupOrphans', () => {
     expect(mockExecSync).toHaveBeenNthCalledWith(
       2,
       `${CONTAINER_RUNTIME_BIN} rm nanoclaw-old-1`,
-      { stdio: 'pipe' },
+      { stdio: 'pipe', timeout: 10000 },
     );
     expect(mockExecSync).toHaveBeenNthCalledWith(
       3,
       `${CONTAINER_RUNTIME_BIN} rm nanoclaw-old-2`,
-      { stdio: 'pipe' },
+      { stdio: 'pipe', timeout: 10000 },
     );
   });
 });

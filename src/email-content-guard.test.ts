@@ -60,4 +60,33 @@ describe('checkContent', () => {
       r.violations.some((v) => v.includes('thank you for reaching out')),
     ).toBe(true);
   });
+
+  it('blocks the invented "MCT" acronym in body or subject', () => {
+    const body = checkContent('', 'Your MCT cohort starts in September.');
+    expect(body.ok).toBe(false);
+    expect(body.violations.some((v) => v.includes('MCT'))).toBe(true);
+
+    const subject = checkContent('MCT enrollment', 'Details below.');
+    expect(subject.ok).toBe(false);
+  });
+
+  it('allows authoritative ICF links (coachingfederation.org + subdomains)', () => {
+    const r = checkContent(
+      'Re: CPL',
+      'See https://coachingfederation.org/mcs-flyer.pdf and ' +
+        'https://learning.coachingfederation.org/cw/course-details?entryId=1',
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it('does not flag the established MCS acronym or full program name', () => {
+    expect(
+      checkContent(
+        '',
+        'The Mentor Coach Training cohort is the MCS Standard Path.',
+      ).ok,
+    ).toBe(true);
+    // lowercase fragments must not trip the uppercase-only matcher
+    expect(checkContent('', 'We connected the ducts.').ok).toBe(true);
+  });
 });

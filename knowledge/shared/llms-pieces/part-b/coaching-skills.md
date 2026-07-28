@@ -173,7 +173,7 @@ ICF certification (ACC, PCC, MCC) measures the quality of skill expression at pr
 
 **Advanced Techniques:** [Core Coaching Techniques](/coaching-techniques/) | [NLP Techniques for Coaching](/5-key-nlp-techniques-for-executive-coaches/) | [NLP Presuppositions in Coaching](/nlp-techniques-its-about-the-influence/)
 
-These are worth bringing to your next mentor coaching session or peer supervision group: Which of the five core skills do you most confidently perform, and which do you most confidently identify in yourself? The gap between those two questions is usually where the development is. The skill you perform most consistently may not be the skill you most need. That discrepancy, and what it reveals about your developmental edge, is what supervision is designed to surface.
+These are worth bringing to your next mentor coaching session or [peer supervision](/peer-coaching-supervision/) group: Which of the five core skills do you most confidently perform, and which do you most confidently identify in yourself? The gap between those two questions is usually where the development is. The skill you perform most consistently may not be the skill you most need. That discrepancy, and what it reveals about your developmental edge, is what supervision is designed to surface.
 
 ### Related Articles
 

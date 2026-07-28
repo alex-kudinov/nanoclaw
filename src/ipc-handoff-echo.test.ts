@@ -20,8 +20,12 @@ vi.mock('./logger.js', () => ({
 }));
 
 const storeMessageDirect = vi.fn();
+const clearPendingSends = vi.fn(
+  (_groupFolder: string, _recipient?: string) => 0,
+);
 vi.mock('./db.js', () => ({
   storeMessageDirect: (...args: unknown[]) => storeMessageDirect(...args),
+  clearPendingSends,
   createTask: vi.fn(),
   deleteTask: vi.fn(),
   getTaskById: vi.fn(),
@@ -118,6 +122,7 @@ describe('IPC handoff routing', () => {
     vi.resetModules();
     vi.useFakeTimers();
     storeMessageDirect.mockClear();
+    clearPendingSends.mockClear();
     sendMessage = vi.fn(async () => {});
     deps = {
       sendMessage,

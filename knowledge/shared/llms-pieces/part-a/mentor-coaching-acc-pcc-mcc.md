@@ -23,9 +23,10 @@ Format
 Sessions
 Group Zoom + 1-on-1 with MCC
 
-$1,499
+$1,500
+or 3 × $500/mo
 
-[Enroll Now](https://buy.stripe.com/bJe8wR2QR1Ld3tv4ew1kA06)
+[Enroll Now](#checkout)
 
 #### Earning Your PCC?
 
@@ -37,9 +38,10 @@ Format
 Sessions
 Group Zoom + 1-on-1 with MCC
 
-$1,799
+$1,800
+or 3 × $600/mo
 
-[Enroll Now](https://book.stripe.com/8x2cN7gHH4Xp1lnaCU1kA03)
+[Enroll Now](#checkout)
 
 Premium
 
@@ -54,8 +56,9 @@ Sessions
 All 1-on-1 with Cherie or Alex
 
 $3,999
+or 3 × $1,333/mo
 
-[Enroll Now](https://buy.stripe.com/eVq00l777gG70hjcL21kA07)
+[Enroll Now](#checkout)
 
 All packages meet or exceed ICF requirements. Already in a Tandem program? Your mentor coaching is included.
 
@@ -73,7 +76,7 @@ What’s Included
 
 Everything you need to know about each mentor coaching package
 
-**Q: ACC Renewal Mentoring - $1,499**
+**Q: ACC Renewal Mentoring - $1,500**
 
 ##### What You Get
 
@@ -93,7 +96,7 @@ This package exceeds ICF ACC renewal requirements: 11 hours total (8 group + 3 i
 - Coaches who want to refresh their skills while meeting requirements
 - Those who want both group learning and personalized attention
 
-**Q: PCC Credential Mentoring - $1,799**
+**Q: PCC Credential Mentoring - $1,800**
 
 ##### What You Get
 
@@ -374,7 +377,7 @@ ICF allows both formats to count toward mentor coaching requirements. The key di
 
 **Q: How much does ICF mentor coaching cost?**
 
-Cost depends on the credential level and session format. Our complete, ICF-compliant mentor coaching packages range from **$1,499** for ACC renewal (8 group + 3 individual hours) to **$1,799** for the PCC package to **$3,999** for MCC (10 hours, all 1-on-1).
+Cost depends on the credential level and session format. Our complete, ICF-compliant mentor coaching packages range from **$1,500** for ACC renewal (8 group + 3 individual hours) to **$1,800** for the PCC package to **$3,999** for MCC (10 hours, all 1-on-1). Every package can be paid in full or in 3 monthly installments.
 
 Every package exceeds ICF’s 10-hour minimum and includes the completion documentation you submit with your credential application. Because each mentor coach is a Master Certified Coach *and* an ICF credential assessor, you’re receiving feedback from someone who evaluates real credential submissions rather than merely meeting an hours requirement.
 
@@ -450,9 +453,9 @@ Our group session schedules are designed to meet this timeline. For individual s
 
 Choose the package that matches your credential path and enroll today.
 
-[ACC Renewal - $1,499](https://buy.stripe.com/bJe8wR2QR1Ld3tv4ew1kA06)
-[Earn PCC - $1,799](https://book.stripe.com/8x2cN7gHH4Xp1lnaCU1kA03)
-[Earn MCC - $3,999](https://buy.stripe.com/eVq00l777gG70hjcL21kA07)
+[ACC Renewal - $1,500](#checkout)
+[Earn PCC - $1,800](#checkout)
+[Earn MCC - $3,999](#checkout)
 
 Questions? [Contact us](/contact-us/) and we’ll help you find the right package.
 
@@ -461,5 +464,41 @@ Questions? [Contact us](/contact-us/) and we’ll help you find the right packag
 Quick question before you go - helps us improve this page.
 
 Thanks - that helps.
+
+Enrollment
+
+#### Loading...
+
+First name
+
+Please enter your first name.
+
+Last name
+
+Please enter your last name.
+
+Email address
+
+Please enter a valid email address.
+
+Confirmation will be sent to
+
+I agree to the [Terms & Conditions](/terms/) and [Privacy Policy](/privacy-policy/)
+
+256-bit SSL encryption
+•
+Powered by Stripe
+
+#### You’re In!
+
+Check your email for access instructions. You’ll receive login details within a few minutes.
+
+[Access Your Program](https://community.tandemcoaching.academy)
+
+Questions? Email us at [hello@tandemcoach.co](mailto:hello@tandemcoach.co)
+
+Cancel payment?
+
+Your progress will be lost.
 
 ---

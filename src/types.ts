@@ -52,6 +52,13 @@ export interface ContainerConfig {
   // mid-run corrupts the work unit, so round up.
   memory?: string;
   cpus?: number;
+  // When true, the agent's final assistant text is NOT echoed to the channel;
+  // only what it posts explicitly via send_message appears. Set for groups whose
+  // output is a structured card (sales, inbox): the host echo arrived as a third
+  // top-level recap of a card the agent had already posted, and it carries no
+  // threadKey so it always landed at the channel root (Oana Tue, 2026-07-28).
+  // Leave unset for conversational groups, where the final text IS the reply.
+  suppressFinalText?: boolean;
   // Per-group claude model override (e.g. 'haiku'). Unset → agent-runner sonnet.
   model?: string;
   // Token-exhaustion probe policy. 'eager' tries every account (incl. cooled-down

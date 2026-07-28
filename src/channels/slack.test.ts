@@ -704,7 +704,7 @@ describe('SlackChannel', () => {
       vi.restoreAllMocks();
     });
 
-    it('skips non-text file types (images)', async () => {
+    it('notes an image attachment instead of dropping it silently', async () => {
       const opts = createTestOpts();
       const channel = new SlackChannel(opts);
       await channel.connect();
@@ -727,13 +727,20 @@ describe('SlackChannel', () => {
       });
       await triggerMessageEvent(event);
 
+      // No download — an image has no extractable text — but the agent is told
+      // a file arrived, so it cannot mistake this for "nothing was attached".
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(opts.onMessage).toHaveBeenCalledWith(
         'slack:C0123456789',
         expect.objectContaining({
-          content: 'check this image',
+          content: expect.stringContaining('check this image'),
         }),
       );
+      const sent = vi.mocked(opts.onMessage).mock.calls[0][1] as {
+        content: string;
+      };
+      expect(sent.content).toContain('photo.png');
+      expect(sent.content).toContain('not readable as text');
 
       vi.restoreAllMocks();
     });
@@ -1440,6 +1447,133 @@ describe('SlackChannel', () => {
       expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
       expect(resolveThreadAnchor).not.toHaveBeenCalled();
       expect(recordThreadAnchor).not.toHaveBeenCalled();
+    });
+  });
+
+  // --- Canonical lead threading (one root per lead) ---
+
+  describe('lead thread canonicalization', () => {
+    const JID = 'slack:C0AHV1SGT6W';
+    const HANDOFF = `[HANDOFF: inbox→sales]
+Party ID: 10088
+Name: Oana Tue
+Email: oana.tue.coach@gmail.com
+Message: I have four questions about the AAMC program.`;
+    const CARD = `[SALES REVIEW] Lead #938
+Category: program-info
+Email: oana.tue.coach@gmail.com
+
+DRAFT RESPONSE TO LEAD:
+---
+Hi Oana, good to hear from you.
+---`;
+
+    async function connected() {
+      const channel = new SlackChannel(createTestOpts());
+      await channel.connect();
+      return channel;
+    }
+
+    it('anchors the inbound handoff on the lead email, not the author key', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+      const channel = await connected();
+
+      await channel.sendMessage(JID, HANDOFF, {
+        fromGroup: 'inbox',
+        threadKey: 'inbox:lead:oana.tue.coach@gmail.com',
+      });
+
+      expect(resolveThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+      );
+      expect(recordThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+        '1704067200.000100',
+      );
+    });
+
+    it('threads the sales card under that root instead of opening a second one', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = await connected();
+
+      // The agent still passes its own entry-scoped key; the host overrides it.
+      await channel.sendMessage(JID, CARD, {
+        fromGroup: 'sales',
+        threadKey: 'sales:entry:938',
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(resolveThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+      );
+      expect(post.mock.calls[0][0].thread_ts).toBe('1785230544.590929');
+      // Broadcast, so the card reaches the channel timeline as well as the
+      // thread. Suppressing it here hid a customer follow-up and its draft
+      // entirely — the operator reported the email as never having arrived
+      // (Oana Tue, 2026-07-28T12:27Z). Deduplication is the card's job, not
+      // the thread's.
+      expect(post.mock.calls[0][0].reply_broadcast).toBe(true);
+    });
+
+    it('leaves non-lead messages on their author-supplied key', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+      const channel = await connected();
+
+      await channel.sendMessage(JID, 'cert issued for jane', {
+        threadKey: 'certifier:cert:jane|pcc',
+      });
+
+      expect(resolveThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'certifier:cert:jane|pcc',
+      );
+    });
+
+    it('still broadcasts non-lead anchored replies', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1700000000.000001',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = await connected();
+
+      await channel.sendMessage(JID, 'cert resent', {
+        threadKey: 'certifier:cert:jane|pcc',
+      });
+
+      expect(
+        currentApp().client.chat.postMessage.mock.calls[0][0].reply_broadcast,
+      ).toBe(true);
+    });
+
+    it('splits a long card on a line boundary and keeps every part in-thread', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = await connected();
+
+      const body = Array.from(
+        { length: 400 },
+        (_, i) => `Paragraph ${i} of the proposed response to the lead.`,
+      ).join('\n');
+      await channel.sendMessage(JID, `${CARD}\n${body}`, {
+        fromGroup: 'sales',
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls.length).toBeGreaterThan(1);
+      for (const [call] of post.mock.calls) {
+        expect(call.thread_ts).toBe('1785230544.590929');
+        // A boundary-aware split never starts a chunk mid-word.
+        expect(call.text.startsWith(' ')).toBe(false);
+        expect(call.text).not.toMatch(/^[a-z]+ of the proposed/);
+      }
     });
   });
 });

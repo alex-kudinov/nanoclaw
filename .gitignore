@@ -7,13 +7,30 @@ dist/
 # Local data & auth
 store/
 data/
+!/data/
+/data/*
+!/data/business/
+/data/business/*
+!/data/business/CLAUDE.md
+!/data/business/migrations/
+/data/business/migrations/*
+!/data/business/migrations/nanoclaw-v2/
+/data/business/migrations/nanoclaw-v2/*
+!/data/business/migrations/nanoclaw-v2/*.sql
+!/data/business/migrations/nanoclaw-v2/*.sh
+!/data/business/migrations/nanoclaw-v2/README.md
 logs/
 
-# Groups - only track base structure and specific CLAUDE.md files
+# Groups - track operating instructions, but not conversations/auth/runtime state
 groups/*
 !groups/*/
 groups/*/*
 !groups/*/CLAUDE.md
+!groups/*/CLAUDE-MAIN.md
+!groups/*/WORKFLOWS.md
+!groups/*/VOICE-AND-TONE.md
+!groups/*/EMAIL-RESPONSE-GUIDELINES.md
+!groups/*/SCHEMA.md
 
 # Knowledge directory — track structure and source files, not agent copies or large generated files
 knowledge/agents/*/llms-full.txt

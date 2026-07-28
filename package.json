@@ -12,6 +12,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:fix": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
+    "docs:continuity-check": "node scripts/sanitize-schema-doc.mjs --self-test && node scripts/check-doc-continuity.mjs",
     "prepare": "husky",
     "setup": "tsx setup/index.ts",
     "auth": "tsx src/whatsapp-auth.ts",

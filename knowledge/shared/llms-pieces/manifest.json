@@ -1,7 +1,7 @@
 {
   "version": "1",
   "generator": "generate-llms-full.py",
-  "generated_at": "2026-07-18T07:21:22Z",
+  "generated_at": "2026-07-25T07:21:45Z",
   "pieces": [
     {
       "id": "part-a/_00_header",
@@ -115,9 +115,9 @@
       "id": "part-a/mentor-coaching-acc-pcc-mcc",
       "path": "part-a/mentor-coaching-acc-pcc-mcc.md",
       "order": 8,
-      "hash": "sha256:8b65606440c8d3171f4dd7ceb3d89292a0e9edf628188a866be42d789a1452de",
-      "bytes": 16709,
-      "words": 2484,
+      "hash": "sha256:4a0df6a84a63d5adcea94356a4a9cf377105e995df5aae91a6d15e0b881b2466",
+      "bytes": 17227,
+      "words": 2587,
       "source": {
         "type": "page",
         "title": "Mentor Coaching",
@@ -352,8 +352,8 @@
       "id": "part-b/adhd-executive",
       "path": "part-b/adhd-executive.md",
       "order": 25,
-      "hash": "sha256:b45df0ca5ffb15b692898696c7941259986f338ff1850280f8fd49c16c8a5de1",
-      "bytes": 48080,
+      "hash": "sha256:d3373562b2fbe457640aa76bb782f9ca7430754bfc4d16cd7b4ad21638cc1259",
+      "bytes": 48110,
       "words": 6392,
       "source": {
         "type": "cluster",
@@ -386,8 +386,8 @@
       "id": "part-b/change-management",
       "path": "part-b/change-management.md",
       "order": 27,
-      "hash": "sha256:f1dd9db0e223849b1b0796dfa2e7937bf7625a04b721a6d9b2da2d998f59b4f1",
-      "bytes": 46589,
+      "hash": "sha256:d39fccc6419fc16f5ad8260b539dd9dab5276dd20f0de4d40c4ef003196334e7",
+      "bytes": 46625,
       "words": 6700,
       "source": {
         "type": "cluster",
@@ -471,8 +471,8 @@
       "id": "part-b/team-leadership",
       "path": "part-b/team-leadership.md",
       "order": 32,
-      "hash": "sha256:a5f0d121665a5507e57d3e0d331521c89834411e6911f2b9e39a702110e1ee19",
-      "bytes": 67900,
+      "hash": "sha256:7e2b3713f8b499a8850457090f32da5257c0adab8ed695fc28ac1a973738a87c",
+      "bytes": 67973,
       "words": 9528,
       "source": {
         "type": "cluster",
@@ -488,8 +488,8 @@
       "id": "part-b/icf-certification",
       "path": "part-b/icf-certification.md",
       "order": 33,
-      "hash": "sha256:167e78adb414e3414ec0a1d0ff4888acbb8eb6621b0810b5113e443e226bb647",
-      "bytes": 53506,
+      "hash": "sha256:2279f5294e89e30c5e062190b81ba74b4a144395075f848e1d5848256d1df5d5",
+      "bytes": 53551,
       "words": 6815,
       "source": {
         "type": "cluster",
@@ -505,8 +505,8 @@
       "id": "part-b/coaching-skills",
       "path": "part-b/coaching-skills.md",
       "order": 34,
-      "hash": "sha256:36773c7783edc1d61337cd823e79bc33d791e5709d829feaf8cc0b2e1a399631",
-      "bytes": 36928,
+      "hash": "sha256:3303241cce6480d4862a3f5ad3eff15171496f1a9201a319ee97a034e164c6ac",
+      "bytes": 36959,
       "words": 5184,
       "source": {
         "type": "cluster",
@@ -556,8 +556,8 @@
       "id": "part-b/coaching-business",
       "path": "part-b/coaching-business.md",
       "order": 37,
-      "hash": "sha256:d70b2a56760a12d5bb0472a84757daecfb7012ab62272433286943f7d26e9505",
-      "bytes": 28907,
+      "hash": "sha256:4e85d94b1466e3ed00ee8ba619e22377c572daf47770ab9c86ab73970d4217da",
+      "bytes": 28948,
       "words": 4778,
       "source": {
         "type": "cluster",

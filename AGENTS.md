@@ -10,8 +10,12 @@ Before investigating or changing this repository, read these in order:
 1. `CLAUDE.md` — canonical repository operating instructions.
 2. `docs/PROJECT-MAP.md` — verified system map, authority rules, risks, and
    cross-client workflow.
-3. The relevant `groups/<group>/CLAUDE.md` for agent behavior changes.
-4. The relevant current design or operations document listed in the project
+3. `docs/ACTIVE-WORK.md` — current work, owners, overlap, and exact next steps.
+4. `docs/CHANGE-PROTOCOL.md` — shared task, documentation, verification, and
+   handoff contract.
+5. The latest relevant entries in `docs/ENGINEERING-CHANGELOG.md`.
+6. The relevant `groups/<group>/CLAUDE.md` for agent behavior changes.
+7. The relevant current design or operations document listed in the project
    map.
 
 Treat `.claude/skills/*/SKILL.md` as canonical procedures even when Codex does
@@ -40,6 +44,8 @@ change when authorized.
 - Never print, copy, commit, or summarize secret values. Treat `.env*`, OAuth
   files, session directories, browser profiles, database dumps, and local MCP
   settings as sensitive.
+- Keep tracked schema references structure-only. Never publish live sample rows
+  or customer/operational content as “schema documentation.”
 - Inspect the actual schema before querying a database. `store/messages.db` is
   SQLite; business data is PostgreSQL. Do not use the legacy business SQLite
   model.
@@ -82,3 +88,23 @@ Keep Claude and Codex aligned. When a change alters architecture, operations,
 group behavior, schemas, setup, or safety controls, update the corresponding
 source of truth plus `docs/PROJECT-MAP.md`. Do not fork `CLAUDE.md` into a
 Codex-only copy.
+
+For every non-trivial change:
+
+- create or continue an `NC-YYYYMMDD-NNN` entry in `docs/ACTIVE-WORK.md` before
+  the first edit;
+- confirm required migrations, group procedures, and other authoritative files
+  are Git-trackable before relying on them;
+- check active entries for overlapping files or external systems;
+- follow the documentation impact matrix in `docs/CHANGE-PROTOCOL.md`;
+- keep the entry current through implementation, validation, handoff, and
+  deployment;
+- append factual evidence to `docs/ENGINEERING-CHANGELOG.md` at the
+  review/commit/release boundary;
+- distinguish uncommitted, committed, migrated, deployed, live-verified, and
+  outcome-validated states.
+
+If another Codex or Claude Code session could not resume from tracked files
+without reading this conversation, the work is not properly handed off.
+
+Run `npm run docs:continuity-check` before handoff; CI runs the same check.

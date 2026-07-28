@@ -89,6 +89,20 @@ function createSchema(database: Database.Database): void {
       last_activity_at TEXT NOT NULL DEFAULT '',
       PRIMARY KEY (channel, thread_key)
     );
+    -- Approvals awaiting their [HANDOFF: *→mailman]. A row is written on ✅ and
+    -- deleted when the handoff is seen; anything still here past the grace
+    -- period is an approved email that never went out. See send-watchdog.ts.
+    CREATE TABLE IF NOT EXISTS pending_sends (
+      draft_ts TEXT PRIMARY KEY,
+      group_folder TEXT NOT NULL,
+      chat_jid TEXT NOT NULL,
+      thread_ts TEXT,
+      recipient TEXT,
+      lead_ref TEXT,
+      approved_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_pending_sends_group
+      ON pending_sends (group_folder, approved_at);
     CREATE TABLE IF NOT EXISTS registered_groups (
       jid TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -478,6 +492,7 @@ export function getNewMessages(
     SELECT id, chat_jid, sender, sender_name, content, timestamp, from_group, thread_ts
     FROM messages
     WHERE timestamp > ? AND chat_jid IN (${placeholders})
+      AND COALESCE(is_bot_message, 0) = 0
       AND content NOT LIKE ?
       AND content != '' AND content IS NOT NULL
     ORDER BY timestamp
@@ -526,6 +541,12 @@ export function getMessagesSince(
   if (excludeGroup) {
     conditions.push('(from_group IS NULL OR from_group != ?)');
     params.push(excludeGroup);
+  } else {
+    // In ordinary polling, bot-authored rows are outbound echoes and must not
+    // be re-ingested. When excludeGroup is present, however, a bot row tagged
+    // with another group is an intentional cross-group handoff and must remain
+    // visible; callers separately discard untagged bot noise in that mode.
+    conditions.push('COALESCE(is_bot_message, 0) = 0');
   }
 
   // Thread filter: undefined = no filter, null = root only, string = specific thread
@@ -879,6 +900,100 @@ export function touchThreadAnchor(channel: string, threadKey: string): void {
   db.prepare(
     `UPDATE slack_thread_anchors SET last_activity_at = ? WHERE channel = ? AND thread_key = ?`,
   ).run(new Date().toISOString(), channel, threadKey);
+}
+
+// --- Approved-send watchdog accessors (see send-watchdog.ts) ---
+
+export function recordPendingSend(row: {
+  draftTs: string;
+  groupFolder: string;
+  chatJid: string;
+  threadTs?: string;
+  recipient?: string;
+  leadRef?: string;
+  approvedAt: string;
+}): void {
+  db.prepare(
+    `INSERT INTO pending_sends
+       (draft_ts, group_folder, chat_jid, thread_ts, recipient, lead_ref, approved_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(draft_ts) DO NOTHING`,
+  ).run(
+    row.draftTs,
+    row.groupFolder,
+    row.chatJid,
+    row.threadTs ?? null,
+    row.recipient ?? null,
+    row.leadRef ?? null,
+    row.approvedAt,
+  );
+}
+
+/**
+ * Clear outstanding expectations for a group. When the handoff names a
+ * recipient, only that lead's row clears — otherwise a send for lead B would
+ * mark lead A's approval fulfilled and hide a real drop. A handoff with no
+ * parseable recipient clears the group's oldest row, which is the one the
+ * agent was most likely acting on.
+ */
+export function clearPendingSends(
+  groupFolder: string,
+  recipient?: string,
+): number {
+  if (recipient) {
+    return db
+      .prepare(
+        `DELETE FROM pending_sends
+          WHERE group_folder = ? AND LOWER(COALESCE(recipient, '')) = ?`,
+      )
+      .run(groupFolder, recipient.toLowerCase()).changes;
+  }
+  return db
+    .prepare(
+      `DELETE FROM pending_sends WHERE draft_ts = (
+         SELECT draft_ts FROM pending_sends
+          WHERE group_folder = ? ORDER BY approved_at LIMIT 1)`,
+    )
+    .run(groupFolder).changes;
+}
+
+export function listOverdueSends(cutoffIso: string): Array<{
+  draftTs: string;
+  groupFolder: string;
+  chatJid: string;
+  threadTs?: string;
+  recipient?: string;
+  leadRef?: string;
+  approvedAt: string;
+}> {
+  const rows = db
+    .prepare(
+      `SELECT draft_ts, group_folder, chat_jid, thread_ts, recipient, lead_ref, approved_at
+         FROM pending_sends WHERE approved_at <= ? ORDER BY approved_at`,
+    )
+    .all(cutoffIso) as Array<{
+    draft_ts: string;
+    group_folder: string;
+    chat_jid: string;
+    thread_ts: string | null;
+    recipient: string | null;
+    lead_ref: string | null;
+    approved_at: string;
+  }>;
+  return rows.map((r) => ({
+    draftTs: r.draft_ts,
+    groupFolder: r.group_folder,
+    chatJid: r.chat_jid,
+    threadTs: r.thread_ts ?? undefined,
+    recipient: r.recipient ?? undefined,
+    leadRef: r.lead_ref ?? undefined,
+    approvedAt: r.approved_at,
+  }));
+}
+
+/** One alert per approval — drop the row so a stuck send cannot spam. */
+export function markPendingSendAlerted(draftTs: string): void {
+  db.prepare('DELETE FROM pending_sends WHERE draft_ts = ?').run(draftTs);
 }
 
 // --- Session accessors ---

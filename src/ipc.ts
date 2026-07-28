@@ -8,12 +8,14 @@ import { CronExpressionParser } from 'cron-parser';
 import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
 import { AvailableGroup } from './container-runner.js';
 import {
+  clearPendingSends,
   createTask,
   deleteTask,
   getTaskById,
   storeMessageDirect,
   updateTask,
 } from './db.js';
+import { observeOutbound } from './send-watchdog.js';
 import {
   dispatchGmailIpc,
   isGmailIpcType,
@@ -231,6 +233,12 @@ export function startIpcWatcher(deps: IpcDeps): void {
             try {
               const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
               if (data.type === 'message' && data.chatJid && data.text) {
+                // A mailman handoff discharges the approval the watchdog is
+                // holding for this group. Observed here — before routing and
+                // before the mailman hold timer — so a cancelled or dropped
+                // send still counts as "the agent got that far", and only a
+                // genuinely absent handoff trips the alert.
+                observeOutbound(sourceGroup, data.text, { clearPendingSends });
                 // Resolve targetGroupFolder → chatJid if present
                 let targetJid = data.chatJid;
                 if (data.targetGroupFolder) {

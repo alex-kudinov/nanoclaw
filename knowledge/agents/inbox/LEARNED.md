@@ -22,3 +22,7 @@ _Each entry approved by a human before being added._
 ### Lesson 4: Expired community link — self-service re-send
 **Problem:** Escalated expired community.tandemcoaching.academy link as requiring Alex/Cherie to check enrollment, when students can self-serve a new link without any human action.
 **Rule:** When a student reports their community.tandemcoaching.academy access link has expired and they cannot log in, direct them to self-serve: go to community.tandemcoaching.academy, enter their email address on the sign-in page, and a new magic link will be sent immediately. No action from Alex or Cherie is required for an expired link. Only escalate to Alex/Cherie if the self-service re-send fails or if the student reports they are not enrolled at all (not found in the system).
+
+### Lesson 5: Unsolicited podcast guest invitations are cold vendor spam — classify MrGru/vendor/cold
+**Problem:** The Sunnyside Podcast (f.barker@thesunnysidepodcast.com) sent three unsolicited guest invitation emails to Alex and they were escalated to chief each time. Alex confirmed these are spam.
+**Rule:** Unsolicited podcast guest invitation emails (cold outreach asking Alex or Cherie to appear as a guest) are cold vendor/PR spam. Classify as MrGru/vendor/cold and auto-archive. Do not escalate to chief. Specific rule: sender_exact:f.barker@thesunnysidepodcast.com → MrGru/vendor/cold.

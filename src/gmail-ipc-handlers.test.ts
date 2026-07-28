@@ -95,7 +95,7 @@ function makePayload(
     timestamp: '2026-03-03T12:00:00Z',
     to: 'prospect@external.com',
     subject: 'Coaching Inquiry Follow-up',
-    body: '<p>Hello, thanks for reaching out!</p>',
+    body: '<p>Hello, here are the coaching program details you requested.</p>',
     ...overrides,
   };
 }
@@ -344,7 +344,7 @@ describe('outbound email interaction logging', () => {
       timestamp: '2026-04-16T09:00:00Z',
       to: 'prospect@external.com',
       subject: 'ACC Program Details',
-      body: '<p>Thanks for reaching out.</p>',
+      body: '<p>Here are the ACC program details you requested.</p>',
       leadId: 42,
       emailType: 'initial',
     });
@@ -381,7 +381,7 @@ describe('outbound email interaction logging', () => {
       groupFolder: 'mailman',
       timestamp: '2026-04-16T09:00:00Z',
       threadId: 'thread-abc',
-      body: '<p>Great question.</p>',
+      body: '<p>The answer depends on your current credential path.</p>',
       leadId: 42,
       emailType: 'reply',
     });

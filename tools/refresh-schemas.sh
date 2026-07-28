@@ -8,8 +8,12 @@ DB_SCHEMA=/Users/xbohdpukc/dev/toolbox/shared/db/tools/db/db-schema.sh
 
 mkdir -p agent_docs
 
-# SQLite schema (safe temp-file pattern)
-"$DB_SCHEMA" --db store/messages.db --refresh > /tmp/nc-messages-schema.tmp
+# SQLite schema (safe temp-file pattern). The shared toolbox includes one live
+# sample row per table for interactive diagnosis; repository documentation must
+# remain structure-only, so strip those rows before writing the tracked file.
+"$DB_SCHEMA" --db store/messages.db --refresh \
+  | /opt/homebrew/bin/node scripts/sanitize-schema-doc.mjs \
+  > /tmp/nc-messages-schema.tmp
 test -s /tmp/nc-messages-schema.tmp && mv /tmp/nc-messages-schema.tmp agent_docs/messages-db-schema.md
 
 # Postgres schema via node (no psql binary on host)

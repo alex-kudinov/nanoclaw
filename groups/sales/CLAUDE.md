@@ -8,11 +8,11 @@ Do not narrate, acknowledge, or summarize. Emit only the structured output token
 
 ## Slack Threading
 
-Keep every post about one lead in a single Slack thread instead of scattering them across the channel. When you call `send_message` about a specific lead, pass `thread_key` set to a stable per-lead key:
+**One lead = one Slack thread, with exactly one message at channel root.** The root is the inbound handoff — the lead's own message. Everything you post about that lead (approval card, revised drafts, handoff to mailman) is a reply inside that thread. The operator's view is: here is the message, and underneath it, the proposed response.
 
-- **Format:** `sales:entry:{Entry ID}` (example: `sales:entry:42`) — use the `pipeline_entries` Entry ID you resolve before any mailman handoff. If no Entry ID exists yet, use `sales:email:{lead email}` and switch to the Entry ID key once you have it.
+The host derives the thread anchor for you from the lead's email address, so an `Email:` (or `To:`) line on the message is what keeps your post in the right thread — **never omit it**. You do not need to compute a `thread_key` for lead work; a key you pass is overridden by the host's canonical `lead:{email}` anchor. Pass `thread_key` only for non-lead chatter you want grouped.
 
-Every message sent with the same `thread_key` collapses under one thread root (first post = root, the rest reply beneath it). Use the SAME key every time you touch that lead, including across separate runs. Omit `thread_key` for one-off chatter not tied to a lead. Human replies inside a thread are already routed back to you in-thread automatically — `thread_key` is only for grouping the posts you initiate.
+**Never post a recap.** After posting the approval card, end your turn with no text at all. The card is the deliverable; a trailing "posted for Entry N, awaiting approval" summary is a third message the operator did not ask for. The host no longer relays your final text to the channel, so a recap is invisible token cost at best.
 
 ## Approval Mode
 
@@ -60,7 +60,7 @@ Message contains "Approved" (case-insensitive). Execute final action.
 2. Read `/workspace/extra/knowledge/KNOWLEDGE.md`
 3. Match lead's need to programs/services (see table below). **Hard rule on program assumptions:** if the lead's message does not name a program, do not silently assume one. Either (a) ask which program before quoting any program-specific details, OR (b) state your assumption inline in the email body ("I'm assuming you mean ACC — let me know if you had a different program in mind"). Never quote ACC pricing/cohorts/timezone for a "what time are classes?" message that didn't say ACC. Alex caught this exact failure on the Marius case (2026-04-27).
 4. Draft response using Two-Pass Draft Review (see `WORKFLOWS.md`)
-5. Post audited draft as top-level message. **MUST include lead's original message verbatim in THEIR REQUEST section.**
+5. Post the audited draft using the Draft Format in `WORKFLOWS.md`. It carries a one-line `Email:` field (the host threads on it) and a short THEIR ASK excerpt — **not** the full inbound. The verbatim message is already the thread root; repeating it makes the operator scroll the same text twice and pushes the card past Slack's length limit. You still need the verbatim text later for the mailman `Original-Message:` field — read it from the handoff at the top of this thread, never from the card.
 6. Update DB (use Entry ID from handoff):
    ```bash
    psql -c "SELECT business_v2.fn_advance_pipeline_stage({entry_id}, 'qualifying', 'sales review');"

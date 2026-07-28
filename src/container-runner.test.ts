@@ -18,6 +18,7 @@ vi.mock('./config.js', () => ({
   EAGER_TOKEN_PROBE_GROUPS: [],
   GROUPS_DIR: '/tmp/nanoclaw-test-groups',
   IDLE_TIMEOUT: 1800000, // 30min
+  MEMORY_SAMPLE_INTERVAL_MS: 0,
   SPAWN_TIMEOUT: 90000, // 90s
   TIMEZONE: 'America/Los_Angeles',
 }));
@@ -44,7 +45,11 @@ vi.mock('fs', async () => {
       writeFileSync: vi.fn(),
       readFileSync: vi.fn(() => ''),
       readdirSync: vi.fn(() => []),
-      statSync: vi.fn(() => ({ isDirectory: () => false })),
+      statSync: vi.fn(() => ({ isDirectory: () => false, size: 0 })),
+      openSync: vi.fn(() => 101),
+      closeSync: vi.fn(),
+      readSync: vi.fn(() => 0),
+      unlinkSync: vi.fn(),
       copyFileSync: vi.fn(),
       chmodSync: vi.fn(),
     },
@@ -101,6 +106,35 @@ function createFakeProcess() {
 }
 
 let fakeProc: ReturnType<typeof createFakeProcess>;
+
+// The production runner tails detached stdout from a file so work survives a
+// daemon restart. Unit tests keep their controllable PassThrough process and
+// adapt it to the LogTail contract instead of touching the real filesystem.
+vi.mock('./log-tail.js', () => ({
+  LogTail: class {
+    private readonly onChunk: (chunk: string) => void;
+    private listener?: (chunk: Buffer | string) => void;
+
+    constructor(_filePath: string, onChunk: (chunk: string) => void) {
+      this.onChunk = onChunk;
+    }
+
+    start(): void {
+      this.listener = (chunk) => this.onChunk(chunk.toString());
+      fakeProc.stdout.on('data', this.listener);
+    }
+
+    drainNow(): void {}
+
+    stop(): void {
+      if (this.listener) fakeProc.stdout.off('data', this.listener);
+    }
+
+    getOffset(): number {
+      return 0;
+    }
+  },
+}));
 
 // Mock child_process.spawn
 vi.mock('child_process', async () => {

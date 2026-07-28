@@ -52,7 +52,11 @@ import {
   getAllSessions,
   getAllTasks,
   getJob,
+  clearPendingSends,
   getMessageById,
+  listOverdueSends,
+  markPendingSendAlerted,
+  recordPendingSend,
   getMessagesSince,
   getThreadContext,
   getNewMessages,
@@ -88,11 +92,18 @@ import { runReaper as runWebhookInboxReaper } from './webhook-inbox-reaper.js';
 import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
 import { startHeartbeat } from './heartbeat.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
+import {
+  recordApproval,
+  sweepPendingSends,
+  SEND_WATCHDOG_TICK_MS,
+  type SendWatchdogStore,
+} from './send-watchdog.js';
 import { runNameReaper } from './contador-name-reaper.js';
 import { runChaosReconcile } from './chaos-reconciler.js';
 import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
 import { query, withAgentContext } from './business-db.js';
-import { handleFollowupDrop } from './followup-drop.js';
+import { handleFollowupDrop, handleTypedDrop } from './followup-drop.js';
+import { makeFollowupDropDeps } from './followup-drop-deps.js';
 import { SlackChannel } from './channels/slack.js';
 import { handleGmailSend } from './gmail-ipc-handlers.js';
 import {
@@ -461,7 +472,26 @@ async function processGroupMessages(
           { group: group.name },
           `Agent output: ${raw.slice(0, 200)}`,
         );
-        if (text) {
+        // Card-posting groups suppress this echo, but ONLY on a root-triggered
+        // run — that is the case where it lands as an extra untethered
+        // top-level post recapping a card the agent already published.
+        //
+        // A run triggered inside a thread keeps its echo: there it threads
+        // under the conversation and is the agent's only channel for progress.
+        // Blanket suppression hid "Waiting on Gmail search results to recover
+        // Oana's Thread-ID" and "Still awaiting the Gmail search result", so a
+        // stalled send looked identical to a completed one for 45 minutes
+        // (Entry 938, 2026-07-28T10:47Z).
+        if (text && group.containerConfig?.suppressFinalText && !threadTs) {
+          logger.info(
+            { group: group.name, length: text.length },
+            'Final agent text suppressed (suppressFinalText)',
+          );
+          // Still counts as output for cursor purposes: the agent completed a
+          // turn and posted its card via send_message, so rolling the cursor
+          // back on a late error would re-draft a lead that was already handled.
+          outputSentToUser = true;
+        } else if (text) {
           await channel.sendMessage(chatJid, text, {
             fromGroup: group.folder,
             threadTs,
@@ -1455,9 +1485,17 @@ async function main(): Promise<void> {
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
 
+  // Set once the Slack channel exists (see the follow-up drop block below).
+  // Observes human messages so a typed "drop <lead>" in #gru-sales is honoured
+  // by the host instead of depending on the sales container to write it.
+  let onOperatorSalesMessage: ((msg: NewMessage) => void) | null = null;
+
   // Channel callbacks (shared by all channels)
   const channelOpts = {
-    onMessage: (_chatJid: string, msg: NewMessage) => storeMessage(msg),
+    onMessage: (_chatJid: string, msg: NewMessage) => {
+      storeMessage(msg);
+      onOperatorSalesMessage?.(msg);
+    },
     onChatMetadata: (
       chatJid: string,
       timestamp: string,
@@ -1590,6 +1628,12 @@ async function main(): Promise<void> {
   // 👎 on a held draft vetoes it and demotes the category. See
   // autonomy-policy.ts for the ladder rules.
   {
+    const sendWatchdogStore: SendWatchdogStore = {
+      recordPendingSend,
+      clearPendingSends,
+      listOverdueSends,
+      markAlerted: markPendingSendAlerted,
+    };
     const slackForAutonomy = channels.find(
       (c): c is SlackChannel => c instanceof SlackChannel,
     );
@@ -1607,45 +1651,95 @@ async function main(): Promise<void> {
         handleVetoReaction(autonomyDeps, ts, reactor),
       );
       startAutonomySweep(autonomyDeps);
+
+      // Approved-send watchdog. Registered as an OBSERVER: it always returns
+      // false so the agent still receives the approval — the host only records
+      // that a send is now owed, and shouts if none appears. See
+      // send-watchdog.ts for why this alerts rather than sending itself.
+      slackForAutonomy.registerApprovalListener(async (ts) => {
+        const card = getMessageById(ts);
+        if (card?.content && card.from_group) {
+          recordApproval(
+            {
+              draftTs: ts,
+              groupFolder: card.from_group,
+              chatJid: card.chat_jid,
+              threadTs: card.thread_ts ?? undefined,
+              cardText: card.content,
+              now: new Date(),
+            },
+            sendWatchdogStore,
+          );
+        }
+        return false; // never claim — the agent path must still run
+      });
+
+      setInterval(() => {
+        sweepPendingSends(new Date(), {
+          store: sendWatchdogStore,
+          postThread: async (jid, text, threadTs) => {
+            await slackForAutonomy.sendMessage(jid, text, { threadTs });
+          },
+        }).catch((err) => logger.error({ err }, 'send-watchdog: sweep error'));
+      }, SEND_WATCHDOG_TICK_MS);
     }
   }
 
-  // Follow-up drop — a 👎 on a `[FOLLOW-UP …] Lead #N` card moves entry N to the
-  // `nurture` hold stage so the daily sales-followup cron stops re-drafting it.
-  // Registered as an OBSERVER (not a claim-chain listener) so it always fires and
-  // never preempts the autonomy veto that may need to cancel the same draft's
-  // pending auto-send. See followup-drop.ts. Reversible: qualifying re-enables.
+  // Follow-up drop — durable, party-scoped, host-enforced. Two entry points:
+  //
+  //   • 👎 on a `[FOLLOW-UP …] Lead #N` card. Registered as an OBSERVER (not a
+  //     claim-chain listener) so it always fires and never preempts the autonomy
+  //     veto that may need to cancel the same draft's pending auto-send.
+  //   • A typed instruction in #gru-sales ("drop renee carr", "#283 drop",
+  //     "stop following up"). This is the path the operator actually uses, and
+  //     until now it only reached the sales container, which repeatedly claimed
+  //     to have dropped a lead without writing the drop. See followup-drop.ts.
+  //
+  // Both call fn_drop_followups (migration 113) and report the rows it returned.
   {
     const slackForDrop = channels.find(
       (c): c is SlackChannel => c instanceof SlackChannel,
     );
-    slackForDrop?.registerRejectObserver((ts, reactor) =>
-      handleFollowupDrop(ts, reactor, {
-        getCard: (id) => {
-          const m = getMessageById(id);
-          if (!m) return undefined;
-          return {
-            content: m.content,
-            from_group: m.from_group,
-            chat_jid: m.chat_jid,
-          };
-        },
-        moveToNurture: async (entryId, reason) => {
-          await withAgentContext('operator-drop', (client) =>
-            client.query(
-              'SELECT business_v2.fn_advance_pipeline_stage($1, $2, $3)',
-              [entryId, 'nurture', reason],
-            ),
-          );
-        },
-        postThread: async (jid, slackTs, text) => {
-          await slackForDrop.sendMessage(jid, text, { threadTs: slackTs });
-        },
-      }).then((acted) => {
-        if (acted)
-          logger.info({ ts, reactor }, 'followup-drop: lead moved to nurture');
-      }),
-    );
+    if (slackForDrop) {
+      const dropDeps = makeFollowupDropDeps(slackForDrop);
+
+      slackForDrop.registerRejectObserver((ts, reactor) =>
+        handleFollowupDrop(ts, reactor, dropDeps).then((acted) => {
+          if (acted)
+            logger.info({ ts, reactor }, 'followup-drop: dropped (reaction)');
+        }),
+      );
+
+      // Only human messages in the sales channel. Agent output (from_group set)
+      // and our own posts are never drop instructions.
+      onOperatorSalesMessage = (msg: NewMessage) => {
+        if (msg.from_group || msg.is_from_me || msg.is_bot_message) return;
+        if (registeredGroups[msg.chat_jid]?.folder !== 'sales') return;
+        handleTypedDrop(
+          {
+            chat_jid: msg.chat_jid,
+            ts: msg.id,
+            text: msg.content,
+            threadTs: msg.thread_ts ?? null,
+          },
+          msg.sender_name || msg.sender || 'operator',
+          dropDeps,
+        )
+          .then((acted) => {
+            if (acted)
+              logger.info(
+                { ts: msg.id },
+                'followup-drop: dropped (typed instruction)',
+              );
+          })
+          .catch((err) => {
+            logger.error(
+              { err, ts: msg.id },
+              'followup-drop: typed path failed',
+            );
+          });
+      };
+    }
   }
 
   // Webhook-inbox reaper — every 5 min, retries received/failed/stale-dispatched

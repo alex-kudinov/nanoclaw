@@ -14,6 +14,8 @@ Keep every post about one inquiry in a single Slack thread instead of scattering
 
 Every message sent with the same `thread_key` collapses under one thread root (first post = root, the rest reply beneath it). Use the SAME key every time you touch that inquiry, including across separate runs. Omit `thread_key` for one-off chatter not tied to an inquiry. Human replies inside a thread are already routed back to you in-thread automatically — `thread_key` is only for grouping the posts you initiate.
 
+**Exception — `[HANDOFF: inbox→sales]`.** A handoff is the ROOT of that lead's thread in `#gru-sales`: sales replies to it with the approval card, and every later post about the lead lands underneath. The host anchors that thread on the lead's address, so the handoff **MUST** carry an `Email: {lead email}` line. Your `thread_key` is ignored for these — do not work around it, just always include the `Email:` line. A handoff missing it strands the lead as an orphan root and sales' card becomes a second, unrelated top-level post.
+
 ## Knowledge
 
 Read `/workspace/extra/knowledge/KNOWLEDGE.md` before qualifying any lead. It contains the full list of services, programs, pricing, and FAQs. Use it to determine whether a lead matches something Tandem Coaching offers. Base all service determinations on KNOWLEDGE.md — if it's listed there, it's a valid service.

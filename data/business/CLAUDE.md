@@ -1,0 +1,249 @@
+# Business Database — business_v2 Schema
+
+Status: tracked operating guide. Running PostgreSQL schema and permissions
+remain implementation authority; ordered migrations in
+`data/business/migrations/nanoclaw-v2/` are the portable change history.
+
+PostgreSQL database for CRM and business operations. All agents access via `business_v2` schema views (reads) and SECURITY DEFINER helper functions (writes). Agent identity is transparently injected via PGOPTIONS session variables.
+
+## Connection
+
+```bash
+# From inside a container — credentials + PGOPTIONS are pre-set as env vars:
+psql   # no args needed (PG* env vars + PGOPTIONS set automatically)
+
+# From Mac Mini host (debugging/admin):
+PGPASSWORD='<BUSINESS_DB_PASS_ADMIN>' psql -h 192.168.64.1 -U nanoclaw_admin -d nanoclaw_business
+# Binary: /opt/homebrew/Cellar/postgresql@16/16.13/bin/psql
+```
+
+Host IP `192.168.64.1` is the Mac Mini as seen from container VMs. DB name: `nanoclaw_business`. Port: `5432`.
+
+**Agent identity:** PGOPTIONS env var sets `app.current_agent` (group name) and `app.current_agent_role` (DB role) per container at connection time. Helper functions read these automatically — no agent-side boilerplate needed. Audit columns (`last_updated_by`, `transitioned_by`) capture the agent name.
+
+## Access Pattern
+
+**Read:** SELECT from `business_v2.v_*` views. Never SELECT from base tables directly.
+
+```sql
+SELECT * FROM business_v2.v_party_contact_card WHERE primary_email = 'jane@example.com';
+SELECT * FROM business_v2.v_active_pipeline WHERE party_id = 10042;
+```
+
+**Write:** Call `business_v2.fn_*()` helper functions. Never INSERT/UPDATE base tables directly.
+
+```sql
+SELECT business_v2.fn_create_party('person', 'Jane Doe', 'jane@example.com', 'wordpress');
+SELECT business_v2.fn_add_party_role(10042, 'prospect');
+SELECT business_v2.fn_create_pipeline_entry(10042, 1, 'new', 10000, 'USD', '{}'::jsonb);
+```
+
+## Roles & Permissions
+
+| Role | Access |
+|------|--------|
+| `nanoclaw_inbox` | SELECT views + EXECUTE helpers |
+| `nanoclaw_sales` | SELECT views + EXECUTE helpers |
+| `nanoclaw_mailman` | SELECT views + EXECUTE helpers |
+| `nanoclaw_chief` | SELECT views + EXECUTE helpers |
+| `nanoclaw_booking` | SELECT views + EXECUTE helpers |
+| `nanoclaw_contador` | SELECT views + EXECUTE helpers |
+| `nanoclaw_procurement` | SELECT views + EXECUTE helpers + public.procurement_opportunities |
+| `nanoclaw_admin` | Full access (DDL + DML) |
+
+Agent roles can SELECT from views and lookup tables, EXECUTE helper functions. They **cannot** SELECT/INSERT/UPDATE base tables in `business_v2` directly.
+
+Credentials: `.env` as `BUSINESS_DB_PASS_INBOX`, `BUSINESS_DB_PASS_SALES`, etc.
+
+## Core views (non-exhaustive)
+
+### `v_party_contact_card` — identity + contact info
+Resolves canonical party with primary email, active roles, merge status.
+```sql
+SELECT * FROM business_v2.v_party_contact_card WHERE primary_email = '{email}';
+```
+
+### `v_active_pipeline` — open pipeline entries
+Shows active pipeline entries (not closed/won/lost) with party info and program.
+```sql
+SELECT * FROM business_v2.v_active_pipeline WHERE party_id = {id};
+SELECT * FROM business_v2.v_active_pipeline WHERE stage IN ('qualifying', 'proposal', 'negotiating');
+```
+
+### `v_active_engagements` — current engagements
+Active coaching/service engagements with party and program details.
+```sql
+SELECT * FROM business_v2.v_active_engagements WHERE engagement_status = 'active';
+```
+
+### `v_party_timeline` — chronological interaction history
+All interactions for a party, ordered by occurrence.
+```sql
+SELECT * FROM business_v2.v_party_timeline WHERE party_id = {id} ORDER BY occurred_at DESC LIMIT 10;
+```
+
+### `v_client_status` — client overview
+Current client status derived from engagements and roles.
+```sql
+SELECT * FROM business_v2.v_client_status WHERE client_status = 'current';
+```
+
+### `v_program_variant_seats` — program capacity
+Program variants with seat availability.
+```sql
+SELECT * FROM business_v2.v_program_variant_seats;
+```
+
+### `v_sales_followup_queue` — leads eligible for a follow-up draft
+Excludes operator-suppressed parties and carries the original inquiry/thread
+context needed for an approval-gated follow-up.
+```sql
+SELECT * FROM business_v2.v_sales_followup_queue;
+```
+
+### `v_sales_needs_reply` — inbound leads awaiting a sales response
+Use this view, rather than agent memory or Slack history, when reporting what
+still needs a reply.
+
+## Core callable helpers (non-exhaustive)
+
+### Party Management
+| Function | Signature | Purpose |
+|----------|-----------|---------|
+| `fn_create_party` | `(text, text, citext, text, jsonb) → bigint` | Idempotent party creation (find-or-create by email) |
+| `fn_add_party_role` | `(bigint, text) → bigint` | Idempotent role assignment |
+| `fn_merge_parties` | `(bigint, bigint, text) → void` | Merge two parties (admin) |
+| `canonical_party_id` | `(bigint) → bigint` | Follow merge chain to canonical |
+| `resolve_parties_by_email` | `(citext) → bigint` | Find party by email |
+| `best_party_by_email` | `(citext) → bigint` | Best-match party by email |
+
+### Pipeline & Documents
+| Function | Signature | Purpose |
+|----------|-----------|---------|
+| `fn_create_pipeline_entry` | `(bigint, bigint, text, int, text, jsonb) → bigint` | Create pipeline entry (party_id, program_id, stage, amount_cents, currency, metadata) |
+| `fn_advance_pipeline_stage` | `(bigint, text, text) → void` | Move pipeline entry to next stage (entry_id, new_stage, reason) |
+| `fn_issue_document` | `(bigint, text, int, text, jsonb) → bigint` | Create document + interaction + outbox atomically |
+| `fn_drop_followups` | `(bigint, text) → table` | Suppress a canonical party and park its open pipeline entries |
+| `fn_resume_followups` | `(bigint, text) → boolean` | Clear party suppression without automatically changing stages |
+
+### Interactions
+| Function | Signature | Purpose |
+|----------|-----------|---------|
+| `fn_log_interaction` | `(bigint, text, text, text, timestamptz, jsonb) → bigint` | Log interaction (party_id, channel, direction, subject, occurred_at, metadata) |
+| `fn_log_interaction_dedup` | `(bigint, text, text, text, timestamptz, jsonb, text, text) → bigint` | Dedup-aware interaction (adds source_provider, source_id for idempotent upsert) |
+
+**Valid channels:** `email`, `meeting`, `call`, `form-submission`, `booking`, `payment`, `slack`, `whatsapp`, `other`
+
+**Valid directions:** `inbound`, `outbound`, `internal`
+
+## Lookup Tables (reference values)
+
+Agents have SELECT access to all lookup tables for reference:
+
+- `role_types` — valid role keys: prospect, client, coach, vendor, partner, admin, certifier, student
+- `pipeline_stages` — valid stage keys: new, qualifying, proposal, negotiating, won, lost, closed
+- `document_types` — valid doc types: proposal, contract, invoice, receipt, certificate
+- `document_statuses` — valid doc statuses: draft, sent, signed, declined, paid, overdue, cancelled
+- `interaction_channels` — 9 channel keys (see above)
+- `interaction_directions` — inbound, outbound, internal
+- `source_providers` — wordpress, trafft, gmail, stripe, plutio, manual, zoom, heartbeat, bonfire, other
+- `programs` — seeded: coaching-inquiry, certification-inquiry, general-inquiry
+
+### Program ID Resolution
+
+Always resolve program_id by slug, never hardcode IDs:
+```sql
+SELECT id FROM business_v2.programs WHERE slug = 'coaching-inquiry';
+```
+
+## Common Workflows
+
+### New Lead (inbox agent)
+```sql
+-- 1. Create party
+SELECT business_v2.fn_create_party('person', 'Jane Doe', 'jane@example.com', 'wordpress');
+-- Returns party_id
+
+-- 2. Assign prospect role
+SELECT business_v2.fn_add_party_role({party_id}, 'prospect');
+
+-- 3. Resolve program
+SELECT id FROM business_v2.programs WHERE slug = 'coaching-inquiry';
+
+-- 4. Create pipeline entry
+SELECT business_v2.fn_create_pipeline_entry({party_id}, {program_id}, 'new', 10000, 'USD', '{}'::jsonb);
+
+-- 5. Log the interaction
+SELECT business_v2.fn_log_interaction({party_id}, 'form-submission', 'inbound', 'Coaching inquiry', NOW(), '{}'::jsonb);
+```
+
+### Pipeline Advancement (sales/mailman)
+```sql
+-- Check current pipeline status
+SELECT * FROM business_v2.v_active_pipeline WHERE party_id = {id};
+
+-- Advance stage
+SELECT business_v2.fn_advance_pipeline_stage({entry_id}, 'qualifying', 'initial review complete');
+
+-- Issue proposal
+SELECT business_v2.fn_issue_document({party_id}, 'proposal', 50000, 'USD', '{"terms": "6 sessions"}'::jsonb);
+```
+
+### Booking (booking agent)
+```sql
+-- Create/find party
+SELECT business_v2.fn_create_party('person', 'Jane Doe', 'jane@example.com', 'trafft');
+
+-- Log with dedup (idempotent for same trafft appointment)
+SELECT business_v2.fn_log_interaction_dedup(
+  {party_id}, 'booking', 'inbound', 'Coaching session',
+  '{start_time}'::timestamptz,
+  jsonb_build_object('trafft_appointment_id', '{apt_id}', 'service', '{service}', 'status', '{status}'),
+  'trafft', '{apt_id}'
+);
+```
+
+### Weekly Digest (chief agent)
+```sql
+SELECT
+  (SELECT COUNT(*) FROM business_v2.v_active_pipeline WHERE stage = 'new') AS new_leads,
+  (SELECT COUNT(*) FROM business_v2.v_active_pipeline WHERE stage IN ('qualifying','proposal','negotiating')) AS pipeline,
+  (SELECT COUNT(*) FROM business_v2.v_active_engagements WHERE engagement_status = 'active') AS active_engagements,
+  (SELECT COUNT(*) FROM business_v2.v_client_status WHERE client_status = 'current') AS active_clients;
+```
+
+## Procurement (hybrid access)
+
+Procurement agent uses mixed schema access:
+
+- **procurement_opportunities:** stays in `public.*` schema — INSERT/SELECT/UPDATE as before
+- **Vendor party operations:** use `business_v2` helpers
+
+```sql
+-- Create vendor party
+SELECT business_v2.fn_create_party('org', 'Vendor Corp', 'vendor@example.com', 'manual');
+SELECT business_v2.fn_add_party_role({party_id}, 'vendor');
+
+-- Context lookup
+SELECT * FROM business_v2.v_party_contact_card WHERE primary_email = '{org_email}';
+
+-- Log interaction (use 'other' channel, NOT 'procurement')
+SELECT business_v2.fn_log_interaction({party_id}, 'other', 'inbound', 'RFP response received', NOW(), '{}'::jsonb);
+
+-- Procurement-specific table (stays in public.*)
+INSERT INTO public.procurement_opportunities (...) VALUES (...);
+```
+
+## Historical Data Note
+
+Legacy `public.*` integration tables still coexist with the modern
+`business_v2` model. Do not infer backfill completeness from this guide. Inspect
+the current views/schema and use aggregate validation before relying on
+historical coverage.
+
+## Schema File Reference
+
+- DDL: `data/business/migrations/nanoclaw-v2/` (01-18 base/cutover plus ordered
+  post-cutover migrations 90-113)
+- Validation: `data/business/migrations/nanoclaw-v2/validate.sql` (20 acceptance criteria)
+- Smoke tests: `data/business/migrations/nanoclaw-v2/90_smoke_tests.sql`

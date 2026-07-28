@@ -1,6 +1,11 @@
 # Schema: nanoclaw_business (Postgres)
 
-Generated: 2026-07-19T08:00:34.483Z
+Generated: 2026-07-26T08:00:57.229Z
+
+Reconciled from tracked migration 113 on 2026-07-28: the two
+`business_v2.parties.no_followup_*` columns below postdate the generated
+snapshot. Run `tools/refresh-schemas.sh` after the next authorized live-schema
+inspection to replace this migration overlay with generated evidence.
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -10,22 +15,22 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ```
   id                            integer              NOT NULL DEFAULT=nextval('booking_events_id_seq'::regclass)
-  trafft_appointment_id         text                
+  trafft_appointment_id         text
   event_type                    text                 NOT NULL
-  status                        text                
-  customer_name                 text                
-  customer_email                text                
-  customer_phone                text                
-  service_name                  text                
-  employee_name                 text                
+  status                        text
+  customer_name                 text
+  customer_email                text
+  customer_phone                text
+  service_name                  text
+  employee_name                 text
   start_date_time               timestamp with time zone
   end_date_time                 timestamp with time zone
   raw_payload                   jsonb                NOT NULL
   follow_up_status              text                 DEFAULT='pending'::text
-  follow_up_draft               text                
-  notes                         text                
+  follow_up_draft               text
+  notes                         text
   created_at                    timestamp with time zone DEFAULT=now()
-  plutio_person_id              text                
+  plutio_person_id              text
 ```
 
 ## classification_backfill_pending
@@ -37,12 +42,12 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   pattern_value                 text                 NOT NULL
   target_label                  text                 NOT NULL
   match_count                   integer              NOT NULL
-  dry_run_summary               text                
+  dry_run_summary               text
   status                        text                 NOT NULL DEFAULT='awaiting_confirmation'::text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   expires_at                    timestamp with time zone NOT NULL DEFAULT=(now() + '24:00:00'::interval)
   resolved_at                   timestamp with time zone
-  resolved_by                   text                
+  resolved_by                   text
 ```
 
 ## classification_rules
@@ -53,7 +58,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   pattern_value                 text                 NOT NULL
   target_label                  text                 NOT NULL
   source                        text                 NOT NULL
-  lesson_id                     integer             
+  lesson_id                     integer
   hit_count                     integer              DEFAULT=0
   last_hit_at                   timestamp with time zone
   enabled                       boolean              DEFAULT=true
@@ -66,9 +71,9 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            integer              NOT NULL DEFAULT=nextval('classification_taxonomy_id_seq'::regclass)
   label                         text                 NOT NULL
-  parent_label                  text                
-  description                   text                
-  hive_share_target             ARRAY               
+  parent_label                  text
+  description                   text
+  hive_share_target             ARRAY
   digest_priority               integer              DEFAULT=0
   enabled                       boolean              DEFAULT=true
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -80,11 +85,11 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ```
   id                            integer              NOT NULL DEFAULT=nextval('clients_id_seq'::regclass)
-  contract_id                   integer             
+  contract_id                   integer
   name                          text                 NOT NULL
-  email                         text                
-  coach_id                      integer             
-  start_date                    date                
+  email                         text
+  coach_id                      integer
+  start_date                    date
   session_count                 integer              NOT NULL DEFAULT=0
   status                        text                 NOT NULL DEFAULT='active'::text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -96,10 +101,10 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            integer              NOT NULL DEFAULT=nextval('coaches_id_seq'::regclass)
   name                          text                 NOT NULL
-  email                         text                
+  email                         text
   capacity                      integer              NOT NULL DEFAULT=5
   current_clients               integer              NOT NULL DEFAULT=0
-  certifications                jsonb               
+  certifications                jsonb
   status                        text                 NOT NULL DEFAULT='active'::text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -109,11 +114,11 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ```
   id                            integer              NOT NULL DEFAULT=nextval('contracts_id_seq'::regclass)
-  proposal_id                   integer             
+  proposal_id                   integer
   client                        text                 NOT NULL
-  coach_assigned                text                
-  start_date                    date                
-  end_date                      date                
+  coach_assigned                text
+  start_date                    date
+  end_date                      date
   status                        text                 NOT NULL DEFAULT='active'::text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -125,15 +130,15 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   id                            integer              NOT NULL DEFAULT=nextval('email_classifications_id_seq'::regclass)
   gmail_message_id              text                 NOT NULL
   gmail_thread_id               text                 NOT NULL
-  sender_email                  text                
-  subject                       text                
+  sender_email                  text
+  subject                       text
   label                         text                 NOT NULL
-  confidence                    numeric             
+  confidence                    numeric
   classifier_version            text                 NOT NULL
-  reasoning                     text                
+  reasoning                     text
   classified_at                 timestamp with time zone NOT NULL DEFAULT=now()
   corrected_at                  timestamp with time zone
-  corrected_from_label          text                
+  corrected_from_label          text
   hive_synced                   boolean              DEFAULT=false
   hive_synced_at                timestamp with time zone
   reaper_attempts               integer              DEFAULT=0
@@ -145,10 +150,10 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ```
   id                            integer              NOT NULL DEFAULT=nextval('invoices_id_seq'::regclass)
-  contract_id                   integer             
+  contract_id                   integer
   amount                        numeric              NOT NULL
   status                        text                 NOT NULL DEFAULT='pending'::text
-  due_date                      date                
+  due_date                      date
   paid_at                       timestamp with time zone
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -160,17 +165,17 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   id                            integer              NOT NULL DEFAULT=nextval('leads_id_seq'::regclass)
   source                        text                 NOT NULL
   status                        text                 NOT NULL DEFAULT='new'::text
-  name                          text                
-  email                         text                
-  company                       text                
-  message                       text                
-  assigned_to                   text                
+  name                          text
+  email                         text
+  company                       text
+  message                       text
+  assigned_to                   text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
   follow_up_count               integer              NOT NULL DEFAULT=0
   last_contact_at               timestamp with time zone
-  thread_id                     text                
-  plutio_person_id              text                
+  thread_id                     text
+  plutio_person_id              text
 ```
 
 ## payments
@@ -178,14 +183,14 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            integer              NOT NULL DEFAULT=nextval('payments_id_seq'::regclass)
   email                         character varying    NOT NULL
-  name                          character varying   
-  product_name                  character varying   
+  name                          character varying
+  product_name                  character varying
   product_id                    character varying    DEFAULT=''::character varying
-  amount_cents                  integer             
+  amount_cents                  integer
   currency                      character varying    DEFAULT='USD'::character varying
-  stripe_session_id             character varying   
-  payment_status                character varying   
-  event_type                    character varying   
+  stripe_session_id             character varying
+  payment_status                character varying
+  event_type                    character varying
   paid_at                       timestamp without time zone
   created_at                    timestamp without time zone DEFAULT=now()
 ```
@@ -195,21 +200,21 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            integer              NOT NULL DEFAULT=nextval('procurement_opportunities_id_seq'::regclass)
   bonfire_id                    text                 NOT NULL
-  bonfire_url                   text                
+  bonfire_url                   text
   title                         text                 NOT NULL
-  agency                        text                
-  close_date                    date                
-  category                      text                
-  search_keyword                text                
-  relevance                     text                
-  relevance_reason              text                
+  agency                        text
+  close_date                    date
+  category                      text
+  search_keyword                text
+  relevance                     text
+  relevance_reason              text
   status                        text                 DEFAULT='new'::text
-  rejection_reason              text                
-  vault_path                    text                
-  raw_snapshot                  jsonb               
-  detail_data                   jsonb               
+  rejection_reason              text
+  vault_path                    text
+  raw_snapshot                  jsonb
+  detail_data                   jsonb
   scrape_attempts               integer              DEFAULT=0
-  last_error                    text                
+  last_error                    text
   first_seen_at                 timestamp with time zone DEFAULT=now()
   last_seen_at                  timestamp with time zone DEFAULT=now()
   updated_at                    timestamp with time zone DEFAULT=now()
@@ -222,12 +227,12 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ```
   id                            integer              NOT NULL DEFAULT=nextval('proposals_id_seq'::regclass)
-  lead_id                       integer             
+  lead_id                       integer
   status                        text                 NOT NULL DEFAULT='draft'::text
-  amount                        numeric             
+  amount                        numeric
   sent_at                       timestamp with time zone
   signed_at                     timestamp with time zone
-  notes                         text                
+  notes                         text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
@@ -250,11 +255,11 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            integer              NOT NULL DEFAULT=nextval('vendors_id_seq'::regclass)
   name                          text                 NOT NULL
-  category                      text                
-  cost                          numeric             
-  renewal_date                  date                
+  category                      text
+  cost                          numeric
+  renewal_date                  date
   status                        text                 NOT NULL DEFAULT='active'::text
-  notes                         text                
+  notes                         text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
@@ -264,11 +269,11 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.attachments_id_seq'::regclass)
   interaction_id                bigint               NOT NULL
-  filename                      text                
-  mime_type                     text                
-  size_bytes                    bigint              
-  storage_provider              text                
-  storage_url                   text                
+  filename                      text
+  mime_type                     text
+  size_bytes                    bigint
+  storage_provider              text
+  storage_url                   text
   metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
@@ -295,8 +300,8 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   name                          text                 NOT NULL
   last_beat                     timestamp with time zone NOT NULL DEFAULT=now()
-  pid                           integer             
-  version                       text                
+  pid                           integer
+  version                       text
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
@@ -315,7 +320,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.document_line_items_id_seq'::regclass)
   document_id                   bigint               NOT NULL
   line_order                    integer              NOT NULL
-  description                   text                
+  description                   text
   quantity                      numeric              NOT NULL DEFAULT=1
   unit_price_cents              integer              NOT NULL DEFAULT=0
   subtotal_cents                integer              NOT NULL DEFAULT=0
@@ -340,12 +345,12 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   status                        text                 NOT NULL
   issued_at                     timestamp with time zone
   due_at                        timestamp with time zone
-  amount_cents                  integer             
+  amount_cents                  integer
   currency                      text                 NOT NULL DEFAULT='USD'::text
-  document_number               text                
-  source_provider               text                
-  source_id                     text                
-  interaction_id                bigint              
+  document_number               text
+  source_provider               text
+  source_id                     text
+  interaction_id                bigint
   metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -356,8 +361,8 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ```
   proposal_plutio_id            text                 NOT NULL
-  party_id                      bigint              
-  email                         text                
+  party_id                      bigint
+  email                         text
   reason                        text                 NOT NULL DEFAULT='open_proposal'::text
   last_seen_open_at             timestamp with time zone NOT NULL DEFAULT=now()
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -390,7 +395,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.engagements_id_seq'::regclass)
   kind                          text                 NOT NULL
   status                        text                 NOT NULL DEFAULT='active'::text
-  program_variant_id            bigint              
+  program_variant_id            bigint
   started_at                    timestamp with time zone
   ended_at                      timestamp with time zone
   metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
@@ -411,24 +416,24 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   first_seen                    timestamp with time zone NOT NULL DEFAULT=now()
   last_seen                     timestamp with time zone NOT NULL DEFAULT=now()
   raw_context                   jsonb                NOT NULL DEFAULT='{}'::jsonb
-  remediation_class             text                
-  diagnosis                     text                
-  proposed_fix                  jsonb               
-  applied_action                jsonb               
-  outcome                       text                
+  remediation_class             text
+  diagnosis                     text
+  proposed_fix                  jsonb
+  applied_action                jsonb
+  outcome                       text
   origin                        text                 NOT NULL DEFAULT='collector'::text
   restart_attempts              integer              NOT NULL DEFAULT=0
-  proposal_channel              text                
-  proposal_ts                   text                
+  proposal_channel              text
+  proposal_ts                   text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
-  confidence                    text                
-  cause_or_symptom              text                
-  evidence                      jsonb               
-  review                        jsonb               
-  investigation_log             text                
-  thread_ts                     text                
-  thread_channel                text                
+  confidence                    text
+  cause_or_symptom              text
+  evidence                      jsonb
+  review                        jsonb
+  investigation_log             text
+  thread_ts                     text
+  thread_channel                text
 ```
 
 ## business_v2.interaction_channels
@@ -444,16 +449,16 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.interactions_id_seq'::regclass)
-  party_id                      bigint              
-  engagement_id                 bigint              
+  party_id                      bigint
+  engagement_id                 bigint
   channel                       text                 NOT NULL
   direction                     text                 NOT NULL
-  subject                       text                
-  body                          text                
+  subject                       text
+  body                          text
   occurred_at                   timestamp with time zone NOT NULL
-  source_provider               text                
-  source_id                     text                
-  source_thread_id              text                
+  source_provider               text
+  source_id                     text
+  source_thread_id              text
   metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -484,17 +489,19 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.parties_id_seq'::regclass)
   party_type                    text                 NOT NULL
   display_name                  text                 NOT NULL
-  legal_name                    text                
-  primary_email                 USER-DEFINED        
-  notes                         text                
-  source_provider               text                
-  source_id                     text                
-  merged_into                   bigint              
+  legal_name                    text
+  primary_email                 USER-DEFINED
+  notes                         text
+  source_provider               text
+  source_id                     text
+  merged_into                   bigint
   merged_at                     timestamp with time zone
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
   last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
   dnd_at                        timestamp with time zone
+  no_followup_at                timestamp with time zone
+  no_followup_reason            text
 ```
 
 ## business_v2.party_contact_roles
@@ -546,12 +553,12 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   party_id                      bigint               NOT NULL
   program_id                    bigint               NOT NULL
   stage                         text                 NOT NULL
-  amount_cents                  integer             
+  amount_cents                  integer
   currency                      text                 NOT NULL DEFAULT='USD'::text
-  dedupe_key                    text                
+  dedupe_key                    text
   entered_stage_at              timestamp with time zone NOT NULL DEFAULT=now()
-  expected_close_date           date                
-  notes                         text                
+  expected_close_date           date
+  notes                         text
   metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -563,7 +570,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.pipeline_stage_history_id_seq'::regclass)
   pipeline_entry_id             bigint               NOT NULL
-  from_stage                    text                
+  from_stage                    text
   to_stage                      text                 NOT NULL
   transitioned_at               timestamp with time zone NOT NULL DEFAULT=now()
   transitioned_by               text                 NOT NULL DEFAULT='unknown'::text
@@ -589,14 +596,14 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.plutio_outbox_id_seq'::regclass)
   operation                     text                 NOT NULL
   kind                          text                 NOT NULL
-  party_id                      bigint              
-  engagement_id                 bigint              
-  document_id                   bigint              
+  party_id                      bigint
+  engagement_id                 bigint
+  document_id                   bigint
   payload                       jsonb                NOT NULL
   status                        text                 NOT NULL DEFAULT='pending'::text
   attempts                      integer              NOT NULL DEFAULT=0
   last_attempted_at             timestamp with time zone
-  last_error                    text                
+  last_error                    text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
   last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
@@ -629,7 +636,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   entity_id                     bigint               NOT NULL
   plutio_entity_type            text                 NOT NULL
   plutio_id                     text                 NOT NULL
-  plutio_url                    text                
+  plutio_url                    text
   last_pushed_at                timestamp with time zone
   last_pulled_at                timestamp with time zone
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -651,8 +658,8 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   program_id                    bigint               NOT NULL
   variant_key                   text                 NOT NULL
   display_name                  text                 NOT NULL
-  capacity                      integer             
-  price_cents                   integer             
+  capacity                      integer
+  price_cents                   integer
   currency                      text                 NOT NULL DEFAULT='USD'::text
   is_active                     boolean              NOT NULL DEFAULT=true
   metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
@@ -667,7 +674,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   slug                          USER-DEFINED         NOT NULL
   kind                          text                 NOT NULL
   display_name                  text                 NOT NULL
-  description                   text                
+  description                   text
   is_active                     boolean              NOT NULL DEFAULT=true
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
@@ -679,12 +686,12 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            bigint               NOT NULL
   proposal_plutio_id            text                 NOT NULL
-  proposal_number               text                
+  proposal_number               text
   action                        text                 NOT NULL
-  recipient_email               text                
-  party_id                      bigint              
-  reply_summary                 text                
-  slack_ts                      text                
+  recipient_email               text
+  party_id                      bigint
+  reply_summary                 text
+  slack_ts                      text
   status                        text                 NOT NULL DEFAULT='pending'::text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   resolved_at                   timestamp with time zone
@@ -695,18 +702,18 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            bigint               NOT NULL
   proposal_plutio_id            text                 NOT NULL
-  proposal_number               text                
+  proposal_number               text
   sequence_no                   smallint             NOT NULL
-  recipient_email               text                
-  recipient_name                text                
-  party_id                      bigint              
-  thread_id                     text                
+  recipient_email               text
+  recipient_name                text
+  party_id                      bigint
+  thread_id                     text
   subject                       text                 NOT NULL
   body                          text                 NOT NULL
-  proposal_url                  text                
-  slack_channel                 text                
-  slack_ts                      text                
-  gmail_message_id              text                
+  proposal_url                  text
+  slack_channel                 text
+  slack_ts                      text
+  gmail_message_id              text
   status                        text                 NOT NULL DEFAULT='pending_approval'::text
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   sent_at                       timestamp with time zone
@@ -745,12 +752,12 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ```
   source                        text                 NOT NULL
-  last_seen_id                  text                
+  last_seen_id                  text
   last_seen_at                  timestamp with time zone
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
   last_run_at                   timestamp with time zone
-  last_run_status               text                
-  last_run_error                text                
+  last_run_status               text
+  last_run_error                text
   last_run_recovered            integer              NOT NULL DEFAULT=0
   last_run_failed               integer              NOT NULL DEFAULT=0
 ```
@@ -758,107 +765,124 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ## business_v2.v_active_engagements
 
 ```
-  participant_id                bigint              
-  engagement_id                 bigint              
-  engagement_kind               text                
-  engagement_status             text                
-  party_id                      bigint              
-  display_name                  text                
-  participant_role              text                
+  participant_id                bigint
+  engagement_id                 bigint
+  engagement_kind               text
+  engagement_status             text
+  party_id                      bigint
+  display_name                  text
+  participant_role              text
   started_at                    timestamp with time zone
-  program_variant_id            bigint              
-  variant_name                  text                
-  program_id                    bigint              
-  program_slug                  USER-DEFINED        
-  program_name                  text                
+  program_variant_id            bigint
+  variant_name                  text
+  program_id                    bigint
+  program_slug                  USER-DEFINED
+  program_name                  text
 ```
 
 ## business_v2.v_active_pipeline
 
 ```
-  pipeline_entry_id             bigint              
-  party_id                      bigint              
-  display_name                  text                
-  program_id                    bigint              
-  program_slug                  USER-DEFINED        
-  program_name                  text                
-  stage                         text                
-  amount_cents                  integer             
-  currency                      text                
+  pipeline_entry_id             bigint
+  party_id                      bigint
+  display_name                  text
+  program_id                    bigint
+  program_slug                  USER-DEFINED
+  program_name                  text
+  stage                         text
+  amount_cents                  integer
+  currency                      text
   entered_stage_at              timestamp with time zone
-  expected_close_date           date                
-  dedupe_key                    text                
-  notes                         text                
+  expected_close_date           date
+  dedupe_key                    text
+  notes                         text
   last_interaction_at           timestamp with time zone
 ```
 
 ## business_v2.v_client_status
 
 ```
-  party_id                      bigint              
-  display_name                  text                
-  client_status                 text                
+  party_id                      bigint
+  display_name                  text
+  client_status                 text
   last_engagement_ended_at      timestamp with time zone
 ```
 
 ## business_v2.v_party_contact_card
 
 ```
-  party_id                      bigint              
-  display_name                  text                
-  party_type                    text                
-  primary_email                 USER-DEFINED        
-  legal_name                    text                
-  source_provider               text                
-  active_roles                  ARRAY               
+  party_id                      bigint
+  display_name                  text
+  party_type                    text
+  primary_email                 USER-DEFINED
+  legal_name                    text
+  source_provider               text
+  active_roles                  ARRAY
   last_interaction_at           timestamp with time zone
 ```
 
 ## business_v2.v_party_timeline
 
 ```
-  party_id                      bigint              
-  interaction_id                bigint              
+  party_id                      bigint
+  interaction_id                bigint
   occurred_at                   timestamp with time zone
-  channel                       text                
-  direction                     text                
-  subject                       text                
-  source_provider               text                
-  source_id                     text                
-  engagement_id                 bigint              
-  pipeline_entry_id             bigint              
-  document_id                   bigint              
-  document_kind                 text                
-  document_status               text                
+  channel                       text
+  direction                     text
+  subject                       text
+  source_provider               text
+  source_id                     text
+  engagement_id                 bigint
+  pipeline_entry_id             bigint
+  document_id                   bigint
+  document_kind                 text
+  document_status               text
 ```
 
 ## business_v2.v_program_variant_seats
 
 ```
-  program_variant_id            bigint              
-  variant_name                  text                
-  program_slug                  USER-DEFINED        
-  seats_total                   integer             
-  seats_filled                  bigint              
-  seats_remaining               bigint              
+  program_variant_id            bigint
+  variant_name                  text
+  program_slug                  USER-DEFINED
+  seats_total                   integer
+  seats_filled                  bigint
+  seats_remaining               bigint
 ```
 
 ## business_v2.v_sales_followup_queue
 
 ```
-  pipeline_entry_id             bigint              
-  party_id                      bigint              
-  display_name                  text                
-  primary_email                 USER-DEFINED        
-  stage                         text                
-  program_name                  text                
+  pipeline_entry_id             bigint
+  party_id                      bigint
+  display_name                  text
+  primary_email                 USER-DEFINED
+  stage                         text
+  program_name                  text
   last_interaction_at           timestamp with time zone
-  follow_up_count               bigint              
-  thread_id                     text                
-  original_subject              text                
-  inquiry_source                text                
-  inquiry_text                  text                
-  interest_page                 text                
+  follow_up_count               bigint
+  thread_id                     text
+  original_subject              text
+  inquiry_source                text
+  inquiry_text                  text
+  interest_page                 text
+```
+
+## business_v2.v_sales_needs_reply
+
+```
+  pipeline_entry_id             bigint
+  party_id                      bigint
+  display_name                  text
+  primary_email                 USER-DEFINED
+  stage                         text
+  program_name                  text
+  last_inbound_at               timestamp with time zone
+  last_outbound_at              timestamp with time zone
+  last_inbound_subject          text
+  last_inbound_message          text
+  thread_id                     text
+  days_waiting                  numeric
 ```
 
 ## business_v2.variant_enrollments
@@ -880,18 +904,18 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.webhook_inbox_id_seq'::regclass)
   source                        text                 NOT NULL
-  event_id                      text                
-  event_type                    text                
+  event_id                      text
+  event_type                    text
   received_at                   timestamp with time zone NOT NULL DEFAULT=now()
   delivery_path                 text                 NOT NULL DEFAULT='n8n'::text
-  raw_headers                   jsonb               
+  raw_headers                   jsonb
   raw_body                      jsonb                NOT NULL
   status                        text                 NOT NULL DEFAULT='received'::text
   attempts                      integer              NOT NULL DEFAULT=0
-  last_error                    text                
+  last_error                    text
   last_attempted_at             timestamp with time zone
   handled_at                    timestamp with time zone
-  handled_by                    text                
-  party_id                      bigint              
-  related_entity                jsonb               
+  handled_by                    text
+  party_id                      bigint
+  related_entity                jsonb
 ```

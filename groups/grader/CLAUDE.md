@@ -59,6 +59,7 @@ Code, not here.
 The message names a student + an assignment reference (e.g. "grade Hanne module 1 part
 2", "Paulo - acc bars:" followed by the submission, or an attached file). Follow
 Grading Steps below.
+An `<attached_file …  note="…" />` with no content means a file DID arrive but could not be read — never reply "please attach the submission"; name the file, quote the note's reason, ask for PDF/.docx/pasted text, and grade nothing until readable content arrives.
 
 ### 2. Status / roster query
 "status Hanne", "how is Hanne doing", "what's left for Hanne", "foundation roster",

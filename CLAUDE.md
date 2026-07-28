@@ -4,9 +4,42 @@ Personal Claude assistant. See [README.md](README.md) for philosophy and setup. 
 
 ## Quick Context
 
-Single Node.js process with skill-based channel system. Channels (WhatsApp, Telegram, Slack, Discord, Gmail) are skills that self-register at startup. Messages route to Claude Agent SDK running in containers (Linux VMs). Each group has isolated filesystem and memory.
+Single Node.js host process with a skill-based channel system. Slack and Gmail
+are the active imported channels; other channel modules are dormant unless
+explicitly installed and wired. Messages route to `claude --print` inside Apple
+Container Linux VMs. Each group has isolated filesystem and memory.
 
-Inbound Gmail messages flow through a **bidirectional classification pipeline**: mailman emits `classify_label_write` IPCs → host writes `email_classifications` rows → Gmail labels (`MrGru/*`) → INBOX removal for `auto_archive=true` taxonomy rows → Hive Firestore `conversations/{threadId}` doc (for labels with a `hive_share_target`) → per-recipient daily digest. Self-learning closes the loop: chief's `route_lesson` pipeline (Slack corrections) and `gmail-label-poll` (operator label drags) both feed `classify-backfill.ts`. See `~/.claude/projects/-Users-xbohdpukc-dev-NanoClaw/memory/project_bidirectional_classification.md`.
+Inbound Gmail messages flow through a **bidirectional classification pipeline**: mailman emits `classify_label_write` IPCs → host writes `email_classifications` rows → Gmail labels (`MrGru/*`) → INBOX removal for `auto_archive=true` taxonomy rows → Hive Firestore `conversations/{threadId}` doc (for labels with a `hive_share_target`) → per-recipient daily digest. Self-learning closes the loop: chief's `route_lesson` pipeline (Slack corrections) and `gmail-label-poll` (operator label drags) both feed `classify-backfill.ts`. See the tracked classification section in `docs/ARCHITECTURE.md`; Claude memory is supporting evidence only.
+
+## Shared Claude Code + Codex Continuity
+
+Claude Code and Codex use the same tracked engineering record. Client-private
+memory or chat history is never the only record of a change.
+
+Before non-trivial work, read:
+
+1. `docs/PROJECT-MAP.md` — reconciled system and authority map.
+2. `docs/ACTIVE-WORK.md` — current ownership, overlap, state, and next actions.
+3. `docs/CHANGE-PROTOCOL.md` — required task, documentation, verification, and
+   handoff procedure.
+4. The latest relevant entries in `docs/ENGINEERING-CHANGELOG.md`.
+5. The relevant group prompt, schema, design, security document, or runbook.
+
+Register the work in `docs/ACTIVE-WORK.md` before the first edit using a stable
+`NC-YYYYMMDD-NNN` ID. Check for overlapping files and external systems. At
+handoff or completion, update the authoritative documents and
+`docs/ENGINEERING-CHANGELOG.md` in the same change. Record build, test,
+migration, deployment, and live verification as separate facts; never imply
+one from another.
+
+The full documentation impact matrix and status vocabulary are in
+`docs/CHANGE-PROTOCOL.md`. If context required to continue exists only in this
+Claude conversation or Claude memory, the handoff is incomplete.
+
+Run `npm run docs:continuity-check` before handoff. CI also enforces that
+continuity/operating authorities and ordered business migrations are tracked,
+schema snapshots contain no live sample rows, completion states are credible,
+and validation uses `.nvmrc`.
 
 ## Database Discovery
 
@@ -19,10 +52,15 @@ Two databases. Read the schema reference BEFORE writing any query — always loo
 
 **Rules:**
 - Read the relevant schema file before writing any query. If a table is not in `messages-db-schema.md`, it is in Postgres — check `nanoclaw-business-pg-schema.md`.
-- `data/business/*.sql` (`classification-schema.sql`, `schema-pg.sql`, `migrations/`) are **Postgres DDL** applied to `nanoclaw_business` — despite their location, they do NOT define any SQLite schema. The SQLite file `data/business/business.db` is dead (empty legacy tables) — do not query it.
+- `data/business/migrations/nanoclaw-v2/` is the tracked ordered PostgreSQL
+  migration history for `business_v2`; `data/business/CLAUDE.md` is its tracked
+  operating guide. Other top-level SQL may be legacy or subsystem-specific.
+  None defines the SQLite host schema. The SQLite file
+  `data/business/business.db` is dead — do not query it.
 - SQLite access: `mcp__toolbox__run_tool db/db-schema --db store/messages.db`.
 - Postgres access from the host: `/opt/homebrew/opt/postgresql@16/bin/psql nanoclaw_business` — the `psql` binary is not on the default non-interactive SSH PATH, always use the full path.
 - If a schema file is stale: regenerate with `tools/refresh-schemas.sh`.
+  Tracked schema references are structure-only; never add live sample rows.
 - Agents in containers: schema files are at `/workspace/extra/agent_docs/`.
 
 

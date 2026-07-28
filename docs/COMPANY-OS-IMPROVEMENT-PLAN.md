@@ -1,0 +1,1427 @@
+# NanoClaw company operating system improvement plan
+
+Status: proposed roadmap, adversarially reviewed by Claude and source-verified
+Baseline: repository commit `a6e4b13`, 2026-07-23
+Scope: functionality, architecture, agent quality, security, privacy, data,
+reliability, performance, operations, developer experience, governance,
+continuity, and business value
+Authority: this is a plan, not implemented state
+
+## 1. Executive recommendation
+
+NanoClaw should evolve as a **controlled company operating system built around a
+modular monolith**, not as a collection of increasingly autonomous prompts and
+not as a conventional microservice platform.
+
+The system already has valuable foundations:
+
+- agents are isolated in lightweight virtual machines;
+- business responsibilities are separated into named roles;
+- consequential email paths have host-side guards;
+- SQLite and PostgreSQL provide durable state;
+- retries, reapers, circuit breakers, warm containers, and restart adoption
+  address real operational failures;
+- the repository has extensive tests and operational knowledge;
+- human approval is already part of several workflows;
+- the recent cross-session IPC theft defect now has a targeted filter and
+  regression tests.
+
+The next stage should not begin by adding more agents. It should establish five
+system-wide capabilities:
+
+1. **A trusted action gateway** so agents never need raw business credentials
+   and every consequential action is authorized, idempotent, and audited.
+2. **A durable work ledger** so every company process has one visible state,
+   owner, deadline, evidence trail, and exception path.
+3. **An evaluation and observability layer** that measures quality, latency,
+   cost, risk, and business outcomes per workflow.
+4. **A reproducible release and recovery system** with one supported runtime,
+   green CI, versioned migrations, encrypted backups, and restore drills.
+5. **A governance model for autonomy** in which permissions expand only after
+   statistically useful quality evidence and remain bounded by action class.
+
+Until those foundations exist, new automation should default to read-only,
+analysis, or draft mode.
+
+## 2. Outcome to optimize
+
+The desired end state is:
+
+> Every important operational event becomes a durable work item. The right
+> agent receives only the data and capabilities it needs, produces an
+> evidence-backed proposal or action, crosses an explicit policy boundary, and
+> leaves a complete record of what happened, why, at what cost, and with what
+> business outcome.
+
+This creates a company OS rather than a chatbot fleet.
+
+### North-star outcomes
+
+| Outcome | Target direction |
+| --- | --- |
+| Work completeness | no important inbound event silently disappears |
+| Action safety | no consequential action bypasses policy or approval |
+| Data integrity | one canonical party/process record, no hidden state islands |
+| Reliability | known SLOs, bounded recovery, proven restores |
+| Decision quality | agent recommendations are evaluated against real outcomes |
+| Human leverage | people handle exceptions and judgment, not repetitive routing |
+| Cost efficiency | cost per successfully completed work item decreases |
+| Change safety | every release is reproducible, reviewable, and reversible |
+
+### Non-goals
+
+- Do not split the host into microservices without measured isolation or scaling
+  need.
+- Do not introduce Kubernetes, Kafka, or a large workflow platform as a default.
+- Do not add a visual dashboard merely to appear enterprise-grade.
+- Do not replace PostgreSQL, SQLite, Markdown knowledge, or Apple Container
+  before their limits are measured.
+- Do not grant an agent a broad credential or shell path to avoid building a
+  narrow host capability.
+- Do not promote autonomy based only on the absence of user corrections.
+
+## 3. Priority model
+
+| Priority | Meaning |
+| --- | --- |
+| P0 | Required before expanding autonomy or business scope |
+| P1 | Required for dependable company-wide operation |
+| P2 | Improves scale, cost, usability, or strategic leverage |
+| P3 | Optional optimization after evidence supports it |
+
+Every initiative should be accepted only when it has:
+
+- a stable `NC-YYYYMMDD-NNN` task ID and active-work owner;
+- an accountable owner;
+- a user/business outcome;
+- a technical and safety boundary;
+- measurable acceptance criteria;
+- a migration and rollback strategy;
+- operational telemetry;
+- documentation and runbook updates;
+- a factual engineering-changelog entry at each review/release boundary so
+  Claude Code and Codex see the same current state and next action.
+
+## 4. Current-state assessment
+
+### 4.1 Strengths to preserve
+
+1. **Isolation-first architecture.** Untrusted content is processed inside
+   Apple Container VMs rather than directly as the login user.
+2. **Host-mediated effects.** IPC provides a natural place for enforcement.
+3. **Role separation.** Mailman, Inbox, Sales, Booking, Contador, Certifier,
+   Courses, Grader, Procurement, Newsroom, Social, Chief, and others have
+   explicit business responsibilities.
+4. **Operational learning.** The code contains fixes for feedback loops,
+   duplicate processing, stale threads, token failures, and restart behavior
+   derived from real incidents.
+5. **Durable business model direction.** `business_v2` provides a path away from
+   email-address identity and disconnected business tables.
+6. **Good test density.** There are currently 99 root test files for 109
+   production TypeScript files, plus an independently tested agent runner.
+7. **Explicit human approval.** Sales, certification, course distribution, and
+   social workflows already distinguish proposals from execution.
+8. **Small-system preference.** The project resists infrastructure fashion and
+   is willing to solve the measured problem.
+
+### 4.2 Material gaps
+
+#### Security and authority
+
+- Agent containers receive raw Claude, PostgreSQL, Plutio, Trafft, Stripe,
+  Google Sheets, Obsidian, email, Bonfire, and other credentials according to
+  group role.
+- Agent network egress is unrestricted.
+- Procurement can connect to a logged-in host Chrome CDP endpoint.
+- The active Claude CLI uses `--dangerously-skip-permissions`.
+- Agent tools are implemented in one broad MCP server; capability exposure is
+  not yet generated from a central least-privilege policy.
+- The security document still describes WhatsApp, ephemeral containers, and
+  Anthropic-only credential exposure, which no longer matches implementation.
+- Human-approval displays can be influenced by model-produced context unless
+  every approval card is rendered from host-owned action data.
+
+#### Reliability and continuity
+
+- The Mac Mini, its Apple Container runtime, and local SQLite state remain
+  important single points of failure.
+- Backup existence, encryption, retention, RPO/RTO, and restore-test evidence
+  are not managed as one control system.
+- Work scheduling is spread across in-process timers, SQLite tasks, host jobs,
+  launchd, n8n, and remote services.
+- Gmail history expiry can reset the push baseline with a possible data-loss
+  window.
+- File IPC, local sessions, and adopted-container sidecars are host-local.
+- There is no verified warm-standby/failover process for the whole operating
+  system.
+
+#### Build and change safety
+
+- `.nvmrc` pins Node 22, CI runs Node 20, and the current workstation shell
+  runs Node 26.5.0.
+- Node 20 is end-of-life as of the current review date. Node 22 and Node 24 are
+  LTS; Node 26 is a valid current release but does not enter LTS until October
+  2026. The workstation is therefore on a real but inappropriate pre-LTS line
+  for the current native-module baseline.
+- CI runs only on pull requests to `main`, not as the universal push/release
+  gate.
+- GitHub Actions use movable version tags rather than reviewed commit SHAs.
+- Several workflows receive write permissions or GitHub App credentials.
+- There is no repository-wide lint rule, coverage threshold, dependency-review
+  gate, secret scan, SBOM, container-image scan, or signed release provenance.
+- The npm advisory audit could not be verified in this review.
+
+#### Architecture and maintainability
+
+- `src/index.ts`, `src/db.ts`, `src/container-runner.ts`,
+  `src/group-queue.ts`, and `src/ipc.ts` each exceed 1,000 lines.
+- One composition root directly owns many unrelated recurring processes.
+- Configuration is distributed across environment reads, code defaults,
+  SQLite JSON, launchd files, ignored local files, and group prompts.
+- Current, target, historical, and superseded documents coexist with uneven
+  status labels.
+- The project map records an older dirty/ahead snapshot; it is evidence, but
+  not self-refreshing.
+
+#### Data and workflow truth
+
+- Process state can exist in SQLite, PostgreSQL, Gmail labels, Slack threads,
+  Plutio, Trafft, Sheets, Markdown files, n8n, and third-party systems.
+- `docs/DATA-MODEL.md` is labeled unimplemented even though substantial
+  `business_v2` mechanics now exist.
+- Schema changes are an accretion of SQL files rather than one versioned,
+  checksummed migration chain exercised in CI.
+- Group support files and some operational schemas historically lived outside
+  Git; recent ignore changes reduce accidental artifacts but do not define a
+  deliberate portable configuration package.
+- PII classification, retention, deletion, legal hold, and subject-access
+  procedures are not one documented system.
+
+#### Agent quality and business value
+
+- Prompt, knowledge-pack, model, toolset, and policy versions are not uniformly
+  recorded with each work item.
+- There is no shared offline evaluation harness for all agents.
+- Autonomy promotion is based substantially on clean approvals, which can miss
+  silent errors, selection effects, and downstream business harm.
+- Knowledge learning can amplify bad corrections or poisoned content despite
+  conflict checks.
+- Token/cost, human time saved, conversion impact, rework, complaint rate, and
+  other business outcomes are not one causal measurement chain.
+
+## 5. Target operating architecture
+
+Keep one host process, but divide it into explicit internal planes:
+
+```text
+                        COMPANY EVENTS
+      Slack | Gmail | webhooks | schedules | people | integrations
+                              |
+                              v
+                   Ingress + normalization plane
+                              |
+                    durable event/work ledger
+                              |
+              policy-aware router and priority scheduler
+                              |
+                  isolated role-specific agent run
+                              |
+                   proposed structured action(s)
+                              |
+                policy + approval + idempotency gate
+                              |
+             host-owned capability adapters / credentials
+                              |
+                     external business systems
+                              |
+                  result, evidence, cost, outcome
+```
+
+### Internal planes
+
+1. **Ingress plane** — validates source identity, normalizes events, deduplicates,
+   and writes the durable event.
+2. **Work plane** — owns work-item state, owner, SLA, priority, dependencies,
+   retry count, and exception status.
+3. **Agent plane** — receives a scoped task, context pack, and capability
+   manifest in an isolated VM.
+4. **Policy plane** — decides whether a proposed action is denied, held,
+   approved, auto-executable, or escalated.
+5. **Capability plane** — holds credentials and performs narrow, typed external
+   operations.
+6. **Evidence plane** — records prompt/knowledge/model/tool/policy versions,
+   decisions, results, costs, and business outcomes.
+7. **Operations plane** — health, SLOs, deployment, backup, restore, incident,
+   and capacity evidence.
+
+These are conceptual responsibilities, not seven implementation frameworks.
+For a one-engineer system, group them into three internal modules by default:
+
+1. **Ingress and work** — ingress, normalization, ledger, routing, scheduling.
+2. **Agent and authority** — agent execution, policy, approval, capabilities.
+3. **Evidence and operations** — audit, telemetry, health, release, recovery.
+
+The migration/admin role is a separate operator trust context even if it uses
+the same repository and executable. This is an intentional exception to the
+one-daemon runtime, not a hidden second application service.
+
+## 6. P0 program: establish control before expansion
+
+### P0.0 Immediate blast-radius reduction
+
+These changes precede the broader P0 program and should be attempted in the
+first 48 hours, with normal testing and rollback:
+
+1. Put C4/C5 actions in explicit manual mode and verify the external-write
+   safe-mode path.
+2. Disable Procurement's connection to the operator's general logged-in Chrome
+   profile. If browser automation is essential, use a dedicated least-privilege
+   profile with only the required procurement sessions and no unrelated login.
+3. Remove shell `eval` from the skill-validation workflow; parse a fixed command
+   shape or map manifest values to allowlisted scripts.
+4. Add temporary outbound amount, recipient, publication, and rate ceilings at
+   final execution boundaries.
+5. Give unrestricted egress an explicit exception register while implementing
+   default-deny network policy. Block known-unneeded destinations immediately.
+6. Confirm live SQLite databases are excluded from every file-sync root.
+7. Repair the user-level Claude permission deny rules surfaced by Claude Code
+   2.1.217: current warnings say `Write(...)` patterns do not enforce file
+   protection and must use the supported `Edit(...)` matcher. Perform this as a
+   separately reviewed machine-configuration change.
+
+**Acceptance:**
+
+- the operator can prove high-impact actions are manual or disabled;
+- Procurement cannot access unrelated authenticated browser sessions;
+- a malicious skill manifest cannot inject a shell command through its test
+  field;
+- sync configuration does not include `store/`, `data/`, or active SQLite/WAL;
+- the temporary controls and their removal conditions are recorded.
+
+### P0.1 Align and enforce the runtime contract
+
+**Problem:** Node 22 is pinned locally, Node 20 is used in CI, and Node 26 is
+active on the workstation. Native bindings have already failed under this
+drift.
+
+**Actions:**
+
+1. Select one production/development LTS line. The lowest-risk immediate repair
+   is Node 22 because it matches `.nvmrc`; Node 24 should be tested in the same
+   compatibility matrix and may be selected instead if the native/runtime suite
+   passes. Do not standardize production on Node 26 before its LTS transition.
+2. Set `package.json#engines`, `.nvmrc`, CI, launchd environment, container
+   builder, developer bootstrap, and documentation to the same exact major.
+3. Add a startup refusal or high-severity health failure when the runtime major
+   differs.
+4. Add `npm run doctor` that reports runtime, native ABI, Apple Container,
+   image, schema, configuration, and dependency state without exposing values.
+5. Run CI on pull requests and pushes to protected `main`.
+
+**Acceptance:**
+
+- local, CI, build, and production report the same major;
+- CI fails when `.nvmrc`, `package.json#engines`, workflow runtime, container
+  build, or service runtime declarations diverge;
+- `better-sqlite3` loads and the full root suite passes;
+- a deliberate wrong-major test fails before daemon startup;
+- the supported runtime and upgrade policy are documented.
+
+### P0.2 Replace raw agent credentials with host capabilities
+
+**Problem:** VM isolation protects the host, but secrets placed inside the VM
+are available to the LLM's shell and to prompt-injected tool use.
+
+**Actions:**
+
+1. Inventory every secret by owner, system, scope, rotation, current consumer,
+   and consequence of compromise.
+2. Classify capabilities as read, draft, write, send/publish, financial,
+   identity/admin, or destructive.
+3. Move third-party credentials to host-owned typed adapters. Agents request
+   operations such as `stripe.lookup_customer`, `plutio.draft_proposal`, or
+   `gmail.propose_reply`; they do not receive API keys.
+4. Give PostgreSQL access through host queries/procedures or short-lived,
+   operation-scoped credentials. Remove admin/migration credentials from the
+   runtime daemon.
+5. Keep Claude authentication as the documented temporary exception, measure
+   exposure, and isolate it from general Bash where the CLI permits.
+6. Rotate every credential after its old container injection path is removed.
+7. Add automated assertions that forbidden secret names are absent from the
+   container environment.
+
+**Acceptance:**
+
+- a tool-enabled red-team agent cannot recover business-system credentials
+  through documented environment, filesystem, `/proc`, child-process,
+  adapter-error, response, or log attacks;
+- capability calls are typed, group-scoped, logged, and deny by default;
+- adapter values are policy-checked as well as verbs: destination, amount,
+  identity, resource scope, volume, and rate cannot exceed the manifest;
+- migrations require a separate operator role/process;
+- secret rotation and emergency revocation are proven.
+
+### P0.3 Create one capability manifest per agent
+
+**Problem:** role prompts explain boundaries, but MCP exposure and host checks
+must enforce them mechanically.
+
+**Actions:**
+
+1. Add a tracked declarative manifest per agent:
+   inputs, data domains, mounts, model, tools, action classes, approval policy,
+   network policy, timeout, resource limit, owner, and SLO.
+2. Generate `--allowedTools`, MCP registration, mounts, and action-policy rules
+   from that manifest.
+3. Fail startup on prompt/manifest/registration drift.
+4. Produce a human-readable permissions matrix in CI.
+5. Add negative tests proving every agent cannot call every non-owned
+   capability.
+
+**Acceptance:**
+
+- no capability exists only because it happened to be present in a shared MCP;
+- a permissions diff is reviewable in every PR;
+- non-main agents have the minimal functional surface;
+- unused/dormant integrations are not exposed.
+
+### P0.4 Make approval unforgeable
+
+**Problem:** a human-in-the-loop control fails if untrusted/model-controlled text
+can misrepresent the action being approved.
+
+**Actions:**
+
+1. Store a canonical proposed-action object on the host before displaying it.
+2. Render approval cards exclusively from host-owned fields: action type,
+   exact destination, exact amount/content hash, data scope, expiration,
+   policy result, and rollback properties.
+3. Bind reactions/buttons to a random nonce, user identity, work item, action
+   hash, and expiration.
+4. Revalidate policy and current state immediately before execution.
+5. Invalidate approval on any material mutation.
+6. Separate “approve draft quality” from “authorize external execution.”
+7. Add two-person approval for financial, credential, deletion, and broad
+   publish actions only when a real independent second approver exists. Until
+   then, use explicit named-human authorization, a mandatory cooldown, strict
+   limits, and an after-action notification; do not claim a fictional
+   separation of duties.
+
+**Acceptance:**
+
+- copied text or model output cannot create a valid approval;
+- a versioned adversarial suite proves stale, replayed, wrong-user,
+  wrong-thread, expired, concurrent, and post-approval-mutated actions fail
+  closed;
+- the audit record reconstructs exactly what was authorized and executed.
+
+### P0.5 Add one safety controller and autonomy ceilings
+
+**Actions:**
+
+1. Implement one host kill switch for all external writes while retaining
+   read-only processing.
+2. Add per-system, per-agent, and per-action-class circuit breakers.
+3. Cap action volume, recipients, money, and retry count per time window.
+4. Keep irreversible, credential, public-broadcast, and high-value financial
+   actions permanently human-authorized unless governance explicitly changes.
+5. Automatically demote autonomy on guard failure, complaint, rollback,
+   anomalous volume, missing telemetry, or evaluator regression.
+6. Implement kill, circuit, hold, veto, and demotion behavior through one
+   controller with documented trigger precedence and state transitions. Do not
+   build overlapping demotion subsystems.
+
+**Acceptance:**
+
+- an operator can enter safe mode without stopping evidence collection;
+- a compromised/noisy agent cannot exceed bounded blast-radius limits;
+- autonomy never advances when quality evidence is missing.
+
+### P0.6 Restore a trusted build and supply-chain baseline
+
+**Actions:**
+
+1. Pin GitHub Actions to reviewed full commit SHAs and declare minimum
+   `permissions` in every workflow/job.
+2. Review workflows that use GitHub App credentials or write to `main`; move
+   generated updates to reviewed PRs where practical.
+3. Replace shell `eval` of skill-provided test commands with a parsed allowlisted
+   command model.
+4. Add secret scanning and dependency review first. Add container-image
+   scanning when its findings have a remediation owner. Defer SBOM generation
+   and signed provenance until external distribution, compliance needs, or a
+   concrete supply-chain decision justifies their maintenance cost.
+5. Add a reviewed dependency-update bot with grouped, tested updates.
+6. Perform the blocked npm advisory review through an explicitly approved
+   process and record its date/result, rather than assuming zero findings.
+7. Establish branch protection: review, green CI, no direct human pushes,
+   signed/tagged releases where useful.
+
+**Acceptance:**
+
+- CI has least privilege and immutable third-party action references;
+- a malicious skill PR cannot execute arbitrary shell through manifest data;
+- release inputs, dependency inventory, and image digest are reproducible;
+- critical advisories have an owner and remediation SLA.
+
+### P0.7 Rewrite the live security model
+
+Replace `docs/SECURITY.md` with an implementation-verified threat model covering:
+
+- Slack, Gmail, webhook, browser, document, and peer-agent prompt injection;
+- raw/remaining credential paths;
+- Apple Container and mount boundaries;
+- unrestricted and target network access;
+- host Chrome CDP exposure;
+- file IPC authentication and replay;
+- MCP/capability authorization;
+- approval integrity;
+- supply-chain and skill-transform risks;
+- PII, logs, sessions, knowledge, and backups;
+- healer/self-modification and autonomy;
+- incident detection, containment, recovery, and rotation.
+- user-level Claude/Codex permission-rule validity and machine-local tool
+  configuration.
+
+Use NIST SSDF as the secure-development frame and OWASP's prompt-injection and
+excessive-agency guidance for agent controls. Treat Apple Container 0.x as a
+version-pinned dependency because upstream states that minor releases may be
+breaking before 1.0.
+
+## 7. P1 program: make work durable and observable
+
+### P1.1 Introduce a durable work ledger
+
+Create a PostgreSQL `work_items` model (or validate an equivalent existing
+model) with:
+
+- immutable source event ID and deduplication key;
+- work type, business entity, owner agent, human owner, priority, and SLA;
+- state: received, validated, queued, running, waiting_external,
+  waiting_approval, blocked, completed, cancelled, failed, dead_letter;
+- current attempt, lease, heartbeat, retry policy, and next action time;
+- parent/child/dependency relationships;
+- proposed action IDs and approval IDs;
+- final result, evidence, cost, and business outcome;
+- timestamps and append-only transition history.
+
+Keep channel messages and agent sessions as views/interfaces, not workflow
+truth. The ledger owns **process state**, not external business facts: Stripe,
+Trafft, Gmail, Plutio, and other systems remain authoritative for the facts
+they originate. The ledger references and reconciles those facts.
+
+**Acceptance:**
+
+- every inbound event is either rejected with reason or represented by one
+  work item;
+- daily source reconciliation proves `observed = accepted + rejected` and
+  alerts on any unexplained discrepancy;
+- no work is “in progress” only because a Slack thread implies it;
+- operators can query overdue, stuck, retrying, awaiting approval, and
+  dead-letter work across all agents;
+- transitions use optimistic concurrency or leases to prevent double execution.
+
+### P1.2 Create the company process catalog
+
+For every process, document:
+
+- trigger and source;
+- business owner and technical owner;
+- inputs and data classification;
+- responsible agent and capability manifest;
+- deterministic rules versus model judgment;
+- outputs and systems changed;
+- approval and escalation rules;
+- SLA/SLO;
+- idempotency and deduplication key;
+- exception/dead-letter handling;
+- reconciliation process;
+- success and business-value metric.
+
+Start with:
+
+1. inbound email classification;
+2. new lead qualification;
+3. sales response and proposal follow-up;
+4. bookings and changes;
+5. payment reconciliation and refunds;
+6. certification;
+7. course recap/distribution;
+8. grading;
+9. procurement opportunity lifecycle;
+10. knowledge ingestion and lessons;
+11. content/newsletter/social publishing;
+12. incident/healer workflow;
+13. recurring jobs and executive briefings.
+
+### P1.3 Consolidate scheduling ownership
+
+Inventory every timer, internal task, job, launchd unit, n8n workflow, cloud
+trigger, and external schedule. For each, assign exactly one scheduling owner
+and one durable run ledger.
+
+Add:
+
+- stable job/run IDs;
+- concurrency policy: allow, forbid, replace, or queue;
+- missed-run behavior;
+- jitter and backoff;
+- lease/heartbeat;
+- retry budget;
+- dead-letter and manual replay;
+- execution deadline;
+- output size/retention;
+- dependency health;
+- owner and alert route.
+
+Avoid introducing a new scheduler until the inventory proves the existing host
+runner cannot meet requirements.
+
+### P1.4 Define service-level objectives
+
+Minimum SLIs per workflow:
+
+- event-to-durable-record latency;
+- queue delay;
+- agent start latency;
+- end-to-end completion latency;
+- success, retry, duplicate, and dead-letter rates;
+- guard rejection and approval-wait rates;
+- external dependency latency/error rate;
+- stale-work count;
+- cost and tokens per completed item;
+- human touch time and rework;
+- business outcome where observable.
+
+Recommended initial objectives should be derived from a baseline, not guessed.
+Start with only two high-risk workflows and three measures: accepted-versus-
+completed work, end-to-end latency, and customer-visible defect/reversal rate.
+Expand the SLI set only when a measure has an owner and informs a decision.
+
+### P1.5 Build operational telemetry without a dashboard project
+
+1. Standardize structured event names and correlation fields:
+   `event_id`, `work_item_id`, `attempt_id`, `agent`, `group`, `thread`,
+   `action_id`, `approval_id`, `external_id`, `model`, and `release`.
+2. Add trace spans around queue, container, Claude, tool, database, and external
+   calls.
+3. Record counters/histograms in a lightweight local/exportable format.
+4. Generate:
+   - live status/doctor output;
+   - daily exception brief;
+   - weekly reliability/quality/cost brief;
+   - incident timeline bundle.
+5. Redact PII and secrets before log write, not only at display time.
+6. Separate audit retention from debug-log retention.
+
+### P1.6 Establish backup, restore, and continuity controls
+
+Define per asset:
+
+| Asset | Backup method | Initial RPO | Initial RTO |
+| --- | --- | --- | --- |
+| PostgreSQL business data | encrypted logical + tested physical/managed backup | business decision | business decision |
+| SQLite host state | transactionally consistent SQLite backup API | business decision | business decision |
+| tracked source/config | Git remote + protected history | near-zero after merge | hours |
+| non-secret portable config | versioned export package | daily/change-triggered | hours |
+| knowledge sources | versioned/encrypted according to sensitivity | daily | hours |
+| secrets/OAuth | recreate/rotate; do not ordinary-file sync | documented | hours |
+| sessions/logs | explicit retention decision | optional | not guaranteed |
+
+Run quarterly restore drills into an isolated environment and record:
+
+- backup selected;
+- checksum/decryption success;
+- schema/application compatibility;
+- restored row/file counts;
+- end-to-end read-only test;
+- actual RPO/RTO;
+- gaps and owners.
+
+At least one drill must restore a transactionally consistent backup captured
+during active writes, run the read-only workflow acceptance suite, and meet
+leadership's approved RPO/RTO. A successful file extraction alone is not a
+restore test.
+
+Create a warm-spare runbook only after deciding which local state is essential
+to failover. Do not call Syncthing a database replication system.
+
+### P1.7 Close ingestion data-loss windows
+
+- On Gmail history expiry, perform a bounded reconciliation scan rather than
+  accepting an unmeasured gap.
+- Reconcile source systems against the work ledger using watermarks and
+  immutable external IDs.
+- Make every webhook and poll path converge to the same deduplication contract.
+- Alert on watermark age, not only process liveness.
+- Add periodic “source count versus accepted/rejected/work-item count”
+  accounting.
+
+## 8. P1 program: data integrity and privacy
+
+### P1.8 Establish migration discipline
+
+1. Choose one migration directory and naming scheme.
+2. Store immutable, ordered migrations with checksums.
+3. Record applied version/checksum in PostgreSQL.
+4. Run migrations against a fresh ephemeral PostgreSQL instance in CI.
+5. Test forward migration, compatibility window, backfill, validation, and
+   rollback/restore.
+6. Generate schema reference docs from the migrated schema.
+7. Detect drift between repository migrations and live schema.
+8. Separate application runtime roles from migration/admin roles.
+
+Reconcile `docs/DATA-MODEL.md` with implemented `business_v2`; split it into
+“current model,” “remaining migration,” and “historical rationale.”
+
+### P1.9 Enforce canonical identity and lineage
+
+- Complete canonical-party use in every write path.
+- Introspect all foreign keys in tests so merge redirects cannot omit a new
+  table.
+- Record source system, external ID, observed time, ingest time, confidence,
+  and transformation version for imported facts.
+- Preserve raw source references without making raw third-party systems the
+  workflow authority.
+- Create reconciliation reports for Plutio, Trafft, Stripe, Sheets, Hive, and
+  other mirrors.
+
+### P1.10 Define privacy and records governance
+
+Create a data inventory for:
+
+- identity/contact data;
+- coaching/client content;
+- emails and Slack messages;
+- recordings/transcripts;
+- financial data;
+- grading/certification;
+- procurement;
+- authentication and operational telemetry.
+
+For each class define purpose, source, legal/business basis, allowed agents,
+allowed human roles, storage locations, encryption, retention, deletion,
+export, incident handling, and third-party processors.
+
+Implement:
+
+- retention jobs with dry-run/report/apply modes;
+- redaction/tokenization for evaluation datasets;
+- access logs for sensitive records;
+- tested deletion/export workflows;
+- encrypted backups and protected keys;
+- no raw PII in routine metrics or broad knowledge packs.
+
+## 9. P1 program: agent quality and safe autonomy
+
+### P1.11 Build one evaluation harness
+
+Build the shared harness shape for Mailman and Sales first. Expand to another
+agent only after the initial pack catches a real regression or blocks an unsafe
+change. The eventual versioned evaluation pack can contain:
+
+- golden successful cases;
+- ambiguous cases requiring escalation;
+- known incident regressions;
+- malformed and duplicate inputs;
+- direct and indirect prompt injections;
+- hostile documents/web pages/emails;
+- cross-agent spoofing and handoff confusion;
+- wrong-recipient/wrong-thread cases;
+- stale knowledge and factual contradictions;
+- unavailable/slow external dependencies;
+- prohibited action requests;
+- cost/context stress cases.
+
+Score:
+
+- task correctness;
+- evidence/factual accuracy;
+- policy compliance;
+- tool selection and argument accuracy;
+- escalation quality;
+- tone/format where relevant;
+- side-effect safety;
+- latency and cost.
+
+Run deterministic guard tests on every PR. Run the relevant offline evaluation
+before model, prompt, knowledge, capability, or autonomy changes. A model-based
+judge may assist triage but cannot alone authorize autonomy promotion.
+
+### P1.12 Record a minimum decision envelope
+
+Initially record:
+
+- source/work/attempt/action IDs;
+- model;
+- prompt hash;
+- application release;
+- proposed action, policy result, final result, latency, tokens, and cost.
+
+Add knowledge-pack, lesson, toolset, and policy hashes only when the relevant
+artifact is versioned and the added evidence has demonstrated diagnostic value.
+The eventual fuller envelope can include:
+
+- source event and normalized input;
+- system/group prompt version;
+- knowledge-pack and lesson versions;
+- model/provider and relevant inference settings;
+- capability manifest and allowed tools;
+- policy version;
+- application release and schema version;
+- proposed actions;
+- evaluator results;
+- tokens, latency, and estimated cost.
+
+Do not turn the evidence system into a second product. Set storage and runtime
+overhead budgets and sample low-risk runs if full capture is not justified.
+
+### P1.13 Harden knowledge and learning
+
+1. Separate authoritative facts, policy, approved examples, learned heuristics,
+   and temporary context.
+2. Give every learned item provenance, author, evidence, scope, confidence,
+   review state, expiration, and supersession link.
+3. Never let an untrusted inbound artifact directly become durable instruction.
+4. Require human review for policy/fact changes and high-impact lessons.
+5. Test knowledge compilation for omission, contradiction, duplication, and
+   stale-source drift.
+6. Retain source fragments so regeneration is reproducible and reversible.
+7. Evaluate retrieval/context selection; stop mounting giant knowledge packs
+   when a smaller scoped pack produces equal quality.
+
+### P1.14 Replace approval streaks with a simple risk-adjusted gate
+
+Begin with three gates for reversible C2 actions:
+
+1. sampled correctness exceeds a defined threshold and minimum sample size;
+2. zero severe incidents during a defined observation window;
+3. the action is reversible, bounded, and continuously monitored.
+
+Keep C3+ actions human-authorized until leadership explicitly changes the
+action-class policy. More mature evidence may later include:
+
+- statistically useful volume;
+- correctness from sampled human review;
+- corrections and guard failures;
+- downstream reversals/complaints;
+- business outcomes;
+- prompt/model/knowledge stability;
+- dependency health;
+- time since last incident;
+- novelty/out-of-distribution score;
+- action reversibility and maximum impact.
+
+The safety controller owns promotion/demotion state. Demotion is immediate for
+defined severe events. Continue random human review after promotion to detect
+silent drift. Define the scorer, minimum sample, confidence/defect threshold,
+and review workload before enabling promotion.
+
+## 10. P2 program: performance and cost
+
+### P2.1 Measure before changing architecture
+
+Build a 30-day baseline by agent/workflow:
+
+- queue p50/p95/p99;
+- cold/warm start;
+- model latency;
+- tool/API latency;
+- container peak memory/CPU;
+- retries, timeouts, and cancellations;
+- input/output/context tokens;
+- cost per attempt and successful item;
+- cache/context-pack hit rate;
+- human wait and rework.
+
+Do not optimize synchronous file reads, polling, container size, or database
+queries without showing their contribution to an SLO or cost problem.
+
+### P2.2 Improve scheduling fairness
+
+Extend `GroupQueue` with measured, bounded policies:
+
+- interactive, customer-facing, financial, batch, and maintenance priority
+  classes;
+- reserved capacity for urgent/customer work;
+- per-group concurrency and rate limits;
+- aging so low-priority work cannot starve;
+- deadline/cancellation propagation;
+- per-dependency circuit limits;
+- backpressure before spawning containers;
+- explicit status for capacity wait versus dependency wait.
+
+Test with a deterministic queue simulator and the historical noop-swarm
+incident.
+
+### P2.3 Right-size containers and networks
+
+1. Use recorded peak memory by agent; set peak plus safety margin.
+2. Test lower CPU/memory limits under real document/browser workloads.
+3. Pin and qualify Apple Container versions; upstream is pre-1.0.
+4. Complete the P0 default-deny egress work and refine isolated networks by
+   trust/integration class.
+5. Route permitted egress through a policy proxy where the operational burden
+   is justified.
+6. Remove hard-coded DNS and bridge addresses from code; validate configuration
+   at startup.
+7. Add a compatibility smoke suite for every Apple Container upgrade.
+
+### P2.4 Reduce LLM context and spend
+
+- assemble task-specific context packs rather than full role corpora;
+- cache deterministic facts and external lookups with freshness metadata;
+- use deterministic code for classification, reconciliation, and validation;
+- batch compatible reads but not unrelated approvals/actions;
+- choose model per action using evaluation evidence;
+- set token/time budgets and early-exit rules;
+- record paid-fallback use and budget by workflow;
+- detect loops and repeated tool calls before cost escalates.
+
+### P2.5 Tune databases from workload evidence
+
+- capture slow-query samples and `EXPLAIN (ANALYZE, BUFFERS)` in safe test data;
+- index work-ledger, watermark, external-ID, canonical-party, and SLA queries;
+- bound connection pools across host and concurrent agents;
+- remove runtime admin access;
+- batch append-only interactions and classification writes where safe;
+- establish SQLite WAL/checkpoint/backup/size health metrics;
+- test lock contention and crash recovery.
+
+## 11. P2 program: architecture and developer experience
+
+### P2.6 Decompose the modular monolith internally
+
+Do not create services. Create explicit modules with typed interfaces:
+
+- bootstrap/lifecycle;
+- channels/ingress;
+- work ledger;
+- routing/scheduling;
+- agent execution;
+- policy/approval;
+- capabilities;
+- data/repositories;
+- recurring jobs;
+- observability;
+- health/readiness.
+
+Reduce the five largest source files through behavior-preserving extraction.
+The composition root should declare wiring, not implement business logic.
+
+Acceptance should focus on:
+
+- no circular dependency increase;
+- clear ownership and public interfaces;
+- unchanged behavior under characterization tests;
+- faster focused tests;
+- easier dependency substitution.
+
+### P2.7 Create a typed configuration system
+
+1. Define one Zod schema for non-secret and secret configuration metadata.
+2. Distinguish required, optional, defaulted, deprecated, secret, and
+   machine-specific keys.
+3. Generate `.env.example`, operator reference, and startup diagnostics.
+4. Validate group JSON, launchd values, runtime version, paths, and external
+   prerequisites before start.
+5. Move hard-coded channel IDs, IPs, DNS, and machine paths into validated
+   deployment profiles where they are operational configuration rather than
+   business logic.
+6. Hash the effective non-secret configuration into run/release evidence.
+
+### P2.8 Build a safe local/integration test environment
+
+Provide one command that creates:
+
+- temporary SQLite;
+- ephemeral PostgreSQL migrated from zero;
+- fake Slack and Gmail adapters;
+- deterministic external-service stubs;
+- synthetic non-PII fixtures;
+- isolated IPC/container directories;
+- safe capability adapter implementations;
+- controlled clock and scheduler.
+
+Add test layers:
+
+1. pure unit and guard tests;
+2. repository/schema tests;
+3. workflow contract tests;
+4. agent offline evals;
+5. Apple Container smoke tests on a macOS runner;
+6. deployment canary tests.
+
+Fix shared temporary paths so parallel tests cannot delete each other's state.
+
+### P2.9 Make releases explicit
+
+Create a release manifest containing:
+
+- Git commit/tag;
+- Node/npm versions;
+- lockfile hash;
+- application and agent-runner versions;
+- container image digest;
+- schema version;
+- prompt/knowledge/capability versions;
+- Apple Container version;
+- test/eval/security evidence;
+- migration and rollback instructions.
+
+Deploy through staged gates:
+
+1. build and verify;
+2. database compatibility check;
+3. read-only/safe-mode startup;
+4. health and dependency readiness;
+5. one canary agent/workflow;
+6. gradual enablement of writes/autonomy;
+7. post-deploy reconciliation.
+
+## 12. P2 program: functionality and company leverage
+
+### P2.10 Build a single exception inbox
+
+The most valuable operator interface is not a general dashboard. It is a
+prioritized exception queue containing:
+
+- work waiting for approval;
+- overdue/stuck items;
+- guard/policy blocks;
+- identity ambiguity;
+- data contradictions;
+- failed reconciliation;
+- expiring credentials;
+- repeated dependency failures;
+- autonomy demotions;
+- dead-letter work.
+
+Support read-only query through Claude/Codex and a compact Slack brief. Add a
+web UI only if volume makes Slack/query interaction inadequate.
+
+### P2.11 Create a unified party and relationship timeline
+
+Expose one evidence-backed timeline for a person/organization:
+
+- identity and aliases;
+- roles and relationships;
+- inquiries and pipeline stages;
+- emails/meetings/bookings;
+- proposals and contracts;
+- payments/refunds;
+- enrollments/engagements;
+- course/grading/certification;
+- support/escalations;
+- consent/preferences;
+- open work and next best action.
+
+Every entry must show source and freshness. Agents should never reconstruct
+this by ad hoc unions or broad searches.
+
+### P2.12 Add process-specific functional closure
+
+For each agent, move from “can perform tasks” to a closed operational loop:
+
+| Domain | Closure requirement |
+| --- | --- |
+| Mailman | every eligible email classified/reconciled or visibly excepted |
+| Inbox | every qualified inquiry has canonical identity, owner, next step |
+| Sales | every active opportunity has evidence-backed next action and SLA |
+| Booking | source and business record reconcile; changes/cancellations handled |
+| Contador | payment/refund/roster/ledger reconcile with explicit exceptions |
+| Certifier | eligibility evidence, approval, issuance, delivery, and audit close |
+| Courses | attendance/recap approval/distribution state is durable |
+| Grader | rubric version, evidence, calibration, review, completion are durable |
+| Procurement | opportunity qualification through submission/outcome is tracked |
+| Newsroom/Social | source, review, rights, approval, publish, performance close |
+| Chief | exceptions and decisions route to accountable owners and close |
+| Healer | incident evidence, containment, approval, remediation, verification close |
+
+### P2.13 Build management briefs from the ledger
+
+Generate:
+
+- daily: urgent approvals, customer risks, failures, deadlines;
+- weekly: funnel, delivery, quality, reliability, costs, learning;
+- monthly: business outcomes, automation ROI, control health, capacity, debt;
+- quarterly: autonomy review, threat model, restore drill, vendor/dependency
+  risk, roadmap decisions.
+
+Briefs must link to evidence and distinguish observation, inference, and
+recommendation.
+
+## 13. Governance and ownership
+
+### Roles
+
+Assign named accountability for:
+
+- company OS product owner;
+- runtime/architecture owner;
+- security and credential owner;
+- data/schema/privacy owner;
+- each business process;
+- each agent and knowledge pack;
+- production operations/on-call;
+- evaluation/autonomy approval;
+- third-party vendor/integration.
+
+One person may hold several roles, but the responsibilities must be explicit.
+
+### Change classes
+
+| Class | Examples | Minimum gate |
+| --- | --- | --- |
+| C0 read-only | query, summarize, diagnose | logging and data access policy |
+| C1 internal draft | draft email/report/proposal | evaluation + human review as needed |
+| C2 reversible write | label, CRM note, task state | policy + idempotency + audit |
+| C3 external communication | send email, publish social | recipient/content guard + approval/autonomy gate |
+| C4 financial/contractual | refund, invoice, contract, certificate | named-human authorization, limits, cooldown; two-person only when staffed |
+| C5 destructive/identity/security | delete, merge identity, rotate credentials, broad permission | named-human procedure + backup/rollback; independent approval when staffed |
+
+### Decision records
+
+Use short ADRs for:
+
+- runtime major and upgrade cadence;
+- host capability gateway;
+- work-ledger ownership;
+- approval/authorization model;
+- network/egress design;
+- migration system;
+- backup/RPO/RTO;
+- evaluation and autonomy policy;
+- telemetry/retention;
+- failover strategy.
+
+## 14. Delivery roadmap
+
+Effort assumes one primary engineer/operator with AI assistance and is
+capacity-based, not a promise of calendar completion. The initial draft's
+one-to-two-week Wave 0 was not credible for this staffing model. Re-estimate
+after every wave and stop when the next control costs more than the risk it
+reduces.
+
+### Immediate containment: first 48 hours
+
+| Deliverable | Priority | Exit gate |
+| --- | --- | --- |
+| manual-mode ceiling for C4/C5 + safe-mode drill | P0 | external writes stop while reads/evidence continue |
+| disable or isolate host Chrome CDP | P0 | Procurement cannot access unrelated sessions |
+| remove skill workflow shell `eval` | P0 | adversarial manifest test cannot execute a command |
+| verify live DB sync exclusions | P0 | `store/`, `data/`, SQLite/WAL excluded at every sync root |
+| record temporary egress/action limits | P0 | limits enforced at final action boundary |
+
+### Wave 0: evidence and brakes (week 1–6)
+
+| Deliverable | Priority | Exit gate |
+| --- | --- | --- |
+| align Node 22 across local/CI/service | P0 | full tests green under one runtime |
+| current threat model and secret/capability inventory | P0 | reviewed matrix, no unknown credential consumers |
+| safe-mode and per-action kill switches | P0 | drill proves external writes stop |
+| immutable CI action pins and minimum permissions | P0 | workflow security review passes |
+| backup inventory and restore test design | P0 | owners and target RPO/RTO proposed |
+| process/job/scheduler catalog | P1 | every recurring execution has one owner |
+| telemetry baseline schema | P1 | work/action correlation IDs visible |
+
+No new autonomous writes during Wave 0. If Node 24 passes the full native and
+deployment compatibility suite, leadership may choose it instead of Node 22;
+the exit gate is one enforced LTS line, not loyalty to a specific number.
+
+### Wave 1: authority and reproducibility (week 7–12)
+
+| Deliverable | Priority | Exit gate |
+| --- | --- | --- |
+| per-agent capability manifests | P0 | generated tools/mounts/policy; negative tests |
+| host action gateway for highest-risk credentials | P0 | Stripe/Plutio/Gmail send path has no raw agent secret |
+| unforgeable approval objects/cards | P0 | replay/mutation/wrong-user tests pass |
+| migration chain + ephemeral PostgreSQL CI | P1 | fresh DB reaches current schema automatically |
+| safe integration-test harness | P1 | key workflows run without real side effects |
+| secret/dependency controls; justified image scanning | P0/P1 | findings have owners and remediation SLAs |
+
+### Wave 2: durable operations (month 4–6)
+
+| Deliverable | Priority | Exit gate |
+| --- | --- | --- |
+| work ledger and transition history for two workflows | P1 | process state is durable and source facts reconcile |
+| scheduler/run consolidation | P1 | duplicates and missed runs are observable/replayable |
+| SLOs and daily exception brief | P1 | 30-day baseline and alert thresholds |
+| Gmail/source reconciliation | P1 | history-expiry gap is bounded and recoverable |
+| encrypted backups + first restore drill | P1 | measured RPO/RTO and corrective actions |
+| shared agent evaluation harness | P1 | Mailman and Sales catch a known incident/injection regression |
+
+### Wave 3: quality, scale, and business closure (month 7–12)
+
+| Deliverable | Priority | Exit gate |
+| --- | --- | --- |
+| minimum decision-envelope versioning | P1 | high-impact actions can be reproduced/explained |
+| risk-adjusted autonomy model | P1 | promotions use sampled outcome evidence |
+| unified party timeline | P2 | top workflows query one canonical view |
+| exception inbox | P2 | operators manage all blocked work in one place |
+| queue priorities and capacity tuning | P2 | customer SLO met under batch load |
+| context/cost optimization | P2 | lower cost without eval regression |
+| selective modular-monolith decomposition | P2 | extract only where current work is blocked by file boundaries |
+
+### Wave 4: continuity and strategic leverage (after month 12, evidence-gated)
+
+- tested warm-spare/failover only if cold restore cannot meet approved RTO;
+- complete privacy/retention workflows;
+- quarterly autonomous-control certification;
+- business KPI/ROI chain per automated process;
+- selective user interface only where exception volume justifies it;
+- model/provider resilience only after tool-use evaluations show parity;
+- retire duplicated state, dead integrations, and superseded documentation.
+
+## 15. Measurement system
+
+### Safety
+
+- unauthorized action attempts;
+- approval replay/mutation failures;
+- guard/policy block rate;
+- credential exposure tests;
+- secret age and rotation compliance;
+- prompt-injection evaluation pass rate;
+- autonomy demotions and severe incidents.
+
+### Reliability
+
+- availability and dependency readiness;
+- accepted versus completed work;
+- duplicate and lost-event rate;
+- queue and completion percentiles;
+- retry/dead-letter/stale work;
+- restore success and measured RPO/RTO;
+- deployment rollback rate.
+
+### Quality
+
+- eval pass rate by agent/version;
+- human correction and sampled defect rate;
+- factual contradiction rate;
+- wrong-recipient/thread/entity rate;
+- downstream reversal/complaint rate;
+- calibration agreement for grader/judgment workflows.
+
+### Performance and cost
+
+- container memory/CPU high water;
+- cold/warm start;
+- model/tool/database latency;
+- tokens and paid fallback;
+- cost per completed work item;
+- operator minutes per item;
+- rework and exception handling time.
+
+### Business value
+
+Use the chain:
+
+```text
+investment → adoption → process behavior → delivery/quality
+           → customer/business outcome → economic value
+```
+
+Do not call correlation causal proof. Use baselines, comparison cohorts where
+possible, change logs, seasonality controls, and qualitative validation.
+
+Examples:
+
+- lead response time → qualified-call rate → proposal/conversion;
+- payment reconciliation time → unresolved exceptions → cash accuracy;
+- grading turnaround → learner completion → certification;
+- inbox automation → human time saved without missed/incorrect routing;
+- proposal follow-up → reply/conversion versus appropriate comparison;
+- incident detection → time to containment and recurrence.
+
+## 16. Risk register
+
+| Risk | Current severity | Main treatment |
+| --- | --- | --- |
+| prompt injection uses raw credentials | critical | host capability gateway + egress policy |
+| Procurement agent reaches operator Chrome sessions | critical | disable; dedicated least-privilege profile if restored |
+| unrestricted agent egress enables exfiltration | critical | default-deny egress + destination/action policy |
+| forged/misleading approval | critical | host-rendered hashed action + nonce |
+| wrong recipient/thread/entity | critical | final-boundary guards + canonical IDs + tests |
+| local-host loss | high | RPO/RTO, encrypted backups, restore drills |
+| runtime/CI mismatch | high | one enforced LTS contract |
+| skill/workflow supply-chain compromise | high | remove `eval`, pin actions, least permissions, review |
+| invalid machine-level Claude deny rules | high | migrate to supported matcher and test denied paths |
+| silent work loss/duplicate | high | durable work ledger + reconciliation |
+| split canonical identity or schema drift | high | finish identity invariants, migrations, drift gate |
+| knowledge poisoning/fact drift | high | provenance, review, eval, scoped packs |
+| runaway loop/cost | high | volume budgets, loop detector, circuit breaker |
+| solo-operator approval/alert fatigue | high | action ceilings, batching, attention SLO, fewer gates |
+| Apple Container breaking upgrade | medium-high | version pin + compatibility smoke |
+| Mac Mini capacity starvation | medium-high | queue classes + right-sizing |
+| stale documentation causes unsafe action | medium-high | status headers + generated references |
+| privacy over-retention | medium-high | inventory, retention, deletion, access logs |
+| over-automation without value | medium | causal measurement chain and stage gates |
+
+## 17. First 20 implementation tickets
+
+Implementation checkpoint (2026-07-28):
+
+- `TEST-001` is implemented by `NC-20260728-005`: the pinned Node 22 root
+  baseline is green at 124 files / 1,595 tests.
+- `OPS-001` is partially implemented: `.nvmrc`, CI, shared instructions, and
+  validation use Node 22; startup/launchd enforcement and a future Node 24
+  decision remain.
+- `DATA-001` is partially implemented: the ordered PostgreSQL migration source
+  is now portable and tracked; a schema-version table, fresh-database CI, and
+  completion of canonical-identity invariants remain.
+- The Claude/Codex continuity controls are implemented by
+  `NC-20260723-002`/`NC-20260728-004`; they improve delivery governance but do
+  not imply that the security, disaster-recovery, telemetry, or autonomy
+  tickets below are complete.
+
+1. `SEC-004` — implement and drill global/per-system external-write safe mode.
+2. `SEC-009` — disable operator-profile Chrome CDP; create a dedicated
+   procurement profile only if the workflow cannot operate without it.
+3. `CICD-002` — remove skill-test shell `eval`.
+4. `OPS-001` — enforce one selected LTS runtime in CI, startup, launchd, and
+   documentation.
+5. `TEST-001` — restore green root tests and isolate temporary test directories.
+6. `SEC-002` — generate complete secret-to-consumer inventory without values.
+7. `SEC-008` — move one highest-risk raw credential behind a host adapter and
+   prove cutover, rollback, and rotation.
+8. `SEC-007` — host-rendered approval object with nonce/hash/revalidation.
+9. `SEC-010` — implement default-deny egress for one pilot agent, then expand.
+10. `CICD-001` — run CI on protected `main`, pin Actions SHAs, and declare
+    minimum workflow permissions.
+11. `DR-001` — backup inventory, approved RPO/RTO, and one isolated restore
+    drill.
+12. `DATA-001` — ordered PostgreSQL migration baseline, canonical-identity
+    invariants, and schema version table.
+13. `DATA-002` — fresh PostgreSQL migration and FK-introspection tests in CI.
+14. `SEC-005` — create per-agent capability manifest schema.
+15. `SEC-006` — generate allowed MCP tools/mounts/policy from manifests.
+16. `REL-002` — implement work-item transitions and source reconciliation for
+    Mailman and Sales only.
+17. `REL-001` — inventory all schedules and assign one owner/run ledger.
+18. `SEC-001` — replace `docs/SECURITY.md` with the verified live threat model.
+19. `OBS-001` — minimum correlation/action/audit event schema with overhead
+    budget.
+20. `EVAL-001` — shared eval format plus incident/injection cases for Mailman
+    and Sales.
+
+## 18. Decisions required from leadership
+
+1. Which actions must remain permanently human-authorized?
+2. What dollar, recipient, and publication limits require an independent second
+   approver, and who can actually fill that role?
+3. What are acceptable RPO and RTO for customer, financial, and operational
+   data?
+4. Which data classes have legal/contractual retention requirements?
+5. Is the Mac Mini allowed to remain the production single host after restore
+   controls, or is warm failover required?
+6. Should the immediate enforced LTS line be Node 22 or Node 24 after the same
+   native and deployment compatibility suite?
+7. Should Mailman and Sales be the first two work-ledger conversions, or does
+   current incident/business evidence identify a riskier pair?
+8. What sampled defect/complaint threshold blocks autonomy promotion?
+9. What monthly spend or cost-per-item requires automatic throttling?
+10. Who owns the company OS, security, data, and each business process?
+
+## 19. External control references
+
+The plan uses these current primary references as guardrails, not as a claim of
+formal compliance:
+
+- NIST SP 800-218, Secure Software Development Framework:
+  https://csrc.nist.gov/pubs/sp/800/218/final
+- NIST SSDF publications, including the generative-AI community profile:
+  https://csrc.nist.gov/Projects/ssdf/publications
+- OWASP LLM06:2025, Excessive Agency:
+  https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
+- OWASP AI Agent Security Cheat Sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html
+- GitHub Actions security hardening:
+  https://docs.github.com/en/code-security/tutorials/secure-your-organization/protect-against-threats
+- Node.js release status:
+  https://nodejs.org/en/about/previous-releases
+- Apple Container project status and compatibility warning:
+  https://github.com/apple/container
+- Apple Container isolated-network guidance:
+  https://github.com/apple/container/blob/main/docs/how-to.md
+
+## 20. Validation status
+
+This plan was produced from repository evidence and primary security
+references, then adversarially reviewed by Claude. The validation challenged:
+
+- incorrect current-state claims;
+- security risks or mitigations missed;
+- unnecessary enterprise complexity;
+- sequencing/dependency errors;
+- operational impracticality for a small company;
+- missing functionality or business-value opportunities;
+- acceptance criteria that cannot actually be verified.
+
+Claude's suggestions were checked against source and incorporated only when
+supported. The method, model/CLI, accepted corrections, rejected suggestions,
+and remaining judgment are recorded below.
+
+### Claude validation record
+
+**Date:** 2026-07-23
+**Validator:** Claude Code 2.1.217, model alias `opus`, high effort
+**Method:** tool-disabled, sessionless, budget-capped `--print` review from an
+isolated temporary working directory. Claude received only this non-secret plan
+through standard input and had no repository, MCP, file, browser, or shell
+tools. The first sandboxed request failed with `ENOTFOUND`; the approved network
+retry completed and returned a bounded adversarial review.
+
+**Accepted and incorporated:**
+
+- the original timeline was not credible for one primary engineer;
+- immediate containment must precede the multi-month control program;
+- Procurement access to a general logged-in host Chrome profile and unrestricted
+  egress were under-prioritized;
+- shell `eval` in skill validation is a high-leverage early removal;
+- one credential adapter should prove cutover, rollback, and rotation before
+  generalizing the pattern;
+- the seven conceptual planes should compile into three internal modules;
+- kill switches, circuit breakers, holds, and autonomy demotion should be one
+  safety controller with precedence;
+- work ledger means process-state authority and reconciliation, not ownership
+  of facts originating in Stripe, Trafft, Gmail, or other systems;
+- initial SLOs, evaluations, work-ledger conversion, and decision-envelope
+  capture should be deliberately narrow;
+- model judges cannot alone authorize autonomy;
+- two-person controls are valid only when a real second approver exists;
+- SBOM/provenance, broad refactoring, full config generation, warm failover, and
+  broad evaluation can wait for evidence;
+- approval, restore, credential-isolation, autonomy, and ledger acceptance
+  criteria need adversarial cases and explicit counts/thresholds.
+
+**Rejected or corrected after verification:**
+
+- Claude claimed Node 26 did not exist in July 2026. Official Node sources show
+  Node 26.5.0 is the current release; it is real but not yet LTS. Node 22 and
+  Node 24 are LTS, and Node 20 is EOL.
+- Claude inferred that Syncthing may currently replicate live SQLite. The
+  repository's `.stignore` explicitly excludes `store/` and `data/`; the plan
+  retains a verification ticket because root-level sync configuration is
+  machine state, but does not claim active database replication.
+- Claude proposed Stripe as necessarily the first credential adapter. The plan
+  leaves the choice to the verified secret/action inventory; Gmail-send,
+  Stripe, or another adapter may present the highest actual risk.
+- Claude's numerical estimate of roughly 20 person-quarters was not evidence-
+  based. The capacity criticism was accepted, not that specific estimate.
+
+**Additional validator finding:**
+
+Claude Code emitted warnings that user-level deny rules using `Write(...)` do
+not match current file-permission checks and should use the supported
+`Edit(...)` matcher. No machine settings were changed during this review. The
+plan treats repair and a deny-path test as a separate P0 machine-configuration
+action.
+
+**Remaining judgment:**
+
+The document intentionally remains comprehensive so the company can see the
+whole risk and capability landscape. Only Immediate Containment and the first
+current wave are commitments. Later waves are option sets that require
+re-baselining, measured need, and explicit leadership decisions.

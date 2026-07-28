@@ -10,6 +10,11 @@ import type { ChatPostMessageArguments } from '@slack/web-api';
 
 const execFileP = promisify(execFile);
 
+import {
+  classifyAttachment,
+  extractIWorkPdf,
+  extractOdfText,
+} from '../attachment-convert.js';
 import { promoteBriefItem } from '../brief-promote.js';
 import {
   ASSISTANT_NAME,
@@ -25,7 +30,9 @@ import {
   updateChatName,
 } from '../db.js';
 import { readEnvFile } from '../env.js';
+import { deriveLeadThreadKey } from '../lead-thread-key.js';
 import { logger } from '../logger.js';
+import { splitForSlack } from '../message-split.js';
 import {
   buildApprovalContent,
   isApprovalOnlyText,
@@ -65,25 +72,12 @@ interface SlackFile {
 // Max file size to download (100 KB — plenty for CSV lists, prevents abuse)
 const MAX_FILE_DOWNLOAD_SIZE = 100 * 1024;
 
-// MIME types and extensions we'll inline as text attachments
-const TEXT_FILE_TYPES = new Set(['csv', 'text', 'plain', 'tsv', 'txt']);
-
-// Office/PDF documents we convert to markdown via markitdown so the container
-// agent gets clean text regardless of its own tooling (students submit grading
-// work as pdf/docx/xlsx/pptx). markitdown dispatches by extension to its handlers
-// (pdfminer / mammoth / openpyxl / python-pptx). On failure we inline a note
-// rather than silently dropping the file.
-const DOC_FILE_TYPES = new Set([
-  'pdf',
-  'docx',
-  'xlsx',
-  'pptx',
-  'doc',
-  'xls',
-  'ppt',
-]);
-const DOC_MIME_RE =
-  /pdf|officedocument|ms-excel|msword|ms-powerpoint|powerpoint/;
+// Attachment routing (text / doc / odf / iwork / unsupported) lives in
+// attachment-convert.ts. Office+PDF go through markitdown, which dispatches by
+// extension to pdfminer / mammoth / openpyxl / python-pptx. On any failure we
+// inline a note rather than silently dropping the file — a dropped attachment
+// reads to the agent as "no submission" and it asks the sender to attach the
+// file they just attached (grader, 2026-07-28T01:52Z).
 const MAX_DOC_DOWNLOAD_SIZE = 25 * 1024 * 1024; // 25 MB
 const MARKITDOWN_BIN =
   process.env.NANOCLAW_MARKITDOWN_BIN ||
@@ -683,7 +677,12 @@ export class SlackChannel implements Channel {
     const channelId = jid.replace(/^slack:/, '');
     const fromGroup = opts?.fromGroup;
     const threadTs = opts?.threadTs;
-    const threadKey = opts?.threadKey;
+    // A lead-bearing message keys on the lead itself, overriding whatever
+    // namespace its author invented. Without this the inbox handoff and the
+    // sales approval card anchor separately and the operator gets two roots per
+    // lead. See lead-thread-key.ts.
+    const leadKey = deriveLeadThreadKey(text);
+    const threadKey = leadKey ?? opts?.threadKey;
 
     if (!this.connected) {
       this.outgoingQueue.push({ jid, text, opts });
@@ -743,6 +742,19 @@ export class SlackChannel implements Channel {
       // roots already post top-level; conversational threadTs replies (a human is
       // actively watching that thread) are left quiet. (Stale anchors don't reach
       // here — they roll over to a fresh top-level root above.)
+      //
+      // Lead threads broadcast too, and MUST. Exempting them (2026-07-28,
+      // reasoning that a broadcast card is duplication) re-created the exact
+      // bug the broadcast was added to fix on 2026-06-29: a reply under an
+      // existing anchor goes into a collapsed thread that never surfaces in the
+      // channel timeline, so new activity is invisible. Within four hours a
+      // customer's follow-up, its draft reply, and the agent's two open
+      // questions all landed silently in a thread and the operator reported the
+      // email as never having arrived (Oana Tue, Entry 938, 12:27–12:32Z).
+      //
+      // The operator's actual complaint was DUPLICATED CONTENT — three roots per
+      // lead, the inbound quoted twice, plus a pointless recap. That is fixed by
+      // the trimmed card and the suppressed root recap, not by hiding posts.
       if (anchoredReply) baseOpts.reply_broadcast = true;
 
       // Slack limits messages to ~4000 characters; split if needed
@@ -768,8 +780,9 @@ export class SlackChannel implements Channel {
           else if (keyToTouch) touchThreadAnchor(channelId, keyToTouch);
         }
       } else {
-        for (let i = 0; i < displayText.length; i += MAX_MESSAGE_LENGTH) {
-          const chunk = displayText.slice(i, i + MAX_MESSAGE_LENGTH);
+        // Break on paragraph/line/word boundaries — a raw slice cuts mid-word
+        // and an operator cannot read a draft that splits inside a sentence.
+        for (const chunk of splitForSlack(displayText, MAX_MESSAGE_LENGTH)) {
           const result = await this.app.client.chat.postMessage({
             ...baseOpts,
             text: chunk,
@@ -970,17 +983,39 @@ export class SlackChannel implements Channel {
     for (const file of files) {
       if (!file.url_private_download) continue;
       const ext = (file.filetype || '').toLowerCase();
-      const isText =
-        TEXT_FILE_TYPES.has(ext) ||
-        file.mimetype?.startsWith('text/') ||
-        file.mimetype === 'application/csv';
-      if (isText) {
-        parts.push(await this.inlineTextFile(file));
-      } else if (
-        DOC_FILE_TYPES.has(ext) ||
-        DOC_MIME_RE.test(file.mimetype || '')
-      ) {
-        parts.push(await this.inlineDocFile(file, ext || 'bin'));
+      switch (classifyAttachment(ext, file.mimetype)) {
+        case 'text':
+          parts.push(await this.inlineTextFile(file));
+          break;
+        case 'doc':
+          parts.push(await this.inlineDocFile(file, ext || 'bin'));
+          break;
+        case 'odf':
+          parts.push(await this.inlineOdfFile(file));
+          break;
+        case 'iwork':
+          parts.push(await this.inlineIWorkFile(file, ext));
+          break;
+        // Both remaining kinds emit a note rather than nothing: the agent must
+        // be able to tell "no file was sent" from "a file was sent that I
+        // cannot read". Silence reads as the former and produces a request to
+        // attach the file the sender already attached.
+        case 'image':
+          parts.push(
+            attachedFileNote(
+              file.name,
+              'image attachment — not readable as text; ask the sender to send the text itself',
+            ),
+          );
+          break;
+        default:
+          parts.push(
+            attachedFileNote(
+              file.name,
+              `unsupported format "${ext || file.mimetype || 'unknown'}" — ask the sender to re-send as PDF, Word (.docx), or plain text`,
+            ),
+          );
+          break;
       }
     }
     return parts.join('');
@@ -1026,20 +1061,9 @@ export class SlackChannel implements Channel {
 
   /** Download a pdf/office doc and inline its markitdown-extracted markdown. */
   private async inlineDocFile(file: SlackFile, ext: string): Promise<string> {
-    if (file.size > MAX_DOC_DOWNLOAD_SIZE) {
-      logger.warn(
-        { fileId: file.id, size: file.size },
-        'Document too large to convert, skipping',
-      );
-      return attachedFileNote(
-        file.name,
-        'too large to convert; paste key parts as text',
-      );
-    }
     try {
-      const resp = await this.fetchFile(file);
-      if (!resp) return attachedFileNote(file.name, 'download failed');
-      const buf = Buffer.from(await resp.arrayBuffer());
+      const buf = await this.fetchDocBuffer(file);
+      if (typeof buf === 'string') return buf;
       const md = await convertViaMarkitdown(buf, ext, file.id);
       if (md) {
         logger.debug(
@@ -1059,6 +1083,82 @@ export class SlackChannel implements Channel {
       );
       return attachedFileNote(file.name, 'conversion error');
     }
+  }
+
+  /** Inline an OpenDocument file's text, extracted from its `content.xml`. */
+  private async inlineOdfFile(file: SlackFile): Promise<string> {
+    const buf = await this.fetchDocBuffer(file);
+    if (typeof buf === 'string') return buf;
+    try {
+      const text = await extractOdfText(buf, file.id);
+      if (text) {
+        logger.debug(
+          { fileId: file.id, name: file.name, chars: text.length },
+          'Extracted OpenDocument attachment',
+        );
+        return attachedFileTag(file.name, text, file.filetype || 'odf');
+      }
+      return attachedFileNote(file.name, 'OpenDocument file holds no text');
+    } catch (err) {
+      logger.warn(
+        { fileId: file.id, name: file.name, err },
+        'Error extracting OpenDocument attachment',
+      );
+      return attachedFileNote(file.name, 'OpenDocument conversion error');
+    }
+  }
+
+  /**
+   * Inline an Apple Pages/Numbers file via its embedded preview PDF. Documents
+   * saved without one carry only a `preview.jpg` thumbnail of page 1, and their
+   * real text sits in Snappy-compressed protobuf we do not parse — so say so.
+   */
+  private async inlineIWorkFile(file: SlackFile, ext: string): Promise<string> {
+    const buf = await this.fetchDocBuffer(file);
+    if (typeof buf === 'string') return buf;
+    try {
+      const pdf = await extractIWorkPdf(buf, file.id);
+      if (pdf) {
+        const md = await convertViaMarkitdown(pdf, 'pdf', file.id);
+        if (md) {
+          logger.debug(
+            { fileId: file.id, name: file.name, chars: md.length },
+            'Converted iWork attachment via embedded preview PDF',
+          );
+          return attachedFileTag(file.name, md, ext || 'iwork');
+        }
+      }
+      return attachedFileNote(
+        file.name,
+        `Apple ${ext || 'iWork'} file with no readable preview — ask the sender to export it as PDF or Word (.docx) and re-send`,
+      );
+    } catch (err) {
+      logger.warn(
+        { fileId: file.id, name: file.name, err },
+        'Error converting iWork attachment',
+      );
+      return attachedFileNote(file.name, 'iWork conversion error');
+    }
+  }
+
+  /**
+   * Shared download for convertible documents. Returns the bytes, or an
+   * already-formatted note string when the file is too large or unfetchable.
+   */
+  private async fetchDocBuffer(file: SlackFile): Promise<Buffer | string> {
+    if (file.size > MAX_DOC_DOWNLOAD_SIZE) {
+      logger.warn(
+        { fileId: file.id, size: file.size },
+        'Document too large to convert, skipping',
+      );
+      return attachedFileNote(
+        file.name,
+        'too large to convert; paste key parts as text',
+      );
+    }
+    const resp = await this.fetchFile(file);
+    if (!resp) return attachedFileNote(file.name, 'download failed');
+    return Buffer.from(await resp.arrayBuffer());
   }
 
   private async resolveUserName(userId: string): Promise<string | undefined> {

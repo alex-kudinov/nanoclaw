@@ -15,6 +15,11 @@
  *   4. No AI-tells — the standard anti-AI-ism check (see ai-tells.ts). The
  *      banned phrases/words that read as "a machine wrote this" and must never
  *      reach a client, enforced here instead of trusting the agent to self-edit.
+ *   5. No invented program abbreviations. Tandem writes program names in full
+ *      ("Mentor Coach Training") or uses the ICF-established specialization
+ *      acronym ("MCS"); agents sometimes coin their own short forms (e.g.
+ *      "MCT") that confuse readers (Cherie, 2026-07-23). Block the known
+ *      coinages so they never reach a client again.
  *
  * Violations BLOCK the send; the [EMAIL BLOCKED] echo goes to chief with the
  * reasons so an operator can fix and resend. Zero-LLM, false-positive-averse.
@@ -31,7 +36,14 @@ export interface ContentCheckResult {
 const DEFAULT_LINK_WHITELIST = [
   'tandemcoach.co',
   'tandemcoaching.academy',
+  // ICF is the authoritative source we routinely cite for credentials, exams,
+  // and the course catalog; the bare domain also covers learning.* and other
+  // subdomains via the endsWith(`.${d}`) rule in hostAllowed(). Whitelisted so
+  // legit ICF links never trip the guard and force a re-draft (Catherine Plano,
+  // 2026-07-23: blocked ICF links → override → agent regenerated an unapproved
+  // email that reverted the operator's edits and sent).
   'coachingfederation.org',
+  'learning.coachingfederation.org',
   'buy.stripe.com',
   'plutio.com',
   'calendly.com',
@@ -107,6 +119,24 @@ function checkAiTells(text: string, violations: string[]): void {
   }
 }
 
+// Invented / ambiguous program abbreviations agents coin on their own. Extend
+// only with forms that never appear legitimately in a Tandem client email —
+// the established acronyms (ICF, ACC, PCC, MCC, MCS, CPL, AAMC, CCE, BARS) are
+// deliberately absent. Case-sensitive uppercase: a coined acronym is always
+// emitted in caps, so this catches the real case with zero false positives.
+const PROGRAM_ABBREVIATIONS: Array<[RegExp, string]> = [
+  [
+    /\bMCT\b/,
+    'invented acronym "MCT" — write "Mentor Coach Training" in full, or use "MCS"',
+  ],
+];
+
+function checkProgramAbbreviations(text: string, violations: string[]): void {
+  for (const [re, label] of PROGRAM_ABBREVIATIONS) {
+    if (re.test(text)) violations.push(label);
+  }
+}
+
 /** Run all content predicates over subject + body. */
 export function checkContent(
   subject: string,
@@ -118,5 +148,6 @@ export function checkContent(
   checkDiscounts(text, violations);
   checkPlaceholders(text, violations);
   checkAiTells(text, violations);
+  checkProgramAbbreviations(text, violations);
   return { ok: violations.length === 0, violations };
 }

@@ -281,7 +281,7 @@ session files.
 | Area | Main files | Responsibility |
 | --- | --- | --- |
 | Registry | `src/channels/registry.ts`, `src/channels/index.ts` | channel self-registration and active imports |
-| Slack | `src/channels/slack.ts`, `src/slack-approval.ts` | Socket Mode, threads, reactions/approvals |
+| Slack | `src/channels/slack.ts`, `src/slack-approval.ts`, `src/lead-thread-key.ts`, `src/message-split.ts`, `src/attachment-convert.ts` | Socket Mode, canonical lead threads, reactions/approvals, safe splitting, attachment extraction |
 | Gmail | `src/channels/gmail.ts`, `src/gmail-api.ts`, `src/gmail-auth.ts` | mailbox channel, OAuth, API operations |
 | Gmail ingest | `src/gmail-push.ts`, `src/gmail-label-poll.ts`, `src/gmail-parser.ts` | push/poll detection and normalization |
 | Gmail IPC | `src/gmail-ipc-handlers.ts`, `src/classify-ipc-handlers.ts` | host-side action execution |
@@ -301,7 +301,7 @@ dependencies, not active runtime channels in this snapshot.
 | Pipeline | `src/pipeline-status.ts`, `src/email-interaction-log.ts` | interaction and reply-state evidence |
 | Plutio | `src/plutio-cli.ts`, `src/plutio-proposals.ts`, `src/plutio-outbox-reaper.ts` | proposal and outbox integration |
 | Proposal replies | `src/proposal-reply*.ts` | accept/decline detection and actions |
-| Follow-up | `src/proposal-followup*.ts`, `src/followup-drop.ts` | approval-gated nudge lifecycle |
+| Follow-up | `src/proposal-followup*.ts`, `src/followup-drop*.ts`, migration 113 | approval-gated nudge lifecycle and durable party-scoped suppression |
 | Trafft | `src/trafft-custom-fields.ts`, `src/trafft-sweeper.ts`, `src/booking-host-write.ts` | booking ingestion and recovery |
 | Stripe | `src/stripe-payment-host.ts`, `src/contador-name-reaper.ts` | payment ingestion and name recovery |
 | Hive/Firebase | `src/hive-bridge.ts`, `src/hive-sync-reaper.ts` | engagement synchronization |
@@ -318,6 +318,7 @@ dependencies, not active runtime channels in this snapshot.
 | Circuit control | `src/circuit-breaker.ts`, `src/hard-filters.ts` | bounded failures and deterministic rejection |
 | Token failover | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts` | auth failure classification and fallback |
 | Autonomy | `src/autonomy-policy.ts`, `src/autonomy-ledger.ts`, `src/autonomy-hold.ts` | category trust levels, holds, vetoes, evidence |
+| Approved-send watchdog | `src/send-watchdog.ts`, `src/db.ts`, `src/ipc.ts` | records approved sends, observes mailman handoffs, alerts on an unobserved send without sending autonomously |
 | Healer | `src/healer/*` | collection, diagnosis, trust, approval, remediation, incident reporting |
 | Heartbeat | `src/heartbeat.ts` | periodic liveness evidence |
 
@@ -347,11 +348,12 @@ changes.
 | --- | --- | --- | --- |
 | `src/` | host application and tests | tracked | canonical implementation |
 | `container/` | agent image and runner | tracked | rebuild on each target architecture |
-| `groups/*/CLAUDE.md` | role prompts | tracked | canonical behavior policy |
-| other `groups/*/*` | workflows, schemas, artifacts, browser state | mostly ignored | operational dependency; inventory explicitly |
+| `groups/*/CLAUDE.md` and named operating support (`CLAUDE-MAIN.md`, `WORKFLOWS.md`, `VOICE-AND-TONE.md`, `EMAIL-RESPONSE-GUIDELINES.md`, `SCHEMA.md`) | role prompts and procedures | tracked | canonical behavior policy; changes travel with Git |
+| other `groups/*/*` | conversations, auth, snapshots, scratch/runtime artifacts | ignored | sensitive or volatile; never treat as portable authority |
 | `knowledge/` | shared and agent knowledge | mixed | sources tracked; generated packs/schedules partly ignored |
 | `tandem-knowledge/` | broader Tandem knowledge corpus | tracked/mixed | review provenance before regeneration |
-| `data/business/` | SQL schemas and local DB guide | mixed | three base schemas tracked; supplemental files local-only |
+| `data/business/CLAUDE.md` and `data/business/migrations/nanoclaw-v2/` | PostgreSQL operating guide and ordered DDL | tracked | portable source history; running schema still wins |
+| other `data/business/` | legacy/local SQL and runtime material | ignored/mixed | not automatically current authority |
 | `data/jobs/` and `data/webhooks.json` | runtime definitions/state | ignored | machine-local; export deliberately |
 | `data/ipc/` | file IPC | ignored | volatile, never copy while live |
 | `data/sessions/` | Claude/container sessions | ignored | sensitive and machine-specific |
@@ -369,17 +371,15 @@ changes.
 
 ### Confirmed portability gaps
 
-1. Git tracks the group `CLAUDE.md` files but ignores 66 other group-level
-   files in this checkout. Several prompts explicitly require those support
-   files, so a plain clone does not reproduce all agent behavior.
-2. Git tracks `data/business/classification-schema.sql`, `schema-pg.sql`, and
-   `schema.sql`, but local supplemental SQL and `data/business/CLAUDE.md` are
-   ignored because `data/` is broadly ignored.
-3. `.stignore` excludes all `data/`, `store/`, and `logs/`; Syncthing therefore
-   does not repair the database/schema portability gap.
-4. `handoffs/` is intentionally outside Git. It may be present on a synced
+1. Named group operating support and the current `business_v2` migration
+   history were promoted to Git by `NC-20260728-004`. Group conversations,
+   browser/auth state, scratch files, execution reports, and other runtime
+   artifacts remain intentionally excluded.
+2. `.stignore` excludes all `data/`, `store/`, and `logs/`; use Git for the
+   tracked business guide/migrations and database-aware backups for live state.
+3. `handoffs/` is intentionally outside Git. It may be present on a synced
    machine but cannot be assumed on a clone or CI worker.
-5. `.claude/settings.json` and local MCP configuration contain absolute paths
+4. `.claude/settings.json` and local MCP configuration contain absolute paths
    and machine-specific integration assumptions.
 
 Until those are deliberately redesigned, “run on another machine” requires a
@@ -400,10 +400,13 @@ Current local schema contains:
 - `scheduled_tasks` and `task_run_logs` — agent task definitions/history;
 - `jobs` and `job_run_logs` — host job definitions/history;
 - `email_tracking` — outbound email metadata;
+- `pending_sends` — approved-send expectations and one-shot alert state;
 - `router_state` — durable router progress.
 
 Inspect `.schema` before every manual query. Do not copy a live WAL-backed
 database with an ordinary file copy and call it a backup.
+Tracked schema snapshots are structure-only: live sample rows are forbidden
+because they can contain customer and operational data.
 
 ### PostgreSQL: business data plane
 
@@ -420,6 +423,8 @@ The modern namespace is `business_v2`, including concepts such as:
 - outbox/reference and incident state;
 - collector/heartbeat evidence;
 - proposal follow-up actions, suppressions, and sweep watermarks;
+- party-level `no_followup_at` / `no_followup_reason` suppression with
+  `fn_drop_followups` and `fn_resume_followups`;
 - durable webhook inbox state.
 
 The database also contains classification tables and older/public integration
@@ -722,6 +727,28 @@ Recommended baseline recovery, as a separate authorized change:
 5. run the full suite;
 6. record genuine expectation or implementation drift separately.
 
+### Verification update on 2026-07-28
+
+`NC-20260728-005` completed that baseline recovery under the pinned Node 22
+runtime:
+
+| Check | Result | Interpretation |
+| --- | --- | --- |
+| root `npm run typecheck` | pass | current TypeScript graph is type-correct |
+| root `npm run format:check` | pass | all root TypeScript source/tests match the shared formatter |
+| root `npm test` | pass, 124 files / 1,595 tests | green regression baseline; webhook and `tsx` child-process tests require local TCP/IPC listener permission |
+| container runner build/tests | pass, 22/22 tests | independent runner package remains green |
+| schedule renderer tests | pass, 16 checks | tracked schedule transformation contract is green |
+| knowledge delta tests | pass, 18 checks | bounded update parser/applicator contract is green |
+
+The repair distinguished stale test contracts from three product defects:
+ordinary polling re-ingested bot rows, retry keys accumulated repeated
+`||root` suffixes, and scheduled tasks did not share queue state with root
+message containers. Native dependencies were rebuilt with Node 22 before
+interpreting results. A sandboxed full run still reports `listen EPERM` for
+local listeners; that is an execution-policy restriction, not a product
+failure.
+
 ## 18. History and evolution
 
 ### Upstream/core lineage
@@ -743,12 +770,13 @@ This fork has diverged substantially into a Tandem Coaching operations system.
 | June | auth failover, proposal reply/follow-up, self-healing, entity-keyed Slack threading, machine/storage work |
 | 5 July | lesson recovery, Sales knowledge reconciliation, program-fact drift protection |
 | 6 July | grader reliability/calibration, autonomy trust ladder, warm container LRU/adoption/resource/status work |
+| 23–28 July | shared Claude/Codex change protocol; email-content guard; schedule and knowledge regeneration; durable follow-up suppression; canonical Slack lead threads; attachment extraction; approved-send watchdog; continuity reconciliation |
 
 The latest archived handoff found was dated 2026-07-05; the root `HANDOFF.md`
 is older. Later commits resolved at least some open items from that handoff,
 including four Sales knowledge contradictions. Always check later history.
 
-### Git topology at snapshot
+### Git topology at the 2026-07-21 snapshot
 
 - branch: `main`;
 - local HEAD: `1d14730`;
@@ -760,9 +788,9 @@ This means “push”, “update from upstream”, and “deploy current” are 
 different operations. Use `.claude/skills/update-nanoclaw/SKILL.md` for the
 upstream merge procedure and preserve local customizations.
 
-## 19. Current working-tree snapshot
+## 19. Historical working-tree snapshot (2026-07-21)
 
-At investigation time, `git status` reported 102 changed paths:
+At that investigation time, `git status` reported 102 changed paths:
 
 - 85 tracked modifications/deletions;
 - 17 untracked paths;
@@ -795,13 +823,12 @@ separate explicit decision; do not open, publish, or delete them casually.
 
 ### P1: reproducibility and source ownership
 
-- Required group support files are ignored by Git.
-- Supplemental business SQL and the local DB guide are ignored by Git and
-  excluded from Syncthing.
-- Local branch history is 40 commits ahead of its origin.
-- A 102-path dirty tree means there is no clean reproducible baseline for the
-  current uncommitted behavior.
-- Current handoff coverage stops before the latest uncommitted work.
+- Named group support files and ordered `business_v2` migrations are now
+  selected for Git tracking; CI must keep them tracked.
+- Runtime databases, schedules, auth/session state, job definitions, and other
+  ignored live state still require an explicit export/recreation plan.
+- The July 23–28 implementation batch requires a reviewed commit and push before
+  it is cross-machine authority.
 
 Decision needed: define an explicit portable-configuration package containing
 non-secret prompts, workflows, schemas, job definitions, and knowledge sources,
@@ -824,12 +851,14 @@ while keeping secrets and volatile runtime state excluded.
 
 ### P1: verification baseline
 
-- The current shell ignored `.nvmrc` and used Node 26, leaving root tests red.
+- Interactive shells can ignore `.nvmrc`; validation must explicitly activate
+  Node 22 before installing/rebuilding native dependencies or interpreting
+  failures. CI reads `.nvmrc`.
 - Native modules must be rebuilt after Node changes.
-- Shared temporary fixture paths can make container tests interfere under
-  parallel execution.
-- Genuine queue/format/runtime expectation drift may remain after environment
-  repair.
+- `NC-20260728-005` restored the green root baseline: 124 files / 1,595 tests.
+- Tests that bind local TCP/IPC listeners require an execution environment that
+  permits those listeners; a sandbox `EPERM` must be rerun with that permission
+  before it is classified as a regression.
 
 ### P2: architectural complexity
 
@@ -858,6 +887,10 @@ while keeping secrets and volatile runtime state excluded.
 | `CLAUDE.md` | current repository operations and conventions | verify implementation-specific claims |
 | `AGENTS.md` | Codex entry point | intentionally delegates to Claude sources |
 | `docs/PROJECT-MAP.md` | reconciled cross-client map | dated snapshot, not live status |
+| `docs/CHANGE-PROTOCOL.md` | required Claude/Codex change, evidence, and handoff contract | update when the shared workflow changes |
+| `docs/ACTIVE-WORK.md` | current task ownership, overlap, state, and next action | must remain concise and current |
+| `docs/ENGINEERING-CHANGELOG.md` | append-only implementation/verification/deployment history | evidence only; do not overstate boundaries crossed |
+| `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` | validated, phased improvement roadmap | proposed work; not implemented state |
 | `docs/REQUIREMENTS.md` | original product principles | intent, not feature inventory |
 | `docs/ARCHITECTURE.md` | broad bespoke architecture | some SDK terminology is stale |
 | `docs/SPEC.md` | core behavior specification | reconcile with fork extensions |
@@ -881,13 +914,15 @@ dives) should be given explicit status before future reliance.
 
 ### Before changing
 
-1. Read root instructions, this map, relevant group prompt, relevant current
-   design, and actual source/schema.
-2. Capture branch, HEAD, worktree status, Node version, and target environment.
-3. Identify pre-existing overlapping changes and their owner.
-4. Classify the work as analysis, local code change, data migration,
+1. Read root instructions, this map, `docs/ACTIVE-WORK.md`,
+   `docs/CHANGE-PROTOCOL.md`, the latest relevant engineering-changelog entry,
+   relevant group prompt, relevant current design, and actual source/schema.
+2. Register or continue a stable `NC-YYYYMMDD-NNN` task before the first edit.
+3. Capture branch, HEAD, worktree status, Node version, and target environment.
+4. Identify pre-existing overlapping changes and their owner/client.
+5. Classify the work as analysis, local code change, data migration,
    integration change, deployment, or live business action.
-5. Define rollback and evidence before any external-state change.
+6. Define rollback and evidence before any external-state change.
 
 ### While changing
 
@@ -911,6 +946,9 @@ dives) should be given explicit status before future reliance.
 - source, schema, prompts, and current docs agree;
 - deployment health and safe end-to-end behavior verified when deployed;
 - rollback remains possible;
+- active-work status and engineering changelog reflect the exact boundary
+  reached: uncommitted, committed, migrated, deployed, live-verified, or
+  outcome-validated;
 - a dated handoff records unresolved work if the change is not complete.
 
 ## 23. Fresh-machine and cross-Mac checklist
@@ -919,14 +957,13 @@ Do not copy the entire working directory. Build an explicit manifest:
 
 ### Portable through Git
 
-- tracked source, tests, base prompts, docs, setup code, base SQL, and skills;
+- tracked source, tests, prompts and named group operating support, docs, setup
+  code, ordered `business_v2` migrations, and skills;
 - intended commit history and branch;
 - lockfiles and Node pin.
 
 ### Export separately after review
 
-- non-secret group support files required by prompts;
-- non-secret supplemental SQL/migrations;
 - job and webhook definitions without credentials;
 - non-generated knowledge sources;
 - mount allowlist template with target-machine paths;

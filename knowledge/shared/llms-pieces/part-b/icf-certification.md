@@ -154,7 +154,7 @@ The portfolio path is particularly appealing for those who have a diverse backgr
 
 Mentor coaching is a cornerstone of the ICF credentialing process, offering a unique opportunity for personal and professional growth. Working with a mentor coach provides insight into and help achieve the thorough understanding of the coaching competencies that set a foundation of any coaching work. Mentor coaching will also help you develop and refine your coaching, provide extensive feedback on your coaching style, and guidance on how to navigate the challenges of building a coaching practice.
 
-For all ICF certification levels, candidates must complete 10 hours of mentor coaching over a minimum period of three months. This engagement is crucial for refining your coaching skills, ensuring alignment with ICF Core Competencies, and preparing for the ICF coaching demonstration exam. Mentor coaching is not just about ticking a box on your certification checklist; it's about deepening your coaching presence and effectiveness.
+For all ICF certification levels, candidates must complete 10 hours of mentor coaching over a minimum period of three months. This engagement is crucial for refining your coaching skills, ensuring alignment with ICF Core Competencies, and preparing for the ICF coaching demonstration exam. Mentor coaching is not just about ticking a box on your certification checklist; it's about deepening your [coaching presence](/icf-core-competencies-coaching-presence/) and effectiveness.
 
 #### Accumulating Coaching Experience Hours and Demonstrating Your Skills
 

@@ -468,7 +468,7 @@ Understanding executive functions is just the beginning - the real transformatio
 2. **Strategy Selection:** Choose one strategy from each executive function area (working memory, impulse control, and cognitive flexibility) to implement over the next 30 days.
 3. **Environmental Review:** Evaluate your physical and digital environments to identify modifications that could support your executive function.
 4. **Team Conversation:** Consider having an open conversation with key team members about working styles and preferences.
-5. **Professional Support:** Explore whether ADHD-informed executive coaching could accelerate your development in these areas.
+5. **Professional Support:** Explore whether ADHD-informed [executive coaching](/executive-coaching-guide/) could accelerate your development in these areas.
 
 At [Tandem Coaching](https://tandemcoach.co/adhd-coaching-executive-success/), we specialize in helping leaders with ADHD transform potential executive function challenges into distinctive leadership advantages. Our approach combines evidence-based strategies with personalized coaching to create sustainable change.
 

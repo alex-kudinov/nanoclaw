@@ -126,8 +126,20 @@ export class GroupQueue {
   private shuttingDown = false;
   private livenessInterval: ReturnType<typeof setInterval> | null = null;
 
+  /**
+   * Root-message containers and scheduled tasks share one queue slot/state.
+   * Message callers already pass `chatJid||root`; scheduler callers use the
+   * historical bare chat JID. Normalize both forms so tasks can preempt and
+   * drain ahead of the warm root-message container instead of running as a
+   * second, competing state for the same destination.
+   */
+  private normalizeGroupJid(groupJid: string): string {
+    return groupJid.includes('||') ? groupJid : `${groupJid}||root`;
+  }
+
   private getGroup(groupJid: string): GroupState {
-    let state = this.groups.get(groupJid);
+    const normalizedJid = this.normalizeGroupJid(groupJid);
+    let state = this.groups.get(normalizedJid);
     if (!state) {
       state = {
         active: false,
@@ -141,7 +153,7 @@ export class GroupQueue {
         retryCount: 0,
         pipedMessages: new Map(),
       };
-      this.groups.set(groupJid, state);
+      this.groups.set(normalizedJid, state);
     }
     return state;
   }
@@ -175,7 +187,7 @@ export class GroupQueue {
    * liveness checker can detect frozen containers (PID alive, VM silent).
    */
   setLastOutputAt(groupJid: string): void {
-    const state = this.groups.get(groupJid);
+    const state = this.groups.get(this.normalizeGroupJid(groupJid));
     if (!state) return;
     state.lastOutputAt = Date.now();
   }
@@ -715,7 +727,11 @@ export class GroupQueue {
     );
     setTimeout(() => {
       if (!this.shuttingDown) {
-        this.enqueueMessageCheck(groupJid);
+        const [chatJid, rawThreadTs] = groupJid.split('||');
+        this.enqueueMessageCheck(
+          chatJid,
+          rawThreadTs === 'root' ? undefined : rawThreadTs,
+        );
       }
     }, delayMs);
   }
@@ -901,7 +917,7 @@ export class GroupQueue {
    * resets all GroupState fields.
    */
   forceCleanupByGroupKey(groupJid: string, opts: CleanupOpts): void {
-    const state = this.groups.get(groupJid);
+    const state = this.groups.get(this.normalizeGroupJid(groupJid));
     if (!state) return;
 
     const containerName = state.containerName;
@@ -1166,7 +1182,7 @@ export class GroupQueue {
 
   /** Release the slot of an adopted container after it exits. */
   finalizeAdopted(groupJid: string): void {
-    const state = this.groups.get(groupJid);
+    const state = this.groups.get(this.normalizeGroupJid(groupJid));
     if (!state || !state.adopted) return;
     if (state.active) {
       state.active = false;

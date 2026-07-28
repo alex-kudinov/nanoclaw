@@ -344,7 +344,7 @@ Each minion that needs business knowledge gets a subset of:
 | File | Mount path | Purpose | Written by |
 |------|-----------|---------|-----------|
 | `KNOWLEDGE.md` | `/workspace/extra/knowledge/KNOWLEDGE.md` | Curated facts, pricing, FAQs | Human (manual edit) |
-| `SCHEDULE.md` | `/workspace/extra/knowledge/SCHEDULE.md` | Live cohort dates | `calendar_ctas.py` (auto, weekly) |
+| `SCHEDULE.md` | `/workspace/extra/knowledge/SCHEDULE.md` | Live cohort dates | `schedule-refresh` job → `tools/refresh-schedule.py` (auto, daily 6:30 CT) — sources the `calendar-debug` endpoint, honors sequential/flexible/cohort + two timezone tracks |
 | `LEARNED.md` | `/workspace/extra/knowledge/LEARNED.md` | Accumulated feedback lessons | `learn_lesson` IPC → host appends |
 
 Knowledge files live in `knowledge/agents/{group}/` on the host and are mounted read-only into containers.
