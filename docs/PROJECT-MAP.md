@@ -809,6 +809,17 @@ The untracked VPS database/workflow backups are an accidental-commit risk and
 may contain sensitive operational data. Inspect and move/ignore them through a
 separate explicit decision; do not open, publish, or delete them casually.
 
+### Reconciliation checkpoint on 2026-07-28
+
+- current branch: `codex/continuity-reconciliation`;
+- base: `a6e4b13`;
+- review checkpoint: `157cb1b`;
+- the July 23–28 batch, continuity system, named group operating support, and
+  ordered business migrations are committed;
+- the branch is not yet pushed;
+- Claude validation of the checkpoint is pending explicit approval to send an
+  email/path-redacted private-code patch to the Claude API.
+
 ## 20. Known drift, risks, and open decisions
 
 ### P0: secrets and production safety
@@ -823,12 +834,12 @@ separate explicit decision; do not open, publish, or delete them casually.
 
 ### P1: reproducibility and source ownership
 
-- Named group support files and ordered `business_v2` migrations are now
-  selected for Git tracking; CI must keep them tracked.
+- Named group support files and ordered `business_v2` migrations are
+  Git-tracked; the continuity checker enforces that state.
 - Runtime databases, schedules, auth/session state, job definitions, and other
   ignored live state still require an explicit export/recreation plan.
-- The July 23–28 implementation batch requires a reviewed commit and push before
-  it is cross-machine authority.
+- The July 23–28 implementation batch is committed at `157cb1b`; Claude review
+  and a branch push remain before it is cross-machine authority.
 
 Decision needed: define an explicit portable-configuration package containing
 non-secret prompts, workflows, schemas, job definitions, and knowledge sources,

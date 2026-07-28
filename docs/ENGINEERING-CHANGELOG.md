@@ -13,7 +13,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-28T12:25Z
 - Owner/client: Codex + Claude validator
 - State: validating
-- Commit/PR: uncommitted on `codex/continuity-reconciliation`
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C2 — test/implementation reliability; no production state
 - Affected systems: SQLite tests, Gmail IPC/content-guard fixtures, container
   runner/runtime tests, group queue tests, and formatting expectations
@@ -51,8 +51,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-28T12:03Z
 - Owner/client: Codex + Claude validator
 - State: validating
-- Commit/PR: uncommitted on `codex/continuity-reconciliation` from
-  `a6e4b13`
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation` from `a6e4b13`;
+  push pending
 - Change class: C2 repository writes; reconciliation includes source for a C5
   least-privilege database boundary but performs no identity or production write
 - Affected systems: Git tracking policy, continuity records/checker, CI Node
@@ -106,7 +106,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-28T11:50Z
 - Owner/client: Claude Code
 - State: deployed_unverified
-- Commit/PR: uncommitted working tree
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C3 — host runtime change plus one customer-facing email sent
 - Affected systems: the NanoClaw host daemon (Slack approval path, IPC routing),
   `store/messages.db` (new `pending_sends` table), and one outbound email
@@ -155,7 +155,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-28T11:26Z
 - Owner/client: Claude Code
 - State: deployed_unverified
-- Commit/PR: uncommitted working tree
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C2 — host runtime behaviour and one agent-instruction line
 - Affected systems: the NanoClaw host daemon's Slack attachment path (all
   groups, not only the grader) and the grader agent instructions
@@ -207,8 +207,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-07-28T10:30Z
 - Owner/client: Claude Code
-- State: ready_for_review (deployed and live-verified; commit pending)
-- Commit/PR: uncommitted working tree
+- State: ready_for_review
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; deployed and
+  live-verified before the review checkpoint; push pending
 - Change class: C2 — host runtime behaviour, agent instructions, and one
   reversible per-group config write
 - Affected systems: the NanoClaw host daemon (Slack send path and the agent
@@ -291,7 +292,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-27T15:10Z
 - Owner/client: Claude Code
 - State: deployed_unverified
-- Commit/PR: uncommitted working tree
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C3 — schema addition, host runtime behaviour, and a production
   data remediation
 - Affected systems: `nanoclaw_business` (business_v2 schema), the NanoClaw host
@@ -356,8 +357,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-07-26T21:44Z
 - Owner/client: Claude Code (retrospectively registered)
-- State: ready_for_review (deployed and live-verified; commit pending)
-- Commit/PR: uncommitted working tree
+- State: ready_for_review
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; deployed and
+  live-verified before the review checkpoint; push pending
 - Change class: C5 — new login identity and authorization boundary
 - Affected systems: `business_v2.v_inbound_documents`, PostgreSQL role
   `bizmgr_reader`, and the bookkeeping read path
@@ -391,7 +393,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-26T08:00Z
 - Owner/client: Claude Code + Codex reconciliation
 - State: ready_for_review
-- Commit/PR: uncommitted working tree
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C2 — internal generated documentation and refresh tooling
 - Affected systems: `agent_docs/messages-db-schema.md`,
   `agent_docs/nanoclaw-business-pg-schema.md`, and `tools/refresh-schemas.sh`
@@ -421,7 +423,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-24T17:08Z
 - Owner/client: Claude Code (retrospectively registered)
 - State: ready_for_review
-- Commit/PR: uncommitted working tree
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C2 — internal knowledge/tool writes affecting C3 agent outputs
 - Affected systems: `tools/regen-kb-delta.py`, its tests, knowledge
   manifest/state/source pieces, `KNOWLEDGE.md`, and shared/agent learned files
@@ -448,7 +450,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-24T11:48Z
 - Owner/client: Claude Code (retrospectively registered)
 - State: ready_for_review
-- Commit/PR: uncommitted working tree
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C2 — scheduler/tool and generated agent-context behavior
 - Affected systems: `tools/refresh-schedule.py`, its tests, the
   machine-local `schedule-refresh` job, and Sales/Inbox/Booking schedule files
@@ -471,7 +473,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-24T00:37Z
 - Owner/client: Claude Code (retrospectively registered)
 - State: ready_for_review
-- Commit/PR: uncommitted working tree
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C2 — host-side outbound content guard affecting C3 email
 - Affected systems: `src/email-content-guard.ts` and its focused tests
 - Outcome: block the known invented `MCT` acronym while allowing authoritative
@@ -492,7 +494,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-23T16:19Z
 - Owner/client: Codex
 - State: ready_for_review
-- Commit/PR: uncommitted working tree
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C2 reversible internal CI/documentation control
 - Affected systems: engineering workflow, documentation entry points, and
   pull-request CI
@@ -517,7 +519,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-07-23T16:19Z
 - Owner/client: Codex with Claude Code/Opus adversarial validation
 - State: ready_for_review
-- Commit/PR: uncommitted working tree
+- Commit/PR: `157cb1b` on `codex/continuity-reconciliation`; push pending
 - Change class: C1 documentation/plan
 - Affected systems: none yet; roadmap covers the full NanoClaw operating system
 - Outcome: creates a source-evidenced, phased improvement plan and prioritized
