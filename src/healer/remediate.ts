@@ -10,6 +10,7 @@
 
 import { logger } from '../logger.js';
 import {
+  isActionable,
   loadOpen,
   proposeFix,
   recordAction,
@@ -18,6 +19,8 @@ import {
   type OpenIncident,
 } from './remediation.js';
 import { query } from '../business-db.js';
+import { healerActionsEnabled } from './action-policy.js';
+import { redact } from './incident-store.js';
 
 const MAX_AUTO = 2; // per-incident circuit breaker
 const VERIFY_QUIET_MS = 6 * 60_000; // recurrence-free window before "fixed"
@@ -43,8 +46,25 @@ async function attempts(id: number): Promise<number> {
   return r.rows[0]?.restart_attempts ?? 0;
 }
 
-/** Execute an incident's proposed rerun command; record + flip to remediating. */
-async function autoRun(inc: OpenIncident, cmd: string): Promise<void> {
+/** Atomically claim, execute, record, and flip one approved allowlist rerun. */
+async function autoRun(inc: OpenIncident, cmd: string): Promise<boolean> {
+  const claim = await query<{ id: number }>(
+    `UPDATE business_v2.incidents
+        SET status = 'triaging', applied_action = $2::jsonb,
+            updated_at = now()
+      WHERE id = $1 AND status = 'diagnosed'
+        AND restart_attempts < $3
+      RETURNING id`,
+    [
+      inc.id,
+      JSON.stringify({
+        kind: 'auto_rerun_claimed',
+        at: new Date().toISOString(),
+      }),
+      MAX_AUTO,
+    ],
+  );
+  if (claim.rows.length !== 1) return false;
   const res = await runShell(cmd);
   await query(
     `UPDATE business_v2.incidents
@@ -54,9 +74,9 @@ async function autoRun(inc: OpenIncident, cmd: string): Promise<void> {
   );
   await recordAction(inc.id, {
     kind: 'auto_rerun',
-    command: cmd,
+    command: redact(cmd),
     ok: res.ok,
-    out: res.out,
+    out: redact(res.out),
     at: new Date().toISOString(),
   });
   await setStatus(inc.id, 'remediating');
@@ -64,6 +84,7 @@ async function autoRun(inc: OpenIncident, cmd: string): Promise<void> {
     { id: inc.id, source: inc.source, ok: res.ok },
     'healer: auto-rerun',
   );
+  return true;
 }
 
 /** Diagnosed transient incidents: auto-rerun if proven-safe, else propose. */
@@ -76,10 +97,13 @@ async function remediateTransient(): Promise<number> {
   for (const inc of incidents) {
     const cmd = list[inc.source] || inc.proposed_fix?.command;
     const safe =
-      autoEnabled() && list[inc.source] && (await attempts(inc.id)) < MAX_AUTO;
+      healerActionsEnabled() &&
+      autoEnabled() &&
+      isActionable(inc) &&
+      list[inc.source] &&
+      (await attempts(inc.id)) < MAX_AUTO;
     if (safe && cmd) {
-      await autoRun(inc, cmd);
-      acted++;
+      if (await autoRun(inc, cmd)) acted++;
     } else {
       await proposeFix(inc); // not on allowlist / cap hit / disabled → human ✅
     }
@@ -96,10 +120,18 @@ async function verifyRemediating(): Promise<number> {
   const incidents = await loadOpen('remediating', 50);
   let closed = 0;
   for (const inc of incidents) {
-    const r = await query<{ acted_at: string | null }>(
-      `SELECT (applied_action->>'at') AS acted_at FROM business_v2.incidents WHERE id = $1`,
+    const r = await query<{
+      acted_at: string | null;
+      action_kind: string | null;
+    }>(
+      `SELECT (applied_action->>'at') AS acted_at,
+              (applied_action->>'kind') AS action_kind
+         FROM business_v2.incidents WHERE id = $1`,
       [inc.id],
     );
+    // The detached implementation pipeline owns its completion state. A quiet
+    // incident is not proof that the still-running pipeline fixed anything.
+    if (r.rows[0]?.action_kind === 'implement_dispatched') continue;
     const actedAt = r.rows[0]?.acted_at ? Date.parse(r.rows[0].acted_at) : 0;
     const recurred = Date.parse(inc.last_seen) > actedAt;
     if (!recurred && Date.now() - actedAt > VERIFY_QUIET_MS) {

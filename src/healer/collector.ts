@@ -39,6 +39,7 @@ import {
   gmailDeliverySeed,
   isGmailDeliveryStale,
 } from './gmail-liveness.js';
+import { healerRestartEnabled } from './action-policy.js';
 import {
   isRestartNoise,
   isStale,
@@ -276,7 +277,7 @@ export async function checkDaemon(): Promise<boolean> {
     raw_context: { last_beat: last, stale_threshold_ms: HEARTBEAT_STALE_MS },
   });
   const attempts = await daemonRestartAttempts();
-  if (attempts < MAX_RESTARTS) {
+  if (attempts < MAX_RESTARTS && healerRestartEnabled()) {
     await restartDaemon();
     await query(
       `UPDATE business_v2.incidents SET restart_attempts = restart_attempts + 1, updated_at = now()
@@ -288,11 +289,17 @@ export async function checkDaemon(): Promise<boolean> {
       'NanoClaw daemon down',
       `Heartbeat stale (last: ${last}). Auto-restart ${attempts + 1}/${MAX_RESTARTS} issued.`,
     );
-  } else {
+  } else if (attempts >= MAX_RESTARTS) {
     await notify(
       'critical',
       'NanoClaw daemon DOWN — restart cap hit',
       `Heartbeat still stale after ${MAX_RESTARTS} auto-restarts. Manual intervention needed.`,
+    );
+  } else {
+    await notify(
+      'critical',
+      'NanoClaw daemon DOWN — restart disabled',
+      `Heartbeat stale (last: ${last}). No restart issued because the deterministic restart control is off.`,
     );
   }
   return true;

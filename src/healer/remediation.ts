@@ -9,9 +9,15 @@
  */
 
 import { execFile } from 'child_process';
+import { randomUUID } from 'crypto';
 
 import { query } from '../business-db.js';
 import { logger } from '../logger.js';
+import {
+  currentActionPolicy,
+  healerActionsEnabled,
+  healerImplementationEnabled,
+} from './action-policy.js';
 import { postIncidentsRef } from './slack.js';
 import { proposalText } from './proposal-render.js';
 import {
@@ -20,6 +26,7 @@ import {
   type Confidence,
   type DiagnosisMeta,
   type DiagnosisResult,
+  type Refutation,
 } from './trust.js';
 
 /** Run a shell command from the repo root. Resolves (never throws) with a tail of output. */
@@ -47,6 +54,12 @@ export interface ProposedFix {
   summary: string;
   command?: string;
   diff?: string;
+  /** Host-issued binding; model-supplied values are always overwritten/removed. */
+  action_epoch?: string;
+  /** One-time proposal identity, rotated every time a new CTA is posted. */
+  approval_nonce?: string;
+  /** Host timestamp used to expire old Slack reactions/replies. */
+  approval_created_at?: string;
 }
 
 export interface OpenIncident {
@@ -62,6 +75,7 @@ export interface OpenIncident {
   confidence: Confidence | null;
   cause_or_symptom: CauseKind | null;
   evidence: string[] | null;
+  review?: Refutation | null;
   thread_ts: string | null;
   thread_channel: string | null;
   last_seen: string;
@@ -69,7 +83,7 @@ export interface OpenIncident {
 
 const COLS = `id, source, severity, occurrences, status, raw_context,
   remediation_class, diagnosis, proposed_fix, confidence, cause_or_symptom,
-  evidence, thread_ts, thread_channel, last_seen::text AS last_seen`;
+  evidence, review, thread_ts, thread_channel, last_seen::text AS last_seen`;
 
 /** Open incidents in a given status, worst-first, capped. */
 export async function loadOpen(
@@ -179,13 +193,40 @@ export function isActionable(inc: OpenIncident): boolean {
 
 /**
  * The post-proposal status (design §6). An actionable command/rerun arms the
- * approval poll (awaiting_approval). A trustworthy-but-manual fix (code_bug, diff)
- * stays 'diagnosed' so the 👍-implement path stays open. An UNtrustworthy verdict
- * lands 'needs_human' — excluded from auto-apply and the 👍, shown in the digest.
+ * approval poll (awaiting_approval). An explicitly enabled code implementation
+ * stays 'diagnosed' so its separate poller can see it. Everything else lands
+ * 'needs_human' — excluded from every executor and shown in the digest.
  */
-function proposalStatus(inc: OpenIncident, actionable: boolean): string {
-  if (actionable) return 'awaiting_approval';
-  return isTrustworthy(inc) ? 'diagnosed' : 'needs_human';
+function proposalStatus(
+  commandActionable: boolean,
+  implementationActionable: boolean,
+): string {
+  if (commandActionable) return 'awaiting_approval';
+  if (implementationActionable) return 'diagnosed';
+  return 'needs_human';
+}
+
+/** Remove any model/stale binding, then add a fresh host-issued one when armed. */
+function bindProposal(
+  fix: ProposedFix | null,
+  armed: boolean,
+): ProposedFix | null {
+  if (!fix) return null;
+  const {
+    action_epoch: _ignoredEpoch,
+    approval_nonce: _ignoredNonce,
+    approval_created_at: _ignoredCreatedAt,
+    ...unbound
+  } = fix;
+  if (!armed) return unbound;
+  const policy = currentActionPolicy();
+  if (!policy.enabled || !policy.epoch) return unbound;
+  return {
+    ...unbound,
+    action_epoch: policy.epoch,
+    approval_nonce: randomUUID(),
+    approval_created_at: new Date().toISOString(),
+  };
 }
 
 /** The minimal incident shape the thread helper needs (id + the thread root). */
@@ -228,18 +269,36 @@ export async function postIncidentThread(
  * (no false "✅ to apply"). proposal_ts is the (threaded) proposal message we poll.
  */
 export async function proposeFix(inc: OpenIncident): Promise<boolean> {
-  const actionable = isActionable(inc);
-  const ref = await postIncidentThread(inc, proposalText(inc, actionable));
+  const commandActionable = isActionable(inc) && healerActionsEnabled();
+  const implementationActionable =
+    inc.remediation_class === 'code_bug' &&
+    inc.proposed_fix?.kind === 'diff' &&
+    isTrustworthy(inc) &&
+    healerImplementationEnabled();
+  inc.proposed_fix = bindProposal(
+    inc.proposed_fix,
+    commandActionable || implementationActionable,
+  );
+  const ref = await postIncidentThread(
+    inc,
+    proposalText(inc, commandActionable || implementationActionable),
+  );
   if (!ref) {
     logger.warn({ id: inc.id }, 'healer: proposal post failed');
     return false;
   }
   await query(
     `UPDATE business_v2.incidents
-        SET proposal_channel = $2, proposal_ts = $3,
-            status = $4, updated_at = now()
+        SET proposal_channel = $2, proposal_ts = $3, status = $4,
+            proposed_fix = $5::jsonb, updated_at = now()
       WHERE id = $1`,
-    [inc.id, ref.channel, ref.ts, proposalStatus(inc, actionable)],
+    [
+      inc.id,
+      ref.channel,
+      ref.ts,
+      proposalStatus(commandActionable, implementationActionable),
+      JSON.stringify(inc.proposed_fix),
+    ],
   );
   return true;
 }

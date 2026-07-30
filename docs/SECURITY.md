@@ -188,10 +188,29 @@ broad permissions against a checkout that may contain live operational work.
 Tracked policy is implementation off by default:
 
 ```text
+HEALER_ACTIONS_ENABLED=0
+HEALER_RESTART_ENABLED=1
 HEALER_IMPLEMENT_ENABLED=0
 ```
 
-Re-enablement requires:
+The global action gate additionally requires a named operator allowlist and
+action epoch. Executable proposals are host-bound to an expiring one-time nonce,
+atomically claimed, and rechecked for trust, class, fix kind, adversarial review,
+and operator identity at the final boundary. The fixed, capped
+`launchctl kickstart` daemon recovery takes no model input and therefore uses
+the separate default-on `HEALER_RESTART_ENABLED` control. `HEALER_QUIET=1`
+disables every execution path; it is not itself an authorization mechanism.
+
+Read-only diagnosis is outside `HEALER_ACTIONS_ENABLED`. The existing
+`HEALER_INVESTIGATE_BASH=1` escape hatch grants Bash under
+`bypassPermissions`; it must remain off until a host-enforced command sandbox
+exists. `HEALER_QUIET=1` is currently its only global emergency stop.
+
+No raw model-authored shell command is eligible for production enablement.
+Re-enablement first requires a typed host-owned action registry with validated
+arguments, idempotency, caps, verification, audit redaction, and denial tests.
+
+Code implementation additionally requires:
 
 - a disposable worktree, not the operational checkout;
 - sanitized diagnosis/task input;

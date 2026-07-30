@@ -70,7 +70,10 @@ describe('diagnoseIncident — escalation policy (design §4)', () => {
     expect(rem.saveDiagnosis).toHaveBeenCalledWith(1, verdict, {
       review: HOLDS,
     });
-    expect(diag.route).toHaveBeenCalledWith(base, verdict);
+    expect(diag.route).toHaveBeenCalledWith(
+      { ...base, review: HOLDS },
+      verdict,
+    );
     expect(diag.triage).not.toHaveBeenCalled();
   });
 
@@ -147,8 +150,18 @@ describe('synthesize — adversarial reconciliation', () => {
       reason: 'symptom?',
     });
     expect(inv.investigate).toHaveBeenCalledTimes(1);
-    expect(r.verdict).toBe(tieBreaker);
+    expect(r.verdict).toEqual({
+      ...tieBreaker,
+      evidence: [
+        ...(tieBreaker.evidence ?? []),
+        'INITIAL_REFUTATION: symptom?',
+      ],
+    });
     expect(r.verdict.confidence).toBe('high');
+    expect(r.review).toEqual({
+      refuted: false,
+      reason: 'independent tie-breaker confirmed an evidenced root cause',
+    });
   });
 
   it('refuted + tie-breaker cannot confirm (null) → downgrade to low/unknown + dissent', async () => {

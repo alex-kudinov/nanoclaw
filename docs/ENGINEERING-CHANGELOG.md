@@ -8,6 +8,160 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260730-002 — Fail-closed healer action boundary and completion plan
+
+- Date: 2026-07-30T18:13Z
+- Owner/client: Codex
+- State: ready_for_review
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `04292cd`
+- Change class: C5 — host command, restart, and self-modification authorization
+- Affected systems: healer action policy, proposal/approval lifecycle,
+  automatic reruns, daemon restart, code implementation, diagnosis trust,
+  tracked fast-healer configuration, security and self-healing authorities
+- Outcome:
+  - added one default-off action boundary above model-authored healer commands,
+    automatic reruns, and implementation while leaving collection, digest,
+    heartbeat observation, and read-only diagnosis available;
+  - replaced the any-non-bot approval fallback with an explicit operator
+    allowlist and required action epoch;
+  - host-bound executable proposals to expiring one-time nonces, rechecked
+    policy/trust/class/fix/review at the final boundary, and atomically claimed
+    approval, implementation, and automatic-rerun work before execution;
+  - made failed, missing, or unparsable adversarial review manual-only; an
+    initial refutation requires the independent tie-breaker to issue a passing
+    synthesized review before execution;
+  - recorded exact approvers, redacted command/output audit data, recovered
+    stale claims, and prevented completed draft PRs from entering the shell
+    approval queue;
+  - separated fixed, capped daemon recovery into default-on
+    `HEALER_RESTART_ENABLED`, preserving availability while model-authored
+    actions and implementation remain off in the tracked launchd template;
+  - reconciled the incomplete system into
+    `docs/SELF-HEALING-COMPLETION-PLAN.md`, with typed actions and separated
+    diagnosis required before autonomy can be enabled.
+- Evidence:
+  - pinned Node 22.23.2 typecheck passed;
+  - pinned Node 22.23.2 healer suite passed after review remediation: 20 files /
+    197 tests;
+  - pinned Node 22.23.2 complete serial repository suite passed after review
+    remediation: 134 files / 1,689 tests;
+  - denial coverage includes disabled/quiet/missing-operator policy, wrong
+    user, stale epoch, expired proposal, failed trust review, lost atomic claim,
+    replay, implementation gate, automatic-rerun gate, and daemon-restart gate.
+- Files: `src/healer/action-policy.ts` and test; healer trust, orchestration,
+  proposal, approval, remediation, implement, collector source/tests;
+  `setup/launchd/com.nanoclaw.healer.fast.plist`;
+  `docs/SELF-HEALING-{DESIGN,PHASE0-SPEC,ORCHESTRATED-DIAGNOSIS,COMPLETION-PLAN}.md`;
+  `docs/SECURITY.md`, `docs/PROJECT-MAP.md`, `docs/ACTIVE-WORK.md`, this entry.
+- Deployment/migration: none. The installed healer artifact/unit, production
+  incident rows, Slack reactions, operator configuration, action epoch, daemon,
+  and services were not changed. The installed implementation-off containment
+  from `NC-20260729-004` remains the only live action-related change.
+- Rollback/recovery: discard only the NC-20260730-002 task-owned local diffs.
+  No production rollback is required because nothing was installed or enabled.
+- Documentation: added the current completion authority and reconciled design,
+  diagnosis, Phase-0, security, project-map, and continuity surfaces.
+- Follow-ups: independent C5 review; separately authorized commit and dark
+  deployment with actions off; then Gate B diagnosis separation and Gate C
+  typed host actions. Do not enable the existing raw-command or shared-checkout
+  implementation paths.
+
+#### Addendum 2026-07-30T19:02Z — independent Claude Opus C5 review
+
+- Reviewer: Claude Code 2.1.220, model `claude-opus-5[1m]` (Opus 5, 1M context)
+  at maximum effort, account label `info-tandem`. No token, key, or credential
+  value entered any prompt, log, diff, document, or command output.
+- Report: `docs/reports/NC-20260730-002-CLAUDE-C5-REVIEW.md`.
+- **Verdict: CHANGES REQUIRED.** State remains `ready_for_review`. The change is
+  a clear net improvement on a boundary that previously accepted any non-bot
+  Slack user and left `runApprovals` entirely ungated; the required changes are
+  small.
+- Verification independently reproduced under pinned Node 22.23.2 outside the
+  restricted sandbox: typecheck passes; the healer suite passes **20 files /
+  193 tests**; the full repository suite passes **130 files / 1,661 tests**;
+  `npm run docs:continuity-check` passes; `npm run format:check` passes across
+  `src/**/*.ts`; `git diff --check` passes. Every recorded figure matched.
+- Verified as claimed: the any-non-bot fallback is gone; model-supplied
+  `action_epoch`/`approval_nonce`/`approval_created_at` are stripped
+  unconditionally before host values are issued; every executing path claims its
+  work with one conditional `UPDATE`, each with a lost-claim test; the seven
+  pre-existing `awaiting_approval` rows carry no nonce and would be disarmed
+  rather than executed if actions were enabled; the `implement.ts:124`
+  single-quote escaping is correct and no shell-injection path exists.
+- Deployment-blocking, P1: gating `restartDaemon()` behind the default-off
+  global switch removes the healer's only live availability function. The
+  restart takes no model input — fixed `launchctl kickstart -k` argv, already
+  capped and idempotent — and collapsing it with arbitrary model-authored shell
+  means a dark deployment leaves a dead daemon unrecovered until a human reads
+  Slack. Add a separate default-on `HEALER_RESTART_ENABLED`, or record the
+  trade-off with a named owner for daemon-down recovery. Decide before
+  authorizing deployment.
+- Commit-blocking, P1: the implementation executor never re-evaluates trust at
+  the final boundary. `runApprovals` calls `isActionable`;
+  `loadImplementable`/`dispatch` check only confidence, cause_or_symptom, and
+  the nonce binding, so the adversarial-review requirement is enforced
+  indirectly and does not survive a trust change after arming. Two lines in
+  `dispatch()` plus one test.
+- Recommended in the same commit, P2: redact `command` and `out` in
+  `remediate.ts` auto-rerun as `approval.ts` already does; and correct four
+  statements — the P1-1 deployment consequence, `HEALER_INVESTIGATE_BASH=1`
+  granting Bash under `bypassPermissions` outside the gate (which contradicts
+  both `action-policy.ts`'s header and the new `SECURITY.md` paragraph), the
+  "refuting review → manual-only" claim that the `synthesize` tie-breaker path
+  contradicts, and `implement.ts`'s claimed time-box that `spawnPipeline` does
+  not implement.
+- Accepted residual, P2/P3: the verify loop can close an implement-dispatched
+  incident as `verified_fixed` while its unbounded detached pipeline still runs;
+  the trust gate compares `review.reason` against free-text literals produced in
+  an untouched file; `applied_action` is one last-write-wins column rather than
+  an audit log; `emojiVerdict` lets reaction order decide approve-vs-reject; the
+  5-minute stale-claim window depends implicitly on the 120-second shell
+  timeout. Raw model-authored `bash -lc` remains the design's core exposure and
+  is correctly deferred to Gate C.
+- Record correction for `NC-20260730-003`: its verification notes cite this task
+  as blocking continuity and repository-wide formatting. Both now pass.
+- Validator state boundary: repository reads plus the report and two continuity
+  edits. No implementation code was edited; nothing was staged or committed; no
+  deployment, service, launchd, migration, incident mutation, Slack reaction,
+  operator/epoch configuration, credential, schedule, or production write
+  occurred. The 65-path dirty worktree, including concurrent NC-20260730-001 and
+  NC-20260730-003 work, was preserved unchanged.
+
+#### Addendum 2026-07-30T19:22Z — Claude review remediation
+
+- Resolved P1-1 by moving the fixed, capped, model-independent
+  `launchctl kickstart` recovery to a separate default-on
+  `HEALER_RESTART_ENABLED` control. The tracked template keeps
+  `HEALER_ACTIONS_ENABLED=0` and `HEALER_IMPLEMENT_ENABLED=0`;
+  `HEALER_QUIET=1` disables all three execution classes.
+- Resolved P1-2 by applying `isTrustworthy` in both the implementation candidate
+  filter and the final dispatch boundary before credentials or the atomic claim.
+  A regression test changes review trust after arming and proves that no claim
+  or process spawn occurs.
+- Resolved the audit finding by redacting automatic-rerun command and output
+  fields before `recordAction`.
+- Closed two accepted review races in the same bounded slice: generic
+  recurrence verification skips `implement_dispatched` work so only its
+  completion poller decides the outcome, and named rejection wins when Slack
+  carries conflicting named-operator approve/reject reactions.
+- Corrected blank approval TTL handling to use the 24-hour bounded default and
+  documented the stale-claim/shell-timeout dependency.
+- Corrected the completion, design, diagnosis, security, project-map, and code
+  claims: diagnostic Bash remains an off-by-default
+  `bypassPermissions` escape hatch outside the model-authored action gate; an
+  initial refutation can be overturned only by the existing independent
+  tie-breaker; deterministic restart is independently controlled; and the
+  detached implementation pipeline has no enforced timeout.
+- Post-remediation verification under pinned Node 22.23.2 passed: focused
+  **5 files / 60 tests**; typecheck; healer **20 files / 197 tests**; complete
+  serial repository suite **134 files / 1,689 tests**; repository formatting;
+  documentation continuity (**23 active/ready rows / 23 changelog entries**);
+  and `git diff --check`.
+- No deployment, service or launchd reload, incident mutation, Slack action,
+  operator/epoch configuration, credential action, or production write
+  occurred. The concurrent Procurement, knowledge, copier, and email-renderer
+  changes remain outside this task.
+
 ### NC-20260729-004 — Week-1 Company-OS containment: Gmail authority and healer default
 
 - Date: 2026-07-30T03:26Z

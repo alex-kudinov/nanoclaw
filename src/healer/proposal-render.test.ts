@@ -21,6 +21,7 @@ function inc(over: Partial<OpenIncident> = {}): OpenIncident {
     confidence: 'high',
     cause_or_symptom: 'root_cause',
     evidence: ['trafft-sweeper.ts:88 — 401 on token refresh'],
+    review: { refuted: false, reason: 'evidence confirmed' },
     thread_ts: null,
     thread_channel: null,
     last_seen: '2026-06-23T00:00:00Z',
@@ -39,8 +40,14 @@ describe('proposalText — trust-gated rendering', () => {
     expect(t).not.toContain('Needs a human look');
   });
 
-  it('trustworthy code_bug → auto-implement CTA (👍 path preserved)', () => {
+  it('trustworthy code_bug with execution disabled has no CTA', () => {
     const t = proposalText(inc({ remediation_class: 'code_bug' }), false);
+    expect(t).not.toContain('auto-implement');
+    expect(t).toContain('Execution is disabled');
+  });
+
+  it('trustworthy code_bug with execution armed shows the implement CTA', () => {
+    const t = proposalText(inc({ remediation_class: 'code_bug' }), true);
     expect(t).toContain('auto-implement');
     expect(t).not.toContain('Needs a human look');
   });

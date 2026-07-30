@@ -44,12 +44,8 @@ export interface DiagnosisMeta {
   investigation_log?: string;
 }
 
-/**
- * Trust gate (design §5): only a medium/high-confidence ROOT-CAUSE diagnosis is
- * believable enough to offer a 👍. Low confidence, a symptom-level cause, or
- * missing trust fields (un-investigated) → untrustworthy → "needs a human look".
- */
-export function isTrustworthy(inc: {
+/** Evidence gate used while adversarial review is still in progress. */
+export function hasEvidenceTrust(inc: {
   confidence?: Confidence | null;
   cause_or_symptom?: CauseKind | null;
 }): boolean {
@@ -57,4 +53,27 @@ export function isTrustworthy(inc: {
     (inc.confidence === 'high' || inc.confidence === 'medium') &&
     inc.cause_or_symptom === 'root_cause'
   );
+}
+
+/** A failed or unparsable refuter is not a passed adversarial review. */
+export function hasPassedReview(inc: { review?: Refutation | null }): boolean {
+  const review = inc.review;
+  return (
+    review?.refuted === false &&
+    review.reason !== 'refuter unavailable' &&
+    review.reason !== 'unparseable refutation'
+  );
+}
+
+/**
+ * Final trust gate: evidence confidence/root-cause AND a completed,
+ * non-refuting adversarial review are both required. Missing review state is
+ * manual-only.
+ */
+export function isTrustworthy(inc: {
+  confidence?: Confidence | null;
+  cause_or_symptom?: CauseKind | null;
+  review?: Refutation | null;
+}): boolean {
+  return hasEvidenceTrust(inc) && hasPassedReview(inc);
 }

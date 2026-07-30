@@ -34,6 +34,7 @@ function inc(over: Partial<OpenIncident> = {}): OpenIncident {
     confidence: 'high',
     cause_or_symptom: 'root_cause',
     evidence: ['trafft-sweeper.ts:88 — 401 on token refresh'],
+    review: { refuted: false, reason: 'evidence confirmed' },
     thread_ts: '88.0',
     thread_channel: 'C1',
     last_seen: '2026-06-23T00:00:00Z',
@@ -45,16 +46,22 @@ beforeEach(() => {
   query.mockReset().mockResolvedValue({ rows: [] });
   postIncidentsRef.mockReset().mockResolvedValue({ channel: 'C1', ts: '99.1' });
   execFile.mockReset();
+  process.env.HEALER_ACTIONS_ENABLED = '1';
+  process.env.HEALER_ACTION_EPOCH = 'test-epoch';
+  process.env.HEALER_OPERATOR_UIDS = 'U_ALEX';
+  delete process.env.HEALER_IMPLEMENT_ENABLED;
+  delete process.env.HEALER_QUIET;
 });
 
 describe('proposeFix', () => {
   it('arms approval (awaiting_approval) for an actionable command fix', async () => {
     expect(await proposeFix(inc())).toBe(true);
     const sql = query.mock.calls[0];
-    expect(sql[1]).toEqual([7, 'C1', '99.1', 'awaiting_approval']);
+    expect(sql[1]?.slice(0, 4)).toEqual([7, 'C1', '99.1', 'awaiting_approval']);
+    expect(sql[1]?.[4]).toContain('"approval_nonce"');
   });
 
-  it('posts a manual diff suggestion but stays diagnosed (no false ✅ path)', async () => {
+  it('posts a manual diff suggestion as needs_human (no false CTA)', async () => {
     await proposeFix(
       inc({
         proposed_fix: {
@@ -64,10 +71,10 @@ describe('proposeFix', () => {
         },
       }),
     );
-    expect(query.mock.calls[0][1][3]).toBe('diagnosed');
+    expect(query.mock.calls[0][1][3]).toBe('needs_human');
   });
 
-  it('keeps a code_bug manual (diagnosed) even if the model returned a command', async () => {
+  it('keeps a code_bug command manual even when the model returned a command', async () => {
     await proposeFix(
       inc({
         remediation_class: 'code_bug',
@@ -78,7 +85,7 @@ describe('proposeFix', () => {
         },
       }),
     );
-    expect(query.mock.calls[0][1][3]).toBe('diagnosed'); // never awaiting_approval → never ✅-shelled
+    expect(query.mock.calls[0][1][3]).toBe('needs_human');
   });
 
   it('returns false and writes nothing when the Slack post fails', async () => {
@@ -97,9 +104,30 @@ describe('proposeFix', () => {
     expect(query.mock.calls[0][1][3]).toBe('needs_human');
   });
 
-  it('a trustworthy code_bug stays diagnosed (👍-implement path stays open)', async () => {
-    await proposeFix(inc({ remediation_class: 'code_bug' }));
+  it('arms the code implementation path only for a diff under both gates', async () => {
+    process.env.HEALER_IMPLEMENT_ENABLED = '1';
+    await proposeFix(
+      inc({
+        remediation_class: 'code_bug',
+        proposed_fix: {
+          kind: 'diff',
+          summary: 'add retry handling',
+          diff: '@@ ...',
+        },
+      }),
+    );
     expect(query.mock.calls[0][1][3]).toBe('diagnosed');
+    expect(query.mock.calls[0][1][4]).toContain('"approval_nonce"');
+  });
+
+  it('persists an unbound manual proposal when the global action gate is off', async () => {
+    delete process.env.HEALER_ACTIONS_ENABLED;
+    await proposeFix(inc());
+    expect(query.mock.calls[0][1][3]).toBe('needs_human');
+    expect(query.mock.calls[0][1][4]).not.toContain('"approval_nonce"');
+    const text = postIncidentsRef.mock.calls[0][0] as string;
+    expect(text).toContain('Execution is disabled');
+    expect(text).not.toContain('react or reply to apply');
   });
 
   it('untrustworthy proposals render as "needs a human look" with no apply CTA', async () => {

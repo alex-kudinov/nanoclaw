@@ -1,6 +1,9 @@
 # Self-Healing — Phase 0 Implementation Spec
 
 **Parent design:** `docs/SELF-HEALING-DESIGN.md`
+**Current status:** Implemented and operating; remaining rotation, recovery
+drills, and action enablement are tracked in
+`docs/SELF-HEALING-COMPLETION-PLAN.md`.
 **Phase 0 goal:** Deterministic observability — every error from every surface becomes a deduped, queryable incident; daemon crashes are detected and auto-recovered. **No Claude, no code-fixing.** That is Phase 1+.
 **Date:** 2026-06-14
 
@@ -26,6 +29,7 @@
 | Digest | launchd `StartCalendarInterval` = 18:00 America/Chicago |
 | Heartbeat write interval | 30s (daemon) |
 | Heartbeat stale threshold | 120s (4 missed beats) |
+| Daemon restart control | Default-on `HEALER_RESTART_ENABLED`; `0` or `HEALER_QUIET=1` makes daemon-down alert-only |
 | Daemon restart cap | 2 per daemon-down incident, then alert-only |
 | JSON log path | `logs/nanoclaw.jsonl` |
 | Migrations | `data/business/migrations/nanoclaw-v2/` — next = `100`, `101` |
@@ -96,7 +100,7 @@ Two launchd units (copies in `setup/launchd/` per the launchd-not-synced rule):
 1. **JSONL scrape** — read `logs/nanoclaw.jsonl` from `collector_state` offset; keep `level>=50`; fingerprint = `sha1(normalize(msg) + '|' + err.type)` where `normalize` strips digits/uuids/timestamps.
 2. **job_run_logs** — open `store/messages.db` **read-only** (`?mode=ro`); rows `status!='ok'` with id > last-seen.
 3. **sweeper_watermarks** — rows `last_run_status IN ('frozen','error')`.
-4. **daemon liveness** — `daemon_heartbeat.last_beat` older than 120s OR `dist/index.js` not in `pgrep` → `source='daemon', severity='critical'`. On daemon-down: if restart count for the open incident < 2, run `launchctl kickstart -k gui/<uid>/com.nanoclaw`, increment count, post alert; else alert-only.
+4. **daemon liveness** — `daemon_heartbeat.last_beat` older than 120s OR `dist/index.js` not in `pgrep` → `source='daemon', severity='critical'`. On daemon-down: when `HEALER_RESTART_ENABLED` is not `0`, quiet mode is off, and the open incident has fewer than 2 restart attempts, run the fixed `launchctl kickstart -k gui/<uid>/com.nanoclaw`, increment count, and post an alert; otherwise alert-only.
 
 **`upsertIncident`:** if an OPEN incident with the fingerprint exists → `last_seen=now(), occurrences+1`; else insert `status='new'`. **Redact** secrets from `raw_context` before write.
 

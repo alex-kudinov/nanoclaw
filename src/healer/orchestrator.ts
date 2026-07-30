@@ -25,7 +25,7 @@ import {
 import { route, triage } from './diagnose.js';
 import { investigate, refute } from './investigate.js';
 import {
-  isTrustworthy,
+  hasEvidenceTrust,
   type DiagnosisResult,
   type Refutation,
 } from './trust.js';
@@ -84,8 +84,21 @@ export async function synthesize(
 ): Promise<Synthesis> {
   if (!refutation.refuted) return { verdict: dx, review: refutation };
   const tieBreaker = await investigate(inc);
-  if (tieBreaker && isTrustworthy(tieBreaker))
-    return { verdict: tieBreaker, review: refutation };
+  if (tieBreaker && hasEvidenceTrust(tieBreaker)) {
+    return {
+      verdict: {
+        ...tieBreaker,
+        evidence: [
+          ...(tieBreaker.evidence ?? []),
+          `INITIAL_REFUTATION: ${refutation.reason}`,
+        ],
+      },
+      review: {
+        refuted: false,
+        reason: 'independent tie-breaker confirmed an evidenced root cause',
+      },
+    };
+  }
   return { verdict: downgrade(dx, refutation), review: refutation };
 }
 
@@ -133,7 +146,7 @@ export async function diagnoseIncident(inc: OpenIncident): Promise<boolean> {
     result.verdict,
     result.review ? { review: result.review } : {},
   );
-  await route(inc, result.verdict);
+  await route({ ...inc, review: result.review ?? null }, result.verdict);
   return true;
 }
 

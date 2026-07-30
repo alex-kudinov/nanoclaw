@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `NC-20260730-002` | Make healer remediation fail closed before completing the wider self-healing system | Codex + Claude validator | `codex/continuity-reconciliation` @ `04292cd` | `ready_for_deploy` | C5 | healer action/approval authority, separate deterministic restart control, pending-proposal safety, focused tests, self-healing authority docs; `docs/reports/NC-20260730-002-CLAUDE-C5-REVIEW.md` (new); no production action or deployment | Claude's two P1 blockers and same-slice P2s are remediated and the complete pinned verification is green. Commit the isolated NC-002 slice, then separately authorize any dark deployment. Gate B diagnosis separation and Gate C typed actions still precede autonomy | 2026-07-30T19:24Z |
 | `NC-20260728-007` | Redesign the OneDrive Drop ingestion subsystem | human | `codex/continuity-reconciliation` @ `cd78ad2` | `planned` | C2 | all four `scripts/copiers/*.py`, their launchd jobs, and the upstream Solera export | Owner is redesigning the subsystem. Do not re-enable the existing copiers; establish first whether the upstream export is coming back | 2026-07-28T23:09Z |
 | `NC-20260728-006` | Chat/people drops ingest instead of retrying forever and pinning `fileproviderd` | Claude Code | `codex/continuity-reconciliation` @ `cd78ad2` | `complete` | C2 | `scripts/copiers/copy_chat.py`, `scripts/copiers/copy_people.py` | None. Fix verified live (66 COPIED / 0 FAILED under launchd) before the subsystem was stopped under NC-20260728-007 | 2026-07-28T23:09Z |
 | `NC-20260728-005` | Restore a truthful green Node 22 test baseline | Codex + Claude validator | `codex/continuity-reconciliation` @ `157cb1b` | `validating` | C2 | Node 22 baseline repaired: 124 files / 1,595 tests pass | Obtain explicit approval for the sanitized Claude API review, reconcile findings, and push the review branch | 2026-07-28T12:34Z |
@@ -37,6 +38,150 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan | Codex + Claude validator | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review` | C1 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260730-002
+
+- Outcome: complete the first safety gate in the self-healing recovery plan
+  before improving throughput or re-enabling any autonomous action.
+- Owner/client: Codex.
+- Change class: C5 because the current approval path can execute a
+  model-proposed shell command on the production host. This task changes the
+  authorization boundary but does not authorize deployment, service reload,
+  production incident mutation, Slack approval, command execution, or any
+  external action.
+- Verified starting state:
+  - NC-20260729-004 is `deployed_unverified`; its installed and tracked
+    `HEALER_IMPLEMENT_ENABLED=0` containment must remain intact;
+  - the fast healer and digest are live, while auto-remediation and
+    implementation have no recorded production actions;
+  - seven incidents were `awaiting_approval`, and two historical
+    `approved_apply` actions exist;
+  - the installed fast-healer plist does not define `HEALER_OPERATOR_UID`;
+    absent another inherited value, source currently treats any non-bot Slack
+    user as an operator;
+  - `HEALER_QUIET` gates diagnosis/remediation/implementation but not
+    `runApprovals`, so it is not a complete action kill switch.
+- Initial implementation scope:
+  - add one default-off `HEALER_ACTIONS_ENABLED` boundary covering approved
+    commands, automatic reruns, and code implementation;
+  - require an explicit named-operator allowlist and fail closed when absent;
+  - re-check trust, class, proposal kind, and action state at final approval
+    execution rather than relying only on proposal-time state;
+  - bind an approval to a fresh one-time proposal and prevent stale Slack
+    reactions from being re-consumed after a later state transition;
+  - keep collection, heartbeat, digest, and read-only diagnosis independent of
+    the action gate;
+  - update the tracked launchd template and self-healing authorities without
+    changing the installed unit.
+- Overlap: preserve all NC-20260729-004 source/artifact/deployment evidence and
+  the user-owned Procurement/knowledge/copier/email-renderer worktree changes.
+  This task owns only the healer safety slice and its documentation.
+- Local implementation checkpoint:
+  - one effective policy requires the global action flag, a named operator
+    allowlist, and an action epoch; missing values and quiet mode fail closed;
+  - host-issued proposal epochs, nonces, and timestamps replace model-supplied
+    values, expire old Slack signals, and are claimed atomically before a shell
+    command or implementation pipeline can run;
+  - approval execution rechecks the current trust/class/fix kind, records the
+    named approver, redacts command/output audit data, and disarms stale claims;
+  - confidence/root-cause labels are insufficient by themselves: a completed
+    passing adversarial review is required at proposal and execution time; an
+    initial refutation can only be overturned by the independent tie-breaker;
+  - the default-off gate covers approved commands, allowlisted auto-reruns, and
+    code implementation. Fixed model-independent daemon recovery instead uses
+    default-on `HEALER_RESTART_ENABLED`, preserving the existing availability
+    behavior while `HEALER_QUIET` remains the common stop;
+  - the tracked fast-healer template has `HEALER_ACTIONS_ENABLED=0`,
+    `HEALER_RESTART_ENABLED=1`, and `HEALER_IMPLEMENT_ENABLED=0`. The installed
+    unit was not changed and remains implementation-off from NC-004.
+- Verification after review remediation: pinned Node 22.23.2 typecheck passes;
+  the healer suite passes **20 files / 197 tests**; the complete serial
+  repository suite passes **134 files / 1,689 tests**. Documentation
+  continuity, repository formatting, and diff checks are the final handoff
+  checks.
+- Completion authority: `docs/SELF-HEALING-COMPLETION-PLAN.md`.
+- Independent C5 review completed 2026-07-30T19:02Z by Claude Code 2.1.220,
+  model `claude-opus-5[1m]` at maximum effort, account label `info-tandem`.
+  Report: `docs/reports/NC-20260730-002-CLAUDE-C5-REVIEW.md`.
+  **Verdict: CHANGES REQUIRED.**
+- Validator reproduced every recorded check independently under pinned Node
+  22.23.2: typecheck passes; healer suite 20 files / 193 tests; full repository
+  suite 130 files / 1,661 tests; `npm run docs:continuity-check` passes (22
+  active/ready rows, 22 changelog entries); `npm run format:check` passes across
+  all of `src/**/*.ts`; `git diff --check` passes. Two blockers recorded in the
+  `NC-20260730-003` entry are therefore resolved and should be amended there:
+  continuity is no longer blocked, and no `src/healer/*` file fails Prettier.
+- Host-execution inventory confirmed: `approval.ts:176`, `remediate.ts:67`,
+  `implement.ts:134`, and `collector.ts:229` are all enclosed by the new
+  boundary. `agentic.ts:74` (diagnosis) is deliberately outside it. The
+  `implement.ts:124` single-quote escaping was checked specifically and is
+  correct — there is no shell-injection path.
+- Deployment-blocking finding **P1-1**: `restartDaemon()`
+  (`collector.ts:226-239`, `:280`) is now behind the same default-off switch as
+  arbitrary model-authored shell, and the tracked template ships
+  `HEALER_ACTIONS_ENABLED=0` with no operator allowlist or epoch. The fast
+  healer is live today and does restart a dead daemon; after a dark deployment
+  it will only post to Slack. The restart takes no model input — fixed
+  `launchctl kickstart -k gui/$uid/com.nanoclaw` argv, already capped and
+  idempotent — so it is the typed-action class the plan intends to permit.
+  Either add a separate `HEALER_RESTART_ENABLED` (default on) or record the
+  availability trade-off with a named human owner for daemon-down recovery.
+  Decide this before authorizing deployment; it does not block the commit.
+- Commit-blocking finding **P1-2**: the implementation path never re-evaluates
+  trust at the final boundary. `runApprovals` calls `isActionable` (and
+  therefore `isTrustworthy`) immediately before executing;
+  `implement.ts:82-100`/`:144-200` filter only on confidence and
+  cause_or_symptom in SQL and recheck only `fixApprovalIsCurrent`, so the
+  adversarial-review requirement is enforced indirectly through nonce issuance
+  and does not survive a trust change after arming. Add
+  `if (!isTrustworthy(inc)) return false;` in `dispatch()` plus the matching
+  filter condition and one test.
+- Recommended in the same commit: **P2-2** `remediate.ts:74-80` records
+  `command` and `out` unredacted while `approval.ts:179-181` redacts both, so
+  the changelog's unqualified "redacted command/output audit data" is wrong for
+  the auto-rerun path; and four documentation corrections — the P1-1 deployment
+  consequence, the `HEALER_INVESTIGATE_BASH=1` Bash escape hatch that sits
+  outside the gate (P2-3), the "refuting review → manual-only" claim that the
+  `synthesize` tie-breaker path contradicts (P2-5), and `implement.ts:9-13`'s
+  claim of a time-box that `spawnPipeline` does not implement.
+- Deferred with explicit acceptance: **P2-1** `verifyRemediating` can close an
+  implement-dispatched incident as `verified_fixed` after 6 quiet minutes while
+  the unbounded detached pipeline is still running, after which `pollResults`
+  never reports the draft PR; **P2-4** the trust gate compares
+  `review.reason` against two free-text literals produced in the untouched
+  `investigate.ts`, so a reword silently opens it; **P2-6** `applied_action` is
+  a single last-write-wins column rather than an audit log; five P3 items
+  including reject-should-win in `emojiVerdict` and the implicit dependency
+  between the 5-minute stale-claim window and the 120-second shell timeout.
+- Validator state boundary: repository reads plus this report and two continuity
+  edits. No implementation code was edited, nothing was staged or committed, and
+  no deployment, service, launchd, incident, Slack reaction, operator/epoch
+  configuration, credential, or production write occurred. The 65-path dirty
+  worktree, including the concurrent NC-20260730-001/003 and user-owned changes,
+  was preserved unchanged.
+- Review remediation checkpoint:
+  - P1-1 resolved by separating fixed daemon recovery into default-on
+    `HEALER_RESTART_ENABLED`; the global model-authored action gate remains off;
+  - P1-2 resolved by rechecking `isTrustworthy` both in candidate loading and
+    immediately before implementation claim/credential access;
+  - automatic-rerun command/output audit fields are redacted;
+  - generic recurrence verification now excludes detached implementation runs;
+    reject wins over approve when named-operator reactions conflict; blank TTL
+    configuration uses the bounded default; stale-claim timing is documented;
+  - security, design, diagnosis, completion, project-map, and implementation
+    text now disclose diagnostic Bash outside the action gate, the tie-breaker,
+    deterministic restart behavior, and the unbounded pipeline residual.
+- Remaining accepted design debt: review status is coupled to free-text
+  literals; `applied_action` is last-write-wins rather than an append-only
+  action log; the implementation pipeline remains unbounded and runs in the
+  operational checkout. Gates B, C, and F own those corrections before
+  autonomy or implementation enablement.
+- Next action: finish pinned verification and commit only NC-002-owned paths.
+  A later, separately authorized dark deployment must keep
+  `HEALER_ACTIONS_ENABLED=0`, `HEALER_RESTART_ENABLED=1`, and
+  `HEALER_IMPLEMENT_ENABLED=0`, then live-verify observation and deterministic
+  restart. Do not enable actions, configure operators/epochs, consume Slack
+  reactions, or mutate production incidents under this task.
 
 ### NC-20260729-004
 

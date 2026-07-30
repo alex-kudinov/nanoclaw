@@ -613,8 +613,13 @@ are:
 - **integrations:** Stripe, Sheets, Firebase/Hive, proposal, Things, toolbox,
   tracking/unsubscribe, SEO, team identifiers;
 - **autonomy:** allowed groups, promotion streak, veto time;
-- **healer:** collect/diagnose/investigate/implement/remediate toggles, commands,
-  concurrency, timeouts, operator and logs;
+- **healer:** collect/diagnose/investigate controls; the default-off
+  model-authored action flag, separate default-on deterministic restart flag,
+  action epoch, explicit operator allowlist, approval TTL, and secondary
+  implement/auto-remediate flags; commands, concurrency, timeouts, and logs. A
+  Slack reaction alone is not execution authority. Diagnostic Bash is a
+  separate off-by-default escape hatch outside the action flag and must remain
+  off pending host sandboxing;
 - **operations:** timezone, log level, dry-run, job report and heartbeat channels.
 
 `.env.example` documents only a subset and contains some upstream/runtime-neutral
@@ -952,6 +957,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/ACTIVE-WORK.md`                 | current task ownership, overlap, state, and next action      | must remain concise and current                    |
 | `docs/ENGINEERING-CHANGELOG.md`       | append-only implementation/verification/deployment history   | evidence only; do not overstate boundaries crossed |
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` | validated, phased improvement roadmap                        | proposed work; not implemented state               |
+| `docs/SELF-HEALING-COMPLETION-PLAN.md` | reconciled healer current state and gated completion sequence | action-boundary source is local until separately reviewed/deployed |
 | `docs/REQUIREMENTS.md`                | original product principles                                  | intent, not feature inventory                      |
 | `docs/ARCHITECTURE.md`                | broad bespoke architecture                                   | some SDK terminology is stale                      |
 | `docs/SPEC.md`                        | core behavior specification                                  | reconcile with fork extensions                     |

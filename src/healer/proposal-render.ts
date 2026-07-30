@@ -35,8 +35,9 @@ function needsHumanText(inc: OpenIncident): string {
   const cause = `*Root cause:* ${inc.diagnosis ?? '(none)'}`;
   const klass = `*Class:* \`${inc.remediation_class}\``;
   const sug = `*Possible fix (manual):* ${fix?.summary ?? '(none)'}`;
-  const why =
-    '_Low-confidence or symptom-level — no auto-apply offered; investigate before acting._';
+  const why = isTrustworthy(inc)
+    ? '_Execution is disabled or not armed — review manually; no action signal will be consumed._'
+    : '_Low-confidence or symptom-level — no auto-apply offered; investigate before acting._';
   return [
     head,
     cause,
@@ -73,7 +74,7 @@ function trustedText(inc: OpenIncident, actionable: boolean): string {
 
 /** The proposal message text, trust-gated. */
 export function proposalText(inc: OpenIncident, actionable: boolean): string {
-  return isTrustworthy(inc)
+  return isTrustworthy(inc) && actionable
     ? trustedText(inc, actionable)
     : needsHumanText(inc);
 }

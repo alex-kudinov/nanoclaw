@@ -9,8 +9,9 @@
  * Fenced like Phase 2: HEALER_IMPLEMENT_ENABLED (default off — ship dark until
  * the headless pipeline invocation is verified). The dev-pipeline lead is
  * interactive (uses AskUserQuestion), so the task prompt forbids questions and
- * the run uses bypassPermissions; without a TTY a stray prompt would hang, so
- * each run is time-boxed and its outcome polled from a completion marker.
+ * the run uses bypassPermissions. The detached process is polled from a
+ * completion marker; it does not yet have a process timeout, which is one reason
+ * the implementation switch remains off by default.
  */
 
 import { spawn } from 'child_process';
@@ -20,21 +21,25 @@ import path from 'path';
 import { logger } from '../logger.js';
 import { activeOAuthToken } from './agentic.js';
 import { getReactions, getReplies } from './slack.js';
-import { emojiVerdict, replyVerdict } from './approval.js';
+import {
+  emojiVerdict,
+  replyVerdict,
+  type ApprovalVerdict,
+} from './approval.js';
 import { query } from '../business-db.js';
+import {
+  fixApprovalIsCurrent,
+  healerImplementationEnabled,
+} from './action-policy.js';
 import {
   postIncidentThread,
   recordAction,
-  setStatus,
   type OpenIncident,
 } from './remediation.js';
+import { isTrustworthy } from './trust.js';
 
 const BRANCH_PREFIX = 'healer/fix-';
 const DONE_MARKER = 'HEALER_IMPLEMENT_DONE:';
-
-function enabled(): boolean {
-  return process.env.HEALER_IMPLEMENT_ENABLED === '1';
-}
 
 function logPath(id: number): string {
   const dir =
@@ -82,14 +87,19 @@ async function loadImplementable(): Promise<OpenIncident[]> {
   >(
     `SELECT id, source, severity, occurrences, status, raw_context,
             remediation_class, diagnosis, proposed_fix, confidence,
-            cause_or_symptom, evidence, thread_ts, thread_channel,
+            cause_or_symptom, evidence, review, thread_ts, thread_channel,
             last_seen::text AS last_seen, proposal_channel, proposal_ts
        FROM business_v2.incidents
       WHERE status = 'diagnosed' AND remediation_class = 'code_bug'
         AND proposal_channel IS NOT NULL AND proposal_ts IS NOT NULL
         AND confidence IS DISTINCT FROM 'low' AND cause_or_symptom = 'root_cause'`,
   );
-  return r.rows;
+  return r.rows.filter(
+    (inc) =>
+      inc.proposed_fix?.kind === 'diff' &&
+      fixApprovalIsCurrent(inc.proposed_fix) &&
+      isTrustworthy(inc),
+  );
 }
 
 /**
@@ -102,14 +112,13 @@ async function loadImplementable(): Promise<OpenIncident[]> {
 async function operatorRequestedImplement(
   channel: string,
   ts: string,
-): Promise<boolean> {
+): Promise<ApprovalVerdict | null> {
   const [reactions, replies] = await Promise.all([
     getReactions(channel, ts),
     getReplies(channel, ts),
   ]);
-  return (
-    emojiVerdict(reactions) === 'approve' || replyVerdict(replies) === 'approve'
-  );
+  const verdict = emojiVerdict(reactions) ?? replyVerdict(replies);
+  return verdict?.decision === 'approve' ? verdict : null;
 }
 
 /** Spawn the dev-pipeline headless+detached on a fresh branch; never awaited. */
@@ -135,7 +144,13 @@ function spawnPipeline(inc: OpenIncident, branch: string, token: string): void {
 }
 
 /** Returns true if a pipeline was actually dispatched. */
-async function dispatch(inc: OpenIncident): Promise<boolean> {
+async function dispatch(
+  inc: OpenIncident & { proposal_ts: string },
+  verdict: ApprovalVerdict,
+): Promise<boolean> {
+  // Trust can change after proposal publication. Re-check at the last boundary
+  // before reading credentials or attempting the one-time database claim.
+  if (!isTrustworthy(inc)) return false;
   const token = activeOAuthToken();
   if (!token) {
     await postIncidentThread(
@@ -144,15 +159,45 @@ async function dispatch(inc: OpenIncident): Promise<boolean> {
     );
     return false; // don't spawn a guaranteed-401 run; leave status 'diagnosed'
   }
+  const nonce = inc.proposed_fix?.approval_nonce;
+  if (!nonce || !fixApprovalIsCurrent(inc.proposed_fix)) return false;
+  const claim = await query<{ id: number }>(
+    `UPDATE business_v2.incidents
+        SET status = 'triaging', applied_action = $4::jsonb,
+            proposal_channel = NULL, proposal_ts = NULL, updated_at = now()
+      WHERE id = $1 AND status = 'diagnosed' AND proposal_ts = $2
+        AND proposed_fix->>'approval_nonce' = $3
+      RETURNING id`,
+    [
+      inc.id,
+      inc.proposal_ts,
+      nonce,
+      JSON.stringify({
+        kind: 'implement_claimed',
+        approved_by: verdict.user,
+        approval_nonce: nonce,
+        at: new Date().toISOString(),
+      }),
+    ],
+  );
+  if (claim.rows.length === 0) return false;
   const branch = branchName(inc.id);
   fs.writeFileSync(logPath(inc.id), `dispatched ${new Date().toISOString()}\n`);
   spawnPipeline(inc, branch, token);
   await recordAction(inc.id, {
     kind: 'implement_dispatched',
     branch,
+    approved_by: verdict.user,
+    approval_nonce: nonce,
     at: new Date().toISOString(),
   });
-  await setStatus(inc.id, 'remediating');
+  await query(
+    `UPDATE business_v2.incidents
+        SET status = 'remediating', updated_at = now()
+      WHERE id = $1 AND status = 'triaging'
+        AND applied_action->>'approval_nonce' = $2`,
+    [inc.id, nonce],
+  );
   await postIncidentThread(
     inc,
     `:wrench: Implementing *${inc.source}* (#${inc.id}) on \`${branch}\` via the dev-pipeline — draft PR to follow.`,
@@ -183,13 +228,30 @@ async function pollResults(): Promise<number> {
     const ok = /HEALER_IMPLEMENT_DONE:0\b/.test(out);
     const pr = extractPrUrl(out);
     if (ok && pr) {
-      await setStatus(row.id, 'awaiting_approval');
+      await query(
+        `UPDATE business_v2.incidents
+            SET status = 'needs_human', outcome = 'escalated',
+                proposed_fix = proposed_fix - 'action_epoch'
+                  - 'approval_nonce' - 'approval_created_at',
+                proposal_channel = NULL, proposal_ts = NULL, updated_at = now()
+          WHERE id = $1 AND status = 'remediating'
+            AND applied_action->>'kind' = 'implement_dispatched'`,
+        [row.id],
+      );
       await postIncidentThread(
         row,
-        `:white_check_mark: Draft PR ready for *${row.source}* (#${row.id}): ${pr}`,
+        `:white_check_mark: Draft PR ready for human review for *${row.source}* (#${row.id}): ${pr}`,
       );
     } else {
-      await setStatus(row.id, 'recurring', 'still_failing');
+      await query(
+        `UPDATE business_v2.incidents
+            SET status = 'recurring', outcome = 'still_failing',
+                proposed_fix = proposed_fix - 'action_epoch'
+                  - 'approval_nonce' - 'approval_created_at',
+                proposal_channel = NULL, proposal_ts = NULL, updated_at = now()
+          WHERE id = $1`,
+        [row.id],
+      );
       await postIncidentThread(
         row,
         `:warning: Implement run for *${row.source}* (#${row.id}) finished without a green PR — needs a look.`,
@@ -202,7 +264,7 @@ async function pollResults(): Promise<number> {
 
 /** Fast-loop step: dispatch 🔧-requested implements, then report finished ones. */
 export async function runImplement(): Promise<number> {
-  if (!enabled() || process.env.HEALER_QUIET === '1') return 0;
+  if (!healerImplementationEnabled()) return 0;
   const eligible = await loadImplementable();
   let dispatched = 0;
   for (const inc of eligible) {
@@ -210,13 +272,11 @@ export async function runImplement(): Promise<number> {
       proposal_channel: string;
       proposal_ts: string;
     };
-    if (
-      (await operatorRequestedImplement(
-        ref.proposal_channel,
-        ref.proposal_ts,
-      )) &&
-      (await dispatch(inc))
-    ) {
+    const verdict = await operatorRequestedImplement(
+      ref.proposal_channel,
+      ref.proposal_ts,
+    );
+    if (verdict && (await dispatch(ref, verdict))) {
       dispatched++;
     }
   }

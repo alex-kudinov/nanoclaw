@@ -6,6 +6,10 @@
 	<dict>
 		<key>HEALER_DAEMON_JSONL</key>
 		<string>/Users/xbohdpukc/dev/NanoClaw/logs/nanoclaw.jsonl</string>
+		<key>HEALER_ACTIONS_ENABLED</key>
+		<string>0</string>
+		<key>HEALER_RESTART_ENABLED</key>
+		<string>1</string>
 		<key>HEALER_IMPLEMENT_ENABLED</key>
 		<string>0</string>
 		<key>NANOCLAW_JSONL_PATH</key>

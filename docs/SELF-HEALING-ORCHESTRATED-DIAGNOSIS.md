@@ -1,6 +1,7 @@
 # Self-Healing Phase 4 — Orchestrated, Evidence-Grounded Diagnosis
 
-**Status:** Plan / pre-implementation · **Date:** 2026-06-24
+**Status:** Synchronous-bounded implementation; throughput completion is tracked
+in `docs/SELF-HEALING-COMPLETION-PLAN.md` · **Date:** 2026-06-24
 **Supersedes** the one-shot diagnosis brain in `src/healer/diagnose.ts` (Phase 1).
 
 ## 1. Why
@@ -82,15 +83,30 @@ Agentic investigation = 30 s–3 min each; the 5-min fast loop can't run many sy
 
 ## 8. Safety
 
-- Investigation/refutation are **READ-ONLY** (Read/Grep/Glob; no Write/Edit; Bash only if a curated read-only allowlist is enabled) — cannot mutate the repo.
-- Kill switches: `HEALER_DIAGNOSE_ENABLED`, per-stage flags; `HEALER_QUIET` already halts all autonomy.
+- Investigation/refutation are intended to be **READ-ONLY**
+  (Read/Grep/Glob; no Write/Edit). `HEALER_INVESTIGATE_BASH=1` is an existing
+  escape hatch that grants Bash to a `bypassPermissions` process outside the
+  model-authored action gate; it must stay off until a host-enforced,
+  command-level read-only sandbox replaces that permission.
+- Diagnosis controls: `HEALER_DIAGNOSE_ENABLED` and per-stage flags.
+- Action controls: `HEALER_ACTIONS_ENABLED=1`, a current action epoch, and an
+  explicit operator allowlist are all required. `HEALER_QUIET=1` is a complete
+  action kill switch, including fixed daemon recovery and diagnostic Bash, but
+  quiet mode alone is not the authorization model.
+- Every executable proposal receives a host-issued, expiring epoch/nonce
+  binding and is atomically claimed after final trust/class/fix/operator checks.
+  Old Slack reactions and replies are not reusable approvals.
+- `HEALER_IMPLEMENT_ENABLED` is secondary to the global action gate and remains
+  off until implementation runs in a disposable worktree.
 - Redaction before any context reaches a model (already in place). Loop-prevention tags (already in place).
 
 ## 9. Build sequence
 
 - **4a — Trust layer.** `confidence` / `cause_or_symptom` / `evidence` on the diagnosis + the 👍 gate + proposal display. (Small, immediate value — makes today's brain honest about its own uncertainty.)
 - **4b — Agentic investigator + orchestrator skeleton.** `agentic.ts` (done) → `investigate()` (read-only) → orchestrator replaces the one-shot; store evidence.
-- **4c — Adversarial refuter + synthesizer.** Always-after-escalation; disagreement → needs_human.
+- **4c — Adversarial refuter + synthesizer.** Always-after-escalation; a
+  refutation triggers an independent tie-breaker, which either produces a
+  passing synthesized review or downgrades the incident to manual handling.
 - **4d — Detached orchestration + state machine + concurrency.** Throughput at scale.
 - **4e (future) — Repro-test author** feeding the Phase-3 tests-green gate.
 

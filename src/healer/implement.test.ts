@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { query } = vi.hoisted(() => ({ query: vi.fn() }));
 const slack = vi.hoisted(() => ({
-  postIncidents: vi.fn(),
   getReactions: vi.fn(),
   getReplies: vi.fn(),
 }));
@@ -12,7 +11,6 @@ const approval = vi.hoisted(() => ({
 }));
 const rem = vi.hoisted(() => ({
   recordAction: vi.fn(),
-  setStatus: vi.fn(),
   postIncidentThread: vi.fn(),
 }));
 const { spawn } = vi.hoisted(() => ({ spawn: vi.fn() }));
@@ -41,14 +39,13 @@ import {
   extractPrUrl,
   runImplement,
 } from './implement.js';
+import type { OpenIncident } from './remediation.js';
 
-/** Default fs: the rotation files resolve to a valid token. */
 function tokenFiles(p: string): string {
   if (p.includes('.claude-active-token')) return 'info\n';
   if (p.includes('.claude-tokens.json')) return '{"info":"sk-ant-oat01-test"}';
   return '';
 }
-import type { OpenIncident } from './remediation.js';
 
 const codeBug: OpenIncident & {
   proposal_channel: string;
@@ -62,10 +59,18 @@ const codeBug: OpenIncident & {
   raw_context: {},
   remediation_class: 'code_bug',
   diagnosis: '429 not backed off',
-  proposed_fix: { kind: 'diff', summary: 'add retry-after', diff: '@@ ...' },
+  proposed_fix: {
+    kind: 'diff',
+    summary: 'add retry-after',
+    diff: '@@ ...',
+    action_epoch: 'test-epoch',
+    approval_nonce: 'nonce-42',
+    approval_created_at: new Date().toISOString(),
+  },
   confidence: 'high',
   cause_or_symptom: 'root_cause',
   evidence: ['trafft-sweeper.ts:120 — no Retry-After handling'],
+  review: { refuted: false, reason: 'evidence confirmed' },
   thread_ts: null,
   thread_channel: null,
   last_seen: '2026-06-23T00:00:00Z',
@@ -75,13 +80,11 @@ const codeBug: OpenIncident & {
 
 beforeEach(() => {
   query.mockReset().mockResolvedValue({ rows: [] });
-  slack.postIncidents.mockReset().mockResolvedValue(true);
   slack.getReactions.mockReset().mockResolvedValue([]);
   slack.getReplies.mockReset().mockResolvedValue([]);
   approval.emojiVerdict.mockReset().mockReturnValue(null);
   approval.replyVerdict.mockReset().mockReturnValue(null);
   rem.recordAction.mockReset();
-  rem.setStatus.mockReset();
   rem.postIncidentThread
     .mockReset()
     .mockResolvedValue({ channel: 'C1', ts: '1.2' });
@@ -89,21 +92,32 @@ beforeEach(() => {
   fsm.writeFileSync.mockReset();
   fsm.readFileSync.mockReset().mockImplementation(tokenFiles);
   process.env.HEALER_IMPLEMENT_ENABLED = '1';
+  process.env.HEALER_ACTIONS_ENABLED = '1';
+  process.env.HEALER_ACTION_EPOCH = 'test-epoch';
+  process.env.HEALER_OPERATOR_UIDS = 'U_ALEX';
+  codeBug.proposed_fix = {
+    kind: 'diff',
+    summary: 'add retry-after',
+    diff: '@@ ...',
+    action_epoch: 'test-epoch',
+    approval_nonce: 'nonce-42',
+    approval_created_at: new Date().toISOString(),
+  };
+  codeBug.review = { refuted: false, reason: 'evidence confirmed' };
   delete process.env.HEALER_QUIET;
 });
 
 describe('pure helpers', () => {
-  it('branchName', () => {
+  it('builds a bounded draft-PR task on the incident branch', () => {
     expect(branchName(42)).toBe('healer/fix-42');
+    const task = buildTask(codeBug, 'healer/fix-42');
+    expect(task).toContain('NON-INTERACTIVELY');
+    expect(task).toContain('healer/fix-42');
+    expect(task).toContain('DRAFT PR');
+    expect(task).toMatch(/do NOT push to main/i);
   });
-  it('buildTask forbids questions and pins the branch', () => {
-    const t = buildTask(codeBug, 'healer/fix-42');
-    expect(t).toContain('NON-INTERACTIVELY');
-    expect(t).toContain('healer/fix-42');
-    expect(t).toContain('DRAFT PR');
-    expect(t).toMatch(/do NOT push to main/i);
-  });
-  it('extractPrUrl finds a PR link or returns null', () => {
+
+  it('extracts only a PR URL', () => {
     expect(
       extractPrUrl('see https://github.com/alex-kudinov/nanoclaw/pull/7 now'),
     ).toBe('https://github.com/alex-kudinov/nanoclaw/pull/7');
@@ -111,44 +125,108 @@ describe('pure helpers', () => {
   });
 });
 
-describe('runImplement gating', () => {
-  it('no-ops when HEALER_IMPLEMENT_ENABLED is unset', async () => {
+describe('runImplement gating and claims', () => {
+  function armEligible(options: { claim?: boolean } = {}): void {
+    query.mockImplementation((sql: string) => {
+      if (
+        sql.includes("status = 'diagnosed' AND remediation_class = 'code_bug'")
+      ) {
+        return { rows: [codeBug] };
+      }
+      if (sql.includes("SET status = 'triaging'")) {
+        return { rows: options.claim === false ? [] : [{ id: 42 }] };
+      }
+      return { rows: [] };
+    });
+  }
+
+  it('no-ops unless both implementation and global action gates are armed', async () => {
     delete process.env.HEALER_IMPLEMENT_ENABLED;
     expect(await runImplement()).toBe(0);
     expect(query).not.toHaveBeenCalled();
+
+    process.env.HEALER_IMPLEMENT_ENABLED = '1';
+    delete process.env.HEALER_ACTIONS_ENABLED;
+    expect(await runImplement()).toBe(0);
+    expect(query).not.toHaveBeenCalled();
   });
-});
 
-describe('dispatch on operator 👍 (same approval signal as everything else)', () => {
-  const armEligible = () =>
-    query.mockImplementation((sql: string) =>
-      sql.includes("'code_bug'") ? { rows: [codeBug] } : { rows: [] },
-    );
-
-  it('spawns the pipeline and flips to remediating on an approve verdict (👍/✅)', async () => {
+  it('ignores an expired or stale proposal binding', async () => {
+    codeBug.proposed_fix = {
+      ...codeBug.proposed_fix!,
+      approval_created_at: '2020-01-01T00:00:00Z',
+    };
     armEligible();
-    approval.emojiVerdict.mockReturnValue('approve');
+    approval.emojiVerdict.mockReturnValue({
+      decision: 'approve',
+      user: 'U_ALEX',
+    });
+    expect(await runImplement()).toBe(0);
+    expect(slack.getReactions).not.toHaveBeenCalled();
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  it('atomically claims and dispatches on a named approve verdict', async () => {
+    armEligible();
+    approval.emojiVerdict.mockReturnValue({
+      decision: 'approve',
+      user: 'U_ALEX',
+    });
     expect(await runImplement()).toBe(1);
     expect(spawn).toHaveBeenCalledTimes(1);
-    expect(rem.setStatus).toHaveBeenCalledWith(42, 'remediating');
+    expect(rem.recordAction).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        kind: 'implement_dispatched',
+        approved_by: 'U_ALEX',
+        approval_nonce: 'nonce-42',
+      }),
+    );
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes("SET status = 'remediating'"),
+      ),
+    ).toBe(true);
   });
 
-  it('ignores a code_bug with no approve verdict', async () => {
-    armEligible(); // both verdicts default to null
+  it('does not dispatch when another poller already consumed the nonce', async () => {
+    armEligible({ claim: false });
+    approval.replyVerdict.mockReturnValue({
+      decision: 'approve',
+      user: 'U_ALEX',
+    });
     expect(await runImplement()).toBe(0);
     expect(spawn).not.toHaveBeenCalled();
   });
 
-  it('also triggers on an approve reply (apply/implement/yes)', async () => {
+  it('re-checks trust after arming and refuses a newly refuted diagnosis', async () => {
     armEligible();
-    approval.replyVerdict.mockReturnValue('approve');
-    expect(await runImplement()).toBe(1);
-    expect(spawn).toHaveBeenCalled();
+    approval.emojiVerdict.mockReturnValue({
+      decision: 'approve',
+      user: 'U_ALEX',
+    });
+    slack.getReactions.mockImplementation(async () => {
+      codeBug.review = {
+        refuted: true,
+        reason: 'adversarial review found a symptom',
+      };
+      return [];
+    });
+    expect(await runImplement()).toBe(0);
+    expect(spawn).not.toHaveBeenCalled();
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes("SET status = 'triaging'"),
+      ),
+    ).toBe(false);
   });
 
-  it('does NOT spawn (warns instead) when no active token is available', async () => {
+  it('leaves the proposal unclaimed when no active token is available', async () => {
     armEligible();
-    approval.emojiVerdict.mockReturnValue('approve');
+    approval.emojiVerdict.mockReturnValue({
+      decision: 'approve',
+      user: 'U_ALEX',
+    });
     fsm.readFileSync.mockImplementation(() => {
       throw new Error('ENOENT');
     });
@@ -162,38 +240,55 @@ describe('dispatch on operator 👍 (same approval signal as everything else)', 
 });
 
 describe('pollResults', () => {
-  const armFinished = (log: string) =>
+  function armFinished(log: string): void {
     query.mockImplementation((sql: string) => {
-      if (sql.includes('implement_dispatched'))
+      if (
+        sql.trimStart().startsWith('SELECT id, source') &&
+        sql.includes('implement_dispatched')
+      ) {
         return { rows: [{ id: 42, source: 'sweeper:trafft' }] };
+      }
       return { rows: [] };
-    }) && fsm.readFileSync.mockReturnValue(log);
+    });
+    fsm.readFileSync.mockReturnValue(log);
+  }
 
-  it('reports a green draft PR and arms it for merge approval', async () => {
+  it('reports a green draft PR as needs_human, never as shell approval', async () => {
     armFinished(
       '...HEALER_IMPLEMENT_DONE:0\nhttps://github.com/alex-kudinov/nanoclaw/pull/9',
     );
     await runImplement();
-    expect(rem.setStatus).toHaveBeenCalledWith(42, 'awaiting_approval');
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes("SET status = 'needs_human'"),
+      ),
+    ).toBe(true);
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes("SET status = 'awaiting_approval'"),
+      ),
+    ).toBe(false);
     expect(rem.postIncidentThread).toHaveBeenCalledWith(
       expect.objectContaining({ id: 42 }),
       expect.stringContaining('/pull/9'),
     );
   });
 
-  it('flags a failed run as recurring', async () => {
+  it('flags a failed run as recurring and clears the old proposal binding', async () => {
     armFinished('boom\nHEALER_IMPLEMENT_DONE:1');
     await runImplement();
-    expect(rem.setStatus).toHaveBeenCalledWith(
-      42,
-      'recurring',
-      'still_failing',
-    );
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes("SET status = 'recurring'"),
+      ),
+    ).toBe(true);
   });
 
-  it('leaves a still-running pipeline untouched (no marker yet)', async () => {
+  it('leaves a still-running pipeline untouched', async () => {
     armFinished('dispatched, working...');
     await runImplement();
-    expect(rem.setStatus).not.toHaveBeenCalled();
+    expect(
+      query.mock.calls.some(([sql]) => String(sql).includes('SET status =')),
+    ).toBe(false);
   });
 });

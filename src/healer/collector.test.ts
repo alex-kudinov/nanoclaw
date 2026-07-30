@@ -53,6 +53,11 @@ beforeEach(() => {
   execFile.mockReset().mockImplementation((_c, _a, _o, cb) => cb(null));
   Database.mockReset();
   process.env.HEALER_DAEMON_JSONL = tmpJsonl;
+  process.env.HEALER_ACTIONS_ENABLED = '1';
+  process.env.HEALER_ACTION_EPOCH = 'test-epoch';
+  process.env.HEALER_OPERATOR_UIDS = 'U_ALEX';
+  delete process.env.HEALER_RESTART_ENABLED;
+  delete process.env.HEALER_QUIET;
 });
 afterAll(() => {
   delete process.env.HEALER_DAEMON_JSONL;
@@ -237,6 +242,20 @@ describe('checkDaemon', () => {
     await checkDaemon();
     expect(execFile).not.toHaveBeenCalled();
     expect(postIncidents).toHaveBeenCalled();
+  });
+
+  it('does not restart when the deterministic restart control is off', async () => {
+    process.env.HEALER_RESTART_ENABLED = '0';
+    query
+      .mockResolvedValueOnce({
+        rows: [{ last_beat: new Date(Date.now() - 5 * 60_000).toISOString() }],
+      })
+      .mockResolvedValueOnce({ rows: [{ restart_attempts: 0 }] });
+    await checkDaemon();
+    expect(execFile).not.toHaveBeenCalled();
+    expect(postIncidents).toHaveBeenCalledWith(
+      expect.stringContaining('restart disabled'),
+    );
   });
 
   it('on a fresh heartbeat resolves ONLY the heartbeat incident (scoped by fingerprint, not all daemon errors)', async () => {

@@ -1,6 +1,7 @@
 # NanoClaw Self-Healing System — Design
 
-**Status:** Design / pre-implementation
+**Status:** Implemented in part; current completion authority is
+`docs/SELF-HEALING-COMPLETION-PLAN.md`
 **Date:** 2026-06-14
 **Decisions locked:** separate independent process · autonomy = propose + auto-rerun idempotent (Tier 1+2) · scope = everything incl. daemon crashes · surface = new `#gru-incidents` channel
 
@@ -147,3 +148,29 @@ Phase 0+1 is the high-leverage core; 2 graduates trust; 3 is later.
 - **Idempotency allowlist** — confirm initial set in §5; classify each remaining job/sweeper before enabling its Tier-2 auto-rerun.
 - **Quiet window** — how to detect "operator actively deploying" to suppress false incidents (e.g., a touch-file the deploy sets, or a `git status` dirty + recent-mtime heuristic).
 ```
+
+## 9. Action-authority correction (`NC-20260730-002`)
+
+The original approval and autonomy decisions describe desired behavior, not
+sufficient execution authority. Before any action tier can be enabled:
+
+- `HEALER_ACTIONS_ENABLED=1`, a non-empty action epoch, and at least one
+  explicitly named Slack operator must all be present; absence and quiet mode
+  fail closed;
+- the host, not a model, binds each executable proposal to the current epoch, a
+  one-time nonce, and a bounded timestamp;
+- final execution rechecks trust, remediation class, fix kind, proposal
+  freshness, named approver, and current database state, then atomically
+  consumes the nonce before a command or implementation pipeline starts;
+- the global gate covers approved shell commands, allowlisted automatic
+  reruns, and code implementation. The fixed, model-independent daemon restart
+  is separately controlled by default-on `HEALER_RESTART_ENABLED`; collection,
+  digest, and read-only diagnosis remain independent;
+- `HEALER_IMPLEMENT_ENABLED` remains an additional, default-off switch under
+  the global gate. Code implementation must also move to a disposable Git
+  worktree before it is eligible for production re-enablement.
+
+The tracked template defaults model-authored actions and implementation off,
+keeps deterministic restart on, and makes `HEALER_QUIET` the common emergency
+stop. This section supersedes any earlier wording that treats “any non-bot
+human,” quiet mode, or a Slack reaction by itself as adequate authorization.
