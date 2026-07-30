@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-07-30T03:26Z
 - Owner/client: Codex with required Claude Opus validator
-- State: ready_for_deploy
-- Commit/PR: committed locally on `codex/continuity-reconciliation` (this
-  commit); not pushed
+- State: deployed_unverified
+- Commit/PR: `16895273e4a387eb12e2bfcfb869abb9aba85c32` on
+  `codex/continuity-reconciliation`; not pushed
 - Change class: C3 — host authorization and customer-email final-send boundary
 - Affected systems: Gmail IPC watcher and handlers, inbound Gmail routing,
   classifier correction routing, Mailman/Sales/Contador/Chief/Archivarista
@@ -75,10 +75,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
     its suite passes **3 files / 22 tests** under Node 22.23.2;
   - Claude Opus adversarial review completed with `CHANGES REQUIRED`; its report
     and the implemented remediation are recorded below.
-- Deployment/migration: the source now defines an additive local SQLite
-  `pending_sends.gmail_thread_id` migration and index, but NC-004 has not run it
-  on a production database. No production write, service restart, installed
-  launchd change, message, or email was performed.
+- Deployment/migration: deployed 2026-07-30 as recorded in the production
+  addendum below. The additive local SQLite
+  `pending_sends.gmail_thread_id` migration and index are live.
 - Rollback/recovery: revert the NC-004 source/prompt/template changes together.
   The overlapping NC-003 send-watchdog work has separate deployed-unverified
   evidence and must not be represented as rolled back unless the live host is
@@ -86,9 +85,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Documentation: `docs/PROJECT-MAP.md`, `docs/SECURITY.md`,
   `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, `docs/ACTIVE-WORK.md`, this record, and
   the relevant group procedures.
-- Remaining boundaries: installed healer state, production daemon/runtime,
-  end-to-end live Gmail rejection/success behavior, and business outcomes are
-  not verified by source tests and remain unchanged.
+- Remaining boundaries: the production host still runs Node 25.8.2 rather than
+  the pinned Node 22; the dirty operational source/prompt checkout was preserved
+  rather than overwritten; a real approved/test-routed success and business
+  outcomes remain unverified.
 
 #### Addendum 2026-07-30T04:00Z — independent Claude Opus pre-commit review
 
@@ -190,6 +190,47 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   committed. No deployment, production migration, daemon restart,
   service/configuration change, push, email, message, approval, credential
   action, or production-data write was performed.
+
+#### Addendum 2026-07-30T17:50Z — deployed with live safety canaries
+
+- Production preflight: the Mac Mini checkout was dirty, the managed daemon was
+  healthy, Node was 25.8.2 rather than pinned Node 22, pending sends and active
+  jobs were zero, and the installed fast-healer implementation flag was `1`.
+  The target source worktree was preserved.
+- Recovery evidence: created restricted backup
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260729-004-20260730T172332Z`
+  with the prior source/dist artifacts, installed plists, and a native SQLite
+  backup. The reviewed archive was staged at
+  `~/.local/share/nanoclaw-releases/1689527`; its SHA-256 is
+  `5114fe4b9b0e062f4dd822337adac1eddf0932bb81cac43e1744e117265ce703`.
+- Pre-activation verification: target-runtime typecheck, focused authorization
+  tests, and build passed under the installed Node 25.8.2. The release build
+  contains the reviewed Gmail authorization, quarantine, durable grant, and
+  recipient-boundary symbols.
+- Activation: symlinked release attempts exited cleanly because the direct-run
+  guard compares the invoked path with `import.meta.url`; automatic recovery
+  restored the prior daemon each time. The final activation copied the
+  immutable release `dist/` to the existing runtime path and restarted the
+  launchd-managed service. At verification time exactly one daemon, PID 68325,
+  was running; Slack and Gmail were connected; PostgreSQL `SELECT 1` passed;
+  the copied artifact matched the release; and no actual NanoClaw Apple
+  Containers were present.
+- Migration/configuration: production SQLite now has
+  `pending_sends.gmail_thread_id` and
+  `idx_pending_sends_gmail_thread`. The installed fast-healer implementation
+  flag was changed from `1` to `0`, reloaded, and verified as `0` in the live
+  launchd environment.
+- Live safety evidence: a synthetic unauthorized `gmail_send` was quarantined
+  and produced `[gmail_send DENIED]` for its caller without dispatch. A separate
+  synthetic pending approval reissued only its exact Gmail thread/recipient
+  after in-memory grants were cleared. Both canaries were removed; neither sent
+  a customer email.
+- Residuals/state boundary: one stale adopted-container health record remained
+  while the actual container inventory was empty. Production still uses Node
+  25.8.2, and the dirty operational source/group-prompt checkout was not
+  overwritten; only the reviewed host artifact is exact to `1689527`. State is
+  `deployed_unverified` until an explicitly approved genuine or test-routed
+  end-to-end send succeeds. No customer message was sent during deployment.
 
 ### NC-20260729-003 — Only a confirmed send discharges an approved send
 

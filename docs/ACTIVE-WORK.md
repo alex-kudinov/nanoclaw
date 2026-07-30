@@ -15,7 +15,7 @@ outside the current client conversation.
 | `NC-20260728-006` | Chat/people drops ingest instead of retrying forever and pinning `fileproviderd` | Claude Code | `codex/continuity-reconciliation` @ `cd78ad2` | `complete` | C2 | `scripts/copiers/copy_chat.py`, `scripts/copiers/copy_people.py` | None. Fix verified live (66 COPIED / 0 FAILED under launchd) before the subsystem was stopped under NC-20260728-007 | 2026-07-28T23:09Z |
 | `NC-20260728-005` | Restore a truthful green Node 22 test baseline | Codex + Claude validator | `codex/continuity-reconciliation` @ `157cb1b` | `validating` | C2 | Node 22 baseline repaired: 124 files / 1,595 tests pass | Obtain explicit approval for the sanitized Claude API review, reconcile findings, and push the review branch | 2026-07-28T12:34Z |
 | `NC-20260728-004` | Reconcile Claude changes with the shared company-OS protocol | Codex + Claude validator | `codex/continuity-reconciliation` @ `157cb1b` | `validating` | C2 | committed review checkpoint; tracking rules; continuity records/checker; authoritative docs | Obtain explicit approval for the sanitized Claude API review, reconcile findings, and push the durable handoff | 2026-07-28T12:34Z |
-| `NC-20260729-004` | Close the highest-risk outbound-email and healer implementation gaps before broader Company-OS work | Codex + Claude validator | `codex/continuity-reconciliation` @ `cd78ad2` | `ready_for_deploy` | C3 | Gmail IPC authorization and final-boundary recipient/thread controls; durable approval grant reissue; denied-call acknowledgements; tracked healer default; focused tests; Company-OS/security/project-map reconciliation; `docs/reports/NC-20260729-004-CLAUDE-IMPLEMENTATION-REVIEW.md` | Reviewed containment is committed locally. Before release, explicitly authorize and plan the deployment; back up/inspect the operational SQLite schema, deploy with pinned Node 22, verify migration/index and single-daemon health, then exercise safe Gmail denial/test-routing and restart-recovery probes | 2026-07-30T11:36Z |
+| `NC-20260729-004` | Close the highest-risk outbound-email and healer implementation gaps before broader Company-OS work | Codex + Claude validator | `codex/continuity-reconciliation` @ `1689527` | `deployed_unverified` | C3 | Gmail IPC authorization and final-boundary recipient/thread controls; durable approval grant reissue; denied-call acknowledgements; installed and tracked healer default; focused tests; Company-OS/security/project-map reconciliation; `docs/reports/NC-20260729-004-CLAUDE-IMPLEMENTATION-REVIEW.md` | Production host artifact and SQLite migration are deployed; both Gmail denial and restart-grant canaries passed; installed fast-healer implementation is off. Observe the first explicitly approved real/test-routed send before claiming outcome validation. Track Node 22 enforcement, prompt/source convergence, and disposable healer worktree isolation separately | 2026-07-30T17:50Z |
 | `NC-20260729-003` | A guard-blocked or failed send can no longer look identical to a delivered one | Claude Code | `codex/continuity-reconciliation` @ `cd78ad2` | `deployed_unverified` | C3 | `src/send-watchdog.ts`, `src/db.ts`, `src/ipc.ts`, `src/gmail-ipc-handlers.ts`, `src/index.ts`, `tsconfig.json`, three test files | Watch for a `[SEND NOT OBSERVED]` alert on the next genuinely blocked send; decide whether to also post the `[EMAIL BLOCKED]` line into the draft thread for instant notice | 2026-07-30T00:12Z |
 | `NC-20260729-002` | Sales/inbox knowledge states the real Coaching Supervision Mastery offer instead of "pre-launch, no price" | Claude Code | `codex/continuity-reconciliation` @ `cd78ad2` | `ready_for_review` | C2 | `knowledge/agents/sales/KNOWLEDGE.md`, `knowledge/agents/inbox/KNOWLEDGE.md`, `knowledge/shared/KNOWLEDGE.md`, `knowledge/agents/sales/LEARNED.md`, `knowledge/shared/LEARNED-sales.md` | Operator supplies the unpublished attendance/missed-session and refund/deferral policy, then answer Lead #611 Q1; separately decide the `LEARNED-sales.md` 73-vs-51 lesson divergence | 2026-07-29T21:55Z |
 | `NC-20260729-001` | Adversarial Claude validation of the Company-OS v2 upgrade plan | Claude Code | `codex/continuity-reconciliation` @ `cd78ad2` | `ready_for_review` | C1 | `docs/reports/NC-20260729-001-CLAUDE-PLAN-VALIDATION.md` (new), `docs/ACTIVE-WORK.md`, `docs/ENGINEERING-CHANGELOG.md` | Human/Codex read the report, decide the five blocking questions in §11, then reconcile accepted findings into `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` under a separate task ID | 2026-07-29T13:05Z |
@@ -182,9 +182,48 @@ outside the current client conversation.
   remaining P3 findings remain backlog. These do not reopen either remediated
   P1 finding, but they remain deployment-readiness work.
 - Current state: source, Claude reports, remediation, and verification evidence
-  are committed locally and ready for an explicitly authorized deployment.
-  Nothing has been deployed, restarted, migrated, pushed, sent, or written to
-  production by NC-004.
+  are committed locally at `1689527`. The reviewed compiled host artifact and
+  additive SQLite migration were deployed to the Mac Mini on 2026-07-30.
+- Production release:
+  - preflight found a healthy but dirty operational checkout, Node 25.8.2
+    rather than the pinned Node 22, and the installed fast-healer unit with
+    implementation enabled;
+  - a restricted rollback bundle was created at
+    `~/.local/share/nanoclaw-deploy-backups/NC-20260729-004-20260730T172332Z`,
+    including the prior source/dist artifacts, installed launchd plists, and a
+    native SQLite backup;
+  - the exact Git archive was staged immutably at
+    `~/.local/share/nanoclaw-releases/1689527` with SHA-256
+    `5114fe4b9b0e062f4dd822337adac1eddf0932bb81cac43e1744e117265ce703`;
+  - target-runtime typecheck, focused authorization tests, and build passed
+    under the installed Node 25.8.2 before activation. Node 22 startup/launchd
+    enforcement remains `OPS-001`; this deployment did not silently change the
+    production runtime;
+  - launchd could not activate a symlinked release because the direct-run guard
+    compares the invoked path with `import.meta.url`. Those attempts exited
+    cleanly and the prior daemon recovered. The final activation copied the
+    already-built immutable release `dist/` into the existing runtime path and
+    restarted the managed service;
+  - production now has one managed process, PID 68325 at verification time.
+    SQLite contains `pending_sends.gmail_thread_id` and
+    `idx_pending_sends_gmail_thread`; Slack and Gmail are connected; the
+    PostgreSQL probe passed; there were no pending sends, active jobs, or real
+    NanoClaw Apple Containers;
+  - an inert unauthorized-Gmail canary was quarantined and returned a
+    `[gmail_send DENIED]` acknowledgement without dispatch. A separate
+    synthetic pending-approval canary proved exact recipient/thread grant
+    reconstruction after the in-memory grants were cleared. It was removed
+    after verification and sent no customer email;
+  - the installed and tracked fast-healer implementation flag is now `0`, and
+    the loaded unit reports the same value.
+- Deployment boundary: the dirty Mac Mini source checkout and its operational
+  group prompts were deliberately not overwritten. Host enforcement is the
+  reviewed artifact from `1689527`; prompt/source convergence remains a
+  separate tracked release concern. One stale adopted-container health record
+  was observed even though the Apple Container inventory was empty.
+- State boundary: `deployed_unverified`. Technical safety canaries passed, but
+  no genuine customer send or explicitly routed end-to-end success canary was
+  performed. No message or customer email was sent by this deployment.
 
 ### NC-20260729-003
 

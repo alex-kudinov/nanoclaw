@@ -1,6 +1,7 @@
 # Schema: messages.db
 
 Generated: 2026-07-26T08:00:56Z
+Structure-only reconciliation: 2026-07-30T17:50Z
 
 ## autonomy_draft_events
 
@@ -161,6 +162,24 @@ Indexes:
   idx_thread (chat_jid,thread_ts,timestamp)
   idx_timestamp (timestamp)
   sqlite_autoindex_messages_1 (id,chat_jid) UNIQUE
+
+## pending_sends
+
+```
+  draft_ts                  TEXT         PK
+  group_folder              TEXT         NOT NULL
+  chat_jid                  TEXT         NOT NULL
+  thread_ts                 TEXT
+  gmail_thread_id           TEXT
+  recipient                 TEXT
+  lead_ref                  TEXT
+  approved_at               TEXT         NOT NULL
+```
+
+Indexes:
+  idx_pending_sends_gmail_thread (gmail_thread_id,approved_at)
+  idx_pending_sends_group (group_folder,approved_at)
+  sqlite_autoindex_pending_sends_1 (draft_ts) UNIQUE
 
 ## registered_groups
 

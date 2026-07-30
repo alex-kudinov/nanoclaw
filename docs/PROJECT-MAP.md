@@ -551,19 +551,25 @@ may call handlers directly: proposal approval currently invokes
 calls the Gmail API directly. Both still require consolidation into the later
 uniform action boundary; neither grants a Sales container `gmail_send`.
 
-These changes are uncommitted implementation state until the active-work and
-changelog record says otherwise. Most grants are deliberately fail-closed and
-process-local in the first slice: after daemon restart, stale agent context must
-be reissued by a host source instead of silently retaining mailbox access. The
-functional exceptions are scheduled Sales work (reconstructed from an active
-pipeline entry and recorded email interaction) and a still-pending human
-approval (reconstructed from the local approval record). The later
-work-ledger/capability-manifest slice should generalize durable work-item grants
-without broadening them.
+The implementation is committed at `1689527`. Its reviewed compiled host
+artifact and additive SQLite migration were deployed to the Mac Mini on
+2026-07-30; the exact release and rollback evidence are in
+`docs/ENGINEERING-CHANGELOG.md`. Most grants remain deliberately fail-closed
+and process-local in the first slice: after daemon restart, stale agent context
+must be reissued by a host source instead of silently retaining mailbox access.
+The functional exceptions are scheduled Sales work (reconstructed from an
+active pipeline entry and recorded email interaction) and a still-pending human
+approval (reconstructed from the local approval record). Live inert canaries
+verified both denial acknowledgement and exact pending-approval grant recovery.
+The later work-ledger/capability-manifest slice should generalize durable
+work-item grants without broadening them.
 
-The tracked fast-healer template defaults implementation off in this worktree.
-That does not prove the installed Mac Mini unit changed; live state requires a
-separate read-only check and any service mutation is a deployment action.
+The tracked and installed fast-healer implementation flags are now off. The
+production host artifact is exact to `1689527`, but the Mac Mini still runs
+Node 25.8.2 and its dirty source/group-prompt checkout was intentionally not
+overwritten. Runtime enforcement is therefore deployed, while prompt/source
+convergence, Node 22 startup enforcement, and a genuine or test-routed
+end-to-end send remain separate verification work.
 
 ## 12. Integrations
 

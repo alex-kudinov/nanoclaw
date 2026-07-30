@@ -8,10 +8,12 @@ reliability, performance, operations, developer experience, governance,
 continuity, and business value
 Authority: this is a plan, not implemented state
 
-Implementation checkpoint: `NC-20260729-004` has implemented, locally
-validated, and committed the first containment slice, including remediation of
-Claude Opus's two blocking review findings. Until that task is deployed and
-live-verified, its source changes are not yet an operating control.
+Implementation checkpoint: `NC-20260729-004` implemented, independently
+reviewed, committed, and deployed the first host containment slice, including
+remediation of Claude Opus's two blocking findings. Live denial and
+restart-grant canaries passed, and the installed healer implementation flag is
+off. The task remains `deployed_unverified` until an explicitly approved real
+or test-routed end-to-end send validates the success path and business outcome.
 
 ## 1. Executive recommendation
 
@@ -146,8 +148,9 @@ Every initiative should be accepted only when it has:
 - At the validated baseline, every group could invoke the complete `gmail_*`
   family. `gmail_send` made party enforcement conditional on a model-supplied
   `leadId`, while `gmail_reply` skipped recipient and CC validation and test
-  routing. `NC-20260729-004` is the uncommitted containment task for these
-  defects.
+  routing. `NC-20260729-004` is the deployed host-containment task for these
+  defects; its dirty production source/prompt checkout remains a separate
+  convergence concern.
 - The dedicated Procurement Chrome profile is a real control, but its
   unauthenticated CDP bridge is on the shared Apple Container gateway and is
   reachable by every agent VM if the bridge is live.
@@ -1111,9 +1114,12 @@ before the next begins.
 - ship `HEALER_IMPLEMENT_ENABLED=0` in the tracked template and read-only check
   the live Mac Mini unit.
 
-Exit gate: a Grader `gmail_send` is quarantined; an unknown reply CC is blocked;
-test mode redirects send and reply; healer implementation is off in tracked
-configuration. `NC-20260729-004` is the implementation task.
+Exit gate: an unauthorized `gmail_send` is quarantined; an unknown reply CC is
+blocked; test mode redirects send and reply; healer implementation is off in
+tracked and installed configuration. `NC-20260729-004` has satisfied the
+technical denial/restart-grant and healer gates in production. A genuine or
+test-routed success remains outcome verification, not a reason to weaken the
+controls.
 
 **Week 2 — brakes and build integrity.**
 
@@ -1328,16 +1334,18 @@ Implementation checkpoint (2026-07-29):
   `NC-20260723-002`/`NC-20260728-004`; they improve delivery governance but do
   not imply that the security, disaster-recovery, telemetry, or autonomy
   tickets below are complete.
-- `SEC-011`/`SEC-012` are locally implemented, validated, and committed by
-  `NC-20260729-004`. They remain undeployed until that task reaches the explicit
-  deployment and live-verification states.
+- `SEC-011`/`SEC-012` are implemented, validated, committed, and deployed by
+  `NC-20260729-004`. Live denial and restart-grant canaries passed; the task
+  remains `deployed_unverified` until an explicitly approved real or
+  test-routed success path is observed.
 
 1. `SEC-011` — authorize `gmail_*` by source group and host-assigned resource;
    quarantine denials and add negative tests.
 2. `SEC-012` — host-resolve party/recipient, fail closed, validate reply CC,
    and apply test routing to replies.
-3. `SEC-013` — disable healer implementation by default; verify live state and
-   move implementation to a disposable worktree.
+3. `SEC-013` — tracked and installed healer implementation defaults are now
+   off; next move any future implementation into a disposable worktree before
+   considering re-enablement.
 4. `SEC-007` — bind approval to normalized recipient, work/thread identity,
    body hash, nonce, expiry, and named operator.
 5. `SEC-004` — implement and drill global/per-system external-write safe mode.
