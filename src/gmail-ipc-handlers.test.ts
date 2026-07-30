@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mutable config value — tests can change this per-test
 let testRecipient = '';
+const businessState = vi.hoisted(() => ({
+  partyByEmailId: 42 as number | null,
+  partyByThreadId: 42 as number | null,
+  emails: new Set<string>(),
+}));
 
 vi.mock('./config.js', () => ({
   ASSISTANT_NAME: 'Gru',
@@ -32,21 +37,48 @@ vi.mock('./email-interaction-log.js', () => ({
   logOutboundEmailInteraction: vi.fn().mockResolvedValue(undefined),
 }));
 
-// Default: party lookup returns null (no match). Individual tests override as needed.
 vi.mock('./business-db.js', () => ({
-  query: vi.fn().mockResolvedValue({ rows: [{ id: null }] }),
+  query: vi.fn(async (sql: string) => {
+    if (sql.includes('best_party_by_email')) {
+      return { rows: [{ id: businessState.partyByEmailId }] };
+    }
+    if (sql.includes("metadata->>'thread_id'")) {
+      return { rows: [{ party_id: businessState.partyByThreadId }] };
+    }
+    if (sql.includes('business_v2.party_emails')) {
+      return {
+        rows: [...businessState.emails].map((email) => ({ email })),
+      };
+    }
+    return { rows: [] };
+  }),
 }));
 
 vi.mock('./gmail-api.js', () => ({
   sendEmail: vi
     .fn()
     .mockResolvedValue({ messageId: 'sent-msg-123', threadId: 'thread-abc' }),
-  replyToThread: vi.fn().mockResolvedValue({
-    messageId: 'reply-msg-456',
-    threadId: 'thread-abc',
-    to: 'sender@external.com',
-    subject: 'Re: ACC inquiry',
-  }),
+  replyToThread: vi.fn(
+    async (opts: {
+      cc?: string;
+      prepareSend?: (recipients: {
+        to: string;
+        cc?: string;
+      }) => Promise<{ body: string }>;
+    }) => {
+      await opts.prepareSend?.({
+        to: 'sender@external.com',
+        cc: opts.cc,
+      });
+      return {
+        messageId: 'reply-msg-456',
+        threadId: 'thread-abc',
+        to: testRecipient || 'sender@external.com',
+        originalTo: 'sender@external.com',
+        subject: 'Re: ACC inquiry',
+      };
+    },
+  ),
   searchEmails: vi.fn().mockResolvedValue('No results found.'),
   readEmail: vi.fn().mockResolvedValue('Email content here'),
   findThreadForReply: vi.fn().mockResolvedValue(null),
@@ -73,10 +105,9 @@ vi.mock('fs', async () => {
 
 import fs from 'fs';
 
-import { sendEmail, findThreadForReply } from './gmail-api.js';
+import { sendEmail, findThreadForReply, replyToThread } from './gmail-api.js';
 import { storeMessageDirect } from './db.js';
 import { logOutboundEmailInteraction } from './email-interaction-log.js';
-import { query } from './business-db.js';
 import {
   handleGmailReply,
   handleGmailSend,
@@ -103,6 +134,19 @@ function makePayload(
 beforeEach(() => {
   vi.clearAllMocks();
   testRecipient = '';
+  businessState.partyByEmailId = 42;
+  businessState.partyByThreadId = 42;
+  businessState.emails = new Set([
+    'prospect@external.com',
+    'real-prospect@external.com',
+    'real-cc@external.com',
+    'colleague@external.com',
+    'lead@external.com',
+    'found@external.com',
+    'vendor@external.com',
+    'sender@external.com',
+    'eqcoach.tina@gmail.com',
+  ]);
 });
 
 describe('handleGmailSend', () => {
@@ -158,6 +202,23 @@ describe('handleGmailSend', () => {
       expect(sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({ cc: 'colleague@external.com' }),
       );
+    });
+
+    it('does not confirm a real-customer send when the email is test-routed', async () => {
+      testRecipient = 'test@tandemcoach.co';
+      const onSendConfirmed = vi.fn();
+
+      await handleGmailSend(makePayload(), undefined, onSendConfirmed);
+
+      expect(onSendConfirmed).not.toHaveBeenCalled();
+    });
+
+    it('confirms the intended recipient after a real Gmail send', async () => {
+      const onSendConfirmed = vi.fn();
+
+      await handleGmailSend(makePayload(), undefined, onSendConfirmed);
+
+      expect(onSendConfirmed).toHaveBeenCalledWith('prospect@external.com');
     });
   });
 
@@ -396,8 +457,9 @@ describe('outbound email interaction logging', () => {
     );
   });
 
-  it('skips logging when leadId is absent and party lookup returns null', async () => {
-    vi.mocked(query).mockResolvedValue({ rows: [{ id: null }] } as any);
+  it('blocks the send when leadId is absent and host party lookup returns null', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = null;
 
     await handleGmailSend({
       type: 'gmail_send',
@@ -409,10 +471,11 @@ describe('outbound email interaction logging', () => {
     });
 
     expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 
   it('logs when leadId is absent but party lookup resolves by email', async () => {
-    vi.mocked(query).mockResolvedValue({ rows: [{ id: 99 }] } as any);
+    businessState.partyByEmailId = 99;
 
     await handleGmailSend({
       type: 'gmail_send',
@@ -429,7 +492,8 @@ describe('outbound email interaction logging', () => {
   });
 
   it('logs reply when leadId is absent but thread history resolves a party', async () => {
-    vi.mocked(query).mockResolvedValue({ rows: [{ party_id: 77 }] } as any);
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = 77;
 
     await handleGmailReply({
       type: 'gmail_reply',
@@ -444,8 +508,9 @@ describe('outbound email interaction logging', () => {
     );
   });
 
-  it('skips reply logging when leadId is absent and thread lookup returns null', async () => {
-    vi.mocked(query).mockResolvedValue({ rows: [{ party_id: null }] } as any);
+  it('blocks a reply when no party can be resolved from recipient or thread', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = null;
 
     await handleGmailReply({
       type: 'gmail_reply',
@@ -514,10 +579,7 @@ describe('recipient guard (tina@example.com incident)', () => {
   });
 
   it('blocks a deliverable address that is not among the party’s known emails', async () => {
-    // leadId triggers the party-email lookup; party 10099 knows only the gmail addr.
-    vi.mocked(query).mockResolvedValueOnce({
-      rows: [{ email: 'eqcoach.tina@gmail.com' }],
-    } as any);
+    businessState.partyByEmailId = null;
     const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
     const result = await handleGmailSend(
       makePayload({ to: 'tina@gmial.com', leadId: 10099 }),
@@ -529,14 +591,102 @@ describe('recipient guard (tina@example.com incident)', () => {
   });
 
   it('allows the party-verified recipient through', async () => {
-    vi.mocked(query).mockResolvedValueOnce({
-      rows: [{ email: 'eqcoach.tina@gmail.com' }],
-    } as any);
+    businessState.partyByEmailId = 10099;
     const result = await handleGmailSend(
       makePayload({ to: 'eqcoach.tina@gmail.com', leadId: 10099 }),
     );
     expect(sendEmail).toHaveBeenCalled();
     expect(result).toMatchObject({ messageId: expect.any(String) });
+  });
+
+  it('does not let omission of leadId bypass host party verification', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = null;
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailSend(
+      makePayload({ to: 'prospect@external.com', leadId: undefined }),
+      postToChief,
+    );
+
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(postToChief.mock.calls[0][0]).toMatch(/no host-resolved party/);
+  });
+
+  it('blocks an unverified CC on replies before Gmail sends', async () => {
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        cc: 'attacker@evil.co',
+      }),
+      postToChief,
+    );
+
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+    expect(postToChief.mock.calls[0][0]).toMatch(/EMAIL BLOCKED.*CC rejected/);
+  });
+
+  it('blocks when the Gmail-derived reply recipient differs from the approved recipient', async () => {
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        approvedRecipient: 'different@example.com',
+      }),
+      postToChief,
+    );
+
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+    expect(postToChief.mock.calls[0][0]).toMatch(
+      /EMAIL BLOCKED.*does not match approved recipient/,
+    );
+  });
+
+  it('test-routes replies and removes the original CC', async () => {
+    testRecipient = 'test@tandemcoach.co';
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        cc: 'colleague@external.com',
+      }),
+    );
+
+    expect(replyToThread).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientOverride: 'test@tandemcoach.co',
+        cc: 'colleague@external.com',
+      }),
+    );
+    const prepare = vi.mocked(replyToThread).mock.calls[0][0].prepareSend;
+    await expect(
+      prepare?.({
+        to: 'sender@external.com',
+        cc: 'colleague@external.com',
+      }),
+    ).resolves.toEqual(expect.objectContaining({ body: expect.any(String) }));
+  });
+
+  it('does not confirm a real-customer reply when the reply is test-routed', async () => {
+    testRecipient = 'test@tandemcoach.co';
+    const onSendConfirmed = vi.fn();
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+      }),
+      undefined,
+      onSendConfirmed,
+    );
+
+    expect(onSendConfirmed).not.toHaveBeenCalled();
   });
 });
 

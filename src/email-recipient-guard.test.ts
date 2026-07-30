@@ -78,9 +78,12 @@ describe('checkRecipient', () => {
     expect(r.ok).toBe(true);
   });
 
-  it('allows a real domain when the party set is unknown/empty', () => {
-    expect(checkRecipient('someone@gmail.com').ok).toBe(true);
-    expect(checkRecipient('someone@gmail.com', new Set()).ok).toBe(true);
+  it('fails closed when the host cannot establish party context', () => {
+    expect(checkRecipient('someone@gmail.com').ok).toBe(false);
+    expect(checkRecipient('someone@gmail.com', new Set()).ok).toBe(false);
+    expect(checkRecipient('someone@gmail.com').reason).toMatch(
+      /host-verified party/,
+    );
   });
 
   it('rejects malformed input', () => {

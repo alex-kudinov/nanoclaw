@@ -20,6 +20,9 @@ import {
   insertJobRunLog,
   markStaleRunsAsFailed,
   recordThreadAnchor,
+  recordPendingSend,
+  clearPendingSendsByRecipient,
+  getPendingSendByGmailThread,
   resolveThreadAnchor,
   rollThreadAnchor,
   touchThreadAnchor,
@@ -36,6 +39,50 @@ import {
 
 beforeEach(() => {
   _initTestDatabase();
+});
+
+describe('pending send approvals', () => {
+  it('persists a Gmail thread binding and clears one same-recipient row at a time', () => {
+    recordPendingSend({
+      draftTs: 'draft-1',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      gmailThreadId: 'gmail-thread-1',
+      recipient: 'lead@example.com',
+      approvedAt: '2026-07-30T01:00:00.000Z',
+    });
+    recordPendingSend({
+      draftTs: 'draft-2',
+      groupFolder: 'chief',
+      chatJid: 'slack:chief',
+      gmailThreadId: 'gmail-thread-2',
+      recipient: 'lead@example.com',
+      approvedAt: '2026-07-30T01:01:00.000Z',
+    });
+
+    expect(getPendingSendByGmailThread('gmail-thread-1')).toEqual({
+      recipient: 'lead@example.com',
+    });
+    expect(clearPendingSendsByRecipient('LEAD@example.com')).toBe(1);
+    expect(getPendingSendByGmailThread('gmail-thread-1')).toBeUndefined();
+    expect(getPendingSendByGmailThread('gmail-thread-2')).toEqual({
+      recipient: 'lead@example.com',
+    });
+  });
+
+  it('does not reauthorize a legacy approval with no approved recipient', () => {
+    recordPendingSend({
+      draftTs: 'draft-no-recipient',
+      groupFolder: 'chief',
+      chatJid: 'slack:chief',
+      gmailThreadId: 'gmail-thread-no-recipient',
+      approvedAt: '2026-07-30T01:00:00.000Z',
+    });
+
+    expect(
+      getPendingSendByGmailThread('gmail-thread-no-recipient'),
+    ).toBeUndefined();
+  });
 });
 
 // Helper to store a message using the normalized NewMessage interface

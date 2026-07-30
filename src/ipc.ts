@@ -8,19 +8,25 @@ import { CronExpressionParser } from 'cron-parser';
 import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
 import { AvailableGroup } from './container-runner.js';
 import {
-  clearPendingSends,
+  clearPendingSendsByRecipient,
   createTask,
   deleteTask,
   getTaskById,
+  getPendingSendByGmailThread,
   storeMessageDirect,
   updateTask,
 } from './db.js';
-import { observeOutbound } from './send-watchdog.js';
+import { observeConfirmedSend, observeOutbound } from './send-watchdog.js';
 import {
   dispatchGmailIpc,
   isGmailIpcType,
   GmailIpcPayload,
 } from './gmail-ipc-handlers.js';
+import {
+  authorizeGmailIpcWithResolver,
+  propagateGmailResources,
+} from './gmail-ipc-policy.js';
+import { resolveDurableGmailResource } from './gmail-ipc-business-scope.js';
 import {
   handleLearnLesson,
   handleRouteLesson,
@@ -130,6 +136,54 @@ function mailmanHandoffKey(text: string): string {
   return crypto.createHash('sha256').update(text).digest('hex');
 }
 
+/** Preserve an unauthorized request for forensics instead of executing it. */
+function quarantineIpcFile(
+  filePath: string,
+  sourceGroup: string,
+  family: string,
+): string {
+  const quarantineDir = path.join(DATA_DIR, 'ipc', 'quarantine', sourceGroup);
+  fs.mkdirSync(quarantineDir, { recursive: true });
+  const destination = path.join(
+    quarantineDir,
+    `${family}-${Date.now()}-${path.basename(filePath)}`,
+  );
+  fs.renameSync(filePath, destination);
+  return destination;
+}
+
+/** Tell the calling agent that an asynchronous Gmail request was denied. */
+function writeDeniedGmailInput(
+  sourceGroup: string,
+  operation: string,
+  reason: string | undefined,
+): void {
+  try {
+    const inputDir = path.join(DATA_DIR, 'ipc', sourceGroup, 'input');
+    fs.mkdirSync(inputDir, { recursive: true });
+    const filename = `gmail-denied-${Date.now()}-${crypto.randomBytes(3).toString('hex')}.json`;
+    fs.writeFileSync(
+      path.join(inputDir, filename),
+      JSON.stringify(
+        {
+          type: 'message',
+          text:
+            `[${operation} DENIED] ${reason || 'host authorization failed'}. ` +
+            'Do not retry with a different ID or address; escalate.',
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    );
+  } catch (err) {
+    logger.error(
+      { err, sourceGroup, operation },
+      'Failed to deliver Gmail authorization denial to calling agent',
+    );
+  }
+}
+
 // A handoff whose text carries an escalation/emergency marker is itself an
 // urgent alert — the tidy "→ Routed to X" echo would be inappropriate noise,
 // so it is suppressed for those.
@@ -185,7 +239,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
     try {
       groupFolders = fs.readdirSync(ipcBaseDir).filter((f) => {
         const stat = fs.statSync(path.join(ipcBaseDir, f));
-        return stat.isDirectory() && f !== 'errors';
+        return stat.isDirectory() && f !== 'errors' && f !== 'quarantine';
       });
     } catch (err) {
       logger.error({ err }, 'Error reading IPC base directory');
@@ -233,12 +287,12 @@ export function startIpcWatcher(deps: IpcDeps): void {
             try {
               const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
               if (data.type === 'message' && data.chatJid && data.text) {
-                // A mailman handoff discharges the approval the watchdog is
-                // holding for this group. Observed here — before routing and
-                // before the mailman hold timer — so a cancelled or dropped
-                // send still counts as "the agent got that far", and only a
-                // genuinely absent handoff trips the alert.
-                observeOutbound(sourceGroup, data.text, { clearPendingSends });
+                // A mailman handoff is progress, not proof: everything after it
+                // can still refuse to send (recipient guard, content guard,
+                // Gmail failure, [ALREADY-HANDLED]). The expectation is
+                // discharged only by a confirmed send, in the gmail IPC handlers
+                // below. See send-watchdog.ts.
+                observeOutbound(sourceGroup, data.text);
                 // Resolve targetGroupFolder → chatJid if present
                 let targetJid = data.chatJid;
                 if (data.targetGroupFolder) {
@@ -347,6 +401,14 @@ export function startIpcWatcher(deps: IpcDeps): void {
                         threadTs: data.thread_ts,
                         threadKey: data.thread_key,
                       });
+                      // Model-authored handoffs may carry Gmail identifiers, but
+                      // they can transfer only resources the source group
+                      // already received from the host.
+                      propagateGmailResources(
+                        sourceGroup,
+                        handoffTarget,
+                        data.text,
+                      );
                       // Slack persists its own outbound via storeOutbound — a
                       // second store here would duplicate the row. Only direct-
                       // store for non-Slack targets (e.g. mailman's gmail jid),
@@ -468,7 +530,46 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 }
                 fs.unlinkSync(filePath);
               } else if (isGmailIpcType(data.type)) {
-                // Gmail IPC: reply, send, search, read
+                // Gmail IPC: capability and resource authorization is enforced
+                // from the directory-derived source identity before dispatch.
+                const approvedReply =
+                  sourceGroup === 'mailman' &&
+                  data.type === 'gmail_reply' &&
+                  typeof data.threadId === 'string'
+                    ? getPendingSendByGmailThread(data.threadId)
+                    : undefined;
+                const authorization = await authorizeGmailIpcWithResolver(
+                  sourceGroup,
+                  data,
+                  async (group, request) =>
+                    Boolean(
+                      group === 'mailman' &&
+                      request.type === 'gmail_reply' &&
+                      approvedReply,
+                    ) || resolveDurableGmailResource(group, request),
+                );
+                if (!authorization.ok) {
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'gmail',
+                  );
+                  logger.warn(
+                    {
+                      sourceGroup,
+                      type: data.type,
+                      reason: authorization.reason,
+                      quarantinedAt,
+                    },
+                    'Unauthorized Gmail IPC quarantined',
+                  );
+                  writeDeniedGmailInput(
+                    sourceGroup,
+                    data.type,
+                    authorization.reason,
+                  );
+                  continue;
+                }
                 fs.unlinkSync(filePath);
                 // Build postToChief so a successful send posts a mechanical
                 // [EMAIL SENT] line (fromGroup='chief' → no chief retrigger).
@@ -492,8 +593,17 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   {
                     ...data,
                     groupFolder: sourceGroup,
+                    approvedRecipient: approvedReply?.recipient,
                   } as GmailIpcPayload,
                   postToChief,
+                  // Only a confirmed send discharges an approved-send
+                  // expectation. Keyed on the real recipient, not the group,
+                  // because the send runs as mailman while the approval belongs
+                  // to sales.
+                  (recipient: string | undefined) =>
+                    observeConfirmedSend(recipient, {
+                      clearPendingSendsByRecipient,
+                    }),
                 );
               } else if (isLearnIpcType(data.type)) {
                 // Learning loop: append lesson to LEARNED.md

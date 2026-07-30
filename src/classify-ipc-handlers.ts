@@ -15,6 +15,7 @@ import {
   removeLabelsFromThread,
   replaceClassLabelsOnThread,
 } from './gmail-labels.js';
+import { grantHostGmailResources } from './gmail-ipc-policy.js';
 import { recordClassification } from './hive-bridge.js';
 import { routeClassifiedEmail } from './host-router.js';
 import { resetRulesCache } from './classify-rules-runner.js';
@@ -398,6 +399,9 @@ export async function handleClassifyLabelWrite(
 export async function handleClassifyCorrectionDetected(
   data: ClassifyCorrectionDetectedPayload,
 ): Promise<void> {
+  // Gmail history is authoritative for this message ID. Grant chief access to
+  // this exact correction target before asking it to synthesize a lesson.
+  grantHostGmailResources('chief', { messageId: data.gmail_message_id });
   writeHostMessage('chief', {
     type: 'message',
     text:

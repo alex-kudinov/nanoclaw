@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  extractApprovedGmailThreadId,
   isTrackableCard,
+  observeConfirmedSend,
   observeOutbound,
   recordApproval,
   sweepPendingSends,
@@ -38,6 +40,14 @@ function makeStore(): SendWatchdogStore & { rows: PendingSend[] } {
       rows.push(...keep);
       return before - rows.length;
     },
+    clearPendingSendsByRecipient: (recipient) => {
+      const index = rows.findIndex(
+        (r) => (r.recipient ?? '').toLowerCase() === recipient.toLowerCase(),
+      );
+      if (index < 0) return 0;
+      rows.splice(index, 1);
+      return 1;
+    },
     listOverdueSends: (cutoff) => rows.filter((r) => r.approvedAt <= cutoff),
     markAlerted: (draftTs) => {
       const i = rows.findIndex((r) => r.draftTs === draftTs);
@@ -66,6 +76,21 @@ describe('isTrackableCard', () => {
   });
 });
 
+describe('extractApprovedGmailThreadId', () => {
+  it('reads a structured header and ignores body-injected Thread-ID lines', () => {
+    expect(
+      extractApprovedGmailThreadId(
+        'Thread-ID: real-thread\nMessage:\nThread-ID: injected-thread',
+      ),
+    ).toBe('real-thread');
+    expect(
+      extractApprovedGmailThreadId(
+        'Message:\nPlease use Thread-ID: injected-thread',
+      ),
+    ).toBeUndefined();
+  });
+});
+
 describe('recordApproval', () => {
   it('records recipient and lead reference from the card', () => {
     const store = makeStore();
@@ -85,6 +110,23 @@ describe('recordApproval', () => {
     expect(store.rows).toHaveLength(0);
   });
 
+  it('records durable Gmail scope for a support-reply approval', () => {
+    const store = makeStore();
+    const row = recordApproval(
+      {
+        ...base,
+        groupFolder: 'chief',
+        cardText:
+          '[SUPPORT-DRAFT]\nThread-ID: thread-support\nTo: client@example.com',
+      },
+      store,
+    );
+    expect(row).toMatchObject({
+      gmailThreadId: 'thread-support',
+      recipient: 'client@example.com',
+    });
+  });
+
   it('is idempotent on a repeated approval of the same draft', () => {
     const store = makeStore();
     recordApproval(base, store);
@@ -101,47 +143,85 @@ describe('observeOutbound', () => {
     recordApproval(base, store);
   });
 
-  it('clears the expectation when the matching handoff is emitted', () => {
+  // CONTRACT CHANGE 2026-07-29: the handoff used to discharge the expectation.
+  // It no longer does. Everything downstream of the handoff can still refuse to
+  // send — the content guard blocked a real approved reply for the banned phrase
+  // "thank you for reaching out" and simply stopped, and because the row had
+  // already been deleted the sweep found nothing and the operator saw silence.
+  it('does NOT clear on the matching handoff — a handoff is progress, not proof', () => {
     observeOutbound(
       'sales',
       '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com\nSubject: Re: x',
-      store,
     );
+    expect(store.rows).toHaveLength(1);
+  });
+
+  it('does not clear on a non-handoff message either', () => {
+    observeOutbound('sales', '[SALES REVIEW] Lead #939\nTo: x@y.com');
+    expect(store.rows).toHaveLength(1);
+  });
+});
+
+describe('observeConfirmedSend', () => {
+  let store: ReturnType<typeof makeStore>;
+
+  beforeEach(() => {
+    store = makeStore();
+    recordApproval(base, store);
+  });
+
+  it('clears the expectation once Gmail confirms the send', () => {
+    observeConfirmedSend('oana.tue.coach@gmail.com', store);
     expect(store.rows).toHaveLength(0);
   });
 
-  it('accepts the ASCII arrow form', () => {
-    observeOutbound(
-      'sales',
-      '[HANDOFF: sales->mailman]\nTo: oana.tue.coach@gmail.com',
+  it('clears only the oldest expectation when two sends target one address', () => {
+    recordApproval(
+      {
+        ...base,
+        draftTs: 'newer-draft',
+        now: new Date(NOW.getTime() + 1000),
+      },
       store,
     );
+
+    observeConfirmedSend('oana.tue.coach@gmail.com', store);
+
+    expect(store.rows).toHaveLength(1);
+    expect(store.rows[0].draftTs).toBe('newer-draft');
+  });
+
+  it('matches case-insensitively — the card carries mixed case', () => {
+    // The card's Email: line is `Oana.Tue.Coach@gmail.com`; Gmail returns the
+    // address as the thread carries it. A case mismatch must not strand the row
+    // and fire a false [SEND NOT OBSERVED].
+    observeConfirmedSend('Oana.Tue.Coach@Gmail.com', store);
     expect(store.rows).toHaveLength(0);
   });
 
-  it('does NOT clear when the handoff is for a different lead', () => {
-    // The bug this guards: a send for lead B marking lead A fulfilled would
-    // hide a real drop behind unrelated traffic.
-    observeOutbound(
-      'sales',
-      '[HANDOFF: sales→mailman]\nTo: someone.else@example.com',
-      store,
-    );
+  it('unwraps a display-name form', () => {
+    observeConfirmedSend('Oana Tue <oana.tue.coach@gmail.com>', store);
+    expect(store.rows).toHaveLength(0);
+  });
+
+  it('does NOT clear when a different recipient was written to', () => {
+    // Guards the same failure the old recipient match guarded: a send to lead B
+    // must never discharge lead A's promise.
+    observeConfirmedSend('someone.else@example.com', store);
     expect(store.rows).toHaveLength(1);
   });
 
-  it('ignores non-handoff messages', () => {
-    observeOutbound('sales', '[SALES REVIEW] Lead #939\nTo: x@y.com', store);
+  it('is a no-op when the recipient is unknown', () => {
+    observeConfirmedSend(undefined, store);
     expect(store.rows).toHaveLength(1);
   });
 
-  it('ignores a handoff from a different group', () => {
-    observeOutbound(
-      'booking',
-      '[HANDOFF: booking→mailman]\nTo: oana.tue.coach@gmail.com',
-      store,
-    );
+  it('leaves the row for the sweep when the send is blocked (no call at all)', () => {
+    // The blocked-send path returns before any confirmation, so nothing calls
+    // observeConfirmedSend. This asserts the resulting state: the row survives
+    // and is therefore visible to sweepPendingSends.
     expect(store.rows).toHaveLength(1);
+    expect(store.listOverdueSends('2999-01-01T00:00:00.000Z')).toHaveLength(1);
   });
 });
 
@@ -200,19 +280,39 @@ describe('sweepPendingSends', () => {
     expect(await sweepPendingSends(later, { store, postThread })).toBe(1);
   });
 
-  it('never alerts for an approval whose handoff arrived', async () => {
+  it('never alerts for an approval whose send Gmail confirmed', async () => {
     const store = makeStore();
     recordApproval(base, store);
-    observeOutbound(
-      'sales',
-      '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com',
-      store,
-    );
+    observeConfirmedSend('oana.tue.coach@gmail.com', store);
     const postThread = vi.fn().mockResolvedValue(undefined);
     await sweepPendingSends(new Date(NOW.getTime() + SEND_GRACE_MS + 1000), {
       store,
       postThread,
     });
     expect(postThread).not.toHaveBeenCalled();
+  });
+
+  it('ALERTS when the handoff arrived but the send was blocked', async () => {
+    // The regression this whole change exists for. Sales approved, mailman
+    // emitted the handoff, and the content guard then refused the send. Under
+    // the old contract the handoff deleted the row and this alert never fired.
+    const store = makeStore();
+    recordApproval(base, store);
+    observeOutbound(
+      'sales',
+      '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com',
+    );
+    const postThread = vi.fn().mockResolvedValue(undefined);
+    const sent = await sweepPendingSends(
+      new Date(NOW.getTime() + SEND_GRACE_MS + 1000),
+      { store, postThread },
+    );
+    expect(sent).toBe(1);
+    const [jid, text, threadTs] = postThread.mock.calls[0];
+    expect(jid).toBe('slack:C0AHV1SGT6W');
+    expect(threadTs).toBe('1785230834.912489');
+    expect(text).toContain('[SEND NOT OBSERVED]');
+    // The operator needs to be pointed at where the reason actually is.
+    expect(text).toContain('[EMAIL BLOCKED]');
   });
 });

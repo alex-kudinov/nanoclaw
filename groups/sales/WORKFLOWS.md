@@ -212,6 +212,12 @@ gmail_get_thread   thread_id=<thread_id>
 
 This returns every message in the conversation, full bodies included — no `gmail_read` follow-up needed. **Never** use `gmail_search query="thread:<id>"`: `thread:` is not a Gmail search operator and returns zero results (it silently failed every follow-up run before 2026-06-26). If `thread_id` is empty, fall back to `gmail_search query="from:<primary_email> OR to:<primary_email>"`. Read the latest state — their last reply, our last email — before you write.
 
+Both operations are host-scoped: `gmail_get_thread` accepts only a thread the
+host assigned to Sales, and `gmail_search` accepts only the exact
+`from:<assigned-email> OR to:<assigned-email>` form for an address the host
+assigned. If either is rejected, stop and surface the missing context; do not
+broaden the query or substitute an ID.
+
 ### Step 2 — Build the context honestly. NEVER fabricate.
 
 - `inquiry_source = email` / `contact-form` → ground the draft in the fetched thread; use `inquiry_text` as the original ask.

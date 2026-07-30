@@ -1,11 +1,17 @@
 # NanoClaw company operating system improvement plan
 
-Status: proposed roadmap, adversarially reviewed by Claude and source-verified
-Baseline: repository commit `a6e4b13`, 2026-07-23
+Status: proposed roadmap, twice adversarially reviewed and source-verified
+Baseline: repository commit `cd78ad2` plus the disclosed dirty worktree,
+2026-07-29
 Scope: functionality, architecture, agent quality, security, privacy, data,
 reliability, performance, operations, developer experience, governance,
 continuity, and business value
 Authority: this is a plan, not implemented state
+
+Implementation checkpoint: `NC-20260729-004` has implemented, locally
+validated, and committed the first containment slice, including remediation of
+Claude Opus's two blocking review findings. Until that task is deployed and
+live-verified, its source changes are not yet an operating control.
 
 ## 1. Executive recommendation
 
@@ -117,8 +123,9 @@ Every initiative should be accepted only when it has:
    derived from real incidents.
 5. **Durable business model direction.** `business_v2` provides a path away from
    email-address identity and disconnected business tables.
-6. **Good test density.** There are currently 99 root test files for 109
-   production TypeScript files, plus an independently tested agent runner.
+6. **Good test density.** The current Git-visible `src/` tree contains 106 test
+   files and 131 non-test TypeScript files, plus an independently tested agent
+   runner. Counts are a maintenance signal, not proof of security coverage.
 7. **Explicit human approval.** Sales, certification, course distribution, and
    social workflows already distinguish proposals from execution.
 8. **Small-system preference.** The project resists infrastructure fashion and
@@ -136,6 +143,17 @@ Every initiative should be accepted only when it has:
 - The active Claude CLI uses `--dangerously-skip-permissions`.
 - Agent tools are implemented in one broad MCP server; capability exposure is
   not yet generated from a central least-privilege policy.
+- At the validated baseline, every group could invoke the complete `gmail_*`
+  family. `gmail_send` made party enforcement conditional on a model-supplied
+  `leadId`, while `gmail_reply` skipped recipient and CC validation and test
+  routing. `NC-20260729-004` is the uncommitted containment task for these
+  defects.
+- The dedicated Procurement Chrome profile is a real control, but its
+  unauthenticated CDP bridge is on the shared Apple Container gateway and is
+  reachable by every agent VM if the bridge is live.
+- The tracked fast-healer launchd template enabled implementation even though
+  the implementation source says it should ship dark. That path runs an
+  agentic host Claude process against the operational checkout.
 - The security document still describes WhatsApp, ephemeral containers, and
   Anthropic-only credential exposure, which no longer matches implementation.
 - Human-approval displays can be influenced by model-produced context unless
@@ -151,6 +169,10 @@ Every initiative should be accepted only when it has:
   launchd, n8n, and remote services.
 - Gmail history expiry can reset the push baseline with a possible data-loss
   window.
+- Nothing currently populates the canonical `source_thread_id` lineage used to
+  bootstrap party resolution for the first outbound interaction.
+- A tracked repository-hygiene launchd job references a missing cleanup script;
+  ownership/inventory alone therefore cannot prove scheduled work is executable.
 - File IPC, local sessions, and adopted-container sidecars are host-local.
 - There is no verified warm-standby/failover process for the whole operating
   system.
@@ -159,6 +181,8 @@ Every initiative should be accepted only when it has:
 
 - `.nvmrc` pins Node 22, CI runs Node 20, and the current workstation shell
   runs Node 26.5.0.
+- The production Mac Mini was separately recorded running Node 25.8.2, so no
+  currently observed authoring/production runtime matches the pin.
 - Node 20 is end-of-life as of the current review date. Node 22 and Node 24 are
   LTS; Node 26 is a valid current release but does not enter LTS until October
   2026. The workstation is therefore on a real but inappropriate pre-LTS line
@@ -206,6 +230,8 @@ Every initiative should be accepted only when it has:
   silent errors, selection effects, and downstream business harm.
 - Knowledge learning can amplify bad corrections or poisoned content despite
   conflict checks.
+- `learn_lesson` publishes before its asynchronous contradiction result and the
+  mounted/shared copies do not reliably carry the same contested state.
 - Token/cost, human time saved, conversion impact, rework, complaint rate, and
   other business outcomes are not one causal measurement chain.
 
@@ -272,29 +298,46 @@ one-daemon runtime, not a hidden second application service.
 These changes precede the broader P0 program and should be attempted in the
 first 48 hours, with normal testing and rollback:
 
-1. Put C4/C5 actions in explicit manual mode and verify the external-write
-   safe-mode path.
-2. Disable Procurement's connection to the operator's general logged-in Chrome
-   profile. If browser automation is essential, use a dedicated least-privilege
-   profile with only the required procurement sessions and no unrelated login.
-3. Remove shell `eval` from the skill-validation workflow; parse a fixed command
-   shape or map manifest values to allowlisted scripts.
-4. Add temporary outbound amount, recipient, publication, and rate ceilings at
+1. Authorize every `gmail_*` IPC operation from the directory-derived source
+   group, quarantine denials, and add a negative test per capability family.
+2. Resolve outbound parties on the host; fail closed when the intended To/CC
+   recipient or Gmail-derived reply target cannot be proved from host data.
+   Apply test routing to both sends and replies and limit reads/threads to
+   host-assigned resources.
+3. Set the tracked fast-healer template to
+   `HEALER_IMPLEMENT_ENABLED=0`; verify separately whether the unit is loaded
+   and enabled on the Mac Mini. Move implementation into a disposable worktree
+   before considering re-enablement.
+4. Keep C4/C5 actions in explicit manual mode and suspend Sales L2 promotion in
+   code or service configuration. Verify zero enabled autonomy channels from a
+   running daemon; an `.env` edit is not evidence because the current autonomy
+   knobs do not load from that file.
+5. Isolate the existing dedicated Procurement profile's CDP bridge at the
+   network boundary or retire it. Do not treat a dedicated profile as network
+   isolation.
+6. Remove shell `eval` from the skill-validation workflow; contain the
+   intentionally PR-controlled execution with `permissions: contents: read`,
+   no secrets, and no `${{ }}` interpolation inside `run:`.
+7. Add temporary outbound amount, recipient, publication, and rate ceilings at
    final execution boundaries.
-5. Give unrestricted egress an explicit exception register while implementing
-   default-deny network policy. Block known-unneeded destinations immediately.
-6. Confirm live SQLite databases are excluded from every file-sync root.
-7. Repair the user-level Claude permission deny rules surfaced by Claude Code
+8. Confirm live SQLite databases are excluded from every file-sync root.
+9. Repair the user-level Claude permission deny rules surfaced by Claude Code
    2.1.217: current warnings say `Write(...)` patterns do not enforce file
    protection and must use the supported `Edit(...)` matcher. Perform this as a
    separately reviewed machine-configuration change.
 
 **Acceptance:**
 
-- the operator can prove high-impact actions are manual or disabled;
-- Procurement cannot access unrelated authenticated browser sessions;
-- a malicious skill manifest cannot inject a shell command through its test
-  field;
+- an unauthorized group cannot invoke or read through any `gmail_*` operation;
+- unknown recipients, unassigned threads/messages, and arbitrary CCs fail
+  closed; send and reply test routing are both proven;
+- healer implementation is off in tracked configuration and its live state is
+  separately evidenced;
+- the operator can prove high-impact actions are manual or disabled from the
+  running service state;
+- no unrelated agent VM can reach the Procurement CDP bridge;
+- skill-PR execution is accepted only on an ephemeral, read-only-permission
+  runner with no secrets and no expression interpolation inside `run:`;
 - sync configuration does not include `store/`, `data/`, or active SQLite/WAL;
 - the temporary controls and their removal conditions are recorded.
 
@@ -352,6 +395,8 @@ are available to the LLM's shell and to prompt-injected tool use.
 
 **Acceptance:**
 
+- before credential extraction work, no group can invoke a capability outside
+  its declared set and negative tests cover each group/capability family;
 - a tool-enabled red-team agent cannot recover business-system credentials
   through documented environment, filesystem, `/proc`, child-process,
   adapter-error, response, or log attacks;
@@ -377,6 +422,8 @@ must enforce them mechanically.
 4. Produce a human-readable permissions matrix in CI.
 5. Add negative tests proving every agent cannot call every non-owned
    capability.
+6. Until manifests generate the surface, keep an explicit host-side operation
+   matrix for `gmail_*` and quarantine every denied request.
 
 **Acceptance:**
 
@@ -384,6 +431,8 @@ must enforce them mechanically.
 - a permissions diff is reviewable in every PR;
 - non-main agents have the minimal functional surface;
 - unused/dormant integrations are not exposed.
+- the interim Gmail matrix is enforced at the host and cannot be widened by a
+  prompt or model-authored handoff.
 
 ### P0.4 Make approval unforgeable
 
@@ -393,6 +442,9 @@ can misrepresent the action being approved.
 **Actions:**
 
 1. Store a canonical proposed-action object on the host before displaying it.
+   For the first slice, extend the existing `pending_sends` record with the
+   normalized recipient, thread/work-item identity, and SHA-256 body hash
+   instead of designing a second approval subsystem.
 2. Render approval cards exclusively from host-owned fields: action type,
    exact destination, exact amount/content hash, data scope, expiration,
    policy result, and rollback properties.
@@ -434,6 +486,9 @@ can misrepresent the action being approved.
 **Acceptance:**
 
 - an operator can enter safe mode without stopping evidence collection;
+- a drill proves `gmail_send`, `gmail_reply`, the courses SMTP bypass, Slack
+  outbound, and Plutio/Stripe host writes all refuse while inbound processing
+  and evidence collection continue;
 - a compromised/noisy agent cannot exceed bounded blast-radius limits;
 - autonomy never advances when quality evidence is missing.
 
@@ -460,7 +515,10 @@ can misrepresent the action being approved.
 **Acceptance:**
 
 - CI has least privilege and immutable third-party action references;
-- a malicious skill PR cannot execute arbitrary shell through manifest data;
+- the skill workflow declares `permissions: contents: read`, receives no
+  secrets, and contains no `${{ }}` interpolation inside a `run:` block;
+  arbitrary PR-controlled execution on its ephemeral runner is explicitly
+  accepted and contained;
 - release inputs, dependency inventory, and image digest are reproducible;
 - critical advisories have an owner and remediation SLA.
 
@@ -523,7 +581,8 @@ they originate. The ledger references and reconciles those facts.
 
 ### P1.2 Create the company process catalog
 
-For every process, document:
+Catalog only the two processes entering the first ledger pilot: inbound
+Mailman → Sales → Mailman work and its approval/send close. For each, document:
 
 - trigger and source;
 - business owner and technical owner;
@@ -538,21 +597,9 @@ For every process, document:
 - reconciliation process;
 - success and business-value metric.
 
-Start with:
-
-1. inbound email classification;
-2. new lead qualification;
-3. sales response and proposal follow-up;
-4. bookings and changes;
-5. payment reconciliation and refunds;
-6. certification;
-7. course recap/distribution;
-8. grading;
-9. procurement opportunity lifecycle;
-10. knowledge ingestion and lessons;
-11. content/newsletter/social publishing;
-12. incident/healer workflow;
-13. recurring jobs and executive briefings.
+Generate the wider catalog from ledger and scheduler data once those systems can
+keep it current. Do not hand-maintain a thirteen-process catalog that has no
+forcing function.
 
 ### P1.3 Consolidate scheduling ownership
 
@@ -577,26 +624,16 @@ Add:
 Avoid introducing a new scheduler until the inventory proves the existing host
 runner cannot meet requirements.
 
-### P1.4 Define service-level objectives
+### P1.4 Define three service-level indicators
 
-Minimum SLIs per workflow:
+For Mailman and Sales, begin with only:
 
-- event-to-durable-record latency;
-- queue delay;
-- agent start latency;
+- accepted-versus-completed work;
 - end-to-end completion latency;
-- success, retry, duplicate, and dead-letter rates;
-- guard rejection and approval-wait rates;
-- external dependency latency/error rate;
-- stale-work count;
-- cost and tokens per completed item;
-- human touch time and rework;
-- business outcome where observable.
+- customer-visible defect/reversal rate.
 
-Recommended initial objectives should be derived from a baseline, not guessed.
-Start with only two high-risk workflows and three measures: accepted-versus-
-completed work, end-to-end latency, and customer-visible defect/reversal rate.
-Expand the SLI set only when a measure has an owner and informs a decision.
+Derive objectives from a measured baseline rather than guessing. Add another
+indicator only when it has an owner and changes an operational decision.
 
 ### P1.5 Build operational telemetry without a dashboard project
 
@@ -688,29 +725,13 @@ Reconcile `docs/DATA-MODEL.md` with implemented `business_v2`; split it into
 
 ### P1.10 Define privacy and records governance
 
-Create a data inventory for:
-
-- identity/contact data;
-- coaching/client content;
-- emails and Slack messages;
-- recordings/transcripts;
-- financial data;
-- grading/certification;
-- procurement;
-- authentication and operational telemetry.
-
-For each class define purpose, source, legal/business basis, allowed agents,
-allowed human roles, storage locations, encryption, retention, deletion,
-export, incident handling, and third-party processors.
-
-Implement:
-
-- retention jobs with dry-run/report/apply modes;
-- redaction/tokenization for evaluation datasets;
-- access logs for sensitive records;
-- tested deletion/export workflows;
-- encrypted backups and protected keys;
-- no raw PII in routine metrics or broad knowledge packs.
+Create a one-page inventory of the data classes actually processed, their
+storage locations, sensitivity, and current consumers. Obtain one leadership
+decision for retention and use it to constrain logs, evaluation fixtures,
+knowledge packs, and backups. Redact evaluation data and keep raw PII out of
+routine metrics now. Defer automated legal hold, subject-access, generalized
+deletion/export, and a full records program until a contract, regulator, or
+measured operational need requires them.
 
 ## 9. P1 program: agent quality and safe autonomy
 
@@ -760,18 +781,6 @@ Initially record:
 
 Add knowledge-pack, lesson, toolset, and policy hashes only when the relevant
 artifact is versioned and the added evidence has demonstrated diagnostic value.
-The eventual fuller envelope can include:
-
-- source event and normalized input;
-- system/group prompt version;
-- knowledge-pack and lesson versions;
-- model/provider and relevant inference settings;
-- capability manifest and allowed tools;
-- policy version;
-- application release and schema version;
-- proposed actions;
-- evaluator results;
-- tokens, latency, and estimated cost.
 
 Do not turn the evidence system into a second product. Set storage and runtime
 overhead budgets and sample low-risk runs if full capture is not justified.
@@ -892,24 +901,9 @@ incident.
 
 ### P2.6 Decompose the modular monolith internally
 
-Do not create services. Create explicit modules with typed interfaces:
-
-- bootstrap/lifecycle;
-- channels/ingress;
-- work ledger;
-- routing/scheduling;
-- agent execution;
-- policy/approval;
-- capabilities;
-- data/repositories;
-- recurring jobs;
-- observability;
-- health/readiness.
-
-Reduce the five largest source files through behavior-preserving extraction.
-The composition root should declare wiring, not implement business logic.
-
-Acceptance should focus on:
+Do not create services or a target module taxonomy in advance. Extract a typed
+internal boundary only when a current safety, testability, or delivery change is
+materially blocked by the existing file boundary. Acceptance then focuses on:
 
 - no circular dependency increase;
 - clear ownership and public interfaces;
@@ -1103,31 +1097,86 @@ one-to-two-week Wave 0 was not credible for this staffing model. Re-estimate
 after every wave and stop when the next control costs more than the risk it
 reduces.
 
-### Immediate containment: first 48 hours
+### Wave 0: containment and proof (week 1–6)
 
-| Deliverable | Priority | Exit gate |
-| --- | --- | --- |
-| manual-mode ceiling for C4/C5 + safe-mode drill | P0 | external writes stop while reads/evidence continue |
-| disable or isolate host Chrome CDP | P0 | Procurement cannot access unrelated sessions |
-| remove skill workflow shell `eval` | P0 | adversarial manifest test cannot execute a command |
-| verify live DB sync exclusions | P0 | `store/`, `data/`, SQLite/WAL excluded at every sync root |
-| record temporary egress/action limits | P0 | limits enforced at final action boundary |
+One primary engineer/operator, sequentially. Each week must reach its exit gate
+before the next begins.
 
-### Wave 0: evidence and brakes (week 1–6)
+**Week 1 — close the outbound-email and healer holes.**
 
-| Deliverable | Priority | Exit gate |
-| --- | --- | --- |
-| align Node 22 across local/CI/service | P0 | full tests green under one runtime |
-| current threat model and secret/capability inventory | P0 | reviewed matrix, no unknown credential consumers |
-| safe-mode and per-action kill switches | P0 | drill proves external writes stop |
-| immutable CI action pins and minimum permissions | P0 | workflow security review passes |
-| backup inventory and restore test design | P0 | owners and target RPO/RTO proposed |
-| process/job/scheduler catalog | P1 | every recurring execution has one owner |
-| telemetry baseline schema | P1 | work/action correlation IDs visible |
+- group-scope every `gmail_*` operation and quarantine denials;
+- host-resolve the party and fail closed for unknown To/CC recipients;
+- apply recipient validation and test routing to replies;
+- restrict thread/message/search access to host-issued work resources;
+- ship `HEALER_IMPLEMENT_ENABLED=0` in the tracked template and read-only check
+  the live Mac Mini unit.
 
-No new autonomous writes during Wave 0. If Node 24 passes the full native and
-deployment compatibility suite, leadership may choose it instead of Node 22;
-the exit gate is one enforced LTS line, not loyalty to a specific number.
+Exit gate: a Grader `gmail_send` is quarantined; an unknown reply CC is blocked;
+test mode redirects send and reply; healer implementation is off in tracked
+configuration. `NC-20260729-004` is the implementation task.
+
+**Week 2 — brakes and build integrity.**
+
+- global external-write safe mode at every named boundary, plus recipient,
+  volume, money, retry, and time-window ceilings;
+- suspend L2 in code/service configuration and verify from the running daemon;
+- contain skill-PR execution, remove `eval`, minimize workflow permissions, and
+  eliminate expression interpolation inside `run:`;
+- enforce one Node LTS major across engines, CI, startup, launchd, build, and
+  developer workflow;
+- keep sync-conflict copies out of the build graph and either ship or remove the
+  missing repository-hygiene job.
+
+Exit gate: a recorded safe-mode drill; full suite green under one enforced
+major; no conflict copies in the build; every tracked scheduled unit has an
+executable target and visible last-exit status.
+
+**Week 3 — bind approval to execution.**
+
+- store the approved normalized recipient, thread/work-item identity, and body
+  hash in the existing pending-send record;
+- refuse replay, stale, superseded, wrong-thread, wrong-user, and post-approval
+  mutation.
+
+Exit gate: the 2026-07-23 regeneration incident replay fails closed.
+
+**Week 4 — make learning reviewable.**
+
+- write self-authored lessons to quarantine;
+- require explicit promotion into the operative mounted artifact;
+- carry provenance/review/contested state consistently to agent and shared
+  copies;
+- correct messages and headers that currently claim stronger review than the
+  implementation provides.
+
+Exit gate: a self-authored lesson is invisible to every agent until promoted.
+
+**Week 5 — stop silent loss.**
+
+- populate `source_thread_id` on inbound classification;
+- perform bounded reconciliation after Gmail history expiry and alert on
+  watermark age;
+- inventory recurring execution with an executability probe, last run, and last
+  exit—not ownership alone.
+
+Exit gate: forced history expiry produces a measured, recovered gap, and the
+execution inventory detects a deliberately broken unit.
+
+**Week 6 — one ledger pilot and one evaluation pack.**
+
+- implement Mailman → Sales → Mailman work items by reusing the proven
+  `webhook_inbox`/watermark/reaper shape;
+- add correlation IDs and one compact daily exception brief;
+- transcribe the seven documented incidents plus direct/indirect
+  prompt-injection cases into the first evaluation pack.
+
+Exit gate: deliberately reverting a Week-1 guard makes the pack fail.
+
+No new autonomous writes during Wave 0. The earlier “move one recurring send
+path behind a host adapter” item returns to Wave 1: Weeks 1–2 close its immediate
+email risk more cheaply. If Node 24 passes the same native/deployment suite,
+leadership may select it instead of Node 22; the exit gate is one enforced LTS
+line.
 
 ### Wave 1: authority and reproducibility (week 7–12)
 
@@ -1157,8 +1206,7 @@ the exit gate is one enforced LTS line, not loyalty to a specific number.
 | --- | --- | --- |
 | minimum decision-envelope versioning | P1 | high-impact actions can be reproduced/explained |
 | risk-adjusted autonomy model | P1 | promotions use sampled outcome evidence |
-| unified party timeline | P2 | top workflows query one canonical view |
-| exception inbox | P2 | operators manage all blocked work in one place |
+| exception inbox with party/work drill-down | P2 | operators manage blocked work and inspect its evidence in one place |
 | queue priorities and capacity tuning | P2 | customer SLO met under batch load |
 | context/cost optimization | P2 | lower cost without eval regression |
 | selective modular-monolith decomposition | P2 | extract only where current work is blocked by file boundaries |
@@ -1168,8 +1216,8 @@ the exit gate is one enforced LTS line, not loyalty to a specific number.
 - tested warm-spare/failover only if cold restore cannot meet approved RTO;
 - complete privacy/retention workflows;
 - quarterly autonomous-control certification;
-- business KPI/ROI chain per automated process;
-- selective user interface only where exception volume justifies it;
+- extend business KPI/ROI only after one process has a stable baseline;
+- extend the exception interface only when its observed volume justifies it;
 - model/provider resilience only after tool-use evaluations show parity;
 - retire duplicated state, dead integrations, and superseded documentation.
 
@@ -1239,8 +1287,11 @@ Examples:
 
 | Risk | Current severity | Main treatment |
 | --- | --- | --- |
+| any container can invoke mailbox read/send operations | critical at validated baseline | host operation matrix, resource grants, quarantine, negative tests (`NC-20260729-004`) |
+| recipient/CC/thread policy can be selected or bypassed by model fields | critical at validated baseline | host-resolved party, fail-closed final guard, assigned-resource checks |
 | prompt injection uses raw credentials | critical | host capability gateway + egress policy |
-| Procurement agent reaches operator Chrome sessions | critical | disable; dedicated least-privilege profile if restored |
+| every agent VM can reach the Procurement CDP bridge if live | critical | isolated network/binding or retire bridge |
+| healer implements against the operational checkout | critical if live-enabled | tracked default off; verify live unit; disposable worktree |
 | unrestricted agent egress enables exfiltration | critical | default-deny egress + destination/action policy |
 | forged/misleading approval | critical | host-rendered hashed action + nonce |
 | wrong recipient/thread/entity | critical | final-boundary guards + canonical IDs + tests |
@@ -1249,6 +1300,8 @@ Examples:
 | skill/workflow supply-chain compromise | high | remove `eval`, pin actions, least permissions, review |
 | invalid machine-level Claude deny rules | high | migrate to supported matcher and test denied paths |
 | silent work loss/duplicate | high | durable work ledger + reconciliation |
+| Gmail history expiry creates an unmeasured gap | high | bounded reconciliation + watermark-age alert |
+| autonomy/risk controls depend on model tags or unloaded environment knobs | high | host-derived class; typed effective config; live-state test |
 | split canonical identity or schema drift | high | finish identity invariants, migrations, drift gate |
 | knowledge poisoning/fact drift | high | provenance, review, eval, scoped packs |
 | runaway loop/cost | high | volume budgets, loop detector, circuit breaker |
@@ -1261,7 +1314,7 @@ Examples:
 
 ## 17. First 20 implementation tickets
 
-Implementation checkpoint (2026-07-28):
+Implementation checkpoint (2026-07-29):
 
 - `TEST-001` is implemented by `NC-20260728-005`: the pinned Node 22 root
   baseline is green at 124 files / 1,595 tests.
@@ -1275,36 +1328,54 @@ Implementation checkpoint (2026-07-28):
   `NC-20260723-002`/`NC-20260728-004`; they improve delivery governance but do
   not imply that the security, disaster-recovery, telemetry, or autonomy
   tickets below are complete.
+- `SEC-011`/`SEC-012` are locally implemented, validated, and committed by
+  `NC-20260729-004`. They remain undeployed until that task reaches the explicit
+  deployment and live-verification states.
 
-1. `SEC-004` — implement and drill global/per-system external-write safe mode.
-2. `SEC-009` — disable operator-profile Chrome CDP; create a dedicated
-   procurement profile only if the workflow cannot operate without it.
-3. `CICD-002` — remove skill-test shell `eval`.
-4. `OPS-001` — enforce one selected LTS runtime in CI, startup, launchd, and
+1. `SEC-011` — authorize `gmail_*` by source group and host-assigned resource;
+   quarantine denials and add negative tests.
+2. `SEC-012` — host-resolve party/recipient, fail closed, validate reply CC,
+   and apply test routing to replies.
+3. `SEC-013` — disable healer implementation by default; verify live state and
+   move implementation to a disposable worktree.
+4. `SEC-007` — bind approval to normalized recipient, work/thread identity,
+   body hash, nonce, expiry, and named operator.
+5. `SEC-004` — implement and drill global/per-system external-write safe mode.
+6. `SEC-009` — isolate or retire the shared-gateway Procurement CDP bridge.
+7. `CICD-002` — contain skill-PR execution and remove shell `eval`.
+8. `OPS-001` — enforce one selected LTS runtime in CI, startup, launchd, and
    documentation.
-5. `TEST-001` — restore green root tests and isolate temporary test directories.
-6. `SEC-002` — generate complete secret-to-consumer inventory without values.
-7. `SEC-008` — move one highest-risk raw credential behind a host adapter and
+9. `TEST-001` — preserve the green root baseline and isolate temporary test directories.
+10. `SEC-002` — generate complete secret-to-consumer inventory without values.
+11. `SEC-008` — move one highest-risk raw credential behind a host adapter and
    prove cutover, rollback, and rotation.
-8. `SEC-007` — host-rendered approval object with nonce/hash/revalidation.
-9. `SEC-010` — implement default-deny egress for one pilot agent, then expand.
-10. `CICD-001` — run CI on protected `main`, pin Actions SHAs, and declare
+12. `SEC-010` — implement default-deny egress for one pilot agent, then expand.
+13. `CICD-001` — run CI on protected `main`, pin Actions SHAs, and declare
     minimum workflow permissions.
-11. `DR-001` — backup inventory, approved RPO/RTO, and one isolated restore
+14. `DR-001` — backup inventory, approved RPO/RTO, and one isolated restore
     drill.
-12. `DATA-001` — ordered PostgreSQL migration baseline, canonical-identity
+15. `DATA-001` — ordered PostgreSQL migration baseline, canonical-identity
     invariants, and schema version table.
-13. `DATA-002` — fresh PostgreSQL migration and FK-introspection tests in CI.
-14. `SEC-005` — create per-agent capability manifest schema.
-15. `SEC-006` — generate allowed MCP tools/mounts/policy from manifests.
-16. `REL-002` — implement work-item transitions and source reconciliation for
+16. `DATA-002` — fresh PostgreSQL migration and FK-introspection tests in CI.
+17. `SEC-005`/`SEC-006` — generate per-agent tool, mount, action, and network
+    policy from one manifest after the interim Gmail matrix is proven.
+18. `REL-002` — implement work-item transitions and source reconciliation for
     Mailman and Sales only.
-17. `REL-001` — inventory all schedules and assign one owner/run ledger.
-18. `SEC-001` — replace `docs/SECURITY.md` with the verified live threat model.
-19. `OBS-001` — minimum correlation/action/audit event schema with overhead
-    budget.
-20. `EVAL-001` — shared eval format plus incident/injection cases for Mailman
-    and Sales.
+19. `REL-001` — inventory schedules and probe target existence, last run, and
+    last exit status.
+20. `EVAL-001` — incident/injection regression pack for Mailman and Sales.
+21. `DATA-003` — add and validate the PostgreSQL expression index for exact
+    `interactions.metadata->>'thread_id'` authorization lookups.
+22. `SEC-014` — replace group-global Gmail resource sets with a durable,
+    bounded, work-item-scoped grant ledger and explicit revocation.
+23. `OBS-003` — define quarantine metrics, alert thresholds, retention, and an
+    operator review/replay runbook.
+
+Deferred until evidence requires them: broader process catalog, general UI,
+full party timeline, per-process ROI program, broad privacy automation, and
+file decomposition not blocking a current change. `SEC-001`, `OBS-001`, and
+the minimum data-class/retention decision remain required supporting work but
+do not displace the twenty ordered implementation tickets above.
 
 ## 18. Decisions required from leadership
 
@@ -1323,6 +1394,29 @@ Implementation checkpoint (2026-07-28):
 8. What sampled defect/complaint threshold blocks autonomy promotion?
 9. What monthly spend or cost-per-item requires automatic throttling?
 10. Who owns the company OS, security, data, and each business process?
+11. Is fast-healer implementation intentionally live anywhere before
+    disposable-worktree isolation?
+12. Does the Procurement Bonfire browser path justify an isolated network, or
+    should the path be retired?
+13. Which named Slack user IDs may authorize C3+ execution?
+14. Will the courses SMTP bypass be retired behind the host Gmail capability,
+    or explicitly accepted with independent policy and ceilings?
+15. Is any silent Gmail ingestion gap acceptable, or is bounded reconciliation
+    mandatory?
+
+### Working defaults adopted for the containment program
+
+Pending a later explicit reversal, `NC-20260729-004` and subsequent planning use
+these conservative defaults:
+
+- healer implementation remains off until disposable-worktree isolation and
+  live verification;
+- Procurement browser access must be network-isolated or retired;
+- only named operators may authorize C3+ actions;
+- the courses SMTP bypass is scheduled for retirement behind the host
+  capability rather than accepted as a permanent parallel sender;
+- Gmail ingestion has zero acceptable silent loss: history expiry requires
+  bounded reconciliation and an alert.
 
 ## 19. External control references
 
@@ -1418,6 +1512,35 @@ not match current file-permission checks and should use the supported
 `Edit(...)` matcher. No machine settings were changed during this review. The
 plan treats repair and a deny-path test as a separate P0 machine-configuration
 action.
+
+### Source-connected Claude validation record
+
+**Date:** 2026-07-29
+**Validator:** Claude Code, `claude-opus-5[1m]` (Opus 5, 1M context), maximum
+effort
+**Report:** `docs/reports/NC-20260729-001-CLAUDE-PLAN-VALIDATION.md`
+**Disposition:** accept with changes
+
+Unlike the July 23 plan-only review, this validator read the implementing
+source, tests, workflows, launchd templates, schemas, group prompts, and
+continuity record. It verified all thirteen challenged current-state claims,
+rejected none, and materially corrected the sequencing:
+
+- group authorization, fail-closed recipient/reply controls, and the tracked
+  healer flag precede Node and CI work;
+- the dedicated Procurement profile exists, but shared-gateway CDP reachability
+  is the unresolved boundary;
+- approval binding enters the six-week slice;
+- schedule inventory must prove executability;
+- the work-ledger pilot should reuse the existing durable inbox/reaper pattern;
+- governance mass is reduced to two process pilots, three core service
+  indicators, a minimum decision envelope, and evidence-triggered expansion.
+
+The report also identified the courses SMTP bypass, unloaded autonomy controls,
+model-selected risk categories, missing `source_thread_id`, Gmail history loss,
+compiled sync conflicts, and the non-portable migration wrapper. Those findings
+are now represented in the ordering, risks, acceptance criteria, tickets, and
+leadership defaults above.
 
 **Remaining judgment:**
 

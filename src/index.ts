@@ -53,6 +53,7 @@ import {
   getAllTasks,
   getJob,
   clearPendingSends,
+  clearPendingSendsByRecipient,
   getMessageById,
   listOverdueSends,
   markPendingSendAlerted,
@@ -93,6 +94,7 @@ import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
 import { startHeartbeat } from './heartbeat.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
 import {
+  extractApprovedGmailThreadId,
   recordApproval,
   sweepPendingSends,
   SEND_WATCHDOG_TICK_MS,
@@ -106,6 +108,7 @@ import { handleFollowupDrop, handleTypedDrop } from './followup-drop.js';
 import { makeFollowupDropDeps } from './followup-drop-deps.js';
 import { SlackChannel } from './channels/slack.js';
 import { handleGmailSend } from './gmail-ipc-handlers.js';
+import { grantHostGmailResources } from './gmail-ipc-policy.js';
 import {
   listOpenProposals,
   resolveRecipient,
@@ -1631,6 +1634,7 @@ async function main(): Promise<void> {
     const sendWatchdogStore: SendWatchdogStore = {
       recordPendingSend,
       clearPendingSends,
+      clearPendingSendsByRecipient,
       listOverdueSends,
       markAlerted: markPendingSendAlerted,
     };
@@ -1659,17 +1663,32 @@ async function main(): Promise<void> {
       slackForAutonomy.registerApprovalListener(async (ts) => {
         const card = getMessageById(ts);
         if (card?.content && card.from_group) {
-          recordApproval(
+          const threadRoot = card.thread_ts
+            ? getThreadParent(card.chat_jid, card.thread_ts)
+            : undefined;
+          const approvedGmailThreadId =
+            extractApprovedGmailThreadId(card.content) ??
+            extractApprovedGmailThreadId(threadRoot?.content);
+          const pending = recordApproval(
             {
               draftTs: ts,
               groupFolder: card.from_group,
               chatJid: card.chat_jid,
               threadTs: card.thread_ts ?? undefined,
               cardText: card.content,
+              approvedGmailThreadId,
               now: new Date(),
             },
             sendWatchdogStore,
           );
+          if (pending?.gmailThreadId) {
+            grantHostGmailResources('mailman', {
+              threadId: pending.gmailThreadId,
+              emailAddresses: pending.recipient
+                ? [pending.recipient]
+                : undefined,
+            });
+          }
         }
         return false; // never claim — the agent path must still run
       });

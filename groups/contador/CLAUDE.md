@@ -83,11 +83,15 @@ When you receive `[HANDOFF: mailman→contador]` with `[TYPE: invoice]`:
 
 The handoff carries only the small fields you need to start: `From`, `Subject`, `Thread-ID`, `Message-ID`, and a `Snippet` (~300 chars of the email body). It does **not** carry the full email body — that would burn tokens for no reason. Most invoices have the vendor name and amount in the snippet.
 
-Extract from the handoff: `From`, `Subject`, `Thread-ID`.
+Extract from the handoff: `From`, `Subject`, `Thread-ID`, `Message-ID`.
 
 Then derive: `Vendor` (from `From` display name), `Amount` (parse from `Snippet`), `Due Date` (parse from `Snippet`).
 
-If `Amount` or `Due Date` are not in the snippet, fetch the full email — call `mcp__nanoclaw__gmail_read` with the `Thread-ID` and parse from the returned body. Do not request the body unless the snippet is insufficient.
+If `Amount` or `Due Date` are not in the snippet, fetch the full email — call
+`mcp__nanoclaw__gmail_read` with the host-assigned `Message-ID` and parse the
+returned body. `gmail_read` does not accept a Thread-ID. Do not request the body
+unless the snippet is insufficient, and never substitute another ID if the host
+rejects it.
 
 If a vendor looks suspicious (numbered company, no service description, first time seen), set `Warning` to a one-line note for chief.
 

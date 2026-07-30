@@ -23,6 +23,7 @@ import {
 } from '../config.js';
 import { getMessageIdsForJid, getRouterState, setRouterState } from '../db.js';
 import { getGmailClient } from '../gmail-auth.js';
+import { grantHostGmailResources } from '../gmail-ipc-policy.js';
 import {
   handleClassifyLabelWrite,
   isAutoArchiveLabel,
@@ -447,6 +448,14 @@ export class GmailChannel implements Channel {
     // directly and skip mailman entirely. Saves one LLM call + one container
     // spawn per matched message. Falls through to mailman on any error.
     const senderEmail = extractSenderEmail(headers.from);
+    // The Gmail API is authoritative for these identifiers. Grant them before
+    // any host routing so mailman can use the resource and can pass the same
+    // grant—not an invented replacement—to the selected downstream group.
+    grantHostGmailResources(GMAIL_GROUP_FOLDER, {
+      threadId,
+      messageId: msg.id,
+      emailAddresses: senderEmail ? [senderEmail] : [],
+    });
     const headerMap: Record<string, string> = {};
     for (const h of rawHeaders) {
       if (h.name && h.value) headerMap[h.name.toLowerCase()] = h.value;

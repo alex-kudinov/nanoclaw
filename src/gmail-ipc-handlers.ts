@@ -29,7 +29,7 @@ import {
 } from './gmail-api.js';
 import { logger } from './logger.js';
 import { convertMarkdownToEmailHtml } from './markdown-to-email-html.js';
-import { checkRecipient } from './email-recipient-guard.js';
+import { checkRecipient, normalizeRecipient } from './email-recipient-guard.js';
 import { checkContent } from './email-content-guard.js';
 
 /** Payload shape written by container MCP tools. */
@@ -57,6 +57,8 @@ export interface GmailIpcPayload {
   messageId?: string;
   // open tracking (gmail_send + gmail_reply)
   leadId?: number;
+  // Host-stamped from durable approval state; container input is overwritten.
+  approvedRecipient?: string;
   emailType?: string;
   // markdown conversion (gmail_send + gmail_reply)
   markdown?: boolean;
@@ -81,14 +83,18 @@ async function resolvePartyId(
   threadId?: string,
 ): Promise<number | null> {
   if (to) {
+    const normalizedTo = normalizeRecipient(to);
     try {
       const result = await query<{ id: number | null }>(
         'SELECT business_v2.best_party_by_email($1::citext) AS id',
-        [to],
+        [normalizedTo],
       );
       if (result.rows[0]?.id) return result.rows[0].id;
     } catch (err) {
-      logger.error({ to, err }, 'gmail-ipc: party lookup by email failed');
+      logger.error(
+        { to: normalizedTo, err },
+        'gmail-ipc: party lookup by email failed',
+      );
     }
   }
   if (threadId) {
@@ -113,9 +119,9 @@ async function resolvePartyId(
 
 /**
  * The set of addresses we know belong to a party (primary_email + party_emails),
- * lowercased. Used to reject an agent-fabricated recipient before sending. Fails
- * open (empty set) on error so a DB hiccup can't block legitimate mail — the
- * reserved-domain check in checkRecipient still applies.
+ * lowercased. Used to reject an agent-fabricated recipient before sending.
+ * Returning an empty set on lookup failure is deliberately fail-closed because
+ * checkRecipient rejects missing host context.
  */
 async function getPartyEmails(partyId: number): Promise<Set<string>> {
   try {
@@ -131,6 +137,80 @@ async function getPartyEmails(partyId: number): Promise<Set<string>> {
   } catch (err) {
     logger.error({ err, partyId }, 'gmail-ipc: party email lookup failed');
     return new Set();
+  }
+}
+
+interface VerifiedPartyContext {
+  partyId: number;
+  emails: Set<string>;
+}
+
+interface RecipientVerification {
+  ok: boolean;
+  context?: VerifiedPartyContext;
+  reason?: string;
+}
+
+/**
+ * Establish the party on the host and prove that the intended recipient belongs
+ * to it. A caller-supplied leadId is a hint only: it is checked against the
+ * party's addresses and rejected if the host email lookup resolves elsewhere.
+ */
+async function verifyPartyRecipient(
+  to: string,
+  claimedPartyId?: number,
+  threadId?: string,
+): Promise<RecipientVerification> {
+  const resolvedPartyId = await resolvePartyId(to, threadId);
+  const partyId = claimedPartyId ?? resolvedPartyId;
+  if (!partyId) {
+    return {
+      ok: false,
+      reason: `recipient ${normalizeRecipient(to)} has no host-resolved party`,
+    };
+  }
+  if (claimedPartyId && resolvedPartyId && claimedPartyId !== resolvedPartyId) {
+    return {
+      ok: false,
+      reason:
+        `claimed party ${claimedPartyId} does not match host-resolved party ` +
+        `${resolvedPartyId}`,
+    };
+  }
+
+  const emails = await getPartyEmails(partyId);
+  const check = checkRecipient(to, emails);
+  if (!check.ok) return { ok: false, reason: check.reason };
+  return { ok: true, context: { partyId, emails } };
+}
+
+function splitRecipients(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function verifyAdditionalRecipients(
+  value: string | undefined,
+  context: VerifiedPartyContext,
+): RecipientVerification {
+  for (const recipient of splitRecipients(value)) {
+    const check = checkRecipient(recipient, context.emails);
+    if (!check.ok) {
+      return {
+        ok: false,
+        reason: `CC rejected: ${check.reason}`,
+      };
+    }
+  }
+  return { ok: true, context };
+}
+
+class RecipientPolicyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RecipientPolicyError';
   }
 }
 
@@ -151,9 +231,16 @@ function buildEmailFooter(trackingId: string, emailType: string): string {
   );
 }
 
+/**
+ * Notified with the real recipient once Gmail has accepted a message. The only
+ * signal that discharges an approved-send expectation — see send-watchdog.ts.
+ */
+export type OnSendConfirmed = (recipient: string | undefined) => void;
+
 export async function handleGmailReply(
   data: GmailIpcPayload,
   postToChief?: PostToChief,
+  onSendConfirmed?: OnSendConfirmed,
 ): Promise<void> {
   if (!data.threadId || !data.body) {
     logger.warn({ data }, 'gmail_reply: missing threadId or body');
@@ -199,27 +286,80 @@ export async function handleGmailReply(
     }
   }
 
-  // Inject tracking pixel + unsubscribe footer for HTML replies with lead context
-  let bodyForReply = data.body;
-  if (data.html && data.leadId) {
-    const trackingId = crypto.randomUUID();
-    try {
-      insertTrackingPixel(trackingId, data.leadId, data.emailType || 'reply');
-      bodyForReply += buildEmailFooter(trackingId, data.emailType || 'reply');
-    } catch (err) {
-      logger.warn(
-        { err, leadId: data.leadId },
-        'Failed to insert tracking pixel, sending without',
+  let verifiedReplyParty: VerifiedPartyContext | undefined;
+  let result: Awaited<ReturnType<typeof replyToThread>>;
+  try {
+    result = await replyToThread({
+      threadId: data.threadId,
+      body: data.body,
+      html: data.html,
+      cc: data.cc,
+      recipientOverride: GMAIL_TEST_RECIPIENT || undefined,
+      prepareSend: async ({ to, cc }) => {
+        if (
+          data.approvedRecipient &&
+          normalizeRecipient(to) !== normalizeRecipient(data.approvedRecipient)
+        ) {
+          throw new RecipientPolicyError(
+            `Gmail thread recipient ${normalizeRecipient(to)} does not match ` +
+              `approved recipient ${normalizeRecipient(data.approvedRecipient)}`,
+          );
+        }
+        const verification = await verifyPartyRecipient(
+          to,
+          data.leadId,
+          data.threadId,
+        );
+        if (!verification.ok || !verification.context) {
+          throw new RecipientPolicyError(
+            verification.reason || 'recipient could not be verified',
+          );
+        }
+        const ccCheck = verifyAdditionalRecipients(cc, verification.context);
+        if (!ccCheck.ok) {
+          throw new RecipientPolicyError(
+            ccCheck.reason || 'CC recipient could not be verified',
+          );
+        }
+        verifiedReplyParty = verification.context;
+
+        let body = data.body!;
+        if (data.html) {
+          const trackingId = crypto.randomUUID();
+          try {
+            insertTrackingPixel(
+              trackingId,
+              verification.context.partyId,
+              data.emailType || 'reply',
+            );
+            body += buildEmailFooter(trackingId, data.emailType || 'reply');
+          } catch (err) {
+            logger.warn(
+              { err, partyId: verification.context.partyId },
+              'Failed to insert tracking pixel, sending without',
+            );
+          }
+        }
+        return { body };
+      },
+    });
+  } catch (err) {
+    if (!(err instanceof RecipientPolicyError)) throw err;
+    logger.error(
+      { threadId: data.threadId, cc: data.cc, reason: err.message },
+      'gmail_reply BLOCKED: recipient failed validation',
+    );
+    if (postToChief) {
+      await postToChief(
+        `🚫 [EMAIL BLOCKED] reply thread=${data.threadId} — ${err.message}. NOT sent; verify the recipient and resend.`,
       );
     }
+    return;
   }
 
-  const result = await replyToThread({
-    threadId: data.threadId,
-    body: bodyForReply,
-    html: data.html,
-    cc: data.cc,
-  });
+  // Gmail accepted it. A test-routed message does NOT discharge the intended
+  // recipient's expectation because that customer never received the email.
+  if (!GMAIL_TEST_RECIPIENT) onSendConfirmed?.(result.originalTo);
 
   // Store outbound in DB for conversation context
   storeMessageDirect({
@@ -238,28 +378,13 @@ export async function handleGmailReply(
   // Log the outbound interaction atomically so the sales follow-up cron
   // sees an up-to-date last_interaction_at. Must not depend on mailman's
   // LLM re-running psql — that round-trip silently drops rows.
-  const replyPartyId =
-    data.leadId || (await resolvePartyId(undefined, data.threadId));
-  if (replyPartyId) {
-    if (!data.leadId) {
-      logger.warn(
-        { threadId: data.threadId, resolvedPartyId: replyPartyId },
-        'gmail-ipc: leadId missing, resolved via thread lookup',
-      );
-    }
-    await logOutboundEmailInteraction({
-      partyId: replyPartyId,
-      emailType: data.emailType || 'reply',
-      subject: data.subject || '',
-      threadId: result.threadId,
-      messageId: result.messageId,
-    });
-  } else if (!data.leadId) {
-    logger.warn(
-      { threadId: data.threadId },
-      'gmail-ipc: reply leadId missing, no thread history for lookup',
-    );
-  }
+  await logOutboundEmailInteraction({
+    partyId: verifiedReplyParty!.partyId,
+    emailType: data.emailType || 'reply',
+    subject: result.subject || data.subject || '',
+    threadId: result.threadId,
+    messageId: result.messageId,
+  });
 
   logger.info(
     {
@@ -272,8 +397,11 @@ export async function handleGmailReply(
 
   if (postToChief) {
     try {
+      const routed = GMAIL_TEST_RECIPIENT
+        ? ` (test-routed; intended=${result.originalTo})`
+        : '';
       await postToChief(
-        `[EMAIL SENT] to=${result.to || data.to || '(unknown)'} subject=${result.subject || data.subject || '(no subject)'}`,
+        `[EMAIL SENT] to=${result.to || '(unknown)'}${routed} subject=${result.subject || data.subject || '(no subject)'}`,
       );
     } catch (err) {
       logger.error({ err }, '[ERROR] gmail [EMAIL SENT] post failed');
@@ -368,34 +496,38 @@ async function resolveSendThreadId(
 export async function handleGmailSend(
   data: GmailIpcPayload,
   postToChief?: PostToChief,
+  onSendConfirmed?: OnSendConfirmed,
 ): Promise<{ messageId: string; threadId: string } | undefined> {
   if (!data.to || !data.subject || !data.body) {
     logger.warn({ data }, 'gmail_send: missing to, subject, or body');
     return undefined;
   }
 
-  // Recipient guard: an agent composes the To: for contact-form replies (no
-  // thread to reply into), so it can fabricate a placeholder or wrong address —
-  // the tina@example.com incident (2026-06-29). Validate against reserved
-  // domains always, and against the party's known emails when we have a Party ID.
-  // A failure is NOT sent; it is surfaced to chief for a human to correct.
-  const knownEmails = data.leadId
-    ? await getPartyEmails(data.leadId)
-    : undefined;
-  const recipientCheck = checkRecipient(data.to, knownEmails);
-  if (!recipientCheck.ok) {
+  // The host resolves and verifies the party whether or not the agent supplies
+  // leadId. Omitting that model-controlled field can no longer bypass the
+  // allowlist. CC recipients are held to the same final-boundary policy.
+  const verification = await verifyPartyRecipient(
+    data.to,
+    data.leadId,
+    data.threadId,
+  );
+  const ccCheck = verification.context
+    ? verifyAdditionalRecipients(data.cc, verification.context)
+    : verification;
+  if (!verification.ok || !verification.context || !ccCheck.ok) {
+    const reason = verification.reason || ccCheck.reason;
     logger.error(
       {
         to: data.to,
         leadId: data.leadId,
         subject: data.subject,
-        reason: recipientCheck.reason,
+        reason,
       },
       'gmail_send BLOCKED: recipient failed validation',
     );
     if (postToChief) {
       await postToChief(
-        `🚫 [EMAIL BLOCKED] to=${data.to} subject=${data.subject} — ${recipientCheck.reason}. NOT sent; verify the recipient and resend.`,
+        `🚫 [EMAIL BLOCKED] to=${data.to} subject=${data.subject} — ${reason}. NOT sent; verify the recipient and resend.`,
       );
     }
     return undefined;
@@ -454,14 +586,18 @@ export async function handleGmailSend(
 
   // Inject tracking pixel + unsubscribe footer for HTML emails with lead context
   let bodyForSend = data.body;
-  if (data.html && data.leadId) {
+  if (data.html) {
     const trackingId = crypto.randomUUID();
     try {
-      insertTrackingPixel(trackingId, data.leadId, data.emailType || 'initial');
+      insertTrackingPixel(
+        trackingId,
+        verification.context.partyId,
+        data.emailType || 'initial',
+      );
       bodyForSend += buildEmailFooter(trackingId, data.emailType || 'initial');
     } catch (err) {
       logger.warn(
-        { err, leadId: data.leadId },
+        { err, partyId: verification.context.partyId },
         'Failed to insert tracking pixel, sending without',
       );
     }
@@ -476,6 +612,10 @@ export async function handleGmailSend(
     threadId: effectiveThreadId,
   });
 
+  // A test-routed message does NOT discharge the intended recipient's
+  // expectation because that customer never received the email.
+  if (!GMAIL_TEST_RECIPIENT) onSendConfirmed?.(originalTo);
+
   storeOutboundEmail(
     result.messageId,
     originalTo,
@@ -488,28 +628,13 @@ export async function handleGmailSend(
   // Log the outbound interaction atomically so the sales follow-up cron
   // sees an up-to-date last_interaction_at. Must not depend on mailman's
   // LLM re-running psql — that round-trip silently drops rows.
-  const sendPartyId =
-    data.leadId || (await resolvePartyId(data.to, effectiveThreadId));
-  if (sendPartyId) {
-    if (!data.leadId) {
-      logger.warn(
-        { to: data.to, resolvedPartyId: sendPartyId },
-        'gmail-ipc: leadId missing, resolved via party lookup',
-      );
-    }
-    await logOutboundEmailInteraction({
-      partyId: sendPartyId,
-      emailType: data.emailType || 'initial',
-      subject: data.subject,
-      threadId: result.threadId,
-      messageId: result.messageId,
-    });
-  } else if (!data.leadId) {
-    logger.warn(
-      { to: data.to, threadId: data.threadId },
-      'gmail-ipc: party lookup returned null, skipping interaction log',
-    );
-  }
+  await logOutboundEmailInteraction({
+    partyId: verification.context.partyId,
+    emailType: data.emailType || 'initial',
+    subject: data.subject,
+    threadId: result.threadId,
+    messageId: result.messageId,
+  });
 
   logger.info(
     {
@@ -630,13 +755,14 @@ export function isGmailIpcType(type: string): boolean {
 export async function dispatchGmailIpc(
   data: GmailIpcPayload,
   postToChief?: PostToChief,
+  onSendConfirmed?: OnSendConfirmed,
 ): Promise<void> {
   switch (data.type) {
     case 'gmail_reply':
-      await handleGmailReply(data, postToChief);
+      await handleGmailReply(data, postToChief, onSendConfirmed);
       break;
     case 'gmail_send':
-      await handleGmailSend(data, postToChief);
+      await handleGmailSend(data, postToChief, onSendConfirmed);
       break;
     case 'gmail_search':
       await handleGmailSearch(data);

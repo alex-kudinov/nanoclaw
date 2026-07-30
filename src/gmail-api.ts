@@ -315,10 +315,16 @@ export async function replyToThread(opts: {
   body: string;
   html?: boolean;
   cc?: string;
+  recipientOverride?: string;
+  prepareSend?: (recipients: {
+    to: string;
+    cc?: string;
+  }) => Promise<{ body: string }>;
 }): Promise<{
   messageId: string;
   threadId: string;
   to: string;
+  originalTo: string;
   subject: string;
 }> {
   const gmail = getGmailClient();
@@ -402,11 +408,18 @@ export async function replyToThread(opts: {
     ? originalSubject
     : `Re: ${originalSubject}`;
 
+  // Give the host policy the Gmail-derived external recipient before any
+  // message is constructed or sent. In test mode the policy still validates
+  // the real intended recipient, then the actual delivery is redirected.
+  const prepared = await opts.prepareSend?.({ to, cc: opts.cc });
+  const effectiveTo = opts.recipientOverride || to;
+  const effectiveCc = opts.recipientOverride ? undefined : opts.cc;
+
   const raw = buildRawMessage({
-    to,
+    to: effectiveTo,
     subject,
-    body: opts.body,
-    cc: opts.cc,
+    body: prepared?.body ?? opts.body,
+    cc: effectiveCc,
     html: opts.html,
     // Full RFC threading chain from the thread's Message-IDs, resilient to an
     // empty last-message Message-ID (walks back) — so the reply threads in the
@@ -423,10 +436,22 @@ export async function replyToThread(opts: {
   await applyLabel(gmail, sentId);
 
   logger.info(
-    { threadId: opts.threadId, to, messageId: sentId },
+    {
+      threadId: opts.threadId,
+      to: effectiveTo,
+      originalTo: to,
+      testRouted: Boolean(opts.recipientOverride),
+      messageId: sentId,
+    },
     'Gmail: reply sent',
   );
-  return { messageId: sentId, threadId: opts.threadId, to, subject };
+  return {
+    messageId: sentId,
+    threadId: opts.threadId,
+    to: effectiveTo,
+    originalTo: to,
+    subject,
+  };
 }
 
 /**

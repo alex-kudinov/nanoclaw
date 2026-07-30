@@ -57,10 +57,10 @@ export interface RecipientCheck {
 /**
  * Decide whether `to` is a safe recipient.
  *  1. Reserved/placeholder domains are always rejected (no party context needed).
- *  2. When the party's known emails are supplied and non-empty, the recipient
- *     must be one of them — this catches a fabricated *real-looking* address.
- *     An empty/unknown set is not enforced (we cannot prove fabrication), so a
- *     party with no recorded email still sends.
+ *  2. The host must supply at least one verified party address.
+ *  3. The recipient must be one of those addresses — this catches a fabricated
+ *     real-looking address and prevents a caller from bypassing the check by
+ *     omitting its model-supplied party identifier.
  */
 export function checkRecipient(
   to: string,
@@ -73,11 +73,13 @@ export function checkRecipient(
   if (isReservedRecipientDomain(addr)) {
     return { ok: false, reason: `reserved/placeholder domain (${addr})` };
   }
-  if (
-    knownPartyEmails &&
-    knownPartyEmails.size > 0 &&
-    !recipientIsKnown(addr, knownPartyEmails)
-  ) {
+  if (!knownPartyEmails || knownPartyEmails.size === 0) {
+    return {
+      ok: false,
+      reason: `recipient ${addr} has no host-verified party email context`,
+    };
+  }
+  if (!recipientIsKnown(addr, knownPartyEmails)) {
     return {
       ok: false,
       reason: `recipient ${addr} is not among the party's known emails`,

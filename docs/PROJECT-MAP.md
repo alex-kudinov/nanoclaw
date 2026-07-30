@@ -78,16 +78,16 @@ archive. Those have different portability and authority properties.
 
 Use this order, while respecting the distinction between mechanics and policy:
 
-| Question | Primary authority | Supporting evidence |
-| --- | --- | --- |
-| What code does now | current source and current schema | focused tests, logs |
-| How a group should behave | `groups/<name>/CLAUDE.md` | its support/knowledge files |
-| Repository-wide operating rules | root `CLAUDE.md` | this map |
-| Business data shape | inspected PostgreSQL schema | tracked SQL and `SCHEMA.md` copies |
-| Host state shape | inspected SQLite schema in `src/db.ts` | local `store/messages.db` |
-| Target architecture | the specifically named design document | implementation and history |
-| Why a decision was made | Git history and dated handoffs | archived plans |
-| Live operational truth | read-only check of the live system | local snapshots and docs |
+| Question                        | Primary authority                      | Supporting evidence                |
+| ------------------------------- | -------------------------------------- | ---------------------------------- |
+| What code does now              | current source and current schema      | focused tests, logs                |
+| How a group should behave       | `groups/<name>/CLAUDE.md`              | its support/knowledge files        |
+| Repository-wide operating rules | root `CLAUDE.md`                       | this map                           |
+| Business data shape             | inspected PostgreSQL schema            | tracked SQL and `SCHEMA.md` copies |
+| Host state shape                | inspected SQLite schema in `src/db.ts` | local `store/messages.db`          |
+| Target architecture             | the specifically named design document | implementation and history         |
+| Why a decision was made         | Git history and dated handoffs         | archived plans                     |
+| Live operational truth          | read-only check of the live system     | local snapshots and docs           |
 
 Important conflict rules:
 
@@ -262,32 +262,32 @@ session files.
 
 ### Host foundation
 
-| Area | Main files | Responsibility |
-| --- | --- | --- |
-| Composition | `src/index.ts` | starts, wires, recovers, and shuts down the system |
-| Configuration | `src/config.ts`, `src/env.ts` | non-secret defaults and narrow `.env` reads |
-| Types | `src/types.ts` | channels, groups, mounts, webhooks, tasks, jobs |
-| Logging | `src/logger.ts`, `src/log-tail.ts` | structured logs and bounded tail access |
-| Local state | `src/db.ts` | SQLite schema, messages, groups, sessions, tasks/jobs |
-| Business state | `src/business-db.ts` | PostgreSQL access and business queries |
-| Routing | `src/router.ts`, `src/host-router.ts`, `src/routing.test.ts` | group and host-directed routing |
-| Queue | `src/group-queue.ts` | per-work-unit serialization, concurrency, warm workers |
-| Containers | `src/container-runner.ts`, `src/container-runtime.ts` | mounts, lifecycle, adoption, resource limits |
-| IPC | `src/ipc.ts`, `src/ipc-writer.ts`, `src/watchdog-ipc.ts` | agent/host protocol and action dispatch |
-| Scheduling | `src/task-scheduler.ts`, `src/job-registry.ts`, `src/job-runner.ts` | agent tasks and host jobs |
+| Area           | Main files                                                          | Responsibility                                         |
+| -------------- | ------------------------------------------------------------------- | ------------------------------------------------------ |
+| Composition    | `src/index.ts`                                                      | starts, wires, recovers, and shuts down the system     |
+| Configuration  | `src/config.ts`, `src/env.ts`                                       | non-secret defaults and narrow `.env` reads            |
+| Types          | `src/types.ts`                                                      | channels, groups, mounts, webhooks, tasks, jobs        |
+| Logging        | `src/logger.ts`, `src/log-tail.ts`                                  | structured logs and bounded tail access                |
+| Local state    | `src/db.ts`                                                         | SQLite schema, messages, groups, sessions, tasks/jobs  |
+| Business state | `src/business-db.ts`                                                | PostgreSQL access and business queries                 |
+| Routing        | `src/router.ts`, `src/host-router.ts`, `src/routing.test.ts`        | group and host-directed routing                        |
+| Queue          | `src/group-queue.ts`                                                | per-work-unit serialization, concurrency, warm workers |
+| Containers     | `src/container-runner.ts`, `src/container-runtime.ts`               | mounts, lifecycle, adoption, resource limits           |
+| IPC            | `src/ipc.ts`, `src/ipc-writer.ts`, `src/watchdog-ipc.ts`            | agent/host protocol and action dispatch                |
+| Scheduling     | `src/task-scheduler.ts`, `src/job-registry.ts`, `src/job-runner.ts` | agent tasks and host jobs                              |
 
 ### Channels and messaging
 
-| Area | Main files | Responsibility |
-| --- | --- | --- |
-| Registry | `src/channels/registry.ts`, `src/channels/index.ts` | channel self-registration and active imports |
-| Slack | `src/channels/slack.ts`, `src/slack-approval.ts`, `src/lead-thread-key.ts`, `src/message-split.ts`, `src/attachment-convert.ts` | Socket Mode, canonical lead threads, reactions/approvals, safe splitting, attachment extraction |
-| Gmail | `src/channels/gmail.ts`, `src/gmail-api.ts`, `src/gmail-auth.ts` | mailbox channel, OAuth, API operations |
-| Gmail ingest | `src/gmail-push.ts`, `src/gmail-label-poll.ts`, `src/gmail-parser.ts` | push/poll detection and normalization |
-| Gmail IPC | `src/gmail-ipc-handlers.ts`, `src/classify-ipc-handlers.ts` | host-side action execution |
-| Outbound safety | `src/email-recipient-guard.ts`, `src/email-content-guard.ts`, `src/ai-tells.ts` | destination, content, and AI-tell enforcement |
-| Tracking | `src/email-tracking.ts`, `src/email-unsubscribe.ts` | delivery metadata and unsubscribe handling |
-| Rendering | `src/markdown-to-email-html.ts`, `src/formatting.test.ts` | safe channel/email presentation |
+| Area            | Main files                                                                                                                      | Responsibility                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Registry        | `src/channels/registry.ts`, `src/channels/index.ts`                                                                             | channel self-registration and active imports                                                    |
+| Slack           | `src/channels/slack.ts`, `src/slack-approval.ts`, `src/lead-thread-key.ts`, `src/message-split.ts`, `src/attachment-convert.ts` | Socket Mode, canonical lead threads, reactions/approvals, safe splitting, attachment extraction |
+| Gmail           | `src/channels/gmail.ts`, `src/gmail-api.ts`, `src/gmail-auth.ts`                                                                | mailbox channel, OAuth, API operations                                                          |
+| Gmail ingest    | `src/gmail-push.ts`, `src/gmail-label-poll.ts`, `src/gmail-parser.ts`                                                           | push/poll detection and normalization                                                           |
+| Gmail IPC       | `src/gmail-ipc-handlers.ts`, `src/classify-ipc-handlers.ts`                                                                     | host-side action execution                                                                      |
+| Outbound safety | `src/email-recipient-guard.ts`, `src/email-content-guard.ts`, `src/ai-tells.ts`                                                 | destination, content, and AI-tell enforcement                                                   |
+| Tracking        | `src/email-tracking.ts`, `src/email-unsubscribe.ts`                                                                             | delivery metadata and unsubscribe handling                                                      |
+| Rendering       | `src/markdown-to-email-html.ts`, `src/formatting.test.ts`                                                                       | safe channel/email presentation                                                                 |
 
 Only Gmail and Slack are imported in `src/channels/index.ts`. Discord, Telegram,
 WhatsApp, voice, and related modules exist as upstream Claude skills or dormant
@@ -295,32 +295,32 @@ dependencies, not active runtime channels in this snapshot.
 
 ### Business automation
 
-| Area | Main files | Responsibility |
-| --- | --- | --- |
-| Lead/identity | `src/lead-matcher.ts`, `src/identity-join.ts` | business identity resolution |
-| Pipeline | `src/pipeline-status.ts`, `src/email-interaction-log.ts` | interaction and reply-state evidence |
-| Plutio | `src/plutio-cli.ts`, `src/plutio-proposals.ts`, `src/plutio-outbox-reaper.ts` | proposal and outbox integration |
-| Proposal replies | `src/proposal-reply*.ts` | accept/decline detection and actions |
-| Follow-up | `src/proposal-followup*.ts`, `src/followup-drop*.ts`, migration 113 | approval-gated nudge lifecycle and durable party-scoped suppression |
-| Trafft | `src/trafft-custom-fields.ts`, `src/trafft-sweeper.ts`, `src/booking-host-write.ts` | booking ingestion and recovery |
-| Stripe | `src/stripe-payment-host.ts`, `src/contador-name-reaper.ts` | payment ingestion and name recovery |
-| Hive/Firebase | `src/hive-bridge.ts`, `src/hive-sync-reaper.ts` | engagement synchronization |
-| Chaos | `src/chaos-activity.ts`, `src/chaos-booking.ts`, `src/chaos-reconciler.ts` | activity/booking reconciliation |
-| Knowledge drift | `src/program-facts-drift.ts`, `src/lesson-conflict.ts`, `src/learn-ipc-handler.ts` | factual and learned-knowledge controls |
-| Brief/digests | `src/brief-promote.ts`, `src/digest-generator.ts`, `src/digest-delivery.ts` | operational briefing |
-| SEO | `src/seo-stats.ts` | SEO job support |
+| Area             | Main files                                                                          | Responsibility                                                      |
+| ---------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Lead/identity    | `src/lead-matcher.ts`, `src/identity-join.ts`                                       | business identity resolution                                        |
+| Pipeline         | `src/pipeline-status.ts`, `src/email-interaction-log.ts`                            | interaction and reply-state evidence                                |
+| Plutio           | `src/plutio-cli.ts`, `src/plutio-proposals.ts`, `src/plutio-outbox-reaper.ts`       | proposal and outbox integration                                     |
+| Proposal replies | `src/proposal-reply*.ts`                                                            | accept/decline detection and actions                                |
+| Follow-up        | `src/proposal-followup*.ts`, `src/followup-drop*.ts`, migration 113                 | approval-gated nudge lifecycle and durable party-scoped suppression |
+| Trafft           | `src/trafft-custom-fields.ts`, `src/trafft-sweeper.ts`, `src/booking-host-write.ts` | booking ingestion and recovery                                      |
+| Stripe           | `src/stripe-payment-host.ts`, `src/contador-name-reaper.ts`                         | payment ingestion and name recovery                                 |
+| Hive/Firebase    | `src/hive-bridge.ts`, `src/hive-sync-reaper.ts`                                     | engagement synchronization                                          |
+| Chaos            | `src/chaos-activity.ts`, `src/chaos-booking.ts`, `src/chaos-reconciler.ts`          | activity/booking reconciliation                                     |
+| Knowledge drift  | `src/program-facts-drift.ts`, `src/lesson-conflict.ts`, `src/learn-ipc-handler.ts`  | factual and learned-knowledge controls                              |
+| Brief/digests    | `src/brief-promote.ts`, `src/digest-generator.ts`, `src/digest-delivery.ts`         | operational briefing                                                |
+| SEO              | `src/seo-stats.ts`                                                                  | SEO job support                                                     |
 
 ### Reliability and autonomy
 
-| Area | Main files | Responsibility |
-| --- | --- | --- |
-| Webhook durability | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry |
-| Circuit control | `src/circuit-breaker.ts`, `src/hard-filters.ts` | bounded failures and deterministic rejection |
-| Token failover | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts` | auth failure classification and fallback |
-| Autonomy | `src/autonomy-policy.ts`, `src/autonomy-ledger.ts`, `src/autonomy-hold.ts` | category trust levels, holds, vetoes, evidence |
-| Approved-send watchdog | `src/send-watchdog.ts`, `src/db.ts`, `src/ipc.ts` | records approved sends, observes mailman handoffs, alerts on an unobserved send without sending autonomously |
-| Healer | `src/healer/*` | collection, diagnosis, trust, approval, remediation, incident reporting |
-| Heartbeat | `src/heartbeat.ts` | periodic liveness evidence |
+| Area                   | Main files                                                                     | Responsibility                                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
+| Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
+| Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
+| Autonomy               | `src/autonomy-policy.ts`, `src/autonomy-ledger.ts`, `src/autonomy-hold.ts`     | category trust levels, holds, vetoes, evidence                                                               |
+| Approved-send watchdog | `src/send-watchdog.ts`, `src/db.ts`, `src/ipc.ts`                              | records approved sends, observes mailman handoffs, alerts on an unobserved send without sending autonomously |
+| Healer                 | `src/healer/*`                                                                 | collection, diagnosis, trust, approval, remediation, incident reporting                                      |
+| Heartbeat              | `src/heartbeat.ts`                                                             | periodic liveness evidence                                                                                   |
 
 Healer code includes investigation, diagnosis, proposal rendering,
 implementation, remediation, trust, approval, and Slack incident threading.
@@ -344,30 +344,30 @@ changes.
 
 ## 8. Directory and portability map
 
-| Path | Meaning | Git | Sync/portability rule |
-| --- | --- | --- | --- |
-| `src/` | host application and tests | tracked | canonical implementation |
-| `container/` | agent image and runner | tracked | rebuild on each target architecture |
-| `groups/*/CLAUDE.md` and named operating support (`CLAUDE-MAIN.md`, `WORKFLOWS.md`, `VOICE-AND-TONE.md`, `EMAIL-RESPONSE-GUIDELINES.md`, `SCHEMA.md`) | role prompts and procedures | tracked | canonical behavior policy; changes travel with Git |
-| other `groups/*/*` | conversations, auth, snapshots, scratch/runtime artifacts | ignored | sensitive or volatile; never treat as portable authority |
-| `knowledge/` | shared and agent knowledge | mixed | sources tracked; generated packs/schedules partly ignored |
-| `tandem-knowledge/` | broader Tandem knowledge corpus | tracked/mixed | review provenance before regeneration |
-| `data/business/CLAUDE.md` and `data/business/migrations/nanoclaw-v2/` | PostgreSQL operating guide and ordered DDL | tracked | portable source history; running schema still wins |
-| other `data/business/` | legacy/local SQL and runtime material | ignored/mixed | not automatically current authority |
-| `data/jobs/` and `data/webhooks.json` | runtime definitions/state | ignored | machine-local; export deliberately |
-| `data/ipc/` | file IPC | ignored | volatile, never copy while live |
-| `data/sessions/` | Claude/container sessions | ignored | sensitive and machine-specific |
-| `store/messages.db` | host SQLite state | ignored | back up transactionally; not source |
-| `handoffs/` | dated Claude work checkpoints | ignored by Git | synced operational history, not canonical current state |
-| `.claude/` | Claude settings and skills | settings tracked selectively | skills portable; local settings and permissions machine-specific |
-| `.nanoclaw/` | applied-skill state | ignored | local installation metadata |
-| `.toolbox/` | shared toolbox registration | ignored | re-register per machine/client |
-| `setup/` | setup, service, launchd, n8n/VPS assets | tracked/mixed | inspect for embedded environment data before sharing |
-| `docs/` | requirements, designs, operations, this map | tracked | label target vs implemented state |
-| `tools/`, `scripts/` | maintenance and integration tools | tracked/mixed | inspect side effects before use |
-| `dist/` | compiled host output | ignored | rebuild; never use as source authority |
-| `logs/` | runtime logs | ignored | sensitive operational evidence |
-| `.env*` | credentials and toggles | ignored | never copy through Git or documentation |
+| Path                                                                                                                                                  | Meaning                                                   | Git                          | Sync/portability rule                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------- |
+| `src/`                                                                                                                                                | host application and tests                                | tracked                      | canonical implementation                                         |
+| `container/`                                                                                                                                          | agent image and runner                                    | tracked                      | rebuild on each target architecture                              |
+| `groups/*/CLAUDE.md` and named operating support (`CLAUDE-MAIN.md`, `WORKFLOWS.md`, `VOICE-AND-TONE.md`, `EMAIL-RESPONSE-GUIDELINES.md`, `SCHEMA.md`) | role prompts and procedures                               | tracked                      | canonical behavior policy; changes travel with Git               |
+| other `groups/*/*`                                                                                                                                    | conversations, auth, snapshots, scratch/runtime artifacts | ignored                      | sensitive or volatile; never treat as portable authority         |
+| `knowledge/`                                                                                                                                          | shared and agent knowledge                                | mixed                        | sources tracked; generated packs/schedules partly ignored        |
+| `tandem-knowledge/`                                                                                                                                   | broader Tandem knowledge corpus                           | tracked/mixed                | review provenance before regeneration                            |
+| `data/business/CLAUDE.md` and `data/business/migrations/nanoclaw-v2/`                                                                                 | PostgreSQL operating guide and ordered DDL                | tracked                      | portable source history; running schema still wins               |
+| other `data/business/`                                                                                                                                | legacy/local SQL and runtime material                     | ignored/mixed                | not automatically current authority                              |
+| `data/jobs/` and `data/webhooks.json`                                                                                                                 | runtime definitions/state                                 | ignored                      | machine-local; export deliberately                               |
+| `data/ipc/`                                                                                                                                           | file IPC                                                  | ignored                      | volatile, never copy while live                                  |
+| `data/sessions/`                                                                                                                                      | Claude/container sessions                                 | ignored                      | sensitive and machine-specific                                   |
+| `store/messages.db`                                                                                                                                   | host SQLite state                                         | ignored                      | back up transactionally; not source                              |
+| `handoffs/`                                                                                                                                           | dated Claude work checkpoints                             | ignored by Git               | synced operational history, not canonical current state          |
+| `.claude/`                                                                                                                                            | Claude settings and skills                                | settings tracked selectively | skills portable; local settings and permissions machine-specific |
+| `.nanoclaw/`                                                                                                                                          | applied-skill state                                       | ignored                      | local installation metadata                                      |
+| `.toolbox/`                                                                                                                                           | shared toolbox registration                               | ignored                      | re-register per machine/client                                   |
+| `setup/`                                                                                                                                              | setup, service, launchd, n8n/VPS assets                   | tracked/mixed                | inspect for embedded environment data before sharing             |
+| `docs/`                                                                                                                                               | requirements, designs, operations, this map               | tracked                      | label target vs implemented state                                |
+| `tools/`, `scripts/`                                                                                                                                  | maintenance and integration tools                         | tracked/mixed                | inspect side effects before use                                  |
+| `dist/`                                                                                                                                               | compiled host output                                      | ignored                      | rebuild; never use as source authority                           |
+| `logs/`                                                                                                                                               | runtime logs                                              | ignored                      | sensitive operational evidence                                   |
+| `.env*`                                                                                                                                               | credentials and toggles                                   | ignored                      | never copy through Git or documentation                          |
 
 ### Confirmed portability gaps
 
@@ -454,26 +454,26 @@ facts, and manually reconciled contradictions.
 The local SQLite snapshot contains 19 registered folders. That snapshot was
 last active around 2026-07-06 and is not asserted to be current production.
 
-| Folder | Role and boundaries | Local execution notes |
-| --- | --- | --- |
-| `main` | privileged administrator/general assistant | main group; no trigger required |
-| `chief` | coordination, escalation, decision routing, support-draft approval | must not revive the old DB-dispatch pattern |
-| `inbox` | qualify inbound leads and create modern CRM evidence | no direct sales ownership |
-| `mailman` | classify and label email; execute approved outbound work | short warm idle; no deprecated lead writes |
-| `sales` | approval-gated sales drafts and pipeline follow-up | reads facts, schedule, learned lessons, voice/workflows |
-| `booking` | Trafft booking events and interaction logging | host/business mounts |
-| `contador` | Stripe, payment Sheets, PostgreSQL, vendor invoices | Haiku locally; inbound direction guard |
-| `certifier` | pending certification workflow and Sertifier actions | explicit approval before consequential issue/send |
-| `courses` | session recap preparation and distribution | preview first, distribute only after approval |
-| `grader` | rubric/data-driven MCS grading and durable results | Sonnet; one thread/container per submission; calibration holds |
-| `procurement` | Bonfire/CaleProcure opportunity and proposal lifecycle | browser/data integrations; avoid blind submissions |
-| `archivarista` | domain-isolated knowledge synthesis/archival | Haiku; broad read mounts, provenance critical |
-| `newsroom` | editorial pipeline | no unapproved broadcast |
-| `social` | LinkedIn content state machine | confirmation/approval boundary |
-| `campanero` | jobs MCP operator | narrow job execution surface |
-| `heartbeat` | watchdog sink | intentionally no conversational response |
-| `feature-requests` | feature/bug intake | local support files, no tracked role prompt |
-| `gru-community`, `gru-incidents`, `gru-seo`, `gru-solera` | registered channel workspaces | folders are currently empty; global/fallback behavior applies |
+| Folder                                                    | Role and boundaries                                                | Local execution notes                                                              |
+| --------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `main`                                                    | privileged administrator/general assistant                         | main group; no trigger required                                                    |
+| `chief`                                                   | coordination, escalation, decision routing, support-draft approval | must not revive the old DB-dispatch pattern                                        |
+| `inbox`                                                   | qualify inbound leads and create modern CRM evidence               | no direct sales ownership                                                          |
+| `mailman`                                                 | classify and label email; execute approved outbound work           | full Gmail family, limited to host-assigned resources and host-verified recipients |
+| `sales`                                                   | approval-gated sales drafts and pipeline follow-up                 | assigned Gmail thread/search reads only; no Gmail send/reply                       |
+| `booking`                                                 | Trafft booking events and interaction logging                      | host/business mounts                                                               |
+| `contador`                                                | Stripe, payment Sheets, PostgreSQL, vendor invoices                | exact host-assigned invoice-message reads; Haiku locally                           |
+| `certifier`                                               | pending certification workflow and Sertifier actions               | explicit approval before consequential issue/send                                  |
+| `courses`                                                 | session recap preparation and distribution                         | current raw SMTP path bypasses Gmail controls and is scheduled for retirement      |
+| `grader`                                                  | rubric/data-driven MCS grading and durable results                 | Sonnet; one thread/container per submission; calibration holds                     |
+| `procurement`                                             | Bonfire/CaleProcure opportunity and proposal lifecycle             | browser/data integrations; avoid blind submissions                                 |
+| `archivarista`                                            | domain-isolated knowledge synthesis/archival                       | Haiku; broad read mounts, provenance critical                                      |
+| `newsroom`                                                | editorial pipeline                                                 | no unapproved broadcast                                                            |
+| `social`                                                  | LinkedIn content state machine                                     | confirmation/approval boundary                                                     |
+| `campanero`                                               | jobs MCP operator                                                  | narrow job execution surface                                                       |
+| `heartbeat`                                               | watchdog sink                                                      | intentionally no conversational response                                           |
+| `feature-requests`                                        | feature/bug intake                                                 | local support files, no tracked role prompt                                        |
+| `gru-community`, `gru-incidents`, `gru-seo`, `gru-solera` | registered channel workspaces                                      | folders are currently empty; global/fallback behavior applies                      |
 
 There are tracked role prompts for `global` plus the 16 named operational
 roles and `_TEMPLATE`. Empty/local-only registered folders and tracked prompts
@@ -520,6 +520,50 @@ Security-sensitive rules:
 - record the requested action, decision, and final result separately;
 - ensure retries are idempotent or carry a stable idempotency key;
 - keep approval state durable across process/container restarts.
+
+### Gmail IPC containment checkpoint (`NC-20260729-004`)
+
+The container runner still exposes one shared MCP namespace, so the host is the
+enforcing boundary. The containment work adds:
+
+- an explicit operation matrix: Mailman owns all Gmail operations; Sales owns
+  resource-scoped search/thread reads; Contador and Archivarista own exact
+  routed-message reads; Chief owns exact correction-message reads; every other
+  group is denied;
+- quarantine, rather than deletion or dispatch, for a denied `gmail_*` IPC,
+  plus an asynchronous denial message to the calling agent;
+- host-origin grants for Gmail thread IDs, message IDs, and addresses, with
+  handoff propagation limited to structured headers and resources the source
+  group already holds; in-memory sets are bounded;
+- a durable Sales-only fallback that re-authorizes an exact thread or address
+  after restart only when PostgreSQL proves it belongs to non-terminal pipeline
+  work;
+- durable approval bindings for Sales and Chief reply cards: the approved
+  Thread-ID and recipient can reissue Mailman's exact reply scope after restart,
+  and the Gmail-derived recipient must match before delivery;
+- exact assigned-address grammar for Gmail search;
+- fail-closed host party resolution for To/CC and Gmail-derived reply targets;
+- reply test routing as well as send test routing.
+
+The operation matrix governs container-originated Gmail IPC. Host-owned flows
+may call handlers directly: proposal approval currently invokes
+`handleGmailSend` as a host action attributed to Sales, while digest delivery
+calls the Gmail API directly. Both still require consolidation into the later
+uniform action boundary; neither grants a Sales container `gmail_send`.
+
+These changes are uncommitted implementation state until the active-work and
+changelog record says otherwise. Most grants are deliberately fail-closed and
+process-local in the first slice: after daemon restart, stale agent context must
+be reissued by a host source instead of silently retaining mailbox access. The
+functional exceptions are scheduled Sales work (reconstructed from an active
+pipeline entry and recorded email interaction) and a still-pending human
+approval (reconstructed from the local approval record). The later
+work-ledger/capability-manifest slice should generalize durable work-item grants
+without broadening them.
+
+The tracked fast-healer template defaults implementation off in this worktree.
+That does not prove the installed Mac Mini unit changed; live state requires a
+separate read-only check and any service mutation is a deployment action.
 
 ## 12. Integrations
 
@@ -704,12 +748,12 @@ build from the intended commit on the target or in a controlled build process.
 The investigation performed read-only inspection plus local verification; it
 did not repair dependencies or change application state.
 
-| Check | Result | Interpretation |
-| --- | --- | --- |
-| `npm run typecheck` | pass | current TypeScript graph is type-correct |
-| container runner typecheck/tests | pass, 22/22 tests | independent runner package is green |
-| root `npm test` under current shell | fail, 1302 passed / 172 failed | not a green baseline |
-| live production checks | not run | no current production-health claim |
+| Check                               | Result                         | Interpretation                           |
+| ----------------------------------- | ------------------------------ | ---------------------------------------- |
+| `npm run typecheck`                 | pass                           | current TypeScript graph is type-correct |
+| container runner typecheck/tests    | pass, 22/22 tests              | independent runner package is green      |
+| root `npm test` under current shell | fail, 1302 passed / 172 failed | not a green baseline                     |
+| live production checks              | not run                        | no current production-health claim       |
 
 The dominant root-test failure is a missing `better-sqlite3` native binding for
 Node 26.5.0, while `.nvmrc` pins Node 22. Some container-runner tests also share
@@ -732,14 +776,14 @@ Recommended baseline recovery, as a separate authorized change:
 `NC-20260728-005` completed that baseline recovery under the pinned Node 22
 runtime:
 
-| Check | Result | Interpretation |
-| --- | --- | --- |
-| root `npm run typecheck` | pass | current TypeScript graph is type-correct |
-| root `npm run format:check` | pass | all root TypeScript source/tests match the shared formatter |
-| root `npm test` | pass, 124 files / 1,595 tests | green regression baseline; webhook and `tsx` child-process tests require local TCP/IPC listener permission |
-| container runner build/tests | pass, 22/22 tests | independent runner package remains green |
-| schedule renderer tests | pass, 16 checks | tracked schedule transformation contract is green |
-| knowledge delta tests | pass, 18 checks | bounded update parser/applicator contract is green |
+| Check                        | Result                        | Interpretation                                                                                             |
+| ---------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| root `npm run typecheck`     | pass                          | current TypeScript graph is type-correct                                                                   |
+| root `npm run format:check`  | pass                          | all root TypeScript source/tests match the shared formatter                                                |
+| root `npm test`              | pass, 124 files / 1,595 tests | green regression baseline; webhook and `tsx` child-process tests require local TCP/IPC listener permission |
+| container runner build/tests | pass, 22/22 tests             | independent runner package remains green                                                                   |
+| schedule renderer tests      | pass, 16 checks               | tracked schedule transformation contract is green                                                          |
+| knowledge delta tests        | pass, 18 checks               | bounded update parser/applicator contract is green                                                         |
 
 The repair distinguished stale test contracts from three product defects:
 ordinary polling re-ingested bot rows, retry keys accumulated repeated
@@ -759,18 +803,18 @@ This fork has diverged substantially into a Tandem Coaching operations system.
 
 ### Local timeline
 
-| Period | Major evolution |
-| --- | --- |
-| early March 2026 | Slack runtime, webhook/group isolation, handoffs, Gmail ingestion, Sales, PostgreSQL migration |
-| 5–10 March | Certifier, Contador, and minion framework expansion |
-| late March | knowledge lessons, job/watchdog systems, bridges, message tracking, threading |
-| 31 March | transition away from Agent SDK/bridge experiments to direct `claude --print`; Archivista renamed |
-| April | Gmail push/classification, modern data model, procurement, booking, webhook reliability |
-| May | token efficiency, push cleanup, Chaos pipeline and reconciliation |
-| June | auth failover, proposal reply/follow-up, self-healing, entity-keyed Slack threading, machine/storage work |
-| 5 July | lesson recovery, Sales knowledge reconciliation, program-fact drift protection |
-| 6 July | grader reliability/calibration, autonomy trust ladder, warm container LRU/adoption/resource/status work |
-| 23–28 July | shared Claude/Codex change protocol; email-content guard; schedule and knowledge regeneration; durable follow-up suppression; canonical Slack lead threads; attachment extraction; approved-send watchdog; continuity reconciliation |
+| Period           | Major evolution                                                                                                                                                                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| early March 2026 | Slack runtime, webhook/group isolation, handoffs, Gmail ingestion, Sales, PostgreSQL migration                                                                                                                                       |
+| 5–10 March       | Certifier, Contador, and minion framework expansion                                                                                                                                                                                  |
+| late March       | knowledge lessons, job/watchdog systems, bridges, message tracking, threading                                                                                                                                                        |
+| 31 March         | transition away from Agent SDK/bridge experiments to direct `claude --print`; Archivista renamed                                                                                                                                     |
+| April            | Gmail push/classification, modern data model, procurement, booking, webhook reliability                                                                                                                                              |
+| May              | token efficiency, push cleanup, Chaos pipeline and reconciliation                                                                                                                                                                    |
+| June             | auth failover, proposal reply/follow-up, self-healing, entity-keyed Slack threading, machine/storage work                                                                                                                            |
+| 5 July           | lesson recovery, Sales knowledge reconciliation, program-fact drift protection                                                                                                                                                       |
+| 6 July           | grader reliability/calibration, autonomy trust ladder, warm container LRU/adoption/resource/status work                                                                                                                              |
+| 23–28 July       | shared Claude/Codex change protocol; email-content guard; schedule and knowledge regeneration; durable follow-up suppression; canonical Slack lead threads; attachment extraction; approved-send watchdog; continuity reconciliation |
 
 The latest archived handoff found was dated 2026-07-05; the root `HANDOFF.md`
 is older. Later commits resolved at least some open items from that handoff,
@@ -893,29 +937,29 @@ while keeping secrets and volatile runtime state excluded.
 
 ## 21. Documentation index
 
-| Document | Use | Caution |
-| --- | --- | --- |
-| `CLAUDE.md` | current repository operations and conventions | verify implementation-specific claims |
-| `AGENTS.md` | Codex entry point | intentionally delegates to Claude sources |
-| `docs/PROJECT-MAP.md` | reconciled cross-client map | dated snapshot, not live status |
-| `docs/CHANGE-PROTOCOL.md` | required Claude/Codex change, evidence, and handoff contract | update when the shared workflow changes |
-| `docs/ACTIVE-WORK.md` | current task ownership, overlap, state, and next action | must remain concise and current |
-| `docs/ENGINEERING-CHANGELOG.md` | append-only implementation/verification/deployment history | evidence only; do not overstate boundaries crossed |
-| `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` | validated, phased improvement roadmap | proposed work; not implemented state |
-| `docs/REQUIREMENTS.md` | original product principles | intent, not feature inventory |
-| `docs/ARCHITECTURE.md` | broad bespoke architecture | some SDK terminology is stale |
-| `docs/SPEC.md` | core behavior specification | reconcile with fork extensions |
-| `docs/DATA-MODEL.md` | business model | inspect live PostgreSQL schema |
-| `docs/SECURITY.md` | threat/security model | verify host guards and current mounts |
-| `docs/CONTAINER-ARCHITECTURE.md` | container lifecycle target/recent design | history includes rejected phases |
-| `docs/APPLE-CONTAINER-NETWORKING.md` | Apple networking operations | environment-specific |
-| `docs/MINION-FRAMEWORK.md` | agent framework | concrete group prompts are role authority |
-| `docs/WEBHOOK-RELIABILITY.md` | durable webhook design | verify tables and current reaper wiring |
-| `docs/PROPOSAL-FOLLOWUP-DESIGN.md` | proposal cadence and approval | verify current store/actions |
-| `docs/SELF-HEALING-*.md` | healer phases/target behavior | enabled state is environment-dependent |
-| `docs/gmail-pubsub-setup.md` | Gmail push setup | cloud/VPS state must be rechecked |
-| `MANIFEST.md` | ownership and recent-shift overview | currently modified; some statuses stale |
-| `HANDOFF.md`, `handoffs/*` | dated work context | chronological evidence only |
+| Document                              | Use                                                          | Caution                                            |
+| ------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------- |
+| `CLAUDE.md`                           | current repository operations and conventions                | verify implementation-specific claims              |
+| `AGENTS.md`                           | Codex entry point                                            | intentionally delegates to Claude sources          |
+| `docs/PROJECT-MAP.md`                 | reconciled cross-client map                                  | dated snapshot, not live status                    |
+| `docs/CHANGE-PROTOCOL.md`             | required Claude/Codex change, evidence, and handoff contract | update when the shared workflow changes            |
+| `docs/ACTIVE-WORK.md`                 | current task ownership, overlap, state, and next action      | must remain concise and current                    |
+| `docs/ENGINEERING-CHANGELOG.md`       | append-only implementation/verification/deployment history   | evidence only; do not overstate boundaries crossed |
+| `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` | validated, phased improvement roadmap                        | proposed work; not implemented state               |
+| `docs/REQUIREMENTS.md`                | original product principles                                  | intent, not feature inventory                      |
+| `docs/ARCHITECTURE.md`                | broad bespoke architecture                                   | some SDK terminology is stale                      |
+| `docs/SPEC.md`                        | core behavior specification                                  | reconcile with fork extensions                     |
+| `docs/DATA-MODEL.md`                  | business model                                               | inspect live PostgreSQL schema                     |
+| `docs/SECURITY.md`                    | threat/security model                                        | verify host guards and current mounts              |
+| `docs/CONTAINER-ARCHITECTURE.md`      | container lifecycle target/recent design                     | history includes rejected phases                   |
+| `docs/APPLE-CONTAINER-NETWORKING.md`  | Apple networking operations                                  | environment-specific                               |
+| `docs/MINION-FRAMEWORK.md`            | agent framework                                              | concrete group prompts are role authority          |
+| `docs/WEBHOOK-RELIABILITY.md`         | durable webhook design                                       | verify tables and current reaper wiring            |
+| `docs/PROPOSAL-FOLLOWUP-DESIGN.md`    | proposal cadence and approval                                | verify current store/actions                       |
+| `docs/SELF-HEALING-*.md`              | healer phases/target behavior                                | enabled state is environment-dependent             |
+| `docs/gmail-pubsub-setup.md`          | Gmail push setup                                             | cloud/VPS state must be rechecked                  |
+| `MANIFEST.md`                         | ownership and recent-shift overview                          | currently modified; some statuses stale            |
+| `HANDOFF.md`, `handoffs/*`            | dated work context                                           | chronological evidence only                        |
 
 Historical/alternate architecture files (`nanoclaw-architecture-final.md`,
 `nanorepo-architecture.md`, `business-agents-architecture.md`, plans, SDK deep

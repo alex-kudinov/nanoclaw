@@ -32,7 +32,7 @@ export type RouteResult = {
 
 // Bookkeeper/archivarista handoffs don't need the full body — they only need
 // enough context to know what arrived. The agent fetches the full email via
-// gmail_read(threadId) when it needs to extract amount/due/vendor or transcripts.
+// gmail_read(messageId) when it needs to extract amount/due/vendor or transcripts.
 const HANDOFF_SNIPPET_CHARS = 300;
 
 function snippet(body: string, max = HANDOFF_SNIPPET_CHARS): string {

@@ -16,5 +16,9 @@
     "sourceMap": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  // Syncthing conflict copies are Git-ignored and .stignore-ignored, so they are
+  // invisible to review and to sync — but "src/**/*" pulled them into the build
+  // graph, so stale duplicates of index.ts/db.ts/send-watchdog.ts were being
+  // typechecked and compiled. Excluding them keeps the build honest.
+  "exclude": ["node_modules", "dist", "src/**/*.sync-conflict-*"]
 }

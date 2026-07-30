@@ -20,12 +20,16 @@ vi.mock('./logger.js', () => ({
 }));
 
 const storeMessageDirect = vi.fn();
-const clearPendingSends = vi.fn(
-  (_groupFolder: string, _recipient?: string) => 0,
-);
+// The IPC watcher now discharges approved-send expectations by recipient, on a
+// confirmed send, rather than by group on the mailman handoff. See
+// send-watchdog.ts.
+const clearPendingSendsByRecipient = vi.fn((_recipient: string) => 0);
 vi.mock('./db.js', () => ({
   storeMessageDirect: (...args: unknown[]) => storeMessageDirect(...args),
-  clearPendingSends,
+  // Deferred like storeMessageDirect above: the factory is hoisted above these
+  // consts, so a bare reference would dereference before initialization.
+  clearPendingSendsByRecipient: (recipient: string) =>
+    clearPendingSendsByRecipient(recipient),
   createTask: vi.fn(),
   deleteTask: vi.fn(),
   getTaskById: vi.fn(),
@@ -122,7 +126,7 @@ describe('IPC handoff routing', () => {
     vi.resetModules();
     vi.useFakeTimers();
     storeMessageDirect.mockClear();
-    clearPendingSends.mockClear();
+    clearPendingSendsByRecipient.mockClear();
     sendMessage = vi.fn(async () => {});
     deps = {
       sendMessage,

@@ -36,6 +36,7 @@ export interface PendingSend {
   groupFolder: string;
   chatJid: string;
   threadTs?: string;
+  gmailThreadId?: string;
   recipient?: string;
   leadRef?: string;
   approvedAt: string;
@@ -43,8 +44,14 @@ export interface PendingSend {
 
 export interface SendWatchdogStore {
   recordPendingSend(row: PendingSend): void;
-  /** Clear every unfulfilled row for a group, optionally narrowed by recipient. */
+  /** Clear unfulfilled rows for a group, optionally narrowed by recipient. */
   clearPendingSends(groupFolder: string, recipient?: string): number;
+  /**
+   * Clear the oldest matching recipient across every group. The send is
+   * executed by mailman's IPC, but the expectation belongs to the group whose
+   * card was approved, so group folder cannot be the join key.
+   */
+  clearPendingSendsByRecipient(recipient: string): number;
   listOverdueSends(cutoffIso: string): PendingSend[];
   markAlerted(draftTs: string): void;
 }
@@ -54,11 +61,30 @@ export interface SendWatchdogDeps {
   postThread(chatJid: string, text: string, threadTs?: string): Promise<void>;
 }
 
-const CARD_RE = /\[SALES REVIEW\]/;
-const EMAIL_RE = /^\s*Email\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
+const CARD_RE = /\[(?:SALES REVIEW|SUPPORT-DRAFT)\]/;
+const EMAIL_RE = /^\s*(?:Email|To)\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
 const LEAD_RE = /\[SALES REVIEW\]\s*(Lead\s*#\s*\d+)/i;
 const MAILMAN_HANDOFF_RE = /\[HANDOFF:\s*\w+\s*(?:→|->)\s*mailman\]/;
 const TO_RE = /^\s*To\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
+
+/** Extract only a structured header, never a Thread-ID injected in body text. */
+export function extractApprovedGmailThreadId(
+  text: string | undefined,
+): string | undefined {
+  if (!text) return undefined;
+  for (const line of text.split(/\r?\n/)) {
+    if (
+      /^\s*(?:Body|Message|Original-Message|DRAFT RESPONSE|THEIR REQUEST)\s*:/i.test(
+        line,
+      )
+    ) {
+      break;
+    }
+    const threadId = /^\s*Thread-ID\s*:\s*(\S+)\s*$/i.exec(line)?.[1];
+    if (threadId) return threadId;
+  }
+  return undefined;
+}
 
 /** True when this text is an approvable send card the watchdog should track. */
 export function isTrackableCard(text: string): boolean {
@@ -76,6 +102,7 @@ export function recordApproval(
     chatJid: string;
     threadTs?: string;
     cardText: string;
+    approvedGmailThreadId?: string;
     now: Date;
   },
   store: SendWatchdogStore,
@@ -86,6 +113,8 @@ export function recordApproval(
     groupFolder: opts.groupFolder,
     chatJid: opts.chatJid,
     threadTs: opts.threadTs,
+    gmailThreadId:
+      opts.approvedGmailThreadId ?? extractApprovedGmailThreadId(opts.cardText),
     recipient: opts.cardText.match(EMAIL_RE)?.[1]?.toLowerCase(),
     leadRef: opts.cardText.match(LEAD_RE)?.[1],
     approvedAt: opts.now.toISOString(),
@@ -93,28 +122,52 @@ export function recordApproval(
   store.recordPendingSend(row);
   logger.info(
     { group: opts.groupFolder, recipient: row.recipient, lead: row.leadRef },
-    'send-watchdog: approval recorded, awaiting mailman handoff',
+    'send-watchdog: approval recorded, awaiting Gmail-confirmed send',
   );
   return row;
 }
 
 /**
- * Called for every outbound message a group emits. A mailman handoff clears the
- * group's outstanding expectation — matched on recipient when the handoff names
- * one, so a send for a different lead cannot mark this one fulfilled.
+ * Called for every outbound message a group emits. A mailman handoff is
+ * PROGRESS, not proof — it records that the agent got as far as asking for the
+ * send. It deliberately does NOT discharge the expectation.
+ *
+ * The original design cleared here, reasoning "the agent got that far". That
+ * left a hole: everything downstream of the handoff can still refuse to send —
+ * the recipient guard, the content guard (an outbound reply was blocked on
+ * 2026-07-29 for the banned phrase "thank you for reaching out" and simply
+ * stopped), a Gmail API failure, or mailman answering [ALREADY-HANDLED]. In
+ * every one of those cases the row had already been deleted, so the sweep found
+ * nothing overdue and the operator saw silence after their own approval. Only a
+ * confirmed send discharges the promise now.
  */
-export function observeOutbound(
-  groupFolder: string,
-  text: string,
-  store: Pick<SendWatchdogStore, 'clearPendingSends'>,
-): void {
+export function observeOutbound(groupFolder: string, text: string): void {
   if (!MAILMAN_HANDOFF_RE.test(text)) return;
   const to = text.match(TO_RE)?.[1]?.toLowerCase();
-  const cleared = store.clearPendingSends(groupFolder, to);
+  logger.info(
+    { group: groupFolder, to },
+    'send-watchdog: mailman handoff observed (progress only — awaiting confirmed send)',
+  );
+}
+
+/**
+ * The only thing that discharges an approval: Gmail accepted the message. Called
+ * from the gmail IPC handlers after a successful send/reply, with the REAL
+ * recipient — for gmail_send that is the original address, never the
+ * GMAIL_TEST_RECIPIENT override, or a test redirect would clear the expectation
+ * for a customer who was never written to.
+ */
+export function observeConfirmedSend(
+  recipient: string | undefined,
+  store: Pick<SendWatchdogStore, 'clearPendingSendsByRecipient'>,
+): void {
+  if (!recipient) return;
+  const addr = recipient.match(/<([^>]+)>/)?.[1] ?? recipient;
+  const cleared = store.clearPendingSendsByRecipient(addr.trim().toLowerCase());
   if (cleared > 0) {
     logger.info(
-      { group: groupFolder, to, cleared },
-      'send-watchdog: mailman handoff observed, expectation cleared',
+      { to: addr, cleared },
+      'send-watchdog: send confirmed, expectation cleared',
     );
   }
 }
@@ -123,9 +176,11 @@ function alertText(row: PendingSend): string {
   const who = row.recipient ? ` to ${row.recipient}` : '';
   const lead = row.leadRef ? ` (${row.leadRef})` : '';
   return (
-    `[SEND NOT OBSERVED]${lead} approved at ${row.approvedAt}, but no ` +
-    `[HANDOFF: ${row.groupFolder}→mailman] has been seen since. The email${who} ` +
-    `has NOT gone out.\n\n` +
+    `[SEND NOT OBSERVED]${lead} approved at ${row.approvedAt}, but Gmail has ` +
+    `never confirmed a send. The email${who} has NOT gone out.\n\n` +
+    `Common causes, in order of likelihood: the outbound content or recipient ` +
+    `guard blocked it (look for a 🚫 [EMAIL BLOCKED] line in #gru-chief naming ` +
+    `the violation), the agent lost the approval, or the Gmail call failed.\n\n` +
     `The approved draft is the message this replies to — send that text, do not ` +
     `redraft it. Reply here with what happened if it cannot be sent.`
   );
@@ -154,7 +209,7 @@ export async function sweepPendingSends(
           lead: row.leadRef,
           approvedAt: row.approvedAt,
         },
-        'send-watchdog: approved send never reached mailman',
+        'send-watchdog: approved send was never confirmed by Gmail',
       );
     } catch (err) {
       // Leave the row in place so the next sweep retries the alert.

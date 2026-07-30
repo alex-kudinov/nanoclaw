@@ -376,6 +376,13 @@ describe('replyToThread external-party addressing', () => {
     );
   };
 
+  const ccLine = (send: ReturnType<typeof vi.fn>): string | undefined => {
+    const raw = send.mock.calls[0][0].requestBody.raw as string;
+    return decodeRaw(raw)
+      .split('\r\n')
+      .find((line) => line.startsWith('Cc:'));
+  };
+
   it('addresses the reply to the customer, not our own last outbound', async () => {
     // Thread whose NEWEST message is our own send to Liz — the old code
     // boomeranged the reply back to info@tandemcoach.co.
@@ -481,6 +488,61 @@ describe('replyToThread external-party addressing', () => {
     ]);
     await replyToThread({ threadId: 't3', body: 'Answer' });
     expect(toLine(send)).toContain('carl@acme.com');
+  });
+
+  it('validates the Gmail-derived recipient before sending', async () => {
+    const send = mockGmail([
+      msg([
+        { name: 'From', value: 'Carl Customer <carl@acme.com>' },
+        { name: 'To', value: 'info@tandemcoach.co' },
+        { name: 'Subject', value: 'Question about ACC' },
+        { name: 'Message-ID', value: '<x>' },
+      ]),
+    ]);
+    const prepareSend = vi.fn(async () => ({ body: 'Validated answer' }));
+
+    await replyToThread({
+      threadId: 't3',
+      body: 'Unvalidated answer',
+      prepareSend,
+    });
+
+    expect(prepareSend).toHaveBeenCalledWith({
+      to: 'Carl Customer <carl@acme.com>',
+      cc: undefined,
+    });
+    expect(decodeRaw(send.mock.calls[0][0].requestBody.raw)).toContain(
+      'Validated answer',
+    );
+  });
+
+  it('test-routes replies and strips CC after validating the intended envelope', async () => {
+    const send = mockGmail([
+      msg([
+        { name: 'From', value: 'Carl Customer <carl@acme.com>' },
+        { name: 'To', value: 'info@tandemcoach.co' },
+        { name: 'Subject', value: 'Question about ACC' },
+        { name: 'Message-ID', value: '<x>' },
+      ]),
+    ]);
+    const prepareSend = vi.fn(async () => ({ body: 'Answer' }));
+
+    const result = await replyToThread({
+      threadId: 't3',
+      body: 'Answer',
+      cc: 'colleague@external.com',
+      recipientOverride: 'test@tandemcoach.co',
+      prepareSend,
+    });
+
+    expect(prepareSend).toHaveBeenCalledWith({
+      to: 'Carl Customer <carl@acme.com>',
+      cc: 'colleague@external.com',
+    });
+    expect(toLine(send)).toContain('test@tandemcoach.co');
+    expect(ccLine(send)).toBeUndefined();
+    expect(result.originalTo).toBe('Carl Customer <carl@acme.com>');
+    expect(result.to).toBe('test@tandemcoach.co');
   });
 });
 

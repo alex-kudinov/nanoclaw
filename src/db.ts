@@ -89,14 +89,15 @@ function createSchema(database: Database.Database): void {
       last_activity_at TEXT NOT NULL DEFAULT '',
       PRIMARY KEY (channel, thread_key)
     );
-    -- Approvals awaiting their [HANDOFF: *→mailman]. A row is written on ✅ and
-    -- deleted when the handoff is seen; anything still here past the grace
-    -- period is an approved email that never went out. See send-watchdog.ts.
+    -- Approvals awaiting a Gmail-confirmed send. A handoff is progress only;
+    -- anything still here past the grace period is an approved email that never
+    -- went out. See send-watchdog.ts.
     CREATE TABLE IF NOT EXISTS pending_sends (
       draft_ts TEXT PRIMARY KEY,
       group_folder TEXT NOT NULL,
       chat_jid TEXT NOT NULL,
       thread_ts TEXT,
+      gmail_thread_id TEXT,
       recipient TEXT,
       lead_ref TEXT,
       approved_at TEXT NOT NULL
@@ -308,6 +309,17 @@ function createSchema(database: Database.Database): void {
   } catch {
     /* column already exists */
   }
+
+  // Durable approval-to-Gmail binding for restart-safe reply authorization.
+  try {
+    database.exec(`ALTER TABLE pending_sends ADD COLUMN gmail_thread_id TEXT`);
+  } catch {
+    /* column already exists */
+  }
+  database.exec(
+    `CREATE INDEX IF NOT EXISTS idx_pending_sends_gmail_thread
+       ON pending_sends (gmail_thread_id, approved_at)`,
+  );
 }
 
 export function initDatabase(): void {
@@ -909,20 +921,25 @@ export function recordPendingSend(row: {
   groupFolder: string;
   chatJid: string;
   threadTs?: string;
+  gmailThreadId?: string;
   recipient?: string;
   leadRef?: string;
   approvedAt: string;
 }): void {
   db.prepare(
     `INSERT INTO pending_sends
-       (draft_ts, group_folder, chat_jid, thread_ts, recipient, lead_ref, approved_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(draft_ts) DO NOTHING`,
+       (draft_ts, group_folder, chat_jid, thread_ts, gmail_thread_id,
+        recipient, lead_ref, approved_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(draft_ts) DO UPDATE SET
+       gmail_thread_id = COALESCE(pending_sends.gmail_thread_id, excluded.gmail_thread_id),
+       recipient = COALESCE(pending_sends.recipient, excluded.recipient)`,
   ).run(
     row.draftTs,
     row.groupFolder,
     row.chatJid,
     row.threadTs ?? null,
+    row.gmailThreadId ?? null,
     row.recipient ?? null,
     row.leadRef ?? null,
     row.approvedAt,
@@ -957,6 +974,43 @@ export function clearPendingSends(
     .run(groupFolder).changes;
 }
 
+/**
+ * Clear the oldest matching recipient across every group. A send is executed
+ * by mailman's IPC while the expectation belongs to the group whose card was
+ * approved, so the group folder cannot be the join key. Deleting one row keeps
+ * concurrent approvals for the same address independently observable.
+ */
+export function clearPendingSendsByRecipient(recipient: string): number {
+  return db
+    .prepare(
+      `DELETE FROM pending_sends
+        WHERE rowid = (
+          SELECT rowid FROM pending_sends
+           WHERE LOWER(COALESCE(recipient, '')) = ?
+           ORDER BY approved_at, rowid
+           LIMIT 1
+        )`,
+    )
+    .run(recipient.toLowerCase()).changes;
+}
+
+/** Host-approved reply binding used to reissue a mailman thread after restart. */
+export function getPendingSendByGmailThread(
+  gmailThreadId: string,
+): { recipient?: string } | undefined {
+  const row = db
+    .prepare(
+      `SELECT recipient FROM pending_sends
+        WHERE gmail_thread_id = ?
+          AND recipient IS NOT NULL
+          AND TRIM(recipient) <> ''
+        ORDER BY approved_at, rowid
+        LIMIT 1`,
+    )
+    .get(gmailThreadId) as { recipient: string | null } | undefined;
+  return row ? { recipient: row.recipient ?? undefined } : undefined;
+}
+
 export function listOverdueSends(cutoffIso: string): Array<{
   draftTs: string;
   groupFolder: string;
@@ -968,7 +1022,8 @@ export function listOverdueSends(cutoffIso: string): Array<{
 }> {
   const rows = db
     .prepare(
-      `SELECT draft_ts, group_folder, chat_jid, thread_ts, recipient, lead_ref, approved_at
+      `SELECT draft_ts, group_folder, chat_jid, thread_ts, gmail_thread_id,
+              recipient, lead_ref, approved_at
          FROM pending_sends WHERE approved_at <= ? ORDER BY approved_at`,
     )
     .all(cutoffIso) as Array<{
@@ -976,6 +1031,7 @@ export function listOverdueSends(cutoffIso: string): Array<{
     group_folder: string;
     chat_jid: string;
     thread_ts: string | null;
+    gmail_thread_id: string | null;
     recipient: string | null;
     lead_ref: string | null;
     approved_at: string;
@@ -985,6 +1041,7 @@ export function listOverdueSends(cutoffIso: string): Array<{
     groupFolder: r.group_folder,
     chatJid: r.chat_jid,
     threadTs: r.thread_ts ?? undefined,
+    gmailThreadId: r.gmail_thread_id ?? undefined,
     recipient: r.recipient ?? undefined,
     leadRef: r.lead_ref ?? undefined,
     approvedAt: r.approved_at,
