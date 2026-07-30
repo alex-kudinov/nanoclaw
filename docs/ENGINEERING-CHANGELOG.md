@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-07-30T18:13Z
 - Owner/client: Codex
-- State: ready_for_review
-- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `04292cd`
+- State: deployed_unverified
+- Commit/PR: `bc8a71b62ca952d7d919144f91609e761d382641` on
+  `codex/continuity-reconciliation`; not pushed
 - Change class: C5 — host command, restart, and self-modification authorization
 - Affected systems: healer action policy, proposal/approval lifecycle,
   automatic reruns, daemon restart, code implementation, diagnosis trust,
@@ -161,6 +162,46 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   operator/epoch configuration, credential action, or production write
   occurred. The concurrent Procurement, knowledge, copier, and email-renderer
   changes remain outside this task.
+
+#### Addendum 2026-07-30T21:38Z — Mac Mini dark deployment
+
+- User separately authorized deployment after the isolated commit. The stale
+  `mini-claw` SSH alias pointed to `.204`; the current Tailscale control-plane
+  record identified the authenticated Mac Mini at `.206`. No SSH configuration
+  was edited.
+- Preflight: production used Node 25.8.2; the operational checkout had 96 dirty
+  paths and remained untouched; NanoClaw was healthy on PID 68325 with Slack
+  and Gmail connected, zero active containers, and no waiting work. The loaded
+  fast healer had 46 successful runs, implementation off, no action-policy
+  artifact, and no action/restart variables.
+- Release: exact commit
+  `bc8a71b62ca952d7d919144f91609e761d382641` was transferred as an immutable
+  Git archive with SHA-256
+  `77ba774119e9edf48726d3f1e0e26072ba11ba2f33406450304b84154f634437`
+  to `~/.local/share/nanoclaw-releases/bc8a71b`.
+- Target-runtime verification under Node 25.8.2 passed: typecheck, focused
+  healer **5 files / 60 tests**, and build.
+- Activation replaced only the compiled `dist/healer/` subtree and installed
+  fast-healer plist. The main daemon, all other compiled host files, source,
+  prompts, databases, schedules, pending proposals, and concurrent Procurement
+  work were not changed.
+- Loaded and evaluated policy: `HEALER_ACTIONS_ENABLED=0`,
+  `HEALER_RESTART_ENABLED=1`, `HEALER_IMPLEMENT_ENABLED=0`; runtime evaluation
+  returned `actions=false`, `restart=true`, `implementation=false`. Deployed
+  `dist/healer/action-policy.js` SHA-256:
+  `f5624020fe26ee105ef5dc740bf12327e262dff2da4eec8a34ae791fd40e943b`.
+- Live fast-cycle canary: one launchd run exited `0`; its aggregate outcome was
+  zero collected/reported/diagnosed/acted/closed/approved/implemented,
+  `gmailStalled=false`, and `daemonDown=false`. The main daemon remained PID
+  68325 with Slack/Gmail connected, zero active containers, and no waiting
+  groups.
+- Rollback bundle:
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260730-002-20260730T213639Z`
+  contains the prior compiled healer subtree and installed plist.
+- State boundary: `deployed_unverified`. The dark policy and ordinary healthy
+  fast cycle are live-verified. A controlled daemon-down recovery canary was
+  not induced against the healthy production daemon, so actual restart
+  execution and longer-term outcomes remain unverified.
 
 ### NC-20260729-004 — Week-1 Company-OS containment: Gmail authority and healer default
 

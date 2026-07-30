@@ -564,12 +564,15 @@ verified both denial acknowledgement and exact pending-approval grant recovery.
 The later work-ledger/capability-manifest slice should generalize durable
 work-item grants without broadening them.
 
-The tracked and installed fast-healer implementation flags are now off. The
-production host artifact is exact to `1689527`, but the Mac Mini still runs
+The main production host artifact remains exact to `1689527`. On 2026-07-30,
+the compiled healer subtree and fast-healer unit were separately deployed from
+exact commit `bc8a71b`: model-authored actions and implementation are off, while
+fixed capped daemon recovery is on. A healthy fast cycle exited cleanly without
+acting and the main daemon remained on the same PID. The Mac Mini still runs
 Node 25.8.2 and its dirty source/group-prompt checkout was intentionally not
-overwritten. Runtime enforcement is therefore deployed, while prompt/source
-convergence, Node 22 startup enforcement, and a genuine or test-routed
-end-to-end send remain separate verification work.
+overwritten. Actual daemon-down recovery, prompt/source convergence, Node 22
+startup enforcement, and a genuine or test-routed end-to-end send remain
+separate verification work.
 
 ## 12. Integrations
 

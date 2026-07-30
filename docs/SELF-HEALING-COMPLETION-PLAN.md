@@ -27,7 +27,7 @@ The incomplete part is the action boundary and operating model:
 | Human approval | Slack reactions/replies are polled | The original path accepted any non-bot user and reusable signals; the local safety slice replaces this with named operators, epochs, expiring nonces, final rechecks, and atomic claims |
 | Tier-2 reruns | Code and circuit breaker exist; allowlist defaults empty | Raw commands must be replaced by typed host-owned actions before enablement; daily/global action caps and production canaries remain |
 | Code implementation | Experimental detached pipeline exists | It runs with broad permissions in the operational checkout. It remains disabled until moved to a disposable worktree with restricted credentials and independent review |
-| Deployment truth | Installed healer jobs are live; implementation is off | The new model-authored action boundary and separate restart control are local source only. Installed artifact/config and existing pending proposals have not been changed |
+| Deployment truth | Commit `bc8a71b` healer artifact/unit deployed dark on 2026-07-30 | Loaded policy is actions off, restart on, implementation off; one healthy fast cycle passed, while a controlled daemon-down recovery canary and longer observation remain |
 
 ## 2. Completion definition
 
@@ -189,8 +189,10 @@ PR in isolation and leaves the operational checkout byte-for-byte unchanged.
 
 ## 5. Explicit non-authorization
 
-This plan and `NC-20260730-002` do not authorize installing the new artifact,
-editing the installed launchd unit, enabling actions, configuring operator
-identities or epochs, consuming current Slack reactions, changing production
-incident rows, running a remediation command, restarting the daemon, opening a
-PR, or deploying any code.
+The implementation task did not itself authorize production changes. The user
+separately authorized the 2026-07-30 dark deployment recorded in
+`docs/ENGINEERING-CHANGELOG.md`. That authorization installed only the compiled
+healer artifact/unit with model-authored actions and implementation off; it did
+not authorize configuring operator identities/epochs, consuming Slack
+reactions, running a remediation command, inducing daemon failure, opening a
+PR, or enabling any autonomy tier.

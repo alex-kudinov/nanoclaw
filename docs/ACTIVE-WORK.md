@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260730-002` | Make healer remediation fail closed before completing the wider self-healing system | Codex + Claude validator | `codex/continuity-reconciliation` @ `04292cd` | `ready_for_deploy` | C5 | healer action/approval authority, separate deterministic restart control, pending-proposal safety, focused tests, self-healing authority docs; `docs/reports/NC-20260730-002-CLAUDE-C5-REVIEW.md` (new); no production action or deployment | Claude's two P1 blockers and same-slice P2s are remediated and the complete pinned verification is green. Commit the isolated NC-002 slice, then separately authorize any dark deployment. Gate B diagnosis separation and Gate C typed actions still precede autonomy | 2026-07-30T19:24Z |
+| `NC-20260730-002` | Make healer remediation fail closed before completing the wider self-healing system | Codex + Claude validator | `codex/continuity-reconciliation` @ `bc8a71b` | `deployed_unverified` | C5 | healer action/approval authority, separate deterministic restart control, pending-proposal safety, focused tests, self-healing authority docs; exact healer-only production release; no model action, implementation, operator/epoch configuration, main-daemon restart, or database migration | Observe scheduled healer cycles and separately authorize a controlled daemon-down recovery canary before claiming deterministic restart live-verified. Gate B diagnosis separation and Gate C typed actions still precede autonomy | 2026-07-30T21:38Z |
 | `NC-20260728-007` | Redesign the OneDrive Drop ingestion subsystem | human | `codex/continuity-reconciliation` @ `cd78ad2` | `planned` | C2 | all four `scripts/copiers/*.py`, their launchd jobs, and the upstream Solera export | Owner is redesigning the subsystem. Do not re-enable the existing copiers; establish first whether the upstream export is coming back | 2026-07-28T23:09Z |
 | `NC-20260728-006` | Chat/people drops ingest instead of retrying forever and pinning `fileproviderd` | Claude Code | `codex/continuity-reconciliation` @ `cd78ad2` | `complete` | C2 | `scripts/copiers/copy_chat.py`, `scripts/copiers/copy_people.py` | None. Fix verified live (66 COPIED / 0 FAILED under launchd) before the subsystem was stopped under NC-20260728-007 | 2026-07-28T23:09Z |
 | `NC-20260728-005` | Restore a truthful green Node 22 test baseline | Codex + Claude validator | `codex/continuity-reconciliation` @ `157cb1b` | `validating` | C2 | Node 22 baseline repaired: 124 files / 1,595 tests pass | Obtain explicit approval for the sanitized Claude API review, reconcile findings, and push the review branch | 2026-07-28T12:34Z |
@@ -176,12 +176,32 @@ outside the current client conversation.
   action log; the implementation pipeline remains unbounded and runs in the
   operational checkout. Gates B, C, and F own those corrections before
   autonomy or implementation enablement.
-- Next action: finish pinned verification and commit only NC-002-owned paths.
-  A later, separately authorized dark deployment must keep
-  `HEALER_ACTIONS_ENABLED=0`, `HEALER_RESTART_ENABLED=1`, and
-  `HEALER_IMPLEMENT_ENABLED=0`, then live-verify observation and deterministic
-  restart. Do not enable actions, configure operators/epochs, consume Slack
-  reactions, or mutate production incidents under this task.
+- Production deployment 2026-07-30T21:36Z–21:38Z:
+  - exact commit `bc8a71b62ca952d7d919144f91609e761d382641` was archived
+    with SHA-256
+    `77ba774119e9edf48726d3f1e0e26072ba11ba2f33406450304b84154f634437`
+    and built on the Mac Mini under its installed Node 25.8.2 runtime;
+  - target-runtime typecheck, focused 5-file/60-test healer verification, and
+    build passed before activation;
+  - only `dist/healer/` and the fast-healer launchd unit were replaced. The
+    dirty operational source checkout, main daemon artifact/process, scheduled
+    work, databases, prompts, and concurrent Procurement work were untouched;
+  - the loaded policy reports `HEALER_ACTIONS_ENABLED=0`,
+    `HEALER_RESTART_ENABLED=1`, and `HEALER_IMPLEMENT_ENABLED=0`; the deployed
+    action-policy SHA-256 is
+    `f5624020fe26ee105ef5dc740bf12327e262dff2da4eec8a34ae791fd40e943b`;
+  - one real fast cycle exited `0` with no incidents, actions, approvals,
+    implementations, or daemon-down condition. The main daemon stayed on PID
+    68325 with Slack/Gmail connected, zero active containers, and an empty
+    waiting queue;
+  - rollback is available at
+    `~/.local/share/nanoclaw-deploy-backups/NC-20260730-002-20260730T213639Z`;
+    the immutable release is
+    `~/.local/share/nanoclaw-releases/bc8a71b`.
+- State boundary: `deployed_unverified`. Dark deployment and policy denial are
+  live-verified; deterministic restart is configured and executable but was not
+  induced against the healthy main daemon. A controlled daemon-down canary and
+  longer observation remain before `complete`.
 
 ### NC-20260729-004
 
