@@ -165,9 +165,10 @@ Resource rules:
   address or thread is re-authorized only when PostgreSQL proves that it belongs
   to a Party with a non-terminal pipeline entry. Database errors fail closed.
 - Human-approved Sales and Chief reply cards durably bind their Gmail Thread-ID
-  and intended recipient in `pending_sends`. That record reissues Mailman's
-  exact reply grant after restart, and the Gmail-derived recipient must match
-  the approved recipient before send.
+  and intended recipient in `pending_sends`. Parseable approvals also bind a
+  random host action ID and the exact approved subject/body hash. That record
+  reissues Mailman's exact reply grant after restart, and the Gmail-derived
+  recipient plus immutable content must match before send.
 - Other restart-stale context must be reissued by a host source. General durable
   work-item grants belong in the later ledger/capability-manifest slice.
 - Procurement receives no mailbox search, thread read, reply, or send
@@ -184,13 +185,22 @@ Gmail IPC outbound email is C3. At that final host boundary:
 - a caller-supplied `leadId` is only a candidate and must agree with host data;
 - the To address must be one of the Party's known addresses;
 - every CC must pass the same Party allowlist;
-- a `GMAIL_TEST_RECIPIENT` delivery does not clear the intended customer's
-  approved-send expectation because the customer did not receive it;
+- global `GMAIL_TEST_RECIPIENT` routing is refused before an action-bound
+  customer send is claimed; use the dedicated host-only internal transport
+  canary instead;
 - missing Party context or a database lookup failure blocks the send;
 - reserved/placeholder domains and malformed addresses always block;
 - reply targets are derived from Gmail thread headers and validated before raw
   message construction;
 - test routing redirects both sends and replies and removes CC.
+- an approved action is conditionally claimed once before Gmail execution;
+  confirmed replay returns the stored Gmail receipt, while an executing or
+  uncertain replay is held for reconciliation rather than automatically sent;
+- deterministic guard failures and uncertain delivery errors remain durable
+  and are posted to the originating approval thread.
+- an overdue `executing` action transitions to non-executable `uncertain`; the
+  operator is told it may have sent and must reconcile Gmail before any new
+  approval.
 
 Content validation remains a separate required boundary. Recipient success does
 not authorize content, and content success does not authorize a recipient.
@@ -201,10 +211,24 @@ host boundary.
 ## Approval and autonomy
 
 Prompt text, Slack cards, reactions, and a model's risk/category label are not by
-themselves binding authorization. Current approval remains incompletely bound to
-the action ultimately executed. The next slice must store a host-owned action
-record containing normalized recipient, work/thread identity, body hash, nonce,
-approver identity, expiry, policy result, and execution result.
+themselves binding authorization. Approved email now has a host-owned execution
+record containing its action ID, normalized recipient, approval thread,
+subject/body hash, stage history, failure state, and Gmail receipt. The model
+cannot mint a valid record or change the host-stamped identity, and the final
+boundary revalidates content and recipient before a one-time claim.
+For email records, the host recognizes only a check-mark or an exact
+whole-message `Approved` inside the draft thread; incidental approval words in
+feedback do not cross the host boundary. The typed form is currently offered
+to every registered Slack approval listener, including incident and proposal
+follow-up listeners; NC-20260802-010 must either narrow that scope or make the
+broader contract explicit and fully tested. The remaining
+named-operator/nonce/expiry work below is still required for full authorization
+binding.
+
+This is delivery binding, not complete approval authorization. The current
+email reaction path still needs named-operator identity, expiry, and a nonce
+bound to the displayed card. Other C3+ actions do not inherit the email ledger
+and remain subject to their own final-boundary controls.
 
 Working policy:
 

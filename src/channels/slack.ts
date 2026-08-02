@@ -23,6 +23,7 @@ import {
 } from '../config.js';
 import {
   getMessageById,
+  getLatestBotMessageInThread,
   recordThreadAnchor,
   resolveThreadAnchor,
   rollThreadAnchor,
@@ -41,7 +42,7 @@ import { logger } from '../logger.js';
 import { splitForSlack } from '../message-split.js';
 import {
   buildApprovalContent,
-  isApprovalOnlyText,
+  isExplicitApprovalText,
   isCheckReaction,
   isThumbsDownReaction,
   resolveApprovalThreadTs,
@@ -359,11 +360,26 @@ export class SlackChannel implements Channel {
         if (inlined) content += inlined;
       }
 
-      // A message that is nothing but a check-mark (✅/☑️/✔️) is a bare
-      // approval — normalize to explicit text so every minion reads it
-      // uniformly (mirrors the ✅-reaction path below).
-      if (!isBotMessage && isApprovalOnlyText(msg.text || '')) {
-        content = buildApprovalContent({});
+      // A whole-message check mark or "Approved" inside a thread is the text
+      // equivalent of reacting to the latest bot-authored draft. Offer that
+      // exact draft to host approval listeners before the normal agent wakeup;
+      // free-form replies remain feedback and never cross this host boundary.
+      const explicitTextApproval =
+        !isBotMessage && isExplicitApprovalText(msg.text || '');
+      if (explicitTextApproval) {
+        if (threadTs) {
+          const approvedMessage = getLatestBotMessageInThread(jid, threadTs);
+          if (approvedMessage) {
+            for (const listener of this.approvalListeners) {
+              try {
+                if (await listener(approvedMessage.id, senderName)) return;
+              } catch (err) {
+                logger.warn({ err }, 'Slack: text approval listener threw');
+              }
+            }
+          }
+        }
+        content = buildApprovalContent({ reactor: senderName });
       }
 
       this.opts.onMessage(jid, {

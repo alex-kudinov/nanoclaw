@@ -8,6 +8,87 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260802-009 — Approved email delivery is an exact, receipted action
+
+- Date: 2026-08-02T21:30Z
+- Owner/client: Codex + Claude validator
+- State: ready_for_review
+- Commit/PR: pending on `codex/nc-20260802-009-email-assurance` from `177de7b`
+- Change class: C5 — customer-email execution, durable host state, agent tool
+  contract, release gate, and production canary
+- Affected systems: approved-send parsing/watchdog; SQLite `pending_sends` and
+  `email_send_events`; Gmail IPC authorization/dispatch/guards; Mailman MCP and
+  tracked instructions; release builder; security/project/roadmap records
+- Incident basis: the July 28-31 failures formed one delivery-control gap, not
+  one isolated bug. A handoff could be printed instead of routed; a routed
+  cross-group row could fail to wake Mailman; PostgreSQL `bigint` text could be
+  rejected against a model number; numeric mocks hid that production failure;
+  a queued tool result could be mistaken for delivery; and source, compiled
+  runtime, ignored Mailman procedure, and deployment evidence could diverge.
+- Implementation so far:
+  - every parseable approval receives one host UUID plus an immutable SHA-256
+    of the exact approved subject/body and retains its approval thread;
+  - `pending_sends` is an action projection and `email_send_events` is an
+    append-only stage ledger from approval through Gmail receipt or visible
+    block/uncertainty;
+  - handoff and Mailman-start correlation prefer exact action/content identity;
+    the final Gmail boundary uses one conditional execution claim;
+  - confirmed replay returns the recorded receipt without Gmail; executing or
+    uncertain replay is held for reconciliation; same-recipient concurrent work
+    is separated by content hash rather than cleared by recipient order;
+  - recipient/content guard failures and uncertain boundary errors post into
+    the originating approval thread. A durable Gmail receipt remains confirmed
+    if only a later business-interaction update fails;
+  - Mailman's required `OUTBOUND-EMAIL.md` is now tracked and packaged. It
+    removes the obsolete ASCII subject rewrite and model-side post-send DB
+    write, requires verbatim approved bytes, and treats “queued” as non-final;
+  - `test:email-critical` is serial and `release:build` runs it against the
+    exact clean commit before compilation.
+- Verification before Claude R1: exact Node 22.23.2 root typecheck/build,
+  email-critical 7 files / 170 tests, runner build and 3 files / 22 tests, full
+  serial regression 144 files / 1,834 tests, continuity, and diff whitespace
+  passed. Those full-suite counts predate the R1 reconciliation and are not
+  final evidence for the revised delta.
+- Claude R1 exact-session Opus 5 review returned `CHANGES REQUIRED` and found
+  that the alert transition could reopen an interrupted Gmail attempt, exact
+  typed approvals never reached host listeners, pre-action rows could not gain
+  an identity, global test routing stranded a claimed action, and bare queued
+  tool text/canary documentation contradicted the intended receipt semantics.
+  The report is
+  `docs/reports/NC-20260802-009-CLAUDE-C5-REVIEW-R1.md`.
+- R1 reconciliation makes an overdue executing attempt permanently uncertain,
+  wires exact typed approval to the latest bot draft in its thread, posts and
+  propagates the host Action-ID, blocks malformed cards and global redirects
+  before execution, alerts Chief on unbound requests, backfills only NULL
+  legacy IDs, qualifies queued tool results, anchors `Body:` after untrusted
+  original text, and adds a fixed monitored-mailbox Gmail receipt canary with
+  no customer/business state. Exact Node 22.23.2 typecheck/build, expanded email
+  gate 10 files / 294 tests, full serial regression 145 files / 1,845 tests,
+  runner build and 3 files / 22 tests, continuity/schema self-test, and source
+  formatting pass.
+- Claude R2 exact-session Opus 5 review returned `APPROVE WITH FOLLOW-UPS`.
+  It independently replayed the interrupted and never-started state-machine
+  transitions, stale terminal-state guards, legacy ID backfill, pre-action
+  aggregate drain query, isolated canary reachability, and release-gate parity.
+  Its five non-blocking residuals are registered as NC-20260802-010: card-aware
+  typed resolution and visible no-op, typed-listener scope/proposal convergence,
+  trusted-boundary Subject parsing, canary header hygiene, and clearer recovery
+  text when global test routing blocks an action. No residual can produce a
+  wrong or duplicate send; customer-path outcome validation remains pending.
+- Final pre-commit gate on exact Node 22.23.2: typecheck and root build passed;
+  email-critical passed 10 files / 294 tests; agent-runner build and 3 files /
+  22 tests passed; documentation continuity passed with 38 active/ready rows
+  and 35 changelog entries; source formatting and `git diff --check` passed.
+- Deployment/external state: none. No email, Slack message, production database
+  write, OAuth change, release activation, or customer-facing action has
+  occurred in this task.
+- Rollback/recovery: revert the reviewed commit and activate the prior exact
+  release. The additive SQLite action/event columns and table may remain
+  dormant; never delete uncertain or confirmed receipt rows during rollback.
+- Residual boundary: this slice binds email delivery identity and execution,
+  but does not close named-operator, nonce, expiry, or displayed-card approval
+  authorization for every Company-OS action class.
+
 ### NC-20260802-008 — Sales routing retries and work-cycle identity are bounded
 
 - Date: 2026-08-02T19:58Z

@@ -560,6 +560,11 @@ server.tool(
       .describe('Set to true when body contains HTML'),
     cc: z.string().optional().describe('CC recipients (comma-separated)'),
     lead_id: z.number().optional().describe('Lead ID for open tracking'),
+    action_id: z
+      .string()
+      .uuid()
+      .optional()
+      .describe('Host-issued approved email action ID from the handoff'),
     email_type: z
       .string()
       .optional()
@@ -573,6 +578,7 @@ server.tool(
       html: args.html || undefined,
       cc: args.cc || undefined,
       leadId: args.lead_id,
+      actionId: args.action_id,
       emailType: args.email_type,
       groupFolder,
       timestamp: new Date().toISOString(),
@@ -582,7 +588,7 @@ server.tool(
       content: [
         {
           type: 'text' as const,
-          text: `Reply queued for thread ${args.thread_id}.`,
+          text: `Reply queued for thread ${args.thread_id}. This is not a delivery receipt; wait for the host's Gmail-confirmed result.`,
         },
       ],
     };
@@ -608,6 +614,11 @@ server.tool(
         'Gmail thread ID to send within an existing thread (keeps your custom subject while threading the email in the same conversation)',
       ),
     lead_id: z.number().optional().describe('Lead ID for open tracking'),
+    action_id: z
+      .string()
+      .uuid()
+      .optional()
+      .describe('Host-issued approved email action ID from the handoff'),
     email_type: z
       .string()
       .optional()
@@ -623,13 +634,19 @@ server.tool(
       html: args.html || undefined,
       threadId: args.thread_id || undefined,
       leadId: args.lead_id,
+      actionId: args.action_id,
       emailType: args.email_type,
       groupFolder,
       timestamp: new Date().toISOString(),
     });
 
     return {
-      content: [{ type: 'text' as const, text: `Email queued to ${args.to}.` }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Email queued to ${args.to}. This is not a delivery receipt; wait for the host's Gmail-confirmed result.`,
+        },
+      ],
     };
   },
 );

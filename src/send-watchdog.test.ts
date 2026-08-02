@@ -24,6 +24,8 @@ Email: Oana.Tue.Coach@gmail.com
 
 DRAFT RESPONSE TO LEAD:
 ---
+Subject: Re: x
+
 Hi Oana,
 ---`;
 
@@ -32,7 +34,10 @@ function makeStore(): SendWatchdogStore & { rows: PendingSend[] } {
   return {
     rows,
     recordPendingSend: (row) => {
-      if (!rows.some((r) => r.draftTs === row.draftTs)) rows.push(row);
+      const existing = rows.find((r) => r.draftTs === row.draftTs);
+      if (existing) return existing;
+      rows.push(row);
+      return row;
     },
     clearPendingSends: (group, recipient) => {
       const before = rows.length;
@@ -65,6 +70,31 @@ function makeStore(): SendWatchdogStore & { rows: PendingSend[] } {
       row.handoffMessageId = messageId;
       return 1;
     },
+    findAction: (opts) => {
+      const matches = rows.filter(
+        (row) =>
+          (!opts.actionId || row.actionId === opts.actionId) &&
+          (!opts.groupFolder || row.groupFolder === opts.groupFolder) &&
+          (!opts.recipient || row.recipient === opts.recipient) &&
+          (!opts.gmailThreadId || row.gmailThreadId === opts.gmailThreadId) &&
+          row.approvedContentSha256 === opts.approvedContentSha256,
+      );
+      return {
+        action: matches.length === 1 ? matches[0] : undefined,
+        ambiguous: matches.length > 1,
+      };
+    },
+    markActionHandoff: (actionId, messageId, observedAt) => {
+      const row = rows.find(
+        (candidate) =>
+          candidate.actionId === actionId && !candidate.handoffObservedAt,
+      );
+      if (!row) return 0;
+      row.state = 'handoff_routed';
+      row.handoffObservedAt = observedAt;
+      row.handoffMessageId = messageId;
+      return 1;
+    },
     markMailmanStarted: (groupFolder, recipient, startedAt) => {
       const row = rows.find(
         (r) =>
@@ -77,7 +107,23 @@ function makeStore(): SendWatchdogStore & { rows: PendingSend[] } {
       row.mailmanStartedAt = startedAt;
       return 1;
     },
-    listOverdueSends: (cutoff) => rows.filter((r) => r.approvedAt <= cutoff),
+    markActionMailmanStarted: (actionId, startedAt) => {
+      const row = rows.find(
+        (candidate) =>
+          candidate.actionId === actionId && !candidate.mailmanStartedAt,
+      );
+      if (!row) return 0;
+      row.state = 'mailman_started';
+      row.mailmanStartedAt = startedAt;
+      return 1;
+    },
+    listOverdueSends: (cutoff) =>
+      rows.filter(
+        (r) =>
+          r.approvedAt <= cutoff &&
+          !r.alertedAt &&
+          !['confirmed', 'blocked', 'uncertain'].includes(r.state ?? ''),
+      ),
     listStalledHandoffs: (cutoff) =>
       rows.filter(
         (r) =>
@@ -91,8 +137,11 @@ function makeStore(): SendWatchdogStore & { rows: PendingSend[] } {
       if (row && !row.handoffAlertedAt) row.handoffAlertedAt = alertedAt;
     },
     markAlerted: (draftTs) => {
-      const i = rows.findIndex((r) => r.draftTs === draftTs);
-      if (i >= 0) rows.splice(i, 1);
+      const row = rows.find((candidate) => candidate.draftTs === draftTs);
+      if (!row) return;
+      row.alertedAt = new Date().toISOString();
+      row.state =
+        row.state === 'executing' ? 'uncertain' : 'attention_required';
     },
   };
 }
@@ -141,6 +190,10 @@ describe('recordApproval', () => {
       recipient: 'oana.tue.coach@gmail.com',
       leadRef: 'Lead #938',
       approvedAt: NOW.toISOString(),
+      actionId: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      ),
+      approvedContentSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
     });
     expect(store.rows).toHaveLength(1);
   });
@@ -170,9 +223,10 @@ describe('recordApproval', () => {
 
   it('is idempotent on a repeated approval of the same draft', () => {
     const store = makeStore();
-    recordApproval(base, store);
-    recordApproval(base, store);
+    const first = recordApproval(base, store);
+    const second = recordApproval(base, store);
     expect(store.rows).toHaveLength(1);
+    expect(second?.actionId).toBe(first?.actionId);
   });
 });
 
@@ -202,6 +256,24 @@ describe('observeOutbound', () => {
     expect(store.rows[0]).toMatchObject({
       handoffObservedAt: NOW.toISOString(),
       handoffMessageId: 'ipc-handoff-1',
+    });
+  });
+
+  it('binds a complete handoff to the exact approved action', () => {
+    const actionId = store.rows[0].actionId!;
+    const recorded = observeOutbound(
+      'sales',
+      `[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com\nSubject: Re: x\nAction-ID: ${actionId}\nBody:\nHi Oana,`,
+      'ipc-exact',
+      NOW,
+      store,
+    );
+
+    expect(recorded).toBe(1);
+    expect(store.rows[0]).toMatchObject({
+      actionId,
+      state: 'handoff_routed',
+      handoffMessageId: 'ipc-exact',
     });
   });
 
@@ -445,6 +517,25 @@ describe('sweepPendingSends', () => {
     expect(postThread).toHaveBeenCalledTimes(1);
   });
 
+  it('warns that an executing action may have sent and never recommends retry', async () => {
+    const store = makeStore();
+    const row = recordApproval(base, store)!;
+    row.state = 'executing';
+    row.executionStartedAt = '2026-07-28T10:46:00.000Z';
+    const postThread = vi.fn().mockResolvedValue(undefined);
+
+    await sweepPendingSends(new Date(NOW.getTime() + SEND_GRACE_MS + 1000), {
+      store,
+      postThread,
+    });
+
+    const text = postThread.mock.calls[0][1] as string;
+    expect(text).toContain('[EMAIL DELIVERY UNCERTAIN]');
+    expect(text).toContain('MAY have gone out');
+    expect(text).toContain('Do not resend');
+    expect(row.state).toBe('uncertain');
+  });
+
   it('retries on the next sweep when posting the alert fails', async () => {
     const store = makeStore();
     recordApproval(base, store);
@@ -594,8 +685,9 @@ describe('rescueUnhandedSends', () => {
 
   it('never guesses: an unsendable card is left to the operator', async () => {
     const store = makeStore();
-    recordApproval(base, store); // CARD has no Subject line in its fence
-    const deps = rescueDeps(store, CARD);
+    const unsendableCard = CARD.replace(/^Subject:.*$/m, '');
+    recordApproval({ ...base, cardText: unsendableCard }, store);
+    const deps = rescueDeps(store, unsendableCard);
 
     const n = await rescueUnhandedSends(
       new Date(NOW.getTime() + HANDOFF_RESCUE_MS + 1000),

@@ -56,6 +56,12 @@ See `OUTBOUND-EMAIL.md` for detailed procedures.
 > **VERBATIM RULE:** Handoff Body content is pre-approved. Send it exactly as
 > written. Set `markdown: true` — the host converts to HTML. Never rewrite.
 
+When the handoff carries `Action-ID`, pass it unchanged as `action_id`. Never
+invent or reuse one. A Gmail tool response means queued, not delivered: the
+host binds the exact approved content, claims it once, and posts the durable
+Gmail result into the original approval thread. On any refusal, stop; never
+retry with modified fields or claim that the email was sent.
+
 ---
 
 ## Inbound Email Processing

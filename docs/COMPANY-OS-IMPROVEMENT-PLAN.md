@@ -1346,8 +1346,12 @@ Implementation checkpoint (2026-07-29):
 3. `SEC-013` — tracked and installed healer implementation defaults are now
    off; next move any future implementation into a disposable worktree before
    considering re-enablement.
-4. `SEC-007` — bind approval to normalized recipient, work/thread identity,
-   body hash, nonce, expiry, and named operator.
+4. `SEC-007` — approved email now binds a host action ID, normalized recipient,
+   work/thread identity, exact subject/body hash, execution stages, and Gmail
+   receipt (`NC-20260802-009`). Complete the remaining named-operator, nonce,
+   expiry, displayed-card authorization binding, and typed-listener/proposal
+   convergence recorded in `NC-20260802-010` before calling SEC-007 closed
+   across the Company OS.
 5. `SEC-004` — implement and drill global/per-system external-write safe mode.
 6. `SEC-009` — isolate or retire the shared-gateway Procurement CDP bridge.
 7. `CICD-002` — contain skill-PR execution and remove shell `eval`.

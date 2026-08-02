@@ -11,6 +11,8 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                           | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260802-010` | Make typed approval resolution card-specific, visibly fail-closed, and consistent across every approval-driven email path                      | Unassigned                         | pending                                                 | `planned`             | C5    | card-filtered typed approval resolution and visible no-op; explicit listener scope; proposal-email action-ledger convergence; subject/boundary parsing hardening; canary header hygiene; blocked test-routing recovery wording                                                                                                                                              | After NC-009 activation, choose whether typed approval remains global or becomes email-card-specific; implement and adversarially test the recorded N1-N5 follow-ups before broadening any approval surface                                                                                                                                                              | 2026-08-02T22:59Z |
+| `NC-20260802-009` | Every approved customer email is one durable, exact, Gmail-receipted action that cannot silently disappear or automatically duplicate          | Codex + Claude validator           | `codex/nc-20260802-009-email-assurance` @ `177de7b`     | `ready_for_review`    | C5    | host-issued email action ID; immutable approved content hash; append-only send stages; one-time execution claim; guard/uncertain result in approval thread; tracked Mailman procedure; release-blocking email suite; controlled internal canary                                                                                                                             | Run final exact-Node and continuity gates, commit the reviewed delta, verify the production pre-action queue is empty, build and activate the exact release, then run the one authorized internal transport canary; leave customer-path outcome validation to the next natural approved send                                                                            | 2026-08-02T22:59Z |
 | `NC-20260802-008` | Close remaining low-risk Sales routing observability, lookup, and retry debt without changing the one-root operator contract                    | Codex + Claude validator           | `codex/nc-20260802-003-company-os-sequence` @ `aa1c821` | `deployed_unverified` | C3    | rejection matrix; process-lifetime health diagnostics; bounded connected-send retry; per-resolved-lead routing serialization; six-hour scheduled revision window; active work-unit provenance; fail-closed cross-channel thread stripping; remainder-only chunk retry                                                                                                      | Observe the next natural inbound handoff/draft/operator-revision cycle and scheduled work card; confirm each work item has one channel root and all later activity remains in-thread                                                                                                                                                                                    | 2026-08-02T20:40Z |
 | `NC-20260802-007` | Close remaining release-activation diagnostics and real-plist integration coverage before broadening the activation surface                     | Codex + Claude validator           | `codex/nc-20260802-003-company-os-sequence` @ `aa1c821` | `complete`            | C5    | atomic `shlock` claim with explicit operator stale-lock recovery; owner-safe cleanup; dry-run tool probes; pruned/same-directory diagnostics; healthy rollback proof; real `plutil` XML round-trip                                                                                                                                                                         | None                                                                                                                                                                                                                                                                                                                                                                    | 2026-08-02T20:40Z |
 | `NC-20260802-006` | Every new Sales work item is the only channel-root post for its cycle; drafts, revisions, approvals, and later handoffs stay inside that thread | Codex + Claude validator           | `codex/nc-20260802-003-company-os-sequence` @ `aa1c821` | `deployed_unverified` | C3    | host work-unit thread provenance, Slack lead-anchor lifecycle and broadcast policy; concurrent same-lead roots; reconnect/partial retry; Sales/Inbox instructions; exact prompt deployed with reviewed runtime                                                                                                                                                             | Observe one natural handoff → draft → operator feedback → revision cycle entirely inside one root; idle health verifies deployment, not the business outcome                                                                                                                                                                                                            | 2026-08-02T20:40Z |
@@ -54,6 +56,97 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260802-010
+
+- Source: Claude Opus 5 review R2 for NC-009 approved commit and activation but
+  required its non-blocking N1-N5 findings to remain visible rather than be
+  silently waived.
+- N1: resolve an exact typed approval to the newest bot-authored approval card,
+  not merely the newest bot message, and post a visible fail-closed reply when
+  no eligible card is found. This closes the current silent second-approval
+  no-op after the host's mechanical `[EMAIL ACTION]` status line.
+- N2: decide and encode the scope of typed approvals. The current Slack channel
+  offers the exact whole-message form to every registered approval listener,
+  including incident and proposal-follow-up listeners that historically relied
+  on a reaction. Either narrow the typed trigger or document and test the
+  broader contract. Proposal-follow-up email must also converge on NC-009's
+  durable action/receipt boundary before the project claims every approved
+  customer email uses that boundary.
+- N3: anchor both `Subject:` and `Body:` parsing after the trusted original-text
+  boundary, and fail closed when that boundary is missing.
+- N4: sanitize the canary Subject inside `buildTransportCanaryRaw` even though
+  the only production caller already validates a 40-hex release commit.
+- N5: when global test routing blocks an action, say explicitly that recovery
+  requires a corrected fresh draft and approval.
+- Safety/priority: N1 fails closed and N3-N5 cannot create a wrong or duplicate
+  send. N2 widens triggers on pre-existing guarded paths and is the next
+  approval-architecture decision. None authorizes a customer send or blocks
+  NC-009's reviewed deployment/canary.
+
+### NC-20260802-009
+
+- Trigger: after the July email-path batch, approved emails repeatedly failed
+  or stalled while the operator waited. The incident was not one defect: an
+  agent printed rather than routed a handoff; cross-group bot rows failed to
+  wake Mailman; PostgreSQL bigint strings disagreed with model numeric IDs;
+  unrealistic mocks hid that production failure; and source, compiled runtime,
+  tracked procedures, and deployment evidence drifted apart.
+- Outcome: one parseable approved card creates one host-issued action ID bound
+  to its approval thread, normalized recipient, approved subject/body hash,
+  durable stage history, guard result, and Gmail receipt. Same-recipient work
+  is never correlated by recipient alone. Confirmed replay returns the original
+  receipt without Gmail; an executing or uncertain action is held for explicit
+  reconciliation. Failure is posted in the approval thread.
+- Authority: the model may relay an Action-ID but cannot mint or overwrite the
+  host record. Recipient, Party, content, Gmail-resource, and one-time execution
+  checks remain host-side. This slice does not claim named-operator/expiry
+  binding for every Company-OS approval class.
+- Documentation drift in scope: `groups/mailman/OUTBOUND-EMAIL.md` was required
+  by the tracked Mailman prompt but ignored by Git and absent from releases. Its
+  local copy also contradicted current Unicode subject behavior and assigned a
+  premature post-send database write to the model. Bring the corrected
+  procedure under tracked authority and release packaging.
+- Release boundary: `release:build` must run the serial email-critical suite
+  against the exact clean commit before compilation. Deployment and a real
+  controlled internal Gmail canary remain separate authorized states; no
+  customer address or prompt-selected destination is permitted for the canary.
+- Overlap: touches the same Sales/Mailman/Gmail/watchdog surfaces as NC-006 and
+  prior NC-005/NC-006 email fixes. It must preserve the NC-006/008 one-root
+  Slack contract and release activation controls. Procurement stays dark.
+- Authorization: the owner said “execute” after approving this ticket's
+  implementation, Claude review, commit, production activation, and one
+  controlled internal canary. This does not authorize a customer email,
+  production business-record mutation, prompt-authored recipient, OAuth change,
+  or unrelated cleanup.
+- Claude R1: exact-session Opus 5 review
+  `docs/reports/NC-20260802-009-CLAUDE-C5-REVIEW-R1.md` returned `CHANGES
+  REQUIRED`. It reproduced a duplicate-send path where the five-minute alert
+  changed `executing` to executable `attention_required`; found typed
+  approvals were outside the host listener; identified legacy action-ID
+  conflict, nullable-recipient confirmation, bare “queued” tool results, and
+  the unsafe global test-routing canary; and required a tracked canary
+  procedure.
+- R1 reconciliation: overdue `executing` now becomes non-executable
+  `uncertain` and says the email may have sent; exact typed `Approved` in a
+  draft thread invokes the same host listeners as a reaction; the host posts
+  the Action-ID in that thread and blocks malformed cards immediately; legacy
+  conflicts backfill but never overwrite a missing action ID; global test
+  routing blocks action-bound sends before claim; unbound requests alert Chief;
+  the runner qualifies “queued”; untrusted original text cannot supply the
+  parsed `Body:` marker; and a dedicated monitored-mailbox transport canary
+  proves an exact Gmail receipt without customer/business state.
+- R1 validation after reconciliation: exact Node 22.23.2 typecheck/build,
+  email-critical 10 files / 294 tests, full serial regression 145 files / 1,845
+  tests, runner build and 3 files / 22 tests, documentation continuity/schema
+  self-test, and source formatting pass.
+- Claude R2: exact-session Opus 5 review
+  `docs/reports/NC-20260802-009-CLAUDE-C5-REVIEW-R2.md` returned `APPROVE WITH
+  FOLLOW-UPS`. It independently reproduced the interrupted-attempt lockout,
+  recoverable never-started approval, terminal-state race guards, legacy action
+  ID backfill, old-schema aggregate precondition, canary isolation, and release
+  gate parity. Its N1-N5 residuals are registered as NC-20260802-010; none can
+  send a wrong or duplicate email, and none blocks the authorized activation.
 
 ### NC-20260802-008
 

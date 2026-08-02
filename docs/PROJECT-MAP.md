@@ -400,13 +400,20 @@ Current local schema contains:
 - `scheduled_tasks` and `task_run_logs` — agent task definitions/history;
 - `jobs` and `job_run_logs` — host job definitions/history;
 - `email_tracking` — outbound email metadata;
-- `pending_sends` — approved-send expectations and one-shot alert state;
+- `pending_sends` — durable approved-email actions: host action ID, approval
+  thread, normalized recipient, approved subject/body hash, current execution
+  state, Gmail receipt, and visible failure state;
+- `email_send_events` — append-only stage history for each approved-email
+  action (`approved` through Gmail-confirmed or visibly held/blocked);
 - `router_state` — durable router progress.
 
 Inspect `.schema` before every manual query. Do not copy a live WAL-backed
 database with an ordinary file copy and call it a backup.
 Tracked schema snapshots are structure-only: live sample rows are forbidden
 because they can contain customer and operational data.
+Approved-email action projections and events are intentionally retained as
+low-volume safety/audit evidence; automatic pruning is declined until a
+reviewed retention rule can preserve confirmed and uncertain receipt history.
 
 ### PostgreSQL: business data plane
 
@@ -624,6 +631,46 @@ verified both denial acknowledgement and exact pending-approval grant recovery.
 The later work-ledger/capability-manifest slice should generalize durable
 work-item grants without broadening them.
 
+### Approved-email delivery assurance (`NC-20260802-009`)
+
+The email path no longer treats “same recipient” or a queued tool response as
+proof that a particular approval was fulfilled. Each parseable approval creates
+one host-issued UUID and immutable SHA-256 of its approved subject/body. The
+host recognizes a check-mark or exact whole-message `Approved` in the draft
+thread, posts the Action-ID back into that thread, and carries or recovers that
+identity at the routed handoff. It claims the Gmail
+boundary with one conditional SQLite transition, and records Gmail message and
+thread IDs before the approval is marked confirmed. A confirmed replay returns
+the existing receipt without calling Gmail; an executing or uncertain replay
+is held for reconciliation instead of retried.
+
+If an executing action reaches the alert deadline, it becomes `uncertain`; the
+alert says that delivery may have occurred, and the claim predicate cannot
+reopen it. An unparseable approval is blocked immediately in its thread.
+Unbound/unknown/ambiguous Mailman requests are quarantined, denied to Mailman,
+and surfaced to Chief. Global `GMAIL_TEST_RECIPIENT` routing is prohibited for
+action-bound customer sends; those actions block before claim.
+
+Guard refusals and uncertain boundary errors are posted in the original
+approval thread and retained in the action/event ledger. A post-send business
+logging failure cannot relabel a durable Gmail receipt as unsent. Legacy rows
+without an action ID remain readable for operator diagnosis, but Mailman cannot
+execute them: they require a fresh exact approval. `groups/mailman/OUTBOUND-EMAIL.md`
+is now tracked and packaged as the canonical verbatim-send procedure; the
+obsolete ASCII subject rewrite and model-side post-send database write are
+removed.
+
+`npm run test:email-critical` is a serial Node-22 regression gate for approval
+parsing, SQLite transitions, routing, authorization, recipient/content guards,
+bigint party resolution, receipts, and replay behavior. `release:build` runs
+that exact gate after proving the source tree is clean and before compiling the
+artifact.
+
+The separate `email:transport-canary` command sends fixed text to the monitored
+mailbox itself and retrieves the exact Gmail receipt without writing business
+or customer-action state. It is a transport/OAuth canary only, never evidence
+that the full approved-customer path or inbox delivery succeeded.
+
 As of 2026-08-02, the main production host runs exact release
 `aa1c82187b7fbf10050a4863bdbe8d07e87af82c` under Node 22.23.2. Health proves
 the release commit and code root match; Slack and Gmail are connected; the
@@ -768,6 +815,7 @@ Never solve that gap by syncing Claude session/auth directories.
 nvm use
 npm install
 npm run typecheck
+npm run test:email-critical
 npm test
 npm run release:build
 

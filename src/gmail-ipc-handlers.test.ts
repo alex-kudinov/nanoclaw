@@ -228,7 +228,12 @@ describe('handleGmailSend', () => {
 
       await handleGmailSend(makePayload(), undefined, onSendConfirmed);
 
-      expect(onSendConfirmed).toHaveBeenCalledWith('prospect@external.com');
+      expect(onSendConfirmed).toHaveBeenCalledWith({
+        actionId: undefined,
+        recipient: 'prospect@external.com',
+        messageId: 'sent-msg-123',
+        threadId: 'thread-abc',
+      });
     });
   });
 
@@ -613,9 +618,16 @@ describe('mechanical [EMAIL SENT] to chief (T06)', () => {
 describe('recipient guard (tina@example.com incident)', () => {
   it('blocks a reserved/placeholder recipient: no send, alerts chief, returns undefined', async () => {
     const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+    const onSendFailed = vi.fn();
     const result = await handleGmailSend(
-      makePayload({ to: 'tina@example.com', subject: 'X' }),
+      makePayload({
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        to: 'tina@example.com',
+        subject: 'X',
+      }),
       postToChief,
+      undefined,
+      onSendFailed,
     );
     expect(result).toBeUndefined();
     expect(sendEmail).not.toHaveBeenCalled();
@@ -623,6 +635,10 @@ describe('recipient guard (tina@example.com incident)', () => {
     expect(postToChief.mock.calls[0][0]).toMatch(
       /EMAIL BLOCKED.*tina@example\.com/,
     );
+    expect(onSendFailed).toHaveBeenCalledWith({
+      actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+      code: 'recipient_guard',
+    });
   });
 
   it('blocks a deliverable address that is not among the party’s known emails', async () => {

@@ -132,6 +132,7 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
    [HANDOFF: sales→mailman]
    To: {lead email address from the [SALES REVIEW] header}
    Subject: {email subject from the draft}
+   Action-ID: {host-issued ID from the [EMAIL ACTION] line in this approval thread}
    Entry ID: {pipeline_entry_id}
    Party ID: {party_id}
    Thread-ID: {real Gmail thread ID if available — OMIT THIS ENTIRE LINE when none exists; never use "(none)", "N/A", or explanatory prose}
@@ -307,6 +308,7 @@ When human replies "Approved" to a follow-up draft:
    [HANDOFF: sales→mailman]
    To: {lead email}
    Subject: Re: {original subject}
+   Action-ID: {host-issued ID from the [EMAIL ACTION] line in this approval thread}
    Entry ID: {pipeline_entry_id}
    Party ID: {party_id}
    Thread-ID: {Gmail thread ID if available}

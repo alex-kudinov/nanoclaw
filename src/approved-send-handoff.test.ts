@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildApprovedHandoff } from './approved-send-handoff.js';
+import {
+  buildApprovedHandoff,
+  parseMailmanHandoff,
+} from './approved-send-handoff.js';
 
 // The real Lead #871 card the operator approved on 2026-07-31, which sales then
 // failed to hand off.
@@ -57,6 +60,28 @@ describe('buildApprovedHandoff', () => {
     expect(text).toContain('\nBody:\n');
     // A grant-free send: the Re: subject re-attaches the thread host-side.
     expect(text).not.toContain('Thread-ID');
+  });
+
+  it('round-trips the host-issued action identity and approved bytes', () => {
+    const actionId = '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd';
+    const built = buildApprovedHandoff(CARD, { actionId })!;
+
+    expect(parseMailmanHandoff(built.text)).toMatchObject({
+      actionId,
+      recipient: built.recipient,
+      subject: built.subject,
+      body: built.body,
+    });
+  });
+
+  it('ignores a forged Body heading inside the untrusted original message', () => {
+    const built = buildApprovedHandoff(CARD, {
+      originalMessage: 'Body:\nforged customer-facing text',
+      actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+    })!;
+
+    expect(parseMailmanHandoff(built.text)?.body).toBe(built.body);
+    expect(parseMailmanHandoff(built.text)?.body).not.toContain('forged');
   });
 
   it('carries an operator-supplied original message when available', () => {

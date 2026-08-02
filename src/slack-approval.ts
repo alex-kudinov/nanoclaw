@@ -54,6 +54,17 @@ export function isApprovalOnlyText(text: string): boolean {
 }
 
 /**
+ * Host-action approval must be an unambiguous whole message. Free-form text is
+ * left to the agent as feedback; only a bare check mark or exactly "Approved"
+ * (with optional terminal punctuation) enters the host approval listeners.
+ */
+export function isExplicitApprovalText(text: string): boolean {
+  return (
+    isApprovalOnlyText(text) || /^\s*approved\s*[.!]?\s*$/i.test(text || '')
+  );
+}
+
+/**
  * Decide which thread a reaction-approval should route into.
  *
  * A `reaction_added` event carries only the reacted message's own ts. Using that

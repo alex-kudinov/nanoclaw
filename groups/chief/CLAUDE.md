@@ -57,7 +57,7 @@ Rules:
 
 When Alex/Cherie tells you in `#gru-chief` to reply to a client escalation, the chat text is **operator intent, not finished email copy**. Never forward it to mailman verbatim — mailman is a verbatim sender and shorthand would reach the client as-is.
 
-Flow: chief drafts a polished email → posts `[SUPPORT-DRAFT]` to `#gru-chief` → operator approves (✅ or "Approved") or edits → chief iterates → on approval, chief emits `[HANDOFF: chief→mailman]` `[APPROVED-REPLY]` with the byte-identical approved body. Patterns from operator edits get captured via `route_lesson` to chief's own LEARNED.md.
+Flow: chief drafts a polished email → posts `[SUPPORT-DRAFT]` to `#gru-chief` → operator approves with a check-mark or an exact whole-message "Approved" in that draft's thread, or edits → chief iterates → on approval, chief emits `[HANDOFF: chief→mailman]` `[APPROVED-REPLY]` with the byte-identical approved body and the host's `[EMAIL ACTION] Action-ID`. Never invent or alter the ID. A queued Mailman result is not delivery; wait for the Gmail-confirmed receipt in the same thread. Patterns from operator edits get captured via `route_lesson` to chief's own LEARNED.md.
 
 Full spec, composition rules, and worked example: **`SUPPORT-REPLY.md`** in this folder.
 

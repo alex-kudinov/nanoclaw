@@ -31,6 +31,10 @@ The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;
 - the Git worktree contains any staged, unstaged, or untracked change.
+- the serial email-critical suite fails. This gate covers approval parsing,
+  exact-action identity and replay, SQLite receipt transitions, cross-group
+  delivery, Gmail authorization, recipient/content refusal, and the realistic
+  PostgreSQL-bigint delivery path.
 
 The archive is a provenance-bearing transport artifact, not a cryptographic
 signature. Its SHA-256 must be recorded out of band in the task/change record
@@ -77,6 +81,7 @@ nvm use
 node --version
 npm ci
 npm run typecheck
+npm run test:email-critical
 npm test
 npm run release:build
 ```
@@ -100,6 +105,14 @@ mechanism.
 
 1. Inspect the current service, health response, listener count, pending work,
    installed Node runtime, and production checkout without changing them.
+   Before the first NC-009 activation, query only the aggregate count in the
+   operational working directory's `store/messages.db` and require
+   `pending_sends` to be empty; do not inspect customer rows. Existing rows use
+   the pre-action schema and cannot be assumed safely migratable while work is
+   in flight. On later releases, require no rows in `approved`,
+   `handoff_routed`, `mailman_started`, `executing`, or `attention_required`;
+   an `executing` row must be reconciled to `confirmed` or `uncertain`, never
+   retried or deleted. Pause new approvals during this drain/check window.
 2. Transfer the exact reviewed archive, compare its SHA-256 through an
    independent channel, and extract it to a new immutable directory such as
    `~/.local/share/nanoclaw-releases/<full-commit>`. Never extract over the
@@ -179,6 +192,25 @@ current host does not yet cryptographically bind the writable live group
 workspace to that archived copy. Deployment must compare/copy the reviewed
 prompt files explicitly and record their hashes. This is a declared residual,
 not a reason to represent the whole behavioral configuration as immutable.
+
+### Internal Gmail transport canary
+
+After activation and health convergence, one explicitly authorized internal
+transport canary may be run from the activated release root:
+
+```bash
+NANOCLAW_EMAIL_CANARY_CONFIRM=NC-009-INTERNAL-TRANSPORT-CANARY \
+  npm run email:transport-canary
+```
+
+The command has no recipient argument. It sends fixed host-authored text only
+to `GMAIL_MONITORED_EMAIL`, omits BCC, does not use the global
+`GMAIL_TEST_RECIPIENT` redirect, and writes no customer action, Slack message,
+or business interaction. It succeeds only after Gmail returns a message/thread
+receipt and that exact message is retrievable; output identifies the recipient
+only by SHA-256. This proves the activated release's Gmail authentication and
+transport receipt path. It does **not** validate Party guards, a real customer
+action, business logging, inbox placement, or the Sales/Mailman outcome.
 
 ## Rollback
 

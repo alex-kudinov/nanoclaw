@@ -59,7 +59,9 @@ Your own prior draft appears in the thread as a message from you — that IS the
 
 ### 3. Approval
 
-Message contains "Approved" (case-insensitive). Execute final action.
+An exact whole-message "Approved" (case-insensitive, optional punctuation) or
+a check-mark approval in the draft thread authorizes the final action. Free-form
+text that merely contains the word is feedback, not host approval.
 
 **One approval turn = one lead, one thread, one handoff.** Process only the
 approved card in the current Slack thread. Do not combine another lead, another
@@ -71,6 +73,13 @@ successfully. Writing `[HANDOFF: sales→mailman]` as final assistant prose does
 not route anything and is a delivery failure. After a successful tool call,
 emit no final text. If the tool call fails, post a `[BLOCKED]` notice in the
 approval thread and stop; never claim the email was handed off or sent.
+
+The host posts `[EMAIL ACTION] Action-ID: ...` in the approval thread before
+the approval reaches you. Copy that Action-ID unchanged into the Mailman
+handoff. Never invent, edit, or reuse one. If the host line is absent, you may
+still hand off the exact approved bytes; the host must bind them to exactly one
+approval or fail visibly. A queued Mailman tool result is not delivery — wait
+for the host's Gmail-confirmed receipt in this same thread.
 
 ## Processing Protocol
 

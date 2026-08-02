@@ -25,16 +25,17 @@
  */
 
 /** Cards carry the operator-facing summary; only the fenced draft is sendable. */
-const CARD_MARKER = /\[(?:SALES REVIEW|CLIENT SUPPORT REVIEW)\]/;
-const EMAIL_LINE = /^\s*Email\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
+const CARD_MARKER = /\[(?:SALES REVIEW|CLIENT SUPPORT REVIEW|SUPPORT-DRAFT)\]/;
+const EMAIL_LINE = /^\s*(?:Email|To)\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
 const LEAD_LINE = /\[SALES REVIEW\]\s*Lead\s*#\s*(\d+)/i;
+const ACTION_LINE = /^\s*Action-ID\s*:\s*(\S+)\s*$/im;
 /**
  * Sales writes `DRAFT RESPONSE TO LEAD:`, client support writes
  * `DRAFT RESPONSE:`. Both fence the sendable draft identically.
  */
 const DRAFT_HEADING = /^\s*DRAFT RESPONSE(?: TO LEAD)?:\s*$/im;
 const FENCE = /^\s*---\s*$/;
-const SUBJECT_LINE = /^\s*Subject\s*:\s*(.+?)\s*$/i;
+const SUBJECT_LINE = /^\s*Subject\s*:\s*(.+?)\s*$/im;
 
 export interface ApprovedHandoff {
   /** Canonical `[HANDOFF: sales→mailman]` text, ready to write as an IPC message. */
@@ -45,6 +46,48 @@ export interface ApprovedHandoff {
   body: string;
 }
 
+export interface ParsedMailmanHandoff extends ApprovedHandoff {
+  actionId?: string;
+}
+
+function parseSubjectAndBody(
+  text: string,
+): { subject: string; body: string } | undefined {
+  const lines = text.split('\n');
+  const originalBoundary = lines.findIndex((line) =>
+    /^\s*---END-ORIGINAL---\s*$/.test(line),
+  );
+  const bodyHeading = lines.findIndex(
+    (line, index) => index > originalBoundary && /^\s*Body\s*:\s*$/i.test(line),
+  );
+  if (bodyHeading === -1) return undefined;
+  const subject = text.match(SUBJECT_LINE)?.[1]?.trim();
+  if (!subject) return undefined;
+  const body = lines
+    .slice(bodyHeading + 1)
+    .join('\n')
+    .replace(/^\n+/, '')
+    .replace(/\s+$/, '');
+  return body ? { subject, body } : undefined;
+}
+
+/** Parse the exact sendable fields from a routed Mailman handoff. */
+export function parseMailmanHandoff(text: string): ParsedMailmanHandoff | null {
+  if (!/^\s*\[HANDOFF:\s*[a-z0-9_-]+\s*(?:→|->)\s*mailman\]/im.test(text)) {
+    return null;
+  }
+  const recipient = text.match(EMAIL_LINE)?.[1]?.toLowerCase();
+  const parsed = parseSubjectAndBody(text);
+  if (!recipient || !parsed) return null;
+  return {
+    text,
+    recipient,
+    subject: parsed.subject,
+    body: parsed.body,
+    actionId: text.match(ACTION_LINE)?.[1],
+  };
+}
+
 /**
  * Parse an approved card into a sendable handoff, or null when anything is
  * missing or ambiguous. Null always means "leave it to the operator" — this
@@ -52,7 +95,12 @@ export interface ApprovedHandoff {
  */
 export function buildApprovedHandoff(
   cardText: string,
-  opts: { originalMessage?: string; entryId?: number } = {},
+  opts: {
+    originalMessage?: string;
+    entryId?: number;
+    actionId?: string;
+    sourceGroup?: string;
+  } = {},
 ): ApprovedHandoff | null {
   if (!CARD_MARKER.test(cardText)) return null;
 
@@ -96,11 +144,15 @@ export function buildApprovedHandoff(
   const original =
     opts.originalMessage?.trim() ||
     'See the approved card in this Slack thread for the operator-facing summary.';
+  const sourceGroup = /^[a-z0-9_-]+$/i.test(opts.sourceGroup ?? '')
+    ? opts.sourceGroup!.toLowerCase()
+    : 'sales';
 
   const text = [
-    '[HANDOFF: sales→mailman]',
+    `[HANDOFF: ${sourceGroup}→mailman]`,
     `To: ${recipient}`,
     `Subject: ${subject}`,
+    ...(opts.actionId ? [`Action-ID: ${opts.actionId}`] : []),
     ...(leadRef ? [`Entry ID: ${leadRef}`] : []),
     'Original-Message:',
     original,

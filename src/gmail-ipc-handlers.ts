@@ -59,6 +59,7 @@ export interface GmailIpcPayload {
   // open tracking (gmail_send + gmail_reply)
   leadId?: number;
   // Host-stamped from durable approval state; container input is overwritten.
+  actionId?: string;
   approvedRecipient?: string;
   emailType?: string;
   // markdown conversion (gmail_send + gmail_reply)
@@ -257,15 +258,32 @@ function buildEmailFooter(trackingId: string, emailType: string): string {
  * Notified with the real recipient once Gmail has accepted a message. The only
  * signal that discharges an approved-send expectation — see send-watchdog.ts.
  */
-export type OnSendConfirmed = (recipient: string | undefined) => void;
+export interface EmailSendReceipt {
+  actionId?: string;
+  recipient: string | undefined;
+  messageId: string;
+  threadId: string;
+}
+
+export interface EmailSendFailure {
+  actionId?: string;
+  code: 'invalid_payload' | 'content_guard' | 'recipient_guard';
+}
+
+export type OnSendConfirmed = (
+  receipt: EmailSendReceipt,
+) => void | Promise<void>;
+export type OnSendFailed = (failure: EmailSendFailure) => void | Promise<void>;
 
 export async function handleGmailReply(
   data: GmailIpcPayload,
   postToChief?: PostToChief,
   onSendConfirmed?: OnSendConfirmed,
+  onSendFailed?: OnSendFailed,
 ): Promise<void> {
   if (!data.threadId || !data.body) {
     logger.warn({ data }, 'gmail_reply: missing threadId or body');
+    await onSendFailed?.({ actionId: data.actionId, code: 'invalid_payload' });
     return;
   }
 
@@ -282,6 +300,7 @@ export async function handleGmailReply(
         `🚫 [EMAIL BLOCKED] reply thread=${data.threadId} — content guard: ${replyContentCheck.violations.join('; ')}. NOT sent; fix the draft and resend.`,
       );
     }
+    await onSendFailed?.({ actionId: data.actionId, code: 'content_guard' });
     return;
   }
 
@@ -376,12 +395,20 @@ export async function handleGmailReply(
         `🚫 [EMAIL BLOCKED] reply thread=${data.threadId} — ${err.message}. NOT sent; verify the recipient and resend.`,
       );
     }
+    await onSendFailed?.({ actionId: data.actionId, code: 'recipient_guard' });
     return;
   }
 
   // Gmail accepted it. A test-routed message does NOT discharge the intended
   // recipient's expectation because that customer never received the email.
-  if (!GMAIL_TEST_RECIPIENT) onSendConfirmed?.(result.originalTo);
+  if (!GMAIL_TEST_RECIPIENT) {
+    await onSendConfirmed?.({
+      actionId: data.actionId,
+      recipient: result.originalTo,
+      messageId: result.messageId,
+      threadId: result.threadId,
+    });
+  }
 
   // Store outbound in DB for conversation context
   storeMessageDirect({
@@ -519,9 +546,11 @@ export async function handleGmailSend(
   data: GmailIpcPayload,
   postToChief?: PostToChief,
   onSendConfirmed?: OnSendConfirmed,
+  onSendFailed?: OnSendFailed,
 ): Promise<{ messageId: string; threadId: string } | undefined> {
   if (!data.to || !data.subject || !data.body) {
     logger.warn({ data }, 'gmail_send: missing to, subject, or body');
+    await onSendFailed?.({ actionId: data.actionId, code: 'invalid_payload' });
     return undefined;
   }
 
@@ -552,6 +581,7 @@ export async function handleGmailSend(
         `🚫 [EMAIL BLOCKED] to=${data.to} subject=${data.subject} — ${reason}. NOT sent; verify the recipient and resend.`,
       );
     }
+    await onSendFailed?.({ actionId: data.actionId, code: 'recipient_guard' });
     return undefined;
   }
 
@@ -572,6 +602,7 @@ export async function handleGmailSend(
         `🚫 [EMAIL BLOCKED] to=${data.to} subject=${data.subject} — content guard: ${contentCheck.violations.join('; ')}. NOT sent; fix the draft and resend.`,
       );
     }
+    await onSendFailed?.({ actionId: data.actionId, code: 'content_guard' });
     return undefined;
   }
 
@@ -636,7 +667,14 @@ export async function handleGmailSend(
 
   // A test-routed message does NOT discharge the intended recipient's
   // expectation because that customer never received the email.
-  if (!GMAIL_TEST_RECIPIENT) onSendConfirmed?.(originalTo);
+  if (!GMAIL_TEST_RECIPIENT) {
+    await onSendConfirmed?.({
+      actionId: data.actionId,
+      recipient: originalTo,
+      messageId: result.messageId,
+      threadId: result.threadId,
+    });
+  }
 
   storeOutboundEmail(
     result.messageId,
@@ -782,13 +820,14 @@ export async function dispatchGmailIpc(
   data: GmailIpcPayload,
   postToChief?: PostToChief,
   onSendConfirmed?: OnSendConfirmed,
+  onSendFailed?: OnSendFailed,
 ): Promise<void> {
   switch (data.type) {
     case 'gmail_reply':
-      await handleGmailReply(data, postToChief, onSendConfirmed);
+      await handleGmailReply(data, postToChief, onSendConfirmed, onSendFailed);
       break;
     case 'gmail_send':
-      await handleGmailSend(data, postToChief, onSendConfirmed);
+      await handleGmailSend(data, postToChief, onSendConfirmed, onSendFailed);
       break;
     case 'gmail_search':
       await handleGmailSearch(data);

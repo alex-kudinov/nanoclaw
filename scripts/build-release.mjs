@@ -35,6 +35,32 @@ const sourceTree = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], {
   encoding: 'utf8',
 }).trim();
 
+// Email is a business-critical side effect. A release is not packageable if
+// approval binding, exact-action idempotency, Gmail receipt handling, or the
+// cross-group delivery path regresses. The worktree is already proven clean,
+// so these tests exercise the exact source tree named by the manifest.
+execFileSync(
+  process.execPath,
+  [
+    path.join(root, 'node_modules', 'vitest', 'vitest.mjs'),
+    'run',
+    'src/approved-send-handoff.test.ts',
+    'src/channels/slack.test.ts',
+    'src/db.test.ts',
+    'src/email-delivery-path.test.ts',
+    'src/email-transport-canary.test.ts',
+    'src/gmail-ipc-handlers.test.ts',
+    'src/ipc-gmail-auth.test.ts',
+    'src/ipc-handoff-echo.test.ts',
+    'src/send-watchdog.test.ts',
+    'src/slack-approval.test.ts',
+    '--pool=forks',
+    '--no-file-parallelism',
+    '--maxWorkers=1',
+  ],
+  { cwd: root, stdio: 'inherit' },
+);
+
 const dist = path.join(root, 'dist');
 fs.rmSync(dist, { recursive: true, force: true });
 execFileSync(

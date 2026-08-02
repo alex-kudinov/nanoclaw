@@ -55,6 +55,8 @@ import {
   getJob,
   clearPendingSends,
   clearPendingSendsByRecipient,
+  findPendingSendAction,
+  failEmailAction,
   getMessageById,
   listOverdueSends,
   listStalledMailmanHandoffs,
@@ -62,6 +64,8 @@ import {
   markPendingSendAlerted,
   markPendingSendHandoff,
   markPendingSendMailmanStarted,
+  markEmailActionHandoff,
+  markEmailActionMailmanStarted,
   recordPendingSend,
   recordThreadAnchor,
   getMessagesSince,
@@ -537,7 +541,11 @@ async function processGroupMessages(
           observeMailmanStart(
             missedMessages.map((message) => message.content),
             new Date(),
-            { markMailmanStarted: markPendingSendMailmanStarted },
+            {
+              markMailmanStarted: markPendingSendMailmanStarted,
+              findAction: findPendingSendAction,
+              markActionMailmanStarted: markEmailActionMailmanStarted,
+            },
           )
       : undefined,
   );
@@ -840,7 +848,11 @@ async function startMessageLoop(): Promise<void> {
               observeMailmanStart(
                 messagesToSend.map((message) => message.content),
                 new Date(),
-                { markMailmanStarted: markPendingSendMailmanStarted },
+                {
+                  markMailmanStarted: markPendingSendMailmanStarted,
+                  findAction: findPendingSendAction,
+                  markActionMailmanStarted: markEmailActionMailmanStarted,
+                },
               );
             }
             logger.info(
@@ -1766,7 +1778,10 @@ async function main(): Promise<void> {
       clearPendingSends,
       clearPendingSendsByRecipient,
       markHandoff: markPendingSendHandoff,
+      findAction: findPendingSendAction,
+      markActionHandoff: markEmailActionHandoff,
       markMailmanStarted: markPendingSendMailmanStarted,
+      markActionMailmanStarted: markEmailActionMailmanStarted,
       listOverdueSends,
       listStalledHandoffs: listStalledMailmanHandoffs,
       markHandoffAlerted: markMailmanHandoffAlerted,
@@ -1803,18 +1818,41 @@ async function main(): Promise<void> {
           const approvedGmailThreadId =
             extractApprovedGmailThreadId(card.content) ??
             extractApprovedGmailThreadId(threadRoot?.content);
+          const approvalThreadTs = card.thread_ts ?? card.id;
           const pending = recordApproval(
             {
               draftTs: ts,
               groupFolder: card.from_group,
               chatJid: card.chat_jid,
-              threadTs: card.thread_ts ?? undefined,
+              threadTs: approvalThreadTs,
               cardText: card.content,
               approvedGmailThreadId,
               now: new Date(),
             },
             sendWatchdogStore,
           );
+          if (
+            pending?.actionId &&
+            (!pending.recipient || !pending.approvedContentSha256)
+          ) {
+            failEmailAction(
+              pending.actionId,
+              'blocked',
+              'approval_card_unparseable',
+              new Date().toISOString(),
+            );
+            await slackForAutonomy.sendMessage(
+              card.chat_jid,
+              `🚫 [EMAIL APPROVAL NOT ARMED] The approved card could not be parsed into one exact recipient, subject, and body. It was NOT sent. Correct the card and approve the revised draft; do not hand off this version.`,
+              { fromGroup: card.from_group, threadTs: approvalThreadTs },
+            );
+          } else if (pending?.actionId) {
+            await slackForAutonomy.sendMessage(
+              card.chat_jid,
+              `[EMAIL ACTION] Action-ID: ${pending.actionId}\nCopy this host-issued ID unchanged into the Mailman handoff. Queued is not sent; wait for the Gmail-confirmed receipt in this thread.`,
+              { fromGroup: card.from_group, threadTs: approvalThreadTs },
+            );
+          }
           if (pending?.gmailThreadId) {
             grantHostGmailResources('mailman', {
               threadId: pending.gmailThreadId,

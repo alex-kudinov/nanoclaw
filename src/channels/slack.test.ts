@@ -25,6 +25,7 @@ vi.mock('../logger.js', () => ({
 // Mock db
 vi.mock('../db.js', () => ({
   getMessageById: vi.fn(() => undefined),
+  getLatestBotMessageInThread: vi.fn(() => undefined),
   updateChatName: vi.fn(),
   resolveThreadAnchor: vi.fn(() => undefined),
   recordThreadAnchor: vi.fn(),
@@ -100,6 +101,7 @@ vi.mock('../env.js', () => ({
 import { SlackChannel, SlackChannelOpts } from './slack.js';
 import {
   getMessageById,
+  getLatestBotMessageInThread,
   updateChatName,
   resolveThreadAnchor,
   recordThreadAnchor,
@@ -176,6 +178,7 @@ describe('SlackChannel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getMessageById).mockReturnValue(undefined);
+    vi.mocked(getLatestBotMessageInThread).mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -255,6 +258,43 @@ describe('SlackChannel', () => {
           sender: 'U_USER_456',
           content: 'Hello everyone',
           is_from_me: false,
+        }),
+      );
+    });
+
+    it('offers an exact typed approval to listeners using the latest thread draft', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      vi.mocked(getLatestBotMessageInThread).mockReturnValue({
+        id: 'draft-ts',
+        chat_jid: 'slack:C0123456789',
+        sender: 'U_BOT_123',
+        sender_name: 'Jonesy',
+        content: '[SALES REVIEW] draft',
+        timestamp: '2024-01-01T00:00:00.000Z',
+        is_from_me: true,
+        is_bot_message: true,
+        from_group: 'sales',
+        thread_ts: 'thread-root',
+      });
+      const listener = vi.fn(async () => false);
+      channel.registerApprovalListener(listener);
+
+      await triggerMessageEvent(
+        createMessageEvent({ text: 'Approved', threadTs: 'thread-root' }),
+      );
+
+      expect(getLatestBotMessageInThread).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        'thread-root',
+      );
+      expect(listener).toHaveBeenCalledWith('draft-ts', 'Alice Smith');
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        expect.objectContaining({
+          content: expect.stringContaining('✅ Approved by Alice Smith.'),
+          thread_ts: 'thread-root',
         }),
       );
     });

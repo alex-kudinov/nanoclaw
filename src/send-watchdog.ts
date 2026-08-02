@@ -19,7 +19,15 @@
  * 2026-07-23 when an override round-trip reverted approved edits.
  */
 
-import { buildApprovedHandoff } from './approved-send-handoff.js';
+import {
+  buildApprovedHandoff,
+  parseMailmanHandoff,
+} from './approved-send-handoff.js';
+import {
+  hashApprovedEmailContent,
+  newEmailActionId,
+  type EmailActionState,
+} from './email-action.js';
 import { logger } from './logger.js';
 
 /**
@@ -39,6 +47,7 @@ export const MAILMAN_START_GRACE_MS = 60 * 1000;
 export const MAILMAN_START_WATCHDOG_TICK_MS = 10 * 1000;
 
 export interface PendingSend {
+  actionId?: string;
   draftTs: string;
   groupFolder: string;
   chatJid: string;
@@ -46,15 +55,20 @@ export interface PendingSend {
   gmailThreadId?: string;
   recipient?: string;
   leadRef?: string;
+  approvedSubject?: string;
+  approvedContentSha256?: string;
   approvedAt: string;
+  state?: EmailActionState;
   handoffObservedAt?: string;
   handoffMessageId?: string;
   mailmanStartedAt?: string;
   handoffAlertedAt?: string;
+  executionStartedAt?: string;
+  alertedAt?: string;
 }
 
 export interface SendWatchdogStore {
-  recordPendingSend(row: PendingSend): void;
+  recordPendingSend(row: PendingSend): PendingSend | void;
   /** Clear unfulfilled rows for a group, optionally narrowed by recipient. */
   clearPendingSends(groupFolder: string, recipient?: string): number;
   /**
@@ -69,11 +83,24 @@ export interface SendWatchdogStore {
     messageId: string | undefined,
     observedAt: string,
   ): number;
+  findAction?(opts: {
+    actionId?: string;
+    groupFolder?: string;
+    recipient?: string;
+    gmailThreadId?: string;
+    approvedContentSha256: string;
+  }): { action?: PendingSend; ambiguous: boolean };
+  markActionHandoff?(
+    actionId: string,
+    messageId: string | undefined,
+    observedAt: string,
+  ): number;
   markMailmanStarted(
     groupFolder: string,
     recipient: string,
     startedAt: string,
   ): number;
+  markActionMailmanStarted?(actionId: string, startedAt: string): number;
   listOverdueSends(cutoffIso: string): PendingSend[];
   listStalledHandoffs(cutoffIso: string): PendingSend[];
   markHandoffAlerted(draftTs: string, alertedAt: string): void;
@@ -141,7 +168,9 @@ export function recordApproval(
   store: SendWatchdogStore,
 ): PendingSend | null {
   if (!isTrackableCard(opts.cardText)) return null;
+  const approved = buildApprovedHandoff(opts.cardText);
   const row: PendingSend = {
+    actionId: newEmailActionId(),
     draftTs: opts.draftTs,
     groupFolder: opts.groupFolder,
     chatJid: opts.chatJid,
@@ -150,14 +179,19 @@ export function recordApproval(
       opts.approvedGmailThreadId ?? extractApprovedGmailThreadId(opts.cardText),
     recipient: opts.cardText.match(EMAIL_RE)?.[1]?.toLowerCase(),
     leadRef: opts.cardText.match(LEAD_RE)?.[1],
+    approvedSubject: approved?.subject,
+    approvedContentSha256: approved
+      ? hashApprovedEmailContent(approved.subject, approved.body)
+      : undefined,
     approvedAt: opts.now.toISOString(),
+    state: 'approved',
   };
-  store.recordPendingSend(row);
+  const stored = store.recordPendingSend(row);
   logger.info(
     { group: opts.groupFolder, recipient: row.recipient, lead: row.leadRef },
     'send-watchdog: approval recorded, awaiting Gmail-confirmed send',
   );
-  return row;
+  return stored ?? row;
 }
 
 /**
@@ -179,9 +213,38 @@ export function observeOutbound(
   text: string,
   messageId: string | undefined,
   now: Date,
-  store: Pick<SendWatchdogStore, 'markHandoff'>,
+  store: Pick<
+    SendWatchdogStore,
+    'markHandoff' | 'findAction' | 'markActionHandoff'
+  >,
 ): number {
   if (!MAILMAN_HANDOFF_RE.test(text)) return 0;
+  const parsed = parseMailmanHandoff(text);
+  if (parsed && store.findAction && store.markActionHandoff) {
+    const match = store.findAction({
+      actionId: parsed.actionId,
+      groupFolder,
+      recipient: parsed.recipient,
+      approvedContentSha256: hashApprovedEmailContent(
+        parsed.subject,
+        parsed.body,
+      ),
+    });
+    if (match.ambiguous) {
+      logger.error(
+        { group: groupFolder, recipient: parsed.recipient },
+        'send-watchdog: handoff matches multiple approved actions — held for operator',
+      );
+      return 0;
+    }
+    if (match.action?.actionId) {
+      return store.markActionHandoff(
+        match.action.actionId,
+        messageId,
+        now.toISOString(),
+      );
+    }
+  }
   const to = text.match(TO_RE)?.[1]?.toLowerCase();
   const recorded = to
     ? store.markHandoff(groupFolder, to, messageId, now.toISOString())
@@ -197,12 +260,34 @@ export function observeOutbound(
 export function observeMailmanStart(
   texts: string[],
   now: Date,
-  store: Pick<SendWatchdogStore, 'markMailmanStarted'>,
+  store: Pick<
+    SendWatchdogStore,
+    'markMailmanStarted' | 'findAction' | 'markActionMailmanStarted'
+  >,
 ): number {
   let marked = 0;
   for (const text of texts) {
     const sourceGroup = text.match(MAILMAN_HANDOFF_RE)?.[1]?.toLowerCase();
     if (!sourceGroup) continue;
+    const parsed = parseMailmanHandoff(text);
+    if (parsed && store.findAction && store.markActionMailmanStarted) {
+      const match = store.findAction({
+        actionId: parsed.actionId,
+        groupFolder: sourceGroup,
+        recipient: parsed.recipient,
+        approvedContentSha256: hashApprovedEmailContent(
+          parsed.subject,
+          parsed.body,
+        ),
+      });
+      if (match.action?.actionId && !match.ambiguous) {
+        marked += store.markActionMailmanStarted(
+          match.action.actionId,
+          now.toISOString(),
+        );
+        continue;
+      }
+    }
     const to = text.match(TO_RE)?.[1]?.toLowerCase();
     if (!to) continue;
     marked += store.markMailmanStarted(sourceGroup, to, now.toISOString());
@@ -241,6 +326,15 @@ export function observeConfirmedSend(
 function alertText(row: PendingSend): string {
   const who = row.recipient ? ` to ${row.recipient}` : '';
   const lead = row.leadRef ? ` (${row.leadRef})` : '';
+  if (row.state === 'executing') {
+    return (
+      `[EMAIL DELIVERY UNCERTAIN]${lead} execution began at ` +
+      `${row.executionStartedAt ?? row.approvedAt}, but no Gmail receipt was ` +
+      `committed. The email${who} MAY have gone out. Do not resend or create a ` +
+      `new action until an operator reconciles the Gmail Sent mailbox and the ` +
+      `stored action ledger.`
+    );
+  }
   return (
     `[SEND NOT OBSERVED]${lead} approved at ${row.approvedAt}, but Gmail has ` +
     `never confirmed a send. The email${who} has NOT gone out.\n\n` +
@@ -301,10 +395,7 @@ export async function sweepStalledMailmanHandoffs(
   return alerted;
 }
 
-/**
- * Alert on approvals whose send never materialised. One alert per approval:
- * `markAlerted` removes the row so a stuck send cannot spam the channel.
- */
+/** Alert once while preserving the action and its non-retryable state. */
 /**
  * Grace before the host emits the handoff itself. Long enough that a healthy
  * sales run (which hands off within ~30s of approval) is never pre-empted.
@@ -374,7 +465,11 @@ export async function rescueUnhandedSends(
       }
     }
 
-    const built = buildApprovedHandoff(card, { entryId });
+    const built = buildApprovedHandoff(card, {
+      entryId,
+      actionId: row.actionId,
+      sourceGroup: row.groupFolder,
+    });
     if (!built || built.recipient !== row.recipient) {
       logger.warn(
         { draftTs: row.draftTs, recipient: row.recipient },
@@ -385,12 +480,19 @@ export async function rescueUnhandedSends(
 
     // Claim first. If another tick (or a late agent handoff) already marked
     // this row, changes is 0 and we must not emit.
-    const claimed = deps.store.markHandoff(
-      row.groupFolder,
-      row.recipient,
-      `host-rescue-${row.draftTs}`,
-      now.toISOString(),
-    );
+    const claimed =
+      row.actionId && deps.store.markActionHandoff
+        ? deps.store.markActionHandoff(
+            row.actionId,
+            `host-rescue-${row.draftTs}`,
+            now.toISOString(),
+          )
+        : deps.store.markHandoff(
+            row.groupFolder,
+            row.recipient,
+            `host-rescue-${row.draftTs}`,
+            now.toISOString(),
+          );
     if (claimed === 0) continue;
 
     try {

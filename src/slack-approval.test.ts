@@ -4,6 +4,7 @@ import {
   isCheckReaction,
   isThumbsDownReaction,
   isApprovalOnlyText,
+  isExplicitApprovalText,
   buildApprovalContent,
   resolveApprovalThreadTs,
 } from './slack-approval.js';
@@ -54,6 +55,14 @@ describe('isApprovalOnlyText', () => {
     expect(isApprovalOnlyText('looks good')).toBe(false);
     expect(isApprovalOnlyText('')).toBe(false);
     expect(isApprovalOnlyText('   ')).toBe(false);
+  });
+
+  it('recognizes only an unambiguous whole-message typed approval', () => {
+    expect(isExplicitApprovalText('Approved')).toBe(true);
+    expect(isExplicitApprovalText(' approved! ')).toBe(true);
+    expect(isExplicitApprovalText('✅')).toBe(true);
+    expect(isExplicitApprovalText('Approved with these edits')).toBe(false);
+    expect(isExplicitApprovalText('Please send it')).toBe(false);
   });
 });
 

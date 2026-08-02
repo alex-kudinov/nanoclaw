@@ -21,6 +21,16 @@ import {
   markStaleRunsAsFailed,
   recordThreadAnchor,
   recordPendingSend,
+  claimEmailActionExecution,
+  confirmEmailAction,
+  findPendingSendAction,
+  getPendingSendByActionId,
+  getLatestBotMessageInThread,
+  listEmailSendEvents,
+  listOverdueSends,
+  markPendingSendAlerted,
+  markEmailActionHandoff,
+  markEmailActionMailmanStarted,
   clearPendingSendsByRecipient,
   getPendingSendByGmailThread,
   resolveThreadAnchor,
@@ -36,12 +46,320 @@ import {
   updateTask,
   upsertJobDefinition,
 } from './db.js';
+import { hashApprovedEmailContent } from './email-action.js';
 
 beforeEach(() => {
   _initTestDatabase();
 });
 
 describe('pending send approvals', () => {
+  const actionId = '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd';
+  const approvedHash = hashApprovedEmailContent('Subject', 'Approved body');
+
+  it('persists one exact action and an append-only Gmail receipt lifecycle', () => {
+    recordPendingSend({
+      actionId,
+      draftTs: 'draft-action',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      threadTs: 'approval-thread',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject',
+      approvedContentSha256: approvedHash,
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+
+    expect(
+      markEmailActionHandoff(
+        actionId,
+        'handoff-message',
+        '2026-08-02T01:00:01.000Z',
+      ),
+    ).toBe(1);
+    expect(
+      markEmailActionMailmanStarted(actionId, '2026-08-02T01:00:02.000Z'),
+    ).toBe(1);
+    expect(
+      claimEmailActionExecution(
+        actionId,
+        approvedHash,
+        'lead@example.com',
+        '2026-08-02T01:00:03.000Z',
+      ).status,
+    ).toBe('claimed');
+    expect(
+      confirmEmailAction(
+        actionId,
+        'lead@example.com',
+        'gmail-message',
+        'gmail-thread',
+        '2026-08-02T01:00:04.000Z',
+      ),
+    ).toBe(1);
+
+    expect(getPendingSendByActionId(actionId)).toMatchObject({
+      state: 'confirmed',
+      gmailMessageId: 'gmail-message',
+      gmailResultThreadId: 'gmail-thread',
+    });
+    expect(listEmailSendEvents(actionId).map((event) => event.stage)).toEqual([
+      'approved',
+      'handoff_routed',
+      'mailman_started',
+      'executing',
+      'confirmed',
+    ]);
+  });
+
+  it('replays a confirmed action as its receipt without another execution claim', () => {
+    recordPendingSend({
+      actionId,
+      draftTs: 'draft-action',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject',
+      approvedContentSha256: approvedHash,
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+    expect(
+      claimEmailActionExecution(
+        actionId,
+        approvedHash,
+        'lead@example.com',
+        '2026-08-02T01:00:01.000Z',
+      ).status,
+    ).toBe('claimed');
+    confirmEmailAction(
+      actionId,
+      'lead@example.com',
+      'gmail-message',
+      'gmail-thread',
+      '2026-08-02T01:00:02.000Z',
+    );
+
+    const replay = claimEmailActionExecution(
+      actionId,
+      approvedHash,
+      'lead@example.com',
+      '2026-08-02T01:00:03.000Z',
+    );
+    expect(replay).toMatchObject({
+      status: 'confirmed',
+      action: { gmailMessageId: 'gmail-message' },
+    });
+    expect(
+      findPendingSendAction({
+        recipient: 'lead@example.com',
+        approvedContentSha256: approvedHash,
+        includeConfirmed: true,
+      }),
+    ).toMatchObject({
+      ambiguous: false,
+      action: { actionId, state: 'confirmed' },
+    });
+    expect(listEmailSendEvents(actionId)).toHaveLength(3);
+  });
+
+  it('holds an executing action after restart instead of risking a duplicate', () => {
+    recordPendingSend({
+      actionId,
+      draftTs: 'draft-action',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject',
+      approvedContentSha256: approvedHash,
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+    claimEmailActionExecution(
+      actionId,
+      approvedHash,
+      'lead@example.com',
+      '2026-08-02T01:00:01.000Z',
+    );
+
+    expect(
+      claimEmailActionExecution(
+        actionId,
+        approvedHash,
+        'lead@example.com',
+        '2026-08-02T01:05:00.000Z',
+      ),
+    ).toMatchObject({
+      status: 'held',
+      reason: expect.stringContaining('uncertain prior Gmail attempt'),
+    });
+  });
+
+  it('turns an overdue executing action uncertain without reopening Gmail', () => {
+    recordPendingSend({
+      actionId,
+      draftTs: 'draft-action',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject',
+      approvedContentSha256: approvedHash,
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+    expect(
+      claimEmailActionExecution(
+        actionId,
+        approvedHash,
+        'lead@example.com',
+        '2026-08-02T01:00:01.000Z',
+      ).status,
+    ).toBe('claimed');
+    expect(listOverdueSends('2026-08-02T01:05:00.000Z')).toHaveLength(1);
+
+    markPendingSendAlerted('draft-action');
+
+    expect(getPendingSendByActionId(actionId)).toMatchObject({
+      state: 'uncertain',
+      lastErrorCode: 'gmail_receipt_reconciliation_required',
+    });
+    expect(
+      claimEmailActionExecution(
+        actionId,
+        approvedHash,
+        'lead@example.com',
+        '2026-08-02T01:05:01.000Z',
+      ),
+    ).toMatchObject({ status: 'held' });
+    expect(listEmailSendEvents(actionId).map((event) => event.stage)).toEqual([
+      'approved',
+      'executing',
+      'uncertain',
+    ]);
+  });
+
+  it('does not append a false alert event after Gmail already confirmed', () => {
+    recordPendingSend({
+      actionId,
+      draftTs: 'draft-action',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject',
+      approvedContentSha256: approvedHash,
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+    claimEmailActionExecution(
+      actionId,
+      approvedHash,
+      'lead@example.com',
+      '2026-08-02T01:00:01.000Z',
+    );
+    confirmEmailAction(
+      actionId,
+      'lead@example.com',
+      'gmail-message',
+      'gmail-thread',
+      '2026-08-02T01:00:02.000Z',
+    );
+
+    markPendingSendAlerted('draft-action');
+
+    expect(listEmailSendEvents(actionId).map((event) => event.stage)).toEqual([
+      'approved',
+      'executing',
+      'confirmed',
+    ]);
+  });
+
+  it('backfills a host action identity onto a legacy approval conflict', () => {
+    recordPendingSend({
+      draftTs: 'legacy-draft',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      recipient: 'lead@example.com',
+      approvedAt: '2026-08-01T01:00:00.000Z',
+    });
+
+    const upgraded = recordPendingSend({
+      actionId,
+      draftTs: 'legacy-draft',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject',
+      approvedContentSha256: approvedHash,
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+
+    expect(upgraded).toMatchObject({
+      actionId,
+      approvedContentSha256: approvedHash,
+    });
+    expect(listEmailSendEvents(actionId).map((event) => event.stage)).toEqual([
+      'approved',
+    ]);
+  });
+
+  it('does not claim an action whose subject or body changed after approval', () => {
+    recordPendingSend({
+      actionId,
+      draftTs: 'draft-action',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject',
+      approvedContentSha256: approvedHash,
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+
+    expect(
+      claimEmailActionExecution(
+        actionId,
+        hashApprovedEmailContent('Subject', 'Mutated body'),
+        'lead@example.com',
+        '2026-08-02T01:00:01.000Z',
+      ),
+    ).toMatchObject({
+      status: 'held',
+      reason: expect.stringContaining('hash does not match'),
+    });
+    expect(getPendingSendByActionId(actionId)?.state).toBe('approved');
+    expect(listEmailSendEvents(actionId).map((event) => event.stage)).toEqual([
+      'approved',
+    ]);
+  });
+
+  it('separates concurrent approvals for the same recipient by content hash', () => {
+    const secondActionId = '1a6d9d42-c03e-499d-b255-ad0823676355';
+    recordPendingSend({
+      actionId,
+      draftTs: 'draft-action-a',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      recipient: 'same@example.com',
+      approvedSubject: 'Subject A',
+      approvedContentSha256: hashApprovedEmailContent('Subject A', 'Body A'),
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+    recordPendingSend({
+      actionId: secondActionId,
+      draftTs: 'draft-action-b',
+      groupFolder: 'chief',
+      chatJid: 'slack:chief',
+      recipient: 'same@example.com',
+      approvedSubject: 'Subject B',
+      approvedContentSha256: hashApprovedEmailContent('Subject B', 'Body B'),
+      approvedAt: '2026-08-02T01:00:01.000Z',
+    });
+
+    expect(
+      findPendingSendAction({
+        recipient: 'same@example.com',
+        approvedContentSha256: hashApprovedEmailContent('Subject B', 'Body B'),
+      }),
+    ).toMatchObject({
+      ambiguous: false,
+      action: { actionId: secondActionId },
+    });
+  });
+
   it('persists a Gmail thread binding and clears one same-recipient row at a time', () => {
     recordPendingSend({
       draftTs: 'draft-1',
@@ -203,6 +521,50 @@ describe('storeMessage', () => {
     );
     expect(messages).toHaveLength(1);
     expect(messages[0].content).toBe('updated');
+  });
+});
+
+describe('Slack thread bot lookup', () => {
+  it('returns the latest bot draft inside one thread', () => {
+    storeChatMetadata('slack:C1', '2026-08-02T01:00:00.000Z');
+    storeMessageDirect({
+      id: 'thread-root',
+      chat_jid: 'slack:C1',
+      sender: 'human',
+      sender_name: 'Human',
+      content: 'Inbound handoff',
+      timestamp: '2026-08-02T01:00:00.000Z',
+      is_from_me: false,
+      is_bot_message: false,
+    });
+    storeMessageDirect({
+      id: 'draft-1',
+      chat_jid: 'slack:C1',
+      sender: 'bot',
+      sender_name: 'Gru',
+      content: '[SALES REVIEW] old',
+      timestamp: '2026-08-02T01:00:01.000Z',
+      is_from_me: true,
+      is_bot_message: true,
+      from_group: 'sales',
+      thread_ts: 'thread-root',
+    });
+    storeMessageDirect({
+      id: 'draft-2',
+      chat_jid: 'slack:C1',
+      sender: 'bot',
+      sender_name: 'Gru',
+      content: '[SALES REVIEW] revised',
+      timestamp: '2026-08-02T01:00:02.000Z',
+      is_from_me: true,
+      is_bot_message: true,
+      from_group: 'sales',
+      thread_ts: 'thread-root',
+    });
+
+    expect(getLatestBotMessageInThread('slack:C1', 'thread-root')?.id).toBe(
+      'draft-2',
+    );
   });
 });
 

@@ -5,19 +5,31 @@ import path from 'path';
 
 import { CronExpressionParser } from 'cron-parser';
 
-import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
+import {
+  DATA_DIR,
+  GMAIL_TEST_RECIPIENT,
+  IPC_POLL_INTERVAL,
+  TIMEZONE,
+} from './config.js';
 import { AvailableGroup } from './container-runner.js';
 import {
+  claimEmailActionExecution,
   clearPendingSendsByRecipient,
+  confirmEmailAction,
   createTask,
   deleteTask,
+  failEmailAction,
+  findPendingSendAction,
+  getPendingSendByActionId,
   getTaskById,
   getPendingSendByGmailThread,
+  markEmailActionHandoff,
   markPendingSendHandoff,
   storeMessageDirect,
   updateTask,
 } from './db.js';
 import { observeConfirmedSend, observeOutbound } from './send-watchdog.js';
+import { hashApprovedEmailContent, isEmailActionId } from './email-action.js';
 import {
   dispatchGmailIpc,
   isGmailIpcType,
@@ -503,7 +515,11 @@ export function startIpcWatcher(deps: IpcDeps): void {
                           data.text,
                           storedHandoffId,
                           new Date(),
-                          { markHandoff: markPendingSendHandoff },
+                          {
+                            markHandoff: markPendingSendHandoff,
+                            findAction: findPendingSendAction,
+                            markActionHandoff: markEmailActionHandoff,
+                          },
                         );
                       }
                       logger.info(
@@ -655,12 +671,172 @@ export function startIpcWatcher(deps: IpcDeps): void {
               } else if (isGmailIpcType(data.type)) {
                 // Gmail IPC: capability and resource authorization is enforced
                 // from the directory-derived source identity before dispatch.
+                const chiefEntry = Object.entries(registeredGroups).find(
+                  ([, g]) => g.folder === 'chief',
+                );
+                const postToChief = chiefEntry
+                  ? async (text: string, threadTs?: string): Promise<void> => {
+                      await deps.sendMessage(chiefEntry[0], text, {
+                        fromGroup: 'chief',
+                        threadTs,
+                      });
+                    }
+                  : undefined;
+                const postBoundaryFailure = async (text: string) => {
+                  if (!postToChief) return;
+                  try {
+                    await postToChief(text);
+                  } catch (err) {
+                    logger.error(
+                      { err, sourceGroup, type: data.type },
+                      'Gmail boundary failure alert could not be posted',
+                    );
+                  }
+                };
+                const explicitActionId =
+                  typeof data.actionId === 'string' &&
+                  isEmailActionId(data.actionId)
+                    ? data.actionId
+                    : undefined;
+                if (data.actionId !== undefined && !explicitActionId) {
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'gmail-action',
+                  );
+                  logger.warn(
+                    { sourceGroup, type: data.type, quarantinedAt },
+                    'Gmail IPC carried an invalid approved action identity',
+                  );
+                  writeDeniedGmailInput(
+                    sourceGroup,
+                    data.type,
+                    'invalid approved email Action-ID',
+                  );
+                  await postBoundaryFailure(
+                    `🚫 [EMAIL ACTION HELD] Mailman supplied an invalid Action-ID. Nothing was sent; correct the approval handoff rather than retrying the Gmail tool.`,
+                  );
+                  continue;
+                }
+
                 const approvedReply =
                   sourceGroup === 'mailman' &&
                   data.type === 'gmail_reply' &&
                   typeof data.threadId === 'string'
                     ? getPendingSendByGmailThread(data.threadId)
                     : undefined;
+                let approvedAction = explicitActionId
+                  ? getPendingSendByActionId(explicitActionId)
+                  : approvedReply?.actionId
+                    ? getPendingSendByActionId(approvedReply.actionId)
+                    : undefined;
+                let approvedContentSha256: string | undefined;
+                const isMailmanSendAction =
+                  sourceGroup === 'mailman' &&
+                  (data.type === 'gmail_send' || data.type === 'gmail_reply');
+                if (isMailmanSendAction && typeof data.body === 'string') {
+                  const subject =
+                    typeof data.subject === 'string'
+                      ? data.subject
+                      : approvedAction?.approvedSubject;
+                  if (subject) {
+                    approvedContentSha256 = hashApprovedEmailContent(
+                      subject,
+                      data.body,
+                    );
+                  }
+                  if (!approvedAction && approvedContentSha256) {
+                    const matched = findPendingSendAction({
+                      groupFolder: undefined,
+                      recipient:
+                        data.type === 'gmail_send' &&
+                        typeof data.to === 'string'
+                          ? data.to
+                          : undefined,
+                      gmailThreadId:
+                        typeof data.threadId === 'string'
+                          ? data.threadId
+                          : undefined,
+                      approvedContentSha256,
+                      includeConfirmed: true,
+                    });
+                    if (matched.ambiguous) {
+                      const quarantinedAt = quarantineIpcFile(
+                        filePath,
+                        sourceGroup,
+                        'gmail-action-ambiguous',
+                      );
+                      logger.error(
+                        { sourceGroup, type: data.type, quarantinedAt },
+                        'Gmail IPC matches multiple approved actions; held for operator',
+                      );
+                      writeDeniedGmailInput(
+                        sourceGroup,
+                        data.type,
+                        'multiple approved email actions match this content',
+                      );
+                      await postBoundaryFailure(
+                        `🚫 [EMAIL ACTION HELD] More than one approval matches a Mailman request. Nothing was sent; reconcile the approval threads before any retry.`,
+                      );
+                      continue;
+                    }
+                    approvedAction = matched.action;
+                  }
+                  if (!approvedAction) {
+                    const context = findPendingSendAction({
+                      recipient:
+                        data.type === 'gmail_send' &&
+                        typeof data.to === 'string'
+                          ? data.to
+                          : undefined,
+                      gmailThreadId:
+                        typeof data.threadId === 'string'
+                          ? data.threadId
+                          : undefined,
+                    });
+                    if (!context.ambiguous) approvedAction = context.action;
+                  }
+                }
+                if (explicitActionId && !approvedAction) {
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'gmail-action-unknown',
+                  );
+                  logger.error(
+                    { sourceGroup, type: data.type, quarantinedAt },
+                    'Gmail IPC references an unknown approved action',
+                  );
+                  writeDeniedGmailInput(
+                    sourceGroup,
+                    data.type,
+                    'approved email action was not found',
+                  );
+                  await postBoundaryFailure(
+                    `🚫 [EMAIL ACTION HELD] Mailman referenced an unknown host action. Nothing was sent; return to the originating approval thread.`,
+                  );
+                  continue;
+                }
+                if (isMailmanSendAction && !approvedAction?.actionId) {
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'gmail-action-unbound',
+                  );
+                  logger.error(
+                    { sourceGroup, type: data.type, quarantinedAt },
+                    'Mailman Gmail send is not bound to one exact host-approved action',
+                  );
+                  writeDeniedGmailInput(
+                    sourceGroup,
+                    data.type,
+                    'no exact host-approved email action is available',
+                  );
+                  await postBoundaryFailure(
+                    `🚫 [EMAIL ACTION HELD] A Mailman request was not bound to one exact host-approved action. Nothing was sent. Approve the exact draft in its Slack thread before retrying.`,
+                  );
+                  continue;
+                }
                 const authorization = await authorizeGmailIpcWithResolver(
                   sourceGroup,
                   data,
@@ -668,7 +844,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     Boolean(
                       group === 'mailman' &&
                       request.type === 'gmail_reply' &&
-                      approvedReply,
+                      (approvedReply || approvedAction),
                     ) || resolveDurableGmailResource(group, request),
                 );
                 if (!authorization.ok) {
@@ -693,41 +869,156 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   );
                   continue;
                 }
-                fs.unlinkSync(filePath);
-                // Build postToChief so a successful send posts a mechanical
-                // [EMAIL SENT] line (fromGroup='chief' → no chief retrigger).
-                const chiefEntry = Object.entries(registeredGroups).find(
-                  ([, g]) => g.folder === 'chief',
-                );
-                const postToChief = chiefEntry
-                  ? async (text: string, threadTs?: string): Promise<void> => {
-                      await deps.sendMessage(chiefEntry[0], text, {
-                        fromGroup: 'chief',
-                        threadTs,
-                      });
-                    }
-                  : undefined;
                 if (!chiefEntry) {
                   logger.error(
                     '[ERROR] gmail [EMAIL SENT]: chief group not registered',
                   );
                 }
-                await dispatchGmailIpc(
-                  {
-                    ...data,
-                    groupFolder: sourceGroup,
-                    approvedRecipient: approvedReply?.recipient,
-                  } as GmailIpcPayload,
-                  postToChief,
-                  // Only a confirmed send discharges an approved-send
-                  // expectation. Keyed on the real recipient, not the group,
-                  // because the send runs as mailman while the approval belongs
-                  // to sales.
-                  (recipient: string | undefined) =>
-                    observeConfirmedSend(recipient, {
-                      clearPendingSendsByRecipient,
-                    }),
-                );
+                const postActionStatus = async (
+                  text: string,
+                ): Promise<void> => {
+                  if (!approvedAction) return;
+                  try {
+                    await deps.sendMessage(approvedAction.chatJid, text, {
+                      fromGroup: approvedAction.groupFolder,
+                      threadTs: approvedAction.threadTs,
+                    });
+                  } catch (err) {
+                    // Slack status delivery is deliberately downstream of the
+                    // durable action transition. A temporary Slack failure
+                    // must never relabel a Gmail-confirmed action as uncertain
+                    // or make the deleted IPC file look unprocessed.
+                    logger.error(
+                      { err, actionId: approvedAction.actionId },
+                      'Approved email action status post failed',
+                    );
+                  }
+                };
+
+                if (approvedAction?.actionId) {
+                  if (GMAIL_TEST_RECIPIENT) {
+                    failEmailAction(
+                      approvedAction.actionId,
+                      'blocked',
+                      'global_test_routing_active',
+                      new Date().toISOString(),
+                    );
+                    fs.unlinkSync(filePath);
+                    await postActionStatus(
+                      `🚫 [EMAIL BLOCKED] Action ${approvedAction.actionId} was NOT sent because global Gmail test routing is active. Use the dedicated host transport canary; never redirect a customer-approved action.`,
+                    );
+                    continue;
+                  }
+                  if (!approvedContentSha256) {
+                    failEmailAction(
+                      approvedAction.actionId,
+                      'blocked',
+                      'approved_content_unverifiable',
+                      new Date().toISOString(),
+                    );
+                    fs.unlinkSync(filePath);
+                    await postActionStatus(
+                      `🚫 [EMAIL BLOCKED] Action ${approvedAction.actionId} could not be matched byte-for-byte to the approved subject and body. It was NOT sent.`,
+                    );
+                    continue;
+                  }
+                  const claim = claimEmailActionExecution(
+                    approvedAction.actionId,
+                    approvedContentSha256,
+                    approvedAction.recipient,
+                    new Date().toISOString(),
+                  );
+                  if (claim.status === 'confirmed') {
+                    fs.unlinkSync(filePath);
+                    await postActionStatus(
+                      `✅ [EMAIL ALREADY SENT] Action ${approvedAction.actionId} already has Gmail receipt ${claim.action.gmailMessageId ?? '(recorded)'}. No duplicate was sent.`,
+                    );
+                    continue;
+                  }
+                  if (claim.status === 'held') {
+                    fs.unlinkSync(filePath);
+                    await postActionStatus(
+                      `⚠️ [EMAIL HELD] Action ${approvedAction.actionId} was not retried: ${claim.reason}. Reconcile the Gmail receipt before any retry.`,
+                    );
+                    continue;
+                  }
+                }
+
+                fs.unlinkSync(filePath);
+                try {
+                  await dispatchGmailIpc(
+                    {
+                      ...data,
+                      actionId: approvedAction?.actionId,
+                      groupFolder: sourceGroup,
+                      approvedRecipient:
+                        approvedAction?.recipient ?? approvedReply?.recipient,
+                    } as GmailIpcPayload,
+                    postToChief,
+                    async (receipt) => {
+                      const confirmedRecipient =
+                        approvedAction?.recipient ?? receipt.recipient;
+                      if (receipt.actionId && confirmedRecipient) {
+                        const confirmed = confirmEmailAction(
+                          receipt.actionId,
+                          confirmedRecipient,
+                          receipt.messageId,
+                          receipt.threadId,
+                          new Date().toISOString(),
+                        );
+                        if (confirmed !== 1) {
+                          throw new Error(
+                            'Gmail accepted the message but the exact action receipt could not be committed',
+                          );
+                        }
+                        await postActionStatus(
+                          `✅ [EMAIL SENT] Action ${receipt.actionId} was accepted by Gmail. Receipt ${receipt.messageId}.`,
+                        );
+                      } else {
+                        observeConfirmedSend(receipt.recipient, {
+                          clearPendingSendsByRecipient,
+                        });
+                      }
+                    },
+                    async (failure) => {
+                      if (!failure.actionId) return;
+                      failEmailAction(
+                        failure.actionId,
+                        'blocked',
+                        failure.code,
+                        new Date().toISOString(),
+                      );
+                      await postActionStatus(
+                        `🚫 [EMAIL BLOCKED] Action ${failure.actionId} failed the host ${failure.code.replaceAll('_', ' ')} check. It was NOT sent.`,
+                      );
+                    },
+                  );
+                } catch (err) {
+                  if (approvedAction?.actionId) {
+                    const current = getPendingSendByActionId(
+                      approvedAction.actionId,
+                    );
+                    if (current?.state === 'confirmed') {
+                      await postActionStatus(
+                        `⚠️ [EMAIL SENT — FOLLOW-UP FAILED] Action ${approvedAction.actionId} has a durable Gmail receipt, but a post-send host update failed. Do NOT resend; reconcile the business interaction record.`,
+                      );
+                    } else {
+                      failEmailAction(
+                        approvedAction.actionId,
+                        'uncertain',
+                        'gmail_dispatch_error',
+                        new Date().toISOString(),
+                      );
+                      await postActionStatus(
+                        `⚠️ [EMAIL DELIVERY UNCERTAIN] Action ${approvedAction.actionId} encountered an error at the Gmail boundary. Do not retry until Gmail is reconciled for a receipt.`,
+                      );
+                    }
+                  }
+                  logger.error(
+                    { err, sourceGroup, type: data.type },
+                    'Gmail IPC dispatch failed after authorization',
+                  );
+                }
               } else if (isProcurementIpcType(data.type)) {
                 if (sourceGroup !== 'procurement') {
                   const quarantinedAt = quarantineIpcFile(

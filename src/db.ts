@@ -5,6 +5,7 @@ import path from 'path';
 import { ASSISTANT_NAME, DATA_DIR, STORE_DIR } from './config.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
+import type { EmailActionState } from './email-action.js';
 import {
   Job,
   JobDefinition,
@@ -94,20 +95,44 @@ function createSchema(database: Database.Database): void {
     -- went out. See send-watchdog.ts.
     CREATE TABLE IF NOT EXISTS pending_sends (
       draft_ts TEXT PRIMARY KEY,
+      action_id TEXT,
       group_folder TEXT NOT NULL,
       chat_jid TEXT NOT NULL,
       thread_ts TEXT,
       gmail_thread_id TEXT,
       recipient TEXT,
       lead_ref TEXT,
+      approved_subject TEXT,
+      approved_content_sha256 TEXT,
       approved_at TEXT NOT NULL,
+      state TEXT NOT NULL DEFAULT 'approved',
       handoff_observed_at TEXT,
       handoff_message_id TEXT,
       mailman_started_at TEXT,
-      handoff_alerted_at TEXT
+      handoff_alerted_at TEXT,
+      execution_started_at TEXT,
+      gmail_message_id TEXT,
+      gmail_result_thread_id TEXT,
+      completed_at TEXT,
+      alerted_at TEXT,
+      last_error_code TEXT,
+      last_event_at TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_pending_sends_group
       ON pending_sends (group_folder, approved_at);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_sends_action
+      ON pending_sends (action_id) WHERE action_id IS NOT NULL;
+    CREATE TABLE IF NOT EXISTS email_send_events (
+      sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+      action_id TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      occurred_at TEXT NOT NULL,
+      code TEXT,
+      gmail_message_id TEXT,
+      gmail_thread_id TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_email_send_events_action
+      ON email_send_events (action_id, sequence);
     CREATE TABLE IF NOT EXISTS registered_groups (
       jid TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -344,6 +369,46 @@ function createSchema(database: Database.Database): void {
     `CREATE INDEX IF NOT EXISTS idx_pending_sends_handoff
        ON pending_sends (handoff_observed_at, mailman_started_at, handoff_alerted_at)`,
   );
+
+  // NC-20260802-009: one immutable identity and append-only stage history for
+  // every newly approved customer email. Existing legacy rows remain visible
+  // but cannot execute through the action-bound path until re-approved.
+  for (const column of [
+    'action_id TEXT',
+    'approved_subject TEXT',
+    'approved_content_sha256 TEXT',
+    "state TEXT NOT NULL DEFAULT 'approved'",
+    'execution_started_at TEXT',
+    'gmail_message_id TEXT',
+    'gmail_result_thread_id TEXT',
+    'completed_at TEXT',
+    'alerted_at TEXT',
+    'last_error_code TEXT',
+    'last_event_at TEXT',
+  ]) {
+    try {
+      database.exec(`ALTER TABLE pending_sends ADD COLUMN ${column}`);
+    } catch {
+      /* column already exists */
+    }
+  }
+  database.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_sends_action
+      ON pending_sends (action_id) WHERE action_id IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_pending_sends_state
+      ON pending_sends (state, approved_at);
+    CREATE TABLE IF NOT EXISTS email_send_events (
+      sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+      action_id TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      occurred_at TEXT NOT NULL,
+      code TEXT,
+      gmail_message_id TEXT,
+      gmail_thread_id TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_email_send_events_action
+      ON email_send_events (action_id, sequence);
+  `);
 }
 
 export function initDatabase(): void {
@@ -673,6 +738,25 @@ export function getLatestInboundByThread(
     .get(threadTs) as NewMessage | undefined;
 }
 
+/** Latest host/bot-authored message inside one Slack work-item thread. */
+export function getLatestBotMessageInThread(
+  chatJid: string,
+  threadTs: string,
+): NewMessage | undefined {
+  return db
+    .prepare(
+      `SELECT id, chat_jid, sender, sender_name, content, timestamp,
+              is_from_me, is_bot_message, from_group, thread_ts
+         FROM messages
+        WHERE chat_jid = ?
+          AND COALESCE(is_bot_message, 0) = 1
+          AND (thread_ts = ? OR id = ?)
+        ORDER BY timestamp DESC, rowid DESC
+        LIMIT 1`,
+    )
+    .get(chatJid, threadTs, threadTs) as NewMessage | undefined;
+}
+
 /**
  * Get all message IDs stored for a given chat JID.
  * Used to seed in-memory dedup sets after restarts.
@@ -985,7 +1069,8 @@ export function touchThreadAnchor(channel: string, threadKey: string): void {
 
 // --- Approved-send watchdog accessors (see send-watchdog.ts) ---
 
-export function recordPendingSend(row: {
+export interface EmailSendActionRow {
+  actionId?: string;
   draftTs: string;
   groupFolder: string;
   chatJid: string;
@@ -993,26 +1078,219 @@ export function recordPendingSend(row: {
   gmailThreadId?: string;
   recipient?: string;
   leadRef?: string;
+  approvedSubject?: string;
+  approvedContentSha256?: string;
   approvedAt: string;
-}): void {
+  state: EmailActionState;
+  handoffObservedAt?: string;
+  handoffMessageId?: string;
+  mailmanStartedAt?: string;
+  handoffAlertedAt?: string;
+  executionStartedAt?: string;
+  gmailMessageId?: string;
+  gmailResultThreadId?: string;
+  completedAt?: string;
+  alertedAt?: string;
+  lastErrorCode?: string;
+  lastEventAt?: string;
+}
+
+type EmailSendDbRow = {
+  action_id: string | null;
+  draft_ts: string;
+  group_folder: string;
+  chat_jid: string;
+  thread_ts: string | null;
+  gmail_thread_id: string | null;
+  recipient: string | null;
+  lead_ref: string | null;
+  approved_subject: string | null;
+  approved_content_sha256: string | null;
+  approved_at: string;
+  state: EmailActionState;
+  handoff_observed_at: string | null;
+  handoff_message_id: string | null;
+  mailman_started_at: string | null;
+  handoff_alerted_at: string | null;
+  execution_started_at: string | null;
+  gmail_message_id: string | null;
+  gmail_result_thread_id: string | null;
+  completed_at: string | null;
+  alerted_at: string | null;
+  last_error_code: string | null;
+  last_event_at: string | null;
+};
+
+const EMAIL_ACTION_SELECT = `action_id, draft_ts, group_folder, chat_jid,
+  thread_ts, gmail_thread_id, recipient, lead_ref, approved_subject,
+  approved_content_sha256, approved_at, state, handoff_observed_at,
+  handoff_message_id, mailman_started_at, handoff_alerted_at,
+  execution_started_at, gmail_message_id, gmail_result_thread_id,
+  completed_at, alerted_at, last_error_code, last_event_at`;
+
+function mapEmailSendAction(row: EmailSendDbRow): EmailSendActionRow {
+  return {
+    actionId: row.action_id ?? undefined,
+    draftTs: row.draft_ts,
+    groupFolder: row.group_folder,
+    chatJid: row.chat_jid,
+    threadTs: row.thread_ts ?? undefined,
+    gmailThreadId: row.gmail_thread_id ?? undefined,
+    recipient: row.recipient ?? undefined,
+    leadRef: row.lead_ref ?? undefined,
+    approvedSubject: row.approved_subject ?? undefined,
+    approvedContentSha256: row.approved_content_sha256 ?? undefined,
+    approvedAt: row.approved_at,
+    state: row.state,
+    handoffObservedAt: row.handoff_observed_at ?? undefined,
+    handoffMessageId: row.handoff_message_id ?? undefined,
+    mailmanStartedAt: row.mailman_started_at ?? undefined,
+    handoffAlertedAt: row.handoff_alerted_at ?? undefined,
+    executionStartedAt: row.execution_started_at ?? undefined,
+    gmailMessageId: row.gmail_message_id ?? undefined,
+    gmailResultThreadId: row.gmail_result_thread_id ?? undefined,
+    completedAt: row.completed_at ?? undefined,
+    alertedAt: row.alerted_at ?? undefined,
+    lastErrorCode: row.last_error_code ?? undefined,
+    lastEventAt: row.last_event_at ?? undefined,
+  };
+}
+
+function appendEmailSendEvent(
+  actionId: string,
+  stage: EmailActionState,
+  occurredAt: string,
+  opts: { code?: string; messageId?: string; threadId?: string } = {},
+): void {
   db.prepare(
-    `INSERT INTO pending_sends
-       (draft_ts, group_folder, chat_jid, thread_ts, gmail_thread_id,
-        recipient, lead_ref, approved_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(draft_ts) DO UPDATE SET
-       gmail_thread_id = COALESCE(pending_sends.gmail_thread_id, excluded.gmail_thread_id),
-       recipient = COALESCE(pending_sends.recipient, excluded.recipient)`,
+    `INSERT INTO email_send_events
+       (action_id, stage, occurred_at, code, gmail_message_id, gmail_thread_id)
+     VALUES (?, ?, ?, ?, ?, ?)`,
   ).run(
-    row.draftTs,
-    row.groupFolder,
-    row.chatJid,
-    row.threadTs ?? null,
-    row.gmailThreadId ?? null,
-    row.recipient ?? null,
-    row.leadRef ?? null,
-    row.approvedAt,
+    actionId,
+    stage,
+    occurredAt,
+    opts.code ?? null,
+    opts.messageId ?? null,
+    opts.threadId ?? null,
   );
+}
+
+export function recordPendingSend(row: {
+  actionId?: string;
+  draftTs: string;
+  groupFolder: string;
+  chatJid: string;
+  threadTs?: string;
+  gmailThreadId?: string;
+  recipient?: string;
+  leadRef?: string;
+  approvedSubject?: string;
+  approvedContentSha256?: string;
+  approvedAt: string;
+}): EmailSendActionRow {
+  const insert = db.transaction(() => {
+    const result = db
+      .prepare(
+        `INSERT INTO pending_sends
+           (draft_ts, action_id, group_folder, chat_jid, thread_ts,
+            gmail_thread_id, recipient, lead_ref, approved_subject,
+            approved_content_sha256, approved_at, state, last_event_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)
+         ON CONFLICT(draft_ts) DO UPDATE SET
+           action_id = COALESCE(pending_sends.action_id, excluded.action_id),
+           gmail_thread_id = COALESCE(pending_sends.gmail_thread_id, excluded.gmail_thread_id),
+           recipient = COALESCE(pending_sends.recipient, excluded.recipient),
+           approved_subject = COALESCE(pending_sends.approved_subject, excluded.approved_subject),
+           approved_content_sha256 = COALESCE(pending_sends.approved_content_sha256, excluded.approved_content_sha256)`,
+      )
+      .run(
+        row.draftTs,
+        row.actionId ?? null,
+        row.groupFolder,
+        row.chatJid,
+        row.threadTs ?? null,
+        row.gmailThreadId ?? null,
+        row.recipient ?? null,
+        row.leadRef ?? null,
+        row.approvedSubject ?? null,
+        row.approvedContentSha256 ?? null,
+        row.approvedAt,
+        row.approvedAt,
+      );
+    const stored = db
+      .prepare(
+        `SELECT ${EMAIL_ACTION_SELECT} FROM pending_sends WHERE draft_ts = ?`,
+      )
+      .get(row.draftTs) as EmailSendDbRow;
+    if (
+      result.changes > 0 &&
+      stored.action_id === row.actionId &&
+      row.actionId
+    ) {
+      const prior = db
+        .prepare(`SELECT 1 FROM email_send_events WHERE action_id = ? LIMIT 1`)
+        .get(row.actionId);
+      if (!prior)
+        appendEmailSendEvent(row.actionId, 'approved', row.approvedAt);
+    }
+    return mapEmailSendAction(stored);
+  });
+  return insert();
+}
+
+export function getPendingSendByActionId(
+  actionId: string,
+): EmailSendActionRow | undefined {
+  const row = db
+    .prepare(
+      `SELECT ${EMAIL_ACTION_SELECT} FROM pending_sends WHERE action_id = ?`,
+    )
+    .get(actionId) as EmailSendDbRow | undefined;
+  return row ? mapEmailSendAction(row) : undefined;
+}
+
+export function findPendingSendAction(opts: {
+  actionId?: string;
+  groupFolder?: string;
+  recipient?: string;
+  gmailThreadId?: string;
+  approvedContentSha256?: string;
+  includeConfirmed?: boolean;
+}): { action?: EmailSendActionRow; ambiguous: boolean } {
+  const conditions = ["state NOT IN ('blocked', 'uncertain')"];
+  const params: unknown[] = [];
+  if (!opts.includeConfirmed) conditions.push("state <> 'confirmed'");
+  if (opts.approvedContentSha256) {
+    conditions.push('approved_content_sha256 = ?');
+    params.push(opts.approvedContentSha256);
+  }
+  if (opts.actionId) {
+    conditions.push('action_id = ?');
+    params.push(opts.actionId);
+  }
+  if (opts.groupFolder) {
+    conditions.push('group_folder = ?');
+    params.push(opts.groupFolder);
+  }
+  if (opts.recipient) {
+    conditions.push("LOWER(COALESCE(recipient, '')) = ?");
+    params.push(opts.recipient.toLowerCase());
+  }
+  if (opts.gmailThreadId) {
+    conditions.push('gmail_thread_id = ?');
+    params.push(opts.gmailThreadId);
+  }
+  const rows = db
+    .prepare(
+      `SELECT ${EMAIL_ACTION_SELECT} FROM pending_sends
+       WHERE ${conditions.join(' AND ')} ORDER BY approved_at, rowid LIMIT 2`,
+    )
+    .all(...params) as EmailSendDbRow[];
+  return {
+    action: rows.length === 1 ? mapEmailSendAction(rows[0]) : undefined,
+    ambiguous: rows.length > 1,
+  };
 }
 
 /**
@@ -1111,71 +1389,266 @@ export function markPendingSendMailmanStarted(
     .run(startedAt, groupFolder, recipient.toLowerCase()).changes;
 }
 
-/** Host-approved reply binding used to reissue a mailman thread after restart. */
-export function getPendingSendByGmailThread(
-  gmailThreadId: string,
-): { recipient?: string } | undefined {
-  const row = db
-    .prepare(
-      `SELECT recipient FROM pending_sends
-        WHERE gmail_thread_id = ?
-          AND recipient IS NOT NULL
-          AND TRIM(recipient) <> ''
-        ORDER BY approved_at, rowid
-        LIMIT 1`,
-    )
-    .get(gmailThreadId) as { recipient: string | null } | undefined;
-  return row ? { recipient: row.recipient ?? undefined } : undefined;
+/** Append the durable handoff stage for one exact approved action. */
+export function markEmailActionHandoff(
+  actionId: string,
+  messageId: string | undefined,
+  observedAt: string,
+): number {
+  const transition = db.transaction(() => {
+    const result = db
+      .prepare(
+        `UPDATE pending_sends
+            SET state = 'handoff_routed',
+                handoff_observed_at = COALESCE(handoff_observed_at, ?),
+                handoff_message_id = COALESCE(handoff_message_id, ?),
+                last_event_at = ?
+          WHERE action_id = ?
+            AND state = 'approved'
+            AND handoff_observed_at IS NULL`,
+      )
+      .run(observedAt, messageId ?? null, observedAt, actionId);
+    if (result.changes > 0) {
+      appendEmailSendEvent(actionId, 'handoff_routed', observedAt);
+    }
+    return result.changes;
+  });
+  return transition();
 }
 
-export function listOverdueSends(cutoffIso: string): Array<{
-  draftTs: string;
-  groupFolder: string;
-  chatJid: string;
-  threadTs?: string;
-  recipient?: string;
-  leadRef?: string;
-  approvedAt: string;
-  handoffObservedAt?: string;
-  handoffMessageId?: string;
-  mailmanStartedAt?: string;
-  handoffAlertedAt?: string;
+/** Append Mailman's claim for one exact approved action. */
+export function markEmailActionMailmanStarted(
+  actionId: string,
+  startedAt: string,
+): number {
+  const transition = db.transaction(() => {
+    const result = db
+      .prepare(
+        `UPDATE pending_sends
+            SET state = 'mailman_started',
+                mailman_started_at = COALESCE(mailman_started_at, ?),
+                last_event_at = ?
+          WHERE action_id = ?
+            AND state IN ('handoff_routed', 'approved')
+            AND mailman_started_at IS NULL`,
+      )
+      .run(startedAt, startedAt, actionId);
+    if (result.changes > 0) {
+      appendEmailSendEvent(actionId, 'mailman_started', startedAt);
+    }
+    return result.changes;
+  });
+  return transition();
+}
+
+export type EmailActionExecutionClaim =
+  | { status: 'claimed'; action: EmailSendActionRow }
+  | { status: 'confirmed'; action: EmailSendActionRow }
+  | { status: 'held'; action?: EmailSendActionRow; reason: string };
+
+/** Claim the final Gmail boundary exactly once. */
+export function claimEmailActionExecution(
+  actionId: string,
+  approvedContentSha256: string,
+  recipient: string | undefined,
+  startedAt: string,
+): EmailActionExecutionClaim {
+  const claim = db.transaction((): EmailActionExecutionClaim => {
+    const current = getPendingSendByActionId(actionId);
+    if (!current) return { status: 'held', reason: 'unknown action identity' };
+    if (current.state === 'confirmed') {
+      return { status: 'confirmed', action: current };
+    }
+    if (current.state === 'executing' || current.state === 'uncertain') {
+      return {
+        status: 'held',
+        action: current,
+        reason: 'action has an uncertain prior Gmail attempt',
+      };
+    }
+    if (current.state === 'blocked') {
+      return { status: 'held', action: current, reason: 'action is blocked' };
+    }
+    if (current.approvedContentSha256 !== approvedContentSha256) {
+      return {
+        status: 'held',
+        action: current,
+        reason: 'subject/body hash does not match the approved action',
+      };
+    }
+    if (
+      recipient &&
+      current.recipient &&
+      current.recipient.toLowerCase() !== recipient.toLowerCase()
+    ) {
+      return {
+        status: 'held',
+        action: current,
+        reason: 'recipient does not match the approved action',
+      };
+    }
+    const result = db
+      .prepare(
+        `UPDATE pending_sends
+            SET state = 'executing', execution_started_at = ?, last_event_at = ?
+          WHERE action_id = ?
+            AND state IN ('approved', 'handoff_routed', 'mailman_started', 'attention_required')`,
+      )
+      .run(startedAt, startedAt, actionId);
+    if (result.changes === 0) {
+      return {
+        status: 'held',
+        action: current,
+        reason: `action state ${current.state} is not executable`,
+      };
+    }
+    appendEmailSendEvent(actionId, 'executing', startedAt);
+    return {
+      status: 'claimed',
+      action: getPendingSendByActionId(actionId)!,
+    };
+  });
+  return claim();
+}
+
+export function confirmEmailAction(
+  actionId: string,
+  recipient: string,
+  messageId: string,
+  gmailThreadId: string,
+  completedAt: string,
+): number {
+  const confirm = db.transaction(() => {
+    const result = db
+      .prepare(
+        `UPDATE pending_sends
+            SET state = 'confirmed', gmail_message_id = ?,
+                gmail_result_thread_id = ?, completed_at = ?, last_event_at = ?,
+                last_error_code = NULL
+          WHERE action_id = ?
+            AND state = 'executing'
+            AND LOWER(COALESCE(recipient, '')) = ?`,
+      )
+      .run(
+        messageId,
+        gmailThreadId,
+        completedAt,
+        completedAt,
+        actionId,
+        recipient.toLowerCase(),
+      );
+    if (result.changes > 0) {
+      appendEmailSendEvent(actionId, 'confirmed', completedAt, {
+        messageId,
+        threadId: gmailThreadId,
+      });
+    }
+    return result.changes;
+  });
+  return confirm();
+}
+
+export function failEmailAction(
+  actionId: string,
+  state: 'blocked' | 'uncertain' | 'attention_required',
+  code: string,
+  occurredAt: string,
+): number {
+  const fail = db.transaction(() => {
+    const result = db
+      .prepare(
+        `UPDATE pending_sends
+            SET state = ?, last_error_code = ?, last_event_at = ?
+          WHERE action_id = ? AND state <> 'confirmed'`,
+      )
+      .run(state, code, occurredAt, actionId);
+    if (result.changes > 0) {
+      appendEmailSendEvent(actionId, state, occurredAt, { code });
+    }
+    return result.changes;
+  });
+  return fail();
+}
+
+export function listEmailSendEvents(actionId: string): Array<{
+  sequence: number;
+  stage: EmailActionState;
+  occurredAt: string;
+  code?: string;
+  gmailMessageId?: string;
+  gmailThreadId?: string;
 }> {
   const rows = db
     .prepare(
-      `SELECT draft_ts, group_folder, chat_jid, thread_ts, gmail_thread_id,
-              recipient, lead_ref, approved_at, handoff_observed_at,
-              handoff_message_id, mailman_started_at, handoff_alerted_at
-         FROM pending_sends WHERE approved_at <= ? ORDER BY approved_at`,
+      `SELECT sequence, stage, occurred_at, code, gmail_message_id,
+              gmail_thread_id FROM email_send_events
+       WHERE action_id = ? ORDER BY sequence`,
     )
-    .all(cutoffIso) as Array<{
-    draft_ts: string;
-    group_folder: string;
-    chat_jid: string;
-    thread_ts: string | null;
+    .all(actionId) as Array<{
+    sequence: number;
+    stage: EmailActionState;
+    occurred_at: string;
+    code: string | null;
+    gmail_message_id: string | null;
     gmail_thread_id: string | null;
-    recipient: string | null;
-    lead_ref: string | null;
-    approved_at: string;
-    handoff_observed_at: string | null;
-    handoff_message_id: string | null;
-    mailman_started_at: string | null;
-    handoff_alerted_at: string | null;
   }>;
-  return rows.map((r) => ({
-    draftTs: r.draft_ts,
-    groupFolder: r.group_folder,
-    chatJid: r.chat_jid,
-    threadTs: r.thread_ts ?? undefined,
-    gmailThreadId: r.gmail_thread_id ?? undefined,
-    recipient: r.recipient ?? undefined,
-    leadRef: r.lead_ref ?? undefined,
-    approvedAt: r.approved_at,
-    handoffObservedAt: r.handoff_observed_at ?? undefined,
-    handoffMessageId: r.handoff_message_id ?? undefined,
-    mailmanStartedAt: r.mailman_started_at ?? undefined,
-    handoffAlertedAt: r.handoff_alerted_at ?? undefined,
+  return rows.map((row) => ({
+    sequence: row.sequence,
+    stage: row.stage,
+    occurredAt: row.occurred_at,
+    code: row.code ?? undefined,
+    gmailMessageId: row.gmail_message_id ?? undefined,
+    gmailThreadId: row.gmail_thread_id ?? undefined,
   }));
+}
+
+/** Host-approved reply binding used to reissue a mailman thread after restart. */
+export function getPendingSendByGmailThread(gmailThreadId: string):
+  | {
+      actionId?: string;
+      recipient?: string;
+      approvedContentSha256?: string;
+    }
+  | undefined {
+  const row = db
+    .prepare(
+      `SELECT action_id, recipient, approved_content_sha256 FROM pending_sends
+        WHERE gmail_thread_id = ?
+          AND recipient IS NOT NULL
+          AND TRIM(recipient) <> ''
+          AND state NOT IN ('confirmed', 'blocked', 'uncertain')
+        ORDER BY approved_at, rowid
+        LIMIT 1`,
+    )
+    .get(gmailThreadId) as
+    | {
+        action_id: string | null;
+        recipient: string | null;
+        approved_content_sha256: string | null;
+      }
+    | undefined;
+  return row
+    ? {
+        ...(row.action_id ? { actionId: row.action_id } : {}),
+        ...(row.recipient ? { recipient: row.recipient } : {}),
+        ...(row.approved_content_sha256
+          ? { approvedContentSha256: row.approved_content_sha256 }
+          : {}),
+      }
+    : undefined;
+}
+
+export function listOverdueSends(cutoffIso: string): EmailSendActionRow[] {
+  const rows = db
+    .prepare(
+      `SELECT ${EMAIL_ACTION_SELECT} FROM pending_sends
+       WHERE approved_at <= ?
+         AND state NOT IN ('confirmed', 'blocked', 'uncertain')
+         AND alerted_at IS NULL
+       ORDER BY approved_at`,
+    )
+    .all(cutoffIso) as EmailSendDbRow[];
+  return rows.map(mapEmailSendAction);
 }
 
 /** Routed handoffs that have not reached a Mailman container by the cutoff. */
@@ -1198,6 +1671,7 @@ export function listStalledMailmanHandoffs(cutoffIso: string): Array<{
           AND handoff_observed_at <= ?
           AND mailman_started_at IS NULL
           AND handoff_alerted_at IS NULL
+          AND state NOT IN ('confirmed', 'blocked', 'uncertain')
         ORDER BY handoff_observed_at`,
     )
     .all(cutoffIso) as Array<{
@@ -1234,9 +1708,41 @@ export function markMailmanHandoffAlerted(
   ).run(alertedAt, draftTs);
 }
 
-/** One alert per approval — drop the row so a stuck send cannot spam. */
+/**
+ * Mark one alert per approval while preserving the action for audit/recovery.
+ * An in-flight Gmail attempt is permanently uncertain: the host cannot know
+ * whether a crash happened just before or just after Gmail accepted it, so an
+ * alert must never make that action executable again.
+ */
 export function markPendingSendAlerted(draftTs: string): void {
-  db.prepare('DELETE FROM pending_sends WHERE draft_ts = ?').run(draftTs);
+  const occurredAt = new Date().toISOString();
+  const transition = db.transaction(() => {
+    const row = db
+      .prepare('SELECT action_id, state FROM pending_sends WHERE draft_ts = ?')
+      .get(draftTs) as
+      | { action_id: string | null; state: EmailActionState }
+      | undefined;
+    if (!row) return;
+    const nextState: EmailActionState =
+      row.state === 'executing' ? 'uncertain' : 'attention_required';
+    const code =
+      nextState === 'uncertain'
+        ? 'gmail_receipt_reconciliation_required'
+        : 'send_not_confirmed';
+    const result = db
+      .prepare(
+        `UPDATE pending_sends
+            SET state = ?, alerted_at = ?, last_error_code = ?, last_event_at = ?
+          WHERE draft_ts = ?
+            AND alerted_at IS NULL
+            AND state NOT IN ('confirmed', 'blocked', 'uncertain')`,
+      )
+      .run(nextState, occurredAt, code, occurredAt, draftTs);
+    if (result.changes > 0 && row.action_id) {
+      appendEmailSendEvent(row.action_id, nextState, occurredAt, { code });
+    }
+  });
+  transition();
 }
 
 // --- Session accessors ---
