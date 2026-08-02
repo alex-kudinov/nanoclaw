@@ -13,7 +13,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-08-02T21:30Z
 - Owner/client: Codex + Claude validator
 - State: ready_for_review
-- Commit/PR: pending on `codex/nc-20260802-009-email-assurance` from `177de7b`
+- Commit/PR: `d1bfccef1c5b6e49837ea668bdbfae207c0aec10` on
+  `codex/nc-20260802-009-email-assurance`; migration-order correction pending
 - Change class: C5 — customer-email execution, durable host state, agent tool
   contract, release gate, and production canary
 - Affected systems: approved-send parsing/watchdog; SQLite `pending_sends` and
@@ -79,9 +80,34 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   email-critical passed 10 files / 294 tests; agent-runner build and 3 files /
   22 tests passed; documentation continuity passed with 38 active/ready rows
   and 35 changelog entries; source formatting and `git diff --check` passed.
-- Deployment/external state: none. No email, Slack message, production database
-  write, OAuth change, release activation, or customer-facing action has
-  occurred in this task.
+- First activation attempt at 2026-08-02T23:08Z: archive SHA-256
+  `e7cbdd65e10d91f52c9bd158f1925854aab5c6a93b176d929313f43bfbc9ce6a`
+  verified locally and on production; bundled verification and activation
+  dry-run passed; the aggregate pre-action `pending_sends` count was zero. The
+  target then failed startup with `no such column: action_id` because the
+  initial schema block created `idx_pending_sends_action` before the legacy
+  column-migration loop. The activator restored exact release `aa1c821` and a
+  healthy Node 22.23.2 listener with Slack/Gmail connected and no queued work.
+  The five live group instructions were restored byte-for-byte from their
+  pre-switch backup. No canary, customer email, OAuth change, or business-row
+  mutation occurred; the database remained on its pre-NC-009 structure.
+- Migration-order correction: the action index is created only after the
+  additive column loop. A focused regression reconstructs the structure-only
+  live pre-NC-009 table and indexes, runs the real initializer, and proves a new
+  action plus its append-only approval event can be written. This correction
+  requires same-session Claude review and a new commit/release before retry.
+- Claude R3 exact-session Opus 5 review returned `APPROVE`. It executed the real
+  committed and corrected `createSchema()` bodies against the exact production
+  DDL: the committed body reproduced `no such column: action_id`, while the
+  correction converged fresh, legacy, repeated, and partially migrated states.
+  The fixture matched production column order and all three old indexes, failed
+  against committed code, and passed against corrected code. Action-ID
+  uniqueness and legacy-row non-executability remain intact. Its broader
+  schema-convergence follow-ups are recorded as NC-20260802-011.
+- Post-R3 exact Node 22.23.2 gates: typecheck and root build pass;
+  email-critical passes 10 files / 295 tests; full serial regression passes
+  145 files / 1,846 tests; agent-runner build and 3 files / 22 tests pass;
+  continuity, source formatting, and diff integrity pass.
 - Rollback/recovery: revert the reviewed commit and activate the prior exact
   release. The additive SQLite action/event columns and table may remain
   dormant; never delete uncertain or confirmed receipt rows during rollback.

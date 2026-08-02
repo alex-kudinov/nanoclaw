@@ -120,8 +120,6 @@ function createSchema(database: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_pending_sends_group
       ON pending_sends (group_folder, approved_at);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_sends_action
-      ON pending_sends (action_id) WHERE action_id IS NOT NULL;
     CREATE TABLE IF NOT EXISTS email_send_events (
       sequence INTEGER PRIMARY KEY AUTOINCREMENT,
       action_id TEXT NOT NULL,
@@ -425,6 +423,34 @@ export function initDatabase(): void {
 /** @internal - for tests only. Creates a fresh in-memory database. */
 export function _initTestDatabase(): void {
   db = new Database(':memory:');
+  createSchema(db);
+}
+
+/** @internal - reproduces the production pending_sends schema before NC-009. */
+export function _initLegacyPendingSendsTestDatabase(): void {
+  db = new Database(':memory:');
+  db.exec(`
+    CREATE TABLE pending_sends (
+      draft_ts TEXT PRIMARY KEY,
+      group_folder TEXT NOT NULL,
+      chat_jid TEXT NOT NULL,
+      thread_ts TEXT,
+      recipient TEXT,
+      lead_ref TEXT,
+      approved_at TEXT NOT NULL
+    );
+    ALTER TABLE pending_sends ADD COLUMN gmail_thread_id TEXT;
+    ALTER TABLE pending_sends ADD COLUMN handoff_observed_at TEXT;
+    ALTER TABLE pending_sends ADD COLUMN handoff_message_id TEXT;
+    ALTER TABLE pending_sends ADD COLUMN mailman_started_at TEXT;
+    ALTER TABLE pending_sends ADD COLUMN handoff_alerted_at TEXT;
+    CREATE INDEX idx_pending_sends_group
+      ON pending_sends (group_folder, approved_at);
+    CREATE INDEX idx_pending_sends_gmail_thread
+      ON pending_sends (gmail_thread_id, approved_at);
+    CREATE INDEX idx_pending_sends_handoff
+      ON pending_sends (handoff_observed_at, mailman_started_at, handoff_alerted_at);
+  `);
   createSchema(db);
 }
 

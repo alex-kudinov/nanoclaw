@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import {
   _initTestDatabase,
+  _initLegacyPendingSendsTestDatabase,
   insertTrackingPixel,
   recordEmailOpen,
   createTask,
@@ -55,6 +56,30 @@ beforeEach(() => {
 describe('pending send approvals', () => {
   const actionId = '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd';
   const approvedHash = hashApprovedEmailContent('Subject', 'Approved body');
+
+  it('migrates the exact pre-NC-009 pending_sends schema before indexing action columns', () => {
+    _initLegacyPendingSendsTestDatabase();
+
+    recordPendingSend({
+      actionId,
+      draftTs: 'post-migration-action',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject',
+      approvedContentSha256: approvedHash,
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+
+    expect(getPendingSendByActionId(actionId)).toMatchObject({
+      actionId,
+      state: 'approved',
+      approvedContentSha256: approvedHash,
+    });
+    expect(listEmailSendEvents(actionId).map((event) => event.stage)).toEqual([
+      'approved',
+    ]);
+  });
 
   it('persists one exact action and an append-only Gmail receipt lifecycle', () => {
     recordPendingSend({

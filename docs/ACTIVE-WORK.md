@@ -11,8 +11,9 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                           | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260802-011` | Make every additive SQLite migration mechanically convergent against its predecessor schema before release                                     | Unassigned                         | pending                                                 | `planned`             | C3    | CI audit for initial indexes over later-migrated columns; predecessor-schema startup fixtures beyond pending_sends; split ALTER/backfill recovery; test-only DB initializer guard                                                                                                                                                                                           | Build a schema-migration contract test that executes each predecessor fixture through repeated and partially completed initialization; then repair pre-existing ALTER-plus-backfill try blocks without changing live data semantics                                                                                                                                     | 2026-08-02T23:28Z |
 | `NC-20260802-010` | Make typed approval resolution card-specific, visibly fail-closed, and consistent across every approval-driven email path                      | Unassigned                         | pending                                                 | `planned`             | C5    | card-filtered typed approval resolution and visible no-op; explicit listener scope; proposal-email action-ledger convergence; subject/boundary parsing hardening; canary header hygiene; blocked test-routing recovery wording                                                                                                                                              | After NC-009 activation, choose whether typed approval remains global or becomes email-card-specific; implement and adversarially test the recorded N1-N5 follow-ups before broadening any approval surface                                                                                                                                                              | 2026-08-02T22:59Z |
-| `NC-20260802-009` | Every approved customer email is one durable, exact, Gmail-receipted action that cannot silently disappear or automatically duplicate          | Codex + Claude validator           | `codex/nc-20260802-009-email-assurance` @ `177de7b`     | `ready_for_review`    | C5    | host-issued email action ID; immutable approved content hash; append-only send stages; one-time execution claim; guard/uncertain result in approval thread; tracked Mailman procedure; release-blocking email suite; controlled internal canary                                                                                                                             | Run final exact-Node and continuity gates, commit the reviewed delta, verify the production pre-action queue is empty, build and activate the exact release, then run the one authorized internal transport canary; leave customer-path outcome validation to the next natural approved send                                                                            | 2026-08-02T22:59Z |
+| `NC-20260802-009` | Every approved customer email is one durable, exact, Gmail-receipted action that cannot silently disappear or automatically duplicate          | Codex + Claude validator           | `codex/nc-20260802-009-email-assurance` @ `d1bfcce`     | `ready_for_review`    | C5    | host-issued email action ID; immutable approved content hash; append-only send stages; one-time execution claim; guard/uncertain result in approval thread; tracked Mailman procedure; release-blocking email suite; controlled internal canary                                                                                                                             | Commit the Claude-approved migration correction, build and verify a new exact release, then repeat the zero-row preflight, dry-run, prompt switch, atomic activation and health checks once; if healthy, run the still-unused single internal transport canary                                                                                                           | 2026-08-02T23:29Z |
 | `NC-20260802-008` | Close remaining low-risk Sales routing observability, lookup, and retry debt without changing the one-root operator contract                    | Codex + Claude validator           | `codex/nc-20260802-003-company-os-sequence` @ `aa1c821` | `deployed_unverified` | C3    | rejection matrix; process-lifetime health diagnostics; bounded connected-send retry; per-resolved-lead routing serialization; six-hour scheduled revision window; active work-unit provenance; fail-closed cross-channel thread stripping; remainder-only chunk retry                                                                                                      | Observe the next natural inbound handoff/draft/operator-revision cycle and scheduled work card; confirm each work item has one channel root and all later activity remains in-thread                                                                                                                                                                                    | 2026-08-02T20:40Z |
 | `NC-20260802-007` | Close remaining release-activation diagnostics and real-plist integration coverage before broadening the activation surface                     | Codex + Claude validator           | `codex/nc-20260802-003-company-os-sequence` @ `aa1c821` | `complete`            | C5    | atomic `shlock` claim with explicit operator stale-lock recovery; owner-safe cleanup; dry-run tool probes; pruned/same-directory diagnostics; healthy rollback proof; real `plutil` XML round-trip                                                                                                                                                                         | None                                                                                                                                                                                                                                                                                                                                                                    | 2026-08-02T20:40Z |
 | `NC-20260802-006` | Every new Sales work item is the only channel-root post for its cycle; drafts, revisions, approvals, and later handoffs stay inside that thread | Codex + Claude validator           | `codex/nc-20260802-003-company-os-sequence` @ `aa1c821` | `deployed_unverified` | C3    | host work-unit thread provenance, Slack lead-anchor lifecycle and broadcast policy; concurrent same-lead roots; reconnect/partial retry; Sales/Inbox instructions; exact prompt deployed with reviewed runtime                                                                                                                                                             | Observe one natural handoff → draft → operator feedback → revision cycle entirely inside one root; idle health verifies deployment, not the business outcome                                                                                                                                                                                                            | 2026-08-02T20:40Z |
@@ -56,6 +57,25 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260802-011
+
+- Source: NC-009's first activation exposed a fresh-database-only blind spot,
+  and Claude Opus 5 R3 found the corrected `pending_sends` fixture is exact but
+  intentionally narrow.
+- F1: add a release-blocking static or executable audit that no index/constraint
+  in the initial schema block references a column added only by a later
+  migration. R3's mechanical audit found zero current violations after the
+  NC-009 fix.
+- F2: separate older `ALTER TABLE` and backfill recovery. Several pre-existing
+  migrations wrap both in one `try`; if the ALTER succeeds and the backfill
+  fails, later startups skip the backfill because the repeated ALTER throws.
+- F3: keep test database initializers unreachable in production, or move schema
+  fixture support out of the shipped runtime module. The new helper has the
+  same pre-existing exposure class as `_initTestDatabase` and no production
+  caller.
+- Boundary: prevention and cleanup only. No production schema or data change is
+  authorized by this planned row.
 
 ### NC-20260802-010
 
@@ -147,6 +167,30 @@ outside the current client conversation.
   ID backfill, old-schema aggregate precondition, canary isolation, and release
   gate parity. Its N1-N5 residuals are registered as NC-20260802-010; none can
   send a wrong or duplicate email, and none blocks the authorized activation.
+- First activation attempt: commit `d1bfccef1c5b6e49837ea668bdbfae207c0aec10`
+  passed its archive/runtime verifier and dry-run, and the aggregate production
+  `pending_sends` count was zero. At 2026-08-02T23:08Z target startup failed on
+  `no such column: action_id`: the initial schema block tried to create the new
+  action index before the later legacy-table `ALTER TABLE` loop added that
+  column. Fresh databases used in tests already had the column, so they did not
+  exercise this order. The activator restored exact release `aa1c821`; one
+  healthy listener, Slack/Gmail connectivity, and an empty queue were verified.
+  No canary or customer email ran. The exact pre-activation group prompts were
+  restored from their release-specific backup.
+- Fix in validation: defer `idx_pending_sends_action` creation until after all
+  NC-009 columns are added. A new database test reconstructs the structure-only
+  production pre-NC-009 table and its three indexes before calling the real
+  schema initializer, then proves action/event writes work after migration.
+- Claude R3: exact-session Opus 5 review
+  `docs/reports/NC-20260802-009-CLAUDE-C5-REVIEW-R3.md` returned `APPROVE`.
+  It executed both the committed and corrected real `createSchema()` bodies
+  against the exact live DDL, proved the new fixture catches the committed
+  failure, verified fresh/legacy/partial/idempotent convergence and action-ID
+  uniqueness, and found zero other initial-index/later-column violations. Its
+  non-blocking migration-maintenance findings are registered as NC-20260802-011.
+- Post-R3 validation on exact Node 22.23.2: typecheck/build, email-critical 10
+  files / 295 tests, full serial regression 145 files / 1,846 tests, runner
+  build and 3 files / 22 tests, continuity, formatting, and diff integrity pass.
 
 ### NC-20260802-008
 
