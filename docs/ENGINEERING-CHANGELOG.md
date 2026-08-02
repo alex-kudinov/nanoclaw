@@ -12,9 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-02T21:30Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_review
-- Commit/PR: `d1bfccef1c5b6e49837ea668bdbfae207c0aec10` on
-  `codex/nc-20260802-009-email-assurance`; migration-order correction pending
+- State: deployed_unverified
+- Commit/PR: `d1bfccef1c5b6e49837ea668bdbfae207c0aec10` plus correction
+  `e1fa93e09f6dedf363c9a8c0be1723583563f533` on
+  `codex/nc-20260802-009-email-assurance`
 - Change class: C5 — customer-email execution, durable host state, agent tool
   contract, release gate, and production canary
 - Affected systems: approved-send parsing/watchdog; SQLite `pending_sends` and
@@ -108,12 +109,41 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   email-critical passes 10 files / 295 tests; full serial regression passes
   145 files / 1,846 tests; agent-runner build and 3 files / 22 tests pass;
   continuity, source formatting, and diff integrity pass.
+- Corrected release/deployment: commit `e1fa93e` produced a 520-file bundle
+  with source-tree digest `7ade520429963e29e5d050da0b105bf7d2497b2b`,
+  artifact digest `de470dd842a6443bb21fa95e3f827afb240324c3f50e35385ceb3cd21337c24a`,
+  and archive SHA-256
+  `e99cca9e13f8b35d9070ecfc444a79a66807db7a6814b06d1cfb66b6c69500b0`.
+  Local unpack, production transfer, bundled verification, zero-row
+  precondition, prompt hashes, and exact-three-field dry-run passed. Activation
+  changed `aa1c821` to `e1fa93e`; health, launchd, and `lsof` converged on sole
+  NanoClaw PID 68877 under Node 22.23.2 with verified release/code-root
+  identity, Slack/Gmail connected, an empty queue, zero containers, and the
+  additive action/event schema present with zero rows.
+- Live transport evidence: the single owner-authorized, fixed-content internal
+  canary returned and re-read Gmail message/thread receipt
+  `19fc4d33ccf3061e`; its monitored recipient is recorded only as SHA-256
+  `a25b480c540d47711e9892cf5319e34bd91e430b7fe85cce306c30b90580df31`.
+  It used the activated release binary/manifest, wrote no Slack, customer,
+  action-ledger, or business state, changed no OAuth configuration, and was not
+  retried. The isolated temporary environment bridge was removed. A direct
+  release-root invocation cannot currently see the operational `.env`; that
+  runbook/code ergonomics defect is a non-blocking NC-010 follow-up.
+- Claude R4 deployment-record review returned `APPROVE WITH FOLLOW-UPS` and
+  authorized the documentation commit. It found no contradiction, overclaim,
+  missing rollback evidence, secret/customer-address leak, or continuity
+  blocker. D1/D2 are recorded in NC-010 N6: remove or repair the unpinned npm
+  canary invocation and provide a tracked non-sending credential/release
+  preflight. The informational shared-environment-layer wording was clarified
+  in the runbook.
 - Rollback/recovery: revert the reviewed commit and activate the prior exact
   release. The additive SQLite action/event columns and table may remain
   dormant; never delete uncertain or confirmed receipt rows during rollback.
 - Residual boundary: this slice binds email delivery identity and execution,
   but does not close named-operator, nonce, expiry, or displayed-card approval
-  authorization for every Company-OS action class.
+  authorization for every Company-OS action class. The full customer path
+  remains `deployed_unverified` until the next natural approved send proves
+  Action-ID continuity, threaded status, event/receipt persistence, and replay.
 
 ### NC-20260802-008 — Sales routing retries and work-cycle identity are bounded
 

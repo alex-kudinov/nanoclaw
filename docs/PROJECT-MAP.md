@@ -669,20 +669,34 @@ artifact.
 The separate `email:transport-canary` command sends fixed text to the monitored
 mailbox itself and retrieves the exact Gmail receipt without writing business
 or customer-action state. It is a transport/OAuth canary only, never evidence
-that the full approved-customer path or inbox delivery succeeded.
+that the full approved-customer path or inbox delivery succeeded. The one
+authorized production canary for NC-009 returned and re-read Gmail
+message/thread receipt `19fc4d33ccf3061e`; its recipient is recorded only by
+SHA-256. Immutable releases intentionally omit `.env`, so the current direct
+release-root invocation cannot discover the operational Gmail credentials.
+The successful canary used an isolated temporary working directory containing
+only a link to the existing operational environment and a copy of the exact
+activated manifest, executed the activated binary, and then removed the
+harness. A first-class environment-file binding is tracked under NC-010.
 
 As of 2026-08-02, the main production host runs exact release
-`aa1c82187b7fbf10050a4863bdbe8d07e87af82c` under Node 22.23.2. Health proves
+`e1fa93e09f6dedf363c9a8c0be1723583563f533` under Node 22.23.2. Health proves
 the release commit and code root match; Slack and Gmail are connected; the
-queue is empty; and the live Sales prompt is byte-identical to the reviewed
-release copy. The atomic activator changed only the executable, code root, and
-expected commit from prior release `23ffb07`, preserving that directory and a
-captured plist as rollback. The operational source checkout remains dirty and
-was not overwritten. The separately deployed healer controls remain as
-recorded under `bc8a71b`: model-authored actions and implementation are off,
-while fixed capped daemon recovery is on. A natural Sales handoff/draft/
-revision cycle and a real daemon-down healer recovery remain separate outcome
-observations.
+queue and container scheduler are empty; and the five affected live group
+instructions match the reviewed release copies. The corrected bundle contains
+520 verified files with source-tree digest
+`7ade520429963e29e5d050da0b105bf7d2497b2b` and artifact digest
+`de470dd842a6443bb21fa95e3f827afb240324c3f50e35385ceb3cd21337c24a`.
+Its atomic activation changed only the executable, code root, and expected
+commit from prior release `aa1c821`. An earlier activation of `d1bfcce` failed
+on the exact legacy SQLite schema and automatically restored `aa1c821`, its
+prompt files, and health before the migration-order correction was reviewed.
+The operational source checkout remains dirty and was not overwritten. The
+separately deployed healer controls remain as recorded under `bc8a71b`:
+model-authored actions and implementation are off, while fixed capped daemon
+recovery is on. A natural approved customer-email action, a Sales handoff/
+draft/revision cycle, and a real daemon-down healer recovery remain separate
+outcome observations.
 
 ## 12. Integrations
 

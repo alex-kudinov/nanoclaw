@@ -196,11 +196,26 @@ not a reason to represent the whole behavioral configuration as immutable.
 ### Internal Gmail transport canary
 
 After activation and health convergence, one explicitly authorized internal
-transport canary may be run from the activated release root:
+transport canary may be run only after a non-sending preflight proves that the
+working directory resolves both the activated `dist/release-manifest.json` and
+the existing operational Gmail environment. Immutable releases omit `.env`,
+and the current command reads the project-local `.env` overlay and manifest
+relative to its working directory (in addition to the home-relative shared
+environment base layer), so the production release root alone does not satisfy
+that precondition.
+
+Until the command gains an explicit, read-only environment-file input, create a
+private temporary working directory, link its `.env` to the existing
+operational `.env`, copy the activated manifest to its `dist/`, and execute the
+absolute activated `dist/email-transport-canary.js` from there. Verify only
+credential presence before the send, never print values, never copy secrets
+into the release, and remove the exact temporary files after the attempt. Do
+not retry if Gmail accepted the send but later receipt retrieval is uncertain.
+The effective command inside that prepared working directory is:
 
 ```bash
 NANOCLAW_EMAIL_CANARY_CONFIRM=NC-009-INTERNAL-TRANSPORT-CANARY \
-  npm run email:transport-canary
+  /absolute/pinned/node /absolute/activated/release/dist/email-transport-canary.js
 ```
 
 The command has no recipient argument. It sends fixed host-authored text only
