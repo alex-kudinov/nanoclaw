@@ -522,6 +522,27 @@ Security-sensitive rules:
 - ensure retries are idempotent or carry a stable idempotency key;
 - keep approval state durable across process/container restarts.
 
+### Sales channel work-item containment (`NC-20260802-006`)
+
+Each inbound `*→sales` handoff is one top-level channel work item. Scheduled
+`[FOLLOW-UP]` and `[COLD]` cards also start visible work items so an approval or
+control surface cannot disappear inside an old collapsed thread. The Slack host
+starts a fresh root and repoints the current lead anchor for each item, even
+when the same lead has an older thread. Sales review cards, revisions, operator
+questions/approvals, outbound handoffs, and status messages resolve to that root
+without `reply_broadcast`; lead replies never roll into a new channel root merely
+because the generic anchor TTL elapsed. A still-open older root remains eligible
+only when the host persisted it for the same channel and lead, preventing both
+same-lead cycle theft and model timestamp authority. Messages queued during a
+Slack disconnect are sent back through the same router after reconnect; a
+partial multi-chunk retry stays under its established root. Group prompts
+document the same rule. The runner stamps output with its container identity;
+the host resolves that identity against the active queue work unit and defaults
+Sales output to its originating thread when `thread_ts` is omitted. The Slack
+adapter independently validates explicit historical roots, deduplicates a
+re-posted scheduled cycle against the stored current root, and enforces the
+no-broadcast policy. Cross-group handoffs never inherit the source thread.
+
 ### Grader file delivery checkpoint (`NC-20260802-001`)
 
 The generic channel message IPC is not a file authority. Grader uploads use a
@@ -754,8 +775,11 @@ to explore the repository.
 
 Production build, activation, health proof, and rollback are governed by
 `docs/RELEASE-INTEGRITY.md`. The daemon refuses a missing/mismatched manifest or
-runtime before opening external systems, and `/health` exposes the verified
-commit/artifact/Node identity.
+runtime or a code root outside that verified release before opening external
+systems. `/health` exposes the verified commit/artifact/Node identity, resolved
+code root, and code-root match. Activation is dry-run by default and derives an
+exact-three-field candidate from the installed plist so machine-local service
+configuration is preserved.
 
 ### Authentication
 

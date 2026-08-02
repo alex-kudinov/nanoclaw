@@ -81,6 +81,10 @@ export interface IpcDeps {
   // Container liveness wiring — optional so existing callers don't need to change
   acknowledgePipedMessage?: (groupFolder: string, messageId: string) => void;
   setLastOutputAt?: (groupFolder: string) => void;
+  resolveSourceThread?: (
+    groupFolder: string,
+    containerName: string,
+  ) => { chatJid: string; threadTs?: string } | undefined;
   // Host-generated Procurement card transport — optional so non-Slack tests and
   // configurations remain read-only.
   postProcurementReviewCard?: (
@@ -338,6 +342,21 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     continue;
                   }
                 }
+                // A Sales work unit is keyed by the Slack thread that woke its
+                // container. Default replies to that host-owned context when
+                // the model omits thread_ts. The directory-derived group and
+                // queue-registered container must both match, and cross-group
+                // handoffs never inherit the source channel's thread.
+                const sourceContext = deps.resolveSourceThread?.(
+                  sourceGroup,
+                  String(data.source_container ?? ''),
+                );
+                const outboundThreadTsFor = (outboundJid: string) =>
+                  data.thread_ts ||
+                  (sourceGroup === 'sales' &&
+                  sourceContext?.chatJid === outboundJid
+                    ? sourceContext?.threadTs
+                    : undefined);
                 // [CANCEL: source→mailman] intercepts a held mailman handoff
                 // from the same source within the hold window. Drop the held
                 // file without forwarding; the cancel marker itself still
@@ -398,7 +417,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   if (sourceEntry) {
                     await deps.sendMessage(sourceEntry[0], data.text, {
                       fromGroup: sourceGroup,
-                      threadTs: data.thread_ts,
+                      threadTs: outboundThreadTsFor(sourceEntry[0]),
                       threadKey: data.thread_key,
                     });
                     logger.warn(
@@ -424,7 +443,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       let storedHandoffId: string | undefined;
                       await deps.sendMessage(handoffEntry[0], data.text, {
                         fromGroup: sourceGroup,
-                        threadTs: data.thread_ts,
+                        threadTs: outboundThreadTsFor(handoffEntry[0]),
                         threadKey: data.thread_key,
                       });
                       // Model-authored handoffs may carry Gmail identifiers, but
@@ -559,7 +578,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   if (targetGroup) {
                     await deps.sendMessage(targetJid, data.text, {
                       fromGroup: sourceGroup,
-                      threadTs: data.thread_ts,
+                      threadTs: outboundThreadTsFor(targetJid),
                       threadKey: data.thread_key,
                     });
                     logger.info(

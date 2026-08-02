@@ -100,28 +100,69 @@ mechanism.
 
 1. Inspect the current service, health response, listener count, pending work,
    installed Node runtime, and production checkout without changing them.
-2. Back up the installed service definition and record the currently active
-   release identity.
-3. Transfer the exact reviewed archive and compare its SHA-256 with the
-   separately recorded value.
-4. Extract it to a new immutable directory such as
+2. Transfer the exact reviewed archive, compare its SHA-256 through an
+   independent channel, and extract it to a new immutable directory such as
    `~/.local/share/nanoclaw-releases/<full-commit>`. Never extract over the
    active release.
-5. Run the bundled verifier under Node `22.23.2`.
-6. Point the service at `<release>/dist/index.js` and set:
-   - `NODE_ENV=production`
-   - `NANOCLAW_REQUIRE_RELEASE_MANIFEST=1`
-   - `NANOCLAW_EXPECTED_RELEASE_COMMIT=<full-commit>`
-   - `NANOCLAW_CODE_ROOT=<release>`
-7. Keep `WorkingDirectory` on the operational checkout so databases, sessions,
-   logs, and other machine-local state retain their established paths.
-8. Reload/restart the service once.
-9. Verify one process, one listener, the intended full release commit in
-   `/health`, connected required channels, no startup-integrity error, and the
-   task-specific side effect.
+3. Run the bundled verifier under the installed pinned Node.
+4. Run the bundled activation command in its default dry-run mode:
 
-`NANOCLAW_CODE_ROOT` makes container skills and agent-runner source come from
-the verified release. Group workspaces remain under the operational checkout
+   ```bash
+   node <release>/scripts/activate-release.mjs \
+     --release-dir <absolute-release-directory>
+   ```
+
+5. Review the reported current/target full commits, roots, and exactly three
+   changed paths. Apply once only with an exact host confirmation:
+
+   ```bash
+   node <release>/scripts/activate-release.mjs \
+     --release-dir <absolute-release-directory> \
+     --apply --confirm-host <exact-hostname>
+   ```
+
+The activator parses the installed plist rather than rendering a tracked
+template. It preserves machine-local Node, working directory, environment,
+limits, logs, and launchd policy, changing only `ProgramArguments[1]`,
+`NANOCLAW_CODE_ROOT`, and `NANOCLAW_EXPECTED_RELEASE_COMMIT`. Before mutation it
+verifies the current rollback release and health, target manifest and bundle,
+the actual interpreter version, and the candidate plist. It then captures an
+exclusive rollback plist, atomically replaces the installed plist, performs one
+bounded unload/load cycle, and requires `/health` to prove the target full
+commit, resolved code root, and `codeRootMatchesRelease=true`. Failure after
+replacement restores the rollback plist, performs one bounded rollback load,
+and health-checks the restored release without masking the original activation
+error. A fixed exclusive lock prevents overlapping activators. The lock records
+the activator PID: a still-live or unreadable lock fails closed, while a lock
+whose recorded PID no longer exists is removed and exclusively re-acquired once.
+The activator also proves that the host listener probe is executable before any
+installed-service mutation; recovery never treats a missing or denied probe as
+an empty port.
+
+If the installed service is already stopped or cannot answer health, the normal
+path fails closed. After verifying that this is the intended incident recovery,
+use the separately explicit mode:
+
+```bash
+node <release>/scripts/activate-release.mjs \
+  --release-dir <absolute-release-directory> \
+  --apply --recover-from-down --confirm-host <exact-hostname>
+```
+
+This skips only the current-health and current-PID requirements. It still
+verifies both bundles, the actual interpreter, candidate plist, exact hostname,
+listener release, target health identity, and rollback behavior. The target is
+never rebuilt or retried.
+
+`--apply` is an external state change and still requires explicit deployment
+authorization. The command does not replace the channel, listener, prompt-hash,
+or task-specific live checks after activation.
+
+Production startup refuses a `NANOCLAW_CODE_ROOT` outside the verified release.
+`/health.release` reports the resolved `codeRoot` and
+`codeRootMatchesRelease`. `NANOCLAW_CODE_ROOT` makes container skills and
+agent-runner source come from the verified release. Group workspaces remain
+under the operational checkout
 because agents write conversation archives and task artifacts there. Therefore
 group prompt files are included and transport-verified in the archive, but the
 current host does not yet cryptographically bind the writable live group

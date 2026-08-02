@@ -95,7 +95,8 @@ export interface SendMessageOpts {
   threadTs?: string;
   // Entity anchor (Slack only). All posts to a channel sharing the same
   // threadKey collapse into one thread: the first post becomes the root, later
-  // posts reply under it. An explicit threadTs always wins over threadKey.
+  // posts reply under it. An explicit threadTs normally wins; the Slack host
+  // may override it with a validated lead-work anchor.
   threadKey?: string;
 }
 

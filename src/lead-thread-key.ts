@@ -37,6 +37,27 @@ const LEAD_BEARING = [
   /\[SALES REVIEW\]/,
 ];
 
+const INBOUND_SALES_HANDOFF_RE =
+  /^\s*\[HANDOFF:\s*[a-z0-9_-]+\s*(?:→|->)\s*sales\]/i;
+
+const SCHEDULED_SALES_WORK_RE = /^\s*\[(?:FOLLOW-UP[^\]]*|COLD)\]/i;
+
+/** A newly received Sales work item that must become a fresh channel root. */
+export function isInboundSalesHandoff(text: string): boolean {
+  return INBOUND_SALES_HANDOFF_RE.test(text);
+}
+
+/** A host-scheduled Sales card that starts its own visible work-item cycle. */
+export function isScheduledSalesWorkItem(text: string): boolean {
+  return SCHEDULED_SALES_WORK_RE.test(text);
+}
+
+/** Stable cycle marker used to recognize a re-post of one scheduled card. */
+export function scheduledSalesWorkMarker(text: string): string | undefined {
+  const match = SCHEDULED_SALES_WORK_RE.exec(text);
+  return match?.[0].trim().replace(/\s+/g, ' ').toUpperCase();
+}
+
 /** Labelled address fields, in the order minions emit them. */
 const ADDRESS_FIELD_RE =
   /^\s*(?:Lead Email|Email|To|From)\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/gim;

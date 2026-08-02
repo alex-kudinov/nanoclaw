@@ -99,6 +99,8 @@ function makeDeps(overrides?: Partial<WebhookServerDeps>): WebhookServerDeps {
         builtAt: '2026-07-31T00:00:00.000Z',
         nodePin: '22.23.2',
         nodeVersion: '22.23.2',
+        codeRoot: '/opt/nanoclaw/releases/test',
+        codeRootMatchesRelease: true,
       },
       channels: {},
       activeContainers: 0,

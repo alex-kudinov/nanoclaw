@@ -8,6 +8,99 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260802-006 — Sales channel roots are inbound work items, not draft broadcasts
+
+- Date: 2026-08-02T18:22Z
+- Owner/client: Codex + Claude validator
+- State: ready_for_review
+- Commit/PR: uncommitted on
+  `codex/nc-20260802-003-company-os-sequence` based on `0f20224`
+- Change class: C3 — Slack routing and Sales operator workflow
+- Affected systems: lead-key derivation, Slack anchor lifecycle/broadcast policy,
+  Sales and Inbox prompts, project map, focused routing tests
+- Trigger: the operator confirmed Sales still scattered drafts arbitrarily
+  between channel and thread. The host explicitly set `reply_broadcast=true` on
+  lead-anchor replies and applied the generic anchor TTL, so even correctly
+  anchored drafts appeared in the channel timeline and old threads could roll
+  into new top-level posts.
+- Implementation: every inbound `*→sales` handoff and every scheduled
+  `[FOLLOW-UP]`/`[COLD]` control card now starts a fresh top-level work-item root
+  and repoints the lead anchor. All subsequent lead cards,
+  revisions, status, approvals, and handoffs resolve quietly inside that root;
+  they never broadcast and never roll merely because the generic TTL elapsed.
+  A host-recorded older root remains valid after the same lead gets a newer work
+  item, so concurrent cycles do not steal each other's drafts. The runner now
+  labels output with its container identity and the host defaults omitted Sales
+  `thread_ts` values from that exact queue-registered work unit; older cycles no
+  longer depend on the model to originate their root. A repeated scheduled card
+  with the same stored marker/lead is treated as a revision, not a second root.
+  Quoted handoff
+  markers cannot start work; partial long-message retries reuse the root already
+  established by chunk one. Reconnect delivery re-enters the same router.
+- Verification: the post-R3 focused release/Sales/IPC/queue suite passes (7
+  files / 178 tests); Node 22.23.2 typecheck passes.
+  Combined full Node 22.23.2 suite passes serially (143 files / 1,810 tests), including
+  the isolated-worktree Chaos reconciler fixture after its logger mock was made
+  independent of a local `.env` file. Typecheck passes; remaining gates are
+  Claude implementation review and reconciliation. Source formatting,
+  documentation continuity, and diff checks passed before R2. Claude Opus 5 R2
+  approved NC-003 with follow-ups and found two NC-006 blockers; the scheduled
+  work-item and host-recorded historical-root changes above reconcile both.
+  Claude Opus 5 R3 then approved with follow-ups and no commit/deploy blockers.
+  The exact-session R4 delta review also approved with follow-ups and no commit
+  or deploy blockers, independently reproducing 7 files / 178 focused tests.
+  Its bounded scheduled-cycle, active-state, and non-lead inheritance findings
+  are recorded under planned task NC-008 rather than hidden in review prose.
+- Deployment/state boundary: no Slack message, database row, installed prompt,
+  service, or production process was changed. Live behavior requires a separate
+  reviewed deployment and one real handoff/draft/revision observation.
+
+### NC-20260802-003 — Release activation is one validated, rollback-safe identity switch
+
+- Date: 2026-08-02T18:15Z
+- Owner/client: Codex + Claude validator
+- State: ready_for_review
+- Commit/PR: uncommitted on
+  `codex/nc-20260802-003-company-os-sequence` based on deployment-record commit
+  `0f20224`
+- Change class: C5 — production release activation and runtime provenance
+- Affected systems: release integrity/health, release bundle inventory,
+  installed launchd activation procedure, release/security/project-map docs
+- Trigger: the `23ffb07` deployment exposed a two-field coordination gap: code
+  root and expected commit were updated separately, while the tracked plist also
+  differed from machine-local Node and runtime settings.
+- Implementation: production startup reports and enforces the resolved code
+  root against the verified release. The new dry-run-by-default activator parses
+  the installed plist, permits exactly three identity changes, verifies current
+  rollback and target bundles plus the actual interpreter and candidate plist,
+  captures an exclusive rollback file, performs one bounded switch, requires
+  commit/root proof from health, and restores once on failure. Apply is guarded
+  by a fixed exclusive lock; rollback health is verified without masking the
+  original failure. An explicit `--recover-from-down` path repairs a stopped or
+  unhealthy current daemon without weakening bundle, interpreter, hostname, or
+  target-health checks. A dead-PID lock is reclaimed once, listener probing is
+  proven before mutation, and lock cleanup cannot mask activation evidence. The
+  release bundle includes the activation command.
+- Validation so far: Node 22.23.2 typecheck passes; focused release integrity,
+  activation planning, and activation executor tests pass (3 files / 21 tests);
+  combined full suite passes serially (143 files / 1,810 tests) with normal local-server
+  permissions; independent
+  agent-runner build/tests pass (3 files / 22 tests); production build and CLI
+  help load successfully. The first sandboxed webhook attempt was invalid only
+  because socket binding was denied and is not counted as a product failure.
+  Continuity, source formatting, and diff checks passed before R2. Claude Opus 5
+  R2 approved this slice with follow-ups; its activation-lock, rollback-report,
+  stopped-daemon recovery, and path-normalization findings are now reconciled
+  and path-normalization findings were reconciled. Claude Opus 5 R3 approved
+  with no blockers. The exact-session R4 delta review also approved with
+  follow-ups and no commit or deploy blockers, independently proving the
+  focused 7-file / 178-test delta and the host `lsof` command shape. Its
+  double-reclaimer stale-lock race and dry-run probe-placement findings are
+  recorded under planned task NC-007; the race must close before the first
+  production `--apply`.
+- Deployment/state boundary: no installed plist, launchd unit, release
+  directory, production process, channel, or external record was changed.
+
 ### NC-20260802-002 — Container timeout is an absolute lifetime, including after adoption
 
 - Date: 2026-08-02T17:03Z

@@ -34,6 +34,28 @@ describe('GroupQueue', () => {
     vi.useRealTimers();
   });
 
+  it('resolves thread context only from the registered source container', () => {
+    queue.registerProcess(
+      'slack:SALES||1785230544.590929',
+      {} as never,
+      'nanoclaw-sales-thread-1',
+      'sales',
+    );
+
+    expect(
+      queue.resolveContainerContext('sales', 'nanoclaw-sales-thread-1'),
+    ).toEqual({
+      chatJid: 'slack:SALES',
+      threadTs: '1785230544.590929',
+    });
+    expect(
+      queue.resolveContainerContext('sales', 'nanoclaw-sales-other'),
+    ).toBeUndefined();
+    expect(
+      queue.resolveContainerContext('chief', 'nanoclaw-sales-thread-1'),
+    ).toBeUndefined();
+  });
+
   // --- Single group at a time ---
 
   it('only runs one container per group at a time', async () => {

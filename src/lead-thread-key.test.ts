@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { deriveLeadEntryRef, deriveLeadThreadKey } from './lead-thread-key.js';
+import {
+  deriveLeadEntryRef,
+  deriveLeadThreadKey,
+  isInboundSalesHandoff,
+  isScheduledSalesWorkItem,
+  scheduledSalesWorkMarker,
+} from './lead-thread-key.js';
 
 const HANDOFF = `[HANDOFF: inbox→sales]
 Party ID: 10088
@@ -76,6 +82,53 @@ THEIR REQUEST:
 
   it('is stable across repeated calls (no regex lastIndex leak)', () => {
     expect(deriveLeadThreadKey(CARD)).toBe(deriveLeadThreadKey(CARD));
+  });
+});
+
+describe('isInboundSalesHandoff', () => {
+  it('recognizes Unicode and ASCII inbound Sales handoffs', () => {
+    expect(isInboundSalesHandoff(HANDOFF)).toBe(true);
+    expect(
+      isInboundSalesHandoff('[HANDOFF: mailman->sales]\nEntry ID: 938'),
+    ).toBe(true);
+  });
+
+  it('does not treat a draft or outbound Mailman handoff as a new root', () => {
+    expect(isInboundSalesHandoff(CARD)).toBe(false);
+    expect(
+      isInboundSalesHandoff(
+        '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com',
+      ),
+    ).toBe(false);
+  });
+
+  it('does not treat a quoted inbound marker as a new handoff', () => {
+    expect(
+      isInboundSalesHandoff(
+        '[SALES REVIEW] Lead #938\nOriginal was [HANDOFF: mailman->sales]',
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('isScheduledSalesWorkItem', () => {
+  it('recognizes leading follow-up and cold cards', () => {
+    expect(isScheduledSalesWorkItem('[FOLLOW-UP #2] Lead #243')).toBe(true);
+    expect(isScheduledSalesWorkItem('  [COLD] Lead #243')).toBe(true);
+  });
+
+  it('ignores embedded scheduled-card text', () => {
+    expect(
+      isScheduledSalesWorkItem('[SALES REVIEW]\nPrior: [FOLLOW-UP #2]'),
+    ).toBe(false);
+  });
+
+  it('normalizes the scheduled cycle marker for revision deduplication', () => {
+    expect(scheduledSalesWorkMarker('  [follow-up   #2] Lead #243')).toBe(
+      '[FOLLOW-UP #2]',
+    );
+    expect(scheduledSalesWorkMarker('[COLD] Lead #243')).toBe('[COLD]');
+    expect(scheduledSalesWorkMarker('[SALES REVIEW]\n[COLD]')).toBeUndefined();
   });
 });
 

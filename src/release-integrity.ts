@@ -26,6 +26,13 @@ export interface ReleaseIdentity {
   builtAt: string | null;
   nodePin: string;
   nodeVersion: string;
+  codeRoot: string;
+  codeRootMatchesRelease: boolean;
+}
+
+function existingAbsolutePath(input: string): string {
+  const absolute = path.resolve(input);
+  return fs.existsSync(absolute) ? fs.realpathSync(absolute) : absolute;
 }
 
 function listFiles(root: string, relative = ''): string[] {
@@ -97,10 +104,14 @@ export function verifyRuntimeRelease(opts?: {
   nodeVersion?: string;
   requireManifest?: boolean;
   expectedCommit?: string;
+  codeRoot?: string;
 }): ReleaseIdentity {
   const distDir = opts?.distDir ?? path.dirname(fileURLToPath(import.meta.url));
   const cwd = opts?.cwd ?? process.cwd();
   const nodeVersion = opts?.nodeVersion ?? process.version;
+  const codeRoot = existingAbsolutePath(
+    opts?.codeRoot ?? process.env.NANOCLAW_CODE_ROOT ?? cwd,
+  );
   const manifestPath = path.join(distDir, RELEASE_MANIFEST_FILE);
   const requireManifest =
     opts?.requireManifest ??
@@ -124,6 +135,8 @@ export function verifyRuntimeRelease(opts?: {
       builtAt: null,
       nodePin,
       nodeVersion: normalizeVersion(nodeVersion),
+      codeRoot,
+      codeRootMatchesRelease: codeRoot === existingAbsolutePath(cwd),
     };
   }
 
@@ -190,6 +203,14 @@ export function verifyRuntimeRelease(opts?: {
     );
   }
 
+  const releaseRoot = existingAbsolutePath(path.dirname(distDir));
+  const codeRootMatchesRelease = codeRoot === releaseRoot;
+  if (requireManifest && !codeRootMatchesRelease) {
+    throw new Error(
+      `NanoClaw code root ${codeRoot} does not match verified release ${releaseRoot}`,
+    );
+  }
+
   return {
     mode: 'release',
     verified: true,
@@ -199,5 +220,7 @@ export function verifyRuntimeRelease(opts?: {
     builtAt: manifest.builtAt,
     nodePin: normalizeVersion(manifest.nodePin),
     nodeVersion: normalizeVersion(nodeVersion),
+    codeRoot,
+    codeRootMatchesRelease,
   };
 }

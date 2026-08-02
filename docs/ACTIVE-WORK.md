@@ -2,7 +2,7 @@
 
 Status: shared current-state register
 Protocol: `docs/CHANGE-PROTOCOL.md`
-Last reviewed: 2026-07-28
+Last reviewed: 2026-08-02
 
 Read this file before editing. Entries describe non-trivial work that may exist
 outside the current client conversation.
@@ -11,6 +11,12 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                    | Owner/client                       | Branch @ base                                 | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260802-008` | Close remaining low-risk Sales routing observability, lookup, and retry debt without changing the one-root operator contract | Codex + Claude validator | not started | `planned` | C3 | negative trust-boundary coverage; resolver downgrade telemetry; non-connection queue retry trigger; anchor-roll race; bounded scheduled-cycle identity; active-state and non-lead inheritance hardening; in-thread chunk dedup | Start only after NC-006 is committed and live-observed; preserve host-owned work-unit thread default and one visible root per cycle | 2026-08-02T19:26Z |
+| `NC-20260802-007` | Close remaining release-activation diagnostics and real-plist integration coverage before broadening the activation surface | Codex + Claude validator | not started | `planned` | C5 | stale-lock takeover race; dry-run listener-probe placement; pruned rollback-root diagnostic; same-directory error; healthy-rollback branch; real `plutil` XML conversion/lint integration check | Start after NC-003 commit and close the stale-lock race before the first production `--apply`; current activator remains fail-closed in ordinary concurrency | 2026-08-02T19:26Z |
+| `NC-20260802-006` | Every new Sales work item is the only channel-root post for its cycle; drafts, revisions, approvals, and later handoffs stay inside that thread | Codex + Claude validator | `codex/nc-20260802-003-company-os-sequence` @ `0f20224` | `ready_for_review` | C3 | host work-unit thread provenance, Slack lead-anchor lifecycle and broadcast policy; concurrent same-lead roots; reconnect/partial retry; Sales/Inbox instructions; no Slack write or production restart in this slice | Commit the Claude-approved implementation, then separately deploy and verify one real handoff/draft/revision cycle | 2026-08-02T19:26Z |
+| `NC-20260802-005` | One deterministic grading coordinator drains Modules 1-5 with five-way concurrency and opens Module 6 only from live verified prerequisites | Codex + Claude validator | `codex/nc-20260802-003-company-os-sequence` @ `0f20224` | `blocked` | C3 | host-side grading plan/transition engine; bounded Slack-root polling projection; global Phase 1 gate; per-student Module 6 prerequisite gate; no autonomous Heartbeat write, certificate issue, or learner communication | Resolve NC-004 submission identity first; exact course titles are now observed, but the planner must not create a second identity or infer completion from Slack | 2026-08-02T18:15Z |
+| `NC-20260802-004` | Every Heartbeat submission has one durable host record keyed by the actual Heartbeat submission ID | Codex + Claude validator | `codex/nc-20260802-003-company-os-sequence` @ `0f20224` | `blocked` | C3 | additive SQLite submission index and transition history; Slack root/file, grader verdict, Heartbeat writeback, latest observed source state; no submission body, feedback, attachment URL, or student message persistence | Owner decision: authorize bounded read-only discovery of Heartbeat's backing record ID, accept a collision-detecting derived key, or keep the index dark; visible UI exposes no submission ID | 2026-08-02T18:15Z |
+| `NC-20260802-003` | Preserve the deployed lineage and make release activation update the code root and expected commit as one validated operation | Codex + Claude validator | `codex/nc-20260802-003-company-os-sequence` @ `0f20224` | `ready_for_review` | C5 | continuation from documented release `23ffb07`/record commit `0f20224`; exact-three-field candidate; stale-safe exclusive activation lock; listener-probe preflight; normal/recovery switch and health-verified rollback; runtime code-root proof; no production activation in this slice | Commit the Claude-approved implementation without activating production; close NC-007 stale-lock takeover race before the first production `--apply` | 2026-08-02T19:26Z |
 | `NC-20260802-002` | A healthy heartbeat cannot keep a stale Sales or other agent container alive beyond its configured runtime                 | Codex                              | `codex/nc-20260802-001-release` @ `3368831`   | `deployed_unverified` | C3    | absolute container lifetime for normal and daemon-adopted runs; focused regression; exact follow-up release; the specifically identified stale Sales container exited before the follow-up restart                                                                                                                                                                         | Observe one naturally long-running container stop at its configured wall-clock cap; code/release identity and idle production health are verified, but a second intentionally stale live container was not created                                                                                                                                                      | 2026-08-02T17:29Z |
 | `NC-20260802-001` | Give MrGru a host-owned, idempotent grader file-upload path so Heartbeat grading no longer depends on visual Slack upload  | Codex                              | `codex/nc-20260802-001-release` @ `0a39380`   | `complete`            | C5    | grader-only container MCP and per-group staged attachments; host path/hash/source enforcement and durable receipts; Slack root plus threaded file upload and grader wake; tracked five-way grader registration/30-second idle defaults; toolbox adapter; pinned-Node regression and production canaries                                                                    | Resume the Module 1-5 queue through the adapter; preserve one root and one ledger row per real submission, and use only explicit terminal grader markers for Heartbeat writeback                                                                                                                                                                                        | 2026-08-02T17:29Z |
 | `NC-20260731-003` | Production runs one real Node 22 build instead of hand patches, and per-lead status lines stop leaking to the channel root | Claude Code                        | `codex/continuity-reconciliation` @ `0a39380` | `deployed_unverified` | C3    | `src/lead-thread-key.ts` (`deriveLeadEntryRef`), `src/lead-email-resolver.ts` (new), `src/channels/slack.ts`, `src/channels/registry.ts`, `src/index.ts`, three test files; Mac Mini `src/` reconciled with the Studio worktree; Node 22.23.2 installed and pinned in launchd; `better-sqlite3` rebuilt; every hand-patched `dist/` file replaced by one compiled artifact | Watch the next per-lead status line ("Lead #N …") land in that lead's thread, and the next unaided approval complete end-to-end. Decide whether to prune the ~118 stale `.test.js` artifacts left in production `dist/`                                                                                                                                                 | 2026-07-31T18:05Z |
@@ -48,6 +54,153 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260802-008
+
+- Dependency: begin only after NC-006 is committed and its one-root behavior is
+  live-observed. Do not weaken the queue-registered work-unit default or permit
+  lead replies to broadcast.
+- Scope: add negative coverage for every historical-root rejection reason;
+  make resolver downgrades observable; define a bounded retry trigger for
+  queued non-connection failures; reconcile simultaneous anchor rolls; give
+  `[COLD]` and restarted follow-up work an explicit generation or recency bound;
+  require active queue state before inheriting a work-unit thread; define the
+  non-lead Sales inheritance boundary; and avoid duplicating a successfully
+  posted first chunk inside its thread.
+- Boundary: no Slack post, database rewrite, or production rollout is implied
+  by this planned row. Each runtime behavior change needs its own reviewed
+  implementation and live-verification boundary.
+
+### NC-20260802-007
+
+- Dependency: NC-003 must be committed first. Preserve the exact-three-field
+  activation plan, exclusive lock, pre-mutation listener probe, bounded
+  rollback, and explicit host confirmation.
+- Scope: improve the diagnostic for a pruned prior release and same-directory
+  targets; make stale-lock takeover owner-safe under two simultaneous
+  reclaimers; surface a broken listener probe during dry-run rehearsal; prove
+  the healthy-rollback reporting branch; and exercise real macOS plist
+  JSON-to-XML conversion/linting outside the mocked unit boundary.
+- Boundary: this is follow-up verification and ergonomics work, not authority
+  to switch the installed plist or restart launchd.
+
+### NC-20260802-006
+
+- Operator contract: each newly received handoff to Sales is a fresh top-level
+  work-item root. The associated draft, revisions, questions, approval status,
+  outbound handoff, and confirmations are thread replies and never broadcast to
+  the channel timeline.
+- Root lifecycle: a new `*→sales` handoff deliberately repoints the canonical
+  lead anchor even when an older lead thread exists. A scheduled `[FOLLOW-UP]`
+  or `[COLD]` card is also a new visible work item so its approval/control
+  surface cannot disappear in a collapsed old thread. Ordinary lead replies
+  never roll solely because an anchor exceeded the generic TTL.
+- Concurrent cycles: an explicit thread is accepted only when the host already
+  persisted that root in the same channel for the same lead. This preserves an
+  older still-open cycle after the current lead anchor advances, while rejecting
+  mistyped or unrelated model-supplied timestamps.
+- Work-unit authority: the runner labels its IPC output with its container
+  identity, and the host defaults Sales replies to the queue-registered Slack
+  thread that woke that exact container. Omitted `thread_ts` therefore cannot
+  redirect an older active cycle to the newest lead anchor. Cross-group sends
+  never inherit the source thread.
+- Scheduled revision dedup: a repeated `[FOLLOW-UP #N]` or `[COLD]` card whose
+  current stored root has the same normalized marker and lead is a thread reply,
+  not another channel root.
+- Retry boundary: reconnects re-enter the canonical router. If a long handoff's
+  first chunk established a root before a later chunk failed, the retry is
+  forced beneath that host-recorded root rather than creating another root.
+- Host boundary: the queue and IPC watcher originate active work-unit context;
+  the Slack adapter validates any explicit historical root and enforces the
+  anchor/broadcast policy. Prompt instructions remain defense in depth.
+- Follow-up disposition: the R3 host-authority, scheduled-card dedup, dead
+  branch, faithful partial-retry fixture, and channel-scoped message lookup
+  findings are closed here. Negative rejection coverage, resolver downgrade
+  telemetry, non-connection retry triggering, anchor-roll races, scheduled-cycle
+  recency/generation, active-state and non-lead inheritance hardening, and
+  in-thread chunk-content dedup remain open under planned task
+  `NC-20260802-008`.
+- State boundary: implementation and local tests are authorized. No Slack post,
+  production database edit, installed service change, or deployment is part of
+  this slice without separate authorization.
+
+### NC-20260802-005
+
+- Dependency: the coordinator may schedule only submissions represented by the
+  NC-004 host index. Slack delivery receipts remain delivery evidence, not the
+  grading workflow record.
+- Phase contract: while any live `Complete (no feedback)` row exists, only
+  Modules 1-5 may be dispatched. At most five unresolved Slack roots may be in
+  flight. All outstanding root timestamps are exposed as one polling batch.
+- Module 6 boundary: eligibility requires all eight canonical prerequisites to
+  have current-run, Heartbeat-sourced `approved` observations and no newer
+  unresolved/retry attempt. The coordinator never trusts the grader's course
+  completion text and never issues a certificate.
+- Side-effect boundary: the coordinator returns explicit next actions and
+  transition preconditions. A signed-in browser operator still performs and
+  verifies Heartbeat writes; missing or contradictory evidence holds the item.
+- Live title observation: the exact assignment titles currently rendered by
+  Heartbeat are recorded in
+  `docs/reports/NC-20260802-004-HEARTBEAT-ID-OBSERVATION.md`. Title drift is no
+  longer an open architecture question; submission identity remains blocking.
+
+### NC-20260802-004
+
+- Authority: `store/messages.db` owns this operational workflow index because it
+  correlates Heartbeat source IDs, Slack delivery, grading, and writeback. Live
+  Heartbeat remains authoritative for submission/result facts.
+- Privacy boundary: persist stable IDs, assignment/status metadata, timestamps,
+  hashes, Slack identifiers, verdict state, and transition evidence only. Do not
+  persist submission bodies, feedback text, attachment URLs, or unrelated
+  student messages.
+- Identity boundary: a real Heartbeat submission ID is mandatory. Composite
+  student/assignment/timestamp keys may help locate a row but cannot become a
+  second submission identity.
+- Concurrency boundary: transitions use the record version and append-only
+  history so reconnects, multiple clients, duplicate posts, and stale
+  writebacks fail closed instead of silently overwriting newer state.
+- 2026-08-02 read-only observation: neither the queue projection nor submission
+  detail dialog exposed a stable submission ID in the visible URL or DOM. The
+  criterion fails at source visibility, before any attempt to prove transition
+  survival or attempt uniqueness. No schema or runtime code was started.
+
+### NC-20260802-003
+
+- Continuity: this isolated branch begins at `0f20224`, the record commit above
+  the deployed `23ffb07` runtime, so NC-001/002 source and deployment evidence
+  are canonical without touching the unrelated dirty shared checkout.
+- Failure exposed by deployment: the installed launchd plist carries both
+  `NANOCLAW_CODE_ROOT` and `NANOCLAW_EXPECTED_RELEASE_COMMIT`; editing or loading
+  them in separate steps can create a deterministic startup refusal.
+- Target: parse the installed plist and change exactly `ProgramArguments[1]`,
+  `NANOCLAW_CODE_ROOT`, and `NANOCLAW_EXPECTED_RELEASE_COMMIT`; validate the
+  current rollback target, target manifest, bundle, interpreter, and candidate
+  plist before mutation; atomically replace the plist; perform one bounded
+  unload/load; prove commit and code root in health; restore once on failure.
+- Boundary: implementation and local tests are authorized. No installed plist,
+  launchd unit, release directory, or production process is changed by this
+  slice without a separate deployment command/authorization.
+- Implementation: `release:activate` is dry-run by default and requires an
+  exact `--confirm-host` match for `--apply`. Production startup now refuses a
+  code root outside the verified release, and health reports the resolved root
+  plus its match state. The transitional rollback check accepts an older healthy
+  release that lacks the new health fields only after its installed root and
+  bundle verify independently.
+- Concurrency/recovery: apply holds one fixed exclusive activation lock.
+  Post-replacement failure restores and health-checks the rollback release while
+  preserving the original activation error. A separately explicit
+  `--recover-from-down` apply path permits repair when the current daemon cannot
+  answer health or has no PID; bundle, interpreter, hostname, target-health, and
+  rollback requirements remain enforced.
+- Recovery hardening: a lock whose recorded PID is no longer alive is reclaimed
+  once with an exclusive re-acquire; a live or unreadable lock still fails
+  closed. `lsof` availability is proved before mutation, including recovery
+  mode, and lock cleanup cannot replace activation/rollback evidence.
+- Follow-up disposition: R2 F8 and R3 A1/A2/A4 are closed here. The pruned prior
+  root diagnostic, same-directory diagnostic, healthy-rollback branch proof,
+  real plist XML integration coverage, stale-lock double-reclaimer race, and
+  dry-run probe placement remain open under planned task `NC-20260802-007`;
+  real XML rendering is intentionally not asserted from the mocked unit suite.
 
 ### NC-20260802-002
 

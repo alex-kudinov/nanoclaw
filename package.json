@@ -21,7 +21,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "release:build": "node scripts/build-release.mjs",
-    "release:verify": "node scripts/verify-release.mjs"
+    "release:verify": "node scripts/verify-release.mjs",
+    "release:activate": "node scripts/activate-release.mjs"
   },
   "dependencies": {
     "@slack/bolt": "^4.6.0",

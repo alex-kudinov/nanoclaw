@@ -24,6 +24,7 @@ vi.mock('../logger.js', () => ({
 
 // Mock db
 vi.mock('../db.js', () => ({
+  getMessageById: vi.fn(() => undefined),
   updateChatName: vi.fn(),
   resolveThreadAnchor: vi.fn(() => undefined),
   recordThreadAnchor: vi.fn(),
@@ -98,6 +99,7 @@ vi.mock('../env.js', () => ({
 
 import { SlackChannel, SlackChannelOpts } from './slack.js';
 import {
+  getMessageById,
   updateChatName,
   resolveThreadAnchor,
   recordThreadAnchor,
@@ -173,6 +175,7 @@ async function triggerMessageEvent(
 describe('SlackChannel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getMessageById).mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -1625,12 +1628,217 @@ Hi Oana, good to hear from you.
         'lead:oana.tue.coach@gmail.com',
       );
       expect(post.mock.calls[0][0].thread_ts).toBe('1785230544.590929');
-      // Broadcast, so the card reaches the channel timeline as well as the
-      // thread. Suppressing it here hid a customer follow-up and its draft
-      // entirely — the operator reported the email as never having arrived
-      // (Oana Tue, 2026-07-28T12:27Z). Deduplication is the card's job, not
-      // the thread's.
-      expect(post.mock.calls[0][0].reply_broadcast).toBe(true);
+      // Only the inbound handoff belongs in the channel timeline. The draft is
+      // a quiet reply inside that work-item thread.
+      expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
+    });
+
+    it('keeps a revision in an older host-recorded work item when the same lead has a newer root', async () => {
+      const oldRoot = '1785230544.590929';
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785239999.000001',
+        lastActivityAt: new Date().toISOString(),
+      });
+      vi.mocked(getMessageById).mockReturnValue({
+        id: oldRoot,
+        chat_jid: JID,
+        sender: 'U_BOT_123',
+        sender_name: 'Jonesy',
+        content: HANDOFF,
+        timestamp: '2026-08-02T12:00:00.000Z',
+        from_group: 'inbox',
+      });
+      const channel = await connected();
+
+      await channel.sendMessage(JID, CARD, {
+        fromGroup: 'sales',
+        threadTs: oldRoot,
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBe(oldRoot);
+      expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
+      expect(rollThreadAnchor).not.toHaveBeenCalled();
+    });
+
+    it('makes a scheduled follow-up card a new visible work-item root', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date(Date.now() - 30 * 86400_000).toISOString(),
+      });
+      const channel = new SlackChannel(
+        createTestOpts({
+          resolveLeadEmail: async () => 'oana.tue.coach@gmail.com',
+        }),
+      );
+      await channel.connect();
+
+      await channel.sendMessage(
+        JID,
+        '[FOLLOW-UP #2] Lead #938\nDRAFT FOLLOW-UP:\nHi Oana',
+        { fromGroup: 'sales' },
+      );
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBeUndefined();
+      expect(rollThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+        '1704067200.000100',
+      );
+    });
+
+    it('keeps a re-posted scheduled card in its existing work-item thread', async () => {
+      const rootTs = '1785230544.590929';
+      const card = '[FOLLOW-UP #2] Lead #938\nDRAFT FOLLOW-UP:\nHi Oana';
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: rootTs,
+        lastActivityAt: new Date().toISOString(),
+      });
+      vi.mocked(getMessageById).mockReturnValue({
+        id: rootTs,
+        chat_jid: JID,
+        sender: 'U_BOT_123',
+        sender_name: 'Jonesy',
+        content: card,
+        timestamp: '2026-08-02T12:00:00.000Z',
+        from_group: 'sales',
+      });
+      const channel = new SlackChannel(
+        createTestOpts({
+          resolveLeadEmail: async () => 'oana.tue.coach@gmail.com',
+        }),
+      );
+      await channel.connect();
+
+      await channel.sendMessage(JID, card, { fromGroup: 'sales' });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBe(rootTs);
+      expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
+      expect(rollThreadAnchor).not.toHaveBeenCalled();
+    });
+
+    it('makes each new inbound Sales handoff a fresh root and repoints the lead anchor', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = await connected();
+
+      await channel.sendMessage(JID, HANDOFF, {
+        fromGroup: 'inbox',
+        threadTs: 'wrong-source-channel-ts',
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBeUndefined();
+      expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
+      expect(rollThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+        '1704067200.000100',
+      );
+    });
+
+    it('does not open a root for a Sales-authored quote of an inbound marker', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = await connected();
+
+      await channel.sendMessage(
+        JID,
+        `${CARD}\nTHEIR ASK: Original was [HANDOFF: mailman->sales]`,
+        { fromGroup: 'sales' },
+      );
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBe('1785230544.590929');
+      expect(rollThreadAnchor).not.toHaveBeenCalled();
+    });
+
+    it('keeps lead revisions in-thread even after the generic anchor TTL', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date(Date.now() - 30 * 86400_000).toISOString(),
+      });
+      const channel = await connected();
+
+      await channel.sendMessage(JID, CARD, { fromGroup: 'sales' });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBe('1785230544.590929');
+      expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
+      expect(rollThreadAnchor).not.toHaveBeenCalled();
+      expect(touchThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+      );
+    });
+
+    it('re-applies Sales containment when a queued draft flushes after reconnect', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = new SlackChannel(createTestOpts());
+
+      await channel.sendMessage(JID, CARD, {
+        fromGroup: 'sales',
+        threadTs: '1785510996.909199',
+      });
+      expect(currentApp().client.chat.postMessage).not.toHaveBeenCalled();
+
+      await channel.connect();
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post).toHaveBeenCalledTimes(1);
+      expect(post.mock.calls[0][0].thread_ts).toBe('1785230544.590929');
+      expect(post.mock.calls[0][0].reply_broadcast).toBeUndefined();
+      expect(touchThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+      );
+    });
+
+    it('retries a partially posted handoff beneath its established root', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = await connected();
+      const post = currentApp().client.chat.postMessage;
+      post
+        .mockResolvedValueOnce({ ts: '1800000000.000001' })
+        .mockRejectedValueOnce(new Error('transient Slack failure'));
+      const longHandoff = `${HANDOFF}\n${'Long original message. '.repeat(260)}`;
+
+      await channel.sendMessage(JID, longHandoff, { fromGroup: 'inbox' });
+      expect(post).toHaveBeenCalledTimes(2);
+      expect(rollThreadAnchor).toHaveBeenCalledTimes(1);
+
+      vi.mocked(getMessageById).mockReturnValue({
+        id: '1800000000.000001',
+        chat_jid: JID,
+        sender: 'U_BOT_123',
+        sender_name: 'Jonesy',
+        content: post.mock.calls[0][0].text,
+        timestamp: '2026-08-02T12:00:00.000Z',
+        from_group: 'inbox',
+      });
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1800000000.000001',
+        lastActivityAt: new Date().toISOString(),
+      });
+      await channel.disconnect();
+      await channel.connect();
+
+      expect(rollThreadAnchor).toHaveBeenCalledTimes(1);
+      for (const [args] of post.mock.calls.slice(2)) {
+        expect(args.thread_ts).toBe('1800000000.000001');
+      }
     });
 
     it('leaves non-lead messages on their author-supplied key', async () => {

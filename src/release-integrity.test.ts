@@ -65,6 +65,8 @@ describe('release integrity', () => {
       commit: manifest.commit,
       artifactHash: manifest.artifactHash,
       nodePin: '22.23.2',
+      codeRoot: fs.realpathSync(root),
+      codeRootMatchesRelease: true,
     });
   });
 
@@ -145,7 +147,27 @@ describe('release integrity', () => {
       mode: 'development',
       verified: false,
       nodePin: '22.23.2',
+      codeRoot: fs.realpathSync(root),
+      codeRootMatchesRelease: true,
     });
+  });
+
+  it('refuses a production code root outside the verified release', () => {
+    const { root, dist } = makeRoot();
+    writeManifest(dist);
+    const staleRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'nanoclaw-stale-code-root-'),
+    );
+    roots.push(staleRoot);
+    expect(() =>
+      verifyRuntimeRelease({
+        cwd: root,
+        distDir: dist,
+        nodeVersion: '22.23.2',
+        requireManifest: true,
+        codeRoot: staleRoot,
+      }),
+    ).toThrow('does not match verified release');
   });
 
   it('requires a manifest in production mode', () => {

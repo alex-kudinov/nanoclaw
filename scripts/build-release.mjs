@@ -101,7 +101,7 @@ try {
     .toString('utf8')
     .split('\0')
     .filter(Boolean);
-  tracked.push('scripts/verify-release.mjs');
+  tracked.push('scripts/verify-release.mjs', 'scripts/activate-release.mjs');
   for (const relative of [...new Set(tracked)].sort()) {
     const source = path.join(root, relative);
     if (!fs.lstatSync(source).isFile()) {

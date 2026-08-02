@@ -21,6 +21,7 @@ const MAX_GRADER_FILE_BYTES = 25 * 1024 * 1024;
 // Context from environment variables (set by the agent runner)
 const chatJid = process.env.NANOCLAW_CHAT_JID!;
 const groupFolder = process.env.NANOCLAW_GROUP_FOLDER!;
+const containerName = process.env.CONTAINER_NAME!;
 const isMain = process.env.NANOCLAW_IS_MAIN === '1';
 
 function writeIpcFile(dir: string, data: object): string {
@@ -80,6 +81,7 @@ server.tool(
       text: args.text,
       sender: args.sender || undefined,
       groupFolder,
+      source_container: containerName || undefined,
       targetGroupFolder: args.target_group || undefined,
       thread_ts: args.thread_ts || undefined,
       thread_key: args.thread_key || undefined,

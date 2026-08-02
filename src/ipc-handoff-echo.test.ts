@@ -102,6 +102,7 @@ function writeHandoffFile(
   text: string,
   threadTs?: string,
   threadKey?: string,
+  sourceContainer?: string,
 ) {
   const dir = path.join(tmpRoot, 'ipc', sourceGroup, 'messages');
   fs.mkdirSync(dir, { recursive: true });
@@ -117,6 +118,7 @@ function writeHandoffFile(
       text,
       thread_ts: threadTs,
       thread_key: threadKey,
+      source_container: sourceContainer,
     }),
   );
   return file;
@@ -378,6 +380,41 @@ describe('IPC handoff routing', () => {
     // ...and NEVER routed to mailman (the silent-stall bug).
     expect(sendMessage.mock.calls.some((c) => c[0] === 'slack:MAILMAN')).toBe(
       false,
+    );
+  });
+
+  it('defaults a Sales reply to its host-registered work-unit thread', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.resolveSourceThread = vi.fn(() => ({
+      chatJid: 'slack:SALES',
+      threadTs: '1785230544.590929',
+    }));
+    const card =
+      '[SALES REVIEW] Lead #882\nEmail: lead@example.com\n' +
+      'ACTION ON APPROVAL: [HANDOFF: sales→mailman]';
+    writeHandoffFile(
+      'sales',
+      card,
+      undefined,
+      undefined,
+      'nanoclaw-sales-thread-1',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(deps.resolveSourceThread).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-thread-1',
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      card,
+      expect.objectContaining({
+        fromGroup: 'sales',
+        threadTs: '1785230544.590929',
+      }),
     );
   });
 

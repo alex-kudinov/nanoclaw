@@ -332,6 +332,35 @@ export class GroupQueue {
   }
 
   /**
+   * Resolve host-owned conversation context for an IPC message emitted by an
+   * active container. The container name is useful only when it still matches
+   * the queue state registered for the directory-derived source group.
+   */
+  resolveContainerContext(
+    groupFolder: string,
+    containerName: string,
+  ): { chatJid: string; threadTs?: string } | undefined {
+    if (!containerName) return undefined;
+    for (const [groupJid, state] of this.groups) {
+      if (
+        state.containerName !== containerName ||
+        state.groupFolder !== groupFolder ||
+        state.isTaskContainer
+      ) {
+        continue;
+      }
+      const [chatJid, rawThreadTs] = groupJid.split('||');
+      return {
+        chatJid,
+        ...(rawThreadTs && rawThreadTs !== 'root'
+          ? { threadTs: rawThreadTs }
+          : {}),
+      };
+    }
+    return undefined;
+  }
+
+  /**
    * Mark the container as idle-waiting (finished work, waiting for IPC input).
    * If tasks are pending, preempt the idle container immediately. Otherwise it
    * stays warm — session hot, follow-ups skip the cold start — until its idle

@@ -2240,6 +2240,8 @@ async function main(): Promise<void> {
       queue.acknowledgePipedMessage(groupFolder, messageId),
     setLastOutputAt: (groupFolder) =>
       queue.setLastOutputAtByFolder(groupFolder),
+    resolveSourceThread: (groupFolder, containerName) =>
+      queue.resolveContainerContext(groupFolder, containerName),
     postProcurementReviewCard: async (text, threadKey) => {
       const slack = channels.find(
         (c): c is SlackChannel => c instanceof SlackChannel,

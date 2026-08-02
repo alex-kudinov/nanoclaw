@@ -11,7 +11,9 @@ verification
 Production startup is fail-closed on a provenance manifest before it initializes
 any external system. The host verifies the complete compiled file set, exact
 Node `22.23.2` runtime, build/runtime version agreement, and the operator-pinned
-full commit. The verified non-secret identity is returned by `/health`.
+full commit. Production also requires the resolved container code root to match
+that verified release. The verified non-secret identity, resolved code root,
+and match state are returned by `/health`.
 
 This is integrity and provenance, not publisher authenticity: the release
 archive checksum must be recorded and compared through an independent
@@ -20,6 +22,17 @@ verified release through `NANOCLAW_CODE_ROOT`. Writable group workspaces remain
 an explicitly documented residual until instructions and operational output are
 separated; reviewed prompt files must be compared during deployment. See
 `docs/RELEASE-INTEGRITY.md`.
+
+Release activation treats the installed launchd plist as machine-local state.
+The host-owned activator changes exactly the executable target, code root, and
+expected commit; any fourth diff fails before mutation. It verifies both the
+rollback and candidate releases, requires an exact hostname confirmation for
+apply, performs one bounded switch, and restores the captured plist once on
+failure. Apply uses an exclusive lock, and rollback is health-checked without
+masking the triggering error. Incident recovery from a stopped/unhealthy daemon
+requires a separate explicit flag but retains bundle, interpreter, hostname,
+listener, target-health, and rollback checks. A tracked plist is never used to
+overwrite unrelated installed settings during activation.
 
 ## Trust model
 

@@ -30,7 +30,13 @@ import {
   updateChatName,
 } from '../db.js';
 import { readEnvFile } from '../env.js';
-import { deriveLeadEntryRef, deriveLeadThreadKey } from '../lead-thread-key.js';
+import {
+  deriveLeadEntryRef,
+  deriveLeadThreadKey,
+  isInboundSalesHandoff,
+  isScheduledSalesWorkItem,
+  scheduledSalesWorkMarker,
+} from '../lead-thread-key.js';
 import { logger } from '../logger.js';
 import { splitForSlack } from '../message-split.js';
 import {
@@ -706,6 +712,47 @@ export class SlackChannel implements Channel {
     }
   }
 
+  /**
+   * Accept an explicit Sales thread only when it names a root this host already
+   * persisted for the same channel and lead. This keeps concurrent work items
+   * for one lead independent without trusting a model-retyped Slack timestamp.
+   */
+  private async isRecordedSalesWorkRoot(
+    jid: string,
+    threadTs: string | undefined,
+    leadKey: string | undefined,
+  ): Promise<boolean> {
+    if (!threadTs || !leadKey) return false;
+    const root = getMessageById(threadTs, jid);
+    if (
+      !root ||
+      root.id !== threadTs ||
+      root.chat_jid !== jid ||
+      root.thread_ts
+    ) {
+      return false;
+    }
+    const startsWork =
+      (root.from_group !== 'sales' && isInboundSalesHandoff(root.content)) ||
+      isScheduledSalesWorkItem(root.content);
+    return startsWork && (await this.deriveLeadKey(root.content)) === leadKey;
+  }
+
+  /** True when text re-posts the scheduled cycle already at the lead anchor. */
+  private async isScheduledSalesRevision(
+    jid: string,
+    rootTs: string | undefined,
+    text: string,
+    leadKey: string | undefined,
+  ): Promise<boolean> {
+    const marker = scheduledSalesWorkMarker(text);
+    if (!rootTs || !marker || !leadKey) return false;
+    const root = getMessageById(rootTs, jid);
+    if (!root || root.thread_ts) return false;
+    if (scheduledSalesWorkMarker(root.content) !== marker) return false;
+    return (await this.deriveLeadKey(root.content)) === leadKey;
+  }
+
   async sendMessage(
     jid: string,
     text: string,
@@ -731,6 +778,28 @@ export class SlackChannel implements Channel {
     // disconnected send costs no lookup — the flush re-derives it anyway.
     const leadKey = await this.deriveLeadKey(text);
     const threadKey = leadKey ?? opts?.threadKey;
+    const requestedSalesRoot = await this.isRecordedSalesWorkRoot(
+      jid,
+      threadTs,
+      leadKey,
+    );
+    const existing =
+      threadKey && (leadKey !== undefined || threadTs === undefined)
+        ? resolveThreadAnchor(channelId, threadKey)
+        : undefined;
+    const hasWorkItemMarker =
+      (fromGroup !== 'sales' && isInboundSalesHandoff(text)) ||
+      isScheduledSalesWorkItem(text);
+    // A retry or revision may repeat the root marker. A validated host-recorded
+    // thread keeps it in that work item instead of opening a duplicate root.
+    const scheduledRevision = await this.isScheduledSalesRevision(
+      jid,
+      existing?.threadTs,
+      text,
+      leadKey,
+    );
+    const startsSalesWork =
+      hasWorkItemMarker && !requestedSalesRoot && !scheduledRevision;
 
     // A host-derived lead anchor OUTRANKS an agent-supplied threadTs. The agent
     // reads timestamps out of the `ts` attributes in its prompt and retypes
@@ -749,18 +818,37 @@ export class SlackChannel implements Channel {
     // same work-unit into one thread. Resolved at send time so a queued-then-
     // flushed post still threads correctly. Three outcomes for a threadKey:
     //   - no anchor yet      → this post becomes the root (recordThreadAnchor)
-    //   - anchor, still fresh → reply under it + broadcast (touchThreadAnchor)
+    //   - anchor, still fresh → reply under it (touchThreadAnchor)
     //   - anchor, gone stale  → don't resurrect; fresh root at the channel
     //                           bottom, repoint the anchor (rollThreadAnchor)
-    let effectiveThreadTs = hostDerivedAnchor ? undefined : threadTs;
+    let effectiveThreadTs = requestedSalesRoot
+      ? threadTs
+      : hostDerivedAnchor || startsSalesWork
+        ? undefined
+        : threadTs;
     let keyToAnchor: string | undefined; // brand-new key → INSERT (race-safe)
     let keyToRoll: string | undefined; // dormant key → repoint to fresh root
     let keyToTouch: string | undefined; // active key → bump last activity
-    let anchoredReply = false;
+    let anchoredReply = requestedSalesRoot;
+    if (requestedSalesRoot && existing?.threadTs === threadTs) {
+      keyToTouch = threadKey;
+    }
     if (threadKey && !effectiveThreadTs) {
-      const existing = resolveThreadAnchor(channelId, threadKey);
-      if (!existing) {
+      if (startsSalesWork) {
+        // Every newly received Sales handoff is the channel-level work item.
+        // It must become a fresh root even when the same lead has an older
+        // thread; later drafts and revisions use the repointed lead anchor.
+        if (existing) keyToRoll = threadKey;
+        else keyToAnchor = threadKey;
+      } else if (!existing) {
         keyToAnchor = threadKey;
+      } else if (hostDerivedAnchor) {
+        // Lead work does not expire into a surprise channel post. Only a new
+        // handoff or scheduled work item rolls the root; later activity stays
+        // contained.
+        effectiveThreadTs = existing.threadTs;
+        anchoredReply = true;
+        keyToTouch = threadKey;
       } else {
         const idleMs = Date.now() - Date.parse(existing.lastActivityAt);
         if (Number.isNaN(idleMs) || idleMs > SLACK_THREAD_TTL_MS) {
@@ -787,26 +875,12 @@ export class SlackChannel implements Channel {
         channel: channelId,
       };
       if (effectiveThreadTs) baseOpts.thread_ts = effectiveThreadTs;
-      // A reply under a still-active anchor threads under it, but a quiet
-      // threaded reply can scroll off in a busy channel. Broadcast it so it also
-      // lands at the channel bottom AND stays grouped in the thread. New/rolled
-      // roots already post top-level; conversational threadTs replies (a human is
-      // actively watching that thread) are left quiet. (Stale anchors don't reach
-      // here — they roll over to a fresh top-level root above.)
-      //
-      // Lead threads broadcast too, and MUST. Exempting them (2026-07-28,
-      // reasoning that a broadcast card is duplication) re-created the exact
-      // bug the broadcast was added to fix on 2026-06-29: a reply under an
-      // existing anchor goes into a collapsed thread that never surfaces in the
-      // channel timeline, so new activity is invisible. Within four hours a
-      // customer's follow-up, its draft reply, and the agent's two open
-      // questions all landed silently in a thread and the operator reported the
-      // email as never having arrived (Oana Tue, Entry 938, 12:27–12:32Z).
-      //
-      // The operator's actual complaint was DUPLICATED CONTENT — three roots per
-      // lead, the inbound quoted twice, plus a pointless recap. That is fixed by
-      // the trimmed card and the suppressed root recap, not by hiding posts.
-      if (anchoredReply) baseOpts.reply_broadcast = true;
+      // Generic entity updates broadcast so a quiet thread can resurface. Sales
+      // lead replies are deliberately exempt: the received work item is the
+      // only channel-root/timeline item, while drafts, revisions, approvals,
+      // and outbound handoffs stay inside it. A later work item creates the
+      // next root.
+      if (anchoredReply && !hostDerivedAnchor) baseOpts.reply_broadcast = true;
 
       // Slack limits messages to ~4000 characters; split if needed
       if (displayText.length <= MAX_MESSAGE_LENGTH) {
@@ -874,7 +948,17 @@ export class SlackChannel implements Channel {
         'Slack message sent',
       );
     } catch (err) {
-      this.outgoingQueue.push({ jid, text, opts });
+      this.outgoingQueue.push({
+        jid,
+        text,
+        // A successful first chunk of a new work item has already established
+        // and persisted its root. Retry the whole logical message beneath that
+        // root so a later-chunk failure cannot create a second channel root.
+        opts:
+          startsSalesWork && effectiveThreadTs
+            ? { ...opts, threadTs: effectiveThreadTs }
+            : opts,
+      });
       logger.warn(
         { jid, err, queueSize: this.outgoingQueue.length },
         'Failed to send Slack message, queued',
@@ -1383,34 +1467,19 @@ export class SlackChannel implements Channel {
     if (this.flushing || this.outgoingQueue.length === 0) return;
     this.flushing = true;
     try {
-      logger.info(
-        { count: this.outgoingQueue.length },
-        'Flushing Slack outgoing queue',
-      );
-      while (this.outgoingQueue.length > 0) {
-        const item = this.outgoingQueue.shift()!;
-        const channelId = item.jid.replace(/^slack:/, '');
-        const postOpts: { channel: string; text: string; thread_ts?: string } =
-          {
-            channel: channelId,
-            text: item.text,
-          };
-        if (item.opts?.threadTs) postOpts.thread_ts = item.opts.threadTs;
-
-        const result = await this.app.client.chat.postMessage(postOpts);
-        if (result.ts) {
-          this.storeOutbound(
-            item.jid,
-            result.ts,
-            item.text,
-            item.opts?.fromGroup,
-            item.opts?.threadTs,
-          );
-        }
-        logger.info(
-          { jid: item.jid, length: item.text.length },
-          'Queued Slack message sent',
-        );
+      // Re-enter the normal send path instead of posting directly. The normal
+      // path derives host-owned lead anchors, suppresses Sales broadcasts, and
+      // applies the work-item root lifecycle. The old shortcut bypassed all of
+      // that, so any Sales draft queued during a Socket Mode interruption could
+      // emerge as an arbitrary channel-root post after reconnect.
+      //
+      // Drain only the snapshot present at the start. sendMessage deliberately
+      // requeues a failed delivery; a bounded snapshot prevents a persistent
+      // Slack failure from spinning forever inside connect().
+      const batch = this.outgoingQueue.splice(0);
+      logger.info({ count: batch.length }, 'Flushing Slack outgoing queue');
+      for (const item of batch) {
+        await this.sendMessage(item.jid, item.text, item.opts);
       }
     } finally {
       this.flushing = false;

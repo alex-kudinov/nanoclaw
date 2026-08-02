@@ -645,13 +645,19 @@ export function getMessagesSince(
  * Look up a message by its ID (e.g. Gmail message ID).
  * Used by classify-ipc-handlers to retrieve body/sender for routing.
  */
-export function getMessageById(messageId: string): NewMessage | undefined {
+export function getMessageById(
+  messageId: string,
+  chatJid?: string,
+): NewMessage | undefined {
+  const channelClause = chatJid ? ' AND chat_jid = ?' : '';
   return db
     .prepare(
       `SELECT id, chat_jid, sender, sender_name, content, timestamp, is_from_me, from_group, thread_ts
-       FROM messages WHERE id = ?`,
+       FROM messages WHERE id = ?${channelClause}`,
     )
-    .get(messageId) as NewMessage | undefined;
+    .get(...(chatJid ? [messageId, chatJid] : [messageId])) as
+    | NewMessage
+    | undefined;
 }
 
 export function getLatestInboundByThread(
