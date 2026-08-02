@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-02T17:03Z
 - Owner/client: Codex
-- State: validating
-- Commit/PR: follow-up on `codex/nc-20260802-001-release`; exact release commit
-  will be recorded at deployment
+- State: deployed_unverified
+- Commit/PR: `23ffb07d47512ae9c889a87328ff71dc38b443f8` on
+  `codex/nc-20260802-001-release`
 - Change class: C3 — production container lifecycle and queue capacity
 - Affected systems: `src/container-runner.ts`, `src/index.ts`, focused timeout
   tests, production NanoClaw release
@@ -30,12 +30,25 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   heartbeats/output, reject already-expired sidecars, and schedule adopted runs
   to stop at the remaining original deadline. Heartbeats continue to prove
   liveness for freeze/spawn checks; they no longer grant runtime extensions.
+- Verification: 37 focused container-runner/group-queue tests pass, including
+  a heartbeat immediately before the deadline and adopted remaining-lifetime
+  arithmetic; typecheck, targeted formatting, diff check, release verification,
+  and the 30-row continuity check pass.
+- Deployment: exact archive SHA-256
+  `627f981166f05860b4869de2df0a989cd65ba3723486ad87114de088cfc91487`
+  was independently verified locally and on the Mac Mini, then activated at
+  `/Users/xbohdpukc/.local/share/nanoclaw-releases/23ffb07d47512ae9c889a87328ff71dc38b443f8`.
+  Fresh health reports release verified, Node 22.23.2, Slack/Gmail connected,
+  one launchd-owned listener, and zero active/waiting containers. The named
+  stale Sales container had exited before this restart, so the next natural
+  wall-clock expiry remains the live outcome check; no synthetic stale work was
+  created.
 
 ### NC-20260802-001 — MrGru grader file delivery is host-owned and idempotent
 
 - Date: 2026-08-02T16:28Z
 - Owner/client: Codex
-- State: ready_for_deploy
+- State: complete
 - Commit/PR: isolated release branch `codex/nc-20260802-001-release` based on
   `0a39380`; exact release commit recorded by the deployment evidence
 - Change class: C5 — new container-to-host file capability and external Slack
@@ -76,8 +89,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   release candidate changes only `channels/slack.js`, `index.js`, `ipc.js`, and
   the new `grader-file-message.js` relative to the running host modules; the
   remaining removed JavaScript files are stale test or dormant-channel build
-  artifacts. Deployment, daemon restart, OAuth mutation, and live Slack canary
-  have not occurred at this release boundary.
+  artifacts.
+- Deployment/canary: the first exact production release was commit `3368831`;
+  it was superseded by timeout-fix release `23ffb07` without changing the grader
+  delivery contract. Release-mode health verifies the exact commit/artifact and
+  Node 22.23.2 with Slack/Gmail connected. Sanitized file delivery produced
+  Slack root `1785690984.409549`, file `F0BM10JEXN3`, a durable complete receipt,
+  and exactly one grader wake. The grader safely flagged the synthetic identity
+  instead of emitting a learner verdict. Replaying the same adapter request
+  after the final release returned the same root/file with `duplicate: true` and
+  no repost. MrGru already had `files:read` and `files:write`; no OAuth mutation
+  occurred.
+- Deployment lessons: production launchd requires legacy `unload`/`load`; the
+  release root resolves pinned dependencies from the shared parent
+  `nanoclaw-releases/node_modules`; and both `NANOCLAW_CODE_ROOT` and
+  `NANOCLAW_EXPECTED_RELEASE_COMMIT` must be changed together. The rollback plist
+  is `com.nanoclaw.plist.pre-23ffb07`.
 
 ### NC-20260731-003 — One real Node 22 release replaces the production hand patches, and per-lead status lines anchor by entry id
 
