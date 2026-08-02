@@ -60,7 +60,11 @@ export interface HealthPayload {
   release: ReleaseIdentity;
   channels: Record<
     string,
-    { connected: boolean; lastActivitySec: number | null }
+    {
+      connected: boolean;
+      lastActivitySec: number | null;
+      diagnostics?: Record<string, string | number | boolean | null>;
+    }
   >;
   activeContainers: number;
   lastMessageAt: string | null;

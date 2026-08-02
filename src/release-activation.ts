@@ -171,11 +171,17 @@ export function planActivation(
   manifest: ReleaseManifest,
 ): ActivationPlan {
   const installed = assertInstalledPlist(installedValue);
+  const current = targetFromPlist(installed);
+  if (path.resolve(releaseDir) === current.releaseDir) {
+    throw new Error(
+      `target release directory is already active: ${current.releaseDir}`,
+    );
+  }
   const candidate = renderCandidate(installed, releaseDir, manifest.commit);
   return {
     installed: clone(installed),
     candidate,
-    current: targetFromPlist(installed),
+    current,
     target: targetFromPlist(candidate),
     changedPaths: diffCandidate(installed, candidate),
   };

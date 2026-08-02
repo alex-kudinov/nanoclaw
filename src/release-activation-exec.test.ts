@@ -9,6 +9,8 @@ const state = vi.hoisted(() => ({
   health: [] as unknown[],
   printResults: [] as string[],
   failLsof: false,
+  failShlock: false,
+  healthFallback: undefined as unknown,
 }));
 
 vi.mock('child_process', () => ({
@@ -25,6 +27,16 @@ vi.mock('child_process', () => ({
       throw Object.assign(new Error('lsof unavailable'), {
         stderr: 'permission denied',
       });
+    }
+    if (file === '/usr/bin/shlock') {
+      const lockPath = args[1];
+      const requestedPid = args[3];
+      if (state.failShlock) throw new Error('shlock failed');
+      // Match the macOS binary: its link(2) claim is atomic, but it refuses
+      // every extant lock, including one whose recorded PID is dead.
+      if (fs.existsSync(lockPath)) throw new Error('lock held');
+      fs.writeFileSync(lockPath, `${requestedPid}\n`, { mode: 0o600 });
+      return '';
     }
     return '';
   },
@@ -104,12 +116,14 @@ beforeEach(() => {
   state.health = [];
   state.printResults = [];
   state.failLsof = false;
+  state.failShlock = false;
+  state.healthFallback = undefined;
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => ({
       ok: true,
       status: 200,
-      json: async () => state.health.shift(),
+      json: async () => state.health.shift() ?? state.healthFallback,
     })),
   );
 });
@@ -139,6 +153,10 @@ describe('release activation executor', () => {
     expect(state.calls.some((call) => call.file === '/bin/launchctl')).toBe(
       false,
     );
+    expect(state.calls).toContainEqual({
+      file: '/usr/sbin/lsof',
+      args: ['-v'],
+    });
   });
 
   it('performs exactly one legacy unload/load and proves target health', async () => {
@@ -190,13 +208,13 @@ describe('release activation executor', () => {
     expect(result.healthVerified).toBe(true);
   });
 
-  it('refuses a second activator while the fixed lock is held', async () => {
+  it('refuses a second activator while a live foreign PID holds the lock', async () => {
     const fixture = makeFixture();
     state.health = [health(oldCommit)];
     state.printResults = ['pid = 2147483647'];
     fs.writeFileSync(
       `${fixture.plistPath}.activation.lock`,
-      `${process.pid}\n`,
+      `${process.ppid}\n`,
     );
 
     await expect(
@@ -208,7 +226,7 @@ describe('release activation executor', () => {
         apply: true,
         confirmHost: os.hostname(),
       }),
-    ).rejects.toThrow(`lock is held by PID ${process.pid}`);
+    ).rejects.toThrow(`lock is held by live PID ${process.ppid}`);
 
     expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
     expect(
@@ -218,23 +236,113 @@ describe('release activation executor', () => {
     ).toBe(false);
   });
 
-  it('reclaims a stale activation lock before switching', async () => {
+  it('refuses a stale lock until an operator verifies and removes it', async () => {
     const fixture = makeFixture();
-    state.health = [health(oldCommit), health(newCommit, fixture.newRoot)];
+    state.health = [health(oldCommit)];
     state.printResults = ['pid = 2147483647'];
     fs.writeFileSync(`${fixture.plistPath}.activation.lock`, '2147483647\n');
 
-    const result = await activateRelease({
-      releaseDir: fixture.newRoot,
-      plistPath: fixture.plistPath,
-      healthUrl: 'http://127.0.0.1:8088/health',
-      timeoutMs: 1_000,
-      apply: true,
-      confirmHost: os.hostname(),
-    });
+    await expect(
+      activateRelease({
+        releaseDir: fixture.newRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: true,
+        confirmHost: os.hostname(),
+      }),
+    ).rejects.toThrow('lock is stale from dead PID 2147483647');
 
-    expect(result.mode).toBe('applied');
-    expect(fs.existsSync(`${fixture.plistPath}.activation.lock`)).toBe(false);
+    expect(fs.existsSync(`${fixture.plistPath}.activation.lock`)).toBe(true);
+    expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
+    expect(state.calls).toContainEqual({
+      file: '/usr/bin/shlock',
+      args: [
+        '-f',
+        `${fixture.plistPath}.activation.lock`,
+        '-p',
+        String(process.pid),
+      ],
+    });
+  });
+
+  it('reports a failed atomic claim with no readable owner', async () => {
+    const fixture = makeFixture();
+    state.health = [health(oldCommit)];
+    state.printResults = ['pid = 2147483647'];
+    state.failShlock = true;
+
+    await expect(
+      activateRelease({
+        releaseDir: fixture.newRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: true,
+        confirmHost: os.hostname(),
+      }),
+    ).rejects.toThrow('lock has an unreadable or missing owner (unknown)');
+
+    expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
+  });
+
+  it('rejects a symlink alias of the already-active release', async () => {
+    const fixture = makeFixture();
+    const alias = path.join(path.dirname(fixture.oldRoot), 'active-alias');
+    fs.symlinkSync(fixture.oldRoot, alias);
+    fs.writeFileSync(
+      path.join(fixture.oldRoot, 'dist', 'release-manifest.json'),
+      JSON.stringify({
+        schemaVersion: 1,
+        commit: newCommit,
+        sourceTree: 'c'.repeat(40),
+        builtAt: '2026-08-02T00:00:00.000Z',
+        nodePin: '22.23.2',
+        nodeVersion: '22.23.2',
+        artifactHash: 'd'.repeat(64),
+        artifactFiles: 1,
+      }),
+    );
+    state.installed = {
+      ...state.installed,
+      ProgramArguments: [
+        '/Users/operator/.local/node/22.23.2/bin/node',
+        path.join(alias, 'dist', 'index.js'),
+      ],
+      EnvironmentVariables: {
+        ...(state.installed.EnvironmentVariables as Record<string, string>),
+        NANOCLAW_CODE_ROOT: alias,
+      },
+    };
+
+    await expect(
+      activateRelease({
+        releaseDir: fixture.oldRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: false,
+      }),
+    ).rejects.toThrow('target release directory is already active');
+
+    expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
+  });
+
+  it('reports a pruned installed rollback release before any mutation', async () => {
+    const fixture = makeFixture();
+    fs.rmSync(fixture.oldRoot, { recursive: true });
+
+    await expect(
+      activateRelease({
+        releaseDir: fixture.newRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: false,
+      }),
+    ).rejects.toThrow('installed rollback release directory is unavailable');
+
+    expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
   });
 
   it('fails closed when listener ownership cannot be probed', async () => {
@@ -262,13 +370,34 @@ describe('release activation executor', () => {
     ).toBe(false);
   });
 
+  it('fails dry-run when the atomic lock tool is unavailable', async () => {
+    const fixture = makeFixture();
+    state.health = [health(oldCommit)];
+    const access = vi.spyOn(fs, 'accessSync').mockImplementation((target) => {
+      if (target === '/usr/bin/shlock') {
+        throw Object.assign(new Error('permission denied'), { code: 'EACCES' });
+      }
+    });
+
+    await expect(
+      activateRelease({
+        releaseDir: fixture.newRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: false,
+      }),
+    ).rejects.toThrow('requires executable /usr/bin/shlock');
+
+    expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
+    access.mockRestore();
+  });
+
   it('restores the exact plist and attempts one rollback load on failed health', async () => {
     const fixture = makeFixture();
-    state.health = [
-      health(oldCommit),
-      ...Array.from({ length: 10 }, () => health(newCommit, fixture.oldRoot)),
-    ];
+    state.health = [health(oldCommit)];
     state.printResults = ['pid = 2147483647', ''];
+    state.healthFallback = health(oldCommit, fixture.oldRoot);
 
     await expect(
       activateRelease({
@@ -279,7 +408,9 @@ describe('release activation executor', () => {
         apply: true,
         confirmHost: os.hostname(),
       }),
-    ).rejects.toThrow('timed out waiting for healthy release');
+    ).rejects.toThrow(
+      /timed out waiting for healthy release.*rollback restored and health-verified/,
+    );
 
     expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
     const launch = state.calls.filter((call) => call.file === '/bin/launchctl');

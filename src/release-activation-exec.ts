@@ -77,7 +77,7 @@ function readManifest(releaseDir: string): ReleaseManifest {
   return JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as ReleaseManifest;
 }
 
-function renderPlistXml(plist: LaunchdPlist, directory: string): Buffer {
+export function renderPlistXml(plist: LaunchdPlist, directory: string): Buffer {
   const scratch = fs.mkdtempSync(path.join(directory, '.nanoclaw-activate-'));
   const candidatePath = path.join(scratch, 'candidate.json');
   try {
@@ -144,44 +144,47 @@ function listenerPids(port: number): number[] {
     .filter((value) => Number.isSafeInteger(value) && value > 0);
 }
 
-function assertListenerProbe(): void {
+function assertHostToolProbes(): void {
   run('/usr/sbin/lsof', ['-v']);
+  try {
+    fs.accessSync('/usr/bin/shlock', fs.constants.X_OK);
+  } catch (error) {
+    throw new Error('release activation requires executable /usr/bin/shlock', {
+      cause: error,
+    });
+  }
 }
 
-function acquireActivationLock(lockPath: string): number {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const fd = fs.openSync(lockPath, 'wx', 0o600);
-      fs.writeFileSync(fd, `${process.pid}\n`);
-      return fd;
-    } catch (error) {
-      let holder = 'unknown';
-      try {
-        holder = fs.readFileSync(lockPath, 'utf8').trim() || 'unknown';
-      } catch {
-        // Preserve the exclusive-open failure; an unreadable lock fails closed.
-      }
-      const pid = Number(holder);
-      if (
-        attempt === 0 &&
-        Number.isSafeInteger(pid) &&
-        pid > 0 &&
-        !pidExists(pid)
-      ) {
-        try {
-          fs.unlinkSync(lockPath);
-          continue;
-        } catch {
-          // A racing activator or permission error leaves the lock authoritative.
-        }
-      }
-      throw new Error(
-        `release activation lock is held by PID ${holder}: ${lockPath}`,
-        { cause: error },
-      );
-    }
+function readLockHolder(lockPath: string): string {
+  try {
+    return fs.readFileSync(lockPath, 'utf8').trim() || 'unknown';
+  } catch {
+    return 'unknown';
   }
-  throw new Error(`release activation lock could not be acquired: ${lockPath}`);
+}
+
+/** shlock uses an atomic link(2) claim and refuses every extant lock. */
+function acquireActivationLock(lockPath: string): void {
+  try {
+    run('/usr/bin/shlock', ['-f', lockPath, '-p', String(process.pid)]);
+  } catch (error) {
+    const holder = readLockHolder(lockPath);
+    const holderPid = Number(holder);
+    const holderState =
+      Number.isSafeInteger(holderPid) && holderPid > 0
+        ? pidExists(holderPid)
+          ? `is held by live PID ${holder}`
+          : `is stale from dead PID ${holder}`
+        : `has an unreadable or missing owner (${holder})`;
+    throw new Error(`release activation lock ${holderState}: ${lockPath}`, {
+      cause: error,
+    });
+  }
+}
+
+function releaseActivationLock(lockPath: string): void {
+  if (readLockHolder(lockPath) !== String(process.pid)) return;
+  fs.unlinkSync(lockPath);
 }
 
 async function waitUntil(
@@ -284,7 +287,19 @@ export async function activateRelease(
   const installed = readPlist(plistPath);
   const manifest = readManifest(releaseDir);
   const plan = planActivation(installed, releaseDir, manifest);
-  plan.current.releaseDir = fs.realpathSync(plan.current.releaseDir);
+  try {
+    plan.current.releaseDir = fs.realpathSync(plan.current.releaseDir);
+  } catch (error) {
+    throw new Error(
+      `installed rollback release directory is unavailable (possibly pruned): ${plan.current.releaseDir}`,
+      { cause: error },
+    );
+  }
+  if (releaseDir === plan.current.releaseDir) {
+    throw new Error(
+      `target release directory is already active: ${plan.current.releaseDir}`,
+    );
+  }
   const nodePath = String(plan.installed.ProgramArguments[0]);
 
   run('/usr/bin/plutil', ['-lint', plistPath]);
@@ -310,6 +325,9 @@ export async function activateRelease(
     plan.candidate,
     options.apply ? path.dirname(plistPath) : os.tmpdir(),
   );
+  // The dry-run is the production rehearsal. Prove the listener probe there so
+  // a missing/denied lsof cannot first surface after --apply is authorized.
+  assertHostToolProbes();
 
   const baseResult = {
     label: plan.installed.Label,
@@ -336,10 +354,9 @@ export async function activateRelease(
   if (priorPid === null && !options.recoverFromDown)
     throw new Error('installed launchd service has no running PID');
   const port = Number(new URL(options.healthUrl).port || 80);
-  assertListenerProbe();
   const rollbackPath = rollbackName(plistPath, plan.current.commit);
   const lockPath = `${plistPath}.activation.lock`;
-  const lockFd = acquireActivationLock(lockPath);
+  acquireActivationLock(lockPath);
 
   try {
     fs.copyFileSync(plistPath, rollbackPath, fs.constants.COPYFILE_EXCL);
@@ -410,14 +427,9 @@ export async function activateRelease(
     }
   } finally {
     try {
-      fs.closeSync(lockFd);
+      releaseActivationLock(lockPath);
     } catch {
-      // Lock cleanup must not mask activation or rollback evidence.
-    }
-    try {
-      fs.unlinkSync(lockPath);
-    } catch {
-      // A stale lock is detected and recovered on the next activation.
+      // Owner-safe lock cleanup must not mask activation or rollback evidence.
     }
   }
 }

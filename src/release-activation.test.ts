@@ -87,6 +87,12 @@ describe('release activation plan', () => {
     );
   });
 
+  it('rejects a target that resolves to the already-active release directory', () => {
+    expect(() => planActivation(installed(), oldRoot, manifest)).toThrow(
+      `target release directory is already active: ${oldRoot}`,
+    );
+  });
+
   it('requires health to prove both commit and code root', () => {
     const target = planActivation(installed(), newRoot, manifest).target;
     expect(() =>

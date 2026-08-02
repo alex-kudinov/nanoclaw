@@ -103,6 +103,7 @@ function writeHandoffFile(
   threadTs?: string,
   threadKey?: string,
   sourceContainer?: string,
+  chatJid = 'slack:UNUSED',
 ) {
   const dir = path.join(tmpRoot, 'ipc', sourceGroup, 'messages');
   fs.mkdirSync(dir, { recursive: true });
@@ -114,7 +115,7 @@ function writeHandoffFile(
     file,
     JSON.stringify({
       type: 'message',
-      chatJid: 'slack:UNUSED',
+      chatJid,
       text,
       thread_ts: threadTs,
       thread_key: threadKey,
@@ -416,6 +417,84 @@ describe('IPC handoff routing', () => {
         threadTs: '1785230544.590929',
       }),
     );
+  });
+
+  it('keeps non-lead Sales status inside its active host work-unit thread', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.resolveSourceThread = vi.fn(() => ({
+      chatJid: 'slack:SALES',
+      threadTs: '1785230544.590929',
+    }));
+    writeHandoffFile(
+      'sales',
+      'Draft revised from the operator feedback.',
+      undefined,
+      undefined,
+      'nanoclaw-sales-thread-1',
+      'slack:SALES',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      'Draft revised from the operator feedback.',
+      expect.objectContaining({
+        fromGroup: 'sales',
+        threadTs: '1785230544.590929',
+      }),
+    );
+  });
+
+  it('never carries a Sales source timestamp into a cross-group channel', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.resolveSourceThread = vi.fn(() => ({
+      chatJid: 'slack:SALES',
+      threadTs: '1785230544.590929',
+    }));
+    writeHandoffFile(
+      'sales',
+      '[HANDOFF: sales→mailman]\nTo: lead@example.com\nBody: approved',
+      '1785230544.590929',
+      undefined,
+      'nanoclaw-sales-thread-1',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:MAILMAN',
+      expect.stringContaining('[HANDOFF: sales→mailman]'),
+      expect.not.objectContaining({ threadTs: '1785230544.590929' }),
+    );
+  });
+
+  it('strips a source timestamp when the source group is not registered', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    delete registeredGroups['slack:SALES'];
+    try {
+      const { startIpcWatcher } = await import('./ipc.js');
+      writeHandoffFile(
+        'sales',
+        '[HANDOFF: sales→mailman]\nTo: lead@example.com\nBody: approved',
+        '1785230544.590929',
+      );
+
+      startIpcWatcher(deps);
+      await vi.advanceTimersByTimeAsync(50);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        'slack:MAILMAN',
+        expect.stringContaining('[HANDOFF: sales→mailman]'),
+        expect.not.objectContaining({ threadTs: '1785230544.590929' }),
+      );
+    } finally {
+      registeredGroups['slack:SALES'] = salesGroup;
+    }
   });
 
   it('a genuine "Lead #N approved. [HANDOFF: sales→mailman]" send (no review marker) still routes to mailman', async () => {

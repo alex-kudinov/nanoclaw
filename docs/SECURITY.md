@@ -28,11 +28,22 @@ The host-owned activator changes exactly the executable target, code root, and
 expected commit; any fourth diff fails before mutation. It verifies both the
 rollback and candidate releases, requires an exact hostname confirmation for
 apply, performs one bounded switch, and restores the captured plist once on
-failure. Apply uses an exclusive lock, and rollback is health-checked without
-masking the triggering error. Incident recovery from a stopped/unhealthy daemon
+failure. Apply uses an atomic `shlock` PID claim that refuses every extant lock,
+reports whether a numeric holder is live or stale, and performs owner-checked
+cleanup. A stale lock requires an operator to prove no activation is running
+before removing the exact reported lock path and repeating dry-run; the
+activator does not race an automatic unlink against a concurrent owner.
+Rollback is health-checked without masking the triggering error. Incident
+recovery from a stopped/unhealthy daemon
 requires a separate explicit flag but retains bundle, interpreter, hostname,
 listener, target-health, and rollback checks. A tracked plist is never used to
 overwrite unrelated installed settings during activation.
+
+Sales thread inheritance is also host-bounded. Container identity is accepted
+only while the matching queue work unit is active; inherited context is limited
+to the same Slack channel, and timestamps are stripped from cross-channel
+handoffs. Explicit historical Sales roots must be persisted channel roots for
+the same lead. Model-supplied timestamps remain proposals, not authority.
 
 ## Trust model
 
@@ -133,7 +144,7 @@ host/container source were deployed gates-off under `NC-20260730-004`.
 | `contador`     | exact assigned invoice-message read               |
 | `archivarista` | exact assigned meeting-assets-message read        |
 | `chief`        | exact assigned classifier-correction-message read |
-| `procurement`  | exact assigned RFP-message read                    |
+| `procurement`  | exact assigned RFP-message read                   |
 | all others     | none                                              |
 
 Resource rules:

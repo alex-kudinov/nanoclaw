@@ -343,6 +343,7 @@ export class GroupQueue {
     if (!containerName) return undefined;
     for (const [groupJid, state] of this.groups) {
       if (
+        !state.active ||
         state.containerName !== containerName ||
         state.groupFolder !== groupFolder ||
         state.isTaskContainer

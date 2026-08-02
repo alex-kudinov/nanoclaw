@@ -59,6 +59,24 @@ import { registerChannel } from './registry.js';
 // Slack's chat.postMessage API limits text to ~4000 characters per call.
 // Messages exceeding this are split into sequential chunks.
 const MAX_MESSAGE_LENGTH = 4000;
+const SCHEDULED_REVISION_WINDOW_MS = 6 * 60 * 60 * 1000;
+const OUTGOING_RETRY_BASE_MS = 5_000;
+const OUTGOING_RETRY_MAX_MS = 5 * 60 * 1000;
+
+type QueuedSlackMessage =
+  | {
+      kind: 'logical';
+      jid: string;
+      text: string;
+      opts?: SendMessageOpts;
+    }
+  | {
+      kind: 'thread-remainder';
+      jid: string;
+      chunks: string[];
+      threadTs: string;
+      fromGroup?: string;
+    };
 
 // The message subtypes we process. Bolt delivers all subtypes via app.event('message');
 // we filter to regular messages (GenericMessageEvent, subtype undefined) and bot messages
@@ -153,12 +171,13 @@ export class SlackChannel implements Channel {
   private botToken: string;
   private botUserId: string | undefined;
   private connected = false;
-  private outgoingQueue: Array<{
-    jid: string;
-    text: string;
-    opts?: SendMessageOpts;
-  }> = [];
+  private outgoingQueue: QueuedSlackMessage[] = [];
   private flushing = false;
+  private outgoingRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private outgoingRetryAttempt = 0;
+  private leadRoutingTails = new Map<string, Promise<void>>();
+  private leadResolverDowngradeCount = 0;
+  private lastLeadResolverDowngradeAt: string | null = null;
   private userNameCache = new Map<string, string>();
   private lastActivityAt = Date.now();
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
@@ -704,8 +723,15 @@ export class SlackChannel implements Channel {
       const email = await resolve(entryId);
       return email ? `lead:${email.toLowerCase()}` : undefined;
     } catch (err) {
+      this.leadResolverDowngradeCount++;
+      this.lastLeadResolverDowngradeAt = new Date().toISOString();
       logger.warn(
-        { err, entryId },
+        {
+          err,
+          entryId,
+          downgradeCount: this.leadResolverDowngradeCount,
+          lastDowngradeAt: this.lastLeadResolverDowngradeAt,
+        },
         'Slack: lead anchor lookup failed, posting unanchored',
       );
       return undefined;
@@ -750,7 +776,31 @@ export class SlackChannel implements Channel {
     const root = getMessageById(rootTs, jid);
     if (!root || root.thread_ts) return false;
     if (scheduledSalesWorkMarker(root.content) !== marker) return false;
+    const rootAgeMs = Date.now() - Date.parse(root.timestamp);
+    if (
+      !Number.isFinite(rootAgeMs) ||
+      rootAgeMs < 0 ||
+      rootAgeMs > SCHEDULED_REVISION_WINDOW_MS
+    ) {
+      return false;
+    }
     return (await this.deriveLeadKey(root.content)) === leadKey;
+  }
+
+  private async withLeadRoutingLock(
+    key: string,
+    operation: () => Promise<void>,
+  ): Promise<void> {
+    const prior = this.leadRoutingTails.get(key) ?? Promise.resolve();
+    const current = prior.catch(() => {}).then(operation);
+    this.leadRoutingTails.set(key, current);
+    try {
+      await current;
+    } finally {
+      if (this.leadRoutingTails.get(key) === current) {
+        this.leadRoutingTails.delete(key);
+      }
+    }
   }
 
   async sendMessage(
@@ -758,12 +808,8 @@ export class SlackChannel implements Channel {
     text: string,
     opts?: SendMessageOpts,
   ): Promise<void> {
-    const channelId = jid.replace(/^slack:/, '');
-    const fromGroup = opts?.fromGroup;
-    const threadTs = opts?.threadTs;
-
     if (!this.connected) {
-      this.outgoingQueue.push({ jid, text, opts });
+      this.outgoingQueue.push({ kind: 'logical', jid, text, opts });
       logger.info(
         { jid, queueSize: this.outgoingQueue.length },
         'Slack disconnected, message queued',
@@ -777,6 +823,32 @@ export class SlackChannel implements Channel {
     // lead. See lead-thread-key.ts. Derived after the queue check so a
     // disconnected send costs no lookup — the flush re-derives it anyway.
     const leadKey = await this.deriveLeadKey(text);
+    if (!leadKey) {
+      await this.sendMessageRouted(jid, text, opts, undefined);
+      return;
+    }
+    await this.withLeadRoutingLock(`${jid}|${leadKey}`, () =>
+      this.sendMessageRouted(jid, text, opts, leadKey),
+    );
+  }
+
+  private async sendMessageRouted(
+    jid: string,
+    text: string,
+    opts: SendMessageOpts | undefined,
+    leadKey: string | undefined,
+  ): Promise<void> {
+    if (!this.connected) {
+      this.outgoingQueue.push({ kind: 'logical', jid, text, opts });
+      logger.info(
+        { jid, queueSize: this.outgoingQueue.length },
+        'Slack disconnected while routing, message queued',
+      );
+      return;
+    }
+    const channelId = jid.replace(/^slack:/, '');
+    const fromGroup = opts?.fromGroup;
+    const threadTs = opts?.threadTs;
     const threadKey = leadKey ?? opts?.threadKey;
     const requestedSalesRoot = await this.isRecordedSalesWorkRoot(
       jid,
@@ -907,11 +979,31 @@ export class SlackChannel implements Channel {
       } else {
         // Break on paragraph/line/word boundaries — a raw slice cuts mid-word
         // and an operator cannot read a draft that splits inside a sentence.
-        for (const chunk of splitForSlack(displayText, MAX_MESSAGE_LENGTH)) {
-          const result = await this.app.client.chat.postMessage({
-            ...baseOpts,
-            text: chunk,
-          } as ChatPostMessageArguments);
+        const chunks = splitForSlack(displayText, MAX_MESSAGE_LENGTH);
+        for (let index = 0; index < chunks.length; index++) {
+          const chunk = chunks[index];
+          let result;
+          try {
+            result = await this.app.client.chat.postMessage({
+              ...baseOpts,
+              text: chunk,
+            } as ChatPostMessageArguments);
+          } catch (err) {
+            if (index > 0 && effectiveThreadTs) {
+              this.queueOutgoingRetry(
+                {
+                  kind: 'thread-remainder',
+                  jid,
+                  chunks: chunks.slice(index),
+                  threadTs: effectiveThreadTs,
+                  fromGroup,
+                },
+                err,
+              );
+              return;
+            }
+            throw err;
+          }
           if (result.ts) {
             this.storeOutbound(
               jid,
@@ -948,20 +1040,20 @@ export class SlackChannel implements Channel {
         'Slack message sent',
       );
     } catch (err) {
-      this.outgoingQueue.push({
-        jid,
-        text,
-        // A successful first chunk of a new work item has already established
-        // and persisted its root. Retry the whole logical message beneath that
-        // root so a later-chunk failure cannot create a second channel root.
-        opts:
-          startsSalesWork && effectiveThreadTs
-            ? { ...opts, threadTs: effectiveThreadTs }
-            : opts,
-      });
-      logger.warn(
-        { jid, err, queueSize: this.outgoingQueue.length },
-        'Failed to send Slack message, queued',
+      this.queueOutgoingRetry(
+        {
+          kind: 'logical',
+          jid,
+          text,
+          // A successful first chunk of a new work item has already established
+          // and persisted its root. Retry the whole logical message beneath that
+          // root so a later-chunk failure cannot create a second channel root.
+          opts:
+            startsSalesWork && effectiveThreadTs
+              ? { ...opts, threadTs: effectiveThreadTs }
+              : opts,
+        },
+        err,
       );
     }
   }
@@ -1161,12 +1253,25 @@ export class SlackChannel implements Channel {
     return Math.round((Date.now() - this.lastActivityAt) / 1000);
   }
 
+  getDiagnostics(): Record<string, string | number | boolean | null> {
+    return {
+      outgoingQueueDepth: this.outgoingQueue.length,
+      outgoingRetryAttempt: this.outgoingRetryAttempt,
+      leadResolverDowngradeCountSinceStart: this.leadResolverDowngradeCount,
+      lastLeadResolverDowngradeAt: this.lastLeadResolverDowngradeAt,
+    };
+  }
+
   ownsJid(jid: string): boolean {
     return jid.startsWith('slack:');
   }
 
   async disconnect(): Promise<void> {
     this.connected = false;
+    if (this.outgoingRetryTimer) {
+      clearTimeout(this.outgoingRetryTimer);
+      this.outgoingRetryTimer = null;
+    }
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
       this.healthCheckInterval = null;
@@ -1463,6 +1568,69 @@ export class SlackChannel implements Channel {
     });
   }
 
+  private queueOutgoingRetry(item: QueuedSlackMessage, err: unknown): void {
+    this.outgoingQueue.push(item);
+    logger.warn(
+      { jid: item.jid, err, queueSize: this.outgoingQueue.length },
+      'Failed to send Slack message, queued',
+    );
+    this.scheduleOutgoingRetry();
+  }
+
+  private scheduleOutgoingRetry(): void {
+    if (!this.connected || this.outgoingRetryTimer) return;
+    const delayMs = Math.min(
+      OUTGOING_RETRY_BASE_MS * 2 ** this.outgoingRetryAttempt,
+      OUTGOING_RETRY_MAX_MS,
+    );
+    this.outgoingRetryAttempt++;
+    this.outgoingRetryTimer = setTimeout(() => {
+      this.outgoingRetryTimer = null;
+      void this.flushOutgoingQueue();
+    }, delayMs);
+    this.outgoingRetryTimer.unref?.();
+    logger.info(
+      { delayMs, retryAttempt: this.outgoingRetryAttempt },
+      'Scheduled Slack outgoing queue retry',
+    );
+  }
+
+  private async sendThreadRemainder(
+    item: Extract<QueuedSlackMessage, { kind: 'thread-remainder' }>,
+  ): Promise<void> {
+    if (!this.connected) {
+      this.outgoingQueue.push(item);
+      return;
+    }
+    const channel = item.jid.replace(/^slack:/, '');
+    for (let index = 0; index < item.chunks.length; index++) {
+      const chunk = item.chunks[index];
+      try {
+        const result = await this.app.client.chat.postMessage({
+          channel,
+          thread_ts: item.threadTs,
+          text: chunk,
+        } as ChatPostMessageArguments);
+        if (result.ts) {
+          this.storeOutbound(
+            item.jid,
+            result.ts,
+            chunk,
+            item.fromGroup,
+            item.threadTs,
+          );
+        }
+      } catch (err) {
+        this.queueOutgoingRetry(
+          { ...item, chunks: item.chunks.slice(index) },
+          err,
+        );
+        return;
+      }
+    }
+    this.lastActivityAt = Date.now();
+  }
+
   private async flushOutgoingQueue(): Promise<void> {
     if (this.flushing || this.outgoingQueue.length === 0) return;
     this.flushing = true;
@@ -1479,8 +1647,14 @@ export class SlackChannel implements Channel {
       const batch = this.outgoingQueue.splice(0);
       logger.info({ count: batch.length }, 'Flushing Slack outgoing queue');
       for (const item of batch) {
-        await this.sendMessage(item.jid, item.text, item.opts);
+        if (item.kind === 'logical') {
+          await this.sendMessage(item.jid, item.text, item.opts);
+        } else {
+          await this.sendThreadRemainder(item);
+        }
       }
+      if (this.outgoingQueue.length === 0) this.outgoingRetryAttempt = 0;
+      else this.scheduleOutgoingRetry();
     } finally {
       this.flushing = false;
     }

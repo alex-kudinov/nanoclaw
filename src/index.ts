@@ -1390,12 +1390,17 @@ async function main(): Promise<void> {
     getHealth: () => {
       const channelHealth: Record<
         string,
-        { connected: boolean; lastActivitySec: number | null }
+        {
+          connected: boolean;
+          lastActivitySec: number | null;
+          diagnostics?: Record<string, string | number | boolean | null>;
+        }
       > = {};
       for (const ch of channels) {
         channelHealth[ch.name] = {
           connected: ch.isConnected(),
           lastActivitySec: ch.getLastActivitySec?.() ?? null,
+          ...(ch.getDiagnostics ? { diagnostics: ch.getDiagnostics() } : {}),
         };
       }
       let activeContainers = 0;

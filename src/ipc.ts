@@ -351,12 +351,23 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   sourceGroup,
                   String(data.source_container ?? ''),
                 );
-                const outboundThreadTsFor = (outboundJid: string) =>
-                  data.thread_ts ||
-                  (sourceGroup === 'sales' &&
-                  sourceContext?.chatJid === outboundJid
-                    ? sourceContext?.threadTs
-                    : undefined);
+                const sourceJid = Object.entries(registeredGroups).find(
+                  ([, group]) => group.folder === sourceGroup,
+                )?.[0];
+                const outboundThreadTsFor = (outboundJid: string) => {
+                  // A timestamp from one channel is meaningless authority in a
+                  // different channel. Keep explicit or inherited context only
+                  // for the source work unit's own destination; a cross-group
+                  // handoff starts/uses the target's independent workflow.
+                  if (!sourceJid || sourceJid !== outboundJid) return undefined;
+                  return (
+                    data.thread_ts ||
+                    (sourceGroup === 'sales' &&
+                    sourceContext?.chatJid === outboundJid
+                      ? sourceContext?.threadTs
+                      : undefined)
+                  );
+                };
                 // [CANCEL: source→mailman] intercepts a held mailman handoff
                 // from the same source within the hold window. Drop the held
                 // file without forwarding; the cancel marker itself still

@@ -132,12 +132,22 @@ bounded unload/load cycle, and requires `/health` to prove the target full
 commit, resolved code root, and `codeRootMatchesRelease=true`. Failure after
 replacement restores the rollback plist, performs one bounded rollback load,
 and health-checks the restored release without masking the original activation
-error. A fixed exclusive lock prevents overlapping activators. The lock records
-the activator PID: a still-live or unreadable lock fails closed, while a lock
-whose recorded PID no longer exists is removed and exclusively re-acquired once.
-The activator also proves that the host listener probe is executable before any
-installed-service mutation; recovery never treats a missing or denied probe as
-an empty port.
+error. A fixed exclusive lock prevents overlapping activators. macOS `shlock`
+records the activator PID and atomically claims the final path with `link(2)`;
+it refuses every extant lock, including a stale one. The activator reports
+whether a numeric holder PID is live or dead, and cleanup removes only a lock
+that still names the current process. The dry run proves both `lsof` and
+`shlock` are executable before any installed-service mutation; recovery never
+treats a missing or denied prerequisite as an empty port. A target that is
+already the installed release, including a symlink alias, and a missing/pruned
+rollback directory both fail with direct diagnostics before mutation.
+
+If the activator reports a stale lock, do not remove it merely because the PID
+is dead: first prove no activation command is running and preserve the error
+output. Only then remove the exact reported
+`<installed-plist>.activation.lock` path and restart the full dry-run. This is a
+deliberate operator recovery step; the activator never auto-reclaims a stale
+lock because an unlink/reclaim sequence can delete a concurrent owner's claim.
 
 If the installed service is already stopped or cannot answer health, the normal
 path fails closed. After verifying that this is the intended incident recovery,

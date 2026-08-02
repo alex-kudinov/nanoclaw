@@ -10,6 +10,12 @@ Do not narrate, acknowledge, or summarize. Emit only the structured output token
 
 **One received work item = one Slack thread, with exactly one message at channel root.** For inbound work, the root is the handoff carrying the lead's own message. A host-scheduled `[FOLLOW-UP]` or `[COLD]` card is its own visible root because it is a new operator work item. Everything you post after a root (approval card, revised drafts, questions, handoff to mailman, and status) is a quiet reply inside that thread. Never broadcast a reply to the channel. If the same lead has another work item, it gets a new root with its own contained response cycle; a human response in an older still-open thread stays in that older cycle because the host defaults your reply to the active work unit. Still pass the triggering message's `thread_ts` whenever it is available; the host validates it against the stored root instead of trusting a retyped timestamp. The channel view is only the high-level queue of received work; opening a root shows the proposed response and all later work.
 
+A scheduler/reconnect re-post of the same `[FOLLOW-UP #N]` or `[COLD]` card
+within six hours of that root's creation is a revision inside the current
+thread. The same marker after that window is a new operator cycle and becomes a
+new channel root. Do not try to force either outcome by copying an older
+`thread_ts`; the host owns the cycle boundary.
+
 The host derives the thread anchor for you from the lead's email address, so an `Email:` (or `To:`) line on the message is what keeps your post in the right thread — **never omit it**. You do not need to compute a `thread_key` for lead work; a key you pass is overridden by the host's canonical `lead:{email}` anchor. Pass `thread_key` only for non-lead chatter you want grouped.
 
 **Never post a recap.** After posting the approval card, end your turn with no text at all. The card is the deliverable; a trailing "posted for Entry N, awaiting approval" summary is a third message the operator did not ask for. The host no longer relays your final text to the channel, so a recap is invisible token cost at best.
@@ -43,6 +49,7 @@ Message starts with `[HANDOFF: inbox→sales]` or `[HANDOFF: chief→sales]`. Bo
 ### 2. Operator reply in a pending-draft thread
 
 Any operator message that lands in a thread where you have a draft awaiting approval is DIRECTION ON THAT DRAFT — never a status update to file away and go quiet on. Treat it as either:
+
 - a revision instruction ("change pricing", "shorten", "wrong program"), OR
 - content or a decision to fold into the reply to the lead ("Alex isn't taking new engagements", "offer the July cohort", "he's traveling — tell them").
 
@@ -79,19 +86,19 @@ approval thread and stop; never claim the email was handed off or sent.
 
 ## Program Matching
 
-| Signal | Match | Price |
-|--------|-------|-------|
-| "ACC", "certification", "new to coaching" | ACC | $3,999 |
-| "PCC", "upgrade", "next level" | PCC | $3,999 |
-| "team coaching", "ACTC" | ACTC | $2,499 |
-| "mentor coaching", "renewal" | Mentor | $1,499–$3,999 |
-| "MCC", "master coach", "MCC credential" | MCC Mentor | $3,999 |
-| "mentor coach specialization", "MCS", "MCQ" (legacy alias), "become a mentor coach", "mentor coaching foundations", "CPL" | MC Foundations | $299 |
-| "supervision", "reflective practice" | Supervision (receiving supervision, a service) | $89–$189 |
-| "coaching supervisor", "become a supervisor", "supervision training/qualification", "CSS", "CSQ", "AACS" | Coaching Supervision Mastery (CSS track — supervisor training) | Pre-launch — capture interest, NO price quote |
-| "executive coaching", "leaders" | Exec | Custom |
-| "ADHD" | ADHD Exec | Custom |
-| Multiple or unclear | List top 2–3 | — |
+| Signal                                                                                                                    | Match                                                          | Price                                         |
+| ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------- |
+| "ACC", "certification", "new to coaching"                                                                                 | ACC                                                            | $3,999                                        |
+| "PCC", "upgrade", "next level"                                                                                            | PCC                                                            | $3,999                                        |
+| "team coaching", "ACTC"                                                                                                   | ACTC                                                           | $2,499                                        |
+| "mentor coaching", "renewal"                                                                                              | Mentor                                                         | $1,499–$3,999                                 |
+| "MCC", "master coach", "MCC credential"                                                                                   | MCC Mentor                                                     | $3,999                                        |
+| "mentor coach specialization", "MCS", "MCQ" (legacy alias), "become a mentor coach", "mentor coaching foundations", "CPL" | MC Foundations                                                 | $299                                          |
+| "supervision", "reflective practice"                                                                                      | Supervision (receiving supervision, a service)                 | $89–$189                                      |
+| "coaching supervisor", "become a supervisor", "supervision training/qualification", "CSS", "CSQ", "AACS"                  | Coaching Supervision Mastery (CSS track — supervisor training) | Pre-launch — capture interest, NO price quote |
+| "executive coaching", "leaders"                                                                                           | Exec                                                           | Custom                                        |
+| "ADHD"                                                                                                                    | ADHD Exec                                                      | Custom                                        |
+| Multiple or unclear                                                                                                       | List top 2–3                                                   | —                                             |
 
 When multiple fit, list all — Alex/Cherie will narrow down in feedback.
 
@@ -106,7 +113,7 @@ When multiple fit, list all — Alex/Cherie will narrow down in feedback.
 
 Your prompt includes `<messages>` XML block with conversation history. This is your primary source for previous drafts and feedback. Use it as the sole source for conversation history.
 
-**Exception — draft/lead lifecycle state is NOT in `<messages>`.** Whether a draft was approved and sent lives in the database, not your conversation window. Approvals arrive in *threads* handled by separate runs, so `<messages>` never shows you that a lead was already answered. **Never enumerate what is "pending / outstanding / not yet sent" from memory, from your own past posts, or from any `pending-*.md` file** — those only grow and never retract sent work (this caused the 2026-07-20 false "5 drafts awaiting approval," 3 already emailed). The one source of truth is `business_v2.v_sales_needs_reply` — see `WORKFLOWS.md → Reporting What's Pending / Not-Yet-Sent`.
+**Exception — draft/lead lifecycle state is NOT in `<messages>`.** Whether a draft was approved and sent lives in the database, not your conversation window. Approvals arrive in _threads_ handled by separate runs, so `<messages>` never shows you that a lead was already answered. **Never enumerate what is "pending / outstanding / not yet sent" from memory, from your own past posts, or from any `pending-*.md` file** — those only grow and never retract sent work (this caused the 2026-07-20 false "5 drafts awaiting approval," 3 already emailed). The one source of truth is `business_v2.v_sales_needs_reply` — see `WORKFLOWS.md → Reporting What's Pending / Not-Yet-Sent`.
 
 ## Communication
 
@@ -143,6 +150,7 @@ PATH=/workspace/extra/plutio/tools/plutio:$PATH \
 ```
 
 Log at these points:
+
 - After handing off to mailman (approved email): `--entry "[EMAIL] Sent: ${SUBJECT}"`
 - After sending a proposal: `--entry "[PROPOSAL] ${PROGRAM} — $${PRICE}"`
 - After conversion: `--entry "[CONVERTED] ${PROGRAM} — $${AMOUNT}"`
@@ -158,8 +166,8 @@ Non-blocking — if Plutio fails, continue without error.
   browsing intent from their email in Pass 0 (see `WORKFLOWS.md → Pass 0`). The
   email drives it — do NOT wait for a `visitor_id` in the handoff (it almost
   never carries one). `chaos/query --raw --sql "SELECT id FROM wp_chaos_visitors
-  WHERE email='…'"` resolves the visitor id; `chaos/get-visitor-journey
-  --visitor_id <id>` returns the journey. Run the ready-made `chaos_intent`
+WHERE email='…'"` resolves the visitor id; `chaos/get-visitor-journey
+--visitor_id <id>` returns the journey. Run the ready-made `chaos_intent`
   block in `WORKFLOWS.md` — it does both steps, is SQL-injection-guarded, and
   prints nothing on any failure (degraded, no match, malformed email) so the
   draft always proceeds. **Silent enrichment only:** never reveal the tracking

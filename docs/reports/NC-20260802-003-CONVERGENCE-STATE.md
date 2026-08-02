@@ -1,15 +1,16 @@
 # NC-20260802-003/004/005 convergence state
 
 - Topic: atomic release activation and durable Heartbeat grading coordination
-- Status: converged for commit; follow-ups tracked
-- Current round: R4 complete
+- Status: converged for commit and owner-authorized deployment
+- Current round: R6 complete
 - Claude project path: `/Users/xbohdpukc/dev/NanoClaw`
 - Current Claude session UUID: `b361d68b-688c-4dd0-bba0-a43188673962`
 - Prior Claude session UUIDs: `20f83173-4353-4b8c-9a19-c3661df32899`
 - Native handoff path: none
-- Latest Codex request: `docs/reports/NC-20260802-003-CODEX-REQUEST-R4.md`
+- Latest Codex request:
+  `docs/reports/NC-20260802-007-008-CODEX-REQUEST-R6.md`
 - Latest Claude response:
-  `docs/reports/NC-20260802-003-CLAUDE-C5-REVIEW-R4.md`
+  `docs/reports/NC-20260802-007-008-CLAUDE-C5-REVIEW-R6.md`
 - Implementation commit: `93e8d00cbe2525436c4202e412af2c278efafff0`
 - Verified agreements: production lineage `23ffb07` plus record `0f20224`;
   activation derives from the installed plist and changes exactly three fields;
@@ -30,7 +31,8 @@
   `b361d68b-688c-4dd0-bba0-a43188673962` completed at max effort; recorded cost
   was `$6.5559585`; the same session's R2 cumulative cost was `$11.8184935`.
   R3's additional run cost was `$10.710246`; R4's additional run cost was
-  `$13.661564` after one zero-cost network failure.
+  `$13.661564` after one zero-cost network failure. R5's additional run cost was
+  `$15.105735` after one zero-cost network failure; R6's was `$7.4639515`.
 
 ## Round R3 — implementation reconciliation
 
@@ -63,3 +65,49 @@
 - Next: no deployment is authorized in this round. Close and re-review the
   stale-lock takeover race under NC-007 before the first production `--apply`;
   NC-006 may be deployed separately and then live-observed before NC-008 begins.
+
+## Round R5 — NC-007/008 follow-up closure
+
+- Owner sequencing: on 2026-08-02 the owner explicitly requested NC-007 and
+  NC-008 together and then deployment, superseding R4's earlier suggestion to
+  deploy and observe NC-006 first.
+- Codex delta: activation now uses atomic `shlock` claiming, rehearses `lsof`
+  during dry-run, reports pruned/already-active roots directly, and exercises
+  real plist XML. Sales routing now bounds scheduled revisions to six hours,
+  serializes same-lead decisions, strips cross-channel threads, requires active
+  work-unit context, reports degradation in health, schedules bounded retries,
+  and retries only unsent chunks after a partial post.
+- Independent checks before review: pinned Node 22.23.2 typecheck, 7-file / 183-
+  test focused suite, and 144-file / 1,824-test full suite pass.
+- Request: `docs/reports/NC-20260802-007-008-CODEX-REQUEST-R5.md`.
+- Next: exact-session Claude R5 review, Codex reconciliation, documentation
+  continuity/format checks, commit, exact release build, owner-authorized
+  activation, and live verification.
+
+## Round R6 — R5 blocker closure
+
+- R5 verdict: changes required. Claude's direct macOS probe established that
+  `shlock` never reclaims an extant stale lock, so the first NC-007 mock and
+  four authoritative descriptions were false. NC-008 itself was approved.
+- Codex reconciliation: the lock mock now refuses all extant locks, live/dead/
+  unreadable owners get distinct errors, dry-run verifies `shlock`, stale
+  recovery is a documented operator proof/removal/rehearsal step, and real-path
+  equality closes the symlink alias. The Sales prompt clarifies root-creation
+  time, health names the process-lifetime counter, and unresolved source groups
+  strip thread timestamps fail-closed.
+- Accepted follow-up: resolver degradation cannot supply the canonical lead
+  email and therefore bypasses per-lead serialization/anchoring. It remains
+  visible through the since-start health counter rather than minting a second
+  identity from weaker data.
+- Independent checks after reconciliation: pinned Node 22.23.2 typecheck,
+  7-file / 186-test focused suite, 144-file / 1,827-test full suite,
+  documentation continuity, schema sanitizer self-test, formatting, and diff
+  whitespace pass.
+- Request: `docs/reports/NC-20260802-007-008-CODEX-REQUEST-R6.md`.
+- Claude verdict: `APPROVE WITH FOLLOW-UPS`; no commit or deploy blockers. The
+  resolver fallback identity is explicitly declined because it would create a
+  second authority. The cosmetic tool-probe name was corrected before commit;
+  owner intervention during lock cleanup remains a documented bounded residual.
+- Next: commit, build the exact artifact, rehearse and apply the owner-authorized
+  activation, then verify release identity, service health, and Sales
+  diagnostics.

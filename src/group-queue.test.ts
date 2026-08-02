@@ -34,13 +34,23 @@ describe('GroupQueue', () => {
     vi.useRealTimers();
   });
 
-  it('resolves thread context only from the registered source container', () => {
-    queue.registerProcess(
-      'slack:SALES||1785230544.590929',
-      {} as never,
-      'nanoclaw-sales-thread-1',
-      'sales',
-    );
+  it('resolves thread context only from an active registered source container', async () => {
+    let release!: () => void;
+    const activeRun = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    queue.setProcessMessagesFn(async () => {
+      queue.registerProcess(
+        'slack:SALES||1785230544.590929',
+        {} as never,
+        'nanoclaw-sales-thread-1',
+        'sales',
+      );
+      await activeRun;
+      return true;
+    });
+    queue.enqueueMessageCheck('slack:SALES', '1785230544.590929');
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(
       queue.resolveContainerContext('sales', 'nanoclaw-sales-thread-1'),
@@ -53,6 +63,12 @@ describe('GroupQueue', () => {
     ).toBeUndefined();
     expect(
       queue.resolveContainerContext('chief', 'nanoclaw-sales-thread-1'),
+    ).toBeUndefined();
+
+    release();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(
+      queue.resolveContainerContext('sales', 'nanoclaw-sales-thread-1'),
     ).toBeUndefined();
   });
 

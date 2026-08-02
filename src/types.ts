@@ -235,6 +235,8 @@ export interface Channel {
   syncGroups?(force: boolean): Promise<void>;
   // Optional: seconds since last inbound/outbound activity. Used by /health endpoint.
   getLastActivitySec?(): number;
+  // Optional: bounded, non-sensitive counters for routing/degradation diagnosis.
+  getDiagnostics?(): Record<string, string | number | boolean | null>;
 }
 
 // Callback type that channels use to deliver inbound messages

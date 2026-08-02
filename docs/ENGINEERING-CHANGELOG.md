@@ -8,6 +8,69 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260802-008 — Sales routing retries and work-cycle identity are bounded
+
+- Date: 2026-08-02T19:58Z
+- Owner/client: Codex + Claude validator
+- State: ready_for_deploy
+- Commit/PR: uncommitted on
+  `codex/nc-20260802-003-company-os-sequence` above `081d2a9`
+- Change class: C3 — Slack routing and Sales operator workflow
+- Affected systems: Slack routing/queue, queue-owned container provenance, IPC
+  cross-channel policy, channel health, Sales instructions, focused tests
+- Implementation: per-lead sends serialize before resolving/rolling anchors;
+  scheduled re-post equivalence expires after six hours; every historical-root
+  rejection reason has negative coverage. Connected delivery failures schedule
+  bounded exponential retries, and partial multi-chunk delivery persists only
+  the unsent remainder under the established root. Queue context must be active;
+  same-channel non-lead Sales status may inherit that host-owned work unit, but
+  explicit or inherited timestamps never cross into another channel. Resolver
+  downgrade count/time and queue retry state are visible through `/health`.
+- R5 review/reconciliation: Claude approved the NC-008 half and identified
+  bounded follow-ups. The source-group lookup now fails closed by stripping a
+  timestamp when the source cannot be registered, the downgrade counter is
+  explicitly named as process-lifetime, and the six-hour prompt wording is
+  measured from root creation. Resolver failure remains visibly unanchored
+  rather than inventing a second lead identity; that fallback is explicitly
+  declined because it would create a second lead authority.
+- Verification so far: Node 22.23.2 typecheck, combined focused regression at
+  7 files / 186 tests, and full regression at 144 files / 1,827 tests pass.
+  Documentation continuity, schema sanitizer self-test, source formatting, and
+  diff whitespace pass. Exact-session Claude Opus R6 approved with follow-ups
+  and no commit/deploy blockers. Commit, deployment, and live Sales observation
+  remain separate pending states.
+
+### NC-20260802-007 — Release activation makes lock and rehearsal behavior truthful
+
+- Date: 2026-08-02T19:58Z
+- Owner/client: Codex + Claude validator
+- State: ready_for_deploy
+- Commit/PR: uncommitted on
+  `codex/nc-20260802-003-company-os-sequence` above `081d2a9`
+- Change class: C5 — production activation lock and fail-closed diagnostics
+- Affected systems: release activation executor/planner, macOS plist integration
+  test, release/security documentation
+- Implementation: the activator delegates its PID claim to macOS `shlock`,
+  whose final `link(2)` claim is atomic and which refuses every extant lock. A
+  dead numeric holder is reported as stale; recovery is a documented operator
+  proof/removal/rehearsal sequence, not an automatic unlink that can race a new
+  owner. Cleanup remains owner-checked. Dry-run proves `lsof` and `shlock`;
+  pruned rollback roots and same-real-directory targets get direct errors; the
+  successful rollback branch is asserted; and a Darwin-only test uses real
+  `plutil` to render, lint, decode, and compare the candidate plist.
+- R5 review/reconciliation: Claude's real-host probe proved that macOS
+  `shlock` refuses stale locks, contrary to the first implementation's claim.
+  The mock now mirrors that behavior; errors distinguish live, stale, and
+  unreadable owners; dry-run proves the lock tool; docs require an operator to
+  prove no activator is running before exact-path removal and a fresh rehearsal;
+  and symlink aliases of the active release fail directly.
+- Verification so far: Node 22.23.2 typecheck, combined focused regression at
+  7 files / 186 tests, and full regression at 144 files / 1,827 tests pass.
+  Documentation continuity, schema sanitizer self-test, source formatting, and
+  diff whitespace pass. Exact-session Claude Opus R6 approved with follow-ups
+  and no commit/deploy blockers. Commit, release build, activation, and live
+  verification remain separate pending states.
+
 ### NC-20260802-006 — Sales channel roots are inbound work items, not draft broadcasts
 
 - Date: 2026-08-02T18:22Z
