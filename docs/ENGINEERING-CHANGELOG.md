@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-02T18:22Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_review
-- Commit/PR: uncommitted on
-  `codex/nc-20260802-003-company-os-sequence` based on `0f20224`
+- State: ready_for_deploy
+- Commit/PR: `93e8d00cbe2525436c4202e412af2c278efafff0` on
+  `codex/nc-20260802-003-company-os-sequence`
 - Change class: C3 — Slack routing and Sales operator workflow
 - Affected systems: lead-key derivation, Slack anchor lifecycle/broadcast policy,
   Sales and Inbox prompts, project map, focused routing tests
@@ -59,9 +59,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-02T18:15Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_review
-- Commit/PR: uncommitted on
-  `codex/nc-20260802-003-company-os-sequence` based on deployment-record commit
+- State: ready_for_deploy
+- Commit/PR: `93e8d00cbe2525436c4202e412af2c278efafff0` on
+  `codex/nc-20260802-003-company-os-sequence`, based on deployment-record commit
   `0f20224`
 - Change class: C5 — production release activation and runtime provenance
 - Affected systems: release integrity/health, release bundle inventory,

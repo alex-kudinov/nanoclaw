@@ -10,6 +10,7 @@
 - Latest Codex request: `docs/reports/NC-20260802-003-CODEX-REQUEST-R4.md`
 - Latest Claude response:
   `docs/reports/NC-20260802-003-CLAUDE-C5-REVIEW-R4.md`
+- Implementation commit: `93e8d00cbe2525436c4202e412af2c278efafff0`
 - Verified agreements: production lineage `23ffb07` plus record `0f20224`;
   activation derives from the installed plist and changes exactly three fields;
   runtime health must prove the code root; Heartbeat remains authoritative;
@@ -57,6 +58,8 @@
   N1/N3 are assigned to NC-007 and N2/N4/N5 to NC-008. The focused delta was
   independently reproduced at 7 files / 178 tests and the `lsof` preflight
   command shape was verified on the host.
-- Next: final continuity/format/diff checks and commit. No deployment is
-  authorized in this round; the stale-lock takeover race must close before the
-  first production `--apply`.
+- Commit: the reviewed NC-003/006 implementation and all R1-R4 evidence were
+  committed as `93e8d00cbe2525436c4202e412af2c278efafff0`.
+- Next: no deployment is authorized in this round. Close and re-review the
+  stale-lock takeover race under NC-007 before the first production `--apply`;
+  NC-006 may be deployed separately and then live-observed before NC-008 begins.
