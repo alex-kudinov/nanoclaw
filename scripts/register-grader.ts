@@ -39,6 +39,14 @@ setRegisteredGroup(jid, {
   containerConfig: {
     timeout: 600000,
     model: 'sonnet', // see MODEL-PER-ACTION POLICY above
+    processingMessage: 'Grading submission',
+    // Each Slack root is an independent submission with its own concurrent
+    // container/session. Five posted roots can therefore use the host's five
+    // slots instead of serializing behind one channel-level conversation.
+    threadPerMessage: true,
+    // Grader threads are one-shot work units. Release warm capacity quickly;
+    // conversational groups keep the longer global idle window.
+    idleTimeout: 30000,
     additionalMounts: [
       {
         // The standalone, self-contained grading platform (registry + graders +
@@ -61,4 +69,6 @@ setRegisteredGroup(jid, {
   },
 });
 
-console.log(`Registered grader group: ${jid} → groups/grader/  (model: sonnet)`);
+console.log(
+  `Registered grader group: ${jid} → groups/grader/  (model: sonnet)`,
+);

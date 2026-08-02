@@ -18,6 +18,14 @@ Your output is sent to the user or group.
 
 You also have `mcp__nanoclaw__send_message` which sends a message immediately while you're still working. This is useful when you want to acknowledge a request before starting longer work.
 
+For an explicitly authorized grading submission, you also have
+`mcp__nanoclaw__send_grader_file`. It accepts one exact regular file already
+under `/workspace/group`, fixes the destination to the grader, and requires a
+stable idempotency key. Use it only when the operator names the student and
+assignment and asks to send that submission for grading. It does not authorize
+grading decisions, Heartbeat updates, certificate claims, or delivery anywhere
+else.
+
 ### Internal thoughts
 
 If part of your output is internal reasoning rather than something for the user, wrap it in `<internal>` tags:

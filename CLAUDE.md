@@ -109,10 +109,17 @@ Two databases. Read the schema reference BEFORE writing any query — always loo
 Run commands directly — execute them yourself rather than instructing the user.
 
 ```bash
+nvm use                 # must resolve to the exact version in .nvmrc
 npm run dev          # Run with hot reload
 npm run build        # Compile TypeScript
+npm run release:build # Clean-commit, provenance-bearing production artifact
 ./container/build.sh # Rebuild agent container
 ```
+
+Production releases follow `docs/RELEASE-INTEGRITY.md`. Do not deploy by
+building or hand-editing `dist/` in the production checkout. Production startup
+must require the release manifest, pin the intended full commit, and expose
+that verified identity through `/health`.
 
 Service management:
 ```bash

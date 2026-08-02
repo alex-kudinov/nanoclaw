@@ -48,7 +48,7 @@ SELECT business_v2.fn_create_pipeline_entry(10042, 1, 'new', 10000, 'USD', '{}':
 | `nanoclaw_chief` | SELECT views + EXECUTE helpers |
 | `nanoclaw_booking` | SELECT views + EXECUTE helpers |
 | `nanoclaw_contador` | SELECT views + EXECUTE helpers |
-| `nanoclaw_procurement` | SELECT views + EXECUTE helpers + public.procurement_opportunities |
+| `nanoclaw_procurement` | SELECT views + RLS-limited legacy Bonfire access on public.procurement_opportunities; source-keyed migration 114 rows and all control-plane writes remain host-only |
 | `nanoclaw_admin` | Full access (DDL + DML) |
 
 Agent roles can SELECT from views and lookup tables, EXECUTE helper functions. They **cannot** SELECT/INSERT/UPDATE base tables in `business_v2` directly.
@@ -214,9 +214,15 @@ SELECT
 
 ## Procurement (hybrid access)
 
-Procurement agent uses mixed schema access:
+Procurement has a transitional split:
 
-- **procurement_opportunities:** stays in `public.*` schema — INSERT/SELECT/UPDATE as before
+- **Legacy scanner:** migration 114 row-level security keeps direct
+  `public.procurement_opportunities` access only for source-keyless Bonfire
+  rows. The role cannot read or mutate source-keyed CaleProcure/email work.
+- **New intake:** migration 114 adds host-only typed writes, immutable
+  observations, idempotent source-run completion, host-bound Slack review
+  cards, and `public.v_procurement_review_queue`. CaleProcure/email adapters
+  must use `src/procurement-intake.ts`, never model-authored SQL.
 - **Vendor party operations:** use `business_v2` helpers
 
 ```sql
@@ -230,9 +236,25 @@ SELECT * FROM business_v2.v_party_contact_card WHERE primary_email = '{org_email
 -- Log interaction (use 'other' channel, NOT 'procurement')
 SELECT business_v2.fn_log_interaction({party_id}, 'other', 'inbound', 'RFP response received', NOW(), '{}'::jsonb);
 
--- Procurement-specific table (stays in public.*)
+-- Legacy Procurement path only; new intake does not issue this SQL
 INSERT INTO public.procurement_opportunities (...) VALUES (...);
 ```
+
+The host administrator alone executes:
+
+- `public.fn_begin_procurement_source_run(...)`;
+- `public.fn_record_procurement_observation(...)`;
+- `public.fn_complete_procurement_source_run(...)`;
+- `public.fn_transition_procurement_review(...)`;
+- `public.fn_record_procurement_review_card(...)`;
+- `public.fn_apply_procurement_review_card_decision(...)`.
+
+The Procurement container receives read-only
+`public.v_procurement_review_queue` through the bounded
+`procurement_queue` IPC tool. Its CaleProcure batch and review-card requests
+cross typed host gates; the final decision actor is derived from Slack and is
+never accepted from the container. Submission is outside this database
+boundary.
 
 ## Historical Data Note
 
@@ -244,6 +266,6 @@ historical coverage.
 ## Schema File Reference
 
 - DDL: `data/business/migrations/nanoclaw-v2/` (01-18 base/cutover plus ordered
-  post-cutover migrations 90-113)
+  post-cutover migrations 90-114)
 - Validation: `data/business/migrations/nanoclaw-v2/validate.sql` (20 acceptance criteria)
 - Smoke tests: `data/business/migrations/nanoclaw-v2/90_smoke_tests.sql`

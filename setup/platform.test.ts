@@ -112,9 +112,9 @@ describe('getNodeVersion', () => {
 // --- getNodeMajorVersion ---
 
 describe('getNodeMajorVersion', () => {
-  it('returns at least 20', () => {
+  it('returns the pinned Node 22 major', () => {
     const major = getNodeMajorVersion();
     expect(major).not.toBeNull();
-    expect(major!).toBeGreaterThanOrEqual(20);
+    expect(major).toBe(22);
   });
 });

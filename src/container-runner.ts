@@ -132,6 +132,10 @@ function buildVolumeMounts(
 ): VolumeMount[] {
   const mounts: VolumeMount[] = [];
   const projectRoot = process.cwd();
+  // A production daemon may execute an immutable release while keeping its
+  // operational state checkout as cwd. Container code and skills must come
+  // from that verified release, not from a stale/dirty state checkout.
+  const codeRoot = process.env.NANOCLAW_CODE_ROOT || projectRoot;
   const groupDir = resolveGroupFolderPath(group.folder);
 
   if (isMain) {
@@ -235,7 +239,7 @@ function buildVolumeMounts(
   );
 
   // Sync skills from container/skills/ into each group's .claude/skills/
-  const skillsSrc = path.join(process.cwd(), 'container', 'skills');
+  const skillsSrc = path.join(codeRoot, 'container', 'skills');
   const skillsDst = path.join(groupSessionsDir, 'skills');
   if (fs.existsSync(skillsSrc)) {
     for (const skillDir of fs.readdirSync(skillsSrc)) {
@@ -271,7 +275,7 @@ function buildVolumeMounts(
   // groups. Recompiled on container startup via entrypoint.sh.
   // Version hash invalidates stale copies when source changes.
   const agentRunnerSrc = path.join(
-    projectRoot,
+    codeRoot,
     'container',
     'agent-runner',
     'src',

@@ -23,6 +23,12 @@ export interface ChannelOpts {
     threadId?: string;
     body: string;
   }) => Promise<void>;
+  /**
+   * Slack-only host hook: pipeline entry id → lead email, so a per-lead status
+   * line that names its lead only by id ("Lead #611 …") threads with the rest of
+   * that lead's traffic instead of landing at the channel root.
+   */
+  resolveLeadEmail?: (entryId: number) => Promise<string | undefined>;
 }
 
 export type ChannelFactory = (opts: ChannelOpts) => Channel | null;

@@ -37,13 +37,23 @@ vi.mock('./email-interaction-log.js', () => ({
   logOutboundEmailInteraction: vi.fn().mockResolvedValue(undefined),
 }));
 
+// party_id / best_party_by_email are `bigint`, and node-postgres returns bigint
+// as a STRING to avoid precision loss. The mock MUST reproduce that: returning a
+// JS number here is what let `claimedPartyId !== resolvedPartyId` pass 1,661
+// tests while blocking every real send with "claimed party 11119 does not match
+// host-resolved party 11119" (Lead #962, 2026-07-30).
+const asBigintText = (v: number | null): string | null =>
+  v === null ? null : String(v);
+
 vi.mock('./business-db.js', () => ({
   query: vi.fn(async (sql: string) => {
     if (sql.includes('best_party_by_email')) {
-      return { rows: [{ id: businessState.partyByEmailId }] };
+      return { rows: [{ id: asBigintText(businessState.partyByEmailId) }] };
     }
     if (sql.includes("metadata->>'thread_id'")) {
-      return { rows: [{ party_id: businessState.partyByThreadId }] };
+      return {
+        rows: [{ party_id: asBigintText(businessState.partyByThreadId) }],
+      };
     }
     if (sql.includes('business_v2.party_emails')) {
       return {
@@ -471,6 +481,43 @@ describe('outbound email interaction logging', () => {
     });
 
     expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('sends when a numeric leadId matches the bigint-as-string resolved party', async () => {
+    businessState.partyByEmailId = 11119;
+    businessState.emails = new Set(['lead@external.com']);
+
+    await handleGmailSend({
+      type: 'gmail_send',
+      groupFolder: 'mailman',
+      timestamp: '2026-07-30T22:41:00Z',
+      to: 'lead@external.com',
+      subject: 'Executive Coaching',
+      body: '<p>Hi.</p>',
+      leadId: 11119,
+    });
+
+    expect(sendEmail).toHaveBeenCalled();
+    expect(logOutboundEmailInteraction).toHaveBeenCalledWith(
+      expect.objectContaining({ partyId: 11119 }),
+    );
+  });
+
+  it('still rejects a leadId that genuinely disagrees with the host', async () => {
+    businessState.partyByEmailId = 11119;
+    businessState.emails = new Set(['lead@external.com']);
+
+    await handleGmailSend({
+      type: 'gmail_send',
+      groupFolder: 'mailman',
+      timestamp: '2026-07-30T22:41:00Z',
+      to: 'lead@external.com',
+      subject: 'Executive Coaching',
+      body: '<p>Hi.</p>',
+      leadId: 22222,
+    });
+
     expect(sendEmail).not.toHaveBeenCalled();
   });
 

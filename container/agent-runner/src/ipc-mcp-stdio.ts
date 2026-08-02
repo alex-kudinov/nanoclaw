@@ -7,6 +7,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { CronExpressionParser } from 'cron-parser';
@@ -14,6 +15,8 @@ import { CronExpressionParser } from 'cron-parser';
 const IPC_DIR = '/workspace/ipc';
 const MESSAGES_DIR = path.join(IPC_DIR, 'messages');
 const TASKS_DIR = path.join(IPC_DIR, 'tasks');
+const ATTACHMENTS_DIR = path.join(IPC_DIR, 'attachments');
+const MAX_GRADER_FILE_BYTES = 25 * 1024 * 1024;
 
 // Context from environment variables (set by the agent runner)
 const chatJid = process.env.NANOCLAW_CHAT_JID!;
@@ -95,6 +98,115 @@ server.tool(
         },
       ],
     };
+  },
+);
+
+server.tool(
+  'send_grader_file',
+  'Stage one local assignment file and ask the host to post it as a new #gru-grader root with the file attached in its thread. This capability is fixed to the grader and available only to the main/chief control group.',
+  {
+    text: z
+      .string()
+      .min(1)
+      .max(4000)
+      .describe('Clean root text naming the student and exact assignment'),
+    file_path: z
+      .string()
+      .min(1)
+      .describe('Absolute path to a regular file under /workspace/group'),
+    idempotency_key: z
+      .string()
+      .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/)
+      .describe('Stable unique key for this student submission'),
+  },
+  async (args) => {
+    if (!isMain && groupFolder !== 'chief') {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: 'Denied: only the main or chief group can send grader files.',
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    try {
+      const groupRoot = fs.realpathSync('/workspace/group');
+      const sourceLstat = fs.lstatSync(args.file_path);
+      if (sourceLstat.isSymbolicLink() || !sourceLstat.isFile()) {
+        throw new Error('file_path must be a regular non-symlink file');
+      }
+      if (sourceLstat.size <= 0 || sourceLstat.size > MAX_GRADER_FILE_BYTES) {
+        throw new Error('file must be between 1 byte and 25 MB');
+      }
+      const sourcePath = fs.realpathSync(args.file_path);
+      if (!sourcePath.startsWith(`${groupRoot}${path.sep}`)) {
+        throw new Error('file_path must resolve under /workspace/group');
+      }
+
+      const filename = path.basename(sourcePath);
+      const content = fs.readFileSync(sourcePath);
+      const sha256 = crypto.createHash('sha256').update(content).digest('hex');
+      const keyHash = crypto
+        .createHash('sha256')
+        .update(args.idempotency_key)
+        .digest('hex');
+      const destinationDir = path.join(ATTACHMENTS_DIR, keyHash);
+      const destinationPath = path.join(destinationDir, filename);
+      fs.mkdirSync(destinationDir, { recursive: true });
+
+      if (fs.existsSync(destinationPath)) {
+        const existing = fs.readFileSync(destinationPath);
+        const existingHash = crypto
+          .createHash('sha256')
+          .update(existing)
+          .digest('hex');
+        if (existingHash !== sha256) {
+          throw new Error(
+            'idempotency key already stages a different file; use a new key',
+          );
+        }
+      } else {
+        const tempPath = `${destinationPath}.${process.pid}.tmp`;
+        fs.writeFileSync(tempPath, content, { mode: 0o600, flag: 'wx' });
+        fs.renameSync(tempPath, destinationPath);
+      }
+
+      const ipcFilename = writeIpcFile(MESSAGES_DIR, {
+        type: 'slack_file_message',
+        chatJid,
+        groupFolder,
+        targetGroupFolder: 'grader',
+        text: args.text,
+        staged_path: path.relative(IPC_DIR, destinationPath),
+        filename,
+        size: content.length,
+        sha256,
+        idempotency_key: args.idempotency_key,
+        timestamp: new Date().toISOString(),
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Grader file queued (${ipcFilename}); idempotency key ${args.idempotency_key}.`,
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Grader file was not queued: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
   },
 );
 
@@ -600,6 +712,144 @@ server.tool(
         {
           type: 'text' as const,
           text: `Thread fetch queued for ${args.thread_id}. Messages will arrive as a follow-up message.`,
+        },
+      ],
+    };
+  },
+);
+
+server.tool(
+  'procurement_queue',
+  'List host-normalized CaleProcure and emailed opportunities awaiting Procurement review. This is read-only and never returns raw portal snapshots or email bodies.',
+  {
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(50)
+      .default(20)
+      .describe('Maximum opportunities to return'),
+  },
+  async (args) => {
+    if (groupFolder !== 'procurement') {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: 'procurement_queue is restricted to the procurement group.',
+          },
+        ],
+        isError: true,
+      };
+    }
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'procurement_queue',
+      limit: args.limit,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: 'Procurement review queue requested. Results will arrive as a follow-up message.',
+        },
+      ],
+    };
+  },
+);
+
+const caleProcureResultRow = z
+  .object({
+    event_id: z.string().trim().min(1).max(128),
+    business_unit: z.string().trim().min(1).max(64).optional(),
+    title: z.string().trim().min(1).max(500),
+    agency: z.string().trim().min(1).max(300),
+    close_date: z.string().trim().min(1).max(80).optional(),
+    category: z.string().trim().max(120).optional(),
+    url: z.string().trim().url().max(2000).optional(),
+    search_keyword: z.string().trim().min(1).max(120),
+  })
+  .strict();
+
+server.tool(
+  'procurement_caleprocure_ingest',
+  'Submit a bounded public CaleProcure result batch to the host validator. The host owns timestamps, deduplication, source-run completion, and all parameterized database writes. This is separately enabled and never submits a bid.',
+  {
+    run_key: z
+      .string()
+      .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/)
+      .describe('Stable idempotency key for this exact result batch'),
+    rows: z
+      .array(caleProcureResultRow)
+      .max(200)
+      .describe('Public result-table rows; empty is a valid complete scan'),
+  },
+  async (args) => {
+    if (groupFolder !== 'procurement') {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: 'procurement_caleprocure_ingest is restricted to the procurement group.',
+          },
+        ],
+        isError: true,
+      };
+    }
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'procurement_caleprocure_ingest',
+      runKey: args.run_key,
+      rows: args.rows,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: 'CaleProcure batch queued for host validation. A completion or denial message will follow.',
+        },
+      ],
+    };
+  },
+);
+
+server.tool(
+  'procurement_review_card',
+  'Ask the host to create or reuse a version-bound Slack review card from current database truth. The recommendation is advisory; only a named human decision command in the card thread can change state.',
+  {
+    opportunity_id: z.number().int().positive(),
+    expected_version: z.number().int().nonnegative(),
+    recommendation: z.enum(['needs_info', 'process', 'drop']),
+    reason: z.string().trim().min(1).max(1000),
+  },
+  async (args) => {
+    if (groupFolder !== 'procurement') {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: 'procurement_review_card is restricted to the procurement group.',
+          },
+        ],
+        isError: true,
+      };
+    }
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'procurement_review_card',
+      opportunityId: args.opportunity_id,
+      expectedVersion: args.expected_version,
+      recommendation: args.recommendation,
+      reason: args.reason,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: 'Host Procurement review card requested. The host will verify current state before posting.',
         },
       ],
     };

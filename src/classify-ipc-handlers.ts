@@ -183,7 +183,7 @@ export async function markClassificationRouted(
  */
 async function routeAfterClassify(
   data: ClassifyLabelWritePayload,
-): Promise<void> {
+): Promise<boolean> {
   // Look up the stored message for body/sender context.
   // Gracefully degrade if DB isn't available (tests, race conditions).
   let body = '';
@@ -233,12 +233,24 @@ async function routeAfterClassify(
         },
         'classify: post-classify routing dispatched',
       );
+      return true;
     }
+    logger.warn(
+      {
+        gmail_message_id: data.gmail_message_id,
+        label: data.label,
+        action: result.action,
+        reason: result.reason,
+      },
+      'classify: post-classify routing did not complete',
+    );
+    return false;
   } catch (err) {
     logger.error(
       { err, gmail_message_id: data.gmail_message_id, label: data.label },
       'classify: post-classify routing failed',
     );
+    return false;
   }
 }
 
@@ -337,11 +349,13 @@ export async function handleClassifyLabelWrite(
     }
 
     if (!alreadyRouted) {
-      await routeAfterClassify(data);
-      await markClassificationRouted(
-        data.gmail_message_id,
-        data.classifier_version,
-      );
+      const routed = await routeAfterClassify(data);
+      if (routed) {
+        await markClassificationRouted(
+          data.gmail_message_id,
+          data.classifier_version,
+        );
+      }
     }
   }
 

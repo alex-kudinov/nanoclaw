@@ -23,6 +23,14 @@
         <string>{{HOME}}</string>
         <key>ASSISTANT_NAME</key>
         <string>Andy</string>
+        <key>NODE_ENV</key>
+        <string>production</string>
+        <key>NANOCLAW_REQUIRE_RELEASE_MANIFEST</key>
+        <string>1</string>
+        <key>NANOCLAW_EXPECTED_RELEASE_COMMIT</key>
+        <string>{{RELEASE_COMMIT}}</string>
+        <key>NANOCLAW_CODE_ROOT</key>
+        <string>{{PROJECT_ROOT}}</string>
     </dict>
     <key>StandardOutPath</key>
     <string>{{PROJECT_ROOT}}/logs/nanoclaw.log</string>

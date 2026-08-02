@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 // --- Mocks ---
 
@@ -47,7 +50,11 @@ vi.mock('@slack/bolt', () => ({
       },
       chat: {
         postMessage: vi.fn().mockResolvedValue({ ts: '1704067200.000100' }),
+        delete: vi.fn().mockResolvedValue({ ok: true }),
       },
+      filesUploadV2: vi.fn().mockResolvedValue({
+        files: [{ files: [{ id: 'F_UPLOAD_1' }] }],
+      }),
       conversations: {
         list: vi.fn().mockResolvedValue({
           channels: [],
@@ -998,6 +1005,87 @@ describe('SlackChannel', () => {
     });
   });
 
+  describe('postGraderFileMessage', () => {
+    it('posts one root, uploads into its thread, then wakes grader with inline text', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slack-grader-file-'));
+      const filePath = path.join(dir, 'submission.txt');
+      fs.writeFileSync(filePath, 'A thoughtful coaching reflection.');
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      try {
+        const result = await channel.postGraderFileMessage(
+          'slack:C0123456789',
+          'Grade Ada - Module 2 Part 2',
+          fs.readFileSync(filePath),
+          'submission.txt',
+          'main',
+        );
+
+        expect(result).toEqual({
+          messageTs: '1704067200.000100',
+          fileIds: ['F_UPLOAD_1'],
+        });
+        expect(currentApp().client.chat.postMessage).toHaveBeenCalledWith({
+          channel: 'C0123456789',
+          text: 'Grade Ada - Module 2 Part 2',
+        });
+        expect(currentApp().client.filesUploadV2).toHaveBeenCalledWith({
+          channel_id: 'C0123456789',
+          thread_ts: '1704067200.000100',
+          file: Buffer.from('A thoughtful coaching reflection.'),
+          filename: 'submission.txt',
+          title: 'submission.txt',
+        });
+        expect(opts.onMessage).toHaveBeenCalledWith(
+          'slack:C0123456789',
+          expect.objectContaining({
+            id: '1704067200.000100',
+            content: expect.stringContaining(
+              '<attached_file name="submission.txt" type="txt">',
+            ),
+            from_group: 'main',
+            thread_ts: undefined,
+          }),
+        );
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('deletes a file-less root and does not wake grader when upload fails', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slack-grader-file-'));
+      const filePath = path.join(dir, 'submission.txt');
+      fs.writeFileSync(filePath, 'submission');
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      currentApp().client.filesUploadV2.mockRejectedValueOnce(
+        new Error('files_upload_failed'),
+      );
+
+      try {
+        await expect(
+          channel.postGraderFileMessage(
+            'slack:C0123456789',
+            'Grade Ada - Module 2 Part 2',
+            fs.readFileSync(filePath),
+            'submission.txt',
+            'main',
+          ),
+        ).rejects.toThrow('files_upload_failed');
+        expect(currentApp().client.chat.delete).toHaveBeenCalledWith({
+          channel: 'C0123456789',
+          ts: '1704067200.000100',
+        });
+        expect(opts.onMessage).not.toHaveBeenCalled();
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+
   // --- ownsJid ---
 
   describe('ownsJid', () => {
@@ -1494,6 +1582,30 @@ Hi Oana, good to hear from you.
       );
     });
 
+    // Entry #871, 2026-07-31: the agent retyped the root ts out of its prompt as
+    // 1785510996.909199 when the real root was ...909209. Slack does not reject
+    // an unknown thread_ts — it posts to the channel — so the draft landed below
+    // the thread instead of inside it. The host knows the canonical root.
+    it('overrides a wrong agent-supplied threadTs with the canonical lead anchor', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785510996.909209',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = await connected();
+
+      await channel.sendMessage(JID, CARD, {
+        fromGroup: 'sales',
+        threadTs: '1785510996.909199',
+      });
+
+      expect(resolveThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+      );
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBe('1785510996.909209');
+    });
+
     it('threads the sales card under that root instead of opening a second one', async () => {
       vi.mocked(resolveThreadAnchor).mockReturnValue({
         threadTs: '1785230544.590929',
@@ -1533,6 +1645,134 @@ Hi Oana, good to hear from you.
         'C0AHV1SGT6W',
         'certifier:cert:jane|pcc',
       );
+    });
+
+    // Per-lead status lines name their lead by pipeline entry id and carry no
+    // labelled address, so before this they anchored nothing and posted at the
+    // channel root while the card and send sat in a thread.
+    describe('status lines anchored by entry id', () => {
+      async function withResolver(
+        resolveLeadEmail: (id: number) => Promise<string | undefined>,
+      ) {
+        const channel = new SlackChannel(createTestOpts({ resolveLeadEmail }));
+        await channel.connect();
+        return channel;
+      }
+
+      it('anchors "Lead #N …" on the resolved lead email', async () => {
+        vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+        const channel = await withResolver(async () => 'lead@example.com');
+
+        await channel.sendMessage(JID, 'Lead #611 — proposal sent', {
+          fromGroup: 'sales',
+        });
+
+        expect(resolveThreadAnchor).toHaveBeenCalledWith(
+          'C0AHV1SGT6W',
+          'lead:lead@example.com',
+        );
+      });
+
+      it('threads a "[NO ACTION] Entry #N" line under the existing lead root', async () => {
+        vi.mocked(resolveThreadAnchor).mockReturnValue({
+          threadTs: '1785230544.590929',
+          lastActivityAt: new Date().toISOString(),
+        });
+        const channel = await withResolver(async () => 'lead@example.com');
+
+        await channel.sendMessage(
+          JID,
+          '[NO ACTION] Entry #85 — nothing to do',
+          {
+            fromGroup: 'sales',
+          },
+        );
+
+        const post = currentApp().client.chat.postMessage;
+        expect(post.mock.calls[0][0].thread_ts).toBe('1785230544.590929');
+      });
+
+      it('passes the parsed entry id to the resolver', async () => {
+        vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+        const resolveLeadEmail = vi.fn(async () => 'lead@example.com');
+        const channel = await withResolver(resolveLeadEmail);
+
+        await channel.sendMessage(JID, 'Lead #611 — proposal sent');
+
+        expect(resolveLeadEmail).toHaveBeenCalledWith(611);
+      });
+
+      // The address route is authoritative and free; the id route is a fallback.
+      it('prefers a labelled address over an id lookup', async () => {
+        vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+        const resolveLeadEmail = vi.fn(async () => 'wrong@example.com');
+        const channel = await withResolver(resolveLeadEmail);
+
+        await channel.sendMessage(JID, CARD, { fromGroup: 'sales' });
+
+        expect(resolveLeadEmail).not.toHaveBeenCalled();
+        expect(resolveThreadAnchor).toHaveBeenCalledWith(
+          'C0AHV1SGT6W',
+          'lead:oana.tue.coach@gmail.com',
+        );
+      });
+
+      it('falls back to the author key when the entry cannot be resolved', async () => {
+        vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+        const channel = await withResolver(async () => undefined);
+
+        await channel.sendMessage(JID, 'Lead #611 — proposal sent', {
+          threadKey: 'sales:entry:611',
+        });
+
+        expect(resolveThreadAnchor).toHaveBeenCalledWith(
+          'C0AHV1SGT6W',
+          'sales:entry:611',
+        );
+      });
+
+      it('does not anchor a roundup naming two leads', async () => {
+        vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+        const resolveLeadEmail = vi.fn(async () => 'lead@example.com');
+        const channel = await withResolver(resolveLeadEmail);
+
+        await channel.sendMessage(
+          JID,
+          'Entry #101 updated ✓\nStill pending: Entry #97',
+        );
+
+        expect(resolveLeadEmail).not.toHaveBeenCalled();
+      });
+
+      it('still delivers the message when the resolver rejects', async () => {
+        vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+        const channel = new SlackChannel(
+          createTestOpts({
+            resolveLeadEmail: async () => {
+              throw new Error('db down');
+            },
+          }),
+        );
+        await channel.connect();
+
+        await expect(
+          channel.sendMessage(JID, 'Lead #611 — proposal sent'),
+        ).resolves.toBeUndefined();
+      });
+
+      it('anchors nothing by id when no resolver is wired', async () => {
+        vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+        const channel = await connected();
+
+        await channel.sendMessage(JID, 'Lead #611 — proposal sent', {
+          threadKey: 'sales:entry:611',
+        });
+
+        expect(resolveThreadAnchor).toHaveBeenCalledWith(
+          'C0AHV1SGT6W',
+          'sales:entry:611',
+        );
+      });
     });
 
     it('still broadcasts non-lead anchored replies', async () => {

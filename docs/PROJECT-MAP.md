@@ -466,7 +466,7 @@ last active around 2026-07-06 and is not asserted to be current production.
 | `certifier`                                               | pending certification workflow and Sertifier actions               | explicit approval before consequential issue/send                                  |
 | `courses`                                                 | session recap preparation and distribution                         | current raw SMTP path bypasses Gmail controls and is scheduled for retirement      |
 | `grader`                                                  | rubric/data-driven MCS grading and durable results                 | Sonnet; one thread/container per submission; calibration holds                     |
-| `procurement`                                             | Bonfire/CaleProcure opportunity and proposal lifecycle             | browser/data integrations; avoid blind submissions                                 |
+| `procurement`                                             | CaleProcure/email review control plane plus legacy Bonfire/proposal lifecycle | new intake is host-normalized/read-only to the minion; Bonfire CDP remains isolate-or-retire |
 | `archivarista`                                            | domain-isolated knowledge synthesis/archival                       | Haiku; broad read mounts, provenance critical                                      |
 | `newsroom`                                                | editorial pipeline                                                 | no unapproved broadcast                                                            |
 | `social`                                                  | LinkedIn content state machine                                     | confirmation/approval boundary                                                     |
@@ -504,6 +504,7 @@ or policy state as applicable.
 Capability families include:
 
 - channel send/reply and Slack thread anchoring;
+- fixed-destination grader file delivery with durable idempotency receipts;
 - Gmail read/classify/draft/send operations;
 - business-data read/write helpers;
 - handoff and learning events;
@@ -520,6 +521,34 @@ Security-sensitive rules:
 - record the requested action, decision, and final result separately;
 - ensure retries are idempotent or carry a stable idempotency key;
 - keep approval state durable across process/container restarts.
+
+### Grader file delivery checkpoint (`NC-20260802-001`)
+
+The generic channel message IPC is not a file authority. Grader uploads use a
+separate `slack_file_message` contract whose final boundary is host-owned:
+
+- only the directory-derived registered main group or `chief` may call it;
+- the destination is fixed to the registered `grader` group;
+- the source must be a regular non-symlink inside that source group's
+  `data/ipc/<group>/attachments/` tree, at most 25 MB, with matching size and
+  SHA-256 metadata;
+- the host snapshots the verified bytes before conversion/upload, closing the
+  writable-mount time-of-check/time-of-use gap;
+- a durable `pending` receipt is written before Slack is touched and becomes
+  `complete` with the root timestamp only after Slack confirms the threaded
+  upload and NanoClaw persists the readable root;
+- duplicate completed keys return the same receipt; pending/uncertain keys are
+  held rather than automatically retried.
+
+`SlackChannel.postGraderFileMessage()` posts one clean root, uploads the source
+artifact into that root's thread through `filesUploadV2`, and only then stores
+the inline-readable root with `from_group` set to the privileged source so the
+grader wakes exactly once. The shared toolbox adapter copies operator-selected
+files over the existing authenticated SSH route to the production Mac Mini's
+IPC, and fails closed unless that host's compiled runtime contains this
+capability; it does not call Slack directly or inject message rows.
+This path is implemented and locally validated but is not deployed or live-
+canaried as of this checkpoint.
 
 ### Gmail IPC containment checkpoint (`NC-20260729-004`)
 
@@ -690,8 +719,8 @@ Never solve that gap by syncing Claude session/auth directories.
 ### Prerequisites
 
 - macOS with Apple Container installed and running;
-- Node 22 (`.nvmrc`; package metadata says Node 20+, but native modules and the
-  verified development environment require respecting the pin);
+- exact Node `22.23.2` (`.nvmrc` and package metadata); native modules must be
+  installed or rebuilt under that exact ABI;
 - npm dependencies installed for that exact Node ABI;
 - Claude Code CLI and valid OAuth/API credentials;
 - required Slack/Gmail credentials and callback configuration;
@@ -706,7 +735,7 @@ nvm use
 npm install
 npm run typecheck
 npm test
-npm run build
+npm run release:build
 
 cd container/agent-runner
 npm install
@@ -722,6 +751,11 @@ npm run dev
 `npm run setup` is stateful. Read `.claude/skills/setup/SKILL.md` and inspect the
 setup code before running it on an established machine. Do not run setup merely
 to explore the repository.
+
+Production build, activation, health proof, and rollback are governed by
+`docs/RELEASE-INTEGRITY.md`. The daemon refuses a missing/mismatched manifest or
+runtime before opening external systems, and `/health` exposes the verified
+commit/artifact/Node identity.
 
 ### Authentication
 
@@ -889,6 +923,25 @@ separate explicit decision; do not open, publish, or delete them casually.
   dev process when real credentials are available.
 - Prompt approval rules must remain backed by host enforcement and durable
   approval records.
+- A read-only production check on 2026-07-30 verified that the dedicated
+  Procurement Chrome service and both its loopback and shared Apple Container
+  gateway CDP endpoints were live. The dedicated profile protects unrelated
+  browser state, but every agent VM can still reach the unauthenticated bridge.
+  The evidence, business-funnel diagnosis, and isolation-or-retirement decision
+  are recorded in `docs/PROCUREMENT-RESURRECTION-PLAN.md`.
+- `NC-20260730-003` implemented the first resurrection slice:
+  migration 114, deterministic CaleProcure normalization, exact-message email
+  intake, an immutable observation/run ledger, a bounded review queue, and
+  optimistic host-only review transitions.
+- `NC-20260730-004` extends that slice with a
+  default-off typed CaleProcure batch IPC and host-generated Slack cards.
+  Decisions require an exact command in the bound card thread from a configured
+  Slack UID and atomically consume the card/version/epoch. Migration 114 and the
+  isolated host/runner/prompt release were deployed to the production Mac Mini
+  on 2026-07-30. RLS preserves direct legacy access only for source-keyless
+  Bonfire rows; source-keyed CaleProcure/email rows are host-owned. Both gates
+  remain off with no owner IDs or epoch; the schedule, browser, 309 legacy rows,
+  and submission boundary were not changed.
 
 ### P1: reproducibility and source ownership
 
@@ -960,6 +1013,8 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/ACTIVE-WORK.md`                 | current task ownership, overlap, state, and next action      | must remain concise and current                    |
 | `docs/ENGINEERING-CHANGELOG.md`       | append-only implementation/verification/deployment history   | evidence only; do not overstate boundaries crossed |
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` | validated, phased improvement roadmap                        | proposed work; not implemented state               |
+| `docs/RELEASE-INTEGRITY.md`           | production build, activation, health, and rollback contract  | archive integrity is not publisher authenticity    |
+| `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement current state and target operating loop | C1 design plus NC-20260730-003/004 local slices; migration/deployment remain unauthorized |
 | `docs/SELF-HEALING-COMPLETION-PLAN.md` | reconciled healer current state and gated completion sequence | action-boundary source is local until separately reviewed/deployed |
 | `docs/REQUIREMENTS.md`                | original product principles                                  | intent, not feature inventory                      |
 | `docs/ARCHITECTURE.md`                | broad bespoke architecture                                   | some SDK terminology is stale                      |

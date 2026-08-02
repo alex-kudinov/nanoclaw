@@ -40,6 +40,7 @@ import { handleChaosActivity } from './chaos-activity.js';
 import { recordChaosBooking } from './chaos-booking.js';
 import { handleStripePayment } from './stripe-payment-host.js';
 import { formatBookedNotice } from './host-router.js';
+import type { ReleaseIdentity } from './release-integrity.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -56,6 +57,7 @@ type RunAgentFn = (
 ) => Promise<ContainerOutput>;
 
 export interface HealthPayload {
+  release: ReleaseIdentity;
   channels: Record<
     string,
     { connected: boolean; lastActivitySec: number | null }
@@ -253,7 +255,13 @@ export class WebhookServer {
 
     return new Promise((resolve, reject) => {
       this.server.once('error', reject);
-      this.server.listen(this.deps.port, '0.0.0.0', () => resolve());
+      this.server.listen(this.deps.port, '0.0.0.0', () => {
+        // Port 0 is useful for isolated tests and local tooling: retain the
+        // kernel-assigned port so callers using the dependency object can
+        // connect without racing a guessed fixed range.
+        this.deps.port = this.getPort();
+        resolve();
+      });
     });
   }
 
@@ -268,6 +276,8 @@ export class WebhookServer {
   }
 
   getPort(): number {
+    const address = this.server.address();
+    if (address && typeof address === 'object') return address.port;
     return this.deps.port;
   }
 

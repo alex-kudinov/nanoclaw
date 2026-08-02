@@ -1,0 +1,32 @@
+[
+  {
+    "event_id": "0000042001",
+    "business_unit": "3900",
+    "title": "Executive Leadership Coaching Services",
+    "agency": "Example California Department",
+    "close_date": "08/21/2026",
+    "category": "RFP",
+    "url": "https://caleprocure.ca.gov/event/3900/0000042001",
+    "search_keyword": "executive coaching"
+  },
+  {
+    "event_id": "0000042001",
+    "business_unit": "3900",
+    "title": "Executive Leadership Coaching Services",
+    "agency": "Example California Department",
+    "close_date": "2026-08-21",
+    "category": "RFP",
+    "url": "https://caleprocure.ca.gov/event/3900/0000042001",
+    "search_keyword": "leadership development"
+  },
+  {
+    "event_id": "01A7002",
+    "business_unit": "7760",
+    "title": "Team Facilitation and Organizational Development",
+    "agency": "Example State Office",
+    "close_date": "09/04/2026 2:00 PM",
+    "category": "RFQ",
+    "url": "https://caleprocure.ca.gov/event/7760/01A7002",
+    "search_keyword": "facilitation"
+  }
+]

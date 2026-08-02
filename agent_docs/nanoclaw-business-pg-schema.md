@@ -2,10 +2,12 @@
 
 Generated: 2026-07-26T08:00:57.229Z
 
-Reconciled from tracked migration 113 on 2026-07-28: the two
-`business_v2.parties.no_followup_*` columns below postdate the generated
-snapshot. Run `tools/refresh-schemas.sh` after the next authorized live-schema
-inspection to replace this migration overlay with generated evidence.
+Reconciled from tracked migrations 113-114 on 2026-07-30: the two
+`business_v2.parties.no_followup_*` columns and Procurement control-plane
+structures below postdate the generated snapshot. Migration 114 was applied
+and structurally verified in production on 2026-07-30. Run
+`tools/refresh-schemas.sh` after the next authorized schema refresh to replace
+these overlays with generated evidence.
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -221,6 +223,88 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   reviewed_at                   timestamp with time zone
   scraped_at                    timestamp with time zone
   source                        text                 DEFAULT='bonfire'::text
+  source_key                    text
+  review_state                  text                 DEFAULT='unreviewed'::text
+  review_reason                 text
+  review_version                integer              NOT NULL DEFAULT=0
+  decision_owner                text
+  decision_at                   timestamp with time zone
+```
+
+## procurement_observations
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('procurement_observations_id_seq'::regclass)
+  source_run_id                 bigint
+  opportunity_id                integer              NOT NULL
+  source                        text                 NOT NULL
+  source_key                    text                 NOT NULL
+  observed_at                   timestamp with time zone NOT NULL
+  payload_hash                  text                 NOT NULL
+  title                         text                 NOT NULL
+  agency                        text
+  close_date                    date
+  category                      text
+  source_url                    text
+  search_keywords               ARRAY                NOT NULL DEFAULT='{}'::text[]
+  gmail_message_id              text
+  gmail_thread_id               text
+  raw_payload                   jsonb                NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## procurement_source_runs
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('procurement_source_runs_id_seq'::regclass)
+  source                        text                 NOT NULL
+  run_key                       text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='running'::text
+  started_at                    timestamp with time zone NOT NULL
+  completed_at                  timestamp with time zone
+  observations_seen             integer              NOT NULL DEFAULT=0
+  observations_new              integer              NOT NULL DEFAULT=0
+  error_code                    text
+  metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## procurement_review_cards
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('procurement_review_cards_id_seq'::regclass)
+  opportunity_id                integer              NOT NULL
+  review_version                integer              NOT NULL
+  channel_jid                   text                 NOT NULL
+  message_ts                    text                 NOT NULL
+  action_epoch                  text                 NOT NULL
+  recommendation                text                 NOT NULL
+  recommendation_reason         text                 NOT NULL
+  state                         text                 NOT NULL DEFAULT='open'::text
+  decision                      text
+  decision_reason               text
+  decision_owner_uid            text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  decided_at                    timestamp with time zone
+```
+
+## v_procurement_review_queue
+
+```
+  opportunity_id                integer
+  source                        text
+  source_key                    text
+  title                         text
+  agency                        text
+  close_date                    date
+  category                      text
+  source_url                    text
+  review_state                  text
+  review_reason                 text
+  review_version                integer
+  first_seen_at                 timestamp with time zone
+  last_seen_at                  timestamp with time zone
+  days_until_close              integer
 ```
 
 ## proposals

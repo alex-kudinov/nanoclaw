@@ -36,6 +36,7 @@ const CAPABILITIES: Readonly<Record<string, ReadonlySet<GmailIpcOperation>>> =
     contador: new Set<GmailIpcOperation>(['gmail_read']),
     archivarista: new Set<GmailIpcOperation>(['gmail_read']),
     chief: new Set<GmailIpcOperation>(['gmail_read']),
+    procurement: new Set<GmailIpcOperation>(['gmail_read']),
   });
 
 const GRANT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -195,10 +196,28 @@ export function propagateGmailResources(
   grantHostGmailResources(targetGroup, allowed);
 }
 
+const BARE_ADDRESS_RE =
+  /^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?)+$/i;
+
+/**
+ * Canonical search form for a single assigned address. A bare address is an
+ * unambiguous request for that party's correspondence and carries no operator,
+ * so it is normalized rather than refused: quarantining it taught the agent
+ * nothing and stalled a live thread waiting on a result that never came
+ * (lead #954, 2026-07-30T21:53Z). Quarantine stays reserved for queries that
+ * genuinely widen scope.
+ */
+export function normalizeGmailSearchQuery(query: string): string {
+  const compact = query.trim().replace(/\s+/g, ' ');
+  if (!BARE_ADDRESS_RE.test(compact)) return compact;
+  const addr = normalizeRecipient(compact);
+  return `from:${addr} OR to:${addr}`;
+}
+
 export function extractScopedGmailSearchAddresses(
   query: string,
 ): string[] | null {
-  const compact = query.trim().replace(/\s+/g, ' ');
+  const compact = normalizeGmailSearchQuery(query);
   const clause = "(?:from|to):([A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9.-]+)";
   const safeShape = new RegExp(`^${clause}(?: OR ${clause})?$`, 'i').exec(
     compact,

@@ -100,7 +100,11 @@ function createSchema(database: Database.Database): void {
       gmail_thread_id TEXT,
       recipient TEXT,
       lead_ref TEXT,
-      approved_at TEXT NOT NULL
+      approved_at TEXT NOT NULL,
+      handoff_observed_at TEXT,
+      handoff_message_id TEXT,
+      mailman_started_at TEXT,
+      handoff_alerted_at TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_pending_sends_group
       ON pending_sends (group_folder, approved_at);
@@ -320,6 +324,26 @@ function createSchema(database: Database.Database): void {
     `CREATE INDEX IF NOT EXISTS idx_pending_sends_gmail_thread
        ON pending_sends (gmail_thread_id, approved_at)`,
   );
+  // Durable delivery-stage evidence. These columns distinguish "Sales never
+  // handed off" from "the handoff routed but Mailman never started", so the
+  // operator gets a precise early alert instead of waiting for the generic
+  // five-minute send timeout.
+  for (const column of [
+    'handoff_observed_at TEXT',
+    'handoff_message_id TEXT',
+    'mailman_started_at TEXT',
+    'handoff_alerted_at TEXT',
+  ]) {
+    try {
+      database.exec(`ALTER TABLE pending_sends ADD COLUMN ${column}`);
+    } catch {
+      /* column already exists */
+    }
+  }
+  database.exec(
+    `CREATE INDEX IF NOT EXISTS idx_pending_sends_handoff
+       ON pending_sends (handoff_observed_at, mailman_started_at, handoff_alerted_at)`,
+  );
 }
 
 export function initDatabase(): void {
@@ -489,37 +513,76 @@ export function storeMessageDirect(msg: {
   );
 }
 
+/**
+ * The single gate that decides whether anything wakes a group. Three classes of
+ * row exist and each has exactly one correct answer:
+ *
+ *   1. human/inbound (`is_bot_message = 0`)            → always wakes.
+ *   2. a group's own echo (`from_group` = that channel's
+ *      owning folder)                                  → never wakes. This is
+ *      the noop-container swarm guard of 2026-07-05: every ack and reply echo
+ *      would otherwise re-spawn the agent that just wrote it.
+ *   3. a CROSS-GROUP delivery (`from_group` set and different from the owner)
+ *                                                      → must wake, because
+ *      that is a handoff addressed to this group.
+ *
+ * Class 3 was the bug. It was collapsed into class 2 by a blanket
+ * `COALESCE(is_bot_message,0) = 0`, so a `[HANDOFF: x→y]` could never start
+ * group y — it only rode along as context when something else happened to wake
+ * y anyway. Every delivery path hit this: mailman→sales via Slack
+ * (`channels/slack.ts` stores host posts with `is_bot_message: true`),
+ * sales→mailman via the Gmail jid (`ipc.ts` storeMessageDirect), chief→mailman,
+ * booking→sales. Fixing it per-producer is whack-a-mole — every future channel
+ * would reintroduce it — so the rule lives here, at the one consumer.
+ *
+ * `folderByJid` maps each polled chat to the group that owns it; a chat with no
+ * mapping cannot distinguish class 2 from class 3 and so keeps the old
+ * conservative behaviour.
+ */
 export function getNewMessages(
   jids: string[],
   lastTimestamp: string,
   botPrefix: string,
+  folderByJid: Record<string, string> = {},
 ): { messages: NewMessage[]; newTimestamp: string } {
   if (jids.length === 0) return { messages: [], newTimestamp: lastTimestamp };
 
   const placeholders = jids.map(() => '?').join(',');
-  // Filter: exclude messages from the same agent as the channel owner (from_group).
-  // from_group IS NULL = human message (always included).
   // Content prefix filter is a backstop for pre-migration bot messages.
   const sql = `
-    SELECT id, chat_jid, sender, sender_name, content, timestamp, from_group, thread_ts
+    SELECT id, chat_jid, sender, sender_name, content, timestamp, from_group,
+           thread_ts, COALESCE(is_bot_message, 0) AS is_bot_message
     FROM messages
     WHERE timestamp > ? AND chat_jid IN (${placeholders})
-      AND COALESCE(is_bot_message, 0) = 0
       AND content NOT LIKE ?
       AND content != '' AND content IS NOT NULL
     ORDER BY timestamp
   `;
 
+  type Row = Omit<NewMessage, 'is_bot_message'> & { is_bot_message: number };
   const rows = db
     .prepare(sql)
-    .all(lastTimestamp, ...jids, `${botPrefix}:%`) as NewMessage[];
+    .all(lastTimestamp, ...jids, `${botPrefix}:%`) as Row[];
 
+  // Advance the cursor over everything examined, not just what is returned, so
+  // suppressed echoes are not rescanned on every poll.
   let newTimestamp = lastTimestamp;
   for (const row of rows) {
     if (row.timestamp > newTimestamp) newTimestamp = row.timestamp;
   }
 
-  return { messages: rows, newTimestamp };
+  const messages: NewMessage[] = rows
+    .filter((row) => {
+      if (!row.is_bot_message) return true;
+      const owner = folderByJid[row.chat_jid];
+      return Boolean(row.from_group) && !!owner && row.from_group !== owner;
+    })
+    .map(({ is_bot_message, ...rest }) => ({
+      ...rest,
+      is_bot_message: Boolean(is_bot_message),
+    }));
+
+  return { messages, newTimestamp };
 }
 
 /**
@@ -994,6 +1057,54 @@ export function clearPendingSendsByRecipient(recipient: string): number {
     .run(recipient.toLowerCase()).changes;
 }
 
+/** Record the exact point at which a routed Mailman handoff became durable. */
+export function markPendingSendHandoff(
+  groupFolder: string,
+  recipient: string,
+  messageId: string | undefined,
+  observedAt: string,
+): number {
+  return db
+    .prepare(
+      `UPDATE pending_sends
+          SET handoff_observed_at = COALESCE(handoff_observed_at, ?),
+              handoff_message_id = COALESCE(handoff_message_id, ?)
+        WHERE rowid = (
+          SELECT rowid FROM pending_sends
+           WHERE group_folder = ?
+             AND LOWER(COALESCE(recipient, '')) = ?
+             AND handoff_observed_at IS NULL
+           ORDER BY approved_at, rowid
+           LIMIT 1
+        )`,
+    )
+    .run(observedAt, messageId ?? null, groupFolder, recipient.toLowerCase())
+    .changes;
+}
+
+/** Mark that Mailman's message loop actually claimed the routed handoff. */
+export function markPendingSendMailmanStarted(
+  groupFolder: string,
+  recipient: string,
+  startedAt: string,
+): number {
+  return db
+    .prepare(
+      `UPDATE pending_sends
+          SET mailman_started_at = COALESCE(mailman_started_at, ?)
+        WHERE rowid = (
+          SELECT rowid FROM pending_sends
+           WHERE group_folder = ?
+             AND LOWER(COALESCE(recipient, '')) = ?
+             AND handoff_observed_at IS NOT NULL
+             AND mailman_started_at IS NULL
+           ORDER BY handoff_observed_at, rowid
+           LIMIT 1
+        )`,
+    )
+    .run(startedAt, groupFolder, recipient.toLowerCase()).changes;
+}
+
 /** Host-approved reply binding used to reissue a mailman thread after restart. */
 export function getPendingSendByGmailThread(
   gmailThreadId: string,
@@ -1019,11 +1130,16 @@ export function listOverdueSends(cutoffIso: string): Array<{
   recipient?: string;
   leadRef?: string;
   approvedAt: string;
+  handoffObservedAt?: string;
+  handoffMessageId?: string;
+  mailmanStartedAt?: string;
+  handoffAlertedAt?: string;
 }> {
   const rows = db
     .prepare(
       `SELECT draft_ts, group_folder, chat_jid, thread_ts, gmail_thread_id,
-              recipient, lead_ref, approved_at
+              recipient, lead_ref, approved_at, handoff_observed_at,
+              handoff_message_id, mailman_started_at, handoff_alerted_at
          FROM pending_sends WHERE approved_at <= ? ORDER BY approved_at`,
     )
     .all(cutoffIso) as Array<{
@@ -1035,6 +1151,10 @@ export function listOverdueSends(cutoffIso: string): Array<{
     recipient: string | null;
     lead_ref: string | null;
     approved_at: string;
+    handoff_observed_at: string | null;
+    handoff_message_id: string | null;
+    mailman_started_at: string | null;
+    handoff_alerted_at: string | null;
   }>;
   return rows.map((r) => ({
     draftTs: r.draft_ts,
@@ -1045,7 +1165,67 @@ export function listOverdueSends(cutoffIso: string): Array<{
     recipient: r.recipient ?? undefined,
     leadRef: r.lead_ref ?? undefined,
     approvedAt: r.approved_at,
+    handoffObservedAt: r.handoff_observed_at ?? undefined,
+    handoffMessageId: r.handoff_message_id ?? undefined,
+    mailmanStartedAt: r.mailman_started_at ?? undefined,
+    handoffAlertedAt: r.handoff_alerted_at ?? undefined,
   }));
+}
+
+/** Routed handoffs that have not reached a Mailman container by the cutoff. */
+export function listStalledMailmanHandoffs(cutoffIso: string): Array<{
+  draftTs: string;
+  groupFolder: string;
+  chatJid: string;
+  threadTs?: string;
+  recipient?: string;
+  leadRef?: string;
+  approvedAt: string;
+  handoffObservedAt?: string;
+}> {
+  const rows = db
+    .prepare(
+      `SELECT draft_ts, group_folder, chat_jid, thread_ts, recipient, lead_ref,
+              approved_at, handoff_observed_at
+         FROM pending_sends
+        WHERE handoff_observed_at IS NOT NULL
+          AND handoff_observed_at <= ?
+          AND mailman_started_at IS NULL
+          AND handoff_alerted_at IS NULL
+        ORDER BY handoff_observed_at`,
+    )
+    .all(cutoffIso) as Array<{
+    draft_ts: string;
+    group_folder: string;
+    chat_jid: string;
+    thread_ts: string | null;
+    recipient: string | null;
+    lead_ref: string | null;
+    approved_at: string;
+    handoff_observed_at: string | null;
+  }>;
+  return rows.map((r) => ({
+    draftTs: r.draft_ts,
+    groupFolder: r.group_folder,
+    chatJid: r.chat_jid,
+    threadTs: r.thread_ts ?? undefined,
+    recipient: r.recipient ?? undefined,
+    leadRef: r.lead_ref ?? undefined,
+    approvedAt: r.approved_at,
+    handoffObservedAt: r.handoff_observed_at ?? undefined,
+  }));
+}
+
+/** Preserve the send expectation but suppress duplicate handoff-stage alerts. */
+export function markMailmanHandoffAlerted(
+  draftTs: string,
+  alertedAt: string,
+): void {
+  db.prepare(
+    `UPDATE pending_sends
+        SET handoff_alerted_at = COALESCE(handoff_alerted_at, ?)
+      WHERE draft_ts = ?`,
+  ).run(alertedAt, draftTs);
 }
 
 /** One alert per approval — drop the row so a stuck send cannot spam. */

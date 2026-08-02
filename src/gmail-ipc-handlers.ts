@@ -30,6 +30,7 @@ import {
 import { logger } from './logger.js';
 import { convertMarkdownToEmailHtml } from './markdown-to-email-html.js';
 import { checkRecipient, normalizeRecipient } from './email-recipient-guard.js';
+import { normalizeGmailSearchQuery } from './gmail-ipc-policy.js';
 import { checkContent } from './email-content-guard.js';
 
 /** Payload shape written by container MCP tools. */
@@ -74,6 +75,22 @@ const jid = `gmail:${GMAIL_MONITORED_EMAIL}`;
 export type PostToChief = (text: string, threadTs?: string) => Promise<void>;
 
 /**
+ * Party IDs are `bigint` in PostgreSQL, and node-postgres returns bigint as a
+ * STRING to avoid precision loss. The agent-supplied `lead_id` is a JSON number
+ * (`lead_id: z.number()` in the container MCP tool). Comparing the two with
+ * `!==` therefore always differed — `11119 !== '11119'` — which blocked every
+ * `gmail_send` that carried a lead_id and resolved to a party, with the
+ * self-contradicting reason "claimed party 11119 does not match host-resolved
+ * party 11119" (Lead #962, 2026-07-30T22:38Z). Normalize at the boundary so no
+ * caller has to remember the driver's representation.
+ */
+function toPartyId(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isSafeInteger(n) && n > 0 ? n : null;
+}
+
+/**
  * Resolve a party ID when leadId is not provided in the IPC payload.
  * Tries recipient email first, then falls back to thread history.
  * Returns null if both lookups fail or find nothing.
@@ -89,7 +106,8 @@ async function resolvePartyId(
         'SELECT business_v2.best_party_by_email($1::citext) AS id',
         [normalizedTo],
       );
-      if (result.rows[0]?.id) return result.rows[0].id;
+      const resolved = toPartyId(result.rows[0]?.id);
+      if (resolved) return resolved;
     } catch (err) {
       logger.error(
         { to: normalizedTo, err },
@@ -106,7 +124,8 @@ async function resolvePartyId(
          ORDER BY occurred_at DESC LIMIT 1`,
         [threadId],
       );
-      if (result.rows[0]?.party_id) return result.rows[0].party_id;
+      const resolved = toPartyId(result.rows[0]?.party_id);
+      if (resolved) return resolved;
     } catch (err) {
       logger.error(
         { threadId, err },
@@ -162,14 +181,17 @@ async function verifyPartyRecipient(
   threadId?: string,
 ): Promise<RecipientVerification> {
   const resolvedPartyId = await resolvePartyId(to, threadId);
-  const partyId = claimedPartyId ?? resolvedPartyId;
+  // The claim arrives as JSON and may be a number or a numeric string; the
+  // resolver is already normalized. Both sides must be compared as numbers.
+  const claimed = toPartyId(claimedPartyId);
+  const partyId = claimed ?? resolvedPartyId;
   if (!partyId) {
     return {
       ok: false,
       reason: `recipient ${normalizeRecipient(to)} has no host-resolved party`,
     };
   }
-  if (claimedPartyId && resolvedPartyId && claimedPartyId !== resolvedPartyId) {
+  if (claimed && resolvedPartyId && claimed !== resolvedPartyId) {
     return {
       ok: false,
       reason:
@@ -667,8 +689,12 @@ export async function handleGmailSearch(data: GmailIpcPayload): Promise<void> {
     return;
   }
 
+  // Execute exactly the query the policy authorized. Authorization normalizes a
+  // bare address to `from:X OR to:X`; running the raw string here would issue an
+  // unscoped full-text search under a scoped grant.
+  const query = normalizeGmailSearchQuery(data.query);
   const results = await searchEmails({
-    query: data.query,
+    query,
     maxResults: data.maxResults,
   });
 
@@ -677,7 +703,7 @@ export async function handleGmailSearch(data: GmailIpcPayload): Promise<void> {
   // is read, discarded, and deleted, so the result must be a plain message.
   writeInputMessage(data.groupFolder, {
     type: 'message',
-    text: `[gmail_search results — query: ${data.query}]\n\n${results}`,
+    text: `[gmail_search results — query: ${query}]\n\n${results}`,
   });
 
   logger.info(

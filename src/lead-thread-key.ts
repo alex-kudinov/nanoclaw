@@ -68,3 +68,65 @@ export function deriveLeadThreadKey(text: string): string | undefined {
   const email = findLeadEmail(text);
   return email ? `lead:${email}` : undefined;
 }
+
+/**
+ * Labelled pipeline-entry field, e.g. `Entry ID: 911` — the form a
+ * mailman→sales handoff uses. Its own line, exactly like the address fields.
+ */
+const ENTRY_FIELD_RE =
+  /^\s*(?:Lead|Entry|Pipeline Entry)\s*ID\s*:\s*(\d+)\s*$/gim;
+
+/** Subject-position id, e.g. `Lead #611 …` or `[NO ACTION] Entry #85 …`. */
+const ENTRY_SUBJECT_RE = /^\s*(?:\[[^\]]*\]\s*)*(?:Lead|Entry)\s*#(\d+)\b/i;
+
+/** Every entry id named anywhere, in either notation — used to refuse roundups. */
+const ENTRY_ANY_RE = /(?:Lead|Entry|Pipeline Entry)\s*(?:ID\s*:|#)\s*(\d+)/gi;
+
+/**
+ * The pipeline entry id a message is about, when it identifies its lead by id
+ * rather than by address. Callers turn this into an email (a host-side DB
+ * lookup) and key on that, so the message joins the same `lead:{email}` thread
+ * as everything else for that lead.
+ *
+ * `Lead #N`, `Entry #N` and `Entry ID: N` are one id space: all name
+ * `business_v2.pipeline_entries.id` (see followup-drop.ts, which parses
+ * `Lead #N` and feeds it straight to an entry lookup).
+ *
+ * Two accepted shapes, because two different producers exist:
+ *   - a **labelled field** on a lead-bearing message — `[HANDOFF: mailman→sales]`
+ *     … `Entry ID: 911`. This is exactly as trustworthy as the `Email:` field
+ *     above and is gated the same way, on LEAD_BEARING. Without it a handoff
+ *     carrying no address anchored nothing, so it opened a fresh channel root
+ *     and recorded no anchor — leaving every later message for that lead to
+ *     thread only if the agent retyped a 16-digit timestamp correctly
+ *     (Lead #911, Monica Dwight, 2026-07-31T18:11Z).
+ *   - a **bare status line** whose subject is the id — "Lead #611 …",
+ *     "[NO ACTION] Entry #85 …". These carry no marker, so the id must open the
+ *     message; a passing mention like "Certificate issued ✓ for Lead #5"
+ *     anchors nothing.
+ *
+ * Either way the message must name exactly one distinct entry, so a roundup
+ * like "Entry #101 updated. Still pending: Entry #97" stays at the root rather
+ * than dragging two leads into one thread — a false merge is worse than no
+ * merge.
+ */
+export function deriveLeadEntryRef(text: string): number | undefined {
+  ENTRY_FIELD_RE.lastIndex = 0;
+  const labelled = [...text.matchAll(ENTRY_FIELD_RE)];
+  const isLeadBearing = LEAD_BEARING.some((re) => re.test(text));
+
+  let claimed: string | undefined;
+  if (isLeadBearing && labelled.length > 0) {
+    claimed = labelled[0][1];
+  } else {
+    claimed = ENTRY_SUBJECT_RE.exec(text)?.[1];
+  }
+  if (claimed === undefined) return undefined;
+
+  ENTRY_ANY_RE.lastIndex = 0;
+  const distinct = new Set([...text.matchAll(ENTRY_ANY_RE)].map((m) => m[1]));
+  if (distinct.size !== 1) return undefined;
+
+  const id = Number(claimed);
+  return Number.isSafeInteger(id) && id > 0 ? id : undefined;
+}

@@ -4,6 +4,7 @@ import {
   authorizeGmailIpc,
   authorizeGmailIpcWithResolver,
   grantHostGmailResources,
+  normalizeGmailSearchQuery,
   propagateGmailResources,
   resetGmailResourceGrantsForTest,
 } from './gmail-ipc-policy.js';
@@ -168,6 +169,34 @@ describe('Gmail IPC capability policy', () => {
     ).toBe(false);
   });
 
+  it('allows Procurement to read only its exact host-assigned RFP message', () => {
+    grantHostGmailResources('procurement', { messageId: 'rfp-message-1' });
+
+    expect(
+      authorizeGmailIpc('procurement', {
+        type: 'gmail_read',
+        messageId: 'rfp-message-1',
+      }).ok,
+    ).toBe(true);
+    expect(
+      authorizeGmailIpc('procurement', {
+        type: 'gmail_read',
+        messageId: 'other-message',
+      }).ok,
+    ).toBe(false);
+    expect(
+      authorizeGmailIpc('procurement', {
+        type: 'gmail_get_thread',
+        threadId: 'rfp-thread-1',
+      }).ok,
+    ).toBe(false);
+    expect(
+      authorizeGmailIpc('procurement', {
+        type: 'gmail_send',
+      }).ok,
+    ).toBe(false);
+  });
+
   it('restores durable resources without overriding capabilities or search grammar', async () => {
     const resolver = async () => true;
 
@@ -198,6 +227,48 @@ describe('Gmail IPC capability policy', () => {
           resolver,
         )
       ).ok,
+    ).toBe(false);
+  });
+
+  it('normalizes a bare assigned address instead of quarantining it', () => {
+    expect(normalizeGmailSearchQuery('yoneko@usdoj.gov')).toBe(
+      'from:yoneko@usdoj.gov OR to:yoneko@usdoj.gov',
+    );
+    expect(normalizeGmailSearchQuery('  Lead@Example.CO  ')).toBe(
+      'from:lead@example.co OR to:lead@example.co',
+    );
+
+    grantHostGmailResources('sales', { emailAddresses: ['lead@example.co'] });
+    expect(
+      authorizeGmailIpc('sales', {
+        type: 'gmail_search',
+        query: 'lead@example.co',
+      }).ok,
+    ).toBe(true);
+  });
+
+  it('does not treat a broad or operator-bearing query as a bare address', () => {
+    grantHostGmailResources('sales', { emailAddresses: ['lead@example.co'] });
+    for (const query of [
+      'lead@example.co OR newer_than:1y',
+      'has:attachment',
+      'lead@example.co other@example.co',
+      'notanaddress',
+    ]) {
+      expect(normalizeGmailSearchQuery(query)).toBe(query.trim());
+      expect(
+        authorizeGmailIpc('sales', { type: 'gmail_search', query }).ok,
+      ).toBe(false);
+    }
+  });
+
+  it('refuses a bare address the host never assigned', () => {
+    grantHostGmailResources('sales', { emailAddresses: ['lead@example.co'] });
+    expect(
+      authorizeGmailIpc('sales', {
+        type: 'gmail_search',
+        query: 'attacker@evil.co',
+      }).ok,
     ).toBe(false);
   });
 });

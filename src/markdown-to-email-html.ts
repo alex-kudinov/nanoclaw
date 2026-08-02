@@ -95,6 +95,45 @@ function groupListItems(lines: string[]): string[] {
   return result;
 }
 
+/** The list type a block opens with, or null when it is not a list item. */
+function blockListType(block: string): 'ul' | 'ol' | null {
+  const first = block.split('\n', 1)[0];
+  if (/^[-•] /.test(first)) return 'ul';
+  if (/^\d+\.\s+/.test(first)) return 'ol';
+  return null;
+}
+
+/**
+ * Rejoin the items of a "loose" list — one whose items are separated by blank
+ * lines, which is how agents naturally draft them.
+ *
+ * Paragraph splitting happens on blank lines, so each item arrived here as its
+ * own block and `groupListItems` wrapped it in its own <ol>. Every item in a
+ * numbered email therefore rendered as "1." (Oana Tue, 2026-07-28: a three-point
+ * reply about pricing went out as 1., 1., 1.).
+ */
+function mergeListBlocks(blocks: string[]): string[] {
+  const merged: string[] = [];
+  for (const block of blocks) {
+    const type = blockListType(block);
+    const prev = merged[merged.length - 1];
+    if (type !== null && prev !== undefined && blockListType(prev) === type) {
+      merged[merged.length - 1] = `${prev}\n${block}`;
+    } else {
+      merged.push(block);
+    }
+  }
+  return merged;
+}
+
+/**
+ * <ul>/<ol> are block elements and are invalid inside <p>: mail clients close
+ * the paragraph early, which adds stray vertical space around every list.
+ */
+function wrapBlock(html: string): string {
+  return /^<(ul|ol)>[\s\S]*<\/\1>$/.test(html) ? html : `<p>${html}</p>`;
+}
+
 // Lines this short are almost always intentional hard breaks (signature blocks,
 // addresses, contact lines) — not wrapped prose. Above this threshold, treat
 // adjacent lines as soft-wrapped prose and fold with spaces.
@@ -150,8 +189,6 @@ export function convertMarkdownToEmailHtml(markdown: string): string {
   text = convertBold(text);
   text = convertBareUrls(text);
 
-  const paragraphs = text.split(/\n\n+/);
-  return paragraphs
-    .map((block) => `<p>${processParagraph(block)}</p>`)
-    .join('');
+  const paragraphs = mergeListBlocks(text.split(/\n\n+/));
+  return paragraphs.map((block) => wrapBlock(processParagraph(block))).join('');
 }

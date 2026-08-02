@@ -174,11 +174,16 @@ Indexes:
   recipient                 TEXT
   lead_ref                  TEXT
   approved_at               TEXT         NOT NULL
+  handoff_observed_at       TEXT
+  handoff_message_id        TEXT
+  mailman_started_at        TEXT
+  handoff_alerted_at        TEXT
 ```
 
 Indexes:
   idx_pending_sends_gmail_thread (gmail_thread_id,approved_at)
   idx_pending_sends_group (group_folder,approved_at)
+  idx_pending_sends_handoff (handoff_observed_at,mailman_started_at,handoff_alerted_at)
   sqlite_autoindex_pending_sends_1 (draft_ts) UNIQUE
 
 ## registered_groups

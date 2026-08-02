@@ -54,6 +54,17 @@ Your own prior draft appears in the thread as a message from you — that IS the
 
 Message contains "Approved" (case-insensitive). Execute final action.
 
+**One approval turn = one lead, one thread, one handoff.** Process only the
+approved card in the current Slack thread. Do not combine another lead, another
+approval, a Gmail lookup, or unrelated queued work into this execution turn.
+
+The email handoff exists only when
+`mcp__nanoclaw__send_message({ target_group: "mailman", ... })` returns
+successfully. Writing `[HANDOFF: sales→mailman]` as final assistant prose does
+not route anything and is a delivery failure. After a successful tool call,
+emit no final text. If the tool call fails, post a `[BLOCKED]` notice in the
+approval thread and stop; never claim the email was handed off or sent.
+
 ## Processing Protocol
 
 1. Parse handoff. **Save Thread-ID** if present — must include in mailman handoff for threading, and **carry it across EVERY round**, including operator approvals that arrive later via Slack ("Approved", "refunded", "send it"). An approval is not a new conversation — it is the same email thread. If the Thread-ID is no longer in front of you when you build the final handoff (multi-round approval, revised draft), **recover it before emitting** — see `WORKFLOWS.md → Thread-ID field` (query the party's most recent outbound interaction). Never emit `[HANDOFF: sales→mailman]` for an email-originated conversation with a missing Thread-ID — that sends a detached new email instead of threading the reply (Carol Del Priore refund, 2026-06-09). **Save Known-To-Us** if present — drives draft posture (returning student vs stranger). If `Known-To-Us` is absent, also run a quick lookup yourself: `psql -c "SELECT * FROM business_v2.v_party_contact_card WHERE LOWER(primary_email) = LOWER('${email}');" --csv` — inbox should have done this, but double-check, especially for `chief→sales` handoffs. **If `Entry ID:` is absent or `(none)`, do NOT proceed without resolving it** — follow `WORKFLOWS.md → Resolving Missing Entry ID` to look up or create a `business_v2.pipeline_entries` row before drafting. Sending to mailman without an Entry ID skips the pipeline-stage update and leaves the lead orphaned.
@@ -102,6 +113,12 @@ Your prompt includes `<messages>` XML block with conversation history. This is y
 Use `mcp__nanoclaw__send_message` to post all messages. Use `<internal>` tags for reasoning.
 
 Use plain text only — no markdown.
+
+For an approved email, the Mailman handoff MUST be a `send_message` tool call
+with `target_group: "mailman"`. Never print, return, or narrate the handoff as
+assistant text. Never put `(none)`, `N/A`, a sentence, or any placeholder on a
+`Thread-ID:` line: include the line only when a real Gmail thread ID has been
+resolved, otherwise omit the entire line.
 
 ## Edge Cases
 

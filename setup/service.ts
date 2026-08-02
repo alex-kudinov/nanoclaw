@@ -28,14 +28,16 @@ export async function run(_args: string[]): Promise<void> {
 
   logger.info({ platform, nodePath, projectRoot }, 'Setting up service');
 
-  // Build first
-  logger.info('Building TypeScript');
+  // Build a provenance-bearing release first. This refuses dirty source,
+  // records the exact commit/tree, and writes the artifact manifest that
+  // production startup verifies before touching any external system.
+  logger.info('Building verified release');
   try {
-    execSync('npm run build', {
+    execSync('npm run release:build', {
       cwd: projectRoot,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    logger.info('Build succeeded');
+    logger.info('Verified release build succeeded');
   } catch {
     logger.error('Build failed');
     emitStatus('SETUP_SERVICE', {
@@ -48,13 +50,26 @@ export async function run(_args: string[]): Promise<void> {
     });
     process.exit(1);
   }
+  const releaseManifest = JSON.parse(
+    fs.readFileSync(
+      path.join(projectRoot, 'dist', 'release-manifest.json'),
+      'utf8',
+    ),
+  ) as { commit?: unknown };
+  if (
+    typeof releaseManifest.commit !== 'string' ||
+    !/^[0-9a-f]{40}$/i.test(releaseManifest.commit)
+  ) {
+    throw new Error('Verified release manifest has no valid commit identity');
+  }
+  const releaseCommit = releaseManifest.commit;
 
   fs.mkdirSync(path.join(projectRoot, 'logs'), { recursive: true });
 
   if (platform === 'macos') {
-    setupLaunchd(projectRoot, nodePath, homeDir);
+    setupLaunchd(projectRoot, nodePath, homeDir, releaseCommit);
   } else if (platform === 'linux') {
-    setupLinux(projectRoot, nodePath, homeDir);
+    setupLinux(projectRoot, nodePath, homeDir, releaseCommit);
   } else {
     emitStatus('SETUP_SERVICE', {
       SERVICE_TYPE: 'unknown',
@@ -72,6 +87,7 @@ function setupLaunchd(
   projectRoot: string,
   nodePath: string,
   homeDir: string,
+  releaseCommit: string,
 ): void {
   const plistPath = path.join(
     homeDir,
@@ -104,6 +120,14 @@ function setupLaunchd(
         <string>/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin</string>
         <key>HOME</key>
         <string>${homeDir}</string>
+        <key>NODE_ENV</key>
+        <string>production</string>
+        <key>NANOCLAW_REQUIRE_RELEASE_MANIFEST</key>
+        <string>1</string>
+        <key>NANOCLAW_EXPECTED_RELEASE_COMMIT</key>
+        <string>${releaseCommit}</string>
+        <key>NANOCLAW_CODE_ROOT</key>
+        <string>${projectRoot}</string>
     </dict>
     <key>StandardOutPath</key>
     <string>${projectRoot}/logs/nanoclaw.log</string>
@@ -148,14 +172,15 @@ function setupLinux(
   projectRoot: string,
   nodePath: string,
   homeDir: string,
+  releaseCommit: string,
 ): void {
   const serviceManager = getServiceManager();
 
   if (serviceManager === 'systemd') {
-    setupSystemd(projectRoot, nodePath, homeDir);
+    setupSystemd(projectRoot, nodePath, homeDir, releaseCommit);
   } else {
     // WSL without systemd or other Linux without systemd
-    setupNohupFallback(projectRoot, nodePath, homeDir);
+    setupNohupFallback(projectRoot, nodePath, homeDir, releaseCommit);
   }
 }
 
@@ -205,6 +230,7 @@ function setupSystemd(
   projectRoot: string,
   nodePath: string,
   homeDir: string,
+  releaseCommit: string,
 ): void {
   const runningAsRoot = isRoot();
 
@@ -224,7 +250,7 @@ function setupSystemd(
       logger.warn(
         'systemd user session not available — falling back to nohup wrapper',
       );
-      setupNohupFallback(projectRoot, nodePath, homeDir);
+      setupNohupFallback(projectRoot, nodePath, homeDir, releaseCommit);
       return;
     }
     const unitDir = path.join(homeDir, '.config', 'systemd', 'user');
@@ -245,6 +271,10 @@ Restart=always
 RestartSec=5
 Environment=HOME=${homeDir}
 Environment=PATH=/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin
+Environment=NODE_ENV=production
+Environment=NANOCLAW_REQUIRE_RELEASE_MANIFEST=1
+Environment=NANOCLAW_EXPECTED_RELEASE_COMMIT=${releaseCommit}
+Environment=NANOCLAW_CODE_ROOT=${projectRoot}
 StandardOutput=append:${projectRoot}/logs/nanoclaw.log
 StandardError=append:${projectRoot}/logs/nanoclaw.error.log
 
@@ -309,6 +339,7 @@ function setupNohupFallback(
   projectRoot: string,
   nodePath: string,
   homeDir: string,
+  releaseCommit: string,
 ): void {
   logger.warn('No systemd detected — generating nohup wrapper script');
 
@@ -323,6 +354,10 @@ function setupNohupFallback(
     'set -euo pipefail',
     '',
     `cd ${JSON.stringify(projectRoot)}`,
+    'export NODE_ENV=production',
+    'export NANOCLAW_REQUIRE_RELEASE_MANIFEST=1',
+    `export NANOCLAW_EXPECTED_RELEASE_COMMIT=${JSON.stringify(releaseCommit)}`,
+    `export NANOCLAW_CODE_ROOT=${JSON.stringify(projectRoot)}`,
     '',
     '# Stop existing instance if running',
     `if [ -f ${JSON.stringify(pidFile)} ]; then`,

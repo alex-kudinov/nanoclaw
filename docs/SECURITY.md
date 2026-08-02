@@ -6,6 +6,21 @@ Authority boundary: source and tracked configuration describe mechanics; live
 services, credentials, networks, and installed launchd units require separate
 verification
 
+## Release integrity boundary
+
+Production startup is fail-closed on a provenance manifest before it initializes
+any external system. The host verifies the complete compiled file set, exact
+Node `22.23.2` runtime, build/runtime version agreement, and the operator-pinned
+full commit. The verified non-secret identity is returned by `/health`.
+
+This is integrity and provenance, not publisher authenticity: the release
+archive checksum must be recorded and compared through an independent
+deployment channel. Container skills and agent-runner source come from the
+verified release through `NANOCLAW_CODE_ROOT`. Writable group workspaces remain
+an explicitly documented residual until instructions and operational output are
+separated; reviewed prompt files must be compared during deployment. See
+`docs/RELEASE-INTEGRITY.md`.
+
 ## Trust model
 
 | Entity/input                                                 | Treatment                                                                                     |
@@ -65,10 +80,38 @@ Denied security-sensitive requests are preserved under
 quarantine, and error files are local operational state and must not be
 committed.
 
+### Grader file capability
+
+`NC-20260802-001` adds one narrow file action rather than expanding generic
+message IPC:
+
+- the caller is the directory-derived registered main group or exact `chief`;
+- the target is fixed to the registered `grader` group and cannot be supplied
+  as another channel;
+- staged input must be a regular non-symlink below the caller's IPC attachment
+  root, no larger than 25 MB, with host-verified size and SHA-256;
+- the host snapshots the verified bytes before readable conversion and Slack
+  upload, so a writable container cannot swap content after validation;
+- a request-bound idempotency receipt is `pending` before the first Slack side
+  effect and `complete` only after the upload and NanoClaw persistence succeed;
+  a pending/uncertain receipt suppresses automatic retry;
+- upload failure triggers best-effort deletion of the file-less Slack root and
+  never wakes the grader.
+
+The external toolbox adapter accepts only regular files below `/private/tmp`,
+the current macOS temporary root, or the operator's Downloads directory. It
+uses the existing authenticated SSH route to stage into the production Mac
+Mini's IPC, fails closed until the compiled host advertises support, and waits
+for the host receipt; it does not receive Slack credentials or write SQLite
+message rows. File contents still leave the host for the
+operator-authorized `#gru-grader` workflow, so deployment and a sanitized live
+canary remain separate C5 review gates.
+
 ## Gmail capability and resource policy
 
-`NC-20260729-004` introduces the interim host policy below. It remains
-uncommitted/unreleased until the shared change record reaches those states.
+`NC-20260729-004` introduced the deployed baseline below. The Procurement row
+was added by `NC-20260730-003` and its migration 114 plus matching
+host/container source were deployed gates-off under `NC-20260730-004`.
 
 | Group          | Allowed Gmail IPC                                 |
 | -------------- | ------------------------------------------------- |
@@ -77,6 +120,7 @@ uncommitted/unreleased until the shared change record reaches those states.
 | `contador`     | exact assigned invoice-message read               |
 | `archivarista` | exact assigned meeting-assets-message read        |
 | `chief`        | exact assigned classifier-correction-message read |
+| `procurement`  | exact assigned RFP-message read                    |
 | all others     | none                                              |
 
 Resource rules:
@@ -102,6 +146,10 @@ Resource rules:
   the approved recipient before send.
 - Other restart-stale context must be reissued by a host source. General durable
   work-item grants belong in the later ledger/capability-manifest slice.
+- Procurement receives no mailbox search, thread read, reply, or send
+  capability. Its host-created email observation stores routing metadata rather
+  than the body; `gmail_read` is authorized only for the exact message ID in
+  the active handoff.
 
 ### Final recipient boundary
 
@@ -145,6 +193,35 @@ Working policy:
 The current autonomy environment knobs are not assumed effective until the
 running daemon reports their resolved values; some call sites read
 `process.env` while repository `.env` loading deliberately does not populate it.
+
+### Procurement named-human review boundary
+
+`NC-20260730-004` deployed a default-off C5 boundary on 2026-07-30:
+
+- `PROCUREMENT_CALEPROCURE_INGEST_ENABLED=1` is required before the Procurement
+  container can persist a bounded public result batch;
+- review actions additionally require `PROCUREMENT_REVIEW_ENABLED=1`, a
+  non-empty `PROCUREMENT_REVIEW_EPOCH`, and one or more exact Slack IDs in
+  `PROCUREMENT_OPERATOR_UIDS`;
+- the host, not the model, constructs the card from current database truth and
+  binds its Slack channel/message, opportunity, review version, and epoch;
+- a decision requires an exact, reason-bearing `DECIDE` command in that card's
+  thread. Slack supplies the actor UID; container arguments and display names
+  never supply authority;
+- reactions alone, unnamed users, root-channel commands, stale versions,
+  unrecorded cards, old epochs, duplicate commands, and database errors do not
+  transition state;
+- `process`, `drop`, and `needs_info` are internal workflow decisions, not C3/C4
+  execution authority.
+- migration 114 enables RLS on the shared opportunity table. The Procurement
+  role can directly read/insert/update only source-keyless Bonfire legacy rows;
+  source-keyed CaleProcure/email rows are visible through the bounded queue and
+  writable only through host-admin functions.
+
+No operator IDs or enablement values are committed or live. Migration and the
+gates-off host/runner/prompt deployment are live; a gates-on fixture, named
+human decision, schedule change, browser action, and business outcome remain
+separate authorization and verification gates.
 
 ## Credentials and integrations
 

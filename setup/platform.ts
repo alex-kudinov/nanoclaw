@@ -99,11 +99,9 @@ export function getServiceManager(): ServiceManager {
 }
 
 export function getNodePath(): string {
-  try {
-    return execSync('command -v node', { encoding: 'utf-8' }).trim();
-  } catch {
-    return process.execPath;
-  }
+  // Persist the exact executable running setup, not whichever unrelated
+  // `node` launchd/systemd later finds first on PATH.
+  return process.execPath;
 }
 
 export function commandExists(name: string): boolean {
@@ -116,12 +114,7 @@ export function commandExists(name: string): boolean {
 }
 
 export function getNodeVersion(): string | null {
-  try {
-    const version = execSync('node --version', { encoding: 'utf-8' }).trim();
-    return version.replace(/^v/, '');
-  } catch {
-    return null;
-  }
+  return process.version.replace(/^v/, '');
 }
 
 export function getNodeMajorVersion(): number | null {

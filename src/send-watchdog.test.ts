@@ -4,9 +4,14 @@ import {
   extractApprovedGmailThreadId,
   isTrackableCard,
   observeConfirmedSend,
+  observeMailmanStart,
   observeOutbound,
   recordApproval,
   sweepPendingSends,
+  rescueUnhandedSends,
+  HANDOFF_RESCUE_MS,
+  sweepStalledMailmanHandoffs,
+  MAILMAN_START_GRACE_MS,
   SEND_GRACE_MS,
   type PendingSend,
   type SendWatchdogStore,
@@ -48,7 +53,43 @@ function makeStore(): SendWatchdogStore & { rows: PendingSend[] } {
       rows.splice(index, 1);
       return 1;
     },
+    markHandoff: (group, recipient, messageId, observedAt) => {
+      const row = rows.find(
+        (r) =>
+          r.groupFolder === group &&
+          r.recipient === recipient &&
+          !r.handoffObservedAt,
+      );
+      if (!row) return 0;
+      row.handoffObservedAt = observedAt;
+      row.handoffMessageId = messageId;
+      return 1;
+    },
+    markMailmanStarted: (groupFolder, recipient, startedAt) => {
+      const row = rows.find(
+        (r) =>
+          r.groupFolder === groupFolder &&
+          r.recipient === recipient &&
+          r.handoffObservedAt &&
+          !r.mailmanStartedAt,
+      );
+      if (!row) return 0;
+      row.mailmanStartedAt = startedAt;
+      return 1;
+    },
     listOverdueSends: (cutoff) => rows.filter((r) => r.approvedAt <= cutoff),
+    listStalledHandoffs: (cutoff) =>
+      rows.filter(
+        (r) =>
+          !!r.handoffObservedAt &&
+          r.handoffObservedAt <= cutoff &&
+          !r.mailmanStartedAt &&
+          !r.handoffAlertedAt,
+      ),
+    markHandoffAlerted: (draftTs, alertedAt) => {
+      const row = rows.find((r) => r.draftTs === draftTs);
+      if (row && !row.handoffAlertedAt) row.handoffAlertedAt = alertedAt;
+    },
     markAlerted: (draftTs) => {
       const i = rows.findIndex((r) => r.draftTs === draftTs);
       if (i >= 0) rows.splice(i, 1);
@@ -149,16 +190,153 @@ describe('observeOutbound', () => {
   // "thank you for reaching out" and simply stopped, and because the row had
   // already been deleted the sweep found nothing and the operator saw silence.
   it('does NOT clear on the matching handoff — a handoff is progress, not proof', () => {
-    observeOutbound(
+    const recorded = observeOutbound(
       'sales',
       '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com\nSubject: Re: x',
+      'ipc-handoff-1',
+      NOW,
+      store,
     );
     expect(store.rows).toHaveLength(1);
+    expect(recorded).toBe(1);
+    expect(store.rows[0]).toMatchObject({
+      handoffObservedAt: NOW.toISOString(),
+      handoffMessageId: 'ipc-handoff-1',
+    });
   });
 
   it('does not clear on a non-handoff message either', () => {
-    observeOutbound('sales', '[SALES REVIEW] Lead #939\nTo: x@y.com');
+    observeOutbound(
+      'sales',
+      '[SALES REVIEW] Lead #939\nTo: x@y.com',
+      undefined,
+      NOW,
+      store,
+    );
     expect(store.rows).toHaveLength(1);
+    expect(store.rows[0].handoffObservedAt).toBeUndefined();
+  });
+
+  it('records when Mailman claims the routed handoff', () => {
+    observeOutbound(
+      'sales',
+      '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com\nSubject: Re: x',
+      'ipc-handoff-1',
+      NOW,
+      store,
+    );
+    expect(
+      observeMailmanStart(
+        [
+          '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com\nSubject: Re: x',
+        ],
+        new Date(NOW.getTime() + 2000),
+        store,
+      ),
+    ).toBe(1);
+    expect(store.rows[0].mailmanStartedAt).toBe(
+      new Date(NOW.getTime() + 2000).toISOString(),
+    );
+  });
+
+  it('binds Mailman start to the source group as well as recipient', () => {
+    const sharedRecipient = 'same-person@example.com';
+    recordApproval(
+      {
+        ...base,
+        draftTs: 'sales-draft',
+        cardText: `[SALES REVIEW] Lead #938\nEmail: ${sharedRecipient}`,
+      },
+      store,
+    );
+    recordApproval(
+      {
+        ...base,
+        draftTs: 'chief-draft',
+        groupFolder: 'chief',
+        cardText: `[SUPPORT-DRAFT]\nTo: ${sharedRecipient}`,
+      },
+      store,
+    );
+    observeOutbound(
+      'sales',
+      `[HANDOFF: sales→mailman]\nTo: ${sharedRecipient}\nSubject: sales`,
+      'ipc-sales',
+      NOW,
+      store,
+    );
+    observeOutbound(
+      'chief',
+      `[HANDOFF: chief→mailman]\nTo: ${sharedRecipient}\nSubject: support`,
+      'ipc-chief',
+      NOW,
+      store,
+    );
+
+    expect(
+      observeMailmanStart(
+        [`[HANDOFF: chief→mailman]\nTo: ${sharedRecipient}\nSubject: support`],
+        new Date(NOW.getTime() + 2000),
+        store,
+      ),
+    ).toBe(1);
+    expect(
+      store.rows.find((row) => row.draftTs === 'sales-draft')?.mailmanStartedAt,
+    ).toBeUndefined();
+    expect(
+      store.rows.find((row) => row.draftTs === 'chief-draft')?.mailmanStartedAt,
+    ).toBe(new Date(NOW.getTime() + 2000).toISOString());
+  });
+});
+
+describe('sweepStalledMailmanHandoffs', () => {
+  it('alerts once when a routed handoff never starts Mailman', async () => {
+    const store = makeStore();
+    recordApproval(base, store);
+    observeOutbound(
+      'sales',
+      '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com\nSubject: Re: x',
+      'ipc-handoff-1',
+      NOW,
+      store,
+    );
+    const postThread = vi.fn().mockResolvedValue(undefined);
+    const now = new Date(NOW.getTime() + MAILMAN_START_GRACE_MS + 1000);
+
+    expect(await sweepStalledMailmanHandoffs(now, { store, postThread })).toBe(
+      1,
+    );
+    expect(postThread.mock.calls[0][1]).toContain('[MAILMAN NOT STARTED]');
+    expect(postThread.mock.calls[0][1]).toContain(
+      'host routing or queue failure',
+    );
+    expect(store.rows).toHaveLength(1);
+    expect(store.rows[0].handoffAlertedAt).toBe(now.toISOString());
+
+    expect(
+      await sweepStalledMailmanHandoffs(
+        new Date(now.getTime() + MAILMAN_START_GRACE_MS),
+        { store, postThread },
+      ),
+    ).toBe(0);
+  });
+
+  it('stays quiet once Mailman has claimed the handoff', async () => {
+    const store = makeStore();
+    recordApproval(base, store);
+    const text =
+      '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com\nSubject: Re: x';
+    observeOutbound('sales', text, 'ipc-handoff-1', NOW, store);
+    observeMailmanStart([text], new Date(NOW.getTime() + 2000), store);
+    const postThread = vi.fn().mockResolvedValue(undefined);
+
+    expect(
+      await sweepStalledMailmanHandoffs(
+        new Date(NOW.getTime() + MAILMAN_START_GRACE_MS + 1000),
+        { store, postThread },
+      ),
+    ).toBe(0);
+    expect(postThread).not.toHaveBeenCalled();
   });
 });
 
@@ -301,6 +479,9 @@ describe('sweepPendingSends', () => {
     observeOutbound(
       'sales',
       '[HANDOFF: sales→mailman]\nTo: oana.tue.coach@gmail.com',
+      'ipc-blocked',
+      NOW,
+      store,
     );
     const postThread = vi.fn().mockResolvedValue(undefined);
     const sent = await sweepPendingSends(
@@ -314,5 +495,127 @@ describe('sweepPendingSends', () => {
     expect(text).toContain('[SEND NOT OBSERVED]');
     // The operator needs to be pointed at where the reason actually is.
     expect(text).toContain('[EMAIL BLOCKED]');
+  });
+});
+
+// --- host handoff rescue (the agent dropped the approved send) ---
+
+const SENDABLE_CARD = `[SALES REVIEW] Lead #871 — Jordan follow-up
+Category: enrollment
+Email: jordan@example.com
+
+THEIR ASK: does the certificate list hours?
+
+DRAFT RESPONSE TO LEAD:
+---
+Subject: Re: your founding-cohort seat is open
+
+Hi Jordan,
+
+The accreditation is granted.
+
+Best,
+The Tandem Coaching Team
+---
+
+Updated draft ready. Reply "Approved" to send.`;
+
+const sendableBase = { ...base, cardText: SENDABLE_CARD };
+
+function rescueDeps(
+  store: SendWatchdogStore,
+  card: string | null = SENDABLE_CARD,
+) {
+  return {
+    store,
+    postThread: vi.fn().mockResolvedValue(undefined),
+    getApprovedCard: vi.fn(() => card),
+    emitHandoff: vi.fn(),
+  };
+}
+
+describe('rescueUnhandedSends', () => {
+  it('emits the approved send verbatim when the agent never handed off', async () => {
+    const store = makeStore();
+    recordApproval(sendableBase, store);
+    const deps = rescueDeps(store);
+
+    const n = await rescueUnhandedSends(
+      new Date(NOW.getTime() + HANDOFF_RESCUE_MS + 1000),
+      deps,
+    );
+
+    expect(n).toBe(1);
+    const [group, text] = deps.emitHandoff.mock.calls[0];
+    expect(group).toBe('sales');
+    expect(text).toContain('[HANDOFF: sales→mailman]');
+    expect(text).toContain('To: jordan@example.com');
+    expect(text).toContain('Subject: Re: your founding-cohort seat is open');
+    expect(text).toContain('The accreditation is granted.');
+    // Operator scaffolding never reaches the customer body.
+    expect(text).not.toContain('THEIR ASK');
+    expect(text).not.toContain('Updated draft ready');
+    expect(store.rows[0].handoffObservedAt).toBeTruthy();
+  });
+
+  it('stays silent when the agent did hand off', async () => {
+    const store = makeStore();
+    recordApproval(sendableBase, store);
+    store.markHandoff(
+      'sales',
+      'jordan@example.com',
+      'agent-msg',
+      NOW.toISOString(),
+    );
+    const deps = rescueDeps(store);
+
+    const n = await rescueUnhandedSends(
+      new Date(NOW.getTime() + HANDOFF_RESCUE_MS + 1000),
+      deps,
+    );
+
+    expect(n).toBe(0);
+    expect(deps.emitHandoff).not.toHaveBeenCalled();
+  });
+
+  it('stays silent inside the rescue grace period', async () => {
+    const store = makeStore();
+    recordApproval(sendableBase, store);
+    const deps = rescueDeps(store);
+
+    const n = await rescueUnhandedSends(
+      new Date(NOW.getTime() + HANDOFF_RESCUE_MS - 1000),
+      deps,
+    );
+
+    expect(n).toBe(0);
+    expect(deps.emitHandoff).not.toHaveBeenCalled();
+  });
+
+  it('never guesses: an unsendable card is left to the operator', async () => {
+    const store = makeStore();
+    recordApproval(base, store); // CARD has no Subject line in its fence
+    const deps = rescueDeps(store, CARD);
+
+    const n = await rescueUnhandedSends(
+      new Date(NOW.getTime() + HANDOFF_RESCUE_MS + 1000),
+      deps,
+    );
+
+    expect(n).toBe(0);
+    expect(deps.emitHandoff).not.toHaveBeenCalled();
+    expect(store.rows[0].handoffObservedAt).toBeUndefined();
+  });
+
+  it('emits once even if the rescue ticks twice', async () => {
+    const store = makeStore();
+    recordApproval(sendableBase, store);
+    const deps = rescueDeps(store);
+    const at = new Date(NOW.getTime() + HANDOFF_RESCUE_MS + 1000);
+
+    await rescueUnhandedSends(at, deps);
+    await rescueUnhandedSends(at, deps);
+
+    expect(deps.emitHandoff).toHaveBeenCalledTimes(1);
   });
 });

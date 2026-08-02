@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { deriveLeadThreadKey } from './lead-thread-key.js';
+import { deriveLeadEntryRef, deriveLeadThreadKey } from './lead-thread-key.js';
 
 const HANDOFF = `[HANDOFF: inbox→sales]
 Party ID: 10088
@@ -76,5 +76,111 @@ THEIR REQUEST:
 
   it('is stable across repeated calls (no regex lastIndex leak)', () => {
     expect(deriveLeadThreadKey(CARD)).toBe(deriveLeadThreadKey(CARD));
+  });
+});
+
+describe('deriveLeadEntryRef', () => {
+  // The real mailman→sales handoff for Lead #911 (Monica Dwight,
+  // 2026-07-31T18:11Z). It carries no address at all — only ids — so it
+  // anchored nothing, opened a fresh channel root, and recorded no anchor.
+  const HANDOFF_BY_ID = `[HANDOFF: mailman→sales]
+[SOURCE: email-reply]
+Entry ID: 911
+Party ID: 11054
+Lead: Monica (proposal)
+Program: ACC Level 1`;
+
+  it('reads a labelled Entry ID field on a lead-bearing handoff', () => {
+    expect(deriveLeadEntryRef(HANDOFF_BY_ID)).toBe(911);
+  });
+
+  it('does not confuse Party ID with Entry ID', () => {
+    expect(deriveLeadEntryRef(HANDOFF_BY_ID)).not.toBe(11054);
+  });
+
+  it('anchors that handoff and its sales card on the same lead', () => {
+    // The card names the same lead as `Lead #911`; both must resolve to one id.
+    expect(
+      deriveLeadEntryRef('[SALES REVIEW] Lead #911\nCategory: scheduling'),
+    ).toBe(deriveLeadEntryRef(HANDOFF_BY_ID));
+  });
+
+  it('ignores a labelled Entry ID on a message that is not lead-bearing', () => {
+    expect(deriveLeadEntryRef('Nightly report\nEntry ID: 911')).toBe(undefined);
+  });
+
+  it('refuses a lead-bearing message naming two entry ids', () => {
+    expect(
+      deriveLeadEntryRef(
+        '[HANDOFF: inbox→sales]\nEntry ID: 911\nEntry ID: 912',
+      ),
+    ).toBe(undefined);
+  });
+
+  it('reads the entry id from a bare per-lead status line', () => {
+    expect(
+      deriveLeadEntryRef('Lead #611 — proposal sent, awaiting reply'),
+    ).toBe(611);
+  });
+
+  it('reads through a leading bracket tag', () => {
+    expect(deriveLeadEntryRef('[NO ACTION] Entry #85 — nothing to do')).toBe(
+      85,
+    );
+  });
+
+  it('reads through several leading bracket tags', () => {
+    expect(
+      deriveLeadEntryRef('[FOLLOW-UP #1] Lead #243\nCategory: followup'),
+    ).toBe(243);
+  });
+
+  it('treats Lead and Entry as the same id space', () => {
+    expect(deriveLeadEntryRef('Entry #243 updated')).toBe(
+      deriveLeadEntryRef('Lead #243 updated'),
+    );
+  });
+
+  // A false merge is worse than no merge: a roundup naming two leads must not
+  // drag both into one thread.
+  it('refuses a message naming more than one entry', () => {
+    expect(
+      deriveLeadEntryRef(
+        'Entry #101 (Jennifer) updated ✓\nStill pending: Entry #97',
+      ),
+    ).toBe(undefined);
+  });
+
+  it('accepts a message repeating the same entry id', () => {
+    expect(
+      deriveLeadEntryRef('Lead #611 updated. Lead #611 now qualifying.'),
+    ).toBe(611);
+  });
+
+  it('ignores an id mentioned mid-sentence rather than as the subject', () => {
+    expect(deriveLeadEntryRef('Certificate issued ✓ for Lead #5')).toBe(
+      undefined,
+    );
+  });
+
+  it('ignores a bracket tag that merely contains a number', () => {
+    expect(deriveLeadEntryRef('[FOLLOW-UP #1] no lead named here')).toBe(
+      undefined,
+    );
+  });
+
+  it('returns undefined for a message with no entry reference', () => {
+    expect(deriveLeadEntryRef('Daily digest — 3 leads processed')).toBe(
+      undefined,
+    );
+  });
+
+  it('rejects a zero id', () => {
+    expect(deriveLeadEntryRef('Lead #0 — placeholder')).toBe(undefined);
+  });
+
+  it('is stable across repeated calls (no regex lastIndex leak)', () => {
+    const text = '[NO ACTION] Entry #85 — nothing to do';
+    expect(deriveLeadEntryRef(text)).toBe(deriveLeadEntryRef(text));
   });
 });

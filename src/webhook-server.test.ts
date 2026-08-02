@@ -74,7 +74,10 @@ const testGroup = {
 
 function makeDeps(overrides?: Partial<WebhookServerDeps>): WebhookServerDeps {
   return {
-    port: 49100 + Math.floor(Math.random() * 900),
+    // Let the kernel allocate a free ephemeral port. A random fixed range
+    // collided with macOS services (notably rapportd on 49152), making the
+    // full release gate nondeterministically fail with EADDRINUSE.
+    port: 0,
     webhooksFile: '/tmp/webhooks.json',
     globalSecret: '',
     heartbeatPath: '/tmp/nanoclaw-heartbeat.json',
@@ -87,6 +90,16 @@ function makeDeps(overrides?: Partial<WebhookServerDeps>): WebhookServerDeps {
     }),
     sendMessage: vi.fn(async () => {}),
     getHealth: () => ({
+      release: {
+        mode: 'release',
+        verified: true,
+        commit: 'a'.repeat(40),
+        sourceTree: 'b'.repeat(40),
+        artifactHash: 'c'.repeat(64),
+        builtAt: '2026-07-31T00:00:00.000Z',
+        nodePin: '22.23.2',
+        nodeVersion: '22.23.2',
+      },
       channels: {},
       activeContainers: 0,
       lastMessageAt: null,
@@ -104,6 +117,7 @@ describe('WebhookServer', () => {
     deps = makeDeps();
     server = new WebhookServer(deps);
     await server.start();
+    deps.port = server.getPort();
     // Set webhook AFTER start() so loadWebhooks() (returns [] via mock) doesn't overwrite it
     (server as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
       testWebhook,

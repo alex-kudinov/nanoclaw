@@ -25,6 +25,7 @@ vi.mock('./logger.js', () => ({
 }));
 vi.mock('./db.js', () => ({
   clearPendingSendsByRecipient: vi.fn(() => 0),
+  markPendingSendHandoff: vi.fn(() => 0),
   createTask: vi.fn(),
   deleteTask: vi.fn(),
   getTaskById: vi.fn(),

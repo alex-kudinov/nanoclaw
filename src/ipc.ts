@@ -13,6 +13,7 @@ import {
   deleteTask,
   getTaskById,
   getPendingSendByGmailThread,
+  markPendingSendHandoff,
   storeMessageDirect,
   updateTask,
 } from './db.js';
@@ -40,6 +41,16 @@ import {
   isClassifyIpcType,
   ClassifyIpcPayload,
 } from './classify-ipc-handlers.js';
+import {
+  dispatchProcurementIpc,
+  isProcurementIpcType,
+  ProcurementIpcPayload,
+} from './procurement-ipc-handlers.js';
+import {
+  dispatchGraderFileMessage,
+  GraderFileMessagePayload,
+  isGraderFileMessageType,
+} from './grader-file-message.js';
 import {
   handleClassificationLesson,
   isClassificationLesson,
@@ -70,6 +81,26 @@ export interface IpcDeps {
   // Container liveness wiring — optional so existing callers don't need to change
   acknowledgePipedMessage?: (groupFolder: string, messageId: string) => void;
   setLastOutputAt?: (groupFolder: string) => void;
+  // Host-generated Procurement card transport — optional so non-Slack tests and
+  // configurations remain read-only.
+  postProcurementReviewCard?: (
+    text: string,
+    threadKey: string,
+  ) => Promise<{ channelJid: string; messageTs: string } | null>;
+  postProcurementReviewThread?: (
+    channelJid: string,
+    threadTs: string,
+    text: string,
+  ) => Promise<void>;
+  // Fixed-destination Slack file delivery for grader submissions. Optional so
+  // non-Slack runtimes and existing unit tests stay inert.
+  postGraderFileMessage?: (
+    targetJid: string,
+    text: string,
+    file: Buffer,
+    filename: string,
+    sourceGroup: string,
+  ) => Promise<{ messageTs: string; fileIds?: string[] }>;
 }
 
 let ipcWatcherRunning = false;
@@ -287,12 +318,6 @@ export function startIpcWatcher(deps: IpcDeps): void {
             try {
               const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
               if (data.type === 'message' && data.chatJid && data.text) {
-                // A mailman handoff is progress, not proof: everything after it
-                // can still refuse to send (recipient guard, content guard,
-                // Gmail failure, [ALREADY-HANDLED]). The expectation is
-                // discharged only by a confirmed send, in the gmail IPC handlers
-                // below. See send-watchdog.ts.
-                observeOutbound(sourceGroup, data.text);
                 // Resolve targetGroupFolder → chatJid if present
                 let targetJid = data.chatJid;
                 if (data.targetGroupFolder) {
@@ -396,6 +421,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   );
                   if (handoffEntry) {
                     const flushHandoff = async (): Promise<void> => {
+                      let storedHandoffId: string | undefined;
                       await deps.sendMessage(handoffEntry[0], data.text, {
                         fromGroup: sourceGroup,
                         threadTs: data.thread_ts,
@@ -413,9 +439,18 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       // second store here would duplicate the row. Only direct-
                       // store for non-Slack targets (e.g. mailman's gmail jid),
                       // whose channel does not self-persist.
+                      //
+                      // Host-authored, so it is a bot message like any other.
+                      // What makes it wake the target is that `from_group`
+                      // differs from the channel's owning group — getNewMessages
+                      // treats that as a cross-group handoff. The rule lives
+                      // there, at the single consumer; do not special-case the
+                      // flag here, or the same gap reappears on the next
+                      // channel. (Lead #962 2026-07-30, Entry #871 2026-07-31.)
                       if (!handoffEntry[0].startsWith('slack:')) {
+                        storedHandoffId = `ipc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
                         storeMessageDirect({
-                          id: `ipc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                          id: storedHandoffId,
                           chat_jid: handoffEntry[0],
                           sender: sourceGroup,
                           sender_name: sourceGroup,
@@ -426,6 +461,20 @@ export function startIpcWatcher(deps: IpcDeps): void {
                           from_group: sourceGroup,
                           thread_ts: data.thread_ts,
                         });
+                      }
+                      if (handoffTarget === 'mailman') {
+                        // A routed handoff is durable progress, not proof of a
+                        // send. Record it only after target delivery/storage
+                        // succeeds so the early watchdog can distinguish
+                        // "Sales never called the tool" from "Mailman never
+                        // claimed the stored handoff".
+                        observeOutbound(
+                          sourceGroup,
+                          data.text,
+                          storedHandoffId,
+                          new Date(),
+                          { markHandoff: markPendingSendHandoff },
+                        );
                       }
                       logger.info(
                         {
@@ -529,6 +578,50 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   }
                 }
                 fs.unlinkSync(filePath);
+              } else if (isGraderFileMessageType(data.type)) {
+                // File authority is derived from the IPC directory, never a
+                // claimed payload field. Only the registered main group and
+                // chief may send, and the target is fixed to grader.
+                if (!isMain && sourceGroup !== 'chief') {
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'grader-file',
+                  );
+                  logger.warn(
+                    { sourceGroup, quarantinedAt },
+                    'Unauthorized grader file IPC quarantined',
+                  );
+                  continue;
+                }
+                if (!deps.postGraderFileMessage) {
+                  throw new Error('Slack grader file transport is unavailable');
+                }
+                const graderEntry = Object.entries(registeredGroups).find(
+                  ([, group]) => group.folder === 'grader',
+                );
+                if (!graderEntry) {
+                  throw new Error('Registered grader group was not found');
+                }
+                const result = await dispatchGraderFileMessage(
+                  sourceGroup,
+                  data as GraderFileMessagePayload,
+                  {
+                    dataDir: DATA_DIR,
+                    targetJid: graderEntry[0],
+                    postGraderFileMessage: deps.postGraderFileMessage,
+                  },
+                );
+                fs.unlinkSync(filePath);
+                logger.info(
+                  {
+                    sourceGroup,
+                    status: result.status,
+                    messageTs: result.receipt.messageTs,
+                    idempotencyKey: result.receipt.idempotencyKey,
+                  },
+                  'Grader file IPC processed',
+                );
               } else if (isGmailIpcType(data.type)) {
                 // Gmail IPC: capability and resource authorization is enforced
                 // from the directory-derived source identity before dispatch.
@@ -605,6 +698,28 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       clearPendingSendsByRecipient,
                     }),
                 );
+              } else if (isProcurementIpcType(data.type)) {
+                if (sourceGroup !== 'procurement') {
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'procurement',
+                  );
+                  logger.warn(
+                    { sourceGroup, type: data.type, quarantinedAt },
+                    'Unauthorized Procurement IPC quarantined',
+                  );
+                  continue;
+                }
+                await dispatchProcurementIpc(
+                  sourceGroup,
+                  data as ProcurementIpcPayload,
+                  {
+                    postReviewCard: deps.postProcurementReviewCard,
+                    postReviewThread: deps.postProcurementReviewThread,
+                  },
+                );
+                fs.unlinkSync(filePath);
               } else if (isLearnIpcType(data.type)) {
                 // Learning loop: append lesson to LEARNED.md
                 fs.unlinkSync(filePath);

@@ -187,12 +187,31 @@ Dispatch table for classified emails:
 |-------------|--------|--------|
 | `lead/*` | `matchLead()` → if pipeline match: sales handoff; else: inbox handoff | mailman |
 | `client/*` | Escalation | chief |
-| `procurement/*` | classify_only (no IPC) | — |
+| `procurement/*` | host-normalized observation + exact-message handoff | procurement via mailman |
 | `financial/bill` | Contador handoff | mailman |
 | `financial/refund` | Escalation | chief |
 | `meeting-assets/*` | Archivarista handoff | mailman |
 | `legal/*`, `recruiting/*`, `internal/*` | Escalation | chief |
 | Unrecognized | Fallback escalation | chief |
+
+The Procurement route shown above is implemented locally by
+`NC-20260730-003` but is not production-active until migration 114, the host
+source, and the agent-runner are deployed together. Production remains on the
+previous `classify_only` behavior until that explicit boundary is crossed.
+
+### Release identity boundary
+
+Production host code is compiled only from a clean committed tree by
+`npm run release:build`. The generated manifest binds the complete `dist/`
+file set to the Git commit/tree and exact Node version. `main()` verifies that
+identity before initializing databases, channels, schedules, webhooks, or
+containers; `/health` exposes it alongside runtime health.
+
+The service uses an immutable release directory for `dist/`, container skills,
+and agent-runner source while retaining the operational checkout as its working
+directory for databases, sessions, logs, and writable group workspaces. Full
+activation and rollback details, including the declared writable-prompt
+residual, are in `docs/RELEASE-INTEGRITY.md`.
 
 ### Lead Matcher (`lead-matcher.ts`)
 
@@ -220,7 +239,7 @@ Returns pipeline entry details + thread_id from most recent outbound interaction
 | **booking** | Processes Trafft booking events, hands off to sales | None (webhook) | — |
 | **courses** | Course session recap emails — preview, edit, distribute | None (IPC handoff) | — |
 | **certifier** | Certificate issuance via Sertifier API | `@Mr Gru` | — |
-| **procurement** | Scrapes procurement portals (Bonfire, CaleProcure) | `@Mr Gru` in procurement channel | browser automation |
+| **procurement** | Reviews public CaleProcure/email opportunities; legacy Bonfire scanner remains isolated pending a decision | `@Mr Gru` in procurement channel | bounded Procurement IPC plus legacy browser automation |
 | **social** | LinkedIn posting orchestrator from blog content | Scheduled jobs | — |
 | **newsroom** | Editorial pipeline — newsletters, social media | `@Mr Gru` | — |
 | **heartbeat** | Receives diagnostic heartbeats. No agent response. | — | — |
@@ -273,8 +292,43 @@ Allowlist-based. Each group declares its mounts in registration config. `mount-s
 2. Route by `type` prefix:
    - `classify_*` → `classify-ipc-handlers.ts`
    - `gmail_*` → `gmail-ipc-handlers.ts`
+   - `procurement_*` → `procurement-ipc-handlers.ts` with directory-derived
+     caller identity, a read-only queue, default-off CaleProcure intake, and
+     host-generated review cards
+   - `slack_file_message` → `grader-file-message.ts`, accepted only from the
+     registered main group or `chief` and fixed to the registered `grader`
    - `learn_*` → `learn-ipc-handler.ts`
    - Default: forwarded to target group as message
+
+### Grader file delivery boundary
+
+`mcp__nanoclaw__send_grader_file` and the shared toolbox adapter stage an exact
+file under `data/ipc/<source>/attachments/` and emit `slack_file_message`.
+The host derives source identity from that directory, rejects traversal,
+symlinks, non-files, files over 25 MB, and size/hash mismatches, then snapshots
+the bytes. It writes a durable pending receipt before posting one Slack root,
+uploads the file into that root's thread with `filesUploadV2`, and persists the
+inline-readable root only after upload success. The completed receipt records
+the root timestamp; duplicate or uncertain keys never post automatically.
+
+### Procurement review boundary
+
+Migration 114 and `NC-20260730-003/004` define the undeployed replacement path:
+
+1. the Procurement container extracts bounded public CaleProcure result rows;
+2. the host validates, timestamps, hashes, deduplicates, and records the batch
+   plus explicit source-run completion;
+3. the minion reads the bounded queue and submits an advisory recommendation;
+4. the host renders current database truth into one Slack card anchored by
+   `procurement:opp:{id}` and records its channel, message, review version, and
+   action epoch;
+5. an exact `DECIDE` command in that card's thread is accepted only from a
+   configured Slack UID; the database atomically claims the card and optimistic
+   version, making stale cards and replays fail closed.
+
+Both collection and review actions are off by default. No card state authorizes
+registration, email, proposal commitments, submission, signature, attestation,
+or terms acceptance.
 
 ### Handoff Pattern
 

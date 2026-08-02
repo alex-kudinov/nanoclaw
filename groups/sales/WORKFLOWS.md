@@ -112,19 +112,29 @@ When you receive feedback (not "Approved") — the message will have a `thread_t
 ## Handling Approval
 
 When you receive "Approved" (the message will have a `thread_ts` — use it for your reply):
+0. **This turn is exclusively for this one approved lead.** Do not process a
+   second approval, lead, lookup result, or unrelated message in the same turn.
+   Reconstruct this card from the current thread, execute its one handoff, and
+   stop.
 1. Find your most recent draft in the `<messages>` block above
 2. Advance pipeline stage in DB:
    ```bash
    psql -c "SELECT business_v2.fn_advance_pipeline_stage({entry_id}, 'proposal', 'approved');"
    ```
-3. Hand off to Mailman for email sending. Post a message using `send_message` **in the same thread using `thread_ts`** with this exact format:
+3. Hand off to Mailman for email sending. This is an ACTION, not output: call
+   `mcp__nanoclaw__send_message` with `target_group: "mailman"`, the current
+   `thread_ts`, and the exact text below. The handoff is not complete until the
+   tool returns successfully. **Never print this block as final assistant prose.**
+   After success, emit no final text. On tool failure, post
+   `[BLOCKED] Mailman handoff failed for Lead #{id} — email not sent.` in the
+   approval thread and stop.
    ```
    [HANDOFF: sales→mailman]
    To: {lead email address from the [SALES REVIEW] header}
    Subject: {email subject from the draft}
    Entry ID: {pipeline_entry_id}
    Party ID: {party_id}
-   Thread-ID: {Gmail thread ID if available — from the inbox→sales handoff or from a mailman→sales handoff}
+   Thread-ID: {real Gmail thread ID if available — OMIT THIS ENTIRE LINE when none exists; never use "(none)", "N/A", or explanatory prose}
    Reply: true (ONLY when responding to a lead's email reply — i.e. from [HANDOFF: mailman→sales] [SOURCE: email-reply]. Omit for first responses to new inquiries.)
    Original-Message:
    {the lead's original message — copied verbatim from the inbound handoff at the root of this thread}

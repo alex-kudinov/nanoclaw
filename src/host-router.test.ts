@@ -2,6 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('./ipc-writer.js', () => ({ writeHostMessage: vi.fn() }));
 vi.mock('./lead-matcher.js', () => ({ matchLead: vi.fn() }));
+vi.mock('./gmail-ipc-policy.js', () => ({
+  grantHostGmailResources: vi.fn(),
+}));
+vi.mock('./procurement-intake.js', () => ({
+  ingestEmailProcurementObservation: vi.fn(),
+}));
 vi.mock('./logger.js', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
@@ -13,10 +19,16 @@ import {
 } from './host-router.js';
 import { writeHostMessage } from './ipc-writer.js';
 import { matchLead } from './lead-matcher.js';
+import { grantHostGmailResources } from './gmail-ipc-policy.js';
+import { ingestEmailProcurementObservation } from './procurement-intake.js';
 import type { PipelineMatch } from './lead-matcher.js';
 
 const mockWrite = writeHostMessage as ReturnType<typeof vi.fn>;
 const mockMatch = matchLead as ReturnType<typeof vi.fn>;
+const mockGrant = grantHostGmailResources as ReturnType<typeof vi.fn>;
+const mockProcurementIntake = ingestEmailProcurementObservation as ReturnType<
+  typeof vi.fn
+>;
 
 function makeParams(overrides: Partial<RouteParams> = {}): RouteParams {
   return {
@@ -67,6 +79,13 @@ describe('host-router', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMatch.mockResolvedValue(null);
+    mockProcurementIntake.mockResolvedValue({
+      opportunityId: 77,
+      observationCreated: true,
+      opportunityCreated: true,
+      reviewState: 'unreviewed',
+      reviewVersion: 0,
+    });
   });
 
   // ══════════════════════════════════════════════════════════════════
@@ -293,15 +312,53 @@ describe('host-router', () => {
     expect(text).toContain('Body:');
   });
 
-  it('returns classify_only for procurement/* without writing', async () => {
+  it('stores and routes procurement/* with one exact read-only Gmail resource', async () => {
     const r = await routeClassifiedEmail(
-      makeParams({ label: 'procurement/rfp' }),
+      makeParams({
+        label: 'procurement/rfp',
+        body: 'Untrusted body that must not be copied into the handoff.',
+      }),
     );
     expect(r).toEqual({
       routed: true,
-      action: 'classify_only',
-      target: 'none',
+      action: 'ipc_written',
+      target: 'mailman',
     });
+    expect(mockProcurementIntake).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: 'procurement/rfp',
+        messageId: 'msg-1',
+        threadId: 'thr-1',
+      }),
+    );
+    expect(mockGrant).toHaveBeenCalledWith('procurement', {
+      messageId: 'msg-1',
+    });
+    const [group, payload] = mockWrite.mock.calls[0];
+    expect(group).toBe('mailman');
+    expect(payload.text).toContain('[HANDOFF: mailman→procurement]');
+    expect(payload.text).toContain('[SOURCE: email]');
+    expect(payload.text).toContain('[PROCUREMENT INTAKE: opportunity 77]');
+    expect(payload.text).toContain('Message-ID: msg-1');
+    expect(payload.text).not.toContain('Untrusted body');
+  });
+
+  it('fails closed without a handoff or Gmail grant when procurement intake fails', async () => {
+    mockProcurementIntake.mockRejectedValueOnce(
+      new Error('database unavailable'),
+    );
+
+    const r = await routeClassifiedEmail(
+      makeParams({ label: 'procurement/rfp' }),
+    );
+
+    expect(r).toEqual({
+      routed: false,
+      action: 'error',
+      target: 'none',
+      reason: 'database unavailable',
+    });
+    expect(mockGrant).not.toHaveBeenCalled();
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
@@ -520,16 +577,18 @@ describe('host-router', () => {
       expect(text).toContain('Program: coaching-inquiry');
     });
 
-    it('routes MrGru/procurement/rfp as classify_only', async () => {
+    it('routes MrGru/procurement/rfp into the Procurement intake', async () => {
       const r = await routeClassifiedEmail(
         makeParams({ label: 'MrGru/procurement/rfp' }),
       );
       expect(r).toEqual({
         routed: true,
-        action: 'classify_only',
-        target: 'none',
+        action: 'ipc_written',
+        target: 'mailman',
       });
-      expect(mockWrite).not.toHaveBeenCalled();
+      expect(mockWrite.mock.calls[0][1].text).toContain(
+        '[HANDOFF: mailman→procurement]',
+      );
     });
 
     it('routes MrGru/financial/bill to contador', async () => {

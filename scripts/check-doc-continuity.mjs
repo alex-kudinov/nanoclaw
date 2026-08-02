@@ -247,8 +247,10 @@ for (const file of schemaDocs) {
 }
 
 const nvmrc = read('.nvmrc').trim();
-if (nvmrc !== '22') {
-  failures.push(`.nvmrc must pin Node 22; found ${JSON.stringify(nvmrc)}`);
+if (!/^22\.\d+\.\d+$/.test(nvmrc)) {
+  failures.push(
+    `.nvmrc must pin an exact Node 22 release; found ${JSON.stringify(nvmrc)}`,
+  );
 }
 const ci = read('.github/workflows/ci.yml');
 if (!ci.includes('node-version-file: .nvmrc')) {

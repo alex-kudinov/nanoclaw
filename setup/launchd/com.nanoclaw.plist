@@ -10,6 +10,15 @@
 		<string>/Users/xbohdpukc</string>
 		<key>MAX_CONCURRENT_CONTAINERS</key>
 		<string>10</string>
+		<key>NANOCLAW_REQUIRE_RELEASE_MANIFEST</key>
+		<string>1</string>
+		<!-- Deployment writes the exact 40-character release commit here. -->
+		<key>NANOCLAW_EXPECTED_RELEASE_COMMIT</key>
+		<string>SET_BY_DEPLOYMENT</string>
+		<key>NANOCLAW_CODE_ROOT</key>
+		<string>/Users/xbohdpukc/dev/NanoClaw</string>
+		<key>NODE_ENV</key>
+		<string>production</string>
 		<key>PATH</key>
 		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/Users/xbohdpukc/.local/bin</string>
 	</dict>
@@ -19,7 +28,7 @@
 	<string>com.nanoclaw</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/opt/homebrew/bin/node</string>
+		<string>/opt/homebrew/opt/node@22/bin/node</string>
 		<string>/Users/xbohdpukc/dev/NanoClaw/dist/index.js</string>
 	</array>
 	<key>RunAtLoad</key>

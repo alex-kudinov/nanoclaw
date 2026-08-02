@@ -65,49 +65,50 @@ For each result in the search table, extract:
 
 Build a JSON array (de-duplicated by event_id or URL).
 
-## Step 4 — Dedup Against Database
+## Step 4 — Submit One Complete Host Batch
 
-Query existing CaleProcure opportunities:
+Do not query or write `procurement_opportunities` directly. Portal rows are
+untrusted data and the host owns validation, timestamps, deduplication,
+parameterized writes, source-run completion, and retry identity.
 
-```bash
-psql -t -A -c "SELECT bonfire_id, status FROM procurement_opportunities WHERE source = 'caleprocure'"
-```
+Call `mcp__nanoclaw__procurement_caleprocure_ingest` once after all keyword
+pages have been extracted:
 
-For each scraped opportunity, use event_id as the bonfire_id:
+- `run_key`: a stable key for this exact batch, such as
+  `cale-YYYYMMDD-HHMM-{short-batch-hash}`;
+- `rows`: the complete JSON array from Step 3, including the keyword on every
+  row; duplicates across keywords are expected and are host-deduplicated.
 
-- event_id exists AND status='rejected' → **skip**
-- event_id exists AND other status → **UPDATE** close_date, last_seen_at if changed
-- event_id NOT in DB → **INSERT** as status='new', include in notification
+The call is bounded to 200 rows and can be default-off during shadow rollout.
+If the host denies or fails the batch:
 
-Mark expired:
+- do not split it into smaller calls to evade the bound;
+- do not fall back to `psql`;
+- report the run key and host denial to Slack;
+- keep the local extraction artifact for a separately authorized retry.
 
-```bash
-psql -c "UPDATE procurement_opportunities SET status='expired' WHERE source='caleprocure' AND close_date < CURRENT_DATE AND status NOT IN ('rejected', 'expired', 'scraped', 'submitted', 'passed')"
-```
+Only `[PROCUREMENT CALEPROCURE INGESTED]` proves the run completed. A queued MCP
+response is not completion.
 
-## Step 5 — Evaluate Relevance
+## Step 5 — Evaluate the Host Queue
 
 Same criteria as Bonfire — read `/workspace/extra/knowledge/KNOWLEDGE.md` for relevance rules.
 
 **Relevant / Noise / Borderline** classifications are identical across portals.
 
-Assign: `relevance` (relevant/borderline/noise) and `relevance_reason`.
+Call `mcp__nanoclaw__procurement_queue`. For each current row you evaluate,
+call `mcp__nanoclaw__procurement_review_card` with:
 
-## Step 6 — Insert/Update DB
+- the exact `opportunity_id` and `review_version`;
+- one recommendation: `process`, `drop`, or `needs_info`;
+- the decisive relevance evidence or missing information.
 
-For new opportunities, INSERT with `source = 'caleprocure'`:
+The host renders current database truth and the recommendation into one
+version-bound Slack card. The recommendation does not change state. A named
+human must reply in the card thread using the exact decision syntax printed by
+the host; only `[PROCUREMENT DECISION RECORDED]` proves the transition.
 
-```bash
-psql -c "INSERT INTO procurement_opportunities
-  (bonfire_id, bonfire_url, title, agency, close_date, category, search_keyword, relevance, relevance_reason, source, raw_snapshot)
-VALUES
-  ('EVENT_ID', 'URL', 'TITLE', 'AGENCY', 'DATE', 'CAT', 'KW', 'relevant', 'reason', 'caleprocure', \$\$JSON\$\$::jsonb)
-ON CONFLICT (bonfire_id) DO UPDATE SET last_seen_at = NOW()"
-```
-
-**Note:** `bonfire_id` stores the CaleProcure event_id (e.g., '0000038540'). The column name is legacy from Bonfire — it's a generic opportunity ID field.
-
-## Step 7 — Notify
+## Step 6 — Notify
 
 Post results with CaleProcure-specific prefix:
 
@@ -121,15 +122,15 @@ Closes: {close_date}
 Category: {category}
 Source: CaleProcure (caleprocure.ca.gov)
 URL: {url}
-Commands: "process {event_id}" to scrape details | "drop {event_id} [reason]" to reject
+Review: use the host card in this opportunity's Slack thread
 ---
 
-Total scanned: {total} | New: {new} | Updated: {updated}
+Total extracted: {total} | Host run: {run_id} | New observations: {new}
 ```
 
 If no new: `[PROCUREMENT-CA] CaleProcure scan — no new relevant opportunities`
 
-## Step 8 — Close Browser
+## Step 7 — Close Browser
 
 Do NOT close the browser if the Bonfire scan ran first and the CaleProcure scan is part of the same daily cycle — the browser stays open. Only close after ALL portal scans are complete:
 

@@ -24,12 +24,26 @@ const storeMessageDirect = vi.fn();
 // confirmed send, rather than by group on the mailman handoff. See
 // send-watchdog.ts.
 const clearPendingSendsByRecipient = vi.fn((_recipient: string) => 0);
+const markPendingSendHandoff = vi.fn(
+  (
+    _groupFolder: string,
+    _recipient: string,
+    _messageId: string | undefined,
+    _observedAt: string,
+  ) => 0,
+);
 vi.mock('./db.js', () => ({
   storeMessageDirect: (...args: unknown[]) => storeMessageDirect(...args),
   // Deferred like storeMessageDirect above: the factory is hoisted above these
   // consts, so a bare reference would dereference before initialization.
   clearPendingSendsByRecipient: (recipient: string) =>
     clearPendingSendsByRecipient(recipient),
+  markPendingSendHandoff: (
+    groupFolder: string,
+    recipient: string,
+    messageId: string | undefined,
+    observedAt: string,
+  ) => markPendingSendHandoff(groupFolder, recipient, messageId, observedAt),
   createTask: vi.fn(),
   deleteTask: vi.fn(),
   getTaskById: vi.fn(),
@@ -127,6 +141,7 @@ describe('IPC handoff routing', () => {
     vi.useFakeTimers();
     storeMessageDirect.mockClear();
     clearPendingSendsByRecipient.mockClear();
+    markPendingSendHandoff.mockClear();
     sendMessage = vi.fn(async () => {});
     deps = {
       sendMessage,
@@ -167,6 +182,46 @@ describe('IPC handoff routing', () => {
     expect(echoCalls()).toHaveLength(0);
     // Slack target self-persists via storeOutbound — no duplicate direct store
     expect(storeMessageDirect).not.toHaveBeenCalled();
+  });
+
+  // The wake rule now lives at the single consumer (getNewMessages in db.ts):
+  // a bot row whose `from_group` differs from the channel's owning group is a
+  // cross-group handoff and wakes the target. The producer therefore stores an
+  // ordinary bot row and only has to tag `from_group` correctly. Asserting
+  // `is_bot_message: false` here would re-encode the rule in a second place and
+  // still leave the Slack delivery path (Entry #871) broken, since Slack
+  // self-persists via storeOutbound and never reaches storeMessageDirect.
+  it('stores a cross-group-tagged wake row when Mailman is registered on Gmail', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    delete registeredGroups['slack:MAILMAN'];
+    registeredGroups['gmail:info@tandemcoach.co'] = mailmanGroup;
+    try {
+      const { startIpcWatcher } = await import('./ipc.js');
+      writeHandoffFile(
+        'sales',
+        '[HANDOFF: sales→mailman]\nTo: lead@example.com\nBody: approved',
+        'thr-mailman',
+      );
+
+      startIpcWatcher(deps);
+      await vi.advanceTimersByTimeAsync(50);
+
+      expect(storeMessageDirect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          chat_jid: 'gmail:info@tandemcoach.co',
+          from_group: 'sales',
+        }),
+      );
+      expect(markPendingSendHandoff).toHaveBeenCalledWith(
+        'sales',
+        'lead@example.com',
+        expect.stringMatching(/^ipc-/),
+        expect.any(String),
+      );
+    } finally {
+      delete registeredGroups['gmail:info@tandemcoach.co'];
+      registeredGroups['slack:MAILMAN'] = mailmanGroup;
+    }
   });
 
   it('plumbs thread_key through to the target sendMessage (entity threading)', async () => {

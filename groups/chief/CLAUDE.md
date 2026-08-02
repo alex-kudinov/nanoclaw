@@ -68,6 +68,7 @@ Lead inquiries still go to sales (above), not this path.
 - Read/write files in your workspace (`/workspace/group/`)
 - Run bash commands (`psql` for business DB — pre-configured, no credentials needed)
 - `mcp__nanoclaw__send_message` — send a message to this Slack channel, or to another agent's channel using `target_group` (e.g. `target_group: "mailman"`)
+- `mcp__nanoclaw__send_grader_file` — only for an explicitly authorized student submission already under `/workspace/group`; destination is fixed to the grader and the stable idempotency key must be reused on recovery. It does not authorize Heartbeat writes or certificate actions.
 
 ## Shared State
 

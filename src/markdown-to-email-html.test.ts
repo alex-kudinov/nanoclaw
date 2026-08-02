@@ -259,4 +259,59 @@ describe('convertMarkdownToEmailHtml', () => {
     expect(result).not.toContain('\u2018');
     expect(result).not.toContain('\u2019');
   });
+
+  // 14. Loose lists \u2014 items separated by blank lines
+  it('keeps a blank-line-separated numbered list as ONE ordered list', () => {
+    // The Oana Tue regression: each item became its own <ol>, so the mail
+    // client restarted numbering and every point rendered as "1.".
+    const result = convertMarkdownToEmailHtml(
+      'Hi there,\n\n1. First point.\n\n2. Second point.\n\n3. Third point.\n\nThanks.',
+    );
+    expect(result.match(/<ol>/g)).toHaveLength(1);
+    expect(result.match(/<li>/g)).toHaveLength(3);
+    expect(result).toContain(
+      '<ol><li>First point.</li><li>Second point.</li><li>Third point.</li></ol>',
+    );
+  });
+
+  it('keeps a blank-line-separated bullet list as ONE unordered list', () => {
+    const result = convertMarkdownToEmailHtml('- one\n\n- two\n\n- three');
+    expect(result.match(/<ul>/g)).toHaveLength(1);
+    expect(result.match(/<li>/g)).toHaveLength(3);
+  });
+
+  it('still emits a tight list as one list', () => {
+    const result = convertMarkdownToEmailHtml('1. one\n2. two');
+    expect(result.match(/<ol>/g)).toHaveLength(1);
+    expect(result.match(/<li>/g)).toHaveLength(2);
+  });
+
+  it('does not merge a bullet list into an adjacent numbered list', () => {
+    const result = convertMarkdownToEmailHtml('- bullet\n\n1. number');
+    expect(result.match(/<ul>/g)).toHaveLength(1);
+    expect(result.match(/<ol>/g)).toHaveLength(1);
+  });
+
+  it('does not merge lists separated by a paragraph of prose', () => {
+    const result = convertMarkdownToEmailHtml(
+      '1. one\n\nSome prose in between that is long enough not to be a signature.\n\n1. restart',
+    );
+    expect(result.match(/<ol>/g)).toHaveLength(2);
+  });
+
+  it('does not wrap a list in <p> (invalid, adds stray spacing in mail)', () => {
+    const result = convertMarkdownToEmailHtml('1. one\n\n2. two');
+    expect(result).not.toContain('<p><ol>');
+    expect(result.startsWith('<ol>')).toBe(true);
+  });
+
+  it('keeps surrounding prose in its own paragraphs', () => {
+    const result = convertMarkdownToEmailHtml(
+      'Hi Oana,\n\n1. First.\n\n2. Second.\n\nBest,\nThe Team',
+    );
+    expect(result).toContain('<p>Hi Oana,</p>');
+    expect(result.indexOf('<p>Hi Oana,</p>')).toBeLessThan(
+      result.indexOf('<ol>'),
+    );
+  });
 });

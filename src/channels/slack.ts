@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { promisify } from 'node:util';
 
 import { App, LogLevel } from '@slack/bolt';
@@ -30,7 +30,7 @@ import {
   updateChatName,
 } from '../db.js';
 import { readEnvFile } from '../env.js';
-import { deriveLeadThreadKey } from '../lead-thread-key.js';
+import { deriveLeadEntryRef, deriveLeadThreadKey } from '../lead-thread-key.js';
 import { logger } from '../logger.js';
 import { splitForSlack } from '../message-split.js';
 import {
@@ -131,6 +131,13 @@ export interface SlackChannelOpts {
   onChatMetadata: OnChatMetadata;
   onBotJoinedChannel?: OnBotJoinedChannel;
   registeredGroups: () => Record<string, RegisteredGroup>;
+  /**
+   * Pipeline entry id → lead email, for per-lead status lines that name their
+   * lead by id and carry no address. Injected so this channel stays free of
+   * business-DB imports; omitted in tests and wherever anchoring by id is not
+   * wanted. See lead-email-resolver.ts.
+   */
+  resolveLeadEmail?: (entryId: number) => Promise<string | undefined>;
 }
 
 export class SlackChannel implements Channel {
@@ -669,6 +676,36 @@ export class SlackChannel implements Channel {
     }
   }
 
+  /**
+   * The host-derived `lead:{email}` anchor for a message, by either route: an
+   * explicitly labelled address, or a per-lead status line that names its lead
+   * only by pipeline entry id. Undefined when the message is not about one
+   * identifiable lead, in which case the caller falls back to the agent's key.
+   */
+  private async deriveLeadKey(text: string): Promise<string | undefined> {
+    const byAddress = deriveLeadThreadKey(text);
+    if (byAddress) return byAddress;
+
+    const resolve = this.opts.resolveLeadEmail;
+    if (!resolve) return undefined;
+    const entryId = deriveLeadEntryRef(text);
+    if (entryId === undefined) return undefined;
+
+    // Threading is presentation. A lookup failure must cost the anchor, never
+    // the message — an unanchored post is a cosmetic problem, a swallowed sales
+    // status line is not.
+    try {
+      const email = await resolve(entryId);
+      return email ? `lead:${email.toLowerCase()}` : undefined;
+    } catch (err) {
+      logger.warn(
+        { err, entryId },
+        'Slack: lead anchor lookup failed, posting unanchored',
+      );
+      return undefined;
+    }
+  }
+
   async sendMessage(
     jid: string,
     text: string,
@@ -677,12 +714,6 @@ export class SlackChannel implements Channel {
     const channelId = jid.replace(/^slack:/, '');
     const fromGroup = opts?.fromGroup;
     const threadTs = opts?.threadTs;
-    // A lead-bearing message keys on the lead itself, overriding whatever
-    // namespace its author invented. Without this the inbox handoff and the
-    // sales approval card anchor separately and the operator gets two roots per
-    // lead. See lead-thread-key.ts.
-    const leadKey = deriveLeadThreadKey(text);
-    const threadKey = leadKey ?? opts?.threadKey;
 
     if (!this.connected) {
       this.outgoingQueue.push({ jid, text, opts });
@@ -693,15 +724,35 @@ export class SlackChannel implements Channel {
       return;
     }
 
+    // A lead-bearing message keys on the lead itself, overriding whatever
+    // namespace its author invented. Without this the inbox handoff and the
+    // sales approval card anchor separately and the operator gets two roots per
+    // lead. See lead-thread-key.ts. Derived after the queue check so a
+    // disconnected send costs no lookup — the flush re-derives it anyway.
+    const leadKey = await this.deriveLeadKey(text);
+    const threadKey = leadKey ?? opts?.threadKey;
+
+    // A host-derived lead anchor OUTRANKS an agent-supplied threadTs. The agent
+    // reads timestamps out of the `ts` attributes in its prompt and retypes
+    // them, and a 16-digit float is easy to get wrong: for Entry #871 it emitted
+    // thread_ts 1785510996.909199 when the thread root is 1785510996.909209 —
+    // digits borrowed from a different message in the same thread. Slack does
+    // not reject an unknown thread_ts, it just drops the post into the channel,
+    // so the operator saw "[draft updated]" land in the thread and the draft
+    // itself land in the channel below it. The host already knows the canonical
+    // root for this lead; a model-supplied timestamp is a proposal, never
+    // authority (same principle as lead-thread-key.ts). `opts.threadKey` is
+    // agent-supplied too, so it does NOT get this precedence — only `leadKey`.
+    const hostDerivedAnchor = leadKey !== undefined;
+
     // Entity-anchored threading: a threadKey collapses repeated posts about the
-    // same work-unit into one thread. An explicit threadTs always wins (the
-    // caller already knows the thread). Resolved at send time so a queued-then-
+    // same work-unit into one thread. Resolved at send time so a queued-then-
     // flushed post still threads correctly. Three outcomes for a threadKey:
     //   - no anchor yet      → this post becomes the root (recordThreadAnchor)
     //   - anchor, still fresh → reply under it + broadcast (touchThreadAnchor)
     //   - anchor, gone stale  → don't resurrect; fresh root at the channel
     //                           bottom, repoint the anchor (rollThreadAnchor)
-    let effectiveThreadTs = threadTs;
+    let effectiveThreadTs = hostDerivedAnchor ? undefined : threadTs;
     let keyToAnchor: string | undefined; // brand-new key → INSERT (race-safe)
     let keyToRoll: string | undefined; // dormant key → repoint to fresh root
     let keyToTouch: string | undefined; // active key → bump last activity
@@ -894,6 +945,128 @@ export class SlackChannel implements Channel {
       logger.warn({ jid, err }, 'postTracked: send failed');
     }
     return undefined;
+  }
+
+  /**
+   * Post a grader work item as one root plus a threaded Slack file upload, then
+   * persist a readable local copy as the root's NanoClaw content. Persistence
+   * happens only after Slack confirms the upload, so the grader never wakes on
+   * a root whose submission file is missing.
+   */
+  async postGraderFileMessage(
+    jid: string,
+    text: string,
+    file: Buffer,
+    filename: string,
+    sourceGroup: string,
+  ): Promise<{ messageTs: string; fileIds: string[] }> {
+    if (!this.connected) {
+      throw new Error('Slack is disconnected; grader file was not queued');
+    }
+
+    // Convert before touching Slack. A readable inline copy is what wakes the
+    // container; the Slack upload is the operator-visible source artifact.
+    const inlined = await this.inlineLocalFile(file, filename);
+    const channelId = jid.replace(/^slack:/, '');
+    const root = await this.app.client.chat.postMessage({
+      channel: channelId,
+      text: text.slice(0, MAX_MESSAGE_LENGTH),
+    });
+    if (!root.ts) throw new Error('Slack root post returned no timestamp');
+
+    let upload: Awaited<ReturnType<typeof this.app.client.filesUploadV2>>;
+    try {
+      upload = await this.app.client.filesUploadV2({
+        channel_id: channelId,
+        thread_ts: root.ts,
+        file,
+        filename,
+        title: filename,
+      });
+    } catch (err) {
+      // A file-less root must not become a grader work item. Best-effort
+      // rollback keeps Slack clean; the host's pending receipt still prevents
+      // an uncertain automatic retry if deletion itself fails.
+      try {
+        await this.app.client.chat.delete({ channel: channelId, ts: root.ts });
+      } catch (deleteErr) {
+        logger.error(
+          { jid, rootTs: root.ts, deleteErr },
+          'Grader file upload failed and root rollback was not confirmed',
+        );
+      }
+      throw err;
+    }
+
+    const fileIds = (upload.files || []).flatMap((entry) =>
+      (entry.files || [])
+        .map((file) => file.id)
+        .filter((id): id is string => typeof id === 'string'),
+    );
+    this.storeOutbound(
+      jid,
+      root.ts,
+      `${text}${inlined}`,
+      sourceGroup,
+      undefined,
+    );
+    this.lastActivityAt = Date.now();
+    logger.info(
+      { jid, rootTs: root.ts, filename, sourceGroup, fileIds },
+      'Slack grader file message sent and persisted',
+    );
+    return { messageTs: root.ts, fileIds };
+  }
+
+  private async inlineLocalFile(
+    buf: Buffer,
+    filename: string,
+  ): Promise<string> {
+    const ext = extname(filename).slice(1).toLowerCase();
+    const conversionId = `local-${Date.now()}`;
+    switch (classifyAttachment(ext)) {
+      case 'text':
+        return buf.length <= MAX_FILE_DOWNLOAD_SIZE
+          ? attachedFileTag(filename, buf.toString('utf-8'), ext)
+          : attachedFileNote(
+              filename,
+              'text file exceeds the 100 KB inline limit; ask the sender to paste the relevant sections',
+            );
+      case 'doc': {
+        const md = await convertViaMarkitdown(buf, ext || 'bin', conversionId);
+        return md
+          ? attachedFileTag(filename, md, ext)
+          : attachedFileNote(filename, 'could not extract text');
+      }
+      case 'odf': {
+        const extracted = await extractOdfText(buf, conversionId);
+        return extracted
+          ? attachedFileTag(filename, extracted, ext)
+          : attachedFileNote(filename, 'OpenDocument file holds no text');
+      }
+      case 'iwork': {
+        const pdf = await extractIWorkPdf(buf, conversionId);
+        const md = pdf
+          ? await convertViaMarkitdown(pdf, 'pdf', conversionId)
+          : null;
+        return md
+          ? attachedFileTag(filename, md, ext)
+          : attachedFileNote(
+              filename,
+              'Apple document has no readable preview; re-send as PDF or Word',
+            );
+      }
+      case 'image':
+        return attachedFileNote(
+          filename,
+          'image attachment is not readable as text',
+        );
+      default:
+        return attachedFileNote(
+          filename,
+          `unsupported format "${ext || 'unknown'}"; re-send as PDF, Word, or plain text`,
+        );
+    }
   }
 
   isConnected(): boolean {

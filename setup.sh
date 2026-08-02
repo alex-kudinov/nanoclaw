@@ -48,12 +48,12 @@ check_node() {
   if command -v node >/dev/null 2>&1; then
     NODE_VERSION=$(node --version 2>/dev/null | sed 's/^v//')
     NODE_PATH_FOUND=$(command -v node)
-    local major
-    major=$(echo "$NODE_VERSION" | cut -d. -f1)
-    if [ "$major" -ge 20 ] 2>/dev/null; then
+    local required
+    required=$(tr -d '[:space:]' < "$PROJECT_ROOT/.nvmrc")
+    if [ "$NODE_VERSION" = "$required" ]; then
       NODE_OK="true"
     fi
-    log "Node $NODE_VERSION at $NODE_PATH_FOUND (major=$major, ok=$NODE_OK)"
+    log "Node $NODE_VERSION at $NODE_PATH_FOUND (required=$required, ok=$NODE_OK)"
   else
     log "Node not found"
   fi

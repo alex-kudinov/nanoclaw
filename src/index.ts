@@ -56,8 +56,13 @@ import {
   clearPendingSendsByRecipient,
   getMessageById,
   listOverdueSends,
+  listStalledMailmanHandoffs,
+  markMailmanHandoffAlerted,
   markPendingSendAlerted,
+  markPendingSendHandoff,
+  markPendingSendMailmanStarted,
   recordPendingSend,
+  recordThreadAnchor,
   getMessagesSince,
   getThreadContext,
   getNewMessages,
@@ -95,8 +100,12 @@ import { startHeartbeat } from './heartbeat.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
 import {
   extractApprovedGmailThreadId,
+  observeMailmanStart,
   recordApproval,
   sweepPendingSends,
+  rescueUnhandedSends,
+  sweepStalledMailmanHandoffs,
+  MAILMAN_START_WATCHDOG_TICK_MS,
   SEND_WATCHDOG_TICK_MS,
   type SendWatchdogStore,
 } from './send-watchdog.js';
@@ -106,6 +115,11 @@ import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
 import { query, withAgentContext } from './business-db.js';
 import { handleFollowupDrop, handleTypedDrop } from './followup-drop.js';
 import { makeFollowupDropDeps } from './followup-drop-deps.js';
+import {
+  makeLeadEmailResolver,
+  resolveEntryIdByEmail,
+} from './lead-email-resolver.js';
+import { handleProcurementDecisionMessage } from './procurement-review.js';
 import { SlackChannel } from './channels/slack.js';
 import { handleGmailSend } from './gmail-ipc-handlers.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
@@ -135,6 +149,7 @@ import {
   markSent,
   pgFollowupStore,
 } from './proposal-followup-store.js';
+import { verifyRuntimeRelease } from './release-integrity.js';
 import {
   handleProposalApproval,
   handleProposalRejection,
@@ -162,6 +177,7 @@ import {
   SendMessageOpts,
 } from './types.js';
 import { isValidGroupFolder } from './group-folder.js';
+import { writeHostMessage } from './ipc-writer.js';
 import { logger } from './logger.js';
 import { readEnvFile } from './env.js';
 import {
@@ -515,6 +531,14 @@ async function processGroupMessages(
       }
     },
     threadTs,
+    group.folder === 'mailman'
+      ? () =>
+          observeMailmanStart(
+            missedMessages.map((message) => message.content),
+            new Date(),
+            { markMailmanStarted: markPendingSendMailmanStarted },
+          )
+      : undefined,
   );
 
   await channel.setTyping?.(chatJid, false);
@@ -548,6 +572,7 @@ async function runAgent(
   chatJid: string,
   onOutput?: (output: ContainerOutput) => Promise<void>,
   threadTs?: string,
+  onStarted?: () => void,
 ): Promise<'success' | 'error'> {
   const isMain = group.isMain === true;
   const sessionKey = `${group.folder}||${threadTs || 'root'}`;
@@ -606,6 +631,7 @@ async function runAgent(
       (proc, containerName) => {
         const compositeKey = `${chatJid}||${threadTs || 'root'}`;
         queue.registerProcess(compositeKey, proc, containerName, group.folder);
+        onStarted?.();
       },
       wrappedOnOutput,
       () => {
@@ -656,10 +682,17 @@ async function startMessageLoop(): Promise<void> {
   while (true) {
     try {
       const jids = Object.keys(registeredGroups);
+      // Which group owns each chat. getNewMessages needs this to tell a group's
+      // own echo (never wakes it) from a cross-group handoff (must wake it).
+      const folderByJid: Record<string, string> = {};
+      for (const [jid, group] of Object.entries(registeredGroups)) {
+        folderByJid[jid] = group.folder;
+      }
       const { messages, newTimestamp } = getNewMessages(
         jids,
         lastTimestamp,
         ASSISTANT_NAME,
+        folderByJid,
       );
 
       if (messages.length > 0) {
@@ -802,6 +835,13 @@ async function startMessageLoop(): Promise<void> {
           // on the object itself (any object is truthy).
           const pipeResult = queue.sendMessage(compositeKey, formatted);
           if (pipeResult.wrote) {
+            if (group.folder === 'mailman') {
+              observeMailmanStart(
+                messagesToSend.map((message) => message.content),
+                new Date(),
+                { markMailmanStarted: markPendingSendMailmanStarted },
+              );
+            }
             logger.info(
               {
                 event: 'container.lifecycle.pipe.dispatch',
@@ -1292,6 +1332,12 @@ export async function chaosReconcilerTick(
 }
 
 async function main(): Promise<void> {
+  // Fail closed before touching containers, databases, channels, or schedulers.
+  // Production must run an untampered artifact from the expected commit under
+  // the exact Node version pinned in the release manifest.
+  const releaseIdentity = verifyRuntimeRelease();
+  logger.info({ release: releaseIdentity }, 'Release integrity verified');
+
   ensureContainerSystemRunning();
 
   // Initialize DB before any handlers that use it (webhook server, IPC, etc.)
@@ -1348,6 +1394,7 @@ async function main(): Promise<void> {
         circuitBreakerStatus = {};
       }
       return {
+        release: releaseIdentity,
         channels: channelHealth,
         activeContainers,
         lastMessageAt: getRouterState('last_timestamp') ?? null,
@@ -1492,12 +1539,18 @@ async function main(): Promise<void> {
   // Observes human messages so a typed "drop <lead>" in #gru-sales is honoured
   // by the host instead of depending on the sales container to write it.
   let onOperatorSalesMessage: ((msg: NewMessage) => void) | null = null;
+  let onOperatorProcurementMessage: ((msg: NewMessage) => void) | null = null;
 
   // Channel callbacks (shared by all channels)
   const channelOpts = {
+    // Anchors per-lead status lines ("Lead #611 …", "[NO ACTION] Entry #85 …")
+    // to the lead's existing thread. The agent names the lead by id and gives no
+    // address, so only the host can turn that into the canonical lead key.
+    resolveLeadEmail: makeLeadEmailResolver(),
     onMessage: (_chatJid: string, msg: NewMessage) => {
       storeMessage(msg);
       onOperatorSalesMessage?.(msg);
+      onOperatorProcurementMessage?.(msg);
     },
     onChatMetadata: (
       chatJid: string,
@@ -1625,6 +1678,44 @@ async function main(): Promise<void> {
     slackForIncidents?.registerApprovalListener((ts) => isIncidentProposal(ts));
   }
 
+  // Procurement decisions — exact, version-bound commands in a host-generated
+  // card thread. The Slack event supplies the actor UID; the model cannot
+  // provide or override it. Policy is default-off until named operator UIDs and
+  // an action epoch are configured.
+  {
+    const slackForProcurement = channels.find(
+      (c): c is SlackChannel => c instanceof SlackChannel,
+    );
+    if (slackForProcurement) {
+      onOperatorProcurementMessage = (msg: NewMessage) => {
+        if (msg.from_group || msg.is_from_me || msg.is_bot_message) return;
+        if (registeredGroups[msg.chat_jid]?.folder !== 'procurement') return;
+        handleProcurementDecisionMessage(
+          {
+            channelJid: msg.chat_jid,
+            threadTs: msg.thread_ts,
+            text: msg.content,
+            actorUid: msg.sender,
+            actorName: msg.sender_name,
+          },
+          {
+            query,
+            postThread: async (channelJid, threadTs, text) => {
+              await slackForProcurement.sendMessage(channelJid, text, {
+                threadTs,
+              });
+            },
+          },
+        ).catch((err) => {
+          logger.error(
+            { err, ts: msg.id, actorUid: msg.sender },
+            'procurement decision message failed',
+          );
+        });
+      };
+    }
+  }
+
   // Autonomy ladder — per-category trust ledger + L2 hold-and-send. The
   // 60s sweep derives draft outcomes from stored messages, promotes/demotes
   // categories, and auto-approves held L2 drafts after the veto window.
@@ -1635,7 +1726,11 @@ async function main(): Promise<void> {
       recordPendingSend,
       clearPendingSends,
       clearPendingSendsByRecipient,
+      markHandoff: markPendingSendHandoff,
+      markMailmanStarted: markPendingSendMailmanStarted,
       listOverdueSends,
+      listStalledHandoffs: listStalledMailmanHandoffs,
+      markHandoffAlerted: markMailmanHandoffAlerted,
       markAlerted: markPendingSendAlerted,
     };
     const slackForAutonomy = channels.find(
@@ -1693,6 +1788,29 @@ async function main(): Promise<void> {
         return false; // never claim — the agent path must still run
       });
 
+      // Finish an approved send the agent abandoned. Runs before the alert
+      // sweep's grace expires, so the usual outcome is a delivered email rather
+      // than a [SEND NOT OBSERVED] and a manual rescue.
+      setInterval(() => {
+        rescueUnhandedSends(new Date(), {
+          store: sendWatchdogStore,
+          postThread: async (jid, text, threadTs) => {
+            await slackForAutonomy.sendMessage(jid, text, { threadTs });
+          },
+          getApprovedCard: (draftTs) =>
+            getMessageById(draftTs)?.content ?? null,
+          resolveEntryIdByEmail,
+          emitHandoff: (groupFolder, text) =>
+            writeHostMessage(groupFolder, {
+              type: 'message',
+              chatJid: 'host-send-rescue',
+              text,
+            }),
+        }).catch((err) =>
+          logger.error({ err }, 'send-watchdog: handoff rescue error'),
+        );
+      }, SEND_WATCHDOG_TICK_MS);
+
       setInterval(() => {
         sweepPendingSends(new Date(), {
           store: sendWatchdogStore,
@@ -1701,6 +1819,17 @@ async function main(): Promise<void> {
           },
         }).catch((err) => logger.error({ err }, 'send-watchdog: sweep error'));
       }, SEND_WATCHDOG_TICK_MS);
+
+      setInterval(() => {
+        sweepStalledMailmanHandoffs(new Date(), {
+          store: sendWatchdogStore,
+          postThread: async (jid, text, threadTs) => {
+            await slackForAutonomy.sendMessage(jid, text, { threadTs });
+          },
+        }).catch((err) =>
+          logger.error({ err }, 'send-watchdog: Mailman-start sweep error'),
+        );
+      }, MAILMAN_START_WATCHDOG_TICK_MS);
     }
   }
 
@@ -2077,6 +2206,50 @@ async function main(): Promise<void> {
       queue.acknowledgePipedMessage(groupFolder, messageId),
     setLastOutputAt: (groupFolder) =>
       queue.setLastOutputAtByFolder(groupFolder),
+    postProcurementReviewCard: async (text, threadKey) => {
+      const slack = channels.find(
+        (c): c is SlackChannel => c instanceof SlackChannel,
+      );
+      const entry = Object.entries(registeredGroups).find(
+        ([, group]) => group.folder === 'procurement',
+      );
+      if (!slack || !entry) return null;
+      const [channelJid] = entry;
+      const messageTs = await slack.postTracked(channelJid, text);
+      if (!messageTs) return null;
+      recordThreadAnchor(
+        channelJid.replace(/^slack:/, ''),
+        threadKey,
+        messageTs,
+      );
+      return { channelJid, messageTs };
+    },
+    postProcurementReviewThread: async (channelJid, threadTs, text) => {
+      const slack = channels.find(
+        (c): c is SlackChannel => c instanceof SlackChannel,
+      );
+      if (!slack) throw new Error('Slack channel unavailable');
+      await slack.sendMessage(channelJid, text, { threadTs });
+    },
+    postGraderFileMessage: async (
+      targetJid,
+      text,
+      file,
+      filename,
+      sourceGroup,
+    ) => {
+      const slack = channels.find(
+        (c): c is SlackChannel => c instanceof SlackChannel,
+      );
+      if (!slack) throw new Error('Slack channel unavailable');
+      return slack.postGraderFileMessage(
+        targetJid,
+        text,
+        file,
+        filename,
+        sourceGroup,
+      );
+    },
     ...(JOB_REPORT_CHANNEL
       ? {
           runHostJob: async (

@@ -581,6 +581,83 @@ describe('getNewMessages', () => {
     expect(messages).toHaveLength(0);
     expect(newTimestamp).toBe('');
   });
+
+  // A cross-group handoff is host-authored, so it is a bot row — but it is the
+  // only thing that can start the target group. Suppressing it stalled every
+  // approved send until something else happened to wake the target
+  // (Lead #962 via the Gmail jid, Entry #871 via Slack).
+  describe('cross-group handoff wake rule', () => {
+    beforeEach(() => {
+      storeMessage({
+        id: 'h1',
+        chat_jid: 'group1@g.us',
+        sender: 'mailman',
+        sender_name: 'mailman',
+        content: '[HANDOFF: mailman→sales]\nEntry ID: 871',
+        timestamp: '2024-01-01T00:00:05.000Z',
+        is_bot_message: true,
+        from_group: 'mailman',
+      });
+      storeMessage({
+        id: 'h2',
+        chat_jid: 'group1@g.us',
+        sender: 'sales',
+        sender_name: 'sales',
+        content: '[SALES REVIEW] Lead #871 — own echo',
+        timestamp: '2024-01-01T00:00:06.000Z',
+        is_bot_message: true,
+        from_group: 'sales',
+      });
+      storeMessage({
+        id: 'h3',
+        chat_jid: 'group1@g.us',
+        sender: 'host',
+        sender_name: 'host',
+        content: 'untagged host status line',
+        timestamp: '2024-01-01T00:00:07.000Z',
+        is_bot_message: true,
+      });
+    });
+
+    it('wakes the target group on another group’s handoff', () => {
+      const { messages } = getNewMessages(
+        ['group1@g.us'],
+        '2024-01-01T00:00:04.000Z',
+        'Gru',
+        { 'group1@g.us': 'sales' },
+      );
+      expect(messages.map((m) => m.id)).toEqual(['h1']);
+    });
+
+    it('never wakes a group on its own echo or on untagged host noise', () => {
+      const { messages } = getNewMessages(
+        ['group1@g.us'],
+        '2024-01-01T00:00:05.000Z',
+        'Gru',
+        { 'group1@g.us': 'sales' },
+      );
+      expect(messages).toHaveLength(0);
+    });
+
+    it('advances the cursor past suppressed rows so they are not rescanned', () => {
+      const { newTimestamp } = getNewMessages(
+        ['group1@g.us'],
+        '2024-01-01T00:00:05.000Z',
+        'Gru',
+        { 'group1@g.us': 'sales' },
+      );
+      expect(newTimestamp).toBe('2024-01-01T00:00:07.000Z');
+    });
+
+    it('stays conservative when the chat has no known owner', () => {
+      const { messages } = getNewMessages(
+        ['group1@g.us'],
+        '2024-01-01T00:00:04.000Z',
+        'Gru',
+      );
+      expect(messages).toHaveLength(0);
+    });
+  });
 });
 
 // --- storeChatMetadata ---

@@ -19,6 +19,7 @@
  * 2026-07-23 when an override round-trip reverted approved edits.
  */
 
+import { buildApprovedHandoff } from './approved-send-handoff.js';
 import { logger } from './logger.js';
 
 /**
@@ -31,6 +32,12 @@ export const SEND_GRACE_MS = 5 * 60 * 1000;
 /** How often to look for approvals whose send never arrived. */
 export const SEND_WATCHDOG_TICK_MS = 60 * 1000;
 
+/** A routed handoff should enter Mailman's message loop promptly. */
+export const MAILMAN_START_GRACE_MS = 60 * 1000;
+
+/** Check the narrower handoff→Mailman boundary more frequently than sends. */
+export const MAILMAN_START_WATCHDOG_TICK_MS = 10 * 1000;
+
 export interface PendingSend {
   draftTs: string;
   groupFolder: string;
@@ -40,6 +47,10 @@ export interface PendingSend {
   recipient?: string;
   leadRef?: string;
   approvedAt: string;
+  handoffObservedAt?: string;
+  handoffMessageId?: string;
+  mailmanStartedAt?: string;
+  handoffAlertedAt?: string;
 }
 
 export interface SendWatchdogStore {
@@ -52,7 +63,20 @@ export interface SendWatchdogStore {
    * card was approved, so group folder cannot be the join key.
    */
   clearPendingSendsByRecipient(recipient: string): number;
+  markHandoff(
+    groupFolder: string,
+    recipient: string,
+    messageId: string | undefined,
+    observedAt: string,
+  ): number;
+  markMailmanStarted(
+    groupFolder: string,
+    recipient: string,
+    startedAt: string,
+  ): number;
   listOverdueSends(cutoffIso: string): PendingSend[];
+  listStalledHandoffs(cutoffIso: string): PendingSend[];
+  markHandoffAlerted(draftTs: string, alertedAt: string): void;
   markAlerted(draftTs: string): void;
 }
 
@@ -61,10 +85,19 @@ export interface SendWatchdogDeps {
   postThread(chatJid: string, text: string, threadTs?: string): Promise<void>;
 }
 
-const CARD_RE = /\[(?:SALES REVIEW|SUPPORT-DRAFT)\]/;
+/**
+ * Approvable send cards. `CLIENT SUPPORT REVIEW` was missing until 2026-07-31:
+ * Gaye Montgomery's $499 access question was drafted, approved, and then
+ * blocked (no party record yet), and because the card matched nothing here
+ * `recordApproval` returned null — no pending row, so no rescue, no
+ * `[SEND NOT OBSERVED]`, and no approval-boundary Gmail grant. The operator's
+ * approval vanished into silence for 15 minutes. Support approvals are send
+ * promises exactly like sales ones and get the same safety net.
+ */
+const CARD_RE = /\[(?:SALES REVIEW|CLIENT SUPPORT REVIEW|SUPPORT-DRAFT)\]/;
 const EMAIL_RE = /^\s*(?:Email|To)\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
 const LEAD_RE = /\[SALES REVIEW\]\s*(Lead\s*#\s*\d+)/i;
-const MAILMAN_HANDOFF_RE = /\[HANDOFF:\s*\w+\s*(?:→|->)\s*mailman\]/;
+const MAILMAN_HANDOFF_RE = /\[HANDOFF:\s*([a-z0-9_-]+)\s*(?:→|->)\s*mailman\]/i;
 const TO_RE = /^\s*To\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
 
 /** Extract only a structured header, never a Thread-ID injected in body text. */
@@ -141,13 +174,46 @@ export function recordApproval(
  * nothing overdue and the operator saw silence after their own approval. Only a
  * confirmed send discharges the promise now.
  */
-export function observeOutbound(groupFolder: string, text: string): void {
-  if (!MAILMAN_HANDOFF_RE.test(text)) return;
+export function observeOutbound(
+  groupFolder: string,
+  text: string,
+  messageId: string | undefined,
+  now: Date,
+  store: Pick<SendWatchdogStore, 'markHandoff'>,
+): number {
+  if (!MAILMAN_HANDOFF_RE.test(text)) return 0;
   const to = text.match(TO_RE)?.[1]?.toLowerCase();
+  const recorded = to
+    ? store.markHandoff(groupFolder, to, messageId, now.toISOString())
+    : 0;
   logger.info(
-    { group: groupFolder, to },
+    { group: groupFolder, to, messageId, recorded },
     'send-watchdog: mailman handoff observed (progress only — awaiting confirmed send)',
   );
+  return recorded;
+}
+
+/** Record that Mailman's message loop has selected a routed handoff for work. */
+export function observeMailmanStart(
+  texts: string[],
+  now: Date,
+  store: Pick<SendWatchdogStore, 'markMailmanStarted'>,
+): number {
+  let marked = 0;
+  for (const text of texts) {
+    const sourceGroup = text.match(MAILMAN_HANDOFF_RE)?.[1]?.toLowerCase();
+    if (!sourceGroup) continue;
+    const to = text.match(TO_RE)?.[1]?.toLowerCase();
+    if (!to) continue;
+    marked += store.markMailmanStarted(sourceGroup, to, now.toISOString());
+  }
+  if (marked > 0) {
+    logger.info(
+      { marked },
+      'send-watchdog: Mailman started routed email handoff',
+    );
+  }
+  return marked;
 }
 
 /**
@@ -186,10 +252,174 @@ function alertText(row: PendingSend): string {
   );
 }
 
+function mailmanStartAlertText(row: PendingSend): string {
+  const who = row.recipient ? ` to ${row.recipient}` : '';
+  const lead = row.leadRef ? ` (${row.leadRef})` : '';
+  return (
+    `[MAILMAN NOT STARTED]${lead} the approved handoff${who} was routed at ` +
+    `${row.handoffObservedAt ?? 'an unknown time'}, but Mailman's message loop ` +
+    `has not claimed it. The email has NOT gone out.\n\n` +
+    `This is a host routing or queue failure, not an email-content refusal. ` +
+    `Check the Mailman queue/container and the stored handoff before retrying; ` +
+    `do not redraft or create a second send.`
+  );
+}
+
+/** Alert once when routing succeeded but Mailman never claimed the handoff. */
+export async function sweepStalledMailmanHandoffs(
+  now: Date,
+  deps: SendWatchdogDeps,
+): Promise<number> {
+  const cutoff = new Date(now.getTime() - MAILMAN_START_GRACE_MS).toISOString();
+  const stalled = deps.store.listStalledHandoffs(cutoff);
+  let alerted = 0;
+  for (const row of stalled) {
+    try {
+      await deps.postThread(
+        row.chatJid,
+        mailmanStartAlertText(row),
+        row.threadTs,
+      );
+      deps.store.markHandoffAlerted(row.draftTs, now.toISOString());
+      alerted++;
+      logger.error(
+        {
+          group: row.groupFolder,
+          recipient: row.recipient,
+          lead: row.leadRef,
+          handoffObservedAt: row.handoffObservedAt,
+        },
+        'send-watchdog: routed handoff was not claimed by Mailman',
+      );
+    } catch (err) {
+      logger.error(
+        { err, draftTs: row.draftTs },
+        'send-watchdog: failed to post Mailman-start alert',
+      );
+    }
+  }
+  return alerted;
+}
+
 /**
  * Alert on approvals whose send never materialised. One alert per approval:
  * `markAlerted` removes the row so a stuck send cannot spam the channel.
  */
+/**
+ * Grace before the host emits the handoff itself. Long enough that a healthy
+ * sales run (which hands off within ~30s of approval) is never pre-empted.
+ */
+export const HANDOFF_RESCUE_MS = 90 * 1000;
+
+export interface HandoffRescueDeps extends SendWatchdogDeps {
+  /** The approved card, by its Slack ts. Null when it can no longer be read. */
+  getApprovedCard(draftTs: string): string | null;
+  /** Write a `[HANDOFF: sales→mailman]` IPC message as `groupFolder`. */
+  emitHandoff(groupFolder: string, text: string): void;
+  /**
+   * Pipeline entry id for a recipient address, resolved at rescue time.
+   *
+   * This is what re-drives a send that was blocked for a missing party. Gaye
+   * Montgomery (2026-07-31) was approved at 22:40:53Z and refused at 22:41:39Z
+   * because no party existed; chief onboarded her 33s later. Resolving here
+   * rather than at approval means the retry sees the record that has since
+   * appeared. Optional — without it a card carrying no `Lead #N` simply hands
+   * off without an Entry ID, exactly as before.
+   */
+  resolveEntryIdByEmail?(email: string): Promise<number | undefined>;
+}
+
+/**
+ * Emit the approved send's handoff when the agent did not.
+ *
+ * The sales agent has dropped this step three times (Entry 938, Lead #962,
+ * Lead #871), each time after the operator had already approved, and each time
+ * the only signal was silence followed by an alert. The host holds the approved
+ * card and the recipient, so it can finish the job deterministically.
+ *
+ * Duplicate safety, in order:
+ *   - only rows with NO observed handoff are considered, so a working agent run
+ *     is never raced;
+ *   - `markHandoff` is an atomic conditional update and the rescue proceeds only
+ *     when it claims the row, so two ticks cannot both emit;
+ *   - the body is sliced verbatim from the approved card, never regenerated;
+ *   - an unparsable card emits nothing and leaves the alert path untouched.
+ */
+export async function rescueUnhandedSends(
+  now: Date,
+  deps: HandoffRescueDeps,
+): Promise<number> {
+  const cutoff = new Date(now.getTime() - HANDOFF_RESCUE_MS).toISOString();
+  const candidates = deps.store
+    .listOverdueSends(cutoff)
+    .filter((row) => !row.handoffObservedAt && row.recipient);
+
+  let rescued = 0;
+  for (const row of candidates) {
+    const card = deps.getApprovedCard(row.draftTs);
+    if (!card) continue;
+
+    // Resolved now, not at approval: a send blocked for a missing party is
+    // retried here, and by this point the onboarding that unblocked it has
+    // usually landed. A lookup failure must not stop the rescue.
+    let entryId: number | undefined;
+    if (deps.resolveEntryIdByEmail && row.recipient) {
+      try {
+        entryId = await deps.resolveEntryIdByEmail(row.recipient);
+      } catch (err) {
+        logger.warn(
+          { err, recipient: row.recipient },
+          'send-watchdog: entry lookup failed, handing off without an Entry ID',
+        );
+      }
+    }
+
+    const built = buildApprovedHandoff(card, { entryId });
+    if (!built || built.recipient !== row.recipient) {
+      logger.warn(
+        { draftTs: row.draftTs, recipient: row.recipient },
+        'send-watchdog: approved card is not machine-sendable — leaving it to the operator',
+      );
+      continue;
+    }
+
+    // Claim first. If another tick (or a late agent handoff) already marked
+    // this row, changes is 0 and we must not emit.
+    const claimed = deps.store.markHandoff(
+      row.groupFolder,
+      row.recipient,
+      `host-rescue-${row.draftTs}`,
+      now.toISOString(),
+    );
+    if (claimed === 0) continue;
+
+    try {
+      deps.emitHandoff(row.groupFolder, built.text);
+      rescued++;
+      logger.warn(
+        {
+          group: row.groupFolder,
+          recipient: row.recipient,
+          lead: row.leadRef,
+          approvedAt: row.approvedAt,
+        },
+        'send-watchdog: agent never emitted the handoff — host emitted the approved send',
+      );
+      await deps.postThread(
+        row.chatJid,
+        `:gear: The agent did not hand this off after approval, so the host emitted the approved send verbatim. Watching for Gmail confirmation.`,
+        row.threadTs,
+      );
+    } catch (err) {
+      logger.error(
+        { err, draftTs: row.draftTs },
+        'send-watchdog: host handoff emit failed',
+      );
+    }
+  }
+  return rescued;
+}
+
 export async function sweepPendingSends(
   now: Date,
   deps: SendWatchdogDeps,
