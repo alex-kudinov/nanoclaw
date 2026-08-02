@@ -8,6 +8,29 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260802-002 — Container timeout is an absolute lifetime, including after adoption
+
+- Date: 2026-08-02T17:03Z
+- Owner/client: Codex
+- State: validating
+- Commit/PR: follow-up on `codex/nc-20260802-001-release`; exact release commit
+  will be recorded at deployment
+- Change class: C3 — production container lifecycle and queue capacity
+- Affected systems: `src/container-runner.ts`, `src/index.ts`, focused timeout
+  tests, production NanoClaw release
+- Trigger/evidence: the NC-001 restart adopted the still-live
+  `nanoclaw-sales-1785689606073` run. It continued emitting heartbeats well past
+  the Sales group's configured runtime and was adopted again on restart.
+- Root cause: heartbeat and output markers called `resetTimeout()`, so the
+  documented hard timeout measured inactivity rather than total runtime.
+  `adoptSidecarContainer()` then applied no deadline based on the sidecar's
+  durable `startedMs`; adopted states are deliberately excluded from the queue's
+  duplicate liveness cleanup.
+- Intended fix: calculate one effective absolute lifetime, never extend it for
+  heartbeats/output, reject already-expired sidecars, and schedule adopted runs
+  to stop at the remaining original deadline. Heartbeats continue to prove
+  liveness for freeze/spawn checks; they no longer grant runtime extensions.
+
 ### NC-20260802-001 — MrGru grader file delivery is host-owned and idempotent
 
 - Date: 2026-08-02T16:28Z
@@ -1021,7 +1044,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Root cause: `src/ipc.ts` called `observeOutbound` on the outbound group
   message, i.e. on the `[HANDOFF: sales→mailman]` line, and
   `src/send-watchdog.ts` deleted the `pending_sends` row there. That handoff is
-  emitted *before* mailman composes the mail, so every downstream refusal —
+  emitted _before_ mailman composes the mail, so every downstream refusal —
   recipient guard, content guard, Gmail error, `[ALREADY-HANDLED]` — happened
   after the expectation had already been discharged. NC-20260728-003 chose the
   handoff deliberately ("the agent got that far"); this narrows it to the only
@@ -1031,7 +1054,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
     logs it as progress only and no longer clears. New `observeConfirmedSend`
     clears on a confirmed send, unwrapping a `Name <addr>` form and matching
     case-insensitively. `alertText` reworded: it no longer claims "no handoff has
-    been seen" (a handoff usually *has* been seen) and now points the operator at
+    been seen" (a handoff usually _has_ been seen) and now points the operator at
     the `🚫 [EMAIL BLOCKED]` line in `#gru-chief` that names the violation.
   - `src/db.ts` — new `clearPendingSendsByRecipient`. The recipient is the join
     key because the send executes as `mailman` while the expectation belongs to
@@ -1172,6 +1195,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Rollback/recovery: revert the five knowledge files as one provenance unit.
   Reverting restores a guardrail that now blocks a real, purchasable program.
 - Documentation: active-work row and detail subsection plus this entry.
+
 #### Addendum 2026-07-29T23:59Z — attendance rules, corrected accreditation floor, MCS price reconciliation, deployed
 
 - State: `ready_for_review` → `deployed_unverified`.
@@ -1547,7 +1571,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   by injecting a `[HANDOFF: sales→mailman]` whose body was sliced verbatim from
   the approved card, not regenerated. Confirmed by `gmail_reply processed` and
   `[EMAIL SENT] to=… subject=Re: Questions about the AAMC Program and MCQ-PCC
-  Qualification`, i.e. correctly threaded on her original subject.
+Qualification`, i.e. correctly threaded on her original subject.
 - Verification:
   - 2026-07-28T11:45Z — `npx tsc --noEmit` clean; 15 watchdog tests pass,
     covering grace period, recipient mismatch, alert-once, and post-failure
@@ -1920,7 +1944,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `.github/workflows/ci.yml`
 - Verification: Claude adversarial protocol review completed; accepted
   corrections are incorporated. 2026-07-23T16:21Z — `node --check
-  scripts/check-doc-continuity.mjs`, `npm run docs:continuity-check`,
+scripts/check-doc-continuity.mjs`, `npm run docs:continuity-check`,
   `npm run typecheck`, and `git diff --check` passed.
 - Deployment/migration: not applicable; no application or external state change
 - Rollback/recovery: revert only these documentation changes

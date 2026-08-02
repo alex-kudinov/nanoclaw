@@ -730,6 +730,24 @@ export function containersStateDir(): string {
   return path.join(DATA_DIR, 'containers');
 }
 
+/**
+ * Wall-clock lifetime for one message container. Heartbeats prove that a
+ * process is responsive, but must not extend this configured safety ceiling.
+ */
+export function effectiveContainerTimeoutMs(group: RegisteredGroup): number {
+  const configTimeout = group.containerConfig?.timeout || CONTAINER_TIMEOUT;
+  return Math.max(configTimeout, IDLE_TIMEOUT + 30_000);
+}
+
+/** Remaining wall-clock lifetime for an existing/adopted container. */
+export function containerTimeoutRemainingMs(
+  group: RegisteredGroup,
+  startedMs: number,
+  nowMs = Date.now(),
+): number {
+  return effectiveContainerTimeoutMs(group) - Math.max(0, nowMs - startedMs);
+}
+
 export async function runContainerAgent(
   group: RegisteredGroup,
   input: ContainerInput,
@@ -911,7 +929,8 @@ export async function runContainerAgent(
       if (onOutput) {
         parseBuffer += chunk;
 
-        // Strip heartbeat markers and reset timers (proves agent is alive)
+        // Strip heartbeat markers. A heartbeat proves the agent is responsive
+        // for spawn/freeze detection; it must not extend the wall-clock cap.
         if (parseBuffer.includes(HEARTBEAT_MARKER)) {
           parseBuffer = parseBuffer.split(HEARTBEAT_MARKER + '\n').join('');
           if (!hadStreamingOutput && !spawnTimedOut) {
@@ -922,7 +941,6 @@ export async function runContainerAgent(
               'Heartbeat received, reset spawn timer',
             );
           }
-          resetTimeout();
         }
 
         let startIdx: number;
@@ -944,8 +962,6 @@ export async function runContainerAgent(
               clearTimeout(spawnTimer);
             }
             hadStreamingOutput = true;
-            // Activity detected — reset the hard timeout
-            resetTimeout();
             // Call onOutput for all markers (including null results)
             // so idle timers start even for "silent" query completions.
             outputChain = outputChain.then(() => onOutput(parsed));
@@ -979,10 +995,9 @@ export async function runContainerAgent(
     let timedOut = false;
     let spawnTimedOut = false;
     let hadStreamingOutput = false;
-    const configTimeout = group.containerConfig?.timeout || CONTAINER_TIMEOUT;
-    // Grace period: hard timeout must be at least IDLE_TIMEOUT + 30s so the
-    // graceful _close sentinel has time to trigger before the hard kill fires.
-    const timeoutMs = Math.max(configTimeout, IDLE_TIMEOUT + 30_000);
+    // Grace period: the absolute timeout must be at least IDLE_TIMEOUT + 30s so
+    // the graceful _close sentinel has time to trigger before the hard kill.
+    const timeoutMs = effectiveContainerTimeoutMs(group);
 
     const killOnTimeout = () => {
       timedOut = true;
@@ -1001,7 +1016,7 @@ export async function runContainerAgent(
       });
     };
 
-    let timeout = setTimeout(killOnTimeout, timeoutMs);
+    const timeout = setTimeout(killOnTimeout, timeoutMs);
 
     // Spawn timeout: fail fast if no output markers arrive within window.
     // This catches containers that boot but never produce output (bad image,
@@ -1021,12 +1036,6 @@ export async function runContainerAgent(
       }
     };
     let spawnTimer = setTimeout(spawnTimeoutFn, spawnTimeoutMs);
-
-    // Reset the timeout whenever there's activity (streaming output)
-    const resetTimeout = () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(killOnTimeout, timeoutMs);
-    };
 
     // Start consuming the container's stdout file. Poll-based tail: cheap,
     // survives anything, and identical machinery to what adoption uses.
@@ -1187,7 +1196,7 @@ export async function runContainerAgent(
         resolve({
           status: 'error',
           result: null,
-          error: `Container timed out after ${configTimeout}ms`,
+          error: `Container timed out after ${timeoutMs}ms`,
         });
         return;
       }

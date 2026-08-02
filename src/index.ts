@@ -35,6 +35,7 @@ import {
 import {
   ContainerOutput,
   ContainerSidecar,
+  containerTimeoutRemainingMs,
   containersStateDir,
   runContainerAgent,
   writeGroupsSnapshot,
@@ -1009,6 +1010,20 @@ function adoptSidecarContainer(
     sweepSidecar(sc, sidecarPath);
     return false;
   }
+  const remainingLifetimeMs = containerTimeoutRemainingMs(group, sc.startedMs);
+  if (remainingLifetimeMs <= 0) {
+    logger.warn(
+      {
+        event: 'container.lifecycle.adopt_expired',
+        containerName: sc.containerName,
+        group: sc.groupName,
+        ageMs: Math.max(0, Date.now() - sc.startedMs),
+      },
+      'Refusing to adopt container beyond its absolute lifetime',
+    );
+    sweepSidecar(sc, sidecarPath);
+    return false;
+  }
   queue.adoptContainer(
     sc.compositeKey,
     sc.containerName,
@@ -1032,11 +1047,30 @@ function adoptSidecarContainer(
     }
   });
   tail.start(sc.outOffset || 0);
+  const lifetimeTimer = setTimeout(() => {
+    logger.error(
+      {
+        event: 'container.lifecycle.adopt_timeout',
+        containerName: sc.containerName,
+        group: sc.groupName,
+      },
+      'Adopted container reached its original absolute lifetime',
+    );
+    exec(stopContainer(sc.containerName), { timeout: 15_000 }, (err) => {
+      if (err) {
+        logger.warn(
+          { err, containerName: sc.containerName, group: sc.groupName },
+          'Failed to stop adopted container at absolute lifetime',
+        );
+      }
+    });
+  }, remainingLifetimeMs);
   // Adoption owns the lifecycle: poll the CLI PID, final-drain on death,
   // release the slot. (The liveness checker skips adopted states.)
   const poll = setInterval(() => {
     if (pidAlive(sc.pid)) return;
     clearInterval(poll);
+    clearTimeout(lifetimeTimer);
     tail.drainNow();
     tail.stop();
     queue.finalizeAdopted(sc.compositeKey);

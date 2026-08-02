@@ -153,6 +153,8 @@ vi.mock('child_process', async () => {
 });
 
 import {
+  containerTimeoutRemainingMs,
+  effectiveContainerTimeoutMs,
   runContainerAgent,
   ContainerOutput,
   resolveOAuthToken,
@@ -225,6 +227,44 @@ describe('container-runner timeout behavior', () => {
     expect(onOutput).toHaveBeenCalledWith(
       expect.objectContaining({ result: 'Here is my response' }),
     );
+  });
+
+  it('heartbeats do not extend the absolute runtime deadline', async () => {
+    const { exec } = await import('child_process');
+    vi.mocked(exec).mockClear();
+    const resultPromise = runContainerAgent(
+      testGroup,
+      testInput,
+      () => {},
+      vi.fn(async () => {}),
+    );
+
+    emitOutputMarker(fakeProc, { status: 'success', result: null });
+    await vi.advanceTimersByTimeAsync(10);
+    await vi.advanceTimersByTimeAsync(1_799_990);
+    fakeProc.stdout.push('---NANOCLAW_HEARTBEAT---\n');
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(exec).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(exec).mock.calls[0]?.[0]).toContain('nanoclaw-test-group');
+
+    fakeProc.emit('close', 137);
+    await vi.advanceTimersByTimeAsync(10);
+    await resultPromise;
+  });
+
+  it('uses the original wall-clock deadline for adopted containers', () => {
+    const salesGroup: RegisteredGroup = {
+      ...testGroup,
+      containerConfig: { timeout: 600_000 },
+    };
+
+    // The idle-close grace remains the floor (30 min + 30 sec in this test).
+    expect(effectiveContainerTimeoutMs(salesGroup)).toBe(1_830_000);
+    expect(containerTimeoutRemainingMs(salesGroup, 1_000, 1_501_000)).toBe(
+      330_000,
+    );
+    expect(containerTimeoutRemainingMs(salesGroup, 1_000, 1_831_000)).toBe(0);
   });
 
   it('spawn timeout with no output resolves as error', async () => {
