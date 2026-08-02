@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-02T19:58Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_deploy
-- Commit/PR: uncommitted on
-  `codex/nc-20260802-003-company-os-sequence` above `081d2a9`
+- State: deployed_unverified
+- Commit/PR: `aa1c82187b7fbf10050a4863bdbe8d07e87af82c` on
+  `codex/nc-20260802-003-company-os-sequence`
 - Change class: C3 — Slack routing and Sales operator workflow
 - Affected systems: Slack routing/queue, queue-owned container provenance, IPC
   cross-channel policy, channel health, Sales instructions, focused tests
@@ -37,16 +37,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   7 files / 186 tests, and full regression at 144 files / 1,827 tests pass.
   Documentation continuity, schema sanitizer self-test, source formatting, and
   diff whitespace pass. Exact-session Claude Opus R6 approved with follow-ups
-  and no commit/deploy blockers. Commit, deployment, and live Sales observation
-  remain separate pending states.
+  and no commit/deploy blockers. Commit and deployment are now complete; live
+  Sales observation remains a separate pending state.
+- Deployment: the exact `aa1c821` artifact and reviewed Sales prompt are live on
+  the production Mac Mini. Health reports Slack/Gmail connected, zero active or
+  waiting containers, `outgoingQueueDepth=0`, `outgoingRetryAttempt=0`, and
+  `leadResolverDowngradeCountSinceStart=0`. No synthetic Slack post was sent;
+  one natural handoff/draft/operator-revision cycle and scheduled work card are
+  still required before the operator outcome is validated.
 
 ### NC-20260802-007 — Release activation makes lock and rehearsal behavior truthful
 
 - Date: 2026-08-02T19:58Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_deploy
-- Commit/PR: uncommitted on
-  `codex/nc-20260802-003-company-os-sequence` above `081d2a9`
+- State: complete
+- Commit/PR: `aa1c82187b7fbf10050a4863bdbe8d07e87af82c` on
+  `codex/nc-20260802-003-company-os-sequence`
 - Change class: C5 — production activation lock and fail-closed diagnostics
 - Affected systems: release activation executor/planner, macOS plist integration
   test, release/security documentation
@@ -69,13 +75,27 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Documentation continuity, schema sanitizer self-test, source formatting, and
   diff whitespace pass. Exact-session Claude Opus R6 approved with follow-ups
   and no commit/deploy blockers. Commit, release build, activation, and live
-  verification remain separate pending states.
+  infrastructure verification are now complete.
+- Release/deployment: Node 22.23.2 built archive
+  `nanoclaw-aa1c82187b7f.tar.gz` with SHA-256
+  `74865da1899008cca7cf533c716a7b84fea4ec44e5c247d17ad87e7913a1d60a`;
+  the target contains 512 verified artifact files with digest
+  `491a8c12f7398000dedceea0d89f54e865ba0df72e0da465f6ec482063e502d6`.
+  Production dry-run changed exactly the executable, code root, and expected
+  commit, then apply switched `23ffb07` → `aa1c821` and retained rollback plist
+  `com.nanoclaw.plist.rollback-23ffb07d4751-2026-08-02T20-39-35-826Z`.
+- Live verification: the installed plist, in-place bundle, and operational
+  Sales prompt match the reviewed release. A first immediate post-switch health
+  request sampled retiring PID 7169 while launchd/listener had advanced; a
+  subsequent no-cache probe converged on PID 14460 across health, `lsof`,
+  launchd, and `ps`. Health proves commit/root match, Node 22.23.2, both channels
+  connected, and no active/waiting containers; the activation lock is absent.
 
 ### NC-20260802-006 — Sales channel roots are inbound work items, not draft broadcasts
 
 - Date: 2026-08-02T18:22Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_deploy
+- State: deployed_unverified
 - Commit/PR: `93e8d00cbe2525436c4202e412af2c278efafff0` on
   `codex/nc-20260802-003-company-os-sequence`
 - Change class: C3 — Slack routing and Sales operator workflow
@@ -114,15 +134,20 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   or deploy blockers, independently reproducing 7 files / 178 focused tests.
   Its bounded scheduled-cycle, active-state, and non-lead inheritance findings
   are recorded under planned task NC-008 rather than hidden in review prose.
-- Deployment/state boundary: no Slack message, database row, installed prompt,
+- Pre-deployment boundary: no Slack message, database row, installed prompt,
   service, or production process was changed. Live behavior requires a separate
   reviewed deployment and one real handoff/draft/revision observation.
+- Deployment addendum: the NC-006 runtime and prompt shipped as part of exact
+  release `aa1c82187b7fbf10050a4863bdbe8d07e87af82c`. Release identity, prompt
+  hash, channel connections, listener ownership, and idle queue are verified.
+  No synthetic Sales message was posted, so the natural handoff/draft/revision
+  observation remains pending.
 
 ### NC-20260802-003 — Release activation is one validated, rollback-safe identity switch
 
 - Date: 2026-08-02T18:15Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_deploy
+- State: complete
 - Commit/PR: `93e8d00cbe2525436c4202e412af2c278efafff0` on
   `codex/nc-20260802-003-company-os-sequence`, based on deployment-record commit
   `0f20224`
@@ -141,9 +166,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   by a fixed exclusive lock; rollback health is verified without masking the
   original failure. An explicit `--recover-from-down` path repairs a stopped or
   unhealthy current daemon without weakening bundle, interpreter, hostname, or
-  target-health checks. A dead-PID lock is reclaimed once, listener probing is
-  proven before mutation, and lock cleanup cannot mask activation evidence. The
-  release bundle includes the activation command.
+  target-health checks. Atomic `shlock` claiming refuses every extant lock; a
+  dead holder gets an explicit operator recovery runbook rather than a racy
+  automatic unlink. Host tool probing is proven before mutation, and lock
+  cleanup cannot mask activation evidence. The release bundle includes the
+  activation command.
 - Validation so far: Node 22.23.2 typecheck passes; focused release integrity,
   activation planning, and activation executor tests pass (3 files / 21 tests);
   combined full suite passes serially (143 files / 1,810 tests) with normal local-server
@@ -161,8 +188,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   double-reclaimer stale-lock race and dry-run probe-placement findings are
   recorded under planned task NC-007; the race must close before the first
   production `--apply`.
-- Deployment/state boundary: no installed plist, launchd unit, release
-  directory, production process, channel, or external record was changed.
+- Deployment: exact release `aa1c82187b7fbf10050a4863bdbe8d07e87af82c`
+  successfully exercised the dry-run and apply paths on the production Mac
+  Mini, atomically changing only the three release-identity fields from
+  `23ffb07`. The subsequent no-cache health probe, `lsof`, launchd, and `ps`
+  converged on sole PID 14460 with `codeRootMatchesRelease=true`; the rollback
+  plist remains available and the activation lock was cleaned up.
 
 ### NC-20260802-002 — Container timeout is an absolute lifetime, including after adoption
 

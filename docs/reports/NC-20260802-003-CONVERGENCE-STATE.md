@@ -11,7 +11,9 @@
   `docs/reports/NC-20260802-007-008-CODEX-REQUEST-R6.md`
 - Latest Claude response:
   `docs/reports/NC-20260802-007-008-CLAUDE-C5-REVIEW-R6.md`
-- Implementation commit: `93e8d00cbe2525436c4202e412af2c278efafff0`
+- Implementation commits: `93e8d00cbe2525436c4202e412af2c278efafff0`
+  (NC-003/006) and `aa1c82187b7fbf10050a4863bdbe8d07e87af82c`
+  (NC-007/008 closure)
 - Verified agreements: production lineage `23ffb07` plus record `0f20224`;
   activation derives from the installed plist and changes exactly three fields;
   runtime health must prove the code root; Heartbeat remains authoritative;
@@ -108,6 +110,11 @@
   resolver fallback identity is explicitly declined because it would create a
   second authority. The cosmetic tool-probe name was corrected before commit;
   owner intervention during lock cleanup remains a documented bounded residual.
-- Next: commit, build the exact artifact, rehearse and apply the owner-authorized
-  activation, then verify release identity, service health, and Sales
-  diagnostics.
+- Next: observe natural Sales traffic for the one-root handoff/draft/revision
+  outcome; do not manufacture customer-facing work to close that evidence gap.
+- Deployment result: exact artifact `aa1c82187b7fbf10050a4863bdbe8d07e87af82c`
+  passed production dry-run and apply. Health, `lsof`, launchd, and `ps`
+  converged on PID 14460 serving the exact code root with both channels
+  connected and an empty queue. The reviewed Sales prompt hash matches the live
+  operational copy. NC-003/007 are complete; NC-006/008 remain
+  `deployed_unverified` until natural Sales traffic proves the one-root cycle.

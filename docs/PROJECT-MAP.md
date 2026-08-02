@@ -541,8 +541,10 @@ the host resolves that identity against the active queue work unit and defaults
 Sales output to its originating thread when `thread_ts` is omitted. The Slack
 adapter independently validates explicit historical roots, deduplicates a
 re-posted scheduled cycle against a stored current root no more than six hours
-old, and enforces the no-broadcast policy. Same-lead routing is serialized so
-simultaneous scheduled re-posts cannot both become roots. Cross-channel
+old, and enforces the no-broadcast policy. Resolved-lead routing is serialized
+so simultaneous scheduled re-posts cannot both become roots. A resolver failure
+remains visibly unanchored rather than minting a second lead identity, and
+increments the since-start diagnostic. Cross-channel
 handoffs never inherit or carry the source timestamp. Same-channel non-lead
 Sales status may inherit only an active queue-registered work unit. Connected
 send failures schedule bounded retries; a partially delivered split message
@@ -575,8 +577,9 @@ grader wakes exactly once. The shared toolbox adapter copies operator-selected
 files over the existing authenticated SSH route to the production Mac Mini's
 IPC, and fails closed unless that host's compiled runtime contains this
 capability; it does not call Slack directly or inject message rows.
-This path is implemented and locally validated but is not deployed or live-
-canaried as of this checkpoint.
+This path shipped in release `0a39380`, was live-canaried through the toolbox,
+and remains present in current production release `aa1c821`. Its durable
+receipt and duplicate replay were verified before the later release switch.
 
 ### Gmail IPC containment checkpoint (`NC-20260729-004`)
 
@@ -621,15 +624,18 @@ verified both denial acknowledgement and exact pending-approval grant recovery.
 The later work-ledger/capability-manifest slice should generalize durable
 work-item grants without broadening them.
 
-The main production host artifact remains exact to `1689527`. On 2026-07-30,
-the compiled healer subtree and fast-healer unit were separately deployed from
-exact commit `bc8a71b`: model-authored actions and implementation are off, while
-fixed capped daemon recovery is on. A healthy fast cycle exited cleanly without
-acting and the main daemon remained on the same PID. The Mac Mini still runs
-Node 25.8.2 and its dirty source/group-prompt checkout was intentionally not
-overwritten. Actual daemon-down recovery, prompt/source convergence, Node 22
-startup enforcement, and a genuine or test-routed end-to-end send remain
-separate verification work.
+As of 2026-08-02, the main production host runs exact release
+`aa1c82187b7fbf10050a4863bdbe8d07e87af82c` under Node 22.23.2. Health proves
+the release commit and code root match; Slack and Gmail are connected; the
+queue is empty; and the live Sales prompt is byte-identical to the reviewed
+release copy. The atomic activator changed only the executable, code root, and
+expected commit from prior release `23ffb07`, preserving that directory and a
+captured plist as rollback. The operational source checkout remains dirty and
+was not overwritten. The separately deployed healer controls remain as
+recorded under `bc8a71b`: model-authored actions and implementation are off,
+while fixed capped daemon recovery is on. A natural Sales handoff/draft/
+revision cycle and a real daemon-down healer recovery remain separate outcome
+observations.
 
 ## 12. Integrations
 
