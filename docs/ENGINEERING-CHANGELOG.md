@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-03T19:50Z
 - Owner/client: Codex
-- State: validating
-- Branch/base: `codex/nc-20260803-002-email-party-hint` @ `cf88525`
+- State: complete
+- Commit/release: `69bbdf782770cc4389d7a0d9035b50e36f75aa47` on
+  `codex/nc-20260803-002-email-party-hint`
 - Change class: C5 — final recipient boundary and one held customer action
 - Incident: Colleen Entry 985 action
   `7f0ee312-1b73-4f9a-bbda-4459ee351436` reached the Gmail execution boundary
@@ -37,11 +38,32 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   passed in the restricted environment and the two known child-process/
   loopback-dependent files passed 43/43 with required permissions.
   Documentation/source formatting, continuity, and diff whitespace checks pass
-  on the changed formatted surfaces; the clean-commit release gate remains.
-- Recovery boundary: the terminal blocked action will not be reopened. The
-  already-approved exact card must be reposted unchanged and freshly approved;
-  completion requires one Gmail-confirmed receipt and a one-message duplicate
-  check.
+  on the changed formatted surfaces. Clean release archive
+  `nanoclaw-69bbdf782770.tar.gz` verified commit
+  `69bbdf782770cc4389d7a0d9035b50e36f75aa47`, source tree
+  `7dcde9b71e9d9ee25d890377740e13af8fa2243d`, artifact SHA-256
+  `6963bfd95a7acda8563d9070abdc7ca7f4710a5dd8ceb9a912cf809662b7059d`,
+  520 files, and archive SHA-256
+  `90b5433eefd31485d2d42fa45a9e89133f16ffef60411d0bd6f93f4c78fd10cc`.
+- Deployment: production rebuilt `nanoclaw-agent:latest` as OCI image digest
+  `sha256:b2a4b8079b9c4b37f5f81b656c3e6bf5e16d04979b57f88d19cb9d51469c508b`,
+  refreshed all 17 runner snapshots before host activation, and installed the
+  reviewed Mailman procedure with matching source/destination SHA-256
+  `f61749b265eb93445ddf1e6e1517976c6cda0780a14f3a8b3e7f0749e6c0e701`.
+  The exact-three-field activation moved production from `5b76a2a` to immutable
+  release `69bbdf7`; health proves matching commit/code root, Node 22.23.2,
+  connected Slack/Gmail, and an idle queue. Rollback plist:
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-5b76a2aa40c5-2026-08-03T19-57-19-459Z`.
+- Authorized recovery: terminal blocked action
+  `7f0ee312-1b73-4f9a-bbda-4459ee351436` remained closed. The reposted card was
+  byte-identical to the approved card (1,045 bytes; matching SHA-256
+  `faa1cf763ab16f18759b6e3573db92ecb08a477f7af1446788a890e047386405`).
+  Fresh action `15757279-47de-4a94-84f2-10613f63ea8c` completed at
+  `2026-08-03T20:06:11.446Z` with Gmail message `19fc93bda9566299` on original
+  thread `19fc907d76aa161a`. Its append-only stages are approved, handoff routed,
+  Mailman started, executing, and confirmed. Production contains exactly one
+  matching confirmed-content row and one row for that Gmail message ID; the
+  outbound interaction was logged and Slack posted the same receipt.
 
 ### NC-20260803-001 — Email sessions and Sales work items are exact
 
