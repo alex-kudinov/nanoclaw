@@ -1,8 +1,8 @@
 # NC-20260803-001 convergence state
 
 - Topic: Approved email session targeting and one-thread Sales work units
-- Status: active
-- Current round: R6 review of the rejected-approval claim delta
+- Status: complete
+- Current round: R6 complete; Claude verdict `APPROVE`
 - Claude project path: `/Users/xbohdpukc/dev/NanoClaw`
 - Current Claude session UUID: `74a9751a-7355-4943-b2fe-623f98149b71`
 - Prior Claude session UUIDs: none
@@ -79,16 +79,21 @@
   rejected approval to continue into the agent path. The observation now
   returns `{ pending, rejected }`; the listener claims only `rejected`, while a
   valid armed card remains unclaimed. Exact Node 22.23.2 focused evidence is 4
-  files / 180 tests plus typecheck; Claude R6 delta review is pending.
+  files / 180 tests plus typecheck; Claude R6 independently verified the delta
+  and returned `APPROVE`.
 - Owner decisions: owner authorized immediate implementation, Claude review,
   production activation, and completion of the stuck approved email; exact
   content/recipient must not be regenerated or changed
-- Last independent checks: production release/Node/PID verified; narrow logs
-  prove one confirmed send and one separate quarantined unbound request. Final
+- Last independent checks: final
   exact Node 22.23.2 gates passed: full 145 files / 1,875 tests (143 sandboxed
   files plus 43/43 across the two permission-dependent files), email-critical
   14 files / 418 tests, typecheck, root build, runner build and 3 files / 22
-  tests, continuity, formatting, and whitespace.
+  tests, continuity, formatting, and whitespace. Immutable release `5b76a2a`
+  was verified and activated in production after runner/prompt rollout; healthy
+  state reports Slack/Gmail connected and the expected Node/release identity.
+  Recovery action `92c2130d-4ee3-4d07-8632-1c29b2884281` is Gmail-confirmed as
+  message `19fc862d08848576` on original thread `19fc7dbb8d41a592`, with one
+  confirmed ledger event and no duplicate confirmed content row.
 - Elapsed/cost notes: Claude R1 ~25 minutes (09:23-09:48 CDT), R2 ~20 minutes
   (09:49-10:09 CDT), R3 ~20 minutes (10:04-10:24 CDT), R4 ~20 minutes
   (10:19-10:39 CDT), R5 ~20 minutes (10:30-10:50 CDT), R6 ~15 minutes
@@ -97,11 +102,11 @@
   (sandbox blocked the switch): `tsc --noEmit` clean, continuity check passed
   (40 rows / 36 entries), and 12 DB-free email-critical/incident files passed
   (352 tests). `db.test.ts`, `routing.test.ts`, `email-delivery-path.test.ts`
-  and `classify-ipc-handlers.test.ts` cannot run on this host —
+  and `classify-ipc-handlers.test.ts` could not run on Claude's host —
   `better_sqlite3.node` is built for `NODE_MODULE_VERSION` 127 against this
   runtime's 147 — so Codex's pinned-runtime run (14 files / 417 tests) remains
-  authoritative for those. The broad gates still owe a pinned-runtime run on the
-  converged snapshot before commit.
+  authoritative for those. Codex subsequently completed the pinned-runtime
+  broad gates on the converged snapshot before commit.
 - Owner decisions: the owner authorized exact recovery of the held reply. The
   recovery will use a newly posted corrected card and a fresh operator approval
   through the normal path, preserving the stored recipient/body and binding the
@@ -109,6 +114,11 @@
   R1-R4 and is treated as agreed. R3-1 is fixed in this ticket via the tracked
   template. Root divergence continues to refuse and log; non-Sales lead fields
   remain display-only.
+- Recovery completed: the stored recipient and 335-byte body were proven exact
+  before fresh approval; only the existing thread subject was added. The
+  repaired host fallback emitted the approved send verbatim after the agent did
+  not hand it off, Gmail confirmed one message, Slack posted `[EMAIL SENT]`, and
+  the later agent attempt resolved `[ALREADY-HANDLED]` without a duplicate.
 - R4-5 owner disposition: refuse an approval card exceeding
   `MAX_MESSAGE_LENGTH` at post time as one visible rejection. This fails closed
   and avoids inventing a cross-message exact-byte approval contract mid-incident.

@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-03T14:45Z
 - Owner/client: Codex + Claude Opus 5 validator
-- State: validating
-- Branch/base: `codex/nc-20260803-001-email-session-threading` @ `fb8ed9e`
+- State: complete
+- Commit/release: `5b76a2aa40c5709b5964c57f0ad5ba81938a1f78` on
+  `codex/nc-20260803-001-email-session-threading`
 - Change class: C5 — customer email, approval boundary, concurrent container
   routing, Slack work-unit identity, production activation, and one held action
 - Incident evidence: Justin Mangum's card omitted a parseable subject and never
@@ -74,8 +75,24 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   continuity, formatting, and whitespace passed. The full serial run passed 143
   files in the restricted environment; its two permission-dependent files then
   passed 43/43 with the required child-process/loopback access, reconciling the
-  complete 145 files / 1,875 tests. Claude R6 returned `APPROVE`. No production
-  mutation or customer send has occurred in this task yet.
+  complete 145 files / 1,875 tests. Claude R6 returned `APPROVE`.
+- Release/deployment: clean release archive
+  `nanoclaw-5b76a2aa40c5.tar.gz` passed bundled verification; production rebuilt
+  `nanoclaw-agent:latest` as
+  `sha256:9de282074c63df2aef0902a07ffe540a756c54e30835d49fa8b65e0ac7a77767`,
+  refreshed all 17 runner snapshots before host activation, installed and
+  hash-verified the five changed operational prompts, enabled Sales
+  `threadPerMessage` with a backed-up one-row migration, and activated immutable
+  release `5b76a2a` with healthy Slack/Gmail connections and exact Node 22.23.2
+  release identity. Rollback plist:
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-e1fa93e09f6d-2026-08-03T15-57-08-304Z`.
+- Authorized recovery: the corrected Justin card preserved the prior recipient
+  and 335-byte body exactly and added only the existing Gmail-thread subject;
+  production hashes and the deployed parser were checked before fresh approval.
+  Action `92c2130d-4ee3-4d07-8632-1c29b2884281` completed at
+  `2026-08-03T16:09:07.552Z` with Gmail message `19fc862d08848576` on thread
+  `19fc7dbb8d41a592`. The ledger contains exactly one confirmed event, message,
+  thread, and matching confirmed-content row; Slack posted the same receipt.
 
 ### NC-20260802-009 — Approved email delivery is an exact, receipted action
 
