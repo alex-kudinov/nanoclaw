@@ -2,7 +2,7 @@
 
 Status: shared current-state register
 Protocol: `docs/CHANGE-PROTOCOL.md`
-Last reviewed: 2026-08-02
+Last reviewed: 2026-08-03
 
 Read this file before editing. Entries describe non-trivial work that may exist
 outside the current client conversation.
@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                           | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260803-001` | One approved Sales reply stays in one Slack work thread, reaches the exact Mailman session, and produces one correctly attributed Gmail result | Codex + Claude validator           | `codex/nc-20260803-001-email-session-threading` @ `fb8ed9e` | `validating`        | C5    | Incident repair for malformed approvable email cards, unscoped Gmail denial delivery across concurrent Mailman containers, duplicate root/thread Sales work units, tracked Chief support authority, and exact recovery of Justin Mangum Entry 600; production release and exact approved customer send authorized by owner | Commit the Claude-approved, broad-gate-clean snapshot; build and deploy the exact release in runner/prompts-before-host order; reconstruct Justin's card only from its stored approved body/recipient plus the existing Gmail thread subject, route through normal approval/action machinery, and require one Gmail receipt | 2026-08-03T15:49Z |
 | `NC-20260802-011` | Make every additive SQLite migration mechanically convergent against its predecessor schema before release                                     | Unassigned                         | pending                                                 | `planned`             | C3    | CI audit for initial indexes over later-migrated columns; predecessor-schema startup fixtures beyond pending_sends; split ALTER/backfill recovery; test-only DB initializer guard                                                                                                                                                                                           | Build a schema-migration contract test that executes each predecessor fixture through repeated and partially completed initialization; then repair pre-existing ALTER-plus-backfill try blocks without changing live data semantics                                                                                                                                     | 2026-08-02T23:28Z |
 | `NC-20260802-010` | Make typed approval resolution card-specific, visibly fail-closed, and consistent across every approval-driven email path                      | Unassigned                         | pending                                                 | `planned`             | C5    | card-filtered typed approval resolution and visible no-op; explicit listener scope; proposal-email action-ledger convergence; subject/boundary parsing hardening; canary header hygiene; blocked test-routing recovery wording; explicit canary environment binding                                                                                                         | Choose whether typed approval remains global or becomes email-card-specific; implement and adversarially test N1-N6, including a first-class read-only canary environment/manifest binding that does not mutate or place secrets inside an immutable release                                                                                                              | 2026-08-02T23:35Z |
 | `NC-20260802-009` | Every approved customer email is one durable, exact, Gmail-receipted action that cannot silently disappear or automatically duplicate          | Codex + Claude validator           | `codex/nc-20260802-009-email-assurance` @ `e1fa93e`     | `deployed_unverified` | C5    | host-issued email action ID; immutable approved content hash; append-only send stages; one-time execution claim; guard/uncertain result in approval thread; tracked Mailman procedure; release-blocking email suite; controlled internal canary                                                                                                                             | Observe the next naturally approved customer email end to end; verify its exact Action-ID, approval-thread status, append-only events, Gmail receipt, and confirmed replay without creating a synthetic customer send. The internal transport/OAuth canary is complete but does not validate this business outcome                                                           | 2026-08-02T23:35Z |
@@ -57,6 +58,56 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260803-001
+
+- Trigger: the first natural approved-customer workflow after NC-20260802-009
+  exposed three interacting production defects. Justin Mangum's Sales card was
+  approvable despite lacking a parseable `Subject:` inside its draft fence, so
+  no exact email action was armed. Two concurrent Mailman containers then read
+  a shared, untargeted Gmail-denial input and consumed each other's results:
+  Justin's denial was attributed to Judith Pineiro after Judith's separate
+  approved reply had already received Gmail message ID `19fc7f12ade6742f`.
+  Concurrent root- and thread-scoped Sales work units also split Justin's review
+  card from the thread containing the operator instruction and later status.
+- Evidence boundary: production logs and the immutable release identity were
+  inspected read-only. Production is running exact release `e1fa93e` under Node
+  22.23.2, PID 68877. Judith's reply is Gmail-confirmed; Justin's unbound
+  `gmail_reply` is quarantined and was not sent. Customer body text and secrets
+  are not copied into continuity or Claude review artifacts.
+- Owner authorization: at 2026-08-03T14:15Z the owner explicitly ordered an
+  immediate fix, Claude validation, and completion of the stuck email. This
+  authorizes implementation, review, commit, production activation, and exact
+  recovery of the already-approved Justin action. It does not authorize a
+  regenerated draft, changed recipient/content, unrelated email, OAuth change,
+  database cleanup, or Procurement activation.
+- Invariants: malformed cards must be rejected before an operator can approve
+  them; asynchronous host results must be delivered only to the originating
+  container; one Sales work item must have one host-owned Slack root/work-unit;
+  uncertain outcomes remain held; recovery must use exact operator-approved
+  bytes and end in a Gmail-confirmed receipt before it is called sent.
+- Claude R3 found a second instance of the incident class: Chief's canonical
+  support template was ignored by Git and used a legacy shape that could not
+  arm an action. The reconciliation now tracks and packages the template in the
+  exact fenced form, proves the tracked file parses, uses group-appropriate
+  rejection text, logs exit-swept unacknowledged results, orders runner rollout
+  before host activation, removes unrelated reformatting, and shares the
+  host-root predicate.
+- Current pinned-runtime evidence after R3 reconciliation: typecheck passed;
+  the focused six-file set passed 218 tests; and the release-blocking
+  email-critical set passed 14 files / 416 tests. Broad gates remain to be
+  rerun after Claude convergence and before release construction.
+- Claude R4 found two remaining blockers: malformed cards already in Slack
+  became silent at approval, and activation did not explicitly deliver the
+  corrected tracked template into the writable operational group workspace. It
+  also exposed the single-row approval parser against Slack's 4,000-character
+  split. The reconciliation posts one visible rejection while minting no
+  action, refuses to split overlong approval cards, uses a group-neutral
+  quarantine family, and makes changed-prompt copy/hash an ordered activation
+  gate. The Chief template is staged and recognized by `git ls-files`.
+- Post-R4 pinned-runtime evidence: typecheck passed; the focused four-file set
+  passed 179 tests; and email-critical passed 14 files / 417 tests.
+
 
 ### NC-20260802-011
 

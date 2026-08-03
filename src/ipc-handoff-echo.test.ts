@@ -368,8 +368,8 @@ describe('IPC handoff routing', () => {
     // card to mailman, which silently dropped it — the lead got no approvable
     // draft. The guard forces the card to the source's own channel instead.
     const card =
-      '[SALES REVIEW] Lead #882\nCategory: program-content\n\n' +
-      'DRAFT RESPONSE TO LEAD:\n---\nHi Bernard, here are the details.\n---\n\n' +
+      '[SALES REVIEW] Lead #882\nCategory: program-content\nEmail: lead@example.com\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nSubject: Program details\n\nHi Bernard, here are the details.\n---\n\n' +
       'ACTION ON APPROVAL:\n→ [HANDOFF: sales→mailman] Entry 882 | Reply: false';
     writeHandoffFile('sales', card, 'thr-882', 'sales:entry:882');
 
@@ -391,6 +391,161 @@ describe('IPC handoff routing', () => {
     );
   });
 
+  it('rejects a malformed Sales card before it can be approved and targets the originating container', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.resolveSourceThread = vi.fn(() => ({
+      chatJid: 'slack:SALES',
+      threadTs: '1785765234.784429',
+    }));
+    deps.deliverSourceInput = vi.fn(() => true);
+    const malformed =
+      '[SALES REVIEW] Lead #600\nCategory: account-access\nEmail: lead@example.com\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nHi Justin, please send a screenshot.\n---';
+    writeHandoffFile(
+      'sales',
+      malformed,
+      undefined,
+      undefined,
+      'nanoclaw-sales-justin',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).not.toHaveBeenCalledWith(
+      'slack:SALES',
+      malformed,
+      expect.anything(),
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringContaining('[APPROVAL CARD REJECTED]'),
+      expect.objectContaining({
+        threadTs: '1785765234.784429',
+        hostWorkUnitThreadTs: '1785765234.784429',
+      }),
+    );
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-justin',
+      expect.stringContaining('[approval_card REJECTED]'),
+    );
+    const quarantineDir = path.join(tmpRoot, 'ipc', 'quarantine', 'sales');
+    expect(fs.readdirSync(quarantineDir)).toHaveLength(1);
+  });
+
+  it('also rejects a malformed Sales card whose footer embeds a mailman handoff', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.deliverSourceInput = vi.fn(() => true);
+    const malformed =
+      '[SALES REVIEW] Lead #601\nEmail: lead2@example.com\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nBody without a subject.\n---\n' +
+      'ACTION ON APPROVAL: [HANDOFF: sales→mailman]';
+    writeHandoffFile(
+      'sales',
+      malformed,
+      undefined,
+      undefined,
+      'nanoclaw-sales-lead2',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).not.toHaveBeenCalledWith(
+      'slack:SALES',
+      malformed,
+      expect.anything(),
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringContaining('[APPROVAL CARD REJECTED]'),
+      expect.objectContaining({ threadKey: 'lead:lead2@example.com' }),
+    );
+    expect(
+      fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
+    ).toEqual([expect.stringMatching(/^approval-card-malformed-/)]);
+  });
+
+  it.each(['CLIENT SUPPORT REVIEW', 'SUPPORT-DRAFT'])(
+    'rejects a malformed [%s] card before it can reach approval',
+    async (marker) => {
+      process.env.MAILMAN_HOLD_SECONDS = '0';
+      const { startIpcWatcher } = await import('./ipc.js');
+      deps.deliverSourceInput = vi.fn(() => true);
+      const malformed =
+        `[${marker}] Account access\nEmail: support@example.com\n` +
+        'DRAFT RESPONSE:\n---\nBody without a subject.\n---';
+      writeHandoffFile(
+        'sales',
+        malformed,
+        undefined,
+        undefined,
+        `nanoclaw-sales-${marker.toLowerCase().replace(/[^a-z]+/g, '-')}`,
+      );
+
+      startIpcWatcher(deps);
+      await vi.advanceTimersByTimeAsync(50);
+
+      expect(sendMessage).not.toHaveBeenCalledWith(
+        'slack:SALES',
+        malformed,
+        expect.anything(),
+      );
+      expect(sendMessage).toHaveBeenCalledWith(
+        'slack:SALES',
+        expect.stringContaining('[APPROVAL CARD REJECTED]'),
+        expect.objectContaining({ threadKey: 'lead:support@example.com' }),
+      );
+      expect(
+        fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
+      ).toHaveLength(1);
+    },
+  );
+
+  it('uses the authoring group in a non-Sales rejection', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.deliverSourceInput = vi.fn(() => true);
+    const malformed =
+      '[SUPPORT-DRAFT]\nTo: support@example.com\n' +
+      'DRAFT RESPONSE:\n---\nBody without a subject.\n---';
+    writeHandoffFile(
+      'chief',
+      malformed,
+      undefined,
+      undefined,
+      'nanoclaw-chief-support',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).not.toHaveBeenCalledWith(
+      'slack:CHIEF',
+      malformed,
+      expect.anything(),
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:CHIEF',
+      expect.stringMatching(/\[APPROVAL CARD REJECTED\].*Chief must repost/),
+      expect.objectContaining({ threadKey: 'lead:support@example.com' }),
+    );
+    expect(
+      sendMessage.mock.calls.some(
+        (call) =>
+          call[0] === 'slack:CHIEF' &&
+          typeof call[1] === 'string' &&
+          call[1].includes('Sales must repost'),
+      ),
+    ).toBe(false);
+    expect(
+      fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'chief')),
+    ).toEqual([expect.stringMatching(/^approval-card-malformed-/)]);
+  });
+
   it('defaults a Sales reply to its host-registered work-unit thread', async () => {
     process.env.MAILMAN_HOLD_SECONDS = '0';
     const { startIpcWatcher } = await import('./ipc.js');
@@ -400,6 +555,7 @@ describe('IPC handoff routing', () => {
     }));
     const card =
       '[SALES REVIEW] Lead #882\nEmail: lead@example.com\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nSubject: Details\n\nApproved body.\n---\n' +
       'ACTION ON APPROVAL: [HANDOFF: sales→mailman]';
     writeHandoffFile(
       'sales',

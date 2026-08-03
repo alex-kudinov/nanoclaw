@@ -581,6 +581,7 @@ server.tool(
       actionId: args.action_id,
       emailType: args.email_type,
       groupFolder,
+      source_container: containerName || undefined,
       timestamp: new Date().toISOString(),
     });
 
@@ -637,6 +638,7 @@ server.tool(
       actionId: args.action_id,
       emailType: args.email_type,
       groupFolder,
+      source_container: containerName || undefined,
       timestamp: new Date().toISOString(),
     });
 
@@ -673,6 +675,7 @@ server.tool(
       query: args.query,
       maxResults: args.max_results,
       groupFolder,
+      source_container: containerName || undefined,
       timestamp: new Date().toISOString(),
     });
 
@@ -698,6 +701,7 @@ server.tool(
       type: 'gmail_read',
       messageId: args.message_id,
       groupFolder,
+      source_container: containerName || undefined,
       timestamp: new Date().toISOString(),
     });
 
@@ -723,6 +727,7 @@ server.tool(
       type: 'gmail_get_thread',
       threadId: args.thread_id,
       groupFolder,
+      source_container: containerName || undefined,
       timestamp: new Date().toISOString(),
     });
 

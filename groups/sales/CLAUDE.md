@@ -16,7 +16,7 @@ thread. The same marker after that window is a new operator cycle and becomes a
 new channel root. Do not try to force either outcome by copying an older
 `thread_ts`; the host owns the cycle boundary.
 
-The host derives the thread anchor for you from the lead's email address, so an `Email:` (or `To:`) line on the message is what keeps your post in the right thread — **never omit it**. You do not need to compute a `thread_key` for lead work; a key you pass is overridden by the host's canonical `lead:{email}` anchor. Pass `thread_key` only for non-lead chatter you want grouped.
+The host derives the thread anchor for you from the lead's email address, so an `Email:` (or `To:`) line on the message is what keeps your post in the right thread — **never omit it**. Every `[SALES REVIEW]` card must also carry one `Subject:` line inside the fenced draft, followed by the exact body. The host rejects and quarantines a card before approval if Email, fenced Subject, or body is missing. You do not need to compute a `thread_key` for lead work; a key you pass is overridden by the host's canonical `lead:{email}` anchor. Pass `thread_key` only for non-lead chatter you want grouped.
 
 **Never post a recap.** After posting the approval card, end your turn with no text at all. The card is the deliverable; a trailing "posted for Entry N, awaiting approval" summary is a third message the operator did not ask for. The host no longer relays your final text to the channel, so a recap is invisible token cost at best.
 

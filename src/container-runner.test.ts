@@ -158,7 +158,9 @@ import {
   runContainerAgent,
   ContainerOutput,
   resolveOAuthToken,
+  sweepExitedContainerInputs,
 } from './container-runner.js';
+import { logger } from './logger.js';
 import type { RegisteredGroup } from './types.js';
 
 const testGroup: RegisteredGroup = {
@@ -182,6 +184,36 @@ function emitOutputMarker(
   const json = JSON.stringify(output);
   proc.stdout.push(`${OUTPUT_START_MARKER}\n${json}\n${OUTPUT_END_MARKER}\n`);
 }
+
+describe('exited-container IPC cleanup', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('warns when an unacknowledged ephemeral result is discarded', () => {
+    vi.mocked(fs.readdirSync).mockReturnValue(['gmail-result.json'] as never);
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({
+        target_container: 'nanoclaw-mailman-one',
+        chat_cursor_recoverable: false,
+      }),
+    );
+
+    expect(
+      sweepExitedContainerInputs(
+        '/tmp/ipc/mailman/input',
+        'nanoclaw-mailman-one',
+      ),
+    ).toBe(1);
+    expect(fs.unlinkSync).toHaveBeenCalledWith(
+      '/tmp/ipc/mailman/input/gmail-result.json',
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ containerName: 'nanoclaw-mailman-one' }),
+      expect.stringContaining('operator retry is required'),
+    );
+  });
+});
 
 describe('container-runner timeout behavior', () => {
   beforeEach(() => {

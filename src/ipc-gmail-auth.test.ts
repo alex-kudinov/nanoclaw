@@ -168,7 +168,9 @@ describe('Gmail IPC watcher authorization', () => {
       }
     });
     const graderRequest = writeRequest('grader', 'grader-send.json');
-    const mailmanRequest = writeRequest('mailman', 'mailman-send.json');
+    const mailmanRequest = writeRequest('mailman', 'mailman-send.json', {
+      source_container: 'nanoclaw-mailman-justin',
+    });
     const actionRequest = writeRequest('mailman', 'action-send.json', {
       actionId,
     });
@@ -184,6 +186,7 @@ describe('Gmail IPC watcher authorization', () => {
       syncGroups: vi.fn(async () => {}),
       getAvailableGroups: () => [],
       writeGroupsSnapshot: vi.fn(),
+      deliverSourceInput: vi.fn(() => true),
     };
 
     startIpcWatcher(deps);
@@ -218,6 +221,11 @@ describe('Gmail IPC watcher authorization', () => {
     expect(
       fs.readdirSync(path.join(testState.root, 'ipc', 'quarantine', 'mailman')),
     ).toHaveLength(2);
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'mailman',
+      'nanoclaw-mailman-justin',
+      expect.stringContaining('[gmail_send DENIED]'),
+    );
     expect(testState.dispatch).toHaveBeenCalledTimes(1);
     expect(testState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -226,6 +234,7 @@ describe('Gmail IPC watcher authorization', () => {
         actionId,
         approvedRecipient: 'lead@example.co',
       }),
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),

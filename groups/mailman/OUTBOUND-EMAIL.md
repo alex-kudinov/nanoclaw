@@ -18,9 +18,13 @@ logging. Mailman parses the handoff and invokes one typed Gmail tool.
 4. Call exactly one Gmail send tool. A tool response saying “queued” is not a
    delivery receipt. The host posts the final Gmail-confirmed result into the
    originating approval thread.
-5. On any tool refusal, stop. Do not retry with a different address, thread,
+5. Gmail tool results and denials are session-addressed by the host. Never use
+   a result that belongs to another work item; if the originating session
+   exits, the host holds the result and alerts instead of delivering it to a
+   sibling Mailman session.
+6. On any tool refusal, stop. Do not retry with a different address, thread,
    Party ID, Action-ID, subject, body, or tool.
-6. Do not write pipeline or interaction state. Sales advances the pipeline at
+7. Do not write pipeline or interaction state. Sales advances the pipeline at
    approval; the host records the outbound interaction only after Gmail accepts
    the message.
 

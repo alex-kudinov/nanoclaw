@@ -8,6 +8,75 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260803-001 — Email sessions and Sales work items are exact
+
+- Date: 2026-08-03T14:45Z
+- Owner/client: Codex + Claude Opus 5 validator
+- State: validating
+- Branch/base: `codex/nc-20260803-001-email-session-threading` @ `fb8ed9e`
+- Change class: C5 — customer email, approval boundary, concurrent container
+  routing, Slack work-unit identity, production activation, and one held action
+- Incident evidence: Justin Mangum's card omitted a parseable subject and never
+  armed an action; his quarantined Gmail denial was consumed by Judith
+  Pineiro's concurrent Mailman session, while Judith's actual reply received
+  Gmail receipt `19fc7f12ade6742f`; root/thread Sales keys split Justin's card
+  from later operator activity. Justin was not sent.
+- Implementation: validate and quarantine every malformed Sales review before
+  Slack; make the canonical Sales template require a fenced subject; stamp all
+  Gmail MCP calls with runner-owned container identity; deliver async results
+  and denials through the exact active queue work unit; add a host-labelled,
+  Sales-directed lead identity derived from Gmail `Reply-To` rather than a
+  relay envelope (other host formatters display the field but do not anchor on
+  it); persist and assert per-root Sales work units; migrate legacy
+  cursors without replay or rollback; and refuse cross-lead root binding.
+- Claude R1 returned `CHANGES REQUIRED`: it proved the first guard was
+  unreachable for cards without a footer, the envelope formatter derived no
+  lead key, host-root trust could cross-merge leads, and targeted files could be
+  silently deleted after container exit. The implementation was reconciled to
+  all four blocking findings plus its quarantine/threading findings. Report:
+  `docs/reports/NC-20260803-001-CLAUDE-RESPONSE-R1.md`.
+- Claude R2 returned `CHANGES REQUIRED`: it proved the alternate support-card
+  markers still bypassed validation and that ephemeral Gmail results had been
+  enrolled in chat-cursor rollback. The reconciliation now shares one marker
+  predicate across validation/arming, excludes ephemeral results from cursor
+  recovery, reloads persisted Sales config before asserting, confines Reply-To
+  and recipient parsing to structured headers, distinguishes invalid Gmail
+  requests, and signals cross-lead root divergence. Report:
+  `docs/reports/NC-20260803-001-CLAUDE-RESPONSE-R2.md`.
+- Claude R3 returned `CHANGES REQUIRED`: it found that Chief's live,
+  Git-ignored `[SUPPORT-DRAFT]` template used an incompatible legacy shape and
+  therefore could not arm an email action. The reconciliation tracks and
+  converts that canonical template, tests the file itself, makes card rejection
+  group-appropriate, logs unacknowledged ephemeral results removed at container
+  exit, requires runner rollout before host activation, removes unrelated
+  documentation reflow, and shares the host-root predicate. Report:
+  `docs/reports/NC-20260803-001-CLAUDE-RESPONSE-R3.md`.
+- Claude R4 returned `CHANGES REQUIRED`: it proved malformed cards already in
+  Slack could fail silently at approval, activation did not explicitly install
+  changed group instructions into the writable operational workspace, and
+  Slack could split an approval card across separately stored rows. The
+  reconciliation adds an approval-observer notice with no action minting,
+  refuses overlong approval cards as one visible rejection, uses a
+  group-neutral quarantine family, stages the Chief template as tracked
+  authority, and makes reviewed prompt installation and hashing an ordered
+  activation correctness gate. Report:
+  `docs/reports/NC-20260803-001-CLAUDE-RESPONSE-R4.md`.
+- Claude R5 returned `APPROVE WITH FOLLOW-UPS` after independently verifying
+  all six R4 items. Codex then found one remaining listener-semantic gap: the
+  visible malformed-card rejection was still unclaimed and could continue into
+  the normal agent approval path. The reconciliation now returns an explicit
+  rejected result, claims only that rejected approval, and leaves valid armed
+  cards unclaimed. Exact Node 22.23.2 focused evidence is 4 files / 180 tests
+  plus typecheck. Report:
+  `docs/reports/NC-20260803-001-CLAUDE-RESPONSE-R5.md`; R6 delta review pending.
+- Final pre-commit exact Node 22.23.2 evidence: expanded email-critical 14 files
+  / 418 tests, typecheck, root build, runner build and 3 files / 22 tests,
+  continuity, formatting, and whitespace passed. The full serial run passed 143
+  files in the restricted environment; its two permission-dependent files then
+  passed 43/43 with the required child-process/loopback access, reconciling the
+  complete 145 files / 1,875 tests. Claude R6 returned `APPROVE`. No production
+  mutation or customer send has occurred in this task yet.
+
 ### NC-20260802-009 — Approved email delivery is an exact, receipted action
 
 - Date: 2026-08-02T21:30Z

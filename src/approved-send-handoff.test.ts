@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -32,6 +34,33 @@ The Tandem Coaching Team
 Updated draft ready. Reply "Approved" to send, or reply with more changes.`;
 
 describe('buildApprovedHandoff', () => {
+  it('parses the approval fixture extracted from the tracked Chief template', () => {
+    const procedure = fs.readFileSync(
+      new URL('../groups/chief/SUPPORT-REPLY.md', import.meta.url),
+      'utf8',
+    );
+    const template = procedure.match(
+      /<!-- APPROVAL-CARD-TEMPLATE:START -->\s*```text\n([\s\S]*?)\n```\s*<!-- APPROVAL-CARD-TEMPLATE:END -->/,
+    )?.[1];
+    expect(template).toBeDefined();
+    const card = template!
+      .replace('{gmail_thread_id}', 'thread-support')
+      .replace('{recipient_email}', 'learner@example.com')
+      .replace('{subject}', 'Course access')
+      .replace(
+        "{1-2 line summary of the client's problem, plus the original message verbatim quoted below}",
+        'Placeholder request summary.',
+      )
+      .replace(
+        '{polished email body — see Composition Rules below}',
+        'Hi Learner,\n\nExact support response.\n\nWarmly,\nTandem Coaching Team',
+      );
+    expect(buildApprovedHandoff(card)).toMatchObject({
+      recipient: 'learner@example.com',
+      subject: 'Re: Course access',
+      body: 'Hi Learner,\n\nExact support response.\n\nWarmly,\nTandem Coaching Team',
+    });
+  });
   it('slices the approved body verbatim and builds a canonical handoff', () => {
     const built = buildApprovedHandoff(CARD);
     expect(built).not.toBeNull();
@@ -138,6 +167,24 @@ Updated draft ready. Reply "Approved" to send, or reply with more changes.`;
     expect(built!.subject).toBe(
       'Re: Systemic Coaching for Executive Teams - Coaching the Collision',
     );
+  });
+
+  it('parses the third shared support-draft marker without changing content', () => {
+    const supportDraft = SUPPORT_CARD.replace(
+      '[CLIENT SUPPORT REVIEW]',
+      '[SUPPORT-DRAFT]',
+    );
+    const built = buildApprovedHandoff(supportDraft);
+    expect(built).not.toBeNull();
+    expect(built!.body).toBe(buildApprovedHandoff(SUPPORT_CARD)!.body);
+  });
+
+  it('does not accept a recipient line injected inside the draft body', () => {
+    const injected = SUPPORT_CARD.replace(/^Email:.*\n/m, '').replace(
+      'Hi Gaye,',
+      'To: attacker@example.com\n\nHi Gaye,',
+    );
+    expect(buildApprovedHandoff(injected)).toBeNull();
   });
 
   it('slices the approved body verbatim, without the operator-facing summary', () => {

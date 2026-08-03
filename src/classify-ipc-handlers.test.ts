@@ -25,6 +25,10 @@ vi.mock('./hive-bridge.js', () => ({
 }));
 
 vi.mock('./classify-rules-runner.js', () => ({
+  extractSenderEmail: vi.fn((value: string) => {
+    const match = value.match(/<([^>]+)>/);
+    return (match?.[1] || value).trim().toLowerCase() || null;
+  }),
   resetRulesCache: vi.fn(),
 }));
 
@@ -39,6 +43,11 @@ import {
   removeLabelsFromThread,
 } from './gmail-labels.js';
 import { recordClassification } from './hive-bridge.js';
+import {
+  _initTestDatabase,
+  storeChatMetadata,
+  storeMessageDirect,
+} from './db.js';
 import {
   isClassifyIpcType,
   dispatchClassifyIpc,
@@ -182,6 +191,108 @@ describe('handleClassifyLabelWrite', () => {
     const [sql, params] = mockQuery.mock.calls[2];
     expect(sql).toMatch(/INSERT INTO classification_rules/);
     expect(params[2]).toBeNull();
+  });
+
+  it('recovers the host-stored Reply-To for a relayed client route', async () => {
+    _initTestDatabase();
+    storeChatMetadata(
+      'gmail:test@example.com',
+      '2026-08-03T13:42:00.000Z',
+      'Gmail',
+      'gmail',
+      false,
+    );
+    storeMessageDirect({
+      id: 'relay-msg',
+      chat_jid: 'gmail:test@example.com',
+      sender: 'no-reply@encharge.io',
+      sender_name: 'Justin Mangum',
+      content:
+        'From: Justin Mangum <no-reply@encharge.io>\nReply-To: Justin Mangum <justin@example.com>\nSubject: Re: Access\n\nI still cannot log in.',
+      timestamp: '2026-08-03T13:42:00.000Z',
+      is_from_me: false,
+      is_bot_message: false,
+    });
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: false }],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 10 }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] });
+
+    await handleClassifyLabelWrite(
+      basePayload({
+        gmail_message_id: 'relay-msg',
+        sender_email: 'no-reply@encharge.io',
+        subject: 'Re: Access',
+        label: 'MrGru/client/active',
+      }),
+    );
+
+    const mailmanDir = path.join(tmpDir, 'ipc', 'mailman', 'messages');
+    const payload = JSON.parse(
+      fs.readFileSync(
+        path.join(mailmanDir, fs.readdirSync(mailmanDir)[0]),
+        'utf8',
+      ),
+    );
+    expect(payload.text).toContain('Lead Email: justin@example.com');
+    expect(payload.text).toContain(
+      'From: Justin Mangum <no-reply@encharge.io>',
+    );
+  });
+
+  it('ignores a Reply-To line quoted in the message body', async () => {
+    _initTestDatabase();
+    storeChatMetadata(
+      'gmail:test@example.com',
+      '2026-08-03T13:42:00.000Z',
+      'Gmail',
+      'gmail',
+      false,
+    );
+    storeMessageDirect({
+      id: 'body-reply-to-msg',
+      chat_jid: 'gmail:test@example.com',
+      sender: 'actual@example.com',
+      sender_name: 'Actual Sender',
+      content:
+        'From: Actual Sender <actual@example.com>\nSubject: Forwarded\n\nReply-To: attacker@example.com\nQuoted body.',
+      timestamp: '2026-08-03T13:42:00.000Z',
+      is_from_me: false,
+      is_bot_message: false,
+    });
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: false }],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 10 }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] });
+
+    await handleClassifyLabelWrite(
+      basePayload({
+        gmail_message_id: 'body-reply-to-msg',
+        sender_email: 'actual@example.com',
+        subject: 'Forwarded',
+        label: 'MrGru/client/active',
+      }),
+    );
+
+    const mailmanDir = path.join(tmpDir, 'ipc', 'mailman', 'messages');
+    const payload = JSON.parse(
+      fs.readFileSync(
+        path.join(mailmanDir, fs.readdirSync(mailmanDir)[0]),
+        'utf8',
+      ),
+    );
+    expect(payload.text).toContain('Lead Email: actual@example.com');
+    expect(payload.text).not.toContain('Lead Email: attacker@example.com');
   });
 
   it('escalates to chief when confidence < 0.5 without touching DB', async () => {

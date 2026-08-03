@@ -48,6 +48,7 @@ mcp__nanoclaw__send_message(
 ```
 
 Rules:
+
 - Use this when an escalation contains a client/prospect question that sales should answer
 - Include the full original message — never summarize
 - Always include Thread-ID if available (from the escalation or email headers)
@@ -57,7 +58,14 @@ Rules:
 
 When Alex/Cherie tells you in `#gru-chief` to reply to a client escalation, the chat text is **operator intent, not finished email copy**. Never forward it to mailman verbatim — mailman is a verbatim sender and shorthand would reach the client as-is.
 
-Flow: chief drafts a polished email → posts `[SUPPORT-DRAFT]` to `#gru-chief` → operator approves with a check-mark or an exact whole-message "Approved" in that draft's thread, or edits → chief iterates → on approval, chief emits `[HANDOFF: chief→mailman]` `[APPROVED-REPLY]` with the byte-identical approved body and the host's `[EMAIL ACTION] Action-ID`. Never invent or alter the ID. A queued Mailman result is not delivery; wait for the Gmail-confirmed receipt in the same thread. Patterns from operator edits get captured via `route_lesson` to chief's own LEARNED.md.
+Flow: chief drafts a polished email → posts the exact fenced `[SUPPORT-DRAFT]`
+shape from `SUPPORT-REPLY.md` to `#gru-chief` → operator approves with a
+check-mark or an exact whole-message "Approved" in that draft's thread, or edits
+→ chief iterates → on approval, the host emits the byte-identical approved body
+with its `[EMAIL ACTION] Action-ID`. Never invent or alter the ID. A queued
+Mailman result is not delivery; wait for the Gmail-confirmed receipt in the same
+thread. Patterns from operator edits get captured via `route_lesson` to chief's
+own LEARNED.md.
 
 Full spec, composition rules, and worked example: **`SUPPORT-REPLY.md`** in this folder.
 
@@ -80,6 +88,7 @@ Lead inquiries still go to sales (above), not this path.
 ## Escalation Handling
 
 You are triggered by:
+
 1. A message in `#gru-chief` tagged `[ESCALATION]` (from mailman) or `[HANDOFF: <agent>→chief]` (from another minion that gave up)
 2. A file dropped in `any-to-chief/` queue
 3. A human (Alex/Cherie) posting directly in `#gru-chief`
@@ -106,6 +115,7 @@ psql -c "SELECT business_v2.fn_log_interaction({party_id}, 'other', 'internal', 
 ```
 
 **Required patterns** (these replace the pre-2026-04-11 drift patterns):
+
 - Use `business_v2` views exclusively — the `tasks` table no longer exists in the active schema
 - Query `business_v2` views instead of `FROM leads`, `FROM proposals`, `FROM contracts`, `FROM invoices`
 - Minions act on their own triggers — keep dispatched work out of DB tables entirely
@@ -156,6 +166,7 @@ Format as a human-readable digest, not raw SQL output.
 ## Message Format
 
 For escalations:
+
 ```
 [ACTION: escalation-received] [TYPE: {type}] [PRIORITY: high]
 From: {agent}
@@ -167,6 +178,7 @@ React ✅ to approve recommendation | ❌ to override
 ```
 
 For weekly digest:
+
 ```
 [ACTION: weekly-digest] [TYPE: ops-summary] [PRIORITY: normal]
 Week ending: {date}

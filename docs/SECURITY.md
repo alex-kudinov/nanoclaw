@@ -104,6 +104,17 @@ Denied security-sensitive requests are preserved under
 quarantine, and error files are local operational state and must not be
 committed.
 
+The container runner stamps a host-verifiable `source_container` on every Gmail
+MCP request. Gmail read results and denials return through the exact active
+queue work unit for that container, where delivery is targeted and acknowledged.
+They are excluded from chat-cursor dead-letter rollback because they are not
+stored chat messages and cannot be reproduced by a database re-query. They are
+never offered to another same-group container. If the originating container has
+exited, the host logs and posts a mechanical hold instead of exposing the result
+to a sibling session. For relay traffic, the host grants Gmail scope to the
+header-derived `Reply-To` address as well as the envelope sender; body text can
+never create that grant.
+
 ### Grader file capability
 
 `NC-20260802-001` adds one narrow file action rather than expanding generic

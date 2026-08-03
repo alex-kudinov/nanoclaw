@@ -1,7 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { _initTestDatabase, getAllChats, storeChatMetadata } from './db.js';
-import { getAvailableGroups, _setRegisteredGroups } from './index.js';
+import {
+  getAvailableGroups,
+  _setRegisteredGroups,
+  threadKeyFor,
+  usesThreadPerMessage,
+  withSalesThreadPerMessage,
+  migrateSalesThreadPerMessageConfig,
+  seedSalesThreadWorkUnitCursors,
+} from './index.js';
+import type { RegisteredGroup } from './types.js';
 
 beforeEach(() => {
   _initTestDatabase();
@@ -31,6 +40,120 @@ describe('JID ownership patterns', () => {
   it('Slack DM JID: starts with slack:D', () => {
     const jid = 'slack:D0123456789';
     expect(jid.startsWith('slack:')).toBe(true);
+  });
+});
+
+describe('Sales work-unit routing', () => {
+  const rootMessage = {
+    id: '1785763378.077589',
+    chat_jid: 'slack:SALES',
+    sender: 'bot',
+    sender_name: 'Mr Gru',
+    content: '[HANDOFF: mailman→sales]\nEmail: lead@example.com',
+    timestamp: '2026-08-03T13:42:18.077Z',
+    is_bot_message: true,
+    from_group: 'mailman',
+  };
+
+  it('makes every Sales root a first-class per-message work unit', () => {
+    const sales = {
+      name: 'Sales',
+      folder: 'sales',
+      trigger: '@Gru',
+      added_at: '2026-08-03T00:00:00Z',
+    };
+    const migrated = withSalesThreadPerMessage(sales);
+    expect(usesThreadPerMessage(migrated)).toBe(true);
+    expect(threadKeyFor(rootMessage, migrated)).toBe(rootMessage.id);
+  });
+
+  it('fails closed when the persisted Sales config does not retain thread isolation', () => {
+    const sales: RegisteredGroup = {
+      name: 'Sales',
+      folder: 'sales',
+      trigger: '@Gru',
+      added_at: '2026-08-03T00:00:00Z',
+    };
+    const persist = vi.fn();
+    expect(() =>
+      migrateSalesThreadPerMessageConfig(
+        { 'slack:SALES': sales },
+        persist,
+        () => ({ 'slack:SALES': sales }),
+      ),
+    ).toThrow(/missing required threadPerMessage isolation/);
+    expect(persist).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.objectContaining({
+        containerConfig: expect.objectContaining({ threadPerMessage: true }),
+      }),
+    );
+  });
+
+  it('maps a later human reply to the same Sales work-unit key', () => {
+    const sales = {
+      name: 'Sales',
+      folder: 'sales',
+      trigger: '@Gru',
+      added_at: '2026-08-03T00:00:00Z',
+      containerConfig: { threadPerMessage: true },
+    };
+    expect(
+      threadKeyFor(
+        {
+          ...rootMessage,
+          id: '1785765657.454000',
+          thread_ts: rootMessage.id,
+          from_group: undefined,
+          is_bot_message: false,
+        },
+        sales,
+      ),
+    ).toBe(rootMessage.id);
+  });
+
+  it('seeds legacy Sales roots without rolling back an existing newer cursor', () => {
+    const cursors: Record<string, string> = {
+      'slack:SALES||root-a': '2026-08-03T13:00:05.000Z',
+    };
+    const changed = seedSalesThreadWorkUnitCursors(
+      'slack:SALES',
+      '2026-08-03T13:00:10.000Z',
+      [
+        {
+          ...rootMessage,
+          id: 'root-a',
+          timestamp: '2026-08-03T13:00:00.000Z',
+        },
+        {
+          ...rootMessage,
+          id: 'root-b',
+          timestamp: '2026-08-03T13:00:09.000Z',
+        },
+        {
+          ...rootMessage,
+          id: 'root-new',
+          timestamp: '2026-08-03T13:00:11.000Z',
+        },
+      ],
+      cursors,
+    );
+    expect(changed).toBe(1);
+    expect(cursors).toEqual({
+      'slack:SALES||root-a': '2026-08-03T13:00:05.000Z',
+      'slack:SALES||root-b': '2026-08-03T13:00:09.000Z',
+    });
+  });
+
+  it('does not change an ordinary root-bucket group', () => {
+    const chief = {
+      name: 'Chief',
+      folder: 'chief',
+      trigger: '@Gru',
+      added_at: '2026-08-03T00:00:00Z',
+    };
+    expect(usesThreadPerMessage(chief)).toBe(false);
+    expect(threadKeyFor(rootMessage, chief)).toBe('root');
   });
 });
 

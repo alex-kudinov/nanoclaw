@@ -103,6 +103,22 @@ mechanism.
 
 ## Activation
 
+For releases that change `container/agent-runner`, rebuild the container image
+and refresh every `data/sessions/*/agent-runner-src` snapshot from the verified
+release **before** activating the host. This ordering is a correctness gate: a
+new host paired with an old runner omits runner-owned `source_container` and
+falls back to unsafe shared-input delivery. Do not run these as parallel steps.
+
+For releases that change tracked group instructions, compare and copy every
+reviewed changed instruction from the verified release into the writable
+operational `groups/` workspace and record both source and destination hashes
+**before or atomically with host activation, never after it**. For
+NC-20260803-001 this includes `groups/chief/CLAUDE.md`,
+`groups/chief/SUPPORT-REPLY.md`, `groups/sales/CLAUDE.md`,
+`groups/sales/WORKFLOWS.md`, and `groups/mailman/OUTBOUND-EMAIL.md`. This is a
+correctness gate: the active host resolves `GROUPS_DIR` from the operational
+working directory rather than `NANOCLAW_CODE_ROOT`.
+
 1. Inspect the current service, health response, listener count, pending work,
    installed Node runtime, and production checkout without changing them.
    Before the first NC-009 activation, query only the aggregate count in the

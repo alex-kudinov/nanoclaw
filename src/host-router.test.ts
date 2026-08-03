@@ -22,6 +22,7 @@ import { matchLead } from './lead-matcher.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
 import { ingestEmailProcurementObservation } from './procurement-intake.js';
 import type { PipelineMatch } from './lead-matcher.js';
+import { deriveLeadThreadKey } from './lead-thread-key.js';
 
 const mockWrite = writeHostMessage as ReturnType<typeof vi.fn>;
 const mockMatch = matchLead as ReturnType<typeof vi.fn>;
@@ -308,8 +309,25 @@ describe('host-router', () => {
     const text: string = payload.text;
     expect(text).toContain('[HANDOFF: mailman→sales]');
     expect(text).toContain('[SOURCE: email-active-client]');
+    expect(text).toContain('Lead Email: bob@example.com');
+    expect(deriveLeadThreadKey(text)).toBe('lead:bob@example.com');
     expect(text).toContain('already-paid client');
     expect(text).toContain('Body:');
+  });
+
+  it('anchors a relayed active-client email on Reply-To, not the relay envelope', async () => {
+    await routeClassifiedEmail(
+      makeParams({
+        label: 'client/active',
+        senderEmail: 'no-reply@encharge.io',
+        senderName: 'Justin Mangum',
+        replyToEmail: 'justin@example.com',
+      }),
+    );
+    const text: string = mockWrite.mock.calls[0][1].text;
+    expect(text).toContain('Lead Email: justin@example.com');
+    expect(text).toContain('From: Justin Mangum <no-reply@encharge.io>');
+    expect(deriveLeadThreadKey(text)).toBe('lead:justin@example.com');
   });
 
   it('stores and routes procurement/* with one exact read-only Gmail resource', async () => {

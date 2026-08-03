@@ -20,7 +20,10 @@
  */
 
 import {
+  approvalCardRejectedText,
   buildApprovedHandoff,
+  isApprovalCard,
+  parseApprovalCardRecipient,
   parseMailmanHandoff,
 } from './approved-send-handoff.js';
 import {
@@ -121,8 +124,6 @@ export interface SendWatchdogDeps {
  * approval vanished into silence for 15 minutes. Support approvals are send
  * promises exactly like sales ones and get the same safety net.
  */
-const CARD_RE = /\[(?:SALES REVIEW|CLIENT SUPPORT REVIEW|SUPPORT-DRAFT)\]/;
-const EMAIL_RE = /^\s*(?:Email|To)\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
 const LEAD_RE = /\[SALES REVIEW\]\s*(Lead\s*#\s*\d+)/i;
 const MAILMAN_HANDOFF_RE = /\[HANDOFF:\s*([a-z0-9_-]+)\s*(?:→|->)\s*mailman\]/i;
 const TO_RE = /^\s*To\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
@@ -148,7 +149,7 @@ export function extractApprovedGmailThreadId(
 
 /** True when this text is an approvable send card the watchdog should track. */
 export function isTrackableCard(text: string): boolean {
-  return CARD_RE.test(text);
+  return isApprovalCard(text);
 }
 
 /**
@@ -169,6 +170,10 @@ export function recordApproval(
 ): PendingSend | null {
   if (!isTrackableCard(opts.cardText)) return null;
   const approved = buildApprovedHandoff(opts.cardText);
+  // The arming surface is exactly the same parseability contract enforced
+  // before the card reaches Slack. Never mint an action for a malformed or
+  // legacy card that the host cannot bind to exact approved bytes.
+  if (!approved) return null;
   const row: PendingSend = {
     actionId: newEmailActionId(),
     draftTs: opts.draftTs,
@@ -177,12 +182,13 @@ export function recordApproval(
     threadTs: opts.threadTs,
     gmailThreadId:
       opts.approvedGmailThreadId ?? extractApprovedGmailThreadId(opts.cardText),
-    recipient: opts.cardText.match(EMAIL_RE)?.[1]?.toLowerCase(),
+    recipient: parseApprovalCardRecipient(opts.cardText),
     leadRef: opts.cardText.match(LEAD_RE)?.[1],
-    approvedSubject: approved?.subject,
-    approvedContentSha256: approved
-      ? hashApprovedEmailContent(approved.subject, approved.body)
-      : undefined,
+    approvedSubject: approved.subject,
+    approvedContentSha256: hashApprovedEmailContent(
+      approved.subject,
+      approved.body,
+    ),
     approvedAt: opts.now.toISOString(),
     state: 'approved',
   };
@@ -192,6 +198,29 @@ export function recordApproval(
     'send-watchdog: approval recorded, awaiting Gmail-confirmed send',
   );
   return stored ?? row;
+}
+
+/**
+ * Observe one approval and make an unparseable approval visibly fail closed.
+ * Existing or split Slack cards can bypass the pre-post IPC gate, so this
+ * boundary must never rely on that earlier validation having run.
+ */
+export async function observeApprovalCard(
+  opts: Parameters<typeof recordApproval>[0] & { authorName: string },
+  store: SendWatchdogStore,
+  postRejected: (text: string) => Promise<void>,
+): Promise<{ pending: PendingSend | null; rejected: boolean }> {
+  const pending = recordApproval(opts, store);
+  const rejected = isApprovalCard(opts.cardText) && !pending;
+  if (rejected) {
+    await postRejected(
+      approvalCardRejectedText(
+        opts.authorName,
+        'This approval was not armed because the card cannot be bound to one exact Email, fenced Subject, and body. It was NOT sent.',
+      ),
+    );
+  }
+  return { pending, rejected };
 }
 
 /**

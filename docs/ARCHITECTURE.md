@@ -101,6 +101,11 @@ handleClassifyLabelWrite() → store + label + auto-rule + routeAfterClassify()
 
 Agents emit IPC files. Host dispatches by type:
 - `gmail_send` / `gmail_reply` → `gmail-ipc-handlers.ts` → Gmail API → apply MrGru label
+- every Gmail MCP request carries its runner-owned `source_container`; async
+  results return through the matching active `GroupQueue` work unit rather than
+  a shared group input file; these ephemeral results are deliberately excluded
+  from chat-cursor dead-letter rollback because the chat database cannot
+  reproduce them;
 - Agent `result` → `channel.sendMessage()` → Slack/Gmail
 
 ---

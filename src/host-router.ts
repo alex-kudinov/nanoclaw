@@ -16,6 +16,8 @@ import { ingestEmailProcurementObservation } from './procurement-intake.js';
 export type RouteParams = {
   label: string;
   senderEmail: string;
+  /** Bare Reply-To address when Gmail supplies one (relay-safe lead identity). */
+  replyToEmail?: string;
   senderName: string;
   subject: string;
   body: string;
@@ -37,6 +39,10 @@ export type RouteResult = {
 // gmail_read(messageId) when it needs to extract amount/due/vendor or transcripts.
 const HANDOFF_SNIPPET_CHARS = 300;
 
+function leadEmail(p: RouteParams): string {
+  return p.replyToEmail || p.senderEmail;
+}
+
 function snippet(body: string, max = HANDOFF_SNIPPET_CHARS): string {
   const flat = body.replace(/\s+/g, ' ').trim();
   return flat.length > max ? `${flat.slice(0, max)}…` : flat;
@@ -50,6 +56,7 @@ function fmtLeadSales(p: RouteParams, match: PipelineMatch): string {
     `Party ID: ${match.party_id}`,
     `Lead: ${match.display_name} (${match.stage})`,
     `Program: ${match.program_slug}`,
+    `Lead Email: ${leadEmail(p)}`,
     ...(() => {
       // Reply on the thread the CUSTOMER actually wrote on — the inbound
       // message's own threadId (p.threadId) — NOT the most-recent-outbound
@@ -76,6 +83,7 @@ function fmtInbox(p: RouteParams): string {
   return [
     '[HANDOFF: mailman\u2192inbox]',
     '[SOURCE: email]',
+    `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
     ...(p.threadId ? [`Thread-ID: ${p.threadId}`] : []),
@@ -88,6 +96,7 @@ function fmtClientResponse(p: RouteParams): string {
     '[HANDOFF: mailman\u2192sales]',
     '[SOURCE: email-active-client]',
     `[CONTEXT: ${p.label} \u2014 already-paid client, draft customer-success response, not a sales pitch]`,
+    `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
     ...(p.threadId ? [`Thread-ID: ${p.threadId}`] : []),
@@ -106,6 +115,7 @@ function fmtChiefEscalation(p: RouteParams, reason: string): string {
     // fmtContador / fmtArchivarista.)
     '[HANDOFF: mailman→chief]',
     `[ESCALATION] ${p.label}`,
+    `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
     `Summary: ${p.body.slice(0, 500)}`,
@@ -117,6 +127,7 @@ function fmtContador(p: RouteParams): string {
   return [
     '[HANDOFF: mailman\u2192contador]',
     '[TYPE: invoice]',
+    `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
     `Thread-ID: ${p.threadId}`,
@@ -129,6 +140,7 @@ function fmtArchivarista(p: RouteParams): string {
   return [
     '[HANDOFF: mailman\u2192archivarista]',
     '[TYPE: meeting-assets]',
+    `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
     `Thread-ID: ${p.threadId}`,
@@ -142,6 +154,7 @@ function fmtProcurementEmail(p: RouteParams, opportunityId: number): string {
     '[HANDOFF: mailman→procurement]',
     '[SOURCE: email]',
     `[PROCUREMENT INTAKE: opportunity ${opportunityId}]`,
+    `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
     `Thread-ID: ${p.threadId}`,

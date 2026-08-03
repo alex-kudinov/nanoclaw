@@ -37,6 +37,31 @@ const DRAFT_HEADING = /^\s*DRAFT RESPONSE(?: TO LEAD)?:\s*$/im;
 const FENCE = /^\s*---\s*$/;
 const SUBJECT_LINE = /^\s*Subject\s*:\s*(.+?)\s*$/im;
 
+/** Keep the pre-approval gate and approval watchdog on one marker surface. */
+export function isApprovalCard(text: string): boolean {
+  return CARD_MARKER.test(text);
+}
+
+/** One operator-visible vocabulary for every fail-closed approval-card path. */
+export function approvalCardRejectedText(
+  authorName: string,
+  reason: string,
+): string {
+  return `🚫 [APPROVAL CARD REJECTED] ${reason} ${authorName} must repost the full corrected card.`;
+}
+
+/** Parse only the exact, labelled recipient field from an approval-card header. */
+export function parseApprovalCardRecipient(text: string): string | undefined {
+  const lines = text.split(/\r?\n/);
+  const boundary = lines.findIndex(
+    (line) => DRAFT_HEADING.test(line) || FENCE.test(line),
+  );
+  const header = lines
+    .slice(0, boundary === -1 ? lines.length : boundary)
+    .join('\n');
+  return header.match(EMAIL_LINE)?.[1]?.toLowerCase();
+}
+
 export interface ApprovedHandoff {
   /** Canonical `[HANDOFF: sales→mailman]` text, ready to write as an IPC message. */
   text: string;
@@ -102,9 +127,9 @@ export function buildApprovedHandoff(
     sourceGroup?: string;
   } = {},
 ): ApprovedHandoff | null {
-  if (!CARD_MARKER.test(cardText)) return null;
+  if (!isApprovalCard(cardText)) return null;
 
-  const recipient = cardText.match(EMAIL_LINE)?.[1]?.toLowerCase();
+  const recipient = parseApprovalCardRecipient(cardText);
   if (!recipient) return null;
 
   const lines = cardText.split('\n');

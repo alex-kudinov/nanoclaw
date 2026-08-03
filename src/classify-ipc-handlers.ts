@@ -18,7 +18,10 @@ import {
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
 import { recordClassification } from './hive-bridge.js';
 import { routeClassifiedEmail } from './host-router.js';
-import { resetRulesCache } from './classify-rules-runner.js';
+import {
+  extractSenderEmail,
+  resetRulesCache,
+} from './classify-rules-runner.js';
 import { logger } from './logger.js';
 
 const CLASSIFIER_CONFIDENCE_FLOOR = 0.5;
@@ -188,6 +191,7 @@ async function routeAfterClassify(
   // Gracefully degrade if DB isn't available (tests, race conditions).
   let body = '';
   let senderName = '';
+  let replyToEmail: string | undefined;
   try {
     let msg = getMessageById(data.gmail_message_id);
     // Guard: if the agent used the thread ID instead of the message ID,
@@ -205,9 +209,18 @@ async function routeAfterClassify(
     }
     if (msg) {
       senderName = msg.sender_name || '';
-      const blankLineIdx = msg.content.indexOf('\n\n');
+      const blankLineIdx = msg.content.search(/\r?\n\r?\n/);
+      const headerRegion =
+        blankLineIdx >= 0 ? msg.content.slice(0, blankLineIdx) : msg.content;
+      const replyToHeader = headerRegion.match(/^Reply-To:\s*(.+)$/im)?.[1];
+      replyToEmail = extractSenderEmail(replyToHeader || '') || undefined;
       body =
-        blankLineIdx >= 0 ? msg.content.slice(blankLineIdx + 2) : msg.content;
+        blankLineIdx >= 0
+          ? msg.content.slice(
+              blankLineIdx +
+                msg.content.slice(blankLineIdx).match(/^\r?\n\r?\n/)![0].length,
+            )
+          : msg.content;
     }
   } catch {
     // DB not available — route with whatever we have from the IPC payload
@@ -217,6 +230,7 @@ async function routeAfterClassify(
     const result = await routeClassifiedEmail({
       label: data.label,
       senderEmail: data.sender_email || '',
+      replyToEmail,
       senderName,
       subject: data.subject || '',
       body,

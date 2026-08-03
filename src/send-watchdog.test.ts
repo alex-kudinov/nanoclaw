@@ -4,6 +4,7 @@ import {
   extractApprovedGmailThreadId,
   isTrackableCard,
   observeConfirmedSend,
+  observeApprovalCard,
   observeMailmanStart,
   observeOutbound,
   recordApproval,
@@ -161,6 +162,13 @@ describe('isTrackableCard', () => {
     expect(isTrackableCard(CARD)).toBe(true);
   });
 
+  it.each(['CLIENT SUPPORT REVIEW', 'SUPPORT-DRAFT'])(
+    'tracks the shared [%s] approval marker',
+    (marker) => {
+      expect(isTrackableCard(CARD.replace('SALES REVIEW', marker))).toBe(true);
+    },
+  );
+
   it('ignores ordinary chatter', () => {
     expect(isTrackableCard('sounds good, thanks')).toBe(false);
   });
@@ -211,7 +219,8 @@ describe('recordApproval', () => {
         ...base,
         groupFolder: 'chief',
         cardText:
-          '[SUPPORT-DRAFT]\nThread-ID: thread-support\nTo: client@example.com',
+          '[SUPPORT-DRAFT]\nThread-ID: thread-support\nTo: client@example.com\n' +
+          'DRAFT RESPONSE:\n---\nSubject: Re: Access\n\nExact body.\n---',
       },
       store,
     );
@@ -219,6 +228,61 @@ describe('recordApproval', () => {
       gmailThreadId: 'thread-support',
       recipient: 'client@example.com',
     });
+  });
+
+  it('does not arm a malformed card even if its marker is trackable', () => {
+    const store = makeStore();
+    const row = recordApproval(
+      {
+        ...base,
+        cardText:
+          '[SUPPORT-DRAFT]\nTo: client@example.com\nDRAFT RESPONSE:\nBody without fences.',
+      },
+      store,
+    );
+    expect(row).toBeNull();
+    expect(store.rows).toHaveLength(0);
+  });
+
+  it('posts a visible rejection when a malformed approval mints no action', async () => {
+    const store = makeStore();
+    const notices: string[] = [];
+    const observation = await observeApprovalCard(
+      {
+        ...base,
+        authorName: 'Chief',
+        cardText:
+          '[SUPPORT-DRAFT]\nTo: client@example.com\nDRAFT RESPONSE:\nBody without fences.',
+      },
+      store,
+      async (text) => {
+        notices.push(text);
+      },
+    );
+
+    expect(observation).toEqual({ pending: null, rejected: true });
+    expect(store.rows).toHaveLength(0);
+    expect(notices).toEqual([
+      expect.stringMatching(
+        /\[APPROVAL CARD REJECTED\].*It was NOT sent\..*Chief must repost/,
+      ),
+    ]);
+  });
+
+  it('leaves a valid armed card unclaimed for the agent approval path', async () => {
+    const store = makeStore();
+    const notices: string[] = [];
+    const observation = await observeApprovalCard(
+      { ...base, authorName: 'Sales' },
+      store,
+      async (text) => {
+        notices.push(text);
+      },
+    );
+
+    expect(observation.pending?.actionId).toBeTruthy();
+    expect(observation.rejected).toBe(false);
+    expect(notices).toEqual([]);
   });
 
   it('is idempotent on a repeated approval of the same draft', () => {
@@ -317,7 +381,7 @@ describe('observeOutbound', () => {
       {
         ...base,
         draftTs: 'sales-draft',
-        cardText: `[SALES REVIEW] Lead #938\nEmail: ${sharedRecipient}`,
+        cardText: CARD.replace(/^Email:.*$/m, `Email: ${sharedRecipient}`),
       },
       store,
     );
@@ -326,7 +390,10 @@ describe('observeOutbound', () => {
         ...base,
         draftTs: 'chief-draft',
         groupFolder: 'chief',
-        cardText: `[SUPPORT-DRAFT]\nTo: ${sharedRecipient}`,
+        cardText: CARD.replace('[SALES REVIEW]', '[SUPPORT-DRAFT]').replace(
+          /^Email:.*$/m,
+          `To: ${sharedRecipient}`,
+        ),
       },
       store,
     );
@@ -696,7 +763,7 @@ describe('rescueUnhandedSends', () => {
 
     expect(n).toBe(0);
     expect(deps.emitHandoff).not.toHaveBeenCalled();
-    expect(store.rows[0].handoffObservedAt).toBeUndefined();
+    expect(store.rows).toHaveLength(0);
   });
 
   it('emits once even if the rescue ticks twice', async () => {

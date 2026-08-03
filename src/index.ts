@@ -56,7 +56,6 @@ import {
   clearPendingSends,
   clearPendingSendsByRecipient,
   findPendingSendAction,
-  failEmailAction,
   getMessageById,
   listOverdueSends,
   listStalledMailmanHandoffs,
@@ -106,7 +105,7 @@ import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
 import {
   extractApprovedGmailThreadId,
   observeMailmanStart,
-  recordApproval,
+  observeApprovalCard,
   sweepPendingSends,
   rescueUnhandedSends,
   sweepStalledMailmanHandoffs,
@@ -210,12 +209,37 @@ const THREAD_CONTEXT_LIMIT = 25;
 // (keyed by its own ts) so concurrent submissions never share a container and
 // each reply threads under the post that triggered it; everyone else shares the
 // 'root' bucket (unchanged behaviour).
-function threadKeyFor(
+export function usesThreadPerMessage(
+  group: RegisteredGroup | undefined,
+): boolean {
+  return group?.containerConfig?.threadPerMessage === true;
+}
+
+/** Sales work-item isolation is a persisted host invariant, not prompt policy. */
+export function withSalesThreadPerMessage(
+  group: RegisteredGroup,
+): RegisteredGroup {
+  if (
+    group.folder !== 'sales' ||
+    group.containerConfig?.threadPerMessage === true
+  ) {
+    return group;
+  }
+  return {
+    ...group,
+    containerConfig: {
+      ...group.containerConfig,
+      threadPerMessage: true,
+    },
+  };
+}
+
+export function threadKeyFor(
   msg: NewMessage,
   group: RegisteredGroup | undefined,
 ): string {
   if (msg.thread_ts) return msg.thread_ts;
-  return group?.containerConfig?.threadPerMessage ? msg.id : 'root';
+  return usesThreadPerMessage(group) ? msg.id : 'root';
 }
 let lastAgentTimestamp: Record<string, string> = {};
 
@@ -256,10 +280,94 @@ function loadState(): void {
 
   sessions = getAllSessions();
   registeredGroups = getAllRegisteredGroups();
+  registeredGroups = migrateSalesThreadPerMessageConfig(registeredGroups);
+  migrateSalesThreadWorkUnitCursors();
   logger.info(
     { groupCount: Object.keys(registeredGroups).length },
     'State loaded',
   );
+}
+
+export function migrateSalesThreadPerMessageConfig(
+  groups: Record<string, RegisteredGroup>,
+  persist: typeof setRegisteredGroup = setRegisteredGroup,
+  reload: typeof getAllRegisteredGroups = getAllRegisteredGroups,
+): Record<string, RegisteredGroup> {
+  for (const [chatJid, group] of Object.entries(groups)) {
+    const migrated = withSalesThreadPerMessage(group);
+    if (migrated !== group) {
+      persist(chatJid, migrated);
+      logger.warn(
+        { chatJid, group: group.name },
+        'Migrated Sales group to required thread-per-message work units',
+      );
+    }
+  }
+  const persisted = reload();
+  const invalid = Object.entries(persisted).find(
+    ([, group]) => group.folder === 'sales' && !usesThreadPerMessage(group),
+  );
+  if (invalid) {
+    throw new Error(
+      `Sales group ${invalid[0]} is missing required threadPerMessage isolation`,
+    );
+  }
+  return persisted;
+}
+
+export function seedSalesThreadWorkUnitCursors(
+  chatJid: string,
+  legacyCursor: string,
+  roots: NewMessage[],
+  cursors: Record<string, string>,
+): number {
+  let changed = 0;
+  for (const root of roots) {
+    if (root.timestamp > legacyCursor) continue;
+    const key = `${chatJid}||${root.id}`;
+    if (cursors[key] && cursors[key] >= root.timestamp) continue;
+    cursors[key] = root.timestamp;
+    changed++;
+  }
+  return changed;
+}
+
+/**
+ * Sales historically shared one `||root` cursor and container. Once Sales roots
+ * become first-class work units, startup recovery would otherwise rediscover up
+ * to 48 hours of already-consumed roots under brand-new per-message keys. Seed
+ * only roots at-or-before the legacy cursor, within the same recovery window,
+ * then mark the migration. Newer roots remain pending and are processed.
+ */
+function migrateSalesThreadWorkUnitCursors(): void {
+  const floor = new Date(Date.now() - RECOVERY_LOOKBACK_MS).toISOString();
+  let changed = false;
+  const markers: string[] = [];
+  for (const [chatJid, group] of Object.entries(registeredGroups)) {
+    if (group.folder !== 'sales') continue;
+    const marker = `sales_thread_work_units_v1:${chatJid}`;
+    if (getRouterState(marker) === '1') continue;
+    const legacyCursor = lastAgentTimestamp[`${chatJid}||root`];
+    if (legacyCursor) {
+      const roots = getMessagesSince(
+        chatJid,
+        floor,
+        ASSISTANT_NAME,
+        group.folder,
+        null,
+      );
+      changed =
+        seedSalesThreadWorkUnitCursors(
+          chatJid,
+          legacyCursor,
+          roots,
+          lastAgentTimestamp,
+        ) > 0 || changed;
+    }
+    markers.push(marker);
+  }
+  if (changed) saveState();
+  for (const marker of markers) setRouterState(marker, '1');
 }
 
 function saveState(): void {
@@ -1219,7 +1327,7 @@ function recoverPendingMessages(): void {
       // (thread_ts of a reply, or id of the root itself). Non-threadPerMessage
       // groups (contador) post at channel root, so look channel-wide (undefined).
       const pm = actionablePending[0];
-      const responseThreadTs = group.containerConfig?.threadPerMessage
+      const responseThreadTs = usesThreadPerMessage(group)
         ? pm.thread_ts || pm.id
         : undefined;
       const lastResponse = getLatestGroupResponse(
@@ -1805,11 +1913,13 @@ async function main(): Promise<void> {
       );
       startAutonomySweep(autonomyDeps);
 
-      // Approved-send watchdog. Registered as an OBSERVER: it always returns
-      // false so the agent still receives the approval — the host only records
-      // that a send is now owed, and shouts if none appears. See
-      // send-watchdog.ts for why this alerts rather than sending itself.
+      // Approved-send watchdog. Valid cards remain observations so the agent
+      // receives the approval. A malformed marked card is claimed after the
+      // host rejects it, preventing that rejected approval from continuing down
+      // the agent path. See send-watchdog.ts for why the host alerts rather
+      // than sending valid cards itself.
       slackForAutonomy.registerApprovalListener(async (ts) => {
+        let claimApproval = false;
         const card = getMessageById(ts);
         if (card?.content && card.from_group) {
           const threadRoot = card.thread_ts
@@ -1819,7 +1929,7 @@ async function main(): Promise<void> {
             extractApprovedGmailThreadId(card.content) ??
             extractApprovedGmailThreadId(threadRoot?.content);
           const approvalThreadTs = card.thread_ts ?? card.id;
-          const pending = recordApproval(
+          const observation = await observeApprovalCard(
             {
               draftTs: ts,
               groupFolder: card.from_group,
@@ -1828,25 +1938,19 @@ async function main(): Promise<void> {
               cardText: card.content,
               approvedGmailThreadId,
               now: new Date(),
+              authorName:
+                registeredGroups[card.chat_jid]?.name ?? card.from_group,
             },
             sendWatchdogStore,
+            (text) =>
+              slackForAutonomy.sendMessage(card.chat_jid, text, {
+                fromGroup: card.from_group,
+                threadTs: approvalThreadTs,
+              }),
           );
-          if (
-            pending?.actionId &&
-            (!pending.recipient || !pending.approvedContentSha256)
-          ) {
-            failEmailAction(
-              pending.actionId,
-              'blocked',
-              'approval_card_unparseable',
-              new Date().toISOString(),
-            );
-            await slackForAutonomy.sendMessage(
-              card.chat_jid,
-              `🚫 [EMAIL APPROVAL NOT ARMED] The approved card could not be parsed into one exact recipient, subject, and body. It was NOT sent. Correct the card and approve the revised draft; do not hand off this version.`,
-              { fromGroup: card.from_group, threadTs: approvalThreadTs },
-            );
-          } else if (pending?.actionId) {
+          const { pending, rejected } = observation;
+          claimApproval = rejected;
+          if (pending?.actionId) {
             await slackForAutonomy.sendMessage(
               card.chat_jid,
               `[EMAIL ACTION] Action-ID: ${pending.actionId}\nCopy this host-issued ID unchanged into the Mailman handoff. Queued is not sent; wait for the Gmail-confirmed receipt in this thread.`,
@@ -1862,7 +1966,7 @@ async function main(): Promise<void> {
             });
           }
         }
-        return false; // never claim — the agent path must still run
+        return claimApproval;
       });
 
       // Finish an approved send the agent abandoned. Runs before the alert
@@ -2285,6 +2389,14 @@ async function main(): Promise<void> {
       queue.setLastOutputAtByFolder(groupFolder),
     resolveSourceThread: (groupFolder, containerName) =>
       queue.resolveContainerContext(groupFolder, containerName),
+    deliverSourceInput: (groupFolder, containerName, text) => {
+      const context = queue.resolveContainerContext(groupFolder, containerName);
+      if (!context) return false;
+      const queueKey = `${context.chatJid}||${context.threadTs ?? 'root'}`;
+      return queue.sendMessage(queueKey, text, {
+        trackForRecovery: false,
+      }).wrote;
+    },
     postProcurementReviewCard: async (text, threadKey) => {
       const slack = channels.find(
         (c): c is SlackChannel => c instanceof SlackChannel,

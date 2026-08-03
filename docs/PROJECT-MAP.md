@@ -698,6 +698,41 @@ recovery is on. A natural approved customer-email action, a Sales handoff/
 draft/revision cycle, and a real daemon-down healer recovery remain separate
 outcome observations.
 
+### Email session and Sales work-unit containment (`NC-20260803-001`)
+
+The first natural customer action after NC-20260802-009 exposed three coupled
+gaps: the Sales template omitted the fenced `Subject:` that the exact-action
+parser requires; concurrent Mailman containers shared untargeted asynchronous
+Gmail input; and Sales channel roots and their replies could map to different
+container keys. The repair validates every approvable email card (`[SALES
+REVIEW]`, `[FOLLOW-UP]`, or `[SUPPORT-DRAFT]`) before Slack regardless of
+whether it embeds a handoff marker, quarantines malformed bytes, and posts a
+group-appropriate rejection in the host-derived work thread. Chief's canonical
+support-reply template is tracked and uses the same exact fenced draft shape as
+the parser.
+
+Every Gmail MCP request now carries the runner's container identity. Async read
+results and denials are returned through the matching live `GroupQueue` work
+unit with runner-owned targeting and acknowledgement. Ephemeral results are
+excluded from chat-cursor rollback because their source is not replayable; an
+exited target produces a visible hold and is never replaced by a sibling
+session, and an exit sweep warns if it removes an unacknowledged result. Host
+email handoffs include a bare `Lead Email:` field in addition to
+the display-name envelope so the actual customer anchors the Slack work item.
+Sales `threadPerMessage` is a persisted startup migration with a fail-closed
+assertion. A bounded cursor migration seeds only roots already consumed by the
+legacy `||root` cursor, preventing activation from replaying the recovery
+window; existing newer per-root cursors are never rolled back.
+
+Host-owned work-root hints remain conditional on the root and outgoing message
+deriving the same lead identity. A mismatch opens no cross-lead thread and does
+not repoint either lead's anchor. An approval card too large for one Slack row
+is refused as one visible rejection rather than split into fragments; a
+malformed pre-existing card also posts a rejection at approval while minting no
+action. `test:email-critical` includes malformed-card, same-group result
+isolation, lead-anchor, cross-lead refusal, overlong-card, and Sales cursor
+migration regressions.
+
 ## 12. Integrations
 
 The repository contains active or planned connections to:

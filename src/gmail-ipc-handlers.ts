@@ -42,6 +42,8 @@ export interface GmailIpcPayload {
     | 'gmail_read'
     | 'gmail_get_thread';
   groupFolder: string;
+  /** Host-verifiable origin used to target asynchronous results to one session. */
+  source_container?: string;
   timestamp: string;
   // gmail_reply + gmail_get_thread
   threadId?: string;
@@ -74,6 +76,11 @@ const jid = `gmail:${GMAIL_MONITORED_EMAIL}`;
  * non-IPC callers and tests can omit it.
  */
 export type PostToChief = (text: string, threadTs?: string) => Promise<void>;
+export type DeliverAsyncResult = (
+  groupFolder: string,
+  containerName: string,
+  text: string,
+) => boolean;
 
 /**
  * Party IDs are `bigint` in PostgreSQL, and node-postgres returns bigint as a
@@ -721,10 +728,13 @@ export async function handleGmailSend(
   return { messageId: result.messageId, threadId: result.threadId };
 }
 
-export async function handleGmailSearch(data: GmailIpcPayload): Promise<void> {
+export async function handleGmailSearch(
+  data: GmailIpcPayload,
+  deliverResult?: DeliverAsyncResult,
+): Promise<boolean> {
   if (!data.query) {
     logger.warn({ data }, 'gmail_search: missing query');
-    return;
+    return false;
   }
 
   // Execute exactly the query the policy authorized. Authorization normalizes a
@@ -739,75 +749,125 @@ export async function handleGmailSearch(data: GmailIpcPayload): Promise<void> {
   // Deliver results back as a follow-up message. The agent-runner's
   // drainIpcInput() only surfaces files with type:'message' — any other type
   // is read, discarded, and deleted, so the result must be a plain message.
-  writeInputMessage(data.groupFolder, {
-    type: 'message',
-    text: `[gmail_search results — query: ${query}]\n\n${results}`,
-  });
+  const delivered = writeInputMessage(
+    data.groupFolder,
+    {
+      type: 'message',
+      text: `[gmail_search results — query: ${query}]\n\n${results}`,
+    },
+    data.source_container,
+    deliverResult,
+  );
 
   logger.info(
     { query: data.query, groupFolder: data.groupFolder },
     'gmail_search processed',
   );
+  return delivered;
 }
 
-export async function handleGmailRead(data: GmailIpcPayload): Promise<void> {
+export async function handleGmailRead(
+  data: GmailIpcPayload,
+  deliverResult?: DeliverAsyncResult,
+): Promise<boolean> {
   if (!data.messageId) {
     logger.warn({ data }, 'gmail_read: missing messageId');
-    return;
+    return false;
   }
 
   const content = await readEmail(data.messageId);
 
   // Deliver the email back as a follow-up message. type:'message' is the only
   // shape the agent-runner's drainIpcInput() surfaces (see handleGmailSearch).
-  writeInputMessage(data.groupFolder, {
-    type: 'message',
-    text: `[gmail_read result — message ${data.messageId}]\n\n${content}`,
-  });
+  const delivered = writeInputMessage(
+    data.groupFolder,
+    {
+      type: 'message',
+      text: `[gmail_read result — message ${data.messageId}]\n\n${content}`,
+    },
+    data.source_container,
+    deliverResult,
+  );
 
   logger.info(
     { messageId: data.messageId, groupFolder: data.groupFolder },
     'gmail_read processed',
   );
+  return delivered;
 }
 
 export async function handleGmailGetThread(
   data: GmailIpcPayload,
-): Promise<void> {
+  deliverResult?: DeliverAsyncResult,
+): Promise<boolean> {
   if (!data.threadId) {
     logger.warn({ data }, 'gmail_get_thread: missing threadId');
-    return;
+    return false;
   }
 
   const content = await getThread(data.threadId);
 
   // type:'message' is the only shape the agent-runner surfaces (see
   // handleGmailSearch).
-  writeInputMessage(data.groupFolder, {
-    type: 'message',
-    text: `[gmail_get_thread result — thread ${data.threadId}]\n\n${content}`,
-  });
+  const delivered = writeInputMessage(
+    data.groupFolder,
+    {
+      type: 'message',
+      text: `[gmail_get_thread result — thread ${data.threadId}]\n\n${content}`,
+    },
+    data.source_container,
+    deliverResult,
+  );
 
   logger.info(
     { threadId: data.threadId, groupFolder: data.groupFolder },
     'gmail_get_thread processed',
   );
+  return delivered;
 }
 
 /** Write a follow-up message to the agent's IPC input directory. */
 function writeInputMessage(
   groupFolder: string,
   payload: Record<string, unknown>,
-): void {
+  targetContainer?: string,
+  deliverResult?: DeliverAsyncResult,
+): boolean {
+  const text = typeof payload.text === 'string' ? payload.text : undefined;
+  if (targetContainer && deliverResult && text) {
+    const delivered = deliverResult(groupFolder, targetContainer, text);
+    if (!delivered) {
+      logger.error(
+        { groupFolder, targetContainer },
+        'Gmail asynchronous result target container is no longer active; result was not delivered to a sibling session',
+      );
+    }
+    return delivered;
+  }
   const inputDir = path.join(DATA_DIR, 'ipc', groupFolder, 'input');
   fs.mkdirSync(inputDir, { recursive: true });
 
   const filename = `gmail-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.json`;
   fs.writeFileSync(
     path.join(inputDir, filename),
-    JSON.stringify(payload, null, 2),
+    JSON.stringify(
+      {
+        ...payload,
+        target_container: targetContainer || undefined,
+      },
+      null,
+      2,
+    ),
     'utf-8',
   );
+
+  if (!targetContainer) {
+    logger.warn(
+      { groupFolder },
+      'Gmail asynchronous result has no source container; using legacy untargeted delivery',
+    );
+  }
+  return true;
 }
 
 /** Check if a type string is a Gmail IPC type. */
@@ -821,6 +881,7 @@ export async function dispatchGmailIpc(
   postToChief?: PostToChief,
   onSendConfirmed?: OnSendConfirmed,
   onSendFailed?: OnSendFailed,
+  deliverResult?: DeliverAsyncResult,
 ): Promise<void> {
   switch (data.type) {
     case 'gmail_reply':
@@ -830,13 +891,43 @@ export async function dispatchGmailIpc(
       await handleGmailSend(data, postToChief, onSendConfirmed, onSendFailed);
       break;
     case 'gmail_search':
-      await handleGmailSearch(data);
+      if (!data.query) {
+        await postToChief?.(
+          '🚫 [GMAIL REQUEST INVALID] gmail_search was missing its required query; no Gmail operation ran.',
+        );
+        break;
+      }
+      if (!(await handleGmailSearch(data, deliverResult))) {
+        await postToChief?.(
+          '🚫 [GMAIL RESULT HELD] A gmail_search completed after its originating container exited. The result was not delivered to another session; retry from the correct work item.',
+        );
+      }
       break;
     case 'gmail_read':
-      await handleGmailRead(data);
+      if (!data.messageId) {
+        await postToChief?.(
+          '🚫 [GMAIL REQUEST INVALID] gmail_read was missing its required messageId; no Gmail operation ran.',
+        );
+        break;
+      }
+      if (!(await handleGmailRead(data, deliverResult))) {
+        await postToChief?.(
+          '🚫 [GMAIL RESULT HELD] A gmail_read completed after its originating container exited. The result was not delivered to another session; retry from the correct work item.',
+        );
+      }
       break;
     case 'gmail_get_thread':
-      await handleGmailGetThread(data);
+      if (!data.threadId) {
+        await postToChief?.(
+          '🚫 [GMAIL REQUEST INVALID] gmail_get_thread was missing its required threadId; no Gmail operation ran.',
+        );
+        break;
+      }
+      if (!(await handleGmailGetThread(data, deliverResult))) {
+        await postToChief?.(
+          '🚫 [GMAIL RESULT HELD] A gmail_get_thread completed after its originating container exited. The result was not delivered to another session; retry from the correct work item.',
+        );
+      }
       break;
     default:
       logger.warn({ type: data.type }, 'Unknown Gmail IPC type');

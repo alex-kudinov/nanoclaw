@@ -109,6 +109,7 @@ import {
   touchThreadAnchor,
 } from '../db.js';
 import { readEnvFile } from '../env.js';
+import { logger } from '../logger.js';
 
 // --- Test helpers ---
 
@@ -1725,6 +1726,72 @@ Hi Oana, good to hear from you.
       expect(rollThreadAnchor).not.toHaveBeenCalled();
     });
 
+    it('keeps a Sales card in its host-owned work root when a host-labelled customer address differs from the envelope', async () => {
+      const workRoot = '1785763378.077589';
+      vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+      vi.mocked(getMessageById).mockReturnValue({
+        id: workRoot,
+        chat_jid: JID,
+        sender: 'U_BOT_123',
+        sender_name: 'Jonesy',
+        content:
+          '[HANDOFF: mailman→sales]\nLead Email: oana.tue.coach@gmail.com\nFrom: Justin Mangum <no-reply@encharge.io>\nThread-ID: gmail-thread',
+        timestamp: '2026-08-03T13:42:18.077Z',
+        from_group: 'mailman',
+      });
+      const channel = await connected();
+
+      await channel.sendMessage(JID, CARD, {
+        fromGroup: 'sales',
+        hostWorkUnitThreadTs: workRoot,
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBe(workRoot);
+      expect(recordThreadAnchor).toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+        workRoot,
+      );
+    });
+
+    it('refuses to merge a different lead into a host-owned Sales work root', async () => {
+      const workRoot = '1785763378.077589';
+      vi.mocked(resolveThreadAnchor).mockReturnValue(undefined);
+      vi.mocked(getMessageById).mockReturnValue({
+        id: workRoot,
+        chat_jid: JID,
+        sender: 'U_BOT_123',
+        sender_name: 'Jonesy',
+        content:
+          '[HANDOFF: mailman→sales]\nLead Email: different@example.com\nFrom: Envelope <no-reply@encharge.io>',
+        timestamp: '2026-08-03T13:42:18.077Z',
+        from_group: 'mailman',
+      });
+      const channel = await connected();
+
+      await channel.sendMessage(JID, CARD, {
+        fromGroup: 'sales',
+        hostWorkUnitThreadTs: workRoot,
+      });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post.mock.calls[0][0].thread_ts).toBeUndefined();
+      expect(recordThreadAnchor).not.toHaveBeenCalledWith(
+        'C0AHV1SGT6W',
+        'lead:oana.tue.coach@gmail.com',
+        workRoot,
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hostWorkUnitThreadTs: workRoot,
+          rootLeadKey: 'lead:different@example.com',
+          outgoingLeadKey: 'lead:oana.tue.coach@gmail.com',
+        }),
+        expect.stringContaining('refusing cross-lead binding'),
+      );
+    });
+
     it('makes a scheduled follow-up card a new visible work-item root', async () => {
       vi.mocked(resolveThreadAnchor).mockReturnValue({
         threadTs: '1785230544.590929',
@@ -2227,7 +2294,7 @@ Hi Oana, good to hear from you.
       ).toBe(true);
     });
 
-    it('splits a long card on a line boundary and keeps every part in-thread', async () => {
+    it('refuses to split a long approval card into unapprovable fragments', async () => {
       vi.mocked(resolveThreadAnchor).mockReturnValue({
         threadTs: '1785230544.590929',
         lastActivityAt: new Date().toISOString(),
@@ -2243,13 +2310,20 @@ Hi Oana, good to hear from you.
       });
 
       const post = currentApp().client.chat.postMessage;
-      expect(post.mock.calls.length).toBeGreaterThan(1);
-      for (const [call] of post.mock.calls) {
-        expect(call.thread_ts).toBe('1785230544.590929');
-        // A boundary-aware split never starts a chunk mid-word.
-        expect(call.text.startsWith(' ')).toBe(false);
-        expect(call.text).not.toMatch(/^[a-z]+ of the proposed/);
-      }
+      expect(post).toHaveBeenCalledTimes(1);
+      expect(post).toHaveBeenCalledWith(
+        expect.objectContaining({
+          thread_ts: '1785230544.590929',
+          text: expect.stringMatching(
+            /\[APPROVAL CARD REJECTED\].*4000-character limit.*Sales must repost/,
+          ),
+        }),
+      );
+      expect(post.mock.calls[0][0].text).not.toContain('Paragraph 399');
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ fromGroup: 'sales' }),
+        expect.stringContaining('refused to split an approval card'),
+      );
     });
   });
 });

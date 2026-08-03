@@ -448,13 +448,16 @@ export class GmailChannel implements Channel {
     // directly and skip mailman entirely. Saves one LLM call + one container
     // spawn per matched message. Falls through to mailman on any error.
     const senderEmail = extractSenderEmail(headers.from);
+    const replyToEmail = extractSenderEmail(headers.replyTo);
     // The Gmail API is authoritative for these identifiers. Grant them before
     // any host routing so mailman can use the resource and can pass the same
     // grant—not an invented replacement—to the selected downstream group.
     grantHostGmailResources(GMAIL_GROUP_FOLDER, {
       threadId,
       messageId: msg.id,
-      emailAddresses: senderEmail ? [senderEmail] : [],
+      emailAddresses: [senderEmail, replyToEmail].filter(
+        (email): email is string => Boolean(email),
+      ),
     });
     const headerMap: Record<string, string> = {};
     for (const h of rawHeaders) {
@@ -564,6 +567,7 @@ export class GmailChannel implements Channel {
           const routeResult = await routeClassifiedEmail({
             label: ruleMatch.target_label,
             senderEmail: senderEmail || '',
+            replyToEmail: replyToEmail || undefined,
             senderName: headers.fromName || '',
             subject: headers.subject || '',
             body: body || '',

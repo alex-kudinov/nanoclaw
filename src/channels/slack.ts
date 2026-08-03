@@ -15,6 +15,10 @@ import {
   extractIWorkPdf,
   extractOdfText,
 } from '../attachment-convert.js';
+import {
+  approvalCardRejectedText,
+  isApprovalCard,
+} from '../approved-send-handoff.js';
 import { promoteBriefItem } from '../brief-promote.js';
 import {
   ASSISTANT_NAME,
@@ -764,7 +768,16 @@ export class SlackChannel implements Channel {
     threadTs: string | undefined,
     leadKey: string | undefined,
   ): Promise<boolean> {
-    if (!threadTs || !leadKey) return false;
+    if (!leadKey) return false;
+    const root = this.recordedSalesWorkRoot(jid, threadTs);
+    return Boolean(
+      root && (await this.deriveLeadKey(root.content)) === leadKey,
+    );
+  }
+
+  /** Return only a host-persisted Sales work root; never trust a model timestamp. */
+  private recordedSalesWorkRoot(jid: string, threadTs: string | undefined) {
+    if (!threadTs) return undefined;
     const root = getMessageById(threadTs, jid);
     if (
       !root ||
@@ -772,12 +785,12 @@ export class SlackChannel implements Channel {
       root.chat_jid !== jid ||
       root.thread_ts
     ) {
-      return false;
+      return undefined;
     }
     const startsWork =
       (root.from_group !== 'sales' && isInboundSalesHandoff(root.content)) ||
       isScheduledSalesWorkItem(root.content);
-    return startsWork && (await this.deriveLeadKey(root.content)) === leadKey;
+    return startsWork ? root : undefined;
   }
 
   /** True when text re-posts the scheduled cycle already at the lead anchor. */
@@ -865,12 +878,37 @@ export class SlackChannel implements Channel {
     const channelId = jid.replace(/^slack:/, '');
     const fromGroup = opts?.fromGroup;
     const threadTs = opts?.threadTs;
+    const hostWorkUnitThreadTs = opts?.hostWorkUnitThreadTs;
     const threadKey = leadKey ?? opts?.threadKey;
-    const requestedSalesRoot = await this.isRecordedSalesWorkRoot(
+    const requestedHostWorkRoot = await this.isRecordedSalesWorkRoot(
       jid,
-      threadTs,
+      hostWorkUnitThreadTs,
       leadKey,
     );
+    if (hostWorkUnitThreadTs && leadKey && !requestedHostWorkRoot) {
+      const root = this.recordedSalesWorkRoot(jid, hostWorkUnitThreadTs);
+      const rootLeadKey = root
+        ? await this.deriveLeadKey(root.content)
+        : undefined;
+      if (rootLeadKey && rootLeadKey !== leadKey) {
+        logger.error(
+          {
+            jid,
+            hostWorkUnitThreadTs,
+            rootLeadKey,
+            outgoingLeadKey: leadKey,
+          },
+          'Slack: outgoing Sales lead differs from its host work root; refusing cross-lead binding',
+        );
+      }
+    }
+    const requestedAgentSalesRoot = requestedHostWorkRoot
+      ? false
+      : await this.isRecordedSalesWorkRoot(jid, threadTs, leadKey);
+    const requestedSalesRoot = requestedHostWorkRoot || requestedAgentSalesRoot;
+    const requestedSalesThreadTs = requestedHostWorkRoot
+      ? hostWorkUnitThreadTs
+      : threadTs;
     const existing =
       threadKey && (leadKey !== undefined || threadTs === undefined)
         ? resolveThreadAnchor(channelId, threadKey)
@@ -910,15 +948,31 @@ export class SlackChannel implements Channel {
     //   - anchor, gone stale  → don't resurrect; fresh root at the channel
     //                           bottom, repoint the anchor (rollThreadAnchor)
     let effectiveThreadTs = requestedSalesRoot
-      ? threadTs
+      ? requestedSalesThreadTs
       : hostDerivedAnchor || startsSalesWork
         ? undefined
         : threadTs;
     let keyToAnchor: string | undefined; // brand-new key → INSERT (race-safe)
     let keyToRoll: string | undefined; // dormant key → repoint to fresh root
     let keyToTouch: string | undefined; // active key → bump last activity
+    let keyToBindHostRoot:
+      | { key: string; rootTs: string; roll: boolean }
+      | undefined;
     let anchoredReply = requestedSalesRoot;
-    if (requestedSalesRoot && existing?.threadTs === threadTs) {
+    if (requestedHostWorkRoot && threadKey && requestedSalesThreadTs) {
+      if (existing?.threadTs === requestedSalesThreadTs) {
+        keyToTouch = threadKey;
+      } else {
+        keyToBindHostRoot = {
+          key: threadKey,
+          rootTs: requestedSalesThreadTs,
+          roll: existing !== undefined,
+        };
+      }
+    } else if (
+      requestedAgentSalesRoot &&
+      existing?.threadTs === requestedSalesThreadTs
+    ) {
       keyToTouch = threadKey;
     }
     if (threadKey && !effectiveThreadTs) {
@@ -949,11 +1003,40 @@ export class SlackChannel implements Channel {
       }
     }
 
+    const bindHostWorkRoot = () => {
+      if (!keyToBindHostRoot) return;
+      if (keyToBindHostRoot.roll) {
+        rollThreadAnchor(
+          channelId,
+          keyToBindHostRoot.key,
+          keyToBindHostRoot.rootTs,
+        );
+      } else {
+        recordThreadAnchor(
+          channelId,
+          keyToBindHostRoot.key,
+          keyToBindHostRoot.rootTs,
+        );
+      }
+      keyToBindHostRoot = undefined;
+    };
+
     try {
       // Prefix agent messages with group name for readability
       const prefix =
         fromGroup && !text.startsWith('[') ? `[${fromGroup}]\n` : '';
-      const displayText = prefix + text;
+      const overlongApprovalCard =
+        isApprovalCard(text) &&
+        prefix.length + text.length > MAX_MESSAGE_LENGTH;
+      const outboundText = overlongApprovalCard
+        ? approvalCardRejectedText(
+            fromGroup
+              ? fromGroup.charAt(0).toUpperCase() + fromGroup.slice(1)
+              : 'The authoring group',
+            `This draft was not posted for approval because its complete exact card exceeds Slack's ${MAX_MESSAGE_LENGTH}-character limit and would be split into unapprovable fragments.`,
+          )
+        : text;
+      const displayText = prefix + outboundText;
 
       const baseOpts: {
         channel: string;
@@ -983,13 +1066,14 @@ export class SlackChannel implements Channel {
           this.storeOutbound(
             jid,
             result.ts,
-            text,
+            outboundText,
             fromGroup,
             effectiveThreadTs,
           );
           if (keyToAnchor)
             recordThreadAnchor(channelId, keyToAnchor, result.ts);
           else if (keyToRoll) rollThreadAnchor(channelId, keyToRoll, result.ts);
+          else if (keyToBindHostRoot) bindHostWorkRoot();
           else if (keyToTouch) touchThreadAnchor(channelId, keyToTouch);
         }
       } else {
@@ -1040,6 +1124,8 @@ export class SlackChannel implements Channel {
               baseOpts.thread_ts = result.ts;
               keyToAnchor = undefined;
               keyToRoll = undefined;
+            } else if (keyToBindHostRoot) {
+              bindHostWorkRoot();
             } else if (keyToTouch) {
               touchThreadAnchor(channelId, keyToTouch);
               keyToTouch = undefined;
@@ -1049,6 +1135,12 @@ export class SlackChannel implements Channel {
           // the channel — the rest stay quiet in the thread.
           if (baseOpts.reply_broadcast) baseOpts.reply_broadcast = false;
         }
+      }
+      if (overlongApprovalCard) {
+        logger.error(
+          { jid, length: text.length, fromGroup, threadTs: effectiveThreadTs },
+          'Slack refused to split an approval card into unapprovable fragments',
+        );
       }
       this.lastActivityAt = Date.now();
       logger.info(

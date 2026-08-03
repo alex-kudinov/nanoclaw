@@ -748,6 +748,37 @@ export function containerTimeoutRemainingMs(
   return effectiveContainerTimeoutMs(group) - Math.max(0, nowMs - startedMs);
 }
 
+/** Remove payloads addressed to an exited container and signal unrecoverable loss. */
+export function sweepExitedContainerInputs(
+  inputDir: string,
+  containerName: string,
+): number {
+  let unrecoverable = 0;
+  try {
+    for (const file of fs.readdirSync(inputDir)) {
+      if (!file.endsWith('.json')) continue;
+      const ipcPath = path.join(inputDir, file);
+      try {
+        const payload = JSON.parse(fs.readFileSync(ipcPath, 'utf-8'));
+        if (payload.target_container !== containerName) continue;
+        fs.unlinkSync(ipcPath);
+        if (payload.chat_cursor_recoverable === false) {
+          unrecoverable++;
+          logger.warn(
+            { containerName, ipcPath },
+            'Exited container left an unacknowledged ephemeral result; operator retry is required',
+          );
+        }
+      } catch {
+        /* unreadable/racing unlink — leave it */
+      }
+    }
+  } catch {
+    /* input dir absent */
+  }
+  return unrecoverable;
+}
+
 export async function runContainerAgent(
   group: RegisteredGroup,
   input: ContainerInput,
@@ -1095,20 +1126,7 @@ export async function runContainerAgent(
       // orphan forever (no sibling will claim it). Dead-letter recovery rolls
       // the cursor back and re-delivers a fresh copy, so removing the orphan
       // here also prevents a duplicate. Best-effort.
-      try {
-        for (const f of fs.readdirSync(inputDir)) {
-          if (!f.endsWith('.json')) continue;
-          const fp = path.join(inputDir, f);
-          try {
-            const d = JSON.parse(fs.readFileSync(fp, 'utf-8'));
-            if (d.target_container === containerName) fs.unlinkSync(fp);
-          } catch {
-            /* unreadable/racing unlink — leave it */
-          }
-        }
-      } catch {
-        /* input dir absent */
-      }
+      sweepExitedContainerInputs(inputDir, containerName);
       try {
         fs.unlinkSync(sidecarPath);
       } catch {

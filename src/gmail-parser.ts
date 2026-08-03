@@ -102,6 +102,7 @@ function cleanBody(text: string): string {
 export interface ParsedHeaders {
   from: string;
   fromName: string;
+  replyTo: string;
   to: string;
   subject: string;
   date: string;
@@ -125,6 +126,7 @@ export function parseEmailHeaders(
   return {
     from,
     fromName,
+    replyTo: get('Reply-To'),
     to: get('To'),
     subject: get('Subject'),
     date: get('Date'),
@@ -142,6 +144,7 @@ export function formatEmailForAgent(
 ): string {
   const headerLines = [
     `From: ${headers.fromName} <${headers.from}>`,
+    ...(headers.replyTo ? [`Reply-To: ${headers.replyTo}`] : []),
     `Subject: ${headers.subject}`,
     `Date: ${headers.date}`,
   ];

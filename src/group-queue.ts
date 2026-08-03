@@ -38,6 +38,11 @@ export interface PipedWriteResult {
   timestampMs?: number;
 }
 
+export interface PipedWriteOpts {
+  /** Chat messages are recoverable from the DB cursor; ephemeral IPC results are not. */
+  trackForRecovery?: boolean;
+}
+
 export interface GroupStatusEntry {
   active: boolean;
   containerName: string | null;
@@ -385,7 +390,11 @@ export class GroupQueue {
    * MUST branch on `result.wrote`, NOT on the object itself (any object
    * is truthy). This is a contract guarded by the TypeScript return type.
    */
-  sendMessage(groupJid: string, text: string): PipedWriteResult {
+  sendMessage(
+    groupJid: string,
+    text: string,
+    opts: PipedWriteOpts = {},
+  ): PipedWriteResult {
     const state = this.getGroup(groupJid);
     if (!state.active || !state.groupFolder || state.isTaskContainer)
       return { wrote: false };
@@ -415,18 +424,23 @@ export class GroupQueue {
         message_id: messageId,
         timestamp_ms: timestampMs,
         target_container: state.containerName ?? undefined,
+        chat_cursor_recoverable: opts.trackForRecovery !== false,
         text,
       });
       fs.writeFileSync(tempPath, payload);
       fs.renameSync(tempPath, filepath);
 
-      // Track for dead-letter recovery
-      state.pipedMessages.set(messageId, {
-        messageId,
-        text,
-        timestampMs,
-        ipcPath: filepath,
-      });
+      // Only DB-backed chat messages can be recovered by rolling back the chat
+      // cursor. Ephemeral async IPC results are targeted and acknowledged, but
+      // must never enter that rollback path: the DB cannot reproduce them.
+      if (opts.trackForRecovery !== false) {
+        state.pipedMessages.set(messageId, {
+          messageId,
+          text,
+          timestampMs,
+          ipcPath: filepath,
+        });
+      }
       state.spawnSnippet = makeSnippet(text);
 
       // Reset idle timer so the container isn't closed while processing

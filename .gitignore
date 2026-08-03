@@ -31,6 +31,7 @@ groups/*/*
 !groups/*/WORKFLOWS.md
 !groups/*/VOICE-AND-TONE.md
 !groups/*/EMAIL-RESPONSE-GUIDELINES.md
+!groups/chief/SUPPORT-REPLY.md
 !groups/mailman/OUTBOUND-EMAIL.md
 !groups/*/SCHEMA.md
 

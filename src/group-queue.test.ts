@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import fs from 'fs';
 
 import { GroupQueue } from './group-queue.js';
 
@@ -438,7 +439,47 @@ describe('GroupQueue', () => {
     expect(payloadCall).toBeDefined();
     const payload = JSON.parse(payloadCall![1] as string);
     expect(payload.target_container).toBe('nanoclaw-sales-42');
+    expect(payload.chat_cursor_recoverable).toBe(true);
     expect(payload.text).toBe('hello');
+  });
+
+  it('does not enroll ephemeral targeted results in chat-cursor rollback', async () => {
+    const rollback = vi.fn();
+    queue.setRollbackTimestampFn(rollback);
+    let writeResult: ReturnType<GroupQueue['sendMessage']> | undefined;
+    queue.setProcessMessagesFn(async () => {
+      queue.registerProcess(
+        'group1@g.us',
+        {} as any,
+        'nanoclaw-sales-ephemeral',
+        'sales',
+      );
+      writeResult = queue.sendMessage('group1@g.us', 'gmail result', {
+        trackForRecovery: false,
+      });
+      return false;
+    });
+
+    queue.enqueueMessageCheck('group1@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+
+    expect(writeResult?.wrote).toBe(true);
+    const payloadCall = vi
+      .mocked(fs.writeFileSync)
+      .mock.calls.find(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].endsWith('.json.tmp') &&
+          typeof call[1] === 'string' &&
+          call[1].includes('gmail result'),
+      );
+    expect(JSON.parse(payloadCall![1] as string).chat_cursor_recoverable).toBe(
+      false,
+    );
+    expect(rollback).not.toHaveBeenCalled();
+    expect(
+      queue.getStatus().groupStates['group1@g.us||root']?.pipedMessageCount,
+    ).toBe(0);
   });
 
   it('sendMessage returns false for task containers so user messages queue up', async () => {

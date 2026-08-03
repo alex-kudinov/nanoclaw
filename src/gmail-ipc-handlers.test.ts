@@ -123,6 +123,7 @@ import {
   handleGmailSend,
   handleGmailSearch,
   handleGmailRead,
+  dispatchGmailIpc,
   GmailIpcPayload,
 } from './gmail-ipc-handlers.js';
 import { convertMarkdownToEmailHtml } from './markdown-to-email-html.js';
@@ -763,11 +764,13 @@ describe('gmail_search / gmail_read result delivery', () => {
       groupFolder: 'chief',
       timestamp: '2026-05-18T12:00:00Z',
       query: 'from:susan',
+      source_container: 'nanoclaw-chief-search-1',
     });
     const call = vi.mocked(fs.writeFileSync).mock.calls.at(-1);
     expect(call).toBeDefined();
     const payload = JSON.parse(call![1] as string);
     expect(payload.type).toBe('message');
+    expect(payload.target_container).toBe('nanoclaw-chief-search-1');
     expect(payload.text).toContain('gmail_search results');
   });
 
@@ -777,11 +780,91 @@ describe('gmail_search / gmail_read result delivery', () => {
       groupFolder: 'chief',
       timestamp: '2026-05-18T12:00:00Z',
       messageId: 'msg-789',
+      source_container: 'nanoclaw-chief-read-1',
     });
     const call = vi.mocked(fs.writeFileSync).mock.calls.at(-1);
     expect(call).toBeDefined();
     const payload = JSON.parse(call![1] as string);
     expect(payload.type).toBe('message');
+    expect(payload.target_container).toBe('nanoclaw-chief-read-1');
     expect(payload.text).toContain('msg-789');
+  });
+
+  it('does not write a result for a sibling when the originating container has exited', async () => {
+    const before = vi.mocked(fs.writeFileSync).mock.calls.length;
+    const deliver = vi.fn(() => false);
+    const delivered = await handleGmailSearch(
+      {
+        type: 'gmail_search',
+        groupFolder: 'mailman',
+        timestamp: '2026-08-03T14:00:00Z',
+        query: 'from:justin@example.com',
+        source_container: 'nanoclaw-mailman-justin',
+      },
+      deliver,
+    );
+
+    expect(delivered).toBe(false);
+    expect(deliver).toHaveBeenCalledWith(
+      'mailman',
+      'nanoclaw-mailman-justin',
+      expect.stringContaining('[gmail_search results'),
+    );
+    expect(vi.mocked(fs.writeFileSync).mock.calls).toHaveLength(before);
+  });
+
+  it('keeps concurrent same-group results bound to their originating containers', async () => {
+    const deliver = vi.fn(() => true);
+    await Promise.all([
+      handleGmailSearch(
+        {
+          type: 'gmail_search',
+          groupFolder: 'mailman',
+          timestamp: '2026-08-03T14:00:00Z',
+          query: 'from:justin@example.com',
+          source_container: 'nanoclaw-mailman-justin',
+        },
+        deliver,
+      ),
+      handleGmailRead(
+        {
+          type: 'gmail_read',
+          groupFolder: 'mailman',
+          timestamp: '2026-08-03T14:00:01Z',
+          messageId: 'judith-message',
+          source_container: 'nanoclaw-mailman-judith',
+        },
+        deliver,
+      ),
+    ]);
+
+    expect(deliver).toHaveBeenCalledWith(
+      'mailman',
+      'nanoclaw-mailman-justin',
+      expect.stringContaining('justin@example.com'),
+    );
+    expect(deliver).toHaveBeenCalledWith(
+      'mailman',
+      'nanoclaw-mailman-judith',
+      expect.stringContaining('judith-message'),
+    );
+  });
+
+  it('reports missing parameters as invalid requests, not exited containers', async () => {
+    const postToChief = vi.fn(async () => {});
+    await dispatchGmailIpc(
+      makePayload({
+        type: 'gmail_search',
+        groupFolder: 'mailman',
+        query: undefined,
+      }),
+      postToChief,
+    );
+    expect(postToChief).toHaveBeenCalledWith(
+      expect.stringContaining('[GMAIL REQUEST INVALID]'),
+    );
+    expect(postToChief).not.toHaveBeenCalledWith(
+      expect.stringContaining('[GMAIL RESULT HELD]'),
+    );
   });
 });

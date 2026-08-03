@@ -70,6 +70,12 @@ import {
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
+import {
+  approvalCardRejectedText,
+  buildApprovedHandoff,
+  isApprovalCard,
+  parseApprovalCardRecipient,
+} from './approved-send-handoff.js';
 
 export interface IpcDeps {
   sendMessage: SendMessageFn;
@@ -97,6 +103,12 @@ export interface IpcDeps {
     groupFolder: string,
     containerName: string,
   ) => { chatJid: string; threadTs?: string } | undefined;
+  /** Deliver a follow-up through GroupQueue so it is targeted and dead-lettered. */
+  deliverSourceInput?: (
+    groupFolder: string,
+    containerName: string,
+    text: string,
+  ) => boolean;
   // Host-generated Procurement card transport — optional so non-Slack tests and
   // configurations remain read-only.
   postProcurementReviewCard?: (
@@ -141,16 +153,14 @@ const CANCEL_RE = new RegExp(
 // (Bernard Suman silent stall, 2026-07-22). We key on the marker, NOT on
 // position: 57 legitimate sends in the corpus prefix "Lead #N approved. "
 // before the handoff marker, so an anchored regex would drop real emails.
-const SALES_REVIEW_RE = /\[SALES REVIEW\]/;
-
 /**
- * True when text is a sales approval card (operator-facing, destined for the
+ * True when text is an approval card (operator-facing, destined for the
  * source group's own channel for human approval) rather than a routing
  * directive. Used to suppress handoff routing on a card whose footer embeds a
- * mailman handoff marker. See SALES_REVIEW_RE.
+ * mailman handoff marker. Shares its marker set with the approval watchdog.
  */
 export function isSalesReviewCard(text: string): boolean {
-  return SALES_REVIEW_RE.test(text);
+  return isApprovalCard(text);
 }
 
 // Mailman send-hold buffer. Held [HANDOFF: *→mailman] messages sit here
@@ -204,8 +214,21 @@ function writeDeniedGmailInput(
   sourceGroup: string,
   operation: string,
   reason: string | undefined,
+  sourceContainer?: string,
+  deliverSourceInput?: IpcDeps['deliverSourceInput'],
 ): void {
   try {
+    const text =
+      `[${operation} DENIED] ${reason || 'host authorization failed'}. ` +
+      'Do not retry with a different ID or address; escalate.';
+    if (sourceContainer && deliverSourceInput) {
+      if (deliverSourceInput(sourceGroup, sourceContainer, text)) return;
+      logger.error(
+        { sourceGroup, operation, sourceContainer },
+        'Gmail denial target container is no longer active; result was not delivered to a sibling session',
+      );
+      return;
+    }
     const inputDir = path.join(DATA_DIR, 'ipc', sourceGroup, 'input');
     fs.mkdirSync(inputDir, { recursive: true });
     const filename = `gmail-denied-${Date.now()}-${crypto.randomBytes(3).toString('hex')}.json`;
@@ -214,21 +237,46 @@ function writeDeniedGmailInput(
       JSON.stringify(
         {
           type: 'message',
-          text:
-            `[${operation} DENIED] ${reason || 'host authorization failed'}. ` +
-            'Do not retry with a different ID or address; escalate.',
+          target_container: sourceContainer || undefined,
+          text,
         },
         null,
         2,
       ),
       'utf-8',
     );
+    if (!sourceContainer) {
+      logger.warn(
+        { sourceGroup, operation },
+        'Gmail denial has no source container; using legacy untargeted delivery',
+      );
+    }
   } catch (err) {
     logger.error(
       { err, sourceGroup, operation },
       'Failed to deliver Gmail authorization denial to calling agent',
     );
   }
+}
+
+/** Tell Sales exactly how to repair a rejected review card. */
+function writeRejectedApprovalCardInput(
+  sourceGroup: string,
+  sourceContainer: string | undefined,
+  deliverSourceInput: IpcDeps['deliverSourceInput'],
+): void {
+  const text =
+    '[approval_card REJECTED] The review card is missing one exact Email, fenced Subject, or body. Repost the same card with all three fields; do not send or change the recipient/body.';
+  if (
+    sourceContainer &&
+    deliverSourceInput?.(sourceGroup, sourceContainer, text)
+  ) {
+    return;
+  }
+  logger.error(
+    { sourceGroup, sourceContainer },
+    'Rejected approval card could not be returned to its originating container',
+  );
 }
 
 // A handoff whose text carries an escalation/emergency marker is itself an
@@ -380,6 +428,12 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       : undefined)
                   );
                 };
+                const hostWorkUnitThreadTsFor = (outboundJid: string) =>
+                  sourceGroup === 'sales' &&
+                  sourceJid === outboundJid &&
+                  sourceContext?.chatJid === outboundJid
+                    ? sourceContext.threadTs
+                    : undefined;
                 // [CANCEL: source→mailman] intercepts a held mailman handoff
                 // from the same source within the hold window. Drop the held
                 // file without forwarding; the cancel marker itself still
@@ -424,7 +478,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 // channel (booking→sales never reached sales — they piled up in
                 // #gru-booking instead). See HANDOFF_ARROW.
                 const handoffMatch = data.text.match(HANDOFF_RE);
-                // GUARD: a [SALES REVIEW] approval card must reach the source's
+                // GUARD: every approvable email card must reach the source's
                 // own channel for human approval — never mailman — even though
                 // its "ACTION ON APPROVAL" footer embeds "[HANDOFF: →mailman]".
                 // Honoring that embedded marker misrouted the card to mailman,
@@ -433,25 +487,74 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 // regardless of the target the agent addressed. A genuine send
                 // ("Lead #7 approved. [HANDOFF: sales→mailman] To:… Body:…")
                 // carries no [SALES REVIEW] marker and still routes below.
-                if (handoffMatch && isSalesReviewCard(data.text)) {
+                if (isSalesReviewCard(data.text)) {
                   const sourceEntry = Object.entries(registeredGroups).find(
                     ([, g]) => g.folder === sourceGroup,
                   );
                   if (sourceEntry) {
+                    if (!buildApprovedHandoff(data.text)) {
+                      writeRejectedApprovalCardInput(
+                        sourceGroup,
+                        data.source_container,
+                        deps.deliverSourceInput,
+                      );
+                      const recipient = parseApprovalCardRecipient(data.text);
+                      await deps.sendMessage(
+                        sourceEntry[0],
+                        approvalCardRejectedText(
+                          sourceEntry[1].name,
+                          'This draft was not posted for approval because it is missing one exact Email, fenced Subject, or body.',
+                        ),
+                        {
+                          fromGroup: sourceGroup,
+                          threadTs: outboundThreadTsFor(sourceEntry[0]),
+                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                            sourceEntry[0],
+                          ),
+                          ...(recipient
+                            ? { threadKey: `lead:${recipient}` }
+                            : {}),
+                        },
+                      );
+                      const quarantinedAt = quarantineIpcFile(
+                        filePath,
+                        sourceGroup,
+                        'approval-card-malformed',
+                      );
+                      logger.error(
+                        { sourceGroup, quarantinedAt },
+                        'IPC guard: malformed approval card rejected before approval',
+                      );
+                      continue;
+                    }
                     await deps.sendMessage(sourceEntry[0], data.text, {
                       fromGroup: sourceGroup,
                       threadTs: outboundThreadTsFor(sourceEntry[0]),
+                      hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                        sourceEntry[0],
+                      ),
                       threadKey: data.thread_key,
                     });
                     logger.warn(
-                      { sourceGroup, handoffTarget: handoffMatch[1] },
-                      'IPC guard: [SALES REVIEW] card carried an embedded handoff marker — routing suppressed, delivered to source channel for approval',
+                      {
+                        sourceGroup,
+                        handoffTarget: handoffMatch?.[1],
+                      },
+                      handoffMatch
+                        ? 'IPC guard: [SALES REVIEW] card carried an embedded handoff marker — routing suppressed, delivered to source channel for approval'
+                        : 'IPC guard: [SALES REVIEW] card validated and delivered to source channel for approval',
                     );
                   } else {
-                    logger.error(
-                      { sourceGroup },
-                      'IPC guard: [SALES REVIEW] card but source group not registered — dropped',
+                    const quarantinedAt = quarantineIpcFile(
+                      filePath,
+                      sourceGroup,
+                      'sales-review-unroutable',
                     );
+                    logger.error(
+                      { sourceGroup, quarantinedAt },
+                      'IPC guard: [SALES REVIEW] card but source group not registered — quarantined',
+                    );
+                    continue;
                   }
                   fs.unlinkSync(filePath);
                   continue;
@@ -606,6 +709,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     await deps.sendMessage(targetJid, data.text, {
                       fromGroup: sourceGroup,
                       threadTs: outboundThreadTsFor(targetJid),
+                      hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(targetJid),
                       threadKey: data.thread_key,
                     });
                     logger.info(
@@ -712,6 +816,8 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     sourceGroup,
                     data.type,
                     'invalid approved email Action-ID',
+                    data.source_container,
+                    deps.deliverSourceInput,
                   );
                   await postBoundaryFailure(
                     `🚫 [EMAIL ACTION HELD] Mailman supplied an invalid Action-ID. Nothing was sent; correct the approval handoff rather than retrying the Gmail tool.`,
@@ -774,6 +880,8 @@ export function startIpcWatcher(deps: IpcDeps): void {
                         sourceGroup,
                         data.type,
                         'multiple approved email actions match this content',
+                        data.source_container,
+                        deps.deliverSourceInput,
                       );
                       await postBoundaryFailure(
                         `🚫 [EMAIL ACTION HELD] More than one approval matches a Mailman request. Nothing was sent; reconcile the approval threads before any retry.`,
@@ -811,6 +919,8 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     sourceGroup,
                     data.type,
                     'approved email action was not found',
+                    data.source_container,
+                    deps.deliverSourceInput,
                   );
                   await postBoundaryFailure(
                     `🚫 [EMAIL ACTION HELD] Mailman referenced an unknown host action. Nothing was sent; return to the originating approval thread.`,
@@ -831,6 +941,8 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     sourceGroup,
                     data.type,
                     'no exact host-approved email action is available',
+                    data.source_container,
+                    deps.deliverSourceInput,
                   );
                   await postBoundaryFailure(
                     `🚫 [EMAIL ACTION HELD] A Mailman request was not bound to one exact host-approved action. Nothing was sent. Approve the exact draft in its Slack thread before retrying.`,
@@ -866,6 +978,11 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     sourceGroup,
                     data.type,
                     authorization.reason,
+                    data.source_container,
+                    deps.deliverSourceInput,
+                  );
+                  await postBoundaryFailure(
+                    `🚫 [GMAIL REQUEST HELD] ${data.type} was denied by the host boundary. Its result was not delivered to another Mailman session.`,
                   );
                   continue;
                 }
@@ -992,6 +1109,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                         `🚫 [EMAIL BLOCKED] Action ${failure.actionId} failed the host ${failure.code.replaceAll('_', ' ')} check. It was NOT sent.`,
                       );
                     },
+                    deps.deliverSourceInput,
                   );
                 } catch (err) {
                   if (approvedAction?.actionId) {

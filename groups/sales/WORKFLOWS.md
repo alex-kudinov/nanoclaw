@@ -94,11 +94,18 @@ RECOMMENDED NEXT STEP: {what to do — e.g., "Send program info + upcoming cohor
 
 DRAFT RESPONSE TO LEAD:
 ---
+Subject: {exact email subject — MANDATORY. The host rejects the entire card before it becomes approvable when this line is missing.}
+
 {The actual email/message you would send to the lead. Warm, professional, specific to their stated need. Reference the matched program, include relevant details from KNOWLEDGE.md. Sign off as the Tandem Coaching team.}
 ---
 
 Waiting for approval. Reply "Approved" to send, or reply with changes.
 ```
+
+The host parses `Email:`, the fenced `Subject:`, and the fenced body before it
+posts a review card. If any field is missing, the card is quarantined and a
+mechanical rejection appears in this lead's work thread. Repost the same card
+with the missing field; never treat the rejected draft as approved or sent.
 
 ## Handling Feedback
 

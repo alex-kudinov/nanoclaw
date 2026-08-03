@@ -93,6 +93,10 @@ export interface NewMessage {
 export interface SendMessageOpts {
   fromGroup?: string;
   threadTs?: string;
+  // Host-owned queue work-unit root. Unlike threadTs, this value is resolved
+  // from the active container identity and never accepted from agent IPC.
+  // Slack may use it even when envelope and customer addresses differ.
+  hostWorkUnitThreadTs?: string;
   // Entity anchor (Slack only). All posts to a channel sharing the same
   // threadKey collapse into one thread: the first post becomes the root, later
   // posts reply under it. An explicit threadTs normally wins; the Slack host

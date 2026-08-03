@@ -168,6 +168,7 @@ describe('parseEmailBody', () => {
 describe('parseEmailHeaders', () => {
   const headers: gmail_v1.Schema$MessagePartHeader[] = [
     { name: 'From', value: '"John Smith" <john@example.com>' },
+    { name: 'Reply-To', value: 'john.reply@example.com' },
     { name: 'To', value: 'info@tandemcoach.co' },
     { name: 'Subject', value: 'Coaching Inquiry' },
     { name: 'Date', value: 'Mon, 1 Jan 2026 10:00:00 -0500' },
@@ -179,6 +180,7 @@ describe('parseEmailHeaders', () => {
     const parsed = parseEmailHeaders(headers);
     expect(parsed.from).toBe('"John Smith" <john@example.com>');
     expect(parsed.fromName).toBe('John Smith');
+    expect(parsed.replyTo).toBe('john.reply@example.com');
     expect(parsed.to).toBe('info@tandemcoach.co');
     expect(parsed.subject).toBe('Coaching Inquiry');
     expect(parsed.messageId).toBe('<abc123@mail.example.com>');
@@ -209,6 +211,7 @@ describe('formatEmailForAgent', () => {
   const headers: ParsedHeaders = {
     from: 'john@example.com',
     fromName: 'John',
+    replyTo: '',
     to: 'info@tandemcoach.co',
     subject: 'Inquiry',
     date: 'Mon, 1 Jan 2026',
@@ -226,6 +229,14 @@ describe('formatEmailForAgent', () => {
   it('includes Thread-ID when threadId is provided', () => {
     const result = formatEmailForAgent(headers, 'Hello', '18e4f2a3bcd');
     expect(result).toContain('Thread-ID: 18e4f2a3bcd');
+  });
+
+  it('includes Reply-To when a relay supplies one', () => {
+    const result = formatEmailForAgent(
+      { ...headers, replyTo: 'Customer <customer@example.com>' },
+      'Hello',
+    );
+    expect(result).toContain('Reply-To: Customer <customer@example.com>');
   });
 
   it('omits Thread-ID when threadId is not provided', () => {
