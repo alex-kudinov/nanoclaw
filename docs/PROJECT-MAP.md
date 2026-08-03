@@ -660,6 +660,14 @@ is now tracked and packaged as the canonical verbatim-send procedure; the
 obsolete ASCII subject rewrite and model-side post-send database write are
 removed.
 
+The Gmail tool's legacy `lead_id` field means canonical Party ID, not pipeline
+Entry ID. It is a model-supplied hint for tracking, never identity authority.
+The host-resolved Party from the exact recipient/thread wins when available;
+the recipient must still belong to that Party's known email set. If the host
+cannot resolve a Party, a valid hint is usable only after the same membership
+check. This preserves the fabricated-recipient guard while preventing Entry
+IDs such as `985` from blocking an exact approved action for Party `11152`.
+
 `npm run test:email-critical` is a serial Node-22 regression gate for approval
 parsing, SQLite transitions, routing, authorization, recipient/content guards,
 bigint party resolution, receipts, and replay behavior. `release:build` runs

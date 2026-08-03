@@ -8,6 +8,41 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260803-002 — Host-resolved Party identity outranks the model hint
+
+- Date: 2026-08-03T19:50Z
+- Owner/client: Codex
+- State: validating
+- Branch/base: `codex/nc-20260803-002-email-party-hint` @ `cf88525`
+- Change class: C5 — final recipient boundary and one held customer action
+- Incident: Colleen Entry 985 action
+  `7f0ee312-1b73-4f9a-bbda-4459ee351436` reached the Gmail execution boundary
+  but was blocked before Gmail. Mailman put pipeline Entry ID `985` into the
+  legacy `lead_id` field; the host resolved the approved recipient/thread to
+  Party `11152`, then incorrectly let the model hint override that authority
+  and reported `recipient_guard`. No Gmail receipt exists for the blocked action.
+- Fix: `verifyPartyRecipient()` now uses the host-resolved Party whenever
+  available and treats `lead_id` only as a legacy canonical-Party hint. A
+  mismatch is logged, not trusted. The known-party email membership check still
+  runs on the host-selected Party, and the exact approved recipient/content,
+  Gmail thread, CC, content, one-time action, and receipt boundaries are
+  unchanged. The runner tool descriptions and Mailman procedure now explicitly
+  prohibit substituting `Entry ID` into `lead_id`.
+- Verification: the exact `985` versus `11152` reply regression passes; focused
+  Gmail/IPC/delivery tests passed 3 files / 48 tests before the dedicated reply
+  regression was added, the final handler file passed 47 tests, the complete
+  email-critical gate passed 14 files / 419 tests, root typecheck/build passed,
+  and the independent runner build plus 3 files / 22 tests passed under exact
+  Node 22.23.2. The full suite reconciled to 145 files / 1,876 tests: 143 files
+  passed in the restricted environment and the two known child-process/
+  loopback-dependent files passed 43/43 with required permissions.
+  Documentation/source formatting, continuity, and diff whitespace checks pass
+  on the changed formatted surfaces; the clean-commit release gate remains.
+- Recovery boundary: the terminal blocked action will not be reopened. The
+  already-approved exact card must be reposted unchanged and freshly approved;
+  completion requires one Gmail-confirmed receipt and a one-message duplicate
+  check.
+
 ### NC-20260803-001 — Email sessions and Sales work items are exact
 
 - Date: 2026-08-03T14:45Z

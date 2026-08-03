@@ -193,7 +193,9 @@ Gmail IPC outbound email is C3. At that final host boundary:
 
 - the intended To address is normalized;
 - the host resolves the Party by email/thread;
-- a caller-supplied `leadId` is only a candidate and must agree with host data;
+- the legacy caller-supplied `leadId` field is only a canonical Party-ID hint;
+  a host-resolved Party from the recipient/thread is authoritative, and a
+  pipeline Entry ID accidentally supplied there cannot override or block it;
 - the To address must be one of the Party's known addresses;
 - every CC must pass the same Party allowlist;
 - global `GMAIL_TEST_RECIPIENT` routing is refused before an action-bound

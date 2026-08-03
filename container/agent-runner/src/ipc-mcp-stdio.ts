@@ -559,7 +559,12 @@ server.tool(
       .optional()
       .describe('Set to true when body contains HTML'),
     cc: z.string().optional().describe('CC recipients (comma-separated)'),
-    lead_id: z.number().optional().describe('Lead ID for open tracking'),
+    lead_id: z
+      .number()
+      .optional()
+      .describe(
+        'Canonical Party ID for open tracking. Never pass a pipeline Entry ID; omit when Party ID is unavailable.',
+      ),
     action_id: z
       .string()
       .uuid()
@@ -614,7 +619,12 @@ server.tool(
       .describe(
         'Gmail thread ID to send within an existing thread (keeps your custom subject while threading the email in the same conversation)',
       ),
-    lead_id: z.number().optional().describe('Lead ID for open tracking'),
+    lead_id: z
+      .number()
+      .optional()
+      .describe(
+        'Canonical Party ID for open tracking. Never pass a pipeline Entry ID; omit when Party ID is unavailable.',
+      ),
     action_id: z
       .string()
       .uuid()

@@ -49,19 +49,22 @@ approved body, verbatim
 
 `Thread-ID`, `Reply`, and `Follow-Up` are optional. Placeholder values such as
 `(none)` and `N/A` are invalid; omit an unavailable optional line entirely.
+`lead_id` in the Gmail tools means the canonical `Party ID`, never `Entry ID`.
+If the handoff has no `Party ID`, omit `lead_id`; the host resolves the Party
+from the exact recipient/thread. Never substitute `Entry ID` into `lead_id`.
 
 ## One deterministic action
 
 - Reply or follow-up with a real `Thread-ID`: call `gmail_reply` with
-  `thread_id`, the verbatim `body`, `markdown: true`, `action_id`, `lead_id`,
-  and `email_type` (`reply` or `follow-up`). Gmail derives the recipient and
-  subject from the assigned thread.
+  `thread_id`, the verbatim `body`, `markdown: true`, `action_id`, the optional
+  canonical-Party `lead_id`, and `email_type` (`reply` or `follow-up`). Gmail
+  derives the recipient and subject from the assigned thread.
 - First response with a real `Thread-ID`: call `gmail_send` with the verbatim
   `to`, `subject`, and `body`, plus `thread_id`, `markdown: true`, `action_id`,
-  `lead_id`, and `email_type: "initial"`.
+  the optional canonical-Party `lead_id`, and `email_type: "initial"`.
 - Send without a thread: call `gmail_send` with the verbatim `to`, `subject`,
-  and `body`, plus `markdown: true`, `action_id`, `lead_id`, and the correct
-  `email_type`.
+  and `body`, plus `markdown: true`, `action_id`, the optional canonical-Party
+  `lead_id`, and the correct `email_type`.
 
 The host independently verifies the immutable approved subject/body hash, the
 recipient and Party relationship, assigned Gmail resources, CC recipients,

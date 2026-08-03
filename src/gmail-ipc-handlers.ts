@@ -58,7 +58,8 @@ export interface GmailIpcPayload {
   maxResults?: number;
   // gmail_read
   messageId?: string;
-  // open tracking (gmail_send + gmail_reply)
+  // Canonical Party-ID hint for open tracking (gmail_send + gmail_reply).
+  // Legacy field name; never interpret a pipeline Entry ID as a Party ID.
   leadId?: number;
   // Host-stamped from durable approval state; container input is overwritten.
   actionId?: string;
@@ -180,8 +181,11 @@ interface RecipientVerification {
 
 /**
  * Establish the party on the host and prove that the intended recipient belongs
- * to it. A caller-supplied leadId is a hint only: it is checked against the
- * party's addresses and rejected if the host email lookup resolves elsewhere.
+ * to it. A caller-supplied leadId is a legacy Party-ID hint only. The host's
+ * recipient/thread resolution is authoritative whenever available; this keeps a
+ * pipeline Entry ID accidentally placed in `lead_id` from blocking an otherwise
+ * exact approved send. The final recipient must still be among the selected
+ * party's known addresses.
  */
 async function verifyPartyRecipient(
   to: string,
@@ -192,22 +196,24 @@ async function verifyPartyRecipient(
   // The claim arrives as JSON and may be a number or a numeric string; the
   // resolver is already normalized. Both sides must be compared as numbers.
   const claimed = toPartyId(claimedPartyId);
-  const partyId = claimed ?? resolvedPartyId;
+  if (claimed && resolvedPartyId && claimed !== resolvedPartyId) {
+    logger.warn(
+      {
+        claimedPartyId: claimed,
+        resolvedPartyId,
+        to: normalizeRecipient(to),
+        threadId,
+      },
+      'gmail-ipc: model party hint disagrees with host resolution; using host-resolved party',
+    );
+  }
+  const partyId = resolvedPartyId ?? claimed;
   if (!partyId) {
     return {
       ok: false,
       reason: `recipient ${normalizeRecipient(to)} has no host-resolved party`,
     };
   }
-  if (claimed && resolvedPartyId && claimed !== resolvedPartyId) {
-    return {
-      ok: false,
-      reason:
-        `claimed party ${claimedPartyId} does not match host-resolved party ` +
-        `${resolvedPartyId}`,
-    };
-  }
-
   const emails = await getPartyEmails(partyId);
   const check = checkRecipient(to, emails);
   if (!check.ok) return { ok: false, reason: check.reason };

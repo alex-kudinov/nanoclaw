@@ -510,21 +510,49 @@ describe('outbound email interaction logging', () => {
     );
   });
 
-  it('still rejects a leadId that genuinely disagrees with the host', async () => {
-    businessState.partyByEmailId = 11119;
+  it('uses the host-resolved Party when Mailman puts a pipeline Entry ID in leadId', async () => {
+    businessState.partyByEmailId = 11152;
     businessState.emails = new Set(['lead@external.com']);
 
     await handleGmailSend({
       type: 'gmail_send',
       groupFolder: 'mailman',
-      timestamp: '2026-07-30T22:41:00Z',
+      timestamp: '2026-08-03T19:39:12Z',
       to: 'lead@external.com',
-      subject: 'Executive Coaching',
+      subject: 'Re: Your Mentor Coaching Foundations questions, answered live',
       body: '<p>Hi.</p>',
-      leadId: 22222,
+      leadId: 985,
     });
 
-    expect(sendEmail).not.toHaveBeenCalled();
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(logOutboundEmailInteraction).toHaveBeenCalledWith(
+      expect.objectContaining({ partyId: 11152 }),
+    );
+  });
+
+  it('replies when Entry 985 is passed as leadId but the host resolves Party 11152', async () => {
+    businessState.partyByEmailId = 11152;
+    businessState.partyByThreadId = 11152;
+    businessState.emails = new Set(['sender@external.com']);
+
+    await handleGmailReply({
+      type: 'gmail_reply',
+      groupFolder: 'mailman',
+      timestamp: '2026-08-03T19:39:12Z',
+      threadId: '19fc907d76aa161a',
+      body: '<p>Approved reply.</p>',
+      leadId: 985,
+      emailType: 'reply',
+    });
+
+    expect(replyToThread).toHaveBeenCalledTimes(1);
+    expect(logOutboundEmailInteraction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        partyId: 11152,
+        threadId: 'thread-abc',
+        messageId: 'reply-msg-456',
+      }),
+    );
   });
 
   it('logs when leadId is absent but party lookup resolves by email', async () => {

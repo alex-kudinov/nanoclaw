@@ -106,6 +106,9 @@ Agents emit IPC files. Host dispatches by type:
   a shared group input file; these ephemeral results are deliberately excluded
   from chat-cursor dead-letter rollback because the chat database cannot
   reproduce them;
+- the Gmail tool's legacy `lead_id` is only a canonical Party-ID hint; host
+  recipient/thread resolution is authoritative, and final To/CC membership
+  checks remain mandatory;
 - Agent `result` → `channel.sendMessage()` → Slack/Gmail
 
 ---
