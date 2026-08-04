@@ -11,7 +11,8 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                           | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260804-001` | Every accepted Sales work item immediately receives an in-thread host acknowledgment before model generation                                  | Codex                              | `codex/nc-20260804-001-sales-generating-ack` @ `f513f94` | `ready_for_review`    | C3    | Enforce Sales `processingMessage` at startup; guarantee the dispatch acknowledgment is attempted before enqueue and remains retryable after a channel failure; align the Sales prompt and shared runtime documentation; inspect generation timing/model selection                                            | Commit the validated change, build/verify an immutable release, then activate it and verify live Sales configuration/health without creating a synthetic lead or email                                                                                                                                                              | 2026-08-04T12:42Z |
+| `NC-20260804-002` | Sales drafts use bounded relevant context and necessary database checks instead of rereading an oversized standard corpus on every handoff     | unassigned                         | pending                                                 | `planned`             | C3    | Profile Sales tool turns and canonical context dependencies; replace blanket 159k-character reads with measured targeted retrieval or a generated authoritative brief; preserve pricing, schedule, learned-correction, voice, approval, Entry ID, and threading safeguards                                      | Design a representative replay/eval set, establish current latency/quality baselines, then test a bounded retrieval plan before changing the Sales prompt or runtime                                                                                                                                                                | 2026-08-04T12:54Z |
+| `NC-20260804-001` | Every accepted Sales work item immediately receives an in-thread host acknowledgment before model generation                                  | Codex                              | `codex/nc-20260804-001-sales-generating-ack` @ `fa817a1` | `deployed_unverified` | C3    | Enforce Sales `processingMessage` at startup; guarantee the dispatch acknowledgment is attempted before enqueue and remains retryable after a channel failure; align the Sales prompt and shared runtime documentation; inspect generation timing/model selection                                            | Observe the next natural Sales handoff post exactly one in-thread `[PROCESSING] Generating response…` before its draft; no synthetic lead or email is needed                                                                                                                                                                      | 2026-08-04T12:54Z |
 | `NC-20260803-003` | A forwarded human inquiry keeps its source text and Gmail identity through classification, routing, and exact downstream recovery               | Codex + Claude validator           | `codex/nc-20260803-003-forwarded-email-recovery` @ `21d5430` | `complete`         | C5    | Stop actionable sender-wide auto-rules; treat forwarded subjects as human conversations; retain forwarded text; durably store early-routed inbound email; reset stale route state across classifier changes and atomically retry an unrouted same-version result; 156 unsafe live auto-rules disabled reversibly                                                                 | None                                                                                                                                                                                                                                                                                                                                                                   | 2026-08-04T01:16Z |
 | `NC-20260803-002` | A model-supplied Entry ID cannot override the host-resolved Party for an exact approved email                                                    | Codex                              | `codex/nc-20260803-002-email-party-hint` @ `69bbdf7`    | `complete`            | C5    | Colleen Entry 985 recipient-guard false positive fixed; immutable host/runner/prompt release deployed; unchanged approved card recovered once with Gmail-confirmed receipt                                                                                                                                                                                                    | None                                                                                                                                                                                                                                                                                                                                                                  | 2026-08-03T20:06Z |
 | `NC-20260803-001` | One approved Sales reply stays in one Slack work thread, reaches the exact Mailman session, and produces one correctly attributed Gmail result | Codex + Claude validator           | `codex/nc-20260803-001-email-session-threading` @ `5b76a2a` | `complete`          | C5    | Exact-session/card/thread repair deployed; runner/prompts/Sales config updated; Justin Entry 600 exact recipient/body Gmail-confirmed once                                                                                                                                                                                                                                | None                                                                                                                                                                                                                                                                                                                                                                    | 2026-08-03T16:10Z |
@@ -67,15 +68,19 @@ outside the current client conversation.
 - Owner/client: Codex.
 - Branch/base: `codex/nc-20260804-001-sales-generating-ack` from
   `f513f94f81fa3bbd2662cbf52e0d50c9fc3ab3ae`.
-- Status: ready for review/commit. No deployment or external Slack mutation has
-  occurred.
+- Status: deployed, awaiting the next natural Sales handoff for outcome
+  verification.
 - Observed incident path: the Mailman-to-Sales handoff entered Sales host
-  processing in under one second, no container-slot wait was observed, and the
-  review card appeared roughly 134 seconds after handoff. The silent interval
-  was the running agent generation path. The runner defaults to Sonnet unless
-  the persisted Sales `containerConfig.model` overrides it; live model/config
-  readback is pending because the production host did not answer the first SSH
-  attempts.
+  processing in 0.9 seconds, no container-slot wait was observed, and the review
+  card appeared roughly 134 seconds after handoff. Live registration and the
+  exact saved runner session confirm Sales used Sonnet, not Opus. That one draft
+  consumed 19 agent turns / 12,007 output tokens: ten full-file reads returned
+  159,125 characters, five PostgreSQL commands handled lead/pipeline state, one
+  ToolSearch resolved the messaging tool, and one send posted the card. The
+  tools were finished about 80 seconds before ToolSearch, isolating the largest
+  remaining delay to model processing over the oversized context. Follow-up
+  `NC-20260804-002` owns measured context reduction; it must not trade away
+  pricing, scheduling, learned-correction, approval, or recipient safeguards.
 - Root cause: `groups/sales/CLAUDE.md` said the host supplied a mechanical
   processing acknowledgment, and host dispatch already supported an opt-in
   `processingMessage`, but the Sales startup invariant enforced only
@@ -91,11 +96,43 @@ outside the current client conversation.
   email-critical tests pass 14 files / 443 tests, the complete suite passes 145
   files / 1,904 tests with its required loopback/subprocess permissions,
   typecheck and production build are clean, formatting/diff whitespace pass,
-  and documentation continuity passes. Release build/verify, production
-  activation, health/config readback, and the next natural Sales handoff remain.
+  and documentation continuity passes. The clean immutable build re-ran and
+  passed its 14-file / 443-test email gate; bundle verification reports 520
+  files. Production health verifies launchd PID 38279 on Node 22.23.2, connected
+  Gmail/Slack, an empty wait queue, exact release/code-root agreement, and the
+  exact reviewed Sales prompt hash. The persisted Sales row now carries
+  `processingMessage: "Generating response…"`, `threadPerMessage: true`, and
+  retains its other settings. The next natural Sales handoff remains the only
+  missing business-path observation.
+- Release/deployment: commit
+  `fa817a179448838a7489d4398992ce3cd9c929fb`, source tree
+  `830e8d9785c6c8dab9a47a74e23acdc3c105f98d`, artifact digest
+  `4e620674603c4d8dabe44f3b9c7b2224cd0e7ca6d962acab1e3848adad8f285e`,
+  archive digest
+  `125f1fc835c9cd067409a46be27d381bc04db747e5f32c7094a6a6f641840d65`.
+  Activated on the production Mac Mini at 2026-08-04T12:51Z; rollback plist is
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-21d54309a42a-2026-08-04T12-51-22-058Z`.
 - Safety boundary: do not create a synthetic lead, customer send, or approval
   to prove the receipt. Deployment may verify code/config/health; natural
   in-thread outcome evidence remains distinct.
+
+### NC-20260804-002
+
+- Trigger: the latency audit under NC-20260804-001 showed that the representative
+  simple Sales draft was not queued and was not running Opus. It used Sonnet for
+  19 turns and loaded 159,125 characters through ten reads before producing the
+  card. The three largest inputs were `KNOWLEDGE.md` (55,713 returned
+  characters), `LEARNED.md` (44,659), and `WORKFLOWS.md` (30,822).
+- Boundary: do not simply remove required reads or switch models. Establish a
+  representative set spanning pricing, scheduling, returning leads, forwarded
+  inquiries, missing Entry IDs, revisions, and approvals; compare exact draft
+  facts and required database/host actions before and after any retrieval change.
+- Candidate direction: bounded heading/keyword retrieval or a reproducibly
+  generated Sales briefing from canonical knowledge and learned corrections,
+  with provenance and drift checks. Redundant Claude auto-memory reads should be
+  measured separately from canonical file access.
+- Deployment: none. This task records the verified performance debt; it does not
+  alter Sales drafting behavior in NC-20260804-001.
 
 ### NC-20260803-003
 
