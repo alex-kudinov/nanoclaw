@@ -215,13 +215,16 @@ export function usesThreadPerMessage(
   return group?.containerConfig?.threadPerMessage === true;
 }
 
-/** Sales work-item isolation is a persisted host invariant, not prompt policy. */
-export function withSalesThreadPerMessage(
+export const SALES_PROCESSING_MESSAGE = 'Generating response…';
+
+/** Sales work isolation and visible receipt are host invariants, not prompt policy. */
+export function withRequiredSalesConfig(
   group: RegisteredGroup,
 ): RegisteredGroup {
   if (
     group.folder !== 'sales' ||
-    group.containerConfig?.threadPerMessage === true
+    (group.containerConfig?.threadPerMessage === true &&
+      group.containerConfig?.processingMessage === SALES_PROCESSING_MESSAGE)
   ) {
     return group;
   }
@@ -230,6 +233,7 @@ export function withSalesThreadPerMessage(
     containerConfig: {
       ...group.containerConfig,
       threadPerMessage: true,
+      processingMessage: SALES_PROCESSING_MESSAGE,
     },
   };
 }
@@ -248,6 +252,39 @@ let lastAgentTimestamp: Record<string, string> = {};
 // Cleared when the container finally spawns (processGroupMessages).
 const ackedSpawns = new Set<string>();
 let messageLoopRunning = false;
+
+/**
+ * Post the host-owned receipt before a work item enters the container queue.
+ * The key is recorded only after channel delivery succeeds; a failed dispatch
+ * therefore remains eligible for the spawn-path fallback instead of becoming a
+ * silent false acknowledgment.
+ */
+export async function postDispatchProcessingAck(
+  channel: Channel,
+  group: RegisteredGroup,
+  chatJid: string,
+  threadTs: string | undefined,
+  compositeKey: string,
+  acknowledged: Set<string> = ackedSpawns,
+): Promise<boolean> {
+  const processingMessage = group.containerConfig?.processingMessage;
+  if (!processingMessage || acknowledged.has(compositeKey)) return false;
+
+  try {
+    await channel.sendMessage(chatJid, `[PROCESSING] ${processingMessage}`, {
+      fromGroup: group.folder,
+      threadTs,
+    });
+    acknowledged.add(compositeKey);
+    return true;
+  } catch (err) {
+    logger.error(
+      { err, group: group.folder },
+      'dispatch processing-ack failed',
+    );
+    return false;
+  }
+}
 
 const channels: Channel[] = [];
 const queue = new GroupQueue();
@@ -280,7 +317,7 @@ function loadState(): void {
 
   sessions = getAllSessions();
   registeredGroups = getAllRegisteredGroups();
-  registeredGroups = migrateSalesThreadPerMessageConfig(registeredGroups);
+  registeredGroups = migrateRequiredSalesConfig(registeredGroups);
   migrateSalesThreadWorkUnitCursors();
   logger.info(
     { groupCount: Object.keys(registeredGroups).length },
@@ -288,28 +325,31 @@ function loadState(): void {
   );
 }
 
-export function migrateSalesThreadPerMessageConfig(
+export function migrateRequiredSalesConfig(
   groups: Record<string, RegisteredGroup>,
   persist: typeof setRegisteredGroup = setRegisteredGroup,
   reload: typeof getAllRegisteredGroups = getAllRegisteredGroups,
 ): Record<string, RegisteredGroup> {
   for (const [chatJid, group] of Object.entries(groups)) {
-    const migrated = withSalesThreadPerMessage(group);
+    const migrated = withRequiredSalesConfig(group);
     if (migrated !== group) {
       persist(chatJid, migrated);
       logger.warn(
         { chatJid, group: group.name },
-        'Migrated Sales group to required thread-per-message work units',
+        'Migrated Sales group to required work isolation and processing receipt',
       );
     }
   }
   const persisted = reload();
   const invalid = Object.entries(persisted).find(
-    ([, group]) => group.folder === 'sales' && !usesThreadPerMessage(group),
+    ([, group]) =>
+      group.folder === 'sales' &&
+      (!usesThreadPerMessage(group) ||
+        group.containerConfig?.processingMessage !== SALES_PROCESSING_MESSAGE),
   );
   if (invalid) {
     throw new Error(
-      `Sales group ${invalid[0]} is missing required threadPerMessage isolation`,
+      `Sales group ${invalid[0]} is missing required host container configuration`,
     );
   }
   return persisted;
@@ -1006,22 +1046,16 @@ async function startMessageLoop(): Promise<void> {
           // path — so it lands instantly even when every container slot is busy
           // (posting a Slack message needs no slot). Guarded by ackedSpawns so a
           // submission that waits across loop ticks for a slot only acks once;
-          // cleared when the container spawns. Fire-and-forget to keep the loop fast.
-          const pm = group.containerConfig?.processingMessage;
-          if (pm && !ackedSpawns.has(compositeKey)) {
-            ackedSpawns.add(compositeKey);
-            channel
-              .sendMessage(chatJid, `[PROCESSING] ${pm}`, {
-                fromGroup: group.folder,
-                threadTs,
-              })
-              .catch((err) =>
-                logger.error(
-                  { err, group: group.folder },
-                  'dispatch processing-ack failed',
-                ),
-              );
-          }
+          // cleared when the container spawns. Await channel delivery so the
+          // receipt is ordered before generation; on failure the spawn fallback
+          // gets another attempt because no acknowledgment marker was recorded.
+          await postDispatchProcessingAck(
+            channel,
+            group,
+            chatJid,
+            threadTs,
+            compositeKey,
+          );
 
           // Enqueue for a new container (thread-aware). The triggering
           // message's text becomes the status-line snippet ("what is this

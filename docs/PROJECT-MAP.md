@@ -743,10 +743,14 @@ exited target produces a visible hold and is never replaced by a sibling
 session, and an exit sweep warns if it removes an unacknowledged result. Host
 email handoffs include a bare `Lead Email:` field in addition to
 the display-name envelope so the actual customer anchors the Slack work item.
-Sales `threadPerMessage` is a persisted startup migration with a fail-closed
-assertion. A bounded cursor migration seeds only roots already consumed by the
-legacy `||root` cursor, preventing activation from replaying the recovery
-window; existing newer per-root cursors are never rolled back.
+Sales `threadPerMessage` and its host-owned `[PROCESSING] Generating response…`
+receipt are persisted startup requirements with a fail-closed assertion. The
+host awaits that in-thread receipt before queueing a cold Sales container,
+records duplicate suppression only after successful channel delivery, and
+leaves a failed first attempt eligible for the spawn-path fallback. A bounded
+cursor migration seeds only roots already consumed by the legacy `||root`
+cursor, preventing activation from replaying the recovery window; existing
+newer per-root cursors are never rolled back.
 
 Host-owned work-root hints remain conditional on the root and outgoing message
 deriving the same lead identity. A mismatch opens no cross-lead thread and does

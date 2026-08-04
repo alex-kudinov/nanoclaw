@@ -31,8 +31,8 @@ export interface ContainerConfig {
   additionalMounts?: AdditionalMount[];
   timeout?: number; // Default: 300000 (5 minutes)
   spawnTimeout?: number; // Default: 90000 (90 seconds) — time for first output marker
-  // When set, the host posts "[PROCESSING] <msg>" to the channel before the
-  // container cold-starts, so the agent need not emit a First-Response ack.
+  // When set, the host posts "[PROCESSING] <msg>" to the work thread before
+  // enqueueing a cold container, so the agent need not emit a First-Response ack.
   processingMessage?: string;
   // When true, each root (non-threaded) post becomes its own thread, keyed by
   // its own ts: a dedicated container + reply thread per post. Keeps concurrent

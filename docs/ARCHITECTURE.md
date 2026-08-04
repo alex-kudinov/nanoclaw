@@ -65,6 +65,8 @@ Check trigger requirement → if needed and missing, skip (accumulate)
     ↓
 Check circuit breaker → if open, defer
     ↓
+Post configured host `[PROCESSING]` receipt in the work thread
+    ↓
 GroupQueue.enqueueMessageCheck(chatJid, threadTs)
     ↓
 processGroupMessages() → getMessagesSince() → formatMessages()
@@ -73,6 +75,14 @@ runContainerAgent(group, prompt) → container stdin JSON
     ↓
 Agent output → channel.sendMessage(chatJid, text)
 ```
+
+The processing receipt is attempted and awaited before queue insertion. Its
+duplicate marker is recorded only after channel delivery succeeds; if that
+attempt fails, the spawn path retries instead of treating an error as a visible
+acknowledgment. Sales startup configuration fail-closes unless every Sales
+group uses per-message work threads and the exact `Generating response…`
+receipt. This makes a newly accepted handoff visible while model generation is
+still running without spending model tokens on status narration.
 
 ### Gmail Classification Bypass (Pre-LLM Fast Path)
 

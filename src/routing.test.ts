@@ -6,11 +6,13 @@ import {
   _setRegisteredGroups,
   threadKeyFor,
   usesThreadPerMessage,
-  withSalesThreadPerMessage,
-  migrateSalesThreadPerMessageConfig,
+  SALES_PROCESSING_MESSAGE,
+  withRequiredSalesConfig,
+  migrateRequiredSalesConfig,
+  postDispatchProcessingAck,
   seedSalesThreadWorkUnitCursors,
 } from './index.js';
-import type { RegisteredGroup } from './types.js';
+import type { Channel, RegisteredGroup } from './types.js';
 
 beforeEach(() => {
   _initTestDatabase();
@@ -62,12 +64,32 @@ describe('Sales work-unit routing', () => {
       trigger: '@Gru',
       added_at: '2026-08-03T00:00:00Z',
     };
-    const migrated = withSalesThreadPerMessage(sales);
+    const migrated = withRequiredSalesConfig(sales);
     expect(usesThreadPerMessage(migrated)).toBe(true);
+    expect(migrated.containerConfig?.processingMessage).toBe(
+      SALES_PROCESSING_MESSAGE,
+    );
     expect(threadKeyFor(rootMessage, migrated)).toBe(rootMessage.id);
   });
 
-  it('fails closed when the persisted Sales config does not retain thread isolation', () => {
+  it('preserves Sales runtime overrides while adding required host behavior', () => {
+    const sales: RegisteredGroup = {
+      name: 'Sales',
+      folder: 'sales',
+      trigger: '@Gru',
+      added_at: '2026-08-03T00:00:00Z',
+      containerConfig: { model: 'opus', timeout: 240_000 },
+    };
+
+    expect(withRequiredSalesConfig(sales).containerConfig).toEqual({
+      model: 'opus',
+      timeout: 240_000,
+      threadPerMessage: true,
+      processingMessage: SALES_PROCESSING_MESSAGE,
+    });
+  });
+
+  it('fails closed when persisted Sales config does not retain required behavior', () => {
     const sales: RegisteredGroup = {
       name: 'Sales',
       folder: 'sales',
@@ -76,18 +98,36 @@ describe('Sales work-unit routing', () => {
     };
     const persist = vi.fn();
     expect(() =>
-      migrateSalesThreadPerMessageConfig(
-        { 'slack:SALES': sales },
-        persist,
-        () => ({ 'slack:SALES': sales }),
-      ),
-    ).toThrow(/missing required threadPerMessage isolation/);
+      migrateRequiredSalesConfig({ 'slack:SALES': sales }, persist, () => ({
+        'slack:SALES': sales,
+      })),
+    ).toThrow(/missing required host container configuration/);
     expect(persist).toHaveBeenCalledWith(
       'slack:SALES',
       expect.objectContaining({
-        containerConfig: expect.objectContaining({ threadPerMessage: true }),
+        containerConfig: expect.objectContaining({
+          threadPerMessage: true,
+          processingMessage: SALES_PROCESSING_MESSAGE,
+        }),
       }),
     );
+  });
+
+  it('does not rewrite a Sales config that already satisfies the invariant', () => {
+    const sales = withRequiredSalesConfig({
+      name: 'Sales',
+      folder: 'sales',
+      trigger: '@Gru',
+      added_at: '2026-08-03T00:00:00Z',
+    });
+    const persist = vi.fn();
+
+    expect(
+      migrateRequiredSalesConfig({ 'slack:SALES': sales }, persist, () => ({
+        'slack:SALES': sales,
+      })),
+    ).toEqual({ 'slack:SALES': sales });
+    expect(persist).not.toHaveBeenCalled();
   });
 
   it('maps a later human reply to the same Sales work-unit key', () => {
@@ -154,6 +194,85 @@ describe('Sales work-unit routing', () => {
     };
     expect(usesThreadPerMessage(chief)).toBe(false);
     expect(threadKeyFor(rootMessage, chief)).toBe('root');
+  });
+});
+
+describe('host processing receipt', () => {
+  const sales: RegisteredGroup = {
+    name: 'Sales',
+    folder: 'sales',
+    trigger: '@Gru',
+    added_at: '2026-08-04T00:00:00Z',
+    containerConfig: {
+      threadPerMessage: true,
+      processingMessage: SALES_PROCESSING_MESSAGE,
+    },
+  };
+
+  function channelWith(sendMessage: Channel['sendMessage']): Channel {
+    return {
+      name: 'test',
+      connect: vi.fn(),
+      sendMessage,
+      isConnected: () => true,
+      ownsJid: () => true,
+      disconnect: vi.fn(),
+    };
+  }
+
+  it('posts and records one in-thread receipt before generation', async () => {
+    const sendMessage = vi.fn().mockResolvedValue(undefined);
+    const acknowledged = new Set<string>();
+    const key = 'slack:SALES||1785805958.497';
+
+    await expect(
+      postDispatchProcessingAck(
+        channelWith(sendMessage),
+        sales,
+        'slack:SALES',
+        '1785805958.497',
+        key,
+        acknowledged,
+      ),
+    ).resolves.toBe(true);
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      '[PROCESSING] Generating response…',
+      { fromGroup: 'sales', threadTs: '1785805958.497' },
+    );
+    expect(acknowledged.has(key)).toBe(true);
+
+    await expect(
+      postDispatchProcessingAck(
+        channelWith(sendMessage),
+        sales,
+        'slack:SALES',
+        '1785805958.497',
+        key,
+        acknowledged,
+      ),
+    ).resolves.toBe(false);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves a failed receipt eligible for the spawn-path retry', async () => {
+    const acknowledged = new Set<string>();
+    const key = 'slack:SALES||1785805958.497';
+    const sendMessage = vi
+      .fn()
+      .mockRejectedValue(new Error('Slack unavailable'));
+
+    await expect(
+      postDispatchProcessingAck(
+        channelWith(sendMessage),
+        sales,
+        'slack:SALES',
+        '1785805958.497',
+        key,
+        acknowledged,
+      ),
+    ).resolves.toBe(false);
+    expect(acknowledged.has(key)).toBe(false);
   });
 });
 
