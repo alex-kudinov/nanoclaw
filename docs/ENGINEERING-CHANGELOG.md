@@ -12,9 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-03T23:26Z
 - Owner/client: Codex + Claude validator
-- State: validating
-- Commit/release: uncommitted on
-  `codex/nc-20260803-003-forwarded-email-recovery` from `0b6ccf1`
+- State: complete
+- Commit/release: `ec0bf4c64aedddac9a4defbc31ceaf9470d171e5` followed by
+  route-state repair `21d54309a42a34b42f5a980606a9406c402485ec` on
+  `codex/nc-20260803-003-forwarded-email-recovery`
 - Change class: C5 — inbound customer email classification, persistence,
   cross-group Gmail authority, live classification-rule remediation, and exact
   inbound replay
@@ -59,10 +60,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   driven by the stored label; completed, recent, auto-direct
   `rules-runner-v1`, and concurrent retries cannot claim the Mailman route.
   Claude R6 found the missing rules-runner exclusion; Claude R7 returned
-  `CONVERGED`. Final immutable build/deployment and the exact route retry remain
-  pending. On the final R7 tree, pinned Node 22.23.2 typecheck passes, the
-  handler file passes 25/25 tests, the complete suite passes 145 files / 1,900
-  tests, and documentation continuity plus diff whitespace pass.
+  `CONVERGED`. The final immutable build/deployment and exact route retry then
+  completed as recorded below. On the final R7 tree, pinned Node 22.23.2
+  typecheck passes, the handler file passes 25/25 tests, the complete suite
+  passes 145 files / 1,900 tests, and documentation continuity plus diff
+  whitespace pass.
+- Final release: clean archive `nanoclaw-21d54309a42a.tar.gz` independently
+  verified commit `21d54309a42a34b42f5a980606a9406c402485ec`, source tree
+  `666ecf2ffddcace71eaeae81d90264370d3d1671`, 520 artifact files, artifact
+  SHA-256 `bf6b25bdeb923158581df3fd90cfb1014ae0021071ddfc3d74043d86bbc50340`,
+  and archive SHA-256
+  `6f782136e1d02ab5167f82bf8ed95503a1f22682a22e03bfb758ace728fc7669`.
+  The serial email-critical release gate passed 14 files / 439 tests.
+- Deployment/outcome: the exact-three-field activator moved production from
+  `ec0bf4c64aed` to `21d54309a42a`; rollback plist is
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-ec0bf4c64aed-2026-08-04T01-08-34-604Z`.
+  Live health converged on PID/listener `71320`, Node 22.23.2, matching immutable
+  code root and commit, connected Gmail/Slack, and an idle queue before replay.
+  The exact recovered message then routed once to Sales and produced one
+  validated `[SALES REVIEW]` card in its own Slack thread. Structural ledger
+  checks found one card/approval marker and zero email send events since the
+  recovery; pending-send state remained two historical blocked and five
+  confirmed rows. The customer reply was not sent and remains approval-bound.
 
 ### NC-20260803-002 — Host-resolved Party identity outranks the model hint
 

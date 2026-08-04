@@ -28,12 +28,15 @@ The exact production replay then exposed a stale `routed_at` transition across
 classifier versions. R6 required exclusion of the rules-runner direct route;
 R7 converged after the retry became one atomic, age-gated claim using the
 stored label and explicitly excluding `rules-runner-v1`.
-Open defects: none; the R7 release and one exact same-version route retry remain
-operational gates
+Open defects: none; R7 release activation and the exact same-version route
+retry are complete
 Owner decisions: none; inbound replay must not send customer email
 Last independent checks: Node 22.23.2 typecheck clean, the final handler file
 passes 25/25 tests, the full suite passes 145 files / 1,900 tests, and
 documentation continuity plus diff whitespace pass on the R7 tree
+Operational outcome: release `21d54309a42a` is live and health-verified. The
+exact replay produced one Sales review card and zero send events; operator
+approval remains required for the customer email.
 Elapsed/cost notes: R1 Opus session reported $5.004783, 64 turns, 39,250 output
 tokens; two exact-session resume attempts produced no inference before being
 stopped. R2 Opus reported $3.502321, 42 turns, and 25,689 output tokens before
