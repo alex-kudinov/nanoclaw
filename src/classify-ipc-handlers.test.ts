@@ -363,11 +363,102 @@ describe('handleClassifyLabelWrite', () => {
     expect(body.text).toMatch(/CLASSIFY-REVIEW/);
   });
 
-  it('short-circuits when conflict returns rowCount 0 (idempotent)', async () => {
-    mockQuery.mockResolvedValueOnce({ rowCount: 0, rows: [] });
+  it('short-circuits a same-version classification that was already routed', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] });
     await handleClassifyLabelWrite(basePayload());
-    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery.mock.calls[1][0]).toMatch(/routed_at IS NULL/);
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('retries an old same-version classification whose route never completed', async () => {
+    _initTestDatabase();
+    storeChatMetadata(
+      'gmail:test@example.com',
+      '2026-08-03T13:42:00.000Z',
+      'Gmail',
+      'gmail',
+      false,
+    );
+    storeMessageDirect({
+      id: 'msg-1',
+      chat_jid: 'gmail:test@example.com',
+      sender: 'Sender <sender@example.com>',
+      sender_name: 'Sender',
+      content:
+        'From: Sender <sender@example.com>\nSubject: Receipt\nThread-ID: thr-1\nMessage-ID: msg-1\n\nBody',
+      timestamp: '2026-08-03T13:42:00.000Z',
+      is_from_me: false,
+      is_bot_message: false,
+      thread_ts: 'thr-1',
+    });
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ label: 'MrGru/client/active' }],
+      })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: false }],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] });
+
+    await handleClassifyLabelWrite(basePayload());
+
+    expect(mockQuery).toHaveBeenCalledTimes(4);
+    expect(mockQuery.mock.calls[3][0]).toMatch(/SET routed_at = NOW/);
+    expect(mockReplace).not.toHaveBeenCalled();
+    const mailmanDir = path.join(tmpDir, 'ipc', 'mailman', 'messages');
+    const payload = JSON.parse(
+      fs.readFileSync(
+        path.join(mailmanDir, fs.readdirSync(mailmanDir)[0]),
+        'utf8',
+      ),
+    );
+    expect(payload.text).toContain('[CONTEXT: MrGru/client/active');
+  });
+
+  it('does not race a recent same-version classification still routing', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] });
+
+    await handleClassifyLabelWrite(basePayload());
+
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery.mock.calls[1][0]).toMatch(/INTERVAL '30 seconds'/);
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('never retries rules-runner-v1 because Gmail owns its direct route', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] });
+
+    await handleClassifyLabelWrite(
+      basePayload({ classifier_version: 'rules-runner-v1' }),
+    );
+
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery.mock.calls[1][0]).toMatch(/\$2 <> 'rules-runner-v1'/);
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(tmpDir, 'ipc', 'mailman'))).toBe(false);
+  });
+
+  it('clears routed_at when a new classifier version replaces an old result', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: true }],
+      });
+
+    await handleClassifyLabelWrite(basePayload());
+
+    expect(mockQuery.mock.calls[0][0]).toMatch(/routed_at = NULL/);
   });
 
   it('calls hive bridge + updates hive_synced when taxonomy has share target', async () => {

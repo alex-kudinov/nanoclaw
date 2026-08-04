@@ -327,7 +327,8 @@ export async function handleClassifyLabelWrite(
        classifier_version = EXCLUDED.classifier_version,
        reasoning = EXCLUDED.reasoning,
        confidence = EXCLUDED.confidence,
-       classified_at = NOW()
+       classified_at = NOW(),
+       routed_at = NULL
      WHERE email_classifications.classifier_version <> EXCLUDED.classifier_version
      RETURNING id`,
     [
@@ -343,6 +344,40 @@ export async function handleClassifyLabelWrite(
   );
 
   if (insert.rowCount === 0) {
+    // A same-version retry normally means an idempotent duplicate. If the
+    // prior attempt never completed routing, however, allow a later replay to
+    // finish the host handoff. Atomically refreshing classified_at claims one
+    // retry per 30-second window, avoiding a race with the first handler or a
+    // concurrent replay. Rules-runner already routes directly in gmail.ts and
+    // must never enter this Mailman retry path.
+    const retryClaim = await query<{ label: string }>(
+      `UPDATE email_classifications
+          SET classified_at = NOW()
+        WHERE gmail_message_id = $1
+          AND classifier_version = $2
+          AND $2 <> 'rules-runner-v1'
+          AND routed_at IS NULL
+          AND classified_at < NOW() - INTERVAL '30 seconds'
+      RETURNING label`,
+      [data.gmail_message_id, data.classifier_version],
+    );
+    const storedLabel = retryClaim.rows[0]?.label;
+    if (storedLabel) {
+      // The conflict did not update the row, so its stored label remains the
+      // authority for this retry even if a replaying model supplies another.
+      const retryData = { ...data, label: storedLabel };
+      const taxonomy = await loadTaxonomyRow(storedLabel);
+      if (!taxonomy?.auto_archive) {
+        const routed = await routeAfterClassify(retryData);
+        if (routed) {
+          await markClassificationRouted(
+            data.gmail_message_id,
+            data.classifier_version,
+          );
+        }
+      }
+      return;
+    }
     logger.debug(
       {
         gmail_message_id: data.gmail_message_id,

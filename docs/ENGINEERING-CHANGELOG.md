@@ -47,8 +47,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   skills-engine tests require. The initial restricted run's 43 failures were
   reproduced as 35 `listen EPERM` cases and eight child-process PATH cases,
   then all 43 passed under the required conditions. Independent Claude review
-  converged in R5; immutable build, deployment, and exact inbound replay remain
-  pending.
+  converged in R5. Immutable release `ec0bf4c64aed` was built and activated;
+  launchd, listener, release/code-root agreement, Gmail, and Slack were healthy.
+  The exact failed Gmail message was replayed once and the deployed parser
+  recovered the authenticated external sender plus 995-character body.
+- Replay finding and repair: Mailman correctly reclassified the replay as
+  `MrGru/lead/inquiry` at confidence 0.95, but the row retained `routed_at` from
+  the earlier bad classifier version and suppressed the corrected host route.
+  No customer email was sent. The follow-up resets `routed_at` when classifier
+  versions change and uses one 30-second, same-version conditional retry claim
+  driven by the stored label; completed, recent, auto-direct
+  `rules-runner-v1`, and concurrent retries cannot claim the Mailman route.
+  Claude R6 found the missing rules-runner exclusion; Claude R7 returned
+  `CONVERGED`. Final immutable build/deployment and the exact route retry remain
+  pending. On the final R7 tree, pinned Node 22.23.2 typecheck passes, the
+  handler file passes 25/25 tests, the complete suite passes 145 files / 1,900
+  tests, and documentation continuity plus diff whitespace pass.
 
 ### NC-20260803-002 — Host-resolved Party identity outranks the model hint
 
