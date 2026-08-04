@@ -107,6 +107,28 @@ describe('host-router', () => {
     expect(payload.text).toContain('[SOURCE: email]');
   });
 
+  it('routes an internal forward under the external lead and never exposes its source thread as a reply thread', async () => {
+    await routeClassifiedEmail(
+      makeParams({
+        label: 'lead/inquiry',
+        senderEmail: 'prospect@example.com',
+        senderName: 'External Prospect',
+        forwardedByEmail: 'cherie@tandemcoach.co',
+        forwardedByName: 'Cherie Silas',
+        threadId: 'internal-forward-thread',
+      }),
+    );
+    const text: string = mockWrite.mock.calls[0][1].text;
+    expect(text).toContain('[SOURCE: forwarded-email]');
+    expect(text).toContain('[FORWARDED-INQUIRY: send-new-email]');
+    expect(text).toContain('Lead Email: prospect@example.com');
+    expect(text).toContain(
+      'Forwarded-By: Cherie Silas <cherie@tandemcoach.co>',
+    );
+    expect(text).toContain('Source-Thread-ID: internal-forward-thread');
+    expect(text).not.toMatch(/^Thread-ID:/m);
+  });
+
   // ══════════════════════════════════════════════════════════════════
   // 2. Lead routing: match → sales handoff with business_v2 fields
   // ══════════════════════════════════════════════════════════════════
@@ -128,6 +150,27 @@ describe('host-router', () => {
     // The INBOUND message's thread (params.threadId='thr-1') wins over the DB's
     // most-recent-outbound thread (match.thread_id='18f1a2b3c4d5e6f7').
     expect(text).toContain('Thread-ID: thr-1');
+  });
+
+  it('sends a matched forwarded lead directly to sales as a new-email work item', async () => {
+    mockMatch.mockResolvedValue(proposalMatch);
+    await routeClassifiedEmail(
+      makeParams({
+        label: 'lead/inquiry',
+        senderEmail: 'alice@corp.com',
+        senderName: 'Alice',
+        forwardedByEmail: 'cherie@tandemcoach.co',
+        forwardedByName: 'Cherie Silas',
+        threadId: 'internal-forward-thread',
+      }),
+    );
+    const text: string = mockWrite.mock.calls[0][1].text;
+    expect(text).toContain('[HANDOFF: mailman→sales]');
+    expect(text).toContain('[SOURCE: forwarded-email]');
+    expect(text).toContain('[FORWARDED-INQUIRY: send-new-email]');
+    expect(text).toContain('Source-Thread-ID: internal-forward-thread');
+    expect(text).not.toMatch(/^Thread-ID:/m);
+    expect(deriveLeadThreadKey(text)).toBe('lead:alice@corp.com');
   });
 
   it('replies on the INBOUND thread, not the stale most-recent-outbound thread (Charlotte Dover regression, 2026-07-22)', async () => {
@@ -505,6 +548,26 @@ describe('host-router', () => {
     expect(mockWrite.mock.calls[0][1].text).toContain(
       '[HANDOFF: mailman→chief]',
     );
+    expect(mockWrite.mock.calls[0][1].text).toContain('Thread-ID: thr-1');
+    expect(mockWrite.mock.calls[0][1].text).toContain('Message-ID: msg-1');
+    expect(mockWrite.mock.calls[0][1].text).toContain('Body-Complete: yes');
+    expect(mockWrite.mock.calls[0][1].text).toContain('Body:\nHello world');
+    expect(mockWrite.mock.calls[0][1].text).toContain(
+      'call gmail_read once with the exact Message-ID above; do not search Gmail',
+    );
+    expect(mockGrant).toHaveBeenCalledWith('chief', {
+      messageId: 'msg-1',
+    });
+  });
+
+  it('keeps a long chief escalation in one Slack-sized handoff', async () => {
+    await routeClassifiedEmail(
+      makeParams({ label: 'other', body: 'x'.repeat(10_000) }),
+    );
+    const text: string = mockWrite.mock.calls[0][1].text;
+    expect(text).toContain('Body-Complete: no');
+    expect(text).toContain('[truncated]');
+    expect(text.length).toBeLessThan(4_000);
   });
 
   // ══════════════════════════════════════════════════════════════════

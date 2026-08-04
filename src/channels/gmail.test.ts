@@ -35,11 +35,32 @@ vi.mock('../host-router.js', () => ({
     .mockResolvedValue({ routed: false, action: 'unhandled' }),
 }));
 
+vi.mock('../classify-ipc-handlers.js', () => ({
+  handleClassifyLabelWrite: vi.fn().mockResolvedValue(undefined),
+  isAutoArchiveLabel: vi.fn().mockResolvedValue(false),
+  markClassificationRouted: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../classify-rules-runner.js', () => ({
+  extractSenderEmail: vi.fn((value: string | null) => {
+    if (!value) return null;
+    const match = value.match(/<([^>]+)>/);
+    return (match?.[1] || value).trim().toLowerCase();
+  }),
+  matchRule: vi.fn().mockResolvedValue(null),
+  recordRuleHit: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../gmail-ipc-policy.js', () => ({
+  grantHostGmailResources: vi.fn(),
+}));
+
 // Mock db
 vi.mock('../db.js', () => ({
   getRouterState: vi.fn().mockReturnValue(String(Date.now())),
   setRouterState: vi.fn(),
   getMessageIdsForJid: vi.fn().mockReturnValue([]),
+  storeMessageDirect: vi.fn(),
 }));
 
 // Mock gmail-auth
@@ -69,8 +90,10 @@ vi.mock('../gmail-parser.js', () => ({
   parseEmailHeaders: vi.fn().mockReturnValue({
     from: 'sender@example.com',
     fromName: 'Sender',
+    replyTo: '',
     subject: 'Test',
   }),
+  resolveForwardedIdentity: vi.fn().mockReturnValue(null),
 }));
 
 // Mock registry
@@ -80,6 +103,27 @@ vi.mock('./registry.js', () => ({
 
 import { GmailChannel, isOwnOutbound } from './gmail.js';
 import { logger } from '../logger.js';
+import { routeClassifiedEmail } from '../host-router.js';
+import { matchRule } from '../classify-rules-runner.js';
+import { storeMessageDirect } from '../db.js';
+import {
+  parseEmailHeaders,
+  resolveForwardedIdentity,
+} from '../gmail-parser.js';
+import { grantHostGmailResources } from '../gmail-ipc-policy.js';
+
+const mockRouteClassifiedEmail = routeClassifiedEmail as ReturnType<
+  typeof vi.fn
+>;
+const mockMatchRule = matchRule as ReturnType<typeof vi.fn>;
+const mockStoreMessageDirect = storeMessageDirect as ReturnType<typeof vi.fn>;
+const mockParseEmailHeaders = parseEmailHeaders as ReturnType<typeof vi.fn>;
+const mockResolveForwardedIdentity = resolveForwardedIdentity as ReturnType<
+  typeof vi.fn
+>;
+const mockGrantHostGmailResources = grantHostGmailResources as ReturnType<
+  typeof vi.fn
+>;
 
 function createTestOpts() {
   return {
@@ -118,6 +162,150 @@ describe('GmailChannel', () => {
     it('processes ordinary inbound — no SENT/DRAFT', () => {
       expect(isOwnOutbound(['INBOX', 'UNREAD'])).toBe(false);
       expect(isOwnOutbound([])).toBe(false);
+    });
+  });
+
+  describe('pre-classified actionable routing', () => {
+    it('persists the exact inbound before direct routing without waking mailman', async () => {
+      mockGmail.users.messages.get.mockResolvedValueOnce({
+        data: {
+          id: 'msg-actionable',
+          threadId: 'thr-actionable',
+          internalDate: '1785772571000',
+          labelIds: ['INBOX'],
+          payload: { headers: [] },
+        },
+      });
+      mockMatchRule.mockResolvedValueOnce({
+        rule_id: 100,
+        target_label: 'MrGru/lead/inquiry',
+        pattern_type: 'sender_exact',
+        pattern_value: 'sender@example.com',
+      });
+      mockRouteClassifiedEmail.mockResolvedValueOnce({
+        routed: true,
+        action: 'ipc_written',
+        target: 'mailman',
+      });
+
+      const opts = createTestOpts();
+      const channel = new GmailChannel(opts);
+      await channel.connect();
+      const processed = await (channel as any).fetchAndProcess(
+        'msg-actionable',
+      );
+
+      expect(processed).toBe(true);
+      expect(mockStoreMessageDirect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'msg-actionable',
+          chat_jid: 'gmail:test@example.com',
+          content: 'formatted email',
+          is_from_me: false,
+          is_bot_message: true,
+          from_group: 'mailman',
+          thread_ts: 'thr-actionable',
+        }),
+      );
+      expect(opts.onMessage).not.toHaveBeenCalled();
+      expect(mockStoreMessageDirect.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRouteClassifiedEmail.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('falls through to the ordinary inbound path when persistence fails', async () => {
+      mockGmail.users.messages.get.mockResolvedValueOnce({
+        data: {
+          id: 'msg-store-failed',
+          threadId: 'thr-store-failed',
+          labelIds: ['INBOX'],
+          payload: { headers: [] },
+        },
+      });
+      mockMatchRule.mockResolvedValueOnce({
+        rule_id: 101,
+        target_label: 'MrGru/lead/inquiry',
+        pattern_type: 'sender_exact',
+        pattern_value: 'sender@example.com',
+      });
+      mockStoreMessageDirect.mockImplementationOnce(() => {
+        throw new Error('sqlite unavailable');
+      });
+
+      const opts = createTestOpts();
+      const channel = new GmailChannel(opts);
+      await channel.connect();
+      const processed = await (channel as any).fetchAndProcess(
+        'msg-store-failed',
+      );
+
+      expect(processed).toBe(true);
+      expect(mockRouteClassifiedEmail).not.toHaveBeenCalled();
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'gmail:test@example.com',
+        expect.objectContaining({ id: 'msg-store-failed' }),
+      );
+    });
+
+    it('routes an internal forward under the external author without reusing the source thread', async () => {
+      mockGmail.users.messages.get.mockResolvedValueOnce({
+        data: {
+          id: 'msg-forwarded',
+          threadId: 'thr-internal-forward',
+          labelIds: ['INBOX'],
+          payload: { headers: [] },
+        },
+      });
+      mockParseEmailHeaders.mockReturnValueOnce({
+        from: 'Cherie Silas <cherie@tandemcoach.co>',
+        fromName: 'Cherie Silas',
+        replyTo: '',
+        to: 'info@tandemcoach.co',
+        subject: 'Fwd: Level 1 registration',
+        date: 'Mon, 3 Aug 2026',
+        messageId: '<source@example.com>',
+        inReplyTo: '',
+      });
+      mockResolveForwardedIdentity.mockReturnValueOnce({
+        email: 'prospect@example.com',
+        name: 'External Prospect',
+      });
+      mockMatchRule.mockResolvedValueOnce({
+        rule_id: 102,
+        target_label: 'MrGru/lead/inquiry',
+        pattern_type: 'subject_regex',
+        pattern_value: 'Level 1 registration',
+      });
+      mockRouteClassifiedEmail.mockResolvedValueOnce({
+        routed: true,
+        action: 'ipc_written',
+        target: 'mailman',
+      });
+
+      const opts = createTestOpts();
+      const channel = new GmailChannel(opts);
+      await channel.connect();
+      await (channel as any).fetchAndProcess('msg-forwarded');
+
+      expect(mockStoreMessageDirect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sender: 'External Prospect <prospect@example.com>',
+          sender_name: 'External Prospect',
+        }),
+      );
+      expect(mockRouteClassifiedEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          senderEmail: 'prospect@example.com',
+          senderName: 'External Prospect',
+          forwardedByEmail: 'cherie@tandemcoach.co',
+          forwardedByName: 'Cherie Silas',
+          threadId: 'thr-internal-forward',
+        }),
+      );
+      expect(mockGrantHostGmailResources).toHaveBeenCalledWith('mailman', {
+        messageId: 'msg-forwarded',
+        emailAddresses: ['cherie@tandemcoach.co', 'prospect@example.com'],
+      });
     });
   });
 

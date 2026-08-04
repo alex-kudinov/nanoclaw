@@ -55,6 +55,9 @@ describe('matchRule', () => {
       subject: 'hi',
     });
     expect(match).toBeNull();
+    expect(mockQuery.mock.calls[0][0]).toMatch(
+      /probation_until IS NULL OR probation_until <= NOW\(\)/,
+    );
   });
 
   it('matches sender_exact case-insensitively', async () => {
@@ -266,9 +269,18 @@ describe('matchRule', () => {
 });
 
 describe('isHumanReplySubject', () => {
-  it('detects Re: prefixed subjects', () => {
+  it('detects reply and forward prefixed subjects', () => {
     expect(isHumanReplySubject('Re: Reserve your seat')).toBe(true);
     expect(isHumanReplySubject('  re: lowercase and spaced')).toBe(true);
+    expect(isHumanReplySubject('Fwd: Level 1 registration')).toBe(true);
+    expect(isHumanReplySubject('Fwd:Level 1 registration')).toBe(true);
+    expect(isHumanReplySubject('FW: customer question')).toBe(true);
+    expect(isHumanReplySubject('RE:customer question')).toBe(true);
+    expect(isHumanReplySubject('Fwd : customer question')).toBe(true);
+    expect(isHumanReplySubject('[EXTERNAL] Fwd: customer question')).toBe(true);
+    expect(isHumanReplySubject('[SECURE] [EXTERNAL] RE: question')).toBe(true);
+    expect(isHumanReplySubject('Re[2]: customer question')).toBe(true);
+    expect(isHumanReplySubject('Re: Fwd: customer question')).toBe(true);
   });
   it('does not flag non-reply subjects', () => {
     expect(isHumanReplySubject('Reserve your seat')).toBe(false);
@@ -292,6 +304,15 @@ describe('matchRule — human-reply guard', () => {
     const match = await matchRule({
       sender_email: 'no-reply@encharge.io',
       subject: 'Re: Reserve your seat in the inaugural MCS cohort',
+    });
+    expect(match).toBeNull();
+  });
+
+  it('suppresses a sender rule when an internal sender forwards an inquiry', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 1, rows: [enchargeRule] });
+    const match = await matchRule({
+      sender_email: 'no-reply@encharge.io',
+      subject: 'Fwd: Level 1 registration',
     });
     expect(match).toBeNull();
   });

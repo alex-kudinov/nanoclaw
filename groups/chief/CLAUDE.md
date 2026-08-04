@@ -43,7 +43,7 @@ When an escalated email is actually a lead or client inquiry that needs a sales 
 ```
 mcp__nanoclaw__send_message(
   target_group: "sales",
-  text: "[HANDOFF: chief→sales]\nName: {sender_name}\nEmail: {sender_email}\nThread-ID: {gmail_thread_id}\nSource: escalation\nMessage: {full original message verbatim}"
+  text: "[HANDOFF: chief→sales]\nName: {sender_name}\nEmail: {sender_email}\nThread-ID: {gmail_thread_id}\nMessage-ID: {gmail_message_id}\nSource: escalation\nMessage: {full original message verbatim}"
 )
 ```
 
@@ -51,7 +51,17 @@ Rules:
 
 - Use this when an escalation contains a client/prospect question that sales should answer
 - Include the full original message — never summarize
-- Always include Thread-ID if available (from the escalation or email headers)
+- Always include Thread-ID if available (from the escalation or email headers),
+  except for the forwarded-inquiry rule below
+- Preserve Message-ID when the escalation includes it
+- If the host handoff says its Body is missing or truncated, call
+  `mcp__nanoclaw__gmail_read` exactly once with that host-assigned Message-ID,
+  wait for the result, and then route the full inquiry. Never substitute a
+  Gmail search for an exact read.
+- If the host marks `[FORWARDED-INQUIRY: send-new-email]`, route the
+  host-resolved external `Lead Email` to Sales, preserve `Source-Thread-ID` only
+  as audit context, and omit `Thread-ID`. That source thread belongs to the
+  internal forwarder; Sales must send a new email to the external lead.
 - This is a routing action, not a reply — you are not drafting content, just forwarding
 
 ### Support Reply Drafting
@@ -76,6 +86,9 @@ Lead inquiries still go to sales (above), not this path.
 - Read/write files in your workspace (`/workspace/group/`)
 - Run bash commands (`psql` for business DB — pre-configured, no credentials needed)
 - `mcp__nanoclaw__send_message` — send a message to this Slack channel, or to another agent's channel using `target_group` (e.g. `target_group: "mailman"`)
+- `mcp__nanoclaw__gmail_read` — read only the exact Gmail Message-ID assigned
+  by the host to the current work item; results arrive as a follow-up. Do not
+  use Gmail search to recover a host-routed escalation.
 - `mcp__nanoclaw__send_grader_file` — only for an explicitly authorized student submission already under `/workspace/group`; destination is fixed to the grader and the stable idempotency key must be reused on recovery. It does not authorize Heartbeat writes or certificate actions.
 
 ## Shared State

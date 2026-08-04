@@ -21,7 +21,12 @@ import {
   GMAIL_PUSH_OWN_WATCH,
   GMAIL_PUSH_SAFETY_POLL_INTERVAL,
 } from '../config.js';
-import { getMessageIdsForJid, getRouterState, setRouterState } from '../db.js';
+import {
+  getMessageIdsForJid,
+  getRouterState,
+  setRouterState,
+  storeMessageDirect,
+} from '../db.js';
 import { getGmailClient } from '../gmail-auth.js';
 import { grantHostGmailResources } from '../gmail-ipc-policy.js';
 import {
@@ -40,6 +45,7 @@ import {
   formatEmailForAgent,
   parseEmailBody,
   parseEmailHeaders,
+  resolveForwardedIdentity,
 } from '../gmail-parser.js';
 import {
   compareHistoryIds,
@@ -436,6 +442,10 @@ export class GmailChannel implements Channel {
     const rawHeaders = msg.payload.headers || [];
     const headers = parseEmailHeaders(rawHeaders);
     const body = parseEmailBody(msg.payload);
+    const headerMap: Record<string, string> = {};
+    for (const h of rawHeaders) {
+      if (h.name && h.value) headerMap[h.name.toLowerCase()] = h.value;
+    }
 
     if (!body && !headers.subject) {
       this.processedIds.add(msg.id);
@@ -443,30 +453,51 @@ export class GmailChannel implements Channel {
     }
 
     const threadId = msg.threadId || msg.id;
+    const forwardedIdentity = resolveForwardedIdentity(
+      headers,
+      body,
+      rawHeaders,
+    );
+    const envelopeSenderEmail = extractSenderEmail(headers.from);
+    const envelopeReplyToEmail = extractSenderEmail(headers.replyTo);
+    const effectiveSenderEmail =
+      forwardedIdentity?.email || envelopeSenderEmail;
+    const effectiveSenderName =
+      forwardedIdentity?.name || headers.fromName || '';
+    const effectiveSenderHeader = forwardedIdentity
+      ? `${effectiveSenderName} <${effectiveSenderEmail}>`
+      : headers.from;
+    const content = formatEmailForAgent(
+      headers,
+      body,
+      threadId,
+      msg.id,
+      forwardedIdentity,
+    );
 
     // Pre-LLM classification: if a rule matches, apply the classification
     // directly and skip mailman entirely. Saves one LLM call + one container
     // spawn per matched message. Falls through to mailman on any error.
-    const senderEmail = extractSenderEmail(headers.from);
-    const replyToEmail = extractSenderEmail(headers.replyTo);
     // The Gmail API is authoritative for these identifiers. Grant them before
     // any host routing so mailman can use the resource and can pass the same
-    // grant—not an invented replacement—to the selected downstream group.
+    // grant—not an invented replacement—to the selected downstream group. A
+    // forwarded external identity is host-derived only after Gmail reports
+    // aligned authentication for the internal From domain plus an explicit
+    // forward marker. Do not grant Mailman the internal forwarding thread:
+    // this work must become a new email to the recovered external person.
     grantHostGmailResources(GMAIL_GROUP_FOLDER, {
-      threadId,
+      ...(forwardedIdentity ? {} : { threadId }),
       messageId: msg.id,
-      emailAddresses: [senderEmail, replyToEmail].filter(
-        (email): email is string => Boolean(email),
-      ),
+      emailAddresses: [
+        envelopeSenderEmail,
+        envelopeReplyToEmail,
+        effectiveSenderEmail,
+      ].filter((email): email is string => Boolean(email)),
     });
-    const headerMap: Record<string, string> = {};
-    for (const h of rawHeaders) {
-      if (h.name && h.value) headerMap[h.name.toLowerCase()] = h.value;
-    }
     // Hard filters: drop known-unwanted emails before any classification
     try {
       const hardFilter = matchHardFilter({
-        senderEmail: senderEmail || '',
+        senderEmail: envelopeSenderEmail || '',
         subject: headers.subject,
         headers: headerMap,
       });
@@ -485,7 +516,7 @@ export class GmailChannel implements Channel {
           /* skip increment */
         }
         try {
-          const logLine = `${new Date().toISOString()} ${senderEmail} ${hardFilter.id} ${hardFilter.reason}\n`;
+          const logLine = `${new Date().toISOString()} ${envelopeSenderEmail} ${hardFilter.id} ${hardFilter.reason}\n`;
           const logPath = path.join(DATA_DIR, 'hard-filter-drops.log');
           fs.appendFileSync(logPath, logLine, 'utf-8');
         } catch {
@@ -505,9 +536,13 @@ export class GmailChannel implements Channel {
     // up on, classify their reply (decline/accept) and act. Best-effort side
     // effect (posts a card/notice); does NOT swallow the email — it still flows
     // to the normal pipeline so a human can respond.
-    if (this.onInboundReply && senderEmail) {
+    if (this.onInboundReply && envelopeSenderEmail) {
       try {
-        await this.onInboundReply({ senderEmail, threadId, body: body || '' });
+        await this.onInboundReply({
+          senderEmail: envelopeSenderEmail,
+          threadId,
+          body: body || '',
+        });
       } catch (err) {
         logger.error(
           { err, messageId: msg.id },
@@ -517,7 +552,7 @@ export class GmailChannel implements Channel {
     }
 
     const ruleMatch = await matchRule({
-      sender_email: senderEmail,
+      sender_email: envelopeSenderEmail,
       subject: headers.subject || null,
       headers: headerMap,
     });
@@ -528,7 +563,7 @@ export class GmailChannel implements Channel {
           type: 'classify_label_write',
           gmail_message_id: msg.id,
           gmail_thread_id: threadId,
-          sender_email: senderEmail,
+          sender_email: effectiveSenderEmail,
           subject: headers.subject || null,
           label: ruleMatch.target_label,
           confidence: 0.95,
@@ -564,15 +599,42 @@ export class GmailChannel implements Channel {
         );
         // Gate 3: host-router dispatches classified email to target group
         try {
+          // The direct route returns before the normal onMessage() persistence
+          // path. Store a durable no-wake copy first so the exact inbound body
+          // and Gmail identifiers remain recoverable without spawning Mailman
+          // a second time. If routing falls through, onMessage() replaces this
+          // row with the ordinary inbound representation.
+          storeMessageDirect({
+            id: msg.id,
+            chat_jid: this.jid,
+            sender: effectiveSenderHeader,
+            sender_name: effectiveSenderName,
+            content,
+            timestamp: msg.internalDate
+              ? new Date(Number(msg.internalDate)).toISOString()
+              : new Date().toISOString(),
+            is_from_me: false,
+            is_bot_message: true,
+            from_group: GMAIL_GROUP_FOLDER,
+            thread_ts: threadId,
+          });
           const routeResult = await routeClassifiedEmail({
             label: ruleMatch.target_label,
-            senderEmail: senderEmail || '',
-            replyToEmail: replyToEmail || undefined,
-            senderName: headers.fromName || '',
+            senderEmail: effectiveSenderEmail || '',
+            replyToEmail: forwardedIdentity
+              ? undefined
+              : envelopeReplyToEmail || undefined,
+            senderName: effectiveSenderName,
             subject: headers.subject || '',
             body: body || '',
             threadId,
             messageId: msg.id,
+            forwardedByEmail: forwardedIdentity
+              ? envelopeSenderEmail || undefined
+              : undefined,
+            forwardedByName: forwardedIdentity
+              ? headers.fromName || undefined
+              : undefined,
           });
           if (routeResult.routed) {
             await markClassificationRouted(msg.id, 'rules-runner-v1');
@@ -595,8 +657,6 @@ export class GmailChannel implements Channel {
       }
     }
 
-    const content = formatEmailForAgent(headers, body, threadId, msg.id);
-
     this.processedIds.add(msg.id);
 
     // Cap processedIds to prevent unbounded growth
@@ -612,8 +672,8 @@ export class GmailChannel implements Channel {
     this.onMessage(this.jid, {
       id: msg.id,
       chat_jid: this.jid,
-      sender: headers.from,
-      sender_name: headers.fromName,
+      sender: effectiveSenderHeader,
+      sender_name: effectiveSenderName,
       content,
       timestamp: new Date().toISOString(),
       is_from_me: false,

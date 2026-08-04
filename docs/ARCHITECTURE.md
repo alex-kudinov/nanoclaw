@@ -85,10 +85,10 @@ Skip SENT / DRAFT / SPAM / TRASH
     ↓
 Hard filter check (hard-filters.json) → drop if matched
     ↓
-Rules runner (classification_rules DB, 60s cache) → if match:
+Rules runner (mature classification_rules DB entries, 60s cache) → if match:
     ├─ handleClassifyLabelWrite() → store + label + auto-rule
     ├─ isAutoArchiveLabel? → skip mailman, done
-    └─ routeClassifiedEmail() → dispatch to sales/chief/minion
+    └─ persist exact inbound → routeClassifiedEmail() → dispatch to sales/chief/minion
     ↓ (no rule match)
 onMessage() → normal message loop → mailman container
     ↓
@@ -168,7 +168,11 @@ Four pattern types, evaluated in priority order:
 3. `sender_regex` — regex against sender email
 4. `subject_regex` — regex against subject line
 
-Sources: `auto` (confidence ≥ 0.9 creates `sender_exact` rule), `lesson` (chief corrections), `seed` (operator CLI), `manual`.
+Sources: `auto` (confidence ≥ 0.9 creates a probationary `sender_exact` rule
+only for auto-archive labels), `lesson` (chief corrections), `seed` (operator
+CLI), `manual`. Rules with a future `probation_until` are not active. `Re:`,
+`Fwd:`, and `Fw:` subjects suppress sender-only rules so a human-carried
+conversation is always classified from its content.
 
 In-memory cache with 60s TTL (`classify-rules-runner.ts`).
 
@@ -491,11 +495,13 @@ Syncthing syncs NanoClaw source between machines. **Excluded from sync** (`.stig
 
 9. **Tracking pixel suppresses self-BCC.** When an email body contains an open-tracking pixel (`https://{TRACKING_DOMAIN}/t/`), BCC and CC to tandemcoach.co addresses are stripped to prevent self-opens polluting engagement signals.
 
-10. **`from_group` is empty for gmail channel messages.** The channel's `onMessage()` callback stores the message without `from_group`. It's set later by the orchestrator when the agent processes the message (or stays empty if the message goes through the classification fast path).
+10. **`from_group` is empty for ordinary Gmail channel messages.** The channel's `onMessage()` callback stores the message without `from_group`. A directly routed actionable rules-runner match is first persisted as a Mailman-owned no-wake copy so its body, Thread-ID, and Message-ID survive the early return without spawning Mailman twice.
 
-11. **Auto-rule creation on high-confidence classification.** When mailman classifies with confidence ≥ 0.9, a `sender_exact` rule is auto-created so the same sender bypasses the LLM next time. Auto-archive labels get a 7-day probation period.
+11. **Internal forwards are new-email work, not reply threads.** For an explicit forward whose Tandem-owned From domain has a Gmail-added, aligned DMARC or DKIM pass, the host resolves the external From/Reply-To in the first forwarded header block as the lead and retains the teammate as `Forwarded-By`. The internal Gmail thread is audit-only and is withheld from Mailman's reply grant. An approved response is a new email to the external lead.
 
-12. **Env vars are NOT on `process.env`.** `readEnvFile()` in `env.ts` parses `.env` files and returns values without setting `process.env`. This keeps secrets off child processes. Always use `readEnvFile()` or the config constants.
+12. **Auto-rule creation on high-confidence auto-archive classification.** When Mailman classifies an auto-archive label with confidence ≥ 0.9, a `sender_exact` rule is created with a 7-day probation period. Actionable labels never create sender-wide auto-rules, and the runner excludes probationary rules until they mature.
+
+13. **Env vars are NOT on `process.env`.** `readEnvFile()` in `env.ts` parses `.env` files and returns values without setting `process.env`. This keeps secrets off child processes. Always use `readEnvFile()` or the config constants.
 
 ---
 

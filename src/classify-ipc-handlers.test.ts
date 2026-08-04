@@ -116,11 +116,10 @@ describe('handleClassifyLabelWrite', () => {
         rowCount: 1,
         rows: [{ hive_share_target: null, auto_archive: false }],
       }) // SELECT taxonomy
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 10 }] }) // INSERT auto-rule
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
       .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE routed_at
     await handleClassifyLabelWrite(basePayload());
-    expect(mockQuery).toHaveBeenCalledTimes(5);
+    expect(mockQuery).toHaveBeenCalledTimes(4);
     expect(mockReplace).toHaveBeenCalledWith(
       'thr-1',
       'MrGru/financial/receipt',
@@ -177,20 +176,21 @@ describe('handleClassifyLabelWrite', () => {
     expect(probation.getTime()).toBeLessThan(eightDays);
   });
 
-  it('passes null probation_until when auto_archive is false', async () => {
+  it('does not create a sender rule when auto_archive is false', async () => {
     mockQuery
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }) // INSERT classification
       .mockResolvedValueOnce({
         rowCount: 1,
         rows: [{ hive_share_target: null, auto_archive: false }],
       }) // taxonomy
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 10 }] }) // INSERT auto-rule
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
       .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE routed_at
     await handleClassifyLabelWrite(basePayload());
-    const [sql, params] = mockQuery.mock.calls[2];
-    expect(sql).toMatch(/INSERT INTO classification_rules/);
-    expect(params[2]).toBeNull();
+    expect(
+      mockQuery.mock.calls.some(([sql]) =>
+        String(sql).includes('INSERT INTO classification_rules'),
+      ),
+    ).toBe(false);
   });
 
   it('recovers the host-stored Reply-To for a relayed client route', async () => {
@@ -219,7 +219,6 @@ describe('handleClassifyLabelWrite', () => {
         rowCount: 1,
         rows: [{ hive_share_target: null, auto_archive: false }],
       })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 10 }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [] });
 
@@ -271,7 +270,6 @@ describe('handleClassifyLabelWrite', () => {
         rowCount: 1,
         rows: [{ hive_share_target: null, auto_archive: false }],
       })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 10 }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [] });
 
@@ -293,6 +291,63 @@ describe('handleClassifyLabelWrite', () => {
     );
     expect(payload.text).toContain('Lead Email: actual@example.com');
     expect(payload.text).not.toContain('Lead Email: attacker@example.com');
+  });
+
+  it('preserves the trusted internal forward marker and suppresses the source thread for Sales', async () => {
+    _initTestDatabase();
+    storeChatMetadata(
+      'gmail:test@example.com',
+      '2026-08-03T13:42:00.000Z',
+      'Gmail',
+      'gmail',
+      false,
+    );
+    storeMessageDirect({
+      id: 'forwarded-msg',
+      chat_jid: 'gmail:test@example.com',
+      sender: 'External Prospect <prospect@example.com>',
+      sender_name: 'External Prospect',
+      content:
+        'From: External Prospect <prospect@example.com>\nForwarded-Inquiry: yes\nForwarded-By: Cherie Silas <cherie@tandemcoach.co>\nSubject: Fwd: Level 1 registration\nThread-ID: internal-forward-thread\nMessage-ID: forwarded-msg\n\nI need help registering.',
+      timestamp: '2026-08-03T13:42:00.000Z',
+      is_from_me: false,
+      is_bot_message: false,
+      thread_ts: 'internal-forward-thread',
+    });
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: false }],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] });
+
+    await handleClassifyLabelWrite(
+      basePayload({
+        gmail_message_id: 'forwarded-msg',
+        gmail_thread_id: 'internal-forward-thread',
+        sender_email: 'wrong-model-address@example.net',
+        subject: 'Fwd: Level 1 registration',
+        label: 'MrGru/lead/inquiry',
+      }),
+    );
+
+    const mailmanDir = path.join(tmpDir, 'ipc', 'mailman', 'messages');
+    const payload = JSON.parse(
+      fs.readFileSync(
+        path.join(mailmanDir, fs.readdirSync(mailmanDir)[0]),
+        'utf8',
+      ),
+    );
+    expect(payload.text).toContain('[SOURCE: forwarded-email]');
+    expect(payload.text).toContain('Lead Email: prospect@example.com');
+    expect(payload.text).not.toContain('wrong-model-address@example.net');
+    expect(payload.text).toContain(
+      'Forwarded-By: Cherie Silas <cherie@tandemcoach.co>',
+    );
+    expect(payload.text).toContain('Source-Thread-ID: internal-forward-thread');
+    expect(payload.text).not.toMatch(/^Thread-ID:/m);
   });
 
   it('escalates to chief when confidence < 0.5 without touching DB', async () => {
@@ -322,7 +377,6 @@ describe('handleClassifyLabelWrite', () => {
         rowCount: 1,
         rows: [{ hive_share_target: ['alex', 'cherie'], auto_archive: false }],
       }) // taxonomy
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // auto-rule
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
       .mockResolvedValueOnce({ rowCount: 1, rows: [] }) // UPDATE routed_at
       .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE hive_synced
@@ -332,8 +386,8 @@ describe('handleClassifyLabelWrite', () => {
       'MrGru/financial/receipt',
       ['alex', 'cherie'],
     );
-    expect(mockQuery).toHaveBeenCalledTimes(6);
-    const lastCall = mockQuery.mock.calls[5][0] as string;
+    expect(mockQuery).toHaveBeenCalledTimes(5);
+    const lastCall = mockQuery.mock.calls[4][0] as string;
     expect(lastCall).toMatch(/UPDATE email_classifications SET hive_synced/);
   });
 
@@ -344,13 +398,12 @@ describe('handleClassifyLabelWrite', () => {
         rowCount: 1,
         rows: [{ hive_share_target: ['alex'], auto_archive: false }],
       }) // taxonomy
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // auto-rule
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
       .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE routed_at
     mockRecord.mockRejectedValueOnce(new Error('firestore 503'));
     await handleClassifyLabelWrite(basePayload());
-    // No UPDATE hive_synced call — INSERT + taxonomy + auto-rule + dedup check + routed_at update
-    expect(mockQuery).toHaveBeenCalledTimes(5);
+    // No UPDATE hive_synced call — INSERT + taxonomy + dedup check + routed_at update
+    expect(mockQuery).toHaveBeenCalledTimes(4);
   });
 });
 
@@ -452,7 +505,6 @@ describe('dispatchClassifyIpc', () => {
         rowCount: 1,
         rows: [{ hive_share_target: null, auto_archive: false }],
       }) // taxonomy
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // auto-rule
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] }) // SELECT dedup check
       .mockResolvedValueOnce({ rowCount: 1, rows: [] }); // UPDATE routed_at
     await dispatchClassifyIpc(basePayload());

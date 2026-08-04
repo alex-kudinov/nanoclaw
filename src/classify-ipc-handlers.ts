@@ -104,7 +104,9 @@ async function loadTaxonomyRow(label: string): Promise<TaxonomyRow | null> {
 
 /**
  * After a successful LLM classification with high confidence, auto-insert a
- * sender_exact rule so the same sender bypasses the LLM next time.
+ * sender_exact rule only for an auto-archive label. Actionable labels cannot
+ * safely be inferred from sender identity alone: an internal person may send
+ * calendar notifications and also forward a real customer inquiry.
  * Only fires for LLM classifiers (not rules-runner-v1 to avoid loops).
  */
 async function maybeCreateAutoRule(
@@ -114,10 +116,11 @@ async function maybeCreateAutoRule(
   if (data.classifier_version === 'rules-runner-v1') return;
   if (data.confidence < AUTO_RULE_CONFIDENCE_FLOOR) return;
   if (!data.sender_email) return;
+  if (autoArchive !== true) return;
 
-  const probationUntil = autoArchive
-    ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-    : null;
+  const probationUntil = new Date(
+    Date.now() + 7 * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
   try {
     const res = await query(
@@ -192,6 +195,9 @@ async function routeAfterClassify(
   let body = '';
   let senderName = '';
   let replyToEmail: string | undefined;
+  let forwardedByEmail: string | undefined;
+  let forwardedByName: string | undefined;
+  let resolvedSenderEmail = data.sender_email || '';
   try {
     let msg = getMessageById(data.gmail_message_id);
     // Guard: if the agent used the thread ID instead of the message ID,
@@ -214,6 +220,27 @@ async function routeAfterClassify(
         blankLineIdx >= 0 ? msg.content.slice(0, blankLineIdx) : msg.content;
       const replyToHeader = headerRegion.match(/^Reply-To:\s*(.+)$/im)?.[1];
       replyToEmail = extractSenderEmail(replyToHeader || '') || undefined;
+      if (/^Forwarded-Inquiry:\s*yes\s*$/im.test(headerRegion)) {
+        const forwardedFromHeader =
+          headerRegion.match(/^From:\s*([^\r\n]+)$/im)?.[1];
+        const forwardedSenderEmail = extractSenderEmail(
+          forwardedFromHeader || '',
+        );
+        if (forwardedSenderEmail) {
+          resolvedSenderEmail = forwardedSenderEmail;
+          senderName =
+            forwardedFromHeader?.match(/^\s*"?([^"<]+?)"?\s*</)?.[1]?.trim() ||
+            senderName;
+        }
+        const forwardedByHeader = headerRegion.match(
+          /^Forwarded-By:\s*([^\r\n]+)$/im,
+        )?.[1];
+        forwardedByEmail =
+          extractSenderEmail(forwardedByHeader || '') || undefined;
+        forwardedByName = forwardedByHeader
+          ?.match(/^\s*"?([^"<]+?)"?\s*</)?.[1]
+          ?.trim();
+      }
       body =
         blankLineIdx >= 0
           ? msg.content.slice(
@@ -229,13 +256,15 @@ async function routeAfterClassify(
   try {
     const result = await routeClassifiedEmail({
       label: data.label,
-      senderEmail: data.sender_email || '',
+      senderEmail: resolvedSenderEmail,
       replyToEmail,
       senderName,
       subject: data.subject || '',
       body,
       threadId: data.gmail_thread_id,
       messageId: data.gmail_message_id,
+      forwardedByEmail,
+      forwardedByName,
     });
     if (result.routed) {
       logger.info(
@@ -328,7 +357,8 @@ export async function handleClassifyLabelWrite(
 
   await replaceClassLabelsOnThread(data.gmail_thread_id, data.label);
 
-  // Auto-create a sender_exact rule so this sender skips the LLM next time
+  // Auto-create sender rules only for auto-archive labels. Actionable email
+  // must continue through content-aware classification.
   await maybeCreateAutoRule(data, taxonomy?.auto_archive);
 
   // Route through host-router for LLM-originated classifications.

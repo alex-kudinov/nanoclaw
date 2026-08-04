@@ -56,6 +56,7 @@ async function loadEnabledRules(): Promise<ClassificationRule[]> {
     `SELECT id, pattern_type, pattern_value, target_label, source
        FROM classification_rules
       WHERE enabled = TRUE
+        AND (probation_until IS NULL OR probation_until <= NOW())
       ORDER BY
         CASE pattern_type
           WHEN 'sender_exact'  THEN 1
@@ -89,16 +90,24 @@ export function extractSenderEmail(from: string | null): string | null {
 }
 
 /**
- * A `Re:`-prefixed subject signals a human reply. Sender rules (sender_exact /
- * sender_regex) are blind to content, so a sender that BOTH sends automated
- * mail and relays human replies — Encharge's `no-reply@encharge.io` is the
- * canonical trap — would auto-archive a real lead. When the subject looks like
- * a human reply, sender rules are skipped so the message falls through to the
- * mailman LLM classifier, which reads the body. Subject/header rules are
- * unaffected: they already match on content the operator chose deliberately.
+ * A `Re:`, `Fwd:`, or `Fw:` subject signals a human-carried conversation.
+ * Real mail systems may prepend routing tags (`[EXTERNAL]`) or reply counters
+ * (`Re[2]:`), and threads may accumulate repeated prefixes. Accept those forms
+ * without treating arbitrary text elsewhere in the subject as a reply marker.
+ * Sender rules (sender_exact / sender_regex) are blind to content, so a sender
+ * that BOTH sends automated mail and relays human inquiries would otherwise
+ * auto-archive or misroute a real lead. Sender rules are skipped so the message
+ * falls through to the mailman LLM classifier, which reads the body.
+ * Subject/header rules are unaffected: they already match on content the
+ * operator chose deliberately.
  */
 export function isHumanReplySubject(subject: string | null): boolean {
-  return subject != null && /^\s*re:\s/i.test(subject);
+  return (
+    subject != null &&
+    /^\s*(?:\[[^\]\r\n]{1,80}\]\s*)*(?:(?:re(?:\[\d+\])?|fwd?)\s*:\s*)+/i.test(
+      subject,
+    )
+  );
 }
 
 function isSenderRule(rule: ClassificationRule): boolean {
@@ -170,7 +179,7 @@ export async function matchRule(
               patternType: rule.pattern_type,
               subject: input.subject,
             },
-            'classify-rules: sender rule suppressed — human reply (Re:) subject; routing to mailman',
+            'classify-rules: sender rule suppressed — human conversation subject; routing to mailman',
           );
           continue;
         }

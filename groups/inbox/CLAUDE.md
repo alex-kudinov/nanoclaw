@@ -127,12 +127,20 @@ Post the handoff message using `mcp__nanoclaw__send_message`. The system automat
 
 Pass through ALL original fields verbatim — do not summarize or compress. Sales Closer needs the full message to craft a response. **Always pass through the Thread-ID** if one was included in the handoff from mailman — this ensures the email response threads under the lead's original inquiry.
 
+**Forwarded-email exception:** when the host marks
+`[FORWARDED-INQUIRY: send-new-email]`, `Source-Thread-ID` belongs to the internal
+teammate's forwarding conversation, not the external lead. Use the host-resolved
+external `Lead Email`/`From` identity, set `Source: forwarded-email`, preserve
+`Source-Thread-ID` only as audit context, and do **not** emit a `Thread-ID` line
+to Sales. The approved response must become a new email to the external lead.
+
 ```
 [HANDOFF: inbox→sales]
 Party ID: {party_id}
 Name: {name}
 Email: {email}
 Thread-ID: {Gmail thread ID if present in the incoming handoff — omit this line if not available}
+Source-Thread-ID: {internal forwarding thread only for Source: forwarded-email — otherwise omit}
 Known-To-Us: {KNOWN_TO_US line from Step 1.5 — omit this line if no prior context}
 Message: {FULL original message — copy it word for word}
 Source: {source from the incoming handoff, e.g. "email" or "contact-form"}

@@ -8,6 +8,48 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260803-003 — Forwarded inquiries remain content-aware and recoverable
+
+- Date: 2026-08-03T23:26Z
+- Owner/client: Codex + Claude validator
+- State: validating
+- Commit/release: uncommitted on
+  `codex/nc-20260803-003-forwarded-email-recovery` from `0b6ccf1`
+- Change class: C5 — inbound customer email classification, persistence,
+  cross-group Gmail authority, live classification-rule remediation, and exact
+  inbound replay
+- Incident: an internal sender's forwarded Level 1 registration inquiry matched
+  an auto-learned calendar sender rule. The parser stopped at the forwarded
+  message marker, the actionable fast path returned before inbound persistence,
+  and the Chief fallback omitted the Gmail identifiers. Chief was not allowed
+  to search, Sales' search was not an exact assigned-address query, and the
+  inquiry dead-ended until the operator supplied its contents manually.
+- Live remediation: an aggregate production audit found 156 enabled
+  `source='auto'` sender rules targeting non-auto-archive taxonomy labels, with
+  428 historical matches. One constrained update set those 156 rows
+  `enabled=false`; no row was deleted, manual/lesson/seed rules and legitimate
+  auto-archive rules were untouched, and the verified remaining count is zero.
+- Implementation: sender-wide auto-rules are now created only for auto-archive
+  labels; future `probation_until` rows are excluded until mature; `Re:`,
+  `Fwd:`, and `Fw:` subjects bypass sender-only rules; the body parser retains
+  explicit forwarded content; direct actionable routes persist an exact
+  Mailman-owned no-wake copy before dispatch; and Chief fallbacks carry full
+  parsed body, Thread-ID, Message-ID, plus exact-read/no-search guidance.
+- Recipient binding: for an explicit forward whose Tandem-owned From domain
+  has a Gmail-added, aligned DMARC or DKIM pass, the host resolves the external
+  From/Reply-To in the first forwarded header block as the lead, preserves the
+  teammate as `Forwarded-By`, withholds Mailman's grant to the internal thread,
+  and exposes that thread only as audit metadata. Inbox/Sales treat the work as
+  a new outbound email after approval, never a reply to the teammate.
+- Verification so far: pinned Node 22.23.2 typecheck passes; five focused files
+  pass 136 tests; the full repository suite passes 145 files / 1,896 tests under
+  Node 22.23.2 with the loopback and subprocess permissions its webhook and
+  skills-engine tests require. The initial restricted run's 43 failures were
+  reproduced as 35 `listen EPERM` cases and eight child-process PATH cases,
+  then all 43 passed under the required conditions. Independent Claude review
+  converged in R5; immutable build, deployment, and exact inbound replay remain
+  pending.
+
 ### NC-20260803-002 — Host-resolved Party identity outranks the model hint
 
 - Date: 2026-08-03T19:50Z

@@ -127,6 +127,10 @@ Persist the classification so the host can write the Gmail label, sync Hive, and
 
 Guidance:
 - `label` MUST be the full `MrGru/...` string from the taxonomy in KNOWLEDGE.md — use only canonical taxonomy labels, always the full path.
+- For a trusted internal forward, the host emits `Forwarded-Inquiry: yes`,
+  keeps the internal teammate on `Forwarded-By`, and places the external
+  original author on the top-level `From:` line. Use that top-level external
+  `From:` address as `sender_email`; never substitute `Forwarded-By`.
 - `confidence` is a float 0–1. If you are unsure between two labels, drop below 0.5 and the host will escalate to chief for review instead of writing a label.
 - Before writing, dedupe inside the container in case you are re-processing: `jq -e ".gmail_message_id == \"${MSG_ID}\"" /workspace/ipc/messages/classify-*.json 2>/dev/null | grep -q true && exit 0` — if a file already exists for this `gmail_message_id`, skip the write.
 - This is non-blocking: write the file and wrap up. The host picks it up asynchronously and handles routing.

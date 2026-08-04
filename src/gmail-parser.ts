@@ -5,6 +5,148 @@
 import { gmail_v1 } from 'googleapis';
 
 const MAX_BODY_LENGTH = 10_000;
+const OWN_DOMAIN_SUFFIXES = [
+  'tandemcoach.co',
+  'tandemcoaching.academy',
+  'tandem.co',
+];
+
+export interface ForwardedIdentity {
+  email: string;
+  name: string;
+}
+
+function bareAddress(value: string): string | null {
+  const angle = value.match(/<([^>]+)>/);
+  const candidate = (angle?.[1] || value).trim().toLowerCase();
+  const match = candidate.match(
+    /[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+/i,
+  );
+  return match?.[0].toLowerCase() || null;
+}
+
+function isOwnAddress(email: string): boolean {
+  const domain = email.slice(email.lastIndexOf('@') + 1);
+  return OWN_DOMAIN_SUFFIXES.some(
+    (own) => domain === own || domain.endsWith(`.${own}`),
+  );
+}
+
+function addressName(value: string, email: string): string {
+  const angle = value.match(/^\s*"?([^"<]+?)"?\s*</);
+  return angle?.[1].trim() || email.split('@')[0];
+}
+
+function dequoteForwardLine(line: string): string {
+  return line.replace(/^\s*(?:>\s*)+/, '').trim();
+}
+
+function isExplicitForwardMarker(line: string): boolean {
+  const dequoted = dequoteForwardLine(line);
+  return (
+    /^-{5,}\s*Forwarded message/i.test(dequoted) ||
+    /^Begin forwarded message\s*:/i.test(dequoted) ||
+    /^-{5,}\s*Original Message\s*-{5,}$/i.test(dequoted)
+  );
+}
+
+function authenticatedOwnFrom(
+  from: string,
+  rawHeaders: gmail_v1.Schema$MessagePartHeader[],
+): boolean {
+  const email = bareAddress(from);
+  if (!email || !isOwnAddress(email)) return false;
+  const fromDomain = email.slice(email.lastIndexOf('@') + 1);
+
+  // Gmail prepends its own Authentication-Results field. Use only the first
+  // such field and require Google's authserv-id so a sender-supplied field
+  // farther down the message cannot manufacture this trust decision.
+  const authenticationResults = rawHeaders.find(
+    (header) => header.name?.toLowerCase() === 'authentication-results',
+  )?.value;
+  if (!authenticationResults) return false;
+  const normalized = authenticationResults.replace(/[\r\n]+/g, ' ').trim();
+  if (!/^mx\.google\.com\s*;/i.test(normalized)) return false;
+
+  const dmarcFrom = normalized.match(
+    /\bdmarc\s*=\s*pass\b[^;]*\bheader\.from\s*=\s*([^\s;]+)/i,
+  )?.[1];
+  if (dmarcFrom?.toLowerCase().replace(/^@/, '') === fromDomain) return true;
+
+  const dkimIdentity = normalized.match(
+    /\bdkim\s*=\s*pass\b[^;]*\bheader\.i\s*=\s*([^\s;]+)/i,
+  )?.[1];
+  const dkimDomain = dkimIdentity
+    ?.toLowerCase()
+    .replace(/^.*@/, '')
+    .replace(/^@/, '');
+  return dkimDomain === fromDomain && isOwnAddress(`sender@${dkimDomain}`);
+}
+
+function forwardedHeaderBlocks(lines: string[]): string[][] {
+  const blocks: string[][] = [];
+  for (let markerIndex = 0; markerIndex < lines.length; markerIndex += 1) {
+    if (!isExplicitForwardMarker(lines[markerIndex])) continue;
+    const block: string[] = [];
+    let started = false;
+    for (const sourceLine of lines.slice(markerIndex + 1)) {
+      if (isExplicitForwardMarker(sourceLine)) break;
+      const line = dequoteForwardLine(sourceLine);
+      if (!line) {
+        if (started) break;
+        continue;
+      }
+      if (!/^(?:From|Reply-To|Date|Sent|To|Cc|Subject)\s*:/i.test(line)) {
+        if (started) break;
+        continue;
+      }
+      started = true;
+      block.push(line);
+    }
+    if (block.length > 0) blocks.push(block);
+  }
+  return blocks;
+}
+
+/**
+ * Resolve the external author of an explicit forward from a Tandem-owned
+ * mailbox. Body headers are untrusted for ordinary external mail; this helper
+ * returns an identity only when Gmail reports aligned authentication for the
+ * internal From domain, the subject is an explicit forward, and a recognized
+ * forward marker exists.
+ */
+export function resolveForwardedIdentity(
+  headers: ParsedHeaders,
+  body: string,
+  rawHeaders: gmail_v1.Schema$MessagePartHeader[] = [],
+): ForwardedIdentity | null {
+  if (!authenticatedOwnFrom(headers.from, rawHeaders)) return null;
+  if (
+    !/^\s*(?:\[[^\]\r\n]{1,80}\]\s*)*(?:fwd?)\s*:\s*/i.test(headers.subject)
+  ) {
+    return null;
+  }
+
+  for (const block of forwardedHeaderBlocks(body.split('\n'))) {
+    const fromCandidates: ForwardedIdentity[] = [];
+    const replyToCandidates: ForwardedIdentity[] = [];
+    for (const line of block) {
+      const match = line.match(/^(From|Reply-To)\s*:\s*(.+)$/i);
+      if (!match) continue;
+      const email = bareAddress(match[2]);
+      if (!email || isOwnAddress(email)) continue;
+      const identity = { email, name: addressName(match[2], email) };
+      if (match[1].toLowerCase() === 'reply-to') {
+        replyToCandidates.push(identity);
+      } else {
+        fromCandidates.push(identity);
+      }
+    }
+    const identity = replyToCandidates[0] || fromCandidates[0];
+    if (identity) return identity;
+  }
+  return null;
+}
 
 /** Walk MIME tree, prefer text/plain, fall back to stripped HTML. */
 export function parseEmailBody(payload: gmail_v1.Schema$MessagePart): string {
@@ -80,17 +222,35 @@ function stripHtml(html: string): string {
   );
 }
 
-/** Strip quoted replies and truncate. */
+/** Strip quoted reply history while preserving intentionally forwarded mail. */
 function cleanBody(text: string): string {
   const lines = text.split('\n');
   const cleaned: string[] = [];
-  for (const line of lines) {
-    // Stop at "On ... wrote:" quote markers
-    if (/^On .+ wrote:$/.test(line.trim())) break;
-    // Stop at "---------- Forwarded message" markers
-    if (/^-{5,}\s*Forwarded message/.test(line.trim())) break;
-    // Skip lines starting with >
-    if (line.trimStart().startsWith('>')) continue;
+  let inForwardedMessage = false;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    // Outside a deliberate forward, stop at ordinary reply history. Inside a
+    // forward, that same marker may introduce the ORIGINAL customer's message
+    // (for example when somebody forwards an already-replied-to thread). Keep
+    // it and the quoted lines beneath it or the actual inquiry disappears. A
+    // marker can itself be quoted below an On-wrote line, so look ahead before
+    // deciding that the remaining history is disposable.
+    if (!inForwardedMessage && /^On .+ wrote:$/.test(line.trim())) {
+      const containsExplicitForward = lines
+        .slice(index + 1)
+        .some(isExplicitForwardMarker);
+      if (!containsExplicitForward) break;
+    }
+    // A forwarded-message marker begins the content the sender intentionally
+    // asked us to process. Preserve Gmail, Apple Mail, and Outlook forms and
+    // the forwarded text beneath them.
+    if (isExplicitForwardMarker(line)) {
+      inForwardedMessage = true;
+    }
+    // Skip ordinary reply quotes, but retain quoted lines inside an explicit
+    // forward so relayed inquiries cannot become an empty signature/snippet.
+    if (!inForwardedMessage && line.trimStart().startsWith('>')) continue;
     cleaned.push(line);
   }
   const result = cleaned.join('\n').trim();
@@ -141,12 +301,27 @@ export function formatEmailForAgent(
   body: string,
   threadId?: string,
   messageId?: string,
+  forwardedIdentity?: ForwardedIdentity | null,
 ): string {
+  const oneLine = (value: string) => value.replace(/[\r\n]+/g, ' ').trim();
+  const envelopeEmail = bareAddress(headers.from) || headers.from;
+  const ordinaryFrom = /<[^>]+>/.test(headers.from)
+    ? oneLine(headers.from)
+    : `${oneLine(headers.fromName)} <${oneLine(headers.from)}>`;
   const headerLines = [
-    `From: ${headers.fromName} <${headers.from}>`,
-    ...(headers.replyTo ? [`Reply-To: ${headers.replyTo}`] : []),
-    `Subject: ${headers.subject}`,
-    `Date: ${headers.date}`,
+    forwardedIdentity
+      ? `From: ${oneLine(forwardedIdentity.name)} <${oneLine(forwardedIdentity.email)}>`
+      : `From: ${ordinaryFrom}`,
+    ...(forwardedIdentity
+      ? [
+          'Forwarded-Inquiry: yes',
+          `Forwarded-By: ${oneLine(headers.fromName)} <${oneLine(envelopeEmail)}>`,
+        ]
+      : headers.replyTo
+        ? [`Reply-To: ${oneLine(headers.replyTo)}`]
+        : []),
+    `Subject: ${oneLine(headers.subject)}`,
+    `Date: ${oneLine(headers.date)}`,
   ];
   if (threadId) headerLines.push(`Thread-ID: ${threadId}`);
   if (messageId) headerLines.push(`Message-ID: ${messageId}`);

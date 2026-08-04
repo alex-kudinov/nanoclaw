@@ -188,6 +188,22 @@ Gmail is both a channel and a business pipeline:
 Do not collapse the classification schema into CRM lead state. The project
 explicitly treats older `public.leads` assumptions as deprecated.
 
+The pre-LLM rules path is deliberately narrower than a sender allowlist:
+actionable classifications never create sender-wide auto-rules, probationary
+rules remain inactive until their timestamp matures, and `Re:`/`Fwd:`/`Fw:`
+subjects bypass sender-only rules for content-aware Mailman classification.
+If an actionable rule does route directly, the host first stores a durable
+Mailman-owned no-wake copy containing the body, Thread-ID, and Message-ID.
+For an explicit forward whose Tandem-owned From domain has a Gmail-added,
+aligned DMARC or DKIM pass, the host resolves the external From/Reply-To in the
+first forwarded header block as the lead and retains the teammate as
+`Forwarded-By`. The internal Gmail conversation is audit-only, is not granted
+to Mailman for reply, and Sales treats the work as a new outbound email after
+approval.
+Chief fallback handoffs carry the full parsed body and exact Gmail identifiers;
+if the body is missing or truncated, Chief may use only the assigned Message-ID
+with `gmail_read`, never a broad search.
+
 ### Webhook work
 
 Definitions live in local data and produce isolated or group-context prompts.

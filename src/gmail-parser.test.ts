@@ -5,6 +5,7 @@ import {
   parseEmailBody,
   parseEmailHeaders,
   formatEmailForAgent,
+  resolveForwardedIdentity,
   ParsedHeaders,
 } from './gmail-parser.js';
 
@@ -72,14 +73,70 @@ describe('parseEmailBody', () => {
     expect(parseEmailBody(payload)).toBe('My reply');
   });
 
-  it('strips forwarded message markers', () => {
+  it('preserves forwarded message markers and original content', () => {
     const text =
-      'See below\n\n---------- Forwarded message ---------\nOriginal content';
+      'See below\n\n---------- Forwarded message ---------\nFrom: Prospect <prospect@example.com>\nSubject: Level 1 registration\n\nOriginal content';
     const payload: gmail_v1.Schema$MessagePart = {
       mimeType: 'text/plain',
       body: { data: base64url(text) },
     };
-    expect(parseEmailBody(payload)).toBe('See below');
+    expect(parseEmailBody(payload)).toBe(text);
+  });
+
+  it('preserves quoted original content beneath a forwarded marker', () => {
+    const text =
+      'Please respond\n\n---------- Forwarded message ---------\n> From: Prospect <prospect@example.com>\n> I need help registering.';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/plain',
+      body: { data: base64url(text) },
+    };
+    expect(parseEmailBody(payload)).toContain('I need help registering.');
+  });
+
+  it('preserves an original inquiry beneath On-wrote inside a forward', () => {
+    const text =
+      'Please handle\n\n---------- Forwarded message ---------\nFrom: Alex <alex@example.com>\nSubject: Re: Level 1 registration\n\nI will check.\n\nOn Mon, Aug 3, 2026 Prospect wrote:\n> I want to register for Level 1. What is the price?';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/plain',
+      body: { data: base64url(text) },
+    };
+    const result = parseEmailBody(payload);
+    expect(result).toContain('On Mon, Aug 3, 2026 Prospect wrote:');
+    expect(result).toContain('I want to register for Level 1.');
+  });
+
+  it('preserves Apple Mail quoted forwarded content', () => {
+    const text =
+      'Please handle\n\nBegin forwarded message:\n\n> From: Prospect <prospect@example.com>\n> Subject: Level 1 registration\n>\n> I want to register. What is the price?';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/plain',
+      body: { data: base64url(text) },
+    };
+    expect(parseEmailBody(payload)).toContain(
+      'I want to register. What is the price?',
+    );
+  });
+
+  it('preserves a quoted forward marker below reply history', () => {
+    const text =
+      'Please handle\n\nOn Mon, Aug 3, 2026 Alex wrote:\n> See below\n> ---------- Forwarded message ---------\n> From: Prospect <prospect@example.com>\n> I want to register. What is the price?';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/plain',
+      body: { data: base64url(text) },
+    };
+    expect(parseEmailBody(payload)).toContain(
+      'I want to register. What is the price?',
+    );
+  });
+
+  it('preserves Outlook original-message forwarded content', () => {
+    const text =
+      'Please handle\n\n-----Original Message-----\nFrom: Prospect <prospect@example.com>\nSubject: Level 1 registration\n\nI want to register. What is the price?';
+    const payload: gmail_v1.Schema$MessagePart = {
+      mimeType: 'text/plain',
+      body: { data: base64url(text) },
+    };
+    expect(parseEmailBody(payload)).toBe(text);
   });
 
   it('skips > quoted lines', () => {
@@ -242,5 +299,124 @@ describe('formatEmailForAgent', () => {
   it('omits Thread-ID when threadId is not provided', () => {
     const result = formatEmailForAgent(headers, 'Hello');
     expect(result).not.toContain('Thread-ID');
+  });
+
+  it('presents the trusted forwarded author while preserving the internal forwarder', () => {
+    const forwarded = { email: 'prospect@example.com', name: 'Prospect' };
+    const result = formatEmailForAgent(
+      {
+        ...headers,
+        from: 'Cherie Silas <cherie@tandemcoach.co>',
+        fromName: 'Cherie Silas',
+        subject: 'Fwd: Level 1 registration',
+      },
+      'Forwarded body',
+      'source-thread',
+      'source-message',
+      forwarded,
+    );
+    expect(result).toContain('From: Prospect <prospect@example.com>');
+    expect(result).toContain('Forwarded-Inquiry: yes');
+    expect(result).toContain(
+      'Forwarded-By: Cherie Silas <cherie@tandemcoach.co>',
+    );
+    expect(result).toContain('Thread-ID: source-thread');
+  });
+});
+
+describe('resolveForwardedIdentity', () => {
+  const authenticatedHeaders: gmail_v1.Schema$MessagePartHeader[] = [
+    {
+      name: 'Authentication-Results',
+      value:
+        'mx.google.com; dkim=pass header.i=@tandemcoach.co; dmarc=pass header.from=tandemcoach.co',
+    },
+  ];
+  const internalHeaders: ParsedHeaders = {
+    from: 'Cherie Silas <cherie@tandemcoach.co>',
+    fromName: 'Cherie Silas',
+    replyTo: '',
+    to: 'info@tandemcoach.co',
+    subject: 'Fwd: Level 1 registration',
+    date: 'Mon, 3 Aug 2026',
+    messageId: '<forward@example.com>',
+    inReplyTo: '',
+  };
+
+  it('resolves the external author from an explicit internal forward', () => {
+    const body =
+      'Please respond\n\n---------- Forwarded message ---------\nFrom: External Prospect <prospect@example.com>\nSubject: Level 1 registration\n\nI need help.';
+    expect(
+      resolveForwardedIdentity(internalHeaders, body, authenticatedHeaders),
+    ).toEqual({
+      email: 'prospect@example.com',
+      name: 'External Prospect',
+    });
+  });
+
+  it('prefers an external forwarded Reply-To over From', () => {
+    const body =
+      '---------- Forwarded message ---------\nFrom: Relay <relay@example.net>\nReply-To: Customer <customer@example.com>\n\nQuestion';
+    expect(
+      resolveForwardedIdentity(internalHeaders, body, authenticatedHeaders),
+    ).toEqual({
+      email: 'customer@example.com',
+      name: 'Customer',
+    });
+  });
+
+  it('rejects a forged own-domain From without Gmail authentication', () => {
+    const body =
+      '---------- Forwarded message ---------\nFrom: Attacker Choice <attacker@evil.example>\n\nQuestion';
+    expect(resolveForwardedIdentity(internalHeaders, body, [])).toBeNull();
+    expect(
+      resolveForwardedIdentity(internalHeaders, body, [
+        {
+          name: 'Authentication-Results',
+          value:
+            'attacker.example; dkim=pass header.i=@tandemcoach.co; dmarc=pass header.from=tandemcoach.co',
+        },
+      ]),
+    ).toBeNull();
+  });
+
+  it('keeps Reply-To preference inside the first forwarded header block', () => {
+    const body =
+      '---------- Forwarded message ---------\nFrom: First Prospect <first@example.com>\nSubject: First\n\nBody text\nReply-To: Later Person <later@example.com>';
+    expect(
+      resolveForwardedIdentity(internalHeaders, body, authenticatedHeaders),
+    ).toEqual({
+      email: 'first@example.com',
+      name: 'First Prospect',
+    });
+  });
+
+  it('does not trust forwarded-looking headers from an external envelope', () => {
+    const body =
+      '---------- Forwarded message ---------\nFrom: Victim <victim@example.com>\n\nQuestion';
+    expect(
+      resolveForwardedIdentity(
+        { ...internalHeaders, from: 'attacker@example.net' },
+        body,
+        authenticatedHeaders,
+      ),
+    ).toBeNull();
+  });
+
+  it('requires both a forward subject and an explicit marker', () => {
+    expect(
+      resolveForwardedIdentity(
+        { ...internalHeaders, subject: 'Level 1 registration' },
+        'From: Victim <victim@example.com>',
+        authenticatedHeaders,
+      ),
+    ).toBeNull();
+    expect(
+      resolveForwardedIdentity(
+        internalHeaders,
+        'From: Victim <victim@example.com>',
+        authenticatedHeaders,
+      ),
+    ).toBeNull();
   });
 });
