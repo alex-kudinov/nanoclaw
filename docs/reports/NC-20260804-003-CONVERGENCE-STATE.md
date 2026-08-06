@@ -2,16 +2,16 @@
 
 - Topic: host-owned immutable approved-email execution fields and canonical
   transactional-link content policy
-- Status: converged_committed_ready_for_deploy
-- Current round: R3 complete
+- Status: converged_release_gate_ready_for_commit
+- Current round: R6 complete
 - Claude project path: `/private/tmp/nanoclaw-sales-ack`
 - Current Claude session UUID: `DF73C42D-43D7-4EED-A284-7521FE6AB8B3`
 - Prior Claude session UUIDs: none recorded for this task
 - Native handoff path: none
 - Latest Codex request:
-  `docs/reports/NC-20260804-003-CODEX-REQUEST-R3.md`
+  `docs/reports/NC-20260804-003-CODEX-REQUEST-R6.md`
 - Latest Claude response:
-  `docs/reports/NC-20260804-003-CLAUDE-RESPONSE-R3.md` (`CONVERGED`)
+  `docs/reports/NC-20260804-003-CLAUDE-RESPONSE-R6.md` (`CONVERGED`)
 - Verified agreements: queued is not sent; exact approved card bytes are
   authoritative; the Lead #1003 action is Gmail-confirmed once and must not be
   retried; Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` is also
@@ -25,8 +25,16 @@
   `3d789365-c1e0-4eab-9e9d-8075f7a63859` reproduced the same path with an exact
   recipient/subject and one body-only `&amp;` expansion, is Gmail-confirmed once
   as `19fd44fd031fc6f1`, and must not be retried
-- Open defects: no review blocker; committed as `2e625f0`; deployment, live
-  release verification, and natural-path outcome validation remain pending
+- Open defects: runtime review converged; first clean build exposed a stale
+  14-file hard-coded release gate versus the authoritative 18-file email gate.
+  The first archive was not deployed. R4 confirmed the four missing tests and
+  identified the surviving duplicate-list drift mechanism; Codex then replaced
+  both lists with one shared runner. R5 found that direct invocation through a
+  symlinked path could silently skip the gate; Codex changed main detection to
+  compare Node's real path. R6 reproduced the ordinary, npm, builder-import,
+  import-only, and symlink-alias paths and returned `CONVERGED`. Replacement
+  commit/build, deployment, live verification, and natural-path outcome
+  validation remain pending.
 - Owner decisions: owner authorized exact recovery, implementation, Claude
   validation, commit, immutable activation, and safe live verification; no
   unrelated email or approval widening is authorized. Claude R2 converged; Codex
@@ -58,4 +66,8 @@
   selection defect plus eight non-blocking findings; Codex independently
   reproduced the blocker and implemented the accepted repairs before R2. R2
   used 28 turns, about 9 minutes, and cost $7.4164145; verdict `CONVERGED`. R3
-  used 12 turns, about 3 minutes, and cost $5.299514; verdict `CONVERGED`.
+  used 12 turns, about 3 minutes, and cost $5.299514; verdict `CONVERGED`. R4
+  used 15 turns, about 4 minutes, and cost $5.8383705; verdict `CONVERGED`. R5
+  used 14 turns, about 4 minutes, and cost $6.433842; verdict
+  `CHANGES REQUIRED`. R6 used 19 turns, about 3 minutes, and cost $7.539689;
+  verdict `CONVERGED`.

@@ -5,6 +5,7 @@ import { execFileSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { runEmailCriticalTests } from './run-email-critical-tests.mjs';
 
 const root = process.cwd();
 const pin = fs.readFileSync(path.join(root, '.nvmrc'), 'utf8').trim();
@@ -39,31 +40,7 @@ const sourceTree = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], {
 // approval binding, exact-action idempotency, Gmail receipt handling, or the
 // cross-group delivery path regresses. The worktree is already proven clean,
 // so these tests exercise the exact source tree named by the manifest.
-execFileSync(
-  process.execPath,
-  [
-    path.join(root, 'node_modules', 'vitest', 'vitest.mjs'),
-    'run',
-    'src/approved-send-handoff.test.ts',
-    'src/channels/slack.test.ts',
-    'src/classify-ipc-handlers.test.ts',
-    'src/db.test.ts',
-    'src/email-delivery-path.test.ts',
-    'src/email-transport-canary.test.ts',
-    'src/gmail-ipc-handlers.test.ts',
-    'src/gmail-parser.test.ts',
-    'src/host-router.test.ts',
-    'src/ipc-gmail-auth.test.ts',
-    'src/ipc-handoff-echo.test.ts',
-    'src/routing.test.ts',
-    'src/send-watchdog.test.ts',
-    'src/slack-approval.test.ts',
-    '--pool=forks',
-    '--no-file-parallelism',
-    '--maxWorkers=1',
-  ],
-  { cwd: root, stdio: 'inherit' },
-);
+runEmailCriticalTests({ root });
 
 const dist = path.join(root, 'dist');
 fs.rmSync(dist, { recursive: true, force: true });

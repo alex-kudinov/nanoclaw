@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-04T15:40Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_deploy; customer recovery is Gmail-confirmed, permanent fix
+- State: ready_for_review; customer recovery is Gmail-confirmed, permanent fix
   is reviewed and not yet deployed
 - Commit: `2e625f0` on `codex/nc-20260804-003-host-owned-email-bytes`
 - Change class: C5 — customer email content boundary and exact recovery
@@ -36,6 +36,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   147 files / 1,927 tests. Claude Opus R2 and R3 both returned `CONVERGED` after
   R1's blocking selector finding was repaired. Formatting and diff whitespace
   are clean; documentation continuity is the remaining pre-commit gate.
+- Release-gate reconciliation: the first clean immutable build exposed that
+  `scripts/build-release.mjs` still hard-coded the former 14-file email suite
+  even though `test:email-critical` had expanded to 18 files. The first archive
+  was not deployed. The builder and `npm run test:email-critical` now invoke one
+  shared Node runner, eliminating the duplicated list rather than merely making
+  two copies temporarily equal. The shared runner includes the four added
+  guard/action files and must reproduce the 18-file / 497-test gate before
+  packaging.
 - Deployment/migration: none yet; no schema migration is required.
 - Safety boundary: no general arbitrary-link approval bypass and no synthetic
   customer send. Claude review and exact Node-22 release gates precede the
@@ -45,7 +53,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-04T14:38Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_deploy; customer recovery is Gmail-confirmed,
+- State: ready_for_review; customer recovery is Gmail-confirmed,
   implementation is reviewed and not yet deployed
 - Commit: `2e625f0` on `codex/nc-20260804-003-host-owned-email-bytes`
 - Change class: C5 — customer email execution, approval identity, one-time

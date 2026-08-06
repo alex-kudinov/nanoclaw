@@ -19,7 +19,7 @@
     "gmail:auth": "tsx src/gmail-consent.ts",
     "reauth": "bash reauth.sh",
     "test": "vitest run",
-    "test:email-critical": "vitest run src/approved-email-execution.test.ts src/approved-send-handoff.test.ts src/channels/slack.test.ts src/classify-ipc-handlers.test.ts src/db.test.ts src/email-content-guard.test.ts src/email-delivery-path.test.ts src/email-transport-canary.test.ts src/gmail-ipc-handlers.test.ts src/gmail-parser.test.ts src/host-router.test.ts src/ipc-gmail-auth.test.ts src/ipc-handoff-echo.test.ts src/proposal-approved-email.test.ts src/proposal-followup.test.ts src/routing.test.ts src/send-watchdog.test.ts src/slack-approval.test.ts --pool=forks --no-file-parallelism --maxWorkers=1",
+    "test:email-critical": "node scripts/run-email-critical-tests.mjs",
     "email:transport-canary": "node dist/email-transport-canary.js",
     "test:watch": "vitest",
     "release:build": "node scripts/build-release.mjs",
