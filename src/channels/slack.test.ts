@@ -2325,5 +2325,42 @@ Hi Oana, good to hear from you.
         expect.stringContaining('refused to split an approval card'),
       );
     });
+
+    it('refuses to post an approval card the Gmail content guard would reject', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = await connected();
+      const blockedCard = `[SALES REVIEW] Lead #938
+Email: client@example.com
+
+DRAFT RESPONSE TO LEAD:
+---
+Subject: Re: Join link
+
+Use https://zoom.us.evil.example/j/123.
+---`;
+
+      await channel.sendMessage(JID, blockedCard, { fromGroup: 'sales' });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post).toHaveBeenCalledTimes(1);
+      expect(post).toHaveBeenCalledWith(
+        expect.objectContaining({
+          thread_ts: '1785230544.590929',
+          text: expect.stringMatching(
+            /\[APPROVAL CARD REJECTED\].*content guard:.*zoom\.us\.evil\.example.*Sales must repost/,
+          ),
+        }),
+      );
+      expect(post.mock.calls[0][0].text).not.toContain(
+        'Use https://zoom.us.evil.example/j/123.',
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ fromGroup: 'sales' }),
+        expect.stringContaining('Gmail content guard would reject'),
+      );
+    });
   });
 });

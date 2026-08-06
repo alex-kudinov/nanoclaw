@@ -209,6 +209,26 @@ Gmail IPC outbound email is C3. At that final host boundary:
 - an approved action is conditionally claimed once before Gmail execution;
   confirmed replay returns the stored Gmail receipt, while an executing or
   uncertain replay is held for reconciliation rather than automatically sent;
+- approving a newer card in the same Slack work thread durably blocks every
+  older pre-Gmail action in that work thread as superseded; actions that may
+  already have reached Gmail are never superseded;
+- if more than one live approval shares a Gmail thread, the host holds the
+  request unless the raw request body identifies exactly one durable candidate;
+  request bytes may corroborate action selection but never become execution
+  authority;
+- after one exact action is resolved, the model's Gmail call is execution
+  intent only. The host reloads recipient, subject, body, Gmail thread,
+  Action-ID, Party hint, email type, and rendering mode from the stored approved
+  Slack card, verifies that card against the durable hash/recipient, and
+  discards model-added CC or raw-HTML flags before authorization and claim;
+- scheduled Sales follow-up cards must expose the exact recipient, Gmail
+  thread, subject, and body being approved; proposal follow-ups use the exact
+  host-owned PostgreSQL draft and the same one-time action/receipt transitions;
+- a parseable Slack approval card must pass the same deterministic content
+  guard before it is posted and again before the Action-ID is minted. Canonical
+  company/transactional domains include Tandem properties and short links,
+  Stripe booking links, and regional Zoom hosts; hostname suffix lookalikes
+  remain blocked;
 - deterministic guard failures and uncertain delivery errors remain durable
   and are posted to the originating approval thread.
 - an overdue `executing` action transitions to non-executable `uncertain`; the
@@ -227,8 +247,9 @@ Prompt text, Slack cards, reactions, and a model's risk/category label are not b
 themselves binding authorization. Approved email now has a host-owned execution
 record containing its action ID, normalized recipient, approval thread,
 subject/body hash, stage history, failure state, and Gmail receipt. The model
-cannot mint a valid record or change the host-stamped identity, and the final
-boundary revalidates content and recipient before a one-time claim.
+cannot mint a valid record, change the host-stamped identity, or supply the
+executed customer-facing bytes; the final boundary reconstructs and revalidates
+content and recipient before a one-time claim.
 For email records, the host recognizes only a check-mark or an exact
 whole-message `Approved` inside the draft thread; incidental approval words in
 feedback do not cross the host boundary. The typed form is currently offered

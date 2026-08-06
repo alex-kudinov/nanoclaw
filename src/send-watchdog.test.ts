@@ -169,6 +169,20 @@ describe('isTrackableCard', () => {
     },
   );
 
+  it('tracks an exact scheduled follow-up approval card', () => {
+    const followup = CARD.replace(
+      '[SALES REVIEW] Lead #938 — REVISED',
+      '[FOLLOW-UP #1] Lead #938\nThread-ID: thread-followup',
+    ).replace('DRAFT RESPONSE TO LEAD:', 'DRAFT FOLLOW-UP:');
+    expect(isTrackableCard(followup)).toBe(true);
+    expect(
+      recordApproval({ ...base, cardText: followup }, makeStore()),
+    ).toMatchObject({
+      leadRef: 'Lead #938',
+      gmailThreadId: 'thread-followup',
+    });
+  });
+
   it('ignores ordinary chatter', () => {
     expect(isTrackableCard('sounds good, thanks')).toBe(false);
   });
@@ -244,6 +258,22 @@ describe('recordApproval', () => {
     expect(store.rows).toHaveLength(0);
   });
 
+  it('does not arm exact bytes that the Gmail content guard will reject', () => {
+    const store = makeStore();
+    const row = recordApproval(
+      {
+        ...base,
+        cardText: CARD.replace(
+          'Hi Oana,',
+          'Use https://zoom.us.evil.example/j/123 instead.',
+        ),
+      },
+      store,
+    );
+    expect(row).toBeNull();
+    expect(store.rows).toHaveLength(0);
+  });
+
   it('posts a visible rejection when a malformed approval mints no action', async () => {
     const store = makeStore();
     const notices: string[] = [];
@@ -265,6 +295,33 @@ describe('recordApproval', () => {
     expect(notices).toEqual([
       expect.stringMatching(
         /\[APPROVAL CARD REJECTED\].*It was NOT sent\..*Chief must repost/,
+      ),
+    ]);
+  });
+
+  it('posts the content violation when rejected exact bytes mint no action', async () => {
+    const store = makeStore();
+    const notices: string[] = [];
+    const observation = await observeApprovalCard(
+      {
+        ...base,
+        authorName: 'Sales',
+        cardText: CARD.replace(
+          'Hi Oana,',
+          'Use https://zoom.us.evil.example/j/123 instead.',
+        ),
+      },
+      store,
+      async (text) => {
+        notices.push(text);
+      },
+    );
+
+    expect(observation).toEqual({ pending: null, rejected: true });
+    expect(store.rows).toHaveLength(0);
+    expect(notices).toEqual([
+      expect.stringMatching(
+        /\[APPROVAL CARD REJECTED\].*content guard:.*zoom\.us\.evil\.example.*Sales must repost/,
       ),
     ]);
   });

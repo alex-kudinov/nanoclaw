@@ -17,6 +17,8 @@ const testState = vi.hoisted(() => {
     fail: vi.fn((..._args: unknown[]) => undefined),
     findAction: vi.fn((..._args: unknown[]) => ({ ambiguous: false })),
     getAction: vi.fn((..._args: unknown[]): unknown => undefined),
+    getMessage: vi.fn((..._args: unknown[]): unknown => undefined),
+    getPendingByThread: vi.fn((..._args: unknown[]): unknown => undefined),
     testRecipient: '',
   };
 });
@@ -38,6 +40,7 @@ vi.mock('./db.js', () => ({
   confirmEmailAction: (...args: unknown[]) => testState.confirm(...args),
   failEmailAction: (...args: unknown[]) => testState.fail(...args),
   findPendingSendAction: (...args: unknown[]) => testState.findAction(...args),
+  getMessageById: (...args: unknown[]) => testState.getMessage(...args),
   getPendingSendByActionId: (...args: unknown[]) =>
     testState.getAction(...args),
   markEmailActionHandoff: vi.fn(() => 0),
@@ -45,11 +48,8 @@ vi.mock('./db.js', () => ({
   createTask: vi.fn(),
   deleteTask: vi.fn(),
   getTaskById: vi.fn(),
-  getPendingSendByGmailThread: vi.fn((threadId: string) =>
-    threadId === 'approved-thread'
-      ? { recipient: 'approved@example.co' }
-      : undefined,
-  ),
+  getPendingSendByGmailThread: (...args: unknown[]) =>
+    testState.getPendingByThread(...args),
   storeMessageDirect: vi.fn(),
   updateTask: vi.fn(),
 }));
@@ -77,6 +77,7 @@ vi.mock('./classify-backfill.js', () => ({
 }));
 
 import { startIpcWatcher, type IpcDeps } from './ipc.js';
+import { hashApprovedEmailContent } from './email-action.js';
 import type { RegisteredGroup } from './types.js';
 
 const registeredGroups: Record<string, RegisteredGroup> = {
@@ -135,20 +136,38 @@ describe('Gmail IPC watcher authorization', () => {
 
   it('quarantines spoofed or unbound sends and dispatches one exact approved action', async () => {
     const actionId = '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd';
+    const approvedBody = 'Use A & B exactly.';
+    const approvedCard = [
+      '[SALES REVIEW] Lead #1003',
+      'Email: lead@example.co',
+      '',
+      'DRAFT RESPONSE TO LEAD:',
+      '---',
+      'Subject: Hello',
+      '',
+      approvedBody,
+      '---',
+    ].join('\n');
     const action = {
       actionId,
       draftTs: 'approved-draft',
       groupFolder: 'sales',
       chatJid: 'slack:CHIEF',
       threadTs: 'approval-thread',
+      gmailThreadId: 'approved-thread',
       recipient: 'lead@example.co',
       approvedSubject: 'Hello',
-      approvedContentSha256:
-        'a36a8a21d506129034793a262046fcd7269160c54242dbf8fc1e61b892ba81a0',
+      approvedContentSha256: hashApprovedEmailContent('Hello', approvedBody),
       approvedAt: '2026-08-02T00:00:00.000Z',
       state: 'mailman_started',
     };
     testState.getAction.mockReturnValue(action);
+    testState.getMessage.mockReturnValue({ content: approvedCard });
+    testState.getPendingByThread.mockImplementation((threadId: unknown) =>
+      threadId === 'approved-thread'
+        ? { action, candidates: [action], ambiguous: false }
+        : { candidates: [], ambiguous: false },
+    );
     testState.claim.mockReturnValue({ status: 'claimed', action });
     testState.dispatch.mockImplementation(async (...allArgs: unknown[]) => {
       const [payload, ...args] = allArgs as [
@@ -172,11 +191,15 @@ describe('Gmail IPC watcher authorization', () => {
       source_container: 'nanoclaw-mailman-justin',
     });
     const actionRequest = writeRequest('mailman', 'action-send.json', {
-      actionId,
+      type: 'gmail_reply',
+      threadId: 'approved-thread',
+      body: 'Use A &amp; B exactly.',
+      html: true,
+      cc: undefined,
     });
     const approvedReply = writeRequest('mailman', 'approved-reply.json', {
       type: 'gmail_reply',
-      threadId: 'approved-thread',
+      threadId: 'unapproved-thread',
       body: 'Approved reply',
     });
     const deps: IpcDeps = {
@@ -229,9 +252,12 @@ describe('Gmail IPC watcher authorization', () => {
     expect(testState.dispatch).toHaveBeenCalledTimes(1);
     expect(testState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'gmail_send',
+        type: 'gmail_reply',
         groupFolder: 'mailman',
         actionId,
+        threadId: 'approved-thread',
+        body: approvedBody,
+        markdown: true,
         approvedRecipient: 'lead@example.co',
       }),
       expect.any(Function),
@@ -239,6 +265,7 @@ describe('Gmail IPC watcher authorization', () => {
       expect.any(Function),
       expect.any(Function),
     );
+    expect(testState.dispatch.mock.calls[0]?.[0]).not.toHaveProperty('html');
     expect(testState.claim).toHaveBeenCalledWith(
       actionId,
       expect.stringMatching(/^[0-9a-f]{64}$/),
@@ -258,8 +285,105 @@ describe('Gmail IPC watcher authorization', () => {
       expect.objectContaining({ fromGroup: 'chief' }),
     );
 
+    // Lead #1029 production regression: an unthreaded first response reached
+    // Mailman without its Action-ID, and Mailman entity-escaped a literal `&`
+    // in both subject and body. The exact-hash lookup cannot identify that
+    // mutated request, so the unique recipient context must recover the action;
+    // the host then executes only the immutable approved card fields.
+    testState.findAction.mockImplementation((opts: unknown) =>
+      (opts as { approvedContentSha256?: string }).approvedContentSha256
+        ? { ambiguous: false }
+        : { ambiguous: false, action },
+    );
+    const unthreadedMutatedSend = writeRequest(
+      'mailman',
+      'unthreaded-mutated-send.json',
+      {
+        actionId: undefined,
+        threadId: undefined,
+        subject: 'Hello &amp;',
+        body: 'Use A &amp; B exactly.',
+        html: true,
+      },
+    );
     await vi.advanceTimersByTimeAsync(1100);
-    expect(testState.dispatch).toHaveBeenCalledTimes(1);
+    expect(fs.existsSync(unthreadedMutatedSend)).toBe(false);
+    expect(testState.dispatch).toHaveBeenCalledTimes(2);
+    expect(testState.dispatch.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({
+        type: 'gmail_send',
+        actionId,
+        to: 'lead@example.co',
+        subject: 'Hello',
+        body: approvedBody,
+        markdown: true,
+        approvedRecipient: 'lead@example.co',
+      }),
+    );
+    expect(testState.dispatch.mock.calls[1]?.[0]).not.toHaveProperty('html');
+
+    await vi.advanceTimersByTimeAsync(1100);
+    expect(testState.dispatch).toHaveBeenCalledTimes(2);
+
+    // Claude R1 B1 regression: two still-active approvals share one Gmail
+    // thread and the model omitted Action-ID. Mutated request bytes identify
+    // neither card exactly, so the host must hold instead of selecting the
+    // oldest (or newest) approval.
+    const newerAction = {
+      ...action,
+      actionId: '1a6d9d42-c03e-499d-b255-ad0823676355',
+      draftTs: 'approved-draft-v2',
+      approvedSubject: 'Hello v2',
+      approvedContentSha256: hashApprovedEmailContent('Hello v2', 'Body v2'),
+      approvedAt: '2026-08-02T00:01:00.000Z',
+    };
+    testState.getPendingByThread.mockReturnValue({
+      action: undefined,
+      candidates: [newerAction, action],
+      ambiguous: true,
+    });
+    const ambiguousReply = writeRequest(
+      'mailman',
+      'ambiguous-thread-reply.json',
+      {
+        type: 'gmail_reply',
+        actionId: undefined,
+        threadId: 'approved-thread',
+        subject: undefined,
+        body: 'Use A &amp; B exactly.',
+        source_container: 'nanoclaw-mailman-ambiguous',
+      },
+    );
+    await vi.advanceTimersByTimeAsync(1100);
+    expect(fs.existsSync(ambiguousReply)).toBe(false);
+    expect(testState.dispatch).toHaveBeenCalledTimes(2);
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'mailman',
+      'nanoclaw-mailman-ambiguous',
+      expect.stringContaining('multiple approved email actions'),
+    );
+
+    testState.claim.mockReturnValue({
+      status: 'held',
+      action,
+      reason: 'subject/body hash does not match the approved action',
+    });
+    const deterministicHold = writeRequest(
+      'mailman',
+      'deterministic-hold.json',
+      { actionId },
+    );
+    await vi.advanceTimersByTimeAsync(1100);
+    expect(fs.existsSync(deterministicHold)).toBe(false);
+    expect(testState.dispatch).toHaveBeenCalledTimes(2);
+    expect(deps.sendMessage).toHaveBeenCalledWith(
+      'slack:CHIEF',
+      expect.stringContaining('Gmail was not called'),
+      expect.objectContaining({
+        fromGroup: 'sales',
+        threadTs: 'approval-thread',
+      }),
+    );
 
     testState.testRecipient = 'internal-canary@example.co';
     const testRoutedRequest = writeRequest(
@@ -269,7 +393,7 @@ describe('Gmail IPC watcher authorization', () => {
     );
     await vi.advanceTimersByTimeAsync(1100);
     expect(fs.existsSync(testRoutedRequest)).toBe(false);
-    expect(testState.dispatch).toHaveBeenCalledTimes(1);
+    expect(testState.dispatch).toHaveBeenCalledTimes(2);
     expect(testState.fail).toHaveBeenCalledWith(
       actionId,
       'blocked',

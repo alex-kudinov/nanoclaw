@@ -17,9 +17,11 @@ import {
 } from '../attachment-convert.js';
 import {
   approvalCardRejectedText,
+  buildApprovedHandoff,
   isApprovalCard,
 } from '../approved-send-handoff.js';
 import { promoteBriefItem } from '../brief-promote.js';
+import { checkContent } from '../email-content-guard.js';
 import {
   ASSISTANT_NAME,
   SLACK_THREAD_TTL_MS,
@@ -1028,6 +1030,15 @@ export class SlackChannel implements Channel {
       const overlongApprovalCard =
         isApprovalCard(text) &&
         prefix.length + text.length > MAX_MESSAGE_LENGTH;
+      const parsedApprovalCard = isApprovalCard(text)
+        ? buildApprovedHandoff(text)
+        : null;
+      const approvalContentCheck = parsedApprovalCard
+        ? checkContent(parsedApprovalCard.subject, parsedApprovalCard.body)
+        : undefined;
+      const blockedApprovalCard = Boolean(
+        approvalContentCheck && !approvalContentCheck.ok,
+      );
       const outboundText = overlongApprovalCard
         ? approvalCardRejectedText(
             fromGroup
@@ -1035,7 +1046,14 @@ export class SlackChannel implements Channel {
               : 'The authoring group',
             `This draft was not posted for approval because its complete exact card exceeds Slack's ${MAX_MESSAGE_LENGTH}-character limit and would be split into unapprovable fragments.`,
           )
-        : text;
+        : blockedApprovalCard
+          ? approvalCardRejectedText(
+              fromGroup
+                ? fromGroup.charAt(0).toUpperCase() + fromGroup.slice(1)
+                : 'The authoring group',
+              `This draft was not posted for approval because its exact subject/body fail the host content guard: ${approvalContentCheck!.violations.join('; ')}.`,
+            )
+          : text;
       const displayText = prefix + outboundText;
 
       const baseOpts: {
@@ -1140,6 +1158,17 @@ export class SlackChannel implements Channel {
         logger.error(
           { jid, length: text.length, fromGroup, threadTs: effectiveThreadTs },
           'Slack refused to split an approval card into unapprovable fragments',
+        );
+      }
+      if (blockedApprovalCard) {
+        logger.error(
+          {
+            jid,
+            fromGroup,
+            threadTs: effectiveThreadTs,
+            violations: approvalContentCheck!.violations,
+          },
+          'Slack refused to post an approval card that the Gmail content guard would reject',
         );
       }
       this.lastActivityAt = Date.now();

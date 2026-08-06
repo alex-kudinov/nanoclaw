@@ -684,6 +684,25 @@ cannot resolve a Party, a valid hint is usable only after the same membership
 check. This preserves the fabricated-recipient guard while preventing Entry
 IDs such as `985` from blocking an exact approved action for Party `11152`.
 
+For an exact approved action, Mailman's Gmail payload is now execution intent,
+not content authority. The host reloads the approved Slack card by its durable
+`draft_ts`/channel binding, re-parses recipient, subject, and body, verifies the
+stored hash and recipient, and replaces model-supplied recipient, subject, body,
+thread, Action-ID, Party hint, email type, and rendering flags before the
+one-time claim. Model-added CC and raw-HTML flags are discarded because neither
+is represented in the approval record. Exact `[FOLLOW-UP #N]` cards now enter
+this same path and require `Email`, `Thread-ID`, fenced `Subject`, and fenced
+body fields. Host-generated proposal follow-ups use their PostgreSQL draft row
+as approval authority and the same one-time action/receipt ledger, preventing a
+post-Gmail failure from leaving a resendable pending draft. Deterministic
+pre-Gmail refusals say that Gmail was not called rather than asking the operator
+to reconcile a nonexistent receipt. Parseable cards also run the exact Gmail
+content policy before Slack posts them for approval and again before an
+Action-ID is minted, so the operator cannot approve a deterministic future
+content rejection. The canonical meeting/checkout set includes regional
+`zoom.us`, `book.stripe.com`, Tandem's legacy `tandemcoaching.com`, and its
+company-controlled `tco.ac` short links; suffix lookalikes remain blocked.
+
 `npm run test:email-critical` is a serial Node-22 regression gate for approval
 parsing, SQLite transitions, routing, authorization, recipient/content guards,
 bigint party resolution, receipts, and replay behavior. `release:build` runs
@@ -758,8 +777,8 @@ not repoint either lead's anchor. An approval card too large for one Slack row
 is refused as one visible rejection rather than split into fragments; a
 malformed pre-existing card also posts a rejection at approval while minting no
 action. `test:email-critical` includes malformed-card, same-group result
-isolation, lead-anchor, cross-lead refusal, overlong-card, and Sales cursor
-migration regressions.
+isolation, lead-anchor, cross-lead refusal, overlong-card, pre-approval content
+parity, transactional-link/lookalike, and Sales cursor migration regressions.
 
 ## 12. Integrations
 

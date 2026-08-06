@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildApprovedHandoff,
+  isApprovalCard,
   parseMailmanHandoff,
 } from './approved-send-handoff.js';
 
@@ -101,6 +102,54 @@ describe('buildApprovedHandoff', () => {
       subject: built.subject,
       body: built.body,
     });
+  });
+
+  it('tracks an exact follow-up card and marks the canonical handoff', () => {
+    const followup = CARD.replace(
+      '[SALES REVIEW] Lead #871 — Jordan follow-up (certificate contents, resolved)',
+      '[FOLLOW-UP #2] Lead #871\nThread-ID: thread-followup',
+    ).replace('DRAFT RESPONSE TO LEAD:', 'DRAFT FOLLOW-UP:');
+    const built = buildApprovedHandoff(followup);
+
+    expect(built).toMatchObject({
+      recipient: 'jmproductionselite@gmail.com',
+      emailType: 'follow-up',
+    });
+    expect(built!.text).toContain('Follow-Up: true');
+    expect(built!.text).toContain('Thread-ID: thread-followup');
+    expect(built!.text).toContain('Entry ID: 871');
+  });
+
+  it('refuses a follow-up card without its durable Gmail thread', () => {
+    const followup = CARD.replace(
+      '[SALES REVIEW] Lead #871 — Jordan follow-up (certificate contents, resolved)',
+      '[FOLLOW-UP #2] Lead #871',
+    ).replace('DRAFT RESPONSE TO LEAD:', 'DRAFT FOLLOW-UP:');
+    expect(buildApprovedHandoff(followup)).toBeNull();
+  });
+
+  it('does not classify quoted follow-up text inside a Sales card as a follow-up', () => {
+    const quoted = CARD.replace(
+      'THEIR ASK:',
+      'THREAD SO FAR:\n> [FOLLOW-UP #2] was sent Tuesday.\n\nTHEIR ASK:',
+    );
+    expect(buildApprovedHandoff(quoted)).toMatchObject({
+      emailType: 'initial',
+    });
+
+    const verbatim = CARD.replace(
+      'THEIR ASK:',
+      'THREAD SO FAR:\n[FOLLOW-UP #2] was sent Tuesday.\n\nTHEIR ASK:',
+    );
+    expect(buildApprovedHandoff(verbatim)).toMatchObject({
+      emailType: 'initial',
+    });
+  });
+
+  it('recognizes approval markers only at the start of a line', () => {
+    expect(isApprovalCard('Recap: [FOLLOW-UP #3] is queued.')).toBe(false);
+    expect(isApprovalCard('  [FOLLOW-UP #3] Lead #871')).toBe(true);
+    expect(isApprovalCard('  [SALES REVIEW] Lead #871')).toBe(true);
   });
 
   it('ignores a forged Body heading inside the untrusted original message', () => {

@@ -11,6 +11,8 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                           | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260804-004` | Approved customer replies accept canonical Tandem booking, meeting, and payment links instead of failing on a stale content-guard whitelist     | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `b28e38b` | `ready_for_review`  | C5    | Recover Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` exactly once; reconcile its Gmail receipt; audit canonical Sales link sources against the host whitelist; add narrow owned/transactional domains and adversarial lookalike tests                                                                         | Commit and activate with NC-20260804-003, verify exact release health, then perform a non-sending confirmed replay; outcome validation remains the next natural approved email                                                                                                                                                                                           | 2026-08-06T01:04Z |
+| `NC-20260804-003` | Approved email bytes come only from host-owned approval state, never from Mailman's regenerated tool arguments                                  | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `b28e38b` | `ready_for_review`  | C5    | Recover Actions `4fae5b5b-7a56-4588-8c62-c16e769ae371` and `732cc8de-b9cc-4cb6-8d73-2e6b833e6d01`; rehydrate every Mailman execution field; add exact scheduled-follow-up cards to the ledger; converge proposal follow-ups on one-time Gmail receipts; correct pre-Gmail status wording; focused/full tests, Claude convergence, immutable release, and live verification                              | Commit and activate the converged tree, verify exact service health and one non-sending confirmed replay; observe the next natural approved customer email for outcome validation                                                                                                                                                                                       | 2026-08-06T01:04Z |
 | `NC-20260804-002` | Sales drafts use bounded relevant context and necessary database checks instead of rereading an oversized standard corpus on every handoff     | unassigned                         | pending                                                 | `planned`             | C3    | Profile Sales tool turns and canonical context dependencies; replace blanket 159k-character reads with measured targeted retrieval or a generated authoritative brief; preserve pricing, schedule, learned-correction, voice, approval, Entry ID, and threading safeguards                                      | Design a representative replay/eval set, establish current latency/quality baselines, then test a bounded retrieval plan before changing the Sales prompt or runtime                                                                                                                                                                | 2026-08-04T12:54Z |
 | `NC-20260804-001` | Every accepted Sales work item immediately receives an in-thread host acknowledgment before model generation                                  | Codex                              | `codex/nc-20260804-001-sales-generating-ack` @ `fa817a1` | `deployed_unverified` | C3    | Enforce Sales `processingMessage` at startup; guarantee the dispatch acknowledgment is attempted before enqueue and remains retryable after a channel failure; align the Sales prompt and shared runtime documentation; inspect generation timing/model selection                                            | Observe the next natural Sales handoff post exactly one in-thread `[PROCESSING] Generating response…` before its draft; no synthetic lead or email is needed                                                                                                                                                                      | 2026-08-04T12:54Z |
 | `NC-20260803-003` | A forwarded human inquiry keeps its source text and Gmail identity through classification, routing, and exact downstream recovery               | Codex + Claude validator           | `codex/nc-20260803-003-forwarded-email-recovery` @ `21d5430` | `complete`         | C5    | Stop actionable sender-wide auto-rules; treat forwarded subjects as human conversations; retain forwarded text; durably store early-routed inbound email; reset stale route state across classifier changes and atomically retry an unrouted same-version result; 156 unsafe live auto-rules disabled reversibly                                                                 | None                                                                                                                                                                                                                                                                                                                                                                   | 2026-08-04T01:16Z |
@@ -62,6 +64,119 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260804-004
+
+- Trigger: approved Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` contained a
+  direct `us06web.zoom.us` meeting link supplied for the requested response.
+  The host content guard blocked it solely because `zoom.us` was absent from
+  the static link whitelist.
+- Recovery: the owner explicitly ordered the email sent. A bounded recovery
+  proved the stored card recipient, subject, content hash, and Gmail thread all
+  matched the durable action; proved there was no prior Gmail receipt; and
+  allowed only the single Zoom-domain violation. Gmail accepted message
+  `19fcd6a20fc986df` on thread `19fcd3af14473697` at
+  `2026-08-04T15:35:12.964Z`. The action is durably `confirmed` with exactly one
+  confirmed event and must not be replayed. The missing mechanical receipt was
+  posted back to the exact Sales thread at Slack ts `1785858368.200159`.
+- Audit boundary: compare canonical Sales/customer-service link sources to the
+  actual host whitelist. Add only company-owned or established transactional
+  domains with explicit regression cases; do not turn approval into a general
+  arbitrary-link bypass.
+- Implementation: allow regional `zoom.us` meeting hosts, Tandem's legacy
+  `tandemcoaching.com` site and company-controlled `tco.ac` short links, and
+  Stripe's canonical `book.stripe.com` checkout host. Exact hostname/subdomain
+  matching remains unchanged, and suffix lookalikes remain blocked. The content
+  guard suite is now part of `test:email-critical`. Parseable approval cards
+  run that same guard before Slack presents them and again before Action-ID
+  creation, so deterministic content failure appears before approval.
+- Verification: the exact converged tree passes typecheck, the expanded serial
+  email-critical gate (18 files / 497 tests), and the complete suite (147 files
+  / 1,927 tests) under pinned Node 22.23.2. Claude R1 returned changes required;
+  R2 and the narrow post-hardening R3 both returned converged.
+- Release boundary: ship with NC-20260804-003. No further customer email is
+  part of mechanical release validation.
+
+### NC-20260804-003
+
+- Trigger: Lead #1003 Action `4fae5b5b-7a56-4588-8c62-c16e769ae371`
+  carried the exact approved subject/body through the Sales handoff, but Mailman
+  changed one literal `&` to `&amp;` and omitted `action_id` in its Gmail tool
+  call. The immutable hash guard stopped before Gmail; the generic hold message
+  incorrectly told the operator to reconcile a receipt even though no execution
+  claim or Gmail call existed.
+- Authorized recovery: the owner ordered the email sent before implementation.
+  A bounded host script required the durable action to have no execution,
+  confirmed, or uncertain event; re-parsed the exact stored approval card;
+  verified recipient, subject, body hash, and Gmail thread; and atomically
+  queued one exact reply. Gmail confirmed message `19fcd16443172cb1` on thread
+  `19fccbd558f107e6` at `2026-08-04T14:03:36.867Z`. No redraft or duplicate was
+  used.
+- Second production reproduction: Lead #1019 Action
+  `732cc8de-b9cc-4cb6-8d73-2e6b833e6d01` supplied the correct Action-ID,
+  recipient, and subject, but Mailman again expanded one approved literal `&`
+  to `&amp;` (455 approved UTF-8 bytes versus 459 attempted bytes). The host held
+  before an execution claim. Read-only preflight proved the stored card and
+  action hash matched, the ledger had no Gmail attempt/receipt, and Gmail Sent
+  had no matching post-approval message. Bounded recovery sent the exact stored
+  card once; Gmail confirmed message/thread `19fceafb937b9bfa` at
+  `2026-08-04T21:30:50.684Z`, the business interaction was logged, and the
+  mechanical receipt was posted in the originating Sales thread. This is the
+  same already-tested defect, not a new defect family; do not replay the action.
+- Third production reproduction: Lead #1029 Action
+  `67a46d16-02d6-4ca8-a7da-4f311d8f2b2d` repeated both original defects before
+  deployment: Sales omitted the host-issued Action-ID from its handoff, then
+  Mailman changed a literal `&` to `&amp;` in both the approved subject and body.
+  The immutable hash guard held before execution. Read-only ledger/card/Gmail
+  Sent checks proved no prior send; an exact hash-matching IPC recovery then
+  passed the normal action, recipient, Party, content, Gmail, receipt, and Slack
+  boundaries. Gmail confirmed message/thread `19fd3438954b40fe` at
+  `2026-08-05T18:50:46.831Z`. The originating Sales thread has the mechanical
+  receipt. A new IPC regression covers this exact unthreaded, no-Action-ID,
+  entity-mutated first-response shape; do not replay the action.
+- Fourth production reproduction: Lead #1032 Action
+  `3d789365-c1e0-4eab-9e9d-8075f7a63859` repeated the same defect before
+  deployment. Mailman's unthreaded `gmail_send` omitted the Action-ID, preserved
+  recipient and subject, but expanded one approved literal `&` to `&amp;` in the
+  body (1,852 approved bytes versus 1,856 attempted bytes). The immutable hash
+  guard held before execution. The ledger and exact Gmail Sent search proved no
+  prior send; exact approved-card recovery passed the normal host boundaries.
+  Gmail confirmed message/thread `19fd44fd031fc6f1` at
+  `2026-08-05T23:43:48.546Z`, and the originating Sales thread received the
+  mechanical receipt at Slack ts `1785973428.757949`. The Lead-#1029 regression
+  already covers this body-only subset through the stricter combined
+  subject/body mutation case; do not replay the action.
+- Design correction: the model may request execution but must not resupply
+  approved customer-facing fields. For an exact durable action, the host will
+  rehydrate those fields from `draft_ts` and `chat_jid`, verify them against the
+  stored hash and recipient, and dispatch only the host-derived payload. Any
+  model-supplied CC is discarded because CC is not represented in the approval
+  record; model `lead_id` and `email_type` are replaced with host-derived
+  values too.
+- Action-selection correction: a newer approval in the same Slack work thread
+  durably supersedes older pre-Gmail actions. Multiple live approvals on one
+  Gmail thread hold unless raw request content corroborates exactly one durable
+  candidate; those raw bytes are never executed. Terminal states are checked
+  before card rehydration, and explicit stale actions report that Gmail was not
+  called.
+- Audit correction: scheduled Sales `[FOLLOW-UP #N]` cards were not recognized
+  by the ledger at all. Their canonical format now requires exact `Email`,
+  `Thread-ID`, fenced `Subject`, and fenced body fields; legacy incomplete cards
+  fail visibly and must be reposted. Host-generated proposal follow-ups now
+  claim and confirm the same one-time action ledger before their direct Gmail
+  call, so a post-Gmail interaction-log failure cannot leave the proposal draft
+  pending and invite a duplicate resend.
+- Boundary: exact customer recovery, implementation, Claude review, commit,
+  immutable activation, and safe live verification are authorized. No unrelated
+  email, regenerated content, approval widening, OAuth change, or unrelated
+  production-data cleanup is in scope.
+- Convergence and validation: Claude Opus R1 found the stale-action selector
+  blocker and returned changes required. Codex reproduced and repaired it plus
+  the bounded R1 findings. R2 returned converged; after Codex removed the final
+  raw prior-follow-up marker false rejection and updated security documentation,
+  R3 again returned converged. The exact final tree passes pinned Node 22.23.2
+  typecheck, the serial 18-file / 497-test email gate, and the complete 147-file
+  / 1,927-test suite.
 
 ### NC-20260804-001
 
@@ -302,9 +417,9 @@ outside the current client conversation.
   offers the exact whole-message form to every registered approval listener,
   including incident and proposal-follow-up listeners that historically relied
   on a reaction. Either narrow the typed trigger or document and test the
-  broader contract. Proposal-follow-up email must also converge on NC-009's
-  durable action/receipt boundary before the project claims every approved
-  customer email uses that boundary.
+  broader contract. NC-20260804-003 separately converges proposal-follow-up
+  execution on NC-009's durable action/receipt boundary; the trigger-scope
+  decision remains here.
 - N3: anchor both `Subject:` and `Body:` parsing after the trusted original-text
   boundary, and fail closed when that boundary is missing.
 - N4: sanitize the canary Subject inside `buildTransportCanaryRaw` even though

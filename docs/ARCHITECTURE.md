@@ -119,6 +119,16 @@ Agents emit IPC files. Host dispatches by type:
 - the Gmail tool's legacy `lead_id` is only a canonical Party-ID hint; host
   recipient/thread resolution is authoritative, and final To/CC membership
   checks remain mandatory;
+- for a durable approved action, the host treats Mailman's call as execution
+  intent and reconstructs recipient, subject, body, Gmail thread, Action-ID,
+  rendering mode, Party hint, and email type from the exact stored approval
+  card before claim;
+- scheduled Sales follow-up cards use the same exact-card action path, while
+  host-generated proposal follow-ups claim and confirm the same ledger directly
+  from their PostgreSQL draft row;
+- a parseable approval card is checked with the same deterministic content
+  policy before Slack presents it for approval and again when the approval is
+  observed; content that Gmail would reject cannot receive an Action-ID;
 - Agent `result` → `channel.sendMessage()` → Slack/Gmail
 
 ---

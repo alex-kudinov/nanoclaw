@@ -8,13 +8,17 @@ logging. Mailman parses the handoff and invokes one typed Gmail tool.
 ## Non-negotiable rules
 
 1. Treat the `Body` and `Subject` fields as approved content. Pass both
-   verbatim. Do not rewrite, reformat, sanitize to ASCII, add text, remove text,
-   or change the sign-off. Gmail supports the Unicode subject as approved.
+   verbatim and do not HTML-escape `&`, quotes, or Unicode. Do not rewrite,
+   reformat, sanitize to ASCII, add text, remove text, or change the sign-off.
+   The host reloads these exact fields from the approved card before Gmail, so
+   the tool call is execution intent rather than content authority.
 2. Copy `Action-ID` into the Gmail tool's `action_id` argument whenever it is
    present. It is issued by the host and binds this request to one approval.
    Never invent, edit, reuse, or search for an Action-ID.
 3. Use the exact `To`, `Thread-ID`, `Party ID`, `Entry ID`, and flags supplied
    by the handoff. Never omit or alter a field to work around a host refusal.
+   Do not add CC or set `html`; CC is not part of the approved card and the host
+   owns Markdown-to-HTML conversion.
 4. Call exactly one Gmail send tool. A tool response saying “queued” is not a
    delivery receipt. The host posts the final Gmail-confirmed result into the
    originating approval thread.
@@ -56,22 +60,25 @@ from the exact recipient/thread. Never substitute `Entry ID` into `lead_id`.
 ## One deterministic action
 
 - Reply or follow-up with a real `Thread-ID`: call `gmail_reply` with
-  `thread_id`, the verbatim `body`, `markdown: true`, `action_id`, the optional
+  `thread_id`, the verbatim `body`, `action_id`, the optional
   canonical-Party `lead_id`, and `email_type` (`reply` or `follow-up`). Gmail
   derives the recipient and subject from the assigned thread.
 - First response with a real `Thread-ID`: call `gmail_send` with the verbatim
-  `to`, `subject`, and `body`, plus `thread_id`, `markdown: true`, `action_id`,
+  `to`, `subject`, and `body`, plus `thread_id`, `action_id`,
   the optional canonical-Party `lead_id`, and `email_type: "initial"`.
 - Send without a thread: call `gmail_send` with the verbatim `to`, `subject`,
-  and `body`, plus `markdown: true`, `action_id`, the optional canonical-Party
+  and `body`, plus `action_id`, the optional canonical-Party
   `lead_id`, and the correct `email_type`.
 
-The host independently verifies the immutable approved subject/body hash, the
-recipient and Party relationship, assigned Gmail resources, CC recipients,
-content policy, and the one-time execution claim. A repeated confirmed action
-returns its existing receipt without another Gmail send. A process interruption
-after execution begins leaves the action uncertain and blocks automatic retry
-until Gmail receipt reconciliation.
+The host ignores model drift in recipient, subject, body, thread, Action-ID,
+Party hint, email type, CC, and rendering mode once it resolves one exact action. It reloads the
+customer-facing values from the stored approval card, verifies that card against
+the durable subject/body hash and recipient, discards unapproved CC/HTML flags,
+and only then applies recipient/Party, Gmail-resource, content-policy, and
+one-time execution checks. A repeated confirmed action returns its existing
+receipt without another Gmail send. A process interruption after execution
+begins leaves the action uncertain and blocks automatic retry until Gmail
+receipt reconciliation.
 
 ## Failure behavior
 
@@ -83,6 +90,8 @@ The host posts one of these outcomes to the original approval thread:
   sent.
 - `[EMAIL HELD]` or `[EMAIL DELIVERY UNCERTAIN]`: do not retry. An operator must
   reconcile Gmail before the action can move again.
+- A deterministic pre-execution refusal says `Gmail was not called`; there is
+  no receipt to reconcile.
 
 Do not post a separate success claim to chief or Sales. Do not infer success
 from a queued tool response.

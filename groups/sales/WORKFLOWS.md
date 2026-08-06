@@ -285,6 +285,8 @@ Post each follow-up as a separate top-level message (one thread per lead):
 ```
 [FOLLOW-UP #{follow_up_count + 1}] Lead #{pipeline_entry_id}
 Category: followup
+Email: {primary_email}
+Thread-ID: {thread_id}
 
 {display_name} | {primary_email}
 
@@ -296,11 +298,18 @@ THREAD SO FAR:
 
 DRAFT FOLLOW-UP:
 ---
+Subject: Re: {original subject}
+
 {the follow-up email draft}
 ---
 
 Waiting for approval. Reply "Approved" to send, or reply with changes.
 ```
+
+The `Email:`, `Thread-ID:`, fenced `Subject:`, and fenced body are mandatory.
+They are the immutable host approval record. A legacy follow-up card without
+those exact fields is rejected visibly and must be reposted before it can be
+sent.
 
 ### Follow-Up Subject Line
 

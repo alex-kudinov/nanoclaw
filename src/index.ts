@@ -7,6 +7,7 @@ import {
   ASSISTANT_NAME,
   DATA_DIR,
   GMAIL_PUSH_WEBHOOK_SECRET,
+  GMAIL_TEST_RECIPIENT,
   HEARTBEAT_INTERVAL_MS,
   HEARTBEAT_JID,
   IDLE_TIMEOUT,
@@ -55,6 +56,9 @@ import {
   getJob,
   clearPendingSends,
   clearPendingSendsByRecipient,
+  claimEmailActionExecution,
+  confirmEmailAction,
+  failEmailAction,
   findPendingSendAction,
   getMessageById,
   listOverdueSends,
@@ -160,6 +164,7 @@ import {
   proposalFollowupTick,
   type ProposalFollowupDeps,
 } from './proposal-followup.js';
+import { executeProposalApprovedEmail } from './proposal-approved-email.js';
 import {
   findChannel,
   formatMessages,
@@ -2215,23 +2220,22 @@ async function main(): Promise<void> {
       slack.registerApprovalListener((ts, reactor) =>
         handleProposalApproval(ts, reactor, {
           getPendingByTs,
-          sendEmail: async (d) => {
-            const sent = await handleGmailSend({
-              type: 'gmail_send',
-              groupFolder: 'sales',
-              timestamp: new Date().toISOString(),
-              to: d.recipientEmail,
-              subject: d.subject,
-              body: d.body,
-              markdown: true,
-              emailType: 'follow-up',
-              leadId: d.partyId ?? undefined,
-            });
-            return {
-              messageId: sent?.messageId ?? '',
-              threadId: sent?.threadId ?? '',
-            };
-          },
+          sendEmail: (d) =>
+            executeProposalApprovedEmail(ts, channelJid, d, {
+              recordAction: recordPendingSend,
+              claimAction: claimEmailActionExecution,
+              confirmAction: confirmEmailAction,
+              failAction: failEmailAction,
+              send: async (payload, onConfirmed, onFailed) => {
+                await handleGmailSend(
+                  payload,
+                  undefined,
+                  onConfirmed,
+                  onFailed,
+                );
+              },
+              testRecipient: GMAIL_TEST_RECIPIENT,
+            }),
           markSent,
           postThread: async (slackTs, text) => {
             await slack.sendMessage(channelJid, text, { threadTs: slackTs });

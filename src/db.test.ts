@@ -403,13 +403,103 @@ describe('pending send approvals', () => {
       approvedAt: '2026-07-30T01:01:00.000Z',
     });
 
-    expect(getPendingSendByGmailThread('gmail-thread-1')).toEqual({
-      recipient: 'lead@example.com',
+    expect(getPendingSendByGmailThread('gmail-thread-1')).toMatchObject({
+      ambiguous: false,
+      action: { recipient: 'lead@example.com' },
     });
     expect(clearPendingSendsByRecipient('LEAD@example.com')).toBe(1);
-    expect(getPendingSendByGmailThread('gmail-thread-1')).toBeUndefined();
-    expect(getPendingSendByGmailThread('gmail-thread-2')).toEqual({
+    expect(getPendingSendByGmailThread('gmail-thread-1')).toEqual({
+      ambiguous: false,
+      candidates: [],
+    });
+    expect(getPendingSendByGmailThread('gmail-thread-2')).toMatchObject({
+      ambiguous: false,
+      action: { recipient: 'lead@example.com' },
+    });
+  });
+
+  it('supersedes an older pre-Gmail action in the same Slack work thread', () => {
+    const newerActionId = '1a6d9d42-c03e-499d-b255-ad0823676355';
+    recordPendingSend({
+      actionId,
+      draftTs: 'draft-v1',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      threadTs: 'lead-thread',
+      gmailThreadId: 'gmail-thread',
       recipient: 'lead@example.com',
+      approvedSubject: 'Subject v1',
+      approvedContentSha256: hashApprovedEmailContent('Subject v1', 'Body v1'),
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+    markEmailActionHandoff(actionId, 'handoff-v1', '2026-08-02T01:00:01.000Z');
+    recordPendingSend({
+      actionId: newerActionId,
+      draftTs: 'draft-v2',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      threadTs: 'lead-thread',
+      gmailThreadId: 'gmail-thread',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject v2',
+      approvedContentSha256: hashApprovedEmailContent('Subject v2', 'Body v2'),
+      approvedAt: '2026-08-02T01:01:00.000Z',
+    });
+
+    expect(getPendingSendByActionId(actionId)).toMatchObject({
+      state: 'blocked',
+      lastErrorCode: 'superseded_by_newer_approval',
+    });
+    expect(listEmailSendEvents(actionId).at(-1)).toMatchObject({
+      stage: 'blocked',
+      code: 'superseded_by_newer_approval',
+    });
+    expect(getPendingSendByGmailThread('gmail-thread')).toMatchObject({
+      ambiguous: false,
+      action: { actionId: newerActionId },
+    });
+    expect(
+      claimEmailActionExecution(
+        actionId,
+        hashApprovedEmailContent('Subject v1', 'Body v1'),
+        'lead@example.com',
+        '2026-08-02T01:02:00.000Z',
+      ),
+    ).toMatchObject({ status: 'held', reason: 'action is blocked' });
+  });
+
+  it('reports ambiguity when one Gmail thread belongs to multiple work threads', () => {
+    recordPendingSend({
+      actionId,
+      draftTs: 'draft-a',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      threadTs: 'lead-thread-a',
+      gmailThreadId: 'shared-gmail-thread',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject A',
+      approvedContentSha256: hashApprovedEmailContent('Subject A', 'Body A'),
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+    recordPendingSend({
+      actionId: '1a6d9d42-c03e-499d-b255-ad0823676355',
+      draftTs: 'draft-b',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      threadTs: 'lead-thread-b',
+      gmailThreadId: 'shared-gmail-thread',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject B',
+      approvedContentSha256: hashApprovedEmailContent('Subject B', 'Body B'),
+      approvedAt: '2026-08-02T01:01:00.000Z',
+    });
+
+    expect(getPendingSendByGmailThread('shared-gmail-thread')).toMatchObject({
+      ambiguous: true,
+      candidates: [
+        { actionId: '1a6d9d42-c03e-499d-b255-ad0823676355' },
+        { actionId },
+      ],
     });
   });
 
@@ -422,9 +512,10 @@ describe('pending send approvals', () => {
       approvedAt: '2026-07-30T01:00:00.000Z',
     });
 
-    expect(
-      getPendingSendByGmailThread('gmail-thread-no-recipient'),
-    ).toBeUndefined();
+    expect(getPendingSendByGmailThread('gmail-thread-no-recipient')).toEqual({
+      ambiguous: false,
+      candidates: [],
+    });
   });
 });
 

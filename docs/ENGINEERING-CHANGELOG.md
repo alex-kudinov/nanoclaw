@@ -8,6 +8,127 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260804-004 — Canonical transactional links survive the content guard
+
+- Date: 2026-08-04T15:40Z
+- Owner/client: Codex + Claude validator
+- State: ready_for_review; customer recovery is Gmail-confirmed, permanent fix
+  is reviewed and not yet deployed
+- Commit/PR: pending on `codex/nc-20260804-003-host-owned-email-bytes`
+- Change class: C5 — customer email content boundary and exact recovery
+- Incident/recovery: Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` was blocked
+  solely for an approved direct `us06web.zoom.us` meeting link. Exact-card
+  preflight proved recipient, subject, content hash, and Gmail thread matched
+  and that no prior receipt existed. A Zoom-only recovery produced Gmail message
+  `19fcd6a20fc986df` on thread `19fcd3af14473697` at
+  `2026-08-04T15:35:12.964Z`; the ledger now contains exactly one confirmed
+  event and is replay-protected. The missing mechanical Gmail receipt was
+  posted to the exact Sales thread at Slack ts `1785858368.200159`.
+- Implementation: allow regional `zoom.us` meeting hosts, Tandem's legacy
+  `tandemcoaching.com` site and company-controlled `tco.ac` short links, and
+  Stripe's canonical `book.stripe.com` checkout host. Exact hostname/subdomain
+  matching remains unchanged, suffix lookalikes remain blocked, and the content
+  guard suite now runs in `test:email-critical`. Parseable approval cards run
+  the same policy before Slack presents them and again before Action-ID
+  creation, preventing an operator from approving a known-unsendable action.
+- Verification: exact pinned Node 22.23.2 typecheck passes; the expanded serial
+  email-critical gate passes 18 files / 497 tests; and the complete suite passes
+  147 files / 1,927 tests. Claude Opus R2 and R3 both returned `CONVERGED` after
+  R1's blocking selector finding was repaired. Formatting and diff whitespace
+  are clean; documentation continuity is the remaining pre-commit gate.
+- Deployment/migration: none yet; no schema migration is required.
+- Safety boundary: no general arbitrary-link approval bypass and no synthetic
+  customer send. Claude review and exact Node-22 release gates precede the
+  immutable activation shared with NC-20260804-003.
+
+### NC-20260804-003 — Execute host-approved email bytes, not model copies
+
+- Date: 2026-08-04T14:38Z
+- Owner/client: Codex + Claude validator
+- State: ready_for_review; customer recovery is Gmail-confirmed,
+  implementation is reviewed and not yet deployed
+- Commit/PR: pending on `codex/nc-20260804-003-host-owned-email-bytes`
+- Change class: C5 — customer email execution, approval identity, one-time
+  Gmail claims, receipts, and duplicate prevention
+- Incident/recovery: Lead #1003 Action
+  `4fae5b5b-7a56-4588-8c62-c16e769ae371` reached Mailman with exact approved
+  bytes, but its tool call omitted `action_id` and changed literal `&` to
+  `&amp;`. The host stopped before an execution claim or Gmail call, then posted
+  misleading receipt-reconciliation wording. A bounded recovery re-parsed the
+  stored card, proved no prior attempt, and sent those exact bytes once. Gmail
+  confirmed message `19fcd16443172cb1`, thread `19fccbd558f107e6`, at
+  `2026-08-04T14:03:36.867Z`.
+- Reproduction/recovery: before this fix was deployed, Lead #1019 Action
+  `732cc8de-b9cc-4cb6-8d73-2e6b833e6d01` repeated the same mutation: Action-ID,
+  recipient, and subject matched, while Mailman expanded one literal `&` to
+  `&amp;` (455 approved UTF-8 bytes versus 459 attempted bytes). The guard held
+  before any execution claim. Read-only ledger/card/Gmail-Sent preflight proved
+  no prior attempt, then bounded exact-card recovery produced Gmail
+  message/thread `19fceafb937b9bfa` at `2026-08-04T21:30:50.684Z`. The action
+  is durably confirmed once, its business interaction was logged, and its Sales
+  thread has the mechanical receipt. Existing HTML-entity drift coverage
+  already exercises this exact defect; this adds operational evidence, not a
+  sixth defect family.
+- Reproduction/recovery addendum 2026-08-05: Lead #1029 Action
+  `67a46d16-02d6-4ca8-a7da-4f311d8f2b2d` repeated the combined pre-deployment
+  path: Sales omitted the Action-ID and Mailman entity-escaped a literal `&` in
+  both subject and body. The action never entered execution, Gmail Sent had no
+  matching message, and exact approved-card recovery passed the normal host
+  guards and produced Gmail-confirmed message/thread `19fd3438954b40fe` at
+  `2026-08-05T18:50:46.831Z`; the Sales thread has the receipt. A focused IPC
+  regression now exercises this exact unthreaded, missing-ID, mutated-field
+  shape. It is additional evidence for the pending host-owned execution fix,
+  not a new defect family.
+- Reproduction/recovery addendum 2026-08-05: Lead #1032 Action
+  `3d789365-c1e0-4eab-9e9d-8075f7a63859` repeated the same pre-deployment
+  missing-ID/entity-mutation path. Mailman preserved recipient and subject but
+  changed one body `&` to `&amp;` (1,852 versus 1,856 bytes). No execution claim
+  or Gmail Sent match existed before recovery. Exact approved-card recovery
+  passed the normal host guards and produced Gmail-confirmed message/thread
+  `19fd44fd031fc6f1` at `2026-08-05T23:43:48.546Z`; the originating Sales
+  thread has the receipt. The existing Lead-#1029 regression covers this
+  narrower body-only mutation shape, so this is operational recurrence evidence
+  rather than a new defect family.
+- Implementation: after resolving one action, the host reloads its exact Slack
+  card and replaces Mailman-supplied Action-ID, recipient, subject, body,
+  thread, CC, HTML/Markdown mode, Party hint, and email type with host-approved
+  or host-derived values before authorization and claim. Deterministic
+  pre-Gmail holds become terminal blocked actions that explicitly say Gmail was
+  not called. Exact scheduled Sales follow-up cards now enter the same ledger
+  and must include Email, Thread-ID, fenced Subject, and fenced body. Direct
+  host proposal follow-ups now claim and confirm the action ledger so a failure
+  after Gmail accepts cannot invite a duplicate resend.
+- Action selection: recording a newer approval in the same Slack work thread
+  transactionally blocks older pre-Gmail actions as superseded, while never
+  superseding an action that may have reached Gmail. A Gmail thread with
+  multiple live approvals is held unless raw request content identifies exactly
+  one durable candidate; raw bytes are corroboration only and never execution
+  authority. Confirmed/uncertain/blocked state is evaluated before card
+  rehydration, and deterministic pre-Gmail failures explicitly say Gmail was
+  not called.
+- Verification: six focused files pass 91/91 tests, including
+  HTML-entity/Unicode/spacing drift, missing Action-ID,
+  recipient/subject/thread/CC/HTML/Party/type replacement, exact follow-up
+  arming, proposal confirmed replay, pre-receipt uncertainty, and a post-send
+  logging exception. On the combined final tree, pinned Node 22.23.2 typecheck,
+  the final 18-file / 497-test email-critical gate, and the complete 147-file /
+  1,927-test suite pass. Claude Opus R1 returned `CHANGES REQUIRED` after
+  independently proving the stale-approved-card selector defect. R2 returned
+  `CONVERGED` after the repair; R3 again returned `CONVERGED` after a final
+  parser false-rejection residual and security-documentation gap were closed.
+  Commit, immutable activation, and live non-sending replay remain pending.
+- Files: `src/approved-email-execution.ts`, `src/ipc.ts`,
+  `src/approved-send-handoff.ts`, `src/send-watchdog.ts`,
+  `src/proposal-approved-email.ts`, `src/index.ts`, focused tests,
+  `package.json`, Sales/Mailman procedures, architecture/security/project map,
+  active work, and this changelog.
+- Deployment/migration: none yet. No schema migration is required.
+- Rollback/recovery: revert the exact release; the already confirmed customer
+  recovery must never be replayed as a new action.
+- Follow-ups: activate the exact reviewed commit, verify service/release
+  identity and a confirmed-action replay without Gmail duplication, then use
+  the next natural approved email as business-outcome validation.
+
 ### NC-20260804-001 — Sales work is acknowledged before model generation
 
 - Date: 2026-08-04T12:36Z

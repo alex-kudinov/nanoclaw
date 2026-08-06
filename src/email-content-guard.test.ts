@@ -79,6 +79,35 @@ describe('checkContent', () => {
     expect(r.ok).toBe(true);
   });
 
+  it('allows canonical Tandem meeting, checkout, legacy-site, and short links', () => {
+    const r = checkContent(
+      'Your links',
+      [
+        'Join at https://us06web.zoom.us/j/123456789.',
+        'Book at https://book.stripe.com/example.',
+        'Learn more at https://www.tandemcoaching.com/coaching.',
+        'Use https://lnk.tco.ac/example.',
+      ].join('\n'),
+    );
+    expect(r.ok).toBe(true);
+    expect(r.violations).toEqual([]);
+  });
+
+  it('still blocks lookalikes of canonical transactional domains', () => {
+    for (const url of [
+      'https://zoom.us.evil.example/j/123',
+      'https://book.stripe.com.evil.example/pay',
+      'https://tco.ac.evil.example/go',
+      'https://tandemcoaching.com.evil.example/login',
+      'https://evil.example\\.zoom.us/j/123',
+      'https://zoom.us@evil.example/j/123',
+    ]) {
+      const r = checkContent('Link', url);
+      expect(r.ok, url).toBe(false);
+      expect(r.violations, url).toHaveLength(1);
+    }
+  });
+
   it('does not flag the established MCS acronym or full program name', () => {
     expect(
       checkContent(

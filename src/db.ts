@@ -1249,6 +1249,9 @@ export function recordPendingSend(row: {
         `SELECT ${EMAIL_ACTION_SELECT} FROM pending_sends WHERE draft_ts = ?`,
       )
       .get(row.draftTs) as EmailSendDbRow;
+    const storedIdentity = db
+      .prepare('SELECT rowid FROM pending_sends WHERE draft_ts = ?')
+      .get(row.draftTs) as { rowid: number };
     if (
       result.changes > 0 &&
       stored.action_id === row.actionId &&
@@ -1259,6 +1262,55 @@ export function recordPendingSend(row: {
         .get(row.actionId);
       if (!prior)
         appendEmailSendEvent(row.actionId, 'approved', row.approvedAt);
+    }
+
+    // A corrected approval in the same Slack work thread supersedes older
+    // pre-Gmail actions. Without this transition, an omitted or stale
+    // Action-ID can bind execution to an older approved card on the same Gmail
+    // thread. Never supersede an action that may already have reached Gmail.
+    if (row.actionId && row.threadTs) {
+      const older = db
+        .prepare(
+          `SELECT action_id FROM pending_sends
+            WHERE group_folder = ?
+              AND chat_jid = ?
+              AND thread_ts = ?
+              AND draft_ts <> ?
+              AND action_id IS NOT NULL
+              AND state IN ('approved', 'handoff_routed', 'mailman_started', 'attention_required')
+              AND (approved_at < ? OR (approved_at = ? AND rowid < ?))`,
+        )
+        .all(
+          row.groupFolder,
+          row.chatJid,
+          row.threadTs,
+          row.draftTs,
+          stored.approved_at,
+          stored.approved_at,
+          storedIdentity.rowid,
+        ) as Array<{ action_id: string }>;
+      for (const priorAction of older) {
+        const superseded = db
+          .prepare(
+            `UPDATE pending_sends
+                SET state = 'blocked',
+                    last_error_code = 'superseded_by_newer_approval',
+                    last_event_at = ?
+              WHERE action_id = ?
+                AND state IN ('approved', 'handoff_routed', 'mailman_started', 'attention_required')`,
+          )
+          .run(row.approvedAt, priorAction.action_id);
+        if (superseded.changes > 0) {
+          appendEmailSendEvent(
+            priorAction.action_id,
+            'blocked',
+            row.approvedAt,
+            {
+              code: 'superseded_by_newer_approval',
+            },
+          );
+        }
+      }
     }
     return mapEmailSendAction(stored);
   });
@@ -1629,39 +1681,28 @@ export function listEmailSendEvents(actionId: string): Array<{
 }
 
 /** Host-approved reply binding used to reissue a mailman thread after restart. */
-export function getPendingSendByGmailThread(gmailThreadId: string):
-  | {
-      actionId?: string;
-      recipient?: string;
-      approvedContentSha256?: string;
-    }
-  | undefined {
-  const row = db
+export function getPendingSendByGmailThread(gmailThreadId: string): {
+  action?: EmailSendActionRow;
+  candidates: EmailSendActionRow[];
+  ambiguous: boolean;
+} {
+  const rows = db
     .prepare(
-      `SELECT action_id, recipient, approved_content_sha256 FROM pending_sends
+      `SELECT ${EMAIL_ACTION_SELECT} FROM pending_sends
         WHERE gmail_thread_id = ?
           AND recipient IS NOT NULL
           AND TRIM(recipient) <> ''
           AND state NOT IN ('confirmed', 'blocked', 'uncertain')
-        ORDER BY approved_at, rowid
-        LIMIT 1`,
+        ORDER BY approved_at DESC, rowid DESC
+        LIMIT 2`,
     )
-    .get(gmailThreadId) as
-    | {
-        action_id: string | null;
-        recipient: string | null;
-        approved_content_sha256: string | null;
-      }
-    | undefined;
-  return row
-    ? {
-        ...(row.action_id ? { actionId: row.action_id } : {}),
-        ...(row.recipient ? { recipient: row.recipient } : {}),
-        ...(row.approved_content_sha256
-          ? { approvedContentSha256: row.approved_content_sha256 }
-          : {}),
-      }
-    : undefined;
+    .all(gmailThreadId) as EmailSendDbRow[];
+  const candidates = rows.map(mapEmailSendAction);
+  return {
+    action: candidates.length === 1 ? candidates[0] : undefined,
+    candidates,
+    ambiguous: rows.length > 1,
+  };
 }
 
 export function listOverdueSends(cutoffIso: string): EmailSendActionRow[] {

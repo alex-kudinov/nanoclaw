@@ -31,6 +31,7 @@ import {
   newEmailActionId,
   type EmailActionState,
 } from './email-action.js';
+import { checkContent } from './email-content-guard.js';
 import { logger } from './logger.js';
 
 /**
@@ -124,7 +125,7 @@ export interface SendWatchdogDeps {
  * approval vanished into silence for 15 minutes. Support approvals are send
  * promises exactly like sales ones and get the same safety net.
  */
-const LEAD_RE = /\[SALES REVIEW\]\s*(Lead\s*#\s*\d+)/i;
+const LEAD_RE = /\[(?:SALES REVIEW|FOLLOW-UP\s+#\d+)\]\s*(Lead\s*#\s*\d+)/i;
 const MAILMAN_HANDOFF_RE = /\[HANDOFF:\s*([a-z0-9_-]+)\s*(?:→|->)\s*mailman\]/i;
 const TO_RE = /^\s*To\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
 
@@ -174,6 +175,11 @@ export function recordApproval(
   // before the card reaches Slack. Never mint an action for a malformed or
   // legacy card that the host cannot bind to exact approved bytes.
   if (!approved) return null;
+  // The Gmail boundary runs the same deterministic guard. Refuse to mint an
+  // Action-ID now if those exact approved bytes would inevitably be blocked
+  // later; an operator must never approve a promise the host already knows it
+  // cannot execute.
+  if (!checkContent(approved.subject, approved.body).ok) return null;
   const row: PendingSend = {
     actionId: newEmailActionId(),
     draftTs: opts.draftTs,
@@ -181,7 +187,9 @@ export function recordApproval(
     chatJid: opts.chatJid,
     threadTs: opts.threadTs,
     gmailThreadId:
-      opts.approvedGmailThreadId ?? extractApprovedGmailThreadId(opts.cardText),
+      approved.gmailThreadId ??
+      opts.approvedGmailThreadId ??
+      extractApprovedGmailThreadId(opts.cardText),
     recipient: parseApprovalCardRecipient(opts.cardText),
     leadRef: opts.cardText.match(LEAD_RE)?.[1],
     approvedSubject: approved.subject,
@@ -213,12 +221,15 @@ export async function observeApprovalCard(
   const pending = recordApproval(opts, store);
   const rejected = isApprovalCard(opts.cardText) && !pending;
   if (rejected) {
-    await postRejected(
-      approvalCardRejectedText(
-        opts.authorName,
-        'This approval was not armed because the card cannot be bound to one exact Email, fenced Subject, and body. It was NOT sent.',
-      ),
-    );
+    const parsed = buildApprovedHandoff(opts.cardText);
+    const contentCheck = parsed
+      ? checkContent(parsed.subject, parsed.body)
+      : undefined;
+    const reason =
+      contentCheck && !contentCheck.ok
+        ? `This approval was not armed because its exact subject/body fail the host content guard: ${contentCheck.violations.join('; ')}. It was NOT sent.`
+        : 'This approval was not armed because the card cannot be bound to one exact Email, fenced Subject, and body. It was NOT sent.';
+    await postRejected(approvalCardRejectedText(opts.authorName, reason));
   }
   return { pending, rejected };
 }

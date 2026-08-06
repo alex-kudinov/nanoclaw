@@ -35,6 +35,10 @@ export interface ContentCheckResult {
 /** Domains an outbound email may link to. Extend via EMAIL_LINK_WHITELIST. */
 const DEFAULT_LINK_WHITELIST = [
   'tandemcoach.co',
+  // Current and legacy Tandem-owned customer destinations. `tco.ac` is the
+  // company-controlled short-link domain used by canonical Sales content.
+  'tandemcoaching.com',
+  'tco.ac',
   'tandemcoaching.academy',
   // ICF is the authoritative source we routinely cite for credentials, exams,
   // and the course catalog; the bare domain also covers learning.* and other
@@ -45,8 +49,13 @@ const DEFAULT_LINK_WHITELIST = [
   'coachingfederation.org',
   'learning.coachingfederation.org',
   'buy.stripe.com',
+  // Current canonical supervision checkout links use Stripe's `book` host.
+  'book.stripe.com',
   'plutio.com',
   'calendly.com',
+  // Trafft-backed appointments and direct session responses carry regional
+  // Zoom hosts such as us06web.zoom.us.
+  'zoom.us',
 ];
 
 export function linkWhitelist(): string[] {
@@ -57,7 +66,7 @@ export function linkWhitelist(): string[] {
   return [...DEFAULT_LINK_WHITELIST, ...extra];
 }
 
-const URL_RE = /https?:\/\/([^\s/<>")\]]+)/gi;
+const URL_RE = /https?:\/\/[^\s<>")\]]+/gi;
 
 /** hostname allowed iff it equals or is a subdomain of a whitelisted domain. */
 function hostAllowed(host: string, whitelist: string[]): boolean {
@@ -69,7 +78,17 @@ function checkLinks(text: string, violations: string[]): void {
   const wl = linkWhitelist();
   const seen = new Set<string>();
   for (const m of text.matchAll(URL_RE)) {
-    const host = m[1].split(':')[0];
+    let host: string;
+    try {
+      host = new URL(m[0]).hostname;
+    } catch {
+      violations.push(`invalid link "${m[0]}"`);
+      continue;
+    }
+    if (!host) {
+      violations.push(`invalid link "${m[0]}"`);
+      continue;
+    }
     if (seen.has(host)) continue;
     seen.add(host);
     if (!hostAllowed(host, wl))

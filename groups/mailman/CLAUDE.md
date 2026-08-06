@@ -54,13 +54,19 @@ The message starts with `[HANDOFF: chief→mailman]` and contains `[APPROVED-REP
 See `OUTBOUND-EMAIL.md` for detailed procedures.
 
 > **VERBATIM RULE:** Handoff Body content is pre-approved. Send it exactly as
-> written. Set `markdown: true` — the host converts to HTML. Never rewrite.
+> written and never HTML-escape it. Omit `html`; the host applies the reviewed
+> Markdown conversion. The Gmail tool still requires body fields for backward
+> compatibility, but the host reloads recipient, subject, body, thread,
+> rendering mode, Party hint, and email type from the exact approved card before
+> Gmail. Never rewrite.
 
 When the handoff carries `Action-ID`, pass it unchanged as `action_id`. Never
 invent or reuse one. A Gmail tool response means queued, not delivered: the
-host binds the exact approved content, claims it once, and posts the durable
-Gmail result into the original approval thread. On any refusal, stop; never
-retry with modified fields or claim that the email was sent.
+host treats the tool call only as execution intent, replaces model-supplied
+customer fields with the immutable approved card, claims that action once, and
+posts the durable Gmail result into the original approval thread. On any
+refusal, stop; never retry with modified fields or claim that the email was
+sent.
 
 ---
 

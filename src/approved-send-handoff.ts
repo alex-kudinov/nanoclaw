@@ -25,15 +25,18 @@
  */
 
 /** Cards carry the operator-facing summary; only the fenced draft is sendable. */
-const CARD_MARKER = /\[(?:SALES REVIEW|CLIENT SUPPORT REVIEW|SUPPORT-DRAFT)\]/;
+const CARD_MARKER =
+  /^\s*\[(?:SALES REVIEW|CLIENT SUPPORT REVIEW|SUPPORT-DRAFT|FOLLOW-UP\s+#\d+)\]/m;
 const EMAIL_LINE = /^\s*(?:Email|To)\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
-const LEAD_LINE = /\[SALES REVIEW\]\s*Lead\s*#\s*(\d+)/i;
+const LEAD_LINE = /\[(?:SALES REVIEW|FOLLOW-UP\s+#\d+)\]\s*Lead\s*#\s*(\d+)/i;
 const ACTION_LINE = /^\s*Action-ID\s*:\s*(\S+)\s*$/im;
+const THREAD_LINE = /^\s*Thread-ID\s*:\s*(\S+)\s*$/im;
+const FOLLOW_UP_LINE = /^\s*Follow-Up\s*:\s*true\s*$/im;
 /**
  * Sales writes `DRAFT RESPONSE TO LEAD:`, client support writes
  * `DRAFT RESPONSE:`. Both fence the sendable draft identically.
  */
-const DRAFT_HEADING = /^\s*DRAFT RESPONSE(?: TO LEAD)?:\s*$/im;
+const DRAFT_HEADING = /^\s*DRAFT (?:RESPONSE(?: TO LEAD)?|FOLLOW-UP):\s*$/im;
 const FENCE = /^\s*---\s*$/;
 const SUBJECT_LINE = /^\s*Subject\s*:\s*(.+?)\s*$/im;
 
@@ -69,6 +72,8 @@ export interface ApprovedHandoff {
   recipient: string;
   subject: string;
   body: string;
+  emailType: 'initial' | 'follow-up';
+  gmailThreadId?: string;
 }
 
 export interface ParsedMailmanHandoff extends ApprovedHandoff {
@@ -109,6 +114,8 @@ export function parseMailmanHandoff(text: string): ParsedMailmanHandoff | null {
     recipient,
     subject: parsed.subject,
     body: parsed.body,
+    emailType: FOLLOW_UP_LINE.test(text) ? 'follow-up' : 'initial',
+    gmailThreadId: text.match(THREAD_LINE)?.[1],
     actionId: text.match(ACTION_LINE)?.[1],
   };
 }
@@ -127,7 +134,8 @@ export function buildApprovedHandoff(
     sourceGroup?: string;
   } = {},
 ): ApprovedHandoff | null {
-  if (!isApprovalCard(cardText)) return null;
+  const cardMarker = cardText.match(CARD_MARKER)?.[0];
+  if (!cardMarker) return null;
 
   const recipient = parseApprovalCardRecipient(cardText);
   if (!recipient) return null;
@@ -172,6 +180,12 @@ export function buildApprovedHandoff(
   const sourceGroup = /^[a-z0-9_-]+$/i.test(opts.sourceGroup ?? '')
     ? opts.sourceGroup!.toLowerCase()
     : 'sales';
+  const header = lines.slice(0, headingIdx).join('\n');
+  const emailType = /^\s*\[FOLLOW-UP\s+#\d+\]/.test(cardMarker)
+    ? 'follow-up'
+    : 'initial';
+  const gmailThreadId = header.match(THREAD_LINE)?.[1];
+  if (emailType === 'follow-up' && !gmailThreadId) return null;
 
   const text = [
     `[HANDOFF: ${sourceGroup}→mailman]`,
@@ -179,6 +193,8 @@ export function buildApprovedHandoff(
     `Subject: ${subject}`,
     ...(opts.actionId ? [`Action-ID: ${opts.actionId}`] : []),
     ...(leadRef ? [`Entry ID: ${leadRef}`] : []),
+    ...(gmailThreadId ? [`Thread-ID: ${gmailThreadId}`] : []),
+    ...(emailType === 'follow-up' ? ['Follow-Up: true'] : []),
     'Original-Message:',
     original,
     '---END-ORIGINAL---',
@@ -186,5 +202,5 @@ export function buildApprovedHandoff(
     body,
   ].join('\n');
 
-  return { text, recipient, subject, body };
+  return { text, recipient, subject, body, emailType, gmailThreadId };
 }
