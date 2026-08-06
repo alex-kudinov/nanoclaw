@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-04T15:40Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_review; customer recovery is Gmail-confirmed, permanent fix
+- State: ready_for_deploy; customer recovery is Gmail-confirmed, permanent fix
   is reviewed and not yet deployed
-- Commit/PR: pending on `codex/nc-20260804-003-host-owned-email-bytes`
+- Commit: `2e625f0` on `codex/nc-20260804-003-host-owned-email-bytes`
 - Change class: C5 — customer email content boundary and exact recovery
 - Incident/recovery: Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` was blocked
   solely for an approved direct `us06web.zoom.us` meeting link. Exact-card
@@ -45,9 +45,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-04T14:38Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_review; customer recovery is Gmail-confirmed,
+- State: ready_for_deploy; customer recovery is Gmail-confirmed,
   implementation is reviewed and not yet deployed
-- Commit/PR: pending on `codex/nc-20260804-003-host-owned-email-bytes`
+- Commit: `2e625f0` on `codex/nc-20260804-003-host-owned-email-bytes`
 - Change class: C5 — customer email execution, approval identity, one-time
   Gmail claims, receipts, and duplicate prevention
 - Incident/recovery: Lead #1003 Action

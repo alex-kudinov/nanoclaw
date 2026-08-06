@@ -2,7 +2,7 @@
 
 - Topic: host-owned immutable approved-email execution fields and canonical
   transactional-link content policy
-- Status: converged_ready_for_release
+- Status: converged_committed_ready_for_deploy
 - Current round: R3 complete
 - Claude project path: `/private/tmp/nanoclaw-sales-ack`
 - Current Claude session UUID: `DF73C42D-43D7-4EED-A284-7521FE6AB8B3`
@@ -25,8 +25,8 @@
   `3d789365-c1e0-4eab-9e9d-8075f7a63859` reproduced the same path with an exact
   recipient/subject and one body-only `&amp;` expansion, is Gmail-confirmed once
   as `19fd44fd031fc6f1`, and must not be retried
-- Open defects: no review blocker; commit, deployment, live release verification,
-  and natural-path outcome validation remain pending
+- Open defects: no review blocker; committed as `2e625f0`; deployment, live
+  release verification, and natural-path outcome validation remain pending
 - Owner decisions: owner authorized exact recovery, implementation, Claude
   validation, commit, immutable activation, and safe live verification; no
   unrelated email or approval widening is authorized. Claude R2 converged; Codex
