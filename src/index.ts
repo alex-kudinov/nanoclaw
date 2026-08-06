@@ -88,6 +88,7 @@ import {
   storeMessageDirect,
 } from './db.js';
 import { GroupQueue } from './group-queue.js';
+import { isApprovalCardSuccessRecap } from './approval-recap.js';
 import { startIpcWatcher } from './ipc.js';
 import { loadJobRegistry, watchJobRegistry } from './job-registry.js';
 import { handleEmailOpen as handleEmailOpenImpl } from './email-tracking.js';
@@ -659,9 +660,22 @@ async function processGroupMessages(
         // Oana's Thread-ID" and "Still awaiting the Gmail search result", so a
         // stalled send looked identical to a completed one for 45 minutes
         // (Entry 938, 2026-07-28T10:47Z).
-        if (text && group.containerConfig?.suppressFinalText && !threadTs) {
+        const suppressApprovalRecap =
+          group.containerConfig?.suppressFinalText &&
+          isApprovalCardSuccessRecap(text);
+        if (
+          text &&
+          group.containerConfig?.suppressFinalText &&
+          (!threadTs || suppressApprovalRecap)
+        ) {
           logger.info(
-            { group: group.name, length: text.length },
+            {
+              group: group.name,
+              length: text.length,
+              reason: suppressApprovalRecap
+                ? 'non-authoritative-approval-recap'
+                : 'root-card-posting-run',
+            },
             'Final agent text suppressed (suppressFinalText)',
           );
           // Still counts as output for cursor purposes: the agent completed a

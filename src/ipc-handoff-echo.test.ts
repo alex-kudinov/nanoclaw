@@ -435,6 +435,192 @@ describe('IPC handoff routing', () => {
     expect(fs.readdirSync(quarantineDir)).toHaveLength(1);
   });
 
+  it('returns a content-guard rejection to the exact Sales container before posting', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.resolveSourceThread = vi.fn(() => ({
+      chatJid: 'slack:SALES',
+      threadTs: '1786050675.234019',
+    }));
+    deps.deliverSourceInput = vi.fn(() => true);
+    const blocked =
+      '[SALES REVIEW] Lead #1047\nCategory: program-content\n' +
+      'Email: marina@example.com\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\n' +
+      'Subject: Team Coaching Certification\n\n' +
+      'I am happy to help map out the right path.\n---';
+    writeHandoffFile(
+      'sales',
+      blocked,
+      undefined,
+      undefined,
+      'nanoclaw-sales-marina',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).not.toHaveBeenCalledWith(
+      'slack:SALES',
+      blocked,
+      expect.anything(),
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringMatching(
+        /\[APPROVAL CARD REJECTED\].*happy to help.*Sales must repost/,
+      ),
+      expect.objectContaining({
+        threadTs: '1786050675.234019',
+        hostWorkUnitThreadTs: '1786050675.234019',
+        threadKey: 'lead:marina@example.com',
+      }),
+    );
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-marina',
+      expect.stringMatching(
+        /\[approval_card REJECTED\].*happy to help.*not posted.*Correct the full card.*do not claim success/i,
+      ),
+    );
+    expect(
+      fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
+    ).toEqual([expect.stringMatching(/^approval-card-content-/)]);
+  });
+
+  it('keeps a rejected card visible and quarantined when its source container has exited', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.deliverSourceInput = vi.fn(() => false);
+    const blocked =
+      '[SALES REVIEW] Lead #1048\nCategory: program-content\n' +
+      'Email: exited@example.com\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nSubject: Program details\n\n' +
+      'I am happy to help with the program.\n---';
+    writeHandoffFile(
+      'sales',
+      blocked,
+      undefined,
+      undefined,
+      'nanoclaw-sales-exited',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-exited',
+      expect.stringContaining('[approval_card REJECTED]'),
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringMatching(/\[APPROVAL CARD REJECTED\].*happy to help/),
+      expect.objectContaining({ threadKey: 'lead:exited@example.com' }),
+    );
+    expect(sendMessage).not.toHaveBeenCalledWith(
+      'slack:SALES',
+      blocked,
+      expect.anything(),
+    );
+    expect(
+      fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
+    ).toEqual([expect.stringMatching(/^approval-card-content-/)]);
+    expect(fs.existsSync(path.join(tmpRoot, 'ipc', 'sales', 'input'))).toBe(
+      false,
+    );
+  });
+
+  it('returns an overlong-card rejection to the exact Sales container before Slack', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.deliverSourceInput = vi.fn(() => true);
+    const overlong =
+      '[SALES REVIEW] Lead #1049\nCategory: program-content\n' +
+      'Email: long@example.com\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nSubject: Program details\n\n' +
+      `Program information: ${'A'.repeat(4100)}\n---`;
+    writeHandoffFile(
+      'sales',
+      overlong,
+      undefined,
+      undefined,
+      'nanoclaw-sales-overlong',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).not.toHaveBeenCalledWith(
+      'slack:SALES',
+      overlong,
+      expect.anything(),
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringMatching(
+        /\[APPROVAL CARD REJECTED\].*4000-character limit.*Sales must repost/,
+      ),
+      expect.objectContaining({ threadKey: 'lead:long@example.com' }),
+    );
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-overlong',
+      expect.stringMatching(/\[approval_card REJECTED\].*4000-character limit/),
+    );
+    expect(
+      fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
+    ).toEqual([expect.stringMatching(/^approval-card-overlong-/)]);
+  });
+
+  it('includes the Slack group prefix in the exact-session overlong preflight', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.deliverSourceInput = vi.fn(() => true);
+    const cardStart =
+      '\n[SALES REVIEW] Lead #1050\nCategory: program-content\n' +
+      'Email: prefixed@example.com\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nSubject: Program details\n\n' +
+      'Program information: ';
+    const cardEnd = '\n---';
+    const prefixedOverlong =
+      cardStart +
+      'A'.repeat(3995 - cardStart.length - cardEnd.length) +
+      cardEnd;
+    expect(prefixedOverlong).toHaveLength(3995);
+    writeHandoffFile(
+      'sales',
+      prefixedOverlong,
+      undefined,
+      undefined,
+      'nanoclaw-sales-prefixed-overlong',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).not.toHaveBeenCalledWith(
+      'slack:SALES',
+      prefixedOverlong,
+      expect.anything(),
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringMatching(
+        /\[APPROVAL CARD REJECTED\].*4000-character limit.*Sales must repost/,
+      ),
+      expect.objectContaining({ threadKey: 'lead:prefixed@example.com' }),
+    );
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-prefixed-overlong',
+      expect.stringMatching(/\[approval_card REJECTED\].*4000-character limit/),
+    );
+    expect(
+      fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
+    ).toEqual([expect.stringMatching(/^approval-card-overlong-/)]);
+  });
+
   it('also rejects a malformed Sales card whose footer embeds a mailman handoff', async () => {
     process.env.MAILMAN_HOLD_SECONDS = '0';
     const { startIpcWatcher } = await import('./ipc.js');

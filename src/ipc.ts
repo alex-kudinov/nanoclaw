@@ -78,6 +78,11 @@ import {
   isApprovalCard,
   parseApprovalCardRecipient,
 } from './approved-send-handoff.js';
+import { checkContent } from './email-content-guard.js';
+import {
+  isSlackMessageOverLimit,
+  SLACK_MESSAGE_MAX_LENGTH,
+} from './slack-limits.js';
 
 export interface IpcDeps {
   sendMessage: SendMessageFn;
@@ -266,9 +271,11 @@ function writeRejectedApprovalCardInput(
   sourceGroup: string,
   sourceContainer: string | undefined,
   deliverSourceInput: IpcDeps['deliverSourceInput'],
+  reason = 'The review card is missing one exact Email, fenced Subject, or body.',
 ): void {
   const text =
-    '[approval_card REJECTED] The review card is missing one exact Email, fenced Subject, or body. Repost the same card with all three fields; do not send or change the recipient/body.';
+    `[approval_card REJECTED] ${reason} ` +
+    'The card was not posted and is not awaiting approval. Correct the full card and repost it now; do not claim success or send it to Mailman.';
   if (
     sourceContainer &&
     deliverSourceInput?.(sourceGroup, sourceContainer, text)
@@ -494,7 +501,8 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     ([, g]) => g.folder === sourceGroup,
                   );
                   if (sourceEntry) {
-                    if (!buildApprovedHandoff(data.text)) {
+                    const approvedHandoff = buildApprovedHandoff(data.text);
+                    if (!approvedHandoff) {
                       writeRejectedApprovalCardInput(
                         sourceGroup,
                         data.source_container,
@@ -526,6 +534,103 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       logger.error(
                         { sourceGroup, quarantinedAt },
                         'IPC guard: malformed approval card rejected before approval',
+                      );
+                      continue;
+                    }
+                    if (isSlackMessageOverLimit(data.text, sourceGroup)) {
+                      const rejectionReason =
+                        `The complete exact card exceeds Slack's ` +
+                        `${SLACK_MESSAGE_MAX_LENGTH}-character limit and would be split into unapprovable fragments.`;
+                      writeRejectedApprovalCardInput(
+                        sourceGroup,
+                        data.source_container,
+                        deps.deliverSourceInput,
+                        rejectionReason,
+                      );
+                      const recipient = parseApprovalCardRecipient(data.text);
+                      await deps.sendMessage(
+                        sourceEntry[0],
+                        approvalCardRejectedText(
+                          sourceEntry[1].name,
+                          `This draft was not posted for approval because ${rejectionReason.charAt(0).toLowerCase()}${rejectionReason.slice(1)}`,
+                        ),
+                        {
+                          fromGroup: sourceGroup,
+                          threadTs: outboundThreadTsFor(sourceEntry[0]),
+                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                            sourceEntry[0],
+                          ),
+                          ...(recipient
+                            ? { threadKey: `lead:${recipient}` }
+                            : {}),
+                        },
+                      );
+                      const quarantinedAt = quarantineIpcFile(
+                        filePath,
+                        sourceGroup,
+                        'approval-card-overlong',
+                      );
+                      logger.error(
+                        {
+                          sourceGroup,
+                          sourceContainer: data.source_container,
+                          length: data.text.length,
+                          quarantinedAt,
+                        },
+                        'IPC guard: overlong approval card rejected and returned to author',
+                      );
+                      continue;
+                    }
+                    const contentCheck = checkContent(
+                      approvedHandoff.subject,
+                      approvedHandoff.body,
+                    );
+                    if (!contentCheck.ok) {
+                      const rejectionReason =
+                        `The exact subject/body fail the host content guard: ` +
+                        `${contentCheck.violations.join('; ')}.`;
+                      // Unlike Slack's downstream defense-in-depth replacement,
+                      // this branch still has the directory-derived source
+                      // container. Return the failure to that exact Sales turn
+                      // so it corrects and reposts instead of trusting the
+                      // earlier file-queue acknowledgement.
+                      writeRejectedApprovalCardInput(
+                        sourceGroup,
+                        data.source_container,
+                        deps.deliverSourceInput,
+                        rejectionReason,
+                      );
+                      const recipient = parseApprovalCardRecipient(data.text);
+                      await deps.sendMessage(
+                        sourceEntry[0],
+                        approvalCardRejectedText(
+                          sourceEntry[1].name,
+                          `This draft was not posted for approval because ${rejectionReason.charAt(0).toLowerCase()}${rejectionReason.slice(1)}`,
+                        ),
+                        {
+                          fromGroup: sourceGroup,
+                          threadTs: outboundThreadTsFor(sourceEntry[0]),
+                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                            sourceEntry[0],
+                          ),
+                          ...(recipient
+                            ? { threadKey: `lead:${recipient}` }
+                            : {}),
+                        },
+                      );
+                      const quarantinedAt = quarantineIpcFile(
+                        filePath,
+                        sourceGroup,
+                        'approval-card-content',
+                      );
+                      logger.error(
+                        {
+                          sourceGroup,
+                          sourceContainer: data.source_container,
+                          violations: contentCheck.violations,
+                          quarantinedAt,
+                        },
+                        'IPC guard: content-invalid approval card rejected and returned to author',
                       );
                       continue;
                     }

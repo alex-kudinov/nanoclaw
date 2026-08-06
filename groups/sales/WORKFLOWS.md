@@ -102,10 +102,14 @@ Subject: {exact email subject — MANDATORY. The host rejects the entire card be
 Waiting for approval. Reply "Approved" to send, or reply with changes.
 ```
 
-The host parses `Email:`, the fenced `Subject:`, and the fenced body before it
-posts a review card. If any field is missing, the card is quarantined and a
-mechanical rejection appears in this lead's work thread. Repost the same card
-with the missing field; never treat the rejected draft as approved or sent.
+The host parses `Email:`, the fenced `Subject:`, and the fenced body and applies
+the outbound content guard before it posts a review card. `send_message` only
+confirms submission to that host validation queue; it does not confirm that the
+card was posted or is awaiting approval. If a field is missing or the exact
+subject/body fail the guard, the card is quarantined, a mechanical rejection
+appears in the lead's work thread, and `[approval_card REJECTED]` returns to this
+same session. Correct and repost the full card immediately. Never treat a
+rejected draft as posted, approved, or sent, and never emit a success recap.
 
 ## Handling Feedback
 

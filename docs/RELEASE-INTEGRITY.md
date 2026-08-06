@@ -80,11 +80,19 @@ From a clean reviewed commit:
 nvm use
 node --version
 npm ci
+npm ci --include=dev --prefix container/agent-runner
 npm run typecheck
 npm run test:email-critical
 npm test
 npm run release:build
 ```
+
+The runner is an independent package, not an npm workspace. Its locked
+dependencies, including build/test dev dependencies, must therefore be
+installed separately before
+`test:email-critical` or `release:build`; the shared email gate deliberately
+builds and tests the runner and fails closed when those dependencies are
+missing.
 
 The expected version is exactly `v22.23.2`. Record the builder's JSON output,
 including archive path, archive SHA-256, full commit, source tree, compiled

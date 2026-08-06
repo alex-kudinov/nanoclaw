@@ -128,7 +128,10 @@ Agents emit IPC files. Host dispatches by type:
   from their PostgreSQL draft row;
 - a parseable approval card is checked with the same deterministic content
   policy before Slack presents it for approval and again when the approval is
-  observed; content that Gmail would reject cannot receive an Action-ID;
+  observed; content that Gmail would reject cannot receive an Action-ID. The
+  pre-Slack rejection is also returned through the exact originating container
+  work unit so Sales corrects and reposts instead of treating the IPC queue
+  acknowledgement as posting success;
 - Agent `result` → `channel.sendMessage()` → Slack/Gmail
 
 ---

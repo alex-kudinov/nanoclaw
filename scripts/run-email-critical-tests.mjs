@@ -8,6 +8,7 @@ import { pathToFileURL } from 'url';
 export const EMAIL_CRITICAL_TEST_ARGS = [
   'run',
   'src/approved-email-execution.test.ts',
+  'src/approval-recap.test.ts',
   'src/approved-send-handoff.test.ts',
   'src/channels/slack.test.ts',
   'src/classify-ipc-handlers.test.ts',
@@ -39,6 +40,15 @@ export function runEmailCriticalTests({ root = process.cwd() } = {}) {
     ],
     { cwd: root, stdio: 'inherit' },
   );
+  const runnerRoot = path.join(root, 'container', 'agent-runner');
+  execFileSync('npm', ['run', 'build'], {
+    cwd: runnerRoot,
+    stdio: 'inherit',
+  });
+  execFileSync('npm', ['test'], {
+    cwd: runnerRoot,
+    stdio: 'inherit',
+  });
 }
 
 if (

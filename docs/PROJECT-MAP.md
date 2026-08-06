@@ -703,6 +703,15 @@ content rejection. The canonical meeting/checkout set includes regional
 `zoom.us`, `book.stripe.com`, Tandem's legacy `tandemcoaching.com`, and its
 company-controlled `tco.ac` short links; suffix lookalikes remain blocked.
 
+Approval-card submission is asynchronous, so the container tool explicitly
+describes its result as pending host validation rather than `Message sent`.
+Malformed, content-invalid, or overlong cards are quarantined, rejected visibly
+in the host-derived Slack work thread, and returned through the exact
+originating container work unit with an instruction to correct and repost.
+Card-posting groups also suppress narrow positive final-text recaps that claim a
+draft was posted and awaits approval; blocking signals, actual progress, and
+Gmail receipts remain visible.
+
 `npm run test:email-critical` is a serial Node-22 regression gate for approval
 parsing, SQLite transitions, routing, authorization, recipient/content guards,
 bigint party resolution, receipts, and replay behavior. `release:build` runs
@@ -776,9 +785,14 @@ deriving the same lead identity. A mismatch opens no cross-lead thread and does
 not repoint either lead's anchor. An approval card too large for one Slack row
 is refused as one visible rejection rather than split into fragments; a
 malformed pre-existing card also posts a rejection at approval while minting no
-action. `test:email-critical` includes malformed-card, same-group result
-isolation, lead-anchor, cross-lead refusal, overlong-card, pre-approval content
-parity, transactional-link/lookalike, and Sales cursor migration regressions.
+action. Content-guard and overlong-card rejections return to the exact authoring
+container; the tool's earlier file-queue acknowledgement is never described as
+a successful Slack post, and a narrow positive model-authored
+`draft posted / awaiting approval` recap is suppressed independently of thread
+placement without hiding blocking prose. `test:email-critical` includes
+malformed-card, same-group result isolation, lead-anchor, cross-lead refusal,
+overlong-card, pre-approval content parity, transactional-link/lookalike, and
+Sales cursor migration regressions.
 
 ## 12. Integrations
 
@@ -910,13 +924,13 @@ Never solve that gap by syncing Claude session/auth directories.
 ```bash
 nvm use
 npm install
+npm ci --include=dev --prefix container/agent-runner
 npm run typecheck
 npm run test:email-critical
 npm test
 npm run release:build
 
 cd container/agent-runner
-npm install
 npm run build
 npm test
 

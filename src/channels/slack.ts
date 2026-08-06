@@ -47,6 +47,11 @@ import {
 import { logger } from '../logger.js';
 import { splitForSlack } from '../message-split.js';
 import {
+  isSlackMessageOverLimit,
+  slackMessagePrefix,
+  SLACK_MESSAGE_MAX_LENGTH,
+} from '../slack-limits.js';
+import {
   buildApprovalContent,
   isExplicitApprovalText,
   isCheckReaction,
@@ -65,7 +70,7 @@ import { registerChannel } from './registry.js';
 
 // Slack's chat.postMessage API limits text to ~4000 characters per call.
 // Messages exceeding this are split into sequential chunks.
-const MAX_MESSAGE_LENGTH = 4000;
+const MAX_MESSAGE_LENGTH = SLACK_MESSAGE_MAX_LENGTH;
 const SCHEDULED_REVISION_WINDOW_MS = 6 * 60 * 60 * 1000;
 const OUTGOING_RETRY_BASE_MS = 5_000;
 const OUTGOING_RETRY_MAX_MS = 5 * 60 * 1000;
@@ -1025,11 +1030,9 @@ export class SlackChannel implements Channel {
 
     try {
       // Prefix agent messages with group name for readability
-      const prefix =
-        fromGroup && !text.startsWith('[') ? `[${fromGroup}]\n` : '';
+      const prefix = slackMessagePrefix(text, fromGroup);
       const overlongApprovalCard =
-        isApprovalCard(text) &&
-        prefix.length + text.length > MAX_MESSAGE_LENGTH;
+        isApprovalCard(text) && isSlackMessageOverLimit(text, fromGroup);
       const parsedApprovalCard = isApprovalCard(text)
         ? buildApprovedHandoff(text)
         : null;

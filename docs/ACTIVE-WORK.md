@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                           | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260806-001` | A host-rejected Sales approval card returns the exact failure to its originating agent session and cannot be reported as successfully posted   | Codex + Claude validator           | `codex/nc-20260806-001-approval-rejection-loop` @ `aff14c8` | `ready_for_deploy`    | C5    | Recover Marina Lead #1047's rejected card without redrafting; return malformed, content-invalid, and overlong cards to the exact originating container; preserve work-thread isolation; prevent pure posted/awaiting-approval recaps without hiding blocked progress; extend the release gate and validate with Claude | Commit and build the immutable release, rebuild and refresh the runner before host activation, copy the reviewed Sales instructions, activate and verify exact health, recycle only idle Sales containers, then run a non-customer exact-session rejection/repost canary                                                                                                    | 2026-08-06T22:30Z |
 | `NC-20260804-004` | Approved customer replies accept canonical Tandem booking, meeting, and payment links instead of failing on a stale content-guard whitelist     | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993` | `deployed_unverified` | C5    | Recover Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` exactly once; reconcile its Gmail receipt; audit canonical Sales link sources against the host whitelist; add narrow owned/transactional domains and adversarial lookalike tests; deploy the converged immutable release and verify its exact identity and guards | Observe the next natural approved email containing a canonical Sales link pass the normal approval-to-Gmail path; no synthetic customer send is needed                                                                                                                                                                                                                 | 2026-08-06T01:43Z |
 | `NC-20260804-003` | Approved email bytes come only from host-owned approval state, never from Mailman's regenerated tool arguments                                  | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993` | `deployed_unverified` | C5    | Recover stranded approved actions exactly once; rehydrate every Mailman execution field; add exact scheduled-follow-up cards to the ledger; converge proposal follow-ups on one-time Gmail receipts; correct pre-Gmail status wording; pass focused/full tests and six Claude rounds; deploy immutable release; verify exact health and a live confirmed replay with no Gmail change | Observe the next natural approved customer email end to end through the normal Sales-to-Mailman watcher path; recovered sends and the live no-duplicate replay prove execution and replay mechanics but do not substitute for that business outcome                                                                                                                       | 2026-08-06T01:43Z |
 | `NC-20260804-002` | Sales drafts use bounded relevant context and necessary database checks instead of rereading an oversized standard corpus on every handoff     | unassigned                         | pending                                                 | `planned`             | C3    | Profile Sales tool turns and canonical context dependencies; replace blanket 159k-character reads with measured targeted retrieval or a generated authoritative brief; preserve pricing, schedule, learned-correction, voice, approval, Entry ID, and threading safeguards                                      | Design a representative replay/eval set, establish current latency/quality baselines, then test a bounded retrieval plan before changing the Sales prompt or runtime                                                                                                                                                                | 2026-08-04T12:54Z |
@@ -64,6 +65,48 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260806-001
+
+- Trigger: Marina Minina Lead #1047 produced a syntactically valid review card
+  whose draft contained the banned phrase `happy to help`. Container-side
+  `send_message` returned `Message sent.` before the asynchronous host checked
+  the exact card. The Slack transport replaced the card with
+  `[APPROVAL CARD REJECTED]`, but that later content-guard branch did not return
+  the rejection to the originating Sales container. Sales therefore emitted a
+  false `Draft posted ... awaiting approval` recap while no approval card
+  existed.
+- Recovery: the exact rejected card was recovered from Sales session
+  `f99127da-01cf-44b7-9399-a85cb6907278`. Only the banned phrase was changed,
+  from `happy to help map out` to `I can map out`; the deployed parser and
+  content guard accepted the corrected card, and the normal Sales IPC path
+  stored it in Marina's original Slack thread at ts `1786051860.082149`.
+- Boundary: make host validation feedback authoritative and targeted to the
+  same container; do not weaken the content guard, synthesize customer email,
+  approve the card, or send it to Gmail.
+- Claude R1: fresh Opus session `22b5d0af-9626-4455-8b57-76c3076f217e`
+  returned `CHANGES REQUIRED`. It verified the exact Marina feedback and
+  container-isolation path, then found that the first recap predicate could
+  suppress blocked prose, an overlong valid card still lacked targeted
+  feedback, the unavailable-container branch lacked a regression, and an
+  approval card with `target_group` received a false cross-group tool string.
+  Codex reproduced and repaired all four before R2.
+- Claude R2: returned `CHANGES REQUIRED` because IPC measured only raw card
+  length while Slack measured the group prefix plus card length when the marker
+  had leading whitespace. Codex replaced the shared constant with a shared
+  prefix-aware predicate used at both sites, added the exact 3,995-character
+  regression, preserved question/still recaps, and added runner build/tests to
+  the immutable email release gate before R3.
+- Claude R3: returned `CONVERGED` on the shared predicate, exact regression,
+  recap behavior, and empirically fail-closed runner gate. Its non-blocking
+  fresh-checkout prerequisite is now explicit: install the independent
+  runner's lockfile before the shared email gate or immutable release build.
+- Claude R4: returned `CONVERGED` on that documentation closeout. The command
+  includes `--include=dev` so a release shell with `NODE_ENV=production` still
+  installs the runner's build/test tools. The bounded follow-up is to cap
+  consecutive rejection/correction turns per container and lead; the current
+  container lifetime still prevents an infinite process, but not repeated
+  visible churn within that lifetime.
 
 ### NC-20260804-004
 

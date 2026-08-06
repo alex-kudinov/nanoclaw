@@ -8,6 +8,61 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260806-001 — Rejected Sales approval cards return to their exact author
+
+- Date: 2026-08-06T22:05Z
+- Owner/client: Codex + Claude validator
+- State: validating; Marina's corrected card is visible for approval, while the
+  implementation is not yet committed, released, deployed, or live-canary
+  verified
+- Commit/release: pending on
+  `codex/nc-20260806-001-approval-rejection-loop`
+- Change class: C5 — customer-email approval presentation and exact-session
+  feedback
+- Incident/recovery: Marina Minina Lead #1047 produced a valid approval card
+  containing the banned phrase `happy to help`. The container received the
+  premature result `Message sent.` before the host content guard rejected the
+  card, and Sales then falsely reported the nonexistent draft as posted. Codex
+  recovered the exact rejected bytes, changed only that phrase to `I can map
+  out`, validated the corrected card with the deployed parser and guard, and
+  reposted it through the normal Sales IPC path to the original work thread at
+  Slack ts `1786051860.082149`. It is awaiting human approval; no approval or
+  Gmail send occurred.
+- Implementation: IPC now parses and content-checks approval cards while the
+  exact source container is still known. Malformed, content-invalid, and valid
+  but overlong cards are quarantined, rejected visibly in the source work
+  thread, and returned only to that container with instructions to correct and
+  repost. A shared 4,000-character limit prevents IPC/Slack drift. The runner's
+  approval-card result now says only that host validation was requested, and a
+  narrow host predicate suppresses pure posted/awaiting-approval recap prose
+  without hiding blocked or negative status text.
+- Verification: pinned Node 22.23.2 typecheck and formatting pass; the serial
+  email-critical gate passes 19 files / 510 tests; the complete suite passes
+  148 files / 1,940 tests; and the independent runner builds and passes 4 files
+  / 29 tests. Claude Opus R1 verified the core Marina path and returned
+  `CHANGES REQUIRED` for four bounded edge cases; Codex reproduced and repaired
+  all four, including Claude's literal false-suppression examples. Claude R2
+  found that a leading-whitespace card could still cross Slack's limit only
+  after its group prefix was added. Both IPC and Slack now call one shared
+  prefix-aware predicate, the exact 3,995-character reproduction is covered,
+  the runner build/tests are part of the immutable email release gate, and
+  question/still recaps remain visible. The post-R2 email gate passes 19 files
+  / 513 tests plus the 29 runner tests; the final complete suite passes 148
+  files / 1,943 tests. Claude R3 returned `CONVERGED`. Its fresh-checkout
+  dependency prerequisite is now explicit in the release runbook and project
+  map: the independent runner's lockfile, including dev dependencies even if
+  `NODE_ENV=production`, must be installed before the shared gate or immutable
+  build. Claude R4 returned `CONVERGED` on that closeout.
+- Safety boundary: the content guard is unchanged and remains fail closed. The
+  repair does not approve a draft, widen customer content, or send email. A
+  non-customer rejection/repost canary is required after immutable activation
+  before outcome validation.
+- Documentation: Sales instructions, workflows, architecture, security,
+  project map, active work, convergence artifacts, and this entry.
+- Rollback/recovery: revert the release as one unit. Marina's accepted approval
+  card remains an independent Slack artifact and must not be reposted or sent
+  without the normal human approval path.
+
 ### NC-20260804-004 — Canonical transactional links survive the content guard
 
 - Date: 2026-08-04T15:40Z

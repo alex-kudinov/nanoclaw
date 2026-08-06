@@ -230,7 +230,11 @@ Gmail IPC outbound email is C3. At that final host boundary:
   Stripe booking links, and regional Zoom hosts; hostname suffix lookalikes
   remain blocked;
 - deterministic guard failures and uncertain delivery errors remain durable
-  and are posted to the originating approval thread.
+  and are posted to the originating approval thread. Pre-approval malformed or
+  content-invalid cards are also returned through the directory-derived source
+  container so another concurrent Sales session cannot consume the correction;
+  the asynchronous tool result is submission for validation, not proof that
+  Slack accepted the card;
 - an overdue `executing` action transitions to non-executable `uncertain`; the
   operator is told it may have sent and must reconcile Gmail before any new
   approval.

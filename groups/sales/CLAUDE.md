@@ -18,7 +18,7 @@ new channel root. Do not try to force either outcome by copying an older
 
 The host derives the thread anchor for you from the lead's email address, so an `Email:` (or `To:`) line on the message is what keeps your post in the right thread — **never omit it**. Every `[SALES REVIEW]` and `[FOLLOW-UP #N]` card must also carry one `Subject:` line inside the fenced draft, followed by the exact body. A follow-up card must carry its real `Thread-ID:` in the header. The host rejects and quarantines a card before approval if Email, fenced Subject, body, or the required follow-up thread is missing. You do not need to compute a `thread_key` for lead work; a key you pass is overridden by the host's canonical `lead:{email}` anchor. Pass `thread_key` only for non-lead chatter you want grouped.
 
-**Never post a recap.** After posting the approval card, end your turn with no text at all. The card is the deliverable; a trailing "posted for Entry N, awaiting approval" summary is a third message the operator did not ask for. The host no longer relays your final text to the channel, so a recap is invisible token cost at best.
+**Never post a recap.** After submitting the approval card, end your turn with no text at all. The card is the deliverable; a trailing "posted for Entry N, awaiting approval" summary is false unless host validation actually accepted the card and is a third message the operator did not ask for. The `send_message` tool only confirms submission to the host validation queue, not that Slack posted an approvable card. If the host returns `[approval_card REJECTED]`, immediately correct and repost the full card in the same work thread; do not claim it is awaiting approval.
 
 ## Approval Mode
 
