@@ -12,9 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-04T15:40Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_deploy; customer recovery is Gmail-confirmed, permanent fix
-  is reviewed and not yet deployed
-- Commit: `2e625f0` on `codex/nc-20260804-003-host-owned-email-bytes`
+- State: deployed_unverified; customer recovery and deployment are
+  Gmail/health-confirmed, with the next natural approved email reserved for
+  business-outcome validation
+- Commit/release: `8ae6993183de31c3aafe0ba65f7a7dab7d3b5eba` on
+  `codex/nc-20260804-003-host-owned-email-bytes`
 - Change class: C5 — customer email content boundary and exact recovery
 - Incident/recovery: Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` was blocked
   solely for an approved direct `us06web.zoom.us` meeting link. Exact-card
@@ -46,7 +48,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   packaging.
 - Release-gate commit: `898294c`; Claude R4 and R6 returned `CONVERGED`, while
   R5's symlink-path false-green finding was repaired before this commit.
-- Deployment/migration: none yet; no schema migration is required.
+- Deployment/migration: no schema migration was required. Immutable release
+  `8ae6993183de31c3aafe0ba65f7a7dab7d3b5eba` is active on the production Mac
+  mini. Health verifies source tree `89f2629dfdde77b160fbc30824287eefa0782545`,
+  artifact hash
+  `1ace579828a381aedef998ac4ae1819f409960ea59fc802789e437dfa0ee06de`,
+  Node `22.23.2`, exact code root, connected Gmail/Slack, one listener, and an
+  idle queue. Operational Sales/Mailman instruction hashes match the release.
 - Safety boundary: no general arbitrary-link approval bypass and no synthetic
   customer send. Claude review and exact Node-22 release gates precede the
   immutable activation shared with NC-20260804-003.
@@ -55,9 +63,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-04T14:38Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_deploy; customer recovery is Gmail-confirmed,
-  implementation is reviewed and not yet deployed
-- Commit: `2e625f0` on `codex/nc-20260804-003-host-owned-email-bytes`
+- State: deployed_unverified; stranded customer approvals are Gmail-confirmed,
+  the implementation is active, and the next natural approved email remains
+  business-outcome validation
+- Commit/release: `8ae6993183de31c3aafe0ba65f7a7dab7d3b5eba` on
+  `codex/nc-20260804-003-host-owned-email-bytes`
 - Change class: C5 — customer email execution, approval identity, one-time
   Gmail claims, receipts, and duplicate prevention
 - Incident/recovery: Lead #1003 Action
@@ -99,6 +109,15 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   thread has the receipt. The existing Lead-#1029 regression covers this
   narrower body-only mutation shape, so this is operational recurrence evidence
   rather than a new defect family.
+- Final pre-activation drain 2026-08-05: exact-card recovery through the
+  reviewed release code durably confirmed Actions
+  `c62d02ac-ed49-4b28-93f9-8935e3f07423`,
+  `b3b0727f-1c51-476e-b854-b313996de655`, and
+  `a5013939-ff73-44bc-bb98-0e4a5a7903d5` with Gmail receipts
+  `19fd4b60e5c393c6`, `19fd4b6457fdb1db`, and `19fd4b85d6692aa2`.
+  Each originating Sales thread received its mechanical receipt. The drained
+  ledger had 23 confirmed and two deterministically blocked actions, with no
+  pending, executing, attention-required, or uncertain state.
 - Implementation: after resolving one action, the host reloads its exact Slack
   card and replaces Mailman-supplied Action-ID, recipient, subject, body,
   thread, CC, HTML/Markdown mode, Party hint, and email type with host-approved
@@ -132,12 +151,19 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `src/proposal-approved-email.ts`, `src/index.ts`, focused tests,
   `package.json`, Sales/Mailman procedures, architecture/security/project map,
   active work, and this changelog.
-- Deployment/migration: none yet. No schema migration is required.
+- Deployment/migration: no schema migration was required. Immutable release
+  `8ae6993183de31c3aafe0ba65f7a7dab7d3b5eba` is active and health-verified with
+  artifact hash
+  `1ace579828a381aedef998ac4ae1819f409960ea59fc802789e437dfa0ee06de`.
+  A live watcher replay of confirmed Action
+  `c62d02ac-ed49-4b28-93f9-8935e3f07423` posted `[EMAIL ALREADY SENT]` in the
+  original thread while its event count stayed at six and the matching Gmail
+  Sent result set remained unchanged. The running release therefore rejected
+  the duplicate without a Gmail call.
 - Rollback/recovery: revert the exact release; the already confirmed customer
   recovery must never be replayed as a new action.
-- Follow-ups: activate the exact reviewed commit, verify service/release
-  identity and a confirmed-action replay without Gmail duplication, then use
-  the next natural approved email as business-outcome validation.
+- Follow-ups: use the next natural approved email as business-outcome
+  validation of the complete normal Sales-to-Mailman watcher path.
 
 ### NC-20260804-001 — Sales work is acknowledged before model generation
 
