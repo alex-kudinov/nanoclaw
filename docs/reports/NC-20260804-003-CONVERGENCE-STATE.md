@@ -2,7 +2,7 @@
 
 - Topic: host-owned immutable approved-email execution fields and canonical
   transactional-link content policy
-- Status: converged_release_gate_ready_for_commit
+- Status: converged_committed_ready_for_deploy
 - Current round: R6 complete
 - Claude project path: `/private/tmp/nanoclaw-sales-ack`
 - Current Claude session UUID: `DF73C42D-43D7-4EED-A284-7521FE6AB8B3`
@@ -33,8 +33,8 @@
   symlinked path could silently skip the gate; Codex changed main detection to
   compare Node's real path. R6 reproduced the ordinary, npm, builder-import,
   import-only, and symlink-alias paths and returned `CONVERGED`. Replacement
-  commit/build, deployment, live verification, and natural-path outcome
-  validation remain pending.
+  release-gate repair is committed as `898294c`; replacement build, deployment,
+  live verification, and natural-path outcome validation remain pending.
 - Owner decisions: owner authorized exact recovery, implementation, Claude
   validation, commit, immutable activation, and safe live verification; no
   unrelated email or approval widening is authorized. Claude R2 converged; Codex

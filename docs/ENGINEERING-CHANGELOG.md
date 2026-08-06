@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-04T15:40Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_review; customer recovery is Gmail-confirmed, permanent fix
+- State: ready_for_deploy; customer recovery is Gmail-confirmed, permanent fix
   is reviewed and not yet deployed
 - Commit: `2e625f0` on `codex/nc-20260804-003-host-owned-email-bytes`
 - Change class: C5 — customer email content boundary and exact recovery
@@ -44,6 +44,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   two copies temporarily equal. The shared runner includes the four added
   guard/action files and must reproduce the 18-file / 497-test gate before
   packaging.
+- Release-gate commit: `898294c`; Claude R4 and R6 returned `CONVERGED`, while
+  R5's symlink-path false-green finding was repaired before this commit.
 - Deployment/migration: none yet; no schema migration is required.
 - Safety boundary: no general arbitrary-link approval bypass and no synthetic
   customer send. Claude review and exact Node-22 release gates precede the
@@ -53,7 +55,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-04T14:38Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_review; customer recovery is Gmail-confirmed,
+- State: ready_for_deploy; customer recovery is Gmail-confirmed,
   implementation is reviewed and not yet deployed
 - Commit: `2e625f0` on `codex/nc-20260804-003-host-owned-email-bytes`
 - Change class: C5 — customer email execution, approval identity, one-time
