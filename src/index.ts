@@ -131,6 +131,7 @@ import {
 import { handleProcurementDecisionMessage } from './procurement-review.js';
 import { procurementPolicyDiagnostic } from './procurement-policy.js';
 import { runProcurementReconciler } from './procurement-reconciler.js';
+import { validateProcurementTaskCompletion } from './procurement-task-completion.js';
 import { SlackChannel } from './channels/slack.js';
 import { handleGmailSend } from './gmail-ipc-handlers.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
@@ -2471,6 +2472,7 @@ async function main(): Promise<void> {
         const text = formatOutbound(rawText);
         if (text) await channel.sendMessage(jid, text, opts);
       },
+      validateTaskCompletion: validateProcurementTaskCompletion,
     },
     hostJobDeps,
   );

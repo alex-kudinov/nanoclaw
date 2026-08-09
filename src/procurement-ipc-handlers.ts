@@ -21,6 +21,7 @@ import {
 } from './procurement-intake.js';
 import { caleProcureIngestEnabled } from './procurement-policy.js';
 import { createProcurementReviewCard } from './procurement-review.js';
+import { activeProcurementTaskRun } from './procurement-task-run.js';
 
 export interface ProcurementQueuePayload {
   type: 'procurement_queue';
@@ -209,9 +210,17 @@ export async function dispatchProcurementIpc(
     ) {
       throw new Error('CaleProcure coverageEvidence is required');
     }
+    const hostRunKey = activeProcurementTaskRun(sourceGroup);
+    const runKey = hostRunKey ?? payload.runKey;
+    if (hostRunKey && hostRunKey !== payload.runKey) {
+      logger.warn(
+        { sourceGroup, modelRunKey: payload.runKey, hostRunKey },
+        'Overriding model CaleProcure run key with scheduled-task identity',
+      );
+    }
     const result = await ingestCaleProcureRows(
       payload.rows,
-      payload.runKey,
+      runKey,
       new Date().toISOString(),
       { query: runtime.query },
       {

@@ -12,10 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-09T19:51Z
 - Owner/client: Codex + Claude owner
-- State: in_progress
-- Commit/release: isolated branch
-  `codex/nc-20260809-003-procurement-recovery` from exact live release
-  `97ca2ccfb9d3185a5b86607fb8118b997e4ef70b`
+- State: deployed_unverified; migration 115 and the first immutable release are
+  live collection-only, while the task/source-run correction is uncommitted
+  and a natural receipted canary remains required
+- Commit/release: commit `9aa23b4e7c394145487baabb64873beb5d321617`
+  is live from isolated branch
+  `codex/nc-20260809-003-procurement-recovery`; follow-up correction pending
 - Change class: C5 — production schema, authorization/configuration, email
   routing, Slack workflow, immutable deployment, and controlled live canaries
 - Affected systems: Procurement control plane, classification taxonomy,
@@ -47,9 +49,43 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   pass.
   A schema-only disposable PostgreSQL rehearsal passed forward migration,
   idempotent reapply, transactional smoke, rollback, and restored migration-114
-  behavior, including the final durable action-receipt design. Nothing
-  is committed, migrated in production, deployed, enabled, or live-canary
-  verified yet.
+  behavior, including the final durable action-receipt design.
+- Deployment and live boundary: migration 115 and immutable release
+  `9aa23b4e7c39` are live under Node 22.23.2; Slack and Gmail health are good;
+  collection is enabled; review is disabled; the legacy daily task is paused.
+  The release archive SHA-256 is
+  `b850b9d9d541a678128ed5495762ceb8e02ce36ae74c9f6e40212be945758522`.
+  This is deployed, not outcome-validated.
+- Live canary evidence: two natural CaleProcure runs returned scheduler
+  `success` but wrote no source-run/card/pursuit rows; the first also queued
+  twice because a due one-time task was not claimed before its slow container
+  completed. Both success claims are rejected. Public browser verification
+  observed all nine release-owned keyword searches and one current positive
+  row, event `0000039985` under business unit `3820`; the page retains a hidden
+  stale row after a zero result and does not safely reach `networkidle`.
+  An operator-assisted adapter canary then completed source run 4 with planned
+  9, observed 9, missing 0, and one new observation/opportunity. That proves
+  the adapter/database path only, not the natural agent path.
+- Follow-up implementation: due tasks use a SQLite compare-and-swap claim;
+  scheduled CaleProcure IPC overrides the model run key with deterministic
+  host token `t.<taskId>.<startMs>`; receipt validation queries that exact key,
+  adapter version, and release-owned planned-unit set; final model text is
+  buffered until validation; scan-shaped prompt drift fails closed; and a
+  restart marks claimed-but-unfinished one-time tasks `error` with a visible
+  alert instead of silently rerunning or losing them.
+- Follow-up verification: Claude Opus R7 returned `CHANGES REQUIRED` with four
+  blockers and six additional findings; all determinate corrections were
+  implemented. Claude R8 then independently returned `GO` for commit,
+  immutable collection-only deployment, and the third natural canary, closing
+  all ten R7 findings. Pinned Node 22.23.2 passes typecheck, build, formatting,
+  `git diff --check`, documentation continuity, 5 focused files / 46 tests,
+  and the complete permission-enabled suite at 152 files / 1,980 tests. The
+  independent runner build and 4 files / 29 tests also pass. R8's live-schema
+  read-only predicate precheck, immutable build/verification, deployment, and
+  the third natural canary remain separate pending facts. Three safe-direction
+  scheduler follow-ups remain explicitly tracked: concurrent-restart false
+  orphan alerts, exact group-not-found terminal recording, and a lost-CAS
+  regression test; none can create a false success.
 - Rollback/recovery: tracked
   `rollback_115_procurement_pursuit.sql` restores the verbatim migration-114
   function bodies, prior taxonomy behavior, and removes 115 objects/columns;

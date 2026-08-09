@@ -977,6 +977,56 @@ export function getDueTasks(): ScheduledTask[] {
     .all(now) as ScheduledTask[];
 }
 
+export function claimTaskRun(
+  id: string,
+  expectedNextRun: string,
+  newNextRun: string | null,
+): boolean {
+  return (
+    db
+      .prepare(
+        `UPDATE scheduled_tasks
+            SET next_run = ?
+          WHERE id = ?
+            AND status = 'active'
+            AND next_run = ?`,
+      )
+      .run(newNextRun, id, expectedNextRun).changes === 1
+  );
+}
+
+const ORPHANED_ONCE_TASK_RESULT =
+  'Error: claimed but never completed; daemon restarted mid-run';
+
+export function failOrphanedOnceTasks(): ScheduledTask[] {
+  const candidates = db
+    .prepare(
+      `SELECT * FROM scheduled_tasks
+        WHERE schedule_type = 'once'
+          AND status = 'active'
+          AND next_run IS NULL
+          AND last_run IS NULL`,
+    )
+    .all() as ScheduledTask[];
+  if (candidates.length === 0) return [];
+
+  const fail = db.transaction(() => {
+    const update = db.prepare(
+      `UPDATE scheduled_tasks
+          SET status = 'error', last_result = ?
+        WHERE id = ?
+          AND schedule_type = 'once'
+          AND status = 'active'
+          AND next_run IS NULL
+          AND last_run IS NULL`,
+    );
+    return candidates.filter(
+      (task) => update.run(ORPHANED_ONCE_TASK_RESULT, task.id).changes === 1,
+    );
+  });
+  return fail();
+}
+
 export function updateTaskAfterRun(
   id: string,
   nextRun: string | null,

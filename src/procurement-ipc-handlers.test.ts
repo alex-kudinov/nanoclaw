@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   dispatchProcurementIpc,
@@ -6,6 +6,14 @@ import {
   type ProcurementIpcDeps,
 } from './procurement-ipc-handlers.js';
 import { CALEPROCURE_PLANNED_UNITS } from './procurement-source-config.js';
+import {
+  _resetProcurementTaskRunsForTests,
+  beginProcurementTaskRun,
+} from './procurement-task-run.js';
+
+beforeEach(() => {
+  _resetProcurementTaskRunsForTests();
+});
 
 function evidenceFor(units: readonly string[]) {
   return Object.fromEntries(
@@ -197,6 +205,65 @@ describe('Procurement IPC writes', () => {
     expect(d.writeInput).toHaveBeenCalledWith(
       'procurement',
       expect.stringContaining('Run 12 is complete'),
+    );
+  });
+
+  it('overrides a model run key with the active host-owned task token', async () => {
+    const d = deps([]);
+    vi.mocked(d.query)
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            run_id: 13,
+            status: 'running',
+            observations_seen: 0,
+            observations_new: 0,
+          },
+        ],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            run_id: 13,
+            status: 'complete',
+            observations_seen: 0,
+            observations_new: 0,
+            missing_units: [],
+          },
+        ],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      });
+    const hostRunKey = beginProcurementTaskRun(
+      'procurement',
+      'task-canary-3',
+      1786319000000,
+    );
+
+    await dispatchProcurementIpc(
+      'procurement',
+      {
+        type: 'procurement_caleprocure_ingest',
+        runKey: 'model-date-shaped-key',
+        rows: [],
+        observedUnits: [...CALEPROCURE_PLANNED_UNITS],
+        coverageEvidence: evidenceFor(CALEPROCURE_PLANNED_UNITS),
+      },
+      {
+        ...d,
+        env: { PROCUREMENT_CALEPROCURE_INGEST_ENABLED: '1' },
+      },
+    );
+
+    expect(vi.mocked(d.query).mock.calls[0][1]?.[1]).toBe(hostRunKey);
+    expect(vi.mocked(d.query).mock.calls[0][1]).not.toContain(
+      'model-date-shaped-key',
     );
   });
 

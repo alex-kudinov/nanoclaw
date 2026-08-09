@@ -44,7 +44,7 @@ setRegisteredGroup(jid, {
         readonly: true,
       },
     ],
-    spawnTimeout: 300000, // 5 min — browser startup + login + page load is slow
+    spawnTimeout: 900000, // 15 min — the bounded nine-keyword coverage run exceeded the legacy 5 min cap
     timeout: 900000, // 15 min — scan + scrape + analysis pipeline
   },
 });

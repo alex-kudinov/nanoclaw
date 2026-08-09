@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                           | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260809-003` | Make Procurement a stable, observable opportunity-to-decision-to-proposal-ready system before adding sources                                   | Codex + Claude owner               | `codex/nc-20260809-003-procurement-recovery` @ `97ca2cc` | `ready_for_review`   | C5    | Isolated implementation from the exact live release; read-only production preflight; tracked configuration and email routing; receipted source completeness; post-decision pursuit ledger; acknowledged reconciliation/action-receipt outbox; rehearsed rollback; immutable release; sanitized and one bounded real non-submission canary; preserve manual submission                  | Commit the R4-converged tree, build/verify the immutable artifact, then back up and deploy dark before any gate or source expansion                                                                                                                                                                                                                                      | 2026-08-09T21:18Z |
+| `NC-20260809-003` | Make Procurement a stable, observable opportunity-to-decision-to-proposal-ready system before adding sources                                   | Codex + Claude owner               | `codex/nc-20260809-003-procurement-recovery` @ `9aa23b4` | `deployed_unverified` | C5    | Migration 115 and immutable release are live; collection-only canary; scheduler one-off claim repair; proposal/source design convergence; preserve manual commercial actions and submission                                                                                                                                            | Ship the R7 receipt-correlation correction, then require one natural nine-unit CaleProcure source-run receipt before review, proposal, or source expansion                                                                                                                                                                         | 2026-08-09T23:55Z |
 | `NC-20260806-001` | A host-rejected Sales approval card returns the exact failure to its originating agent session and cannot be reported as successfully posted   | Codex + Claude validator           | `codex/nc-20260806-001-approval-rejection-loop` @ `aff14c8` | `ready_for_deploy`    | C5    | Recover Marina Lead #1047's rejected card without redrafting; return malformed, content-invalid, and overlong cards to the exact originating container; preserve work-thread isolation; prevent pure posted/awaiting-approval recaps without hiding blocked progress; extend the release gate and validate with Claude | Commit and build the immutable release, rebuild and refresh the runner before host activation, copy the reviewed Sales instructions, activate and verify exact health, recycle only idle Sales containers, then run a non-customer exact-session rejection/repost canary                                                                                                    | 2026-08-06T22:30Z |
 | `NC-20260804-004` | Approved customer replies accept canonical Tandem booking, meeting, and payment links instead of failing on a stale content-guard whitelist     | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993` | `deployed_unverified` | C5    | Recover Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` exactly once; reconcile its Gmail receipt; audit canonical Sales link sources against the host whitelist; add narrow owned/transactional domains and adversarial lookalike tests; deploy the converged immutable release and verify its exact identity and guards | Observe the next natural approved email containing a canonical Sales link pass the normal approval-to-Gmail path; no synthetic customer send is needed                                                                                                                                                                                                                 | 2026-08-06T01:43Z |
 | `NC-20260804-003` | Approved email bytes come only from host-owned approval state, never from Mailman's regenerated tool arguments                                  | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993` | `deployed_unverified` | C5    | Recover stranded approved actions exactly once; rehydrate every Mailman execution field; add exact scheduled-follow-up cards to the ledger; converge proposal follow-ups on one-time Gmail receipts; correct pre-Gmail status wording; pass focused/full tests and six Claude rounds; deploy immutable release; verify exact health and a live confirmed replay with no Gmail change | Observe the next natural approved customer email end to end through the normal Sales-to-Mailman watcher path; recovered sends and the live no-duplicate replay prove execution and replay mechanics but do not substitute for that business outcome                                                                                                                       | 2026-08-06T01:43Z |
@@ -126,6 +126,56 @@ outside the current client conversation.
   documentation continuity, 9 focused files / 64 tests, and the complete
   permission-enabled repository suite at 151 files / 1,969 tests. The
   independent runner build and 4 files / 29 tests also pass.
+- Production migration 115 and immutable release `9aa23b4e7c39` are live under
+  Node 22.23.2 with Slack/Gmail healthy. The legacy daily scan is paused and
+  collection alone is enabled; review remains disabled. The first bounded
+  one-time CaleProcure canary crossed the old five-minute timeout and completed
+  after 443 seconds, but wrote no source-run receipt, so its scheduler
+  `success` is explicitly rejected as a business success. While that run was
+  active, the due `once` row was queued a second time because `next_run` was not
+  cleared until completion. `src/task-scheduler.ts` now claims a one-time task
+  before container execution; the focused fake-timer regression proves a slow
+  run is queued exactly once.
+- Claude session `58fde579-483e-42ca-a516-434971d3ad07` resumed from native
+  handoff `2026-08-09-1651-procurement-proposal-source-r5.md`. R6 changed the
+  proposal verdict to `CHANGES REQUIRED`, corrected the missing action-card and
+  event-ledger contracts, and found a latent 115 reconciler defect that would
+  rewrite a future submitted pursuit as `expired_undecided`. That path is not
+  reachable under 115, but migration 116 may not enable `proposal_ready` or
+  `submitted` until it replaces the expiry predicate and passes R7 review.
+- The second natural CaleProcure canary ran exactly once after an operational
+  pause-on-pickup workaround but again produced no source-run receipt. Public
+  browser inspection found eight zero-result planned searches and one current
+  `facilitation` row, event `0000039985` for SF Bay Conservation Commission.
+  The page keeps a stale hidden row after a zero-result search and does not
+  safely settle at `networkidle`; the installed procedure now uses visible
+  markers, ignores retained hidden rows, rejects default-table extraction, and
+  requires a verified business-unit/event identity.
+- An operator-assisted adapter canary first failed closed on the missing
+  business unit, then completed as source run 4 after public agency evidence
+  established business unit `3820`: planned 9, observed 9, missing 0, one new
+  observation/opportunity. This proves the adapter/database path only and does
+  not count as a natural agent scan.
+- Claude R7 returned `CHANGES REQUIRED`. It confirmed the pre-validation
+  final-text leak and uncorrelated post-start receipt query, and additionally
+  found an under-inclusive `rescan` matcher, missing release-owned unit/version
+  checks, a fail-open optional validator, and a restart orphan introduced by
+  clearing a one-time task's due timestamp. The follow-up delta binds IPC
+  ingestion to a host-owned task token, buffers final text until validation,
+  uses a compare-and-swap claim, and fails orphaned one-time tasks loud rather
+  than rerunning them silently. Review remains disabled.
+- Claude R8 independently returned `GO` for commit, immutable collection-only
+  deployment, and a third natural CaleProcure canary. Its review closed all ten
+  R7 findings and confirmed the host token, CAS, task-state, release-contract,
+  and JSONB-predicate semantics. Pinned Node 22.23.2 then passed the complete
+  permitted repository suite at 152 files / 1,980 tests, plus typecheck, build,
+  formatting, documentation continuity, and the independent runner build and
+  4 files / 29 tests. Before the canary, execute the read-only PostgreSQL
+  predicate precheck; keep review disabled and require event `0000039985` / BU
+  `3820` as the unassisted positive control. R8 also records three safe-direction
+  scheduler follow-ups (restart-overlap false orphan alert, exact group-not-found
+  terminal reason, and a lost-CAS regression) that do not permit a false success
+  and do not block this reviewed release.
 
 ### NC-20260806-001
 

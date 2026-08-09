@@ -14,11 +14,17 @@ No authentication needed. Navigate directly to the search page:
 
 ```bash
 agent-browser open "https://caleprocure.ca.gov/pages/Events-BS3/event-search.aspx"
-agent-browser wait --load networkidle
+agent-browser wait 10000
 agent-browser snapshot -i
 ```
 
-If the page doesn't load (403, timeout, or blank): wait 10s, retry once. If still failing, report to Slack and skip CaleProcure scan (Bonfire scan results are still valid).
+Do not wait for `networkidle`: this PeopleSoft page keeps background/AJAX work
+alive and may never reach that state. A successful load is the visible `Event
+Search` heading plus either `Showing Results` or `No event met your search
+criteria`. If those markers are absent (403, timeout, blank, or still
+`Loading...`), wait 10s and snapshot once more. If they are still absent,
+report to Slack and skip CaleProcure scan (Bonfire scan results are still
+valid).
 
 ## Step 2 — Search by Keyword
 
@@ -39,10 +45,17 @@ written, one at a time:
 For each keyword:
 1. Clear any previous search
 2. Enter keyword in the search field
-3. Wait for results to load (AJAX — watch for table/list to populate)
+3. Wait 4 seconds, then snapshot. If the results/no-results marker has not
+   changed, wait 6 more seconds and snapshot once more. Do not use
+   `networkidle`.
 4. Extract opportunities from results
 5. If paginated (>25 results), navigate first 2 pages
 6. Clear search, next keyword
+
+Before extracting, confirm the visible `Event Name` input contains the current
+keyword and that the page shows either a new `Showing Results` summary or the
+no-results message. The default unfiltered page currently shows hundreds of
+posted events; never treat that default table as the result of a planned unit.
 
 **Optional expansion (does not replace any host-planned unit):** If the search
 supports UNSPSC code filtering, also try:
@@ -50,6 +63,10 @@ supports UNSPSC code filtering, also try:
 - `86132000` — Management education and training services
 
 De-duplicate results across searches.
+
+The table can retain a hidden row from the prior search after the page shows
+`No event met your search criteria`. In that state the current keyword has zero
+results: ignore every retained/hidden table row and record `resultCount: 0`.
 
 ## Step 3 — Extract Opportunities
 
@@ -61,11 +78,28 @@ For each result in the search table, extract:
 | `agency` | Department name |
 | `close_date` | Due/end date |
 | `category` | Event type (RFP, IFB, RFQ, etc.) or UNSPSC code |
-| `url` | Detail page URL — prefer clean format: `https://caleprocure.ca.gov/event/{BU}/{AUC_ID}` |
+| `url` | Verified detail page URL in clean format: `https://caleprocure.ca.gov/event/{BU}/{AUC_ID}` |
 | `event_id` | The AUC_ID from the URL or result row |
+| `business_unit` | The `{BU}` path segment from the verified detail URL |
 | `search_keyword` | Which keyword search found this |
 
 Build a JSON array (de-duplicated by event_id or URL).
+
+The host tool schema is strict. Each row may contain only `event_id`, `title`,
+`agency`, `search_keyword`, `business_unit`, and the optional `close_date`,
+`category`, and `url`. Although the wire schema permits omitting
+`business_unit`, the host requires a stable CaleProcure identity: every row
+must supply `business_unit` or a verified clean `url` containing the same
+business-unit and event-ID pair. Never submit a result-row ID with neither.
+Open the event detail or an authoritative agency link to obtain that path;
+never infer a business unit from the department name.
+
+Do not pass the table's `status` (`Posted` is not a category), raw cells,
+result counts, or any other key. Omit an optional field when it is unknown or
+empty; in particular, never pass `url: ""` or a `javascript:` link. The
+complete deduplicated batch must contain at most 200 rows. If a visible result
+lacks a verifiable business unit, report the unit incomplete and do not claim
+a complete source receipt.
 
 ## Step 4 — Submit One Complete Host Batch
 
@@ -88,6 +122,16 @@ pages have been extracted:
   keyword, with exactly `resultCount` (a non-negative integer) and
   `pagesVisited` (a positive integer). The keys must exactly match
   `observed_units`. Do not include cookies, credentials, or raw page snapshots.
+
+For a scheduled scan, the host replaces the submitted `run_key` with a
+task-bound token before writing the source ledger. The agent-supplied value is
+still required for non-scheduled/manual adapter calls, but it is never trusted
+as scheduled-task identity and cannot make a different task look complete.
+
+Call the host adapter even when `rows` is empty. Nine successfully observed
+zero-result searches are a complete zero-row batch, not a reason to return
+without a receipt. A scan is unfinished until the host returns the terminal
+ingest line below.
 
 The call is bounded to 200 rows and can be default-off during shadow rollout.
 If the host denies or fails the batch:

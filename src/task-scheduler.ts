@@ -10,6 +10,8 @@ import {
   writeTasksSnapshot,
 } from './container-runner.js';
 import {
+  claimTaskRun,
+  failOrphanedOnceTasks,
   getAllTasks,
   getDueTasks,
   getDueJobs,
@@ -25,6 +27,11 @@ import { reportJobResult } from './job-reporter.js';
 import { GroupQueue } from './group-queue.js';
 import { resolveGroupFolderPath } from './group-folder.js';
 import { logger } from './logger.js';
+import { requiresProcurementSourceReceipt } from './procurement-task-completion.js';
+import {
+  beginProcurementTaskRun,
+  endProcurementTaskRun,
+} from './procurement-task-run.js';
 import { RegisteredGroup, ScheduledTask, SendMessageFn } from './types.js';
 
 export interface SchedulerDependencies {
@@ -38,6 +45,10 @@ export interface SchedulerDependencies {
     groupFolder: string,
   ) => void;
   sendMessage: SendMessageFn;
+  validateTaskCompletion: (
+    task: ScheduledTask,
+    startedAtMs: number,
+  ) => Promise<void>;
 }
 
 export interface HostJobDeps {
@@ -126,15 +137,24 @@ async function runTask(
   // Advance next_run immediately to prevent re-fire while the container is running.
   // The scheduler loop checks every 60s; containers can take 5+ minutes.
   // Without this, getDueTasks() returns the same task on every tick.
+  let claimedNextRun: string | null;
   if (task.schedule_type === 'cron') {
     const interval = CronExpressionParser.parse(task.schedule_value, {
       tz: TIMEZONE,
     });
-    const nextRun = interval.next().toISOString();
-    updateTask(task.id, { next_run: nextRun });
+    claimedNextRun = interval.next().toISOString();
   } else if (task.schedule_type === 'interval') {
     const ms = parseInt(task.schedule_value, 10);
-    updateTask(task.id, { next_run: new Date(Date.now() + ms).toISOString() });
+    claimedNextRun = new Date(Date.now() + ms).toISOString();
+  } else {
+    claimedNextRun = null;
+  }
+  if (!task.next_run || !claimTaskRun(task.id, task.next_run, claimedNextRun)) {
+    logger.info(
+      { taskId: task.id, group: task.group_folder },
+      'Scheduled task was already claimed',
+    );
+    return;
   }
 
   logger.info(
@@ -182,6 +202,8 @@ async function runTask(
 
   let result: string | null = null;
   let error: string | null = null;
+  const receiptRequired = requiresProcurementSourceReceipt(task);
+  let activeRunToken: string | null = null;
 
   // For group context mode, use the group's current session
   const sessions = deps.getSessions();
@@ -203,6 +225,13 @@ async function runTask(
   };
 
   try {
+    if (receiptRequired) {
+      activeRunToken = beginProcurementTaskRun(
+        task.group_folder,
+        task.id,
+        startTime,
+      );
+    }
     const output = await runContainerAgent(
       group,
       {
@@ -219,10 +248,13 @@ async function runTask(
       async (streamedOutput: ContainerOutput) => {
         if (streamedOutput.result) {
           result = streamedOutput.result;
-          // Forward result to user (sendMessage handles formatting)
-          await deps.sendMessage(task.chat_jid, streamedOutput.result, {
-            fromGroup: task.group_folder,
-          });
+          // Receipt-required final text is held until the host validates the
+          // causally bound source run. Other task behavior is unchanged.
+          if (!receiptRequired) {
+            await deps.sendMessage(task.chat_jid, streamedOutput.result, {
+              fromGroup: task.group_folder,
+            });
+          }
           scheduleClose();
         }
         if (streamedOutput.status === 'success') {
@@ -255,6 +287,43 @@ async function runTask(
     if (closeTimer) clearTimeout(closeTimer);
     error = err instanceof Error ? err.message : String(err);
     logger.error({ taskId: task.id, error }, 'Task failed');
+  } finally {
+    if (activeRunToken) {
+      endProcurementTaskRun(task.group_folder, activeRunToken);
+    }
+  }
+
+  if (!error) {
+    try {
+      await deps.validateTaskCompletion(task, startTime);
+    } catch (err) {
+      error = err instanceof Error ? err.message : String(err);
+      logger.error(
+        { taskId: task.id, group: task.group_folder, error },
+        'Task completion receipt validation failed',
+      );
+      await deps
+        .sendMessage(task.chat_jid, `[SCHEDULED TASK NOT COMPLETE] ${error}`, {
+          fromGroup: task.group_folder,
+        })
+        .catch((sendError) => {
+          logger.error(
+            { taskId: task.id, err: sendError },
+            'Task completion failure alert could not be delivered',
+          );
+        });
+    }
+  }
+
+  if (!error && receiptRequired && result) {
+    await deps
+      .sendMessage(task.chat_jid, result, { fromGroup: task.group_folder })
+      .catch((sendError) => {
+        logger.error(
+          { taskId: task.id, err: sendError },
+          'Validated task result could not be delivered',
+        );
+      });
   }
 
   const durationMs = Date.now() - startTime;
@@ -300,6 +369,25 @@ export function startSchedulerLoop(
   }
   schedulerRunning = true;
   logger.info('Scheduler loop started');
+
+  for (const task of failOrphanedOnceTasks()) {
+    logger.error(
+      { taskId: task.id, group: task.group_folder },
+      'One-time task was claimed but never completed before daemon restart',
+    );
+    deps
+      .sendMessage(
+        task.chat_jid,
+        `[SCHEDULED TASK NOT COMPLETE] Task ${task.id} was claimed but never completed before daemon restart; it was not re-run automatically.`,
+        { fromGroup: task.group_folder },
+      )
+      .catch((err) => {
+        logger.error(
+          { taskId: task.id, err },
+          'Orphaned one-time task alert could not be delivered',
+        );
+      });
+  }
 
   const loop = async () => {
     try {

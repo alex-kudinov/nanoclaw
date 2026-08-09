@@ -489,7 +489,7 @@ last active around 2026-07-06 and is not asserted to be current production.
 | `certifier`                                               | pending certification workflow and Sertifier actions                          | explicit approval before consequential issue/send                                            |
 | `courses`                                                 | session recap preparation and distribution                                    | current raw SMTP path bypasses Gmail controls and is scheduled for retirement                |
 | `grader`                                                  | rubric/data-driven MCS grading and durable results                            | Sonnet; one thread/container per submission; calibration holds                               |
-| `procurement`                                             | CaleProcure/email review control plane plus legacy Bonfire/proposal lifecycle | new intake is host-normalized/read-only to the minion; Bonfire CDP remains isolate-or-retire |
+| `procurement`                                             | CaleProcure/email review control plane plus legacy Bonfire/proposal lifecycle | scheduled intake uses host-owned task/source-run identity; review and commercial actions remain separately gated; Bonfire CDP remains isolate-or-retire |
 | `archivarista`                                            | domain-isolated knowledge synthesis/archival                                  | Haiku; broad read mounts, provenance critical                                                |
 | `newsroom`                                                | editorial pipeline                                                            | no unapproved broadcast                                                                      |
 | `social`                                                  | LinkedIn content state machine                                                | confirmation/approval boundary                                                               |
@@ -1137,8 +1137,9 @@ separate explicit decision; do not open, publish, or delete them casually.
   Bonfire rows; source-keyed CaleProcure/email rows are host-owned. Both gates
   remain off with no owner IDs or epoch; the schedule, browser, 309 legacy rows,
   and submission boundary were not changed.
-- `NC-20260809-003` is the uncommitted recovery slice under review. Migration
-  115 makes a bound `process` decision create one pursuit transactionally,
+- `NC-20260809-003` migration 115 and immutable release `9aa23b4e7c39` are
+  deployed in collection-only validation. Migration 115 makes a bound
+  `process` decision create one pursuit transactionally,
   keeps every active/overdue pursuit visible, associates repeated observations
   with each exact source run, requires per-unit coverage receipts, and uses an
   acknowledged alert outbox that retries undelivered Slack alerts and re-alerts
@@ -1148,8 +1149,19 @@ separate explicit decision; do not open, publish, or delete them casually.
   action as unrecorded. Host alert posts use `SlackChannel.postTracked`;
   their persisted bot/no-`from_group` shape is suppressed by the existing
   bot-noise spawn guard. `proposal_ready` and `submitted` remain unreachable
-  until the separate typed packet/receipt migration. None of migration 115,
-  its host code, or its gates is deployed yet.
+  until the separate typed packet/receipt migration. Two natural CaleProcure
+  canaries returned scheduler success without a source-run receipt and are
+  explicitly rejected as business successes. An operator-assisted public-row
+  canary proved only the adapter/database path with nine planned/observed units
+  and zero missing. The Claude-R8-reviewed follow-up binds scheduled IPC writes to a
+  host-owned per-task token, buffers final text until that exact receipt
+  validates, verifies the release adapter/unit contract, atomically claims due
+  work, and fails restart-orphaned one-time tasks loud. Collection is enabled;
+  review remains off until a natural receipted canary passes. R8 returned `GO`
+  for an immutable collection-only release and third natural canary after the
+  read-only live-schema predicate precheck; pinned Node 22.23.2 passes the full
+  152-file / 1,980-test host suite and the independent 4-file / 29-test runner
+  suite.
 
 ### P1: reproducibility and source ownership
 
@@ -1222,7 +1234,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/ENGINEERING-CHANGELOG.md`         | append-only implementation/verification/deployment history    | evidence only; do not overstate boundaries crossed                                        |
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | validated, phased improvement roadmap                         | proposed work; not implemented state                                                      |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract   | archive integrity is not publisher authenticity                                           |
-| `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement history, current recovery state, and target loop | migration 114 is deployed dark; NC-20260809-003 migration 115 pursuit closure is implemented and under release validation |
+| `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement history, current recovery state, and target loop | migration 115 is deployed collection-only; natural source-run proof, review closure, and the separately reviewed proposal packet remain open |
 | `docs/SELF-HEALING-COMPLETION-PLAN.md`  | reconciled healer current state and gated completion sequence | action-boundary source is local until separately reviewed/deployed                        |
 | `docs/REQUIREMENTS.md`                  | original product principles                                   | intent, not feature inventory                                                             |
 | `docs/ARCHITECTURE.md`                  | broad bespoke architecture                                    | some SDK terminology is stale                                                             |
