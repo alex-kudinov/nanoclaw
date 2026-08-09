@@ -4,6 +4,7 @@ import {
   createProcurementReviewCard,
   handleProcurementDecisionMessage,
   parseProcurementDecisionCommand,
+  parseProcurementPursuitAdvanceCommand,
   type ProcurementReviewDeps,
 } from './procurement-review.js';
 
@@ -37,6 +38,28 @@ describe('Procurement decision command', () => {
     expect(parseProcurementDecisionCommand('DECIDE #42 v0 process')).toBeNull();
     expect(
       parseProcurementDecisionCommand('DECIDE #42 v0 submit — do it'),
+    ).toBeNull();
+    expect(
+      parseProcurementDecisionCommand('DECIDE #0 v0 process — invalid id'),
+    ).toBeNull();
+  });
+
+  it('accepts only bounded pursuit states with an evidence reason', () => {
+    expect(
+      parseProcurementPursuitAdvanceCommand(
+        'ADVANCE #91 v2 passed — Kill screen failed on mandatory insurance',
+      ),
+    ).toEqual({
+      pursuitId: 91,
+      expectedVersion: 2,
+      targetState: 'passed',
+      reason: 'Kill screen failed on mandatory insurance',
+    });
+    expect(
+      parseProcurementPursuitAdvanceCommand('ADVANCE #91 v2 submitted — sent'),
+    ).toBeNull();
+    expect(
+      parseProcurementPursuitAdvanceCommand('ADVANCE #91 v2 passed'),
     ).toBeNull();
   });
 });
@@ -224,7 +247,7 @@ describe('named-human Procurement decision', () => {
   beforeEach(() => {
     d = {
       query: vi.fn(),
-      postThread: vi.fn(),
+      postThread: vi.fn().mockResolvedValue('124.00'),
     };
   });
 
@@ -267,20 +290,41 @@ describe('named-human Procurement decision', () => {
   });
 
   it('passes only the exact card, version, epoch, decision, and Slack UID', async () => {
-    vi.mocked(d.query).mockResolvedValueOnce({
-      rows: [
-        {
-          opportunity_id: 42,
-          review_state: 'process',
-          review_version: 1,
-          status: 'accepted',
-        },
-      ],
-      rowCount: 1,
-      command: 'SELECT',
-      oid: 0,
-      fields: [],
-    });
+    vi.mocked(d.query)
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            opportunity_id: 42,
+            review_state: 'process',
+            review_version: 1,
+            status: 'accepted',
+          },
+        ],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            alert_id: 71,
+            alert_text:
+              '[PROCUREMENT DECISION RECORDED] #42 is process at v1. Actor: U_ALEX.\nHost pursuit: #91 v0.\nADVANCE #91 v0 passed — <terminal no-bid evidence>',
+          },
+        ],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ acknowledged: true }],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      });
 
     expect(await handleProcurementDecisionMessage(message, d, enabledEnv)).toBe(
       true,
@@ -298,7 +342,23 @@ describe('named-human Procurement decision', () => {
     expect(d.postThread).toHaveBeenCalledWith(
       'slack:C_PROC',
       '123.45',
-      expect.stringContaining('DECISION RECORDED'),
+      expect.stringContaining('ADVANCE #91 v0 passed'),
+    );
+  });
+
+  it('posts a rejection receipt for malformed operator commands', async () => {
+    expect(
+      await handleProcurementDecisionMessage(
+        { ...message, text: 'ADVANCE #0 v0 passed — invalid id' },
+        d,
+        enabledEnv,
+      ),
+    ).toBe(true);
+    expect(d.query).not.toHaveBeenCalled();
+    expect(d.postThread).toHaveBeenCalledWith(
+      'slack:C_PROC',
+      '123.45',
+      expect.stringContaining('[PROCUREMENT ACTION NOT RECORDED] Malformed'),
     );
   });
 
@@ -308,6 +368,115 @@ describe('named-human Procurement decision', () => {
       true,
     );
     expect(d.postThread).toHaveBeenCalledWith(
+      'slack:C_PROC',
+      '123.45',
+      expect.stringContaining('NOT RECORDED'),
+    );
+  });
+
+  it('advances a pursuit only through the bound thread and named actor', async () => {
+    vi.mocked(d.query)
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            pursuit_id: 91,
+            opportunity_id: 42,
+            pursuit_state: 'passed',
+            pursuit_version: 1,
+          },
+        ],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            alert_id: 72,
+            alert_text: '[PROCUREMENT PURSUIT RECORDED] #91 is passed at v1.',
+          },
+        ],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ acknowledged: true }],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      });
+    const advance = {
+      ...message,
+      text: 'ADVANCE #91 v0 passed — Public requirement is outside our qualifications',
+    };
+
+    expect(await handleProcurementDecisionMessage(advance, d, enabledEnv)).toBe(
+      true,
+    );
+    expect(vi.mocked(d.query).mock.calls[0][0]).toContain(
+      'fn_apply_procurement_pursuit_advance',
+    );
+    expect(vi.mocked(d.query).mock.calls[0][1]).toEqual([
+      'slack:C_PROC',
+      '123.45',
+      91,
+      0,
+      'passed',
+      'Public requirement is outside our qualifications',
+      'U_ALEX',
+      'epoch-1',
+    ]);
+    expect(d.postThread).toHaveBeenCalledWith(
+      'slack:C_PROC',
+      '123.45',
+      expect.stringContaining('[PROCUREMENT PURSUIT RECORDED]'),
+    );
+  });
+
+  it('never reports a committed action as rejected when Slack delivery fails', async () => {
+    vi.mocked(d.query)
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            opportunity_id: 42,
+            review_state: 'drop',
+            review_version: 1,
+            status: 'rejected',
+          },
+        ],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            alert_id: 73,
+            alert_text: '[PROCUREMENT DECISION RECORDED] #42 is drop at v1.',
+          },
+        ],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      });
+    vi.mocked(d.postThread).mockResolvedValueOnce(undefined);
+
+    const drop = {
+      ...message,
+      text: 'DECIDE #42 v0 drop — Mandatory requirement is unavailable',
+    };
+    await expect(
+      handleProcurementDecisionMessage(drop, d, enabledEnv),
+    ).resolves.toBe(true);
+    expect(d.query).toHaveBeenCalledTimes(2);
+    expect(d.postThread).toHaveBeenCalledTimes(1);
+    expect(d.postThread).not.toHaveBeenCalledWith(
       'slack:C_PROC',
       '123.45',
       expect.stringContaining('NOT RECORDED'),

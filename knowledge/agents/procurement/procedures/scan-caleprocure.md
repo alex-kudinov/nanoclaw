@@ -24,7 +24,8 @@ If the page doesn't load (403, timeout, or blank): wait 10s, retry once. If stil
 
 The search interface has a keyword text field and optional filters. Use keyword search — the AJAX-driven results update dynamically.
 
-Keywords (one search at a time — same as Bonfire):
+The host release owns the completeness plan below. Search every unit exactly as
+written, one at a time:
 1. `coaching`
 2. `leadership development`
 3. `executive coaching`
@@ -43,7 +44,8 @@ For each keyword:
 5. If paginated (>25 results), navigate first 2 pages
 6. Clear search, next keyword
 
-**Alternative:** If the search supports UNSPSC code filtering, also try:
+**Optional expansion (does not replace any host-planned unit):** If the search
+supports UNSPSC code filtering, also try:
 - `86132001` — Executive coaching service
 - `86132000` — Management education and training services
 
@@ -78,6 +80,14 @@ pages have been extracted:
   `cale-YYYYMMDD-HHMM-{short-batch-hash}`;
 - `rows`: the complete JSON array from Step 3, including the keyword on every
   row; duplicates across keywords are expected and are host-deduplicated.
+- `observed_units`: every host-planned keyword whose requested result pages
+  actually loaded and were inspected. Never include a keyword that timed out,
+  failed, or was skipped. Empty results still count as observed when the page
+  loaded successfully.
+- `coverage_evidence`: one public, bounded object for every `observed_units`
+  keyword, with exactly `resultCount` (a non-negative integer) and
+  `pagesVisited` (a positive integer). The keys must exactly match
+  `observed_units`. Do not include cookies, credentials, or raw page snapshots.
 
 The call is bounded to 200 rows and can be default-off during shadow rollout.
 If the host denies or fails the batch:
@@ -87,8 +97,12 @@ If the host denies or fails the batch:
 - report the run key and host denial to Slack;
 - keep the local extraction artifact for a separately authorized retry.
 
-Only `[PROCUREMENT CALEPROCURE INGESTED]` proves the run completed. A queued MCP
-response is not completion.
+Only `[PROCUREMENT CALEPROCURE INGESTED]` is a terminal host receipt. Inspect its
+derived state and missing-unit list: `complete` means every host-planned unit
+has a structurally valid container-reported coverage receipt. It is an
+auditable adapter receipt, not independent proof that the portal search
+happened. `partial` or `failed` must be reported and retried with the same run
+key and exact batch evidence. A queued MCP response is not completion.
 
 ## Step 5 — Evaluate the Host Queue
 
@@ -125,7 +139,7 @@ URL: {url}
 Review: use the host card in this opportunity's Slack thread
 ---
 
-Total extracted: {total} | Host run: {run_id} | New observations: {new}
+Total extracted: {total} | Host run: {run_id} ({status}) | New observations: {new} | Missing units: {missing_or_none}
 ```
 
 If no new: `[PROCUREMENT-CA] CaleProcure scan — no new relevant opportunities`

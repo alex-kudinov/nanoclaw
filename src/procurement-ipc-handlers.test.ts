@@ -5,6 +5,13 @@ import {
   isProcurementIpcType,
   type ProcurementIpcDeps,
 } from './procurement-ipc-handlers.js';
+import { CALEPROCURE_PLANNED_UNITS } from './procurement-source-config.js';
+
+function evidenceFor(units: readonly string[]) {
+  return Object.fromEntries(
+    units.map((unit) => [unit, { resultCount: 0, pagesVisited: 1 }]),
+  );
+}
 
 function deps(rows: Record<string, unknown>[]) {
   const query = vi.fn(async () => ({
@@ -25,8 +32,41 @@ describe('Procurement IPC queue', () => {
     expect(isProcurementIpcType('procurement_queue')).toBe(true);
     expect(isProcurementIpcType('procurement_caleprocure_ingest')).toBe(true);
     expect(isProcurementIpcType('procurement_review_card')).toBe(true);
+    expect(isProcurementIpcType('procurement_pursuit_queue')).toBe(true);
     expect(isProcurementIpcType('procurement_submit')).toBe(false);
     expect(isProcurementIpcType('procurement_review')).toBe(false);
+  });
+
+  it('returns active pursuits without filtering on deadline', async () => {
+    const d = deps([
+      {
+        pursuit_id: 91,
+        pursuit_version: 0,
+        pursuit_state: 'qualifying',
+        opportunity_id: 42,
+        source: 'caleprocure',
+        source_key: '3900/1',
+        title: 'Leadership coaching',
+        agency: 'Example',
+        close_date: '2026-09-01',
+        days_until_close: 10,
+        next_action: 'Complete qualification',
+        next_action_due: '2026-08-20T00:00:00Z',
+      },
+    ]);
+    await dispatchProcurementIpc(
+      'procurement',
+      { type: 'procurement_pursuit_queue', limit: 5 },
+      d,
+    );
+    expect(vi.mocked(d.query).mock.calls[0][0]).toContain(
+      'v_procurement_pursuit_queue',
+    );
+    expect(vi.mocked(d.query).mock.calls[0][0]).not.toContain('close_date >=');
+    expect(d.writeInput).toHaveBeenCalledWith(
+      'procurement',
+      expect.stringContaining('[PROCUREMENT PURSUIT] #91 v0'),
+    );
   });
 
   it('returns a bounded queue without raw payload or Gmail content', async () => {
@@ -96,6 +136,8 @@ describe('Procurement IPC writes', () => {
           type: 'procurement_caleprocure_ingest',
           runKey: 'cale-20260730-1',
           rows: [],
+          observedUnits: [],
+          coverageEvidence: {},
         },
         d,
       ),
@@ -121,7 +163,15 @@ describe('Procurement IPC writes', () => {
         fields: [],
       })
       .mockResolvedValueOnce({
-        rows: [{ completed: true }],
+        rows: [
+          {
+            run_id: 12,
+            status: 'complete',
+            observations_seen: 0,
+            observations_new: 0,
+            missing_units: [],
+          },
+        ],
         rowCount: 1,
         command: 'SELECT',
         oid: 0,
@@ -134,6 +184,8 @@ describe('Procurement IPC writes', () => {
         type: 'procurement_caleprocure_ingest',
         runKey: 'cale-20260730-1',
         rows: [],
+        observedUnits: [...CALEPROCURE_PLANNED_UNITS],
+        coverageEvidence: evidenceFor(CALEPROCURE_PLANNED_UNITS),
       },
       {
         ...d,
@@ -156,6 +208,8 @@ describe('Procurement IPC writes', () => {
         {
           type: 'procurement_caleprocure_ingest',
           runKey: 'cale-20260730-1',
+          observedUnits: ['coaching'],
+          coverageEvidence: evidenceFor(['coaching']),
           rows: Array.from({ length: 201 }, () => ({
             event_id: '1',
             business_unit: '3900',
@@ -170,6 +224,27 @@ describe('Procurement IPC writes', () => {
         },
       ),
     ).rejects.toThrow('at most 200 rows');
+    expect(d.query).not.toHaveBeenCalled();
+  });
+
+  it('requires coverage receipts at the host IPC boundary', async () => {
+    const d = deps([]);
+    await expect(
+      dispatchProcurementIpc(
+        'procurement',
+        {
+          type: 'procurement_caleprocure_ingest',
+          runKey: 'cale-unreceipted-1',
+          rows: [],
+          observedUnits: ['coaching'],
+          coverageEvidence: [] as never,
+        },
+        {
+          ...d,
+          env: { PROCUREMENT_CALEPROCURE_INGEST_ENABLED: '1' },
+        },
+      ),
+    ).rejects.toThrow('coverageEvidence is required');
     expect(d.query).not.toHaveBeenCalled();
   });
 

@@ -19,6 +19,14 @@
 		<string>/Users/xbohdpukc/dev/NanoClaw</string>
 		<key>NODE_ENV</key>
 		<string>production</string>
+		<key>PROCUREMENT_CALEPROCURE_INGEST_ENABLED</key>
+		<string>0</string>
+		<key>PROCUREMENT_REVIEW_ENABLED</key>
+		<string>0</string>
+		<key>PROCUREMENT_REVIEW_EPOCH</key>
+		<string></string>
+		<key>PROCUREMENT_OPERATOR_UIDS</key>
+		<string></string>
 		<key>PATH</key>
 		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/Users/xbohdpukc/.local/bin</string>
 	</dict>

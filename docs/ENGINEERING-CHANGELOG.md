@@ -8,6 +8,56 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260809-003 — Close the Procurement opportunity-to-outcome loop
+
+- Date: 2026-08-09T19:51Z
+- Owner/client: Codex + Claude owner
+- State: in_progress
+- Commit/release: isolated branch
+  `codex/nc-20260809-003-procurement-recovery` from exact live release
+  `97ca2ccfb9d3185a5b86607fb8118b997e4ef70b`
+- Change class: C5 — production schema, authorization/configuration, email
+  routing, Slack workflow, immutable deployment, and controlled live canaries
+- Affected systems: Procurement control plane, classification taxonomy,
+  scheduler/reconciliation, host/runner IPC, group behavior, PostgreSQL,
+  launchd, release pipeline, and operations documentation
+- Starting evidence: aggregate-only production preflight confirms the live
+  release is healthy but Procurement is not operational: both RFP/RFQ labels
+  are `auto_archive=true`; 348 of 466 classified Procurement emails lack a
+  routing receipt; control-plane run/observation/card tables are empty; all 396
+  opportunities are source-keyless and unreviewed; the review constraint is
+  unvalidated; the active daily task timed out on 2026-08-09; all four daemon
+  gate keys are absent; proposal-framework authority is still April-dated.
+- Authorized outcome: implement, review, commit, migrate, deploy, and live-test
+  the smallest reliable path from receipted, host-planned intake through named decision
+  and proposal-ready or recorded-pass closure. Keep submission and commitments
+  manual. Add sources only after that outcome is proven.
+- Review/verification so far: Claude Opus R2 found permanent alert-loss and
+  one-alert-ever regressions before release. Both are repaired with a durable
+  acknowledged outbox, per-alert failure isolation, and daily time buckets.
+  Claude R3 returned converged, after which Codex found that a Slack failure
+  after commit could still emit a false `NOT RECORDED` receipt. Successful
+  decision and pursuit receipts are now written in the same transaction as the
+  state/event, delivered with a receipt-returning post, and retried through the
+  bounded acknowledged outbox. Claude R4 explicitly corrected its R3 miss and
+  returned converged with all five gates GO. Pinned Node 22.23.2 typecheck
+  passes; the final focused gate passes 9 files / 64 tests; formatting and
+  documentation continuity pass; the final complete permitted suite passes
+  151 files / 1,969 tests; the independent runner build and 4 files / 29 tests
+  pass.
+  A schema-only disposable PostgreSQL rehearsal passed forward migration,
+  idempotent reapply, transactional smoke, rollback, and restored migration-114
+  behavior, including the final durable action-receipt design. Nothing
+  is committed, migrated in production, deployed, enabled, or live-canary
+  verified yet.
+- Rollback/recovery: tracked
+  `rollback_115_procurement_pursuit.sql` restores the verbatim migration-114
+  function bodies, prior taxonomy behavior, and removes 115 objects/columns;
+  `smoke_rollback_115_procurement_pursuit.sql` proves the restoration. Installed
+  service definition, taxonomy rows, task row/prompt, and relevant schema
+  definitions still require explicit backups before production mutation;
+  immutable release rollback retains prior `97ca2cc`.
+
 ### NC-20260806-001 — Rejected Sales approval cards return to their exact author
 
 - Date: 2026-08-06T22:05Z

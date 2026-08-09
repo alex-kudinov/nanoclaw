@@ -219,9 +219,13 @@ Procurement has a transitional split:
 - **Legacy scanner:** migration 114 row-level security keeps direct
   `public.procurement_opportunities` access only for source-keyless Bonfire
   rows. The role cannot read or mutate source-keyed CaleProcure/email work.
-- **New intake:** migration 114 adds host-only typed writes, immutable
+- **New intake:** migrations 114-115 add host-only typed writes, immutable
   observations, idempotent source-run completion, host-bound Slack review
-  cards, and `public.v_procurement_review_queue`. CaleProcure/email adapters
+  cards, coverage-derived run state, atomic pursuit creation, a versioned
+  pursuit event ledger, per-run opportunity associations, exact-thread
+  advancement, and an acknowledged reconciliation/action-receipt outbox,
+  `public.v_procurement_review_queue`, and
+  `public.v_procurement_pursuit_queue`. CaleProcure/email adapters
   must use `src/procurement-intake.ts`, never model-authored SQL.
 - **Vendor party operations:** use `business_v2` helpers
 
@@ -248,10 +252,16 @@ The host administrator alone executes:
 - `public.fn_transition_procurement_review(...)`;
 - `public.fn_record_procurement_review_card(...)`;
 - `public.fn_apply_procurement_review_card_decision(...)`.
+- `public.fn_begin_procurement_source_run_v2(...)`;
+- `public.fn_complete_procurement_source_run_v2(...)`;
+- `public.fn_link_procurement_run_opportunity(...)`;
+- `public.fn_apply_procurement_pursuit_advance(...)`;
+- `public.fn_reconcile_procurement(...)`;
+- `public.fn_ack_procurement_reconciler_alert(...)`.
 
 The Procurement container receives read-only
-`public.v_procurement_review_queue` through the bounded
-`procurement_queue` IPC tool. Its CaleProcure batch and review-card requests
+`public.v_procurement_review_queue` and `public.v_procurement_pursuit_queue`
+through bounded IPC tools. Its CaleProcure batch and review-card requests
 cross typed host gates; the final decision actor is derived from Slack and is
 never accepted from the container. Submission is outside this database
 boundary.
@@ -266,6 +276,6 @@ historical coverage.
 ## Schema File Reference
 
 - DDL: `data/business/migrations/nanoclaw-v2/` (01-18 base/cutover plus ordered
-  post-cutover migrations 90-114)
+  post-cutover migrations 90-115)
 - Validation: `data/business/migrations/nanoclaw-v2/validate.sql` (20 acceptance criteria)
 - Smoke tests: `data/business/migrations/nanoclaw-v2/90_smoke_tests.sql`

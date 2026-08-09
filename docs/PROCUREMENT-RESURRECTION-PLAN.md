@@ -1,17 +1,19 @@
 # Procurement Scout resurrection plan
 
-Status: migration 114 and gates-off dark release deployed; activation gates remain
-Tasks: `NC-20260730-001`, `NC-20260730-003`, `NC-20260730-004`
-Owner/client: Codex
-Date: 2026-07-30
+Status: migration 114 is deployed dark; migration 115 pursuit closure is implemented and under validation
+Tasks: `NC-20260730-001`, `NC-20260730-003`, `NC-20260730-004`, `NC-20260809-002`, `NC-20260809-003`
+Owner/client: Codex + Claude owner review
+Date: 2026-08-09
 Change class: C1 design authority with separately recorded C2/C5 implementation and deployment
-Production boundary: read-only inspection; no prompt, schedule, browser,
-database, service, message, proposal, or portal state changed
+Production boundary: the 2026-08-09 preflight was aggregate/read-only. The
+authorized migration-115 release has not yet been applied or activated; its
+disposable-database smoke test passed and rolled back.
 
 ## 1. Executive conclusion
 
-The Procurement Scout is not dead. Its daily discovery scan is live in
-production and is still finding opportunities. What has been neglected is the
+The Procurement Scout is not dead, but its legacy daily discovery task timed
+out on 2026-08-09 and has no durable proof of complete source coverage. What
+has been neglected is the
 idea that made the minion valuable:
 
 > a closed, governed process that turns a procurement signal into a qualified
@@ -909,6 +911,20 @@ Next:
 6. wire CaleProcure collection only after source-run completeness and rollback
    are live;
 7. coordinate any Bonfire work with the separate CDP containment decision.
+
+The 2026-08-09 owner authorization resolves the earlier ownership and cutover
+questions for `NC-20260809-003`: Alex is primary and Cherie backup (Slack IDs
+remain host-only); the decision actor initially owns the pursuit; escalation is
+14 days; the legacy daily scan pauses at cutover; the shared CDP bridge is a
+separate retirement task; and no source is added until one public,
+non-submission opportunity reaches an evidenced `passed` closure. Coverage
+receipts prove plan/receipt completeness, not independent browser execution.
+Migration 115 and its rollback are implemented and rehearsed only in an
+isolated schema-only database at this writing; they are not yet production
+state. Successful human decisions and pursuit advances write their exact Slack
+receipt into the acknowledged outbox in the same transaction as the state
+change; delivery failure leaves a bound-thread receipt pending and can never
+relabel a committed action as unrecorded.
 
 ## 17. Authorized continuation: dark collection and named-human review
 

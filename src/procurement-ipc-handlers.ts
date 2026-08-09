@@ -17,6 +17,7 @@ import { logger } from './logger.js';
 import {
   ingestCaleProcureRows,
   type CaleProcureRow,
+  type CaleProcureUnitEvidence,
 } from './procurement-intake.js';
 import { caleProcureIngestEnabled } from './procurement-policy.js';
 import { createProcurementReviewCard } from './procurement-review.js';
@@ -31,6 +32,14 @@ export interface ProcurementCaleProcureIngestPayload {
   type: 'procurement_caleprocure_ingest';
   runKey: string;
   rows: CaleProcureRow[];
+  observedUnits: string[];
+  coverageEvidence: Record<string, CaleProcureUnitEvidence>;
+  groupFolder?: string;
+}
+
+export interface ProcurementPursuitQueuePayload {
+  type: 'procurement_pursuit_queue';
+  limit?: number;
   groupFolder?: string;
 }
 
@@ -46,7 +55,8 @@ export interface ProcurementReviewCardPayload {
 export type ProcurementIpcPayload =
   | ProcurementQueuePayload
   | ProcurementCaleProcureIngestPayload
-  | ProcurementReviewCardPayload;
+  | ProcurementReviewCardPayload
+  | ProcurementPursuitQueuePayload;
 
 interface QueueRow extends QueryResultRow {
   opportunity_id: number | string;
@@ -59,6 +69,21 @@ interface QueueRow extends QueryResultRow {
   review_state: string;
   review_version: number | string;
   days_until_close: number | string | null;
+}
+
+interface PursuitQueueRow extends QueryResultRow {
+  pursuit_id: number | string;
+  pursuit_version: number | string;
+  pursuit_state: string;
+  opportunity_id: number | string;
+  source: string;
+  source_key: string;
+  title: string;
+  agency: string | null;
+  close_date: string | null;
+  days_until_close: number | string | null;
+  next_action: string;
+  next_action_due: string;
 }
 
 export interface ProcurementIpcDeps {
@@ -75,7 +100,7 @@ export interface ProcurementIpcDeps {
     channelJid: string,
     threadTs: string,
     text: string,
-  ): Promise<void>;
+  ): Promise<string | undefined>;
   env?: NodeJS.ProcessEnv;
 }
 
@@ -101,8 +126,26 @@ export function isProcurementIpcType(
   return (
     type === 'procurement_queue' ||
     type === 'procurement_caleprocure_ingest' ||
-    type === 'procurement_review_card'
+    type === 'procurement_review_card' ||
+    type === 'procurement_pursuit_queue'
   );
+}
+
+function formatPursuitQueue(rows: PursuitQueueRow[]): string {
+  if (rows.length === 0) {
+    return '[PROCUREMENT PURSUITS] No active host-owned pursuits.';
+  }
+  return rows
+    .flatMap((row) => [
+      `[PROCUREMENT PURSUIT] #${row.pursuit_id} v${row.pursuit_version} — ${row.title}`,
+      `Opportunity: #${row.opportunity_id} · State: ${row.pursuit_state}`,
+      `Source: ${row.source} (${row.source_key}) · Agency: ${row.agency ?? 'unknown'}`,
+      `Closes: ${row.close_date ?? 'unknown'} (${row.days_until_close ?? 'unknown'} day(s))`,
+      `Next: ${row.next_action} · Due: ${row.next_action_due}`,
+      '',
+    ])
+    .join('\n')
+    .trimEnd();
 }
 
 function boundedLimit(value: number | undefined): number {
@@ -156,17 +199,32 @@ export async function dispatchProcurementIpc(
     if (!Array.isArray(payload.rows) || payload.rows.length > 200) {
       throw new Error('CaleProcure intake accepts at most 200 rows');
     }
+    if (!Array.isArray(payload.observedUnits)) {
+      throw new Error('CaleProcure observedUnits is required');
+    }
+    if (
+      typeof payload.coverageEvidence !== 'object' ||
+      payload.coverageEvidence === null ||
+      Array.isArray(payload.coverageEvidence)
+    ) {
+      throw new Error('CaleProcure coverageEvidence is required');
+    }
     const result = await ingestCaleProcureRows(
       payload.rows,
       payload.runKey,
       new Date().toISOString(),
       { query: runtime.query },
+      {
+        observedUnits: payload.observedUnits,
+        evidence: payload.coverageEvidence,
+      },
     );
     runtime.writeInput(
       sourceGroup,
       [
-        `[PROCUREMENT CALEPROCURE INGESTED] Run ${result.runId} is complete.`,
+        `[PROCUREMENT CALEPROCURE INGESTED] Run ${result.runId} is ${result.status}.`,
         `Observed: ${result.observationsSeen} · New observations: ${result.observationsNew}`,
+        `Missing host-planned units: ${result.missingUnits.join(', ') || 'none'}`,
         `Opportunity IDs: ${result.opportunityIds.join(', ') || 'none'}`,
         'Request procurement_queue to review current actionable rows.',
       ].join('\n'),
@@ -206,6 +264,25 @@ export async function dispatchProcurementIpc(
       result.reused
         ? `[PROCUREMENT REVIEW CARD] Existing host card reused for #${result.opportunityId} v${result.reviewVersion}.`
         : `[PROCUREMENT REVIEW CARD] Host card posted for #${result.opportunityId} v${result.reviewVersion}.`,
+    );
+    return;
+  }
+
+  if (payload.type === 'procurement_pursuit_queue') {
+    const limit = boundedLimit(payload.limit);
+    const result = await runtime.query<PursuitQueueRow>(
+      `SELECT pursuit_id, pursuit_version, pursuit_state, opportunity_id,
+              source, source_key, title, agency, close_date, days_until_close,
+              next_action, next_action_due
+         FROM public.v_procurement_pursuit_queue
+        ORDER BY close_date ASC NULLS LAST, next_action_due ASC, pursuit_id ASC
+        LIMIT $1`,
+      [limit],
+    );
+    runtime.writeInput(sourceGroup, formatPursuitQueue(result.rows));
+    logger.info(
+      { sourceGroup, rows: result.rows.length, limit },
+      'procurement pursuit queue delivered',
     );
     return;
   }

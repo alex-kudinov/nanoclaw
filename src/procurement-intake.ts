@@ -12,6 +12,10 @@ import type { QueryResult, QueryResultRow } from 'pg';
 import { z } from 'zod';
 
 import { query as businessQuery } from './business-db.js';
+import {
+  CALEPROCURE_ADAPTER_VERSION,
+  plannedCaleProcureUnits,
+} from './procurement-source-config.js';
 
 export type ProcurementSource = 'caleprocure' | 'email';
 export type ProcurementReviewDecision = 'needs_info' | 'process' | 'drop';
@@ -42,9 +46,21 @@ export interface ProcurementIngestResult {
 
 export interface ProcurementRunResult {
   runId: number;
+  status: 'complete' | 'partial' | 'failed';
   observationsSeen: number;
   observationsNew: number;
   opportunityIds: number[];
+  missingUnits: string[];
+}
+
+export interface CaleProcureCoverage {
+  observedUnits: string[];
+  evidence: Record<string, CaleProcureUnitEvidence>;
+}
+
+export interface CaleProcureUnitEvidence {
+  resultCount: number;
+  pagesVisited: number;
 }
 
 export interface ProcurementReviewResult {
@@ -356,6 +372,90 @@ interface RunRow extends QueryResultRow {
   status: 'running' | 'complete' | 'partial' | 'failed';
   observations_seen: number | string;
   observations_new: number | string;
+  missing_units: unknown;
+}
+
+function normalizeCoverageUnits(units: unknown): string[] {
+  if (!Array.isArray(units)) {
+    throw new Error('CaleProcure observedUnits must be an array');
+  }
+  const planned = new Set(plannedCaleProcureUnits());
+  const normalized = units.map((unit) => {
+    if (typeof unit !== 'string') {
+      throw new Error('CaleProcure observed unit must be a string');
+    }
+    const value = unit.replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!planned.has(value)) {
+      throw new Error(
+        `CaleProcure observed unit is not host-planned: ${value}`,
+      );
+    }
+    return value;
+  });
+  if (new Set(normalized).size !== normalized.length) {
+    throw new Error('CaleProcure observedUnits contains duplicates');
+  }
+  return normalized.sort();
+}
+
+function jsonStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
+}
+
+function normalizeCoverageEvidence(
+  observedUnits: string[],
+  evidence: unknown,
+): Record<string, CaleProcureUnitEvidence> {
+  if (
+    typeof evidence !== 'object' ||
+    evidence === null ||
+    Array.isArray(evidence)
+  ) {
+    throw new Error('CaleProcure coverageEvidence must be an object');
+  }
+  const input = evidence as Record<string, unknown>;
+  const observed = new Set(observedUnits);
+  if (
+    Object.keys(input).length !== observed.size ||
+    Object.keys(input).some((unit) => !observed.has(unit))
+  ) {
+    throw new Error(
+      'CaleProcure coverageEvidence must exactly receipt every observed unit',
+    );
+  }
+  return Object.fromEntries(
+    observedUnits.map((unit) => {
+      const receipt = input[unit];
+      if (
+        typeof receipt !== 'object' ||
+        receipt === null ||
+        Array.isArray(receipt)
+      ) {
+        throw new Error(`CaleProcure coverage receipt is invalid: ${unit}`);
+      }
+      const values = receipt as Record<string, unknown>;
+      if (
+        Object.keys(values).some(
+          (key) => key !== 'resultCount' && key !== 'pagesVisited',
+        ) ||
+        !Number.isSafeInteger(values.resultCount) ||
+        Number(values.resultCount) < 0 ||
+        !Number.isSafeInteger(values.pagesVisited) ||
+        Number(values.pagesVisited) < 1
+      ) {
+        throw new Error(`CaleProcure coverage receipt is invalid: ${unit}`);
+      }
+      return [
+        unit,
+        {
+          resultCount: Number(values.resultCount),
+          pagesVisited: Number(values.pagesVisited),
+        },
+      ];
+    }),
+  );
 }
 
 async function beginSourceRun(
@@ -366,14 +466,16 @@ async function beginSourceRun(
 ): Promise<RunRow> {
   const result = await executor.query<RunRow>(
     `SELECT *
-       FROM public.fn_begin_procurement_source_run(
-         $1, $2, $3::timestamptz, $4::jsonb
+       FROM public.fn_begin_procurement_source_run_v2(
+         $1, $2, $3::timestamptz, $4, $5, $6::jsonb
        )`,
     [
       'caleprocure',
       runKey,
       observedAt,
-      JSON.stringify({ adapter: 'host-v1', batch_hash: batchHash }),
+      batchHash,
+      CALEPROCURE_ADAPTER_VERSION,
+      JSON.stringify(plannedCaleProcureUnits()),
     ],
   );
   if (!result.rows[0]) {
@@ -387,8 +489,8 @@ async function sourceRunOpportunityIds(
   executor: QueryExecutor,
 ): Promise<number[]> {
   const result = await executor.query<{ opportunity_id: number | string }>(
-    `SELECT DISTINCT opportunity_id
-       FROM public.procurement_observations
+    `SELECT opportunity_id
+       FROM public.procurement_source_run_opportunities
       WHERE source_run_id = $1
       ORDER BY opportunity_id`,
     [runId],
@@ -396,23 +498,44 @@ async function sourceRunOpportunityIds(
   return result.rows.map((row) => Number(row.opportunity_id));
 }
 
-async function completeSourceRun(
+async function linkSourceRunOpportunity(
   runId: number,
-  status: 'complete' | 'partial' | 'failed',
-  seen: number,
-  created: number,
-  errorCode: string | null,
+  opportunityId: number,
   executor: QueryExecutor,
 ): Promise<void> {
-  const result = await executor.query<{ completed: boolean }>(
-    `SELECT public.fn_complete_procurement_source_run(
-       $1, $2, $3::timestamptz, $4, $5, $6
-     ) AS completed`,
-    [runId, status, new Date().toISOString(), seen, created, errorCode],
+  await executor.query(
+    'SELECT public.fn_link_procurement_run_opportunity($1, $2)',
+    [runId, opportunityId],
   );
-  if (!result.rows[0]?.completed) {
-    throw new Error(`procurement source run ${runId} was not running`);
-  }
+}
+
+async function completeSourceRun(
+  runId: number,
+  observedUnits: string[],
+  evidence: Record<string, unknown>,
+  observationsSeen: number,
+  observationsNew: number,
+  errorCode: string | null,
+  executor: QueryExecutor,
+): Promise<RunRow> {
+  const result = await executor.query<RunRow>(
+    `SELECT * FROM public.fn_complete_procurement_source_run_v2(
+       $1, $2::timestamptz, $3::jsonb, $4::jsonb, $5, $6, $7
+     )`,
+    [
+      runId,
+      new Date().toISOString(),
+      JSON.stringify(observedUnits),
+      JSON.stringify(evidence),
+      observationsSeen,
+      observationsNew,
+      errorCode,
+    ],
+  );
+  const row = result.rows[0];
+  if (!row)
+    throw new Error(`procurement source run ${runId} returned no result`);
+  return row;
 }
 
 /**
@@ -424,6 +547,7 @@ export async function ingestCaleProcureRows(
   runKey: string,
   observedAt = new Date().toISOString(),
   executor: QueryExecutor = defaultExecutor,
+  coverage?: CaleProcureCoverage,
 ): Promise<ProcurementRunResult> {
   const normalizedRunKey = cleanOptional(runKey);
   if (!normalizedRunKey) throw new Error('CaleProcure runKey is required');
@@ -436,7 +560,20 @@ export async function ingestCaleProcureRows(
   if (!Array.isArray(rows)) {
     throw new Error('CaleProcure result payload must be an array');
   }
-  const batchHash = payloadHash({ rows }, MAX_BATCH_PAYLOAD_BYTES);
+  const observedUnits = normalizeCoverageUnits(coverage?.observedUnits);
+  const evidence = normalizeCoverageEvidence(observedUnits, coverage?.evidence);
+  if (canonicalJson(evidence).length > 32 * 1024) {
+    throw new Error('CaleProcure coverage evidence exceeds 32768 characters');
+  }
+  const batchHash = payloadHash(
+    {
+      rows,
+      observedUnits,
+      evidence,
+      adapterVersion: CALEPROCURE_ADAPTER_VERSION,
+    },
+    MAX_BATCH_PAYLOAD_BYTES,
+  );
   const run = await beginSourceRun(
     normalizedRunKey,
     observedAt,
@@ -447,9 +584,11 @@ export async function ingestCaleProcureRows(
   if (run.status === 'complete') {
     return {
       runId,
+      status: 'complete',
       observationsSeen: Number(run.observations_seen),
       observationsNew: Number(run.observations_new),
       opportunityIds: await sourceRunOpportunityIds(runId, executor),
+      missingUnits: jsonStringArray(run.missing_units),
     };
   }
   if (run.status !== 'running') {
@@ -468,16 +607,41 @@ export async function ingestCaleProcureRows(
         executor,
       );
       opportunityIds.push(result.opportunityId);
+      await linkSourceRunOpportunity(runId, result.opportunityId, executor);
       if (result.observationCreated) observationsNew += 1;
     }
-    await completeSourceRun(
+    const rowKeywords = new Set(
+      observations.flatMap((observation) => observation.searchKeywords),
+    );
+    for (const keyword of rowKeywords) {
+      if (!observedUnits.includes(keyword)) {
+        throw new Error(
+          `CaleProcure row keyword was not reported observed: ${keyword}`,
+        );
+      }
+    }
+    const completed = await completeSourceRun(
       runId,
-      'complete',
+      observedUnits,
+      evidence,
       observations.length,
       observationsNew,
       null,
       executor,
     );
+    if (completed.status === 'running') {
+      throw new Error(
+        `procurement source run ${runId} did not reach a terminal state`,
+      );
+    }
+    return {
+      runId,
+      status: completed.status,
+      observationsSeen: Number(completed.observations_seen),
+      observationsNew: Number(completed.observations_new),
+      opportunityIds,
+      missingUnits: jsonStringArray(completed.missing_units),
+    };
   } catch (error) {
     const code =
       error instanceof Error && error.name
@@ -485,7 +649,8 @@ export async function ingestCaleProcureRows(
         : 'adapter_error';
     await completeSourceRun(
       runId,
-      'failed',
+      observedUnits,
+      evidence,
       opportunityIds.length,
       observationsNew,
       code,
@@ -493,13 +658,6 @@ export async function ingestCaleProcureRows(
     ).catch(() => undefined);
     throw error;
   }
-
-  return {
-    runId,
-    observationsSeen: opportunityIds.length,
-    observationsNew,
-    opportunityIds,
-  };
 }
 
 interface ReviewRow extends QueryResultRow {
@@ -519,6 +677,11 @@ export async function transitionProcurementReview(
   },
   executor: QueryExecutor = defaultExecutor,
 ): Promise<ProcurementReviewResult> {
+  if (input.decision === 'process') {
+    throw new Error(
+      'procurement process decisions require a bound Slack review card',
+    );
+  }
   if (!Number.isSafeInteger(input.opportunityId) || input.opportunityId <= 0) {
     throw new Error('procurement opportunityId must be a positive integer');
   }

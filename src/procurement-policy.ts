@@ -54,3 +54,22 @@ export function caleProcureIngestEnabled(
 ): boolean {
   return env.PROCUREMENT_CALEPROCURE_INGEST_ENABLED === '1';
 }
+
+export function procurementPolicyDiagnostic(
+  env: NodeJS.ProcessEnv = process.env,
+): {
+  collectionEnabled: boolean;
+  reviewEnabled: boolean;
+  reviewReason: ProcurementReviewPolicy['reason'];
+  operatorCount: number;
+  epochConfigured: boolean;
+} {
+  const review = currentProcurementReviewPolicy(env);
+  return {
+    collectionEnabled: caleProcureIngestEnabled(env),
+    reviewEnabled: review.enabled,
+    reviewReason: review.reason,
+    operatorCount: review.operatorUids.size,
+    epochConfigured: review.epoch !== null,
+  };
+}

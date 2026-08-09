@@ -126,7 +126,7 @@ export interface IpcDeps {
     channelJid: string,
     threadTs: string,
     text: string,
-  ) => Promise<void>;
+  ) => Promise<string | undefined>;
   // Fixed-destination Slack file delivery for grader submissions. Optional so
   // non-Slack runtimes and existing unit tests stay inert.
   postGraderFileMessage?: (

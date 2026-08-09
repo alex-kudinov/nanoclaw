@@ -808,7 +808,7 @@ const caleProcureResultRow = z
 
 server.tool(
   'procurement_caleprocure_ingest',
-  'Submit a bounded public CaleProcure result batch to the host validator. The host owns timestamps, deduplication, source-run completion, and all parameterized database writes. This is separately enabled and never submits a bid.',
+  'Submit one bounded public CaleProcure result batch plus coverage receipts to the host validator. The host owns the planned search units and derives complete/partial/failed. This is separately enabled and never submits a bid.',
   {
     run_key: z
       .string()
@@ -817,7 +817,20 @@ server.tool(
     rows: z
       .array(caleProcureResultRow)
       .max(200)
-      .describe('Public result-table rows; empty is a valid complete scan'),
+      .describe('Public result-table rows; empty is valid only with full coverage receipts'),
+    observed_units: z
+      .array(z.string().trim().min(1).max(120))
+      .max(32)
+      .describe('Every host-planned keyword whose result pages were actually observed'),
+    coverage_evidence: z
+      .record(
+        z.string(),
+        z.object({
+          resultCount: z.number().int().nonnegative(),
+          pagesVisited: z.number().int().positive(),
+        }).strict(),
+      )
+      .describe('One public result-count/pages-visited receipt for every observed unit'),
   },
   async (args) => {
     if (groupFolder !== 'procurement') {
@@ -835,6 +848,8 @@ server.tool(
       type: 'procurement_caleprocure_ingest',
       runKey: args.run_key,
       rows: args.rows,
+      observedUnits: args.observed_units,
+      coverageEvidence: args.coverage_evidence,
       groupFolder,
       timestamp: new Date().toISOString(),
     });
@@ -845,6 +860,34 @@ server.tool(
           text: 'CaleProcure batch queued for host validation. A completion or denial message will follow.',
         },
       ],
+    };
+  },
+);
+
+server.tool(
+  'procurement_pursuit_queue',
+  'List every active host-owned pursuit created by a named-human process decision. Deadlines order the queue but never hide work.',
+  {
+    limit: z.number().int().min(1).max(50).default(20),
+  },
+  async (args) => {
+    if (groupFolder !== 'procurement') {
+      return {
+        content: [{ type: 'text' as const, text: 'procurement_pursuit_queue is restricted to the procurement group.' }],
+        isError: true,
+      };
+    }
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'procurement_pursuit_queue',
+      limit: args.limit,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      content: [{
+        type: 'text' as const,
+        text: 'Procurement pursuit queue requested. Results will arrive as a follow-up message.',
+      }],
     };
   },
 );

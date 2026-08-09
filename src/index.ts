@@ -129,6 +129,8 @@ import {
   resolveEntryIdByEmail,
 } from './lead-email-resolver.js';
 import { handleProcurementDecisionMessage } from './procurement-review.js';
+import { procurementPolicyDiagnostic } from './procurement-policy.js';
+import { runProcurementReconciler } from './procurement-reconciler.js';
 import { SlackChannel } from './channels/slack.js';
 import { handleGmailSend } from './gmail-ipc-handlers.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
@@ -1544,6 +1546,10 @@ async function main(): Promise<void> {
   // the exact Node version pinned in the release manifest.
   const releaseIdentity = verifyRuntimeRelease();
   logger.info({ release: releaseIdentity }, 'Release integrity verified');
+  logger.info(
+    { procurementPolicy: procurementPolicyDiagnostic() },
+    'Procurement host policy resolved',
+  );
 
   ensureContainerSystemRunning();
 
@@ -1913,9 +1919,11 @@ async function main(): Promise<void> {
           {
             query,
             postThread: async (channelJid, threadTs, text) => {
-              await slackForProcurement.sendMessage(channelJid, text, {
+              return slackForProcurement.postTracked(
+                channelJid,
+                text,
                 threadTs,
-              });
+              );
             },
           },
         ).catch((err) => {
@@ -2191,6 +2199,58 @@ async function main(): Promise<void> {
       logger.error({ err }, 'chaos-reconciler: startup invocation failed');
     });
   }, 60 * 1000);
+
+  // Procurement reconciler — only armed when the release-bound review policy
+  // is enabled. PostgreSQL deduplicates alerts and owns the sole automatic
+  // state transition (active pursuit -> expired_undecided).
+  if (procurementPolicyDiagnostic().reviewEnabled) {
+    const reconcileProcurement = async (): Promise<void> => {
+      const slack = channels.find(
+        (c): c is SlackChannel => c instanceof SlackChannel,
+      );
+      const entry = Object.entries(registeredGroups).find(
+        ([, group]) => group.folder === 'procurement',
+      );
+      const result = await runProcurementReconciler({
+        alert: async (text, channelJid, threadTs) => {
+          if (!slack || (!channelJid && !entry)) {
+            throw new Error('Procurement Slack channel is unavailable');
+          }
+          // postTracked provides a delivery receipt. Host-authored rows are
+          // persisted as bot messages and the router's bot-noise guard does
+          // not wake the Procurement agent.
+          const messageTs = await slack.postTracked(
+            channelJid ?? entry![0],
+            text,
+            threadTs,
+          );
+          if (!messageTs) {
+            throw new Error('Procurement Slack alert was not delivered');
+          }
+        },
+      });
+      logger.info({ result }, 'procurement-reconciler: complete');
+    };
+    setInterval(
+      () => {
+        reconcileProcurement().catch((err) => {
+          logger.error({ err }, 'procurement-reconciler: unhandled error');
+        });
+      },
+      60 * 60 * 1000,
+    );
+    setTimeout(
+      () => {
+        reconcileProcurement().catch((err) => {
+          logger.error(
+            { err },
+            'procurement-reconciler: startup invocation failed',
+          );
+        });
+      },
+      2 * 60 * 1000,
+    );
+  }
 
   // Proposal follow-up — daily approval-gated nudges for open (pending) Plutio
   // proposals that have gone unsigned. Drafts post to #gru-sales; a ✅ reaction
@@ -2472,7 +2532,7 @@ async function main(): Promise<void> {
         (c): c is SlackChannel => c instanceof SlackChannel,
       );
       if (!slack) throw new Error('Slack channel unavailable');
-      await slack.sendMessage(channelJid, text, { threadTs });
+      return slack.postTracked(channelJid, text, threadTs);
     },
     postGraderFileMessage: async (
       targetJid,

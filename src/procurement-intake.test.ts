@@ -10,6 +10,7 @@ import {
   transitionProcurementReview,
   type QueryExecutor,
 } from './procurement-intake.js';
+import { CALEPROCURE_PLANNED_UNITS } from './procurement-source-config.js';
 
 function executorWithRows(rows: Record<string, unknown>[]): QueryExecutor {
   const query = vi.fn(async () => ({
@@ -22,6 +23,12 @@ function executorWithRows(rows: Record<string, unknown>[]): QueryExecutor {
   return {
     query: query as unknown as QueryExecutor['query'],
   };
+}
+
+function evidenceFor(units: readonly string[]) {
+  return Object.fromEntries(
+    units.map((unit) => [unit, { resultCount: 0, pagesVisited: 1 }]),
+  );
 }
 
 describe('CaleProcure normalization', () => {
@@ -169,6 +176,13 @@ describe('Procurement database boundary', () => {
         fields: [],
       })
       .mockResolvedValueOnce({
+        rows: [{ fn_link_procurement_run_opportunity: true }],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      })
+      .mockResolvedValueOnce({
         rows: [
           {
             opportunity_id: 42,
@@ -184,7 +198,22 @@ describe('Procurement database boundary', () => {
         fields: [],
       })
       .mockResolvedValueOnce({
-        rows: [{ completed: true }],
+        rows: [{ fn_link_procurement_run_opportunity: true }],
+        rowCount: 1,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            run_id: 8,
+            status: 'complete',
+            observations_seen: 2,
+            observations_new: 1,
+            missing_units: [],
+          },
+        ],
         rowCount: 1,
         command: 'SELECT',
         oid: 0,
@@ -197,18 +226,25 @@ describe('Procurement database boundary', () => {
       'cale-2026-07-30T17:00Z',
       '2026-07-30T17:00:00.000Z',
       db,
+      {
+        observedUnits: [...CALEPROCURE_PLANNED_UNITS],
+        evidence: evidenceFor(CALEPROCURE_PLANNED_UNITS),
+      },
     );
 
     expect(result).toEqual({
       runId: 8,
+      status: 'complete',
       observationsSeen: 2,
       observationsNew: 1,
       opportunityIds: [41, 42],
+      missingUnits: [],
     });
     expect(query.mock.calls.at(-1)?.[1]).toEqual([
       8,
-      'complete',
       expect.any(String),
+      JSON.stringify([...CALEPROCURE_PLANNED_UNITS].sort()),
+      JSON.stringify(evidenceFor([...CALEPROCURE_PLANNED_UNITS].sort())),
       2,
       1,
       null,
@@ -225,6 +261,7 @@ describe('Procurement database boundary', () => {
             status: 'complete',
             observations_seen: 2,
             observations_new: 1,
+            missing_units: [],
           },
         ],
         rowCount: 1,
@@ -247,12 +284,18 @@ describe('Procurement database boundary', () => {
         'cale-2026-07-30T17:00Z',
         '2026-07-30T17:00:00.000Z',
         db,
+        {
+          observedUnits: [...CALEPROCURE_PLANNED_UNITS],
+          evidence: evidenceFor(CALEPROCURE_PLANNED_UNITS),
+        },
       ),
     ).resolves.toEqual({
       runId: 8,
+      status: 'complete',
       observationsSeen: 2,
       observationsNew: 1,
       opportunityIds: [41, 42],
+      missingUnits: [],
     });
     expect(query).toHaveBeenCalledTimes(2);
     expect(
@@ -280,7 +323,15 @@ describe('Procurement database boundary', () => {
         fields: [],
       })
       .mockResolvedValueOnce({
-        rows: [{ completed: true }],
+        rows: [
+          {
+            run_id: 9,
+            status: 'failed',
+            observations_seen: 0,
+            observations_new: 0,
+            missing_units: ['coaching'],
+          },
+        ],
         rowCount: 1,
         command: 'SELECT',
         oid: 0,
@@ -294,25 +345,30 @@ describe('Procurement database boundary', () => {
         'cale-drift-1',
         '2026-07-30T17:00:00.000Z',
         db,
+        {
+          observedUnits: ['executive coaching'],
+          evidence: evidenceFor(['executive coaching']),
+        },
       ),
     ).rejects.toThrow();
     expect(query.mock.calls.at(-1)?.[1]).toEqual([
       9,
-      'failed',
       expect.any(String),
+      '["executive coaching"]',
+      JSON.stringify(evidenceFor(['executive coaching'])),
       0,
       0,
       'adapter_zoderror',
     ]);
   });
 
-  it('uses optimistic typed review transitions', async () => {
+  it('uses optimistic typed review transitions for host repair decisions', async () => {
     const db = executorWithRows([
       {
         opportunity_id: 42,
-        review_state: 'process',
+        review_state: 'needs_info',
         review_version: 3,
-        status: 'accepted',
+        status: 'new',
       },
     ]);
 
@@ -320,8 +376,8 @@ describe('Procurement database boundary', () => {
       {
         opportunityId: 42,
         expectedVersion: 2,
-        decision: 'process',
-        reason: 'Matches the leadership coaching scope',
+        decision: 'needs_info',
+        reason: 'Deadline evidence is missing',
         owner: 'operator@example.com',
       },
       db,
@@ -329,16 +385,33 @@ describe('Procurement database boundary', () => {
 
     expect(result).toEqual({
       opportunityId: 42,
-      reviewState: 'process',
+      reviewState: 'needs_info',
       reviewVersion: 3,
-      status: 'accepted',
+      status: 'new',
     });
     expect(vi.mocked(db.query).mock.calls[0][1]).toEqual([
       42,
       2,
-      'process',
-      'Matches the leadership coaching scope',
+      'needs_info',
+      'Deadline evidence is missing',
       'operator@example.com',
     ]);
+  });
+
+  it('requires the bound-card path for every process decision', async () => {
+    const query = vi.fn();
+    await expect(
+      transitionProcurementReview(
+        {
+          opportunityId: 42,
+          expectedVersion: 0,
+          decision: 'process',
+          reason: 'Looks relevant',
+          owner: 'operator@example.com',
+        },
+        { query } as QueryExecutor,
+      ),
+    ).rejects.toThrow('bound Slack review card');
+    expect(query).not.toHaveBeenCalled();
   });
 });

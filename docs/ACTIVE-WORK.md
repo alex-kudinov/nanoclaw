@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                           | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------- | --------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260809-003` | Make Procurement a stable, observable opportunity-to-decision-to-proposal-ready system before adding sources                                   | Codex + Claude owner               | `codex/nc-20260809-003-procurement-recovery` @ `97ca2cc` | `ready_for_review`   | C5    | Isolated implementation from the exact live release; read-only production preflight; tracked configuration and email routing; receipted source completeness; post-decision pursuit ledger; acknowledged reconciliation/action-receipt outbox; rehearsed rollback; immutable release; sanitized and one bounded real non-submission canary; preserve manual submission                  | Commit the R4-converged tree, build/verify the immutable artifact, then back up and deploy dark before any gate or source expansion                                                                                                                                                                                                                                      | 2026-08-09T21:18Z |
 | `NC-20260806-001` | A host-rejected Sales approval card returns the exact failure to its originating agent session and cannot be reported as successfully posted   | Codex + Claude validator           | `codex/nc-20260806-001-approval-rejection-loop` @ `aff14c8` | `ready_for_deploy`    | C5    | Recover Marina Lead #1047's rejected card without redrafting; return malformed, content-invalid, and overlong cards to the exact originating container; preserve work-thread isolation; prevent pure posted/awaiting-approval recaps without hiding blocked progress; extend the release gate and validate with Claude | Commit and build the immutable release, rebuild and refresh the runner before host activation, copy the reviewed Sales instructions, activate and verify exact health, recycle only idle Sales containers, then run a non-customer exact-session rejection/repost canary                                                                                                    | 2026-08-06T22:30Z |
 | `NC-20260804-004` | Approved customer replies accept canonical Tandem booking, meeting, and payment links instead of failing on a stale content-guard whitelist     | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993` | `deployed_unverified` | C5    | Recover Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` exactly once; reconcile its Gmail receipt; audit canonical Sales link sources against the host whitelist; add narrow owned/transactional domains and adversarial lookalike tests; deploy the converged immutable release and verify its exact identity and guards | Observe the next natural approved email containing a canonical Sales link pass the normal approval-to-Gmail path; no synthetic customer send is needed                                                                                                                                                                                                                 | 2026-08-06T01:43Z |
 | `NC-20260804-003` | Approved email bytes come only from host-owned approval state, never from Mailman's regenerated tool arguments                                  | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993` | `deployed_unverified` | C5    | Recover stranded approved actions exactly once; rehydrate every Mailman execution field; add exact scheduled-follow-up cards to the ledger; converge proposal follow-ups on one-time Gmail receipts; correct pre-Gmail status wording; pass focused/full tests and six Claude rounds; deploy immutable release; verify exact health and a live confirmed replay with no Gmail change | Observe the next natural approved customer email end to end through the normal Sales-to-Mailman watcher path; recovered sends and the live no-duplicate replay prove execution and replay mechanics but do not substitute for that business outcome                                                                                                                       | 2026-08-06T01:43Z |
@@ -65,6 +66,66 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260809-003
+
+- Trigger: after the two-round NC-20260809-002 audit converged, the owner
+  authorized all in-scope implementation, production, deployment, and canary
+  actions needed to make Procurement stable, reliable, and useful.
+- Safety boundary: opportunity submission, signature, attestation, portal
+  registration, contractual acceptance, and customer-facing commitments remain
+  human-only. Production mutations must be additive, backed up, reversible,
+  receipt-bearing, and separately recorded as migrated, deployed,
+  live-verified, or outcome-validated.
+- Isolation: this branch/worktree starts from exact live release commit
+  `97ca2ccfb9d3185a5b86607fb8118b997e4ef70b`, not the 137+-path shared dirty
+  checkout. Do not import unrelated active work or rebuild production from its
+  operational checkout.
+- Live preflight at 2026-08-09T19:49Z: release `97ca2cc` is verified under Node
+  22.23.2 with Slack/Gmail connected and no active containers. Both Procurement
+  taxonomy rows are enabled and `auto_archive=true`; 466 Procurement-classified
+  emails exist and 348 lack `routed_at`. Migration-114 run, observation, and
+  card tables are empty; all 396 opportunities remain `unreviewed` and
+  source-keyless; the review constraint is not validated. The active daily task
+  timed out on 2026-08-09 after 76 prior success and 13 error rows. All four
+  Procurement daemon environment keys are absent. The private framework remains
+  April-dated, with 12 briefs, 6 analyses, 2 proposal drafts, and 2 status files.
+- Required sequence: finish the no-content preflight; converge the migration
+  115/host API/reconciler design with Claude; implement and test; commit one
+  exact source tree; build/verify an immutable artifact; apply additive schema
+  and taxonomy/config changes with backups; deploy once; run negative and
+  sanitized positive canaries; then carry one public opportunity to a recorded
+  `passed` or `proposal_ready` state without submission.
+- Source expansion gate: no new feed until the closure canary passes. SAM.gov's
+  official API is first candidate; official state email alerts follow only
+  after caller-level email routing and liveness reconciliation are proven.
+- Claude R2 adversarial implementation review returned `CHANGES REQUIRED` and
+  found two exact original-failure-class defects: unacknowledged Slack alerts
+  could be lost permanently, and untouched overdue pursuits alerted only once.
+  The post-R2 implementation now keeps undelivered alerts pending until a
+  delivery receipt is acknowledged, continues after individual Slack failures,
+  uses daily buckets for time-driven conditions, applies the accepted 14-day
+  deadline window, requires exact per-unit coverage receipts, rejects card-less
+  programmatic `process`, renders exact pursuit commands in the decision
+  receipt, and records per-run opportunity associations.
+- Claude R3 returned `CONVERGED`, but Codex independently found a false-receipt
+  branch that remained reachable when Slack failed after a committed decision.
+  The final design writes exact success receipts transactionally into the
+  acknowledged outbox, routes them to the bound decision thread, retries them
+  until a Slack timestamp is acknowledged, and never emits `NOT RECORDED`
+  after commit. Claude R4 explicitly corrected the R3 miss and returned
+  `CONVERGED`; all five release gates are GO.
+- Schema-only rehearsal on the production PostgreSQL host passed: migration 115
+  applied and reapplied idempotently; the transactional smoke covered pursuit
+  replay/terminal state, coverage, retry, source-run association, RLS, expiry,
+  event ledger, daily re-alert, and delivery acknowledgment; the tracked
+  rollback then removed 115 and restored both migration-114 decision paths.
+  The disposable database and six temporary SQL files were removed. No live
+  business row, daemon, gate, schedule, taxonomy row, or message changed.
+- Final pinned Node 22.23.2 verification passes formatting, typecheck,
+  documentation continuity, 9 focused files / 64 tests, and the complete
+  permission-enabled repository suite at 151 files / 1,969 tests. The
+  independent runner build and 4 files / 29 tests also pass.
 
 ### NC-20260806-001
 

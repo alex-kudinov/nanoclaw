@@ -128,6 +128,14 @@ function setupLaunchd(
         <string>${releaseCommit}</string>
         <key>NANOCLAW_CODE_ROOT</key>
         <string>${projectRoot}</string>
+        <key>PROCUREMENT_CALEPROCURE_INGEST_ENABLED</key>
+        <string>0</string>
+        <key>PROCUREMENT_REVIEW_ENABLED</key>
+        <string>0</string>
+        <key>PROCUREMENT_REVIEW_EPOCH</key>
+        <string></string>
+        <key>PROCUREMENT_OPERATOR_UIDS</key>
+        <string></string>
     </dict>
     <key>StandardOutPath</key>
     <string>${projectRoot}/logs/nanoclaw.log</string>

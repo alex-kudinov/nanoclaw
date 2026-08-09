@@ -22,6 +22,8 @@ import type {
 
 const DECISION_RE =
   /^DECIDE\s+#(\d+)\s+v(\d+)\s+(process|drop|needs_info)\s+(?:—|--|:)\s+(.+)$/is;
+const PURSUIT_ADVANCE_RE =
+  /^ADVANCE\s+#(\d+)\s+v(\d+)\s+(assessing|blocked|passed)\s+(?:—|--|:)\s+(.+)$/is;
 const MAX_REASON_LENGTH = 1_000;
 const REVIEW_DECISIONS = new Set<ProcurementReviewDecision>([
   'needs_info',
@@ -33,6 +35,13 @@ export interface ProcurementDecisionCommand {
   opportunityId: number;
   expectedVersion: number;
   decision: ProcurementReviewDecision;
+  reason: string;
+}
+
+export interface ProcurementPursuitAdvanceCommand {
+  pursuitId: number;
+  expectedVersion: number;
+  targetState: 'assessing' | 'blocked' | 'passed';
   reason: string;
 }
 
@@ -80,13 +89,29 @@ interface AppliedDecisionRow extends QueryResultRow {
   status: string;
 }
 
+interface AppliedPursuitRow extends QueryResultRow {
+  pursuit_id: number | string;
+  opportunity_id: number | string;
+  pursuit_state: string;
+  pursuit_version: number | string;
+}
+
+interface PendingActionReceiptRow extends QueryResultRow {
+  alert_id: number | string;
+  alert_text: string;
+}
+
 export interface ProcurementReviewDeps {
   query: QueryExecutor['query'];
   postCard(
     text: string,
     threadKey: string,
   ): Promise<{ channelJid: string; messageTs: string } | null>;
-  postThread(channelJid: string, threadTs: string, text: string): Promise<void>;
+  postThread(
+    channelJid: string,
+    threadTs: string,
+    text: string,
+  ): Promise<string | undefined>;
 }
 
 const defaultQuery: QueryExecutor['query'] = (sql, params = []) =>
@@ -122,12 +147,34 @@ export function parseProcurementDecisionCommand(
 ): ProcurementDecisionCommand | null {
   const match = DECISION_RE.exec(text.trim());
   if (!match) return null;
-  return {
-    opportunityId: positiveInteger(Number(match[1]), 'opportunityId'),
-    expectedVersion: nonnegativeInteger(Number(match[2]), 'expectedVersion'),
-    decision: match[3].toLowerCase() as ProcurementReviewDecision,
-    reason: cleanReason(match[4]),
-  };
+  try {
+    return {
+      opportunityId: positiveInteger(Number(match[1]), 'opportunityId'),
+      expectedVersion: nonnegativeInteger(Number(match[2]), 'expectedVersion'),
+      decision: match[3].toLowerCase() as ProcurementReviewDecision,
+      reason: cleanReason(match[4]),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function parseProcurementPursuitAdvanceCommand(
+  text: string,
+): ProcurementPursuitAdvanceCommand | null {
+  const match = PURSUIT_ADVANCE_RE.exec(text.trim());
+  if (!match) return null;
+  try {
+    return {
+      pursuitId: positiveInteger(Number(match[1]), 'pursuitId'),
+      expectedVersion: nonnegativeInteger(Number(match[2]), 'expectedVersion'),
+      targetState:
+        match[3].toLowerCase() as ProcurementPursuitAdvanceCommand['targetState'],
+      reason: cleanReason(match[4]),
+    };
+  } catch {
+    return null;
+  }
 }
 
 function formatReviewCard(
@@ -270,8 +317,10 @@ export async function handleProcurementDecisionMessage(
   deps: Pick<ProcurementReviewDeps, 'query' | 'postThread'>,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<boolean> {
-  const command = parseProcurementDecisionCommand(message.text);
-  if (!command) return false;
+  const commandPrefix = /^\s*(DECIDE|ADVANCE)\b/i.test(message.text);
+  const decision = parseProcurementDecisionCommand(message.text);
+  const advance = parseProcurementPursuitAdvanceCommand(message.text);
+  if (!decision && !advance && !commandPrefix) return false;
 
   const threadTs = message.threadTs?.trim();
   if (!threadTs) return true;
@@ -280,9 +329,16 @@ export async function handleProcurementDecisionMessage(
     await deps.postThread(
       message.channelJid,
       threadTs,
-      `[PROCUREMENT DECISION NOT RECORDED] ${reason}`,
+      `[PROCUREMENT ACTION NOT RECORDED] ${reason}`,
     );
   };
+
+  if (!decision && !advance) {
+    await postFailure(
+      'Malformed command. Use the exact versioned DECIDE or ADVANCE syntax shown by the host.',
+    );
+    return true;
+  }
 
   const policy = currentProcurementReviewPolicy(env);
   if (!policy.enabled || !policy.epoch) {
@@ -294,52 +350,143 @@ export async function handleProcurementDecisionMessage(
     return true;
   }
 
+  let recorded:
+    | { kind: 'decision'; row: AppliedDecisionRow }
+    | { kind: 'pursuit'; row: AppliedPursuitRow };
   try {
-    const result = await deps.query<AppliedDecisionRow>(
-      `SELECT *
-         FROM public.fn_apply_procurement_review_card_decision(
-           $1, $2, $3, $4, $5, $6, $7, $8
-         )`,
-      [
-        message.channelJid,
-        threadTs,
-        command.opportunityId,
-        command.expectedVersion,
-        command.decision,
-        command.reason,
-        message.actorUid,
-        policy.epoch,
-      ],
-    );
-    const row = result.rows[0];
-    if (!row) throw new Error('review transition returned no result');
-    await deps.postThread(
-      message.channelJid,
-      threadTs,
-      `[PROCUREMENT DECISION RECORDED] #${row.opportunity_id} is ${row.review_state} at v${row.review_version}. Actor: ${message.actorName || message.actorUid}.`,
-    );
-    logger.info(
-      {
-        opportunityId: Number(row.opportunity_id),
-        reviewState: row.review_state,
-        actorUid: message.actorUid,
-      },
-      'procurement decision recorded',
-    );
+    if (decision) {
+      const result = await deps.query<AppliedDecisionRow>(
+        `SELECT *
+           FROM public.fn_apply_procurement_review_card_decision(
+             $1, $2, $3, $4, $5, $6, $7, $8
+           )`,
+        [
+          message.channelJid,
+          threadTs,
+          decision.opportunityId,
+          decision.expectedVersion,
+          decision.decision,
+          decision.reason,
+          message.actorUid,
+          policy.epoch,
+        ],
+      );
+      const row = result.rows[0];
+      if (!row) throw new Error('review transition returned no result');
+      recorded = { kind: 'decision', row };
+    } else if (advance) {
+      const result = await deps.query<AppliedPursuitRow>(
+        `SELECT *
+           FROM public.fn_apply_procurement_pursuit_advance(
+             $1, $2, $3, $4, $5, $6, $7, $8
+           )`,
+        [
+          message.channelJid,
+          threadTs,
+          advance.pursuitId,
+          advance.expectedVersion,
+          advance.targetState,
+          advance.reason,
+          message.actorUid,
+          policy.epoch,
+        ],
+      );
+      const row = result.rows[0];
+      if (!row) throw new Error('pursuit transition returned no result');
+      recorded = { kind: 'pursuit', row };
+    } else {
+      return true;
+    }
   } catch (error) {
     logger.warn(
       {
         err: error,
-        opportunityId: command.opportunityId,
-        expectedVersion: command.expectedVersion,
+        opportunityId: decision?.opportunityId,
+        pursuitId: advance?.pursuitId,
+        expectedVersion: (decision ?? advance)?.expectedVersion,
         actorUid: message.actorUid,
       },
-      'procurement decision rejected by host ledger',
+      'procurement action rejected by host ledger',
     );
     await postFailure(
-      'The card is stale, unbound, already used, or the database rejected the transition. Refresh the queue and request a new card.',
+      'The action is stale, unbound, already used, or the database rejected the transition. Refresh the applicable queue before retrying.',
+    );
+    return true;
+  }
+
+  const receiptSubjectId =
+    recorded.kind === 'decision'
+      ? String(recorded.row.opportunity_id)
+      : String(recorded.row.pursuit_id);
+  const receiptVersion =
+    recorded.kind === 'decision'
+      ? String(recorded.row.review_version)
+      : String(recorded.row.pursuit_version);
+  const receiptCondition =
+    recorded.kind === 'decision' ? 'decision_receipt' : 'pursuit_receipt';
+  try {
+    const pending = await deps.query<PendingActionReceiptRow>(
+      `SELECT id AS alert_id, alert_text
+         FROM public.procurement_reconciler_alerts
+        WHERE condition_key = $1
+          AND subject_id = $2
+          AND subject_version = $3
+          AND channel_jid = $4
+          AND thread_ts = $5
+          AND delivered_at IS NULL`,
+      [
+        receiptCondition,
+        receiptSubjectId,
+        receiptVersion,
+        message.channelJid,
+        threadTs,
+      ],
+    );
+    const receipt = pending.rows[0];
+    if (!receipt) {
+      throw new Error('committed action receipt was not found');
+    }
+    const messageTs = await deps.postThread(
+      message.channelJid,
+      threadTs,
+      receipt.alert_text,
+    );
+    if (!messageTs) throw new Error('Slack returned no receipt timestamp');
+    const acknowledged = await deps.query<{ acknowledged: boolean }>(
+      `SELECT public.fn_ack_procurement_reconciler_alert($1) AS acknowledged`,
+      [Number(receipt.alert_id)],
+    );
+    if (acknowledged.rows[0]?.acknowledged !== true) {
+      throw new Error('action receipt acknowledgment returned no update');
+    }
+  } catch (error) {
+    logger.error(
+      {
+        err: error,
+        receiptCondition,
+        subjectId: receiptSubjectId,
+        subjectVersion: receiptVersion,
+      },
+      'procurement action recorded; durable Slack receipt remains pending',
     );
   }
+
+  logger.info(
+    recorded.kind === 'decision'
+      ? {
+          opportunityId: Number(recorded.row.opportunity_id),
+          reviewState: recorded.row.review_state,
+          actorUid: message.actorUid,
+        }
+      : {
+          pursuitId: Number(recorded.row.pursuit_id),
+          pursuitState: recorded.row.pursuit_state,
+          actorUid: message.actorUid,
+        },
+    recorded.kind === 'decision'
+      ? 'procurement decision recorded'
+      : 'procurement pursuit advanced',
+  );
   return true;
 }
 

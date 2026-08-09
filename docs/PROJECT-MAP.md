@@ -1137,6 +1137,19 @@ separate explicit decision; do not open, publish, or delete them casually.
   Bonfire rows; source-keyed CaleProcure/email rows are host-owned. Both gates
   remain off with no owner IDs or epoch; the schedule, browser, 309 legacy rows,
   and submission boundary were not changed.
+- `NC-20260809-003` is the uncommitted recovery slice under review. Migration
+  115 makes a bound `process` decision create one pursuit transactionally,
+  keeps every active/overdue pursuit visible, associates repeated observations
+  with each exact source run, requires per-unit coverage receipts, and uses an
+  acknowledged alert outbox that retries undelivered Slack alerts and re-alerts
+  time-driven conditions daily. Named-human success receipts are inserted into
+  that outbox in the same transaction as the decision or pursuit event and are
+  routed only to the bound Slack thread; no post-commit failure can report the
+  action as unrecorded. Host alert posts use `SlackChannel.postTracked`;
+  their persisted bot/no-`from_group` shape is suppressed by the existing
+  bot-noise spawn guard. `proposal_ready` and `submitted` remain unreachable
+  until the separate typed packet/receipt migration. None of migration 115,
+  its host code, or its gates is deployed yet.
 
 ### P1: reproducibility and source ownership
 
@@ -1209,7 +1222,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/ENGINEERING-CHANGELOG.md`         | append-only implementation/verification/deployment history    | evidence only; do not overstate boundaries crossed                                        |
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | validated, phased improvement roadmap                         | proposed work; not implemented state                                                      |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract   | archive integrity is not publisher authenticity                                           |
-| `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement current state and target operating loop  | C1 design plus NC-20260730-003/004 local slices; migration/deployment remain unauthorized |
+| `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement history, current recovery state, and target loop | migration 114 is deployed dark; NC-20260809-003 migration 115 pursuit closure is implemented and under release validation |
 | `docs/SELF-HEALING-COMPLETION-PLAN.md`  | reconciled healer current state and gated completion sequence | action-boundary source is local until separately reviewed/deployed                        |
 | `docs/REQUIREMENTS.md`                  | original product principles                                   | intent, not feature inventory                                                             |
 | `docs/ARCHITECTURE.md`                  | broad bespoke architecture                                    | some SDK terminology is stale                                                             |
