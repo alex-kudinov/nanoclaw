@@ -68,6 +68,19 @@ export class CaleProcureJobError extends Error {
   }
 }
 
+export function errorMessageChain(error: unknown): string {
+  const messages: string[] = [];
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+  while (current !== undefined && current !== null && messages.length < 8) {
+    if (seen.has(current)) break;
+    seen.add(current);
+    messages.push(current instanceof Error ? current.message : String(current));
+    current = current instanceof Error ? current.cause : undefined;
+  }
+  return messages.join(' <- ');
+}
+
 export interface RunCaleProcureJobOptions {
   shadow: boolean;
   port: CaleProcureBrowserPort;
@@ -104,7 +117,14 @@ export async function runCaleProcureJob({
     }
     return publicSummary('live', collection, receipt);
   } catch (error) {
-    if (!shadow && error instanceof CaleProcureCollectionError) {
+    if (error instanceof CaleProcureCollectionError && shadow) {
+      throw new CaleProcureJobError(
+        error.message,
+        publicSummary('partial', error.partial),
+        { cause: error.cause },
+      );
+    }
+    if (error instanceof CaleProcureCollectionError) {
       const receipt = await ingest(
         error.partial.rows,
         runKey,
@@ -115,7 +135,7 @@ export async function runCaleProcureJob({
       throw new CaleProcureJobError(
         error.message,
         publicSummary('partial', error.partial, receipt),
-        { cause: error },
+        { cause: error.cause },
       );
     }
     throw error;
@@ -184,7 +204,7 @@ async function runCli(): Promise<void> {
     if (error instanceof CaleProcureJobError && error.partialSummary) {
       await writeLine(process.stderr, JSON.stringify(error.partialSummary));
     }
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessageChain(error);
     await writeLine(process.stderr, `CaleProcure collector failed: ${message}`);
     process.exitCode = 1;
   } finally {

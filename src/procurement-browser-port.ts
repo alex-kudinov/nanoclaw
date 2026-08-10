@@ -4,6 +4,7 @@ import {
   type BrowserContext,
   type Locator,
   type Page,
+  type Response,
 } from 'playwright-core';
 
 import type {
@@ -23,7 +24,8 @@ const EVENT_NAME_ID = '#RESP_INQA_WK_ZZ_AUC_NAME';
 const CLEAR_ID = '#AUC_PREF_WK_AUC_PREF_CLEAR_PB';
 const SEARCH_ID = '#RESP_INQA_WK_INQ_AUC_GO_PB';
 const RESULTS_GRID_ID = '#datatable-ready';
-const NO_RESULTS_TEXT = 'No event met your search criteria';
+const NO_RESULTS_TEXT =
+  'No event met your search criteria. Please change your search criteria and try again';
 const SUMMARY_RE = /^Showing Results (?:\d+-)?\d+ of (\d+)$/;
 const SEARCH_POST_PATH =
   '/nlx3/psc/psfpd1/SUPPLIER/ERP/c/AUC_MANAGE_BIDS.AUC_RESP_INQ_AUC.GBL';
@@ -223,6 +225,52 @@ async function waitForResultState(
     .filter({ visible: true });
   while (Date.now() < deadline) {
     if ((await summaries.count()) > 0 || (await empty.count()) > 0) return;
+    await page.waitForTimeout(100);
+  }
+  throw new Error('CaleProcure result state did not appear before timeout');
+}
+
+function isCaleProcureSearchResponse(response: Response): boolean {
+  try {
+    const url = new URL(response.url());
+    return (
+      url.origin === new URL(SEARCH_URL).origin &&
+      url.pathname === SEARCH_POST_PATH &&
+      response.request().method() === 'POST' &&
+      response.status() === 200 &&
+      response.headers()['content-type']?.startsWith('application/json') ===
+        true
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function waitForSearchOutcome(
+  page: Page,
+  responseProvesZero: () => boolean,
+  timeoutMs: number,
+): Promise<'response' | 'visible'> {
+  const deadline = Date.now() + timeoutMs;
+  const summaries = page
+    .getByText(/^Showing Results /)
+    .filter({ visible: true });
+  const empty = page
+    .getByText(NO_RESULTS_TEXT, { exact: true })
+    .filter({ visible: true });
+  const grid = page.locator(`${RESULTS_GRID_ID}:visible`);
+  while (Date.now() < deadline) {
+    const proved = responseProvesZero();
+    const summaryCount = await summaries.count();
+    const emptyCount = await empty.count();
+    const gridCount = await grid.count();
+    if (proved && (summaryCount > 0 || gridCount > 0)) {
+      throw new Error(
+        'CaleProcure response proves no results but the page shows results',
+      );
+    }
+    if (summaryCount > 0 || emptyCount > 0) return 'visible';
+    if (proved) return 'response';
     await page.waitForTimeout(100);
   }
   throw new Error('CaleProcure result state did not appear before timeout');
@@ -431,68 +479,49 @@ export class PlaywrightCaleProcureBrowserPort implements CaleProcureBrowserPort 
       SEARCH_ID,
       'Search button',
     );
-    const [response] = await Promise.all([
-      this.searchPage.waitForResponse(
-        (candidate) => {
-          try {
-            const url = new URL(candidate.url());
-            return (
-              url.origin === new URL(SEARCH_URL).origin &&
-              url.pathname === SEARCH_POST_PATH &&
-              candidate.request().method() === 'POST'
-            );
-          } catch {
-            return false;
-          }
-        },
-        { timeout: this.timeoutMs },
-      ),
-      clickAndWaitForBusyCycle(this.searchPage, search, this.timeoutMs),
-    ]);
-
+    let acceptingResponses = true;
     let responseProvesZero = false;
-    if (
-      response.status() === 200 &&
-      response.headers()['content-type']?.startsWith('application/json')
-    ) {
-      try {
-        responseProvesZero = isCaleProcureZeroResultResponse(
-          await response.json(),
-          keyword,
-        );
-      } catch {
-        // A malformed or changed response cannot prove a zero result. The
-        // visible result-state contract below remains the fail-closed path.
-      }
-    }
-
-    if (responseProvesZero) {
-      const visibleSummaries = this.searchPage
-        .getByText(/^Showing Results /)
-        .filter({ visible: true });
-      const visibleGrid = this.searchPage.locator(`${RESULTS_GRID_ID}:visible`);
-      if (
-        (await visibleSummaries.count()) > 0 ||
-        (await visibleGrid.count()) > 0
-      ) {
-        throw new Error(
-          'CaleProcure response proves no results but the page shows results',
-        );
-      }
-    } else {
-      await waitForResultState(this.searchPage, this.timeoutMs);
+    const onResponse = (candidate: Response) => {
+      if (!acceptingResponses || !isCaleProcureSearchResponse(candidate))
+        return;
+      void candidate
+        .json()
+        .then((payload: unknown) => {
+          if (
+            acceptingResponses &&
+            isCaleProcureZeroResultResponse(payload, keyword)
+          ) {
+            responseProvesZero = true;
+          }
+        })
+        .catch(() => undefined);
+    };
+    this.searchPage.on('response', onResponse);
+    let resultEvidence: 'response' | 'visible';
+    try {
+      await clickAndWaitForBusyCycle(this.searchPage, search, this.timeoutMs);
+      resultEvidence = await waitForSearchOutcome(
+        this.searchPage,
+        () => responseProvesZero,
+        this.timeoutMs,
+      );
+    } finally {
+      acceptingResponses = false;
+      this.searchPage.off('response', onResponse);
     }
 
     const echoedQuery = await input.inputValue();
-    const resultCount = responseProvesZero
-      ? 0
-      : await readVisibleResultTotal(this.searchPage);
-    const rows = responseProvesZero
-      ? []
-      : await readVisibleRows(this.searchPage);
+    const resultCount =
+      resultEvidence === 'response'
+        ? 0
+        : await readVisibleResultTotal(this.searchPage);
+    const rows =
+      resultEvidence === 'response'
+        ? []
+        : await readVisibleRows(this.searchPage);
     return {
       echoedQuery,
-      resultEvidence: responseProvesZero ? 'response' : 'visible',
+      resultEvidence,
       resultCount,
       pagesVisited: 1,
       rows,

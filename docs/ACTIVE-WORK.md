@@ -12,7 +12,7 @@ outside the current client conversation.
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
 | `NC-20260809-001` | Recalibrate Foundation grading while making student-visible AI/process traces a fail-closed release boundary                                   | Codex + Claude validator           | `codex/grader-release-20260810-v3` @ `bc93125`               | `deployed_unverified` | C5    | Host-only output gate; current read-only Heartbeat assignment context; exact per-turn proof; raw final-text suppression; no automatic Heartbeat result-write path; immutable Mini release and installed-artifact canary verified                                                                                                                                                       | Keep Heartbeat result posting manual and disabled; complete the scrubbed-corpus and blind human voice-panel work before claiming autonomous student-facing grading is fully validated                                                                                                                                                                                | 2026-08-10T01:18Z |
-| `NC-20260809-003` | Make Procurement a stable, observable opportunity-to-decision-to-proposal-ready system before adding sources                                    | Codex + Claude owner               | `codex/nc-20260809-003-procurement-integration` @ `4053bf8` + R17 response-proof delta | `validating`          | C5    | Migration 115 and integrated deterministic collector release are live but every collection/review gate remains off; R16 teardown proof passes; Claude R17 returned GO on the narrow query-bound response repair, whose receipt now records `visible` or `response` provenance; Bonfire/container browsing is retired and proposals/source activation/submission remain off/manual | Complete full verification, build/deploy one superseding immutable release, then prove three consecutive 9/9 shadows with both evidence paths and the positive control before one receipt-bound live collection                                                                                                                                    | 2026-08-10T03:43Z |
+| `NC-20260809-003` | Make Procurement a stable, observable opportunity-to-decision-to-proposal-ready system before adding sources                                    | Codex + Claude owner               | `codex/nc-20260809-003-procurement-integration` @ `a69f0ff` + R20 GO | `ready_for_deploy`   | C5    | Migration 115 and immutable `a69f0ff` are live but every collection/review gate remains off; Claude R20 approved the deterministic outcome repair; exact Node 22.23.2 verification passes 22 focused tests, the complete 165-file / 2,215-test root suite, and the runner's 34 tests; Bonfire/container browsing is retired and proposals/source activation/submission remain off/manual | Build/deploy one superseding immutable release, then prove three consecutive 9/9 shadows with both evidence paths and the positive control before one receipt-bound live collection                                                                                                                | 2026-08-10T04:40Z |
 | `NC-20260806-001` | A host-rejected Sales approval card returns the exact failure to its originating agent session and cannot be reported as successfully posted    | Codex + Claude validator           | `codex/nc-20260806-001-approval-rejection-loop` @ `aff14c8`  | `ready_for_deploy`    | C5    | Recover Marina Lead #1047's rejected card without redrafting; return malformed, content-invalid, and overlong cards to the exact originating container; preserve work-thread isolation; prevent pure posted/awaiting-approval recaps without hiding blocked progress; extend the release gate and validate with Claude                                                               | Commit and build the immutable release, rebuild and refresh the runner before host activation, copy the reviewed Sales instructions, activate and verify exact health, recycle only idle Sales containers, then run a non-customer exact-session rejection/repost canary                                                                                                | 2026-08-06T22:30Z |
 | `NC-20260804-004` | Approved customer replies accept canonical Tandem booking, meeting, and payment links instead of failing on a stale content-guard whitelist     | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993`   | `deployed_unverified` | C5    | Recover Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` exactly once; reconcile its Gmail receipt; audit canonical Sales link sources against the host whitelist; add narrow owned/transactional domains and adversarial lookalike tests; deploy the converged immutable release and verify its exact identity and guards                                                              | Observe the next natural approved email containing a canonical Sales link pass the normal approval-to-Gmail path; no synthetic customer send is needed                                                                                                                                                                                                                  | 2026-08-06T01:43Z |
 | `NC-20260804-003` | Approved email bytes come only from host-owned approval state, never from Mailman's regenerated tool arguments                                  | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993`   | `deployed_unverified` | C5    | Recover stranded approved actions exactly once; rehydrate every Mailman execution field; add exact scheduled-follow-up cards to the ledger; converge proposal follow-ups on one-time Gmail receipts; correct pre-Gmail status wording; pass focused/full tests and six Claude rounds; deploy immutable release; verify exact health and a live confirmed replay with no Gmail change | Observe the next natural approved customer email end to end through the normal Sales-to-Mailman watcher path; recovered sends and the live no-duplicate replay prove execution and replay mechanics but do not substitute for that business outcome                                                                                                                     | 2026-08-06T01:43Z |
@@ -390,6 +390,71 @@ outside the current client conversation.
   forecasts as gated candidates. Forecasts remain intelligence, not open
   opportunities; no account, alert, or feed was activated. SAM.gov remains the
   first new deterministic adapter after the current closure canary.
+- Immutable release `a69f0ff1a372` activated on the production Mac Mini with
+  source tree `ca6e0b3c278538d70ef8c1f414318340d574f3dc`, artifact
+  `cb89cf09981aa2e071a4c21d1d2b3b1c7e4d1c49592afdefbcf7640802fd50c7`,
+  archive SHA-256
+  `e3cc8e00cfccc294607e5a8bd27e017d6b8bfd9065fe4bec0d552d9fe7cb6803`,
+  and exact Node 22.23.2 health after the launchd heartbeat converged to the new
+  listener PID. Slack/Gmail remained connected, active containers stayed zero,
+  Chrome returned to its two-tab baseline, and all three Procurement gates
+  remained `0`.
+- The first `a69f0ff` shadow exited on its own and preserved Chrome/tabs but
+  still failed on `coaching`. Claude R18 returned `NO-GO` on the proposed async
+  response predicate because the live response cardinality/shape premise was
+  not yet established, the captured payload could race, and CLI failures lost
+  their cause chain and shadow partial summary. Bounded public-source
+  diagnostics then proved exactly one same-path POST for each of `coaching` and
+  `facilitation`, both HTTP 200 JSON with one exact echoed query. The zero query
+  returns the full terminal string `No event met your search criteria. Please
+  change your search criteria and try again`; the old parser accepted only the
+  shorter UI label. The positive control returns one visible reconciled row and
+  its single `box_error_items` capture has no text property.
+- The R18 repair candidate matches only the exact query-bound full terminal
+  string, observes responses through a removable listener, and feeds a bounded
+  loop that independently accepts reconciled visible results or the response
+  zero proof while rejecting a simultaneous visible/zero contradiction. It no
+  longer has a mutable resolved-payload race or a losing response timeout.
+  Shadow collection failures now become `CaleProcureJobError` with a public
+  partial summary and an eight-level cycle-safe cause chain. Exact Node 22.23.2
+  focused verification passes 3 files / 19 tests, including `search()` itself,
+  cheap response gates, listener cleanup, terminal-zero selection, visible
+  positive reconciliation, and shadow evidence. Full verification, Claude
+  convergence, immutable release, and production shadows remain pending.
+- Claude R19 returned `NO-GO` on one introduced regression: the outcome loop
+  treated a visible no-results marker as contradicting a response-proven zero,
+  even though those signals agree. It also found the response flag was sampled
+  after DOM counts and required coverage for contradiction, timeout,
+  visible-zero, and cross-keyword response paths. A bounded read-only diagnostic
+  then searched `executive coaching` and observed exactly one visible normalized
+  DOM message: `No event met your search criteria. Please change your search
+  criteria and try again`, identical to the terminal response text. The four
+  exact DOM call sites now use that verified full string.
+- The post-R19 candidate samples the response-zero flag before DOM counts,
+  rejects only a simultaneous visible results summary/grid, prefers visible
+  evidence when the page renders an agreeing zero, and otherwise returns the
+  response proof for the known hidden-zero portal defect. The four requested
+  paths are executable: visible zero returns `visible`/0/[], contradiction
+  throws, absent evidence times out fail-closed, and a terminal tuple for a
+  different keyword cannot suppress a reconciled positive row. Cause output no
+  longer duplicates the collection error at the first two links. Exact Node
+  22.23.2 focused verification passes 3 files / 22 tests plus typecheck,
+  formatting, and `git diff --check`; final Claude convergence and complete
+  verification remain pending.
+- Claude R20 returned `GO for commit, immutable deployment, and the unchanged
+  three-shadow gate`, with no blocker or high issue. Its one Medium is an
+  empirical gate rather than a code defect: the now-correct full empty marker
+  must disappear after Clear Criteria before the following keyword, or the run
+  will fail loudly instead of accepting a stale zero. Shadow 1 will exercise
+  that path naturally. Its low CI-flake observation is applied by giving the
+  synthetic no-evidence timeout 50 ms instead of 1 ms. Exact Node 22.23.2 final
+  verification passes the focused 3-file / 22-test Procurement slice, root
+  build, typecheck, formatting, documentation continuity, `git diff --check`,
+  the complete 165-file / 2,215-test root suite, and the independent runner
+  build plus 5 files / 34 tests. An initial sandboxed complete-suite attempt was
+  rejected as evidence because the sandbox denied the webhook bind and a
+  migration child process; the complete suite was rerun outside that sandbox
+  and passed. Immutable release and production shadow evidence remain pending.
 
 ### NC-20260806-001
 

@@ -284,6 +284,64 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `git diff --check`, the full 165-file / 2,209-test root suite, and the
   independent runner's 5 files / 34 tests. A superseding immutable release
   remains pending; all collection/review gates remain off.
+- R17 release and R18 diagnosis: immutable `a69f0ff1a372` activated with archive
+  SHA-256
+  `e3cc8e00cfccc294607e5a8bd27e017d6b8bfd9065fe4bec0d552d9fe7cb6803`,
+  source tree `ca6e0b3c278538d70ef8c1f414318340d574f3dc`, artifact
+  `cb89cf09981aa2e071a4c21d1d2b3b1c7e4d1c49592afdefbcf7640802fd50c7`,
+  and exact Node 22.23.2 health. The first shadow self-exited with tabs 2-to-2
+  but still failed on `coaching`. Claude R18 returned `NO-GO` on the proposed
+  async response predicate and required response-cardinality diagnostics,
+  resolved-response binding, cause-chain output, shadow partial evidence, and
+  a `search()` regression. A bounded no-write diagnostic proved one exact-path
+  POST per search, HTTP 200 JSON, and one exact query capture. `coaching` uses
+  the full terminal message `No event met your search criteria. Please change
+  your search criteria and try again`, whereas the parser expected only the
+  shorter UI label. `facilitation` retains its one visible reconciled row and
+  has no error text. This disproves wrong-response/status/content-type causes
+  and isolates the string-contract mismatch.
+- R18 repair candidate: the browser port now matches only the exact full
+  query-bound terminal tuple through a removable response listener and a
+  bounded visible-or-response outcome loop. The visible positive path does not
+  depend on response-body shape; contradictory zero/visible states fail closed;
+  there is no shared resolved-payload mutation or losing response timeout.
+  Shadow failures retain a public partial summary and print an eight-level,
+  cycle-safe cause chain. Exact Node 22.23.2 passes 3 focused files / 19 tests,
+  including the production `search()` path, rejected-response cheap gates,
+  listener cleanup, terminal-zero selection, visible positive reconciliation,
+  and shadow partial/cause evidence. Full verification, final Claude review,
+  immutable release, and production shadow evidence remain pending; all gates
+  are still off.
+- R19 outcome-order review and repair: Claude returned `NO-GO` because an
+  agreeing visible no-results marker was incorrectly included in the
+  response-zero contradiction condition, and because the response flag was
+  sampled after the DOM counts. It also required direct tests of contradiction,
+  timeout, visible-zero, and cross-keyword terminal payloads. A bounded public
+  DOM diagnostic on `executive coaching` observed the full normalized message
+  `No event met your search criteria. Please change your search criteria and try
+  again`, exactly matching the verified response text, so all four exact DOM
+  call sites now use that full string. The repaired loop samples the flag first,
+  rejects only visible results summary/grid, prefers an agreeing visible zero,
+  and uses response provenance only when the portal renders no state. The four
+  missing paths now have regressions; shadow/live cause output also removes its
+  duplicated first link. Exact Node 22.23.2 focused verification passes 3 files
+  / 22 tests, typecheck, formatting, and `git diff --check`. Final Claude
+  convergence, full verification, immutable release, and three shadows remain
+  pending; all Procurement gates remain off.
+- Claude R20 returned `GO for commit, immutable deployment, and the unchanged
+  three-shadow gate`, with no blocker/high. Its remaining Medium is the intended
+  fail-closed Clear Criteria check becoming load-bearing now that the full empty
+  marker is matched; shadow 1 will prove whether the portal removes that marker
+  before the next keyword. The synthetic timeout test now uses 50 ms rather
+  than 1 ms to avoid unrelated one-millisecond deadline races. Exact Node
+  22.23.2 final verification passes the focused 3-file / 22-test Procurement
+  slice, root build, typecheck, formatting, documentation continuity,
+  `git diff --check`, the complete 165-file / 2,215-test root suite, and the
+  independent runner build plus 5 files / 34 tests. An initial sandboxed
+  complete-suite attempt was rejected because the sandbox denied the webhook
+  bind and a migration child process; the complete suite was rerun outside that
+  sandbox and passed. Immutable release and three-shadow evidence remain
+  pending.
 - Rollback/recovery: tracked
   `rollback_115_procurement_pursuit.sql` restores the verbatim migration-114
   function bodies, prior taxonomy behavior, and removes 115 objects/columns;

@@ -3,10 +3,43 @@ import { describe, expect, it, vi } from 'vitest';
 import type { CaleProcureBrowserPort } from './procurement-caleprocure-collector.js';
 import {
   CaleProcureJobError,
+  errorMessageChain,
   runCaleProcureJob,
 } from './procurement-caleprocure-job.js';
 
 describe('CaleProcure host job failure evidence', () => {
+  it('preserves shadow partial evidence and the nested cause chain', async () => {
+    const root = new Error('hidden result state');
+    const port: CaleProcureBrowserPort = {
+      open: async () => undefined,
+      readBaseline: async () => ({ resultCount: 320, extractedRows: 320 }),
+      readDepartmentDirectory: async () => [
+        { businessUnit: '3820', name: 'SF Bay Conservation Commission' },
+      ],
+      search: async () => {
+        throw root;
+      },
+      readDetail: async () => {
+        throw new Error('not reached');
+      },
+      close: async () => undefined,
+    };
+
+    await expect(runCaleProcureJob({ shadow: true, port })).rejects.toSatisfy(
+      (error: unknown) => {
+        expect(error).toBeInstanceOf(CaleProcureJobError);
+        const jobError = error as CaleProcureJobError;
+        expect(jobError.partialSummary).toEqual(
+          expect.objectContaining({ mode: 'partial' }),
+        );
+        expect(errorMessageChain(jobError)).toContain(
+          'CaleProcure search failed for "coaching" <- hidden result state',
+        );
+        return true;
+      },
+    );
+  });
+
   it('writes one partial receipt and closes the port when collection aborts', async () => {
     const controller = new AbortController();
     const close = vi.fn(async () => undefined);
