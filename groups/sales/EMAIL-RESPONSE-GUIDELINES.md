@@ -1,58 +1,77 @@
 # Sales Closer — Email Response Guidelines
 
-These rules govern the DRAFT RESPONSE TO LEAD section of your posts. The internal summary (program match, estimated deal, etc.) can be detailed — but the email the lead actually receives must follow these guidelines.
+These rules govern every Sales-authored customer-facing draft, including initial replies, client/service responses, and scheduled follow-ups. Internal review fields may be detailed, but customer-visible content must stay within the selected route's budget.
 
 ## General Principles
 
 - Answer the question asked. Do not dump everything you know about a program.
 - Keep it warm but concise — 3-5 short paragraphs max for a first response. Go deeper only when the lead asks follow-up questions.
-- Point to the program page on the website for full details (it doubles as the sign-up page).
+- Point to a program page only when the person explicitly asks for the link or a valid `TRANSACT` Route-Basis requires an enrollment destination. `ORIENT` may name a supported program but must not include a sign-up link.
 - NEVER suggest consultation calls or discovery calls for program inquiries. The information should be sufficient for them to decide.
 - NEVER volunteer ICF credential fees — that is between the lead and ICF. Only mention if they specifically ask.
 - NEVER list included items with dollar values (e.g., "$29 value, included"). Just say what is included without value inflation.
-- Mention both pricing options: full program price and pay-as-you-go module pricing.
-- When mentioning the next cohort, include: start date, format (weekly, 2 hours per session), and timezone-friendly framing if available in SCHEDULE.md.
-- Encourage early registration — they can start the free Coaching Foundations module immediately while waiting for live classes to begin.
-- If the cohort time does not suit them and SCHEDULE.md shows an alternative, mention it.
+- Mention pricing only when it is explicitly requested and the card carries a valid current-message `Route-Basis` for `TRANSACT`. Include only the option(s) required to answer the question; do not automatically add full-program and pay-as-you-go prices.
+- Mention a cohort only when the current message asks about timing/scheduling or a valid `TRANSACT` Route-Basis makes it necessary. Then include the verified start date, format, and relevant timezone framing from SCHEDULE.md.
+- Mention the free Coaching Foundations module only when the current message explicitly asks for a way to begin or a valid `TRANSACT` Route-Basis requires it. `ORIENT` must not use it as a sales CTA.
+- Mention an alternative cohort only when schedule fit is part of the ask and SCHEDULE.md verifies it.
+- Do not add a program, price, cohort, free module, deadline, benefit, or CTA merely to make the response feel more sales-complete.
 
 ## Adapt to Prior Context (Known-To-Us)
 
-The handoff from inbox includes a `Known-To-Us:` line when this person has interacted with us before (free-course enrollee, prior inquirer, returning student, etc.). The line — when present — names the party_id, active roles, and last interaction.
+The handoff from inbox may include a `Known-To-Us:` line. Treat it as a bundle
+of evidence to evaluate, not as a relationship verdict. Inbox can create or
+resolve a party/prospect record during intake, so the presence of a party ID,
+visitor record, pipeline entry, `prospect` role, or `Known-To-Us` line alone
+does not prove a prior relationship.
 
-Use it. The first response should reflect what we already know:
+Set the relationship posture fail-closed:
 
 | Known-To-Us shows | Adjust draft |
 |---|---|
-| Active role `student` (e.g. Coaching Foundations enrollee) | Frame the program as "the natural next step" — do not pitch it as if we just met. Skip the free-module link (they already have it). |
-| Active role `prospect`, prior inquiry > 30 days ago | "Following up on your earlier interest in {program}" — reference the prior thread. |
-| Active role `client` | Warm continuation. Skip generic intro material. Refer to existing engagement if relevant. |
-| No `Known-To-Us` line | Standard new-lead posture. Free intro module link OK. |
+| Completed payment/enrollment or active engagement that predates this inbound | `paid_client` (individual) or `organization_buyer` (organization) — continue the relationship naturally, but mention it only when relevant to the current ask. |
+| Verified interaction or role whose timestamp strictly predates this inbound | `prior_contact` — reference it only if the evidence identifies what happened and it helps answer the current ask. |
+| Host-resolved evidence explicitly establishes no prior relationship | `stranger` — neutral first-contact posture; this is not permission to add a generic pitch. |
+| Only party/prospect/visitor/pipeline/contact-card existence, evidence created by this inquiry, ambiguous evidence, or no result | `unknown` — use neutral stranger posture; do not say "welcome back", "following up on your earlier interest", or imply an existing engagement. |
+| Record and current message disagree about prior contact | Use route `HUMAN`; do not choose a side or produce a customer draft. |
 
-If you write a draft that ignores `Known-To-Us` content, the reviewer (Alex/Cherie) will send it back for revision and that round-trip is preventable. The Marius Braun case (2026-04-27) had to be revised because the first draft pitched ACC like he was a stranger when he was already in the free Coaching Foundations community.
+The Marius Braun case (2026-04-27) shows why verified relationship evidence
+matters. It does not justify treating every resolved contact record as a
+relationship or describing a program as "the natural next step" when the
+current request does not ask for a path recommendation.
 
 ## Clarifying Ambiguous Questions
 
 Some prospect questions have a single clear answer — just answer those directly. But others depend on context the prospect hasn't shared (their current credentials, their timeline, whether they're an individual or representing an organization, etc.). Use judgment to distinguish between the two.
 
-**When the answer forks based on unknown context**, do both:
+**When the answer forks based on unknown context**, do not choose the most
+likely branch and write as if it were true.
 
-1. **Provide your best-guess answer.** Lead with an assumption and answer as if it's correct: "Based on your question, it sounds like you're looking at [X] — if so, here's the path..." This way the prospect gets immediate value even if they never reply.
-
-2. **Flag what would sharpen the answer.** After the assumed answer, include a brief, natural ask: "That said, the best path depends on [specific thing] — if you can share [that detail], I can give you a more specific answer." Frame it as helping them, not interrogating them.
+1. Answer any common, supported part directly and mark answerability `PARTIAL`.
+2. If one missing detail can resolve the fork, use `CLARIFY` and ask one brief,
+   specific question.
+3. If a safe response needs an operator-held fact, policy decision, exception,
+   or judgment, use `HUMAN`, list the item under `ABSTAINED`, and produce no
+   customer-facing draft.
 
 **Guidelines:**
 - One clarifying ask per email max. Never stack multiple questions — it reads like a form.
 - The ask should be specific, not open-ended. "Do you already hold an ACC credential?" beats "Can you tell me more about your background?"
-- The assumed answer should be the most likely scenario based on what they wrote. If they say "I want to get certified," assume ACC (most common entry point).
+- Never infer ACC or another program merely because it is the statistically common path. Recommend a program only when an `ORIENT` route has enough stated context; otherwise ask the one detail that distinguishes the paths.
 - If the question is clear enough for a definitive answer, skip the clarifying ask entirely. Most emails should still be straight answers.
+
+## Program-specific activation rule
+
+The following sections apply only after the Request-First Decision Procedure
+establishes that program and the selected route requires those details. They do
+not override the current ask or the route's content budget.
 
 ## ACC-Specific Rules
 
-- Lead with: weekly, 2 hours per session, modular structure, no prerequisites.
-- Pricing: "$3,999 for the full program, or $399 per module if you prefer pay-as-you-go."
-- Summarize inclusions in one line: "includes mentor coaching, exam prep, and everything you need for your ACC." Do not enumerate items with dollar values.
-- Link to program page: tandemcoach.co/icf/acc-coach-certification-training/
-- If SCHEDULE.md has a free intro module link, include: "You can start the free Coaching Foundations module right now: {link}"
+- When asked about format, answer with: weekly, 2 hours per session, modular structure, no prerequisites.
+- When asked about pricing or when `TRANSACT` requires it: "$3,999 for the full program, or $399 per module if you prefer pay-as-you-go."
+- When asked what is included, summarize in one line: "includes mentor coaching, exam prep, and everything you need for your ACC." Do not enumerate items with dollar values.
+- When a link is requested or required to enroll: tandemcoach.co/icf/acc-coach-certification-training/
+- When the current message explicitly asks for a way to start now or a valid `TRANSACT` Route-Basis requires it, and SCHEDULE.md verifies the link: "You can start the free Coaching Foundations module right now: {link}"
 
 ### ACC has TWO tracks — never collapse them
 
@@ -73,13 +92,13 @@ This rule exists because of the Marius Braun case (2026-04-27): the agent quoted
 
 ## PCC-Specific Rules
 
-- IMPORTANT: PCC requires ACC first. If the lead does not mention having ACC, guide them to start with ACC.
+- IMPORTANT: PCC requires ACC first. If ACC status is not established and it matters to the ask, use `CLARIFY`; do not assume they need ACC or redirect the response into an ACC pitch.
 - If they have ACC, emphasize the pathway: their ACC training hours count toward PCC education requirements.
-- Include: 500 coaching hours required, PCC commands higher fees and is typically required for organizational contracts.
+- Include the 500 coaching-hours requirement when eligibility or requirements are asked. Mention organizational-contract relevance only when it answers the person's stated goal.
 
 ## ACTC-Specific Rules
 
-- IMPORTANT: ACTC requires an ACC or PCC credential. If the lead does not have either, guide them to start with ACC first.
-- Emphasize $2,499 price point — the most affordable ICF credential.
-- Prior team coaching engagements from the past 5 years can count toward requirements.
-- Format: self-paced intro module plus live/self-paced hybrid core modules.
+- IMPORTANT: ACTC requires an ACC or PCC credential. If credential status is not established and it matters to the ask, use `CLARIFY`; do not redirect into an ACC pitch.
+- State the $2,499 price only for a pricing/transaction ask; do not frame affordability as an unsolicited sales claim.
+- Mention prior team-coaching engagements from the past five years only for an eligibility/requirements ask.
+- Describe the self-paced intro plus live/self-paced hybrid core modules only for a format/content ask or supported transaction decision.

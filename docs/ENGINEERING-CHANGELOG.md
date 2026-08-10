@@ -8,6 +8,20 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260809-004 — Request-first Sales response policy
+
+- Date: 2026-08-10T06:30Z
+- Owner/client: Codex implementer + Claude Code owner/reviewer
+- State: ready_for_deploy from exact live base `4437ee3a47dac2dc69357bcd160f410efe467fc7`
+- Change class: C5 — Sales behavior authority, autonomy marker recognition, immutable release, and production prompt activation
+- Replaces offer-first behavior with deterministic request-first routing: evidence-gated relationship, explicit asks, answerability, one route, and a bounded content budget.
+- Commercial content is legal only for `TRANSACT` with a verbatim current-message Route-Basis of at most 15 words. `ORIENT` cannot add price, cohort, booking, enrollment, signup, or free-module CTAs.
+- `LOW` confidence and `HUMAN` produce a draftless `[SALES ESCALATION]`; browsing-path data is disabled and non-binding for customer-facing drafting.
+- Draft recognition is anchored, case-insensitive, and emphasis-tolerant; the historical `REVISED DRAFT FOLLOW-UP:` alias remains recognition-only. A replay over 2,322 local Sales bot rows classified 568 before and after, with zero differences.
+- Claude exact-session R3 verdict: `ACCEPT`. Exact live-lineage pre-release checks: 2 final contract files / 17 tests; full suite 166 files / 2,227 tests accounted for (2,184 in-sandbox plus 43 permission-sensitive tests rerun 43/43); typecheck, build, formatting, continuity, and diff checks clean.
+- The nine-case fixture is a structural contract seed, not evidence of improved real-customer responses. Blinded historical scoring and natural-response observation remain pending outcome validation.
+- Review record: `docs/reports/NC-20260809-004-CLAUDE-FINAL-REVIEW-R3.md`.
+
 ### NC-20260809-001 — Grader recalibration release
 
 - Date: 2026-08-10T00:55Z

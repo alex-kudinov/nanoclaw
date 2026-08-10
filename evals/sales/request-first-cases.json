@@ -1,0 +1,122 @@
+[
+  {
+    "id": "active-client-operational-request",
+    "relationshipEvidence": "Verified active client role and an open engagement in the thread",
+    "currentMessage": "Please resend the worksheet from our last session.",
+    "expectedRoute": "SERVICE",
+    "expectedConfidence": "HIGH",
+    "answerability": "YES",
+    "draftExpected": true,
+    "mustInclude": ["address the worksheet request"],
+    "mustNotInclude": [
+      "program recommendation",
+      "price",
+      "cohort",
+      "free module"
+    ]
+  },
+  {
+    "id": "specific-supported-question",
+    "relationshipEvidence": "No prior relationship established",
+    "currentMessage": "Are the live classes two hours long? The thread establishes ACC.",
+    "expectedRoute": "ANSWER",
+    "expectedConfidence": "HIGH",
+    "answerability": "YES",
+    "draftExpected": true,
+    "mustInclude": ["direct duration answer"],
+    "mustNotInclude": ["price", "unrequested cohort", "free module"]
+  },
+  {
+    "id": "explicit-enrollment-transaction",
+    "relationshipEvidence": "Verified prior ACC inquiry in the current Gmail thread",
+    "currentMessage": "I am ready to enroll in ACC. What are the payment options?",
+    "expectedRoute": "TRANSACT",
+    "expectedConfidence": "HIGH",
+    "answerability": "YES",
+    "routeBasis": "ready to enroll in ACC",
+    "draftExpected": true,
+    "mustInclude": ["supported ACC payment options", "enrollment action"],
+    "mustNotInclude": ["different program", "generic discovery call"]
+  },
+  {
+    "id": "explicit-path-orientation",
+    "relationshipEvidence": "Relationship unknown; current message supplies credential and goal",
+    "currentMessage": "I already hold ACC and want to coach teams. Which Tandem path fits?",
+    "expectedRoute": "ORIENT",
+    "expectedConfidence": "HIGH",
+    "answerability": "YES",
+    "draftExpected": true,
+    "mustInclude": [
+      "supported team-coaching orientation",
+      "stated credential and goal"
+    ],
+    "mustNotInclude": [
+      "unrelated programs",
+      "path-tracking reference",
+      "price",
+      "cohort",
+      "sign-up link",
+      "free module"
+    ]
+  },
+  {
+    "id": "ambiguous-certification-request",
+    "relationshipEvidence": "Only an auto-created prospect record exists",
+    "currentMessage": "I want to get certified. What should I take?",
+    "expectedRoute": "CLARIFY",
+    "expectedConfidence": "MEDIUM",
+    "answerability": "PARTIAL",
+    "draftExpected": true,
+    "mustInclude": ["one focused question that distinguishes credential paths"],
+    "mustNotInclude": ["assume ACC", "price", "cohort", "multiple-program dump"]
+  },
+  {
+    "id": "operator-held-policy-exception",
+    "relationshipEvidence": "Verified active student",
+    "currentMessage": "Can you guarantee that my missed class will be waived?",
+    "expectedRoute": "HUMAN",
+    "expectedConfidence": "LOW",
+    "answerability": "NO",
+    "draftExpected": false,
+    "mustInclude": ["ABSTAINED", "exact operator policy decision needed"],
+    "mustNotInclude": ["customer draft", "guarantee", "program pitch"]
+  },
+  {
+    "id": "out-of-scope-request",
+    "relationshipEvidence": "No prior relationship established",
+    "currentMessage": "Can Tandem issue an ICF credential directly without ICF review?",
+    "expectedRoute": "DECLINE",
+    "expectedConfidence": "HIGH",
+    "answerability": "YES",
+    "draftExpected": true,
+    "mustInclude": ["concise supported boundary"],
+    "mustNotInclude": ["cross-sell", "invented exception"]
+  },
+  {
+    "id": "followup-with-no-new-ask",
+    "relationshipEvidence": "A verified outbound ACC answer is present; no customer reply",
+    "currentMessage": "Scheduled follow-up work item; prior thread has one unresolved enrollment decision.",
+    "expectedRoute": "CLARIFY",
+    "expectedConfidence": "HIGH",
+    "answerability": "YES",
+    "draftExpected": true,
+    "mustInclude": ["reference prior email", "close-the-loop question"],
+    "mustNotInclude": [
+      "new cohort",
+      "free module",
+      "new benefit",
+      "different program"
+    ]
+  },
+  {
+    "id": "path-conflicts-with-current-message",
+    "relationshipEvidence": "Verified active client; supplied path signal shows repeated PCC pages",
+    "currentMessage": "Please send a copy of my paid invoice.",
+    "expectedRoute": "SERVICE",
+    "expectedConfidence": "HIGH",
+    "answerability": "YES",
+    "draftExpected": true,
+    "mustInclude": ["address invoice-copy request"],
+    "mustNotInclude": ["PCC", "path-based recommendation", "price", "cohort"]
+  }
+]

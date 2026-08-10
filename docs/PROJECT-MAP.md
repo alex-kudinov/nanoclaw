@@ -472,6 +472,27 @@ against `LEARNED.md`. A bulk “merge lessons” job was disabled after a lossy
 rewrite path was identified. Knowledge regeneration must preserve provenance,
 facts, and manually reconciled contradictions.
 
+### Sales request-first behavior (`NC-20260809-004`)
+
+The runtime Sales behavior authority is `groups/sales/CLAUDE.md`, supplemented
+by `groups/sales/WORKFLOWS.md` and
+`groups/sales/EMAIL-RESPONSE-GUIDELINES.md`. `groups/sales/CLAUDE-MAIN.md` is a
+compatibility/staging companion and is not loaded by the current host or
+container runtime; contract tests include it to prevent contradictory guidance.
+
+Sales must decide in this order: relationship evidence predating the inbound,
+current-message asks, answerability, one response route with its content budget,
+then path non-authority. Website browsing-path data is disabled and non-binding
+for customer-facing drafts. Commercial content requires `TRANSACT` and a
+verbatim current-message Route-Basis of no more than 15 words. `LOW` confidence
+or `HUMAN` yields a draftless escalation, not an approvable Sales card.
+
+The host autonomy ledger recognizes canonical standalone Sales headings using
+an anchored, emphasis-tolerant, case-insensitive grammar. The historical
+`REVISED DRAFT FOLLOW-UP:` label remains recognition-only. The structural eval
+fixture lives outside the Sales container mount at
+`evals/sales/request-first-cases.json`; it does not itself prove response quality.
+
 ## 10. Agent/group map
 
 The local SQLite snapshot contains 19 registered folders. That snapshot was

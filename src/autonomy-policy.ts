@@ -58,11 +58,20 @@ export function autonomyGroups(): string[] {
 /** A draft older than this with no operator response is counted 'expired'. */
 export const DRAFT_EXPIRY_HOURS = 72;
 
-const DRAFT_MARKERS = ['DRAFT RESPONSE TO LEAD:', 'DRAFT FOLLOW-UP:'];
+const DRAFT_MARKER_RE =
+  /^[ \t]*\**[ \t]*(?:REVISED[ \t]+)?(?:DRAFT RESPONSE TO LEAD|DRAFT FOLLOW-UP)[ \t]*:\**[ \t]*$/im;
+const FOLLOW_UP_DRAFT_MARKER_RE =
+  /^[ \t]*\**[ \t]*(?:REVISED[ \t]+)?DRAFT FOLLOW-UP[ \t]*:\**[ \t]*$/im;
 
-/** True when a bot message body is a reviewable outbound draft. */
+/**
+ * True when a bot message contains one canonical Sales draft heading on its
+ * own line. The exact historical `REVISED DRAFT FOLLOW-UP:` form remains a
+ * recognition-only alias so existing real drafts do not disappear from
+ * reports; producers must emit the canonical heading. Bare `DRAFT RESPONSE:`
+ * belongs to non-Sales producers and must not enter the Sales autonomy ledger.
+ */
 export function isDraftMessage(text: string): boolean {
-  return DRAFT_MARKERS.some((m) => text.includes(m));
+  return DRAFT_MARKER_RE.test(text);
 }
 
 /** Extract the agent's self-tagged `Category: {slug}` line, if valid. */
@@ -103,7 +112,7 @@ export function isAutoApprovalMessage(text: string): boolean {
  */
 export function heuristicCategory(text: string): Category {
   const t = text.toLowerCase();
-  if (text.includes('DRAFT FOLLOW-UP:')) return 'followup';
+  if (FOLLOW_UP_DRAFT_MARKER_RE.test(text)) return 'followup';
   if (
     /refund|failed payment|declined|split payment|installment|invoice/.test(t)
   )

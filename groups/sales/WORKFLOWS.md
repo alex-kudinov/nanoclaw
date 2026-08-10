@@ -1,62 +1,68 @@
 # Sales Closer — Workflows Reference
 
-## Two-Pass Draft Review
+## Request-First Decision Procedure
 
-Every draft — whether for a new lead or a feedback revision — goes through this process:
+Every new response and feedback revision uses this precedence. Complete and
+record each decision before moving to the next:
 
-### Pass 0: Chaos Browsing-Intent Lookup (email-driven, best-effort)
+1. **RELATIONSHIP** — `paid_client | organization_buyer | prior_contact |
+   stranger | unknown`. Relationship is evidence-gated and fail-closed. A record
+   establishes prior relationship only when its own evidence predates the
+   current inbound: a completed payment/enrollment or active engagement; an
+   interaction whose `occurred_at` is strictly earlier than this message's
+   arrival; or a party role whose `started_at` is strictly earlier. A party,
+   prospect role, pipeline entry, visitor record, contact-card row, or
+   `Known-To-Us` line by itself is not evidence; intake can create it for the
+   current inquiry. With no qualifying pre-existing evidence, choose `unknown`
+   and use a neutral stranger posture. Never write "following up on your earlier
+   interest", "welcome back", or otherwise assert prior contact. If the record
+   and message disagree, choose route `HUMAN`.
+2. **CURRENT MESSAGE** — enumerate the person's explicit asks in their order and
+   label each source `CURRENT MESSAGE`, `THREAD`, or `OPERATOR`. The newest
+   substantive message wins over old lead-stage labels, earlier assumptions,
+   and website behavior.
+3. **ANSWERABILITY** — `YES | PARTIAL | NO`. `YES` means every material answer is
+   supported by the current thread, authoritative knowledge/schedule, or a
+   verified system fact. `PARTIAL` names exactly what is supported and what is
+   missing. `NO` means a safe customer answer requires an unavailable fact,
+   policy decision, or human judgment. Never fill a missing fact with the most
+   likely program or path.
+4. **ROUTE/BUDGET** — choose exactly one route and obey its content budget:
+   - `SERVICE`: help an active/prior client, student, partner, or existing
+     engagement. Address the operational need; no generic pitch.
+   - `TRANSACT`: the person explicitly asks to buy, enroll, receive a quote or
+     proposal, or understand price/payment needed for a decision. Include only
+     the commercial facts required for that transaction.
+   - `ANSWER`: answer a specific supported question directly. Do not append an
+     offer merely because one exists.
+   - `ORIENT`: the person asks which service/program/path fits. Use no more than
+     three sentences plus exactly one focused clarifier. Recommend only from
+     stated needs and supported facts; do not add price, cohort, booking, or
+     enrollment material.
+   - `CLARIFY`: one missing detail blocks a safe answer and one focused question
+     can resolve it. Ask that question; do not front-load a guessed solution.
+   - `HUMAN`: an operator/system fact, exception, policy decision, or judgment is
+     required. Abstain; create an internal review card with no customer draft.
+   - `DECLINE`: the request is out of scope, unsafe, or something Tandem cannot
+     do. Give a concise supported boundary; do not cross-sell as compensation.
+5. **PATH NON-BINDING** — website-path/browsing signals have zero
+   customer-facing authority. Do not run the Chaos path lookup while drafting.
+   If a path signal is already present, record it only as `PATH NON-BINDING` and
+   ensure removing it changes no word, fact, recommendation, or CTA. It may be
+   used only in a separately authorized blinded evaluation until the deployed
+   and audited signal definitions converge.
 
-A contact-form lead reaches you with only a few words — no browsing history. Before
-Pass 1, try to recover what they were actually researching on the site so you can
-write a targeted reply instead of asking them to clarify. This is keyed on the
-lead's **email** (from the handoff `Email:` line) — do NOT wait for a `visitor_id`
-to be handed to you; it almost never is. The whole step is best-effort: on any
-failure it prints nothing and you draft from the message alone, exactly as before.
+Confidence is `HIGH`, `MEDIUM`, or `LOW`. Use `LOW` whenever identity,
+relationship, request, or a material answer is too uncertain to write safely.
+`LOW` confidence and route `HUMAN` both prohibit a customer-facing draft.
 
-Run this one block. `LEAD_EMAIL` is the handoff email:
+## Request-First Draft Review
 
-```bash
-LEAD_EMAIL="<email from handoff>"
-chaos_intent() {
-  local email="$1" vid lib=/workspace/extra/toolbox-lib base=/workspace/extra/chaos/tools/chaos
-  case "$email" in *"'"*|*'"'*|*';'*|*' '*|*'\'*|*'`'*) return 0 ;; esac  # SQL-unsafe → skip
-  [[ "$email" == *@*.* ]] || return 0                                      # not an email → skip
-  vid=$(TOOLBOX_LIB="$lib" bash "$base/query.sh" --raw \
-        --sql "SELECT id FROM wp_chaos_visitors WHERE email = '$email' ORDER BY last_seen DESC LIMIT 1" 2>/dev/null \
-        | jq -r '(.rows[0].id) // empty' 2>/dev/null)
-  [[ "$vid" =~ ^[0-9]+$ ]] || return 0                                     # no visitor row → skip (NORMAL)
-  TOOLBOX_LIB="$lib" bash "$base/get-visitor-journey.sh" --visitor_id "$vid" 2>/dev/null \
-    | sed 's/^OK //' \
-    | jq -r '(.journey.events // []) as $e
-        | ( $e | map(select(.event_type=="page_view" and (.url|type=="string")) | (.url|sub("https?://[^/]+";"")))
-              | group_by(.) | map("\(length)x \(.[0])") | sort | reverse | .[:12] ) as $p
-        | if ($p|length)>0 then "CHAOS_INTENT pages_viewed: " + ($p|join("  |  ")) else empty end' 2>/dev/null
-}
-chaos_intent "$LEAD_EMAIL"
-```
+### Pass 1: Draft to the route budget
 
-**If it prints a `CHAOS_INTENT` line**, that is the lead's page-by-page journey
-before they contacted you (highest-hit pages first). **If it prints nothing** —
-the common, normal case (anonymous visitor, tracker blocked/incognito, or email
-never observed) — proceed to Pass 1 with no journey signals. Never post an error,
-never mention the lookup, never block the draft on it.
-
-**Using the signal — SILENT enrichment only:**
-- **Never reveal the tracking.** Do NOT write "I saw you viewed…", "you spent time
-  on our pricing page", or anything that references their browsing. That reads as
-  surveillance and destroys trust. The journey is a private hint that shapes the
-  SUBSTANCE of your reply — it is never quoted.
-- **The written message stays primary.** If it conflicts with the journey, the
-  message wins. The journey only fills the gaps a vague message leaves.
-- **Program-assumption rule still applies** (Processing Protocol step 3). The
-  journey lets you LEAD with a confident program recommendation instead of asking
-  the lead to clarify — but frame it as a recommendation they can redirect
-  ("the PCC Pathway looks like the best fit for where you are — let me know if you
-  had a different program in mind"), never as settled fact, and never cite browsing
-  as your reason. You are stating your assumption inline (step 3b), now better-informed.
-
-### Pass 1: Draft
-Write the email draft following Voice & Tone, Email Response Guidelines, and program-specific rules.
+Write the shortest complete response allowed by the selected route, following
+Voice & Tone, Email Response Guidelines, and any program-specific rules that the
+route actually activates.
 
 ### Pass 2: Audit Against Lessons
 Re-read `LEARNED.md` — the accumulated human corrections (each was approved by a human and OVERRIDES KNOWLEDGE.md on conflict). This is the authoritative lesson source; do NOT rely on KNOWLEDGE.md for lessons. For each lesson:
@@ -71,6 +77,19 @@ After the audit, include a `[LESSONS APPLIED]` section in your internal reasonin
 
 Only post the final, audited version to the channel. Never post a draft that knowingly violates a lesson.
 
+### Pass 3: Request-Scope Audit
+
+Before posting, verify all six statements:
+
+1. The first substantive sentence answers or directly advances Ask 1.
+2. Every explicit ask is answered, clarified, or listed under `ABSTAINED`.
+3. Every body element maps to an ask, a route-required fact, or an explicit
+   `ADDED BEYOND ASK` justification.
+4. The CTA matches the selected route.
+5. Any paragraph that can be deleted without losing a requested answer or
+   route-required action has been deleted.
+6. Removing all path/browsing information leaves the customer draft identical.
+
 ## Draft Format
 
 Post this to `#gru-sales` using `mcp__nanoclaw__send_message`:
@@ -79,28 +98,67 @@ Post this to `#gru-sales` using `mcp__nanoclaw__send_message`:
 [SALES REVIEW] Lead #{id}
 Category: {exactly one of: pricing | enrollment | program-content | scheduling | account-access | payment-issue | other — the inquiry's primary subject. Powers the autonomy ladder; never omit.}
 Email: {lead email — MANDATORY, on its own line. The host threads this card under the lead's inbound message using this address. Omit it and the card lands as a stray top-level post.}
+Route: {exactly one of: SERVICE | TRANSACT | ANSWER | ORIENT | CLARIFY | HUMAN | DECLINE}
+Confidence: {HIGH | MEDIUM | LOW}
 
-{name} | {company or "(none)"} | {"returning" or "new"}
+{name} | {company or "(none)"}
 
-THEIR ASK: {one or two lines — the question(s) in your own words, e.g. "Four questions on the AAMC→MCS pathway: eligibility, dual-level scope, training others, extra requirements." Do NOT paste the original message; it is the root of this thread, directly above your card.}
+RELATIONSHIP: {paid_client | organization_buyer | prior_contact | stranger | unknown} — {one-line evidence that predates the current inbound; never infer from a record's mere existence}
 
-PROGRAM MATCH:
+THEIR ASK:
+1. [{CURRENT MESSAGE | THREAD | OPERATOR}] {concise request}
+{repeat for every explicit ask; do NOT paste the original message because it is the root above the card}
+
+ANSWERABLE: {YES | PARTIAL | NO} — {one-line evidence boundary}
+
+ABSTAINED: {include only for PARTIAL/NO; exact unanswered item and missing fact/decision}
+
+ADDED BEYOND ASK: {include only when the draft adds something; exact element and why the selected route requires it}
+
+Route-Basis: "{required only for TRANSACT: a verbatim span of at most 15 words from the CURRENT MESSAGE naming a program or asking to enroll, pay, or be invoiced}"
+
+PROGRAM MATCH: {include if and only if Route is TRANSACT and Route-Basis is valid}
 - {Program 1}: ${price} — {why this fits}
 - {Program 2}: ${price} — {if applicable}
 
-ESTIMATED DEAL: ~${total}
-
-RECOMMENDED NEXT STEP: {what to do — e.g., "Send program info + upcoming cohort dates", "Schedule discovery call", "Clarify credential level"}
+ESTIMATED DEAL: ~${total} {include if and only if Route is TRANSACT and Route-Basis is valid}
 
 DRAFT RESPONSE TO LEAD:
 ---
 Subject: {exact email subject — MANDATORY. The host rejects the entire card before it becomes approvable when this line is missing.}
 
-{The actual email/message you would send to the lead. Warm, professional, specific to their stated need. Reference the matched program, include relevant details from KNOWLEDGE.md. Sign off as the Tandem Coaching team.}
+{The actual email/message you would send to the lead. Warm, professional, and limited to the stated need and selected route. Include a program or KNOWLEDGE.md detail only when it maps to an ask or route-required fact. Sign off as the Tandem Coaching team.}
 ---
 
 Waiting for approval. Reply "Approved" to send, or reply with changes.
 ```
+
+No valid `Route-Basis` means no `TRANSACT`. Without `TRANSACT`, omit
+`PROGRAM MATCH`, `ESTIMATED DEAL`, price, cohort date, booking link, and
+enrollment step unless the current message contains an equally direct verbatim
+basis for that specific element. Route-Basis comes from the current message,
+not an old thread, operator assumption, database label, or path signal.
+
+For `LOW` confidence or route `HUMAN`, use `[SALES ESCALATION] Lead #{id}`
+instead of `[SALES REVIEW]`, omit `DRAFT RESPONSE TO LEAD:` entirely, and use:
+
+```
+NO CUSTOMER DRAFT — HUMAN INPUT REQUIRED:
+{the exact fact, policy, or decision needed from the operator}
+```
+
+End an escalation with `Operator input required before a customer response can
+be drafted.` Do not ask the operator to approve an escalation card. The distinct
+header keeps it outside the approved-send watchdog.
+
+The only legal Sales draft headings are the exact standalone lines
+`DRAFT RESPONSE TO LEAD:` and `DRAFT FOLLOW-UP:`. Do not use `DRAFT:`,
+`DRAFT EMAIL:`, `DRAFT RESPONSE:`, or `DRAFT RESPONSE TO CLIENT:`; those do not
+enter the Sales autonomy ladder.
+
+The host recognizes the exact historical `REVISED DRAFT FOLLOW-UP:` line only
+for ledger/report compatibility. It is not a legal producer heading; revisions
+still use `DRAFT FOLLOW-UP:`.
 
 The host parses `Email:`, the fenced `Subject:`, and the fenced body and applies
 the outbound content guard before it posts a review card. `send_message` only
@@ -116,7 +174,7 @@ rejected draft as posted, approved, or sent, and never emit a success recap.
 When you receive feedback (not "Approved") — the message will have a `thread_ts`:
 1. Find your most recent draft in the `<messages>` block above (it's the message from you that starts with `[SALES REVIEW]`)
 2. Apply the requested changes
-3. Run the Two-Pass Draft Review process — apply feedback first, then audit against KNOWLEDGE.md lessons
+3. Run the Request-First Draft Review — apply feedback first, then rerun the decision procedure, lesson audit, and request-scope audit
 4. Re-post the FULL audited draft (not just the diff) in the same thread using `thread_ts`
 5. End with: "Updated draft ready. Reply 'Approved' to send, or reply with more changes."
 
@@ -243,16 +301,16 @@ broaden the query or substitute an ID.
 ### Step 2 — Build the context honestly. NEVER fabricate.
 
 - `inquiry_source = email` / `contact-form` → ground the draft in the fetched thread; use `inquiry_text` as the original ask.
-- `inquiry_source = webform` → there is **no written message**. Reference what they signed up for (`program_name` / `interest_page`) and the email we already sent them (from the thread). You may enrich with browsing intent — run the email-driven `chaos_intent` block from Pass 0 (same silent-enrichment rules apply).
+- `inquiry_source = webform` → there is **no written message**. Reference what they signed up for (`program_name` / `interest_page`) and the email we already sent them (from the thread). Do not enrich the response from browsing-path data; path remains non-binding.
 - **Never** write "[original message not accessible…]" or invent an inquiry. The view only surfaces leads with real context (a prior email + an origin signal). State what you DO know; do not paper over a gap.
 
 ### Follow-Up #1 (`follow_up_count = 0`)
 
-This must read as a follow-up to YOUR previous email, not a cold outreach. Open by referencing what you sent them — e.g., "I sent over some details about the PCC program a few days ago" or "Following up on the ACC information I shared." Then add value: answer a likely follow-up question, mention a detail that might help them decide, or share a relevant upcoming date. 2-3 short paragraphs. Tone: helpful, not pushy.
+This must read as a follow-up to YOUR previous email, not a cold outreach. Open by referencing what you actually sent, then return to the unresolved ask or decision already present in the thread. Do not invent a "likely" question or add a program, price, cohort, free module, deadline, or benefit that the person did not ask about and the prior thread did not establish. One or two short paragraphs. Tone: helpful, not pushy.
 
 ### Follow-Up #2 (`follow_up_count = 1`)
 
-Again, explicitly reference the conversation — "I reached out a couple of times about {topic}." Add new value: mention an upcoming cohort, a free module, a relevant detail they didn't ask about. Give them a concrete reason to re-engage. 2-3 paragraphs.
+Again, explicitly reference the conversation and the exact unresolved ask or decision. A concise close-the-loop question is enough. Do not manufacture "new value" by introducing an upcoming cohort, free module, different program, price, or other detail outside the existing request. One or two short paragraphs.
 
 ### Cold (`follow_up_count = 2`)
 
@@ -291,8 +349,21 @@ Post each follow-up as a separate top-level message (one thread per lead):
 Category: followup
 Email: {primary_email}
 Thread-ID: {thread_id}
+Route: {SERVICE | TRANSACT | ANSWER | ORIENT | CLARIFY | DECLINE; HUMAN produces no draft}
+Confidence: {HIGH | MEDIUM | LOW}
 
 {display_name} | {primary_email}
+
+RELATIONSHIP: {paid_client | organization_buyer | prior_contact | stranger | unknown} — {one-line evidence that predates the current inbound}
+
+THEIR ASK:
+1. [THREAD] {the exact unresolved ask or decision from the Gmail thread}
+
+ANSWERABLE: {YES | PARTIAL | NO} — {one-line evidence boundary}
+
+ABSTAINED: {include only for PARTIAL/NO}
+
+ADDED BEYOND ASK: {include only if the selected route requires an addition; otherwise omit}
 
 CONTEXT ({inquiry_source}):
 {inquiry_text if present; else "Submitted the {program_name} {interest_page} form — no written message"}
@@ -314,6 +385,10 @@ The `Email:`, `Thread-ID:`, fenced `Subject:`, and fenced body are mandatory.
 They are the immutable host approval record. A legacy follow-up card without
 those exact fields is rejected visibly and must be reposted before it can be
 sent.
+
+If confidence is `LOW` or the route is `HUMAN`, do not emit
+`DRAFT FOLLOW-UP:`. Use the `NO CUSTOMER DRAFT — HUMAN INPUT REQUIRED:` block
+from the main Draft Format instead.
 
 ### Follow-Up Subject Line
 
@@ -392,9 +467,9 @@ When you receive `[EMAIL-OPENED]`:
 
 Same rules as initial emails but shorter. The follow-up MUST read as part of an ongoing conversation — never as a standalone cold email. The reader should immediately understand this is a follow-up to something you previously sent them.
 
-**Do:** Open by referencing your previous email and what you shared. Then add new value.
+**Do:** Open by referencing your previous email and return to the exact unresolved ask or decision.
 **Don't:** Use generic openers like "just following up" or "checking in." Don't reintroduce yourself or the company as if they've never heard from you.
-**Don't:** Repeat the same information from the first email. Each follow-up should offer something new.
+**Don't:** Repeat an information dump or manufacture something new to sell. A concise reminder or close-the-loop question can be complete.
 
 ### Batch Cap
 

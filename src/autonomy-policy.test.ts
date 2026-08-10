@@ -24,10 +24,25 @@ function chicagoHour(d: Date): number {
 }
 
 describe('draft/approval detection', () => {
-  it('detects both draft markers', () => {
+  it('detects both canonical Sales draft headings on their own lines', () => {
     expect(isDraftMessage('…\nDRAFT RESPONSE TO LEAD:\nHi')).toBe(true);
     expect(isDraftMessage('…\nDRAFT FOLLOW-UP:\nHi')).toBe(true);
+    expect(isDraftMessage('…\nREVISED DRAFT FOLLOW-UP:\nHi')).toBe(true);
+    expect(isDraftMessage('…\ndraft follow-up:\nHi')).toBe(true);
+    expect(isDraftMessage('…\n**DRAFT RESPONSE TO LEAD:**\nHi')).toBe(true);
     expect(isDraftMessage('regular status update')).toBe(false);
+  });
+
+  it('does not ingest non-Sales or quoted/inline draft labels', () => {
+    for (const text of [
+      'DRAFT RESPONSE:\nHi',
+      'DRAFT RESPONSE TO CLIENT:\nHi',
+      'DRAFT EMAIL:\nHi',
+      'Status: DRAFT RESPONSE TO LEAD: waiting',
+      '> DRAFT RESPONSE TO LEAD:\n> quoted prior card',
+    ]) {
+      expect(isDraftMessage(text), text).toBe(false);
+    }
   });
 
   it('parses a valid Category line and rejects unknown slugs', () => {
@@ -75,6 +90,15 @@ describe('heuristicCategory (backfill)', () => {
     expect(heuristicCategory('DRAFT FOLLOW-UP:\nJust checking in')).toBe(
       'followup',
     );
+    expect(heuristicCategory('draft follow-up:\nJust checking in')).toBe(
+      'followup',
+    );
+    expect(heuristicCategory('**DRAFT FOLLOW-UP:**\nJust checking in')).toBe(
+      'followup',
+    );
+    expect(
+      heuristicCategory('REVISED DRAFT FOLLOW-UP:\nJust checking in'),
+    ).toBe('followup');
     expect(heuristicCategory('your refund has been processed')).toBe(
       'payment-issue',
     );
