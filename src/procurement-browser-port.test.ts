@@ -3,6 +3,7 @@ import type { Page } from 'playwright-core';
 
 import {
   PlaywrightCaleProcureBrowserPort,
+  isCaleProcureZeroResultResponse,
   parseCaleProcureResultCells,
   parseCaleProcureResultTotal,
   validatedLoopbackCdpUrl,
@@ -27,6 +28,54 @@ function resultStatePage(options: { clearsAfterWait: boolean }): Page {
 }
 
 describe('CaleProcure browser contract parsers', () => {
+  it('accepts only an exact query-bound PeopleSoft no-results response', () => {
+    const response = {
+      CaptureResults: {
+        eventName: [{ Properties: { value: 'coaching' } }],
+        box_error_items: [
+          {
+            Properties: {
+              text: '  No event met your search criteria  ',
+            },
+          },
+        ],
+      },
+    };
+
+    expect(isCaleProcureZeroResultResponse(response, 'coaching')).toBe(true);
+    expect(isCaleProcureZeroResultResponse(response, 'facilitation')).toBe(
+      false,
+    );
+    expect(
+      isCaleProcureZeroResultResponse(
+        {
+          CaptureResults: {
+            ...response.CaptureResults,
+            box_error_items: [
+              { Properties: { text: 'Search criteria are required' } },
+            ],
+          },
+        },
+        'coaching',
+      ),
+    ).toBe(false);
+    expect(
+      isCaleProcureZeroResultResponse(
+        {
+          CaptureResults: {
+            ...response.CaptureResults,
+            eventName: [
+              { Properties: { value: 'coaching' } },
+              { Properties: { value: 'coaching' } },
+            ],
+          },
+        },
+        'coaching',
+      ),
+    ).toBe(false);
+    expect(isCaleProcureZeroResultResponse(null, 'coaching')).toBe(false);
+  });
+
   it('closes owned pages and disconnects the CDP client', async () => {
     const browserClose = vi.fn(async () => undefined);
     const searchClose = vi.fn(async () => undefined);

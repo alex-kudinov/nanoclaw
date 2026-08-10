@@ -21,6 +21,7 @@ export interface CaleProcureSearchRow {
 
 export interface CaleProcureSearchObservation {
   echoedQuery: string;
+  resultEvidence: 'visible' | 'response';
   resultCount: number;
   pagesVisited: number;
   rows: CaleProcureSearchRow[];
@@ -47,6 +48,7 @@ export interface CaleProcureBrowserPort {
 export interface CaleProcureUnitDiagnostic {
   keyword: string;
   status: 'observed' | 'failed';
+  resultEvidence: 'visible' | 'response';
   resultCount: number;
   // For reconciliation failures this is the number pulled from the grid;
   // otherwise it is the number of rows contributed by the unit.
@@ -186,6 +188,15 @@ export async function collectCaleProcure(
         );
       }
       if (
+        observed.resultEvidence !== 'visible' &&
+        observed.resultEvidence !== 'response'
+      ) {
+        fail(
+          `CaleProcure result evidence is invalid for ${JSON.stringify(keyword)}`,
+          output,
+        );
+      }
+      if (
         !Number.isSafeInteger(observed.resultCount) ||
         observed.resultCount < 0 ||
         !Number.isSafeInteger(observed.pagesVisited) ||
@@ -200,6 +211,7 @@ export async function collectCaleProcure(
         output.diagnostics.push({
           keyword,
           status: 'failed',
+          resultEvidence: observed.resultEvidence,
           resultCount: observed.resultCount,
           extractedRows: observed.rows.length,
           pagesVisited: observed.pagesVisited,
@@ -214,6 +226,7 @@ export async function collectCaleProcure(
         output.diagnostics.push({
           keyword,
           status: 'failed',
+          resultEvidence: observed.resultEvidence,
           resultCount: observed.resultCount,
           extractedRows: 0,
           pagesVisited: observed.pagesVisited,
@@ -264,6 +277,7 @@ export async function collectCaleProcure(
         output.diagnostics.push({
           keyword,
           status: 'failed',
+          resultEvidence: observed.resultEvidence,
           resultCount: observed.resultCount,
           extractedRows: 0,
           pagesVisited: observed.pagesVisited,
@@ -282,6 +296,7 @@ export async function collectCaleProcure(
       output.diagnostics.push({
         keyword,
         status: 'observed',
+        resultEvidence: observed.resultEvidence,
         resultCount: observed.resultCount,
         extractedRows: verifiedRows.length,
         pagesVisited: observed.pagesVisited,

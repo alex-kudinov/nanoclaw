@@ -25,6 +25,8 @@ const SEARCH_ID = '#RESP_INQA_WK_INQ_AUC_GO_PB';
 const RESULTS_GRID_ID = '#datatable-ready';
 const NO_RESULTS_TEXT = 'No event met your search criteria';
 const SUMMARY_RE = /^Showing Results (?:\d+-)?\d+ of (\d+)$/;
+const SEARCH_POST_PATH =
+  '/nlx3/psc/psfpd1/SUPPLIER/ERP/c/AUC_MANAGE_BIDS.AUC_RESP_INQ_AUC.GBL';
 
 export interface CaleProcureBrowserOptions {
   cdpUrl?: string;
@@ -168,6 +170,44 @@ export function parseCaleProcureResultCells(
     agency: normalized[3],
     ...(normalized[4] ? { closeDate: normalized[4] } : {}),
   };
+}
+
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function capturedProperty(
+  captureResults: Record<string, unknown>,
+  label: string,
+  property: string,
+): string | null {
+  const captures = captureResults[label];
+  if (!Array.isArray(captures) || captures.length !== 1) return null;
+  const capture = objectValue(captures[0]);
+  const properties = objectValue(capture?.Properties);
+  const value = properties?.[property];
+  return typeof value === 'string' ? value : null;
+}
+
+export function isCaleProcureZeroResultResponse(
+  payload: unknown,
+  keyword: string,
+): boolean {
+  const root = objectValue(payload);
+  const captureResults = objectValue(root?.CaptureResults);
+  if (!captureResults) return false;
+  const echoedQuery = capturedProperty(captureResults, 'eventName', 'value');
+  const resultMessage = capturedProperty(
+    captureResults,
+    'box_error_items',
+    'text',
+  );
+  return (
+    echoedQuery === keyword &&
+    resultMessage?.replace(/\s+/g, ' ').trim() === NO_RESULTS_TEXT
+  );
 }
 
 async function waitForResultState(
@@ -391,14 +431,68 @@ export class PlaywrightCaleProcureBrowserPort implements CaleProcureBrowserPort 
       SEARCH_ID,
       'Search button',
     );
-    await clickAndWaitForBusyCycle(this.searchPage, search, this.timeoutMs);
-    await waitForResultState(this.searchPage, this.timeoutMs);
+    const [response] = await Promise.all([
+      this.searchPage.waitForResponse(
+        (candidate) => {
+          try {
+            const url = new URL(candidate.url());
+            return (
+              url.origin === new URL(SEARCH_URL).origin &&
+              url.pathname === SEARCH_POST_PATH &&
+              candidate.request().method() === 'POST'
+            );
+          } catch {
+            return false;
+          }
+        },
+        { timeout: this.timeoutMs },
+      ),
+      clickAndWaitForBusyCycle(this.searchPage, search, this.timeoutMs),
+    ]);
+
+    let responseProvesZero = false;
+    if (
+      response.status() === 200 &&
+      response.headers()['content-type']?.startsWith('application/json')
+    ) {
+      try {
+        responseProvesZero = isCaleProcureZeroResultResponse(
+          await response.json(),
+          keyword,
+        );
+      } catch {
+        // A malformed or changed response cannot prove a zero result. The
+        // visible result-state contract below remains the fail-closed path.
+      }
+    }
+
+    if (responseProvesZero) {
+      const visibleSummaries = this.searchPage
+        .getByText(/^Showing Results /)
+        .filter({ visible: true });
+      const visibleGrid = this.searchPage.locator(`${RESULTS_GRID_ID}:visible`);
+      if (
+        (await visibleSummaries.count()) > 0 ||
+        (await visibleGrid.count()) > 0
+      ) {
+        throw new Error(
+          'CaleProcure response proves no results but the page shows results',
+        );
+      }
+    } else {
+      await waitForResultState(this.searchPage, this.timeoutMs);
+    }
 
     const echoedQuery = await input.inputValue();
-    const resultCount = await readVisibleResultTotal(this.searchPage);
-    const rows = await readVisibleRows(this.searchPage);
+    const resultCount = responseProvesZero
+      ? 0
+      : await readVisibleResultTotal(this.searchPage);
+    const rows = responseProvesZero
+      ? []
+      : await readVisibleRows(this.searchPage);
     return {
       echoedQuery,
+      resultEvidence: responseProvesZero ? 'response' : 'visible',
       resultCount,
       pagesVisited: 1,
       rows,

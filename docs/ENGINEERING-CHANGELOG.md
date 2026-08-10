@@ -263,6 +263,27 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   formatting, continuity, `git diff --check`, and the runner's 5 files / 34
   tests. No source receipt or opportunity write occurred, and all gates remain
   off pending immutable redeployment and the repeated shadow.
+- R16 artifact and acquisition diagnosis: clean commit `4053bf89867b` produced
+  archive SHA-256
+  `f7f73df4757ca2cb4ee73e9c31b11c4b5cf2aa769c4e5c64b84c20173870a660`,
+  source tree `b147c5d090450d9c66ef216b3ce05a91fa16c6d6`, artifact
+  `92d1efc4915a985a63959970e98e2dff6b35a4a84f16606086e35638205d1ca6`,
+  and 592 files. It verified on the Mac Mini and dry-ran with exactly the three
+  expected identity changes, but was not activated while unrelated Sales work
+  remained active. Two direct target-release shadows prove self-exit, Chrome
+  survival, and a two-tab post-run baseline. Query-bound public diagnostics
+  then isolated `coaching`: the PeopleSoft POST returns 200 and an exact
+  query/no-results tuple while the UI renders neither results nor no-results;
+  `facilitation` through the same path returns one visible row and no
+  no-results tuple. A candidate response parser accepts only that exact tuple
+  and rejects contradictions. Claude R17 returned `GO`; the follow-up records
+  `visible | response` evidence provenance in every unit diagnostic, treats a
+  malformed candidate URL as non-matching rather than fatal, and adds the two
+  requested exact parser regressions. Exact Node 22.23.2 passes the 3 focused
+  files / 16 tests, build, typecheck, formatting, continuity,
+  `git diff --check`, the full 165-file / 2,209-test root suite, and the
+  independent runner's 5 files / 34 tests. A superseding immutable release
+  remains pending; all collection/review gates remain off.
 - Rollback/recovery: tracked
   `rollback_115_procurement_pursuit.sql` restores the verbatim migration-114
   function bodies, prior taxonomy behavior, and removes 115 objects/columns;

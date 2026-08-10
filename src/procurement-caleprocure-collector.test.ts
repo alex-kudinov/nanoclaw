@@ -29,6 +29,7 @@ function fakePort(
 function zero(keyword: string): CaleProcureSearchObservation {
   return {
     echoedQuery: keyword,
+    resultEvidence: 'response',
     resultCount: 0,
     pagesVisited: 1,
     rows: [],
@@ -55,6 +56,7 @@ describe('deterministic CaleProcure collector', () => {
       fakePort({
         facilitation: {
           echoedQuery: 'facilitation',
+          resultEvidence: 'visible',
           resultCount: 1,
           pagesVisited: 1,
           elapsedMs: 120,
@@ -79,6 +81,9 @@ describe('deterministic CaleProcure collector', () => {
         url: 'https://caleprocure.ca.gov/event/3820/0000039985',
       }),
     ]);
+    expect(result.diagnostics[0]).toEqual(
+      expect.objectContaining({ resultEvidence: 'visible' }),
+    );
   });
 
   it('isolates a count mismatch and continues later units', async () => {
@@ -138,6 +143,7 @@ describe('deterministic CaleProcure collector', () => {
     const port = fakePort({
       broad: {
         echoedQuery: 'broad',
+        resultEvidence: 'visible',
         resultCount: 201,
         pagesVisited: 1,
         elapsedMs: 10,
@@ -168,6 +174,7 @@ describe('deterministic CaleProcure collector', () => {
       fakePort({
         first: {
           echoedQuery: 'first',
+          resultEvidence: 'visible',
           resultCount: 1,
           pagesVisited: 1,
           elapsedMs: 10,

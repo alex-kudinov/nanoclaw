@@ -1,6 +1,6 @@
 # NC-20260809-003 Procurement source candidates
 
-Date checked: 2026-08-09
+Date checked: 2026-08-09; official-source refresh: 2026-08-10
 
 Status: research only. The accepted recovery gate still forbids connecting a
 new feed until one public opportunity completes the migration-115 closure
@@ -29,6 +29,32 @@ terms acceptance, or submission.
   not become authority for deadlines, amendments, or submission instructions.
   Prefer the issuing body's notice and retain its stable reference.
 - Generic web search is discovery assistance, not a completeness-bearing feed.
+
+## 2026-08-10 official-source refresh
+
+This refresh broadens discovery without changing the activation order or the
+closure gate. It uses issuing-body pages as authority; the third-party portal
+behind an official link is transport, not authority for issuer identity.
+
+| Tier | Source | Evidence of useful coverage | Recommended treatment |
+| --- | --- | --- | --- |
+| A | [California DGS upcoming solicitations](https://www.dgs.ca.gov/PD/Procurement-Division) | DGS publishes a separate forward-looking list in addition to Cal eProcure. The current official list includes workforce-development consulting and training categories, so it is materially relevant rather than a generic bid directory. | Add as **forecast intelligence**, not an open opportunity feed. A forecast row may prompt monitoring but may not create a pursuit until an authoritative solicitation exists. Prefer a deterministic PDF/table snapshot with document-date and row-count receipts. |
+| A | [UC CalUsource public bid site](https://procurement.ucop.edu/) | UC states that the public site covers bid opportunities across all campuses. | Evaluate a public, read-only adapter after SAM.gov. Keep campus/issuer identity explicit. Registration, questions, and responses remain human-only. |
+| A | [CSU CSUBUY public bid portal](https://www.calstate.edu/csu-system/doing-business-with-the-csu/contract-services-and-procurement/supplier-resources) | CSU exposes a public bid portal for its universities and Chancellor's Office and documents that registration is required to participate, not to identify the public source. | Evaluate a public adapter after UC. Do not automate supplier onboarding or authenticated event actions. Treat SDSU separately until CSU's own rollout page says it is covered. |
+| B | [Los Angeles County open solicitations](https://isd.lacounty.gov/services/procurement/) | The County's official procurement page links public open and awarded solicitation searches by commodity, department, title, description, and number. | First measure official alert/public-search yield through the receipted email route. Build HTML acquisition only if it adds unique relevant opportunities. Vendor registration is human-only. |
+| B | [San Diego County BuyNet and procurement forecast](https://www.sandiegocounty.gov/content/sdc/purchasing.html.html) | The County publishes both open solicitations and a forward procurement forecast. | Treat open notices and forecast rows as different evidence classes. Prefer alerts; never promote a forecast into an open pursuit without the later solicitation. |
+| B | [Orange County Open Bids](https://cpo.ocgov.com/open-bids-county-contracts-portal) | The County's official page publishes active solicitations through OpenGov and offers follow/notification functions. | Measure public listing access and exact issuer IDs before considering an OpenGov adapter. Account creation, following, and response submission are human actions. |
+| C | [Federal agency procurement forecasts](https://www.acquisition.gov/procurement-forecasts) | Acquisition.gov indexes official recurring forecasts across major agencies. | Use only for pipeline intelligence and target-account planning. SAM.gov remains the authority when a notice becomes open. |
+| Hold | [SBA SUBNet](https://subnet.sba.gov/client/dsp_solicitation_details_3.cfm) | SBA exposes public subcontracting listings, but currently says new posting is unavailable and the observed mix is heavily construction-oriented. | Do not implement yet. Reassess only if a manual relevance sample shows unique coaching, training, facilitation, or organizational-development yield. |
+
+### Portfolio rule
+
+Do not build one generic `Jaggaer`, `OpenGov`, `GEP`, or portal scraper and call
+it a source. A shared transport library is acceptable, but each issuing system
+must retain its own canonical issuer URL, planned units, stable opportunity ID,
+coverage receipt, and amendment/cancellation semantics. Activate candidates one
+at a time and retain only those that add measured unique relevant yield beyond
+Cal eProcure, SAM.gov, and exact-resource email intake.
 
 ## Adapter acceptance contract
 
