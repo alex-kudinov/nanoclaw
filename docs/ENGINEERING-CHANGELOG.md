@@ -340,8 +340,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   independent runner build plus 5 files / 34 tests. An initial sandboxed
   complete-suite attempt was rejected because the sandbox denied the webhook
   bind and a migration child process; the complete suite was rerun outside that
-  sandbox and passed. Immutable release and three-shadow evidence remain
-  pending.
+  sandbox and passed.
+- Immutable release `d5836318ce36` activated with verified source tree
+  `4b169c0201c680ad4659c8bdf91946e20d06a8df`, artifact
+  `7542dea1bcdc5b4b2134797063397bab723396486434a680e5d00982ab1def43`,
+  and archive SHA-256
+  `292e2384fcdf353b6b576443d53cbaf3f33c9421f954a597b86a5028b0e47f53`.
+  Health converged to listener PID 48776 on exact Node 22.23.2; Slack/Gmail
+  remained connected, active containers and in-flight send states were zero,
+  Chrome remained at two tabs, and all three Procurement gates remained `0`.
+- Restarted shadow 1 self-exited after 74.75 seconds with tabs 2 -> 2 and no
+  write, but stopped after `coaching` because the full visible no-results marker
+  survives Clear Criteria. A bounded public-source diagnostic proved Clear
+  empties the query, summary, and grid while leaving that message visible; a
+  following `facilitation` search removes it and renders one reconciled row.
+  The prior hidden-UI premise is retired: the response path is required because
+  the visible marker is stale and not query-bound.
+- Claude R21 returned `GO FOR R21 IMPLEMENTATION` with one same-change High:
+  remove the marker from total parsing as well as clear/outcome decisions.
+  Zeros now require the exact query-bound response tuple; positives require a
+  visible summary and reconciliation; marker visibility is a non-authoritative
+  public diagnostic. Claude R22 returned `GO FOR COMMIT AND SUPERSEDING
+  IMMUTABLE SHADOW RELEASE`, with no blocker/high code issue. Exact Node 22.23.2
+  passes 3 focused files / 26 tests, the complete 165-file / 2,219-test root
+  suite, typecheck, build, formatting, documentation continuity,
+  `git diff --check`, and the independent runner build plus 5 files / 34 tests.
+- Before any live write, each restarted shadow must prove: every zero is
+  `response`; every positive is `visible` and reconciled; no contradiction;
+  a positive immediately follows a zero; `coaching` is `response` / 0 /
+  `visibleEmptyMarker: true`; complete 9/9 coverage; nonzero reconciled
+  baseline; differing unit totals; identity-verified positive control; runtime
+  below half timeout; self-exit; and no Chrome tab growth. Immutable superseding
+  release and the restarted three-shadow evidence remain pending.
 - Rollback/recovery: tracked
   `rollback_115_procurement_pursuit.sql` restores the verbatim migration-114
   function bodies, prior taxonomy behavior, and removes 115 objects/columns;

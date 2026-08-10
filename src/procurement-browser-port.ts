@@ -94,17 +94,10 @@ export async function waitForCaleProcureResultStateCleared(
   const summaries = page
     .getByText(/^Showing Results /)
     .filter({ visible: true });
-  const empty = page
-    .getByText(NO_RESULTS_TEXT, { exact: true })
-    .filter({ visible: true });
   const grid = page.locator(`${RESULTS_GRID_ID}:visible`);
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (
-      (await summaries.count()) === 0 &&
-      (await empty.count()) === 0 &&
-      (await grid.count()) === 0
-    ) {
+    if ((await summaries.count()) === 0 && (await grid.count()) === 0) {
       return;
     }
     await page.waitForTimeout(100);
@@ -115,22 +108,15 @@ export async function waitForCaleProcureResultStateCleared(
 }
 
 async function readVisibleResultTotal(page: Page): Promise<number> {
-  const noResults = page
-    .getByText(NO_RESULTS_TEXT, { exact: true })
-    .filter({ visible: true });
   const summaryTexts = await page
     .getByText(/^Showing Results /)
     .filter({ visible: true })
     .allInnerTexts();
-  return parseCaleProcureResultTotal(
-    summaryTexts,
-    (await noResults.count()) > 0,
-  );
+  return parseCaleProcureResultTotal(summaryTexts);
 }
 
 export function parseCaleProcureResultTotal(
   summaryTexts: readonly string[],
-  noResultsVisible: boolean,
 ): number {
   const totals = new Set<number>();
   for (const raw of summaryTexts) {
@@ -138,12 +124,6 @@ export function parseCaleProcureResultTotal(
     const match = SUMMARY_RE.exec(normalized);
     if (match) totals.add(Number(match[1]));
   }
-  if (noResultsVisible && totals.size > 0) {
-    throw new Error(
-      'CaleProcure result state shows both results and no-results',
-    );
-  }
-  if (noResultsVisible) return 0;
   if (totals.size !== 1) {
     throw new Error(
       `CaleProcure result summary is ambiguous: ${totals.size} distinct visible totals`,
@@ -255,21 +235,17 @@ async function waitForSearchOutcome(
   const summaries = page
     .getByText(/^Showing Results /)
     .filter({ visible: true });
-  const empty = page
-    .getByText(NO_RESULTS_TEXT, { exact: true })
-    .filter({ visible: true });
   const grid = page.locator(`${RESULTS_GRID_ID}:visible`);
   while (Date.now() < deadline) {
     const proved = responseProvesZero();
     const summaryCount = await summaries.count();
-    const emptyCount = await empty.count();
     const gridCount = await grid.count();
     if (proved && (summaryCount > 0 || gridCount > 0)) {
       throw new Error(
         'CaleProcure response proves no results but the page shows results',
       );
     }
-    if (summaryCount > 0 || emptyCount > 0) return 'visible';
+    if (summaryCount > 0) return 'visible';
     if (proved) return 'response';
     await page.waitForTimeout(100);
   }
@@ -519,9 +495,16 @@ export class PlaywrightCaleProcureBrowserPort implements CaleProcureBrowserPort 
       resultEvidence === 'response'
         ? []
         : await readVisibleRows(this.searchPage);
+    const visibleEmptyMarker =
+      (await this.searchPage
+        .getByText(NO_RESULTS_TEXT, { exact: true })
+        .filter({ visible: true })
+        .count()
+        .catch(() => 0)) > 0;
     return {
       echoedQuery,
       resultEvidence,
+      visibleEmptyMarker,
       resultCount,
       pagesVisited: 1,
       rows,

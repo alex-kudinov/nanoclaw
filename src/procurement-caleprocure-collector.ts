@@ -22,6 +22,7 @@ export interface CaleProcureSearchRow {
 export interface CaleProcureSearchObservation {
   echoedQuery: string;
   resultEvidence: 'visible' | 'response';
+  visibleEmptyMarker: boolean;
   resultCount: number;
   pagesVisited: number;
   rows: CaleProcureSearchRow[];
@@ -49,6 +50,8 @@ export interface CaleProcureUnitDiagnostic {
   keyword: string;
   status: 'observed' | 'failed';
   resultEvidence: 'visible' | 'response';
+  // Diagnostic only: the portal marker is not query-bound and is never evidence.
+  visibleEmptyMarker: boolean;
   resultCount: number;
   // For reconciliation failures this is the number pulled from the grid;
   // otherwise it is the number of rows contributed by the unit.
@@ -196,6 +199,12 @@ export async function collectCaleProcure(
           output,
         );
       }
+      if (typeof observed.visibleEmptyMarker !== 'boolean') {
+        fail(
+          `CaleProcure visible empty-marker diagnostic is invalid for ${JSON.stringify(keyword)}`,
+          output,
+        );
+      }
       if (
         !Number.isSafeInteger(observed.resultCount) ||
         observed.resultCount < 0 ||
@@ -212,6 +221,7 @@ export async function collectCaleProcure(
           keyword,
           status: 'failed',
           resultEvidence: observed.resultEvidence,
+          visibleEmptyMarker: observed.visibleEmptyMarker,
           resultCount: observed.resultCount,
           extractedRows: observed.rows.length,
           pagesVisited: observed.pagesVisited,
@@ -227,6 +237,7 @@ export async function collectCaleProcure(
           keyword,
           status: 'failed',
           resultEvidence: observed.resultEvidence,
+          visibleEmptyMarker: observed.visibleEmptyMarker,
           resultCount: observed.resultCount,
           extractedRows: 0,
           pagesVisited: observed.pagesVisited,
@@ -278,6 +289,7 @@ export async function collectCaleProcure(
           keyword,
           status: 'failed',
           resultEvidence: observed.resultEvidence,
+          visibleEmptyMarker: observed.visibleEmptyMarker,
           resultCount: observed.resultCount,
           extractedRows: 0,
           pagesVisited: observed.pagesVisited,
@@ -297,6 +309,7 @@ export async function collectCaleProcure(
         keyword,
         status: 'observed',
         resultEvidence: observed.resultEvidence,
+        visibleEmptyMarker: observed.visibleEmptyMarker,
         resultCount: observed.resultCount,
         extractedRows: verifiedRows.length,
         pagesVisited: observed.pagesVisited,

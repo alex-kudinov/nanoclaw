@@ -30,6 +30,7 @@ function zero(keyword: string): CaleProcureSearchObservation {
   return {
     echoedQuery: keyword,
     resultEvidence: 'response',
+    visibleEmptyMarker: true,
     resultCount: 0,
     pagesVisited: 1,
     rows: [],
@@ -57,6 +58,7 @@ describe('deterministic CaleProcure collector', () => {
         facilitation: {
           echoedQuery: 'facilitation',
           resultEvidence: 'visible',
+          visibleEmptyMarker: false,
           resultCount: 1,
           pagesVisited: 1,
           elapsedMs: 120,
@@ -144,6 +146,7 @@ describe('deterministic CaleProcure collector', () => {
       broad: {
         echoedQuery: 'broad',
         resultEvidence: 'visible',
+        visibleEmptyMarker: false,
         resultCount: 201,
         pagesVisited: 1,
         elapsedMs: 10,
@@ -175,6 +178,7 @@ describe('deterministic CaleProcure collector', () => {
         first: {
           echoedQuery: 'first',
           resultEvidence: 'visible',
+          visibleEmptyMarker: false,
           resultCount: 1,
           pagesVisited: 1,
           elapsedMs: 10,

@@ -10,11 +10,17 @@ import {
   waitForCaleProcureResultStateCleared,
 } from './procurement-browser-port.js';
 
-function resultStatePage(options: { clearsAfterWait: boolean }): Page {
+function resultStatePage(options: {
+  clearsAfterWait: boolean;
+  persistentEmpty?: boolean;
+}): Page {
   let cleared = false;
   const locator = (kind: 'summary' | 'empty' | 'grid') => ({
     filter: () => locator(kind),
-    count: async () => (cleared ? 0 : kind === 'empty' ? 0 : 1),
+    count: async () => {
+      if (kind === 'empty') return options.persistentEmpty ? 1 : 0;
+      return cleared ? 0 : 1;
+    },
   });
   return {
     getByText: (value: string | RegExp) =>
@@ -31,6 +37,7 @@ function zeroResultSearchPage(
   options: {
     emitTerminal?: boolean;
     visibleAfterSearch?: 'none' | 'empty' | 'results';
+    persistEmptyAfterClear?: boolean;
   } = {},
 ): {
   page: Page;
@@ -40,6 +47,7 @@ function zeroResultSearchPage(
   let inputValue = '';
   let priorResultsVisible = true;
   let afterSearchState: 'none' | 'empty' | 'results' = 'none';
+  let emptyMarkerVisible = false;
   const listeners = new Set<(response: unknown) => void>();
   const rejectedJson = vi.fn(async () => {
     throw new Error('must not parse');
@@ -52,9 +60,9 @@ function zeroResultSearchPage(
     headers: () => ({ 'content-type': 'application/json; charset=UTF-8' }),
     json: async () => payload,
   });
-  const terminal = {
+  const terminal = () => ({
     CaptureResults: {
-      eventName: [{ Properties: { value: 'coaching' } }],
+      eventName: [{ Properties: { value: inputValue } }],
       box_error_items: [
         {
           Properties: {
@@ -63,7 +71,7 @@ function zeroResultSearchPage(
         },
       ],
     },
-  };
+  });
   const locator = (
     kind: 'busy' | 'clear' | 'input' | 'search' | 'summary' | 'empty' | 'grid',
   ) => ({
@@ -72,13 +80,18 @@ function zeroResultSearchPage(
       if (kind === 'summary' || kind === 'grid') {
         return priorResultsVisible || afterSearchState === 'results' ? 1 : 0;
       }
-      if (kind === 'empty') return afterSearchState === 'empty' ? 1 : 0;
+      if (kind === 'empty') return emptyMarkerVisible ? 1 : 0;
       if (kind === 'busy') return 0;
       return 1;
     },
     waitFor: async () => undefined,
     click: async () => {
-      if (kind === 'clear') priorResultsVisible = false;
+      if (kind === 'clear') {
+        inputValue = '';
+        priorResultsVisible = false;
+        afterSearchState = 'none';
+        if (!options.persistEmptyAfterClear) emptyMarkerVisible = false;
+      }
       if (kind === 'search') {
         const rejected = {
           ...response({}),
@@ -88,16 +101,17 @@ function zeroResultSearchPage(
         };
         const advisory = {
           CaptureResults: {
-            eventName: [{ Properties: { value: 'coaching' } }],
+            eventName: [{ Properties: { value: inputValue } }],
             box_error_items: [{ Properties: {} }],
           },
         };
         for (const listener of listeners) listener(rejected);
         for (const listener of listeners) listener(response(advisory));
         if (options.emitTerminal !== false) {
-          for (const listener of listeners) listener(response(terminal));
+          for (const listener of listeners) listener(response(terminal()));
         }
         afterSearchState = options.visibleAfterSearch ?? 'none';
+        if (afterSearchState === 'empty') emptyMarkerVisible = true;
       }
     },
     fill: async (value: string) => {
@@ -137,10 +151,13 @@ function zeroResultSearchPage(
   };
 }
 
-function positiveResultSearchPage(): Page {
+function positiveResultSearchPage(
+  options: { staleEmpty?: boolean } = {},
+): Page {
   let inputValue = '';
   let priorResultsVisible = true;
   let positiveResultsVisible = false;
+  let emptyMarkerVisible = options.staleEmpty ?? false;
   const listeners = new Set<(response: unknown) => void>();
   const cells = {
     allInnerTexts: async () => [
@@ -164,7 +181,8 @@ function positiveResultSearchPage(): Page {
       if (kind === 'summary' || kind === 'grid') {
         return priorResultsVisible || positiveResultsVisible ? 1 : 0;
       }
-      if (kind === 'empty' || kind === 'busy') return 0;
+      if (kind === 'empty') return emptyMarkerVisible ? 1 : 0;
+      if (kind === 'busy') return 0;
       return 1;
     },
     waitFor: async () => undefined,
@@ -172,6 +190,7 @@ function positiveResultSearchPage(): Page {
       if (kind === 'clear') {
         priorResultsVisible = false;
         positiveResultsVisible = false;
+        emptyMarkerVisible = options.staleEmpty ?? false;
       }
       if (kind === 'search') {
         for (const listener of listeners) {
@@ -295,6 +314,7 @@ describe('CaleProcure browser contract parsers', () => {
     await expect(port.search('coaching')).resolves.toEqual({
       echoedQuery: 'coaching',
       resultEvidence: 'response',
+      visibleEmptyMarker: false,
       resultCount: 0,
       pagesVisited: 1,
       rows: [],
@@ -323,6 +343,7 @@ describe('CaleProcure browser contract parsers', () => {
     await expect(port.search('facilitation')).resolves.toEqual({
       echoedQuery: 'facilitation',
       resultEvidence: 'visible',
+      visibleEmptyMarker: false,
       resultCount: 1,
       pagesVisited: 1,
       rows: [
@@ -337,7 +358,7 @@ describe('CaleProcure browser contract parsers', () => {
     });
   });
 
-  it('search prefers an agreeing visible zero over response provenance', async () => {
+  it('search requires response provenance even when a current zero marker is visible', async () => {
     const fake = zeroResultSearchPage({ visibleAfterSearch: 'empty' });
     const Port = PlaywrightCaleProcureBrowserPort as unknown as new (
       browser: object,
@@ -350,7 +371,8 @@ describe('CaleProcure browser contract parsers', () => {
 
     await expect(port.search('coaching')).resolves.toEqual({
       echoedQuery: 'coaching',
-      resultEvidence: 'visible',
+      resultEvidence: 'response',
+      visibleEmptyMarker: true,
       resultCount: 0,
       pagesVisited: 1,
       rows: [],
@@ -390,6 +412,77 @@ describe('CaleProcure browser contract parsers', () => {
       'result state did not appear before timeout',
     );
     expect(fake.responseListenerCount()).toBe(0);
+  });
+
+  it('does not accept a visible zero marker without a query-bound response', async () => {
+    const fake = zeroResultSearchPage({
+      emitTerminal: false,
+      visibleAfterSearch: 'empty',
+      persistEmptyAfterClear: true,
+    });
+    const Port = PlaywrightCaleProcureBrowserPort as unknown as new (
+      browser: object,
+      context: object,
+      searchPage: Page,
+      detailPage: object,
+      timeoutMs: number,
+    ) => PlaywrightCaleProcureBrowserPort;
+    const port = Reflect.construct(Port, [{}, {}, fake.page, {}, 50]);
+
+    await expect(port.search('leadership development')).rejects.toThrow(
+      'result state did not appear before timeout',
+    );
+  });
+
+  it('reconciles a positive result while a stale zero marker remains visible', async () => {
+    const Port = PlaywrightCaleProcureBrowserPort as unknown as new (
+      browser: object,
+      context: object,
+      searchPage: Page,
+      detailPage: object,
+      timeoutMs: number,
+    ) => PlaywrightCaleProcureBrowserPort;
+    const port = Reflect.construct(Port, [
+      {},
+      {},
+      positiveResultSearchPage({ staleEmpty: true }),
+      {},
+      5_000,
+    ]);
+
+    await expect(port.search('facilitation')).resolves.toMatchObject({
+      resultEvidence: 'visible',
+      visibleEmptyMarker: true,
+      resultCount: 1,
+      rows: [{ eventId: '0000039985' }],
+    });
+  });
+
+  it('uses query-bound response provenance for consecutive zero searches', async () => {
+    const fake = zeroResultSearchPage({
+      visibleAfterSearch: 'empty',
+      persistEmptyAfterClear: true,
+    });
+    const Port = PlaywrightCaleProcureBrowserPort as unknown as new (
+      browser: object,
+      context: object,
+      searchPage: Page,
+      detailPage: object,
+      timeoutMs: number,
+    ) => PlaywrightCaleProcureBrowserPort;
+    const port = Reflect.construct(Port, [{}, {}, fake.page, {}, 5_000]);
+
+    await expect(port.search('coaching')).resolves.toMatchObject({
+      resultEvidence: 'response',
+      resultCount: 0,
+    });
+    await expect(port.search('leadership development')).resolves.toMatchObject({
+      echoedQuery: 'leadership development',
+      resultEvidence: 'response',
+      visibleEmptyMarker: true,
+      resultCount: 0,
+      rows: [],
+    });
   });
 
   it('closes owned pages and disconnects the CDP client', async () => {
@@ -449,21 +542,18 @@ describe('CaleProcure browser contract parsers', () => {
 
   it('accepts duplicate visible summaries only when they agree', () => {
     expect(
-      parseCaleProcureResultTotal(
-        ['Showing Results 1-320 of 320', 'Showing Results 1-320 of 320'],
-        false,
-      ),
+      parseCaleProcureResultTotal([
+        'Showing Results 1-320 of 320',
+        'Showing Results 1-320 of 320',
+      ]),
     ).toBe(320);
     expect(() =>
-      parseCaleProcureResultTotal(
-        ['Showing Results 1 of 1', 'Showing Results 1-320 of 320'],
-        false,
-      ),
+      parseCaleProcureResultTotal([
+        'Showing Results 1 of 1',
+        'Showing Results 1-320 of 320',
+      ]),
     ).toThrow('ambiguous');
-    expect(() =>
-      parseCaleProcureResultTotal(['Showing Results 1 of 1'], true),
-    ).toThrow('both results and no-results');
-    expect(parseCaleProcureResultTotal([], true)).toBe(0);
+    expect(() => parseCaleProcureResultTotal([])).toThrow('ambiguous');
   });
 
   it('parses the six visible result cells and rejects incomplete identity', () => {
@@ -522,5 +612,17 @@ describe('CaleProcure browser contract parsers', () => {
         5,
       ),
     ).rejects.toThrow('prior result state did not clear');
+  });
+
+  it('treats a persistent empty marker as non-authoritative clear-state residue', async () => {
+    await expect(
+      waitForCaleProcureResultStateCleared(
+        resultStatePage({
+          clearsAfterWait: true,
+          persistentEmpty: true,
+        }),
+        50,
+      ),
+    ).resolves.toBeUndefined();
   });
 });
