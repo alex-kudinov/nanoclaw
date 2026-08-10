@@ -44,6 +44,10 @@ setRegisteredGroup(jid, {
     // container/session. Five posted roots can therefore use the host's five
     // slots instead of serializing behind one channel-level conversation.
     threadPerMessage: true,
+    // Grader-authored student copy is emitted only through the host gate. Raw
+    // final assistant text must never become a second Slack producer.
+    suppressFinalText: true,
+    suppressFinalTextInThreads: true,
     // Grader threads are one-shot work units. Release warm capacity quickly;
     // conversational groups keep the longer global idle window.
     idleTimeout: 30000,

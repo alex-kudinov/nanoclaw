@@ -41,6 +41,8 @@ export interface PipedWriteResult {
 export interface PipedWriteOpts {
   /** Chat messages are recoverable from the DB cursor; ephemeral IPC results are not. */
   trackForRecovery?: boolean;
+  /** Host-minted identity for one grader Claude turn. */
+  runId?: string;
 }
 
 export interface GroupStatusEntry {
@@ -425,6 +427,7 @@ export class GroupQueue {
         timestamp_ms: timestampMs,
         target_container: state.containerName ?? undefined,
         chat_cursor_recoverable: opts.trackForRecovery !== false,
+        run_id: opts.runId,
         text,
       });
       fs.writeFileSync(tempPath, payload);

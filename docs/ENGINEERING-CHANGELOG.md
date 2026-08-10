@@ -8,6 +8,29 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260809-001 — Grader recalibration release
+
+- Date: 2026-08-10T00:55Z
+- Owner/client: Codex + Claude validator
+- State: ready_for_deploy from exact live base `ba726e7`
+- Change class: C5 — host/runner message boundary, live read-only curriculum
+  lookup, group prompt, registration, and production activation
+- The host is the only publisher of grader-authored text into `#gru-grader`.
+  Student staging is exactly `PASS|NO PASS`, one blank line, then feedback;
+  blocked bytes are never posted or persisted.
+- Six Foundation assignments are resolved from the current Heartbeat lesson by
+  one allowlisted GET. The grader receives curriculum text, not a credential or
+  a Heartbeat write tool.
+- Every initial or warm grader turn carries a host-minted UUID through the
+  runner and MCP boundary; the host requires an exact run/JID/thread match.
+- Grader raw final text is suppressed for normal and adopted containers.
+- Automatic posting of results to Heartbeat is absent by design. The release
+  stages feedback in Slack for human review and manual copy only.
+- Verification before commit: pinned Node 22.23.2 typechecks; focused grader
+  suite 121/121; full root suite 160 files / 2,178 tests; runner 5 files /
+  34 tests; documentation continuity and diff checks clean.
+- Release record: `docs/reports/NC-20260809-001-GRADER-RELEASE.md`.
+
 ### NC-20260809-003 — Close the Procurement opportunity-to-outcome loop
 
 - Date: 2026-08-09T19:51Z

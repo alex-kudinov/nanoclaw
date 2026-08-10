@@ -1,4 +1,5 @@
 import { exec, execSync } from 'child_process';
+import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -11,6 +12,7 @@ import {
   HEARTBEAT_INTERVAL_MS,
   HEARTBEAT_JID,
   IDLE_TIMEOUT,
+  IPC_POLL_INTERVAL,
   JOB_REPORT_CHANNEL,
   JOBS_FILE,
   MAX_CONCURRENT_CONTAINERS,
@@ -76,6 +78,8 @@ import {
   getNewMessages,
   getThreadParent,
   getLatestGroupResponse,
+  hasDeliveredGraderStudentCopy,
+  hasGraderOutputInThread,
   getRouterState,
   initDatabase,
   markStaleRunsAsFailed,
@@ -88,6 +92,23 @@ import {
   storeMessageDirect,
 } from './db.js';
 import { GroupQueue } from './group-queue.js';
+import {
+  deliverGraderOutput,
+  formatGraderMissingOutputNotice,
+  GRADER_GROUP_FOLDER,
+  type GraderDeliveryRequest,
+  type GraderDeliveryResult,
+} from './grader-delivery.js';
+import { resolveSubmissionContext } from './grader-submission-context.js';
+import { fetchLiveAssignment } from './grader-assignment-fetch.js';
+import {
+  clearLatestGraderThreadContext,
+  formatHostAssignmentContext,
+  formatHostContextUnavailable,
+  prepareLatestGraderRunContext,
+  setGraderRunContext,
+  type GraderRunContext,
+} from './grader-run-context.js';
 import { isApprovalCardSuccessRecap } from './approval-recap.js';
 import { startIpcWatcher } from './ipc.js';
 import { loadJobRegistry, watchJobRegistry } from './job-registry.js';
@@ -212,6 +233,163 @@ let registeredGroups: Record<string, RegisteredGroup> = {};
 // this many of the thread's most recent posts (root + replies) so the agent sees
 // the pending draft it's being asked to change even if its Claude session rotated.
 const THREAD_CONTEXT_LIMIT = 25;
+/**
+ * Shared suppression decision for the agent's raw final assistant text.
+ *
+ * Both relays must consult this: the normal streaming relay in
+ * processGroupMessages and routeAdoptedOutput, which re-attaches to a container
+ * that outlived the daemon. routeAdoptedOutput previously had no suppression
+ * check at all, so after a host restart a grader's raw final text went straight
+ * into the submission thread, ungated and carrying no operator marker.
+ */
+export function shouldSuppressFinalText(
+  group: RegisteredGroup | undefined,
+  threadTs: string | undefined,
+): boolean {
+  // The grader is a safety boundary, not a rollout flag. A stale or partially
+  // applied registered_groups row must not turn its raw final assistant text
+  // back into a second, ungated Slack producer. The explicit config flags stay
+  // in the registration script as defense in depth and documentation, while
+  // the authoritative registered folder fails closed here.
+  if (group?.folder === GRADER_GROUP_FOLDER) return true;
+  const cfg = group?.containerConfig;
+  if (!cfg?.suppressFinalText) return false;
+  return !threadTs || cfg.suppressFinalTextInThreads === true;
+}
+
+/**
+ * Establish the host's grading context for one grader run, before it starts.
+ *
+ * Returns the prompt block to append. Registering the context is what later
+ * authorizes student-facing output at the delivery boundary, so every path that
+ * does not register one leaves the run able to talk to the operator and unable
+ * to talk to a student. That asymmetry is the point: the host would rather ask
+ * for a re-run than publish feedback whose assignment it cannot name.
+ */
+async function establishGraderRunContext(
+  group: RegisteredGroup,
+  chatJid: string,
+  threadTs: string,
+  runId: string,
+): Promise<string | undefined> {
+  // A fresh container generation must not let a later piped turn clone proof
+  // from an older generation. Keep exact old run entries for late output, but
+  // clear the pointer that authorizes a warm follow-up clone.
+  clearLatestGraderThreadContext(chatJid, threadTs);
+  const root = getThreadParent(chatJid, threadTs);
+  if (!root) return formatHostContextUnavailable('submission-root-unavailable');
+  const resolved = resolveSubmissionContext(
+    root.content,
+    group.containerConfig?.additionalMounts,
+  );
+  if (resolved.kind === 'no-submission') return undefined;
+  if (resolved.kind === 'blocked') {
+    logger.warn(
+      { chatJid, threadTs, reason: resolved.code },
+      'Grader submission context could not be resolved',
+    );
+    return formatHostContextUnavailable(resolved.code);
+  }
+
+  const { studentName, assignment } = resolved;
+  const base = {
+    studentName,
+    code: assignment.code,
+    title: assignment.title,
+    registeredAtMs: Date.now(),
+  };
+  if (!assignment.heartbeat) {
+    // No live mapping is a registry statement, not a failure: ACC/PCC/MCC grade
+    // from the pack snapshot by design. The run is authorized, and the block
+    // says which authority it is under.
+    const context: GraderRunContext = { ...base, mode: 'snapshot-only' };
+    setGraderRunContext(runId, chatJid, threadTs, context);
+    return formatHostAssignmentContext(context);
+  }
+
+  const fetched = await fetchLiveAssignment(assignment.heartbeat, {
+    readSecret: (key) => readEnvFile([key])[key],
+  });
+  if (!fetched.ok) {
+    logger.warn(
+      { chatJid, threadTs, code: assignment.code, reason: fetched.code },
+      'Live assignment fetch failed; grading run will hold',
+    );
+    return formatHostContextUnavailable(fetched.code);
+  }
+  const context: GraderRunContext = {
+    ...base,
+    mode: 'heartbeat',
+    live: fetched.assignment,
+  };
+  setGraderRunContext(runId, chatJid, threadTs, context);
+  return formatHostAssignmentContext(context);
+}
+
+/**
+ * Host transport for the grader output boundary. The only place in the daemon
+ * that binds the boundary to a real database and a real Slack client.
+ */
+async function deliverGraderOutputHost(
+  request: GraderDeliveryRequest,
+): Promise<GraderDeliveryResult> {
+  const slack = channels.find(
+    (c): c is SlackChannel => c instanceof SlackChannel,
+  );
+  if (!slack) {
+    throw new Error('Slack channel unavailable; grader message not sent');
+  }
+  return deliverGraderOutput(request, {
+    hasDeliveredStudentCopy: hasDeliveredGraderStudentCopy,
+    postStudentCopy: (jid, text, threadTs) =>
+      slack.postGraderStudentCopy(jid, text, threadTs),
+    postOperatorNotice: (jid, text, threadTs) =>
+      slack.postGraderOperatorNotice(jid, text, threadTs),
+  });
+}
+
+// How long to let the IPC watcher drain before calling a grader run silent.
+// The container writes its messages to disk and exits; the watcher picks them up
+// on its own poll, so "runAgent returned" is earlier than "everything it emitted
+// has been posted". Five polls is generous for a one-file drain and still bounded.
+const GRADER_OUTPUT_DRAIN_POLLS = 5;
+
+/**
+ * Report a grader run that finished having published nothing.
+ *
+ * Suppressing the final assistant text removes the accidental "something
+ * happened" signal, and for a submission thread silence is the worst outcome:
+ * the operator has no verdict, no block notice, and no reason to look. This
+ * restores the signal without restoring the raw bytes — the notice is fixed,
+ * host-constructed text, so nothing ungated can ride along with it.
+ *
+ * The authoritative check runs inside the boundary's per-thread lock, so a
+ * message that lands during the drain window wins and the notice is skipped.
+ */
+async function noticeGraderRunWithNoOutput(
+  chatJid: string,
+  threadTs: string,
+  runStartedAt: string,
+): Promise<void> {
+  for (let poll = 0; poll < GRADER_OUTPUT_DRAIN_POLLS; poll++) {
+    if (hasGraderOutputInThread(chatJid, threadTs, runStartedAt)) return;
+    await new Promise((resolve) => setTimeout(resolve, IPC_POLL_INTERVAL));
+  }
+  const result = await deliverGraderOutputHost({
+    jid: chatJid,
+    threadTs,
+    text: formatGraderMissingOutputNotice(),
+    source: 'final-text',
+    precondition: () =>
+      !hasGraderOutputInThread(chatJid, threadTs, runStartedAt),
+  });
+  if (result.outcome === 'delivered') {
+    logger.warn(
+      { chatJid, threadTs },
+      'Grader run produced no output; operator notice posted',
+    );
+  }
+}
 
 // Thread key for grouping a message into a run. Threaded posts keep their
 // thread_ts; for threadPerMessage groups a root post becomes its own thread
@@ -576,7 +754,18 @@ async function processGroupMessages(
   } else {
     messagesToFormat = excludeOwnGroupMessages(missedMessages, group.folder);
   }
-  const prompt = formatMessages(messagesToFormat);
+  let prompt = formatMessages(messagesToFormat);
+  let graderRunId: string | undefined;
+  if (group.folder === GRADER_GROUP_FOLDER && threadTs) {
+    graderRunId = crypto.randomUUID();
+    const contextBlock = await establishGraderRunContext(
+      group,
+      chatJid,
+      threadTs,
+      graderRunId,
+    );
+    if (contextBlock) prompt = `${prompt}\n\n${contextBlock}`;
+  }
 
   // Advance cursor so the piping path in startMessageLoop won't re-fetch
   // these messages. Save the old cursor so we can roll back on error.
@@ -632,6 +821,8 @@ async function processGroupMessages(
 
   let hadError = false;
   let outputSentToUser = false;
+  const graderRunStartedAt =
+    group.folder === GRADER_GROUP_FOLDER ? new Date().toISOString() : undefined;
 
   const output = await runAgent(
     group,
@@ -668,8 +859,7 @@ async function processGroupMessages(
           isApprovalCardSuccessRecap(text);
         if (
           text &&
-          group.containerConfig?.suppressFinalText &&
-          (!threadTs || suppressApprovalRecap)
+          (shouldSuppressFinalText(group, threadTs) || suppressApprovalRecap)
         ) {
           logger.info(
             {
@@ -718,7 +908,21 @@ async function processGroupMessages(
             },
           )
       : undefined,
+    graderRunId,
   );
+
+  if (group.folder === GRADER_GROUP_FOLDER && threadTs) {
+    void noticeGraderRunWithNoOutput(
+      chatJid,
+      threadTs,
+      graderRunStartedAt!,
+    ).catch((err) =>
+      logger.error(
+        { err, group: group.folder, threadTs },
+        'Grader missing-output notice failed',
+      ),
+    );
+  }
 
   await channel.setTyping?.(chatJid, false);
   if (idleTimer) clearTimeout(idleTimer);
@@ -752,6 +956,7 @@ async function runAgent(
   onOutput?: (output: ContainerOutput) => Promise<void>,
   threadTs?: string,
   onStarted?: () => void,
+  runId?: string,
 ): Promise<'success' | 'error'> {
   const isMain = group.isMain === true;
   const sessionKey = `${group.folder}||${threadTs || 'root'}`;
@@ -802,6 +1007,7 @@ async function runAgent(
       group,
       {
         prompt,
+        runId,
         sessionId,
         groupFolder: group.folder,
         chatJid,
@@ -1006,14 +1212,29 @@ async function startMessageLoop(): Promise<void> {
             saveState();
             continue;
           }
-          const formatted = formatMessages(messagesToSend);
+          let formatted = formatMessages(messagesToSend);
+          let pipedRunId: string | undefined;
+          let pipedContext: GraderRunContext | undefined;
+          if (group.folder === GRADER_GROUP_FOLDER && threadTs) {
+            pipedRunId = crypto.randomUUID();
+            pipedContext = prepareLatestGraderRunContext(chatJid, threadTs);
+            const contextBlock = pipedContext
+              ? formatHostAssignmentContext(pipedContext)
+              : formatHostContextUnavailable('submission-context-unavailable');
+            formatted = `${formatted}\n\n${contextBlock}`;
+          }
 
           // Try piping to an active container first — follow-up messages
           // in an ongoing conversation don't require a trigger.
           // sendMessage returns a PipedWriteResult — branch on .wrote, not
           // on the object itself (any object is truthy).
-          const pipeResult = queue.sendMessage(compositeKey, formatted);
+          const pipeResult = queue.sendMessage(compositeKey, formatted, {
+            runId: pipedRunId,
+          });
           if (pipeResult.wrote) {
+            if (pipedRunId && pipedContext && threadTs) {
+              setGraderRunContext(pipedRunId, chatJid, threadTs, pipedContext);
+            }
             if (group.folder === 'mailman') {
               observeMailmanStart(
                 messagesToSend.map((message) => message.content),
@@ -1269,7 +1490,8 @@ function adoptSidecarContainer(
   return true;
 }
 
-async function routeAdoptedOutput(
+/** @internal - exported for regression testing. */
+export async function routeAdoptedOutput(
   sc: ContainerSidecar,
   channel: Channel,
   o: ContainerOutput,
@@ -1290,6 +1512,19 @@ async function routeAdoptedOutput(
     `Agent output: ${raw.slice(0, 200)}`,
   );
   if (!text) return;
+  if (
+    sc.groupFolder === GRADER_GROUP_FOLDER ||
+    shouldSuppressFinalText(
+      registeredGroups[sc.chatJid],
+      sc.threadTs ?? undefined,
+    )
+  ) {
+    logger.info(
+      { group: sc.groupName, adopted: true, length: text.length },
+      'Final agent text suppressed (suppressFinalText)',
+    );
+    return;
+  }
   try {
     await channel.sendMessage(sc.chatJid, text, {
       fromGroup: sc.groupFolder,
@@ -2555,6 +2790,7 @@ async function main(): Promise<void> {
         sourceGroup,
       );
     },
+    deliverGraderOutput: deliverGraderOutputHost,
     ...(JOB_REPORT_CHANNEL
       ? {
           runHostJob: async (

@@ -90,6 +90,8 @@ const HEARTBEAT_MARKER = '---NANOCLAW_HEARTBEAT---';
 
 export interface ContainerInput {
   prompt: string;
+  /** Host-minted identity for one grader Claude turn. */
+  runId?: string;
   sessionId?: string;
   groupFolder: string;
   chatJid: string;

@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { ASSISTANT_NAME, DATA_DIR, STORE_DIR } from './config.js';
+import { isGraderStudentVerdictUnit } from './grader-output-gate.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import type { EmailActionState } from './email-action.js';
@@ -837,6 +838,47 @@ export function getThreadContext(
     )
     .all(chatJid, threadTs, threadTs, limit) as NewMessage[];
   return rows.reverse();
+}
+
+function graderThreadOutput(
+  chatJid: string,
+  threadTs: string,
+  since?: string,
+): string[] {
+  const sinceClause = since ? ' AND timestamp >= ?' : '';
+  const params = since
+    ? [chatJid, threadTs, threadTs, since]
+    : [chatJid, threadTs, threadTs];
+  const rows = db
+    .prepare(
+      `SELECT content FROM messages
+       WHERE chat_jid = ? AND (id = ? OR thread_ts = ?)
+         AND from_group = 'grader' AND is_from_me = 1
+         AND content IS NOT NULL AND content != ''${sinceClause}`,
+    )
+    .all(...params) as Array<{ content: string }>;
+  return rows.map((row) => row.content);
+}
+
+/** Restart-safe, rule-version-independent student-copy delivery proof. */
+export function hasDeliveredGraderStudentCopy(
+  chatJid: string,
+  threadTs: string,
+): boolean {
+  return graderThreadOutput(chatJid, threadTs).some((content) =>
+    isGraderStudentVerdictUnit(content),
+  );
+}
+
+/** True when this run produced any grader output other than the host ack. */
+export function hasGraderOutputInThread(
+  chatJid: string,
+  threadTs: string,
+  since?: string,
+): boolean {
+  return graderThreadOutput(chatJid, threadTs, since).some(
+    (content) => !content.startsWith('[PROCESSING]'),
+  );
 }
 
 /**

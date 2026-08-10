@@ -443,6 +443,35 @@ describe('GroupQueue', () => {
     expect(payload.text).toBe('hello');
   });
 
+  it('carries a grader run id outside the prompt bytes', async () => {
+    const fs = await import('fs');
+    queue.adoptContainer(
+      'group1@g.us',
+      'nanoclaw-grader-42',
+      'grader',
+      12345,
+      Date.now(),
+    );
+    const writeFileSync = vi.mocked(fs.default.writeFileSync);
+    writeFileSync.mockClear();
+
+    const result = queue.sendMessage('group1@g.us', 'follow-up', {
+      runId: '8f49f42f-105f-4b14-8e68-1846f9a7271b',
+    });
+    expect(result.wrote).toBe(true);
+
+    const payloadCall = writeFileSync.mock.calls.find(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].endsWith('.json.tmp') &&
+        typeof call[1] === 'string' &&
+        call[1].includes('"type":"message"'),
+    );
+    const payload = JSON.parse(payloadCall![1] as string);
+    expect(payload.run_id).toBe('8f49f42f-105f-4b14-8e68-1846f9a7271b');
+    expect(payload.text).toBe('follow-up');
+  });
+
   it('does not enroll ephemeral targeted results in chat-cursor rollback', async () => {
     const rollback = vi.fn();
     queue.setRollbackTimestampFn(rollback);

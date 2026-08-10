@@ -168,9 +168,18 @@ const WORD_TELLS = [
 
 const WORD_TELLS_RE = new RegExp(`\\b(${WORD_TELLS.join('|')})\\b`, 'gi');
 
-/** Extra literal phrases to block, from EMAIL_AI_TELLS_EXTRA (comma-separated). */
-function extraPhraseTells(): AiTell[] {
-  return (process.env.EMAIL_AI_TELLS_EXTRA || '')
+export interface AiTellScanOptions {
+  /**
+   * Optional environment variable containing comma-separated extra phrases.
+   * Defaults to the historical email setting for backwards compatibility.
+   * Pass `null` when a caller must use only the shared curated list.
+   */
+  extraPhrasesEnvVar?: string | null;
+}
+
+/** Extra literal phrases from the caller-selected comma-separated env setting. */
+function extraPhraseTells(envVar: string | null): AiTell[] {
+  return (envVar ? process.env[envVar] || '' : '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
@@ -184,11 +193,21 @@ function extraPhraseTells(): AiTell[] {
  * Scan text for AI-tells. Returns a deduplicated list of matched labels
  * (empty when clean). Case-insensitive; runs the full phrase + word set.
  */
-export function scanAiTells(text: string): string[] {
+export function scanAiTells(
+  text: string,
+  options: AiTellScanOptions = {},
+): string[] {
   const found = new Set<string>();
+  const extraPhrasesEnvVar =
+    options.extraPhrasesEnvVar === undefined
+      ? 'EMAIL_AI_TELLS_EXTRA'
+      : options.extraPhrasesEnvVar;
   // Fold curly quotes to straight so apostrophe patterns match either form.
   const hay = (text || '').replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
-  for (const tell of [...PHRASE_TELLS, ...extraPhraseTells()]) {
+  for (const tell of [
+    ...PHRASE_TELLS,
+    ...extraPhraseTells(extraPhrasesEnvVar),
+  ]) {
     if (tell.re.test(hay)) found.add(tell.label);
   }
   for (const m of hay.matchAll(WORD_TELLS_RE)) {

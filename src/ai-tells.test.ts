@@ -94,4 +94,13 @@ describe('scanAiTells — env extension', () => {
       expect.arrayContaining(['synergize', 'best in class']),
     );
   });
+
+  it('allows callers to exclude the email-scoped extension', () => {
+    process.env.EMAIL_AI_TELLS_EXTRA = 'grading-only false positive';
+    expect(
+      scanAiTells('A grading-only false positive.', {
+        extraPhrasesEnvVar: null,
+      }),
+    ).toEqual([]);
+  });
 });

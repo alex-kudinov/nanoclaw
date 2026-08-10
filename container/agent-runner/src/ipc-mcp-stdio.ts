@@ -25,6 +25,8 @@ const chatJid = process.env.NANOCLAW_CHAT_JID!;
 const groupFolder = process.env.NANOCLAW_GROUP_FOLDER!;
 const containerName = process.env.CONTAINER_NAME!;
 const isMain = process.env.NANOCLAW_IS_MAIN === '1';
+// Host-minted per-turn proof, outside the model-writable tool schema.
+const runId = process.env.NANOCLAW_RUN_ID || undefined;
 
 function writeIpcFile(dir: string, data: object): string {
   fs.mkdirSync(dir, { recursive: true });
@@ -87,6 +89,7 @@ server.tool(
       targetGroupFolder: args.target_group || undefined,
       thread_ts: args.thread_ts || undefined,
       thread_key: args.thread_key || undefined,
+      run_id: runId,
       timestamp: new Date().toISOString(),
     };
 
@@ -817,20 +820,28 @@ server.tool(
     rows: z
       .array(caleProcureResultRow)
       .max(200)
-      .describe('Public result-table rows; empty is valid only with full coverage receipts'),
+      .describe(
+        'Public result-table rows; empty is valid only with full coverage receipts',
+      ),
     observed_units: z
       .array(z.string().trim().min(1).max(120))
       .max(32)
-      .describe('Every host-planned keyword whose result pages were actually observed'),
+      .describe(
+        'Every host-planned keyword whose result pages were actually observed',
+      ),
     coverage_evidence: z
       .record(
         z.string(),
-        z.object({
-          resultCount: z.number().int().nonnegative(),
-          pagesVisited: z.number().int().positive(),
-        }).strict(),
+        z
+          .object({
+            resultCount: z.number().int().nonnegative(),
+            pagesVisited: z.number().int().positive(),
+          })
+          .strict(),
       )
-      .describe('One public result-count/pages-visited receipt for every observed unit'),
+      .describe(
+        'One public result-count/pages-visited receipt for every observed unit',
+      ),
   },
   async (args) => {
     if (groupFolder !== 'procurement') {
@@ -873,7 +884,12 @@ server.tool(
   async (args) => {
     if (groupFolder !== 'procurement') {
       return {
-        content: [{ type: 'text' as const, text: 'procurement_pursuit_queue is restricted to the procurement group.' }],
+        content: [
+          {
+            type: 'text' as const,
+            text: 'procurement_pursuit_queue is restricted to the procurement group.',
+          },
+        ],
         isError: true,
       };
     }
@@ -884,10 +900,12 @@ server.tool(
       timestamp: new Date().toISOString(),
     });
     return {
-      content: [{
-        type: 'text' as const,
-        text: 'Procurement pursuit queue requested. Results will arrive as a follow-up message.',
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: 'Procurement pursuit queue requested. Results will arrive as a follow-up message.',
+        },
+      ],
     };
   },
 );

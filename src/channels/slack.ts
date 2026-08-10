@@ -37,6 +37,7 @@ import {
   updateChatName,
 } from '../db.js';
 import { readEnvFile } from '../env.js';
+import { GRADER_GROUP_FOLDER } from '../grader-delivery.js';
 import {
   deriveLeadEntryRef,
   deriveLeadThreadKey,
@@ -1261,6 +1262,54 @@ export class SlackChannel implements Channel {
       logger.warn({ jid, err }, 'postTracked: send failed');
     }
     return undefined;
+  }
+
+  private async postGraderStrict(
+    jid: string,
+    text: string,
+    threadTs: string | undefined,
+  ): Promise<string> {
+    if (!this.connected) {
+      throw new Error('Slack is disconnected; grader message was not queued');
+    }
+    if (text.length > MAX_MESSAGE_LENGTH) {
+      throw new Error(
+        `Grader message is ${text.length} characters; the one-message limit is ${MAX_MESSAGE_LENGTH}`,
+      );
+    }
+    const channelId = jid.replace(/^slack:/, '');
+    const postOpts: { channel: string; text: string; thread_ts?: string } = {
+      channel: channelId,
+      text,
+    };
+    if (threadTs) postOpts.thread_ts = threadTs;
+    const result = await this.app.client.chat.postMessage(postOpts);
+    if (!result.ts) {
+      throw new Error('Slack returned no timestamp for the grader message');
+    }
+    this.storeOutbound(jid, result.ts, text, GRADER_GROUP_FOLDER, threadTs);
+    this.lastActivityAt = Date.now();
+    logger.info(
+      { jid, length: text.length, threadTs },
+      'Grader message posted (strict)',
+    );
+    return result.ts;
+  }
+
+  async postGraderStudentCopy(
+    jid: string,
+    text: string,
+    threadTs: string | undefined,
+  ): Promise<string> {
+    return this.postGraderStrict(jid, text, threadTs);
+  }
+
+  async postGraderOperatorNotice(
+    jid: string,
+    text: string,
+    threadTs: string | undefined,
+  ): Promise<string> {
+    return this.postGraderStrict(jid, text, threadTs);
   }
 
   /**

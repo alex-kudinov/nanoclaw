@@ -66,6 +66,12 @@ import {
   isGraderFileMessageType,
 } from './grader-file-message.js';
 import {
+  GRADER_GROUP_FOLDER,
+  type GraderDeliveryRequest,
+  type GraderDeliveryResult,
+} from './grader-delivery.js';
+import { getGraderRunContext } from './grader-run-context.js';
+import {
   handleClassificationLesson,
   isClassificationLesson,
 } from './classify-backfill.js';
@@ -136,6 +142,10 @@ export interface IpcDeps {
     filename: string,
     sourceGroup: string,
   ) => Promise<{ messageTs: string; fileIds?: string[] }>;
+  // Required for grader-to-grader text. Absence fails closed.
+  deliverGraderOutput?: (
+    request: GraderDeliveryRequest,
+  ) => Promise<GraderDeliveryResult>;
 }
 
 let ipcWatcherRunning = false;
@@ -262,6 +272,37 @@ function writeDeniedGmailInput(
     logger.error(
       { err, sourceGroup, operation },
       'Failed to deliver Gmail authorization denial to calling agent',
+    );
+  }
+}
+
+/** Tell the calling agent that an asynchronous grader-file request was denied. */
+function writeDeniedGraderFileInput(
+  sourceGroup: string,
+  reason: string | undefined,
+): void {
+  try {
+    const inputDir = path.join(DATA_DIR, 'ipc', sourceGroup, 'input');
+    fs.mkdirSync(inputDir, { recursive: true });
+    const filename = `grader-file-denied-${Date.now()}-${crypto.randomBytes(3).toString('hex')}.json`;
+    fs.writeFileSync(
+      path.join(inputDir, filename),
+      JSON.stringify(
+        {
+          type: 'message',
+          text:
+            `[GRADER FILE DENIED] ${reason || 'host validation failed'}. ` +
+            'The file was not posted. Correct the request and retry with exactly two nonblank lines: student name, then exact assignment label.',
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    );
+  } catch (err) {
+    logger.error(
+      { err, sourceGroup },
+      'Failed to deliver grader-file denial to calling agent',
     );
   }
 }
@@ -812,7 +853,41 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 } else {
                   // Normal message: send to resolved target
                   const targetGroup = registeredGroups[targetJid];
-                  if (targetGroup) {
+                  if (
+                    targetGroup &&
+                    sourceGroup === GRADER_GROUP_FOLDER &&
+                    targetGroup.folder === GRADER_GROUP_FOLDER
+                  ) {
+                    if (!deps.deliverGraderOutput) {
+                      throw new Error(
+                        'Grader output boundary is unavailable; message not sent',
+                      );
+                    }
+                    const runContext = getGraderRunContext(
+                      data.run_id,
+                      targetJid,
+                      data.thread_ts,
+                    );
+                    const result = await deps.deliverGraderOutput({
+                      jid: targetJid,
+                      threadTs: data.thread_ts,
+                      text: data.text,
+                      source: 'ipc',
+                      submissionContext: runContext
+                        ? { studentName: runContext.studentName }
+                        : undefined,
+                    });
+                    logger.info(
+                      {
+                        targetJid,
+                        sourceGroup,
+                        outcome: result.outcome,
+                        kind: result.kind,
+                        violations: result.violations,
+                      },
+                      'IPC grader message routed through the host output boundary',
+                    );
+                  } else if (targetGroup) {
                     await deps.sendMessage(targetJid, data.text, {
                       fromGroup: sourceGroup,
                       threadTs: outboundThreadTsFor(targetJid),
@@ -836,49 +911,59 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 }
                 fs.unlinkSync(filePath);
               } else if (isGraderFileMessageType(data.type)) {
-                // File authority is derived from the IPC directory, never a
-                // claimed payload field. Only the registered main group and
-                // chief may send, and the target is fixed to grader.
-                if (!isMain && sourceGroup !== 'chief') {
-                  const quarantinedAt = quarantineIpcFile(
-                    filePath,
-                    sourceGroup,
-                    'grader-file',
+                try {
+                  // File authority is derived from the IPC directory, never a
+                  // claimed payload field. Only the registered main group and
+                  // chief may send, and the target is fixed to grader.
+                  if (!isMain && sourceGroup !== 'chief') {
+                    const quarantinedAt = quarantineIpcFile(
+                      filePath,
+                      sourceGroup,
+                      'grader-file',
+                    );
+                    logger.warn(
+                      { sourceGroup, quarantinedAt },
+                      'Unauthorized grader file IPC quarantined',
+                    );
+                    continue;
+                  }
+                  if (!deps.postGraderFileMessage) {
+                    throw new Error(
+                      'Slack grader file transport is unavailable',
+                    );
+                  }
+                  const graderEntry = Object.entries(registeredGroups).find(
+                    ([, group]) => group.folder === 'grader',
                   );
-                  logger.warn(
-                    { sourceGroup, quarantinedAt },
-                    'Unauthorized grader file IPC quarantined',
-                  );
-                  continue;
-                }
-                if (!deps.postGraderFileMessage) {
-                  throw new Error('Slack grader file transport is unavailable');
-                }
-                const graderEntry = Object.entries(registeredGroups).find(
-                  ([, group]) => group.folder === 'grader',
-                );
-                if (!graderEntry) {
-                  throw new Error('Registered grader group was not found');
-                }
-                const result = await dispatchGraderFileMessage(
-                  sourceGroup,
-                  data as GraderFileMessagePayload,
-                  {
-                    dataDir: DATA_DIR,
-                    targetJid: graderEntry[0],
-                    postGraderFileMessage: deps.postGraderFileMessage,
-                  },
-                );
-                fs.unlinkSync(filePath);
-                logger.info(
-                  {
+                  if (!graderEntry) {
+                    throw new Error('Registered grader group was not found');
+                  }
+                  const result = await dispatchGraderFileMessage(
                     sourceGroup,
-                    status: result.status,
-                    messageTs: result.receipt.messageTs,
-                    idempotencyKey: result.receipt.idempotencyKey,
-                  },
-                  'Grader file IPC processed',
-                );
+                    data as GraderFileMessagePayload,
+                    {
+                      dataDir: DATA_DIR,
+                      targetJid: graderEntry[0],
+                      postGraderFileMessage: deps.postGraderFileMessage,
+                    },
+                  );
+                  fs.unlinkSync(filePath);
+                  logger.info(
+                    {
+                      sourceGroup,
+                      status: result.status,
+                      messageTs: result.receipt.messageTs,
+                      idempotencyKey: result.receipt.idempotencyKey,
+                    },
+                    'Grader file IPC processed',
+                  );
+                } catch (err) {
+                  writeDeniedGraderFileInput(
+                    sourceGroup,
+                    err instanceof Error ? err.message : String(err),
+                  );
+                  throw err;
+                }
               } else if (isGmailIpcType(data.type)) {
                 // Gmail IPC: capability and resource authorization is enforced
                 // from the directory-derived source identity before dispatch.

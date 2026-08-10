@@ -59,6 +59,9 @@ export interface ContainerConfig {
   // threadKey so it always landed at the channel root (Oana Tue, 2026-07-28).
   // Leave unset for conversational groups, where the final text IS the reply.
   suppressFinalText?: boolean;
+  // Extends suppressFinalText to threaded runs. Use only where raw final text
+  // must never bypass a host-owned output boundary (currently the grader).
+  suppressFinalTextInThreads?: boolean;
   // Per-group claude model override (e.g. 'haiku'). Unset → agent-runner sonnet.
   model?: string;
   // Token-exhaustion probe policy. 'eager' tries every account (incl. cooled-down
