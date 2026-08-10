@@ -459,8 +459,21 @@ export class PlaywrightCaleProcureBrowserPort implements CaleProcureBrowserPort 
       this.searchPage.close(),
       this.detailPage.close(),
     ]);
-    // Do not call browser.close(): this is a shared, launchd-owned Chrome.
-    void this.browser;
+    // For connectOverCDP, Browser.close() closes the client transport rather
+    // than the launchd-owned Chrome process. Without it, the WebSocket keeps
+    // the one-shot collector process alive after its summary or error flushes.
+    let disconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        this.browser.close(),
+        new Promise<void>((resolve) => {
+          disconnectTimer = setTimeout(resolve, 10_000);
+          disconnectTimer.unref();
+        }),
+      ]);
+    } finally {
+      if (disconnectTimer) clearTimeout(disconnectTimer);
+    }
     void this.context;
   }
 }

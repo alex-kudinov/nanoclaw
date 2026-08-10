@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Page } from 'playwright-core';
 
 import {
+  PlaywrightCaleProcureBrowserPort,
   parseCaleProcureResultCells,
   parseCaleProcureResultTotal,
   validatedLoopbackCdpUrl,
@@ -26,6 +27,61 @@ function resultStatePage(options: { clearsAfterWait: boolean }): Page {
 }
 
 describe('CaleProcure browser contract parsers', () => {
+  it('closes owned pages and disconnects the CDP client', async () => {
+    const browserClose = vi.fn(async () => undefined);
+    const searchClose = vi.fn(async () => undefined);
+    const detailClose = vi.fn(async () => undefined);
+    const Port = PlaywrightCaleProcureBrowserPort as unknown as new (
+      browser: { close(): Promise<void> },
+      context: object,
+      searchPage: { close(): Promise<void> },
+      detailPage: { close(): Promise<void> },
+      timeoutMs: number,
+    ) => PlaywrightCaleProcureBrowserPort;
+    const port = Reflect.construct(Port, [
+      { close: browserClose },
+      {},
+      { close: searchClose },
+      { close: detailClose },
+      60_000,
+    ]);
+
+    await port.close();
+
+    expect(searchClose).toHaveBeenCalledOnce();
+    expect(detailClose).toHaveBeenCalledOnce();
+    expect(browserClose).toHaveBeenCalledOnce();
+  });
+
+  it('does not hang when the CDP transport does not acknowledge close', async () => {
+    vi.useFakeTimers();
+    try {
+      const browserClose = vi.fn(() => new Promise<void>(() => undefined));
+      const Port = PlaywrightCaleProcureBrowserPort as unknown as new (
+        browser: { close(): Promise<void> },
+        context: object,
+        searchPage: { close(): Promise<void> },
+        detailPage: { close(): Promise<void> },
+        timeoutMs: number,
+      ) => PlaywrightCaleProcureBrowserPort;
+      const port = Reflect.construct(Port, [
+        { close: browserClose },
+        {},
+        { close: async () => undefined },
+        { close: async () => undefined },
+        60_000,
+      ]);
+
+      const closing = port.close();
+      await vi.advanceTimersByTimeAsync(10_000);
+      await closing;
+
+      expect(browserClose).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('accepts duplicate visible summaries only when they agree', () => {
     expect(
       parseCaleProcureResultTotal(

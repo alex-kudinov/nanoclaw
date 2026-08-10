@@ -240,6 +240,29 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   continuity, `git diff --check`, the complete 157-file / 2,006-test suite, and
   the independent runner build plus 4-file / 29-test suite. No deployment or
   production outcome is claimed by these gates.
+- Intervening-lineage reconciliation and first shadow: production had advanced
+  to Grader release `bc931252`; Procurement was replayed on tracked Grader
+  evidence commit `7451834` rather than overwriting it. The integrated 165-file
+  / 2,206-test root suite and 5-file / 34-test runner suite passed, and immutable
+  release `f3c423c52f62` activated with exact health. Prompt/launcher bytes
+  match the release; CDP is loopback-only and the old bridge is unreachable;
+  legacy scan, container ingest, deterministic collector, and review are off.
+  `data/jobs.json` had a backed-up literal trailing `\\n` corruption repaired
+  before default-off registration.
+- Shadow gate 1 failed usefully: the collector reported a real `coaching`
+  search failure and cleaned its tabs, but the one-shot Node process remained
+  alive because its CDP WebSocket was never disconnected. Chrome stayed alive
+  with no tab growth. The candidate fix awaits `browser.close()` after both
+  owned pages; Playwright's connect-over-CDP path maps that close to the client
+  transport, not the launchd-owned browser. Claude R16 independently verified
+  those semantics from pinned Playwright source and returned `GO`. The final
+  delta also bounds the transport disconnect at 10 seconds with an unreferenced,
+  cleared timer, and a second regression proves a missing close acknowledgement
+  cannot hang the one-shot process. Exact Node 22.23.2 passes 3 focused files /
+  15 tests, the full 165-file / 2,208-test root suite, host build, typecheck,
+  formatting, continuity, `git diff --check`, and the runner's 5 files / 34
+  tests. No source receipt or opportunity write occurred, and all gates remain
+  off pending immutable redeployment and the repeated shadow.
 - Rollback/recovery: tracked
   `rollback_115_procurement_pursuit.sql` restores the verbatim migration-114
   function bodies, prior taxonomy behavior, and removes 115 objects/columns;
