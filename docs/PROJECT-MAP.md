@@ -1193,6 +1193,30 @@ separate explicit decision; do not open, publish, or delete them casually.
   exercising the resolution boundary and focused gates; immutable
   collection-only deployment and a fourth natural canary may proceed while
   review remains disabled.
+  Release `ec62c3003aaa` then activated successfully and is the first live
+  archive-attested procedure, but its fourth natural canary timed out after
+  1,235,396 ms with no result or source receipt. The configured 900,000 ms
+  timeout was not effective because the runner floors it at
+  `IDLE_TIMEOUT + 30,000` (1,230,000 ms on production). With four natural
+  browser outcomes failed, direct public-browser success, and an
+  operator-assisted adapter success, the browser acquisition layer remains
+  unvalidated. Review stays off; do not add timeout or prompt retries before a
+  deterministic host-owned CaleProcure collector is designed and reviewed.
+  That replacement is now implemented and Claude R14-approved for commit and
+  shadow deployment. It is a host job from the immutable release, uses the
+  daemon's pinned Node runtime, connects only to the dedicated loopback CDP
+  origin, and ingests through `ingestCaleProcureRows`; it does not delegate
+  portal navigation to a model or container. Visible result-state transitions,
+  count/row reconciliation, portal-directory business-unit mapping, exact
+  detail identity, a 200-row pre-detail budget, per-unit diagnostics, partial
+  receipts, and abort/tab cleanup are enforced in code. The prior Procurement
+  container bridge and Bonfire credential injection are retired; Bonfire and
+  attachment acquisition are paused pending separate deterministic adapters.
+  The registered daily collector defaults off. Shadow deployment must prove
+  three self-exiting 9/9 runs, positive control `3820/0000039985`, differing
+  query totals, and no tab growth before one review-off live collection. Review
+  activation remains a later owner decision after two scheduled live runs on
+  different days.
 
 ### P1: reproducibility and source ownership
 

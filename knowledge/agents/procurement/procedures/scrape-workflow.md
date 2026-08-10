@@ -1,5 +1,12 @@
 # Detail Scrape Workflow
 
+> **Portal acquisition paused.** Work only from artifacts already present in
+> the approved procurement vault. The procurement container has no portal
+> browser or portal credentials. Do not attempt Bonfire/CaleProcure navigation,
+> claim document coverage, or advance a pursuit when required source documents
+> are absent; request a host-owned deterministic acquisition instead. The
+> browser commands below are retained as historical evidence only.
+
 Execute this workflow when triggered by the `process` command.
 
 Post progress to Slack at each milestone. Never go more than 60 seconds idle.
@@ -55,6 +62,7 @@ agent-browser wait --load networkidle
 ```
 
 If a Cloudflare challenge page appears ("Verify you are human" or similar):
+
 1. Wait 10 seconds: `agent-browser wait 10000`
 2. Re-snapshot to check if resolved
 3. If still blocked, try navigating from vendor.bonfirehub.com search results (click-through carries session cookies)
@@ -65,6 +73,7 @@ If null URL, search by title on the portal and click through.
 ## Step 4 — Extract Details
 
 From the detail page, extract:
+
 - Full description
 - Requirements / qualifications
 - Evaluation criteria
@@ -152,6 +161,7 @@ agent-browser close
 ## On Failure
 
 If scrape crashes or fails:
+
 - Status stays 'scraping' in DB
 - On next `process` for the same opportunity, detect stale 'scraping' status (>1 hour since updated_at) and resume from Step 2
 - Set last_error with description
@@ -177,6 +187,7 @@ Always include a **Bid Recommendation** section immediately after the header met
 ## Bid Recommendation
 
 {3-5 sentences: Should we bid? Why or why not?
+
 - Fit score (Excellent / Strong / Moderate / Weak)
 - Key strengths Tandem brings
 - Key risks or gaps

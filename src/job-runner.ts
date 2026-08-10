@@ -24,6 +24,30 @@ export interface JobRunnerDeps {
   writeJobsSnapshot: () => void;
 }
 
+/**
+ * Internal NanoClaw jobs execute the immutable release's compiled bytes while
+ * retaining the operational checkout as cwd for .env, data, logs, and state.
+ */
+export function resolveJobScriptPath(
+  job: Pick<Job, 'project' | 'project_root' | 'script'>,
+  codeRoot = process.env.NANOCLAW_CODE_ROOT,
+): string {
+  const useReleaseRoot =
+    job.project === 'nanoclaw' &&
+    job.script.startsWith('dist/') &&
+    codeRoot &&
+    path.isAbsolute(codeRoot);
+  const root = useReleaseRoot ? codeRoot : job.project_root;
+  const resolved = path.resolve(root, job.script);
+  if (useReleaseRoot) {
+    const relative = path.relative(path.resolve(root), resolved);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new Error('internal NanoClaw job script escapes the release root');
+    }
+  }
+  return resolved;
+}
+
 function shouldReport(job: Job, status: JobRunResult['status']): boolean {
   if (job.alert_level === 'silent') return false;
   // A skipped run (a prior instance is still in flight) is a benign no-op —
@@ -83,7 +107,7 @@ export async function runJob(
   });
 
   // 2. Verify script exists
-  const scriptPath = path.join(job.project_root, job.script);
+  const scriptPath = resolveJobScriptPath(job);
   try {
     fs.accessSync(scriptPath, fs.constants.R_OK);
   } catch {
@@ -119,6 +143,7 @@ export async function runJob(
   env.NANOCLAW_MINION = job.project;
   env.NANOCLAW_JOB = job.name;
   env.NANOCLAW_ACTION = path.basename(job.script, path.extname(job.script));
+  env.NANOCLAW_JOB_TIMEOUT_MS = String(job.timeout_ms);
 
   // 4. Determine executable and spawn
   const ext = path.extname(job.script);
@@ -143,6 +168,14 @@ export async function runJob(
     );
     const pythonExec = fs.existsSync(venvPython) ? venvPython : 'python3';
     proc = spawn(pythonExec, [scriptPath, ...args], {
+      shell: false,
+      detached: true,
+      cwd: job.project_root,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } else if (ext === '.js' || ext === '.mjs' || ext === '.cjs') {
+    proc = spawn(process.execPath, [scriptPath, ...args], {
       shell: false,
       detached: true,
       cwd: job.project_root,

@@ -1,5 +1,11 @@
 # Scan Workflow
 
+> **Retired agent workflow. Do not execute.** Both CaleProcure and Bonfire
+> portal collection are host-owned. CaleProcure uses the deterministic host
+> collector; Bonfire is paused until a deterministic host adapter exists. The
+> former container-to-host CDP bridge and procurement portal credentials are no
+> longer available to this agent. The remainder is historical evidence only.
+
 Execute this workflow when triggered by "Run daily procurement scan" (scheduled) or `rescan` (manual).
 
 Run the scan silently. Do NOT post per-step or per-keyword progress to Slack — the host already posts a mechanical processing message when you start. Post to Slack only for a blocking error (Step 1) or the final new-opportunity results (Step 6).
@@ -33,6 +39,7 @@ If login fails (wrong credentials, CAPTCHA, MFA) → report to Slack and stop.
 IMPORTANT: Do NOT browse all opportunities. The portal has 13,000+ listings. Use the search interface.
 
 Keywords (one search at a time):
+
 1. `coaching`
 2. `leadership development`
 3. `executive coaching`
@@ -51,13 +58,13 @@ De-duplicate results across searches (same opportunity may match multiple keywor
 
 For each result, extract:
 
-| Field | Description |
-|-------|-------------|
-| `title` | Opportunity name |
-| `agency` | Issuing organization |
-| `close_date` | Submission deadline |
-| `category` | Category or commodity code |
-| `url` | Link to detail page |
+| Field            | Description                     |
+| ---------------- | ------------------------------- |
+| `title`          | Opportunity name                |
+| `agency`         | Issuing organization            |
+| `close_date`     | Submission deadline             |
+| `category`       | Category or commodity code      |
+| `url`            | Link to detail page             |
 | `search_keyword` | Which keyword search found this |
 
 Build a JSON array (de-duplicated by URL or title+agency).
@@ -71,10 +78,12 @@ psql -t -A -c "SELECT bonfire_id, status FROM procurement_opportunities"
 ```
 
 Extract bonfire_id for each scraped opportunity:
+
 - From URL: regex `/\/opportunities\/(\d+)$/`
 - For null-URL: `echo -n "TITLE+AGENCY" | sha256sum | cut -c1-8`
 
 For each scraped opportunity:
+
 - bonfire_id exists AND status='rejected' → **skip** (do not notify)
 - bonfire_id exists AND other status → **UPDATE** close_date, last_seen_at if changed
 - bonfire_id NOT in DB → **INSERT** as status='new', include in notification

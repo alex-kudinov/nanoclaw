@@ -1,5 +1,12 @@
 # CaleProcure Scan Workflow
 
+> **Retired agent workflow. Do not execute.** CaleProcure collection moved to
+> the release-owned `procurement-caleprocure-collector` host job after four
+> model-driven browser canaries failed to produce reliable business evidence.
+> The remaining text is retained only as historical evidence for the host
+> collector's assertions. Agents must not browse, self-report coverage, or call
+> the legacy CaleProcure ingest IPC.
+
 Execute this workflow as part of the daily scan (after Bonfire scan) or when triggered by `rescan caleprocure`.
 
 CaleProcure is California's state procurement portal (caleprocure.ca.gov). It runs on PeopleSoft Strategic Sourcing — pages require a real browser session (direct HTTP returns 403). No login is required for browsing/searching.

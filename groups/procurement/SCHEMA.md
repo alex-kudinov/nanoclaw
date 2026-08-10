@@ -23,8 +23,9 @@ New CaleProcure/email intake is host-owned:
   access to source-keyless Bonfire rows; it cannot read or mutate source-keyed
   CaleProcure/email rows.
 
-Use `mcp__nanoclaw__procurement_caleprocure_ingest` for bounded public result
-batches, `mcp__nanoclaw__procurement_queue` to list review work, and
+The deterministic host job owns CaleProcure browser collection and calls the
+host intake function directly. Agents must not call the legacy CaleProcure
+ingest IPC. Use `mcp__nanoclaw__procurement_queue` to list review work and
 `mcp__nanoclaw__procurement_review_card` to request human review. Do not write
 control-plane rows with direct SQL or emit a human `DECIDE` command. Legacy
 rows have no `source_key` and are intentionally excluded until a separate

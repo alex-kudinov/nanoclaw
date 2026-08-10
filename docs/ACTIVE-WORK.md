@@ -12,7 +12,7 @@ outside the current client conversation.
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
 | `NC-20260809-001` | Recalibrate Foundation grading while making student-visible AI/process traces a fail-closed release boundary                                   | Codex + Claude validator           | `codex/grader-release-20260810-v3` @ `bc93125`               | `deployed_unverified` | C5    | Host-only output gate; current read-only Heartbeat assignment context; exact per-turn proof; raw final-text suppression; no automatic Heartbeat result-write path; immutable Mini release and installed-artifact canary verified                                                                                                                                                       | Keep Heartbeat result posting manual and disabled; complete the scrubbed-corpus and blind human voice-panel work before claiming autonomous student-facing grading is fully validated                                                                                                                                                                                | 2026-08-10T01:18Z |
-| `NC-20260809-003` | Make Procurement a stable, observable opportunity-to-decision-to-proposal-ready system before adding sources                                    | Codex + Claude owner               | `codex/nc-20260809-003-procurement-recovery` @ `ba726e7`     | `deployed_unverified` | C5    | Migration 115 and receipt-bound immutable release are live; collection-only; scheduler/host receipt canary passed mechanically but failed the positive-control outcome; preserve manual commercial actions and submission                                                                                                                                                            | Claude R11 returned GO; run the full release gate, build/deploy the release-owned procedure, and require a natural nine-unit canary to discover the current positive control before review, proposal, or source expansion                                                                                                                                               | 2026-08-10T00:45Z |
+| `NC-20260809-003` | Make Procurement a stable, observable opportunity-to-decision-to-proposal-ready system before adding sources                                    | Codex + Claude owner               | `codex/nc-20260809-003-procurement-integration` @ `7451834`  | `validating`          | C5    | Migration 115 and release-owned control plane remain live; Claude R15 approved a deterministic loopback-only host collector for commit/shadow; Bonfire/container browsing is retired; review, proposals, source activation, and submission remain off/manual                                                                                                                            | Deploy the immutable collector release without regressing the newer Grader lineage, prove three self-exiting 9/9 shadow runs with a positive control and no tab growth, then run one receipt-bound live collection while review remains off                                                                                                                            | 2026-08-10T02:40Z |
 | `NC-20260806-001` | A host-rejected Sales approval card returns the exact failure to its originating agent session and cannot be reported as successfully posted    | Codex + Claude validator           | `codex/nc-20260806-001-approval-rejection-loop` @ `aff14c8`  | `ready_for_deploy`    | C5    | Recover Marina Lead #1047's rejected card without redrafting; return malformed, content-invalid, and overlong cards to the exact originating container; preserve work-thread isolation; prevent pure posted/awaiting-approval recaps without hiding blocked progress; extend the release gate and validate with Claude                                                               | Commit and build the immutable release, rebuild and refresh the runner before host activation, copy the reviewed Sales instructions, activate and verify exact health, recycle only idle Sales containers, then run a non-customer exact-session rejection/repost canary                                                                                                | 2026-08-06T22:30Z |
 | `NC-20260804-004` | Approved customer replies accept canonical Tandem booking, meeting, and payment links instead of failing on a stale content-guard whitelist     | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993`   | `deployed_unverified` | C5    | Recover Action `c4bdc122-ee80-47fd-848a-a18ddd6318b3` exactly once; reconcile its Gmail receipt; audit canonical Sales link sources against the host whitelist; add narrow owned/transactional domains and adversarial lookalike tests; deploy the converged immutable release and verify its exact identity and guards                                                              | Observe the next natural approved email containing a canonical Sales link pass the normal approval-to-Gmail path; no synthetic customer send is needed                                                                                                                                                                                                                  | 2026-08-06T01:43Z |
 | `NC-20260804-003` | Approved email bytes come only from host-owned approval state, never from Mailman's regenerated tool arguments                                  | Codex + Claude validator           | `codex/nc-20260804-003-host-owned-email-bytes` @ `8ae6993`   | `deployed_unverified` | C5    | Recover stranded approved actions exactly once; rehydrate every Mailman execution field; add exact scheduled-follow-up cards to the ledger; converge proposal follow-ups on one-time Gmail receipts; correct pre-Gmail status wording; pass focused/full tests and six Claude rounds; deploy immutable release; verify exact health and a live confirmed replay with no Gmail change | Observe the next natural approved customer email end to end through the normal Sales-to-Mailman watcher path; recovered sends and the live no-duplicate replay prove execution and replay mechanics but do not substitute for that business outcome                                                                                                                     | 2026-08-06T01:43Z |
@@ -264,6 +264,72 @@ outside the current client conversation.
   independent runner build and 4 files / 29 tests also pass. An earlier npm
   wrapper attempt selected ambient Node 26 and was discarded as invalid runtime
   evidence before the suite was rerun directly with the pinned executable.
+- Immutable release `ec62c3003aaa` is live with archive SHA-256
+  `f52e2f57e9e5214e01d1e08451ab3f15f29604115212cc4dd2818069f212619f`,
+  source tree `a8b4c7bd1efc5da7c7ab227a600bc01acc4bfeb5`, artifact
+  `38a5df15cea7352e12bb889c276f040d7c237a1cccd1d5d2e8a74135b7d0ec93`,
+  and rollback plist
+  `com.nanoclaw.plist.rollback-ba726e7cbda0-2026-08-10T00-51-16-106Z`.
+  Refreshed health reports the new PID, Node 22.23.2, exact code root match,
+  Slack/Gmail connected, and zero containers; collection is `1`, review `0`.
+  The live packaged procedure hash is
+  `e7d355cfe5a7e95197ffb308a8d30ad60ed98f072502dab065d92d2314e74a9f`.
+- Fourth natural task `nc-20260809-003-caleprocure-canary-4` was atomically
+  claimed once but produced no result and no source-run receipt. Its single run
+  ended `error` after 1,235,396 ms with the bounded classification
+  `container_timeout=true`; no task payload was read. This also exposed that
+  `effectiveContainerTimeoutMs` floors the configured 900,000 ms timeout at
+  `IDLE_TIMEOUT + 30,000` (1,230,000 ms in production), contradicting the
+  documented 15-minute bound. Four natural attempts now isolate the unstable
+  layer to model-driven browser orchestration: direct public browsing and the
+  operator-assisted host adapter both find/accept the positive control, while
+  natural scans do not deliver it. Do not extend the timeout and retry again;
+  converge a deterministic host-owned collector first.
+- Deterministic acquisition implementation: CaleProcure collection now runs as
+  a host job from the immutable release, connects only to the dedicated
+  `127.0.0.1:9250` Chrome debugging origin, and calls the existing typed
+  `ingestCaleProcureRows` boundary directly. It establishes a non-empty
+  unfiltered baseline, reads the portal's business-unit directory, executes
+  each of the nine release-owned searches with a proved clear/search busy
+  transition, reconciles visible totals and rows, verifies exact detail-page
+  identity, and emits bounded public diagnostics. Per-unit row-budget,
+  reconciliation, and identity failures remain visible without discarding
+  other independently proven units; transport, baseline, query-transition,
+  malformed-metadata, and abort failures remain fail-closed. The job writes a
+  partial source receipt on a failed live collection, closes its two owned
+  tabs, resets the business pool, and has an internal abort deadline below the
+  outer scheduler timeout.
+- Runtime cutover implementation: internal `dist/*.js` jobs resolve from the
+  immutable `NANOCLAW_CODE_ROOT` and execute under the daemon's exact Node
+  binary while retaining the operational working directory. The scheduler
+  passes the configured job timeout. The old container-owned Procurement CDP,
+  credential, bridge, and browser-config path is removed; the dedicated Chrome
+  launch script binds loopback only. The new daily 08:00 America/Chicago job is
+  registered default-off. Bonfire and missing-attachment acquisition are
+  paused until separately designed deterministic host adapters exist.
+- Claude R12 approved this architecture. R13 then found six concrete defects:
+  stale result-state races, abort-without-receipt/tab leakage, post-navigation
+  row limits, whole-run identity abort, residual Bonfire bridge wiring, and
+  forced-exit flush risk. All six were corrected and covered. Claude R14
+  returned `GO for commit and shadow deployment`, accepted those repairs, and
+  identified one additional pre-live reliability improvement: isolate a
+  count/row reconciliation mismatch per unit and continue later units. That
+  change is implemented; the six focused files pass 47/47 under exact Node
+  22.23.2. R14 requires empirical proof that the CDP client disconnects and the
+  process exits without terminating launchd Chrome; three consecutive shadow
+  runs must complete in under half the timeout with nine diagnostics, differing
+  query totals, event `0000039985` / BU `3820`, and no tab growth. Only then may
+  one live collection run with review still disabled. Review activation still
+  requires two scheduled live runs on different days, including truthful zero
+  results, plus a separate owner decision.
+- Claude R15 reviewed the exact M-6 delta and returned `GO for commit and
+  immutable shadow deployment`, with no blocker or high regression. It traced
+  the failed unit through migration 115: the unit enters diagnostics but not
+  coverage, so the live receipt remains `partial` and the job exits nonzero.
+  Exact Node 22.23.2 verification on the final candidate passes the host build,
+  typecheck, formatting, documentation continuity, `git diff --check`, the
+  complete 157-file / 2,006-test root suite, and the independent runner build
+  plus 4-file / 29-test suite. Deployment and empirical gates remain pending.
 
 ### NC-20260806-001
 

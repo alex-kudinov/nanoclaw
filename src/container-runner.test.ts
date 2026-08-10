@@ -423,6 +423,18 @@ describe('container-runner timeout behavior', () => {
     expect(containerTimeoutRemainingMs(salesGroup, 1_000, 1_831_000)).toBe(0);
   });
 
+  it('honors a scheduled task timeout without the message idle floor', () => {
+    const procurementGroup: RegisteredGroup = {
+      ...testGroup,
+      containerConfig: { timeout: 900_000 },
+    };
+
+    expect(effectiveContainerTimeoutMs(procurementGroup, true)).toBe(900_000);
+    expect(effectiveContainerTimeoutMs(procurementGroup, false)).toBe(
+      1_830_000,
+    );
+  });
+
   it('spawn timeout with no output resolves as error', async () => {
     const onOutput = vi.fn(async () => {});
     const resultPromise = runContainerAgent(

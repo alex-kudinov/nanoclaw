@@ -8,16 +8,16 @@ Group all posts about one opportunity into one thread: pass `send_message`'s `th
 
 ## Setup
 
-| Item | Value |
-|------|-------|
-| Browser | `agent-browser` — CDP bridge to host Mac Mini Chrome (persistent profile, bypasses CF) |
-| Database | Source-keyless Bonfire legacy workflow only: read the schema before `psql`. Row-level security blocks direct access to new CaleProcure/email rows, which are written by the host through typed, parameterized functions. |
-| Workspace | Read/write `/workspace/group/` |
-| Vault | Read/write `/workspace/extra/vault-procurement/` |
-| Knowledge | Read-only `/workspace/extra/knowledge/` (procedures, relevance criteria) |
-| Messaging | `mcp__nanoclaw__send_message` — plain text only, no markdown |
-| Credentials | `$BONFIRE_USERNAME`, `$BONFIRE_PASSWORD` (env vars) |
-| DB test | `psql -c "SELECT 1"` at start of scan/DB-dependent commands only. Retry once on failure (5s wait), then error to Slack. |
+| Item        | Value                                                                                                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Browser     | Unavailable in this container. Portal collection is host-owned and the former CDP bridge is retired.                                                                                                                     |
+| Database    | Source-keyless Bonfire legacy workflow only: read the schema before `psql`. Row-level security blocks direct access to new CaleProcure/email rows, which are written by the host through typed, parameterized functions. |
+| Workspace   | Read/write `/workspace/group/`                                                                                                                                                                                           |
+| Vault       | Read/write `/workspace/extra/vault-procurement/`                                                                                                                                                                         |
+| Knowledge   | Read-only `/workspace/extra/knowledge/` (procedures, relevance criteria)                                                                                                                                                 |
+| Messaging   | `mcp__nanoclaw__send_message` — plain text only, no markdown                                                                                                                                                             |
+| Credentials | No procurement-portal credentials are injected into this container.                                                                                                                                                      |
+| DB test     | `psql -c "SELECT 1"` at start of scan/DB-dependent commands only. Retry once on failure (5s wait), then error to Slack.                                                                                                  |
 
 ## Database Access — Hybrid Schema Pattern
 
@@ -26,27 +26,31 @@ Two schemas are in use. Do not mix them up.
 ### business_v2 — vendor party operations
 
 **Create a vendor party** (new vendor encountered during a scan):
+
 ```sql
 SELECT business_v2.fn_create_party('org', '{vendor_name}', '{contact_email}', 'manual');
 SELECT business_v2.fn_add_party_role({party_id}, 'vendor');
 ```
 
 **Look up an existing party by email:**
+
 ```sql
 SELECT * FROM business_v2.v_party_contact_card WHERE primary_email = '{email}';
 ```
 
 **Log an interaction with a vendor party:**
+
 ```sql
 SELECT business_v2.fn_log_interaction({party_id}, 'other', 'inbound', '{subject}', '{body}', NOW());
 ```
 
 Use `'other'` as the channel value. Valid channel values are: `email`, `meeting`, `call`, `form-submission`, `booking`, `payment`, `slack`, `whatsapp`, `other`.
 
-### public.* — procurement-specific data
+### public.\* — procurement-specific data
 
 Procurement opportunity tables stay in the `public` schema. Direct SQL is
 restricted by row-level security to source-keyless Bonfire legacy rows:
+
 ```sql
 INSERT INTO public.procurement_opportunities (...) VALUES (...);
 SELECT * FROM public.procurement_opportunities WHERE ...;
@@ -70,18 +74,13 @@ Migration 114 introduces the new control-plane path. For rows returned by
 - submission, reply, registration, attestation, signature, and terms acceptance
   remain manual and are never implied by queue state.
 
-For a public CaleProcure result-table batch:
-
-- extract only the bounded fields in the CaleProcure procedure;
-- call `mcp__nanoclaw__procurement_caleprocure_ingest` once for the complete
-  batch, with a stable run key and one exact result-count/pages-visited receipt
-  for every declared observed keyword;
-- never build SQL from a result row and never fall back to direct
-  `procurement_opportunities` writes if the host gate denies the batch;
-- only a host completion message proves the source run completed.
-- host `complete` proves that the release-owned planned set has a structurally
-  valid receipt for every unit; it does not independently prove browser work,
-  so never replace the public extraction evidence with narration.
+Public CaleProcure collection is owned by the deterministic host job
+`procurement-caleprocure-collector`. Do not browse the portal, construct a
+coverage receipt, or call `mcp__nanoclaw__procurement_caleprocure_ingest`.
+The host process that executes each search also measures the visible rows,
+verifies the department/business-unit pair on the detail page, and writes the
+source receipt. Treat the resulting source-keyed queue rows as intake data;
+never fall back to direct `procurement_opportunities` writes.
 
 Migration 115 closes the post-decision gap:
 
@@ -153,27 +152,28 @@ psql -t -A -c "SELECT id, bonfire_id, title FROM procurement_opportunities WHERE
 # Fallback: WHERE title ILIKE '%SEARCH%'
 ```
 
-| Command | Action |
-|---------|--------|
-| *(scheduled scan)* | Run Section A (both portals) |
-| `rescan` | Run Section A (both portals) |
-| `rescan bonfire` | Run Bonfire scan only |
-| `rescan caleprocure` | Extract CaleProcure result rows and submit one bounded batch to the host adapter |
-| `queue` | Call `mcp__nanoclaw__procurement_queue` for host-normalized review work |
-| `review [new opportunity id]` | Evaluate the current queue row and request a host-generated review card |
-| `pursuits` | Call `mcp__nanoclaw__procurement_pursuit_queue`; never substitute a legacy status query |
-| `assess [pursuit id]` | Gather qualification evidence for the current version and post it in the bound thread |
-| `process/drop [new opportunity id]` | Request or reuse a host review card; the named human supplies `DECIDE` |
-| `draft [pursuit id]` | Create only a clearly provisional working draft until the typed packet contract lands |
-| `revise [pursuit id] [feedback]` | Revise the provisional working artifact without changing host state |
-| `approve/submit/outcome` | Human-owned/unavailable on the migration-115 lane; explain the missing typed receipt instead of using legacy SQL |
-| `corrections` | Read + post `vault-procurement/info/pending-corrections.md` |
-| `show pipeline` | Query grouped by lifecycle stage (see below) |
-| `show rejected` | Query rejected with reasons, ordered by reviewed_at DESC |
-| `show [id]` | Query `SELECT * ... WHERE bonfire_id='ID'`, format all fields |
-| `help` | Post command list |
+| Command                             | Action                                                                                                           |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| _(scheduled scan)_                  | No agent-owned CaleProcure scan; the host collector is scheduled separately                                      |
+| `rescan`                            | Do not browse or ingest; explain that portal collection is host-owned                                            |
+| `rescan bonfire`                    | Do not browse or ingest; Bonfire collection is paused pending a deterministic host adapter                       |
+| `rescan caleprocure`                | Do not browse or ingest; explain that the deterministic host collector must be run by the host job operator      |
+| `queue`                             | Call `mcp__nanoclaw__procurement_queue` for host-normalized review work                                          |
+| `review [new opportunity id]`       | Evaluate the current queue row and request a host-generated review card                                          |
+| `pursuits`                          | Call `mcp__nanoclaw__procurement_pursuit_queue`; never substitute a legacy status query                          |
+| `assess [pursuit id]`               | Gather qualification evidence for the current version and post it in the bound thread                            |
+| `process/drop [new opportunity id]` | Request or reuse a host review card; the named human supplies `DECIDE`                                           |
+| `draft [pursuit id]`                | Create only a clearly provisional working draft until the typed packet contract lands                            |
+| `revise [pursuit id] [feedback]`    | Revise the provisional working artifact without changing host state                                              |
+| `approve/submit/outcome`            | Human-owned/unavailable on the migration-115 lane; explain the missing typed receipt instead of using legacy SQL |
+| `corrections`                       | Read + post `vault-procurement/info/pending-corrections.md`                                                      |
+| `show pipeline`                     | Query grouped by lifecycle stage (see below)                                                                     |
+| `show rejected`                     | Query rejected with reasons, ordered by reviewed_at DESC                                                         |
+| `show [id]`                         | Query `SELECT * ... WHERE bonfire_id='ID'`, format all fields                                                    |
+| `help`                              | Post command list                                                                                                |
 
 **Pipeline lifecycle stages for `show pipeline`:**
+
 - **Action needed:** review, revision
 - **In progress:** new, accepted, scraping, scraped, drafting
 - **Ready:** ready
@@ -186,13 +186,10 @@ psql -t -A -c "SELECT id, bonfire_id, title FROM procurement_opportunities WHERE
 
 On every scan, first run crash recovery: read `/workspace/extra/knowledge/procedures/edge-cases.md` (Crash Recovery section). Read `/workspace/extra/knowledge/KNOWLEDGE.md` before evaluating relevance.
 
-Run scans in sequence (or single portal if targeted):
-1. **Bonfire Hub:** Read `/workspace/extra/knowledge/procedures/scan-workflow.md` and follow all steps.
-2. **CaleProcure:** Read `/workspace/extra/knowledge/procedures/scan-caleprocure.md`.
-   Its new path ends at the typed host adapter; do not use the legacy direct-SQL
-   steps retained in old artifacts.
-
-Close browser only after ALL portal scans complete. DB column `source` tracks origin ('bonfire' or 'caleprocure').
+No portal scan remains agent-owned. CaleProcure collection is performed by the
+deterministic host job and delivered through the source-run ledger. Bonfire is
+paused pending a deterministic host adapter. A `rescan` request reports this
+boundary and must not fabricate coverage or invoke a browser.
 
 ---
 
@@ -200,8 +197,9 @@ Close browser only after ALL portal scans complete. DB column `source` tracks or
 
 For source-keyed work, begin only after a host receipt confirms `process` and
 the pursuit appears in `procurement_pursuit_queue`. Never update its legacy
-status with SQL. Source-keyless Bonfire rows retain the historical workflow
-only while that scanner remains explicitly enabled.
+status with SQL. Source-keyless Bonfire rows may use already stored artifacts,
+but the agent may not reacquire portal content while the deterministic
+attachment path is absent.
 
 Read `/workspace/extra/knowledge/procedures/scrape-workflow.md` and follow all steps.
 
@@ -257,6 +255,7 @@ Key files: `coach-roster.md`, `company-profile.md`, `certifications.md`, `compli
 ## F. Framework Feedback
 
 Natural language corrections: read `/workspace/extra/vault-procurement/info/feedback-protocol.md` and follow the disambiguation hierarchy:
+
 1. Specific target identified → update that file
 2. Multiple targets → update ALL matching files
 3. Ambiguous → write to `pending-corrections.md`, ask user to specify

@@ -397,33 +397,6 @@ function buildVolumeMounts(
 }
 
 /**
- * Resolve the procurement Chrome CDP WebSocket URL. Chrome runs on this host,
- * so fetch via loopback — the container-facing bridge IP (192.168.64.1) only
- * exists while a container is running, which is never true for the first
- * container spawned on an idle host. The returned URL is rewritten to the
- * bridge IP so the container reaches Chrome through the socat bridge.
- */
-async function resolveProcurementCdpUrl(
-  bridgeHost: string,
-  port: number,
-): Promise<string> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const resp = await fetch(`http://127.0.0.1:${port}/json/version`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      const data = (await resp.json()) as { webSocketDebuggerUrl?: string };
-      const url = data.webSocketDebuggerUrl || '';
-      if (url) return url.replace('127.0.0.1', bridgeHost);
-    } catch {
-      // Chrome may be mid-restart (launchd KeepAlive) — retry below.
-    }
-    if (attempt < 2) await new Promise((r) => setTimeout(r, 2000));
-  }
-  return '';
-}
-
-/**
  * Read the OAuth token pool, falling back to a single .env token when the pool
  * file is absent. Feeds cooldown-aware selection.
  */
@@ -501,8 +474,6 @@ async function readSecrets(
     'PLUTIO_API_CLIENTID',
     'PLUTIO_API_CLIENTSECRET',
     'PLUTIO_SUBDOMAIN',
-    'BONFIRE_USERNAME',
-    'BONFIRE_PASSWORD',
     'HEARTBEAT_API_KEY',
     'EMAIL_USER',
     'EMAIL_PASS',
@@ -643,49 +614,15 @@ async function readSecrets(
     }
   }
 
-  // Inject Bonfire credentials + browser stealth config for Procurement Scout
+  // Procurement portal browsing is host-owned. Remove any pre-retirement CDP
+  // config so the container cannot auto-discover a stale bridge endpoint.
   if (groupFolder === 'procurement') {
-    if (configured.BONFIRE_USERNAME) {
-      secrets.BONFIRE_USERNAME = configured.BONFIRE_USERNAME;
-    }
-    if (configured.BONFIRE_PASSWORD) {
-      secrets.BONFIRE_PASSWORD = configured.BONFIRE_PASSWORD;
-    }
-    // CDP bridge: connect to a real Chrome on the Mac Mini host.
-    // Chrome runs with a persistent profile (cookies, history, cache) which
-    // bypasses Cloudflare bot detection on Bonfire agency subdomains.
-    // Port 9250 is forwarded to the container network via socat.
-    const CDP_HOST = '192.168.64.1';
-    const CDP_PORT = 9250;
-    const cdpUrl = await resolveProcurementCdpUrl(CDP_HOST, CDP_PORT);
     const procGroupDir = resolveGroupFolderPath(groupFolder);
     const browserConfigPath = path.join(procGroupDir, 'agent-browser.json');
-    if (cdpUrl) {
-      // Downloads save to the HOST filesystem (Chrome runs on host).
-      // Point to the host vault path so PDFs land where the container can read them.
-      const hostVaultPath = path.join(
-        os.homedir(),
-        'Vaults',
-        'My Notes',
-        'Tandem',
-        'Procurement',
-      );
-      fs.writeFileSync(
-        browserConfigPath,
-        JSON.stringify({ cdp: cdpUrl, downloadPath: hostVaultPath }, null, 2) +
-          '\n',
-      );
-      secrets.AGENT_BROWSER_CONFIG = '/workspace/group/agent-browser.json';
-    } else {
-      // A leftover config from a previous run holds a dead browser UUID —
-      // Chrome 404s the WebSocket upgrade and agent-browser auto-discovers
-      // the file even without AGENT_BROWSER_CONFIG. No config is the honest
-      // state; the agent then reports the browser as unavailable.
-      fs.rmSync(browserConfigPath, { force: true });
-      logger.warn(
-        'Procurement Chrome CDP unreachable on loopback after retries — removed stale agent-browser.json, falling back to in-container browser',
-      );
-    }
+    fs.rmSync(browserConfigPath, { force: true });
+    logger.info(
+      'Procurement container browser access retired — removed stale agent-browser.json',
+    );
   }
 
   // Inject Stripe + Sheets secrets for El Contador
@@ -807,8 +744,12 @@ export function containersStateDir(): string {
  * Wall-clock lifetime for one message container. Heartbeats prove that a
  * process is responsive, but must not extend this configured safety ceiling.
  */
-export function effectiveContainerTimeoutMs(group: RegisteredGroup): number {
+export function effectiveContainerTimeoutMs(
+  group: RegisteredGroup,
+  isScheduledTask = false,
+): number {
   const configTimeout = group.containerConfig?.timeout || CONTAINER_TIMEOUT;
+  if (isScheduledTask) return configTimeout;
   return Math.max(configTimeout, IDLE_TIMEOUT + 30_000);
 }
 
@@ -1099,9 +1040,25 @@ export async function runContainerAgent(
     let timedOut = false;
     let spawnTimedOut = false;
     let hadStreamingOutput = false;
-    // Grace period: the absolute timeout must be at least IDLE_TIMEOUT + 30s so
-    // the graceful _close sentinel has time to trigger before the hard kill.
-    const timeoutMs = effectiveContainerTimeoutMs(group);
+    // Message containers need enough time for their idle-close sentinel.
+    // Scheduled tasks are single-turn and must honor their configured bound.
+    const configuredTimeoutMs =
+      group.containerConfig?.timeout || CONTAINER_TIMEOUT;
+    const timeoutMs = effectiveContainerTimeoutMs(
+      group,
+      input.isScheduledTask === true,
+    );
+    if (timeoutMs !== configuredTimeoutMs) {
+      logger.warn(
+        {
+          group: group.name,
+          configuredTimeoutMs,
+          effectiveTimeoutMs: timeoutMs,
+          isScheduledTask: input.isScheduledTask === true,
+        },
+        'Configured container timeout raised to preserve message idle-close grace',
+      );
+    }
 
     const killOnTimeout = () => {
       timedOut = true;

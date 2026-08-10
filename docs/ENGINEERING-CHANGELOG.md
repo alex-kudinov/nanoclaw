@@ -43,9 +43,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-09T19:51Z
 - Owner/client: Codex + Claude owner
-- State: deployed_unverified; migration 115 and receipt-bound collection-only
-  release are live, the natural host-receipt path passes mechanically, and the
-  current positive-control discovery outcome still fails
+- State: validating; migration 115 and the prior collection-only release remain
+  live with review disabled; a Claude-approved deterministic host collector is
+  implemented and awaits immutable deployment plus shadow/live outcome proof
 - Commit/release: commits `9aa23b4e7c394145487baabb64873beb5d321617`
   and `ba726e7cbda03e35cf63d7d1b732ced5339f95e4` are live from isolated branch
   `codex/nc-20260809-003-procurement-recovery`
@@ -184,6 +184,62 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   29-test suite pass. An initial npm-wrapper run selected ambient Node 26 and
   produced ABI/runtime-only failures; it was rejected and replaced with the
   direct pinned-runtime run.
+- Release `ec62c3003aaae652712164f47b3c5c7efbc9f5d3` is live from immutable
+  archive SHA-256
+  `f52e2f57e9e5214e01d1e08451ab3f15f29604115212cc4dd2818069f212619f`
+  (source tree `a8b4c7bd1efc5da7c7ab227a600bc01acc4bfeb5`, artifact
+  `38a5df15cea7352e12bb889c276f040d7c237a1cccd1d5d2e8a74135b7d0ec93`,
+  552 files). Activation changed only the three release identity paths and
+  created rollback plist
+  `com.nanoclaw.plist.rollback-ba726e7cbda0-2026-08-10T00-51-16-106Z`.
+  Refreshed health proves a new PID, exact code-root match, Node 22.23.2,
+  Slack/Gmail connected, and zero active containers. Collection remains on,
+  review off. The manifest-covered live Procurement procedure is byte-identical
+  at SHA-256
+  `e7d355cfe5a7e95197ffb308a8d30ad60ed98f072502dab065d92d2314e74a9f`.
+- Fourth natural canary
+  `nc-20260809-003-caleprocure-canary-4` was claimed exactly once but produced
+  no result and no source-run receipt. One aggregate task-run row ended `error`
+  after 1,235,396 ms and a boolean-only query classified it as a container
+  timeout; no task result payload was read. The supposed 900,000 ms group bound
+  was actually raised by `effectiveContainerTimeoutMs` to production
+  `IDLE_TIMEOUT + 30,000 = 1,230,000` ms. Review remains off. After four natural
+  failures, another prompt/timeout retry is not evidence-driven: the next
+  stabilization slice must move CaleProcure acquisition into deterministic
+  host-owned browser code and leave the agent to assess receipted rows.
+- Deterministic collector candidate: added a host-owned Playwright CDP port,
+  collection coordinator, exact CaleProcure identity resolver, receipt-writing
+  CLI, and default-off daily registration script. The port accepts only an
+  unauthenticated `http://127.0.0.1` origin, creates and later closes exactly
+  two pages, proves clear/search busy transitions, uses visible-only result
+  state, reconciles count against extracted rows, maps an exact department via
+  the portal directory, and verifies every positive row against its clean
+  detail URL before host ingestion. The coordinator bounds pre-detail rows,
+  preserves independently proven units across row-budget, reconciliation, and
+  identity failures, aborts globally on transport/baseline/query failures, and
+  supplies partial live coverage to the existing receipt boundary.
+- Scheduler/release candidate: immutable `dist/*.js` jobs resolve beneath
+  `NANOCLAW_CODE_ROOT`, execute using `process.execPath`, retain the operational
+  cwd, and receive their configured timeout. The agent-container Procurement
+  CDP/credential/bridge configuration is retired, stale browser config is
+  removed, the dedicated Chrome is loopback-only, and release archives include
+  the registration/browser scripts. Bonfire acquisition is paused rather than
+  silently relying on the now-retired container bridge.
+- Independent review: Claude R12 approved the architecture; R13 required six
+  bounded race, abort, row-budget, unit-isolation, bridge-retirement, and output
+  flush repairs; R14 accepted all six and returned `GO for commit and shadow
+  deployment`. R14's remaining count-mismatch whole-run abort was also changed
+  to a per-unit `reconciliation_failed` diagnostic. The focused exact-Node
+  22.23.2 gate passes 6 files / 47 tests. Production activation and all shadow
+  and live claims remain pending; review stays disabled.
+- Final candidate review: Claude R15 independently reproduced the focused
+  6-file / 47-test gate, traced `reconciliation_failed` through the migration
+  115 receipt boundary, and returned `GO for commit and immutable shadow
+  deployment` with no blocker or high regression. Codex's final exact-Node
+  22.23.2 evidence also includes the host build, typecheck, formatting,
+  continuity, `git diff --check`, the complete 157-file / 2,006-test suite, and
+  the independent runner build plus 4-file / 29-test suite. No deployment or
+  production outcome is claimed by these gates.
 - Rollback/recovery: tracked
   `rollback_115_procurement_pursuit.sql` restores the verbatim migration-114
   function bodies, prior taxonomy behavior, and removes 115 objects/columns;
