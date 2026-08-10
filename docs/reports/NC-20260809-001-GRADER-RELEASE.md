@@ -21,13 +21,26 @@ feedback-write, retry, or certificate side effect in this release.
 - unconditional grader raw-final-text suppression;
 - tracked grader registration and prompt contract.
 
-## Verification before build
+## Verification and release proof
 
 - Node 22.23.2 root and agent-runner typechecks: pass;
-- focused grader boundary: 121 tests pass;
-- full root suite: 160 files, 2,178 tests pass;
+- focused grader boundary: 10 files, 235 tests pass;
+- full root suite: 160 files, 2,186 tests pass;
+- release gate: 19 files, 513 tests pass;
 - agent runner: 5 files, 34 tests pass;
 - documentation continuity and `git diff --check`: pass.
+
+The immutable production release is
+`bc9312522aba8a584fdce6af26a9b0434862bf59`, integrated on the exact prior live
+base `ec62c3003aaae652712164f47b3c5c7efbc9f5d3`. The Mac Mini reports the exact
+release, source-tree and artifact hashes under Node 22.23.2, with PID 92532
+executing that release's `dist/index.js`. Both final-text suppression flags are
+live and the operational grader prompt matches the release-owned prompt.
+
+A no-network canary imported the gate from the installed artifact: concrete
+evidence-based feedback passed and stock praise was blocked. The installed
+Heartbeat assignment client remains GET-only. The release made no Slack student
+post, Heartbeat write, approval, learner communication, or certificate action.
 
 ## Activation order
 

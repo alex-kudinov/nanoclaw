@@ -12,7 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-10T00:55Z
 - Owner/client: Codex + Claude validator
-- State: ready_for_deploy from exact live base `ba726e7`
+- State: deployed_unverified as immutable release `bc9312522aba` from exact live
+  base `ec62c3003aaa`
 - Change class: C5 — host/runner message boundary, live read-only curriculum
   lookup, group prompt, registration, and production activation
 - The host is the only publisher of grader-authored text into `#gru-grader`.
@@ -26,9 +27,16 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Grader raw final text is suppressed for normal and adopted containers.
 - Automatic posting of results to Heartbeat is absent by design. The release
   stages feedback in Slack for human review and manual copy only.
-- Verification before commit: pinned Node 22.23.2 typechecks; focused grader
-  suite 121/121; full root suite 160 files / 2,178 tests; runner 5 files /
-  34 tests; documentation continuity and diff checks clean.
+- Verification on the combined commit: pinned Node 22.23.2 typechecks; focused
+  grader suite 10 files / 235 tests; full root suite 160 files / 2,186 tests;
+  release gate 19 files / 513 tests; runner 5 files / 34 tests; documentation
+  continuity and diff checks clean.
+- Production proof: PID 92532 executes the exact `bc9312522aba` release;
+  `/health` verifies source tree and artifact identity, Slack/Gmail are
+  connected, both grader final-text suppression flags are live, and the prompt
+  hash matches the release. A no-network installed-artifact canary accepted
+  concrete feedback and blocked stock praise. Heartbeat access remained
+  GET-only; no student post, result write, approval, or certificate action ran.
 - Release record: `docs/reports/NC-20260809-001-GRADER-RELEASE.md`.
 
 ### NC-20260809-003 — Close the Procurement opportunity-to-outcome loop
