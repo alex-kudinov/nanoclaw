@@ -27,6 +27,14 @@ silently removed security and delivery fixes.
   tracked runtime inputs required by the daemon and agent containers;
 - `RELEASE.json` and `FILES.sha256` inside the archive.
 
+The archive includes tracked `container/`, `groups/`, and `knowledge/` bytes.
+When a release contains `knowledge/agents/<group>`, the host mounts that
+manifest-covered directory read-only at `/workspace/extra/knowledge` and
+suppresses any mutable configured mount targeting the same container path.
+Older releases without packaged knowledge retain the configured operational
+mount so rollback remains viable. `FILES.sha256` therefore attests the group
+prompt and the procedures to which it delegates as one release identity.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

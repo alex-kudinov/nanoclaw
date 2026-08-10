@@ -12,12 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-09T19:51Z
 - Owner/client: Codex + Claude owner
-- State: deployed_unverified; migration 115 and the first immutable release are
-  live collection-only, while the task/source-run correction is uncommitted
-  and a natural receipted canary remains required
-- Commit/release: commit `9aa23b4e7c394145487baabb64873beb5d321617`
-  is live from isolated branch
-  `codex/nc-20260809-003-procurement-recovery`; follow-up correction pending
+- State: deployed_unverified; migration 115 and receipt-bound collection-only
+  release are live, the natural host-receipt path passes mechanically, and the
+  current positive-control discovery outcome still fails
+- Commit/release: commits `9aa23b4e7c394145487baabb64873beb5d321617`
+  and `ba726e7cbda03e35cf63d7d1b732ced5339f95e4` are live from isolated branch
+  `codex/nc-20260809-003-procurement-recovery`
 - Change class: C5 — production schema, authorization/configuration, email
   routing, Slack workflow, immutable deployment, and controlled live canaries
 - Affected systems: Procurement control plane, classification taxonomy,
@@ -86,6 +86,73 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   scheduler follow-ups remain explicitly tracked: concurrent-restart false
   orphan alerts, exact group-not-found terminal recording, and a lost-CAS
   regression test; none can create a false success.
+- Follow-up deployment: immutable archive
+  `nanoclaw-ba726e7cbda0.tar.gz` (SHA-256
+  `09606bde8ed6a9f20ef587c46f3a8877a30809c88987fada187e29b03f95b6de`)
+  verified source tree `14272af5b15c6431ff9de41f44cdcf182f6a9224` and
+  artifact `268749789bde31b0f6389776066802e6d537f2558f1fd93186dac2700f51492d`.
+  Activation retained rollback plist
+  `com.nanoclaw.plist.rollback-9aa23b4e7c39-2026-08-09T23-54-21-421Z`;
+  exact live health is `ba726e7`, Node 22.23.2, Slack/Gmail connected, no active
+  container. The required live JSONB-predicate precheck returned zero rows.
+  CaleProcure ingest was found stale-off and was enabled after exact backup;
+  review remains off. Live task timeout drift was corrected to 900000 ms.
+- Third natural canary: task `nc-20260809-003-caleprocure-canary-3` ran once
+  and host source run 5 completed with adapter v2, planned 9, observed 9,
+  missing 0. It reported zero observations/opportunities and missed current
+  public event `0000039985`, so only the scheduler/correlation/receipt mechanics
+  pass; the procurement outcome fails. Independent public-browser reproduction
+  showed that filling `Event Name` does not run a query: the explicit visible
+  `Search` button must be clicked. After that click `facilitation` yields a
+  visible `Showing Results 1 of 1` grid while hidden duplicate summaries and
+  rows remain. The tracked procedure now requires an explicit search action and
+  visible-only proof. It must be independently reviewed, installed byte-exact,
+  and pass another natural positive-control canary before review, proposal, or
+  source expansion.
+- Claude R9 returned `CHANGES REQUIRED` and found that the first procedure
+  correction had not restated the explicit-search rule in the Step 4
+  `observed_units` payload contract, did not operationalize visible-only
+  selection with snapshot refs, and documented an impossible in-run recovery
+  for `partial`. The corrected contract now requires an explicit visible
+  Search action and exact-keyword visible result state for every observed unit,
+  uses interactive refs/accessibility snapshots rather than raw text matches,
+  and stops partial runs for an operator rerun with a new host token.
+- Independent public-browser verification also closed the expected stable-ID
+  gap without an agency-name guess: CaleProcure's visible
+  `Look up businessUnit` table maps the exact SF Bay Conservation Commission
+  row to `3820`; opening `/event/3820/0000039985` visibly repeats the exact
+  event ID, department, title, and close date. The procedure generalizes that
+  as exact-one department lookup plus clean-detail verification and fails
+  partial on zero/multiple matches or detail mismatch.
+- Release-integrity follow-up: R9 verified that the active release packages
+  `groups/` but not the `knowledge/` procedure to which the Procurement prompt
+  delegates. The builder now includes tracked `knowledge/` bytes, and the host
+  prefers the active release's read-only per-group knowledge directory while
+  suppressing a mutable configured mount at the same container path. Older
+  releases without packaged knowledge retain the configured fallback for safe
+  rollback. Three focused mount-plan regressions cover manifest-owned
+  precedence, old-release fallback, and unsafe group-folder rejection; pinned
+  Node 22.23.2 typecheck and the final 1 file / 27 tests pass.
+- Claude R10 returned `CHANGES REQUIRED` on one mount-target alias defect: an
+  empty configured target or the equivalent `knowledge/` and `./knowledge`
+  spellings could mount after and shadow the verified release bytes. The
+  suppression filter now matches the mount resolver's empty-value fallback and
+  normalizes the final relative target. Three regressions cover those aliases.
+  R10 otherwise accepted the R9 repairs and release-owned design; its
+  non-blocking procedure findings are incorporated by resolving refs before
+  actions and requiring a lookup-reported globally unique normalized exact
+  department match.
+- Claude R11 returned `GO` for commit, immutable collection-only deployment,
+  and one fourth natural positive-control canary with review disabled. It
+  independently exercised twelve mount spellings, reproduced 27/27 focused
+  tests plus typecheck/format/continuity/diff checks, and confirmed the alias
+  blocker closed. The exact CLI result was 233.640 seconds and `$7.0173895`.
+- Final release gate: exact Node 22.23.2 passes the host build, typecheck,
+  formatting, documentation continuity, `git diff --check`, and the complete
+  152-file / 1,986-test suite; the independent runner build and 4-file /
+  29-test suite pass. An initial npm-wrapper run selected ambient Node 26 and
+  produced ABI/runtime-only failures; it was rejected and replaced with the
+  direct pinned-runtime run.
 - Rollback/recovery: tracked
   `rollback_115_procurement_pursuit.sql` restores the verbatim migration-114
   function bodies, prior taxonomy behavior, and removes 115 objects/columns;
@@ -110,7 +177,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   premature result `Message sent.` before the host content guard rejected the
   card, and Sales then falsely reported the nonexistent draft as posted. Codex
   recovered the exact rejected bytes, changed only that phrase to `I can map
-  out`, validated the corrected card with the deployed parser and guard, and
+out`, validated the corrected card with the deployed parser and guard, and
   reposted it through the normal Sales IPC path to the original work thread at
   Slack ts `1786051860.082149`. It is awaiting human approval; no approval or
   Gmail send occurred.

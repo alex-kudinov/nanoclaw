@@ -477,26 +477,26 @@ facts, and manually reconciled contradictions.
 The local SQLite snapshot contains 19 registered folders. That snapshot was
 last active around 2026-07-06 and is not asserted to be current production.
 
-| Folder                                                    | Role and boundaries                                                           | Local execution notes                                                                        |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `main`                                                    | privileged administrator/general assistant                                    | main group; no trigger required                                                              |
-| `chief`                                                   | coordination, escalation, decision routing, support-draft approval            | must not revive the old DB-dispatch pattern                                                  |
-| `inbox`                                                   | qualify inbound leads and create modern CRM evidence                          | no direct sales ownership                                                                    |
-| `mailman`                                                 | classify and label email; execute approved outbound work                      | full Gmail family, limited to host-assigned resources and host-verified recipients           |
-| `sales`                                                   | approval-gated sales drafts and pipeline follow-up                            | assigned Gmail thread/search reads only; no Gmail send/reply                                 |
-| `booking`                                                 | Trafft booking events and interaction logging                                 | host/business mounts                                                                         |
-| `contador`                                                | Stripe, payment Sheets, PostgreSQL, vendor invoices                           | exact host-assigned invoice-message reads; Haiku locally                                     |
-| `certifier`                                               | pending certification workflow and Sertifier actions                          | explicit approval before consequential issue/send                                            |
-| `courses`                                                 | session recap preparation and distribution                                    | current raw SMTP path bypasses Gmail controls and is scheduled for retirement                |
-| `grader`                                                  | rubric/data-driven MCS grading and durable results                            | Sonnet; one thread/container per submission; calibration holds                               |
+| Folder                                                    | Role and boundaries                                                           | Local execution notes                                                                                                                                   |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main`                                                    | privileged administrator/general assistant                                    | main group; no trigger required                                                                                                                         |
+| `chief`                                                   | coordination, escalation, decision routing, support-draft approval            | must not revive the old DB-dispatch pattern                                                                                                             |
+| `inbox`                                                   | qualify inbound leads and create modern CRM evidence                          | no direct sales ownership                                                                                                                               |
+| `mailman`                                                 | classify and label email; execute approved outbound work                      | full Gmail family, limited to host-assigned resources and host-verified recipients                                                                      |
+| `sales`                                                   | approval-gated sales drafts and pipeline follow-up                            | assigned Gmail thread/search reads only; no Gmail send/reply                                                                                            |
+| `booking`                                                 | Trafft booking events and interaction logging                                 | host/business mounts                                                                                                                                    |
+| `contador`                                                | Stripe, payment Sheets, PostgreSQL, vendor invoices                           | exact host-assigned invoice-message reads; Haiku locally                                                                                                |
+| `certifier`                                               | pending certification workflow and Sertifier actions                          | explicit approval before consequential issue/send                                                                                                       |
+| `courses`                                                 | session recap preparation and distribution                                    | current raw SMTP path bypasses Gmail controls and is scheduled for retirement                                                                           |
+| `grader`                                                  | rubric/data-driven MCS grading and durable results                            | Sonnet; one thread/container per submission; calibration holds                                                                                          |
 | `procurement`                                             | CaleProcure/email review control plane plus legacy Bonfire/proposal lifecycle | scheduled intake uses host-owned task/source-run identity; review and commercial actions remain separately gated; Bonfire CDP remains isolate-or-retire |
-| `archivarista`                                            | domain-isolated knowledge synthesis/archival                                  | Haiku; broad read mounts, provenance critical                                                |
-| `newsroom`                                                | editorial pipeline                                                            | no unapproved broadcast                                                                      |
-| `social`                                                  | LinkedIn content state machine                                                | confirmation/approval boundary                                                               |
-| `campanero`                                               | jobs MCP operator                                                             | narrow job execution surface                                                                 |
-| `heartbeat`                                               | watchdog sink                                                                 | intentionally no conversational response                                                     |
-| `feature-requests`                                        | feature/bug intake                                                            | local support files, no tracked role prompt                                                  |
-| `gru-community`, `gru-incidents`, `gru-seo`, `gru-solera` | registered channel workspaces                                                 | folders are currently empty; global/fallback behavior applies                                |
+| `archivarista`                                            | domain-isolated knowledge synthesis/archival                                  | Haiku; broad read mounts, provenance critical                                                                                                           |
+| `newsroom`                                                | editorial pipeline                                                            | no unapproved broadcast                                                                                                                                 |
+| `social`                                                  | LinkedIn content state machine                                                | confirmation/approval boundary                                                                                                                          |
+| `campanero`                                               | jobs MCP operator                                                             | narrow job execution surface                                                                                                                            |
+| `heartbeat`                                               | watchdog sink                                                                 | intentionally no conversational response                                                                                                                |
+| `feature-requests`                                        | feature/bug intake                                                            | local support files, no tracked role prompt                                                                                                             |
+| `gru-community`, `gru-incidents`, `gru-seo`, `gru-solera` | registered channel workspaces                                                 | folders are currently empty; global/fallback behavior applies                                                                                           |
 
 There are tracked role prompts for `global` plus the 16 named operational
 roles and `_TEMPLATE`. Empty/local-only registered folders and tracked prompts
@@ -1137,7 +1137,8 @@ separate explicit decision; do not open, publish, or delete them casually.
   Bonfire rows; source-keyed CaleProcure/email rows are host-owned. Both gates
   remain off with no owner IDs or epoch; the schedule, browser, 309 legacy rows,
   and submission boundary were not changed.
-- `NC-20260809-003` migration 115 and immutable release `9aa23b4e7c39` are
+- `NC-20260809-003` migration 115 and immutable releases `9aa23b4e7c39` and
+  `ba726e7cbda0` are
   deployed in collection-only validation. Migration 115 makes a bound
   `process` decision create one pursuit transactionally,
   keeps every active/overdue pursuit visible, associates repeated observations
@@ -1162,6 +1163,36 @@ separate explicit decision; do not open, publish, or delete them casually.
   read-only live-schema predicate precheck; pinned Node 22.23.2 passes the full
   152-file / 1,980-test host suite and the independent 4-file / 29-test runner
   suite.
+  The precheck and immutable activation passed, but the third natural canary
+  exposed a separate browser-procedure failure: source run 5 was correctly
+  bound to its task and reported all nine units observed, yet returned zero
+  opportunities and missed the current positive control. Direct public-browser
+  reproduction proved that filling `Event Name` does not execute a search;
+  CaleProcure requires clicking the visible `Search` button, after which
+  `facilitation` shows event `0000039985`. Hidden duplicate summaries/rows can
+  coexist with the visible result. The tracked procedure therefore requires
+  explicit `Clear Criteria` / fill / `Search` actions and visible-only result
+  proof. Review remains off until that correction is independently reviewed,
+  installed byte-exact, and a natural positive-control canary passes.
+  Claude R9 found three remaining procedure-contract gaps: Step 4 still
+  equated observation with page load, visible selection lacked a snapshot-ref
+  method, and `partial` prescribed an in-run retry that cannot converge with a
+  task-bound token. The corrected procedure now closes all three and uses the
+  portal-native exact department lookup followed by a clean detail-page match
+  to verify business unit/event identity. It never maps agency name directly to
+  a source key.
+  R9 also verified that the release archive covered `groups/` but omitted the
+  delegated `knowledge/` bytes. The release builder now packages tracked
+  `knowledge/`, and `container-runner` mounts
+  `knowledge/agents/<group>` from the verified active code root read-only when
+  present, suppressing every normalized mutable configured alias of the same
+  target. Older releases fall back to the configured mount so rollback remains
+  viable. Claude R10 found and closed the raw-target alias gap (`''`,
+  `knowledge/`, and `./knowledge`) and otherwise accepted the R9 procedure and
+  release-integrity repairs. Claude R11 returned `GO` after independently
+  exercising the resolution boundary and focused gates; immutable
+  collection-only deployment and a fourth natural canary may proceed while
+  review remains disabled.
 
 ### P1: reproducibility and source ownership
 
@@ -1224,32 +1255,32 @@ while keeping secrets and volatile runtime state excluded.
 
 ## 21. Documentation index
 
-| Document                                | Use                                                           | Caution                                                                                   |
-| --------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `CLAUDE.md`                             | current repository operations and conventions                 | verify implementation-specific claims                                                     |
-| `AGENTS.md`                             | Codex entry point                                             | intentionally delegates to Claude sources                                                 |
-| `docs/PROJECT-MAP.md`                   | reconciled cross-client map                                   | dated snapshot, not live status                                                           |
-| `docs/CHANGE-PROTOCOL.md`               | required Claude/Codex change, evidence, and handoff contract  | update when the shared workflow changes                                                   |
-| `docs/ACTIVE-WORK.md`                   | current task ownership, overlap, state, and next action       | must remain concise and current                                                           |
-| `docs/ENGINEERING-CHANGELOG.md`         | append-only implementation/verification/deployment history    | evidence only; do not overstate boundaries crossed                                        |
-| `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | validated, phased improvement roadmap                         | proposed work; not implemented state                                                      |
-| `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract   | archive integrity is not publisher authenticity                                           |
+| Document                                | Use                                                                   | Caution                                                                                                                                      |
+| --------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md`                             | current repository operations and conventions                         | verify implementation-specific claims                                                                                                        |
+| `AGENTS.md`                             | Codex entry point                                                     | intentionally delegates to Claude sources                                                                                                    |
+| `docs/PROJECT-MAP.md`                   | reconciled cross-client map                                           | dated snapshot, not live status                                                                                                              |
+| `docs/CHANGE-PROTOCOL.md`               | required Claude/Codex change, evidence, and handoff contract          | update when the shared workflow changes                                                                                                      |
+| `docs/ACTIVE-WORK.md`                   | current task ownership, overlap, state, and next action               | must remain concise and current                                                                                                              |
+| `docs/ENGINEERING-CHANGELOG.md`         | append-only implementation/verification/deployment history            | evidence only; do not overstate boundaries crossed                                                                                           |
+| `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | validated, phased improvement roadmap                                 | proposed work; not implemented state                                                                                                         |
+| `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |
 | `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement history, current recovery state, and target loop | migration 115 is deployed collection-only; natural source-run proof, review closure, and the separately reviewed proposal packet remain open |
-| `docs/SELF-HEALING-COMPLETION-PLAN.md`  | reconciled healer current state and gated completion sequence | action-boundary source is local until separately reviewed/deployed                        |
-| `docs/REQUIREMENTS.md`                  | original product principles                                   | intent, not feature inventory                                                             |
-| `docs/ARCHITECTURE.md`                  | broad bespoke architecture                                    | some SDK terminology is stale                                                             |
-| `docs/SPEC.md`                          | core behavior specification                                   | reconcile with fork extensions                                                            |
-| `docs/DATA-MODEL.md`                    | business model                                                | inspect live PostgreSQL schema                                                            |
-| `docs/SECURITY.md`                      | threat/security model                                         | verify host guards and current mounts                                                     |
-| `docs/CONTAINER-ARCHITECTURE.md`        | container lifecycle target/recent design                      | history includes rejected phases                                                          |
-| `docs/APPLE-CONTAINER-NETWORKING.md`    | Apple networking operations                                   | environment-specific                                                                      |
-| `docs/MINION-FRAMEWORK.md`              | agent framework                                               | concrete group prompts are role authority                                                 |
-| `docs/WEBHOOK-RELIABILITY.md`           | durable webhook design                                        | verify tables and current reaper wiring                                                   |
-| `docs/PROPOSAL-FOLLOWUP-DESIGN.md`      | proposal cadence and approval                                 | verify current store/actions                                                              |
-| `docs/SELF-HEALING-*.md`                | healer phases/target behavior                                 | enabled state is environment-dependent                                                    |
-| `docs/gmail-pubsub-setup.md`            | Gmail push setup                                              | cloud/VPS state must be rechecked                                                         |
-| `MANIFEST.md`                           | ownership and recent-shift overview                           | currently modified; some statuses stale                                                   |
-| `HANDOFF.md`, `handoffs/*`              | dated work context                                            | chronological evidence only                                                               |
+| `docs/SELF-HEALING-COMPLETION-PLAN.md`  | reconciled healer current state and gated completion sequence         | action-boundary source is local until separately reviewed/deployed                                                                           |
+| `docs/REQUIREMENTS.md`                  | original product principles                                           | intent, not feature inventory                                                                                                                |
+| `docs/ARCHITECTURE.md`                  | broad bespoke architecture                                            | some SDK terminology is stale                                                                                                                |
+| `docs/SPEC.md`                          | core behavior specification                                           | reconcile with fork extensions                                                                                                               |
+| `docs/DATA-MODEL.md`                    | business model                                                        | inspect live PostgreSQL schema                                                                                                               |
+| `docs/SECURITY.md`                      | threat/security model                                                 | verify host guards and current mounts                                                                                                        |
+| `docs/CONTAINER-ARCHITECTURE.md`        | container lifecycle target/recent design                              | history includes rejected phases                                                                                                             |
+| `docs/APPLE-CONTAINER-NETWORKING.md`    | Apple networking operations                                           | environment-specific                                                                                                                         |
+| `docs/MINION-FRAMEWORK.md`              | agent framework                                                       | concrete group prompts are role authority                                                                                                    |
+| `docs/WEBHOOK-RELIABILITY.md`           | durable webhook design                                                | verify tables and current reaper wiring                                                                                                      |
+| `docs/PROPOSAL-FOLLOWUP-DESIGN.md`      | proposal cadence and approval                                         | verify current store/actions                                                                                                                 |
+| `docs/SELF-HEALING-*.md`                | healer phases/target behavior                                         | enabled state is environment-dependent                                                                                                       |
+| `docs/gmail-pubsub-setup.md`            | Gmail push setup                                                      | cloud/VPS state must be rechecked                                                                                                            |
+| `MANIFEST.md`                           | ownership and recent-shift overview                                   | currently modified; some statuses stale                                                                                                      |
+| `HANDOFF.md`, `handoffs/*`              | dated work context                                                    | chronological evidence only                                                                                                                  |
 
 Historical/alternate architecture files (`nanoclaw-architecture-final.md`,
 `nanorepo-architecture.md`, `business-agents-architecture.md`, plans, SDK deep

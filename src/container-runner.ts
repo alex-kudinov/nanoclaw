@@ -37,7 +37,7 @@ import {
   stopContainer,
 } from './container-runtime.js';
 import { validateAdditionalMounts } from './mount-security.js';
-import { RegisteredGroup } from './types.js';
+import { AdditionalMount, RegisteredGroup } from './types.js';
 
 /**
  * Resolve an OAuth token from the token pool via round-robin rotation.
@@ -107,10 +107,63 @@ export interface ContainerOutput {
   error?: string;
 }
 
-interface VolumeMount {
+export interface VolumeMount {
   hostPath: string;
   containerPath: string;
   readonly: boolean;
+}
+
+export interface ReleaseOwnedInstructionMountPlan {
+  knowledgeMount: VolumeMount | null;
+  additionalMounts: AdditionalMount[];
+}
+
+/**
+ * Prefer manifest-covered per-group knowledge from the active code root.
+ * Older releases that do not package knowledge retain their configured
+ * operational mount, so rollback remains viable.
+ */
+export function planReleaseOwnedInstructionMounts(
+  codeRoot: string,
+  groupFolder: string,
+  additionalMounts: AdditionalMount[],
+): ReleaseOwnedInstructionMountPlan {
+  if (!/^[A-Za-z0-9_-]+$/.test(groupFolder)) {
+    return { knowledgeMount: null, additionalMounts };
+  }
+
+  const knowledgePath = path.resolve(
+    codeRoot,
+    'knowledge',
+    'agents',
+    groupFolder,
+  );
+  let isDirectory = false;
+  try {
+    isDirectory =
+      fs.existsSync(knowledgePath) && fs.statSync(knowledgePath).isDirectory();
+  } catch {
+    isDirectory = false;
+  }
+  if (!isDirectory) {
+    return { knowledgeMount: null, additionalMounts };
+  }
+
+  return {
+    knowledgeMount: {
+      hostPath: knowledgePath,
+      containerPath: '/workspace/extra/knowledge',
+      readonly: true,
+    },
+    additionalMounts: additionalMounts.filter((mount) => {
+      const rawContainerPath =
+        mount.containerPath || path.basename(mount.hostPath);
+      const normalizedContainerPath = path.posix
+        .normalize(`/${rawContainerPath}`)
+        .replace(/\/+$/, '');
+      return normalizedContainerPath !== '/knowledge';
+    }),
+  };
 }
 
 function computeDirHash(dir: string): string {
@@ -310,10 +363,28 @@ function buildVolumeMounts(
     readonly: false,
   });
 
-  // Additional mounts validated against external allowlist (tamper-proof from containers)
-  if (group.containerConfig?.additionalMounts) {
+  const instructionMounts = planReleaseOwnedInstructionMounts(
+    codeRoot,
+    group.folder,
+    group.containerConfig?.additionalMounts ?? [],
+  );
+  if (instructionMounts.knowledgeMount) {
+    mounts.push(instructionMounts.knowledgeMount);
+    logger.info(
+      {
+        group: group.name,
+        hostPath: instructionMounts.knowledgeMount.hostPath,
+      },
+      'Using release-owned group knowledge mount',
+    );
+  }
+
+  // Remaining operational mounts are validated against the external allowlist
+  // (tamper-proof from containers). A release-owned knowledge mount shadows
+  // the mutable configured mount at the same container path.
+  if (instructionMounts.additionalMounts.length > 0) {
     const validatedMounts = validateAdditionalMounts(
-      group.containerConfig.additionalMounts,
+      instructionMounts.additionalMounts,
       group.name,
       isMain,
     );

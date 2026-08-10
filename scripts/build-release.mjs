@@ -100,6 +100,7 @@ try {
       'package-lock.json',
       'container',
       'groups',
+      'knowledge',
       'launchd',
       'setup/launchd',
     ],

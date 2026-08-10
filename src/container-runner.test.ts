@@ -157,6 +157,7 @@ import {
   effectiveContainerTimeoutMs,
   runContainerAgent,
   ContainerOutput,
+  planReleaseOwnedInstructionMounts,
   resolveOAuthToken,
   sweepExitedContainerInputs,
 } from './container-runner.js';
@@ -176,6 +177,129 @@ const testInput = {
   chatJid: 'test@g.us',
   isMain: false,
 };
+
+describe('release-owned instruction mounts', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('prefers manifest-covered group knowledge over a mutable configured mount', () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.statSync).mockReturnValue({
+      isDirectory: () => true,
+    } as never);
+
+    const plan = planReleaseOwnedInstructionMounts(
+      '/releases/abc123',
+      'procurement',
+      [
+        {
+          hostPath: 'knowledge/agents/procurement',
+          containerPath: 'knowledge',
+          readonly: true,
+        },
+        {
+          hostPath: '/operations/vault',
+          containerPath: 'vault-procurement',
+          readonly: false,
+        },
+      ],
+    );
+
+    expect(plan.knowledgeMount).toEqual({
+      hostPath: '/releases/abc123/knowledge/agents/procurement',
+      containerPath: '/workspace/extra/knowledge',
+      readonly: true,
+    });
+    expect(plan.additionalMounts).toEqual([
+      {
+        hostPath: '/operations/vault',
+        containerPath: 'vault-procurement',
+        readonly: false,
+      },
+    ]);
+  });
+
+  it.each([
+    {
+      containerPath: '',
+      hostPath: '/operations/knowledge',
+      label: 'an empty configured target',
+    },
+    {
+      containerPath: 'knowledge/',
+      hostPath: 'knowledge/agents/procurement',
+      label: 'a trailing slash',
+    },
+    {
+      containerPath: './knowledge',
+      hostPath: 'knowledge/agents/procurement',
+      label: 'a relative path prefix',
+    },
+  ])(
+    'suppresses the mutable knowledge alias expressed with $label',
+    ({ containerPath, hostPath }) => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.statSync).mockReturnValue({
+        isDirectory: () => true,
+      } as never);
+
+      const plan = planReleaseOwnedInstructionMounts(
+        '/releases/abc123',
+        'procurement',
+        [
+          {
+            hostPath,
+            containerPath,
+            readonly: true,
+          },
+        ],
+      );
+
+      expect(plan.knowledgeMount?.containerPath).toBe(
+        '/workspace/extra/knowledge',
+      );
+      expect(plan.additionalMounts).toEqual([]);
+    },
+  );
+
+  it('retains the configured fallback for an older release without knowledge', () => {
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+    const configured = [
+      {
+        hostPath: 'knowledge/agents/procurement',
+        containerPath: 'knowledge',
+        readonly: true,
+      },
+    ];
+
+    expect(
+      planReleaseOwnedInstructionMounts(
+        '/releases/old',
+        'procurement',
+        configured,
+      ),
+    ).toEqual({ knowledgeMount: null, additionalMounts: configured });
+  });
+
+  it('rejects an unsafe group folder before resolving a release path', () => {
+    const configured = [
+      {
+        hostPath: 'knowledge/agents/procurement',
+        containerPath: 'knowledge',
+        readonly: true,
+      },
+    ];
+
+    expect(
+      planReleaseOwnedInstructionMounts(
+        '/releases/current',
+        '../escape',
+        configured,
+      ),
+    ).toEqual({ knowledgeMount: null, additionalMounts: configured });
+  });
+});
 
 function emitOutputMarker(
   proc: ReturnType<typeof createFakeProcess>,
