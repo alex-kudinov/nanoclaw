@@ -93,9 +93,11 @@ import {
 } from './db.js';
 import { GroupQueue } from './group-queue.js';
 import {
+  deriveGraderMissingOutputReason,
   deliverGraderOutput,
   formatGraderMissingOutputNotice,
   GRADER_GROUP_FOLDER,
+  type GraderMissingOutputReason,
   type GraderDeliveryRequest,
   type GraderDeliveryResult,
 } from './grader-delivery.js';
@@ -105,6 +107,7 @@ import {
   clearLatestGraderThreadContext,
   formatHostAssignmentContext,
   formatHostContextUnavailable,
+  getGraderRunContext,
   prepareLatestGraderRunContext,
   setGraderRunContext,
   type GraderRunContext,
@@ -370,6 +373,7 @@ async function noticeGraderRunWithNoOutput(
   chatJid: string,
   threadTs: string,
   runStartedAt: string,
+  reason: GraderMissingOutputReason,
 ): Promise<void> {
   for (let poll = 0; poll < GRADER_OUTPUT_DRAIN_POLLS; poll++) {
     if (hasGraderOutputInThread(chatJid, threadTs, runStartedAt)) return;
@@ -378,7 +382,7 @@ async function noticeGraderRunWithNoOutput(
   const result = await deliverGraderOutputHost({
     jid: chatJid,
     threadTs,
-    text: formatGraderMissingOutputNotice(),
+    text: formatGraderMissingOutputNotice(reason),
     source: 'final-text',
     precondition: () =>
       !hasGraderOutputInThread(chatJid, threadTs, runStartedAt),
@@ -821,6 +825,8 @@ async function processGroupMessages(
 
   let hadError = false;
   let outputSentToUser = false;
+  let graderAgentResultObserved = false;
+  let graderFinalTextObserved = false;
   const graderRunStartedAt =
     group.folder === GRADER_GROUP_FOLDER ? new Date().toISOString() : undefined;
 
@@ -833,6 +839,13 @@ async function processGroupMessages(
       // Any result (even a null one) is proof-of-life for the frozen-container
       // detector. See GroupQueue.checkLiveness STALE_OUTPUT_THRESHOLD_MS.
       queue.setLastOutputAt(compositeKey);
+      if (
+        group.folder === GRADER_GROUP_FOLDER &&
+        result.result !== null &&
+        result.result !== undefined
+      ) {
+        graderAgentResultObserved = true;
+      }
       if (result.result) {
         const raw =
           typeof result.result === 'string'
@@ -861,6 +874,9 @@ async function processGroupMessages(
           text &&
           (shouldSuppressFinalText(group, threadTs) || suppressApprovalRecap)
         ) {
+          if (group.folder === GRADER_GROUP_FOLDER) {
+            graderFinalTextObserved = true;
+          }
           logger.info(
             {
               group: group.name,
@@ -912,10 +928,19 @@ async function processGroupMessages(
   );
 
   if (group.folder === GRADER_GROUP_FOLDER && threadTs) {
+    const missingOutputReason: GraderMissingOutputReason =
+      deriveGraderMissingOutputReason({
+        submissionContextAvailable:
+          getGraderRunContext(graderRunId, chatJid, threadTs) !== undefined,
+        runErrored: output === 'error' || hadError,
+        agentResultObserved: graderAgentResultObserved,
+        finalTextObserved: graderFinalTextObserved,
+      });
     void noticeGraderRunWithNoOutput(
       chatJid,
       threadTs,
       graderRunStartedAt!,
+      missingOutputReason,
     ).catch((err) =>
       logger.error(
         { err, group: group.folder, threadTs },

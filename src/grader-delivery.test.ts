@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   _resetGraderDeliveryLocks,
+  deriveGraderMissingOutputReason,
   deliverGraderOutput,
   formatGraderMissingOutputNotice,
   GRADER_GROUP_FOLDER,
@@ -373,13 +374,39 @@ describe('deliverGraderOutput', () => {
 
 describe('formatGraderMissingOutputNotice', () => {
   it('is fixed, operator-marked, and carries no model bytes', () => {
-    const notice = formatGraderMissingOutputNotice();
+    const notice = formatGraderMissingOutputNotice(
+      'final-text-without-thread-output',
+    );
 
     expect(notice.startsWith(GRADER_OPERATOR_PREFIX)).toBe(true);
     expect(notice).toContain('re-trigger');
+    expect(notice).toContain('Reason: final-text-without-thread-output');
+    expect(notice).toContain('staging call may have been skipped or failed');
     // Classified as operator-only by the gate, so it can never be mistaken for
     // a staging unit and can never set delivery state.
     expect(notice.split('\n')[0]).toBe(GRADER_OPERATOR_PREFIX);
+  });
+
+  it.each([
+    'submission-context-unavailable',
+    'run-error',
+    'final-text-without-thread-output',
+    'no-agent-result',
+  ] as const)('publishes the host-owned reason code %s', (reason) => {
+    const notice = formatGraderMissingOutputNotice(reason);
+    expect(notice).toContain(`Reason: ${reason}`);
+    expect(notice).not.toContain('PASS\n\n');
+    expect(notice).not.toContain('NO PASS\n\n');
+  });
+
+  it('gives an unresolved submission the exact two-line-root recovery', () => {
+    const notice = formatGraderMissingOutputNotice(
+      'submission-context-unavailable',
+    );
+
+    expect(notice).toContain('student name on line 1');
+    expect(notice).toContain('exact assignment label on line 2');
+    expect(notice).not.toContain('re-trigger the grading run');
   });
 
   it('is delivered through the operator transport, never the student one', async () => {
@@ -396,6 +423,47 @@ describe('formatGraderMissingOutputNotice', () => {
     expect(result.kind).toBe('operator');
     expect(studentPosts).toEqual([]);
     expect(operatorPosts).toHaveLength(1);
+  });
+});
+
+describe('deriveGraderMissingOutputReason', () => {
+  const base = {
+    submissionContextAvailable: true,
+    runErrored: false,
+    agentResultObserved: false,
+    finalTextObserved: false,
+  };
+
+  it('prioritizes an unavailable submission context over a later run error', () => {
+    expect(
+      deriveGraderMissingOutputReason({
+        ...base,
+        submissionContextAvailable: false,
+        runErrored: true,
+      }),
+    ).toBe('submission-context-unavailable');
+  });
+
+  it('reports a run error when a real submission context existed', () => {
+    expect(deriveGraderMissingOutputReason({ ...base, runErrored: true })).toBe(
+      'run-error',
+    );
+  });
+
+  it('reports final text that never reached the thread', () => {
+    expect(
+      deriveGraderMissingOutputReason({ ...base, finalTextObserved: true }),
+    ).toBe('final-text-without-thread-output');
+  });
+
+  it('does not call an internal-only agent result no-agent-result', () => {
+    expect(
+      deriveGraderMissingOutputReason({ ...base, agentResultObserved: true }),
+    ).toBe('final-text-without-thread-output');
+  });
+
+  it('reserves no-agent-result for a run with no result at all', () => {
+    expect(deriveGraderMissingOutputReason(base)).toBe('no-agent-result');
   });
 });
 

@@ -121,6 +121,33 @@ export interface GraderDeliveryRequest {
   submissionContext?: { studentName: string };
 }
 
+export type GraderMissingOutputReason =
+  | 'submission-context-unavailable'
+  | 'run-error'
+  | 'final-text-without-thread-output'
+  | 'no-agent-result';
+
+export interface GraderMissingOutputSignals {
+  submissionContextAvailable: boolean;
+  runErrored: boolean;
+  agentResultObserved: boolean;
+  finalTextObserved: boolean;
+}
+
+/** Derive the operator-facing silence reason from host-owned run signals only. */
+export function deriveGraderMissingOutputReason(
+  signals: GraderMissingOutputSignals,
+): GraderMissingOutputReason {
+  if (!signals.submissionContextAvailable) {
+    return 'submission-context-unavailable';
+  }
+  if (signals.runErrored) return 'run-error';
+  if (signals.finalTextObserved || signals.agentResultObserved) {
+    return 'final-text-without-thread-output';
+  }
+  return 'no-agent-result';
+}
+
 /**
  * Fixed operator notice for a run that ended having published nothing.
  *
@@ -131,12 +158,29 @@ export interface GraderDeliveryRequest {
  * operator gets the fact of the silence and the thread it happened in; the
  * transcript is in the logs.
  */
-export function formatGraderMissingOutputNotice(): string {
+export function formatGraderMissingOutputNotice(
+  reason: GraderMissingOutputReason = 'no-agent-result',
+): string {
+  const explanation: Record<GraderMissingOutputReason, string> = {
+    'submission-context-unavailable':
+      'The host could not resolve this thread to a real student submission, so no verdict was allowed.',
+    'run-error':
+      'The grader run ended with an error before a verdict or operator message reached this thread.',
+    'final-text-without-thread-output':
+      'The run returned final text, but no gated verdict or operator message reached this thread. The staging call may have been skipped or failed.',
+    'no-agent-result':
+      'The run ended without an agent result, verdict, or operator message reaching this thread.',
+  };
+  const recovery =
+    reason === 'submission-context-unavailable'
+      ? 'Operator: post a new submission root with the student name on line 1 and the exact assignment label on line 2.'
+      : 'Operator: check the run log for this thread, then re-trigger the grading run.';
   return [
     GRADER_OPERATOR_PREFIX,
-    'GRADER RUN PRODUCED NO OUTPUT',
-    'The run finished without posting a verdict or an operator message.',
-    'Operator: review the submission and re-trigger the grading run.',
+    'GRADER RUN PRODUCED NO ACTIONABLE OUTPUT',
+    `Reason: ${reason}`,
+    explanation[reason],
+    recovery,
   ].join('\n');
 }
 

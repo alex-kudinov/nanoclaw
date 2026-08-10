@@ -26,6 +26,14 @@ describe('checkGraderOutput', () => {
     expect(result).toEqual({ ok: true, kind: 'student', violations: [] });
   });
 
+  it('accepts a PASS whose genuine grow begins after an internal blank line', () => {
+    const result = checkGraderOutput(
+      'PASS\n\nAssigning competency lenses before the recording gives each participant a real appraisal job, and the redirects ask for observed behavior when comments drift into impression.\n\nLeave flexibility in the closing because six individual insights may need more room when the feedback round runs long.',
+    );
+
+    expect(result).toEqual({ ok: true, kind: 'student', violations: [] });
+  });
+
   it('passes concise, actionable NO PASS copy', () => {
     const result = checkGraderOutput(
       'NO PASS\n\nAdd the closing-session plan, including how you will review progress and agree the coach’s next development focus.',
