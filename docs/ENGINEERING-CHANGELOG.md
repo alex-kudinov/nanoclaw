@@ -8,6 +8,39 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260811-001 — Exact-thread human commercial terms and reply aliases
+
+- Date: 2026-08-11T20:10Z
+- Owner/client: Codex
+- State: ready for immutable release from exact live immutable base
+  `194f8486e737d387f5b69b1f88db711bebc06659`
+- Trigger: Sales rejected Alex's exact 5% Velera instruction as an invented
+  discount, then incorrectly told the operator to send Tom Olney's reply
+  manually. The exact Gmail sender alias was also absent from Tom's CRM email
+  allowlist and would have caused the next boundary failure.
+- Recovery: a complete corrected Lead #1098 card is posted in Tom's original
+  Slack work thread and awaits approval; no email has been sent.
+- Implementation: canonical numeric commercial terms are derived only from
+  durable non-bot human messages in the exact Sales work thread, with questions
+  inert and later explicit negation revoking an earlier value. IPC preflight,
+  Slack defense in depth, Action-ID creation, and final Gmail dispatch consume
+  the same exact-thread evidence; mismatched values and every other guard remain
+  blocked.
+- Recipient boundary: an approved reply may accept the exact Gmail-derived
+  participant as a reply-scoped alias only when it matches the approved card,
+  carries a host Action-ID, and its approved Gmail thread resolves to the Party.
+  No CRM row is created and standalone/model-supplied recipients remain on the
+  existing allowlist.
+- Verification at this entry: pinned Node 22.23.2 typecheck, formatting,
+  documentation continuity, runner build/tests, and the 19-file email-critical
+  gate pass (523/523). The broad sandbox run passed 2,233/2,279; its 45
+  permission-sensitive listener and migration failures passed on the required
+  unrestricted rerun. The only remaining failure is an unrelated pre-existing
+  CNPC prompt-contract assertion: the exact live base's test expects registration
+  details in a source-checkout wrapper that only delegates to the compiled CLI,
+  and neither file differs on this branch. Immutable release, deployment, and a
+  natural Gmail receipt remain pending.
+
 ### NC-20260810-002 — CNPC intake and bounded coach matching
 
 - State: validating from exact live immutable base `0b355396281a5e35b6159dce1ab8f9d36155efd0`.

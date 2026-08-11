@@ -26,6 +26,7 @@ vi.mock('../logger.js', () => ({
 vi.mock('../db.js', () => ({
   getMessageById: vi.fn(() => undefined),
   getLatestBotMessageInThread: vi.fn(() => undefined),
+  getHumanMessagesInThread: vi.fn(() => []),
   updateChatName: vi.fn(),
   resolveThreadAnchor: vi.fn(() => undefined),
   recordThreadAnchor: vi.fn(),
@@ -102,6 +103,7 @@ import { SlackChannel, SlackChannelOpts } from './slack.js';
 import {
   getMessageById,
   getLatestBotMessageInThread,
+  getHumanMessagesInThread,
   updateChatName,
   resolveThreadAnchor,
   recordThreadAnchor,
@@ -2361,6 +2363,45 @@ Use https://zoom.us.evil.example/j/123.
         expect.objectContaining({ fromGroup: 'sales' }),
         expect.stringContaining('Gmail content guard would reject'),
       );
+    });
+
+    it('posts a discount card only when the exact term came from a human in that thread', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1786475865.628699',
+        lastActivityAt: new Date().toISOString(),
+      });
+      vi.mocked(getHumanMessagesInThread).mockReturnValue([
+        {
+          id: '1786476845.000100',
+          content:
+            "just gotta pick one - kayla's or 5% company discount - stripe won't combine both",
+          timestamp: '2026-08-11T19:34:00.000Z',
+          sender: 'U_ALEX',
+          sender_name: 'Alex Kudinov',
+        },
+      ]);
+      const channel = await connected();
+      const card = `[SALES REVIEW] Lead #1098
+Email: Tom.Olney@velera.com
+
+DRAFT RESPONSE TO LEAD:
+---
+Subject: Re: ACC Enrollment for Velera - Group Pricing
+
+Use the 5% company discount.
+---`;
+
+      await channel.sendMessage(JID, card, { fromGroup: 'sales' });
+
+      expect(currentApp().client.chat.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          thread_ts: '1786475865.628699',
+          text: expect.stringContaining('Use the 5% company discount.'),
+        }),
+      );
+      expect(
+        currentApp().client.chat.postMessage.mock.calls[0][0].text,
+      ).not.toContain('[APPROVAL CARD REJECTED]');
     });
   });
 });

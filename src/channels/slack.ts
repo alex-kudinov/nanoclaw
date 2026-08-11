@@ -22,6 +22,7 @@ import {
 } from '../approved-send-handoff.js';
 import { promoteBriefItem } from '../brief-promote.js';
 import { checkContent } from '../email-content-guard.js';
+import { resolveHumanAuthorizedDiscountTerms } from '../human-commercial-term-authorization.js';
 import {
   ASSISTANT_NAME,
   SLACK_THREAD_TTL_MS,
@@ -1038,7 +1039,12 @@ export class SlackChannel implements Channel {
         ? buildApprovedHandoff(text)
         : null;
       const approvalContentCheck = parsedApprovalCard
-        ? checkContent(parsedApprovalCard.subject, parsedApprovalCard.body)
+        ? checkContent(parsedApprovalCard.subject, parsedApprovalCard.body, {
+            authorizedDiscountTerms:
+              fromGroup === 'sales'
+                ? resolveHumanAuthorizedDiscountTerms(jid, effectiveThreadTs)
+                : [],
+          })
         : undefined;
       const blockedApprovalCard = Boolean(
         approvalContentCheck && !approvalContentCheck.ok,

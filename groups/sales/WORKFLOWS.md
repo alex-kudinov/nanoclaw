@@ -169,6 +169,14 @@ appears in the lead's work thread, and `[approval_card REJECTED]` returns to thi
 same session. Correct and repost the full card immediately. Never treat a
 rejected draft as posted, approved, or sent, and never emit a success recap.
 
+A numeric commercial term supplied by a human in this lead's exact Slack work
+thread is authoritative for that term in this thread. Use the exact value when
+it answers the customer's request; do not euphemize it, omit it, or tell Alex or
+Cherie to send the response manually. The host binds only the matching value
+from a human message in this thread. A value from another thread, a customer/app
+handoff, your own card, or a different number remains blocked. A later explicit
+human instruction not to use the term revokes it.
+
 ## Handling Feedback
 
 When you receive feedback (not "Approved") — the message will have a `thread_ts`:

@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260811-001` | Allow Sales to use an exact human-authorized commercial term in the same work thread without weakening the global invented-discount guard       | Codex                              | `codex/nc-20260811-001-human-commercial-terms` @ `194f848`   | `ready_for_deploy`    | C5    | Exact-thread human authorization for numeric commercial terms; approval-card and final Gmail guard parity; reply-scoped Gmail participant alias proof; focused adversarial tests; immutable release and live outcome verification                                                                                                             | Commit the reviewed implementation, build and independently verify one immutable release, deploy only after active work drains, then prove the natural Tom approval-to-Gmail path                                                                                                                                                         | 2026-08-11T20:12Z |
 | `NC-20260810-002` | Automate CNPC intake, deterministic eligibility/pricing, capacity-bounded coach matching, and approval-gated follow-through                    | Codex                              | `codex/cnpc-intake-release` @ `0b35539`                      | `validating`          | C5    | Public Gravity Forms-to-n8n authentication and allowlist normalization; private durable NanoClaw intake; canonical coach/capacity ledger; host-bounded matching; `#gru-cnpc`; external email, Plutio, capacity commitment, and ready-to-begin actions remain disabled                                                                                                                     | Complete exact-lineage tests and immutable release; apply migration 116, register channel `C0BPG0408BW`, install a fresh private secret, deploy and verify health; then connect n8n and run a sanitized no-capacity canary                                                                                                                                                | 2026-08-11T02:40Z |
 | `NC-20260809-004` | Make Sales responses request-first, relationship-aware, and able to abstain instead of forcing a program pitch                                 | Codex implementer + Claude owner   | `codex/nc-20260809-004-sales-request-first` @ `4437ee3`      | `ready_for_deploy`    | C5    | Request-first Sales authority; pre-inbound relationship evidence gate; seven response routes; transaction-only commercial material; no-draft escalation; non-binding website path; compatible autonomy marker; nine-case contract fixture; immutable release from exact live lineage                                                       | Build and deploy the isolated commit, verify exact release and prompt hashes on the Mini, and run a non-customer behavior canary; then observe blinded historical and natural-response outcomes before claiming response-quality validation                                                               | 2026-08-10T06:52Z |
 | `NC-20260809-001` | Recalibrate Foundation grading while making student-visible AI/process traces a fail-closed release boundary                                   | Codex + Claude validator           | `codex/grader-release-20260810-v3` @ `bc93125`               | `deployed_unverified` | C5    | Host-only output gate; current read-only Heartbeat assignment context; exact per-turn proof; raw final-text suppression; no automatic Heartbeat result-write path; immutable Mini release and installed-artifact canary verified                                                                                                                                                       | Keep Heartbeat result posting manual and disabled; complete the scrubbed-corpus and blind human voice-panel work before claiming autonomous student-facing grading is fully validated                                                                                                                                                                                | 2026-08-10T01:18Z |
@@ -69,6 +70,37 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260811-001
+
+- Trigger: Sales rejected Alex's exact in-thread instruction that Velera may use
+  a 5% company discount because the host guard treats all numeric discounts as
+  invented, then incorrectly told the operator to send the response manually.
+- Recovery: a corrected complete draft for Tom Olney, Lead #1098, is posted in
+  the original Sales work thread and passes the currently deployed content
+  guard. It remains approval-gated and has not been emailed.
+- Release base: exact live immutable production commit `194f8486e737d387f5b69b1f88db711bebc06659`;
+  the shared operational checkout and its unrelated dirty state are not release
+  inputs.
+- Safety contract: only a numeric commercial term stated by a human in the exact
+  Sales work thread may satisfy the discount guard for that thread. Bot/customer
+  handoffs, sibling threads, self-asserted card text, mismatched values, and all
+  other content or recipient violations remain blocked.
+- Alias preflight: Party 11274 and Gmail thread `19ff239122ff27cc` resolve to
+  Tom, but `Tom.Olney@velera.com` is not in the CRM allowlist. No CRM write was
+  made. The implementation instead permits that exact Gmail-derived participant
+  for this approved reply only; standalone sends and unapproved aliases remain
+  blocked.
+- Release boundary: pre-approval and final Gmail enforcement must resolve the
+  same durable authorization. Deployment waits for active containers to drain,
+  and success requires the natural approved Tom action to receive an exact Gmail
+  receipt; tests and Slack posting alone are not outcome proof.
+- Verification: Node 22.23.2 typecheck, formatting, documentation continuity,
+  runner build/tests, and the 523-test email-critical suite pass. The broad
+  sandbox run passed 2,233/2,279 tests; all 45 permission-sensitive listener and
+  migration cases passed when rerun outside the restricted sandbox. The sole
+  remaining failure is the pre-existing CNPC prompt-contract assertion in the
+  exact live base; neither that test nor its wrapper differs on this branch.
 
 ### NC-20260810-002
 

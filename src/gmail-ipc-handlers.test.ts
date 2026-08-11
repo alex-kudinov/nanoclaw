@@ -330,6 +330,21 @@ describe('handleGmailSend', () => {
       await handleGmailSend(data);
       expect(sendEmail).not.toHaveBeenCalled();
     });
+
+    it('sends an exact host-authorized discount and blocks a mismatched value', async () => {
+      const allowed = makePayload({ body: 'Use the 5% company discount.' });
+      await handleGmailSend(allowed, undefined, undefined, undefined, {
+        authorizedDiscountTerms: ['percent:5'],
+      });
+      expect(sendEmail).toHaveBeenCalledTimes(1);
+
+      vi.clearAllMocks();
+      const blocked = makePayload({ body: 'Use the 15% company discount.' });
+      await handleGmailSend(blocked, undefined, undefined, undefined, {
+        authorizedDiscountTerms: ['percent:5'],
+      });
+      expect(sendEmail).not.toHaveBeenCalled();
+    });
   });
 
   // Regression: Carol Del Priore refund (2026-06-09). A dropped Thread-ID on a
@@ -737,6 +752,56 @@ describe('recipient guard (tina@example.com incident)', () => {
     expect(postToChief.mock.calls[0][0]).toMatch(
       /EMAIL BLOCKED.*does not match approved recipient/,
     );
+  });
+
+  it('allows an exact approved Gmail-thread participant alias for that reply only', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = 11274;
+    businessState.emails = new Set(['tolney@velera.com']);
+    const actionId = '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd';
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: '19ff239122ff27cc',
+        actionId,
+        approvedRecipient: 'sender@external.com',
+      }),
+    );
+
+    expect(replyToThread).toHaveBeenCalledTimes(1);
+    expect(logOutboundEmailInteraction).toHaveBeenCalledWith(
+      expect.objectContaining({ partyId: 11274 }),
+    );
+
+    vi.clearAllMocks();
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: '19ff239122ff27cc',
+        actionId: undefined,
+        approvedRecipient: undefined,
+      }),
+    );
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+  });
+
+  it('does not extend the Gmail-thread alias exception to a standalone send', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = 11274;
+    businessState.emails = new Set(['tolney@velera.com']);
+
+    await handleGmailSend(
+      makePayload({
+        to: 'sender@external.com',
+        threadId: '19ff239122ff27cc',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'sender@external.com',
+      }),
+    );
+
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
   });
 
   it('test-routes replies and removes the original CC', async () => {

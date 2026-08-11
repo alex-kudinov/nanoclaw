@@ -274,6 +274,29 @@ describe('recordApproval', () => {
     expect(store.rows).toHaveLength(0);
   });
 
+  it('arms an exact human-authorized discount but not a different value', () => {
+    const card = CARD.replace('Hi Oana,', 'Use the 5% company discount.');
+    const authorized = recordApproval(
+      {
+        ...base,
+        cardText: card,
+        authorizedDiscountTerms: ['percent:5'],
+      },
+      makeStore(),
+    );
+    expect(authorized).not.toBeNull();
+
+    const mismatched = recordApproval(
+      {
+        ...base,
+        cardText: card.replace('5%', '15%'),
+        authorizedDiscountTerms: ['percent:5'],
+      },
+      makeStore(),
+    );
+    expect(mismatched).toBeNull();
+  });
+
   it('posts a visible rejection when a malformed approval mints no action', async () => {
     const store = makeStore();
     const notices: string[] = [];

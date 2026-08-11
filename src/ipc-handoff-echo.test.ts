@@ -20,6 +20,16 @@ vi.mock('./logger.js', () => ({
 }));
 
 const storeMessageDirect = vi.fn();
+type HumanThreadMessage = {
+  id: string;
+  content: string;
+  timestamp: string;
+  sender: string;
+  sender_name: string;
+};
+const getHumanMessagesInThread = vi.fn(
+  (_chatJid: string, _threadTs: string): HumanThreadMessage[] => [],
+);
 // The IPC watcher now discharges approved-send expectations by recipient, on a
 // confirmed send, rather than by group on the mailman handoff. See
 // send-watchdog.ts.
@@ -34,6 +44,8 @@ const markPendingSendHandoff = vi.fn(
 );
 vi.mock('./db.js', () => ({
   storeMessageDirect: (...args: unknown[]) => storeMessageDirect(...args),
+  getHumanMessagesInThread: (chatJid: string, threadTs: string) =>
+    getHumanMessagesInThread(chatJid, threadTs),
   // Deferred like storeMessageDirect above: the factory is hoisted above these
   // consts, so a bare reference would dereference before initialization.
   clearPendingSendsByRecipient: (recipient: string) =>
@@ -150,6 +162,8 @@ describe('IPC handoff routing', () => {
     vi.resetModules();
     vi.useFakeTimers();
     storeMessageDirect.mockClear();
+    getHumanMessagesInThread.mockReset();
+    getHumanMessagesInThread.mockReturnValue([]);
     clearPendingSendsByRecipient.mockClear();
     markPendingSendHandoff.mockClear();
     sendMessage = vi.fn(async () => {});
@@ -486,6 +500,47 @@ describe('IPC handoff routing', () => {
     expect(
       fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
     ).toEqual([expect.stringMatching(/^approval-card-content-/)]);
+  });
+
+  it('accepts an exact human-authorized discount from the host work thread', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.resolveSourceThread = vi.fn(() => ({
+      chatJid: 'slack:SALES',
+      threadTs: '1786475865.628699',
+    }));
+    getHumanMessagesInThread.mockReturnValue([
+      {
+        id: '1786476845.000100',
+        content: "pick Kayla's or 5% company discount",
+        timestamp: '2026-08-11T19:34:00.000Z',
+        sender: 'U_ALEX',
+        sender_name: 'Alex Kudinov',
+      },
+    ]);
+    const card =
+      '[SALES REVIEW] Lead #1098\nCategory: pricing\n' +
+      'Email: Tom.Olney@velera.com\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\n' +
+      'Subject: Re: ACC Enrollment for Velera - Group Pricing\n\n' +
+      'Use the 5% company discount.\n---';
+    writeHandoffFile('sales', card, undefined, undefined, 'nanoclaw-sales-tom');
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(getHumanMessagesInThread).toHaveBeenCalledWith(
+      'slack:SALES',
+      '1786475865.628699',
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      card,
+      expect.objectContaining({
+        threadTs: '1786475865.628699',
+        hostWorkUnitThreadTs: '1786475865.628699',
+      }),
+    );
   });
 
   it('keeps a rejected card visible and quarantined when its source container has exited', async () => {

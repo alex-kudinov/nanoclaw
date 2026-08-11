@@ -14,6 +14,7 @@ import {
   getJobRunLogs,
   getMessagesSince,
   getThreadContext,
+  getHumanMessagesInThread,
   getNewMessages,
   storeMessageDirect,
   getRunningJobNames,
@@ -48,9 +49,77 @@ import {
   upsertJobDefinition,
 } from './db.js';
 import { hashApprovedEmailContent } from './email-action.js';
+import { resolveHumanAuthorizedDiscountTerms } from './human-commercial-term-authorization.js';
 
 beforeEach(() => {
   _initTestDatabase();
+});
+
+describe('human commercial-term authorization', () => {
+  it('uses only human statements from the exact thread and honors revocation', () => {
+    const chatJid = 'slack:SALES';
+    const threadTs = 'thread-tom';
+    storeChatMetadata(
+      chatJid,
+      '2026-08-11T19:00:00.000Z',
+      'Sales',
+      'slack',
+      true,
+    );
+    const put = (
+      id: string,
+      content: string,
+      timestamp: string,
+      isBot: boolean,
+      thread = threadTs,
+    ) =>
+      storeMessageDirect({
+        id,
+        chat_jid: chatJid,
+        sender: isBot ? 'B_APP' : 'U_ALEX',
+        sender_name: isBot ? 'Gru' : 'Alex Kudinov',
+        content,
+        timestamp,
+        is_from_me: isBot,
+        is_bot_message: isBot,
+        thread_ts: thread,
+      });
+
+    put(
+      'bot-root',
+      'Customer mentioned a 15% discount',
+      '2026-08-11T19:00:00.000Z',
+      true,
+    );
+    put(
+      'human-other',
+      'Use the 20% discount',
+      '2026-08-11T19:01:00.000Z',
+      false,
+      'thread-other',
+    );
+    put(
+      'human-allow',
+      "pick Kayla's or 5% company discount",
+      '2026-08-11T19:02:00.000Z',
+      false,
+    );
+
+    expect(
+      getHumanMessagesInThread(chatJid, threadTs).map((m) => m.id),
+    ).toEqual(['human-allow']);
+    expect(resolveHumanAuthorizedDiscountTerms(chatJid, threadTs)).toEqual([
+      'percent:5',
+    ]);
+
+    put(
+      'human-revoke',
+      'Do not use the 5% discount.',
+      '2026-08-11T19:03:00.000Z',
+      false,
+    );
+    expect(resolveHumanAuthorizedDiscountTerms(chatJid, threadTs)).toEqual([]);
+  });
 });
 
 describe('pending send approvals', () => {

@@ -43,6 +43,7 @@ vi.mock('./db.js', () => ({
   getMessageById: (...args: unknown[]) => testState.getMessage(...args),
   getPendingSendByActionId: (...args: unknown[]) =>
     testState.getAction(...args),
+  getHumanMessagesInThread: vi.fn(() => []),
   markEmailActionHandoff: vi.fn(() => 0),
   markPendingSendHandoff: vi.fn(() => 0),
   createTask: vi.fn(),
@@ -264,6 +265,7 @@ describe('Gmail IPC watcher authorization', () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
+      { authorizedDiscountTerms: [] },
     );
     expect(testState.dispatch.mock.calls[0]?.[0]).not.toHaveProperty('html');
     expect(testState.claim).toHaveBeenCalledWith(

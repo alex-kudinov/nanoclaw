@@ -142,6 +142,7 @@ import {
   SEND_WATCHDOG_TICK_MS,
   type SendWatchdogStore,
 } from './send-watchdog.js';
+import { resolveHumanAuthorizedDiscountTerms } from './human-commercial-term-authorization.js';
 import { runNameReaper } from './contador-name-reaper.js';
 import { runChaosReconcile } from './chaos-reconciler.js';
 import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
@@ -2263,6 +2264,13 @@ async function main(): Promise<void> {
               threadTs: approvalThreadTs,
               cardText: card.content,
               approvedGmailThreadId,
+              authorizedDiscountTerms:
+                card.from_group === 'sales'
+                  ? resolveHumanAuthorizedDiscountTerms(
+                      card.chat_jid,
+                      approvalThreadTs,
+                    )
+                  : [],
               now: new Date(),
               authorName:
                 registeredGroups[card.chat_jid]?.name ?? card.from_group,

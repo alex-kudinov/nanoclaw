@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 
-import { checkContent } from './email-content-guard.js';
+import {
+  checkContent,
+  extractHumanCommercialTermDecisions,
+} from './email-content-guard.js';
 
 describe('checkContent', () => {
   it('passes a normal program reply with whitelisted links', () => {
@@ -24,6 +27,45 @@ describe('checkContent', () => {
     expect(checkContent('', 'I can offer you 15% off today').ok).toBe(false);
     expect(checkContent('', 'discounted to $999 for you').ok).toBe(false);
     expect(checkContent('', 'we can waive the $175 fee').ok).toBe(false);
+  });
+
+  it('allows only the exact human-authorized numeric term', () => {
+    expect(
+      checkContent('', 'The Velera company discount is 5% off.', {
+        authorizedDiscountTerms: ['percent:5'],
+      }).ok,
+    ).toBe(true);
+    expect(
+      checkContent('', 'The Velera company discount is 15% off.', {
+        authorizedDiscountTerms: ['percent:5'],
+      }).ok,
+    ).toBe(false);
+  });
+
+  it('does not let commercial authorization bypass another content violation', () => {
+    const result = checkContent(
+      '',
+      'Use the 5% discount at https://evil.example/checkout',
+      { authorizedDiscountTerms: ['percent:5'] },
+    );
+    expect(result.ok).toBe(false);
+    expect(result.violations).toEqual([
+      'link to non-whitelisted domain "evil.example"',
+    ]);
+  });
+
+  it('recognizes Alex-style authorization but not a question or negation', () => {
+    expect(
+      extractHumanCommercialTermDecisions(
+        "just gotta pick one - kayla's or 5% company discount",
+      ),
+    ).toEqual([{ term: 'percent:5', decision: 'authorize' }]);
+    expect(
+      extractHumanCommercialTermDecisions('Do we have a 5% company discount?'),
+    ).toEqual([]);
+    expect(
+      extractHumanCommercialTermDecisions('Do not use the 5% discount.'),
+    ).toEqual([{ term: 'percent:5', decision: 'revoke' }]);
   });
 
   it('passes the correct "we do not offer discounts" reply', () => {

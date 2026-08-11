@@ -185,6 +185,15 @@ Gmail is both a channel and a business pipeline:
 6. outbound email crosses host recipient and content guards;
 7. approval-gated workflows remain pending until an authorized action.
 
+Sales commercial terms have a narrow provenance exception to the global
+invented-discount block: the host derives canonical numeric terms from non-bot
+human messages stored in the exact Slack work thread, applies later revocation,
+and re-resolves that evidence at approval-card preflight, Action-ID creation,
+and final Gmail dispatch. The agent cannot assert its own authority and another
+thread cannot lend authority. Approved replies also tolerate a CRM-lagging
+sender alias only from the exact Gmail participant + approved recipient +
+thread-to-Party binding; the allowance is reply-scoped and does not mutate CRM.
+
 Do not collapse the classification schema into CRM lead state. The project
 explicitly treats older `public.leads` assumptions as deprecated.
 
@@ -816,6 +825,16 @@ placement without hiding blocking prose. `test:email-critical` includes
 malformed-card, same-group result isolation, lead-anchor, cross-lead refusal,
 overlong-card, pre-approval content parity, transactional-link/lookalike, and
 Sales cursor migration regressions.
+
+Numeric commercial authorization follows the same exact-work-unit model. A
+human's affirmative term in one Sales thread authorizes only the matching
+canonical value there; a question is inert and a later explicit negative
+instruction removes the term. That durable evidence is consumed by the IPC
+preflight, Slack defense in depth, approved-send watcher, and final Gmail guard.
+For replies, an exact Gmail-derived participant that matches the approved card
+may bridge a stale CRM alias only when the approved thread resolves to the
+Party; unapproved and standalone recipient paths retain the original
+party-email allowlist.
 
 ## 12. Integrations
 

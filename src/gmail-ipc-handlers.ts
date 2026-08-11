@@ -31,7 +31,10 @@ import { logger } from './logger.js';
 import { convertMarkdownToEmailHtml } from './markdown-to-email-html.js';
 import { checkRecipient, normalizeRecipient } from './email-recipient-guard.js';
 import { normalizeGmailSearchQuery } from './gmail-ipc-policy.js';
-import { checkContent } from './email-content-guard.js';
+import {
+  checkContent,
+  type ContentCheckContext,
+} from './email-content-guard.js';
 
 /** Payload shape written by container MCP tools. */
 export interface GmailIpcPayload {
@@ -104,10 +107,15 @@ function toPartyId(value: unknown): number | null {
  * Tries recipient email first, then falls back to thread history.
  * Returns null if both lookups fail or find nothing.
  */
+interface ResolvedParty {
+  partyId: number;
+  source: 'email' | 'thread';
+}
+
 async function resolvePartyId(
   to?: string,
   threadId?: string,
-): Promise<number | null> {
+): Promise<ResolvedParty | null> {
   if (to) {
     const normalizedTo = normalizeRecipient(to);
     try {
@@ -116,7 +124,7 @@ async function resolvePartyId(
         [normalizedTo],
       );
       const resolved = toPartyId(result.rows[0]?.id);
-      if (resolved) return resolved;
+      if (resolved) return { partyId: resolved, source: 'email' };
     } catch (err) {
       logger.error(
         { to: normalizedTo, err },
@@ -134,7 +142,7 @@ async function resolvePartyId(
         [threadId],
       );
       const resolved = toPartyId(result.rows[0]?.party_id);
-      if (resolved) return resolved;
+      if (resolved) return { partyId: resolved, source: 'thread' };
     } catch (err) {
       logger.error(
         { threadId, err },
@@ -191,8 +199,10 @@ async function verifyPartyRecipient(
   to: string,
   claimedPartyId?: number,
   threadId?: string,
+  opts: { allowApprovedThreadParticipantAlias?: boolean } = {},
 ): Promise<RecipientVerification> {
-  const resolvedPartyId = await resolvePartyId(to, threadId);
+  const resolvedParty = await resolvePartyId(to, threadId);
+  const resolvedPartyId = resolvedParty?.partyId ?? null;
   // The claim arrives as JSON and may be a number or a numeric string; the
   // resolver is already normalized. Both sides must be compared as numbers.
   const claimed = toPartyId(claimedPartyId);
@@ -216,7 +226,26 @@ async function verifyPartyRecipient(
   }
   const emails = await getPartyEmails(partyId);
   const check = checkRecipient(to, emails);
-  if (!check.ok) return { ok: false, reason: check.reason };
+  if (!check.ok) {
+    // A reply action has two independent host-owned facts that a newly observed
+    // alias may not yet have in CRM: Gmail resolved this exact address as the
+    // participant of the approved thread, and the human approved the same
+    // address on the card. Permit that address for this reply only when the
+    // thread itself resolves to the party. Standalone sends, model-supplied
+    // recipients, reserved domains, and unrelated threads remain blocked.
+    const normalizedTo = normalizeRecipient(to);
+    const addressShapeCheck = checkRecipient(to, new Set([normalizedTo]));
+    if (
+      opts.allowApprovedThreadParticipantAlias &&
+      resolvedParty?.source === 'thread' &&
+      addressShapeCheck.ok
+    ) {
+      const replyEmails = new Set(emails);
+      replyEmails.add(normalizedTo);
+      return { ok: true, context: { partyId, emails: replyEmails } };
+    }
+    return { ok: false, reason: check.reason };
+  }
   return { ok: true, context: { partyId, emails } };
 }
 
@@ -293,6 +322,7 @@ export async function handleGmailReply(
   postToChief?: PostToChief,
   onSendConfirmed?: OnSendConfirmed,
   onSendFailed?: OnSendFailed,
+  contentGuardContext: ContentCheckContext = {},
 ): Promise<void> {
   if (!data.threadId || !data.body) {
     logger.warn({ data }, 'gmail_reply: missing threadId or body');
@@ -302,7 +332,11 @@ export async function handleGmailReply(
 
   // Content guard (P2): discount offers, non-whitelisted links, unfilled
   // placeholders. Runs on the agent's raw composition, before conversion.
-  const replyContentCheck = checkContent(data.subject || '', data.body);
+  const replyContentCheck = checkContent(
+    data.subject || '',
+    data.body,
+    contentGuardContext,
+  );
   if (!replyContentCheck.ok) {
     logger.error(
       { threadId: data.threadId, violations: replyContentCheck.violations },
@@ -363,6 +397,14 @@ export async function handleGmailReply(
           to,
           data.leadId,
           data.threadId,
+          {
+            allowApprovedThreadParticipantAlias: Boolean(
+              data.actionId &&
+              data.approvedRecipient &&
+              normalizeRecipient(to) ===
+                normalizeRecipient(data.approvedRecipient),
+            ),
+          },
         );
         if (!verification.ok || !verification.context) {
           throw new RecipientPolicyError(
@@ -560,6 +602,7 @@ export async function handleGmailSend(
   postToChief?: PostToChief,
   onSendConfirmed?: OnSendConfirmed,
   onSendFailed?: OnSendFailed,
+  contentGuardContext: ContentCheckContext = {},
 ): Promise<{ messageId: string; threadId: string } | undefined> {
   if (!data.to || !data.subject || !data.body) {
     logger.warn({ data }, 'gmail_send: missing to, subject, or body');
@@ -600,7 +643,11 @@ export async function handleGmailSend(
 
   // Content guard (P2): discount offers, non-whitelisted links, unfilled
   // placeholders. Runs on the agent's raw composition, before conversion.
-  const contentCheck = checkContent(data.subject, data.body);
+  const contentCheck = checkContent(
+    data.subject,
+    data.body,
+    contentGuardContext,
+  );
   if (!contentCheck.ok) {
     logger.error(
       {
@@ -888,13 +935,26 @@ export async function dispatchGmailIpc(
   onSendConfirmed?: OnSendConfirmed,
   onSendFailed?: OnSendFailed,
   deliverResult?: DeliverAsyncResult,
+  contentGuardContext: ContentCheckContext = {},
 ): Promise<void> {
   switch (data.type) {
     case 'gmail_reply':
-      await handleGmailReply(data, postToChief, onSendConfirmed, onSendFailed);
+      await handleGmailReply(
+        data,
+        postToChief,
+        onSendConfirmed,
+        onSendFailed,
+        contentGuardContext,
+      );
       break;
     case 'gmail_send':
-      await handleGmailSend(data, postToChief, onSendConfirmed, onSendFailed);
+      await handleGmailSend(
+        data,
+        postToChief,
+        onSendConfirmed,
+        onSendFailed,
+        contentGuardContext,
+      );
       break;
     case 'gmail_search':
       if (!data.query) {

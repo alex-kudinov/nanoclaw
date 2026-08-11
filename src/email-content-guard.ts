@@ -32,6 +32,14 @@ export interface ContentCheckResult {
   violations: string[];
 }
 
+/** Canonical value used to bind one human-authorized numeric term exactly. */
+export type NumericDiscountTerm = string;
+
+export interface ContentCheckContext {
+  /** Host-resolved terms only. Never populate this from agent-supplied text. */
+  authorizedDiscountTerms?: readonly NumericDiscountTerm[];
+}
+
 /** Domains an outbound email may link to. Extend via EMAIL_LINK_WHITELIST. */
 const DEFAULT_LINK_WHITELIST = [
   'tandemcoach.co',
@@ -96,25 +104,147 @@ function checkLinks(text: string, violations: string[]): void {
   }
 }
 
-// Numeric discount offers only — the word "discount" alone must pass (the
-// correct reply to "do you offer discounts?" contains it).
-const DISCOUNT_RES = [
-  /\d+\s*%\s*off/i,
-  /\$\s*\d[\d,]*\s*off\b/i,
-  /discount(?:ed)?\s+(?:of|to|price\s+of)\s+\$?\s*\d/i,
-  /(?:special|reduced)\s+price\s+of\s+\$?\s*\d/i,
-  /\bwaive\s+(?:the\s+)?\$?\s*\d/i,
-];
+interface NumericDiscountMatch {
+  key: NumericDiscountTerm;
+  label: string;
+  index: number;
+}
 
-function checkDiscounts(text: string, violations: string[]): void {
-  for (const re of DISCOUNT_RES) {
-    const m = text.match(re);
-    if (m) {
-      violations.push(
-        `numeric discount offer "${m[0].trim()}" (discounts are human-only)`,
-      );
-      return;
-    }
+function normalizedNumber(value: string): string {
+  const n = Number(value.replaceAll(',', ''));
+  return Number.isFinite(n) ? String(n) : value.replaceAll(',', '');
+}
+
+function collectMatches(
+  text: string,
+  re: RegExp,
+  key: (m: RegExpExecArray) => NumericDiscountTerm,
+  matches: NumericDiscountMatch[],
+): void {
+  for (const m of text.matchAll(re)) {
+    matches.push({ key: key(m), label: m[0].trim(), index: m.index ?? 0 });
+  }
+}
+
+/**
+ * Extract the exact numeric commercial terms that the global guard controls.
+ * The key is semantic rather than textual, so "5% off" matches a human's
+ * "5% company discount" while 15% remains a different, blocked term.
+ */
+function extractNumericDiscountOffers(text: string): NumericDiscountMatch[] {
+  const matches: NumericDiscountMatch[] = [];
+  const percentSeen = new Set<string>();
+  for (const m of text.matchAll(/\b(\d+(?:\.\d+)?)\s*%/gi)) {
+    const start = m.index ?? 0;
+    const window = text.slice(
+      Math.max(0, start - 120),
+      start + m[0].length + 120,
+    );
+    if (!/\b(?:discount|savings?|off)\b/i.test(window)) continue;
+    const key = `percent:${normalizedNumber(m[1])}`;
+    if (percentSeen.has(key)) continue;
+    percentSeen.add(key);
+    matches.push({ key, label: m[0].trim(), index: start });
+  }
+  collectMatches(
+    text,
+    /\$\s*(\d[\d,]*(?:\.\d+)?)\s*off\b/gi,
+    (m) => `amount-off:${normalizedNumber(m[1])}`,
+    matches,
+  );
+  collectMatches(
+    text,
+    /discount(?:ed)?\s+(?:of|to|price\s+of)\s+\$?\s*(\d[\d,]*(?:\.\d+)?)/gi,
+    (m) => `price:${normalizedNumber(m[1])}`,
+    matches,
+  );
+  collectMatches(
+    text,
+    /(?:special|reduced)\s+price\s+of\s+\$?\s*(\d[\d,]*(?:\.\d+)?)/gi,
+    (m) => `price:${normalizedNumber(m[1])}`,
+    matches,
+  );
+  collectMatches(
+    text,
+    /\bwaive\s+(?:the\s+)?\$?\s*(\d[\d,]*(?:\.\d+)?)/gi,
+    (m) => `waive:${normalizedNumber(m[1])}`,
+    matches,
+  );
+  return matches.sort((a, b) => a.index - b.index);
+}
+
+export interface HumanCommercialTermDecision {
+  term: NumericDiscountTerm;
+  decision: 'authorize' | 'revoke';
+}
+
+/**
+ * Interpret a human Slack reply narrowly. Questions are not authority; explicit
+ * negation revokes an earlier term; an affirmative commercial statement (such
+ * as "pick ... 5% company discount") authorizes only that canonical value.
+ */
+export function extractHumanCommercialTermDecisions(
+  text: string,
+): HumanCommercialTermDecision[] {
+  const decisions: HumanCommercialTermDecision[] = [];
+  for (const m of text.matchAll(/\b(\d+(?:\.\d+)?)\s*%/gi)) {
+    const start = m.index ?? 0;
+    const clauseStart = Math.max(
+      text.lastIndexOf('\n', start),
+      text.lastIndexOf('.', start),
+      text.lastIndexOf(';', start),
+    );
+    const nextStops = [
+      text.indexOf('\n', start),
+      text.indexOf('.', start),
+      text.indexOf(';', start),
+    ].filter((i) => i >= 0);
+    const clauseEnd = nextStops.length ? Math.min(...nextStops) : text.length;
+    const clause = text.slice(clauseStart + 1, clauseEnd + 1);
+    if (
+      !/\b(?:discount|savings?|off|pick|choose|use|apply|offer|give|approve|authorize|option)\b/i.test(
+        clause,
+      )
+    )
+      continue;
+    const term = `percent:${normalizedNumber(m[1])}`;
+    if (clause.includes('?')) continue;
+    const negated = /\b(?:do\s+not|don't|cannot|can't|never|not|no)\b/i.test(
+      clause,
+    );
+    decisions.push({ term, decision: negated ? 'revoke' : 'authorize' });
+  }
+
+  for (const offer of extractNumericDiscountOffers(text)) {
+    if (offer.key.startsWith('percent:')) continue;
+    const window = text.slice(
+      Math.max(0, offer.index - 80),
+      Math.min(text.length, offer.index + offer.label.length + 80),
+    );
+    if (window.includes('?')) continue;
+    const negated = /\b(?:do\s+not|don't|cannot|can't|never|not|no)\b/i.test(
+      window,
+    );
+    decisions.push({
+      term: offer.key,
+      decision: negated ? 'revoke' : 'authorize',
+    });
+  }
+  return decisions;
+}
+
+function checkDiscounts(
+  text: string,
+  violations: string[],
+  authorized: ReadonlySet<NumericDiscountTerm>,
+): void {
+  const firstUnauthorized = extractNumericDiscountOffers(text).find(
+    (offer) => !authorized.has(offer.key),
+  );
+  if (firstUnauthorized) {
+    violations.push(
+      `numeric discount offer "${firstUnauthorized.label}" (discounts are human-only)`,
+    );
   }
 }
 
@@ -160,11 +290,16 @@ function checkProgramAbbreviations(text: string, violations: string[]): void {
 export function checkContent(
   subject: string,
   body: string,
+  context: ContentCheckContext = {},
 ): ContentCheckResult {
   const violations: string[] = [];
   const text = `${subject || ''}\n${body || ''}`;
   checkLinks(text, violations);
-  checkDiscounts(text, violations);
+  checkDiscounts(
+    text,
+    violations,
+    new Set(context.authorizedDiscountTerms ?? []),
+  );
   checkPlaceholders(text, violations);
   checkAiTells(text, violations);
   checkProgramAbbreviations(text, violations);

@@ -840,6 +840,33 @@ export function getThreadContext(
   return rows.reverse();
 }
 
+/**
+ * Durable human-only statements in one Slack work thread, oldest first.
+ * Root app handoffs and agent output are excluded by the bot flag; callers use
+ * this as provenance for exact-thread human commercial-term authorization.
+ */
+export function getHumanMessagesInThread(
+  chatJid: string,
+  threadTs: string,
+): Array<
+  Pick<NewMessage, 'id' | 'content' | 'timestamp' | 'sender' | 'sender_name'>
+> {
+  return db
+    .prepare(
+      `SELECT id, content, timestamp, sender, sender_name
+         FROM messages
+        WHERE chat_jid = ?
+          AND (id = ? OR thread_ts = ?)
+          AND COALESCE(is_bot_message, 0) = 0
+          AND COALESCE(is_from_me, 0) = 0
+          AND content IS NOT NULL AND content != ''
+        ORDER BY timestamp ASC, rowid ASC`,
+    )
+    .all(chatJid, threadTs, threadTs) as Array<
+    Pick<NewMessage, 'id' | 'content' | 'timestamp' | 'sender' | 'sender_name'>
+  >;
+}
+
 function graderThreadOutput(
   chatJid: string,
   threadTs: string,

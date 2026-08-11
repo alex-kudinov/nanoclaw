@@ -85,6 +85,7 @@ import {
   parseApprovalCardRecipient,
 } from './approved-send-handoff.js';
 import { checkContent } from './email-content-guard.js';
+import { resolveHumanAuthorizedDiscountTerms } from './human-commercial-term-authorization.js';
 import {
   isSlackMessageOverLimit,
   SLACK_MESSAGE_MAX_LENGTH,
@@ -622,9 +623,21 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       );
                       continue;
                     }
+                    const approvalThreadTs = hostWorkUnitThreadTsFor(
+                      sourceEntry[0],
+                    );
                     const contentCheck = checkContent(
                       approvedHandoff.subject,
                       approvedHandoff.body,
+                      {
+                        authorizedDiscountTerms:
+                          sourceGroup === 'sales'
+                            ? resolveHumanAuthorizedDiscountTerms(
+                                sourceEntry[0],
+                                approvalThreadTs,
+                              )
+                            : [],
+                      },
                     );
                     if (!contentCheck.ok) {
                       const rejectionReason =
@@ -1409,6 +1422,15 @@ export function startIpcWatcher(deps: IpcDeps): void {
 
                 fs.unlinkSync(filePath);
                 try {
+                  const contentGuardContext = {
+                    authorizedDiscountTerms:
+                      approvedAction?.groupFolder === 'sales'
+                        ? resolveHumanAuthorizedDiscountTerms(
+                            approvedAction.chatJid,
+                            approvedAction.threadTs,
+                          )
+                        : [],
+                  };
                   await dispatchGmailIpc(
                     {
                       ...executableData,
@@ -1455,6 +1477,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       );
                     },
                     deps.deliverSourceInput,
+                    contentGuardContext,
                   );
                 } catch (err) {
                   if (approvedAction?.actionId) {

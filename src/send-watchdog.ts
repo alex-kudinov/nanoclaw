@@ -165,6 +165,7 @@ export function recordApproval(
     threadTs?: string;
     cardText: string;
     approvedGmailThreadId?: string;
+    authorizedDiscountTerms?: readonly string[];
     now: Date;
   },
   store: SendWatchdogStore,
@@ -179,7 +180,12 @@ export function recordApproval(
   // Action-ID now if those exact approved bytes would inevitably be blocked
   // later; an operator must never approve a promise the host already knows it
   // cannot execute.
-  if (!checkContent(approved.subject, approved.body).ok) return null;
+  if (
+    !checkContent(approved.subject, approved.body, {
+      authorizedDiscountTerms: opts.authorizedDiscountTerms,
+    }).ok
+  )
+    return null;
   const row: PendingSend = {
     actionId: newEmailActionId(),
     draftTs: opts.draftTs,
@@ -223,7 +229,9 @@ export async function observeApprovalCard(
   if (rejected) {
     const parsed = buildApprovedHandoff(opts.cardText);
     const contentCheck = parsed
-      ? checkContent(parsed.subject, parsed.body)
+      ? checkContent(parsed.subject, parsed.body, {
+          authorizedDiscountTerms: opts.authorizedDiscountTerms,
+        })
       : undefined;
     const reason =
       contentCheck && !contentCheck.ok

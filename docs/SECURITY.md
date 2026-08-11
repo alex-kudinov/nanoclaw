@@ -229,6 +229,19 @@ Gmail IPC outbound email is C3. At that final host boundary:
   company/transactional domains include Tandem properties and short links,
   Stripe booking links, and regional Zoom hosts; hostname suffix lookalikes
   remain blocked;
+- the numeric-discount guard accepts a value only when a non-bot human stated
+  that same canonical value in the exact Sales chat and work thread. Questions
+  do not authorize, later explicit negation revokes, and bot/customer handoffs,
+  sibling threads, self-asserted card text, and mismatched values do not satisfy
+  the guard. The same durable thread evidence is re-resolved at card posting,
+  Action-ID creation, and final Gmail dispatch; all other content predicates
+  remain independent and blocking;
+- an approved Gmail reply may use a newly observed sender alias that is not yet
+  in `party_emails` only when Gmail resolves that exact address as the
+  participant of the durably approved thread, the approval card names the same
+  address, the thread resolves to the Party, and a host Action-ID is present.
+  This reply-scoped proof does not create a CRM alias and cannot authorize a
+  standalone send, model-supplied recipient, reserved domain, or other thread;
 - deterministic guard failures and uncertain delivery errors remain durable
   and are posted to the originating approval thread. Pre-approval malformed or
   content-invalid cards are also returned through the directory-derived source
