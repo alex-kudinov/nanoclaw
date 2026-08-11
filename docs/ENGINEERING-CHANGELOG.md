@@ -8,6 +8,1074 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260810-002 — CNPC intake and bounded coach-matching control plane
+
+- Date: 2026-08-11T00:40Z
+- Owner/client: Codex
+- State: validating — local and uncommitted; not migrated, registered, built,
+  deployed, or live-verified. No dummy or real submission has been sent.
+- Commit/PR: uncommitted on `codex/continuity-reconciliation`; task began at
+  `0a39380`, and the shared branch advanced independently to `2e6fb70` during
+  implementation for NC-20260810-001.
+- Change class: C5 — public webhook, customer identity data, new agent behavior,
+  and future email/contract/payment boundaries. Highest currently enabled
+  operational class is C2 because this slice stores intake/match state and posts
+  internal review only; all external actions are disabled.
+- Affected systems: webhook archive/reaper/extractors, host CNPC intake and match
+  result handlers, ordered PostgreSQL migration 115, CNPC group prompt and
+  knowledge, runtime registration script, environment reference, project map,
+  and CNPC runbook.
+- Trigger: CNPC's EA manually transfers website applications to a Sheet, ranks
+  coaches against a Word bench, cross-checks a separate availability form,
+  drafts client/coach messages, coordinates chemistry calls, creates
+  contract/payment work, and adjusts capacity. The owner wants Gravity Forms to
+  flow through n8n to a CNPC minion with minimal intervention.
+- Root cause: the manual process has no canonical operational roster or
+  capacity ledger. The Word bench, public site, Plutio onboarding responses, and
+  Plutio availability responses disagree. Intake, matching, pending chemistry
+  load, signed/paid commitment, reporting, and external actions are also mixed
+  across prose, forms, email, and a spreadsheet without durable idempotency or
+  receipts.
+- Outcome implemented locally:
+  - public Gravity Forms-to-n8n route at
+    `POST https://webhooks.tandemcoach.co/webhook/cnpc-coaching-intake`, with a
+    dedicated ingress secret and capture-only first-dummy procedure;
+  - exact private n8n-to-NanoClaw endpoint contract at
+    `POST http://mini-claw:8088/hook/cnpc-coaching-intake`;
+  - stable Gravity Forms form/entry identity and perimeter deduplication;
+  - typed, length-bounded intake validation before archive/ack;
+  - host-owned identity resolution, deterministic eligibility/pricing, and
+    canonical intake persistence;
+  - schema for coach roster, capacity snapshots, match versions/candidates,
+    expiring chemistry soft holds, signed-and-paid engagement gating, and a
+    hash/idempotency/receipt action outbox;
+  - host-only active/capacity-bearing match pool; the model cannot add coaches;
+  - strict model-result validation against intake ID, roster version, coach IDs,
+    ranks, roles, scores, and reasons before match persistence;
+  - CNPC minion behavior, privacy rails, and blocked external-action response;
+  - registration script that stores the webhook secret only in ignored runtime
+    state with mode `0600` and never prints it.
+- Security: CNPC Plutio uses a separate future host-only credential namespace.
+  The existing single-workspace reaper is not used. The credential disclosed in
+  chat must be rotated before production. No credential, coach certificate,
+  coach email, private client list, or raw form response was copied into source,
+  prompts, tests, or continuity docs.
+- Verification under Node 22.23.2:
+  - `npm run typecheck` passes;
+  - CNPC/extractor focused suite passes 5 files / 51 tests;
+  - focused HTTP webhook suite passes 1 file / 37 tests with local ephemeral
+    listener permission;
+  - full root suite passes 155 files / 2,046 tests;
+  - `npm run docs:continuity-check` and `git diff --check` pass.
+- Deployment/migration: not performed. Migration 115 is unapplied; the CNPC
+  Slack group/webhook are unregistered; no release artifact exists; production
+  health and side effects are unverified.
+- Required next step: obtain/create the dedicated `#gru-cnpc` Slack channel ID,
+  rotate and set a new CNPC intake webhook secret, review/apply migration 115,
+  register the group/webhook, build and deploy an immutable artifact, verify
+  health/registration, then accept one sanitized dummy submission. Mailbox,
+  named approvers, Plutio template discovery, and receipt-bound executors remain
+  separately gated before any real client/coach communication.
+- Rollback: before deployment, discard only the NC-20260810-002 source files and
+  hunks. After migration, the additive tables/views can remain dormant; remove
+  the runtime webhook/group registration to stop intake. Never drop tables after
+  accepting a submission without first exporting/reconciling their rows.
+- Documentation: `docs/CNPC-AUTOMATION.md`, `docs/PROJECT-MAP.md`,
+  `docs/ACTIVE-WORK.md`, this entry, group prompt, and CNPC knowledge files.
+
+### NC-20260810-001 — Practitioner Series CCE accreditation status is per course
+
+- Date: 2026-08-10T20:40Z
+- Owner/client: Claude Code
+- State: deployed_unverified — the tandemweb half is deployed and confirmed live
+  by fetch; the NanoClaw half is committed, pushed, and present on the Mac Mini
+  production checkout through the existing `knowledge/` sync. What remains
+  unverified is agent behavior: no container has been respawned against the
+  corrected knowledge, so no Sales draft quoting the three approved courses has
+  been observed. Artifact verification is not behavior verification.
+- Commit/PR: NanoClaw `996ca14` on `codex/continuity-reconciliation` (14 files:
+  the eleven agent copies, the shared master, sales `LEARNED.md`, and
+  `facts/programs.yaml`), pushed to `origin`, never to the `qwibitai` upstream.
+  tandemweb `eba3ec23c` merged to `main` as `2fcc2f829`, pushed, and deployed.
+  The two continuity documents are committed separately and necessarily carry the
+  concurrent procurement session's doc rows, which were already staged in those
+  same files; that session's 31 non-documentation staged files were left alone.
+  The NanoClaw knowledge commit does
+  carry earlier uncommitted knowledge work that shared the same files and could
+  not be split by path — the MCS Practicum corrections and the NC-20260729-002
+  Coaching Supervision Mastery rewrite, both unmodified.
+- Change class: C2 — knowledge/instruction writes that affect C3 agent email output
+- Affected systems: all eleven agent knowledge copies, the shared knowledge
+  master, and the sales learned-lesson override file. No code, schema, build, or
+  runtime change.
+- Outcome: agents state ICF CCE accreditation per Practitioner Series course.
+  Running a Coaching Business, Coaching Tools Mastery, and AI for Coaches are
+  quoted as approved; the remaining three are quoted as pending; Setting Up Your
+  Coaching Practice is quoted with no CCE claim.
+- Trigger: operator reported that Sales still treated every Practitioner Series
+  course as accreditation-pending after ICF had granted three of them.
+- Root cause: two independent defects.
+  1. `knowledge/agents/*/KNOWLEDGE.md` carried a single blanket callout,
+     "ACCREDITATION IS PENDING — ICF CCE accreditation is pending per course
+     (not yet granted)", written before any approval landed. Tandemweb commit
+     `56a57437a` ("ICF granted CCE for tools, business, and AI courses") never
+     propagated into the knowledge base.
+  2. `knowledge/shared/KNOWLEDGE.md`, regenerated 2026-08-08, had lost the entire
+     `## Practitioner Series` section, because `generate-llms-full.py` emits no
+     `practitioner-series*` piece into `llms-pieces/`. Propagation is a blind
+     `cp shared → agents/*` in `validate-knowledge.sh --update`, so the next
+     propagation would have deleted the section from every agent.
+- Source of truth used: `~/dev/tandemweb/pages/practitioner-series/05-section-catalog.html`
+  (2026-08-09) plus each course's hero, format, enroll, and FAQ sections.
+- Files:
+  - `knowledge/agents/{archivarista,booking,campanero,chief,contador,courses,inbox,mailman,procurement,sales,social}/KNOWLEDGE.md`
+    — course table gains an explicit per-course `ICF CCE status` column; the
+    blanket pending callout is replaced by an approved/pending/no-claim
+    breakdown. Two accredited splits corrected against the live pages: Running a
+    Coaching Business `14 CC + 26 RD` → `9 CC + 31 RD`, Coaching Tools Mastery
+    `14 CC + 6 RD` → `13 CC + 7 RD`. Adds the per-course URLs, the differing
+    guarantees (30-day money-back once approved, void on certificate issue,
+    versus full refund if a pending course fails to earn its designation), and
+    the ICF 16-hour Resource Development renewal cap.
+  - `knowledge/shared/KNOWLEDGE.md` — the corrected `## Practitioner Series`
+    section reinserted before `## Coaching Tools Library`, so the next
+    propagation no longer erases it.
+  - `knowledge/agents/sales/LEARNED.md` — Lesson 67 records the per-course rule;
+    learned lessons override KNOWLEDGE.md on conflict.
+- Verification: `npm run docs:continuity-check` passed. Every one of the eleven
+  agent copies carries three approved rows and one per-course callout, and no
+  blanket-pending statement remains in `knowledge/` or the group prompts. Ground
+  truth was read from the tandemweb page sections, not from memory. No build,
+  test suite, migration, deployment, or agent canary was run.
+- Deployment/migration: not applicable — no artifact and no schema change. The
+  knowledge files are read at container launch, so agents pick the change up on
+  their next spawn.
+- Rollback/recovery: revert these thirteen knowledge files.
+- Documentation: this entry.
+- Second increment, same date, on operator instruction:
+  - Upstream generator fixed. `~/dev/tandemweb/tools/generate-llms-full.py`
+    `PART_A_PAGES` gained a "Continuing Coach Education (CCE) Courses" divider
+    and all eight practitioner-series pages (hub plus seven courses).
+    `./tools/generate-llms-full.sh --no-scrape` regenerated 62 pieces (was 53):
+    nine new `llms-pieces/part-a/` files, `llms-full.txt` 1601KB → 1735KB, and
+    practitioner-series references in it rose from 5 incidental blog links to 82.
+    The regen deletes no existing piece. The Practitioner Series section will
+    therefore survive future `generate-knowledge.sh` runs. Local only in the
+    tandemweb worktree — not committed and not deployed.
+  - Pending CC/RD splits resolved by the operator, so the knowledge base quotes
+    them again instead of withholding them: Career & Transition 14 CC + 6 RD,
+    ADHD Coaching 15 CC + 5 RD, Systemic Coaching 16 CC + 4 RD, all 20.0 hours,
+    all labelled "submitted", never "accredited". Applied to the eleven agent
+    copies, the shared master, and Lesson 67.
+- Both page-level errors were corrected and published on owner instruction the
+  same evening. The hub catalog tile for ADHD Coaching went from
+  `20 hrs · 14 CC + 6 RD` to `15 CC + 5 RD`; the visually identical Career &
+  Transition tile beside it was already correct and was left alone. The Systemic
+  Coaching page went from 30.0 hours / 25 CC + 5 RD to 20.0 hours / 16 CC + 4 RD
+  across `01-section-hero.html`, `05-section-syllabus.html`, two FAQ answers, and
+  four fields in the `meta.json` JSON-LD; video runtime (~26 h) and lesson counts
+  were left untouched, since those describe content rather than claimed CCE
+  hours. `pages/practitioner-series/preview-full.html` was deliberately not
+  edited: it is a stale snapshot that still shows Coaching Tools Mastery as
+  unapproved, and it is read by neither the generator nor the deploy, so a
+  partial correction would only make it look current.
+- Follow-ups: (1) `facts/programs.yaml` gained a `practitioner-series` entry in
+  the same change, so this drift class is now covered — verified 0 findings
+  against the current knowledge base and 3 against a deliberately regressed copy.
+  (2) `pages/practitioner-series/preview-full.html` is stale and should be
+  regenerated by whoever owns previews. (3) The 2026-08-15 regen is the first to
+  exercise the new pieces; the model may rewrite the hand-written Practitioner
+  Series section from page content, which would keep the facts but could drop the
+  operating instructions in the callout. Sales Lesson 67 is the backstop, since
+  lessons override KNOWLEDGE.md and the regen does not touch them.
+
+### NC-20260809-004 — Request-first Sales response policy
+
+- Date: 2026-08-10T03:21Z
+- Owner/client: Codex implementer + Claude Code owner/reviewer
+- State: ready_for_review — local and uncommitted; a local TypeScript build
+  passed, but no release artifact was created or deployed and nothing is
+  live-verified or outcome-validated
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `0a39380`
+- Change class: C2 — Sales prompt/procedure behavior plus isolated shared
+  autonomy-marker recognition
+- Evidence basis: the converged 30-day Sales audit (`NC-20260805-001`) found
+  289 included work cycles, 105 substantive operator lines, and 81 reviewed
+  drafts. Operator-held facts and record corrections were common; unrequested
+  content clustered in old follow-ups; active-client cases could be ignored;
+  and the deployed path lookup differed from the audited signal.
+- Change: Sales now decides relationship, explicit current asks, answerability,
+  and one of seven routes before selecting content. Review cards expose route,
+  confidence, evidence-bounded relationship, ask provenance, answerability,
+  abstentions, and justified additions. Program match and estimated deal require
+  `TRANSACT` plus a verbatim at-most-15-word current-message `Route-Basis`.
+  `LOW`/`HUMAN` cases use non-trackable `[SALES ESCALATION]` and prohibit a
+  customer draft. ORIENT and follow-ups cannot invent commercial material.
+- Path boundary: Chaos browsing-path lookup is disabled for customer-facing
+  drafting and a supplied path signal must leave the response identical. It can
+  return only through a separately authorized, blinded path-on/path-off
+  evaluation after runtime/audit signal definitions converge.
+- Shared-host boundary: `isDraftMessage` now recognizes anchored,
+  case-insensitive, emphasis-tolerant canonical Sales headings, plus the exact
+  historical `REVISED DRAFT FOLLOW-UP:` form as a recognition-only alias. It
+  excludes quoted/inline echoes and bare support/client labels. Its follow-up
+  backfill classifier uses the same grammar. Replay over 2,322 local Sales bot
+  rows measured old 568 / final 568 / zero differences, so autonomy-report
+  history does not drift from this change.
+- Eval boundary: `evals/sales/request-first-cases.json` is tracked outside the
+  read-write group mount. Nine synthetic cases cover all routes and key journey
+  failures. The tests validate fixture/contract structure only; no response
+  quality claim is made.
+- Claude convergence: exact Sales-owner session
+  `ae6931fb-c0e6-4714-9b81-ac8599a00f4f` returned `ACCEPT WITH CHANGES` in R1
+  and R2, then `ACCEPT` in R3 after every in-bound finding was reconciled.
+  Claude attested that the excluded dirty approval-rejection and Handling
+  Approval blocks remained text-identical, but no pre-edit hash exists; current
+  review hashes are `CLAUDE.md` `14f6dab...a662` and `WORKFLOWS.md`
+  `089a565...0bec`.
+- Verification: pinned Node 22.23.2 focused policy/prompt/ledger/mailman run 5
+  files / 34 tests pass; final prompt pair 2 / 17 pass; root run passed 1,963
+  tests and its 43 sandbox-permission failures then passed 43/43 in the two
+  affected files (150 files / 2,006 tests accounted for). Typecheck, local
+  TypeScript build, targeted formatting, schema/continuity check, and diff check
+  pass.
+- Local/live determination: no local NanoClaw/Gru/company daemon is registered
+  with launchctl and enabled LaunchAgents do not point a NanoClaw service at this
+  checkout. No production query/write, Mini sync, service restart, Slack post,
+  email, release deployment, commit, or push occurred.
+- Rollback/recovery: revert the four Sales prompt/support files, the isolated
+  marker change/tests, prompt-contract test, and synchronized continuity text
+  together. Reverting only the prompts or only marker recognition recreates a
+  split policy surface.
+
+### NC-20260809-001 — Host-owned grader output boundary, then live Heartbeat assignment grounding
+
+- Date: 2026-08-09T20:44Z (P0.1/P0.2 A/A2); 2026-08-09T22:05Z (P0.2 R7)
+- Owner/client: Claude Code implementer (R4, R7), Codex reviewer
+- State: ready_for_review — implemented and uncommitted; NOT built into a
+  release artifact, NOT deployed, NOT live-verified. No Slack post, Heartbeat
+  write, certificate action, or database mutation occurred.
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `0a39380`
+- Change class: C2 - host message-path behavior for one group, plus a shared
+  channel method, a shared config flag, and a group prompt contract
+- Problem: the P0.1 gate validated one message at a time but nothing enforced
+  it on the way to Slack, and three independent defects made the invariant
+  ("a student must never reasonably infer grading was performed by AI")
+  unenforceable in the live path. `SlackChannel.sendMessage` prefixes agent
+  posts with `[grader]` at display time, AFTER the caller's text is validated,
+  so every grade published a system tag directly above student-facing feedback.
+  `routeAdoptedOutput` relayed a re-adopted container's raw final text with no
+  suppression check at all. `suppressFinalText` requires `!threadTs` and is
+  therefore a no-op for every `threadPerMessage` group, the grader included.
+- Change: added `src/grader-delivery.ts`, the only path allowed to publish
+  grader-authored text into the grader channel. It engages on verified IPC
+  source `grader` AND resolved destination `grader`, serializes derive/check/post
+  per thread, derives prior delivery structurally, calls `checkGraderOutput`,
+  posts through dedicated strict Slack methods, and posts only rule codes on a
+  block. Supporting changes: `src/db.ts`
+  `hasDeliveredGraderStudentCopy`/`hasGraderOutputInThread` (whole-thread, no
+  25-row window, independent of the mutable voice rules);
+  `src/channels/slack.ts` `postGraderStudentCopy`/`postGraderOperatorNotice`
+  (no prefix, no queue, no split, no lead-anchor derivation, rejects on
+  disconnect/API error/missing timestamp, persists `from_group='grader'`);
+  `src/ipc.ts` routing that fails closed when the boundary is absent;
+  `src/types.ts` `suppressFinalTextInThreads` plus a shared
+  `shouldSuppressFinalText` consulted by both final-text relays;
+  `src/index.ts` bounded IPC-drain missing-output notice;
+  `src/grader-output-gate.ts` shared verdict predicate, a 3,500-character
+  absolute cap that clamps expanded mode, and operator-addressed block wording;
+  `scripts/register-grader.ts` both suppression flags; and the
+  `groups/grader/CLAUDE.md` two-message contract.
+- Deliberately not done: `SendMessageOpts` was NOT extended with a strict-send
+  flag. An optional flag on the shared `Channel` interface is silently ignored
+  by any channel that does not implement it, which fails open. Dedicated
+  `SlackChannel` methods leave every non-grader caller unchanged by
+  construction rather than by review. Raw final assistant text is never
+  host-wrapped or quoted; the missing-output notice is fixed host-authored text.
+- Verification (pinned `/opt/homebrew/opt/node@22/bin/node` v22.23.2, matching
+  `.nvmrc`): `tsc --noEmit` clean; `prettier --check "src/**/*.ts"` clean;
+  focused run 7 files / 245 tests pass; full suite 145 files / 1,872 tests pass
+  (baseline before this change was 142 files / 1,808 tests). `npm test` under
+  the default Homebrew Node 26.6.0 produces 68 invalid `better-sqlite3`
+  NODE_MODULE_VERSION 127-vs-147 failures in `src/db.test.ts`; that is the
+  documented environment trap, not a regression.
+- Not evidence of deployment: a passing suite and a clean typecheck are not a
+  release. The live grader `registered_groups.container_config` row still reads
+  `suppressFinalText=0`, so threaded final-text suppression is inert in
+  production until that row is updated during deployment.
+- Follow-up: Codex review of the composite diff; owner decisions on
+  blocked-submission service level and P0.5 retroactivity; corpus-level blind
+  human review remains the release gate this deterministic boundary does not
+  replace.
+
+#### Addendum 2026-08-09T20:45Z — independent Codex composite review
+
+- P0.1 source acceptance is complete. Codex found one fail-open edge after R4:
+  normal/adopted final-text suppression depended on current registration flags.
+  Both relays now suppress unconditionally when the authoritative group or
+  sidecar source folder is `grader`; config flags remain defense in depth and
+  Sales/Inbox behavior is unchanged.
+- The grader prompt now states explicitly that the first verdict line is the
+  operator's Approve-vs-Retry marker and only the feedback body is pasted into
+  Heartbeat. This removes the R4 prompt/report contradiction.
+- Independent pinned Node 22.23.2 verification: focused 7 files / 247 tests,
+  full 145 files / 1,874 tests, `tsc --noEmit`, Prettier, schema self-test,
+  documentation continuity, and `git diff --check` all pass.
+- Still not built, deployed, or live-verified. No Slack/Heartbeat/certificate or
+  runtime database mutation occurred. Corpus-level blind human review is still
+  required before release claims about voice quality.
+
+#### Addendum 2026-08-09T21:08Z — P0.2 A/A2 and Claude R6
+
+- Claude R5 found that P0.1 still accepted `PASS\nfeedback` and that one old
+  thread output suppressed every later missing-output notice. The gate now
+  requires `VERDICT\n\nfeedback`, counts normalized Unicode code points while
+  enforcing the transport's UTF-16 ceiling, never rewrites, and the prompt states
+  the same copy contract. Missing-output checks use a per-run timestamp watermark.
+- Claude R6 found and Codex fixed a whitespace-only-body fail-open that could
+  post a verdict with no feedback and then mark the thread delivered. R6 accepted
+  Codex's rejection of name-prefix aliases and the unsynced derivative index.
+- Codex did not accept silently optional identity context, artificial timing
+  delay, or uncalibrated contrast/reuse thresholds. Those remain design and
+  measure-only evaluation work; identity-contract design is next.
+- Final local verification under pinned Node 22.23.2: six focused files / 237
+  tests, full 145 files / 1,877 tests, typecheck and TypeScript formatting pass.
+- No Slack/Heartbeat/certificate/runtime database/build/deployment action.
+- R7 (2026-08-09T22:05Z) — second problem, same invariant: the grading pack's
+  `assignments/` tree holds SNAPSHOTS taken at course-onboarding time, and a
+  read-only Heartbeat inventory proved three of the six Foundation-program
+  written assignments have since diverged in grading-relevant ways (M2 changes
+  the client profile from two to five years of experience; M4 adds an
+  observation-form link and reframes the form as an observation structure rather
+  than an ACC scoring exercise; M5 says evaluation-feedback where the snapshot
+  says developmental-feedback). Grading a student against an assignment they
+  were never given is, from the student's side, indistinguishable from grading
+  badly. Separately, nothing prevented feedback from opening by addressing a
+  different student by name — the loudest available signal that no person read
+  the submission.
+- R7 change: the host now resolves and supplies the current assignment before
+  each grading run and refuses student-facing output for any run it cannot
+  account for. New `src/grader-submission-context.ts` (grading root from the
+  registered `additionalMounts` entry, size-capped registry load,
+  first-two-nonblank-line header parse, exact normalized label match,
+  discriminated no-submission/resolved/blocked result);
+  `src/grader-assignment-fetch.ts` (one read-only GET per submission, 15s
+  timeout, 512 KB transport cap, 60,000-character content cap, exact lesson-id
+  and canonical-title equality, non-blank content, never logs or persists
+  content or the credential); `src/grader-run-context.ts` (bounded in-memory
+  per-thread proof of a resolved submission, 30-minute TTL, plus the
+  heartbeat/snapshot-only/unavailable prompt blocks, XML-escaped including the
+  assignment body); `src/grader-salutation.ts` (explicit-greeting and own-line
+  vocative arms; exact full-name or exact first-token match; no prefix aliases,
+  no nickname inference, no arbitrary capitalized-word scanning).
+  `src/grader-output-gate.ts` gains `expectedStudentName` and
+  `salutation-name-mismatch`; `src/grader-delivery.ts` gains `submissionContext`
+  and `missing-submission-context`, so a run with no host record cannot stage
+  student copy while operator-only output is unaffected; `src/ipc.ts` supplies
+  the context; `src/index.ts` establishes it before `runAgent`.
+  `~/dev/grading/registry.json` carries a `heartbeat` object on the six mapped
+  assignments and `validate.py` enforces its shape, id/title uniqueness, and
+  global label unambiguity, covered by a new `test_validate.py`.
+  `groups/grader/CLAUDE.md` documents the context block, rewrites Step 3 to
+  grade from the live assignment and hold on contradiction, and adds Critical
+  Rule 8 — compacted to stay at exactly 200 lines with every prior rule intact.
+- R7 authority boundary: `HEARTBEAT_API_KEY` injection remains `courses`-only
+  (`src/container-runner.ts:551`); the grader container receives no credential,
+  no courses repository, and no publishing tool. The credential is read through
+  `readEnvFile`, which does not write `process.env`, so it never reaches a child
+  process. Assignment content is never persisted or logged; only a 16-character
+  SHA-256 prefix leaves the fetch module.
+- R7 self-review caught a fail-open in its own first wiring: a thread can be run
+  more than once, and a context registered by an earlier run was still live
+  inside its TTL when a later run in the same thread failed to establish one, so
+  the later run's output would have been authorized by a resolution that was not
+  its own. `establishGraderRunContext` now clears the thread's context before
+  deciding, so every run either registers its own or leaves the thread with none.
+- R7 verification (pinned Node 22.23.2, absolute path): focused 10 files / 342
+  tests; full suite 149 files / 1,982 tests, up from 145 / 1,877; `tsc --noEmit`
+  clean; `prettier --check` clean; schema sanitizer self-test passed;
+  documentation continuity passed; `git diff --check` clean. Grading repository:
+  `test_validate.py` 26/26 (run as plain callables — pytest is absent from the
+  system python3); `validate.py` reports one pre-existing unrelated
+  `calibration/acc-bars-standard.json` error from an untouched code path, proved
+  pre-existing by running the two new checks against both the committed and the
+  working registry (0 errors on each).
+- R7 response-shape gap was unresolved inside that round, then closed by Codex's
+  read-only checks against all six registered lessons: each response carried the
+  exact requested ID, registered title, and nonblank content. Claude R8 withdrew
+  R7 Finding 1. No student/submission data was read and no Heartbeat write occurred.
+- R7 evidence:
+  `docs/reports/NC-20260809-001-GRADER-RECALIBRATION-CLAUDE-RESPONSE-R7.md`.
+  No build, deploy, Slack post, Heartbeat write, certificate action, runtime
+  database mutation, commit, push, or live API call occurred, and no student
+  data was accessed.
+
+#### Addendum 2026-08-09T22:17Z — live read proof and independent R7 hardening
+
+- Codex used the existing courses repository's read-only Heartbeat tool against
+  all six registered Foundation lesson IDs. Every response carried the exact
+  requested ID, registered title, and nonblank content. This closes R7's API-
+  shape uncertainty. M1/M3/M6 matched the grading snapshots; M2/M4/M5 had the
+  documented grading-relevant drift. No student/submission data was read and no
+  Heartbeat write occurred.
+- Independent review found that malformed present `heartbeat` metadata was
+  silently dropped by the runtime loader, which could convert a mapped
+  Foundation assignment to stale `snapshot-only` grading after a partial sync.
+  The loader now rejects the entire registry in that state. The Python label
+  normalizer now mirrors JavaScript lowercase instead of full casefolding, and
+  the prompt's discrepancy gate now explicitly requests an operator-only flag.
+- Independent pinned Node 22.23.2 verification after correction: focused 10
+  files / 343 tests; full 149 files / 1,983 tests; typecheck, TypeScript
+  formatting, schema sanitizer, documentation continuity, and diff checks pass.
+  Grading validator unit checks pass 27/27; the full validator still reports the
+  pre-existing unrelated `calibration/acc-bars-standard.json` error.
+- Still uncommitted in NanoClaw, unbuilt, undeployed, and not live-verified in a
+  grader thread. No Slack post, Heartbeat write, certificate action, or runtime
+  database mutation occurred. Claude R8 closure review is pending.
+
+#### Addendum 2026-08-09T23:03Z — per-turn proof and R11 acceptance
+
+- Claude R8 accepted the live response proof but found that thread-keyed context
+  could still let overlapping or adopted warm-container turns borrow another
+  run's authority. R9 then verified the exact two-line file-root rejection path;
+  R10 withdrew a container-static ID design and required one host-minted ID per
+  Claude turn; R11 independently returned `ACCEPT` on the implementation.
+- Initial and piped grader turns now carry distinct UUIDs. The runner isolates
+  UUID-bearing IPC files one per turn, leaves deferred files on disk unacked,
+  rewrites MCP config before each `claude --print`, and preserves the exact
+  prompt/UUID through OAuth rotation and API-key fallback. The MCP server stamps
+  the ID outside the model tool schema. Host delivery requires exact ID, grader
+  destination, and thread; missing, malformed, expired, replayed, restarted, or
+  adopted proof therefore supplies no student context and fails closed.
+- Warm follow-ups clone the verified assignment synchronously so the global
+  Slack loop never awaits Heartbeat. The clone is registered only after a pipe
+  write succeeds and is refused after ten minutes from the original live fetch.
+  Existing exact-run entries remain through the 30-minute TTL so late output
+  from turn N is not invalidated when turn N+1 starts.
+- Final local verification under pinned Node 22.23.2: root typecheck clean;
+  agent-runner typecheck clean; focused post-hardening 3 files / 51 tests; full
+  root suite 149 files / 1,992 tests; full runner 4 / 27; `git diff --check`
+  clean; grader prompt exactly 200 lines. Grading repository live-mapping checks
+  pass 29/29 and its authority change is committed locally at `f19fa39`.
+- Deployment ordering is mandatory: rebuild and activate the runner image first,
+  verify `run_id` on a safe grader IPC payload, then activate the host-side
+  requirement, with no missing-ID grace period. No release was built or deployed
+  in this task and no Slack/Heartbeat/certificate/runtime database write occurred.
+- Code acceptance is not a human-voice claim. The blind, submission-in-hand,
+  control-seeded corpus review remains unmet and is the release gate: students
+  must never reasonably infer or assume AI grading.
+
+#### Addendum 2026-08-10T09:12Z — visible PASS grows and actionable silence diagnostics
+
+- PASS feedback now separates a real developmental point into paragraph two,
+  while a PASS with no substantive grow remains one paragraph. The canonical
+  voice and all 14 generated packs agree exactly; the grader prompt uses the
+  same conditional rule and contains no conflicting shape instruction.
+- Silent runs now receive one of four host-derived, content-free reason codes.
+  Malformed or unresolved submission roots get the exact two-line-root recovery;
+  internal-only results are no longer mislabeled as no agent result.
+- Claude R12's five required corrections were implemented and Claude R13 returned
+  `ACCEPT`. Regression coverage pins the two-paragraph unit, every reason branch,
+  root recovery, prompt wording, and the restored 200-line prompt invariant.
+- Pinned Node 22.23.2 verification: 151 files / 2,018 tests pass; typecheck,
+  continuity, and diff checks pass; runner remains 4 files / 27 tests; 14 grading
+  packs are current and pack-builder tests pass. No Slack, Heartbeat, certificate,
+  build, deployment, or runtime mutation occurred in this correction.
+
+### NC-20260805-001 — Sales journey and request-first methodology audit
+
+- Date: 2026-08-10T01:08Z
+- Owner/client: Codex + Claude Code/Opus validator
+- State: ready_for_review; analysis/design converged on the non-path change
+  surface, path-conditioned behavior held pending signal repair and blind eval
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `0a39380`
+- Change class: C1 — read-only behavior, journey, and architecture audit;
+  documentation and PII-free coded artifacts only
+- Scope: sealed 2026-07-10 through 2026-08-09 Sales Slack snapshot, current
+  Sales prompt/workflow/knowledge/lesson/runtime authorities, operator
+  corrections, and a read-only Chaos pre-inquiry journey join. No prompt,
+  runtime, database, schedule, deployment, Slack/email, commit, or push change.
+- Corrected corpus: 1,345 messages; 297 reconstructed work cycles, 289 included;
+  327 observed customer-facing drafts (319 in included cases); 105 substantive
+  operator lines (94 in included cases, 11 unlinked); 81 hand-reviewed drafts
+  for unrequested content; 71 PII-free Chaos identities linking to 145 cases.
+- Converged findings: current authorities put program matching before the
+  request and force commercial fields onto 66 paid-client/organization-buyer
+  cases. Of 71 cases with substantive operator input, 45 required an
+  operator-held fact and 18 a record correction; 48/289 cases retrospectively
+  needed a fact or system record. Direct drafting is better than the pooled R2
+  audit claimed (56/122 reviewed drafts approved unchanged; 6/71 reviewed
+  non-follow-ups had unrequested content), while the historical follow-up
+  generator was the concentrated expansion defect (8/10 reviewed follow-ups).
+- Temporal correction: standard-card Email/To compliance moved 1/88 to 39/48
+  to 77/78 and cross-thread splitting moved 51/51 to 12/29 to 0/50 across the
+  three implementation eras. Follow-up cards stopped after 2026-07-31. These
+  are not all current drafting defects; why follow-ups stopped remains unknown.
+- Delivery contract: approval must create `approved_pending_send`, suppressing
+  duplicate redrafting while remaining visible until Gmail-confirmed receipt,
+  explicit human cancellation, or human-reviewed failure. Approval alone never
+  retires work.
+- People-path result: Chaos matches 71/141 reconstructed identities and 145/289
+  cases, but only 71/289 cases have a journey contemporaneous with that inbound.
+  Twenty-two of 71 matched identities visited two or more service families;
+  linked reviewed acceptance was 31/74 versus unlinked 25/48 (Fisher exact
+  p=0.353), providing no evidence that browsing should widen a response.
+- Path blocker: the analyzed signal unions devices, excludes post-inquiry
+  events, and groups titles into coarse families. Deployed Pass 0 selects one
+  newest visitor row, includes post-inquiry events, emits raw paths, and sorts
+  formatted counts lexicographically (`9x` before `11x`). Path context should
+  not alter customer-facing tokens until those divergences are repaired and a
+  blinded path-on/path-off eval passes.
+- Recommended implementation order: deterministic host changes first — closed
+  send obligation, host-resolved relationship, draft-marker/ladder alignment,
+  broader typed-drop parser, non-approving acknowledgement, implement-or-delete
+  the documented approval-card rejection path, and recap suppression — then
+  conditional commercial fields, first-class abstention, and typed lesson
+  precedence. Pass 0 remains recorded, non-binding eval context.
+- Collaboration: exact Claude session
+  `ae6931fb-c0e6-4714-9b81-ac8599a00f4f`; R2-R5 cost USD 51.30. R2 and R3 were
+  rejected for coding and report/artifact defects; R4 reconciled the Slack and
+  operator corpora; R5 reproduced 94 path checks with zero mismatch and issued
+  the integrated convergence verdict.
+- Verification: independent JSON parsing confirms 289 unique uniform case rows,
+  105 unique uniform operator-line rows, 71 unique uniform path rows, zero
+  basic state-invariant violations, and no basic email/phone/URL patterns in
+  durable JSONL. Raw card-era counts and Fisher exact p=0.352588 were
+  independently recomputed. Documentation continuity and whitespace checks are
+  required before handoff.
+- Artifacts: `docs/reports/NC-20260805-001-SALES-JOURNEY-AUDIT-CLAUDE-RESPONSE-R4.md`,
+  `docs/reports/NC-20260805-001-SALES-JOURNEY-AUDIT-CLAUDE-RESPONSE-R5.md`,
+  the R4 case/operator JSONLs, the Codex Chaos path report/JSONL, and the
+  convergence state.
+- Follow-up: owner selects the first implementation slice and resolves the
+  watchdog window, lesson authority/contested clusters, conditional card,
+  card-validation disposition, follow-up cessation, and Pass 0 disposition.
+
+### NC-20260809-002 — Procurement opportunity-to-outcome audit
+
+- Date: 2026-08-09T20:05Z
+- Owner/client: Codex + Claude Code owner review
+- State: ready_for_review; two-round Codex/Claude audit converged, production
+  state not refreshed, implementation not authorized
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `0a39380`
+- Change class: C1 - read-only architecture, operations, and source-strategy
+  audit; documentation artifacts only
+- Finding: Procurement is split between a prompt/browser/direct-SQL Bonfire
+  lane that can show activity without completeness or closure, and a safer
+  migration-114 CaleProcure/email review kernel that was dark-deployed,
+  disabled, and ends at a human decision without dispatching acquisition,
+  assessment, proposal, submission-receipt, or outcome work.
+- Additional converged finding: the exact-resource Procurement email router is
+  implemented but both real caller paths skip it when taxonomy
+  `auto_archive=true`; tracked Procurement knowledge marks both RFP/RFQ labels
+  as auto-archive. The likely behavior is label-and-archive without a minion
+  handoff, pending read-only live taxonomy verification. The documented `.env`
+  gate keys are also inert for policy code that reads `process.env`, while the
+  tracked service definitions configure none of them.
+- Evidence: current source, migration, tests, history, group procedures, safe
+  local snapshot/framework metadata, and official source authorities were
+  reconciled in
+  `docs/reports/NC-20260809-002-PROCUREMENT-SYSTEM-AUDIT-CODEX-INDEPENDENT.md`.
+  The focused Node 22.23.2 suite passes 7 files / 81 tests; those tests validate
+  the narrow safety boundary, not portal completeness or business outcomes.
+- Recommendation: preserve and extend migration 114, pause or shadow the
+  legacy scan, prove one CaleProcure opportunity through a named decision and
+  proposal-ready/pass outcome without submission, then add SAM.gov's API and
+  official state alert feeds based on measured incremental qualified yield.
+- Collaboration: after explicit owner authorization, R1 and the defect-focused
+  R2 ran in exact Claude Procurement session
+  `942ee3f7-b76b-4b84-9036-5f19f9f7f3e3`. Claude accepted Codex's caller-level
+  email correction and partial-write/schema findings; Codex independently
+  verified Claude's post-`process`, scheduler, configuration, and reconciliation
+  findings. All 23 material findings converge in
+  `docs/reports/NC-20260809-002-PROCUREMENT-SYSTEM-AUDIT-CLAUDE-RESPONSE-R2.md`.
+  Reported Claude cost: USD 12.669568 across both rounds.
+
+### NC-20260805-002 — Lead #1029 exact recovery and host-owned execution regression
+
+- Date: 2026-08-05T18:50Z
+- Owner/client: Codex
+- State: validating; customer recovery is Gmail-confirmed, permanent source fix
+  continues under isolated `NC-20260804-003` and is not deployed
+- Commit/PR: pending on `codex/nc-20260804-003-host-owned-email-bytes`
+- Change class: C3 — exact approved customer-email recovery and focused
+  regression evidence
+- Incident: Sales omitted Action
+  `67a46d16-02d6-4ca8-a7da-4f311d8f2b2d` from the Mailman handoff; Mailman then
+  changed approved literal ampersands to `&amp;` in both subject and body. The
+  immutable hash guard held before execution or Gmail.
+- Recovery: read-only ledger, approval-card, and Gmail-Sent preflight proved no
+  prior attempt. Exact approved-card recovery passed the existing host action,
+  hash, recipient, Party, content, Gmail, receipt, and Slack boundaries. Gmail
+  confirmed message/thread `19fd3438954b40fe` at
+  `2026-08-05T18:50:46.831Z`; the originating Sales thread has the mechanical
+  receipt. Do not replay this action.
+- Verification: the isolated source fix now includes this exact unthreaded,
+  missing-Action-ID, entity-mutated first-response shape. Its pinned Node
+  22.23.2 email-critical gate passes 18 files / 492 tests; typecheck,
+  documentation continuity, and diff whitespace checks pass. No activation
+  occurred during validation.
+- Additional recurrence: Lead #1032 Action
+  `3d789365-c1e0-4eab-9e9d-8075f7a63859` later repeated the same undeployed
+  path. Mailman omitted the Action-ID and entity-escaped one approved body
+  ampersand while preserving recipient and subject. Preflight proved no prior
+  send; exact-card recovery produced Gmail-confirmed message/thread
+  `19fd44fd031fc6f1` at `2026-08-05T23:43:48.546Z`, with the receipt in the
+  originating Sales thread. The existing regression covers this narrower
+  body-only mutation; do not replay the action.
+
+### NC-20260802-001 — MrGru grader file delivery is host-owned and idempotent
+
+- Date: 2026-08-02T16:28Z
+- Owner/client: Codex
+- State: ready_for_review
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `0a39380`
+- Change class: C5 — new container-to-host file capability and external Slack
+  side-effect boundary
+- Affected systems: container MCP, per-group IPC attachments, host IPC watcher,
+  Slack root/file persistence, shared toolbox, Heartbeat grading procedure
+- Trigger: the enabled Brave file input could not be driven through the browser
+  extension bridge, making each Heartbeat attachment require a native picker and
+  visual Slack inspection. MrGru already has `files:read` and `files:write`; no
+  OAuth change was required.
+- Implementation: `send_grader_file`/`slack_file_message` is accepted only from
+  the registered main group or `chief`, fixes the target to `grader`, validates
+  real path, regular-file type, 25-MB ceiling, size and SHA-256, then snapshots
+  the bytes. A request-bound pending receipt precedes Slack; completion records
+  the root timestamp. Pending/uncertain and completed duplicates never repost.
+- Slack contract: post one clean root, upload the source artifact into its
+  thread with `filesUploadV2`, then persist an inline-readable copy so the grader
+  wakes only after upload success. Failed upload attempts best-effort delete the
+  file-less root and do not wake the grader.
+- Operator surface: shared `slack/post-grader-file` stages only from macOS temp
+  roots or Downloads over the existing authenticated SSH route to the production
+  Mac Mini, fails closed until its compiled runtime advertises support, emits
+  official IPC, waits for the receipt, and returns the root timestamp. The
+  Heartbeat skill now prefers this path and uses visual Slack/native picker only
+  as a fallback.
+- Registration drift closed: `scripts/register-grader.ts` now tracks the
+  already-documented one-root/one-container behavior, instant mechanical
+  processing line, and 30-second grader idle timeout. Re-registration therefore
+  preserves five-way batch concurrency and releases one-shot warm capacity
+  instead of silently reverting to channel serialization and the 20-minute
+  global idle default.
+- Verification under the direct Node 22.23.2 executable: root typecheck passes;
+  focused suite passes (3 files / 88 tests); full suite passes (141 files /
+  1,777 tests); independent agent-runner build and tests pass (3 files / 22
+  tests); targeted Prettier and `git diff --check` pass; continuity check passes
+  with 29 active/ready rows and changelog entries. Toolbox registry JSON, shell
+  syntax, discovery, and an isolated temp-root queue dry run pass. Deployment,
+  daemon restart, OAuth mutation, and live Slack canary have not occurred.
+
+### NC-20260731-003 — One real Node 22 release replaces the production hand patches, and per-lead status lines anchor by entry id
+
+- Date: 2026-07-31T18:05Z
+- Owner/client: Claude Code
+- State: deployed_unverified
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `0a39380`;
+  production now runs a compiled artifact, not hand patches
+- Change class: C3 — production runtime, release process, Slack threading
+- Affected systems: Mac Mini runtime and launchd, NanoClaw `dist/`, Slack
+  outbound threading, `~/dev` source propagation
+- Trigger: `rescueUnhandedSends` was built and tested but undeployed; production
+  `dist/` was hand-patched; per-lead status lines still posted at channel root.
+- Root cause of the deployment blockage: the `~/dev` Syncthing folder is paused
+  on the Mac Studio, so the Mini's `src/` had been frozen at `a6e4b13` since
+  before NC-004. The Mini's Syncthing reported `idle / needFiles: 0`, which is
+  true of a receiver whose sender is paused and therefore proves nothing. Any
+  `npm run build` on the Mini would have silently reverted NC-004 — the reason
+  the fixes were hand-patched in the first place.
+- Second blocker, found in pre-flight rather than in production:
+  `verifyRuntimeRelease()` asserts an exact `.nvmrc` Node match on both the
+  manifest-present and manifest-absent paths, with no escape hatch. The Mini ran
+  Node 25.8.2 against a `22.23.2` pin. The previously deployed `index.js`
+  predated the guard, so nothing had failed yet; a fresh build would have
+  crash-looped, and launchd throttling would have kept it down.
+- Fix: installed Node 22.23.2 at `~/.local/node/22.23.2`, repointed
+  `com.nanoclaw.plist` at it, rebuilt `better-sqlite3` for that ABI, reconciled
+  the Mini's `src/` with the Studio worktree, and deployed one compiled artifact.
+  Verified by rebuilding on the Mini and hash-comparing to the deployed tree —
+  identical, so the host can now rebuild without reverting anything. Import
+  pre-flight over all 125 modules reported zero unresolved specifiers; restart
+  produced `runs = 1` and an empty error log.
+- Also shipped by this release: the NC-004 (P1-1, P1-2, P2-1) and NC-002 (P1-1,
+  P1-2) remediations, which had been fixed in source on 2026-07-30 but were
+  stranded behind the stale `dist/`.
+- Threading change: `deriveLeadEntryRef` reads the pipeline entry id out of a
+  per-lead status line and `lead-email-resolver.ts` resolves it to the lead's
+  address, so "Lead #611 …" and "[NO ACTION] Entry #85 …" join the same
+  `lead:{email}` thread as the card and the send. Narrow by construction: the id
+  must open the message and the message must name exactly one entry, because a
+  false merge is worse than no merge. Resolver failures are logged and drop the
+  anchor rather than the message. 140 files / 1,760 tests pass.
+- Record correction: the Mac Mini does **not** sleep overnight. 61 days uptime,
+  no sleep/wake events, and 1,590 Gmail pushes processed between 00:00 and 08:00
+  — 279 during the hour it was reported down. The unreachability is
+  `macmini-eth.kudinov.com` → `192.168.1.50` on `en8`, which holds a `/32`
+  netmask on a `/24` LAN and answers ICMP but not TCP. Use `192.168.1.171` or
+  `100.115.115.206`. `en8` carries the default route and was left alone.
+
+### NC-20260731-002 — The host lead anchor outranks an agent-supplied thread_ts
+
+- Date: 2026-07-31T16:18Z
+- Owner/client: Claude Code
+- State: deployed_unverified
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `0a39380`;
+  production carries a hand-patched `dist/channels/slack.js`
+- Change class: C2 — operator-facing Slack threading; no external send path
+- Affected systems: Slack outbound threading for lead-bearing messages
+- Trigger: for Entry #871 sales replied in the lead's thread with
+  "[draft updated]" and then posted the updated draft into the channel.
+- Root cause: `sendMessage` consulted the host-derived lead anchor only when the
+  caller passed no `threadTs`. The agent passed one — `1785510996.909199`, a
+  timestamp that does not exist, apparently retyped from the `ts` attributes in
+  its prompt (the thread root is `…909209`; the operator's in-thread reply ends
+  `.509199`). Slack silently posts an unknown `thread_ts` to the channel. The
+  anchor table held the correct root the whole time.
+- Fix: a derived `leadKey` now outranks an agent-supplied `threadTs`, extending
+  the principle already stated in `lead-thread-key.ts` to the last place the
+  agent could override the host. `opts.threadKey` is agent-supplied and keeps its
+  old, lower precedence, so non-lead threading is untouched.
+- Files: `src/channels/slack.ts`, `src/channels/slack.test.ts`,
+  `docs/ACTIVE-WORK.md`, this entry.
+- Verification: pinned Node 22.23.2 — typecheck passes; full suite **138 files /
+  1,720 tests** passes; format passes. The regression test was proven to fail
+  against the old precedence before being accepted; the pre-existing
+  "explicit threadTs wins over threadKey" test still passes unmodified.
+- Deployment: `dist/channels/slack.js` hand-patched, daemon restarted
+  (pid 20788). Backup `/tmp/slack.js.bak-*`. Still not a build from source — the
+  Mini's `src`/`dist` divergence (NC-20260730-005) remains the blocking issue.
+- Rollback/recovery: restore the backup and restart.
+- Follow-up: per-lead status lines with no labelled address field still post at
+  channel root, because the anchor can only be derived from an email address.
+  Resolving `Lead #<id>` / `Entry #<id>` to the party email host-side would close
+  it, at the cost of a business-DB lookup on the Slack send path.
+
+### NC-20260731-001 — One wake rule for cross-group handoffs, at the single consumer
+
+- Date: 2026-07-31T15:33Z
+- Owner/client: Claude Code
+- State: deployed_unverified
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `0a39380`;
+  production carries a hand-patched `dist/db.js`
+- Change class: C3 — controls whether an approved customer email is ever composed
+- Affected systems: host message loop (`getNewMessages`), IPC handoff routing,
+  every channel that delivers a cross-group handoff
+- Trigger: `[HANDOFF: mailman→sales]` for Entry #871 routed and posted to
+  `#gru-sales` at 15:16:36Z; sales never spawned and no draft was produced.
+- Root cause: `getNewMessages` — the only query that can start a container —
+  excluded every `is_bot_message = 1` row. A cross-group handoff is host-authored
+  and therefore a bot row, so it could not wake its target. It only rode along as
+  context when something else happened to wake that group.
+  `NC-20260730-005` patched this for non-Slack targets by flipping the flag in
+  `ipc.ts`; Slack targets self-persist via `channels/slack.ts:1203` and were
+  still broken. Every channel has its own persistence path, so a per-producer fix
+  cannot hold.
+- Fix: the rule now lives once, at the consumer. Human/inbound wakes; a group's
+  own echo never wakes it (the 2026-07-05 noop-container swarm guard); a row
+  whose `from_group` differs from the channel's owning folder wakes the target.
+  Unknown owner keeps the previous conservative behaviour. `src/index.ts` supplies
+  the jid→folder map; `src/ipc.ts` reverts to a uniform `is_bot_message: true` so
+  the flag stops encoding routing semantics.
+- Files: `src/db.ts`, `src/index.ts`, `src/ipc.ts`, `src/db.test.ts`,
+  `src/ipc-handoff-echo.test.ts`, `docs/ACTIVE-WORK.md`, this entry.
+- Verification: pinned Node 22.23.2 — typecheck passes; full suite **138 files /
+  1,719 tests** passes; `npm run format:check` passes. New cases cover
+  wake-on-cross-group, no-wake-on-own-echo, no-wake-on-untagged-host-noise,
+  cursor advance past suppressed rows, and the unknown-owner path.
+- Deployment: `dist/db.js` hand-patched with the rule expressed purely in SQL (a
+  correlated `registered_groups.folder` lookup), validated against live rows
+  before restart, daemon restarted (pid 2469). Two minutes of observation showed
+  one container spawn — no spawn storm. Backup `/tmp/db.js.bak-*`. Still not a
+  build from source; the Mini's `src`/`dist` divergence from NC-20260730-005 is
+  unresolved.
+- Operator-authorized data change: one `store/messages.db` row flipped to wake
+  sales for Entry #871 before the fix shipped; the card posted at 15:26:45.
+- Coordination: `src/ipc-handoff-echo.test.ts` gained a concurrent Codex
+  assertion on the producer flag. It was relaxed, not removed — the behaviour is
+  still covered by the consumer rule and the new `db.test.ts` cases.
+- Rollback/recovery: restore `/tmp/db.js.bak-*` and restart to return to the
+  suppressed-handoff behaviour; revert the five source files to undo the fix.
+- Follow-ups:
+  1. Per-lead status lines (e.g. "Lead #611 …", "[NO ACTION] Entry #85 …") carry
+     no labelled address field, so `deriveLeadThreadKey` yields nothing and they
+     post at channel root instead of the lead's thread. The Entry #871 draft card
+     itself threaded correctly. Resolving `Lead #<id>` / `Entry #<id>` to the
+     party email host-side would close it without trusting the agent.
+  2. A routed handoff that produces no target spawn within one poll interval
+     should alert on its own — carried over from NC-20260730-005 and now twice
+     demonstrated.
+
+### NC-20260730-006 — Observable email handoffs and provenance-bearing releases
+
+- Date: 2026-07-31T01:52Z
+- Owner/client: Codex; Claude review pending
+- State: validating
+- Commit/PR: uncommitted composite worktree on
+  `codex/continuity-reconciliation` @ `0a39380`; the previously staged
+  `NC-20260730-003/004` slice is preserved in the index
+- Change class: C5 — email-send observability plus fail-closed production
+  startup, artifact provenance, service runtime, and deployment contract
+- Affected systems: Sales/Mailman prompt contract; host IPC and message loop;
+  SQLite pending-send schema; watchdog; daemon health; build/release scripts;
+  exact Node pin; launchd/setup; container code source; architecture, security,
+  project map, schema reference, active work, and release runbook
+- Outcome:
+  - Sales is instructed and contract-tested to process one approved lead per
+    turn, make the typed `send_message` call, emit no final prose after a
+    successful handoff, and omit rather than invent a missing Thread-ID;
+  - the host records the durable handoff and actual Mailman process start as
+    separate stages, alerts once when the latter never occurs, and retains the
+    later Gmail-confirmed-send expectation;
+  - a PostgreSQL-realistic bigint-string regression exercises the stored
+    non-bot handoff, Mailman-visible SQLite read, and real Gmail handler path;
+  - the Mailman-start join uses both source group and recipient so concurrent
+    workflows to one address cannot satisfy each other;
+  - production startup verifies the complete compiled file set, exact build and
+    runtime Node `22.23.2`, manifest schema, and operator-pinned full commit
+    before initializing external systems;
+  - `/health` includes the verified non-secret release identity;
+  - a clean-commit builder produces a manifest and checksummed archive; the
+    independent verifier rejects compiled tampering, malformed metadata,
+    unlisted bundle files, duplicate/escaping inventory paths, release-manifest
+    disagreement, wrong Node, and wrong expected commit;
+  - container skills and agent-runner source resolve from
+    `NANOCLAW_CODE_ROOT`, allowing immutable release code with the established
+    operational checkout as working/state directory.
+- Declared residual: writable live group workspaces are not yet
+  cryptographically bound to the archived prompt copies. Deployment must
+  compare/copy reviewed prompt files and record hashes; separating immutable
+  instructions from writable group output remains follow-up architecture.
+- Verification under Node `22.23.2`:
+  - root typecheck passes;
+  - focused email/release/setup set passes **11 files / 122 tests**;
+  - complete serial suite passes **138 files / 1,715 tests** outside the
+    restricted sandbox required by its loopback/IPC tests;
+  - independent agent-runner build and **3 files / 22 tests** pass;
+  - repository TypeScript format check and both staged/unstaged diff checks
+    pass;
+  - documentation continuity passes **25 active/ready rows / 25 changelog
+    entries** after updating the exact-Node assertion.
+  - production TypeScript build passes, and `npm run release:build` was
+    deliberately exercised against this dirty review worktree: it refused
+    before compilation/packaging with the required clean-commit error.
+  - the full-suite webhook test's guessed fixed-port range collided twice with
+    macOS listeners (`rapportd` owns `49152`); tests now request a
+    kernel-assigned ephemeral port. The webhook suite passes twice
+    independently (**35/35**) and the following full suite is clean.
+- Deployment/migration: not yet performed. The SQLite columns are additive at
+  daemon initialization. No customer email, Procurement gate, healer action,
+  production database write, service restart, or external message occurred
+  during this implementation/validation boundary.
+- Rollback/recovery: restore the prior service pointer and reviewed Sales prompt
+  files, then verify the prior full commit and channels. Retain additive SQLite
+  columns. Full procedure: `docs/RELEASE-INTEGRITY.md`.
+- Next: obtain Claude's adversarial review of the composite dirty-worktree
+  boundary; reconcile findings; commit the already staged Procurement slice and
+  this email/release slice without unrelated knowledge/copier/renderer changes;
+  build the clean artifact; deploy and live-verify the exact commit.
+
+### NC-20260730-005 — Approved sales email reaches the customer again
+
+- Date: 2026-07-30T22:47Z
+- Owner/client: Claude Code + Codex reconciliation
+- State: validating
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `0a39380`;
+  production carries two hand-patched `dist/` files
+- Change class: C3 — customer-email execution path; one email delivered
+- Affected systems: Gmail IPC recipient verification, Gmail search
+  authorization, host IPC handoff routing, `store/messages.db` (three
+  operator-authorized mutations), Mac Mini daemon (two restarts)
+- Trigger: an approved draft for Lead #962 produced only `[SEND NOT OBSERVED]`
+  with no `[EMAIL BLOCKED]`, no quarantine entry, and no explanation.
+- Outcome:
+  - `gmail_send` with a `lead_id` works again. Party IDs are `bigint`, returned
+    by node-postgres as strings, and were compared with `!==` against the
+    agent's JSON number — so `11119 !== '11119'` blocked every send with the
+    reason "claimed party 11119 does not match host-resolved party 11119".
+    Regression from `NC-20260729-004`; blocked the whole outbound sales path
+    because `groups/mailman/OUTBOUND-EMAIL.md` requires `lead_id` on every call.
+  - a `sales→mailman` handoff can now wake mailman. The host stored it with
+    `is_bot_message: true` while `getNewMessages` — the only loop that starts a
+    container — filters bot rows, and the Gmail channel's `sendMessage` is a
+    no-op. Handoffs were invisible to the spawn loop and only rode along when an
+    unrelated inbound email woke mailman anyway. Pre-existing; masked by inbound
+    volume until a quiet mailbox exposed it.
+  - a bare-address `gmail_search` is normalized to `from:X OR to:X` instead of
+    being quarantined; queries carrying operators or extra terms are still
+    refused, and the executed query now equals the authorized one.
+- Test-integrity fix: `gmail-ipc-handlers.test.ts` mocked party IDs as JS
+  numbers, which is why 1,661 tests passed while production could not send. The
+  mock now reproduces bigint-as-string. Against the original code the corrected
+  suite fails 6 tests; it previously failed none.
+- Files: `src/gmail-ipc-handlers.ts`, `src/gmail-ipc-policy.ts`, `src/ipc.ts`,
+  `src/gmail-ipc-handlers.test.ts`, `src/gmail-ipc-policy.test.ts`,
+  `docs/ACTIVE-WORK.md`, this entry.
+- Verification: pinned Node 22.23.2 — typecheck passes; full suite **134 files /
+  1,695 tests** pass; `npm run format:check` passes; `git diff --check` passes.
+  The regression test was proven to fail against the original code before being
+  accepted.
+- Deployment: both fixes applied to the Mac Mini's compiled `dist/` by hand and
+  the daemon restarted (pids 61600, 65516). **Not** a build from source — see
+  the integrity note below. One customer email delivered at 22:42:02Z (message
+  `19fb5311a98be747`), body byte-identical to the approved draft and recovered
+  from `store/messages.db` rather than regenerated; interaction logged and the
+  `pending_sends` expectation cleared by the confirmed send.
+- Integrity problem, open: production `dist/` does not correspond to the Mini's
+  `src/`. `verifyPartyRecipient` exists only in the compiled artifact, and
+  `npm run build` on that host would silently revert the entire
+  `NC-20260729-004` Gmail boundary. Both fixes therefore had to be applied to
+  `dist/`. Backups at `/tmp/gmail-ipc-handlers.js.bak-*` and `/tmp/ipc.js.bak-*`.
+- Rollback/recovery: restore the two `dist/` backups and restart to return to
+  the blocked-send state; revert the five source files to undo the fixes.
+- Follow-ups:
+  1. Reconcile the Mini's `src/` with reviewed source and redeploy from a real
+     build. Until then no host rebuild is safe.
+  2. Sales emitted the handoff as final assistant text instead of calling
+     `mcp__nanoclaw__send_message`, so nothing routed at all — the original
+     stall. It made a correct call for a different lead 16 seconds earlier in
+     the same run. Prompt hardening (one lead per approval turn; handoff must be
+     a tool call, never prose; never a `Thread-ID` placeholder) is unowned.
+  3. `[SEND NOT OBSERVED]` remains the only operator-visible signal when the
+     failure is upstream of the Gmail handlers. A routed handoff that produces
+     no mailman spawn within one poll interval should alert on its own.
+- Codex pickup 2026-07-31T01:52Z: all three source fixes are now included in
+  the Node-22-green composite worktree. `NC-20260730-006` closes follow-ups
+  1-3 with typed-handoff prompt rules, Mailman-start observability, and a
+  clean-commit release boundary. The production hand patches remain active
+  until that reviewed source is committed and deployed.
+
+### NC-20260730-004 — Default-off CaleProcure collection and named-human review
+
+- Date: 2026-07-30T19:14Z
+- Owner/client: Codex
+- State: deployed_unverified
+- Commit/PR: uncommitted Procurement slice on
+  `codex/continuity-reconciliation` @ `bc8a71b`; production was built from the
+  isolated release recorded below, not from the shared dirty checkout
+- Change class: C5 — Slack identity/authorization boundary plus production
+  migration, agent image, host artifact, prompt activation, and service restart
+- Affected systems: migration 114, Procurement intake/review policy, host IPC,
+  Slack card transport and inbound human messages, container MCP, Procurement
+  prompt/procedure/schema, environment example, architecture/security/project
+  map, resurrection plan, and continuity records
+- Outcome:
+  - adds a Procurement-only, maximum-200-row CaleProcure IPC whose host supplies
+    observation time and owns strict validation, batch hashing, run-key
+    idempotency, deduplication, parameterized writes, and terminal run evidence;
+  - keeps that write path off unless
+    `PROCUREMENT_CALEPROCURE_INGEST_ENABLED=1`;
+  - generates review cards from current database queue truth, anchors them to
+    `procurement:opp:{id}`, and durably binds opportunity/version, Slack
+    channel/message, action epoch, recommendation, and reason;
+  - accepts only an exact, reason-required `DECIDE` command inside the bound
+    card thread from a Slack UID in `PROCUREMENT_OPERATOR_UIDS`, with both the
+    review enable flag and current epoch present;
+  - atomically consumes the open card and optimistic review version, so wrong
+    callers, unnamed users, root commands, unrecorded cards, stale versions,
+    old epochs, and replays fail closed;
+  - keeps reactions advisory-only and preserves manual registration, email,
+    proposal commitments, submission, signature, attestation, and terms.
+- Files: `.env.example`; migration 114; `src/procurement-{policy,review}*`;
+  Procurement intake/IPC plus tests; Procurement IPC watcher authorization
+  test; root index/IPC; agent-runner MCP; Procurement prompt, CaleProcure
+  procedure, schema/DB references, architecture, security, project map,
+  resurrection plan, active work, and this changelog.
+- Verification:
+  - pinned Node 22.23.2 typecheck passed;
+  - 104 focused tests passed across 9 files, covering typed intake, policy,
+    card binding, wrong caller/user/thread, disabled gates, stale/replay
+    rejection, migration grants, email/Gmail containment, and host routing;
+  - pinned Node 22.23.2 complete serial suite passed 134 files / 1,685 tests;
+  - independent `container/agent-runner` build and 3 files / 22 tests passed;
+  - repository formatting, schema-sanitizer self-test, documentation continuity
+    (23 active/ready rows, 22 pre-entry changelog entries), and
+    `git diff --check` passed at the full-suite snapshot;
+  - after that snapshot, concurrent `NC-20260730-002` edits made the current
+    root typecheck fail at `src/healer/approval.ts:63`. Repository-wide
+    formatting, the current Procurement-focused 104 tests, schema sanitization,
+    final 23/23 continuity check, and diff checks pass. This task does not
+    rewrite the Healer fix.
+- Deployment/migration: none. Migration 114 is unapplied. The example
+  collection/review flags are off, the epoch/operator list is empty, and no
+  live configuration was inspected or changed.
+- Rollback/recovery: before deployment, discard only NC-20260730-004-owned
+  source/docs and restore the prior staged migration 114 version. After an
+  authorized migration, disable both gates and roll back host/runner/prompt
+  source first; retain additive audit rows unless a separately reviewed
+  retention migration is approved.
+- Documentation: reconciled the old direct-SQL CaleProcure procedure with the
+  typed host path and documented exact authority, default state, deployment
+  boundary, and canary sequence.
+- Follow-ups: review the combined `NC-20260730-003/004` slice; name primary and
+  backup Slack operator IDs; authorize backup/precondition inspection,
+  migration 114, gates-off dark deployment, and synthetic denial/success
+  canaries separately. Schedule cutover and all Bonfire work remain unapproved.
+
+#### Addendum 2026-07-30T21:53Z — migration-first gates-off production deployment
+
+- Authorization and isolation: the user explicitly authorized migration and
+  deployment at 2026-07-30T21:34Z. The release was reconstructed from the
+  previously deployed `1689527` host base plus only Procurement-owned
+  source/prompt/runner files. The production checkout's 96 pre-existing dirty
+  paths and committed `NC-20260730-002` Healer slice were not used as the host
+  build source.
+- Preflight: one healthy daemon and listener, zero active containers, both
+  Procurement gates off, no operator IDs or review epoch, all three expected
+  database roles present, 309 legacy opportunity rows, and none of the migration
+  114 control-plane relations present.
+- Boundary correction before migration: live inspection showed the legacy
+  `nanoclaw_procurement` role still had direct `SELECT/INSERT/UPDATE`. Migration
+  114 now enables row-level security: admin retains full access, readonly
+  retains full read, and Procurement can directly read/insert/update only
+  source-keyless `source='bonfire'` rows. New CaleProcure/email rows remain
+  host-owned and are exposed only through the bounded queue view.
+- Recovery: restricted backup
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260730-004-20260730T2146Z`
+  contains the prior runtime/prompts, a native PostgreSQL dump, and the current
+  agent image retained as
+  `nanoclaw-agent:rollback-NC-20260730-004-20260730T2146Z`. The runtime archive
+  SHA-256 is `ac0392c6f981618f9664e2ea174daefc2e80907fbf00d700f6b902a623beb36e`;
+  the database dump SHA-256 is
+  `cd432848c3ad4ce1cefad78f6a9662abfc96a635b19f28aaa627894d35493f5d`.
+  An earlier `...T2145Z` directory is an incomplete, unused backup attempt.
+- Release evidence: archive
+  `~/.local/share/nanoclaw-releases/NC-20260730-004-20260730T2136Z` was copied
+  from SHA-256
+  `1e4b402aacf953addc01ce532d2adbfffc50ef9591cf3f2fb77e354656a3e18d`.
+  Local pinned Node 22.23.2 typecheck/build, 87 focused pre-RLS tests, 26
+  focused post-RLS tests, and the independent runner build/tests passed. The
+  isolated full run passed 1,661 of 1,662 tests; its only failure was the
+  pre-existing `webhook-server.test.ts` ephemeral-port race. On the target's
+  unpinned Node 25.8.2, root typecheck/build and 87 focused tests passed. A
+  fresh Node 22 agent-image build compiled the runner and a no-credential
+  container canary found both Procurement MCP symbols.
+- Migration: migration 114 committed successfully in one transaction. The
+  three control tables, queue view, and six functions exist; all four new
+  queue/control row counts are zero; all 309 legacy opportunities remain.
+  Procurement directly sees 298 source-keyless Bonfire rows and zero
+  source-keyed/non-Bonfire rows; readonly/admin each see all 309. A direct
+  CaleProcure insert under the Procurement role was denied and left zero
+  sentinel rows.
+- Activation: the byte-exact host `dist/`, Procurement prompt/schema/procedure,
+  and schema references were activated; the prior host artifact remains at
+  `dist.pre-NC-20260730-004-20260730T2152Z`. The built agent image became
+  `nanoclaw-agent:latest` at digest
+  `sha256:004e711111abf9fdde65cf26a58b24894c8414ba77d89432e63613eb90e73c7f`.
+  Launchd restarted successfully at 2026-07-30T21:52:49Z.
+- Live verification: exactly one daemon (PID 42265) owns the single `:8088`
+  listener; `/health` reports Slack and Gmail connected. Host `dist/` and the
+  three Procurement prompt/procedure files are byte-exact to the release.
+  The live artifact resolves collection `false` and review `false` with zero
+  operators and no epoch. The existing daily `0 8 * * *` task was not changed.
+  Restart resumed two unrelated Sales/Contador containers; they were not
+  stopped or inspected.
+- State boundary: migration and dark deployment are live, but no Procurement
+  batch, observation, review card, decision, schedule change, browser action,
+  email/message, proposal, or submission was performed. State remains
+  `deployed_unverified` until an explicitly approved gates-on synthetic fixture
+  and named-human review canary complete; business outcomes remain unvalidated.
+
 ### NC-20260730-002 — Fail-closed healer action boundary and completion plan
 
 - Date: 2026-07-30T18:13Z
@@ -202,6 +1270,122 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   fast cycle are live-verified. A controlled daemon-down recovery canary was
   not induced against the healthy production daemon, so actual restart
   execution and longer-term outcomes remain unverified.
+
+### NC-20260730-003 — Procurement host intake and review control plane
+
+- Date: 2026-07-30T18:13Z
+- Owner/client: Codex
+- State: deployed_unverified
+- Commit/PR: uncommitted on `codex/continuity-reconciliation`; task started at
+  `1689527` and the shared branch advanced to `04292cd` during implementation
+- Change class: C2 — additive source and migration; deployed gates-off with
+  `NC-20260730-004`
+- Affected systems: Procurement PostgreSQL model, CaleProcure normalization,
+  classified-email host router, Gmail resource policy, host/container IPC,
+  Procurement prompt/schema, architecture/security/continuity documentation
+- Outcome:
+  - adds tracked migration 114 with source-run completion, immutable
+    observations, canonical source keys, a bounded review view, and optimistic
+    host-only decision transitions;
+  - replaces free-form email-body SQL with a host parameterized intake that
+    stores metadata before handoff and fails closed on database errors;
+  - grants Procurement `gmail_read` only for the exact host-assigned message;
+    mailbox search, thread reads, send, and reply remain denied;
+  - provides deterministic CaleProcure row validation, date normalization,
+    cross-keyword deduplication, conflict rejection, payload hashing, and
+    complete/failed source-run evidence;
+  - exposes a Procurement-only, read-only queue IPC that omits raw payload and
+    Gmail identifiers.
+- Important boundaries:
+  - migration 114 and the isolated host/container/prompt artifacts were later
+    deployed gates-off under `NC-20260730-004`;
+  - the daily scanner, Bonfire/CDP bridge, schedule, 309 legacy rows, and vault
+    artifacts are unchanged;
+  - CaleProcure browser collection is not yet wired to the adapter;
+  - review transitions exist as a host-only optimistic function but are not
+    exposed to the model; submission and all outbound actions remain manual.
+- Files: migration 114; `src/procurement-intake*`,
+  `src/procurement-ipc-handlers*`, sanitized fixture, host router/classifier,
+  Gmail policy, root IPC, agent-runner MCP, Procurement authorities, schema
+  references, architecture/security/project map, resurrection plan, and shared
+  lifecycle records.
+- Verification:
+  - 87 focused tests pass across Procurement intake/queue, host routing, Gmail
+    authorization, classifier routing, and Gmail channel paths;
+  - pinned Node 22.23.2 root typecheck passes;
+  - pinned Node 22.23.2 complete serial suite passes 130 files / 1,661 tests;
+  - independent `container/agent-runner` build passes and its suite passes
+    3 files / 22 tests under pinned Node 22.23.2;
+  - Procurement-owned TypeScript formatting and `git diff --check` pass;
+  - repository continuity is currently blocked only because overlapping
+    `NC-20260730-002` has no engineering-changelog entry; the repository-wide
+    formatting check is currently blocked only by three `src/healer/*` files
+    owned by that task. Neither blocker is rewritten under this task.
+- Migration/deployment: pending and separately gated. Apply migration 114
+  before the matching host and agent-runner source; back up and inspect live
+  constraints first.
+- Rollback/recovery: before deployment, revert only NC-20260730-003 source and
+  documentation. After migration, keep the additive tables/columns by default
+  and roll back host routing first; destructive schema removal requires a
+  separately reviewed data-retention decision.
+- Follow-ups: host-verified human review action; CaleProcure collection/cutover;
+  Bonfire isolate-or-retire/value trial; framework provenance and outcome loop.
+
+### NC-20260730-001 — Procurement Scout investigation and resurrection design
+
+- Date: 2026-07-30T17:43Z
+- Owner/client: Codex
+- State: ready_for_review
+- Commit/PR: uncommitted on `codex/continuity-reconciliation` @ `1689527`
+- Change class: C1 — read-only investigation and internal target design
+- Affected systems: Procurement group, scheduled scan, Bonfire/CaleProcure and
+  email intake, procurement PostgreSQL state, local proposal framework, browser
+  security boundary, Company-OS continuity
+- Outcome:
+  - reconstructed the original opportunity-to-outcome thesis from the group
+    prompt, procedures, local framework, history, schemas, and implementation;
+  - verified that production discovery remains live but the qualification,
+    decision, proposal, submission, outcome, and calibration loop is mostly
+    dormant;
+  - documented the smallest credible resurrection: deterministic source
+    observations, host-owned transitions and database operations, CaleProcure
+    plus exact-resource email first, an isolated-or-retired Bonfire path,
+    provenance-aware proposal evidence, manual submission, and required
+    outcome closure;
+  - left seven leadership decisions as explicit gates before any C2-C5
+    implementation or production change.
+- Evidence:
+  - production read-only audit found one registered group and active daily task,
+    70 successful/9 error task-run rows, a running Procurement browser service,
+    and healthy loopback plus shared-gateway CDP endpoints;
+  - the 309-row opportunity store contains 163 `new`, 138 `expired`, 6
+    `rejected`, and 2 `scraped` records; 127 of the `new` records are classified
+    as noise, while no record has reached a proposal/submission/outcome status;
+  - aggregate vault evidence contains 12 briefs, 6 analyses, 2 proposal drafts,
+    2 status files, and zero bid-history rows;
+  - local dated scan artifacts use 44 distinct top-level JSON shapes;
+  - live email routing and its tests explicitly keep procurement labels at
+    `classify_only`, despite the group prompt describing a Mailman handoff;
+  - the live status constraint contains proposal states absent from the
+    Git-ignored procurement DDL, confirming non-portable schema drift.
+- Files: `docs/PROCUREMENT-RESURRECTION-PLAN.md`,
+  `docs/PROJECT-MAP.md`, `docs/ACTIVE-WORK.md`, this entry.
+- Verification: 2026-07-30T17:48Z —
+  `npm run docs:continuity-check` passed (20 active/ready rows and 20 changelog
+  entries; schema-sanitizer self-test passed), and `git diff --check` passed
+  with no output. These documentation-only checks ran under the current
+  shell's Node 26.5.0; `.nvmrc` remains Node 22, and no product/runtime suite
+  was needed or run.
+- Deployment/migration: not applicable. Production was inspected read-only; no
+  prompt, browser, schedule, service, database, message, proposal, or portal
+  state changed.
+- Rollback/recovery: revert only the four NC-20260730-001 documentation edits.
+  The production scanner and current dirty worktrees were not changed.
+- Documentation: new Procurement current-state/target-design authority plus
+  project-map and shared lifecycle records.
+- Follow-ups: human resolves the seven design gates; accepted implementation
+  phases receive separate C2-C5 task IDs with exact rollback and deployment
+  boundaries. Coordinate browser containment with `NC-20260729-004`.
 
 ### NC-20260729-004 — Week-1 Company-OS containment: Gmail authority and healer default
 
