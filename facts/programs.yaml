@@ -42,3 +42,34 @@ programs:
       - "$299"
       - "10 CCE hours"
     kb_absent: []
+
+  # Added 2026-08-10 after the KB spent months telling leads that all seven
+  # Practitioner Series courses were accreditation-pending, four months after ICF
+  # approved three of them. No price/products_ids: the Practitioner Series has no
+  # entry in products.json (its checkout runs outside that catalog), and the guard
+  # skips price checks when products_ids is absent.
+  #
+  # kb_absent is the durable half — those strings mean a stale or contradicted
+  # claim came back, most likely re-imported by a KB regen from a marketing page.
+  # kb_present is deliberately phrased as the KB writes the splits today; a regen
+  # that rewords them to "9 Core Competency and 31 Resource Development" will fire
+  # a notify-only alert asking a human to re-verify, which is the intended
+  # workflow, not a bug.
+  practitioner-series:
+    name: Practitioner Series (self-paced CCE courses)
+    source_url: https://tandemcoach.co/practitioner-series/
+    kb_present:
+      # Approved 2026-08 — quoting these as pending is a customer-facing error
+      - "9 CC + 31 RD"    # Running a Coaching Business, 40.0 h
+      - "13 CC + 7 RD"    # Coaching Tools Mastery, 20.0 h
+      - "6 CC + 14 RD"    # AI for Coaches, 20.0 h
+      # Submitted, pending ICF review — splits confirmed by Alex 2026-08-10
+      - "14 CC + 6 RD"    # Career & Transition Coaching, 20.0 h
+      - "15 CC + 5 RD"    # ADHD Coaching, 20.0 h
+      - "16 CC + 4 RD"    # Systemic Coaching for Executive Teams, 20.0 h
+    kb_absent:
+      - "ACCREDITATION IS PENDING — quote carefully"  # the blanket callout that caused this
+      - "pending per course"                          # ditto, and no longer true
+      - "14 CC + 26 RD"                               # stale Running a Coaching Business split
+      - "25 CC + 5 RD"                                # stale Systemic split, still fixable upstream
+      - "30.0 instructional hours"                    # stale Systemic hours, ditto

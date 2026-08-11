@@ -1,7 +1,8 @@
 # Tandem Coaching — Knowledge Base
 
-<!-- manifest-hash: 2dbe7023bb5131b4916e29d5a2a1cbd5426ddef74007e9c2eaf1f8fe69bfda08 -->
-<!-- validated-at: 2026-07-25 -->
+<!-- manifest-hash: b833dba47c22b4162ff40b0746cd748b56d1200bb73667e4d98220d9b8bb6456 -->
+<!-- validated-at: 2026-08-08 -->
+
 
 
 
@@ -74,11 +75,12 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
   - ICF Exam Prep (Individual Coaching): **Free**
   - ICF Exam Prep (Team Coaching): **Free**
 - **Payment flexibility:** Buy the full program or take it one module at a time. Module-by-module enrollment is the primary flexible alternative.
-- **ICF credential path:** PCC + ACTC (dual credential — requires 500+ coaching hours for PCC credential application)
+- **ICF credential path:** PCC + ACTC (dual credential — PCC requires 500+ coaching hours with at least 450 paid across 25+ clients over 24+ months)
+- **ICF accreditation:** Level 2 + AATC (dual accreditation). Tandem's graduation certificate carries both the ICF Level 2 and AATC seals. AATC (Advanced Accreditation in Team Coaching) is the organizational accreditation Tandem holds; ACTC is the individual credential ICF awards to coaches who meet its own experience, assessment, and application requirements — including five team coaching engagements and an active ICF credential.
 - **Includes:** Systems coaching methodology, team coaching competencies, organizational systems dynamics, mentor coaching (group + individual), coaching supervision, performance evaluation preparation, both exam prep courses, Coaching Tools Plus library access
-- **Credentials earned:** PCC (Professional Certified Coach) AND ACTC (Advanced Certification in Team Coaching) — two credentials from one program
+- **Credentials earned:** PCC (Professional Certified Coach) AND ACTC (Advanced Certification in Team Coaching) — two ICF credentials from one program
 - **Key differentiators:**
-  - PCC + ACTC dual credential in one program — rare in the market
+  - PCC + ACTC dual credential in one program (ICF Level 2 + AATC dual accreditation) — rare in the market
   - MCC-led team (Cherie Silas, Alex Kudinov) with PCC instructors
   - Two free modules to try before committing
   - Systems coaching methodology — not a rehash of ACC content
@@ -103,9 +105,20 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
   - Recording Review: $349
   - ICF Team Coaching Test Prep: **Free**
 - **ICF credential path:** ACTC (Advanced Certification in Team Coaching)
-- **Includes:** Systems coaching methodology (7-Eyed Model), team coaching competencies, 5 hours coaching supervision, recording review with expert feedback on team coaching competencies, team coaching exam prep, Coaching Tools Plus library access
+- **ICF accreditation:** AATC (Advanced Accreditation in Team Coaching). AATC is the organizational accreditation Tandem holds; ACTC is the individual credential ICF awards to coaches who meet its own requirements — including five team coaching engagements and an active ICF credential.
+- **ICF ACTC credential requirements:**
+  - 60+ hours of team coaching education (at least 50% synchronous)
+  - 5 team coaching engagements within the past 5 years (intact teams, 3+ members; teams of 15+ members require a co-coach present)
+  - 5 hours of coaching supervision
+  - Pass the ICF Team Coaching certification exam
+  - Prerequisite: active ACC, PCC, or MCC credential
+- **ICF application fee:** $250 (ICF member) / $350 (non-member) — paid directly to ICF when applying for the credential
+- **Total all-in cost:** $2,749–$2,849 (Tandem program $2,499 + ICF application fee $250–$350)
+- **Includes:** Systems coaching methodology (7-Eyed Model), team coaching competencies, 5 hours coaching supervision (runs throughout the program and beyond), recording review with expert feedback on team coaching competencies, team coaching exam prep, Coaching Tools Plus library access
 - **Prerequisites:** ACC or PCC credential (or MCC)
 - **Led by:** Cherie Silas, MCC, ACTC — one of the few coaches who holds both MCC and ACTC
+- **Typical timeline:** 4–6 months for education; 6–12 months total from enrollment to certification (experience hours can run concurrently with training)
+- **Refund policy:** Individual modules can be cancelled before the first live session for a full refund. Full program follows the same policy. Self-paced modules that have not been accessed can be refunded.
 - **Key differentiators:**
   - Instructor holds both MCC and ACTC — learning from real team coaching experience
   - Free Team Coaching Competencies & Ethics module to try before committing
@@ -117,10 +130,12 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
 ### Professional Coach Program (ACC + PCC + ACTC Bundle)
 - **Full name:** Professional Coach Program — Three Credentials, One Program
 - **URL:** /icf/acc-pcc-certification/
-- **Duration:** 125+ hours of coach education (Phase 1: 60 hours ACC + Phase 2: 65+ hours Systems Coach)
+- **Duration:** 125+ hours of coach education (Phase 1: 60 hours ACC + Phase 2: 65+ hours Systems Coach). ICF-approved hours: 162 total, of which 75 are AATC team coaching hours.
 - **Format:** Hybrid — self-paced online learning + live online sessions (Zoom), interactive, small-group
 - **Price:** $7,499 (saves $499 vs. enrolling in ACC and Systems Coach separately at $3,999 + $3,999 = $7,998)
 - **ICF credential path:** ACC + PCC + ACTC (three credentials in one enrollment)
+- **ICF accreditation:** Level 2 + AATC (dual accreditation). Tandem's graduation certificate carries both the ICF Level 2 and AATC seals. Completing coach education does not itself award an ICF credential — ICF awards the ACC, PCC, and ACTC credentials separately after applicants meet its own education, experience, assessment, examination, and application requirements.
+- **ICF listing:** Tandem Coaching Academy's accredited offering is listed by ICF as **Elevate Coaching**, an ICF Level 2 program with 162 approved hours. Verify at the [ICF Education Search Service](https://apps.coachingfederation.org/eweb/dynamicpage.aspx?pid=7159&webcode=ess).
 - **Prerequisites:** None — designed for coaches starting from scratch who want to reach PCC level
 - **Structure:**
   - **Start Free:** Coaching Foundations module (ICF Competencies & Ethics) — no cost, no commitment
@@ -134,6 +149,7 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
   - $499 savings vs. buying ACC and Systems Coach separately
   - MCC-led throughout (Cherie Silas, Alex Kudinov)
   - Free Coaching Foundations module to try before committing
+  - ICF Level 2 + AATC dual accreditation — graduation certificate carries both seals
 
 **IMPORTANT — Routing guidance:** When a lead asks about ACC and no prior credential pathway is mentioned, proactively mention the Professional Coach Program as an option for those thinking about going all the way to PCC. When a lead already has ACC or 60+ hours of ICF-accredited training, route them to the Systems Coach Program ($3,999) instead — they don't need the full bundle.
 
@@ -160,14 +176,16 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
 
 ## Program Comparison (Quick Reference)
 
-| Program | Hours | Price | Credential(s) | Prerequisites |
-|---------|-------|-------|----------------|---------------|
-| ACC (Level 1) | 60+ | $3,999 (full) / $399/module | ACC | None |
-| Systems Coach — PCC + ACTC (Level 2 Bridge) | 65+ | $3,999 (full) / $399/module | PCC + ACTC | 60+ hrs ICF training |
-| Professional Coach Program | 125+ | $7,499 | ACC + PCC + ACTC | None |
-| ACTC (standalone) | 60+ | $2,499 (full) / $399/module | ACTC | ACC or PCC |
-| Mentor Coach Training / MCS Standard Path (AAMC) | 71 | $2,997 (or 3×$999) | CCE hours (AAMC standard) | Active ICF credential |
-| Mentor Coaching Foundations (CCE, CPL path) | 10 | $299 (launch) / $397 (regular) | CCE hours | Active ICF credential |
+| Program | Hours | Price | Credential(s) | ICF Accreditation | Prerequisites |
+|---------|-------|-------|----------------|-------------------|---------------|
+| ACC (Level 1) | 60+ | $3,999 (full) / $399/module | ACC | Level 1 | None |
+| Systems Coach — PCC + ACTC (Level 2 Bridge) | 65+ | $3,999 (full) / $399/module | PCC + ACTC | Level 2 + AATC | 60+ hrs ICF training |
+| Professional Coach Program | 125+ (162 ICF-approved) | $7,499 | ACC + PCC + ACTC | Level 2 + AATC | None |
+| ACTC (standalone) | 60+ | $2,499 (full) / $399/module | ACTC | AATC | ACC or PCC |
+| Mentor Coach Training / MCS Standard Path (AAMC) | 71 | $2,997 (or 3×$999) | CCE hours (AAMC standard) | — | Active ICF credential |
+| Mentor Coaching Foundations (CCE, CPL path) | 10 | $299 (launch) / $397 (regular) | CCE hours | — | Active ICF credential |
+
+**Note:** AATC (Advanced Accreditation in Team Coaching) is the organizational accreditation Tandem holds for its team coaching curriculum. ACTC is the individual credential ICF awards to coaches who meet its own requirements. Tandem's graduation certificate for PCC-track programs carries both the ICF Level 2 and AATC seals.
 
 ## Instructors & Leadership
 
@@ -209,37 +227,53 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
 ### ICF Credential Requirements (Summary)
 
 **ACC (Associate Certified Coach):**
-- 60+ hours of coach-specific education (Tandem ACC program provides 72+)
-- 100+ hours of coaching experience (paid or pro bono)
+- 60+ hours of coach-specific education
+- 100+ hours of coaching experience (at least 75 paid; remaining 25 may be pro bono)
 - 10+ hours of mentor coaching
-- Pass ICF Credentialing Exam
+- Pass the ICF ACC Exam
 - Performance evaluation
 
 **PCC (Professional Certified Coach):**
-- 125+ hours of coach-specific education (Tandem PCC program provides 143)
-- 500+ hours of coaching experience
+- 125+ hours of coach-specific education
+- 500+ hours of coaching experience (at least 450 paid, minimum 25 clients over 24+ months)
 - 10+ hours of mentor coaching
-- Pass ICF Credentialing Exam
-- Performance evaluation
+- Pass the ICF Credentialing Exam (PCC/MCC)
+- Performance evaluation (inside the program on the Level 2 path; 2 recordings + transcripts on the Portfolio path)
 
 **MCC (Master Certified Coach):**
 - 200+ hours of coach-specific education
 - 2,500+ hours of coaching experience
 - 10+ hours of mentor coaching
-- Pass ICF Credentialing Exam
+- Pass the ICF Credentialing Exam (PCC/MCC)
 - Performance evaluation
 
 ### ICF Credentialing Exam
-- **Format:** Computer-based, situational judgment format (coaching scenarios where you choose the best ICF-aligned response)
-- **Proper name:** Coach Knowledge Assessment (CKA)
+
+ICF uses two separate exams: the **ACC Exam** for ACC candidates and the **ICF Credentialing Exam** for PCC and MCC candidates.
+
+**ACC Exam:**
+- **Format:** Computer-based, multiple-choice (coaching scenarios where you choose the best ICF-aligned response)
 - **Administrator:** Administered by Pearson VUE on behalf of ICF
-- **Content:** Based on ICF Core Competencies, coaching ethics, and the definition and boundaries of professional coaching (updated competency model)
-- **Questions:** 155 scored questions plus 20 unscored pre-test items (175 total)
-- **Scoring:** Scaled scoring with a passing score of 460 out of 600
-- **Time limit:** 3 hours
+- **Content:** Based on ICF Core Competencies, coaching ethics, and the definition and boundaries of professional coaching
+- **Questions:** 60 multiple-choice questions
+- **Scoring:** Scaled scoring with a passing score of 460
+- **Time limit:** 90 minutes including an optional break
 - **Availability:** Can be taken at Pearson VUE test centers worldwide or via online proctoring
 - **Cost:** $275 (separate from ICF credential application fee)
-- **Same exam for all levels:** The same CKA is used for ACC and PCC credentials
+- **Confirm details:** ICF sets these details and can change them — confirm on the [current ICF ACC Exam page](https://coachingfederation.org/credentialing/icf-credential-exams/acc-exam/) before sitting it
+
+**ICF Credentialing Exam (PCC/MCC):**
+- **Format:** Computer-based, situational judgment format (select the best and worst action for each coaching scenario)
+- **Administrator:** Administered by Pearson VUE on behalf of ICF
+- **Content:** Based on ICF Core Competencies, coaching ethics, and the definition and boundaries of professional coaching
+- **Questions:** 78 situational-judgment items
+- **Scoring:** Scaled scoring with a passing score of 460
+- **Time limit:** 180 minutes including an optional break
+- **Same exam for PCC and MCC:** The same ICF Credentialing Exam is used for both PCC and MCC credentials — there is no separate MCC-level exam
+- **Availability:** Can be taken at Pearson VUE test centers worldwide or via online proctoring
+- **Confirm details:** ICF sets these details and can change them — confirm on the [current ICF PCC/MCC Exam page](https://coachingfederation.org/credentialing/icf-credential-exams/pcc-mcc-exam/) before sitting it
+
+**General exam notes:**
 - **Preparation:** Tandem programs include free exam prep courses as part of the curriculum (individual coaching prep for ACC; both individual and team coaching prep for PCC/ACTC)
 - **Retake policy:** Can be retaken if not passed; ICF sets waiting period between attempts
 
@@ -317,7 +351,7 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
 - **Status:** ALL Evaluation Training products have been discontinued per ICF guidance. They CANNOT be sold separately.
 - **What happened:** As of June 2026, per ICF guidance, evaluation trainings (ACC BARS, PCC Markers, MCC BARS, Complete Bundle) cannot be sold outside of the MCS Standard Path. All standalone products ($49–$149) have been removed from the catalog. Evaluation training content is now embedded in the Mentor Coach Training / MCS Standard Path program only.
 - **BARS/Markers delivery is path-scoped:**
-  - **Standard Path** (Mentor Coach Training / MCS Practicum, $2,497/$1,997): ACC BARS and PCC Markers are delivered *inside* the program as embedded async content.
+  - **Standard Path** (Mentor Coach Training / MCS Practicum, $2,997): ACC BARS and PCC Markers are delivered *inside* the program as embedded async content.
   - **CPL path** (Mentor Coaching Foundations, $997): Tandem does NOT provide BARS/Markers. CPL-path coaches obtain evaluation training from ICF directly, separately.
   - Never tell a Standard Path/Practicum lead that evaluation training is separate. Never tell a CPL lead that Tandem provides it.
 - **Rule for agents:** Do NOT offer, quote, or reference Evaluation Training as a standalone purchasable product. If a prospect asks specifically about BARS or Markers training as a standalone purchase, inform them these are no longer available separately — coaches on the Standard Path receive them embedded in the Mentor Coach Training program; coaches on the CPL path obtain them from ICF directly.
@@ -366,7 +400,7 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
 - **Format:** Individual and group supervision sessions (live online)
 - **Who it's for:** Credentialed coaches seeking reflective practice, ethical guidance, and professional growth
 - **Requires actual clients:** Supervision is reflective practice about your actual work as a coach with actual clients
-- **CSS requirement (upcoming):** Starting January 2027, ICF will require coaches providing supervision to hold the Coaching Supervisor Specialization (CSS) credential. Tandem is preparing for this transition.
+- **CSS requirement (upcoming):** Starting January 2027, ICF will require coaches providing supervision to hold the Coaching Supervisor Specialization (CSS) credential. Tandem holds ICF **AACS** accreditation (granted July 2026, valid through July 2029) and its supervisor-training program, **Coaching Supervision Mastery**, is **enrolling now** for an inaugural cohort running October 7, 2026 – February 10, 2027 ($3,996 inaugural / $4,796 regular). See the CSS section in the sales/inbox knowledge base for full details.
 - **Key differentiator:** Supervisors hold advanced credentials and supervision-specific training
 
 ### Executive Coaching (Service)
@@ -382,10 +416,11 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
   - **1-on-1 Executive Coaching:** Dedicated MCC or PCC coach, 6–12 months, bi-weekly sessions, with assessments and stakeholder check-ins
   - **Leadership Team Coaching:** Coaching for intact leadership teams on alignment, communication, decision-making, and collective performance
   - **Virtual or In-Person:** Most engagements are virtual; in-person available in Dallas or Houston
-- **Confidentiality:** Sessions are fully confidential per ICF ethics. Employer-sponsored engagements include a three-way goal-alignment conversation, but session content is private.
+- **Engagement structure:** Starts with a conversation to assess goals, challenges, and coach-match fit. Then a structured ASPIRE® engagement with initial assessments, three-way goal-alignment conversation (coach, leader, sponsor), bi-weekly sessions, mid-engagement check-ins, and closing conversation. No obligation at the outset — if coaching isn't the right answer, Tandem will say so.
+- **Confidentiality:** Sessions are fully confidential per ICF ethics. Employer-sponsored engagements include a three-way goal-alignment conversation, but session content is private. Mid-engagement check-ins share high-level engagement structure (sessions happening, goals set, change produced) without session content.
 - **Philosophy:** "You're whole, not broken" — a thinking partner approach, not fixing
 - **Coaches:** Led by Cherie Silas, MCC and Alex Kudinov, MCC, with a team of 15+ ICF-credentialed coaches matched by industry and challenge
-- **ROI data:** 788% average ROI on coaching engagements, 77% improvement in business measures, 70% improvement in individual performance, 50% improvement in team performance (ICF Global Coaching Study and Manchester Inc.)
+- **ROI data:** 788% average ROI on coaching engagements, 77% improvement in business measures, 70% improvement in individual performance, 50% improvement in team performance (ICF Global Coaching Study and Manchester Inc.). **Important caveat:** These are third-party research findings across the organizations those studies surveyed — they are not a measure of Tandem client outcomes specifically.
 - **Key differentiator:** MCC-led team with Fortune 500 executive backgrounds; structured ASPIRE® framework with named assessment tools; measurable outcomes
 
 ### ADHD Coaching (Service)
@@ -423,6 +458,71 @@ All Part A programs are ICF Level 2 accredited and lead to ICF credentials.
 - **Business certifications:** Woman-Owned Business, SAM Registered, HUBZone Certified
 - **Phone:** 855-51-COACH (855-512-6224)
 - **Key differentiator:** MCC-led team with Fortune 500 coaching experience; 360 LEAD Now! bookend assessments proving measurable progress; programs build capability rather than deliver one-off workshops; partnership with HR/L&D throughout
+
+## Practitioner Series (self-paced CCE specialization courses)
+A pathway of **7 self-paced specialization courses** authored end-to-end by two Master Certified Coaches (Cherie Silas, MCC and Alex Kudinov, MCC) for **already-credentialed** ICF coaches (ACC/PCC/MCC/ACTC) who want to deepen a niche skill and earn **Continuing Coach Education (CCE) hours toward credential renewal** — without an expensive live cohort. This is **not a certification** and awards no new credential; hours count toward renewal of an existing ICF credential.
+
+- **Courses:** 7 (all live now)
+- **Total hours:** 141+ CCE hours across the full pathway — **80 of them ICF CCE-accredited today** (3 courses approved); the rest are in active ICF review
+- **Format:** Fully self-paced, asynchronous, **lifetime access** (single-course and bundle purchases)
+- **Certificate:** Certificate of completion issued automatically. For the **3 approved** courses the certificate carries the **ICF CCE-Approved Program badge** and shows the accredited hour count now. For courses still in review the CC/RD split displays once accreditation lands, and the certificate is reissued with the badge.
+- **Prerequisites:** Assumes coaching foundations. Pre-credential learners are welcome but should start with the **free Coaching Foundations module on the ACC (Level 1) program page** first.
+- **Renewal context (sales hook):** ICF credentials require **40 CCE every 3 years — ≥24 Core Competency (CC) + 16 Resource Development (RD)**. The series is built to fill that requirement affordably.
+- **URL:** /practitioner-series/ (course list at /practitioner-series/#courses)
+
+**Pricing (three ways to buy):**
+| Option | Price | Details |
+|--------|-------|---------|
+| **À la carte** | **$79–$499 / course** | Single course, lifetime access, yours forever |
+| **One-time bundle** | **$949** | All 7 current courses, lifetime access, no renewal |
+| **All-Access (annual)** | **$349 / year** | 7-day free trial, every course + future additions; subscription (renews annually) |
+
+**The 7 courses** (ICF CCE status is **per course** — verified against the live course pages 2026-08-10):
+| # | Course | Author | Hours | Price | ICF CCE status | CC/RD split | Focus |
+|---|--------|--------|-------|-------|----------------|-------------|-------|
+| 1 | Setting Up Your Coaching Practice | Alex Kudinov, MCC | ~30 h (171 lessons) | $79 | **No CCE claim** — not marketed with CCE hours | — | Legal, tax, insurance, financial & operational layer of a practice |
+| 2 | Running a Coaching Business | Alex Kudinov, MCC | 40 h | $449 | **✅ APPROVED** | 9 CC + 31 RD (incl. 3 mandatory ethics hours) | Pre-revenue → running practice; discovery-as-coaching; three-party contracting; ethics |
+| 3 | Coaching Tools Mastery | Cherie Silas, MCC | 20 h | $199 | **✅ APPROVED** | 13 CC + 7 RD | Right Tool, Right Mind; choosing/sequencing tools; 498-tool library, 105 tool-chains |
+| 4 | AI for Coaches | Alex Kudinov, MCC | 20 h | $149 | **✅ APPROVED** | 6 CC + 14 RD (incl. 3 mandatory ethics hours) | Where AI belongs in practice; ethics, augmentation, disclosure, presence |
+| 5 | Career & Transition Coaching | Alex Kudinov, MCC | 20 h | $349 | ⏳ Pending — in active ICF review | 14 CC + 6 RD (submitted) | Five transitions: layoffs, pivots, stuck mid-career, returns after caregiving, late-career encore |
+| 6 | ADHD Coaching | Cherie Silas, MCC | 20 h | $399 | ⏳ Pending — in active ICF review | 15 CC + 5 RD (submitted) | ADHD-informed coaching across life, executive & entrepreneur lenses |
+| 7 | Systemic Coaching for Executive Teams | Cherie Silas, MCC | 20 h | $499 | ⏳ Pending — in active ICF review | 16 CC + 4 RD (submitted) | Coach the system, not personalities; read structural collision; ACTC-adjacent |
+
+**Course pages:** 1 /practitioner-series/setting-up-a-coaching-practice/ · 2 /practitioner-series/running-a-coaching-business/ · 3 /practitioner-series/coaching-tools-mastery/ · 4 /practitioner-series/ai-for-coaches/ · 5 /practitioner-series/career-transition/ · 6 /practitioner-series/adhd-coach-training/ · 7 /practitioner-series/systemic-coaching/
+
+**Enrollment:** Browse the course page → pick a single course, the bundle, or All-Access → checkout (about a minute). All-Access starts with a **7-day free trial** (no certificate issued during the trial; cancel anytime in the trial). No enrollment deadlines and **no completion deadline** — partial progress is preserved indefinitely.
+
+> **⚠️ CCE ACCREDITATION IS PER COURSE — 3 of the 7 are ALREADY APPROVED. Never say the Practitioner Series as a whole is pending (or as a whole accredited).**
+>
+> **✅ Approved — quote as ICF CCE-approved today (80 accredited hours between them):**
+> - **Running a Coaching Business** — 40.0 CCE hours, 9 CC + 31 RD
+> - **Coaching Tools Mastery** — 20.0 CCE hours, 13 CC + 7 RD
+> - **AI for Coaches** — 20.0 CCE hours, 6 CC + 14 RD
+>
+> For these three: the hours count toward ACC/PCC/MCC renewal **now**, the certificate carries the **ICF CCE-Approved Program badge**, and the guarantee is a **30-day money-back guarantee, void once the certificate of completion has been issued**. Do **not** attach a "pending" caveat to them.
+>
+> **⏳ Pending — in active ICF review** (hours below are what was **submitted** to ICF, confirmed by Alex 2026-08-10 — always say "submitted" or "pending approval", never "accredited"):
+> - **Career & Transition Coaching** — 20.0 hours, 14 CC + 6 RD
+> - **ADHD Coaching** — 20.0 hours, 15 CC + 5 RD
+> - **Systemic Coaching for Executive Teams** — 20.0 hours, 16 CC + 4 RD
+>
+> Say: *"Certificate of completion is issued now; ICF CCE accreditation is pending, and the CC/RD hours display once it lands."* Do **not** call these hours ICF-accredited. Guarantee on these: **full refund if the course does not earn its CCE designation.**
+>
+> **No CCE claim:** Setting Up Your Coaching Practice ($79) is not marketed with CCE hours — do not promise CCE credit for it.
+>
+> **ICF renewal RD cap:** ICF allows a maximum of **16 Resource Development hours per three-year renewal cycle**. For Running a Coaching Business (9 CC + 31 RD), up to **25 hours** apply to any single renewal; the balance is depth the coach keeps, not credit they can claim.
+>
+> (Contrast: Mentor Coaching Foundations and the Level 1/2/ACTC/MCS programs are already accredited.)
+
+**Disambiguation (avoid these mix-ups):**
+- **Practitioner Series ≠ certification.** It's CCE for *renewal* of an existing credential. Coaches seeking a *new* credential need the ACC/PCC/ACTC certification programs; coaches pursuing the Mentor Coach Specialization need MCS. Route accordingly.
+- **"ADHD Coaching" (course, $399, self-paced CCE) ≠ "ADHD Executive Coaching" (service, $15k–$50k+ client engagement).** If a lead mentions ADHD, ask whether they want to *learn* ADHD-informed coaching (the course) or *hire* an ADHD coach for a leader (the service).
+- **"AI for Coaches" ($149)** is a Practitioner Series course, not a certification track.
+- All-Access ($349/yr) is a **subscription**; the $949 bundle and à-la-carte courses are **one-time, lifetime**.
+
+**Instructors:** Same two MCCs wrote every course end-to-end — Cherie Silas, MCC (Coaching Tools Mastery, ADHD Coaching, Systemic Coaching for Executive Teams) and Alex Kudinov, MCC (Setting Up Your Coaching Practice, Running a Coaching Business, AI for Coaches, Career & Transition Coaching). See Instructors section above for full credentials.
+
+---
 
 ## Coaching Tools Library
 
@@ -544,6 +644,7 @@ Tandem publishes educational content about coaching, ICF credentials, and profes
 
 ### Coaching Skills & Practice Articles
 - **"Coaching Skills: A Practitioner's Guide to ICF Competency Development"** — /coaching-skills/ — Deep practitioner guide covering the five core coaching skills (active listening, powerful questioning, building trust, coaching presence, direct communication), how skills differ from techniques, skill expression across ACC/PCC/MCC levels, the coach's inner game (self-awareness, engaged neutrality, managing reactivity), coaching skills inside models (GROW, CLEAR, OSCAR), skill failure modes (over-questioning, performative listening, accountability before trust), and how development actually works
+- **"We Are Hired to Give Our Clients Solutions That Work. Aren't We?"** — /we-are-hired-to-give-our-clients-solutions-that-work-arent-we/ — Why consultant-delivered solutions produce compliance, not sustainable change: solutions are the consultant's, not the client's, so clients revert the moment the coach leaves. Coaching mastery isn't asking questions — it's knowing when to ask, when to share, and when to teach (the "sixth discipline" of moving fluidly among coaching, mentoring, consulting, teaching, and facilitating). Clients who co-design solutions own them. Shares mock coaching conversations illustrating the difference between jumping in with answers and evoking client-generated insight. Actionable guidance: revisit engagement agreements, get curious before offering perspectives, share knowledge without attachment, practice and get trained. Links to [building a coaching practice](/building-a-successful-coaching-practice-expert-insights-for-attracting-and-retaining-clients/), [formation awareness of coaching stance](/formation-awareness-coaching-stance/), [running a coaching business](/practitioner-series/running-a-coaching-business/), and coaching supervision articles.
 - **"What is Mentor Coaching?"** — /blog/what-is-mentor-coaching — Explains mentor coaching vs. coaching supervision vs. regular coaching
 - **"ICF Core Competencies Explained"** — /blog/icf-core-competencies — Detailed walkthrough of the updated ICF competency model
 - **"What is Coaching Supervision?"** — /blog/what-is-coaching-supervision — Explains supervision purpose, format, and benefits
@@ -625,10 +726,10 @@ A: Tandem provides the ICF-accredited training. ICF grants the credential. After
 A: No. ICF coaching hours start accumulating from the first ICF-accredited class. Prior non-ICF coaching experience does not partially cover the requirement.
 
 **Q: Is there a separate exam for MCC?**
-A: There is no separate MCC-level exam distinct from the ICF Credentialing Exam. MCC BARS follows the same structure and content as PCC Markers, so prior PCC Markers work transfers.
+A: No. PCC and MCC candidates take the same ICF Credentialing Exam (78 situational-judgment items, 180 minutes). There is no separate MCC-level exam. However, ACC candidates take a different, separate ACC Exam (60 multiple-choice questions, 90 minutes). MCC BARS follows the same structure and content as PCC Markers, so prior PCC Markers work transfers.
 
 **Q: How does MCS differ from the ICF Coaching Supervision Specialization?**
-A: They are completely separate tracks. The MCS (Mentor Coach Specialization) is Tandem's ICF-accredited program for coaches who mentor other coaches. The ICF Coaching Supervisor Specialization is a separate credential ICF has announced but has not yet released full specifics, timelines, or application process details for. These are unrelated offerings.
+A: They are completely separate tracks. The MCS (Mentor Coach Specialization) is Tandem's ICF-accredited program for coaches who mentor other coaches. The CSS (Coaching Supervisor Specialization) is ICF's individual designation for coaching *supervisors* — eligibility is an active PCC or MCC plus 41+ hours of supervision training (≥50% synchronous), against ICF's 8 Coaching Supervision Competencies (published September 2024); valid 3 years. Tandem's program for that pathway is **Coaching Supervision Mastery**, ICF-accredited under AACS and enrolling now (October 7, 2026 – February 10, 2027).
 
 ### Mentor Coaching & MCS
 
@@ -841,8 +942,10 @@ In enrollment-confirmation and welcome emails, proactively include the community
 - "MCS-PCC covers ACC-level mentoring" → MCS is strictly per-level. MCS-PCC covers PCC-candidate mentoring only (safe harbor: MCS-PCC holders may also mentor ACC candidates). MCS-ACC is required otherwise for ACC-candidate mentoring.
 - "Tandem provides BARS/Markers for CPL-path coaches" → CPL-path coaches obtain evaluation training from ICF directly. Only Standard Path/MCT students receive it embedded in the program.
 - "Systems Coach modules must be taken in order" → Modules are drop-in and can be taken in any order.
-- "There's a separate MCC exam" → There is no separate MCC-level exam. MCC BARS follows the same structure as PCC Markers.
+- "The same exam is used for ACC and PCC" → No. ICF now uses two separate exams: the ACC Exam (60 multiple-choice questions, 90 minutes) for ACC candidates, and the ICF Credentialing Exam (78 situational-judgment items, 180 minutes) for PCC and MCC candidates. Both have a passing score of 460.
+- "There's a separate MCC exam" → There is no separate MCC-level exam. PCC and MCC share the ICF Credentialing Exam. MCC BARS follows the same structure as PCC Markers.
 - "My prior training must be ICF-accredited because I said so" → Do not assume. Always ask for the graduation certificate before advising on credit transfer or path eligibility. Non-accredited hours either don't transfer or transfer at a reduced rate (roughly 1 hour per 3 completed).
+- "ACTC and AATC are the same thing" → AATC (Advanced Accreditation in Team Coaching) is the organizational accreditation that Tandem holds from ICF for its team coaching curriculum. ACTC (Advanced Certification in Team Coaching) is the individual credential ICF awards to coaches who meet its own experience, assessment, and application requirements. Tandem's graduation certificate carries the AATC seal; ICF awards the ACTC credential separately.
 
 ### Sales Conversation Flow
 1. **Identify need:** What credential/goal is the prospect pursuing?
