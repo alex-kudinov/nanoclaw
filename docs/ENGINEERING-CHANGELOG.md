@@ -8,6 +8,42 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260810-002 — CNPC intake and bounded coach matching
+
+- State: validating from exact live immutable base `0b355396281a5e35b6159dce1ab8f9d36155efd0`.
+- Trigger: automate the EA-controlled CNPC intake-to-coach-match workflow while
+  preserving human approval for consequential communication and commercial
+  actions.
+- Public capture deployed and verified:
+  - n8n workflow ID `cnpc-coaching-intake` is published at
+    `POST https://webhooks.tandemcoach.co/webhook/cnpc-coaching-intake`;
+  - missing authentication returns `401`; an authenticated complete synthetic
+    form-1 payload returns `202`, `normalized: true`, stable `gf:1:<entry>`
+    identity, and mapping version `gf-form-1-v1`;
+  - sanitized Gravity Forms entry 583 established the exact field-ID mapping;
+  - the capture workflow has no downstream node, so it cannot reach NanoClaw,
+    Slack, email, Plutio, or coach-capacity state yet.
+- Source implementation:
+  - typed, length-bounded normalized intake contract and stable event key;
+  - durable host-owned identity and intake persistence;
+  - deterministic eligibility and published price tiers;
+  - migration 116 for canonical coaches, capacity snapshots, match results,
+    chemistry soft holds, engagements, and an approval/receipt outbox;
+  - host-bounded active-capacity candidate pool and exact roster version;
+  - host validation and persistence of candidate IDs, ranks, reasons, and
+    roster version returned by the CNPC minion;
+  - dedicated `groups/cnpc/` behavior, knowledge, and registration for Slack
+    channel `C0BPG0408BW`.
+- Security boundary: public and private webhook secrets are distinct; the
+  tracked n8n artifact contains only a one-way public-secret digest; the minion
+  receives neither database nor Gmail/Plutio credentials. Client/coach email,
+  Plutio, hard capacity commitment, and ready-to-begin execution are absent and
+  blocked pending named approval and host receipts.
+- Release state at this entry: rebased onto exact live immutable commit
+  `0b35539`; migration, registration, private n8n delivery, deployment, and
+  sanitized end-to-end canary remain pending.
+- Detailed operating contract: `docs/CNPC-AUTOMATION.md`.
+
 ### NC-20260809-004 — Request-first Sales response policy
 
 - Date: 2026-08-10T06:30Z

@@ -42,9 +42,23 @@ export function extractEventKey(
       return extractChaos(p);
     case 'form-submitted':
       return extractFormSubmitted(p);
+    case 'cnpc-coaching-intake':
+      return extractCnpcCoachingIntake(p);
     default:
       return NONE;
   }
+}
+
+/**
+ * CNPC Gravity Forms intake. n8n must preserve one stable submission_id,
+ * normally `gf:<form_id>:<entry_id>`, across all delivery retries.
+ */
+function extractCnpcCoachingIntake(p: Payload): ExtractedKey {
+  const submissionId = asStr(p.submission_id);
+  return {
+    event_id: submissionId ? `cnpc:${submissionId}` : null,
+    event_type: 'cnpc.intake.submitted',
+  };
 }
 
 function asStr(v: unknown): string | null {

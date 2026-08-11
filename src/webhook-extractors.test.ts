@@ -151,6 +151,26 @@ describe('extractEventKey — contact-form', () => {
   });
 });
 
+describe('extractEventKey — cnpc-coaching-intake', () => {
+  it('uses the stable Gravity Forms submission id', () => {
+    expect(
+      extractEventKey('cnpc-coaching-intake', {
+        submission_id: 'gf:47:9001',
+      }),
+    ).toEqual({
+      event_id: 'cnpc:gf:47:9001',
+      event_type: 'cnpc.intake.submitted',
+    });
+  });
+
+  it('fails open to archive without dedup only when n8n omits the key', () => {
+    expect(extractEventKey('cnpc-coaching-intake', {})).toEqual({
+      event_id: null,
+      event_type: 'cnpc.intake.submitted',
+    });
+  });
+});
+
 describe('extractEventKey — zoom-class', () => {
   it('keys on the Zoom recording UUID inside payload.payload.object', () => {
     expect(

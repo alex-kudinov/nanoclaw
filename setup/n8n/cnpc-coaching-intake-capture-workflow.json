@@ -1,0 +1,76 @@
+{
+  "id": "cnpc-coaching-intake",
+  "name": "CNPC Gravity Forms Intake - Normalize Only",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cnpc-coaching-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "trigger-cnpc-intake",
+      "name": "CNPC Gravity Forms Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "cnpc-coaching-intake"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Authenticated, allowlisted Gravity Forms form 1 normalizer.\n// This workflow deliberately has no downstream connection. The normalized\n// contract is retained in n8n execution data for verification only.\nconst crypto = require('crypto');\nconst envelope = $input.first().json || {};\nconst headers = envelope.headers && typeof envelope.headers === 'object'\n  ? envelope.headers\n  : {};\nconst supplied = String(\n  Object.entries(headers).find(([key]) => key.toLowerCase() === 'x-cnpc-webhook-secret')?.[1] || '',\n);\n\n// SHA-256 digest of the separately managed Gravity Forms ingress secret. The\n// secret itself is never stored in this workflow or forwarded downstream.\nconst expectedDigest = 'a170a77346b7af36b749ee9dbd1faf49dfeb4108b7fed2e86a0ba00217b2e1b1';\nconst suppliedDigest = crypto.createHash('sha256').update(supplied, 'utf8').digest('hex');\nconst authenticated = supplied.length > 0 && crypto.timingSafeEqual(\n  Buffer.from(suppliedDigest, 'hex'),\n  Buffer.from(expectedDigest, 'hex'),\n);\n\nconst result = (statusCode, response, normalized) => [{\n  json: { status_code: statusCode, response, ...(normalized ? { normalized } : {}) },\n}];\n\nif (!authenticated) {\n  return result(401, { accepted: false, error: 'unauthorized' });\n}\n\nconst body = envelope.body;\nif (!body || typeof body !== 'object' || Array.isArray(body)) {\n  return result(422, { accepted: false, error: 'JSON object body required' });\n}\n\nconst encodedLength = Buffer.byteLength(JSON.stringify(body), 'utf8');\nif (encodedLength > 262144 || Object.keys(body).length > 300) {\n  return result(413, { accepted: false, error: 'payload exceeds intake limits' });\n}\n\nconst text = (key, maxLength) => {\n  const value = body[key];\n  if (value === undefined || value === null) return '';\n  return String(value).trim().slice(0, maxLength);\n};\nconst formId = text('form_id', 64);\nconst entryId = text('id', 64);\nif (formId !== '1' || !/^\\d{1,20}$/.test(entryId)) {\n  return result(422, { accepted: false, error: 'unexpected Gravity Forms identity' });\n}\n\nconst organizationTypes = {\n  'Non-profit 501(c)3': 'nonprofit_501c3',\n  'Not-for-profit other 501(c)': 'nonprofit_other_501c',\n  'For profit': 'for_profit',\n  'Not sure': 'unsure',\n};\nconst expenseBands = {\n  'Small (OpEx Budget under $250,000 USD / year)': 'under_250k',\n  'Medium (OpEx Budget under $500,000 USD / year)': '250k_to_499999',\n  'Large (OpEx Budget over $500,000 USD / year)': '500k_plus',\n};\nconst coachingTypes = {\n  Individual: 'individual',\n  Team: 'team',\n  Both: 'both',\n  'Not Sure': 'unsure',\n};\n\nconst organizationType = organizationTypes[text('21', 100)];\nconst expenseBand = expenseBands[text('22', 160)];\nconst coachingType = coachingTypes[text('24', 40)];\nconst required = {\n  first_name: text('1.3', 100),\n  last_name: text('1.6', 100),\n  email: text('2', 320),\n  lead_source: text('16', 500),\n  organization_name: text('20', 500),\n  website: text('17', 2048),\n  city: text('4.3', 200),\n  state: text('4.4', 100),\n  why_coaching: text('3', 10000),\n};\nconst missing = Object.entries(required)\n  .filter(([, value]) => !value)\n  .map(([key]) => key);\nconst consent = ['1', 'true', 'yes', 'on'].includes(text('29.1', 20).toLowerCase());\nif (missing.length || !organizationType || !expenseBand || !coachingType || !consent) {\n  return result(422, {\n    accepted: false,\n    error: 'required or enumerated field validation failed',\n    missing_fields: missing,\n    invalid_fields: [\n      ...(!organizationType ? ['organization_type'] : []),\n      ...(!expenseBand ? ['operating_expense_band'] : []),\n      ...(!coachingType ? ['coaching_type'] : []),\n      ...(!consent ? ['consent'] : []),\n    ],\n  });\n}\n\nconst rawDate = text('date_created', 64);\nlet submittedAt = new Date().toISOString();\nif (/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$/.test(rawDate)) {\n  submittedAt = `${rawDate.replace(' ', 'T')}.000Z`;\n} else if (rawDate && !Number.isNaN(Date.parse(rawDate))) {\n  submittedAt = new Date(rawDate).toISOString();\n}\n\nconst submissionId = `gf:${formId}:${entryId}`;\nconst normalized = {\n  submission_id: submissionId,\n  submitted_at: submittedAt,\n  applicant: {\n    first_name: required.first_name,\n    last_name: required.last_name,\n    email: required.email,\n    lead_source: required.lead_source,\n  },\n  organization: {\n    legal_name: required.organization_name,\n    website: required.website,\n    city: required.city,\n    state: required.state,\n    organization_type: organizationType,\n    operating_expense_band: expenseBand,\n  },\n  request: {\n    program_track: 'cnpc',\n    coaching_type: coachingType,\n    why_coaching: required.why_coaching,\n    first_choice_coach: text('30', 500),\n    second_choice_coach: text('31', 500),\n    anything_else: text('28', 10000),\n  },\n  consent: true,\n  source: { form_id: formId, entry_id: entryId },\n};\n\nreturn result(202, {\n  accepted: true,\n  capture_only: true,\n  normalized: true,\n  submission_id: submissionId,\n  mapping_version: 'gf-form-1-v1',\n}, normalized);"
+      },
+      "id": "authenticate-and-normalize",
+      "name": "Authenticate and Normalize Form 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": {
+          "responseCode": "={{ $json.status_code }}"
+        }
+      },
+      "id": "respond-cnpc-intake",
+      "name": "Return Intake Receipt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [760, 300]
+    }
+  ],
+  "connections": {
+    "CNPC Gravity Forms Webhook": {
+      "main": [
+        [
+          {
+            "node": "Authenticate and Normalize Form 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticate and Normalize Form 1": {
+      "main": [
+        [
+          {
+            "node": "Return Intake Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "executionTimeout": 300
+  }
+}

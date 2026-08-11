@@ -26,6 +26,16 @@ import type { RegisteredGroup, WebhookDefinition } from './types.js';
 import { markFailed, markHandled } from './webhook-inbox.js';
 import { handleChaosActivity } from './chaos-activity.js';
 import { handleStripePayment } from './stripe-payment-host.js';
+import {
+  CNPC_INTAKE_WEBHOOK_ID,
+  parseCnpcIntakePayload,
+  prepareCnpcIntake,
+  type CnpcPreparedIntake,
+} from './cnpc-intake.js';
+import {
+  parseAndValidateCnpcMatchResult,
+  recordCnpcMatchResult,
+} from './cnpc-match-result.js';
 
 const MAX_ATTEMPTS = 5;
 const BATCH_SIZE = 20;
@@ -194,10 +204,22 @@ async function dispatchRow(row: InboxRow, deps: ReaperDeps): Promise<void> {
       `group '${webhook.group}' not registered; cannot redispatch inbox #${row.id}`,
     );
   }
-  const prompt = renderPrompt(webhook.prompt_template, row.raw_body);
+  let promptPayload: unknown = row.raw_body;
+  let cnpcIntakeId: number | null = null;
+  let cnpcPrepared: CnpcPreparedIntake | null = null;
+  if (row.source === CNPC_INTAKE_WEBHOOK_ID) {
+    const prepared = await prepareCnpcIntake(
+      parseCnpcIntakePayload(row.raw_body),
+      row.id,
+    );
+    promptPayload = prepared;
+    cnpcIntakeId = prepared.intake.id;
+    cnpcPrepared = prepared;
+  }
+  const prompt = renderPrompt(webhook.prompt_template, promptPayload);
   const isMain = group.isMain === true;
 
-  await deps.runAgent(
+  const output = await deps.runAgent(
     group,
     {
       prompt,
@@ -209,7 +231,30 @@ async function dispatchRow(row: InboxRow, deps: ReaperDeps): Promise<void> {
     () => {},
   );
 
-  await markHandled(row.id, { handled_by: `${webhook.group}:reaper` });
+  if (
+    cnpcPrepared?.eligibility.status === 'eligible' &&
+    cnpcPrepared.match_pool.candidate_count > 0
+  ) {
+    if (!output.result) {
+      throw new Error('CNPC reaper run returned no match result');
+    }
+    const raw =
+      typeof output.result === 'string'
+        ? output.result
+        : JSON.stringify(output.result);
+    await recordCnpcMatchResult(
+      parseAndValidateCnpcMatchResult(raw, cnpcPrepared),
+      cnpcPrepared,
+    );
+  }
+
+  await markHandled(row.id, {
+    handled_by: `${webhook.group}:reaper`,
+    related_entity:
+      cnpcIntakeId !== null
+        ? { kind: 'cnpc_intake', id: cnpcIntakeId }
+        : undefined,
+  });
 }
 
 export async function runReaper(deps: ReaperDeps): Promise<ReaperResult> {

@@ -159,6 +159,8 @@ import { validateProcurementTaskCompletion } from './procurement-task-completion
 import { SlackChannel } from './channels/slack.js';
 import { handleGmailSend } from './gmail-ipc-handlers.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
+import { prepareCnpcIntake } from './cnpc-intake.js';
+import { recordCnpcMatchResult } from './cnpc-match-result.js';
 import {
   listOpenProposals,
   resolveRecipient,
@@ -1947,6 +1949,8 @@ async function main(): Promise<void> {
     markWebhookDispatched: markDispatchedImpl,
     markWebhookFailed: markFailedImpl,
     markWebhookHandled: markHandledImpl,
+    handleCnpcIntake: prepareCnpcIntake,
+    recordCnpcMatchResult,
     gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
     handleGmailPush: async (emailAddress: string, historyId: string) => {
       // Late-bound lookup: channels array is populated after webhook server

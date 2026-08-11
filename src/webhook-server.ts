@@ -41,6 +41,18 @@ import { recordChaosBooking } from './chaos-booking.js';
 import { handleStripePayment } from './stripe-payment-host.js';
 import { formatBookedNotice } from './host-router.js';
 import type { ReleaseIdentity } from './release-integrity.js';
+import {
+  CNPC_INTAKE_WEBHOOK_ID,
+  CnpcIntakePayloadError,
+  parseCnpcIntakePayload,
+  type CnpcIntakeInput,
+  type CnpcPreparedIntake,
+} from './cnpc-intake.js';
+import {
+  parseAndValidateCnpcMatchResult,
+  stripCnpcMatchResult,
+  type CnpcMatchResult,
+} from './cnpc-match-result.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -110,6 +122,16 @@ export interface WebhookServerDeps {
       related_entity?: unknown;
     },
   ) => Promise<void>;
+  // CNPC intake is validated and written by the host before the minion sees a
+  // bounded match pool. The minion never receives database or Plutio writes.
+  handleCnpcIntake?: (
+    input: CnpcIntakeInput,
+    webhookInboxId: number | null,
+  ) => Promise<CnpcPreparedIntake>;
+  recordCnpcMatchResult?: (
+    result: CnpcMatchResult,
+    prepared: CnpcPreparedIntake,
+  ) => Promise<number>;
   // Per-group serialization. Webhook agent runs go through the GroupQueue
   // (like the message loop and scheduled tasks) so concurrent webhooks to one
   // group reuse a warm container instead of spawning rival ones that contend
@@ -628,6 +650,23 @@ export class WebhookServer {
       return;
     }
 
+    // CNPC's public-form contract is validated before archive/ack. This keeps
+    // malformed n8n mappings out of the async agent lane and gives n8n a 422
+    // it can route to its error workflow.
+    let parsedCnpcIntake: CnpcIntakeInput | null = null;
+    if (hookId === CNPC_INTAKE_WEBHOOK_ID) {
+      try {
+        parsedCnpcIntake = parseCnpcIntakePayload(payload);
+      } catch (err) {
+        if (err instanceof CnpcIntakePayloadError) {
+          res.writeHead(422, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+          return;
+        }
+        throw err;
+      }
+    }
+
     // Resolve registered group
     const groups = this.deps.getRegisteredGroups();
     const group = Object.values(groups).find((g) => g.folder === webhook.group);
@@ -692,7 +731,9 @@ export class WebhookServer {
       }),
     );
 
-    const prompt = renderPrompt(webhook.prompt_template, payload);
+    let promptPayload = payload;
+    let cnpcIntakeId: number | null = null;
+    let cnpcPreparedIntake: CnpcPreparedIntake | null = null;
     const isMain = group.isMain === true;
 
     logger.info(
@@ -704,6 +745,47 @@ export class WebhookServer {
       await this.deps.markWebhookDispatched(inboxId).catch((err) => {
         logger.error({ hookId, inboxId, err }, 'markWebhookDispatched failed');
       });
+    }
+
+    if (hookId === CNPC_INTAKE_WEBHOOK_ID) {
+      if (!parsedCnpcIntake || !this.deps.handleCnpcIntake) {
+        const reason = 'CNPC intake host handler is not configured';
+        logger.error({ hookId, inboxId }, reason);
+        if (inboxId !== null && this.deps.markWebhookFailed) {
+          await this.deps
+            .markWebhookFailed(inboxId, reason)
+            .catch((err) =>
+              logger.error(
+                { hookId, inboxId, err },
+                'markWebhookFailed failed',
+              ),
+            );
+        }
+        return;
+      }
+      try {
+        const prepared = await this.deps.handleCnpcIntake(
+          parsedCnpcIntake,
+          inboxId,
+        );
+        promptPayload = prepared;
+        cnpcIntakeId = prepared.intake.id;
+        cnpcPreparedIntake = prepared;
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err);
+        logger.error({ hookId, inboxId, err }, 'CNPC intake host write failed');
+        if (inboxId !== null && this.deps.markWebhookFailed) {
+          await this.deps
+            .markWebhookFailed(inboxId, reason)
+            .catch((markErr) =>
+              logger.error(
+                { hookId, inboxId, err: markErr },
+                'markWebhookFailed failed',
+              ),
+            );
+        }
+        return;
+      }
     }
 
     // Chaos verified visitor — an ACTIVITY signal, never an inquiry. Recorded
@@ -1151,6 +1233,8 @@ export class WebhookServer {
       }
     }
 
+    const prompt = renderPrompt(webhook.prompt_template, promptPayload);
+
     // Circuit breaker — this dispatch path spawns an agent container directly,
     // bypassing the GroupQueue (and its per-group serialization + breaker). A
     // group whose containers keep failing (e.g. a frozen container runtime)
@@ -1225,11 +1309,33 @@ export class WebhookServer {
               ),
             async (streamedOutput: ContainerOutput) => {
               if (!streamedOutput.result) return;
-              if (webhook.suppress_output) return;
-              const raw =
+              let raw =
                 typeof streamedOutput.result === 'string'
                   ? streamedOutput.result
                   : JSON.stringify(streamedOutput.result);
+              const cnpcRequiresMatchResult =
+                cnpcPreparedIntake?.eligibility.status === 'eligible' &&
+                cnpcPreparedIntake.match_pool.candidate_count > 0;
+              if (
+                hookId === CNPC_INTAKE_WEBHOOK_ID &&
+                cnpcRequiresMatchResult
+              ) {
+                if (!cnpcPreparedIntake || !this.deps.recordCnpcMatchResult) {
+                  throw new Error(
+                    'CNPC match-result recorder is not configured',
+                  );
+                }
+                const matchResult = parseAndValidateCnpcMatchResult(
+                  raw,
+                  cnpcPreparedIntake,
+                );
+                await this.deps.recordCnpcMatchResult(
+                  matchResult,
+                  cnpcPreparedIntake,
+                );
+                raw = stripCnpcMatchResult(raw);
+              }
+              if (webhook.suppress_output) return;
               const text = raw
                 .replace(/<internal>[\s\S]*?<\/internal>/g, '')
                 .trim();
@@ -1278,7 +1384,13 @@ export class WebhookServer {
           );
           if (inboxId !== null && this.deps.markWebhookHandled) {
             await this.deps
-              .markWebhookHandled(inboxId, { handled_by: webhook.group })
+              .markWebhookHandled(inboxId, {
+                handled_by: webhook.group,
+                related_entity:
+                  cnpcIntakeId !== null
+                    ? { kind: 'cnpc_intake', id: cnpcIntakeId }
+                    : undefined,
+              })
               .catch((err) =>
                 logger.error(
                   { hookId, inboxId, err },
