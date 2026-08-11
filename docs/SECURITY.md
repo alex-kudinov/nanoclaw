@@ -175,6 +175,13 @@ Resource rules:
 - Scheduled Sales work has one durable fallback: after restart, an exact
   address or thread is re-authorized only when PostgreSQL proves that it belongs
   to a Party with a non-terminal pipeline entry. Database errors fail closed.
+- An asynchronous Gmail result is delivered only to the simultaneously active
+  container whose exact host-known name and directory-owned group match the
+  requesting source. This exact path may reach a scheduled-task container;
+  ordinary chat piping still cannot. Late results and any container/group
+  mismatch are held rather than rerouted to a sibling session. These results
+  are ephemeral (`chat_cursor_recoverable=false`) because no Slack database row
+  can reproduce them.
 - Human-approved Sales and Chief reply cards durably bind their Gmail Thread-ID
   and intended recipient in `pending_sends`. Parseable approvals also bind a
   random host action ID and the exact approved subject/body hash. That record

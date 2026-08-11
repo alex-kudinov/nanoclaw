@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260811-002` | Restore daily Sales lead follow-ups by keeping exact scheduled-task Gmail continuations alive and rejecting false task completion               | Codex                              | `codex/nc-20260811-002-sales-followup-continuation` @ `f68953e` | `validating`          | C5    | Exact source-container delivery for asynchronous Gmail results into scheduled tasks; resettable bounded multi-turn close; selected-ID completion receipt; Sales workflow; outage/backlog accounting; approval-card-only recovery; combined immutable release with NC-20260811-001                                      | Finish full host/runner/release gates and immutable build; after explicit production-write/restart approval, activate the combined release and reviewed Sales workflow, run one bounded five-lead recovery, and verify cards plus completion receipt rather than scheduler prose                                                                                             | 2026-08-11T20:45Z |
 | `NC-20260811-001` | Allow Sales to use an exact human-authorized commercial term in the same work thread without weakening the global invented-discount guard       | Codex                              | `codex/nc-20260811-001-human-commercial-terms` @ `194f848`   | `ready_for_deploy`    | C5    | Exact-thread human authorization for numeric commercial terms; approval-card and final Gmail guard parity; reply-scoped Gmail participant alias proof; focused adversarial tests; immutable release and live outcome verification                                                                                                             | Commit the reviewed implementation, build and independently verify one immutable release, deploy only after active work drains, then prove the natural Tom approval-to-Gmail path                                                                                                                                                         | 2026-08-11T20:12Z |
 | `NC-20260810-002` | Automate CNPC intake, deterministic eligibility/pricing, capacity-bounded coach matching, and approval-gated follow-through                    | Codex                              | `codex/cnpc-intake-release` @ `0b35539`                      | `validating`          | C5    | Public Gravity Forms-to-n8n authentication and allowlist normalization; private durable NanoClaw intake; canonical coach/capacity ledger; host-bounded matching; `#gru-cnpc`; external email, Plutio, capacity commitment, and ready-to-begin actions remain disabled                                                                                                                     | Complete exact-lineage tests and immutable release; apply migration 116, register channel `C0BPG0408BW`, install a fresh private secret, deploy and verify health; then connect n8n and run a sanitized no-capacity canary                                                                                                                                                | 2026-08-11T02:40Z |
 | `NC-20260809-004` | Make Sales responses request-first, relationship-aware, and able to abstain instead of forcing a program pitch                                 | Codex implementer + Claude owner   | `codex/nc-20260809-004-sales-request-first` @ `4437ee3`      | `ready_for_deploy`    | C5    | Request-first Sales authority; pre-inbound relationship evidence gate; seven response routes; transaction-only commercial material; no-draft escalation; non-binding website path; compatible autonomy marker; nine-case contract fixture; immutable release from exact live lineage                                                       | Build and deploy the isolated commit, verify exact release and prompt hashes on the Mini, and run a non-customer behavior canary; then observe blinded historical and natural-response outcomes before claiming response-quality validation                                                               | 2026-08-10T06:52Z |
@@ -70,6 +71,43 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260811-002
+
+- Trigger: no daily Sales follow-up approval card was produced from 2026-08-03
+  through 2026-08-11 even though the weekday task continued to run.
+- Live evidence: seven runs were recorded as `success`, but every result says it
+  queued Gmail thread reads and was waiting. Thirty-two exact Gmail results were
+  subsequently held because the originating scheduled-task container could not
+  accept targeted asynchronous input. Late July produced follow-up cards
+  normally; August produced zero.
+- Root cause: the exact-session hardening correctly prevented asynchronous
+  Gmail results from falling into a sibling session, but `GroupQueue` also
+  excluded every scheduled-task container from exact source-container delivery.
+  The generic scheduler then closed the task ten seconds after its first model
+  result and treated "waiting for Gmail" prose as completion.
+- Backlog: the live deterministic queue currently has 108 eligible rows: 101
+  first follow-ups, five second follow-ups, and two cold transitions. This is
+  the current eligible population, not an attribution of all 108 rows to the
+  one-week outage.
+- Safety contract: only an active container whose exact name and directory-owned
+  group match the Gmail request may receive its result; ordinary chat input must
+  remain excluded from task containers. A daily Sales run is not successful
+  merely because the model exits zero: for a non-empty queue its final receipt
+  must name each selected pipeline ID and the host must observe a visible card
+  for all of them; an empty queue requires the exact empty-queue result. Backlog
+  recovery creates approval cards only and never sends customer email without
+  human approval.
+- Implementation/verification: exact task-container source delivery, resettable
+  60-second continuation windows, and the counted Sales completion validator are
+  implemented. The Sales workflow now forbids ending on queued/waiting prose and
+  defines the exact receipt. Pinned Node 22.23.2 typecheck, formatting,
+  documentation continuity, and diff checks pass; five focused files pass 112
+  tests; the expanded release gate passes 22 files / 558 tests plus the
+  independent runner's 5 files / 34 tests. The complete host suite accounts for
+  2,287/2,288 tests after the required permission-sensitive rerun; only the
+  unrelated, exact-base CNPC source-wrapper assertion remains. Immutable build
+  remains pending; production is unchanged.
 
 ### NC-20260811-001
 

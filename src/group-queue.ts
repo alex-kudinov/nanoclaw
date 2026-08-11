@@ -398,7 +398,54 @@ export class GroupQueue {
     opts: PipedWriteOpts = {},
   ): PipedWriteResult {
     const state = this.getGroup(groupJid);
-    if (!state.active || !state.groupFolder || state.isTaskContainer)
+    return this.writePipedMessage(groupJid, state, text, opts, false);
+  }
+
+  /**
+   * Deliver one ephemeral host result to the exact container that requested it.
+   *
+   * Scheduled-task containers intentionally reject ordinary chat piping, but
+   * they still need the asynchronous Gmail result they requested themselves.
+   * Container name + directory-owned group are both required so a result can
+   * never fall through to a sibling Sales session.
+   */
+  deliverSourceInput(
+    groupFolder: string,
+    containerName: string,
+    text: string,
+  ): PipedWriteResult {
+    if (!groupFolder || !containerName) return { wrote: false };
+    for (const [groupJid, state] of this.groups) {
+      if (
+        !state.active ||
+        state.containerName !== containerName ||
+        state.groupFolder !== groupFolder
+      ) {
+        continue;
+      }
+      return this.writePipedMessage(
+        groupJid,
+        state,
+        text,
+        { trackForRecovery: false },
+        true,
+      );
+    }
+    return { wrote: false };
+  }
+
+  private writePipedMessage(
+    groupJid: string,
+    state: GroupState,
+    text: string,
+    opts: PipedWriteOpts,
+    allowTaskContainer: boolean,
+  ): PipedWriteResult {
+    if (
+      !state.active ||
+      !state.groupFolder ||
+      (state.isTaskContainer && !allowTaskContainer)
+    )
       return { wrote: false };
     state.idleWaiting = false; // Agent is about to receive work, no longer idle
     state.idleSinceMs = undefined;

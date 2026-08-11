@@ -41,8 +41,9 @@ The builder refuses to run when:
 - the Git worktree contains any staged, unstaged, or untracked change.
 - the serial email-critical suite fails. This gate covers approval parsing,
   exact-action identity and replay, SQLite receipt transitions, cross-group
-  delivery, Gmail authorization, recipient/content refusal, and the realistic
-  PostgreSQL-bigint delivery path.
+  delivery, exact scheduled-task Gmail continuation and completion receipts,
+  Gmail authorization, recipient/content refusal, and the realistic PostgreSQL-
+  bigint delivery path.
 
 The archive is a provenance-bearing transport artifact, not a cryptographic
 signature. Its SHA-256 must be recorded out of band in the task/change record

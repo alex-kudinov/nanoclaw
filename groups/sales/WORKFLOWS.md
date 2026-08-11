@@ -306,6 +306,12 @@ host assigned to Sales, and `gmail_search` accepts only the exact
 assigned. If either is rejected, stop and surface the missing context; do not
 broaden the query or substitute an ID.
 
+These Gmail reads are asynchronous. A `queued` tool response is not the Gmail
+thread and is not completion. Keep this scheduled work item open until every
+selected read returns to this exact task container, then post every selected
+follow-up/cold artifact. Never finish with "waiting," "queued," or similar
+prose.
+
 ### Step 2 — Build the context honestly. NEVER fabricate.
 
 - `inquiry_source = email` / `contact-form` → ground the draft in the fetched thread; use `inquiry_text` as the original ask.
@@ -482,3 +488,15 @@ Same rules as initial emails but shorter. The follow-up MUST read as part of an 
 ### Batch Cap
 
 If more than 5 leads qualify in a single cron run, process the 5 oldest first (by `last_interaction_at ASC`). Post: `{remaining} more leads need follow-up — will process next business day.` Remaining leads are picked up on the next cron run.
+
+After all selected artifacts are visibly posted, finish with exactly one result
+line (do not post it through `send_message`; the scheduler publishes it):
+
+```
+[FOLLOW-UP RUN COMPLETE] selected={number selected, 1-5} follow-up-cards={number of FOLLOW-UP cards} cold={number of COLD cards} remaining={queue rows not selected} ids={comma-separated selected pipeline_entry_ids}
+```
+
+The counts must add up and the IDs must name every selected row exactly once.
+The host compares this receipt with the visible cards and marks the scheduled
+run failed if any selected artifact is missing. For an empty queue, use only
+the existing exact `No leads pending follow-up today.` receipt.

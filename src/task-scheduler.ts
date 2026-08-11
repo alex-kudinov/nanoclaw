@@ -48,6 +48,7 @@ export interface SchedulerDependencies {
   validateTaskCompletion: (
     task: ScheduledTask,
     startedAtMs: number,
+    result: string | null,
   ) => Promise<void>;
 }
 
@@ -210,14 +211,16 @@ async function runTask(
   const sessionId =
     task.context_mode === 'group' ? sessions[task.group_folder] : undefined;
 
-  // After the task produces a result, close the container promptly.
-  // Tasks are single-turn — no need to wait IDLE_TIMEOUT (30 min) for the
-  // query loop to time out. A short delay handles any final MCP calls.
-  const TASK_CLOSE_DELAY_MS = 10000;
+  // A scheduled task may be multi-turn: Gmail tools return immediately and
+  // deliver their exact-thread result asynchronously into this same container.
+  // Keep a bounded continuation window after every result, and reset it after
+  // each subsequent turn. The completion validator rejects "waiting" prose
+  // without a durable business artifact, so this cannot fail silently.
+  const TASK_CLOSE_DELAY_MS = 60_000;
   let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
   const scheduleClose = () => {
-    if (closeTimer) return; // already scheduled
+    if (closeTimer) clearTimeout(closeTimer);
     closeTimer = setTimeout(() => {
       logger.debug({ taskId: task.id }, 'Closing task container after result');
       deps.queue.closeStdin(task.chat_jid);
@@ -295,7 +298,7 @@ async function runTask(
 
   if (!error) {
     try {
-      await deps.validateTaskCompletion(task, startTime);
+      await deps.validateTaskCompletion(task, startTime, result);
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
       logger.error(

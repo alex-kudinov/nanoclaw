@@ -8,12 +8,56 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260811-002 — Restore receipted daily Sales follow-ups
+
+- Date: 2026-08-11T20:45Z
+- Owner/client: Codex
+- State: validating on
+  `codex/nc-20260811-002-sales-followup-continuation` from committed commercial-
+  term base `f68953ef57743c722f2644cadec834209bb3db23`; not deployed
+- Change class: C5 — production scheduler/IPC isolation, Sales behavior, and
+  backlog recovery
+- Incident: seven daily runs from August 3-11 were logged `success` while every
+  result only said that five Gmail reads were queued or still pending. The 32
+  returned Gmail results were held after their scheduled-task containers
+  exited, and no August follow-up card was produced.
+- Root cause: the August 2 exact-session hardening correctly stopped Gmail
+  results falling into sibling Sales sessions, but the exact delivery resolver
+  also excluded scheduled-task containers. The generic ten-second close timer
+  then ended the work item and treated waiting prose as success.
+- Implementation: exact Gmail input may return to an active scheduled task only
+  when both source container and directory-owned group match; ordinary chat
+  piping remains denied. The scheduler uses a resettable bounded continuation
+  window. A non-empty daily run must return a count-consistent receipt naming
+  every selected pipeline ID, and the host verifies a visible follow-up/cold
+  card for each; an empty run requires the exact empty-queue receipt. Partial or
+  waiting runs fail visibly and are recorded as errors.
+- Backlog/safety: a read-only live aggregate found 108 currently eligible rows
+  (101 FU1, five FU2, two cold); this current population is not attributed in
+  full to the outage. Recovery remains capped at five oldest rows per run and
+  creates approval cards only. No customer email is sent without later human
+  approval.
+- Verification so far: pinned Node 22.23.2 typecheck, formatting, documentation
+  continuity, and diff checks clean. The focused scheduler/queue/completion/
+  Gmail/handoff gate passes 5 files / 112 tests. The expanded email-critical
+  gate passes 22 files / 558 tests and the independent runner passes 5 files /
+  34 tests. The complete host suite accounts for 2,287/2,288 tests: 2,242 pass
+  in-sandbox and all 45 permission-sensitive tests pass on the required
+  unrestricted rerun. The sole remaining failure is the unrelated pre-existing
+  CNPC source-wrapper contract assertion already present on the exact base.
+  Immutable build, deployment, and one bounded live backlog run remain pending.
+- Rollback: reactivate the prior immutable release and restore the prior
+  operational Sales workflow copy. Held async results are never replayed into a
+  new or sibling session; rerun the bounded task instead.
+- Documentation: Sales workflow, project map, security model, active work, and
+  this changelog entry.
+
 ### NC-20260811-001 — Exact-thread human commercial terms and reply aliases
 
 - Date: 2026-08-11T20:10Z
 - Owner/client: Codex
-- State: ready for immutable release from exact live immutable base
-  `194f8486e737d387f5b69b1f88db711bebc06659`
+- State: ready_for_deploy; immutable release pending from exact live immutable
+  base `194f8486e737d387f5b69b1f88db711bebc06659`
 - Trigger: Sales rejected Alex's exact 5% Velera instruction as an invented
   discount, then incorrectly told the operator to send Tom Olney's reply
   manually. The exact Gmail sender alias was also absent from Tom's CRM email

@@ -538,6 +538,58 @@ describe('GroupQueue', () => {
     await vi.advanceTimersByTimeAsync(10);
   });
 
+  it('delivers an ephemeral Gmail result only to its exact scheduled-task container', async () => {
+    const writeFileSync = vi.mocked(fs.writeFileSync);
+    let resolveTask!: () => void;
+    queue.enqueueTask('slack:SALES', 'task-followup-daily', async () => {
+      await new Promise<void>((resolve) => {
+        resolveTask = resolve;
+      });
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    queue.registerProcess(
+      'slack:SALES',
+      {} as never,
+      'nanoclaw-sales-daily-1',
+      'sales',
+    );
+    writeFileSync.mockClear();
+
+    // Ordinary user/chat piping remains excluded from task containers.
+    expect(queue.sendMessage('slack:SALES', 'human chatter').wrote).toBe(false);
+    expect(
+      queue.deliverSourceInput(
+        'sales',
+        'nanoclaw-sales-wrong-session',
+        'gmail result',
+      ).wrote,
+    ).toBe(false);
+
+    const delivered = queue.deliverSourceInput(
+      'sales',
+      'nanoclaw-sales-daily-1',
+      '[gmail_get_thread result — thread exact]',
+    );
+    expect(delivered.wrote).toBe(true);
+    const payloadCall = writeFileSync.mock.calls.find(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].endsWith('.json.tmp') &&
+        typeof call[1] === 'string' &&
+        call[1].includes('gmail_get_thread result'),
+    );
+    const payload = JSON.parse(payloadCall![1] as string);
+    expect(payload.target_container).toBe('nanoclaw-sales-daily-1');
+    expect(payload.chat_cursor_recoverable).toBe(false);
+
+    resolveTask();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(
+      queue.deliverSourceInput('sales', 'nanoclaw-sales-daily-1', 'late result')
+        .wrote,
+    ).toBe(false);
+  });
+
   it('preempts when idle arrives with pending tasks', async () => {
     const fs = await import('fs');
     let resolveProcess: () => void;

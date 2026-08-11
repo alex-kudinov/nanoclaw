@@ -233,6 +233,19 @@ There are two schedulers:
 They have different tables, execution paths, failure modes, and trust levels.
 Do not treat the terms “task” and “job” as interchangeable in code.
 
+Scheduled agent tasks can span multiple model turns when a host tool, notably a
+Gmail read, returns a queued acknowledgement and delivers the real result
+asynchronously. The host may pipe that result into a scheduled-task container
+only when both the directory-owned group and the exact requesting container
+name match an active run; ordinary Slack/chat piping remains forbidden for task
+containers. The scheduler resets a bounded 60-second continuation window after
+each result turn. The daily Sales follow-up task has an additional completion
+contract: an empty queue must leave the exact empty-queue receipt; otherwise a
+counted receipt names the 1-5 selected pipeline IDs and the host verifies a
+visible follow-up/cold artifact for every ID. Queued/waiting prose, a partial
+batch, or inconsistent counts records an error and posts a visible scheduled-
+task failure alert.
+
 ## 6. Container execution model
 
 ### Current implementation
@@ -746,9 +759,9 @@ Gmail receipts remain visible.
 
 `npm run test:email-critical` is a serial Node-22 regression gate for approval
 parsing, SQLite transitions, routing, authorization, recipient/content guards,
-bigint party resolution, receipts, and replay behavior. `release:build` runs
-that exact gate after proving the source tree is clean and before compiling the
-artifact.
+bigint party resolution, receipts, replay behavior, and exact scheduled-task
+Gmail continuation/completion. `release:build` runs that exact gate after
+proving the source tree is clean and before compiling the artifact.
 
 The separate `email:transport-canary` command sends fixed text to the monitored
 mailbox itself and retrieves the exact Gmail receipt without writing business

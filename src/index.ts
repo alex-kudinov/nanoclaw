@@ -157,6 +157,7 @@ import { handleProcurementDecisionMessage } from './procurement-review.js';
 import { procurementPolicyDiagnostic } from './procurement-policy.js';
 import { runProcurementReconciler } from './procurement-reconciler.js';
 import { validateProcurementTaskCompletion } from './procurement-task-completion.js';
+import { validateSalesFollowupTaskCompletion } from './sales-followup-task-completion.js';
 import { SlackChannel } from './channels/slack.js';
 import { handleGmailSend } from './gmail-ipc-handlers.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
@@ -2744,7 +2745,10 @@ async function main(): Promise<void> {
         const text = formatOutbound(rawText);
         if (text) await channel.sendMessage(jid, text, opts);
       },
-      validateTaskCompletion: validateProcurementTaskCompletion,
+      validateTaskCompletion: async (task, startedAtMs, result) => {
+        await validateProcurementTaskCompletion(task, startedAtMs);
+        validateSalesFollowupTaskCompletion(task, startedAtMs, result);
+      },
     },
     hostJobDeps,
   );
@@ -2776,12 +2780,7 @@ async function main(): Promise<void> {
     resolveSourceThread: (groupFolder, containerName) =>
       queue.resolveContainerContext(groupFolder, containerName),
     deliverSourceInput: (groupFolder, containerName, text) => {
-      const context = queue.resolveContainerContext(groupFolder, containerName);
-      if (!context) return false;
-      const queueKey = `${context.chatJid}||${context.threadTs ?? 'root'}`;
-      return queue.sendMessage(queueKey, text, {
-        trackForRecovery: false,
-      }).wrote;
+      return queue.deliverSourceInput(groupFolder, containerName, text).wrote;
     },
     postProcurementReviewCard: async (text, threadKey) => {
       const slack = channels.find(

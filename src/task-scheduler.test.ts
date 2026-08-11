@@ -128,6 +128,75 @@ describe('task scheduler', () => {
     expect(getTaskById('task-once-slow')?.status).toBe('completed');
   });
 
+  it('resets the close window after each asynchronous continuation turn', async () => {
+    createTask({
+      id: 'task-followup-daily',
+      group_folder: 'sales',
+      chat_jid: 'slack:SALES',
+      prompt: 'Daily follow-up check.',
+      schedule_type: 'cron',
+      schedule_value: '0 9 * * 1-5',
+      context_mode: 'isolated',
+      next_run: new Date(Date.now() - 60_000).toISOString(),
+      status: 'active',
+      created_at: '2026-08-11T00:00:00.000Z',
+    });
+
+    let emitOutput!: (output: {
+      status: 'success';
+      result: string;
+    }) => Promise<void>;
+    let finishContainer!: (value: {
+      status: 'success';
+      result: string;
+    }) => void;
+    vi.mocked(runContainerAgent).mockImplementation(
+      (_group, _input, _onProcess, onOutput) =>
+        new Promise((resolve) => {
+          emitOutput = onOutput!;
+          finishContainer = resolve;
+        }),
+    );
+    const closeStdin = vi.fn();
+    startSchedulerLoop({
+      registeredGroups: () => ({
+        sales: {
+          name: 'Sales',
+          folder: 'sales',
+          trigger: '',
+          added_at: '2026-08-11T00:00:00.000Z',
+        },
+      }),
+      getSessions: () => ({}),
+      queue: {
+        enqueueTask: (
+          _groupJid: string,
+          _taskId: string,
+          fn: () => Promise<void>,
+        ) => void fn(),
+        closeStdin,
+        notifyIdle: vi.fn(),
+      } as any,
+      onProcess: () => {},
+      sendMessage: async () => {},
+      validateTaskCompletion: async () => {},
+    });
+    await vi.advanceTimersByTimeAsync(10);
+
+    await emitOutput({ status: 'success', result: 'Waiting for Gmail.' });
+    await vi.advanceTimersByTimeAsync(59_000);
+    expect(closeStdin).not.toHaveBeenCalled();
+
+    await emitOutput({ status: 'success', result: 'Drafts posted.' });
+    await vi.advanceTimersByTimeAsync(59_000);
+    expect(closeStdin).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(closeStdin).toHaveBeenCalledOnce();
+
+    finishContainer({ status: 'success', result: 'Drafts posted.' });
+    await vi.advanceTimersByTimeAsync(10);
+  });
+
   it('records and reports a host completion-receipt rejection as task error', async () => {
     createTask({
       id: 'task-receipt-missing',
