@@ -231,6 +231,10 @@ Gmail IPC outbound email is C3. At that final host boundary:
 - scheduled Sales follow-up cards must expose the exact recipient, Gmail
   thread, subject, and body being approved; proposal follow-ups use the exact
   host-owned PostgreSQL draft and the same one-time action/receipt transitions;
+- exact asynchronous host results are drained before a runner close sentinel;
+  a queued approval-card rejection or Gmail result cannot be discarded merely
+  because the model turn that was active when it arrived exceeded the bounded
+  continuation window;
 - a parseable Slack approval card must pass the same deterministic content
   guard before it is posted and again before the Action-ID is minted. Canonical
   company/transactional domains include Tandem properties and short links,

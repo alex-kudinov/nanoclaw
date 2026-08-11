@@ -239,12 +239,15 @@ asynchronously. The host may pipe that result into a scheduled-task container
 only when both the directory-owned group and the exact requesting container
 name match an active run; ordinary Slack/chat piping remains forbidden for task
 containers. The scheduler resets a bounded 60-second continuation window after
-each result turn. The daily Sales follow-up task has an additional completion
-contract: an empty queue must leave the exact empty-queue receipt; otherwise a
-counted receipt names the 1-5 selected pipeline IDs and the host verifies a
-visible follow-up/cold artifact for every ID. Queued/waiting prose, a partial
-batch, or inconsistent counts records an error and posts a visible scheduled-
-task failure alert.
+each result turn. The runner drains exact pending input before honoring a close
+sentinel, because a host rejection or Gmail result may arrive while a long model
+turn is still running. The daily Sales follow-up task has an additional
+completion contract: an empty queue must leave the exact empty-queue receipt;
+otherwise the latest visible counted receipt names the 1-5 selected pipeline
+IDs and the host verifies a visible follow-up/cold artifact for every ID in the
+final work-thread state. Queued/waiting prose, a rejected or partial batch, or
+inconsistent counts records an error and posts a visible scheduled-task failure
+alert.
 
 ## 6. Container execution model
 

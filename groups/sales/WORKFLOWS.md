@@ -312,6 +312,12 @@ selected read returns to this exact task container, then post every selected
 follow-up/cold artifact. Never finish with "waiting," "queued," or similar
 prose.
 
+Approval-card submission is asynchronous too. Before ending the batch, process
+every host acceptance or `[APPROVAL CARD REJECTED]` result. A rejection means
+that selected lead has no visible artifact: correct and repost the full card,
+then leave the batch receipt describing the final visible set. Do not count a
+queued or rejected card as posted.
+
 ### Step 2 — Build the context honestly. NEVER fabricate.
 
 - `inquiry_source = email` / `contact-form` → ground the draft in the fetched thread; use `inquiry_text` as the original ask.

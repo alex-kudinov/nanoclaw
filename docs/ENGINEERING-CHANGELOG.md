@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-11T20:45Z
 - Owner/client: Codex
-- State: ready_for_deploy as immutable release commit
-  `79819282865458823b727b6cc99a229caac4fdd3`; not staged or deployed
+- State: validating; live transport/completion repair in
+  `79819282865458823b727b6cc99a229caac4fdd3`; runner close-order correction
+  validated locally and pending a superseding immutable release
 - Change class: C5 — production scheduler/IPC isolation, Sales behavior, and
   backlog recovery
 - Incident: seven daily runs from August 3-11 were logged `success` while every
@@ -49,14 +50,31 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `f4cf456c79b1cbf957446ba975c32a8464f964fc5151e501d511cbbbfebbbc9a`
   across 612 files, and archive SHA-256
   `d5dfef80ea23ff1a99cc54e431228fa87aa26306bfe542cab7c11d48ec536120`.
-  Deployment and one bounded live backlog run remain pending explicit
-  production activation approval.
+  The first immutable release was then activated with explicit approval and a
+  bounded five-lead live recovery was run.
 - Read-only production preflight at 2026-08-11T20:49Z: immutable release
   `194f8486e737d387f5b69b1f88db711bebc06659` remains live and verified under
   Node 22.23.2 with Slack/Gmail connected; all seven August daily follow-up runs
   remain recorded as `success`; nonterminal `pending_sends` count is zero. One
   unrelated Certifier container was active, so activation would wait for it to
   drain even after approval.
+- First production outcome: release `7981928` ran as the sole Node 22.23.2
+  listener with matching verified code root and connected Slack/Gmail. All five
+  exact Gmail thread results returned to the scheduled task and zero were held.
+  Four approval cards were accepted for Leads #349, #332, #467, and #326. Lead
+  #472 was rejected by the content guard for two banned phrases. The new host
+  completion validator correctly rejected the task's inaccurate five-card
+  receipt and recorded the run as `error`; no customer email was sent.
+- Second root cause and repair: the host rejection reached the correct task
+  container while its long model turn was active, but the runner checked a
+  stale close sentinel before draining IPC input at the next loop boundary. A
+  small pure loop policy now gives exact pending input priority over close, and
+  the completion validator evaluates the latest visible receipt against the
+  final visible card state so a corrected asynchronous repost can complete the
+  run. Sales instructions require processing every card acceptance/rejection
+  before the final receipt. Pinned Node 22.23.2 validation passes root
+  typecheck/build, 3 focused host files / 36 tests, 3 permission-sensitive
+  files / 45 tests, and the independent runner build with 6 files / 36 tests.
 - Rollback: reactivate the prior immutable release and restore the prior
   operational Sales workflow copy. Held async results are never replayed into a
   new or sibling session; rerun the bounded task instead.

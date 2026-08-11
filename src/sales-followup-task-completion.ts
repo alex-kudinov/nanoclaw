@@ -60,7 +60,13 @@ export function validateSalesFollowupTaskCompletion(
     return;
   }
 
-  const receipt = COMPLETE_RECEIPT.exec(result?.trim() ?? '');
+  const latestVisibleReceipt = messages
+    .map((message) => message.content.trim())
+    .reverse()
+    .find((content) => COMPLETE_RECEIPT.test(content));
+  const receipt = COMPLETE_RECEIPT.exec(
+    latestVisibleReceipt ?? result?.trim() ?? '',
+  );
   if (!receipt) {
     throw new Error(
       'Daily Sales follow-up produced neither an empty-queue receipt nor a valid completion receipt',

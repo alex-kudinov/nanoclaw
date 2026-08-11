@@ -27,6 +27,7 @@ import { HEARTBEAT_MARKER } from './ipc-protocol.js';
 import { detectRateLimit, detectAuthFailure } from './rate-limit.js';
 import { resolveModel, formatUsageLine } from './model-util.js';
 import { payloadIsForThisContainer } from './ipc-input-filter.js';
+import { drainBeforeClose } from './ipc-loop-policy.js';
 import { selectNextIpcTurn, type IpcTurnCandidate } from './ipc-turn-policy.js';
 import { fileURLToPath } from 'url';
 
@@ -427,14 +428,16 @@ async function runAgent(
       // Wait for a prompt: either the queued one, or the next IPC message,
       // or the close sentinel.
       if (pendingTurn === undefined) {
-        if (shouldClose()) {
-          log('Close sentinel detected, exiting agent loop');
-          break;
-        }
-        const nextTurn = drainIpcInput(false);
-        if (nextTurn) {
-          pendingTurn = nextTurn;
+        const decision = drainBeforeClose(
+          () => drainIpcInput(false),
+          shouldClose,
+        );
+        if (decision.turn) {
+          pendingTurn = decision.turn;
           lastActivityMs = Date.now();
+        } else if (decision.close) {
+          log('Close sentinel detected after input drain, exiting agent loop');
+          break;
         } else {
           if (Date.now() - lastActivityMs > WRAPPER_IDLE_TIMEOUT_MS) {
             log(

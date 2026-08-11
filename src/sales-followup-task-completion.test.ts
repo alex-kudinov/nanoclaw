@@ -79,6 +79,26 @@ describe('daily Sales follow-up completion receipt', () => {
     ).not.toThrow();
   });
 
+  it('accepts the final visible card state after an asynchronous rejection correction', () => {
+    const reader = {
+      getBotMessagesSince: vi.fn(() => [
+        post('[FOLLOW-UP #1] Lead #349\nCategory: followup'),
+        post(
+          '[FOLLOW-UP RUN COMPLETE] selected=2 follow-up-cards=2 cold=0 remaining=106 ids=349,472',
+        ),
+        post('[FOLLOW-UP #1] Lead #472\nCategory: followup'),
+      ]),
+    };
+    expect(() =>
+      validateSalesFollowupTaskCompletion(
+        task,
+        Date.parse('2026-08-11T14:00:00.000Z'),
+        'Corrected Lead #472 card reposted.',
+        reader,
+      ),
+    ).not.toThrow();
+  });
+
   it('rejects waiting prose, held-result warnings, and another group output', () => {
     const reader = {
       getBotMessagesSince: vi.fn(() => [
