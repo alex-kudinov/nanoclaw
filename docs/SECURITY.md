@@ -235,6 +235,9 @@ Gmail IPC outbound email is C3. At that final host boundary:
   a queued approval-card rejection or Gmail result cannot be discarded merely
   because the model turn that was active when it arrived exceeded the bounded
   continuation window;
+- host-persisted approval cards return an exact-container `ACCEPTED` result;
+  rejected cards return `REJECTED`, and neither acknowledgement authorizes an
+  email send;
 - a parseable Slack approval card must pass the same deterministic content
   guard before it is posted and again before the Action-ID is minted. Canonical
   company/transactional domains include Tandem properties and short links,

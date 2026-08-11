@@ -313,10 +313,11 @@ follow-up/cold artifact. Never finish with "waiting," "queued," or similar
 prose.
 
 Approval-card submission is asynchronous too. Before ending the batch, process
-every host acceptance or `[APPROVAL CARD REJECTED]` result. A rejection means
-that selected lead has no visible artifact: correct and repost the full card,
-then leave the batch receipt describing the final visible set. Do not count a
-queued or rejected card as posted.
+every `[approval_card ACCEPTED]` or `[approval_card REJECTED]` host result. A
+rejection means that selected lead has no visible artifact: correct and repost
+the full card. Count a card only after its exact `ACCEPTED` result, then leave
+the batch receipt describing the final visible set. Do not count a queued or
+rejected card as posted.
 
 ### Step 2 — Build the context honestly. NEVER fabricate.
 

@@ -405,6 +405,41 @@ describe('IPC handoff routing', () => {
     );
   });
 
+  it('acknowledges a host-accepted approval card to its exact originating container', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.deliverSourceInput = vi.fn(() => true);
+    const card =
+      '[SALES REVIEW] Lead #472\nCategory: followup\nEmail: lead@example.com\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nSubject: Re: Program details\n\nHi Sierra, checking back in.\n---';
+    writeHandoffFile(
+      'sales',
+      card,
+      undefined,
+      'sales:entry:472',
+      'nanoclaw-sales-followup-472',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      card,
+      expect.objectContaining({
+        fromGroup: 'sales',
+        threadKey: 'sales:entry:472',
+      }),
+    );
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-followup-472',
+      expect.stringMatching(
+        /\[approval_card ACCEPTED\] Lead #472 exact card.*posted for human approval.*final receipt/i,
+      ),
+    );
+  });
+
   it('rejects a malformed Sales card before it can be approved and targets the originating container', async () => {
     process.env.MAILMAN_HOLD_SECONDS = '0';
     const { startIpcWatcher } = await import('./ipc.js');

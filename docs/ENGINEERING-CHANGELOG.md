@@ -75,6 +75,35 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   before the final receipt. Pinned Node 22.23.2 validation passes root
   typecheck/build, 3 focused host files / 36 tests, 3 permission-sensitive
   files / 45 tests, and the independent runner build with 6 files / 36 tests.
+- Superseding deployment and bounded recovery: immutable release `a33bed1` was
+  activated after active work and nonterminal sends drained to zero. Production
+  rebuilt `nanoclaw-agent:latest` as OCI index
+  `sha256:adad05ad78c04cbee8bae2dc5a559adc9fc25f0816be5b46494219b93ccfebfc`,
+  refreshed all 18 runner snapshots, and installed the reviewed Sales workflow
+  at SHA-256
+  `93e8db58793e7107a8323ce623a6f1249c78ceedc9a74be4faca721ad248a0a4`.
+  Health proves exact commit/code root, Node 22.23.2, one listener, connected
+  Slack/Gmail, and an empty queue. Rollback plist:
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-798192828654-2026-08-11T21-57-44-214Z`.
+  The normal task prompt was restored immediately after the one-lead run was
+  claimed, with its next cron still 2026-08-12 09:00 America/Chicago.
+- Recovery outcome and third protocol mismatch: the repaired runner consumed
+  Lead #472's exact Gmail result and the content-guard rejection, and Sales
+  posted a corrected visible approval card at 2026-08-11T22:00:41Z. Together
+  with the four accepted cards from the first bounded run, all five recovery
+  artifacts now exist; no customer email was sent. The run still recorded an
+  error because success persisted the card to Slack but, unlike rejection,
+  returned no asynchronous acknowledgement to the exact container. Sales could
+  not know validation had succeeded and ended with waiting prose instead of a
+  receipt. The follow-up repair returns `[approval_card ACCEPTED]` only after
+  Slack persistence; the marker is progress/visibility evidence, never send
+  authority. Pinned Node 22.23.2 typecheck/build and documentation continuity
+  pass; the focused IPC/queue/completion set passes 3 files / 57 tests, the
+  email-critical gate passes 22 files / 560 tests plus the independent runner's
+  6 files / 36 tests, and all 45 permission-sensitive broad-suite tests pass in
+  their required environment. The complete root suite accounts for 2,290 of
+  2,291 tests; the sole remaining failure is the unchanged pre-existing CNPC
+  source-wrapper contract assertion.
 - Rollback: reactivate the prior immutable release and restore the prior
   operational Sales workflow copy. Held async results are never replayed into a
   new or sibling session; rerun the bounded task instead.

@@ -755,7 +755,10 @@ Approval-card submission is asynchronous, so the container tool explicitly
 describes its result as pending host validation rather than `Message sent`.
 Malformed, content-invalid, or overlong cards are quarantined, rejected visibly
 in the host-derived Slack work thread, and returned through the exact
-originating container work unit with an instruction to correct and repost.
+originating container work unit with an instruction to correct and repost. A
+card successfully persisted to Slack returns `[approval_card ACCEPTED]` through
+the same exact-container path; scheduled batches count only those accepted
+artifacts before emitting their completion receipt.
 Card-posting groups also suppress narrow positive final-text recaps that claim a
 draft was posted and awaits approval; blocking signals, actual progress, and
 Gmail receipts remain visible.

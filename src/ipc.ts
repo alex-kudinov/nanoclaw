@@ -330,6 +330,30 @@ function writeRejectedApprovalCardInput(
   );
 }
 
+/** Confirm that host validation posted the exact card for human approval. */
+function writeAcceptedApprovalCardInput(
+  sourceGroup: string,
+  sourceContainer: string | undefined,
+  deliverSourceInput: IpcDeps['deliverSourceInput'],
+  cardText: string,
+): void {
+  const leadId = /\bLead #(\d+)\b/.exec(cardText)?.[1];
+  const artifact = leadId ? `Lead #${leadId} exact card` : 'The exact card';
+  const text =
+    `[approval_card ACCEPTED] ${artifact} was posted for human approval. ` +
+    'Count it as a visible artifact; do not send it to Mailman or claim the email was sent. Continue the batch and emit the final receipt after every selected artifact is accepted.';
+  if (
+    sourceContainer &&
+    deliverSourceInput?.(sourceGroup, sourceContainer, text)
+  ) {
+    return;
+  }
+  logger.warn(
+    { sourceGroup, sourceContainer },
+    'Accepted approval card could not be acknowledged to its originating container',
+  );
+}
+
 // A handoff whose text carries an escalation/emergency marker is itself an
 // urgent alert — the tidy "→ Routed to X" echo would be inappropriate noise,
 // so it is suppressed for those.
@@ -696,6 +720,12 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       ),
                       threadKey: data.thread_key,
                     });
+                    writeAcceptedApprovalCardInput(
+                      sourceGroup,
+                      data.source_container,
+                      deps.deliverSourceInput,
+                      data.text,
+                    );
                     logger.warn(
                       {
                         sourceGroup,
