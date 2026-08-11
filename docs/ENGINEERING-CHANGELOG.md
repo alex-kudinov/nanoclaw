@@ -12,9 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-11T20:45Z
 - Owner/client: Codex
-- State: validating on
-  `codex/nc-20260811-002-sales-followup-continuation` from committed commercial-
-  term base `f68953ef57743c722f2644cadec834209bb3db23`; not deployed
+- State: ready_for_deploy as immutable release commit
+  `79819282865458823b727b6cc99a229caac4fdd3`; not staged or deployed
 - Change class: C5 — production scheduler/IPC isolation, Sales behavior, and
   backlog recovery
 - Incident: seven daily runs from August 3-11 were logged `success` while every
@@ -45,7 +44,19 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   in-sandbox and all 45 permission-sensitive tests pass on the required
   unrestricted rerun. The sole remaining failure is the unrelated pre-existing
   CNPC source-wrapper contract assertion already present on the exact base.
-  Immutable build, deployment, and one bounded live backlog run remain pending.
+  The immutable archive was independently extracted and runtime-verified:
+  source tree `bf8789b7d6ce14a2d0fb5e3f6fe352dfc6562369`, compiled artifact
+  `f4cf456c79b1cbf957446ba975c32a8464f964fc5151e501d511cbbbfebbbc9a`
+  across 612 files, and archive SHA-256
+  `d5dfef80ea23ff1a99cc54e431228fa87aa26306bfe542cab7c11d48ec536120`.
+  Deployment and one bounded live backlog run remain pending explicit
+  production activation approval.
+- Read-only production preflight at 2026-08-11T20:49Z: immutable release
+  `194f8486e737d387f5b69b1f88db711bebc06659` remains live and verified under
+  Node 22.23.2 with Slack/Gmail connected; all seven August daily follow-up runs
+  remain recorded as `success`; nonterminal `pending_sends` count is zero. One
+  unrelated Certifier container was active, so activation would wait for it to
+  drain even after approval.
 - Rollback: reactivate the prior immutable release and restore the prior
   operational Sales workflow copy. Held async results are never replayed into a
   new or sibling session; rerun the bounded task instead.
