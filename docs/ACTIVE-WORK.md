@@ -73,6 +73,32 @@ outside the current client conversation.
 
 ## Task details
 
+### NC-20260812-001
+
+- Trigger: Chaos can receive authenticated lifecycle facts, but the production
+  Stripe path does not yet preserve the provider event identity, event time,
+  account, or exact refund identity needed for durable purchase/refund
+  attribution and cross-system reconciliation.
+- Release base: exact live immutable production commit `b4d85b2`; the shared
+  operational checkout and its unrelated dirty state are not release inputs.
+- Safety contract: Stripe remains authoritative for payment and refund facts;
+  accounting completion never depends on Chaos; lifecycle publication is
+  default-off, PII-free at rest, retryable, idempotent, and dead-letters alert
+  the chief. Existing fulfillment and Encharge Stripe automation are unchanged.
+- Implemented source: fixed account-bound n8n extraction for Heartbeat and
+  Tandem; canonical `pi_*` purchase identity; exact `re_*` partial-refund
+  identity; additive migration 117; durable outbox, reaper, chief alerting, and
+  Chaos publisher; aggregate-only 7/30/90 reconciliation; release-root-safe
+  Contador wrappers; authenticated Chaos purchase/refund ingestion and cohort
+  counters.
+- Verification: Claude R1/R2 findings are fixed and Claude R3 returned `SHIP`.
+  On pinned Node 22.23.2, typecheck passes, 55 focused tests pass, and the
+  release gate passes 22 files / 560 tests plus 6 runner files / 36 tests. The
+  complete suite passes 2,304 tests with one unrelated pre-existing CNPC prompt
+  contract failure; CNPC source is unchanged from the live base. Production
+  migration, private n8n backup/update, immutable activation, and aggregate
+  receipt proof remain pending.
+
 ### NC-20260811-002
 
 - Trigger: no daily Sales follow-up approval card was produced from 2026-08-03

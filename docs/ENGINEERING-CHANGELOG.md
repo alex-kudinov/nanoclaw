@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-12
 - Owner/client: Codex + Claude Code owner/reviewer
-- State: `ready_for_deploy` on the exact live release lineage; not yet migrated,
+- State: ready_for_deploy on the exact live release lineage; not yet migrated,
   configured, deployed, or live-verified.
 - Change class: C5 — dual-account payment/refund webhook identity, durable
   business-data outbox, authenticated external analytics write, and production
