@@ -144,6 +144,8 @@ import {
 } from './send-watchdog.js';
 import { resolveHumanAuthorizedDiscountTerms } from './human-commercial-term-authorization.js';
 import { runNameReaper } from './contador-name-reaper.js';
+import { runChaosLifecycleOutbox } from './chaos-lifecycle-outbox.js';
+import { runChaosLifecycleReconciliation } from './chaos-lifecycle-reconcile.js';
 import { runChaosReconcile } from './chaos-reconciler.js';
 import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
 import { query, withAgentContext } from './business-db.js';
@@ -2451,6 +2453,42 @@ async function main(): Promise<void> {
       logger.error({ err }, 'contador-name-reaper: startup invocation failed');
     });
   }, 90 * 1000);
+
+  // Stripe -> Chaos lifecycle outbox — every 5 min + one-shot 120s after
+  // startup. Payment accounting never waits on Chaos reachability; this worker
+  // retries the privacy-minimized delivery queue independently.
+  const CHAOS_LIFECYCLE_REAPER_INTERVAL_MS = 5 * 60 * 1000;
+  setInterval(() => {
+    runChaosLifecycleOutbox().catch((err) => {
+      logger.error({ err }, 'chaos-lifecycle-reaper: unhandled error');
+    });
+  }, CHAOS_LIFECYCLE_REAPER_INTERVAL_MS);
+  setTimeout(() => {
+    runChaosLifecycleOutbox().catch((err) => {
+      logger.error(
+        { err },
+        'chaos-lifecycle-reaper: startup invocation failed',
+      );
+    });
+  }, 120 * 1000);
+
+  // Aggregate-only provider/outbox/Chaos reconciliation. The first run proves
+  // current coverage after startup; subsequent weekly runs surface 7/30/90-day
+  // deltas without logging customer or provider identifiers.
+  const CHAOS_LIFECYCLE_RECONCILE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+  setInterval(() => {
+    runChaosLifecycleReconciliation().catch((err) => {
+      logger.error({ err }, 'chaos-lifecycle-reconciliation: unhandled error');
+    });
+  }, CHAOS_LIFECYCLE_RECONCILE_INTERVAL_MS);
+  setTimeout(() => {
+    runChaosLifecycleReconciliation().catch((err) => {
+      logger.error(
+        { err },
+        'chaos-lifecycle-reconciliation: startup invocation failed',
+      );
+    });
+  }, 240 * 1000);
 
   // Chaos reconciler — every 24h. Reconciles Chaos verified-visitor state
   // against business_v2; synthesizes sweep webhook_inbox rows for any visitor

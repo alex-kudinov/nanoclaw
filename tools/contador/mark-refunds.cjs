@@ -44,6 +44,22 @@ const SINGLE_ID = (() => {
   const i = ARGV.indexOf('--id');
   return i >= 0 && ARGV[i + 1] ? ARGV[i + 1].trim() : null;
 })();
+const REFUND_ID = (() => {
+  const i = ARGV.indexOf('--refund-id');
+  return i >= 0 && ARGV[i + 1] ? ARGV[i + 1].trim() : null;
+})();
+const ACCOUNT_ARG = (() => {
+  const i = ARGV.indexOf('--account');
+  return i >= 0 && ARGV[i + 1] ? ARGV[i + 1].trim() : '';
+})();
+if (ACCOUNT_ARG && !['heartbeat', 'tandem'].includes(ACCOUNT_ARG)) {
+  console.error('ERROR: --account must be heartbeat or tandem');
+  process.exit(1);
+}
+if (REFUND_ID && !/^re_[A-Za-z0-9_]+$/.test(REFUND_ID)) {
+  console.error('ERROR: --refund-id must be a Stripe re_ id');
+  process.exit(1);
+}
 const LOOKBACK_DAYS = parseInt(process.env.REFUND_LOOKBACK_DAYS || '365', 10);
 const CREATED_AFTER = Math.floor(Date.now() / 1000) - LOOKBACK_DAYS * 86400;
 const ID_COL_INDEX = 9; // column J (0-indexed) holds the Stripe id
@@ -55,6 +71,9 @@ const REFUND_AMT_HEADER = 'Refunded Amount';
 function loadEnv(keys) {
   const wanted = new Set(keys);
   const out = {};
+  for (const key of keys) {
+    if (process.env[key]) out[key] = process.env[key];
+  }
   for (const file of [
     path.join(os.homedir(), 'dev', '.env.shared'),
     path.join(process.cwd(), '.env'),
@@ -88,9 +107,9 @@ const ENV = loadEnv([
 ]);
 
 const STRIPE_ACCOUNTS = [
-  { label: 'primary', key: ENV.STRIPE_RESTRICTED_KEY },
-  { label: 'alt', key: ENV.STRIPE_SECRET_KEY_ALT },
-].filter((a) => a.key);
+  { label: 'heartbeat', key: ENV.STRIPE_RESTRICTED_KEY },
+  { label: 'tandem', key: ENV.STRIPE_SECRET_KEY_ALT },
+].filter((a) => a.key && (!ACCOUNT_ARG || a.label === ACCOUNT_ARG));
 
 const SHEETS_PAYMENTS_ID = ENV.SHEETS_PAYMENTS_ID;
 const SA_PATH =
@@ -175,13 +194,26 @@ async function refundInfo(account, key, refund, charge) {
     currency: (refund.currency || '').toUpperCase(),
     created: refund.created,
     reason: refund.reason || '',
+    originalAmount: charge && Number.isFinite(charge.amount) ? charge.amount : null,
+    canonicalTransactionId: pi,
     ids: [pi, cs, ch].filter(Boolean),
   };
 }
 
-// Single-id mode: resolve the latest succeeded refund for one pi_/cs_/ch_.
-async function resolveSingle(account, key, id) {
+// Single-id mode: resolve one exact refund when --refund-id is supplied,
+// otherwise retain the legacy latest-succeeded lookup for manual reconciliation.
+async function resolveSingle(account, key, id, refundId) {
   try {
+    if (refundId) {
+      const refund = await stripeGet(key, `/v1/refunds/${refundId}`);
+      if (refund.status !== 'succeeded') return null;
+      const chargeId =
+        typeof refund.charge === 'string' ? refund.charge : refund.charge && refund.charge.id;
+      const charge = chargeId ? await stripeGet(key, `/v1/charges/${chargeId}`) : null;
+      const info = await refundInfo(account, key, refund, charge);
+      if (id && !info.ids.includes(id)) return null;
+      return info;
+    }
     let chargeId = null;
     if (id.startsWith('pi_')) {
       const pi = await stripeGet(key, `/v1/payment_intents/${id}?expand[]=latest_charge`);
@@ -315,7 +347,7 @@ async function buildRefundIndex() {
 
   if (SINGLE_ID) {
     for (const acct of STRIPE_ACCOUNTS) {
-      const info = await resolveSingle(acct.label, acct.key, SINGLE_ID);
+      const info = await resolveSingle(acct.label, acct.key, SINGLE_ID, REFUND_ID);
       if (info) {
         add(info);
         console.log(`[${acct.label}] resolved refund ${info.refundId} for ${SINGLE_ID}`);
@@ -350,6 +382,12 @@ async function buildRefundIndex() {
 
 async function main() {
   const refundIndex = await buildRefundIndex();
+  const exactRefund = REFUND_ID
+    ? [...refundIndex.values()].find((info) => info.refundId === REFUND_ID) || null
+    : null;
+  if (REFUND_ID && !exactRefund) {
+    throw new Error(`exact succeeded refund ${REFUND_ID} did not resolve for ${ACCOUNT_ARG || 'either account'}`);
+  }
 
   const resp = await sheetsGet('Payment Log!A:M');
   const rows = resp.values || [];
@@ -437,6 +475,26 @@ async function main() {
     backfilled++;
   }
   console.log(`\nAPPLIED — marked ${marked} refunded, backfilled ${backfilled} Refund ID/Amount(s).`);
+  if (exactRefund) {
+    const lifecycle = {
+      eligible: Boolean(exactRefund.canonicalTransactionId),
+      event_name: 'purchase_refunded',
+      account: exactRefund.account,
+      source_event_id: exactRefund.refundId,
+      canonical_transaction_id: exactRefund.canonicalTransactionId,
+      provider_object_id: SINGLE_ID,
+      occurred_at: new Date(exactRefund.created * 1000).toISOString(),
+      refunded_amount_cents: exactRefund.amount,
+      original_amount_cents: exactRefund.originalAmount,
+      currency: exactRefund.currency,
+      is_partial:
+        Number.isFinite(exactRefund.originalAmount) &&
+        exactRefund.amount < exactRefund.originalAmount,
+    };
+    console.log(
+      `__CHAOS_LIFECYCLE__${Buffer.from(JSON.stringify(lifecycle)).toString('base64url')}`,
+    );
+  }
 }
 
 main().catch((e) => {

@@ -32,15 +32,38 @@ if (!STRIPE_ID) {
 }
 const ID_TYPE = STRIPE_ID.startsWith('cs_') ? 'checkout' : 'payment_intent';
 
-const STRIPE_KEYS = [
-  process.env.STRIPE_RESTRICTED_KEY,
-  process.env.STRIPE_SECRET_KEY_ALT,
-].filter(Boolean);
-if (STRIPE_KEYS.length === 0) {
-  console.error('ERROR: No Stripe API keys set (STRIPE_RESTRICTED_KEY / STRIPE_SECRET_KEY_ALT)');
+const ACCOUNT_ARG = (() => {
+  const i = process.argv.indexOf('--account');
+  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1].trim() : '';
+})();
+if (ACCOUNT_ARG && !['heartbeat', 'tandem'].includes(ACCOUNT_ARG)) {
+  console.error('ERROR: --account must be heartbeat or tandem');
   process.exit(1);
 }
-let STRIPE_KEY = STRIPE_KEYS[0];
+
+const STRIPE_ACCOUNTS = [
+  {
+    label: 'heartbeat',
+    key: process.env.STRIPE_RESTRICTED_KEY,
+  },
+  {
+    label: 'tandem',
+    key: process.env.STRIPE_SECRET_KEY_ALT,
+  },
+].filter((account) => account.key);
+const STRIPE_KEYS = ACCOUNT_ARG
+  ? STRIPE_ACCOUNTS.filter((account) => account.label === ACCOUNT_ARG)
+  : STRIPE_ACCOUNTS;
+if (STRIPE_KEYS.length === 0) {
+  console.error(
+    ACCOUNT_ARG
+      ? `ERROR: Stripe key for account ${ACCOUNT_ARG} is not configured`
+      : 'ERROR: No Stripe API keys set (STRIPE_RESTRICTED_KEY / STRIPE_SECRET_KEY_ALT)',
+  );
+  process.exit(1);
+}
+let STRIPE_KEY = STRIPE_KEYS[0].key;
+let STRIPE_ACCOUNT = STRIPE_KEYS[0].label;
 
 const SHEETS_PAYMENTS_ID = process.env.SHEETS_PAYMENTS_ID;
 const SHEETS_ROSTER_ID = process.env.SHEETS_ROSTER_ID;
@@ -315,11 +338,13 @@ async function fetchPaymentWithKeyFallback() {
   const debugLines = [];
   debugLines.push(`keys=${STRIPE_KEYS.length}`);
   for (let ki = 0; ki < STRIPE_KEYS.length; ki++) {
-    STRIPE_KEY = STRIPE_KEYS[ki];
-    debugLines.push(`try-${ki}=${STRIPE_KEY.slice(0, 10)}`);
+    STRIPE_KEY = STRIPE_KEYS[ki].key;
+    STRIPE_ACCOUNT = STRIPE_KEYS[ki].label;
+    debugLines.push(`try-${ki}=${STRIPE_ACCOUNT}`);
     try {
       const result = await fetchPaymentData();
-      debugLines.push(`ok-${ki},name=${result.customerName},email=${result.customerEmail}`);
+      debugLines.push(`ok-${ki}=${STRIPE_ACCOUNT}`);
+      result.stripeAccount = STRIPE_ACCOUNT;
       result._debug = debugLines.join(' | ');
       return result;
     } catch (err) {
@@ -336,6 +361,7 @@ async function fetchPaymentWithKeyFallback() {
 async function fetchPaymentData() {
   let productName, productId, customerEmail, customerName;
   let amountCents, currency, paymentStatus, eventType;
+  let canonicalTransactionId = ID_TYPE === 'payment_intent' ? STRIPE_ID : '';
   let feeCents = 0;
   let refundedCents = 0;
   let lineItems = [];
@@ -357,10 +383,13 @@ async function fetchPaymentData() {
     paymentStatus = session.payment_status || 'unknown';
     eventType = 'checkout.session.completed';
     stripeCreatedAt = session.created || 0;
-
     if (session.payment_intent) {
+      canonicalTransactionId =
+        typeof session.payment_intent === 'string'
+          ? session.payment_intent
+          : session.payment_intent.id || '';
       try {
-        const pi = await stripeGet(`/v1/payment_intents/${session.payment_intent}`);
+        const pi = await stripeGet(`/v1/payment_intents/${canonicalTransactionId}`);
         if (pi.latest_charge) {
           const charge = await stripeGet(`/v1/charges/${pi.latest_charge}?expand[]=balance_transaction`);
           feeCents = charge.balance_transaction?.fee || 0;
@@ -430,6 +459,7 @@ async function fetchPaymentData() {
     productName, productId, customerEmail, customerName,
     amountCents, currency, paymentStatus, eventType,
     feeCents, refundedCents, lineItems, stripeCreatedAt,
+    canonicalTransactionId,
   };
 }
 
@@ -479,7 +509,9 @@ async function main() {
     productName, productId, customerEmail, customerName,
     amountCents, currency, paymentStatus, eventType,
     feeCents, refundedCents, lineItems, stripeCreatedAt,
+    canonicalTransactionId, stripeAccount,
   } = fetchResult;
+  const accountingStripeId = canonicalTransactionId || STRIPE_ID;
 
   const fmtDate = (d) => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
   const fmtISO = (d) => d.toISOString().split('T')[0];
@@ -515,14 +547,15 @@ async function main() {
         feeDollars,
         netDollars,
         currency,
-        STRIPE_ID,
+        accountingStripeId,
         paymentStatus,
       ];
       // Check if this Stripe ID already exists in column J
       const existingIds = await sheetsGet(SHEETS_PAYMENTS_ID, 'Payment Log!J:J');
       const idCol = existingIds.values || [];
+      const candidateIds = new Set([accountingStripeId, STRIPE_ID]);
       const existingRow = idCol.findIndex(
-        (r, i) => i > 0 && r[0] === STRIPE_ID,
+        (r, i) => i > 0 && candidateIds.has(r[0]),
       );
       if (existingRow >= 0) {
         const sheetRow = existingRow + 1;
@@ -690,12 +723,13 @@ async function main() {
               productName,
               amountDollars,
               transactionDate,
-              STRIPE_ID,
+              accountingStripeId,
             ];
             const salesIds = await sheetsGet(SHEETS_ROSTER_ID, 'Sales!F:F');
             const salesIdCol = salesIds.values || [];
+            const candidateIds = new Set([accountingStripeId, STRIPE_ID]);
             const existingSales = salesIdCol.findIndex(
-              (r, i) => i > 0 && r[0] === STRIPE_ID,
+              (r, i) => i > 0 && candidateIds.has(r[0]),
             );
             if (existingSales >= 0) {
               const sheetRow = existingSales + 1;
@@ -726,8 +760,12 @@ async function main() {
 
   // 3. PostgreSQL insert
   try {
+    const duplicateDelete =
+      accountingStripeId !== STRIPE_ID
+        ? ` DELETE FROM payments WHERE stripe_session_id='${sqlEscape(STRIPE_ID)}';`
+        : '';
     execSync(
-      `psql -c "INSERT INTO payments (email, name, product_name, product_id, amount_cents, currency, stripe_session_id, payment_status, event_type, paid_at) VALUES ('${sqlEscape(customerEmail)}', '${sqlEscape(customerName)}', '${sqlEscape(productName)}', '${sqlEscape(productId)}', ${amountCents}, '${sqlEscape(currency)}', '${sqlEscape(STRIPE_ID)}', '${sqlEscape(paymentStatus)}', '${sqlEscape(eventType)}', '${transactionDateISO}') ON CONFLICT (stripe_session_id) DO UPDATE SET email=EXCLUDED.email, name=EXCLUDED.name, product_name=EXCLUDED.product_name, amount_cents=EXCLUDED.amount_cents, payment_status=EXCLUDED.payment_status;"`,
+      `psql -c "BEGIN; INSERT INTO payments (email, name, product_name, product_id, amount_cents, currency, stripe_session_id, payment_status, event_type, paid_at) VALUES ('${sqlEscape(customerEmail)}', '${sqlEscape(customerName)}', '${sqlEscape(productName)}', '${sqlEscape(productId)}', ${amountCents}, '${sqlEscape(currency)}', '${sqlEscape(accountingStripeId)}', '${sqlEscape(paymentStatus)}', '${sqlEscape(eventType)}', '${transactionDateISO}') ON CONFLICT (stripe_session_id) DO UPDATE SET email=EXCLUDED.email, name=EXCLUDED.name, product_name=EXCLUDED.product_name, product_id=EXCLUDED.product_id, amount_cents=EXCLUDED.amount_cents, currency=EXCLUDED.currency, payment_status=EXCLUDED.payment_status, event_type=EXCLUDED.event_type, paid_at=EXCLUDED.paid_at;${duplicateDelete} COMMIT;"`,
       { stdio: 'pipe' },
     );
     results.db = 'OK';
@@ -742,7 +780,7 @@ async function main() {
     `Customer: ${customerName} (${customerEmail})`,
     `Product: ${productName}`,
     `Amount: $${amountDollars} ${currency} (fee: $${feeDollars}, net: $${netDollars})${refundedCents > 0 ? ` [REFUNDED $${(refundedCents / 100).toFixed(2)}]` : ''}`,
-    `Stripe ID: ${STRIPE_ID} (${ID_TYPE})`,
+    `Stripe ID: ${accountingStripeId} (${ID_TYPE}${accountingStripeId !== STRIPE_ID ? `; received ${STRIPE_ID}` : ''})`,
     `Roster: ${rosterMatches.length > 0 ? rosterMatches.map(m => `${m.tab} → ${m.column}`).join(', ') : '→ Sales tab (unmapped product)'}`,
     `Payment Log: ${results.sheets_log}`,
     `Student Roster: ${results.sheets_roster}`,
@@ -755,6 +793,25 @@ async function main() {
   }
 
   console.log(lines.join('\n'));
+
+  const lifecycleEligible =
+    results.db === 'OK' &&
+    /^pi_[A-Za-z0-9_]+$/.test(canonicalTransactionId || '') &&
+    (ID_TYPE === 'checkout' ? paymentStatus === 'paid' : paymentStatus === 'succeeded');
+  const lifecycle = {
+    eligible: lifecycleEligible,
+    event_name: 'purchase_completed',
+    account: stripeAccount,
+    canonical_transaction_id: canonicalTransactionId || null,
+    provider_object_id: STRIPE_ID,
+    occurred_at: new Date(txnDateObj).toISOString(),
+    amount_cents: amountCents,
+    currency,
+    payment_status: paymentStatus,
+  };
+  console.log(
+    `__CHAOS_LIFECYCLE__${Buffer.from(JSON.stringify(lifecycle)).toString('base64url')}`,
+  );
 }
 
 main().catch((err) => {

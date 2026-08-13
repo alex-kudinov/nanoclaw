@@ -77,6 +77,35 @@ describe('extractEventKey — trafft', () => {
 });
 
 describe('extractEventKey — stripe-payment', () => {
+  it('prefers the verified Stripe event id when n8n preserves it', () => {
+    expect(
+      extractEventKey('stripe-payment', {
+        stripe_id: 'pi_3Q8ABC123',
+        event_id: 'evt_1234567890abc',
+        event_type: 'payment_intent.succeeded',
+      }),
+    ).toEqual({
+      event_id: 'stripe:evt_1234567890abc',
+      event_type: 'payment_intent.succeeded',
+    });
+  });
+
+  it('distinguishes multiple refunds carried by one charge.refunded event', () => {
+    const a = extractEventKey('stripe-payment', {
+      stripe_id: 'pi_3Q8ABC123',
+      event_id: 'evt_1234567890abc',
+      refund_id: 're_first123456',
+      event_type: 'charge.refunded',
+    });
+    const b = extractEventKey('stripe-payment', {
+      stripe_id: 'pi_3Q8ABC123',
+      event_id: 'evt_1234567890abc',
+      refund_id: 're_second12345',
+      event_type: 'charge.refunded',
+    });
+    expect(a.event_id).not.toEqual(b.event_id);
+  });
+
   it('keys on (stripe_id, event_type)', () => {
     expect(
       extractEventKey('stripe-payment', {

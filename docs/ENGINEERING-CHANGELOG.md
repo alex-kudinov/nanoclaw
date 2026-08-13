@@ -8,6 +8,57 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260812-001 — Account-aware Stripe lifecycle evidence for Chaos
+
+- Date: 2026-08-12
+- Owner/client: Codex + Claude Code owner/reviewer
+- State: `ready_for_deploy` on the exact live release lineage; not yet migrated,
+  configured, deployed, or live-verified.
+- Change class: C5 — dual-account payment/refund webhook identity, durable
+  business-data outbox, authenticated external analytics write, and production
+  n8n configuration.
+- Root cause: the live n8n workflow already has separate Stripe Trigger
+  credentials for Heartbeat and Tandem, but its minimized envelope drops the
+  verified `evt_*`, Stripe timestamp, and refund `re_*`. NanoClaw then silently
+  tries both keys and accounts by the incoming `cs_*`/`pi_*`, allowing one
+  Checkout sale to occupy two accounting rows. The tracked workflow was also
+  stale and contained a webhook secret; it has been replaced by a secret-free
+  live-contract source and runbook. A generic, unauthenticated legacy alias fed
+  the Heartbeat extractor despite having no mentions in 45 executions/90 days.
+- Local outcome:
+  - fixed account labels remain bound to their Stripe Trigger credential;
+  - n8n preserves provider event/time and fans out exact succeeded refund IDs;
+  - purchases converge on canonical `pi_*`; unpaid/no-PI Checkout events do not
+    become purchases;
+  - Payment Log, Sales roster fallback, and Postgres converge on the canonical
+    ID instead of preserving a `cs_*`/`pi_*` double;
+  - Stripe key prefixes, names, and emails are absent from the structured
+    lifecycle result; the private accounting summary behavior is unchanged;
+  - migration 117 adds a PII-free outbox with independent retry/dead-letter
+    state and immediate chief alerting; raw email is resolved transiently only
+    when sending to Chaos;
+  - Chaos publication is default-off and cannot make accounting retry; and
+  - an aggregate-only 7/30/90 reconciliation compares both Stripe accounts,
+    outbox state, and Chaos receipts from an explicit producer coverage start.
+- Claude convergence: R1 session `85747f15-ef0b-4998-9c8a-684dca0d44f1`
+  returned `REVISE DESIGN`; R2 session
+  `457996e8-3943-466d-a086-0ef17d198d6b` confirmed convergence, idempotency,
+  refund distinctness, PII minimization, and honest cohort/reconciliation
+  semantics, then returned `REVISE` for missing dead-letter alerting and an
+  optional account label. Both findings are fixed and covered by tests.
+- Verification: 53 focused tests pass; TypeScript, Node syntax for all host
+  scripts except the intentionally function-wrapped n8n Code-node source, PHP
+  contract tests (42), form-data drift check, and `git diff --check` pass. The
+  local full root suite is not a valid signal under Node 26 with Node-22 native
+  modules and restricted listeners; target-runtime Node 22 verification remains
+  a release gate.
+- Exact-lineage reconciliation: the reviewed source commit was replayed on top
+  of live release `b4d85b2`. CNPC already owns migration 116 there, so the Chaos
+  migration was mechanically renumbered to 117 with no SQL semantic change.
+- Rollback: keep `CHAOS_LIFECYCLE_ENABLED=false`; restore the private n8n
+  backup; deploy the prior NanoClaw artifact. Migration 117 is additive and may
+  remain dormant.
+
 ### NC-20260811-002 — Restore receipted daily Sales follow-ups
 
 - Date: 2026-08-11T20:45Z

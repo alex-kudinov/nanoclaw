@@ -115,6 +115,15 @@ function extractTrafft(p: Payload): ExtractedKey {
 function extractStripe(p: Payload): ExtractedKey {
   const stripe_id = asStr(p.stripe_id);
   const event_type = asStr(p.event_type);
+  const provider_event_id = asStr(p.event_id);
+  const refund_id = asStr(p.refund_id);
+  if (provider_event_id && event_type) {
+    const suffix = refund_id ? `:${refund_id}` : '';
+    return {
+      event_id: `stripe:${provider_event_id}${suffix}`,
+      event_type,
+    };
+  }
   if (stripe_id && event_type) {
     return { event_id: `stripe:${stripe_id}:${event_type}`, event_type };
   }

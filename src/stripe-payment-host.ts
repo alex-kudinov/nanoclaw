@@ -15,6 +15,11 @@ import path from 'path';
 import { promisify } from 'util';
 
 import { DATA_DIR } from './config.js';
+import {
+  enqueueStripeLifecycleFact,
+  type StripeLifecycleAccount,
+  type StripeLifecycleFact,
+} from './chaos-lifecycle-outbox.js';
 import { readEnvFile } from './env.js';
 import { logger } from './logger.js';
 
@@ -46,6 +51,10 @@ const REFUND_EVENT_TYPES = new Set([
   'refund.updated',
   'charge.refund.updated',
 ]);
+const PAYMENT_EVENT_TYPES = new Set([
+  'payment_intent.succeeded',
+  'checkout.session.completed',
+]);
 
 /** Thrown when the webhook envelope carries no usable Stripe id. */
 export class StripePayloadError extends Error {
@@ -59,6 +68,7 @@ export interface StripePaymentResult {
   stripeId: string;
   /** Verbatim multi-line summary printed by process-payment.cjs. */
   summary: string;
+  lifecycleEnqueued: boolean;
 }
 
 /** Read + validate the Stripe id from the n8n `{stripe_id, event_type}` envelope. */
@@ -87,6 +97,63 @@ export function parseEventType(payload: unknown): string {
   return typeof p.event_type === 'string' ? p.event_type.trim() : '';
 }
 
+export function parseStripeAccount(
+  payload: unknown,
+): StripeLifecycleAccount | null {
+  const p =
+    payload && typeof payload === 'object'
+      ? (payload as Record<string, unknown>)
+      : {};
+  const account = typeof p.account === 'string' ? p.account.trim() : '';
+  if (!account) return null;
+  if (account !== 'heartbeat' && account !== 'tandem') {
+    throw new StripePayloadError(`invalid Stripe account label: ${account}`);
+  }
+  return account;
+}
+
+function optionalProviderId(
+  payload: unknown,
+  field: 'event_id' | 'refund_id',
+  prefix: 'evt' | 're',
+): string | null {
+  const p =
+    payload && typeof payload === 'object'
+      ? (payload as Record<string, unknown>)
+      : {};
+  const value = typeof p[field] === 'string' ? p[field].trim() : '';
+  if (!value) return null;
+  if (!new RegExp(`^${prefix}_[A-Za-z0-9_]+$`).test(value)) {
+    throw new StripePayloadError(`invalid ${field}`);
+  }
+  return value;
+}
+
+export function parseLifecycleSentinel(stdout: string): {
+  summary: string;
+  fact: StripeLifecycleFact | null;
+} {
+  let fact: StripeLifecycleFact | null = null;
+  const summaryLines: string[] = [];
+  for (const line of stdout.split('\n')) {
+    if (!line.startsWith('__CHAOS_LIFECYCLE__')) {
+      summaryLines.push(line);
+      continue;
+    }
+    const encoded = line.slice('__CHAOS_LIFECYCLE__'.length).trim();
+    try {
+      fact = JSON.parse(
+        Buffer.from(encoded, 'base64url').toString('utf8'),
+      ) as StripeLifecycleFact;
+    } catch {
+      throw new StripePayloadError(
+        'invalid lifecycle result from Stripe processor',
+      );
+    }
+  }
+  return { summary: summaryLines.join('\n').trim(), fact };
+}
+
 /** Build the child env process-payment.cjs needs (Stripe keys, Sheets, psql). */
 function buildScriptEnv(): NodeJS.ProcessEnv {
   const cfg = readEnvFile([
@@ -113,23 +180,61 @@ export async function handleStripePayment(
   payload: unknown,
 ): Promise<StripePaymentResult> {
   const stripeId = parseStripePayload(payload);
-  const isRefund = REFUND_EVENT_TYPES.has(parseEventType(payload));
+  const eventType = parseEventType(payload);
+  const isRefund = REFUND_EVENT_TYPES.has(eventType);
+  if (eventType && !isRefund && !PAYMENT_EVENT_TYPES.has(eventType)) {
+    throw new StripePayloadError(`unsupported Stripe event_type: ${eventType}`);
+  }
+  const account = parseStripeAccount(payload);
+  if (eventType && !account) {
+    throw new StripePayloadError(
+      'Stripe account label is required for typed payment and refund events',
+    );
+  }
+  const providerEventId = optionalProviderId(payload, 'event_id', 'evt');
+  const refundId = optionalProviderId(payload, 'refund_id', 're');
+  if (refundId && !isRefund) {
+    throw new StripePayloadError('refund_id requires a refund event_type');
+  }
   // Refund events run mark-refunds.cjs in single-id mode (status → "refunded",
   // records the re_ id). Payment events run the full process-payment pipeline.
   const args = isRefund
-    ? [REFUND_SCRIPT, '--id', stripeId, '--apply']
-    : [SCRIPT, stripeId];
+    ? [
+        REFUND_SCRIPT,
+        '--id',
+        stripeId,
+        '--apply',
+        ...(account ? ['--account', account] : []),
+        ...(refundId ? ['--refund-id', refundId] : []),
+      ]
+    : [SCRIPT, stripeId, ...(account ? ['--account', account] : [])];
   const { stdout } = await execFileAsync(process.execPath, args, {
     env: buildScriptEnv(),
     timeout: 120_000,
     maxBuffer: 4 * 1024 * 1024,
   });
-  const summary = stdout.trim();
+  const parsed = parseLifecycleSentinel(stdout);
+  let lifecycleEnqueued = false;
+  if (parsed.fact?.eligible) {
+    if (account && parsed.fact.account !== account) {
+      throw new StripePayloadError(
+        `Stripe account mismatch: perimeter=${account}, resolver=${parsed.fact.account}`,
+      );
+    }
+    const result = await enqueueStripeLifecycleFact({
+      ...parsed.fact,
+      provider_event_id: providerEventId,
+      provider_object_id: parsed.fact.provider_object_id ?? stripeId,
+      source_event_id: refundId ?? parsed.fact.source_event_id,
+    });
+    lifecycleEnqueued = result.enqueued;
+  }
+  const summary = parsed.summary;
   logger.info(
     { stripeId, isRefund, lines: summary.split('\n').length },
     isRefund
       ? 'Stripe refund recorded (no agent spawn)'
       : 'Stripe payment processed (no agent spawn)',
   );
-  return { stripeId, summary };
+  return { stripeId, summary, lifecycleEnqueued };
 }

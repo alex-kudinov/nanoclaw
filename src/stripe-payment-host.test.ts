@@ -15,6 +15,8 @@ vi.mock('child_process', () => ({
 import {
   parseStripePayload,
   parseEventType,
+  parseStripeAccount,
+  parseLifecycleSentinel,
   handleStripePayment,
   StripePayloadError,
 } from './stripe-payment-host.js';
@@ -71,11 +73,45 @@ describe('parseEventType', () => {
   });
 });
 
+describe('parseStripeAccount', () => {
+  it('accepts the two perimeter-derived account labels', () => {
+    expect(parseStripeAccount({ account: 'heartbeat' })).toBe('heartbeat');
+    expect(parseStripeAccount({ account: 'tandem' })).toBe('tandem');
+  });
+
+  it('keeps legacy envelopes compatible but rejects invented labels', () => {
+    expect(parseStripeAccount({})).toBeNull();
+    expect(() => parseStripeAccount({ account: 'caller-controlled' })).toThrow(
+      StripePayloadError,
+    );
+  });
+});
+
+describe('parseLifecycleSentinel', () => {
+  it('strips the private structured line from the Slack summary', () => {
+    const fact = {
+      eligible: true,
+      event_name: 'purchase_completed',
+      account: 'heartbeat',
+      canonical_transaction_id: 'pi_123',
+      occurred_at: '2026-08-12T12:00:00.000Z',
+    };
+    const encoded = Buffer.from(JSON.stringify(fact)).toString('base64url');
+    const parsed = parseLifecycleSentinel(
+      `[PAYMENT RECEIVED]\n__CHAOS_LIFECYCLE__${encoded}\n`,
+    );
+    expect(parsed.summary).toBe('[PAYMENT RECEIVED]');
+    expect(parsed.fact).toEqual(fact);
+    expect(parsed.summary).not.toContain(encoded);
+  });
+});
+
 describe('handleStripePayment', () => {
   it('runs the script and returns the verbatim summary', async () => {
     const r = await handleStripePayment({
       stripe_id: 'pi_3TYdEFRnZI4gH1uA1dVO93l7',
       event_type: 'payment_intent.succeeded',
+      account: 'heartbeat',
     });
     expect(r.stripeId).toBe('pi_3TYdEFRnZI4gH1uA1dVO93l7');
     expect(r.summary).toContain('MCS - Standard path');
@@ -90,11 +126,21 @@ describe('handleStripePayment', () => {
     expect((call[1] as string[])[1]).toBe('cs_abc123');
   });
 
+  it('pins the processor to the perimeter-derived Stripe account', async () => {
+    const { execFile } = await import('child_process');
+    await handleStripePayment({ stripe_id: 'pi_abc123', account: 'tandem' });
+    const args = vi.mocked(execFile).mock.calls.at(-1)![1] as string[];
+    expect(args).toEqual(
+      expect.arrayContaining(['pi_abc123', '--account', 'tandem']),
+    );
+  });
+
   it('routes a charge.refunded event to mark-refunds.cjs --id --apply', async () => {
     const { execFile } = await import('child_process');
     await handleStripePayment({
       stripe_id: 'pi_3TYdEFRnZI4gH1uA1dVO93l7',
       event_type: 'charge.refunded',
+      account: 'heartbeat',
     });
     const args = vi.mocked(execFile).mock.calls.at(-1)![1] as string[];
     expect(args[0]).toMatch(/mark-refunds\.cjs$/);
@@ -103,11 +149,32 @@ describe('handleStripePayment', () => {
     expect(args).toContain('--apply');
   });
 
+  it('passes the exact refund and provider event ids to the refund path', async () => {
+    const { execFile } = await import('child_process');
+    await handleStripePayment({
+      stripe_id: 'pi_3TYdEFRnZI4gH1uA1dVO93l7',
+      event_type: 'charge.refunded',
+      account: 'heartbeat',
+      event_id: 'evt_1234567890abc',
+      refund_id: 're_1234567890abc',
+    });
+    const args = vi.mocked(execFile).mock.calls.at(-1)![1] as string[];
+    expect(args).toEqual(
+      expect.arrayContaining([
+        '--account',
+        'heartbeat',
+        '--refund-id',
+        're_1234567890abc',
+      ]),
+    );
+  });
+
   it('does NOT route a payment_intent.succeeded event to the refund script', async () => {
     const { execFile } = await import('child_process');
     await handleStripePayment({
       stripe_id: 'pi_abc',
       event_type: 'payment_intent.succeeded',
+      account: 'tandem',
     });
     const args = vi.mocked(execFile).mock.calls.at(-1)![1] as string[];
     expect(args[0]).toMatch(/process-payment\.cjs$/);
@@ -118,6 +185,21 @@ describe('handleStripePayment', () => {
     await expect(handleStripePayment({ stripe_id: 'bogus' })).rejects.toThrow(
       StripePayloadError,
     );
+  });
+
+  it('rejects typed payment and refund events without an account label', async () => {
+    await expect(
+      handleStripePayment({
+        stripe_id: 'pi_missing_account',
+        event_type: 'payment_intent.succeeded',
+      }),
+    ).rejects.toThrow(StripePayloadError);
+    await expect(
+      handleStripePayment({
+        stripe_id: 'pi_missing_account',
+        event_type: 'charge.refunded',
+      }),
+    ).rejects.toThrow(StripePayloadError);
   });
 
   it('propagates a script failure', async () => {

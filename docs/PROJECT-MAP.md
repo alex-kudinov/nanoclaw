@@ -344,9 +344,9 @@ dependencies, not active runtime channels in this snapshot.
 | Proposal replies | `src/proposal-reply*.ts`                                                            | accept/decline detection and actions                                |
 | Follow-up        | `src/proposal-followup*.ts`, `src/followup-drop*.ts`, migration 113                 | approval-gated nudge lifecycle and durable party-scoped suppression |
 | Trafft           | `src/trafft-custom-fields.ts`, `src/trafft-sweeper.ts`, `src/booking-host-write.ts` | booking ingestion and recovery                                      |
-| Stripe           | `src/stripe-payment-host.ts`, `src/contador-name-reaper.ts`                         | payment ingestion and name recovery                                 |
+| Stripe           | `src/stripe-payment-host.ts`, `src/contador-name-reaper.ts`, `tools/contador/process-payment.cjs` | dual-account payment/refund ingestion, canonical transaction identity, and name recovery |
 | Hive/Firebase    | `src/hive-bridge.ts`, `src/hive-sync-reaper.ts`                                     | engagement synchronization                                          |
-| Chaos            | `src/chaos-activity.ts`, `src/chaos-booking.ts`, `src/chaos-reconciler.ts`          | activity/booking reconciliation                                     |
+| Chaos            | `src/chaos-activity.ts`, `src/chaos-booking.ts`, `src/chaos-reconciler.ts`, `src/chaos-lifecycle-outbox.ts`, `src/chaos-lifecycle-reconcile.ts` | activity/booking reconciliation plus durable aggregate-verified commerce lifecycle delivery |
 | CNPC             | `src/cnpc-intake.ts`, `src/cnpc-match-result.ts`, migration 116                     | host-owned intake, policy, bounded coach pool, and validated match result |
 | Knowledge drift  | `src/program-facts-drift.ts`, `src/lesson-conflict.ts`, `src/learn-ipc-handler.ts`  | factual and learned-knowledge controls                              |
 | Brief/digests    | `src/brief-promote.ts`, `src/digest-generator.ts`, `src/digest-delivery.ts`         | operational briefing                                                |
