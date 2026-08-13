@@ -8,8 +8,9 @@ import { readEnvFile } from './env.js';
 import { logger } from './logger.js';
 
 const execFileAsync = promisify(execFile);
+const CODE_ROOT = process.env.NANOCLAW_CODE_ROOT || process.cwd();
 const SCRIPT = path.resolve(
-  process.cwd(),
+  CODE_ROOT,
   'tools/contador/reconcile-chaos-lifecycle.cjs',
 );
 const PSQL_DIR = '/opt/homebrew/opt/postgresql@16/bin';

@@ -25,10 +25,10 @@ import { logger } from './logger.js';
 
 const execFileAsync = promisify(execFile);
 
-const PROJECT_ROOT = process.cwd();
-const SCRIPT = path.resolve(PROJECT_ROOT, 'tools/contador/process-payment.cjs');
+const CODE_ROOT = process.env.NANOCLAW_CODE_ROOT || process.cwd();
+const SCRIPT = path.resolve(CODE_ROOT, 'tools/contador/process-payment.cjs');
 const REFUND_SCRIPT = path.resolve(
-  PROJECT_ROOT,
+  CODE_ROOT,
   'tools/contador/mark-refunds.cjs',
 );
 const SA_JSON = path.join(

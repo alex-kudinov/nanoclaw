@@ -55,6 +55,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Exact-lineage reconciliation: the reviewed source commit was replayed on top
   of live release `b4d85b2`. CNPC already owns migration 116 there, so the Chaos
   migration was mechanically renumbered to 117 with no SQL semantic change.
+  The release bundle now includes the three deterministic Contador scripts and
+  resolves them through `NANOCLAW_CODE_ROOT`, so activation cannot accidentally
+  execute a different copy from the dirty operational checkout.
 - Rollback: keep `CHAOS_LIFECYCLE_ENABLED=false`; restore the private n8n
   backup; deploy the prior NanoClaw artifact. Migration 117 is additive and may
   remain dormant.

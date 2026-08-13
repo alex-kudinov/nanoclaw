@@ -103,6 +103,7 @@ try {
       'knowledge',
       'launchd',
       'setup/launchd',
+      'tools/contador',
     ],
     { cwd: root },
   )
