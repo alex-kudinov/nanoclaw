@@ -46,7 +46,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   refund distinctness, PII minimization, and honest cohort/reconciliation
   semantics, then returned `REVISE` for missing dead-letter alerting and an
   optional account label. Both findings are fixed and covered by tests.
-- Verification: 53 focused tests pass; TypeScript, Node syntax for all host
+- Verification: 55 focused tests pass; TypeScript, Node syntax for all host
   scripts except the intentionally function-wrapped n8n Code-node source, PHP
   contract tests (42), form-data drift check, and `git diff --check` pass. The
   local full root suite is not a valid signal under Node 26 with Node-22 native
@@ -58,6 +58,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   The release bundle now includes the three deterministic Contador scripts and
   resolves them through `NANOCLAW_CODE_ROOT`, so activation cannot accidentally
   execute a different copy from the dirty operational checkout.
+- Claude R3 reviewed that four-file release-integrity delta in the same session
+  and returned `SHIP` with no P0/P1 finding.
 - Rollback: keep `CHAOS_LIFECYCLE_ENABLED=false`; restore the private n8n
   backup; deploy the prior NanoClaw artifact. Migration 117 is additive and may
   remain dormant.
