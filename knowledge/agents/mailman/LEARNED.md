@@ -62,3 +62,7 @@ mailman. Mailman remains a verbatim sender — never alter handoff body content.
 ### Lesson 12: Unsolicited podcast guest invitations are cold vendor spam — classify MrGru/vendor/cold
 **Problem:** The Sunnyside Podcast (f.barker@thesunnysidepodcast.com) sent three unsolicited guest invitation emails to Alex and they were escalated to chief each time. Alex confirmed these are spam.
 **Rule:** Unsolicited podcast guest invitation emails (cold outreach asking Alex or Cherie to appear as a guest) are cold vendor/PR spam. Classify as MrGru/vendor/cold and auto-archive. Do not escalate to chief. Specific rule: sender_exact:f.barker@thesunnysidepodcast.com → MrGru/vendor/cold.
+
+### Lesson 13: MrGru/association/event is a defined label — do not escalate as unrecognized
+**Problem:** Mailman escalated an ICF (support@coachingfederation.org) email labeled MrGru/association/event to chief with reason 'unrecognized label'. That label is already defined in the taxonomy (KNOWLEDGE.md line ~626): 'Correspondence from ICF, EMCC, Scrum Alliance, or other professional associations about events, conferences, proposals, or membership (hive: cherie+alex, priority 1)'.
+**Rule:** MrGru/association/event is a known category. Route it via normal hive share to cherie+alex at priority 1 (stays in inbox, not archived). Do not escalate to chief for this label. Only escalate genuinely unrecognized labels (i.e. MrGru/other, or a label string that does not appear in the taxonomy list at all).

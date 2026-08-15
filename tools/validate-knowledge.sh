@@ -49,8 +49,8 @@ fi
 # ── Staleness check ──
 
 CURRENT_HASH=$(shasum -a 256 "$LLMS_FULL" | cut -d' ' -f1)
-STORED_HASH=$(grep -o 'llms-full-hash: [a-f0-9]*' "$KNOWLEDGE" 2>/dev/null | cut -d' ' -f2)
-VALIDATED_AT=$(grep -o 'validated-at: [0-9-]*' "$KNOWLEDGE" 2>/dev/null | cut -d' ' -f2)
+STORED_HASH=$(grep -o 'llms-full-hash: [a-f0-9]*' "$KNOWLEDGE" 2>/dev/null | cut -d' ' -f2 || true)
+VALIDATED_AT=$(grep -o 'validated-at: [0-9-]*' "$KNOWLEDGE" 2>/dev/null | cut -d' ' -f2 || true)
 
 ERRORS=0
 

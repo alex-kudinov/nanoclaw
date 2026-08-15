@@ -7,6 +7,9 @@ ICF Certification Programs
 
 Compare and enroll in ICF-accredited coach certification programs led by Master Certified Coaches – ACC (Level 1), PCC (Level 2), and ACTC team coaching. Find the right program for where you are, and start with a free module.
 
+Tandem Coaching Academy is listed by the International Coaching Federation as **Elevate Coaching**, an ICF **Level 2** program with **162 approved hours**, and holds ICF Level 1 and AATC accreditation. Tandem issues certificates of completion; ICF awards the ACC, PCC and ACTC credentials separately.
+[Verify with ICF →](https://apps.coachingfederation.org/eweb/dynamicpage.aspx?pid=7159&webcode=ess)
+
 [Explore Programs](#programs)
 [Book a Consultation](/contact-us/)
 [Get the Program Guide](#)
@@ -38,10 +41,10 @@ ICF Level 2
 
 #### Professional Coach Program
 
-ACC + PCC + ACTC
+ICF Level 2 + AATC
 
 - 125+ ICF education hours
-- Three ICF credentials included
+- ICF Level 2 + AATC accredited
 - One enrollment, one price
 
 **Best for:** Coaches who want the complete journey from foundations through professional certification.
@@ -58,10 +61,10 @@ Bridge
 PCC + ACTC
 
 - 65+ ICF education hours
-- PCC + ACTC dual credential
+- ICF Level 2 + AATC dual accreditation
 - Requires 60 hrs prior training
 
-**Best for:** ACC-credentialed coaches ready to advance to PCC – the most requested credential in corporate coaching.
+**Best for:** coaches who have completed a Level 1 program and are ready to advance toward PCC.
 
 $3,999
 Includes ACTC
@@ -154,9 +157,9 @@ For corporate clients, an ICF credential is often a requirement in coaching RFPs
 
 If you’re new to coaching or don’t yet hold an ICF credential, start with the [ACC program (Level 1)](/icf/acc-coach-certification-training/). It covers foundational coaching skills and qualifies you for the ACC credential.
 
-If you already know you want PCC, the [Professional Coach Program ($7,499)](/icf/acc-pcc-certification/) bundles ACC training + the Level 2 Bridge into one enrollment - three credentials (ACC + PCC + ACTC) at a $499 savings vs. enrolling separately.
+If you already know you are working toward PCC, the [Professional Coach Program ($7,499)](/icf/acc-pcc-certification/) delivers the complete ICF Level 2 accredited education in one enrollment – all 162 approved hours, of which 75 are AATC team coaching hours – at a $499 saving versus enrolling in the two stages separately.
 
-If you already hold an ACC (or equivalent 60 hours of ICF-accredited training), the [Level 2 Bridge ($3,999)](/icf/pcc-professional-coach-certification/) bridges you to PCC + ACTC credentials.
+If you have already completed a Level 1 program (Tandem’s, or 60+ validated hours from another ICF-accredited provider), the [Level 2 Bridge ($3,999)](/icf/pcc-professional-coach-certification/) completes your Level 2 and AATC accredited education from there.
 
 If you hold an ACC or PCC and want to specialize in team coaching only, the standalone [ACTC program](/icf/actc-team-coaching-training/) is the right fit.
 
@@ -235,7 +238,7 @@ Unlike many certifications in the coaching industry, ICF credentials require mor
 The ICF offers three progressive credential levels, each building on the one before:
 
 - **ACC**
-  **Associate Certified Coach** – The foundational credential. Requires ICF Level 1 training (60+ education hours), 100 documented coaching hours, and a performance evaluation. Most coaches earn their ACC within 6–12 months of starting training. [Learn more about the ACC path →](/icf/acc-coach-certification-training/)
+  **Associate Certified Coach** – The foundational credential. Requires ICF Level 1 training (60+ education hours), 100 documented coaching hours, and a performance evaluation. Most coaches are granted their ACC by ICF within 6–12 months of starting training. [Learn more about the ACC path →](/icf/acc-coach-certification-training/)
 - **PCC**
   **Professional Certified Coach** – The professional credential. Requires ICF Level 2 training (125+ total education hours), 500 coaching hours, and a performance evaluation. PCC is the credential most commonly requested in corporate coaching engagements and RFPs. [Learn more about the PCC path →](/icf/pcc-professional-coach-certification/)
 - **MCC**
@@ -259,7 +262,7 @@ The total investment for ICF coaching certification varies by credential level a
 
 #### Choosing the Right ICF Coaching Certification Program
 
-The right program depends on where you are in your coaching journey. New coaches who want to become certified should start with a Level 1 (ACC) program that provides comprehensive foundational education. If you know you want PCC from the start, the [Professional Coach Program](/icf/acc-pcc-certification/) bundles ACC + PCC + ACTC into one enrollment – the best value for coaches committed to building a full coaching practice. Experienced coaches with an ACC ready to advance should look at the [Systems Coach bridge program](/icf/pcc-professional-coach-certification/) that builds on your existing skills and experience.
+The right program depends on where you are in your coaching journey. New coaches who want to become certified should start with a Level 1 (ACC) program that provides comprehensive foundational education. If you know you want PCC from the start, the [Professional Coach Program](/icf/acc-pcc-certification/) delivers the complete ICF Level 2 accredited education – all 162 approved hours, including 75 AATC team coaching hours – in one enrollment. Experienced coaches with an ACC ready to advance should look at the [Systems Coach bridge program](/icf/pcc-professional-coach-certification/) that builds on your existing skills and experience.
 
 When evaluating programs, look for ICF accreditation (not just “aligned” programs), instructor credentials (what level of coaches are teaching?), and whether the program includes the mentor coaching and supervision hours you’ll need for credentialing. The best programs help you develop coaching skills you can use with real clients from day one. For a deeper framework, see our guide to [choosing an ICF-accredited coaching program](/icf-accredited-coaching-programs/).
 

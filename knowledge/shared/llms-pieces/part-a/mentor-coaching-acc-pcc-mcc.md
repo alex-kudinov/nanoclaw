@@ -70,6 +70,24 @@ Group mentor coaching runs in 4-week cohorts throughout the year
 
 [program\_dates program="mentor"]
 
+##### These dates only cover part of your hours – here’s the rest
+
+Each package has two parts. The *group sessions* – 8 hours, four 2-hour sessions – run on the cohort dates listed above. The *individual sessions* – 3 hours, two 90-minute sessions – you schedule directly with your mentor coach at times that suit you, so they never appear on this calendar.
+
+That’s why the listed dates look shorter than the full engagement. A group cohort runs about five weeks; your individual sessions are what carry it the rest of the way.
+
+##### Important: ICF requires 3 months, and tracking that is on you
+
+ICF requires mentor coaching to span *a minimum of 3 months* from your first session to your last. We don’t gate your scheduling – so if you book both individual sessions right after the group cohort ends, your engagement spans about six weeks and *ICF will reject the submission.* You’d have to do mentor coaching again.
+
+Note the date of your first group session, and schedule your final individual session at least three months after it. ICF also requires a minimum of 3 individual hours, which is why there’s no all-group option at any price.
+
+##### Can I pay in installments, or have my employer pay?
+
+Yes to both. Every package offers a *3-payment plan at checkout* – ACC Renewal 3 × $500, PCC 3 × $600, MCC 3 × $1,333.
+
+If your organization is paying, we work with whatever their process needs: invoices issued before you enroll, purchase orders, Government Purchase Cards and federal forms, and phased invoicing if your benefit has a cap. We also offer discounts to *active and retired military and first responders*. Send paperwork to [info@tandemcoach.co](mailto:info@tandemcoach.co).
+
 What’s Included
 
 ### Package Details

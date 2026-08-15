@@ -35,7 +35,7 @@ If you’re still unsure, read our detailed article on [what is an executive coa
 
 #### **Coaching for Executive and Board-Level Transitions**
 
-Not every transition is a job search. For senior leaders, the work moves away from applications and resumes toward strategic positioning—defining the mandate you want next, sharpening the executive presence a board evaluates, and preparing for the scrutiny that comes with C-suite and director roles. This is a separate specialty, not a heavier version of general career coaching.
+Not every transition is a job search. For senior leaders, the work moves away from applications and resumes toward strategic positioning—defining the mandate you want next, sharpening the executive presence a board evaluates, and preparing for the scrutiny that comes with C-suite and director roles. This is a separate specialty, not a heavier version of general career coaching. For coaches who want to build a formal practice around this specialty, Tandem’s [career transition coaching certification](/practitioner-series/career-transition/) covers exactly this work.
 
 It is also a specialty that is formalizing. Business schools now run dedicated programs on coaching-driven leadership transitions—[IMD’s 2026 coaching masterclass](https://www.imd.org/event/coaching/2026-09-03/masterclass-information-session/) is one example—and specialized firms have launched transition services aimed squarely at C-suite and board candidates. If you are moving at that level, look for a coach whose practice is built around board readiness and executive positioning rather than generic job-search support.
 

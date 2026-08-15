@@ -70,7 +70,7 @@ You have your ACC and want to specialize. ACTC sets you apart in a growing marke
 
 You already work with teams but lack the ICF team coaching framework. ACTC gives your practice the structure and recognition it deserves – and makes you competitive for contracts that require ICF credentials.
 
-Don’t have your ACC or PCC yet? No problem – start with our [ACC Level 1 program](/icf/acc-coach-certification-training/) or go straight to the [Professional Coach Program](/icf/acc-pcc-certification/) which includes ACC + PCC + ACTC in one enrollment.
+Don’t have your ACC or PCC yet? No problem – start with our [ACC Level 1 program](/icf/acc-coach-certification-training/) or go straight to the [Professional Coach Program](/icf/acc-pcc-certification/) which delivers the complete ICF Level 2 and AATC accredited education in one enrollment.
 
 [Not sure if ACTC is your next step? Book a free consultation](https://tandemcoach.co/contact-us/)
 
@@ -162,11 +162,55 @@ Upcoming Cohort Dates
 
 Start with any module – ACTC modules are independent, so you can join wherever fits your schedule. View upcoming sessions below.
 
+##### What if I have to miss a live session?
+
+*Enroll anyway.* Missing a session costs you nothing. Your access to the class is for life, so any session you miss you can take with a later cohort – no fee, no deadline, no re-enrollment. If another cohort is running that week, you can join their session instead and not wait at all.
+
+*We don’t record live sessions, on purpose.* These are live coaching practice – students coach each other on real situations and get feedback in the moment. People bring what they bring because the room is private, and a recording would change that. We protect it rather than trade it for convenience.
+
+The only limit is ICF’s, not ours: at least 50% of your certification hours must be live. If missed sessions would take you below that, you make them up with a later cohort before your certificate is issued. Short of that, you’re fine – a holiday, a work trip, or a week away is not a reason to wait for the next cohort.
+
+##### The next start date doesn’t work for me. When’s the one after that?
+
+Level 2 cohorts start less often than Level 1, so the gap between intakes can be several months. Every scheduled intake is in the list above – not just the one currently enrolling – so you can plan around a conflict rather than guess.
+
+All times shown are US Eastern. If you’re outside North America, or none of the scheduled times work with your day, email [info@tandemcoach.co](mailto:info@tandemcoach.co) and we’ll tell you what’s coming and flag you when a cohort opens in a workable time zone.
+
 #### Full ACTC Program – $2,499
 
 Save vs. buying modules individually. Includes all core modules, supervision, recording review, exam prep, and [Coaching Tools Plus](/coaching-tools/) access – everything you need from enrollment to certification.
 
 [Enroll in Full Program](https://community.tandemcoaching.academy/invitation?code=22G496)
+
+Before you enroll
+
+##### Can I pay in installments?
+
+There’s no fixed payment plan on the full program, because the modular structure is a better one. *Buy modules individually at $399 as you’re ready.* Pause between them at no cost, and your progress never expires – so you can spread the investment over as long as you need, with no interest and no commitment to the rest.
+
+The full program at $2,499 is the cheaper route if you know you’re doing all of it – it saves over $500 against buying piece by piece.
+
+##### I trained somewhere else. Does that reduce the price or shorten the program?
+
+No – and the reason is ICF’s rather than ours. An ICF Level 2 program is accredited as a complete curriculum, and the accredited provider has to deliver all of it. Cost and scope stay the same whatever you’ve done before.
+
+*Your existing hours aren’t wasted, though.* If your prior training was ICF-accredited – a completed Level 1 program, or CCEUs from an accredited provider – we can roll those hours into the certificate we issue you, which is the document ICF reads when you apply. Training that wasn’t ICF-accredited generally can’t be counted, though we’ll look at exceptions case by case.
+
+Email your certificate to [info@tandemcoach.co](mailto:info@tandemcoach.co) and we’ll tell you exactly what counts – before you enroll, and without needing a call.
+
+##### My employer is paying. Can you invoice, or take a purchase order?
+
+Yes – we work with whatever your organization’s process requires:
+
+- *Invoices* for a company paying by card, transfer, or check – issued before you enroll, so you don’t pay first and claim back
+- *Purchase orders* – send us the PO and we’ll invoice against it
+- *Government Purchase Cards and federal forms* – accepted; we’ll complete any standard form your office needs
+- *Phased invoicing* if your benefit has a cap – tell us the limit and we’ll split enrollment across separate invoices to fit it
+- *Receipts* for expense claims, issued automatically on every purchase
+
+We also offer discounts to *active and retired military and first responders* – ask us for details.
+
+Send paperwork to [info@tandemcoach.co](mailto:info@tandemcoach.co). Our registration details are on our [Capability Statement](/capability-statement/) – Tandem Coaching Partners is SAM-registered and a WBENC-certified woman-owned small business.
 
 Your Instructors
 
@@ -322,7 +366,7 @@ Yes. The ACTC is an advanced team coaching credential that builds on individual 
 
 This prerequisite exists because effective team coaching requires a solid grounding in core coaching skills – active listening, powerful questioning, and holding space – before adding the complexity of group dynamics, systems thinking, and multi-stakeholder relationships.
 
-If you don’t yet hold an individual coaching credential, you’ll want to start there first. Tandem offers an [ICF Level 1 ACC program](/icf/acc-coach-certification-training/) that provides the foundational training and credential you need. Or consider the [Professional Coach Program](/icf/acc-pcc-certification/) to earn ACC + PCC + ACTC in one enrollment.
+If you don’t yet hold an individual coaching credential, you’ll want to start there first. Tandem offers an [ICF Level 1 ACC program](/icf/acc-coach-certification-training/) that provides the foundational accredited education you need. Or consider the [Professional Coach Program](/icf/acc-pcc-certification/) for the complete ICF Level 2 and AATC accredited education in one enrollment.
 
 **Q: Team Coaching vs Group Coaching: What’s the Difference?**
 

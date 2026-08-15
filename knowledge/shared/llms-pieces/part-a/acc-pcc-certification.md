@@ -3,9 +3,9 @@ URL: https://tandemcoach.co/icf/acc-pcc-certification/
 
 ICF Level 2 Accredited Program
 
-## Become an ICF Professional Certified Coach (PCC) - Three Credentials, One Program
+## Become an ICF Professional Certified Coach (PCC) – Two ICF Accreditations, One Program
 
-The complete path from zero experience to Professional Certified Coach (PCC) credential. Earn your ACC, PCC, and ACTC certifications through the International Coaching Federation (ICF) in a single enrollment - 125+ hours of coach education, mentoring, supervision, and exam prep for $7,499.
+The complete path from zero experience toward the Professional Certified Coach (PCC) credential. Tandem’s full ICF Level 2 accredited education in a single enrollment – all 162 approved hours, of which 75 are AATC team coaching hours – with mentoring, supervision, and exam prep for $7,499. You graduate with Tandem’s certificate carrying the ICF Level 2 and AATC seals; the International Coaching Federation awards the PCC credential and ACTC certification separately once you meet its own requirements.
 
 With **Cherie Silas, MCC**, **Alex Kudinov, MCC** & team
 
@@ -14,7 +14,7 @@ With **Cherie Silas, MCC**, **Alex Kudinov, MCC** & team
 
 **ICF Level 2** Accredited
 
-**ACC + PCC + ACTC** Three Credentials
+**ICF Level 2 + AATC** Two Accreditations
 
 Led by **MCC & PCC Coaching Team**
 
@@ -43,9 +43,9 @@ The Professional Coach Program is designed for people who want PCC-level coachin
 
 Cherie Silas and Alex Kudinov - both Master Certified Coaches - lead your training alongside a team of PCC-credentialed instructors. You learn from coaches who actively coach Fortune 500 leaders.
 
-#### Three Credentials, One Enrollment
+#### Two ICF Accreditations, One Enrollment
 
-ACC, PCC, and ACTC in a single integrated curriculum. No re-enrollments, no coordinating between programs. $7,499 - saving $499 vs. enrolling in ACC and Systems Coach separately.
+The complete ICF Level 2 accredited curriculum, carrying both the Level 2 and AATC accreditations, in one integrated program. No re-enrollments, no coordinating between programs. $7,499 – saving $499 versus enrolling in the Level 1 and Level 2 Bridge stages separately.
 
 #### Individual + Systems Coaching
 
@@ -61,7 +61,7 @@ Start at your own pace with the free Foundations module. Phase 1 runs sequential
 
 #### Exam Prep & ICF Application Support
 
-ICF Coach Knowledge Assessment prep is built in. When you finish, you get documentation, guidance on the application process, and support through credentialing - not just a certificate.
+ICF Credentialing Exam prep is built in. When you finish, you get your Tandem graduation certificate, documentation of your accredited hours, and guidance on applying to ICF.
 
 Who this is for
 
@@ -85,7 +85,13 @@ You already use coaching skills in your leadership role and want formal ICF cred
 
 Your path to PCC
 
-### Two Phases, Three Credentials - Everything Included
+### Two Phases, 162 Accredited Hours – Everything Included
+
+**Verify Tandem’s ICF accreditation.** Tandem Coaching Academy’s accredited offering is listed by the International Coaching Federation as **Elevate Coaching**, an ICF **Level 2** program with **162 approved hours**. This Professional Coach Program delivers that complete accredited curriculum, 75 hours of which are AATC team coaching hours.
+
+Completing coach education does not itself award an ICF credential. Tandem issues its own graduation certificate, carrying the ICF Level 2 and AATC seals. ICF awards the ACC, PCC and ACTC credentials or certifications after applicants meet its own education, experience, assessment, examination and application requirements.
+
+[View Tandem Coaching Academy in the ICF Education Search Service →](https://apps.coachingfederation.org/eweb/dynamicpage.aspx?pid=7159&webcode=ess)
 
 Start Free
 
@@ -104,7 +110,7 @@ ICF Level 1
 
 Build your coaching foundation through four core modules covering session structure, contracting, listening, powerful questioning, direct communication, cognitive reframing, and advanced techniques. Includes group supervision, mentor coaching, and exam prep.
 
-You earn your ACC credential at the end of Phase 1 - a real milestone, not just a stepping stone.
+Phase 1 covers the ICF Level 1 accredited curriculum – the education behind the ACC credential, which ICF awards once you meet its own experience, assessment and application requirements. Because this program runs through to the full Level 2, your graduation certificate is issued at the end of Phase 2 and carries the ICF Level 2 and AATC seals.
 
 - Module 1 – Coaching Fundamentals
 - Module 2 – Critical Coaching Skills
@@ -148,7 +154,7 @@ Phase 2 modules run on a flexible schedule - start with any module, in any order
 
 #### Professional Coach Program - $7,499
 
-All training, mentoring, supervision, exam prep, and [Coaching Tools Plus](/coaching-tools/) access included. Three ICF credentials (ACC + PCC + ACTC) in one enrollment. Save $499 vs. buying ACC and Systems Coach separately.
+All training, mentoring, supervision, exam prep, and [Coaching Tools Plus](/coaching-tools/) access included. The complete ICF Level 2 accredited education, carrying Level 2 and AATC seals, in one enrollment. Save $499 vs. buying the Level 1 and Level 2 Bridge stages separately.
 
 [Enroll in Full Program](https://community.tandemcoaching.academy/invitation?code=79F646)
 
@@ -214,7 +220,7 @@ Complete guide
 
 The Professional Coach Program is Tandem Coaching’s integrated path to **International Coaching Federation (ICF)** Professional Certified Coach (PCC) credentialing. It combines ICF Level 1 coach education (ACC credential) with Level 2 education (PCC + ACTC credentials) into a single enrollment.
 
-Instead of enrolling in separate programs for each credential, you get a continuous curriculum of 125+ hours of ICF-accredited coaching education designed to develop your coaching ability from foundational skills through advanced systems and team coaching. Whether you want to become a life coach, executive coach, or build a coaching business – this program gives you the education, coaching experience, and credentials to help clients achieve their goals and launch your career with confidence.
+Instead of enrolling in separate programs for each credential, you get a continuous curriculum of 162 ICF-approved hours of accredited coaching education designed to develop your coaching ability from foundational skills through advanced systems and team coaching. Whether you want to become a life coach, executive coach, or build a coaching business – this program gives you the education, coaching experience, and credentials to help clients achieve their goals and launch your career with confidence.
 
 **Q: What Credentials Do I Earn?**
 
@@ -265,7 +271,7 @@ You can start immediately with the free Coaching Foundations module, then join t
 - Group and individual mentor coaching
 - Group coaching supervision
 - Performance evaluation preparation
-- ICF Coach Knowledge Assessment exam prep
+- ICF Credentialing Exam prep
 - Access to Tandem’s coaching community
 - All documentation for ICF credential applications
 
@@ -286,8 +292,8 @@ Choose the path that matches where you are and where you want to go.
 | Feature | ACC Program | Professional Coach | Systems Coach (Bridge) | ACTC Team Coaching |
 | --- | --- | --- | --- | --- |
 | Prerequisites | None | None | 60+ hours ICF training | ACC or PCC credential |
-| Credentials earned | ACC | ACC + PCC + ACTC | PCC + ACTC | ACTC |
-| Training hours | 60 hours | 125+ hours | 65+ hours | 60+ hours |
+| Tandem certificate issued | Level 1 | Level 2 + AATC | Level 2 + AATC | AATC |
+| ICF-approved hours | 89 hours | 162 hours | Completes your 162 | 75 hours |
 | ICF accreditation level | Level 1 | Level 1 + Level 2 | Level 2 | Team Coaching |
 | 1-on-1 coaching skills | ✓ | ✓ | ✓ | - |
 | Systems & team coaching | - | ✓ | ✓ | ✓ |
@@ -323,7 +329,7 @@ Everything you need from enrollment to credentialing:
 - Group and individual mentor coaching
 - Group coaching supervision
 - Performance evaluation preparation
-- ICF Coach Knowledge Assessment exam prep
+- ICF Credentialing Exam prep
 - Tandem coaching community access
 - [Coaching Tools Plus](/coaching-tools/) library access
 - Documentation for all three ICF credential applications
@@ -374,7 +380,7 @@ Three ways to begin. Every option includes MCC-led instruction and our supportiv
 
 $7,499
 
-All training, mentoring, supervision, exam prep, and [Coaching Tools Plus](/coaching-tools/). Three credentials (ACC + PCC + ACTC) in one enrollment. Save $499 vs. separate programs.
+All training, mentoring, supervision, exam prep, and [Coaching Tools Plus](/coaching-tools/). The complete ICF Level 2 accredited education – Level 2 + AATC – in one enrollment. Save $499 vs. separate stages.
 
 [Enroll Now](https://community.tandemcoaching.academy/invitation?code=79F646)
 
@@ -396,7 +402,7 @@ Before you go
 
 #### Start Your Coaching Journey – For Free
 
-Our Coaching Foundations module covers ICF competencies & ethics at no cost. Experience MCC-led instruction and explore three credentials before committing to anything.
+Our Coaching Foundations module covers ICF competencies & ethics at no cost. Experience MCC-led instruction and explore the full accredited path before committing to anything.
 
 [Get Free Access Now](https://community.tandemcoaching.academy/invitation?code=8JB28E)
 

@@ -14,7 +14,7 @@ MCC-led executive coaching that helps senior leaders think more clearly, lead mo
 
 **30+ Years** Combined Executive Experience
 
-**788% Average ROI** on Coaching Engagements
+**788% ROI** reported in ICF/Manchester research
 
 Fortune 500 to **Growth-Stage** Leaders
 
@@ -106,8 +106,8 @@ Executive coaching isn’t a nice-to-have. The research is clear – and the lea
 
 788%
 
-Average ROI on
-coaching engagements
+ROI reported by
+ICF/Manchester research
 
 77%
 
@@ -123,6 +123,8 @@ performance
 
 Improvement in
 team performance
+
+Source: ICF and Manchester Inc. coaching ROI studies. These are third-party research findings across the organizations those studies surveyed – they are not a measure of Tandem client outcomes.
 
 ##### Stronger Executive Presence
 
@@ -244,7 +246,7 @@ We offer a range of engagement structures to fit different needs and budgets. Fo
 
 **Q: What’s the ROI of executive coaching?**
 
-Research consistently shows strong returns. The ICF and Manchester Inc. report an average ROI of 788% on coaching engagements, with 77% of organizations reporting improvements in business measures like productivity and revenue, and 70% of individual leaders showing measurable performance gains.
+Independent research shows strong returns. The ICF and Manchester Inc. studies report an average ROI of 788% across the coaching engagements they surveyed – this is third-party research, not a measure of Tandem client performance, with 77% of organizations reporting improvements in business measures like productivity and revenue, and 70% of individual leaders showing measurable performance gains.
 
 In our own practice, the outcomes are less about a single number and more about specific shifts: a leader who stops losing key talent, a VP who earns a seat at the strategy table, or an executive team that starts making decisions in days instead of weeks.
 
@@ -278,7 +280,7 @@ We use a three-way conversation at the start to align goals between you, your sp
 
 **Q: What’s the difference between MCC and PCC credentials?**
 
-Both are ICF credentials, awarded at different levels of demonstrated mastery. PCC (Professional Certified Coach) requires 500+ hours of coaching experience and passes the ICF assessment at the professional level. MCC (Master Certified Coach) is the highest credential – fewer than 5% of ICF coaches hold it, and it requires 2,500+ hours, more rigorous performance assessment, and demonstrated mastery across all eleven ICF core competencies.
+Both are ICF credentials, awarded at different levels of demonstrated mastery. PCC (Professional Certified Coach) requires 500+ hours of coaching experience and passes the ICF assessment at the professional level. MCC (Master Certified Coach) is the highest credential – fewer than 5% of ICF coaches hold it, and it requires 2,500+ hours, more rigorous performance assessment, and demonstrated mastery across all eight ICF Core Competencies.
 
 For executive coaching, the difference matters because senior leaders bring complex situations – power dynamics, strategic ambiguity, stakeholder politics – where an MCC’s depth of experience and assessment skill changes the quality of the conversation. We staff every senior executive engagement with an MCC or PCC coach.
 
@@ -394,5 +396,13 @@ Start with a conversation. We’ll learn about your challenges, your goals, and 
 [Learn About Our Approach](#our-approach)
 
 Free initial consultation · No commitment required
+
+##### Buying on behalf of an organization or agency?
+
+We’re set up for it. *Tandem Coaching Partners is SAM-registered* and a certified woman-owned small business – SBA WOSB, WBENC, Texas HUB, and NCTRCA – so if your organization carries diversity-spend targets or federal purchasing requirements, we’re straightforward to buy from.
+
+We work with whatever your process needs: invoices raised before engagement starts, purchase orders, Government Purchase Cards and federal forms, and phased invoicing where a budget has a cap. Recent engagements include *Dell*, *Sagitec Solutions*, and *Chicago Trading Company*.
+
+Our UEI, CAGE code, NAICS and PSC codes are on our [Capability Statement](/capability-statement/). Send procurement paperwork to [info@tandemcoach.co](mailto:info@tandemcoach.co) – and we offer discounts to *active and retired military and first responders*.
 
 ---

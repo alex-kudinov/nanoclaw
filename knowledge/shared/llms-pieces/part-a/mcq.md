@@ -1,5 +1,39 @@
-# ICF Mentor Coach Specialization (MCS) - Hub
-URL: https://tandemcoach.co/mcs/
+# ICF Mentor Coach Qualification (MCQ) - Legacy Hub
+URL: https://tandemcoach.co/mcq/
+
+ICF Mentor Coach Specialization (MCS) Guide | Tandem
+
+
+- [Coaching](/executive-coaching/)
+  - [Executive Coaching](/executive-coaching/)
+  - [Leadership Development](/leadership-development/)
+  - [Team & Organizational](/organizational-coach/)
+  - [Coaching Engagements](/coaching-engagements/)
+- [Training](/icf-coaching/)
+  - [ACC Certification (Level 1)](/icf/acc-coach-certification-training/)
+  - [Professional Coach Program (Level 2)](/icf/acc-pcc-certification/)
+  - [Level 2 Bridge (PCC + ACTC)](/icf/pcc-professional-coach-certification/)
+  - [ACTC Team Coaching (AATC)](/icf/actc-team-coaching-training/)
+  - [Mentor Coaching](/icf/mentor-coaching-acc-pcc-mcc/)
+  - [Coaching Supervision](/coaching-supervision/)
+  - [Practitioner Series (CCE)](/practitioner-series/)
+  - [MCS Guide](/mcs/)
+  - [MCS Foundations](/mcs/mentor-coaching-foundations/)
+  - [Advanced Accreditation](/mcs/advanced-accreditation/)
+  - [CSS Guide](/coaching-supervisor-specialization-css/)
+  - [Coaching Supervisor Training](/coaching-supervisor-training/)
+  - [Free Coaching Tools](/coaching-tools/)
+  - [Blog & Insights](/blog/)
+  - [The Coaching Room](/coaching-insights/)
+- [About Us](/about-us/)
+- [Blog](/blog/)
+  - [Executive Coaching](/category/executive-coaching/)
+  - [Leadership Development](/category/leadership-development/)
+  - [Coach Training](/category/professional-coaching/)
+  - [Organizational Coaching](/category/organizational-coaching/)
+- [Pulse](/pulse/)
+- [Search](#)
+- [Book Free Consultation](/contact-us/)
 
 Required January 1, 2027
 
@@ -679,5 +713,41 @@ Co-branded info sessions on MCS for your members - we travel (virtually) to chap
 Mentor Coaching Foundations - 10-hour program for the CPL path - $299.
 
 [See program](#our-programs)
+
+##### Services
+
+- [Executive Coaching](/executive-coaching/)
+- [Leadership Development](/leadership-development/)
+- [Team & Organizational](/organizational-coach/)
+- [Coaching Engagements](/coaching-engagements/)
+- [ICF Certification Programs](/icf-coaching/)
+
+##### Company
+
+- [About Us](/about-us/)
+- [Contact](/contact-us/)
+- [Blog](/blog/)
+- [Coaching Tools](/coaching-tools/)
+- [Pulse](/pulse/)
+- [Testimonials](/testimonials/)
+- [Capability Statement](/capability-statement/)
+
+##### Stay Connected
+
+Join 1,000+ coaches and leaders who get our bi-weekly insights on coaching, leadership, and professional development.
+
+Dallas, TX · [+1 (855) 51-COACH](tel:18555126224) · [info@tandemcoach.co](mailto:info@tandemcoach.co)
+
+© 2019-2026 Tandem Coaching Partners, LLC. All Rights Reserved
+
+[Privacy Policy](/privacy-policy/)
+|
+[Terms](/terms/)
+|
+[Accessibility](/accessibility/)
+|
+[Sitemap](/sitemap/)
+
+Some content on this site was created with the assistance of AI tools and reviewed by Tandem Coaching to reflect our coaching expertise and values.
 
 ---

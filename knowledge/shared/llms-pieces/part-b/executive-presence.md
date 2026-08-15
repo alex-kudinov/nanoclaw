@@ -1,170 +1,136 @@
 # Blog: Executive Presence
 
-## Executive Presence Examples: What Coaches See in Practice
-URL: https://tandemcoach.co/executive-presence-examples/
+## Executive Presence Assessment: How to Measure the Gap
+URL: https://tandemcoach.co/executive-presence-assessment/
 
-### What does executive presence look like in practice?
+### How do I measure my executive presence gap?
 
-Executive presence shows up as behavior matched to what the moment requires. A board presenter pauses before answering a skeptical question — the pause signals authority. A crisis leader slows down, summarizes others before speaking, asks one reframing question. A cross-functional influencer maps each stakeholder's real priorities. The behavior fits the context precisely.
+Run a 360-degree feedback instrument with presence-specific dimensions, disaggregated by rater group. Cross-rater variance reveals your Context gap. Pair it with Genos EQ to test for an Expression gap or ProfileXT to test for an Authority gap. One instrument produces a score. Two or three produce a diagnosis.
 
-You have read the definitions. You know that executive presence involves confidence, communication, and composure. Now you want to know what it actually looks like in a meeting room, in a board presentation, in a crisis—and what it looks like when it is missing.
+Most executive presence development starts without a measurement. A leader hears vague feedback: “You need more gravitas” or “You don’t project confidence at the senior level.” The leader nods, reads a book, maybe hires a coach. Six months later, nobody can say whether anything changed because nobody measured anything to begin with.
 
-The challenge with most executive presence examples is that they describe traits, not behaviors. “Projects confidence” or “commands respect” tells you what the endpoint should look like without showing you the path from here to there. The examples in this article work differently. They are drawn from coaching practice, organized around the specific types of presence gaps that [assessment data reveals](/what-is-executive-presence/), and designed to help you recognize your own situation rather than an idealized version of someone else’s.
+That is the fundamental problem with how organizations approach executive presence. They treat a diagnosable gap as a personality trait and a measurable perception as an opinion. The result is development without a baseline, coaching without a target, and progress without evidence.
 
-Strong executive presence and its absence share one underlying mechanism: the gap between how a leader intends to show up and how people experience them. Understanding that gap (which dimension it falls in, what drives it, and what coaching addresses) turns abstract feedback into a development plan.
+Assessment changes the equation. Validated instruments can identify exactly where a leader’s self-perception diverges from stakeholder experience, which dimensions of presence are strong, and which are producing the friction. The question is not whether [what executive presence means](/what-is-executive-presence/) can be measured. It is which instruments measure which dimensions, and how the data maps to a development plan that targets the right gap.
 
 #### Key Takeaways
 
-- Executive presence is a perception gap: the distance between a leader’s intentions and how people experience them in the room.
-- Strong presence examples share a common pattern: the behavior matches what the audience needs in that specific context.
-- Four failure patterns appear consistently in 360-degree assessment data: the Invisible Thinker, the Over-Preparer, the Culture Mismatch, and the Proving Leader.
-- EP expectations change at each organizational level. A leader who demonstrates strong presence as a VP may struggle at the C-suite because the definition shifted.
-- Some “lack of executive presence” feedback reflects the organization, not the individual. Assessment determines which one requires the work.
+- Self-assessment of executive presence is unreliable. Leaders consistently rate their own presence higher than stakeholders do, and the shape of that gap is itself a diagnostic signal.
+- Four validated instruments measure different presence dimensions: Bates ExPI (dedicated EP composite), Genos EQ (emotional expression), ProfileXT (behavioral tendencies), and 360-degree feedback (audience perception split by rater group).
+- The ACE framework maps assessment data to three gap types: Expression, Authority, and Context. Identifying the primary gap type determines whether coaching targets visibility, positional authority, or organizational fit.
+- No single instrument covers all three gaps. A multi-instrument stack produces a triangulated diagnosis that connects data to a specific coaching plan, not a generic development prescription.
 
-### What Strong Executive Presence Looks Like
+### Why Self-Assessment Alone Falls Short
 
-Strong executive presence is recognizable not by how loudly a leader speaks but by how precisely they read what the moment requires. Real coaching contexts reveal four behavioral patterns: what strong presence looks like in action, where the gaps appear in assessment data, and what the coaching work addresses in each case.
+Executive presence is a perception problem, not a self-knowledge problem. A leader can be deeply aware of their own strengths, communication style, and strategic thinking capacity and still have no reliable picture of how others experience them in a room. The gap between self-perception and audience perception is where presence lives, and self-assessment cannot see it.
 
-#### The Board Presentation
+The research backs this up. [Eurich’s research on self-awareness](https://hbr.org/2018/01/what-self-awareness-really-is-and-how-to-cultivate-it) found that while 95% of people believe they are self-aware, only 10–15% actually demonstrate it when tested against external data. In the context of executive presence, this means leaders routinely misjudge how their communication skills, body language, and authority register with the people who matter most.
 
-A VP of Operations presents quarterly results to a board that has seen twenty versions of this report. Other presenters cycle through slides quickly, filling silence with narration. This leader does not. She opens with three sentences about the one number that changes the conversation, sets her notes aside, and addresses the room directly. Her body language is settled—weight evenly distributed, eye contact that moves deliberately from person to person, not scanning the room in search of approval. When a board member interrupts with a skeptical question, she pauses before answering. Not to think through an unfamiliar problem, but to signal that the question has weight. The pause itself carries authority.
+Consider a composite scenario. A vice president self-rates her communication clarity at 4.5 out of 5. She prepares thoroughly for every meeting, speaks precisely, and follows up in writing. Her direct reports rate the same dimension at 3.1. The gap is not about skill. Her communication is strong. The gap is about display: she processes decisions internally before announcing conclusions, so her team never sees her reasoning. They experience directives where she experiences dialogue. Both assessments are honest. Only one reflects what the audience actually sees.
 
-This is the expression dimension of presence: making internal confidence visible through deliberate behavior. The board reads it as command, though the word is never used.
+This kind of divergence is diagnostic. When the shape of the self-other gap follows a pattern where the leader rates internal capabilities highly while external audiences rate visible behaviors lower, the perception disconnect points to a specific gap type. A leader who scores well on emotional intelligence assessments but receives low 360 feedback on emotional expression is not lacking awareness. They are lacking visibility. The awareness is there. The display is not.
 
-#### Crisis Communication
+> The leaders who score highest on emotional intelligence are often the ones with the widest expression gaps. Awareness without display is the most common misdiagnosis in presence coaching.
 
-A supply chain crisis hits during a peak operational period. The executive team is moving fast, with competing priorities, vendor escalations, and customer pressure pulling in different directions. The operations leader does the opposite. She slows down. In the crisis meeting, she is the first to stop talking and the last to propose a solution. Active listening is visible: she summarizes what each person said before responding, asks one clarifying question that reframes the problem, then lays out a decision framework in two minutes. Her calm does not read as disengagement. It reads as the authority of someone who has seen this before.
+Self-assessment has a second limitation: it cannot detect what an organization’s culture defines as “executive.” A leader may accurately assess their own behavior and still miss that their communication style does not match what this particular organization rewards at the senior level. That is not a self-knowledge problem. It is a context problem, and it requires external data to surface.
 
-This is the authority dimension: the leader who does not need to fill every silence or solve every problem because the room already knows their analysis will be worth waiting for.
+The bridge between self-perception and reality is structured feedback from the people who experience the leader’s presence directly. That means validated instruments, not casual conversations.
 
-#### Cross-Functional Influence
+### Instruments That Measure Executive Presence
 
-A product leader needs alignment from legal, finance, and marketing on a launch timeline. She has no authority over any of these functions. In the meeting, she does not use the weight of her title or her relationship with the CEO. She maps the impact of the decision on each stakeholder’s real priorities (risk exposure for legal, budget cycle for finance, campaign timing for marketing) and presents options that make alignment genuinely easier than resistance. The influence lands not because of confidence but because of precision.
+Executive presence is not one thing. It spans how a leader communicates, how they occupy authority, and how their style fits the organizational context. No single instrument captures all of those dimensions. Understanding what each instrument measures, and what it misses, is the first step toward building an assessment approach that actually diagnoses the problem. For a broader look at the field, see our overview of [executive coaching assessment tools](/executive-coaching-tools/).
 
-This is the context dimension: reading what each audience needs and delivering exactly that. [Targeted exercises for each gap pattern](/executive-presence-exercises/) can build it systematically.
+| Instrument | What It Measures | ACE Gap Diagnosed | Format | Limitations |
+| --- | --- | --- | --- | --- |
+| **Bates ExPI** | 15 facets of executive presence across Character, Substance, and Style | Broad (all three, undifferentiated) | 360-based, certified administration | Measures presence as a single construct; does not isolate which gap type is primary |
+| **Genos EQ** | Emotional expression, self-management, emotional awareness, empathy | Expression Gap | Self-report + 360 option | Does not measure organizational context or role-alignment; covers emotional dimensions only |
+| **ProfileXT** | Behavioral tendencies, cognitive patterns, occupational interests | Authority Gap | Individual assessment, norm-referenced | Does not capture audience perception; measures trait patterns, not how they land |
+| **360-Degree Feedback** | Audience perception across rater groups (peers, direct reports, superiors) | Context Gap (via cross-rater variance) | Multi-rater survey, customizable dimensions | Depends on rater quality; reveals perception but not underlying cause |
 
-#### Virtual Town Hall
+The **Bates Executive Presence Index** is the only instrument designed specifically for executive presence. Developed by Bates Communications, it evaluates 15 facets organized into three dimensions and produces a composite EP profile. It is well-validated and provides a clear snapshot. The limitation is structural: because it measures presence as a unified construct, it tells you where the leader is strong or weak on the ExPI scale but does not distinguish between the three underlying gap types. A leader who scores low on influence could have an authority problem, an expression problem, or a context problem. The ExPI score alone does not differentiate.
 
-The CEO of a 2,000-person organization runs a quarterly virtual town hall. Her camera angle places her eyes at the top third of the frame. She speaks to the lens, not the chat window or her notes. Her pacing is ten percent slower than conversational, a deliberate adjustment for a medium that flattens energy. When she pauses for questions, she reads the question aloud before answering, giving remote attendees who missed it a second chance to follow. These are not performative adjustments. They are context adaptations: behaviors calibrated to the specific constraints of a mediated channel where presence signals are compressed and easily lost.
+**[Genos emotional intelligence assessments](https://www.genosinternational.com/assessments)** measure dimensions that map directly to the Expression gap. When Genos data shows high self-awareness paired with minimal emotional expression, the finding points to a specific pattern: the leader processes deeply but makes little of that processing visible to others. Direct reports experience detachment where the leader experiences deep engagement. Genos does not measure organizational context or positional authority, so it covers one gap type with precision rather than all three with less resolution.
 
-> The pause before a hard question often carries more authority than the answer.
+**ProfileXT** measures behavioral tendencies and cognitive patterns that map to the Authority gap. If ProfileXT reveals high analytical drive with strong relational orientation but low dominance, the data points to a leader who communicates well but has not claimed positional authority. They are liked but not followed. The coaching plan that emerges from this finding targets organizational positioning, not communication skills. ProfileXT does not capture how others perceive the leader, which is why it pairs with 360 feedback rather than replacing it.
 
-### Four Failure Patterns That Reveal Presence Gaps
+The **360-degree feedback** instrument captures what no self-report assessment can: how different audiences actually experience the leader. The diagnostic power is in the disaggregation. When direct reports rate a leader at 4.2 on presence dimensions while senior stakeholders rate the same behaviors at 2.8, the variance itself is the finding. The leader is not inconsistent. Different audiences are applying different templates for what “executive” looks like. That cross-rater pattern is the primary signal for a Context gap, and it only becomes visible when the data is split by rater group.
 
-When leaders receive “lack of executive presence” feedback, the phrase covers several different underlying patterns. Four appear consistently in 360-degree assessment data. Each maps to a distinct gap in the ACE assessment framework, and the coaching approach that addresses one is not the approach that addresses another. Acting on the wrong one does not close the gap.
+No single instrument covers all three gaps. That limitation is the argument for a multi-instrument assessment stack. At Tandem, we combine Genos EQ, ProfileXT, and 360-degree feedback to produce a triangulated diagnosis: which gap type is primary, how the data confirms it across multiple instruments, and what the coaching plan should target.
 
-#### The Invisible Thinker (Expression Gap)
+> A composite score tells you a leader has a presence problem. A triangulated diagnosis tells you which problem, and that distinction determines whether the coaching engagement produces change or produces paperwork.
 
-The feedback arrives in performance reviews and promotion decisions: “brilliant but not visible,” “needs to step up,” “doesn’t command the room.” Colleagues experience this leader as withdrawn or disengaged in meetings, even as they rely on her analysis in every strategic document the team produces.
+### How Assessment Data Maps to ACE Gaps
 
-**The Invisible Thinker** processes deeply and displays little. The thinking is rich; the expression is minimal. She reaches strong conclusions and announces them without narrating the path. She observes a meeting dynamic and adjusts her behavior without explaining why. Her self-awareness scores on Genos EQ assessments are high; she notices exactly what is happening in the room. The gap is in emotional expression: the distance between what she is thinking and what the room can see her thinking.
+Assessment data becomes useful when it maps to a diagnostic framework. Without that mapping, the data produces a score. With it, the data produces a diagnosis: which gap type is primary, what evidence supports that diagnosis, and what coaching intervention will be most effective. The ACE model, a practitioner-developed framework built from assessment patterns observed across hundreds of coaching engagements, organizes presence gaps into three categories.
 
-The coaching approach targets the expression gap specifically. Not confidence, which is not the problem. Not communication in the generic sense. The work is making the reasoning process visible in real time—narrating the thinking, not just announcing the conclusion. What a presence gap assessment typically reveals is that the ability is already there; the inhibition is learned, and it can be unlearned.
+#### Authority Gap Indicators
 
-#### The Over-Preparer (Expression Gap)
+ProfileXT behavioral data shows a pattern: high relational orientation, strong communication skills, low dominance. The 360 feedback confirms it: strong marks on interpersonal connection but low visibility in decision-making, strategic influence, and organizational positioning. The leader inspires trust one-on-one but does not project confidence in senior leadership forums. The gap is not about competence or even confidence. It is about occupying positional authority: the transition from proving value through contribution to projecting authority through restraint and strategic presence.
 
-This leader’s presence gaps do not come from too little preparation. They come from too much. His feedback reads: “stiff in presentations,” “talks to his slides,” “rehearsed rather than real.” Colleagues describe competence but not presence.
+#### Context Gap Indicators
 
-**The Over-Preparer** compensates for expression anxiety through exhaustive preparation. He reads from slides in board presentations, over-structures every meeting with agendas nobody actually follows, and scripts one-on-one conversations. The preparation is high quality. But the preparation has become the performance, and it displaces the authentic presence that stakeholders are actually assessing.
+The strongest signal is cross-rater variance in the 360 data. When direct reports rate the leader at 4+ on presence dimensions while peer-level or senior stakeholders rate the same leader at 2-3, the leader is not behaving inconsistently. Different audiences are applying different definitions of what leadership should look like. An organizational audit step, examining what this culture rewards and which leadership styles are systematically valued, surfaces whether the assessment reflects a behavioral gap or a style-context mismatch. This is the dimension most presence models miss entirely.
 
-Assessment data reveals a consistent pattern: high analytical rigor, high preparation behaviors, low spontaneity and adaptability in stakeholder interactions. The coaching approach does not target preparation discipline, which is genuine strength. It targets the belief that preparation is presence, and the practice of trusting competence enough to set the notes aside.
+#### Expression Gap Indicators
 
-#### The Culture Mismatch (Context Gap)
+Genos EQ scores reveal the pattern most clearly: high self-awareness, high emotional awareness, minimal emotional expression. The leader knows what they think and feel. The room does not. 360 communication scores are low not because the leader lacks communication skills but because their internal processing never becomes visible. Stakeholders fill the visibility gap with assumptions, usually negative ones. The coaching intervention targets making internal processing observable: narrating reasoning in real time, externalizing reactions rather than editing them, letting the audience see the thinking that produces the conclusion.
 
-This leader has strong presence in her previous environment. The feedback in the new one arrives as confusion: “she comes across as aggressive,” or the reverse, “she seems too passive, she doesn’t assert herself.” Neither description would have made sense three years ago.
+#### Same Data, Three Diagnoses
 
-**The Culture Mismatch** pattern is the clearest example of context gap: behaviors that read as authority in one organizational culture read as threat or weakness in another. A startup founder who joins a Fortune 500 board brings directness that the startup rewarded. The board culture rewards measured deliberation. The same communication style that generated credibility in one room generates friction in another. Her 360-degree feedback splits cleanly by audience, with high marks from colleagues who share her background and low marks from stakeholders embedded in the new culture.
+Here is why the framework matters. Take a leader whose 360 composite score on executive presence is 3.0 out of 5. That score alone tells you almost nothing. Read the data through the Authority gap lens and you see strong emotional intelligence scores but low ratings on influence and strategic thinking visibility. The leader connects well but does not occupy positional power. Read the same data through the Context gap lens and you see high cross-rater variance: direct reports love her, the C-suite does not see “executive” in her style. Read it through the Expression gap lens and you see high Genos self-awareness paired with low external display: she processes everything and shows nothing.
 
-The coaching approach begins with organizational mapping, not behavior change. The work is helping the leader develop a reading of what this specific culture calls “executive,” then building the repertoire to move between registers. Understanding what [executive presence coaching addresses](/executive-presence-coaching/) in cases like this goes well beyond communication technique.
+All three readings use the same data. All three produce different coaching plans. [Executive presence coaching](/executive-presence-coaching/) that does not start with a gap diagnosis defaults to the most visible complaint, which is usually confidence or communication, neither of which may be the actual issue. Assessment without a diagnostic framework produces data. Assessment with ACE produces a plan, including [targeted executive presence exercises](/executive-presence-exercises/) specific to the identified gap.
 
-#### The Proving Leader (Authority Gap)
+### Choosing the Right Assessment Approach
 
-This leader has been the most technically capable person in every role he has held. His feedback is paradoxical: colleagues respect him deeply but do not experience him as a leader. “He does everyone’s job better than they do, but he never seems to be in charge.”
+The right assessment approach depends on the diagnostic question. An individual leader receiving presence feedback needs a different instrument set than an HR team evaluating a cohort for career advancement or a coaching firm building a baseline for a six-month engagement.
 
-**The Proving Leader** answers every question in a meeting, volunteers for every high-stakes task, and consistently works the longest hours on the team. His assessment data shows strong expertise scores and low authority scores. He is demonstrating competence in a role that now requires him to occupy authority. The behaviors that built his career (being the most prepared person in the room, having the right answer, delivering beyond expectations) are now actively working against the perception he needs to create.
+**Budget tier 1: Minimum viable.** A 360-degree feedback instrument with presence-specific dimensions. This captures audience perception data and, when disaggregated by rater group, can surface Context gap signals. It does not measure the emotional intelligence dimensions that reveal Expression gaps or the behavioral tendency patterns that reveal Authority gaps. For organizations beginning to take presence development seriously, this is the starting point. For organizations [measuring leadership development outcomes](/how-to-measure-leadership-development/) across a cohort, aggregated 360 data reveals systemic patterns that individual assessments miss.
 
-The coaching approach targets the shift from expert identity to leader identity. Specifically: the practice of restraint. Not answering every question. Not taking every task. Trusting that the team’s work reflects on the leader, and that the leader’s job is to enable the team, not replace it.
+**Budget tier 2: Targeted stack.** A 360 paired with one additional instrument chosen based on the presenting complaint. If the feedback suggests the leader “doesn’t show what they’re thinking,” add Genos EQ to test for an Expression gap. If the feedback is about influence and strategic visibility, add ProfileXT to test for an Authority gap. This approach costs less than the full stack while doubling diagnostic precision for the suspected gap type.
 
-> The pattern that got you here is what’s limiting you now.
+**Budget tier 3: Full stack.** Genos EQ + ProfileXT + 360-degree feedback. This covers all three ACE gap types with dedicated instruments, produces triangulated data, and gives the coach maximum diagnostic resolution. The full stack is the gold standard for individual executive coaching engagements where the investment in coaching is significant and the diagnosis needs to be precise. Leaders [developing executive presence](/developing-executive-presence/) through a structured coaching engagement benefit most from this level of diagnostic depth.
 
-### How Executive Presence Changes Across Organizational Levels
+⚠
 
-The same leader can demonstrate strong executive presence at the director level and receive significant presence feedback at the VP level, not because she regressed, but because the definition changed. Presence expectations shift materially at each organizational transition, and leaders who do not recognize the shift often find themselves performing the previous version of the role.
+Warning
 
-#### Director Level: Visibility and Contribution Quality
+Personality assessments alone (MBTI, DiSC, StrengthsFinder) do not measure executive presence. They measure traits, not audience perception. A leader can have ideal personality traits and still produce a significant presence gap because the issue is how those traits translate to observable behavior in context. If your assessment approach relies solely on personality instruments, it will miss the perception dimension entirely.
 
-At the director level, presence is primarily about visibility and the quality of individual contributions. Can you speak with authority in cross-functional rooms? Do you contribute in meetings with senior leadership in ways that signal strategic thinking, not just operational competence? The expression gap is the most common finding at this level: technically strong leaders who have not yet developed the habit of making their analysis visible to the people who need to see it.
+**Assessment cadence matters as much as instrument selection.** Presence develops over months, and perception changes lag behavioral changes. A baseline assessment before coaching starts establishes the gap. A targeted re-assessment at month 3 or 4, focused on the presenting gap dimension, checks whether behavioral changes are registering with the audience. A full post-engagement measurement at month 6 provides evidence of development. Without this cadence, assessment is a snapshot instead of a measurement methodology. Organizations exploring [executive presence training programs](/executive-presence-training/) should apply the same cadence logic: pre-training baseline, mid-program check, post-program measurement.
 
-#### VP Level: Strategic Influence and Cross-Functional Credibility
+> Without assessment, presence coaching is intuition-guided. With assessment, it is gap-specific. That is not an incremental improvement. It is a different engagement entirely.
 
-At the VP level, the presence question shifts from “does this person contribute?” to “does this person move others to act?” Influence without positional authority becomes the central presence signal. The authority gap emerges here: leaders who built their reputation through individual expertise now need to earn credibility through the quality of their organizational thinking and their ability to align people who do not report to them.
+The most common mistake organizations make when commissioning assessments is starting without a diagnostic question. “We want to assess executive presence” is not specific enough. Which gap type is the suspected issue? Which instruments will test that hypothesis? How will the data connect to a coaching or development plan? The ACE framework prevents the “assessment without direction” problem by requiring these questions before the first instrument is administered.
 
-As one client described the transition: “I kept trying to do what had always worked: have the best answer, deliver the best work. But nobody seemed to notice anymore. What they noticed was whether people followed my lead, not whether my analysis was correct.”
+### FAQ: Executive Presence Assessment
 
-#### C-Suite: Organizational Tone and External Representation
+**Q: How is executive presence measured?**
 
-At the C-suite level, presence shifts to what the leader represents rather than what they produce. [Coaching at the CEO level](/ceo-coaching/) often begins with this reframing: the way an executive walks into a board meeting shapes what the board believes about the company’s health. The way she responds to an investor in a difficult quarter sets the emotional context for how the entire organization interprets its situation. Presence is no longer personal credibility. It is organizational signal.
+Executive presence is measured through validated instruments that capture both self-perception and audience experience. The most common instruments include 360-degree feedback (audience perception across rater groups), the Bates Executive Presence Index (15 EP-specific facets), Genos EQ (emotional expression and awareness), and ProfileXT (behavioral tendencies). Effective measurement uses multiple instruments to triangulate the diagnosis rather than relying on a single composite score.
 
-The context gap becomes the primary assessment finding at this level. The behaviors that generated presence at the VP level (demonstrating command of the function, showing depth of expertise) can actively undermine C-suite presence if they continue unchanged. The transition requires learning to stop proving and start embodying. For a broader view of how presence fits into overall leadership development, [leadership development examples](/leadership-development-examples/) across other competencies show how the pattern repeats at each level transition.
+**Q: What is the Bates Executive Presence Index?**
 
-### Executive Presence in Different Contexts
+The Bates Executive Presence Index (ExPI) is the only assessment instrument designed specifically for executive presence. Developed by Bates Communications, it measures 15 facets organized across three dimensions: Character (authenticity, integrity, concern), Substance (practical wisdom, confidence, composure), and Style (appearance, intentionality, inclusiveness). It requires certified administration and produces a presence profile that identifies strengths and development areas across all 15 facets.
 
-Executive presence is not a fixed set of behaviors. What reads as strong presence in one context reads as weakness, aggression, or irrelevance in another. The context gap is the assessment finding that most often surprises leaders, because the behavioral patterns that produced their success were calibrated to a specific environment.
+**Q: Can you assess executive presence without a formal instrument?**
 
-#### Industry Variation
+Informal assessment, such as asking trusted colleagues for candid feedback, provides directional signals but lacks the reliability and specificity of validated instruments. The main limitation is that informal feedback tends to confirm existing biases rather than surface blind spots. A structured 360 with presence-specific dimensions is the minimum viable formal assessment and costs less than most leaders expect.
 
-In tech organizations, directness and speed read as presence. In financial services, the same behaviors read as impulsive and lacking judgment. In regulated, client-facing environments, the presence standard is measured deliberation: the appearance of knowing everything before saying anything. In nonprofits, where organizational authority is more distributed, both registers can alienate.
+**Q: How often should executive presence be reassessed?**
 
-#### Virtual and In-Person Settings
+For coaching engagements, reassess at three intervals: baseline (before coaching starts), mid-point (month 3 or 4, targeted to the presenting gap), and post-engagement (month 6, full re-assessment). Behavioral change in the leader typically outpaces perception change in the audience, so mid-point checks prevent premature course corrections based on lagging stakeholder perception.
 
-The medium changes which presence signals are visible. In person, posture, movement, spatial positioning, and the management of physical space all carry presence information. Virtual settings compress these signals. What survives compression: eye contact (achieved through camera angle, not screen position), vocal pacing, the ability to manage energy in a flat medium, and the discipline not to check email while speaking.
+Assessment is not a test. It is a diagnostic. The distinction matters because tests produce pass/fail verdicts while diagnostics produce treatment plans.
 
-Leaders who have strong in-person presence often struggle in virtual settings because they continue transmitting signals that the medium cannot carry. The adjustment is not about being “more” something; it is about understanding which signals the channel can and cannot support.
+A leader who “fails” an executive presence assessment has not failed at all. They have a baseline: specific data showing where their self-perception diverges from stakeholder experience, which instruments confirmed which gap type, and what the coaching plan should target first. That is more than most presence development programs offer before they start spending the budget.
 
-#### Crisis Versus Steady-State
-
-Presence under pressure reveals gap patterns that remain invisible in normal operations. The Proving Leader who manages steady-state operations effectively may over-function in a crisis, taking tasks, filling every silence, solving problems that belong to the team. What reads as reliable in normal conditions reads as controlling under pressure. The context has shifted; the behavior has not.
-
-#### Cross-Cultural Contexts
-
-Behaviors that signal authority in one culture signal aggression or arrogance in another. [Cross-cultural leadership research](https://en.wikipedia.org/wiki/Hofstede%27s_cultural_dimensions_theory) on power distance (the degree to which less powerful members of organizations accept and expect unequal power distribution) shows that presence behaviors calibrated to low-power-distance cultures (directness, challenge, informality) actively undermine credibility in high-power-distance environments, and vice versa. A leader who moves across cultures without recalibrating is not experiencing a presence deficit. She is experiencing a context gap that requires organizational mapping, not behavior change.
-
-### When Lack of Executive Presence Is the Wrong Diagnosis
-
-Sometimes feedback about lack of executive presence is accurate and individual: a real gap in expression, authority, or context that coaching can close. Sometimes it reflects organizational dynamics, cultural acculturation, or rater bias that has nothing to do with the leader’s actual capability. The assessment determines which.
-
-A leader who arrives in a new environment with strong presence in her previous context may receive presence feedback not because her presence has declined but because she has not yet decoded what this specific culture calls “executive.” The coaching work in this case begins with the organization, not with her.
-
-The gender dimension is particularly significant here. Research on [executive presence for women](/executive-presence-for-women/) consistently shows that presence expectations encoded in feedback often reflect dominant-culture norms rather than leadership effectiveness. Women who communicate with the relational directness that research links to team trust may receive presence feedback from evaluators whose definition of presence is indexed to a different behavioral register. The feedback is real. Its attribution to the individual is not always accurate.
-
-> Not all executive presence feedback is about the individual. Some of it is about the room.
-
-Analyzing 360-degree feedback for audience patterns, not just aggregated scores, is what distinguishes these cases. When feedback scores are consistent across all rater groups, the gap is likely individual. When scores split by audience (high from some groups, low from others) the gap is likely contextual or organizational. Acting on individual-development interventions in a contextual case does not close the gap. It addresses the wrong problem.
-
-For leaders whose feedback is accurate and individual, the path from recognition to change runs through understanding which gap applies and practicing behaviors that close it. The place to start is [developing executive presence](/developing-executive-presence/) through structured, gap-typed practice rather than generic confidence work.
-
-### Frequently Asked Questions
-
-**Q: What is an example of executive presence?**
-
-A VP presenting to skeptical board members sets her notes aside, addresses the room directly with deliberate eye contact, and pauses before answering questions in a way that signals the question has weight. She is not performing confidence; she is demonstrating that she does not need the slide deck to carry the room. The board experiences authority before she makes a single recommendation.
-
-**Q: What does lack of executive presence look like?**
-
-Lack of executive presence most often shows up as a gap between capability and perception. Two common patterns: the Invisible Thinker, whose strong analysis stays internal and whose colleagues experience detachment; and the Proving Leader, who answers every question and works the longest hours but gets feedback that he does not seem to be “in charge.” Both have genuine capability. The gap is in how the room experiences them, not in what they actually know.
-
-**Q: Can executive presence be developed?**
-
-Yes, with one important qualification. Generic confidence coaching changes surface behaviors but rarely closes the underlying gap. The development approach that produces behavioral change starts with identifying which gap the assessment data shows (expression, authority, or context) and then targets practices specific to that gap type. [Executive presence training](/executive-presence-training/) grounded in assessment is more effective than generic presence programs, particularly for leaders who already know the feedback is real but cannot identify what specifically needs to change.
-
-**Q: How do I know which executive presence gap I have?**
-
-The most reliable indicator is 360-degree stakeholder feedback analyzed for patterns rather than just scores. If feedback is consistent across all rater groups, the gap is likely in expression or authority. If feedback splits (high from some audiences, low from others) the gap is likely contextual. A structured [presence gap assessment](/executive-presence-assessment/) that maps behavioral data to specific gap types gives you the diagnostic precision to target the right area rather than practicing generic presence behaviors that may not apply to your situation.
+Without assessment, executive presence coaching is intuition-guided. With assessment, the development plan has a baseline, a target gap, an instrument set that tracks progress, and evidence at the six-month mark that something actually changed. The leaders who build lasting influence, who inspire confidence at the senior level, who project authority that matches their role, are not guessing at what to develop. They measured the gap first.
 
 ### Related Articles
 
 - [12 Executive Presence Exercises by Gap Type](https://tandemcoach.co/executive-presence-exercises/): Match your exercise to your feedback signal.
-- [Executive Presence Assessment: How to Measure the Gap](https://tandemcoach.co/executive-presence-assessment/): Run a 360-degree feedback instrument with presence-specific dimensions, disaggregated by rater group.
+- [Executive Presence Examples: What Coaches See in Practice](https://tandemcoach.co/executive-presence-examples/): Executive presence shows up as behavior matched to what the moment requires.
 - [Executive Presence Training: A Buyer’s Guide for HR Leaders](https://tandemcoach.co/executive-presence-training/): Diagnose the gap type first.
 - [Executive Presence in Virtual Meetings: Where the Gaps Get Harder](https://tandemcoach.co/executive-presence-virtual-meetings/): Virtual settings strip the ambient signal layer physical rooms carry — how a leader moves, positions themselves, responds nonverbally before speaking.
 - [Sylvia Hewlett’s Executive Presence Model: What It Gets Right, Where It Falls Short](https://tandemcoach.co/sylvia-hewlett-executive-presence/): Hewlett's model gave the field a shared vocabulary — gravitas (67%), communication (28%), appearance (5%) — backed by data from 4,000 professionals, creating a business case for presence development where none existed.

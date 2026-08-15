@@ -213,6 +213,12 @@ Seats are filled from the waitlist in order. Add your name and email and you wil
 
 No payment now. Reserve your seat from the waitlist and we will send your enrollment link.
 
+##### My organization is paying. Can you invoice or take a purchase order?
+
+Yes – we work with whatever your organization’s process requires: *invoices* issued before you enroll so you don’t pay first and claim back, *purchase orders*, *Government Purchase Cards and federal forms*, *phased invoicing* if your benefit has a per-transaction or annual cap, and receipts for expense claims on every purchase.
+
+We also offer discounts to *active and retired military and first responders* – ask us for details. Send paperwork to [info@tandemcoach.co](mailto:info@tandemcoach.co); our registration details are on our [Capability Statement](/capability-statement/).
+
 FAQ
 
 ### Common questions about Mentor Coach Training.
@@ -257,9 +263,15 @@ No. ICF issues the MCS specialization, not Tandem. This cohort produces the cert
 
 $50 ICF member intro / $125 non-member intro through April 2027. After April 2027, $125 / $200. The application fee is paid directly to ICF and is not included in the cohort tuition. One application fee covers MCS at one, two, or all three credential levels (MCS-ACC, MCS-PCC, MCS-MCC). Renewal is required every 3 years with 10 CCE hours aligned with the MC Competencies.
 
-**Q: What happens if I cannot commit to weekly attendance?**
+**Q: What happens if I miss a class?**
 
-The course is rigorous, and everyone's success depends on full cohort participation. If you already know you will miss classes during this cycle, you should consider attending a future cohort to optimize your learning. Students must complete all assignments to graduate, even if they miss a live class. Students who miss too many sessions may be required to make up the missed sessions in a future cohort in order to graduate.
+**One or two classes is workable, and you do not lose the cohort over it.** We run two time-zone windows, so if a parallel cohort is meeting that week you can attend its session instead and stay on pace. Where that is not possible, you pick the class up with a later cohort at no additional cost - your access to the material is for life, so there is no deadline and nothing to re-purchase. Assignments are due regardless of attendance; missing a live class does not move a deadline.
+
+**We do not record live classes, deliberately.** Classes are live mentor coaching practice on real sessions, observed and critiqued in the moment. That candour depends on the room staying private, so we protect it rather than trade it for convenience.
+
+**An extended absence is different here, and worth being straight about.** This is not a lecture course you can catch up on alone. Cohorts run at 9 students and are built around peer practice - you act as Coach, Coaching Client, Mentor and Mentee for the others, and 5 observed mentor coaching sessions plus a two-part capstone depend on that pairing. If you already know you will be away for several weeks of a 12-week cycle, a later cohort will serve you better and will not leave a peer without their partner.
+
+Deciding between this cohort and the next because of one specific conflict? Email [info@tandemcoach.co](mailto:info@tandemcoach.co) with the dates and we will tell you which cohort fits - usually in one reply.
 
 **Q: Is Mentor Coach Training ICF accredited?**
 

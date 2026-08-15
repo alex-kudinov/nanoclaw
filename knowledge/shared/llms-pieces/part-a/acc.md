@@ -184,7 +184,7 @@ Free
 
 #### ICF Exam Prep Course
 
-The full prep course for the ICF Coach Knowledge Assessment – the complete scenario bank with detailed explanations and progress tracking. Yours free.
+The full prep course for the ICF ACC Exam – the complete scenario bank with detailed explanations and progress tracking. Yours free.
 
 [Start Free](https://community.tandemcoaching.academy/invitation?code=J4548J)
 
@@ -194,6 +194,14 @@ Upcoming Cohort Dates
 
 ACC training follows a sequential path – start with Module 1 and progress through the program. View upcoming session dates below.
 
+##### What if I have to miss a live session?
+
+*Enroll anyway.* Missing a session costs you nothing. Your access to the class is for life, so any session you miss you can take with a later cohort – no fee, no deadline, no re-enrollment. If another cohort is running that week, you can join their session instead and not wait at all.
+
+*We don’t record live sessions, on purpose.* These are live coaching practice – students coach each other on real situations and get feedback in the moment. People bring what they bring because the room is private, and a recording would change that. We protect it rather than trade it for convenience.
+
+The only limit is ICF’s, not ours: at least 50% of your certification hours must be live. If missed sessions would take you below that, you make them up with a later cohort before your certificate is issued. Short of that, you’re fine – a holiday, a work trip, or a week away is not a reason to wait for the next cohort.
+
 [program\_dates program="acc" view="schedule"]
 
 #### Full ACC Level 1 Program – $3,999
@@ -201,6 +209,44 @@ ACC training follows a sequential path – start with Module 1 and progress thro
 Save over $600 vs. buying modules individually. Includes all core modules, mentoring, exam prep, and [Coaching Tools Plus](/coaching-tools/) access – everything you need from enrollment to certification.
 
 [Enroll in Full Program](https://community.tandemcoaching.academy/invitation?code=3EG6G7)
+
+Before you enroll
+
+##### Why is this cheaper than comparable programs? What’s missing?
+
+Nothing is missing. You’re paying for the training rather than the machinery around it. *The two people who own Tandem teach the cohorts themselves* – there’s no sales team, no franchise or licensing layer, and no instructor markup between you and an MCC. We price at what the work is worth to deliver, not at what the market will bear.
+
+What the price actually buys: instruction from two ICF Master Certified Coaches – the top 3.7% of more than 56,000 credentialed coaches worldwide, one of them named #16 most influential coach by Global Gurus. ICF-accredited Level 1 and Level 2 programs. Mentor coaching delivered by MCCs who are *also ICF credential assessors*, so they know exactly what evaluators look for. Exam prep included, and most of our graduates pass on the first attempt.
+
+You don’t have to take any of that on faith. *The Coaching Foundations module is free – no credit card.* Sit in it, watch how we actually teach, and decide from there.
+
+##### Can I pay in installments?
+
+There’s no fixed payment plan on the full program, because the modular structure is a better one. *Buy modules individually at $399 as you’re ready.* Pause between them at no cost, and your progress never expires – so you can spread the investment over as long as you need, with no interest and no commitment to the rest.
+
+Many students take a break between modules on purpose, to practice what they’ve learned and accumulate coaching hours before continuing.
+
+##### I trained somewhere else. Does that reduce the price or shorten the program?
+
+No – and the reason is ICF’s rather than ours. An ICF Level 1 program is accredited as a complete curriculum, and the accredited provider has to deliver all of it. Cost and scope stay the same whatever you’ve done before.
+
+*Your existing hours aren’t wasted, though.* If your prior training was ICF-accredited – a completed Level 1 program, or CCEUs from an accredited provider – we can roll those hours into the certificate we issue you, which is the document ICF reads when you apply. Training that wasn’t ICF-accredited generally can’t be counted, though we’ll look at exceptions case by case.
+
+Email your certificate to [info@tandemcoach.co](mailto:info@tandemcoach.co) and we’ll tell you exactly what counts – before you enroll, and without needing a call.
+
+##### My employer is paying. Can you invoice, or take a purchase order?
+
+Yes – we work with whatever your organization’s process requires:
+
+- *Invoices* for a company paying by card, transfer, or check – issued before you enroll, so you don’t pay first and claim back
+- *Purchase orders* – send us the PO and we’ll invoice against it
+- *Government Purchase Cards and federal forms* – accepted; we’ll complete any standard form your office needs
+- *Phased invoicing* if your benefit has a cap – tell us the limit and we’ll split enrollment across separate invoices to fit it
+- *Receipts* for expense claims, issued automatically on every purchase
+
+We also offer discounts to *active and retired military and first responders* – ask us for details.
+
+Send paperwork to [info@tandemcoach.co](mailto:info@tandemcoach.co). Our registration details are on our [Capability Statement](/capability-statement/) – Tandem Coaching Partners is SAM-registered and a WBENC-certified woman-owned small business.
 
 Your Coaching Team
 
@@ -300,8 +346,8 @@ You must complete guided mentoring with a credentialed coach, spread over a mini
 **Performance Evaluation**
 You must submit a recorded coaching session reviewed by an ICF assessor to verify you are demonstrating coaching competency at the ACC standard in practice.
 
-**Pass the ICF Credentialing Exam (CKA)**
-The Coach Knowledge Assessment (CKA) is a written exam administered online through Pearson VUE. It covers ICF Core Competencies, ethics, and the boundaries of coaching. You schedule your exam appointment through the Pearson VUE testing platform after ICF approves your application. The exam uses scaled scoring with a passing score of 460 out of 600.
+**Pass the ICF ACC Exam**
+The ACC Exam is a written exam administered online through Pearson VUE. It covers the ICF Core Competencies, ethics, and the boundaries of coaching. You schedule your exam appointment through the Pearson VUE testing platform after ICF approves your application. It runs 60 multiple-choice questions in 90 minutes including an optional break, and uses scaled scoring with a passing score of 460.
 
 **Q: Path to Becoming an ACC: Application Paths Compared**
 
@@ -317,9 +363,9 @@ Piece together your education from non-ICF programs or non-accredited courses ap
 
 Tandem’s ACC program follows the Level 1 pathway – meaning everything you need is built into one cohesive program. When you finish, you receive credentials documentation in a single completion certificate that ICF accepts directly. No chasing down transcripts or coordinating with multiple vendors.
 
-**Q: ICF ACC Exam Preparation: What to Expect on the CKA**
+**Q: ICF ACC Exam Preparation: What to Expect on the ACC Exam**
 
-The ICF Credentialing Exam (CKA) is designed to test your application of ICF Core Competencies and ethics, not just memorization. The exam is designed around situational judgment scenarios – you’re given coaching situations and asked to choose the response that best reflects ICF standards. There are 155 scored questions delivered online via Pearson VUE, with a passing score of 460 out of 600.
+The ICF ACC Exam is designed to test your application of ICF Core Competencies and ethics, not just memorization. The exam is designed around coaching scenarios – you’re given coaching situations and asked to choose the response that best reflects ICF standards. There are 60 multiple-choice questions delivered online via Pearson VUE, with 90 minutes to complete them including an optional break, and a scaled passing score of 460. ICF sets these details and can change them – confirm on the [current ICF ACC Exam page](https://coachingfederation.org/credentialing/icf-credential-exams/acc-exam/) before you sit it.
 
 Effective exam preparation goes beyond reading the competencies. Many coaches who started their coach training without exam-specific prep struggle with the format, even when they understand the content. Tandem’s [free Exam Prep Course](#program-overview) walks you through the question types, common pitfalls, and a practice scenario set so the actual exam feels familiar. Your ACC credential may be granted only after you pass this assessment, so deliberate practice pays off.
 
@@ -338,7 +384,7 @@ Transparency matters when you're making an investment in your career. Here's the
 | Tandem Full ACC Level 1 Program (all modules, mentoring & exam prep) | $3,999 |
 | ICF Credential Application Fee (member) | $175 |
 | ICF Credential Application Fee (non-member) | $325 |
-| ICF Credentialing Exam Fee (CKA) | $275 |
+| ICF ACC Exam Fee | $275 |
 | ICF Membership (optional, annual) | $245/yr |
 | Total Investment (with ICF membership) | ~$4,694 |
 
@@ -392,7 +438,7 @@ Most coaches complete the full process in 6 to 12 months. The training modules t
 
 **Q: What is the ICF ACC credentialing exam format?**
 
-The ICF Credentialing Exam (also called the Coach Knowledge Assessment or CKA) is a written exam delivered online through Pearson VUE. It includes 155 scored questions (plus 20 unscored pre-test items) in situational judgment format – you’ll be given coaching scenarios and asked to select the best response based on ICF Core Competencies and ethics. You schedule your exam appointment through the Pearson VUE testing platform after your ACC application is approved. The exam uses scaled scoring with a passing score of 460 out of 600, and you have 3 hours to complete it. Tandem’s [Exam Prep Course (free)](#program-overview) specifically prepares you for this format.
+The ACC Exam is a written exam delivered online through Pearson VUE. It includes 60 multiple-choice questions – you’ll be given coaching scenarios and asked to select the best response based on the ICF Core Competencies and Code of Ethics. You have 90 minutes in total, including an optional break. You schedule your exam appointment through the Pearson VUE testing platform after your ACC application is approved. The exam uses scaled scoring with a passing score of 460. Tandem’s [Exam Prep Course (free)](#program-overview) specifically prepares you for this format. Check the [current ACC Exam page](https://coachingfederation.org/credentialing/icf-credential-exams/acc-exam/) at ICF before you sit it – exam details are set by ICF and can change.
 
 **Q: Do I need coaching experience before starting the program?**
 
@@ -469,7 +515,7 @@ Want to go all the way to PCC?
 
 Professional Coach Program - $7,499
 
-Get ACC + PCC + ACTC credentials in one enrollment. Save $499 vs. enrolling separately.
+The complete ICF Level 2 accredited education – Level 2 + AATC – in one enrollment. Save $499 vs. enrolling in the two stages separately.
 
 [See the Professional Coach Program →](/icf/acc-pcc-certification/)
 

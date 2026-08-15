@@ -244,6 +244,16 @@ Foundations is built for credentialed coaches with full practices. The 10 hours 
 
    Engagement beats and reflection prompts at the end of every unit ask you to apply the framework to your current MC practice - not in the abstract.
 
+##### English isn’t my first language. Can I follow the course?
+
+Yes. The course is delivered in English, *every one of the 22 video modules is captioned*, and *a written transcript is attached to each lesson*. You can read along with the narration, translate the transcript, or work through the written version at whatever pace suits you rather than relying on listening alone.
+
+Because Foundations is fully asynchronous there’s no live session to keep up with, and no time-zone problem – two things that matter if you’re studying in a second language or outside North America.
+
+##### My organization is paying. Can you invoice or take a purchase order?
+
+Yes – invoices issued before you enroll, purchase orders, Government Purchase Cards and federal forms, and receipts for expense claims on every purchase. We also offer discounts to *active and retired military and first responders*. Send paperwork to [info@tandemcoach.co](mailto:info@tandemcoach.co); our registration details are on our [Capability Statement](/capability-statement/).
+
 **10 hours total · ~2 weeks at a focused pace**
 
 Or pace across a quarter. No live sessions, no scheduling conflicts.
