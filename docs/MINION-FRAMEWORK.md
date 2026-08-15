@@ -349,6 +349,8 @@ Each minion that needs business knowledge gets a subset of:
 
 Knowledge files live in `knowledge/agents/{group}/` on the host and are mounted read-only into containers.
 
+**On the operational checkout, not the release.** Both the mount and the `learn_lesson` write resolve `knowledge/` against the daemon's working directory (`PROJECT_ROOT = process.cwd()`), so editing the repository is what changes what an agent reads — the `knowledge/` tree inside a release directory is inert transport payload. Startup refuses if the working directory ever lands inside the release; see `docs/RELEASE-INTEGRITY.md`, "Working directory boundary".
+
 The learning loop:
 1. Minion completes a feedback-and-approval cycle
 2. Minion writes a `learn_lesson` IPC file to `/workspace/ipc/messages/`

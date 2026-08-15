@@ -11,7 +11,13 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                                                                                                    | Owner/client                                   | Branch @ base                                                                                              | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                                                       | Next action                                                                                                                                                                                                                                                                                                                                                                                                     | Updated           |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260810-002` | Create a CNPC intake minion that receives Gravity Forms submissions through n8n, maintains a canonical coach/capacity ledger, proposes evidence-backed matches, and coordinates approval-gated client/coach/Plutio actions | Codex                                          | `codex/continuity-reconciliation` @ `0a39380` (local-only claim)                                           | `validating`          | C5    | CNPC webhook contract and host-owned intake persistence; dedicated group prompt/knowledge; structured roster, capacity, match, chemistry, and engagement state; separate host-only CNPC Plutio credential namespace; focused tests and authority docs. Excludes live webhooks, production migration/write, coach/client email, Slack post, Plutio action, deployment, commit, or push                                       | Obtain/create the dedicated `#gru-cnpc` Slack channel ID; then review/apply migration 115, register the group/webhook with a rotated secret, build/deploy one exact artifact, provide the live n8n URL, and run one sanitized dummy submission. External email and Plutio actions remain disabled                                                                                                                     | 2026-08-11T00:40Z |
+| `NC-20260815-006` | Make it impossible for the daemon to silently serve a release's frozen `store/`, `groups/`, and `knowledge/` instead of the operational checkout's, and state in the docs which copy agents actually read | Claude Code | `codex/chaos-lifecycle-release` @ `d1d9cf7` (local-only claim; that branch owns `src/release-integrity.ts`, which `codex/continuity-reconciliation` does not track) | `ready_for_review` | C2 | `src/release-integrity.ts` (`assertStateRootSeparation`, `codeRoot`/`stateRoot` on `ReleaseIdentity`), `src/index.ts` startup log, `src/release-integrity.test.ts` (+4 cases), `src/webhook-server.test.ts` fixture, `docs/RELEASE-INTEGRITY.md` ("Working directory boundary", Activation step 7), `docs/MINION-FRAMEWORK.md`; no schema, migration, deployment, or external message | Deploy is a rebuild + reactivate; on the next activation confirm `/health` reports `release.stateRoot=/Users/xbohdpukc/dev/NanoClaw` and `release.codeRoot` under `nanoclaw-releases`, which is the fact this change exists to make legible | 2026-08-15T20:35Z |
+| `NC-20260815-005` | Retire the MCQ name, drop the `" Roster"` suffix from every roster tab, and order the tab strip rosters-first with services and reference last, without breaking payment routing                                          | Claude Code                                    | `codex/continuity-reconciliation` @ `b66bc80` (local-only claim)                                           | `complete`            | C4    | Seven tab titles and 133 `Product Map` rows in the Student Roster; new `tools/contador/rename-roster-tabs.cjs`. Excludes `Prep Exam`, `Sales` and `Product Map`, whose names are hardcoded in `process-payment.cjs`                                                                                                                                                                                           | None — all 132 mapped products verified to resolve, and three real payments replayed onto the renamed tabs                                                                                                                                                                                                                                                                                                    | 2026-08-15T21:25Z |
+| `NC-20260815-004` | Stop Stripe Checkout purchases being recorded twice, stop the shell eating dollar signs out of product names, and repair the rows both defects already produced                                                              | Claude Code                                    | `codex/continuity-reconciliation` @ `b66bc80` (local-only claim)                                           | `deployed_unverified` | C4    | `tools/contador/process-payment.cjs` payment identity, Postgres write, and product resolution for the payment-intent half; `tools/contador/process-payment.test.ts`; three repaired `payments` rows; three stale `Sales` rows; removal of three untracked Syncthing conflict copies of `src/index.ts`                                                                                                          | Watch the next real Checkout purchase confirm one row rather than two; the exercised proof so far is a replay of existing payments                                                                                                                                                                                                                                                                            | 2026-08-15T21:05Z |
+| `NC-20260815-003` | Remove the four payments recorded twice by Stripe from both the Payment Log and the `payments` table, and restore the real product name where the surviving row carried the degraded one                                          | Claude Code                                    | `codex/continuity-reconciliation` @ `b66bc80` (local-only claim)                                           | `complete`            | C4    | Payment Log sheet rows and `nanoclaw_business.payments` rows for four purchases; new `tools/contador/dedupe-checkout-payments.cjs`. Excludes the ingestion change that would stop it recurring, and the `$`-corruption defect                                                                                                                                                                                | Decide whether to stop the recurrence: nothing suppresses `payment_intent.succeeded` when the same purchase already arrived as `checkout.session.completed`, so the next Checkout purchase duplicates again                                                                                                                                                                                                    | 2026-08-15T20:45Z |
+| `NC-20260815-002` | Let the bookkeeper's roster tabs be renamed safely, and stop non-enrolment products (supervision and coaching sessions) from being filed on the Student Roster at all, without hiding them from the Payment Log             | Claude Code                                    | `codex/continuity-reconciliation` @ `b66bc80` (local-only claim)                                           | `deployed_unverified` | C4    | `tools/contador/process-payment.cjs` exam-routing tab classification and a data-driven not-a-student rule read from the Product Map; new focused tests; `vitest.config.ts` now includes `tools/**`; seven sentinel rows in the Product Map. Excludes the double-ingestion defect and the `$`-corruption defect                                                                                                               | Watch the first real supervision payment and the first real exam-prep payment to confirm live behaviour, then the owner's tab renames are unblocked                                                                                                                                                                                                                                                           | 2026-08-15T20:15Z |
+| `NC-20260815-001` | Make the bookkeeper Student Roster reflect one mentor-coaching roster and a real coaching-supervision roster, so every mentor-coaching and Coaching Supervision Mastery permutation Stripe sells lands on a credential tab instead of the unmapped catch-all | Claude Code                                    | `codex/continuity-reconciliation` @ `b66bc80` (local-only claim)                                           | `blocked`             | C4    | Google Sheet `1bX0hv…ZI70` (Product Map, Mentor Coaching Roster, ICF Mentor Coaching, new CSS Roster, Sales); new `tools/contador/roster-cleanup.cjs` + `tools/contador/lib/sheets-client.cjs`; toolbox `shared/stripe` gains read-only `--account` on `list-products`/`get-product`. Excludes any change to `process-payment.cjs`, the Payment Log sheet, the `payments` table, and any Stripe write | Blocked on one `process-payment.cjs` task carrying two changes, then a build and Mini deploy: `:602` classifies program rosters by `endsWith(' Roster')` so the requested rename would silently disable exam routing, and the file needs a not-an-enrolment list so supervision sessions stop re-appearing on the `Sales` catch-all. Two further defects need separate tasks: four payments double-ingested as Checkout Session + PaymentIntent ($4,986 in Postgres, $1,688 in the Payment Log), and `payments.product_name` shell-corrupted for `$`-bearing products at `process-payment.cjs:730`                                     | 2026-08-15T18:45Z |
+| `NC-20260810-002` | Create a CNPC intake minion that receives Gravity Forms submissions through n8n, maintains a canonical coach/capacity ledger, proposes evidence-backed matches, and coordinates approval-gated client/coach/Plutio actions | Codex                                          | `codex/continuity-reconciliation` @ `0a39380` (local-only claim)                                           | `validating`          | C5    | CNPC webhook contract and host-owned intake persistence; dedicated group prompt/knowledge; structured roster, capacity, match, chemistry, and engagement state; separate host-only CNPC Plutio credential namespace; focused tests and authority docs; live-verified public allowlist/normalization-only n8n workflow mapped from a sanitized dummy. Excludes production migration/write, private NanoClaw delivery, coach/client email, Slack post, Plutio action, NanoClaw deployment, commit, or push | Obtain `#gru-cnpc`; apply migration 115, register the private webhook with a rotated secret, build/deploy one exact NanoClaw artifact, and only then enable n8n-to-NanoClaw delivery. External email and Plutio actions remain disabled pending named approval and receipt executors                                                                                                                                        | 2026-08-11T02:15Z |
 | `NC-20260810-001` | Agents quote ICF CCE accreditation per Practitioner Series course instead of calling all seven pending                                                                                                                     | Claude Code                                    | `codex/continuity-reconciliation` @ `996ca14` (pushed); tandemweb `2fcc2f829` on `main` (pushed, deployed) | `deployed_unverified` | C2    | eleven `knowledge/agents/*/KNOWLEDGE.md` copies, `knowledge/shared/KNOWLEDGE.md`, and `knowledge/agents/sales/LEARNED.md` (Lesson 67); per-course approved/pending/no-claim status, two corrected accredited CC/RD splits, per-course URLs, differing guarantees, and reinsertion of the section the 2026-08-08 regen had deleted from the shared master; also the upstream `generate-llms-full.py` page list, the regenerated `llms-pieces`/`llms-full.txt`, the two contradicting marketing claims, and a `facts/programs.yaml` drift entry; no code, schema, build, or deployment, and no Slack or email | Observe the 2026-08-15 05:00 CT `knowledge-regen` (dry run shows +9 added / ~18 changed, 9 batches) and confirm the regenerated Practitioner Series section keeps per-course status; then observe one Sales reply quote an approved course with no pending caveat, which is what moves this to complete | 2026-08-11T01:40Z |
 | `NC-20260809-004` | Make Sales responses request-first, relationship-aware, and able to abstain instead of forcing a program pitch                                                                                                             | Codex implementer + Claude Code owner/reviewer | `codex/continuity-reconciliation` @ `0a39380` (local-only claim)                                           | `ready_for_review`    | C2    | local request-first Sales authority, non-trackable abstention, path non-authority, compatible autonomy marker, tracked nine-case eval seed, focused/full offline verification, and exact-session Claude R1/R2 review; excludes overlapping delivery runtime and all production/Slack/email/deploy/commit/push actions                                                                                                       | Owner reviews the composite uncommitted diff; next separately authorize the blinded historical behavior eval and, after it passes, an isolated commit/release/live canary                                                                                                                                                                                                                                       | 2026-08-10T03:41Z |
 | `NC-20260809-002` | Audit the complete Procurement opportunity-to-outcome system with Claude as NanoClaw Company-OS owner and identify why scraping, triage/scoring, assessment, and proposal preparation repeatedly fail to produce outcomes  | Codex + Claude Code owner                      | `codex/continuity-reconciliation` @ `0a39380` (local-only claim)                                           | `ready_for_review`    | C1    | read-only repository/history/runtime-evidence audit; two-round Codex/Claude convergence; official-source research; no production query/write, browser action, schedule/config change, Slack/email/proposal/submission, deployment, commit, or push                                                                                                                                                                          | Owner reviews the converged R2 audit and resolves primary/backup operators, email auto-archive policy, pursuit ownership, framework authority, deadlines/lifecycle evidence, legacy/Bonfire disposition, and pilot scope; separately authorize the read-only production preflight before implementation                                                                                                         | 2026-08-09T20:30Z |
@@ -54,6 +60,268 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260815-006
+
+- Trigger: a same-day session traced a Sales agent quoting pre-approval ICF
+  accreditation copy to the wrong cause — that agents read `knowledge/` from the
+  pinned release snapshot, because the daemon runs
+  `~/.local/share/nanoclaw-releases/<commit>/dist/index.js` and that directory
+  holds a `knowledge/` tree with a frozen mtime. The repository's knowledge was
+  rsynced into the release directory on that basis, changing nothing any agent
+  reads.
+- What is true: `PROJECT_ROOT = process.cwd()` (`src/config.ts:24`), launchd
+  keeps `WorkingDirectory` on the operational checkout per Activation step 7,
+  and `expandPath()` resolves a relative mount `hostPath` with `path.resolve`.
+  So `store/`, `groups/`, `data/`, every relative mount, and both `learn_lesson`
+  and `route_lesson` writes land on the checkout. chief, mailman, inbox and
+  sales declare the knowledge mount absolutely (`~/dev/NanoClaw/knowledge/...`)
+  and were never ambiguous. The stale answers came from the `set -e` abort in
+  `tools/validate-knowledge.sh`, fixed the same day, which had been skipping the
+  copy-to-agents step since 2026-08-12.
+- The release's `knowledge/` copy is transport payload — the archive carries the
+  tracked runtime inputs — and nothing reads it. It is still a convincing decoy,
+  which is the reason for this change.
+- Applied: `verifyRuntimeRelease()` returns `codeRoot` and `stateRoot`, reported
+  on `/health` and named in the startup log; in release mode it calls the new
+  `assertStateRootSeparation()`, which refuses to start when the working
+  directory is the release directory or nested inside it. Scoped to release mode
+  because a development run legitimately has `dist/` inside the checkout.
+- One existing test moved to a deployed topology (separate checkout and release
+  directories) so the fixture models what the guard enforces. Four cases added,
+  including a `<release>-operational` sibling that a string-prefix check would
+  wrongly reject.
+- Branch split: the code landed on `codex/chaos-lifecycle-release` (@ `d1d9cf7`),
+  which owns `src/release-integrity.ts` and is what production release `84607fd`
+  was cut from. `codex/continuity-reconciliation` does not track that module —
+  its working tree holds an untracked, pre-`codeRootMatchesRelease` copy — so it
+  carries this register entry only.
+- Evidence: `npx tsc --noEmit` clean; 2290 of 2291 tests pass under Node 22.23.2.
+  The one failure (`cnpc-prompt-contract`) and two playwright-core collection
+  errors are pre-existing on that branch and reproduce with the changes stashed.
+  No build, no deployment, no live verification.
+- Left alone: the inert `knowledge/` copies and the `knowledge.bak-20260815-1435`
+  backup inside mini-claw's release directories. Deleting files in an activated
+  release is a deployment action, and the guard plus the docs remove the reason
+  to read them.
+
+### NC-20260815-005
+
+- Trigger: the owner asked to retire the MCQ name, drop the `" Roster"` suffix
+  from every roster tab, and move rosters to the head of the tab strip with
+  services and reference tabs at the end. Blocked until NC-20260815-002 removed
+  the `endsWith(' Roster')` dependency in exam routing.
+- The tab title is the routing key: `process-payment.cjs` reads `Product Map`
+  column B as a literal tab name. The retitle and the 133-row map rewrite are
+  therefore issued as ONE Sheets batchUpdate, which is atomic. Reorder follows
+  as a second batch since moving a sheet shifts the others.
+- Guards: the script refuses to start if a rename target already exists, or if
+  the rewritten map would name a tab that does not exist. The latter fired on
+  the first run against the `(not a student)` sentinel — which occupies the tab
+  column but names no tab — and is now exempted explicitly.
+- `Prep Exam`, `Sales` and `Product Map` keep their names; those three are
+  hardcoded in `process-payment.cjs`.
+- Verification: all 132 distinct mapped products resolved through the deployed
+  `resolveRosterTargets` against the renamed sheet, with 0 targets pointing at a
+  missing tab or column; exam routing still pairs a program tab with `Prep
+  Exam`; row counts intact across all 13 tabs; three real payments replayed end
+  to end onto `Mentor Coaching`, `CSS`, and nowhere respectively.
+
+### NC-20260815-004
+
+- Trigger: NC-20260815-003 repaired the duplicate rows but not their cause, and
+  the owner asked for the identified defects to be fixed rather than reported.
+- Fix 1, recurrence. A Checkout purchase raises `checkout.session.completed`
+  (cs_…) and `payment_intent.succeeded` (pi_…). Both halves know the
+  payment-intent id — the session carries it — so a payment is now stored under
+  that id, and whichever event arrives second updates the first one's row.
+  Lookup also accepts the event's own id so rows written before this change are
+  adopted rather than duplicated.
+- Fix 2, the shell eating product names. The Postgres write built one shell
+  command with values inline, so the shell expanded them before psql saw them:
+  `($999/mo ×4)` was stored as `(99/mo ×4)`. Values now pass as psql variables
+  referenced by `:'name'`, fed on stdin — psql does not interpolate variables
+  for `-c`. `execFileSync` removes the shell entirely, and `sqlEscape` was
+  deleted rather than left available for the next concatenated query.
+- Fix 3, found only by running it. With both halves on one row, the poorer event
+  degraded it: the payment-intent half carries "Unknown" and no product id. Both
+  stores now refuse that — a `CASE` guard on the upsert, and a read-before-write
+  guard on the sheet. Then a live replay showed the intent half still reaching
+  the `Sales` catch-all, because "Unknown" matches no Product Map row and so
+  misses the not-a-student sentinel. The intent branch now resolves its product
+  from the checkout session, which required two calls: Stripe caps `expand` at
+  four levels and the list-endpoint path was five.
+- Data repaired: three `payments` rows whose names had lost their price; three
+  stale `Sales` rows that were duplicate halves of payments already correctly
+  rostered. Two rows matching the mangling pattern were deliberately left alone
+  — `MCS Advanced Accreditation Mentor Coaching — Installment (/mo)` genuinely
+  has no price in its Stripe name, confirmed against the Payment Log, which is
+  written before the shell step.
+- Also removed: three untracked Syncthing conflict copies of `src/index.ts` on
+  both machines. An earlier claim that these reached the build was wrong —
+  `tsconfig.json` excludes them, `.gitignore` and `.stignore` cover them, and
+  `src/index.ts` skips them at runtime. They were stale cruft, not a hazard.
+- Verification: 27 focused tests, full suite 2,063/2,063 on the Mini under
+  pinned Node 22.23.2. The upsert was rehearsed against a temp table inside a
+  rolled-back transaction for all three arrival orders. Then exercised live:
+  replaying a checkout event and its payment-intent twin produced ONE row, and
+  three replays of `$`-bearing payments restored the correct names with the
+  `payments` row count unchanged at 247.
+- Open: the proof so far is replay of existing payments. The next genuinely new
+  Checkout purchase is the live confirmation.
+
+### NC-20260815-003
+
+- Trigger: the owner confirmed the duplicate-payment table produced during
+  NC-20260815-001 and asked for it to be fixed.
+- Cause: a Stripe Checkout purchase raises both `checkout.session.completed`
+  (real product + `product_id`) and `payment_intent.succeeded` (generic
+  description, no product). Both were ingested, and the upsert dedup is keyed on
+  Stripe id, which differs between the halves.
+- The two stores had diverged, so the repair differs per store, and an earlier
+  claim that both carried all four duplicates was wrong. `payments` held both
+  halves of all four ($4,986); its four PaymentIntent rows were deleted. The
+  Payment Log held both halves for only two ($1,688); those duplicates were
+  deleted. For the other two the Payment Log's single row *was* the PaymentIntent
+  half — the only record of a real payment — so it was kept and its degraded
+  product name corrected instead.
+- Boundary: C4, deletes rows from the revenue record. Excludes the ingestion
+  change that would prevent recurrence and the `$`-corruption defect.
+- Safety: dry-run default; the Postgres delete requires both the intent-side
+  event type and an `EXISTS` check for the surviving twin, so a re-run cannot
+  remove the last record of a payment; sheet renames are applied before
+  deletions, and deletions run bottom-up so shifting rows cannot misalign them.
+  Rollbacks for both stores were captured before the first write.
+- Verification: Postgres shows 0 remaining intent halves, 4 checkout halves
+  kept, 0 cs/pi duplicate pairs anywhere, 247 rows. Payment Log shows both
+  duplicates absent, both renames in place, 395 rows, gross $272,701.40. Dry-run
+  predictions matched applied actions line for line.
+- Open: recurrence is not prevented. The next Checkout purchase will duplicate
+  again until the pipeline records the underlying payment-intent id on the
+  checkout event and upserts on it.
+
+### NC-20260815-002
+
+- Trigger: NC-20260815-001 could not perform the owner's requested roster-tab
+  renames, and its removal of supervision rows from the `Sales` catch-all would
+  have been undone by the next payment.
+- Two changes to `tools/contador/process-payment.cjs`. Exam routing no longer
+  classifies program tabs by an `endsWith(' Roster')` title test, which had made
+  a silent behaviour change out of any tab rename. And a Product Map row whose
+  tab column is the sentinel `(not a student)` now suppresses every Student
+  Roster write for that product — credential tab and `Sales` catch-all alike —
+  while leaving the Payment Log and Postgres writes untouched.
+- Testability was a prerequisite: the script ran `main()` at import and exited
+  at module scope on missing argv or Stripe keys, so importing it fired the
+  whole pipeline. Those three now run only under `require.main === module`, and
+  the routing decision is a pure exported function.
+- Boundary: C4, live payment pipeline. Excludes the double-ingestion defect and
+  the `$`-corruption defect, which remain separate unowned tasks.
+- Verification: 17 new focused tests including a parametrised regression that
+  asserts program-tab classification survives four candidate renames. Full suite
+  on the Mini under pinned Node 22.23.2 passes 2,053/2,053; two suites fail to
+  load only for Codex's absent migrations 114/115, unrelated and pre-existing.
+  The Studio cannot run the suite at all (`better-sqlite3` ABI 127 vs Node 26's
+  147). Routing was then simulated against the live Product Map through the
+  deployed function, confirming all four behaviours including the deliberate
+  exclusion of `5x Sessions`.
+- Deploy-topology correction: `~/dev` is NOT paused for Syncthing. The script
+  was byte-identical on the Mini before the `scp`, and a marker file propagated
+  Studio→Mini in ~15s. Any `tools/**/*.cjs` edit is therefore a production
+  deploy on save; a rollback must be captured from git, not by copying the
+  working file. Rollback for this change is on the Mini at
+  `/tmp/process-payment.cjs.rollback`.
+- Open: the renames and tab-strip reorder are now safe and await the owner.
+  `Prep Exam`, `Sales`, and `Product Map` are still hardcoded by name and cannot
+  be renamed without a further code change.
+
+### NC-20260815-001
+
+- Trigger: the owner reported that the Student Roster's `Mentor Coaching Roster`
+  and `ICF Mentor Coaching` tabs hold the same set of products and should be
+  merged, that there is no roster for coaching supervision training, and that
+  Coaching Supervision Mastery should be mapped to it in every permutation
+  Stripe sells.
+- Read-only discovery established three separate defects rather than one layout
+  preference. `Product Map` had no header row while `process-payment.cjs`
+  discards row 1 unconditionally, so its first mapping was dead. The
+  `ICF Mentor Coaching` tab's columns began at `ACC` instead of `Email`/`Name`,
+  so the roster writer's `newRow[colIndex] = date` overwrote the buyer's email
+  with the payment date. Coaching Supervision Mastery had no mapping at all and
+  both buyers had fallen through to the `Sales` catch-all.
+- The exact product names live on the *second* Stripe account, which the
+  toolbox's `list-products` / `get-product` could not reach — a miss there
+  returns "No such product", indistinguishable from a deleted product. Both
+  tools gained a read-only `--account primary|alt|all` (defaults unchanged) so
+  the catalog could be enumerated before writing any mapping.
+- Boundary: C4 because the roster is the shared enrollment record trainers read
+  and the change deletes a tab and rewrites the Product Map. Excluded by
+  intent: `process-payment.cjs`, the Payment Log sheet, the `payments` table,
+  and every Stripe write.
+- Applied via `tools/contador/roster-cleanup.cjs --apply` (dry-run by default,
+  idempotent, each phase asserted before it mutates). A full snapshot of all
+  four affected tabs was captured first. The merge refuses to delete
+  `ICF Mentor Coaching` unless every row on it resolves to both an email and a
+  target column; Laura Smith's lost address was recovered by name and date from
+  the `Sales` row that recorded the same payment intact.
+- Verification at 2026-08-15T17:50Z: every mutated range read back. Laura Smith
+  is on `Mentor Coaching Roster` with her real address and `ACC Renewal`
+  `8/4/2026`; `CSS Roster` exists and carries both supervision buyers;
+  `Product Map` is 141 data rows under a real header with no row targeting a
+  non-existent tab; `ICF Mentor Coaching` is gone; `Sales` retains exactly the
+  still-unmapped rows. Re-running the upsert reported `already set` rather than
+  rewriting, confirming idempotence.
+- Governing rule stated by the owner mid-task: mentor coaching and mentor coach
+  training (MCS) are distinct products for distinct people — the first is bought
+  by coaches earning their own credential, the second by coaches training to
+  become mentor coaches. Product names are not evidence of which; route by what
+  the buyer is enrolled in. `MCS Advanced Accreditation Mentor Coaching —
+  Installment (/mo)` resolved as training on that basis (3 × $999 = the $2,997
+  MCS Standard Path, and both buyers carry Stripe `product=mcs-cohort-sept-*`
+  metadata) and now maps to `MCQ Roster` → `MCS Practicum`, with Katy Stone and
+  Jeremy Sieurac replayed there off `Sales`. Verified in both directions: no
+  trainee on `Mentor Coaching Roster`, no mentor-coaching client on `MCQ Roster`.
+- Second rule from the owner: a mentoring purchase belongs on a credential-
+  program roster only if the buyer is in that program. Applied — and the mapping
+  turned out to be inverted in both directions. `ACC Renewal Mentoring` (bought
+  by coaches who already hold an ACC) was filing onto `ACC Roster`, while the
+  real `Level 1`/`Level 2` program mentoring products were unmapped and falling
+  to `Sales`. Wahida Saeedi and Thamer M Alessa moved to `Mentor Coaching
+  Roster`; Edward Utz (holds M1–M4) got his Group Mentoring onto `ACC Roster`.
+  The script enforces the rule rather than trusting a hand-written list: a
+  demotion is refused if the student holds any coursework column, and the
+  destination is written and read back before the source is cleared.
+- Third rule from the owner: supervision sessions are delivered services, not
+  enrolments — nobody becomes a student by buying one, so they are excluded from
+  this spreadsheet entirely and their eight Stripe products stay deliberately
+  unmapped. Denise Cole's two `Sales` rows were removed. This does not stay done
+  by itself: the catch-all re-collects any unmapped product, so it needs the
+  code change below.
+- Fourth rule from the owner: paid Plutio invoices behind `Sales` rows must be
+  read from Plutio and matched to products. All eight resolved. The load-bearing
+  discovery is that the payer is frequently **not** the student — four of the
+  eight were sponsor-paid, and one covered eight students at once — so the Stripe
+  payload alone can never place these. Twelve students were added or corrected:
+  Holly Coneway, Oana Tue, Yoneko Riley-Barrow (under her own address, not the
+  DOJ payer's), Jessica Velez (`Full Program`), Kristin Strunk (moved off
+  `ACC Roster`, same contamination as Wahida/Thamer), and the eight ALLENATI
+  seats. One `Sales` row was a $1 Plutio "test invoice" and was removed.
+- Blocked: the owner asked to drop `" Roster"` from every roster tab name and
+  reorder the tab strip. `process-payment.cjs:602` classifies program rosters by
+  `m.tab.endsWith(' Roster')`, so the rename would silently disable exam routing
+  and start writing exam-prep buyers to both the program roster and `Prep Exam`.
+  Needs a one-line code fix (`m.tab !== 'Prep Exam'`), a build, and a Mini
+  deploy as its own task before any tab is renamed. Reordering the strip is
+  safe on its own; no code depends on tab position.
+- Separate defects found, each needing its own task: four payments recorded
+  twice (Checkout Session *and* its PaymentIntent) for $4,986 of phantom revenue
+  in `payments` and the Payment Log, confirmed against Stripe's balance-
+  transaction ledger; and the shell-expansion corruption of
+  `payments.product_name` at `process-payment.cjs:730`.
+- Open, smaller: the Stripe-side product name that is itself missing its price;
+  the header-by-position assumption still in the roster writer; and the five
+  contador scripts that still duplicate the Sheets client now in
+  `tools/contador/lib/sheets-client.cjs`.
 
 ### NC-20260809-001
 
@@ -277,6 +545,8 @@ outside the current client conversation.
   slice performs no migration, registration, Slack post, email, Plutio action,
   deployment, commit, or push. It deliberately blocks every external action.
 - Implemented locally: normalized and length-bounded Gravity Forms contract;
+  authenticated capture-only n8n workflow configuration with no downstream
+  connection and only a one-way ingress-secret digest;
   `cnpc-coaching-intake` event-key dedup; host identity/intake write;
   deterministic eligibility and pricing; migration 115 for canonical intakes,
   coach roster, capacity snapshots, match runs/candidates, chemistry soft holds,
@@ -304,16 +574,16 @@ outside the current client conversation.
   work remains uncommitted and preserves that commit and the broader dirty tree.
   Correction from the NC-20260810-001 owner: that commit was amended for its
   message only and is now `996ca14`; the tree it contains is byte-identical.
-- Deployment/migration state: source only. Migration 115 is not applied;
-  `#gru-cnpc` and its webhook runtime definition are not registered; no artifact
-  is built or deployed; the endpoint is not live; no dummy or real submission
-  has been sent.
-- Exact next action: finish validation and review the local diff; activate the
-  public capture-only n8n webhook with a distinct Gravity Forms ingress secret;
-  obtain the dedicated Slack channel ID; rotate/set the private CNPC webhook
-  secret; apply migration
+- Deployment/migration state: the public n8n normalization-only workflow is
+  imported, published, restarted, and live-verified (`401` without its ingress
+  secret, `202 normalized` with it). Sanitized Gravity Forms form 1 entry 583
+  established the exact field map. Migration 115 is not applied; `#gru-cnpc`
+  and its private webhook runtime definition are not registered; no NanoClaw
+  artifact is built or deployed; normalized delivery remains disabled.
+- Exact next action: obtain the dedicated Slack channel ID; rotate/set the
+  private CNPC webhook secret; apply migration
   115 and register the group/webhook on the target; build/deploy an immutable
-  artifact; verify health and registration; then run one sanitized dummy intake.
+  artifact; verify health and registration; then enable n8n-to-NanoClaw delivery.
   Mailbox, named approvers, Plutio templates, and receipt executors remain a
   separately gated follow-on before real-client automation.
 

@@ -8,6 +8,598 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260815-006 — Refuse to run a release from inside the release, and say which knowledge tree agents read
+
+- Date: 2026-08-15T20:35Z
+- Owner/client: Claude Code
+- State: ready_for_review — typecheck clean; 2290 of 2291 tests pass under the
+  pinned Node 22.23.2. The one failure (`cnpc-prompt-contract`) and two
+  playwright-core collection errors are pre-existing on that branch and fail
+  identically with these changes stashed. Not built, not deployed, not
+  live-verified.
+- Commit/PR: `d1d9cf7` on `codex/chaos-lifecycle-release`, the branch production
+  release `84607fd` was cut from and the only branch that tracks
+  `src/release-integrity.ts`. `codex/continuity-reconciliation` carries this
+  register entry only.
+- Change class: C2 — a startup refusal plus documentation; no schema, migration,
+  or external effect.
+- Affected systems: `src/release-integrity.ts`, `src/index.ts` (startup log),
+  `src/release-integrity.test.ts`, `src/webhook-server.test.ts` and
+  `src/cnpc-webhook.test.ts` (health fixtures), `docs/RELEASE-INTEGRITY.md`,
+  `docs/MINION-FRAMEWORK.md`.
+- Trigger: a 2026-08-15 session spent hours on a Sales agent that kept quoting
+  pre-approval ICF accreditation copy, and concluded — wrongly — that agents read
+  knowledge from the pinned release snapshot, because the daemon runs
+  `~/.local/share/nanoclaw-releases/<commit>/dist/index.js` and that directory
+  contains a `knowledge/` tree frozen at build time. It then rsynced the
+  repository's knowledge into the release directory, which changed nothing any
+  agent reads.
+- What is actually true: `PROJECT_ROOT = process.cwd()` (`src/config.ts:24`), the
+  launchd `WorkingDirectory` is the operational checkout per Activation step 7,
+  and `expandPath()` resolves a relative mount `hostPath` with `path.resolve` —
+  so `store/`, `groups/`, `data/`, every relative mount, and both `learn_lesson`
+  and `route_lesson` writes all land on the checkout. Four groups (chief,
+  mailman, inbox, sales) declare the knowledge mount absolutely as
+  `~/dev/NanoClaw/knowledge/agents/{group}` and were never ambiguous. The real
+  cause of the stale answers was the one already fixed the same day: the
+  `set -e` abort in `tools/validate-knowledge.sh` had been skipping the
+  copy-to-agents step since 2026-08-12, so the per-agent `KNOWLEDGE.md` copies
+  had not been refreshed.
+- The release's `knowledge/` tree is transport payload — the archive carries the
+  tracked runtime inputs — and nothing reads it. It is, however, a convincing
+  decoy: it has plausible content and a frozen mtime, and it is what a debugger
+  finds first when the daemon's argv points into the release directory.
+- Applied: `verifyRuntimeRelease()` already asserted `codeRootMatchesRelease` —
+  the code root must BE the verified release. This adds the mirror: it now also
+  returns `stateRoot` (the working directory) and calls the new
+  `assertStateRootSeparation()`, which throws when the working directory is the
+  release directory or nested inside it — the misconfiguration that would make
+  the wrong diagnosis correct, and which otherwise fails silently by serving a
+  frozen database and a frozen knowledge tree. Both roots are on `/health` and
+  named in the startup log line.
+- The separation check is gated on `requireManifest`, matching the sibling
+  code-root check. A development run has its `dist/` inside the checkout, so the
+  two roots coincide legitimately; a release whose two roots coincide is either
+  an in-place build on the production checkout or a `WorkingDirectory` pointed
+  at the snapshot, and `docs/RELEASE-INTEGRITY.md` already forbids both.
+- One existing test moved from an in-place topology to a deployed one (separate
+  checkout and release directories), because the fixture has to model the
+  deployment the guard enforces. Four cases added: both roots reported, refusal
+  when the working directory is the release, refusal when nested inside it, and
+  a sibling path (`<release>-operational`) that a naive string-prefix check
+  would have rejected.
+- Docs: `RELEASE-INTEGRITY.md` gains a "Working directory boundary" section and
+  its code-root paragraph now states both directions; `MINION-FRAMEWORK.md`
+  states that editing the repository is what changes what an agent reads.
+- Not done: the release directories on mini-claw still hold their inert
+  `knowledge/` copies, including the `knowledge.bak-20260815-1435` backup from
+  the rsync. Left in place deliberately — deleting files inside an activated
+  release is a deployment action, and the guard plus the docs remove the reason
+  anyone would read them.
+
+### NC-20260815-005 — Rename the roster tabs and reorder the tab strip
+
+- Date: 2026-08-15T21:25Z
+- Owner/client: Claude Code
+- State: complete — applied and verified against the live spreadsheet, including
+  a live pipeline run writing to the renamed tabs. Deployment not applicable:
+  the change is sheet data and titles, read at runtime.
+- Commit/PR: uncommitted on `codex/continuity-reconciliation`; began at `b66bc80`.
+- Change class: C4 — the tab title is the payment-routing key.
+- Affected systems: seven tab titles and 133 `Product Map` rows in the Student
+  Roster; new `tools/contador/rename-roster-tabs.cjs`.
+- Trigger: the owner asked to retire the MCQ name, drop the `" Roster"` suffix
+  ("they are all kinda rosters"), and move rosters to the head of the tab strip
+  with services and reference tabs at the end. This was blocked until
+  NC-20260815-002 removed the `endsWith(' Roster')` dependency in exam routing.
+- Applied: `ACC Roster`→`ACC`, `PCC Roster`→`PCC`, `ACTC Roster`→`ACTC`,
+  `Mentor Coaching Roster`→`Mentor Coaching`, `MCQ Roster`→`MCS`,
+  `CSS Roster`→`CSS`, `Practitioner Series Roster`→`Practitioner Series`.
+  Strip order is now ACC, PCC, ACTC, Mentor Coaching, MCS, CSS, Practitioner
+  Series, Prep Exam, Attendance, Feedback, Sales, Name Map, Product Map.
+- `Prep Exam`, `Sales` and `Product Map` keep their names: those three are
+  hardcoded in `process-payment.cjs` and cannot be renamed without a code change.
+- The retitle and the 133-row `Product Map` rewrite are issued as **one Sheets
+  batchUpdate**, which is atomic — there is no window in which the map points at
+  a name no tab has. Reordering follows as a second batch because moving a sheet
+  shifts the others. The script refuses to start if a rename target already
+  exists or if the rewritten map would name a non-existent tab; that guard fired
+  on the first run against the `(not a student)` sentinel, which occupies the
+  tab column but names no tab, and is now exempted explicitly.
+- Verification at 2026-08-15T21:20Z: all **132 distinct mapped products** were
+  resolved through the deployed `resolveRosterTargets` against the renamed
+  sheet — 0 targets pointing at a missing tab, 0 at a missing column. Exam
+  routing still pairs a program tab with `Prep Exam` (`ACC Exam Prep` →
+  `ACC → Exam Prep, Prep Exam → ACC Exam Prep`), which is precisely what the
+  old suffix test would have broken. Row counts survived intact across all 13
+  tabs (MCS 149, ACC 44, Prep Exam 56, Product Map 152). Three real payments
+  were then replayed end to end and wrote successfully to `Mentor Coaching`,
+  `CSS`, and — for the supervision session — nowhere. Pre-change `Product Map`
+  snapshot kept in the session scratchpad.
+
+### NC-20260815-004 — Stop the double-recording and the shell-mangled product names at source
+
+- Date: 2026-08-15T21:05Z
+- Owner/client: Claude Code
+- State: deployed_unverified — live on the Mini, exercised against real payments
+  by replay, but no genuinely new Checkout purchase has run through it yet.
+- Commit/PR: uncommitted on `codex/continuity-reconciliation`; began at `b66bc80`.
+- Change class: C4 — the live payment pipeline and the revenue record.
+- Affected systems: `tools/contador/process-payment.cjs`,
+  `tools/contador/process-payment.test.ts`, three `payments` rows, three `Sales`
+  rows, and three untracked Syncthing conflict files.
+- **Fix 1 — a purchase is now one row.** Checkout raises
+  `checkout.session.completed` (cs_…) and `payment_intent.succeeded` (pi_…);
+  keyed on their own ids they read as two payments, which produced $4,986 of
+  double-counted revenue. Both halves know the payment-intent id — the session
+  carries it as `payment_intent` — so that is now the identity a payment is
+  stored under, and whichever event arrives second updates the first one's row.
+  Lookup also accepts the event's own id, so a row written before this change is
+  adopted in place rather than duplicated.
+- **Fix 2 — the shell no longer eats product names.** The Postgres write built a
+  single shell command with the values inline, so the SHELL expanded them before
+  psql ever saw them: `($999/mo ×4)` became `(99/mo ×4)`, `($500/mo)` became
+  `(00/mo)`, `$9` and `$5` being read as positional parameters. The same
+  interpolation would have *executed* a product name containing backticks or
+  `$(…)`. Values now pass as psql variables referenced by `:'name'`, and
+  `execFileSync` removes the shell. Two details worth recording: psql does
+  **not** interpolate variables for `-c` (it returns a syntax error), so the
+  script is fed on stdin via `-f -`; and `sqlEscape` was deleted rather than
+  left lying around to invite the next concatenated query.
+- **Fix 3 — found only by running it, not by testing it.** Two further defects
+  surfaced once both halves shared a row:
+  - The poorer event degraded the row. The payment-intent half carries "Unknown"
+    and no product id, and would overwrite what the checkout event recorded.
+    Both stores now refuse: a `CASE` guard on the Postgres upsert and a
+    read-before-write guard on the sheet.
+  - Even so, a live replay showed the intent half still landing on the `Sales`
+    catch-all — "Unknown" matches no Product Map row, so it missed the
+    not-a-student sentinel. The intent branch now resolves its product from the
+    originating checkout session. That needed two calls, not one: Stripe caps
+    `expand` at four levels and `data.line_items.data.price.product` on the list
+    endpoint is five, so it silently returns nothing.
+- Data repaired: `payments` ids 239, 259, 293 replayed through the fixed
+  pipeline, restoring `($999/mo ×4)` and `($500/mo)`. Ids 267 and 284 match the
+  same pattern but were **deliberately left alone** — `MCS Advanced
+  Accreditation Mentor Coaching — Installment (/mo)` genuinely carries no price
+  in its Stripe name, confirmed against the Payment Log, which is written before
+  the shell step and was therefore never affected. Three stale `Sales` rows were
+  removed: the PaymentIntent halves for Wahida Saeedi, Thamer M Alessa and Dora
+  Vanourek, all three already correctly on `Mentor Coaching Roster`. `Sales` is
+  now 7 rows, every one a genuine Plutio invoice.
+- Also removed: three untracked Syncthing conflict copies of `src/index.ts`
+  (identical to each other, dated 2026-07-28) on both machines. **A claim in
+  NC-20260815-003 that these reached the build and test globs was wrong** —
+  `tsconfig.json` excludes `src/**/*.sync-conflict-*`, `.gitignore` and
+  `.stignore` cover them, and `src/index.ts:1231` skips them at runtime. They
+  were stale cruft, not a hazard; one copy is archived in the session scratchpad.
+- Verification at 2026-08-15T21:00Z: 27 focused tests (up from 17), full suite
+  **2,063/2,063** on the Mini under pinned Node 22.23.2, the same two suites
+  failing to load only for Codex's absent migrations 114/115. The upsert was
+  rehearsed against a temp table inside a rolled-back transaction for all three
+  arrival orders — checkout-then-intent, intent-then-checkout, and adoption of a
+  legacy cs_-keyed row — each yielding one row with the product preserved.
+  psql's `:'var'` quoting was separately proved to store `$999`, `O'Brien`,
+  `$(whoami)` and backticks as literal text. Then exercised live against real
+  payments: a checkout event and its payment-intent twin both resolved to the
+  same single row, the intent half reported "kept richer product name" and
+  "skipped (not a student)", and three `$`-bearing replays restored the correct
+  names with `payments` unchanged at 247 rows.
+- Open: every proof so far is a replay of an existing payment. The next
+  genuinely new Checkout purchase is the live confirmation.
+
+### NC-20260815-003 — Remove the four double-recorded Stripe payments from both stores
+
+- Date: 2026-08-15T20:45Z
+- Owner/client: Claude Code
+- State: complete — applied and read-back-verified in both stores. Deployment is
+  not applicable: this is a data repair, executed once against production.
+- Commit/PR: uncommitted on `codex/continuity-reconciliation`; task began at
+  `b66bc80`.
+- Change class: C4 — deletes rows from the revenue record.
+- Affected systems: the Payment Log sheet, `nanoclaw_business.payments`, and a
+  new `tools/contador/dedupe-checkout-payments.cjs`.
+- Cause: a Stripe Checkout purchase raises two events —
+  `checkout.session.completed`, carrying the real product name and its `prod_`
+  id, and `payment_intent.succeeded`, carrying only a generic description. Both
+  were ingested. The upsert dedup is keyed on Stripe id, and the halves carry
+  different ids, so it cannot see that they are one payment. Every affected row
+  follows that shape exactly: the `cs_live_` row has product and `product_id`
+  populated, the `pi_` row has neither.
+- The two stores had diverged, so each needed a different repair — and the
+  earlier claim in NC-20260815-001 that both carried all four duplicates was
+  wrong. Corrected by direct row lookup before acting:
+  - `payments` held **both** halves of all four: $4,986 over-counted. The four
+    `payment_intent.succeeded` rows (ids 269, 231, 71, 114) were deleted and the
+    checkout halves kept.
+  - The Payment Log held both halves for only **two**: Thamer M Alessa (rows
+    196/197) and Denise Cole (rows 18/19), so $1,688 over-counted. Those two
+    duplicate rows were deleted.
+  - For Wahida Saeedi (row 156) and Dora Vanourek (row 56) the Payment Log had a
+    **single** row, and it was the PaymentIntent half — the only record of a real
+    payment. Deleting those would have erased revenue. They were kept and their
+    degraded product names corrected in place: "Individual Mentor Coaching" →
+    "ACC Renewal Mentoring", "Unknown" → "PCC Credential Mentoring".
+- Safety properties of the script: dry-run by default; the Postgres `DELETE`
+  carries both `event_type = 'payment_intent.succeeded'` and an `EXISTS` check
+  for the surviving checkout twin, so a re-run after the twin is gone deletes
+  nothing rather than removing the last record of a payment; sheet edits are
+  applied before deletions and deletions run bottom-up, because a deletion
+  shifts every row beneath it and would invalidate pending row numbers.
+- Rollback captured before any write: the eight Postgres rows at
+  `/tmp/payments-dedupe-rollback-20260815.txt` on the Mini, and the six Payment
+  Log rows in the session scratchpad.
+- Verification at 2026-08-15T20:40Z: Postgres reports 0 PaymentIntent halves
+  remaining, 4 checkout halves kept, **0 cs/pi duplicate pairs anywhere in the
+  table**, 247 rows total. The Payment Log reports both duplicates absent, both
+  renames in place, 395 rows, gross $272,701.40. The dry run's predicted actions
+  matched the applied actions line for line.
+- No unit test accompanies this script, unlike NC-20260815-002. It is a
+  once-executed data repair over four enumerated payments whose evidence is the
+  production read-back above; a test over its hardcoded pair list would assert
+  the fixture, not the behaviour.
+- **This will recur and was not fixed here.** Nothing suppresses
+  `payment_intent.succeeded` when the same purchase already arrived as
+  `checkout.session.completed`, so the next Checkout purchase duplicates again.
+  A durable fix means recording the underlying payment-intent id when handling
+  the checkout event and upserting on it, so the later PaymentIntent event
+  updates that row instead of inserting a second one. That is a payment-pipeline
+  change and needs its own task.
+- Noted in passing, not addressed: `src/` contains three Syncthing conflict
+  copies of `index.ts` (`index.sync-conflict-20260728-*.ts`). They predate this
+  work, but they are the same active-sync mechanism documented under
+  NC-20260815-002, and they sit in a directory the test globs and build reach.
+
+### NC-20260815-002 — Roster tabs become renameable, and non-enrolment products stop reaching the Student Roster
+
+- Date: 2026-08-15T20:15Z
+- Owner/client: Claude Code
+- State: deployed_unverified — the changed script is live on the Mini and both
+  changes are verified against the live Product Map by exercising the exported
+  function directly, but no real Stripe payment has flowed through it yet. The
+  first supervision or exam-prep payment is the live verification.
+- Commit/PR: uncommitted on `codex/continuity-reconciliation`; task began at
+  `b66bc80`.
+- Change class: C4 — edits the live payment pipeline that writes the roster and
+  the Payment Log.
+- Affected systems: `tools/contador/process-payment.cjs`, new
+  `tools/contador/process-payment.test.ts`, `vitest.config.ts` (adds
+  `tools/**/*.test.ts`), and seven sentinel rows in the Product Map.
+- Trigger: NC-20260815-001 could not perform the owner's requested tab renames,
+  and its removal of supervision rows from the `Sales` catch-all would have been
+  undone by the next payment.
+- Change 1 — exam routing no longer depends on tab names. `:602` classified a
+  program roster as `m.tab !== 'Prep Exam' && m.tab.endsWith(' Roster')`. The
+  suffix test made exam routing depend on a naming convention: renaming any tab
+  emptied `programTabs`, which disables `resolveExamRouting` entirely and writes
+  every exam-prep buyer to **both** the program roster and `Prep Exam` instead
+  of one of them — silently, with no error. Twelve `Prep Exam` map rows pair
+  with a program roster, so it would have fired immediately. Now classified as
+  `m.tab !== 'Prep Exam'`, which is what the check always meant.
+- Change 2 — a data-driven not-a-student rule. A Product Map row whose tab
+  column is the sentinel `(not a student)` marks a delivered service:
+  supervision sessions, coaching sessions, anything nobody becomes a student by
+  buying. Such a payment is still written to the Payment Log and Postgres, but
+  reaches neither a credential tab nor the `Sales` catch-all. Declaring it in
+  the sheet rather than in code means adding a product later needs one row, not
+  a code change and a deploy.
+- Testability: the routing decision was extracted into a pure exported
+  `resolveRosterTargets()` plus `rosterTargetSummary()`. The script previously
+  ran `main()` at import and exited on a missing argv/keys at module scope, so
+  importing it fired the whole Stripe → Sheets → Postgres pipeline as a side
+  effect; those three now run only under `require.main === module`. CLI
+  behaviour is unchanged and was re-checked both ways.
+- Applied to the Product Map: `Individual Supervision - Single Session`,
+  `Group Supervision - Single Session`, `Public Group Supervision`,
+  `Public Group Coaching Supervision`, `Group Supervision Subscription`,
+  `Bronze Supervision Subscription`, `Gold Supervision Subscription`.
+  **`5x Sessions` was deliberately excluded**: its Stripe name says nothing
+  about what the sessions are and it carries only Heartbeat offer metadata, so
+  suppressing it could hide a real student. It has never sold, and leaving it
+  off means it lands on `Sales` for manual triage — the safe default.
+- Verification at 2026-08-15T20:10Z: 17 new focused tests, including a
+  parametrised regression that asserts program-tab classification survives the
+  renames `ACC`, `MCS`, `Mentor Coaching`, and `Practitioner Series`. On the
+  Mini under the pinned Node 22.23.2 the focused suites pass 31/31 and the full
+  suite passes **2,053/2,053 tests**; two suites fail to load only because
+  Codex's uncommitted migrations 114/115 are absent from that clone, which
+  predates and is unrelated to this change. On the Studio the full suite cannot
+  run — `better-sqlite3` is built for Node 22 (ABI 127) and Homebrew Node there
+  is 26 (ABI 147). End-to-end routing was then simulated against the live
+  Product Map through the deployed function: supervision services resolve to
+  "nowhere", Coaching Supervision Mastery still resolves to `CSS Roster`,
+  `ACC Exam Prep` still resolves to both targets for exam routing, and
+  `5x Sessions` still falls to `Sales`.
+- **Deploy topology correction, discovered during this task.** `~/dev` is
+  *not* paused for Syncthing as the operating notes claimed. The changed script
+  was already byte-identical on the Mini **before** the `scp`, and a marker file
+  written on the Studio appeared on the Mini in ~15 seconds. Consequences: a
+  `tools/**/*.cjs` edit on the Studio is in production within seconds, with no
+  build and no scp; and a rollback copy taken on the Mini *after* editing
+  locally captures the already-changed file. The genuine rollback for this
+  change is `git show HEAD:tools/contador/process-payment.cjs`, saved on the
+  Mini at `/tmp/process-payment.cjs.rollback`
+  (`b1165079fd5895faf2282445339d5f4b5532ea6e080028b3a3326ede56a4b1d0`, identical
+  in both clones). `src/**` still requires a Mini build because production runs
+  `dist/`.
+- Not done: the tab renames themselves and the tab-strip reorder, which are the
+  owner's next call now that they are safe; and `Prep Exam`, `Sales`, and
+  `Product Map` remain hardcoded by name in this file, so those three tabs still
+  cannot be renamed without a further code change.
+
+### NC-20260815-001 — Student Roster: merge the duplicate mentor-coaching tab, add the coaching-supervision roster
+
+- Date: 2026-08-15T17:55Z
+- Owner/client: Claude Code
+- State: blocked — every roster and Product Map change described here is applied
+  to and read-back-verified against the live Student Roster spreadsheet, and
+  deployment is not applicable to those: the change is data in a Google Sheet
+  that `process-payment.cjs` reads at runtime, so it took effect on write. The
+  task is blocked only on the owner's later request to drop the `" Roster"`
+  suffix from tab names, which requires a code change and a Mini deploy first
+  (see the blocker at the end of this entry). No NanoClaw code path changed, no build or restart is required,
+  `process-payment.cjs` was not edited, and neither the Payment Log sheet nor the
+  `payments` table was touched. The new `roster-cleanup.cjs` is an operator-run
+  one-off, not wired into any cron or host path.
+- Commit/PR: uncommitted on `codex/continuity-reconciliation`; task began at
+  `b66bc80`.
+- Change class: C4 — the Student Roster is the shared financial/enrollment
+  record trainers read, and this deletes a tab and rewrites the Product Map.
+- Affected systems: Google Sheet `1bX0hvMgXyoVQXuHRjYfwmVrv9mN5W08jF4iB8LiZI70`
+  (`Product Map`, `Mentor Coaching Roster`, `ICF Mentor Coaching`, `Sales`, new
+  `CSS Roster`); new `tools/contador/roster-cleanup.cjs` and
+  `tools/contador/lib/sheets-client.cjs`; toolbox `shared/stripe`
+  `list-products` / `get-product` gain a read-only `--account` argument.
+- Trigger: the owner reported that `Mentor Coaching Roster` and
+  `ICF Mentor Coaching` hold the same set of products and must be merged, and
+  that coaching-supervision training has no roster at all even though Stripe
+  sells Coaching Supervision Mastery.
+- Three defects were behind that, all of which hide paying students:
+  1. `Product Map` had no header row, but `process-payment.cjs` discards row 1
+     unconditionally (`filter((r, i) => i > 0 …)`), so the first mapping was
+     dead. Row 1 was `ICF Mentor Coaching — ACC Renewal (Installment $500/mo)`,
+     which is why that product also had to be repeated at the bottom to work.
+  2. `ICF Mentor Coaching` was a second tab for the same three products as
+     `Mentor Coaching Roster`, and its columns began at `ACC` rather than
+     `Email`/`Name`. `process-payment.cjs` writes `newRow[0]=email`,
+     `newRow[1]=name`, then `newRow[colIndex]=date`; with `colIndex` 0 the date
+     overwrote the email. Laura Smith's row had lost `laura.smith@calabr.com`.
+  3. Coaching Supervision Mastery had no Product Map row, so both buyers fell
+     through to the unmapped-product `Sales` catch-all.
+- Applied: inserted a real `Product Map` header; repointed and de-duplicated the
+  `ICF Mentor Coaching` rows onto `Mentor Coaching Roster`; added the two
+  unsold-so-far mentor-coaching permutations (`Earn PCC`, `Earn MCC`) and both
+  Coaching Supervision Mastery permutations (`Inaugural`, `Regular`); created
+  `CSS Roster` (`Email | Name | Coaching Supervision Mastery | Refunded |
+  Joined`); recovered Laura Smith's email from the `Sales` row that recorded the
+  same payment intact and merged her onto `Mentor Coaching Roster`; deleted the
+  `ICF Mentor Coaching` tab; replayed the three now-mapped `Sales` rows onto
+  their roster tabs and removed them from the catch-all.
+- Product names in the map are byte-exact Stripe product names, confirmed
+  against both Stripe accounts. The em dash, the `×`, and the thousands comma
+  are significant: `process-payment.cjs` compares the whole string.
+- Verification at 2026-08-15T17:50Z: pre-change snapshot of all four affected
+  tabs captured before any write. After `--apply`, every mutated range was read
+  back: `Mentor Coaching Roster` carries Laura Smith with her real address and
+  `ACC Renewal=8/4/2026`; `CSS Roster` carries Chisato Nomoto (7/28/2026) and
+  Jordan Mercedes (8/15/2026); `Product Map` is 141 data rows under a header,
+  with no row targeting a non-existent tab and no blank tail; the tab list no
+  longer contains `ICF Mentor Coaching`; `Sales` retains exactly the rows whose
+  products are still unmapped. The script is dry-run by default and idempotent —
+  the merge upsert and the `Sales` replay both target Laura Smith, and the
+  second reported `ACC Renewal=8/4/2026 already set` rather than rewriting it.
+- Follow-up at 2026-08-15T18:20Z, after the owner stated the governing rule:
+  **mentor coaching and mentor coach training (MCS) are distinct products for
+  distinct people.** `Mentor Coaching Roster` holds coaches *buying* mentor
+  coaching toward their own credential; the MCS roster holds coaches *training*
+  to become mentor coaches. A product name containing "Mentor Coaching" is
+  therefore not evidence of which roster it belongs to.
+  - That resolves the tab question left open above.
+    `MCS Advanced Accreditation Mentor Coaching — Installment (/mo)` is
+    training: 3 × $999 is the installment plan for the $2,997 / 71-hour MCS
+    Standard Path (`knowledge/shared/KNOWLEDGE.md` line 190), and AAMC is that
+    program's accreditation. Confirmed independently — both buyers' Stripe
+    customer metadata carries `product=mcs-cohort-sept-thursday` /
+    `mcs-cohort-sept-friday`, the same September cohort the two existing
+    `Mentor Coach Training - September … Cohort` rows already map to
+    `MCQ Roster` → `MCS Practicum`.
+  - Applied and read back: the product now maps to `MCQ Roster` →
+    `MCS Practicum`; Katy Stone (8/5/2026) and Jeremy Sieurac (8/10/2026) were
+    replayed there off `Sales`. `Mentor Coaching Roster` still holds only the
+    four mentor-coaching clients and no trainee; `MCQ Roster` holds no
+    mentor-coaching client. The split is clean in both directions.
+- Not done, and deliberately left for separate work:
+  - `payments.product_name` is corrupted for any product whose name contains a
+    `$`. `process-payment.cjs:730` interpolates `productName` into a
+    double-quoted shell string passed to `execSync`, so the shell expands the
+    amount: `($999/mo ×4)` is stored as `(99/mo ×4)` and `($500/mo)` as
+    `(00/mo)`. The Sheets writes happen before that line and are unaffected, so
+    the Payment Log is correct and the database is not.
+  - Still unmapped and left on `Sales`: `Individual Supervision - Single
+    Session`, and the eight Plutio invoice descriptions, which are sales-closed
+    deals and belong on the catch-all by design.
+- Second follow-up at 2026-08-15T18:45Z, after the owner's rule for the ACC
+  case: a mentoring purchase belongs on a credential-program roster only if the
+  buyer is in that program, not if they are an outside coach buying mentor
+  coaching. The evidence showed the mapping was **inverted** in both directions:
+  - Wahida Saeedi and Thamer M Alessa held `ACC Roster` → `Group Mentoring` +
+    `Individual Mentoring` dates with **no** `Full Program`/`M1`–`M4` anywhere on
+    the row, and their product is `ACC Renewal` — by definition a coach who
+    already holds the credential. Not Level 1 students.
+  - Meanwhile the *real* Level 1 and Level 2 program mentoring products
+    (`Level 1: Group Mentoring`, `Level 1: Individual Mentor Coaching and
+    Coaching Assessments`, `ICF Level 1: Group Mentoring`, and both Level 2
+    equivalents) were **unmapped entirely** and fell to `Sales`. Edward Utz —
+    who holds M1 through M4 — had his 8/3/2026 Group Mentoring sitting on the
+    catch-all.
+  - Applied: dropped the two `ACC Renewal Mentoring` → `ACC Roster` rows; added
+    the five real program-mentoring mappings; moved Wahida and Thamer to
+    `Mentor Coaching Roster` → `ACC Renewal` (Thamer was on no mentor-coaching
+    roster at all) and cleared their `ACC Roster` mentoring cells; replayed
+    Edward Utz onto `ACC Roster` → `Group Mentoring`.
+  - The demotion is a move, not a delete: the destination is written and read
+    back before the source cells are cleared, and it is refused outright if the
+    student holds any coursework column — so the owner's rule is enforced by the
+    script rather than by the accuracy of a hand-written list.
+  - Verified: both demoted rows now show no dates on `ACC Roster`; Edward Utz
+    retains M1–M4 plus his Group Mentoring; `Mentor Coaching Roster` holds five
+    clients; `Sales` is down to 13 rows.
+- **Bookkeeping defect found while resolving the above — not a roster problem
+  and not fixed here.** Four payments were ingested twice, once as the Checkout
+  Session and once as its own PaymentIntent. The upsert dedup is keyed on Stripe
+  ID and the two halves carry different ids, so it cannot catch this.
+  - The two stores are affected differently, and an earlier statement in this
+    entry that both carried all four duplicates was wrong. Corrected by direct
+    row lookup on 2026-08-15T20:25Z: **Postgres `payments` holds all eight rows
+    ($4,986 over-counted). The Payment Log sheet holds only two of the four
+    pairs — Thamer M Alessa (rows 196/197, $1,499) and Denise Cole (rows 18/19,
+    $189), so $1,688 over-counted there.** For Wahida Saeedi (row 156) and Dora
+    Vanourek (row 56) the sheet has a single row, and it is the PaymentIntent
+    half — so those two are not a revenue error at all, but they carry the
+    degraded product name ("Individual Mentor Coaching", "Unknown") instead of
+    the real one from the checkout session.
+  - `talessa@gmail.com` 2026-05-20 $1,499 — `cs_live_a1Y9FM…` "ACC Renewal
+    Mentoring" + `pi_3TZCAC…` "Individual Mentor Coaching"
+  - `wahida.saeedi@roche.com` 2026-06-10 $1,499 — `cs_live_a1YuRV…` + `pi_3Tgk0Q…`
+  - `doravanourek@gmail.com` 2026-07-24 $1,799 — `cs_live_b1AA5G…` + `pi_3TwaKU…`
+  - `denise@clarionpointpartners.com` 2026-08-05 $189 — `cs_live_b126Rq…` + `pi_3U1Auo…`
+  - Confirmed against Stripe's ledger: `list-balance-transactions` for
+    2026-06-10 returns exactly **one** $1,499 charge
+    (`txn_3Tgk0QRnZI4gH1uA0W8xRcIY`), not two. So this is duplicated recording,
+    not duplicated money — $4,986 of phantom revenue across the four.
+  - This also explains every remaining oddity on `Sales`: the two `Individual
+    Mentor Coaching` rows and the two `Unknown` rows are the PaymentIntent
+    halves of purchases already recorded. They were left in place rather than
+    deleted, because removing them would hide the double-count while the Payment
+    Log and `payments` still carry it.
+  - Owner confirmed each of the four at 2026-08-15T18:55Z: Thamer M Alessa and
+    Wahida Saeedi are ACC mentor coaching, Dora Vanourek is PCC mentor coaching,
+    and Denise Cole is a supervision *session* — explicitly **not** Coaching
+    Supervision Mastery. Read back against the live sheet: the first three are
+    already on `Mentor Coaching Roster` under `ACC Renewal` / `ACC Renewal` /
+    `PCC Credential`, and `CSS Roster` holds only Chisato Nomoto and Jordan
+    Mercedes. No correction was required.
+- Third supervision category identified, and ruled out of this spreadsheet
+  entirely. Denise Cole's purchase is `Individual Supervision - Single Session`
+  — *receiving* supervision. It is distinct from both categories already
+  modelled: program-embedded supervision (`ACC`/`PCC`/`ACTC Group Supervision`,
+  correctly filed on the credential rosters) and supervisor *training*
+  (Coaching Supervision Mastery → `CSS Roster`).
+  - Owner's rule at 2026-08-15T19:05Z: supervision sessions are delivered
+    services, like coaching sessions — buying one does not make anyone a
+    student, so they do not belong anywhere in the Student Roster. Their revenue
+    still belongs in the Payment Log; only the roster spreadsheet excludes them.
+  - Applied: both of Denise Cole's `Sales` rows removed (the
+    `Individual Supervision - Single Session` checkout and its duplicate
+    PaymentIntent half). `Sales` is now 11 rows: eight Plutio invoice
+    descriptions plus the three remaining double-ingestion halves. Deletion is
+    matched on Stripe id with the email asserted first, so a shifted row cannot
+    be removed by mistake.
+  - Eight standalone supervision-service products exist in Stripe and all are
+    **deliberately** unmapped — this is the correct end state, not a gap to
+    close later: `Individual Supervision - Single Session`, `Group Supervision -
+    Single Session`, `Public Group Supervision`, `Public Group Coaching
+    Supervision`, `Group Supervision Subscription`, `Bronze Supervision
+    Subscription`, `Gold Supervision Subscription`, `5x Sessions`.
+  - The removal does not stay done on its own. `process-payment.cjs` writes
+    every unmapped product to the `Sales` catch-all, so the next supervision
+    sale re-adds a row. Making it durable needs a not-an-enrolment list in that
+    file so such products reach the Payment Log but never the roster
+    spreadsheet — the same file, build, and Mini deploy as the `endsWith('
+    Roster')` blocker below, so both belong to one follow-up task.
+  - Latent hazard noted, not changed: the Product Map carries a bare
+    `Group Supervision` → `PCC Roster` / `Group Supervision` row. No Stripe
+    product has that exact name today, but `process-payment.cjs` falls back to
+    the PaymentIntent *description* for the product name, so a manually created
+    supervision payment described "Group Supervision" would be filed on the PCC
+    credential roster as though the buyer were a Level 2 student — the same
+    error class as the `ACC Renewal Mentoring` inversion fixed above.
+- Fourth pass at 2026-08-15T19:25Z, on the owner's instruction to read the paid
+  Plutio invoices behind the `Sales` rows and match them to products. A Plutio
+  payment reaches Stripe with a per-deal description (`Invoice #tca-371-pl
+  from …`), so it can never match a Product Map row and always lands on the
+  catch-all. The product is on the invoice — and so is the student, who is
+  **frequently not the payer**. The parenthetical in each `Sales` product string
+  is the Plutio invoice `_id`, which is what makes these resolvable at all.
+  - `tca-371-pl` — "MCS Practicum - Holly Coneway (Payment 2 of 2)". Holly
+    Coneway was on no roster. **Added** → `MCQ Roster` / `MCS Practicum`.
+  - `tca-387-pl` — "Oana Tue (Business Intervention Practices SRL) — AAMC
+    Friday Cohort", $2,997 split 3 × $999. Oana Tue was on no roster.
+    **Added** → `MCQ Roster` / `MCS Practicum`.
+  - `tca-384-pl` — "Mentor Coaching Specialization - Foundations - U.S.
+    Department of Justice". Billed to `tina.m.ashley@usdoj.gov`; the invoice
+    reference names the actual participant, **Yoneko Riley-Barrow**
+    (`yoneko.riley-barrow@usdoj.gov`), who was on no roster. **Added** →
+    `MCQ Roster` / `MC Foundation` under her own address, not the payer's.
+  - `tca-358-pl` — "MCS Practicum - Cohort A (Fridays AM) - Michelle Ambrose",
+    billed to `justin.m.speaks.mil@socom.mil`. Michelle Ambrose is already on
+    `MCQ Roster` / `MCS Practicum` (6/4/2026). No change needed; recorded here
+    because the `Sales` row names the payer, not the student.
+  - `tca-345-pl` — the Plutio invoice is literally named "test invoice": $1,
+    billed to internal staff (`cherie@tandemcoaching.academy`), and still
+    `status: overdue` in Plutio despite Stripe taking the $1. **Removed** from
+    `Sales`; not a student.
+  - Three could not be completed and are listed as open items below:
+    `tca-347-pl` (Kristin Strunk), `tca-381-pl` (Jessica Velez), and
+    `tca-386-pl` (eight unnamed seats).
+  - `Sales` is now 10 rows. The remaining Plutio rows were deliberately left in
+    place rather than cleared: they are this sheet's only record of which payer
+    funded which student, and three of them are still unresolved.
+- The three invoices that needed owner input were resolved at
+  2026-08-15T19:40Z and applied:
+  - `tca-347-pl` "Mentor Coaching - Kristin Strunk", line item "ICF Mentor
+    Coaching Program - May 2026 Cohort (10 hours)" $1,499 in three parts. The
+    **same contamination** already fixed for Wahida Saeedi and Thamer M Alessa:
+    Kristin held `ACC Roster` `Group Mentoring` + `Individual Mentoring` dated
+    4/24/2026 with no coursework column. The invoice names no credential; the
+    owner confirmed **ACC Renewal**. Moved to `Mentor Coaching Roster` /
+    `ACC Renewal` = 4/24/2026 and her `ACC Roster` mentoring cells cleared.
+  - `tca-381-pl` "Level 1 Certification Program - Jessica Velez" $3,201, billed
+    to MAPping Change LLC. Owner confirmed it sets `Full Program` = 7/24/2026;
+    her existing `M1`/`M2` dates are untouched (the upsert only fills blanks).
+  - `tca-386-pl` "Mentor Coaching Foundations - Group Enrollment (8 Seats)",
+    ALLENATI PER L'ECCELLENZA SLU, $2,152.80 = 8 × $299 less a 10% group
+    discount. The line item says "Individual enrollment invitations issued per
+    participant upon payment" and names nobody, so the eight came from the
+    owner. All eight added to `MCQ Roster` / `MC Foundation` = 8/6/2026:
+    Silvia Tormen, Francesca Di Gioia, Barbara Muzzolon, Elisabetta Bartocci,
+    Mauro Cavosi, Micaela Del Fabbro Arcopinto, Laura Virtuoso, Grazia Barone.
+    The payer, `marco@allenatiperleccellenza.com`, is **not** among them and was
+    correctly not added.
+  - Verified by exact-email read-back: 8/8 seats present, `MCQ Roster` now 149
+    students; Jessica Velez shows `Full Program` alongside her `M1`/`M2`;
+    Kristin Strunk holds no dates on `ACC Roster` and appears on
+    `Mentor Coaching Roster` under `ACC Renewal`.
+  - Sponsor-paid enrolments are now a confirmed, recurring pattern rather than a
+    one-off: four of the eight invoices (`tca-358-pl`, `tca-384-pl`,
+    `tca-381-pl`, `tca-386-pl`) were paid by someone other than the student, and
+    one covered eight students at once. Nothing in the Stripe payload carries the
+    student identity, so no automated path can place these — they require reading
+    the Plutio invoice, and for group enrolments an external participant list.
+- Also still open: the training roster's tab is named `MCQ Roster`; MCQ is the
+  retired name for MCS. The owner asked to rename it and to drop the `" Roster"`
+  suffix from every roster tab, then reorder the tab strip. The rename is
+  blocked on a code change — see below.
+- **Blocker recorded for the requested rename.** `process-payment.cjs:602`
+  classifies a matched tab as a program roster with
+  `m.tab.endsWith(' Roster')`. Dropping the suffix makes `programTabs` empty,
+  which disables `resolveExamRouting` entirely: every exam-prep buyer would then
+  be written to *both* the program roster and `Prep Exam` instead of one of
+  them, silently and with no error. Twelve `Prep Exam` map rows are paired with
+  a program roster, so this is not hypothetical. The fix is one line — classify
+  as `m.tab !== 'Prep Exam'`, which is what the check means — but it is an edit
+  to the live payment pipeline and needs its own task, build, and Mini deploy
+  before any tab is renamed. `Product Map`, `Sales`, and `Prep Exam` are
+  likewise hardcoded by name in that file. `backfill-names.cjs` is rename-proof:
+  it discovers tabs from live metadata and filters on the `Email`/`Name` header
+  shape.
+  - `process-payment.cjs` still hardcodes "skip row 1" instead of matching the
+    header by name; the inserted header makes that correct today but does not
+    make it safe.
+  - Five contador scripts still carry their own copy of the Sheets JWT client
+    that `tools/contador/lib/sheets-client.cjs` now provides. They are live
+    payment paths and are not migrated as a side effect of a data cleanup.
+
 ### NC-20260810-002 — CNPC intake and bounded coach-matching control plane
 
 - Date: 2026-08-11T00:40Z
@@ -39,7 +631,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Outcome implemented locally:
   - public Gravity Forms-to-n8n route at
     `POST https://webhooks.tandemcoach.co/webhook/cnpc-coaching-intake`, with a
-    dedicated ingress secret and capture-only first-dummy procedure;
+    dedicated ingress secret, a tracked one-way secret digest, and a
+    capture-only first-dummy workflow that has no downstream connection;
   - exact private n8n-to-NanoClaw endpoint contract at
     `POST http://mini-claw:8088/hook/cnpc-coaching-intake`;
   - stable Gravity Forms form/entry identity and perimeter deduplication;
@@ -55,6 +648,31 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   - CNPC minion behavior, privacy rails, and blocked external-action response;
   - registration script that stores the webhook secret only in ignored runtime
     state with mode `0600` and never prints it.
+- Capture ingress deployment at 2026-08-11T01:56Z:
+  - n8n 2.9.4 workflow ID `cnpc-coaching-intake` imported from the tracked
+    capture-only configuration, published, and activated after the required
+    container restart;
+  - n8n `/healthz` returned `ok` and the CLI listed the exact workflow ID/name;
+  - public no-secret preflight returned `401 unauthorized`;
+  - public authenticated sanitized preflight returned `202`, `capture_only:
+    true`, and the exact three submitted field names;
+  - no NanoClaw, Slack, email, Plutio, coach-capacity, or client side effect was
+    possible because the live workflow contains no downstream node.
+- Gravity Forms mapping and normalized-ingress update at 2026-08-11T02:10Z:
+  - sanitized form 1 entry 583 was received successfully and used only to map
+    public field IDs; submitted values were not copied into source or docs;
+  - the live `/apply/` form labels/options were reconciled to the captured IDs;
+  - the workflow now allowlists the applicant, organization, coaching request,
+    consent, and stable entry-identity fields and maps organization type,
+    expense band, and coaching type through closed enums;
+  - local executable contract validation passed authentication, required-field,
+    consent, identity, and enum cases;
+  - the updated workflow was imported in place, published, and restarted;
+    `/healthz` returned `ok`, the workflow name was exact, a no-secret live
+    request returned `401`, and a complete authenticated synthetic request
+    returned `202`, `normalized: true`, and `mapping_version: gf-form-1-v1`;
+  - normalized delivery remains disabled because the workflow still has no
+    downstream node.
 - Security: CNPC Plutio uses a separate future host-only credential namespace.
   The existing single-workspace reaper is not used. The credential disclosed in
   chat must be rotated before production. No credential, coach certificate,
