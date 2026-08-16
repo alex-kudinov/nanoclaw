@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-002` | Add one host-owned action-envelope contract and a global/per-system external-write safe mode without activating or widening any live capability | Codex | `codex/nc-20260816-002-action-safety-control` @ `f1ffd5c` (local-only claim) | `in_progress` | C5 | Map existing outbound mutation boundaries; implement versioned action identity, policy/evidence binding, deterministic safe-mode precedence, aggregate diagnostics, and negative/mutation/replay/drill tests. Default behavior and all production configuration remain unchanged. | Reconcile active capability/autonomy/approval controls, select the narrow central host boundary, then implement and validate the dark control layer with security/project/roadmap documentation. | 2026-08-16T14:43Z |
 | `NC-20260816-001` | Apply the Company OS ledger schema in production and deploy a non-authoritative, default-off Mailman/Sales shadow projection | Codex | `codex/nc-20260816-001-company-os-shadow` @ deployed `55c97d5` | `complete` | C5 | Migration 118 is backed up, applied, minimized, append-only, and host-admin-only. Exact Node 22.23.2 release `55c97d5` is live with a bounded shadow since 2026-08-14: 4 eligible items reconcile as 3 completed plus 1 named source gap; the next pass was duplicate-only. SQLite stayed authoritative with 67 actions, 61 confirmed, 6 blocked, and zero actionable sends; Gmail/Slack stayed connected and no deployment send/post occurred. | None for this milestone. Any ledger authority, workflow dependency, wider history, or second-workflow projection requires a new separately authorized task. | 2026-08-16T14:21Z |
 | `NC-20260815-010` | Establish the first durable Company OS work-ledger foundation for the Mailman/Sales approved-email pilot without activating it in production | Codex | `codex/nc-20260815-010-company-os-ledger` @ `6e281f0` from `38810d3` | `complete` | C2 | Focused design/ADR, additive migration 118 plus history-preserving rollback, host-only typed state/receipt store, 16 focused tests, and data/project/roadmap authorities passed review through the separately authorized NC-20260816-001 activation. | None. Production application and non-authoritative shadow evidence are recorded under `NC-20260816-001`; promotion remains separate. | 2026-08-16T14:21Z |
 | `NC-20260815-007` | Reactivate the Company OS plan against the current NanoClaw baseline and make it the single strategic roadmap for separately gated implementation slices | Codex | `codex/nc-20260815-007-company-os-reactivation` @ `b7bb65d` from `9e4977a` | `complete` | C1 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, this register, and `docs/ENGINEERING-CHANGELOG.md`; documentation and prioritization only; no source, schema, prompt, configuration, deployment, production, or external-system change | None — R0 is recovered and continuity-verified; subsequent slices use separate task IDs and isolated branches. | 2026-08-16T04:46Z |
@@ -77,6 +78,40 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-002
+
+- Trigger: after the bounded Company OS ledger shadow reached its verified
+  milestone, the owner instructed Codex to proceed to the next roadmap gate.
+- Outcome: create one versioned host-owned action-envelope contract and one
+  deterministic global/per-system external-write safety controller. The
+  control must deny before a side effect when explicitly engaged, preserve
+  evidence collection, expose aggregate health, and bind decisions to exact
+  action/policy identities without granting any new action authority.
+- Branch/base: isolated worktree
+  `/private/tmp/nanoclaw-nc-20260816-002` on
+  `codex/nc-20260816-002-action-safety-control`, based on completed Company OS
+  evidence commit `f1ffd5c7ef10334cdb64919282dcd231d80b57ea`. The dirty
+  operational checkout and all other worktrees remain untouched. This claim is
+  local-only until committed/pushed.
+- Scope/authority: C5 because this changes a security boundary for external
+  writes. Authority covers local source, tests, `.env.example`, and the
+  security/project/roadmap/continuity authorities. It excludes production
+  configuration, deployment, restart, database migration/write, Slack/Gmail or
+  other external actions, action approval, ledger promotion, push, and merge.
+- Overlap: existing Gmail final-boundary checks, Procurement action cards,
+  CNPC holds, grader delivery, autonomy policy/holds, and healer typed-action
+  plans remain authoritative for their domains. This task must compose with
+  them and must not replace, weaken, or activate unfinished overlapping work.
+- Acceptance: exact envelope mutation/replay is rejected; global and
+  per-system brakes use documented precedence and deny before invocation;
+  evidence/health reads continue; disabled/default configuration preserves
+  current behavior; unknown action classes/systems fail closed when enforcement
+  is enabled; focused negative and safe-mode drill tests, exact Node typecheck,
+  relevant broad gates, continuity, formatting, and diff checks pass.
+- Deployment boundary: implementation is dark and local only. Any production
+  configuration or activation requires a separate C5 task with immutable
+  release, live safe-mode drill, rollback, and non-interference evidence.
 
 ### NC-20260816-001
 
