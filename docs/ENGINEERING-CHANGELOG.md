@@ -12,9 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T01:13Z
 - Owner/client: Codex
-- State: ready_for_review; local and uncommitted on
+- State: ready_for_review; committed locally but not pushed or merged.
+- Commit/PR: implementation commit
+  `253996b43d7ffb49d95102d2f8fb906058f885fd` on
   `codex/nc-20260815-008-email-replay-gate`, based on verified production
-  commit `84607fd2ac4bcc0dd87fdc2d80d79635a69f0a6d`.
+  commit `84607fd2ac4bcc0dd87fdc2d80d79635a69f0a6d`; no PR.
 - Change class: C5 because the assurance protects the customer-email action
   boundary; authority and effects remained local and non-sending.
 - Root cause: the live lineage already reloads exact operator-approved bytes
@@ -40,21 +42,33 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   pass. The root sandbox run passed 2,270/2,316; all 45 permission-sensitive
   failures passed in an unrestricted rerun. The sole remaining root failure is
   the unrelated pre-existing CNPC wrapper contract on the unchanged base.
+- Artifact: the clean implementation commit reran the email gate and built
+  successfully. Source tree
+  `ea5938c2938630ad6268c62b58790a0362472e60`; compiled artifact
+  `f706b9eb47794f38445234d17bd02a98d8dceca34242c2a32dd3018da3b8a670`
+  across 620 files; archive SHA-256
+  `20a776b78413a7cb76a90e954ab2eaf1a98f7d48f3359d606e69561711103d30`.
+  Fresh-directory bundled verification with `--runtime` passed under Node
+  22.23.2.
 - Deployment/migration: none. Read-only `/health` verified production commit
   `84607fd`, matching code root, Node 22.23.2, connected Gmail/Slack, no active
   container, and an empty queue before the branch was created. No Gmail,
   Slack, production database, migration, service, schedule, configuration, or
   external-message write occurred.
+- Runtime decision: the compiled artifact hash is identical to live `84607fd`
+  because this slice changes tests, the release gate, and documentation only.
+  No activation is needed; merging the commit makes the new gate effective for
+  future releases without a provenance-only production restart.
 - Rollback/recovery: discard this isolated branch/worktree; no production or
   data rollback applies.
 - Documentation: the Company OS records this as the first deterministic
   `EVAL-001` subset, while keeping prompt-injection, blinded model-quality, and
   natural-path outcome evidence open. Project and release contracts distinguish
   replay proof from transport canary and customer outcome.
-- Follow-up: independent review and commit; run `release:build` only from that
-  clean reviewed commit. Deployment and any canary require separate authority,
-  and rollout success still requires a natural approved customer action without
-  manual repair.
+- Follow-up: review, push, and merge the two local task commits. No deployment
+  is needed for this test/docs-only slice. A natural approved customer action
+  without manual repair remains separate outcome evidence for the existing
+  live email path.
 
 ### NC-20260812-001 — Account-aware Stripe lifecycle evidence for Chaos
 
