@@ -14,8 +14,9 @@ the tracked ordered migrations remain implementation authority. Separately,
 `company_work_receipts`. Those host-only tables are a cross-agent work
 projection linked to Party and pipeline IDs; they do not replace interactions,
 pipeline state, or the SQLite approved-email action authority.
-`NC-20260816-001` adds a bounded, default-off host projection and owns the
-separate production migration/deployment evidence. See
+`NC-20260816-001` applied those tables in production and live-verified a
+bounded, default-off host projection across completed, source-gap, and
+duplicate-only cases. SQLite remains approved-email authority. See
 `docs/COMPANY-OS-WORK-LEDGER.md` and `docs/ACTIVE-WORK.md` for current state.
 
 ---

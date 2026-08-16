@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T13:54Z
 - Owner/client: Codex
-- State: validating
-- Commit/PR: local implementation on
-  `codex/nc-20260816-001-company-os-shadow` from exact ledger evidence commit
-  `3479305ba947ade6f4eaed478acd8fdc8a6f631c`; commit and release pending
+- State: complete for the migration and non-authoritative shadow milestone;
+  ledger authority/promotion remains a separate task
+- Commit/PR: implementation commits `052fb0222ceadab3f99d99e551b9e19d2c6a879f`
+  and corrective `55c97d5e1bd072dab1c3000f3b715134c3ccc336` on
+  `codex/nc-20260816-001-company-os-shadow`; no PR
 - Change class: C5 — production PostgreSQL migration, host configuration,
   immutable release activation, and non-authoritative shadow writes
 - Intended outcome: apply migration 118 with a verified PostgreSQL backup and
@@ -42,12 +43,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   IDs, timestamps, named exception codes, and SHA-256 evidence. No recipient,
   subject, body, approval-card text, customer action mutation, Slack post, or
   Gmail call is part of the projector.
-- Verification so far: exact Node 22.23.2 typecheck passes; 20 focused
+- Verification: exact Node 22.23.2 typecheck passes; 25 focused
   ledger/projector/SQLite tests pass, including full success, exact replay,
   terminal restart convergence, block/fail/resume, per-action failure
   isolation, default-off/misconfiguration, metadata privacy, exact-thread
-  closure, and aggregate fail-open health. Broad, release, migration, and live
-  reconciliation evidence remains pending.
+  closure, and aggregate fail-open health. The release-blocking email gate
+  passes 628/628 and the independent runner passes 36/36. The root sandbox run
+  passes 2,311/2,357; all 45 permission-sensitive failures pass unrestricted,
+  leaving only the unchanged base CNPC wrapper assertion.
 - First production boundary: custom-format PostgreSQL backup
   `NC-20260816-001-20260816T1405Z/nanoclaw_business_pre_118.dump` is 2,574,495
   bytes, has SHA-256 `932a9aea3e96a2befca8a5f335d04bc9db46d7bd7229b350216834d9ab5510dd`,
@@ -64,14 +67,36 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Live defect response: the missing mandatory source fact is not permission to
   infer progress from the later Gmail receipt. The corrective implementation
   records `source_gap:mailman_dispatch_missing` at the last verified stage and
-  refuses later promotion. Exact Node 22 typecheck and 20 focused tests pass;
-  corrective release and live duplicate-only reconciliation remain pending.
+  refuses later promotion. Exact Node 22 typecheck and 25 focused tests pass.
+- Corrective production boundary: immutable release
+  `55c97d5e1bd072dab1c3000f3b715134c3ccc336` (source tree `00f62467`, artifact
+  SHA-256 `0b2c090b`, archive SHA-256 `f93d4109`) activated with rollback plist
+  `com.nanoclaw.plist.rollback-052fb0222cea-2026-08-16T14-17-03-352Z`.
+  Stable health reports one listener, exact launchd/code-root identity, Node
+  22.23.2, connected Gmail/Slack, and an empty outgoing queue.
+- Live reconciliation: the first corrective pass scanned seven bounded source
+  actions, excluded three non-Mailman roots, projected four items, applied one
+  named source-gap transition, and completed three. A later pass applied zero
+  transitions and deduplicated all 29 facts with no errors. PostgreSQL contains
+  4 items, 29 events, and 13 receipts: 3
+  `outcome_validated/completed` and 1 `approved/failed` with
+  `source_gap:mailman_dispatch_missing`. All three tables are admin-owned;
+  append-only event/receipt triggers are enabled; non-admin grants and
+  raw-content columns are zero.
+- Non-interference/outcome evidence: SQLite remains at 67 bound actions and
+  334 events: 61 confirmed, 6 blocked, and zero actionable. Projection
+  activation itself sent no email and posted no Slack message. During the
+  preflight window, an independently natural approved action completed normal
+  fallback, Mailman execution, exact Gmail confirmation, and exactly one
+  original-thread closure without manual repair, closing `NC-20260815-009`'s
+  customer-path gate while remaining independent of ledger authority.
 
 ### NC-20260815-010 — Establish the dark Company OS work-ledger foundation
 
 - Date: 2026-08-16T04:48Z
 - Owner/client: Codex
-- State: ready_for_review
+- State: complete; the owner authorized and `NC-20260816-001` completed the
+  separate production/shadow milestone.
 - Commit/PR: implementation commit
   `6e281f0c7627bbe5c8579befa649057732ac55b6` on local branch
   `codex/nc-20260815-010-company-os-ledger`, based on recovered roadmap commit
@@ -113,9 +138,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
     stale version, exact retry, block/resume, receipt binding, and zero
     non-admin grants were verified. The rollback refused to erase populated
     history, after which the cluster and temporary script were deleted.
-- Deployment/migration: not applied; a later activation task must reconcile
-  the live ordered-migration state and run its own preflight, backup, apply,
-  validation, shadow projection, and rollback gates.
+- Deployment/migration at this task's boundary: not applied. The later,
+  separately authorized `NC-20260816-001` task reconciled live ordering,
+  captured the production backup, applied migration 118, deployed the bounded
+  observer, and completed live parity/replay validation without promoting the
+  ledger into email authority.
 - Documentation: active work and this changelog registered the task before the
   first implementation edit; the design, data model, project map, roadmap, and
   migration guide are reconciled with the committed implementation.
@@ -169,9 +196,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T03:45Z
 - Owner/client: Codex
-- State: deployed_unverified; the exact runtime and Mailman instructions are
-  live and health-verified, while natural-path customer-email outcome evidence
-  remains pending.
+- State: complete; the exact runtime/Mailman repair is live and a later natural
+  approved email completed the customer path without manual recovery.
 - Commit/PR: implementation commit
   `12c2b049a27aadf88b2e0517e830ba91e232adc4` on
   `codex/nc-20260815-009-email-fallback-headers`, based on documentation head
@@ -238,16 +264,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   automatically retry an executing or uncertain action.
 - Documentation: updated current behavior, recipient authority, incident
   replay, Mailman procedure, and `REL-005` in the Company OS plan.
-- Follow-ups: use the next natural approved customer action as outcome proof
-  without manual recovery. Keep the release `deployed_unverified` until the
-  exact Gmail receipt and original Slack-thread completion are durable.
+- Natural outcome validation: at 2026-08-16T13:59Z, action
+  `996a9d1c-e193-4fa3-9fe4-340a438e0f8d` traversed approval, the normal
+  fallback handoff, Mailman start, one-time execution, and Gmail confirmation,
+  then wrote exactly one completion to its original Slack thread. No manual
+  repair or synthetic customer send was used. The durable action is confirmed,
+  closing the named release outcome gate.
+- Follow-up: preserve the incident corpus and normal receipt monitoring; no
+  task-specific deployment or outcome gate remains.
 
 ### NC-20260815-008 — Make approved-email incidents a release-blocking replay
 
 - Date: 2026-08-16T01:13Z
 - Owner/client: Codex
-- State: deployed_unverified; exact replay gate is live, while natural-path
-  email outcome validation remains open.
+- State: complete; exact replay is release-blocking and its later repaired
+  natural path completed without manual recovery.
 - Commit/PR: implementation commit
   `253996b43d7ffb49d95102d2f8fb906058f885fd` and verified-artifact handoff
   commit `cfcfaae03b6b51ae13a481d32ea1476d3dc9345e` on
@@ -300,13 +331,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   has no data migration to undo. Preserve the contamination archive and exact
   Gmail receipt; never roll back or resend the confirmed customer action.
 - Documentation: the Company OS records this as the first deterministic
-  `EVAL-001` subset, while keeping prompt-injection, blinded model-quality, and
-  natural-path outcome evidence open. Project and release contracts distinguish
-  replay proof from transport canary and customer outcome.
-- Follow-up: review, push, and merge the local task commits. Repair the newly
-  observed fallback-marker and approval-bound CC/header defects in a separate
-  runtime slice, then require a later natural approved customer action without
-  manual repair as outcome evidence.
+  `EVAL-001` subset. Project and release contracts distinguish replay proof
+  from transport canary and customer outcome; prompt-injection and blinded
+  model-quality evaluation remain wider program work.
+- Follow-up at the original boundary: repair the observed fallback-marker and
+  approval-bound CC/header defects in a separate runtime slice, then require a
+  later natural approved customer action without manual repair as outcome
+  evidence. `NC-20260815-009` subsequently completed both requirements.
 - Deployment addendum (2026-08-16T02:45Z): after explicit owner authorization,
   exact head `cfcfaae03b6b51ae13a481d32ea1476d3dc9345e` rebuilt with the 571-test
   email gate and 36-test runner gate passing. Archive SHA-256
@@ -344,6 +375,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   matching code root, Node 22.23.2, connected Gmail/Slack, and no active/queued
   work. The installed 620-file release independently verifies. Rollback remains
   the launchd plist captured by the activation tool.
+- Natural closure (2026-08-16T13:59Z): after `NC-20260815-009` repaired and
+  deployed both runtime defects, action
+  `996a9d1c-e193-4fa3-9fe4-340a438e0f8d` completed the normal approval,
+  fallback, Mailman, Gmail acknowledgment, and one original-thread completion
+  path without manual recovery. That closes this task's named natural outcome
+  gate while leaving the synthetic incident corpus release-blocking.
 
 ### NC-20260812-001 — Account-aware Stripe lifecycle evidence for Chaos
 

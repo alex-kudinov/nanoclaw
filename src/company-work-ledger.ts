@@ -1,10 +1,11 @@
 /**
  * Host-only Company OS work-ledger foundation.
  *
- * NC-20260815-010 intentionally does not wire this module into the daemon.
- * PostgreSQL migration 118 is unapplied and the existing SQLite approved-email
- * action ledger remains execution authority. This module stores opaque IDs and
- * SHA-256 evidence only; raw customer/approval content is not accepted.
+ * NC-20260815-010 introduced this module without runtime wiring. The separately
+ * authorized NC-20260816-001 milestone applied migration 118 and wired a
+ * bounded, non-authoritative shadow observer. The existing SQLite approved-
+ * email action ledger remains execution authority. This module stores opaque
+ * IDs and SHA-256 evidence only; raw customer/approval content is not accepted.
  */
 
 import { createHash } from 'crypto';

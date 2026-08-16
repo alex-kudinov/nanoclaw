@@ -64,7 +64,7 @@ company-wide merely because one workflow implements them.
 | P0.5 safety controller | still proposed | Domain-specific gates and circuit controls exist, but there is no one drilled global/per-system external-write safe mode with common precedence, ceilings, and evidence. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
-| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` adds the separately gated production schema and bounded, default-off observer. SQLite remains email authority, parity/release evidence is tracked separately, and workflow promotion is still open. |
+| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` applied the production schema and live-verified the bounded observer across completion, source-gap, and duplicate-only replay. SQLite remains email authority and workflow promotion plus a second pilot process are still open. |
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
 | P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places; they are not normalized behind one trigger/run contract or reconciled as one inventory. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
@@ -887,8 +887,11 @@ build, independent verification, real-work drain, and guarded activation.
 Host-generated Chief fallbacks carry Mailman's executable marker; the approval
 envelope binds ordered visible CC recipients; ambiguous, duplicate,
 hidden-copy, and malformed recipient headers fail closed; and the 2026-08-15
-marker/CC incident is release-blocking. The next natural-path Gmail receipt
-without manual repair remains the separate outcome gate.
+marker/CC incident is release-blocking. At 2026-08-16T13:59Z, a later natural
+approved action completed normal fallback, Mailman execution, exact Gmail
+acknowledgment, and one original-thread closure without manual repair. That
+closes this slice's outcome gate while leaving the broader injection, blinded
+quality, and multi-workflow evaluation harness open.
 
 - golden successful cases;
 - ambiguous cases requiring escalation;
@@ -1264,12 +1267,11 @@ calendar time, and starts from the conservative inventory in section 0.
 R1 checkpoint: `NC-20260815-008` made deterministic approved-email incident
 replay release-blocking, and `NC-20260815-009` repaired and deployed the
 fallback-marker and approval-bound CC execution path as exact release
-`12c2b049`. The release, migration, health, and drain evidence is complete, but
-the next natural approved customer email is still required for outcome
-validation. Other R1 capability-manifest, universal action-envelope/safe-mode,
-and healer decisions remain open. A default-off, non-activated R2 ledger
-foundation may be designed and tested in isolation; no live ledger migration or
-workflow activation may bypass those R1 gates.
+`12c2b049`. A later natural approved action completed the normal fallback,
+Mailman execution, exact Gmail receipt, and one original-thread closure without
+manual recovery, closing both tasks' named customer-path gate. Other R1
+capability-manifest, universal action-envelope/safe-mode, and healer decisions
+remain open; no ledger promotion may bypass them.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus
@@ -1277,9 +1279,11 @@ PostgreSQL migration 118. The schema excludes raw customer content,
 the existing SQLite approved-email action ledger remains execution authority,
 and no agent receives access. `NC-20260816-001` implements the next bounded
 step: a default-off, fail-open host observer that projects only exact action and
-receipt facts. Production migration, release, and parity are recorded in that
-task; workflow dependency/promotion and the pending natural `NC-20260815-009`
-outcome remain separate gates.
+receipt facts. Migration 118 and immutable release `55c97d5` are live-verified:
+four eligible actions reconcile as three complete outcomes plus one named
+source gap, and the next cycle is duplicate-only. This completes the first R2
+shadow-proof milestone, not R2 as a whole; workflow dependency/promotion and a
+second pilot process remain separate gates.
 
 Each slice receives one or more separate `NC-YYYYMMDD-NNN` tasks only when work
 starts. Do not reserve future IDs, combine these slices into one implementation
@@ -1565,9 +1569,10 @@ Implementation checkpoint (2026-07-29):
     policy from one manifest after the interim Gmail matrix is proven.
 18. `REL-002` — implement work-item transitions and source reconciliation for
     Mailman and Sales only. `NC-20260815-010` implements the state/receipt/schema
-    foundation; `NC-20260816-001` owns the production schema plus default-off
-    shadow event projection. Live parity evidence and any promotion remain
-    explicit, separate boundaries.
+    foundation; `NC-20260816-001` applies the production schema and completes
+    the bounded shadow evidence with three outcomes, one explicit source gap,
+    and duplicate-only replay. Any authority promotion remains an explicit,
+    separate boundary.
 19. `REL-001` — inventory schedules and probe target existence, last run, and
     last exit status.
 20. `EVAL-001` — incident/injection regression pack for Mailman and Sales.

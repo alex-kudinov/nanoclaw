@@ -50,8 +50,8 @@ before applying anything.
 - migrations 114-117 are owned by separately tracked Procurement, CNPC, and
   Chaos tasks with their own deployment state;
 - migration 118 is the host-only Company OS work-ledger foundation created by
-  `NC-20260815-010`; `NC-20260816-001` owns its separately backed-up, explicit
-  production apply and default-off observer deployment;
+  `NC-20260815-010`; `NC-20260816-001` records its separately backed-up,
+  explicit production apply and live-verified default-off observer deployment;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history.
 

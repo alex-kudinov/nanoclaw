@@ -357,7 +357,7 @@ dependencies, not active runtime channels in this snapshot.
 | Area                   | Main files                                                                     | Responsibility                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
-| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | host-only stage/disposition/receipt projection; observer is bounded, default-off, and never email authority; production migration/release evidence lives under `NC-20260816-001` |
+| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | live host-only stage/disposition/receipt projection; observer is bounded, default-off, fail-open, and never email authority; exact migration/release/shadow evidence lives under `NC-20260816-001` |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
 | Autonomy               | `src/autonomy-policy.ts`, `src/autonomy-ledger.ts`, `src/autonomy-hold.ts`     | category trust levels, holds, vetoes, evidence                                                               |
@@ -477,10 +477,12 @@ The modern namespace is `business_v2`, including concepts such as:
 - party-level `no_followup_at` / `no_followup_reason` suppression with
   `fn_drop_followups` and `fn_resume_followups`;
 - durable webhook inbox state.
-- migration-118 Company OS work-item, append-only event, and exact-receipt
-  structures. `NC-20260816-001` adds a default-off host observer of exact
-  SQLite/Slack action facts; running migration and release state must be taken
-  from active-work/changelog evidence, not repository presence.
+- live migration-118 Company OS work-item, append-only event, and exact-receipt
+  structures. `NC-20260816-001` deploys a default-off host observer of exact
+  SQLite/Slack action facts; the verified bounded history is three completed
+  outcomes plus one named source gap, with duplicate-only replay. SQLite
+  remains action authority; running state must still be taken from
+  active-work/changelog evidence, not repository presence.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.
@@ -793,8 +795,10 @@ failure and visible-CC loss. Host-generated Chief fallbacks now carry
 or malformed recipient headers; and the durable action stores the ordered
 visible CC list for exact rehydration and final-boundary authorization. Exact
 release `12c2b049` and the reviewed Mailman instructions are deployed and
-health-verified; natural customer-path proof remains pending until a later
-approved email completes without manual recovery.
+health-verified. Natural action
+`996a9d1c-e193-4fa3-9fe4-340a438e0f8d` later completed the normal fallback,
+Mailman execution, exact Gmail acknowledgment, and one original-thread closure
+without manual recovery, closing the named customer-path gate.
 
 The separate `email:transport-canary` command sends fixed text to the monitored
 mailbox itself and retrieves the exact Gmail receipt without writing business

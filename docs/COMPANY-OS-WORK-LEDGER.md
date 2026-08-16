@@ -1,7 +1,7 @@
 # Company OS work ledger — Mailman/Sales pilot
 
-Status: host-only schema and shadow observer implemented; production migration,
-release, and reconciliation remain pending
+Status: host-only schema and non-authoritative shadow observer live-verified;
+workflow authority and promotion remain separate
 Tasks: foundation `NC-20260815-010`; activation `NC-20260816-001`
 Decision: the shared ledger is host-owned PostgreSQL business state, while the
 existing SQLite approved-email tables remain the action-execution authority
@@ -31,7 +31,7 @@ The activation slice adds a bounded observer, but it still does not:
 - treat agent output, a queued tool response, service health, or a transport
   canary as progress.
 
-Migration 118 and shadow deployment are authorized only under
+Migration 118 and shadow deployment were authorized and completed only under
 `NC-20260816-001`. Promotion to a workflow dependency remains a later,
 separately authorized milestone.
 
@@ -159,9 +159,10 @@ Base-table and sequence permissions are revoked from `PUBLIC`. Only
 gets a view, write function, or base-table privilege in this slice. The host
 typed store uses the existing admin-side `withAgentContext()` transaction.
 
-Migration 118 remains unapplied until the activation evidence in
-`NC-20260816-001` records an exact production backup, explicit one-file apply,
-structural validation, and zero non-admin privileges. Migration 117 belongs to
+Migration 118 was applied in production only under `NC-20260816-001`, after an
+exact custom-format backup and explicit one-file apply. Live validation found
+three `nanoclaw_admin`-owned tables, enabled append-only event/receipt triggers,
+zero non-admin grants, and zero raw-content columns. Migration 117 belongs to
 active Chaos work; repository numbering never authorizes applying another
 task's migration.
 
@@ -212,36 +213,38 @@ transition, duplicate, and completion counts. Projection errors are contained
 per action; a whole-tick source/database failure is logged and surfaced in
 health, but never thrown into the email execution path.
 
-## 8. Verification and activation gates
+## 8. Verified activation evidence
 
-This dark-foundation milestone exits when:
+`NC-20260816-001` completed the separately authorized migration and shadow
+milestone:
 
-- migration and rollback files are tracked and migration 118 is not applied;
-- migration contract tests prove host-only permissions, privacy-minimized
-  columns, constraints, exact receipt/event uniqueness, and rollback refusal
-  with data;
-- state-machine/store tests cover restart-equivalent retry, exact duplicate,
-  conflicting duplicate, stale version, illegal skip, block/resume, failure,
-  required receipts, cancellation, and full success;
-- typecheck, focused tests, root tests, documentation continuity, formatting,
-  and diff checks pass, with unrelated baseline failures named separately;
-- `docs/PROJECT-MAP.md`, `docs/DATA-MODEL.md`, the Company OS roadmap, active
-  work, and the changelog distinguish local implementation from migration,
-  shadow projection, deployment, and outcome validation.
+- migration 118 has an exact production backup, restore catalog, migration
+  digest, structural validation, least-privilege proof, and minimized columns;
+- exact Node 22.23.2 typecheck, 25 focused tests, the 628-test email-critical
+  gate, and the independent 36-test runner gate passed;
+- immutable corrective release `55c97d5e1bd072dab1c3000f3b715134c3ccc336`
+  is live with exact code-root/artifact health and one listener;
+- a bounded scan of seven source actions excluded three non-Mailman roots and
+  projected four eligible items as three complete outcomes plus one explicit
+  `source_gap:mailman_dispatch_missing` failure at its last verified stage;
+- the following cycle applied zero transitions and deduplicated all 29 facts;
+- SQLite remained authoritative and unchanged by the projection: 67 bound
+  actions, 61 confirmed, 6 blocked, zero actionable, and 334 source events;
+  Gmail and Slack remained connected and the outgoing queue remained empty.
 
-`NC-20260816-001` is the separately authorized migration and shadow milestone.
-It must still provide schema-first live preflight, backup/restore evidence,
-exact migration ordering, immutable release identity, bounded historical
-parity, retry convergence, and unchanged SQLite/Gmail action counts. A
-separately accepted promotion gate remains mandatory.
+The natural approved-email action required by `NC-20260815-009` also completed
+through normal fallback, Mailman execution, exact Gmail acknowledgment, and one
+original-thread closure without manual repair. That is outcome evidence for the
+existing email path; it does not promote this ledger into that path. A
+separately accepted authority/promotion gate remains mandatory.
 
 ## 9. Rollback
 
 Before migration: revert the branch; there is no data or service recovery.
 
-After a later migration but before runtime dependency: prefer leaving the
+After the live migration but before runtime dependency: prefer leaving the
 host-only additive tables dormant. The tracked rollback refuses to drop them
-when any work item, receipt, or event exists.
+because work-item, receipt, and event history now exists.
 
 After shadow wiring: roll back the runtime projection first. Never delete work
 history or use a ledger rollback to resend/cancel an email action. The SQLite

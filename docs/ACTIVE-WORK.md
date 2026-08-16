@@ -11,11 +11,11 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260816-001` | Apply the Company OS ledger schema in production and deploy a non-authoritative, default-off Mailman/Sales shadow projection | Codex | `codex/nc-20260816-001-company-os-shadow` @ deployed `052fb02`; corrective release pending | `validating` | C5 | Backup and migration 118 passed; exact release `052fb02` is healthy under Node 22.23.2 with shadow enabled since 2026-08-14. First live pass completed 3 exact cases, excluded 3 non-Mailman roots, and exposed one historical confirmed action with no Mailman-dispatch event. The observer failed open and did not change email state. A source-gap projection plus 20 focused tests is local. | Commit/build/activate the corrective immutable release, then prove 4 eligible items reconcile as 3 completed plus 1 named source gap, a second pass is duplicate-only, and SQLite/Gmail/Slack action counts remain unchanged. | 2026-08-16T14:14Z |
-| `NC-20260815-010` | Establish the first durable Company OS work-ledger foundation for the Mailman/Sales approved-email pilot without activating it in production | Codex | `codex/nc-20260815-010-company-os-ledger` @ `6e281f0` from `38810d3` | `ready_for_review` | C2 | Focused design/ADR, additive unapplied migration 118 plus history-preserving rollback, host-only typed state/receipt store, 16 focused tests, and data/project/roadmap authorities. Throwaway PostgreSQL apply/store/rollback proof passed. No runtime wiring, group behavior, live migration, production DB write, service change, or external action. | Owner reviews this milestone and chooses whether to authorize the separate production-migration plus default-off shadow-projection milestone; no live workflow dependency or promotion is implied. | 2026-08-16T05:13Z |
+| `NC-20260816-001` | Apply the Company OS ledger schema in production and deploy a non-authoritative, default-off Mailman/Sales shadow projection | Codex | `codex/nc-20260816-001-company-os-shadow` @ deployed `55c97d5` | `complete` | C5 | Migration 118 is backed up, applied, minimized, append-only, and host-admin-only. Exact Node 22.23.2 release `55c97d5` is live with a bounded shadow since 2026-08-14: 4 eligible items reconcile as 3 completed plus 1 named source gap; the next pass was duplicate-only. SQLite stayed authoritative with 67 actions, 61 confirmed, 6 blocked, and zero actionable sends; Gmail/Slack stayed connected and no deployment send/post occurred. | None for this milestone. Any ledger authority, workflow dependency, wider history, or second-workflow projection requires a new separately authorized task. | 2026-08-16T14:21Z |
+| `NC-20260815-010` | Establish the first durable Company OS work-ledger foundation for the Mailman/Sales approved-email pilot without activating it in production | Codex | `codex/nc-20260815-010-company-os-ledger` @ `6e281f0` from `38810d3` | `complete` | C2 | Focused design/ADR, additive migration 118 plus history-preserving rollback, host-only typed state/receipt store, 16 focused tests, and data/project/roadmap authorities passed review through the separately authorized NC-20260816-001 activation. | None. Production application and non-authoritative shadow evidence are recorded under `NC-20260816-001`; promotion remains separate. | 2026-08-16T14:21Z |
 | `NC-20260815-007` | Reactivate the Company OS plan against the current NanoClaw baseline and make it the single strategic roadmap for separately gated implementation slices | Codex | `codex/nc-20260815-007-company-os-reactivation` @ `b7bb65d` from `9e4977a` | `complete` | C1 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, this register, and `docs/ENGINEERING-CHANGELOG.md`; documentation and prioritization only; no source, schema, prompt, configuration, deployment, production, or external-system change | None — R0 is recovered and continuity-verified; subsequent slices use separate task IDs and isolated branches. | 2026-08-16T04:46Z |
-| `NC-20260815-009` | Make the normal approved-email fallback executable and bind every operator-visible recipient header into the immutable action | Codex | `codex/nc-20260815-009-email-fallback-headers` @ deployed `12c2b049` from `cfcfaae` | `deployed_unverified` | C5 | Exact runtime, additive `approved_cc` migration, and reviewed Mailman instructions are live; release/artifact/health/listener/drain evidence is complete. No synthetic customer email was used. | Observe the next naturally approved customer email through normal fallback/execution, then bind the exact Gmail receipt and original Slack-thread completion without manual repair before outcome validation. | 2026-08-16T04:36Z |
-| `NC-20260815-008` | Prove approved Sales-email delivery without customer traffic or manual operator rescue by reconciling the live lineage and gating releases on deterministic historical replay | Codex | `codex/nc-20260815-008-email-replay-gate` @ deployed `cfcfaae` from verified production `84607fd` | `deployed_unverified` | C5 | The deterministic replay gate is deployed and live-verified. The blocked customer action was recovered once with an exact card/hash/party/zero-prior-send gate and a Gmail receipt, but the natural path failed before execution because the watchdog fallback omitted Mailman's required marker; the normal immutable replay also strips an operator-approved CC. | Open a separate runtime-repair task for the fallback marker and approval-bound CC/header semantics, add both incidents to the release-blocking corpus, and deploy only after the same full gate. Prove the next naturally approved email end to end without manual recovery before calling the business path validated. | 2026-08-16T03:14Z |
+| `NC-20260815-009` | Make the normal approved-email fallback executable and bind every operator-visible recipient header into the immutable action | Codex | `codex/nc-20260815-009-email-fallback-headers` @ deployed lineage `12c2b049` | `complete` | C5 | Release/artifact/health/listener/drain evidence was followed by natural action `996a9d1c-e193-4fa3-9fe4-340a438e0f8d`: approval, fallback handoff, Mailman start, claim, Gmail confirmation, and exactly one original-thread closure completed without manual repair. | None. Keep the incident corpus release-blocking and continue normal receipt monitoring. | 2026-08-16T14:21Z |
+| `NC-20260815-008` | Prove approved Sales-email delivery without customer traffic or manual operator rescue by reconciling the live lineage and gating releases on deterministic historical replay | Codex | `codex/nc-20260815-008-email-replay-gate` @ deployed lineage `cfcfaae` | `complete` | C5 | The replay gate is release-blocking; NC-20260815-009 repaired and deployed the two natural-path defects; natural action `996a9d1c-e193-4fa3-9fe4-340a438e0f8d` then reached an exact Gmail receipt and one original-thread closure without manual recovery. | None. Preserve the incident corpus and email-critical gate in every descendant release. | 2026-08-16T14:21Z |
 | `NC-20260812-001` | Give Chaos durable, account-aware purchase and refund events from both Stripe accounts without duplicating fulfillment or Encharge's native Stripe automation | Codex + Claude Code owner/reviewer | `codex/chaos-lifecycle-release` @ `b4d85b2` (exact live lineage) | `ready_for_deploy` | C5 | Existing n8n Stripe ingress, canonicalized NanoClaw dual-account payment/refund processing, PII-free lifecycle outbox/reaper with chief dead-letter alerting, Chaos authenticated lifecycle ingestion, aggregate 7/30/90 reconciliation, focused tests, and release documentation. Excludes customer email/contact creation, customer messaging, and payment/refund action. | Apply migration 117, update the live n8n workflow from a private backup, configure default-off secrets/coverage start, build and deploy one immutable artifact, then prove aggregate receipts before enabling the producer. Encharge and Heartbeat producers remain separate subsequent slices. | 2026-08-13T03:05Z |
 | `NC-20260811-002` | Restore daily Sales lead follow-ups by keeping exact scheduled-task Gmail and approval-card continuations alive with host-validated completion  | Codex                              | `codex/nc-20260811-002-sales-followup-continuation` @ `a33bed1` | `in_progress`         | C5    | Exact Gmail delivery, runner drain-before-close, and final-state completion validation are live; the bounded recovery posted all five cards without sending email, then exposed that rejected cards return asynchronously while accepted cards receive no exact-container acknowledgement, leaving the task unable to emit its receipt | Return `[approval_card ACCEPTED]` to the exact originating container after Slack persists the reviewed card, validate focused/broad/release gates, deploy one superseding immutable release with the reviewed Sales workflow, and prove the callback/receipt contract without duplicating Lead #472 or sending customer email                                              | 2026-08-11T22:04Z |
 | `NC-20260811-001` | Allow Sales to use an exact human-authorized commercial term in the same work thread without weakening the global invented-discount guard       | Codex                              | `codex/nc-20260811-001-human-commercial-terms` @ `194f848`   | `ready_for_deploy`    | C5    | Exact-thread human authorization for numeric commercial terms; approval-card and final Gmail guard parity; reply-scoped Gmail participant alias proof; focused adversarial tests; immutable release and live outcome verification                                                                                                             | Commit the reviewed implementation, build and independently verify one immutable release, deploy only after active work drains, then prove the natural Tom approval-to-Gmail path                                                                                                                                                         | 2026-08-11T20:12Z |
@@ -110,6 +110,30 @@ outside the current client conversation.
   restart, duplicate, blocked, failure, and success tests pass; immutable
   release health is exact; a sanitized reconciliation proves shadow facts do
   not change or duplicate the live email path.
+- Result: production backup
+  `NC-20260816-001-20260816T1405Z/nanoclaw_business_pre_118.dump` is 2,574,495
+  bytes with SHA-256 `932a9aea3e96a2befca8a5f335d04bc9db46d7bd7229b350216834d9ab5510dd`
+  and an 899-line restore catalog. Migration 118 SHA-256
+  `7aa14b087335b11afe7d637aba07c47268f0a1c8d9ec475091478e5c12f65d4a`
+  was applied alone. The three tables are owned by `nanoclaw_admin`, expose no
+  raw-content columns or non-admin grants, and retain enabled append-only
+  event/receipt triggers.
+- Release/live evidence: initial release `052fb0222cea` exposed a historical
+  confirmed action missing its required Mailman-dispatch event. The observer
+  failed open and did not infer the gap. Corrective immutable release
+  `55c97d5e1bd072dab1c3000f3b715134c3ccc336` (source tree `00f62467`,
+  artifact SHA-256 `0b2c090b`, archive SHA-256 `f93d4109`) records
+  `source_gap:mailman_dispatch_missing` at the last verified stage and is live
+  on Node 22.23.2 with one listener and exact launchd/code-root identity.
+  First corrective reconciliation scanned seven bounded actions, excluded
+  three non-Mailman roots, projected four items, applied one gap transition,
+  and completed three. A later cycle applied zero transitions and deduplicated
+  all 29 facts with no errors. PostgreSQL contains 4 items, 29 events, and 13
+  exact receipts: 3 `outcome_validated/completed` and 1 `approved/failed` source
+  gap. SQLite remained at 67 bound actions, 334 events, 61 confirmed, 6
+  blocked, and zero actionable actions; Gmail/Slack stayed connected with an
+  empty outgoing queue. Projection activation sent no email and posted no
+  Slack message.
 - Rollback: disable shadow projection first and return to the prior immutable
   release. Leave additive host-only tables dormant. The tracked destructive
   rollback remains forbidden once any ledger history exists.
@@ -163,6 +187,10 @@ outside the current client conversation.
   retry converged, non-admin table grants were zero, and rollback refused to
   erase the populated history. The cluster and temporary smoke script were
   removed afterward.
+- Subsequent acceptance: the owner authorized the separate
+  `NC-20260816-001` milestone; that task applied migration 118 and proved the
+  bounded non-authoritative production shadow. This closes the foundation
+  review without changing this task's original no-activation boundary.
 - Verification: exact Node 22.23.2 focused tests pass 2 files / 16 tests;
   typecheck, full-source formatting, documentation continuity (58 active/ready
   rows and 54 changelog entries), and diff checks pass. The sandbox root suite
@@ -194,10 +222,10 @@ outside the current client conversation.
 - Scope: this plan, this active-work entry, and the factual changelog record.
   No source, test, schema, migration, prompt, configuration, service,
   deployment, browser, database, Slack, Gmail, or external-system change.
-- Overlap: the task links current release, healer, Procurement, CNPC, grader,
-  Sales, and Contador evidence but does not alter their status, files, or
-  external systems. `NC-20260815-009` remains the current deployed email
-  lineage and natural-path validation remains pending.
+- Overlap: the task links the then-current release, healer, Procurement, CNPC,
+  grader, Sales, and Contador evidence but does not alter their status, files,
+  or external systems. `NC-20260815-009` later closed its natural-path gate;
+  that subsequent evidence does not change this documentation task's scope.
 - Decisions: one Company OS roadmap; separately allocated implementation task
   IDs; safety prerequisites before live ledger activation; normalized triggers
   and versioned skills after ledger semantics; operator exception UX after
@@ -273,6 +301,13 @@ outside the current client conversation.
   work, and exactly one `approved_cc` schema column. The first transitional
   health read preceded predecessor-PID exit; release acceptance waited for the
   new PID/uptime boundary. No email was sent for deployment proof.
+- Natural outcome validation at 2026-08-16T13:59Z: action
+  `996a9d1c-e193-4fa3-9fe4-340a438e0f8d` traversed approval, the normal
+  fallback handoff, Mailman start, one-time execution, and Gmail confirmation,
+  then produced exactly one completion in its original Slack thread. No manual
+  repair or synthetic customer send was used. The durable SQLite outcome is
+  `confirmed`; the later Company OS shadow independently reconciles the same
+  opaque action as `outcome_validated/completed` without controlling it.
 - Rollback: restore the activation-captured launchd plist and verify the prior
   `cfcfaae` release. Any additive local schema change must remain backward
   compatible; uncertain or executing actions are never automatically retried.
@@ -415,10 +450,14 @@ outside the current client conversation.
   commit/source tree/artifact, matching code root, Node 22.23.2, connected
   Gmail/Slack, and zero active/queued work. The installed 620-file bundle also
   passes independent verification.
-- State: `deployed_unverified`. The release-blocking replay is live, but its
-  compiled runtime is intentionally unchanged from `84607fd`; it does not fix
-  the two newly observed handoff/header defects. The next slice must repair
-  both and use a later, independently approved natural email as outcome proof.
+- Subsequent closure: `NC-20260815-009` repaired both observed handoff/header
+  defects and deployed them through the same release-blocking replay gate. At
+  2026-08-16T13:59Z, later natural action
+  `996a9d1c-e193-4fa3-9fe4-340a438e0f8d` completed approval, normal fallback,
+  Mailman execution, exact Gmail acknowledgment, and one original-thread
+  closure without manual recovery. The replay assurance and its named natural
+  business-path gate are therefore complete; keep the corpus in every
+  descendant email release.
 
 ### NC-20260812-001
 
