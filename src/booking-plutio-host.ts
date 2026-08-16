@@ -522,7 +522,7 @@ export async function dispatchBookingPlutioOutboxRow(
     );
     await queryFn(
       `UPDATE business_v2.interactions
-          SET metadata = metadata || jsonb_build_object('plutio_person_id', $1),
+          SET metadata = metadata || jsonb_build_object('plutio_person_id', $1::text),
               updated_at = NOW(),
               last_updated_by = 'booking-plutio-host'
         WHERE party_id = $2

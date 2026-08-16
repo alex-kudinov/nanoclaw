@@ -27,7 +27,11 @@ import { HEARTBEAT_MARKER } from './ipc-protocol.js';
 import { detectRateLimit, detectAuthFailure } from './rate-limit.js';
 import { resolveModel, formatUsageLine } from './model-util.js';
 import { payloadIsForThisContainer } from './ipc-input-filter.js';
-import { drainBeforeClose } from './ipc-loop-policy.js';
+import {
+  drainBeforeClose,
+  prepareScheduledTaskPrompt,
+  shouldExitAfterTurn,
+} from './ipc-loop-policy.js';
 import { selectNextIpcTurn, type IpcTurnCandidate } from './ipc-turn-policy.js';
 import {
   buildAllowedTools,
@@ -398,9 +402,10 @@ async function runAgent(
     prompt: containerInput.prompt,
     runId: containerInput.runId,
   };
-  if (containerInput.isScheduledTask) {
-    pendingTurn.prompt = `[SCHEDULED TASK - The following message was sent automatically and is not coming directly from the user or group.]\n\n${pendingTurn.prompt}`;
-  }
+  pendingTurn.prompt = prepareScheduledTaskPrompt(
+    pendingTurn.prompt,
+    containerInput.isScheduledTask,
+  );
   if (!pendingTurn.runId) {
     const drained = drainIpcInput(true);
     if (drained) {
@@ -664,6 +669,10 @@ async function runAgent(
       }
 
       lastActivityMs = Date.now();
+      if (shouldExitAfterTurn(containerInput.isScheduledTask)) {
+        log('Scheduled task result emitted — exiting one-shot agent loop');
+        break;
+      }
     }
   } finally {
     clearInterval(heartbeatInterval);
@@ -822,7 +831,6 @@ async function main(): Promise<void> {
       if (result.failedTurn) {
         containerInput.prompt = result.failedTurn.prompt;
         containerInput.runId = result.failedTurn.runId;
-        containerInput.isScheduledTask = false;
       }
       containerInput.sessionId = undefined;
       let lastMessage = result.rateLimitMessage ?? result.authFailMessage;
@@ -840,7 +848,6 @@ async function main(): Promise<void> {
         if (retry.failedTurn) {
           containerInput.prompt = retry.failedTurn.prompt;
           containerInput.runId = retry.failedTurn.runId;
-          containerInput.isScheduledTask = false;
         }
         lastMessage =
           retry.rateLimitMessage ?? retry.authFailMessage ?? lastMessage;

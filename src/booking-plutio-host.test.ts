@@ -247,6 +247,9 @@ describe('dispatchBookingPlutioOutboxRow', () => {
     expect(receipt.remoteStatus).toBe('recorded');
     expect(query).toHaveBeenCalledTimes(3);
     expect(query.mock.calls[1][1]).toEqual([42, 'person_1']);
+    expect(query.mock.calls[2][0]).toContain(
+      "jsonb_build_object('plutio_person_id', $1::text)",
+    );
     expect(query.mock.calls[2][1]).toEqual(['person_1', 42, '47']);
   });
 

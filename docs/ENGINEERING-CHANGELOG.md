@@ -10,9 +10,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260816-013 — Cut Booking lifecycle Plutio writes over to the host
 
-- Date: 2026-08-16T22:11Z
+- Date: 2026-08-16T22:32Z
 - Owner/client: Codex
-- State: deployed_unverified; capability boundary live, outcome canary not sent
+- State: validating; capability boundary live, authorized canary exposed two
+  release blockers
 - Commit/PR: claim `58778d9`; implementation `08cbb9b`; release-path correction
   and immutable release `77064e9` on
   `codex/nc-20260816-013-booking-plutio-cutover` from `f10c572`; no PR
@@ -29,9 +30,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   installation, Booking drain, registered-mount transaction, prompt activation,
   and side-effect-free live boundary verification. The approved deployment did
   not authorize customer traffic, email, Trafft mutation, credential rotation,
-  push, or merge. The proposed sanitized normal-ingress canary was blocked
-  before execution, so it created no production Booking/Slack/outbox/Plutio
-  side effect.
+  push, or merge. The owner later authorized exactly one synthetic
+  normal-ingress event, its Booking/Slack/outbox/Plutio effects, and one
+  duplicate replay. That duplicate is deferred until the discovered release
+  blockers are repaired and deployed; no distinct webhook event is authorized.
 - Implementation: canceled/rescheduled Booking interactions now use the exact
   archive-derived event id. Initial receiver and inbox replay both reject a
   resolved container error, require the persisted interaction's event id,
@@ -47,6 +49,25 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   passes 2,472/2,473; the sole failure is the unchanged unrelated CNPC
   wrapper-string assertion expecting literal `folder: 'cnpc'`. No production
   database, webhook, Slack, Trafft, or Plutio action occurred.
+- Canary incident: one sanitized rescheduled event was accepted as inbox
+  `4469`. It created synthetic party `11333`, exact lifecycle interaction
+  `3034`, processed party-sync row `1311`, and two exact Booking notices rather
+  than the intended one. Both agent turns emitted successful results, but the
+  scheduled-task runner remained warm until liveness/spawn cleanup converted
+  those results to host errors. The deployed completion gate was recovered
+  against the exact archived event and interaction, producing Booking activity
+  row `1312` and marking the inbox handled before any further retry.
+- Plutio incident: exact row `1312` reached the authorized remote activity
+  step, then the post-write metadata update failed with SQLSTATE `42P18`
+  because `$1` inside `jsonb_build_object` lacked a text cast. The marker makes
+  the next attempt no-write. Row `1312` remains failed and retryable; no email
+  or Trafft mutation occurred.
+- Corrective implementation: scheduled tasks now retain their one-shot identity
+  across credential retries, receive the scheduled prefix idempotently, and
+  exit immediately after emitting one result. The Booking receipt metadata
+  update now binds `$1::text`. Focused receiver/inbox/Booking/reaper checks pass
+  59/59; the full independent runner passes 43/43; both packages build and root
+  typecheck passes. A read-only production PostgreSQL probe confirms the cast.
 - Release artifact:
   `77064e99c4dc2e1342993ba8659a820fd2a1bf05` has source tree
   `f83601b26773952947ba54d7efc647e22f7c913c`, 664-file artifact hash
@@ -69,12 +90,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `agent_docs`. The installed verifier reports only `business_db`, all
   configured Trafft and Plutio source names absent, and all required DB inputs
   present. No retryable lifecycle row or `booking_activity:*` outbox row exists.
-- Outcome boundary: the sanitized webhook call was rejected by the external
-  approval gate before execution. No webhook, synthetic party, Booking
-  interaction, Slack notice, durable Plutio outbox work, or Plutio activity was
-  created. One explicitly authorized normal-ingress canary and immediate
-  duplicate replay remain before outcome validation; email and Trafft mutation
-  remain excluded.
+- Outcome boundary: the capability cutover remains live, but the normal path is
+  not outcome-validated. Build and deploy a superseding immutable release, then
+  replay only failed outbox row `1312`; remote readback must return
+  `already_recorded`, the SQL update must succeed, and the row must become
+  terminal without a second activity. The already-authorized duplicate replay
+  may then verify inbox idempotency for this exact event; any distinct webhook
+  requires separate explicit authority. Email and Trafft mutation remain
+  excluded.
 
 ### NC-20260816-012 — Prove Booking reschedule identity and the real Plutio marker
 
