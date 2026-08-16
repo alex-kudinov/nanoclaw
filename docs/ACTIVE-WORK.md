@@ -217,6 +217,10 @@ outside the current client conversation.
   focused one-shot runner suite passes 5/5 without mounts or credentials, and
   final health reports exact release `02ce48f`, Node 22.23.2, connected
   Gmail/Slack, and empty container/work queues.
+- Automatic scheduler proof: the first post-fix cron cycle started at
+  `2026-08-16T23:00:29Z`, exited 0, and durably recorded `ok`. Its compiled
+  reaper receipt reports processed/succeeded/retried/dead-lettered all zero,
+  with the next run scheduled for `23:15Z`.
 - Final local gates: exact Node 22.23.2 passes the 16/16 focused
   Booking/Plutio/compiled-CLI set, root typecheck/build, shell syntax,
   documentation continuity, the 635/635 email-critical release gate, and the

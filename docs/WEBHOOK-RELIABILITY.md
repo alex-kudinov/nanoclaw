@@ -150,6 +150,9 @@ inbox, party, interaction, and outbox counts. Because the first normal event
 required operator recovery, this path remains `deployed_unverified` until one
 fresh post-fix natural canceled/rescheduled event exits after one agent turn,
 posts one Booking notice, and reaches a terminal receipt without intervention.
+The first automatic post-fix 15-minute Plutio cycle exited 0 and durably
+recorded an all-zero work receipt, proving the scheduler now invokes the
+release-bound compiled launcher without consuming another retry.
 
 ### 3.5a Customer-event sweep is skipped by design
 

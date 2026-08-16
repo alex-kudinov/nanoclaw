@@ -130,6 +130,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   The exact production image passes the focused 5/5 one-shot runner suite
   without mounts or credentials. Final health reports release `02ce48f`, Node
   22.23.2, connected Gmail/Slack, and empty work queues.
+- Automatic scheduler verification: the first post-fix cron cycle began at
+  `2026-08-16T23:00:29Z`, exited 0, and recorded `ok`; its compiled reaper
+  receipt reports zero processed, succeeded, retried, or dead-lettered rows.
 - Final local verification: exact Node 22.23.2 passes the 16/16 focused
   Booking/Plutio/compiled-CLI set, root typecheck/build, shell syntax,
   documentation continuity, the 635/635 email-critical release gate, and the
