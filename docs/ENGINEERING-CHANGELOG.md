@@ -8,6 +8,48 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-015 — Deploy and prove the read-only Company OS brief
+
+- Date: 2026-08-16T23:51Z
+- Owner/client: Codex
+- State: complete; deployed and live read-verified
+- Commit/PR: deployment claim/release `cf9625847bb2cbb0faa167f68a0f842d645e1807`
+  on `codex/nc-20260816-015-work-ledger-report-deploy`; no PR
+- Change class: C2 reversible service activation plus C0 production read
+- Preflight: `mini-claw.local` served verified release `02ce48f` from one
+  listener with connected Slack/Gmail, zero active containers, empty runtime
+  and outgoing queues, zero active email actions, 61 confirmed/6 blocked email
+  actions, 334 email events, and Company OS fingerprint 4 items/version sum
+  25/29 events/13 receipts.
+- Release: exact Node 22.23.2 built clean commit `cf962584` with source tree
+  `0edd192cc8bb073fc028c05645727a1554ea164e`, 676-file artifact
+  `02627f90816dd80657a92cc17e89b2eea8bf8d3f721b5997c771081ecdcdb960`,
+  and archive SHA-256
+  `f2ecf9e81d76a94a695d1afd94d37ea463f0db9b388c925139f448299153b6d5`.
+  The archive and compiled report CLI independently verified both locally and
+  after fresh extraction on production. The release build passed 635/635
+  email-critical tests and the independent runner build plus 43/43 tests.
+- Deployment: the bundled dry run verified the exact current/target releases,
+  interpreter, bundles, health, listener tools, candidate plist, and exactly
+  three pointer changes. Applied activation moved `02ce48f` to `cf96258`,
+  created rollback plist
+  `com.nanoclaw.plist.rollback-02ce48f5564c-2026-08-16T23-49-36-282Z`, and
+  converged to sole listener/launchd/heartbeat PID `16616`. Health reports the
+  exact commit, source tree, artifact, Node pin, code root match, connected
+  Slack/Gmail, empty queues, and a healthy duplicate-only shadow cycle.
+- Production read: one compiled `--json --limit 100 --stale-after-hours 24`
+  invocation scanned all four work items without truncation. It reported three
+  completed items and one known critical failed/stale
+  `source_gap:mailman_dispatch_missing`; all contradiction, event-chain,
+  duplicate, receipt-gap, overdue, waiting-approval, and outcome-missing counts
+  were zero.
+- No-write proof: the Company OS count/version/timestamp fingerprint and SQLite
+  email counts were byte-for-value identical after the report. No migration,
+  configuration, prompt, workflow transition, email, Slack post, customer
+  traffic, production data write, push, or merge occurred.
+- Rollback: restore the retained exact plist and health-verify release
+  `02ce48f`; no database rollback or external side-effect recovery applies.
+
 ### NC-20260816-014 — Add a read-only Company OS exception brief
 
 - Date: 2026-08-16T23:27Z

@@ -359,7 +359,7 @@ dependencies, not active runtime channels in this snapshot.
 | Area                   | Main files                                                                     | Responsibility                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
-| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-work-report.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | live host-only stage/disposition/receipt projection; observer is bounded, default-off, fail-open, and never email authority; NC-014 adds a local bounded SELECT-only exception report that is not daemon-wired or deployed |
+| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-work-report.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | live host-only stage/disposition/receipt projection; observer is bounded, default-off, fail-open, and never email authority; NC-015 deploys/live-verifies the bounded SELECT-only exception CLI, which remains disconnected from the daemon and workflows |
 | External-write control | `src/action-safety.ts`, `src/action-safety-drill-exec.ts`, `docs/ACTION-SAFETY-CONTROL.md` | deployed/default-off common action envelope and dynamic global/per-system brakes; exact release `47019c9` live-verifies Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, Hive/Firestore, and Things; in-flight interruption, standalone scripts, remaining integrations, ceilings, and demotion remain open |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
@@ -486,11 +486,13 @@ The modern namespace is `business_v2`, including concepts such as:
   outcomes plus one named source gap, with duplicate-only replay. SQLite
   remains action authority; running state must still be taken from
   active-work/changelog evidence, not repository presence.
-- `NC-20260816-014` adds a local read-only reconciliation/exception report over
+- `NC-20260816-014` adds a read-only reconciliation/exception report over
   those privacy-minimized tables. It detects state/event contradictions,
   receipt gaps, duplicate facts, named source gaps, blocked/failed/waiting,
-  stale/overdue, and outcome-missing work through one bounded SELECT. It is not
-  daemon-wired or deployed and cannot affect the approved-email path.
+  stale/overdue, and outcome-missing work through one bounded SELECT.
+  `NC-20260816-015` deploys exact release `cf96258` and verifies one full
+  four-item production read plus unchanged PostgreSQL and SQLite fingerprints.
+  It is not daemon-wired and cannot affect the approved-email path.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.
@@ -744,10 +746,11 @@ Corrective release `67f16d5` fixed one-shot scheduled-task exit and the receipt
 cast, rebuilt image `sha256:0618fbecf88cc0298fa9665db1c0c2c0ad368da37d471d148fb984e310ca835e`,
 and refreshed all 18 runner snapshots. A third defect then surfaced before the
 controlled retry: `tools/plutio/run-reaper.sh` still executed operational
-TypeScript rather than immutable release code. Exact active release `02ce48f`
-adds a compiled reaper CLI, includes the launcher in the bundle, and makes the
+TypeScript rather than immutable release code. Release `02ce48f` added a
+compiled reaper CLI, included the launcher in the bundle, and made the
 operational launcher verify and execute launchd's exact code root and Node
-interpreter. The real launcher processed only row `1312`; remote readback
+interpreter; exact active release `cf96258` preserves those bytes and controls.
+The real launcher processed only row `1312`; remote readback
 returned `already_recorded`, persisted marker/person/note receipts and
 interaction metadata, and emptied the queue without a second activity. The
 authorized duplicate webhook returned HTTP 200 and left all entity counts

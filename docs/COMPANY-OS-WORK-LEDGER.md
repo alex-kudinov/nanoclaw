@@ -1,10 +1,10 @@
 # Company OS work ledger — Mailman/Sales pilot
 
-Status: host-only schema and non-authoritative shadow observer live-verified;
-local read-only exception brief implemented; workflow authority, deployment,
-and promotion remain separate
+Status: host-only schema, non-authoritative shadow observer, and read-only
+exception brief deployed and live-verified; workflow authority and promotion
+remain separate
 Tasks: foundation `NC-20260815-010`; activation `NC-20260816-001`; read-only
-brief `NC-20260816-014`
+brief `NC-20260816-014`; report deployment/proof `NC-20260816-015`
 Decision: the shared ledger is host-owned PostgreSQL business state, while the
 existing SQLite approved-email tables remain the action-execution authority
 
@@ -24,8 +24,9 @@ Mailman/inbound fact
   → original Slack-thread/outcome validation
 ```
 
-The activation slice adds a bounded observer, and NC-014 adds a separate local
-read-only reconciliation report, but neither does any of the following:
+The activation slice adds a bounded observer, and NC-014/NC-015 add and deploy
+a separate read-only reconciliation report, but neither does any of the
+following:
 
 - make the ledger authoritative for any workflow decision;
 - change either group prompt or tool capability;
@@ -275,12 +276,21 @@ selects recipient, subject, body, approval text, evidence bytes, or credentials.
 A database/query failure returns only `ledger_query_failed` and cannot affect
 the shadow projector or email path.
 
-This is a local, non-authoritative R2 evidence surface. It has not been
-deployed or run against production under NC-014, does not satisfy R4's operator
-resolution/work-panel gate, and cannot promote a ledger fact into workflow
-authority. A later deployment may prove the exact compiled report read-only;
-any Slack brief, schedule, acknowledgment, resolution action, or workflow
-dependency requires its own task and authority.
+NC-014 established this as a local, non-authoritative R2 evidence surface.
+NC-015 deploys exact release `cf96258` and live-verifies one bounded production
+read: all four items were scanned without truncation, three were complete, and
+one was the known critical failed/stale
+`source_gap:mailman_dispatch_missing`. All structural contradiction,
+event-chain, duplicate, receipt-gap, overdue, waiting-approval, and
+outcome-missing counts were zero. Before/after fingerprints remained four
+items, version sum 25, 29 events, 13 receipts, and unchanged maximum
+timestamps; SQLite remained 61 confirmed/6 blocked actions and 334 events with
+zero active actions.
+
+The report is still not daemon- or scheduler-wired, does not satisfy R4's
+operator resolution/work-panel gate, and cannot promote a ledger fact into
+workflow authority. Any Slack brief, schedule, acknowledgment, resolution
+action, or workflow dependency requires its own task and authority.
 
 ## 10. Rollback
 

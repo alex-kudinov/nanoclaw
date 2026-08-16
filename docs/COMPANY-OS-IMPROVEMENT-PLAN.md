@@ -58,17 +58,17 @@ company-wide merely because one workflow implements them.
 | --- | --- | --- |
 | P0.0 blast-radius reduction | partial | Gmail containment is `deployed_unverified` under `NC-20260729-004`; healer Gate A is `deployed_unverified` under `NC-20260730-002`. Procurement CDP isolation, the universal external-write brake, and all other named boundaries remain open. |
 | P0.1 runtime contract | partial | `NC-20260728-005` restored a pinned Node 22 test baseline; `NC-20260731-003` put production on Node 22.23.2; release/runtime enforcement has advanced, but review and live-verification gates remain task-specific. |
-| P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries. `NC-20260816-010` removes Trafft credentials from enforced Booking while retaining its then-used Plutio family; `NC-20260816-011` adds the dark Booking-to-Plutio host adapter with opaque durable references, archive-derived values, safety enforcement, and replay receipts. Exact release `13ca192` under `NC-20260816-012` deploys shared reschedule identity and proves a visible remote marker plus no-write replay after the HTML-comment candidate failed closed. `NC-20260816-013` wires initial/replay enqueue behind successful-agent plus exact-persisted-interaction gates and removes Booking's direct Plutio procedure. Its authorized normal-ingress canary exposed and contained scheduled-task exit, PostgreSQL receipt-cast, and operational-checkout reaper-launcher defects; exact active release `02ce48f` repairs all three. The controlled row replay returned `already_recorded` with durable receipts and the duplicate webhook left counts stable. A fresh post-fix natural lifecycle observation remains open because the first event required operator recovery, so no full P0.2 credit is claimed. Company-wide adapter migration and red-team proof also remain open. |
-| P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. `NC-20260816-006` live-verifies Campanero; exact release `ba5fe74` under `NC-20260816-010` live-verifies Booking as the second selective canary with Trafft absent and required DB/Plutio names present. NC-013 narrows Booking to `business_db`, removes its Plutio/toolbox mounts, and has installed secret/mount-negative proof. Exact active release `02ce48f` preserves that projection after the corrective rollouts; the durable Booking receipt and duplicate ingress replay now pass. One fresh post-fix natural lifecycle observation remains pending. Other groups, egress enforcement, broader raw-secret removal, and action-value ceilings remain open. |
+| P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries. `NC-20260816-010` removes Trafft credentials from enforced Booking while retaining its then-used Plutio family; `NC-20260816-011` adds the dark Booking-to-Plutio host adapter with opaque durable references, archive-derived values, safety enforcement, and replay receipts. Exact release `13ca192` under `NC-20260816-012` deploys shared reschedule identity and proves a visible remote marker plus no-write replay after the HTML-comment candidate failed closed. `NC-20260816-013` wires initial/replay enqueue behind successful-agent plus exact-persisted-interaction gates and removes Booking's direct Plutio procedure. Its authorized normal-ingress canary exposed and contained scheduled-task exit, PostgreSQL receipt-cast, and operational-checkout reaper-launcher defects; release `02ce48f` repaired all three and exact active release `cf96258` preserves them. The controlled row replay returned `already_recorded` with durable receipts and the duplicate webhook left counts stable. A fresh post-fix natural lifecycle observation remains open because the first event required operator recovery, so no full P0.2 credit is claimed. Company-wide adapter migration and red-team proof also remain open. |
+| P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. `NC-20260816-006` live-verifies Campanero; exact release `ba5fe74` under `NC-20260816-010` live-verifies Booking as the second selective canary with Trafft absent and required DB/Plutio names present. NC-013 narrows Booking to `business_db`, removes its Plutio/toolbox mounts, and has installed secret/mount-negative proof. Exact active release `cf96258` preserves that projection after the corrective rollouts; the durable Booking receipt and duplicate ingress replay now pass. One fresh post-fix natural lifecycle observation remains pending. Other groups, egress enforcement, broader raw-secret removal, and action-value ceilings remain open. |
 | P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260816-002` implements a dark content-free universal envelope plus mutation/replay tests, but legacy domains do not yet supply it and enforcement is not activated. |
 | P0.5 safety controller | partial | The `NC-20260816-002` controller remains default-off; exact release `d32fda08` deploys and live-verifies a dry-run-first, auto-restored production transaction across Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, and Hive/Firestore with no external write, queue mutation, or Hive retry consumption. `NC-20260816-004` adds next-turn stale warm/adoption revocation when manifest enforcement is enabled. Immediate in-flight interruption, standalone-script/remaining-integration coverage, per-action ceilings, and automatic demotion remain open. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
-| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` applied the production schema and live-verified the bounded observer across completion, source-gap, and duplicate-only replay; `NC-20260816-014` adds a local read-only integrity/exception report. SQLite remains email authority and workflow promotion plus a second pilot process are still open. |
+| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` applied the production schema and live-verified the bounded observer across completion, source-gap, and duplicate-only replay; `NC-20260816-014` adds the read-only integrity/exception report and `NC-20260816-015` deploys and live-verifies one full bounded production read with unchanged state. SQLite remains email authority and workflow promotion plus a second pilot process are still open. |
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
 | P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places; they are not normalized behind one trigger/run contract or reconciled as one inventory. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
-| P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014` adds a local compact exception surface for the one Mailman/Sales ledger pilot, but production proof, a second workflow, normalized correlation, and recurring briefs remain incomplete. |
+| P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014` adds the compact exception surface for the Mailman/Sales ledger pilot and `NC-20260816-015` proves it against production, but a second workflow, normalized correlation, and recurring briefs remain incomplete. |
 | P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
 | P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable; Gmail history-expiry reconciliation and a common source-watermark contract remain open. |
 | P1.8 migration discipline | partial | Ordered tracked `business_v2` migrations and structure-only schema checks exist; checksums, fresh-database CI, portability, and universal migration/restore gates remain incomplete. |
@@ -87,7 +87,7 @@ company-wide merely because one workflow implements them.
 | P2.7 typed configuration | partial | Typed policy modules, setup code, and examples exist, but effective configuration still spans environment, SQLite JSON, launchd, code, and local state. |
 | P2.8 safe integration environment | partial | Focused fixtures, synthetic canaries, and extensive tests exist; a reusable side-effect-free environment covering the two pilot workflows remains incomplete. |
 | P2.9 explicit releases | partial | Exact release provenance and code/state-root checks are live on the current email lineage; those controls are not yet universal release and recovery proof for every workflow. |
-| P2.10 exception inbox | partial | `NC-20260816-014` implements the smallest local SELECT-only ledger exception brief for the Mailman/Sales pilot. It has no deployment, Slack schedule, acknowledgment/resolution action, second workflow, or work panel; the existing watchdogs, digests, cards, and queues therefore remain separate surfaces. |
+| P2.10 exception inbox | partial | `NC-20260816-014` implements the smallest SELECT-only ledger exception brief for the Mailman/Sales pilot and `NC-20260816-015` deploys/live-verifies one bounded production read. It has no Slack schedule, acknowledgment/resolution action, second workflow, or work panel; the existing watchdogs, digests, cards, and queues therefore remain separate surfaces. |
 | P2.11 relationship timeline | partial | `business_v2`, interactions, canonical lead keys, and thread anchoring provide parts of the timeline; one reconciled party/work/action/outcome view remains incomplete. |
 | P2.12 functional closure | partial | Procurement, CNPC, grader, Sales, and Contador now have stronger closed-loop pieces, but each process still needs an explicit completion definition, receipt, exception path, and outcome check. |
 | P2.13 management briefs | partial | Brief and digest generators exist, but they are not derived from the shared work ledger and do not yet report accepted, completed, blocked, stale, and outcome-validated work consistently. |
@@ -1401,9 +1401,10 @@ needed an explicit text cast; and the 15-minute Plutio launcher executed the
 dirty operational checkout rather than immutable release code. The host gate
 was recovered against exact persisted state to stop further agent retries.
 Release `67f16d5` fixed the runner and cast and rebuilt/refreshed the production
-runner boundary. Exact active release `02ce48f` adds the compiled reaper CLI,
-bundles the Plutio launcher, and makes that launcher verify and execute
-launchd's release and Node selections. The controlled activity-row retry read
+runner boundary. Release `02ce48f` added the compiled reaper CLI, bundled the
+Plutio launcher, and made that launcher verify and execute launchd's release
+and Node selections; exact active release `cf96258` preserves those controls.
+The controlled activity-row retry read
 the existing marker as `already_recorded`, persisted all opaque receipts and
 interaction metadata, and emptied the queue without a second remote activity.
 The authorized duplicate webhook returned HTTP 200 with stable counts. R1's
@@ -1421,12 +1422,13 @@ receipt facts. Migration 118 and immutable release `55c97d5` are live-verified:
 four eligible actions reconcile as three complete outcomes plus one named
 source gap, and the next cycle is duplicate-only. This completes the first R2
 shadow-proof milestone, not R2 as a whole; workflow dependency/promotion and a
-second pilot process remain separate gates. `NC-20260816-014` adds the next
-local R2 evidence surface: a bounded read-only report that reconciles item,
-event, and receipt structure and classifies waiting, blocked, failed, stale,
-source-gap, deadline, and outcome-missing work. It is not daemon-wired or
-deployed, supplies no resolution action, and does not bypass the R3 trigger or
-R4 operator-workflow gates.
+second pilot process remain separate gates. `NC-20260816-014` adds the next R2
+evidence surface: a bounded read-only report that reconciles item, event, and
+receipt structure and classifies waiting, blocked, failed, stale, source-gap,
+deadline, and outcome-missing work. `NC-20260816-015` deploys it and proves one
+full production read with unchanged ledger/email fingerprints. It is not
+daemon-wired, supplies no resolution action, and does not bypass the R3 trigger
+or R4 operator-workflow gates.
 
 Each slice receives one or more separate `NC-YYYYMMDD-NNN` tasks only when work
 starts. Do not reserve future IDs, combine these slices into one implementation
@@ -1719,9 +1721,10 @@ Implementation checkpoint (2026-07-29):
     Mailman and Sales only. `NC-20260815-010` implements the state/receipt/schema
     foundation; `NC-20260816-001` applies the production schema and completes
     the bounded shadow evidence with three outcomes, one explicit source gap,
-    and duplicate-only replay; `NC-20260816-014` adds the local bounded
-    integrity and exception report. Any deployment or authority promotion
-    remains an explicit, separate boundary.
+    and duplicate-only replay; `NC-20260816-014` adds the bounded integrity and
+    exception report; and `NC-20260816-015` deploys it and verifies one full
+    production read without state change. Any authority promotion remains an
+    explicit, separate boundary.
 19. `REL-001` — inventory schedules and probe target existence, last run, and
     last exit status.
 20. `EVAL-001` — incident/injection regression pack for Mailman and Sales.
@@ -1750,9 +1753,10 @@ Implementation checkpoint (2026-07-29):
 28. `UX-001` — build the smallest ledger-backed exception brief/work panel for
     waiting approval, blocked, stale, failed, dead-letter, and
     outcome-unvalidated work; retain source-system links and receipts.
-    `NC-20260816-014` implements only the local read-only Mailman/Sales brief;
-    deployment, dead-letter coverage, operator resolution, Slack scheduling,
-    and any wider work panel remain open.
+    `NC-20260816-014` implements the read-only Mailman/Sales brief and
+    `NC-20260816-015` deploys/live-verifies one bounded invocation; dead-letter
+    coverage, operator resolution, Slack scheduling, and any wider work panel
+    remain open.
 29. `REL-005` — make the host-generated approved-email fallback conform to
     Mailman's executable marker contract, and bind every operator-visible
     recipient header, including CC, into the immutable action before execution.

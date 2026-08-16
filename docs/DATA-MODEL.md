@@ -18,9 +18,11 @@ pipeline state, or the SQLite approved-email action authority.
 bounded, default-off host projection across completed, source-gap, and
 duplicate-only cases. SQLite remains approved-email authority. See
 `docs/COMPANY-OS-WORK-LEDGER.md` and `docs/ACTIVE-WORK.md` for current state.
-`NC-20260816-014` adds a local SELECT-only reconciliation report over the same
-privacy-minimized structures; it changes no schema or authority and is not yet
-deployed.
+`NC-20260816-014` adds a SELECT-only reconciliation report over the same
+privacy-minimized structures; it changes no schema or authority.
+`NC-20260816-015` deploys and live-verifies one bounded four-item production
+read under exact release `cf96258`, with unchanged item/version/event/receipt
+and SQLite email fingerprints before and after.
 
 ---
 
