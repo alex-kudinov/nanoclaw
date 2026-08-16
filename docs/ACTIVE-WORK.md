@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260816-013` | Cut canceled/rescheduled Booking activity over to the durable host Plutio boundary and remove raw Plutio access from the Booking container | Codex | `codex/nc-20260816-013-booking-plutio-cutover` @ deployed `67f16d5` | `validating` | C5 | The authorized canary created inbox `4469`, party `11333`, interaction `3034`, two Booking notices, processed party-sync row `1311`, and replay-safe Booking activity row `1312`. Release `67f16d5` fixes the scheduled-task exit and PostgreSQL receipt cast, is live with rebuilt runner image/snapshots, and exposed a third blocker before replay: the scheduled Plutio launcher still executes the dirty operational TypeScript checkout instead of the verified release. Its local-only attempt left row `1312` failed at attempt 2 without calling Plutio. | Ship the immutable compiled reaper CLI plus release-resolving operational launcher; verify the scheduled boundary uses the exact active release; then replay only row `1312` and require `already_recorded`, terminal receipt persistence, and no second activity. Finally use the already-authorized duplicate replay for this exact event only. No distinct webhook event, email, or Trafft mutation is authorized. | 2026-08-16T22:49Z |
+| `NC-20260816-013` | Cut canceled/rescheduled Booking activity over to the durable host Plutio boundary and remove raw Plutio access from the Booking container | Codex | `codex/nc-20260816-013-booking-plutio-cutover` @ deployed `02ce48f` | `deployed_unverified` | C5 | Booking is constrained to `business_db`; direct Plutio/toolbox mounts and credentials are absent. The authorized canary created inbox `4469`, party `11333`, interaction `3034`, two Booking notices, party-sync row `1311`, and activity row `1312`, exposing and containing scheduled-task exit, receipt-cast, and mutable-checkout launcher defects. Exact release `02ce48f` is healthy with all three repaired. The real scheduled launcher replayed only row `1312` to terminal `already_recorded` with durable receipts and no second activity; the authorized duplicate webhook returned 200 with stable counts. | Observe the next fresh natural canceled/rescheduled event and require one agent turn, one Booking notice, automatic durable enqueue/receipt, and no operator recovery. No synthetic distinct webhook, email, or Trafft mutation is authorized. | 2026-08-16T22:55Z |
 | `NC-20260816-012` | Repair shared Trafft reschedule identity and empirically prove the dark Booking host adapter's remote Plutio replay marker before any cutover | Codex | `codex/nc-20260816-012-booking-plutio-marker` @ deployed `13ca192` | `complete` | C5 | Shared reschedule identity and the visible digest marker are live. The retained synthetic note contains the original negative entry plus the authorized correction, exactly one visible marker, and immediate replay returned `already_recorded` without a second corrective write. Natural ingress/outbox, Booking prompt/manifest/mount, credential removal/rotation, Trafft, production DB, customer/Slack, push, and merge remained excluded. | None; this prerequisite milestone is complete. | 2026-08-16T21:24Z |
 | `NC-20260816-011` | Build and deploy the dark host-owned Booking-to-Plutio lifecycle adapter without invoking Plutio or changing Booking's current capability | Codex | `codex/nc-20260816-011-booking-plutio-host` @ deployed `63ed4aa` | `complete` | C5 | Exact release `63ed4aa` contains the typed archived-event parser, opaque durable outbox path, host-derived dispatch, action-safety enforcement, replay marker/receipt, and Booking-only stale reclaim. The installed injected canary proves first pass, replay, and booked-event denial with zero DB/child/network calls; live email/task/Plutio aggregates are unchanged and Booking-specific outbox rows remain zero. Natural ingress, the Booking prompt/manifest, and container Plutio access are unchanged. | None for this dark milestone. Next separately fix/canary shared reschedule identity, prove remote marker persistence on an authorized business-path canary, wire ingress, then remove Booking's Plutio credential/mount only if those gates pass. | 2026-08-16T20:49Z |
 | `NC-20260816-010` | Remove raw Trafft credentials from an enforced Booking container while preserving the separately identified legacy Plutio path | Codex | `codex/nc-20260816-010-booking-credential-boundary` @ deployed `ba5fe74` | `complete` | C5 | Exact release `ba5fe74` projects declared credential families and selectively enforces Campanero plus Booking. The installed no-network verifier proved all three configured Trafft names absent from Booking and the required DB/Plutio names present. The discovered non-booked-event Plutio path remains explicitly declared until a host-owned replacement is proven. No external or business-row write occurred. | None for this milestone. Next replace Booking's non-booked Plutio path with a host-owned adapter, then separately gate Plutio credential removal; destination-scoped egress remains a later control. | 2026-08-16T20:06Z |
@@ -195,6 +195,41 @@ outside the current client conversation.
   immutable release. That local dispatch rejected row `1312` as unsupported,
   incrementing it to attempt 2 without reaching Plutio. NC-013 now also owns an
   immutable compiled CLI and a release-resolving launcher repair.
+- Final corrective deployment: immutable release
+  `02ce48f5564cb88e59c23fdb7178719772899645` is live with source tree
+  `81ca79bb7b474eafdbc80bb5f2380aa502478d42`, 668-file artifact hash
+  `186369904b851f05c1a87dcc36712631132cbeee407aef67bf25b658bf220858`,
+  and archive SHA-256
+  `c53b925a1301affdc6545971a82f33f7ce1272c0f610480f7bce56eb06a93009`.
+  LaunchAgent rollback
+  `com.nanoclaw.plist.rollback-67f16d5a412e-2026-08-16T22-52-25-594Z`
+  is retained. The operational launcher hash is
+  `eaf515bdca5ae3d94c2539278e9d9327333c052107532ec4b4d3ba6879acbec3`;
+  its exact prior copy remains as
+  `tools/plutio/run-reaper.sh.rollback-nc013-2026-08-16T22-52Z`.
+- Recovery outcome: the real operational launcher resolved and verified
+  release `02ce48f`, processed only row `1312`, and returned one success with
+  no retry or dead letter. Row `1312` is terminal `processed`; its receipt is
+  `already_recorded` with marker, person, and note IDs present; interaction
+  `3034` now has its opaque Plutio person reference; and the active outbox is
+  empty. The authorized duplicate webhook returned HTTP 200 for inbox `4469`
+  with inbox/party/interaction/outbox counts unchanged. The production image's
+  focused one-shot runner suite passes 5/5 without mounts or credentials, and
+  final health reports exact release `02ce48f`, Node 22.23.2, connected
+  Gmail/Slack, and empty container/work queues.
+- Final local gates: exact Node 22.23.2 passes the 16/16 focused
+  Booking/Plutio/compiled-CLI set, root typecheck/build, shell syntax,
+  documentation continuity, the 635/635 email-critical release gate, and the
+  independent runner's 43/43 suite. The unrestricted root suite passes
+  2,474/2,475; the sole failure remains the unchanged unrelated CNPC
+  wrapper-string assertion expecting literal `folder: 'cnpc'`.
+- Outcome boundary: the cutover, capability removal, durable remote receipt,
+  no-write Plutio replay, and ingress duplicate replay are live-verified. The
+  original normal-ingress event required operator recovery and produced two
+  Booking notices before the fixes, so NC-013 remains `deployed_unverified`
+  rather than claiming a pristine outcome. The next fresh natural lifecycle
+  event is the observation gate; no further synthetic distinct event is needed
+  or authorized.
 
 ### NC-20260816-012
 

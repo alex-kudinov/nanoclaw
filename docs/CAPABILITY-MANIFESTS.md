@@ -1,8 +1,9 @@
 # Agent capability manifests
 
 Status: Campanero and Booking selective enforcement live-verified; NC-013
-Booking Plutio removal is deployed and capability-boundary-verified, while its
-normal-ingress outcome canary remains pending; global enforcement off
+Booking Plutio removal, normal-ingress canary, durable receipt, and no-write
+replays are deployed and verified, while one fresh post-fix natural lifecycle
+observation remains open; global enforcement off
 
 Tasks: `NC-20260816-004` foundation; `NC-20260816-006` staged activation;
 `NC-20260816-010` credential-family projection and Booking gate;
@@ -127,13 +128,29 @@ Booking Plutio outbox row. The tracked Booking prompt/procedure no longer calls
 Plutio, and the live manifest/registration retain only `business_db`,
 `knowledge`, and `agent_docs`. A dry-run-first exact-host/exact-release helper
 removes the two legacy registered mounts with an exclusive rollback snapshot.
-Exact immutable release `77064e9` passes the full release gate and is live on
-the Mini. Post-activation health and installed no-network verification prove
-that Booking receives only `business_db`, `knowledge`, and `agent_docs`; every
-configured Trafft and Plutio source name and both legacy mounts are absent.
-This is capability-boundary evidence, not natural business-path proof. The
-sanitized normal-ingress canary was not sent and its interaction, outbox,
-remote receipt, and no-write replay remain pending explicit authorization.
+Exact immutable release `77064e9` activated the boundary on the Mini.
+Post-activation health and installed no-network verification prove that Booking
+receives only `business_db`, `knowledge`, and `agent_docs`; every configured
+Trafft and Plutio source name and both legacy mounts are absent. The authorized
+normal-ingress canary then created the exact archived event, synthetic party,
+lifecycle interaction, durable party/activity outbox work, and remote activity,
+but exposed a scheduled-task exit defect that produced two Booking notices and
+a PostgreSQL receipt-cast failure after the remote write. The host completion
+gate was recovered to stop agent retries.
+
+Release `67f16d5` fixed one-shot scheduled-task exit and the receipt cast,
+rebuilt the production image, and refreshed all runner snapshots. That rollout
+then exposed that the 15-minute Plutio launcher still bypassed immutable
+releases through the operational TypeScript checkout. Exact active release
+`02ce48f` adds a compiled reaper CLI and makes the operational launcher verify
+and execute the code root and Node interpreter selected by launchd. The
+controlled outbox retry returned `already_recorded`, persisted the marker and
+opaque remote receipts, repaired interaction metadata, and emptied the active
+queue without a second activity. The authorized duplicate webhook returned
+HTTP 200 with stable inbox/party/interaction/outbox counts. This is deployed
+capability and replay evidence; because the first canary required recovery, a
+fresh natural canceled/rescheduled lifecycle observation remains the honest
+post-fix outcome gate.
 
 ## Change procedure
 

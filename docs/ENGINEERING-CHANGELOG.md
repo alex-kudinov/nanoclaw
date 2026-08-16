@@ -10,13 +10,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260816-013 — Cut Booking lifecycle Plutio writes over to the host
 
-- Date: 2026-08-16T22:32Z
+- Date: 2026-08-16T22:55Z
 - Owner/client: Codex
-- State: validating; capability boundary live, authorized canary exposed two
-  release blockers
+- State: deployed_unverified; capability and replay boundaries verified, one
+  fresh post-fix natural lifecycle observation remains
 - Commit/PR: claim `58778d9`; implementation `08cbb9b`; release-path correction
-  and immutable release `77064e9`; scheduled-task/receipt correction `67f16d5`
-  on
+  and immutable release `77064e9`; scheduled-task/receipt correction `67f16d5`;
+  immutable reaper boundary `02ce48f` on
   `codex/nc-20260816-013-booking-plutio-cutover` from `f10c572`; no PR
 - Change class: C5 — external-write capability cutover
 - Intended outcome: enqueue canceled/rescheduled Booking activity through the
@@ -87,6 +87,17 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   CLI, includes the Plutio launcher in immutable bundles, and makes the
   operational launcher verify and execute the code root and Node interpreter
   named by the installed launchd service.
+- Final corrective release: `02ce48f5564cb88e59c23fdb7178719772899645`
+  has source tree `81ca79bb7b474eafdbc80bb5f2380aa502478d42`,
+  668-file artifact hash
+  `186369904b851f05c1a87dcc36712631132cbeee407aef67bf25b658bf220858`,
+  and archive SHA-256
+  `c53b925a1301affdc6545971a82f33f7ce1272c0f610480f7bce56eb06a93009`.
+  Fresh extraction verified the compiled CLI and byte-identical bundled
+  launcher. Production activation retained rollback plist
+  `com.nanoclaw.plist.rollback-67f16d5a412e-2026-08-16T22-52-25-594Z`.
+  The operational launcher is hash-bound to the release copy, with its prior
+  file retained as `run-reaper.sh.rollback-nc013-2026-08-16T22-52Z`.
 - Release artifact:
   `77064e99c4dc2e1342993ba8659a820fd2a1bf05` has source tree
   `f83601b26773952947ba54d7efc647e22f7c913c`, 664-file artifact hash
@@ -109,15 +120,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `agent_docs`. The installed verifier reports only `business_db`, all
   configured Trafft and Plutio source names absent, and all required DB inputs
   present. No retryable lifecycle row or `booking_activity:*` outbox row exists.
-- Outcome boundary: the capability cutover remains live, but the normal path is
-  not outcome-validated. Build and deploy the immutable reaper-launcher repair,
-  then
-  replay only failed outbox row `1312`; remote readback must return
-  `already_recorded`, the SQL update must succeed, and the row must become
-  terminal without a second activity. The already-authorized duplicate replay
-  may then verify inbox idempotency for this exact event; any distinct webhook
-  requires separate explicit authority. Email and Trafft mutation remain
-  excluded.
+- Recovery and replay outcome: the real operational launcher verified and ran
+  release `02ce48f`, processed only row `1312`, and reported one success with
+  zero retries/dead letters. The row is terminal `processed`; its durable
+  receipt says `already_recorded` and contains marker/person/note evidence;
+  interaction `3034` carries its opaque Plutio person reference; and the active
+  outbox is empty. The one authorized duplicate webhook returned HTTP 200 for
+  inbox `4469` with inbox, party, interaction, and outbox counts unchanged.
+  The exact production image passes the focused 5/5 one-shot runner suite
+  without mounts or credentials. Final health reports release `02ce48f`, Node
+  22.23.2, connected Gmail/Slack, and empty work queues.
+- Final local verification: exact Node 22.23.2 passes the 16/16 focused
+  Booking/Plutio/compiled-CLI set, root typecheck/build, shell syntax,
+  documentation continuity, the 635/635 email-critical release gate, and the
+  independent runner's 43/43 suite. The unrestricted root suite passes
+  2,474/2,475; its sole failure is the unchanged unrelated CNPC wrapper-string
+  assertion expecting literal `folder: 'cnpc'`.
+- Outcome boundary: capability removal, durable receipt, remote no-write replay,
+  and duplicate ingress are live-verified. The original normal event required
+  operator recovery and produced two Booking notices before the fixes, so this
+  remains `deployed_unverified` pending one fresh post-fix natural lifecycle
+  observation. No distinct synthetic webhook, email, or Trafft mutation is
+  authorized.
 
 ### NC-20260816-012 — Prove Booking reschedule identity and the real Plutio marker
 

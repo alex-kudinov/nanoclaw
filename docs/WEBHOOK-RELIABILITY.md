@@ -105,6 +105,12 @@ Two complementary jobs; both follow the existing `plutio-outbox-reaper.ts` shape
 
 - **`webhook-inbox-reaper.ts`** (5-min cron) — claim rows in `('received', 'failed', 'dispatched-stale')`, re-render prompt, re-`runAgent`, apply the same source completion gate as initial delivery, and dead-letter at `MAX_ATTEMPTS=5` to `#gru-chief`.
 - **`plutio-outbox-reaper.ts`** — processes the general Plutio outbox plus replay-safe `booking_activity:*` rows; Booking dispatch re-loads the archived Trafft event and stores its remote marker receipt.
+- **Operational execution boundary** — `tools/plutio/run-reaper.sh` reads the
+  Node interpreter and `NANOCLAW_CODE_ROOT` from the installed NanoClaw
+  LaunchAgent, verifies that immutable release, and executes its compiled
+  `dist/plutio-outbox-reaper-cli.js` while retaining the operational checkout
+  only as the state/config working directory. It must never execute source via
+  `npx tsx` from the mutable operational checkout.
 
 ### 3.4a Booking lifecycle completion gate (NC-013 deployed_unverified)
 
@@ -120,12 +126,30 @@ interaction. Initial delivery and inbox replay both require:
 Only then may the host insert or reuse one opaque `booking_activity:*` outbox
 row and mark the inbox row handled with its party, interaction, and outbox
 references. A missing interaction or enqueue error leaves the inbox retryable.
-The container never receives the Plutio secret or tool path. Exact NC-013
-release `77064e9` is live, and installed negative verification proves Booking
-receives only `business_db`, `knowledge`, and `agent_docs`; all configured
-Trafft/Plutio source names and legacy mounts are absent. The sanitized normal
-ingress canary was not sent, so interaction/outbox/remote-receipt/no-write
-replay proof remains pending explicit authorization.
+The container never receives the Plutio secret or tool path. Initial NC-013
+release `77064e9` activated the boundary, and installed negative verification
+proved Booking receives only `business_db`, `knowledge`, and `agent_docs`; all
+configured Trafft/Plutio source names and legacy mounts are absent.
+
+The authorized normal-ingress canary created archived inbox `4469`, party
+`11333`, interaction `3034`, processed party-sync row `1311`, and activity row
+`1312`. It exposed a runner lifecycle defect that retried a successful agent
+turn and posted two Booking notices, plus a PostgreSQL receipt-cast failure
+after the remote activity write. The host gate was recovered exactly and the
+inbox marked handled before further agent retries. Release `67f16d5` fixes
+one-shot scheduled-task exit and the cast, rebuilds the production image, and
+refreshes all runner snapshots. A third pre-replay failure proved the scheduled
+Plutio launcher still used the operational checkout; exact active release
+`02ce48f` adds the compiled CLI and release-bound launcher described above.
+
+The repaired real launcher processed only row `1312`; marker readback returned
+`already_recorded`, persisted marker/person/note receipts and interaction
+metadata, and left no active outbox row without a second activity. The one
+authorized duplicate webhook returned HTTP 200 for inbox `4469` with stable
+inbox, party, interaction, and outbox counts. Because the first normal event
+required operator recovery, this path remains `deployed_unverified` until one
+fresh post-fix natural canceled/rescheduled event exits after one agent turn,
+posts one Booking notice, and reaches a terminal receipt without intervention.
 
 ### 3.5a Customer-event sweep is skipped by design
 

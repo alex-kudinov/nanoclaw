@@ -707,7 +707,7 @@ shared-identity and remote-marker prerequisites only and assigned natural
 ingress, durable outbox receipt, procedure/manifest/mount cutover, and container
 Plutio removal to NC-013. The current NC-013 state follows.
 
-`NC-20260816-013` is now deployed as exact release `77064e9`. It gives
+`NC-20260816-013` first deployed the cutover as exact release `77064e9`. It gives
 canceled/rescheduled interactions the archive-derived
 event key, fixes receiver and inbox-reaper handling so a returned container
 error stays retryable, and requires that exact persisted lifecycle interaction
@@ -721,13 +721,34 @@ separate disposable operational-root remove/idempotency/restore rehearsal. On
 the Mini, Booking drained cleanly; the helper removed exactly the two legacy
 mounts; the live procedure files match the release; and activation preserved
 both registration, prompt, and LaunchAgent rollback artifacts. One healthy
-Node 22.23.2 listener reports exact verified release `77064e9`. Installed
+Node 22.23.2 listener reported exact verified release `77064e9`. Installed
 negative proof shows Booking receives only `business_db`, `knowledge`, and
 `agent_docs`, with all configured Trafft/Plutio source names and legacy mounts
-absent. The sanitized natural canary was blocked before execution, so no
-synthetic party, interaction, Slack notice, outbox work, or Plutio activity was
-created. Natural archived-event outbox/remote receipt and no-write replay
-evidence remain open; this is `deployed_unverified`, not outcome validation.
+absent.
+
+The subsequently authorized normal-ingress canary created archived inbox
+`4469`, synthetic party `11333`, lifecycle interaction `3034`, party-sync row
+`1311`, and Booking activity row `1312`. It also exposed two defects: scheduled
+tasks emitted a result but remained warm until the host treated them as failed,
+causing one automatic retry and two Booking notices; and the post-Plutio
+metadata query lacked an explicit text cast after the remote activity write.
+The host completion gate was recovered against the exact archived interaction,
+marking the inbox handled before further retries.
+
+Corrective release `67f16d5` fixed one-shot scheduled-task exit and the receipt
+cast, rebuilt image `sha256:0618fbecf88cc0298fa9665db1c0c2c0ad368da37d471d148fb984e310ca835e`,
+and refreshed all 18 runner snapshots. A third defect then surfaced before the
+controlled retry: `tools/plutio/run-reaper.sh` still executed operational
+TypeScript rather than immutable release code. Exact active release `02ce48f`
+adds a compiled reaper CLI, includes the launcher in the bundle, and makes the
+operational launcher verify and execute launchd's exact code root and Node
+interpreter. The real launcher processed only row `1312`; remote readback
+returned `already_recorded`, persisted marker/person/note receipts and
+interaction metadata, and emptied the queue without a second activity. The
+authorized duplicate webhook returned HTTP 200 and left all entity counts
+stable. Because the initial event required operator recovery, NC-013 remains
+`deployed_unverified` pending one fresh post-fix natural lifecycle observation;
+its capability and replay boundaries are live-verified.
 
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some
