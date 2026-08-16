@@ -1,11 +1,9 @@
 # Host action safety control
 
-Status: the seven-system boundary is implemented under `NC-20260816-009`.
-Production remains on the six-system, live-verified release
-`d32fda08e818bb803463f7006484abd19291b9e6` from `NC-20260816-008` until the
-new immutable release passes its deployment gate. All production controls were
-restored default-off after the prior drill and the broader repository-wide
-controller remains partial.
+Status: the seven-system boundary is deployed and live-verified in release
+`47019c937d38e9346813f6058484e12e3d577ef5` under `NC-20260816-009`.
+All production controls were restored default-off after the drill and the
+broader repository-wide controller remains partial.
 
 ## Purpose and authority
 
@@ -230,3 +228,33 @@ exactly: 61 confirmed/6 blocked email actions, 334 send events, one completed
 Campanero task, jobs hash `b3fc5040565d`; Hive 110 eligible/0 unsynced/0 retry
 attempts/0 dead letters; Plutio 1,258 processed/15 dead; and Chaos 5 sent. No
 real outbound action or production business-row mutation was performed.
+
+## Live evidence — NC-20260816-009
+
+Immutable release `47019c937d38e9346813f6058484e12e3d577ef5` has source tree
+`fa2e10c998aadfc8e00320b459c8b82902849c38`, 652-file artifact hash
+`f4dec12cb563929536f4f9dc883c7dd27ead215535ed0e13a8bda13daf75bb1c`,
+and archive SHA-256
+`c4fd47a61e9cdc898a3c39ed53b411c87c6281ed25518e53f4437d1cb187cae4`.
+It was independently verified locally and on `mini-claw.local`, then activated
+from `d32fda08e818bb803463f7006484abd19291b9e6`; rollback plist is
+`com.nanoclaw.plist.rollback-d32fda08e818-2026-08-16T19-39-11-903Z`.
+
+The clean apply drill retained environment backup
+`.env.rollback-action-safety-2026-08-16T19-40-01-708Z`, observed the live
+daemon in global safe mode, and returned `global_safe_mode` from Gmail
+new-send, Gmail reply-send, Slack, Courses SMTP, Plutio, Stripe,
+Hive/Firestore, and Things. Every client, child, outbox, Firestore, and Things
+fetch tripwire remained false; Slack queue depth stayed zero; and Courses
+projected no SMTP secret or email mount. The live environment and backup both
+hash to `0c95d71db6cc751e57f8be40c88727d6bae675c05679fb0a6d1afcad1d16be73`.
+
+Final health showed exact release `47019c9` under Node 22.23.2, one matching
+listener, connected Gmail/Slack, zero active/waiting/outgoing work,
+action-safety enforcement false, global safe mode false, no disabled systems,
+and Campanero still the only selectively enforced capability group. Pre/post
+evidence matched exactly: 61 confirmed/6 blocked email actions, 334 send
+events, one completed Campanero task, jobs hash `b3fc5040565d`; Hive 110
+eligible/0 unsynced/0 retry attempts/0 dead letters; Plutio 1,259 processed/15
+dead; and Chaos 5 sent. No real Things task, Slack reaction, outbound action,
+or production business-row mutation was performed.

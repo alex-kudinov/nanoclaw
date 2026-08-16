@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260816-009` | Extend the common external-write brake to the Things HTTP bridge without creating a real to-do | Codex | `codex/nc-20260816-009-things-safety`; claim `16dbc22`, implementation at branch head | `validating` | C5 | Guard the host-owned Things `/add-todo` POST before network invocation; preserve the Slack caller's false/no-success-reaction behavior on denial; extend the installed no-network release drill and production proof. Excludes any real Things task, Slack message/reaction, bridge credential/config change, other integration coverage, envelope enforcement, push, and merge. | Commit the validated implementation; package/deploy the exact immutable release; live-run the auto-restored eight-operation safe-mode drill with unchanged aggregates. | 2026-08-16T19:35Z |
+| `NC-20260816-009` | Extend the common external-write brake to the Things HTTP bridge without creating a real to-do | Codex | `codex/nc-20260816-009-things-safety` @ deployed `47019c9` | `complete` | C5 | Exact release `47019c9` denies the host Things `/add-todo` POST before fetch; the Slack-facing caller returns false/no success reaction; the live bundled drill returned all eight denials with no tripwire, exact config restoration, and unchanged aggregates. Excludes any real Things task, Slack message/reaction, bridge credential/config change, other integration coverage, envelope enforcement, push, and merge. | None for this milestone. Next extend the controller to a non-overlapping container-exposed write boundary or add separately gated ceilings/demotion. | 2026-08-16T19:40Z |
 | `NC-20260816-008` | Extend the common external-write brake to Hive/Firestore without consuming retry budget or performing a real write | Codex | `codex/nc-20260816-008-hive-safety` @ deployed `d32fda08` | `complete` | C5 | Exact release `d32fda08` denies Hive composite/direct mutations before Firebase initialization; inline work remains retryable; reaper denial is held without attempt/dead-letter/alert; live bundled drill returned all seven denials with no tripwire, exact config restoration, and unchanged aggregates. Excludes any real external write, classification/schema change, Chaos overlap, other integration coverage, envelope enforcement, push, and merge. | None for this milestone. Next extend the controller to Things or a container-exposed write boundary without overlapping active Chaos work. | 2026-08-16T19:14Z |
 | `NC-20260816-007` | Deploy and live-drill the common external-write safety brake without performing an external write | Codex | `codex/nc-20260816-007-action-safety-drill` @ deployed `ab2ace1` | `complete` | C5 | Exact release `ab2ace1` live-verifies the dry-run-first, hostname-confirmed, backup-producing global safe-mode transaction across actual Gmail send/reply, Slack, Courses SMTP projection, Plutio, and Stripe boundaries. All six calls denied before invocation; config restored byte-for-byte; queues, jobs/tasks, email evidence, and Plutio/Chaos outboxes remained unchanged. Excludes envelope enforcement, real external writes, other-system coverage, ceilings/demotion, push, and merge. | None for this milestone. Extend coverage to standalone and remaining integration surfaces, then add ceilings/demotion as separately gated Company OS slices. | 2026-08-16T18:19Z |
 | `NC-20260816-006` | Deploy the capability-manifest release dark, then activate and prove one low-risk Campanero canary without exposing any other agent | Codex | `codex/nc-20260816-006-campanero-canary` @ deployed `2987070` | `complete` | C5 | Combined immutable release preserves live Stripe lineage `a67e081`; global manifest enforcement remains off; only Campanero is selected and live-verified with no Claude tools, only the `jobs` MCP tool, read-only declared mounts, and a read-only 22-job inventory canary. Bash and undeclared MCP surfaces were absent. Zero active/waiting work, outgoing Slack queue, actionable email sends, or job/task mutations appeared. Excludes customer email, job mutation, production database writes, global/all-agent activation, prompt changes, publication/mainline merge, and push. | None for this milestone. Any second agent, global activation, egress restriction, credential removal, or action-safety activation requires a separately tracked gate. | 2026-08-16T17:31Z |
@@ -109,10 +109,11 @@ outside the current client conversation.
   release drill reports an eighth denial with the Things fetch tripwire false;
   production configuration restores byte-for-byte and observed work/outbound
   aggregates remain unchanged.
-- Next executable sequence: register and commit this claim; implement the
-  boundary plus focused injection/denial tests; run the Node 22 focused, broad,
-  release, and continuity gates; build and independently verify one immutable
-  artifact; preflight, deploy, live-drill, restore, and record exact evidence.
+- Executed sequence: registered and committed the claim; implemented the
+  boundary plus focused injection/denial tests; passed the Node 22 focused,
+  broad, release, and continuity gates; built and independently verified one
+  immutable artifact; preflighted, deployed, live-drilled, restored, and
+  recorded exact evidence.
 - Validation so far: exact Node 22.23.2 typecheck and source formatting pass.
   The direct parser/boundary/controller/config/drill set passes 31/31, and the
   expanded action-safety plus Slack regression set passes 152/152. The
@@ -122,6 +123,22 @@ outside the current client conversation.
   continuity/capability checks pass. The unrestricted root suite passes
   2,441/2,442; its sole failure is the unchanged, unrelated
   `src/cnpc-prompt-contract.test.ts` source-wrapper assertion.
+- Release/live proof: immutable release
+  `47019c937d38e9346813f6058484e12e3d577ef5` (source tree `fa2e10c9`,
+  652-file artifact hash `f4dec12c`, archive SHA-256 `c4fd47a6`) was
+  independently verified locally and on `mini-claw.local`, then activated from
+  `d32fda08` with rollback plist
+  `com.nanoclaw.plist.rollback-d32fda08e818-2026-08-16T19-39-11-903Z`.
+  The apply drill retained backup
+  `.env.rollback-action-safety-2026-08-16T19-40-01-708Z`, returned eight
+  `global_safe_mode` denials, crossed no tripwire, and restored the environment
+  to exact matching hash `0c95d71d`. Final health has one matching Node 22
+  listener, connected Gmail/Slack, zero active/waiting/outgoing work, controls
+  default-off, and only Campanero selected. Pre/post evidence remained 61
+  confirmed/6 blocked email actions, 334 events, one completed Campanero task,
+  jobs hash `b3fc5040565d`; Hive 110/0/0/0; Plutio 1,259 processed/15
+  dead; and Chaos 5 sent. No Things fetch, real task, Slack reaction, outbound
+  action, or production business-row mutation occurred.
 
 ### NC-20260816-008
 

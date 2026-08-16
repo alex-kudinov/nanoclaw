@@ -394,8 +394,8 @@ incrementing/dead-lettering or alerting.
 auto-restored no-write production drill. `NC-20260816-008` deploys and
 live-verifies the Hive extension with an injected Firestore tripwire and
 unchanged retry/business aggregates. The Things extension is implemented and
-locally verifies an eighth denial with an injected fetch tripwire; production
-deployment remains separately recorded. The controls are default-off in
+release `47019c9` live-verifies an eighth denial with an injected fetch
+tripwire and unchanged business aggregates. The controls are default-off in
 production and do not replace any domain-specific approval, claim, receipt,
 hold, or policy. Envelope enforcement also remains off: current legacy callers
 supply no envelope and would be denied if it were enabled. The default-off

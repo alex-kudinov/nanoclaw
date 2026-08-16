@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T19:27Z
 - Owner/client: Codex
-- State: validating; source and focused no-network proof complete, immutable
-  release/deployment pending
-- Commit/PR: claim commit `16dbc22`; implementation is the clean branch-head
-  commit containing this entry on `codex/nc-20260816-009-things-safety`; no PR
+- State: complete; immutable release deployed and the eight-call no-write drill
+  live-verified with exact restoration and unchanged evidence aggregates
+- Commit/PR: claim commit `16dbc22` plus implementation/release commit
+  `47019c937d38e9346813f6058484e12e3d577ef5` on
+  `codex/nc-20260816-009-things-safety`; no PR
 - Change class: C5 — extend a common production external-write safety boundary
 - Intended outcome: stop decision-brief promotion at the host Things HTTP
   boundary under global or Things-only safe mode without creating a to-do or
@@ -28,16 +29,44 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Safety boundary: no real Things task, Slack message/reaction, bridge
   credential/configuration change, other integration change, envelope
   enforcement, push, or merge is authorized.
-- Verification so far: 31/31 focused parser/boundary/controller/config/drill
+- Verification: 31/31 focused parser/boundary/controller/config/drill
   tests, 152/152 expanded action-safety/Slack regressions, 635/635
   email-critical tests, exact Node 22.23.2 typecheck/source formatting,
   independent runner build plus 40/40 tests, and continuity/capability checks
   pass. The unrestricted root suite passes 2,441/2,442; its sole failure is the
   unchanged, unrelated `src/cnpc-prompt-contract.test.ts` source-wrapper
-  assertion. Immutable packaging, deployment, and live auto-restored proof
-  remain next.
+  assertion.
+- Release/deployment evidence: immutable release
+  `47019c937d38e9346813f6058484e12e3d577ef5` has source tree
+  `fa2e10c998aadfc8e00320b459c8b82902849c38`, 652-file artifact hash
+  `f4dec12cb563929536f4f9dc883c7dd27ead215535ed0e13a8bda13daf75bb1c`,
+  and archive SHA-256
+  `c4fd47a61e9cdc898a3c39ed53b411c87c6281ed25518e53f4437d1cb187cae4`.
+  It independently verified locally and on `mini-claw.local`; activation from
+  exact `d32fda08e818bb803463f7006484abd19291b9e6` changed only the three
+  permitted plist paths and retained rollback
+  `com.nanoclaw.plist.rollback-d32fda08e818-2026-08-16T19-39-11-903Z`.
+- Live proof: dry-run and apply passed. Apply retained environment backup
+  `.env.rollback-action-safety-2026-08-16T19-40-01-708Z`, observed the live
+  daemon in global safe mode, and returned `global_safe_mode` from Gmail
+  new-send/reply, Slack, Courses SMTP, Plutio, Stripe, Hive, and Things. Every
+  client/child/outbox/Firestore/Things-fetch tripwire stayed false; Slack
+  queued zero; and Courses projected no SMTP secret/mount. The restored `.env`
+  and backup both hash to
+  `0c95d71db6cc751e57f8be40c88727d6bae675c05679fb0a6d1afcad1d16be73`.
+- Final production evidence: one listener on exact `47019c9` under Node
+  22.23.2; Gmail/Slack connected; zero active/waiting/outgoing work; action
+  safety restored enforcement/global false with no disabled systems;
+  Campanero remained the only selected capability group. Pre/post evidence
+  matched: 61 confirmed/6 blocked pending sends, 334 email events, one
+  completed Campanero task, jobs hash `b3fc5040565d`; Hive 110 eligible/0
+  unsynced/0 retry attempts/0 dead letters; Plutio 1,259 processed/15 dead; and
+  Chaos 5 sent. No real Things task, Slack reaction, outbound action, or
+  production business-row mutation occurred.
 - Residuals/rollback: the controller still does not interrupt an already
-  in-flight fetch. Chaos, Booking/Trafft, Certifier/Sertifier,
+  in-flight fetch. Use the retained plist to return to `d32fda08`; the
+  environment remained byte-identical to its retained backup. Chaos,
+  Booking/Trafft, Certifier/Sertifier,
   container-exposed writes, and standalone tools remain outside universal
   coverage; envelope adoption, ceilings, and automatic demotion remain open.
 

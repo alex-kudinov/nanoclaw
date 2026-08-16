@@ -1297,8 +1297,10 @@ direct `/add-todo` function denies before fetch in global or Things-only safe
 mode, while the existing Slack-facing wrapper returns false so the caller adds
 no success reaction. The installed no-network drill now expects an eighth
 denial across seven systems and includes an injected Things-fetch tripwire.
-Immutable deployment and live restoration/non-interference evidence remain the
-exit gate for this slice.
+Exact release `47019c9` is deployed; the live drill returned all eight
+`global_safe_mode` denials, crossed no tripwire, restored the exact environment,
+and left email, job, Hive, Plutio, and Chaos aggregates unchanged. No real
+Things task or Slack reaction occurred.
 
 Full P0.4/P0.5 still requires domain envelope
 adoption, standalone-script and remaining-integration coverage, immediate
