@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T23:27Z
 - Owner/client: Codex
-- State: ready_for_review; local milestone only
-- Commit/PR: pending on
+- State: complete; local milestone only
+- Commit/PR: implementation `7ee3f67` on
   `codex/nc-20260816-014-work-ledger-exceptions`; no PR
 - Change class: C2 — local, reversible, read-only operator tooling
 - Intended outcome: turn the live-verified Mailman/Sales shadow ledger into a
