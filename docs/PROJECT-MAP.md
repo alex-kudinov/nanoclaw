@@ -315,6 +315,7 @@ session files.
 | Queue          | `src/group-queue.ts`                                                | per-work-unit serialization, concurrency, warm workers |
 | Containers     | `src/container-runner.ts`, `src/container-runtime.ts`               | mounts, lifecycle, adoption, resource limits           |
 | IPC            | `src/ipc.ts`, `src/ipc-writer.ts`, `src/watchdog-ipc.ts`            | agent/host protocol and action dispatch                |
+| Capabilities   | `src/capability-manifest.ts`, `capabilities/*.json`                 | default-off per-agent launch, MCP, IPC, mount, and runtime projection |
 | Action safety  | `src/action-safety.ts`, `docs/ACTION-SAFETY-CONTROL.md`             | content-free action envelope, global/per-system external-write brake, aggregate health |
 | Scheduling     | `src/task-scheduler.ts`, `src/job-registry.ts`, `src/job-runner.ts` | agent tasks and host jobs                              |
 
@@ -602,6 +603,30 @@ Security-sensitive rules:
 - record the requested action, decision, and final result separately;
 - ensure retries are idempotent or carry a stable idempotency key;
 - keep approval state durable across process/container restarts.
+
+### Per-agent manifest checkpoint (`NC-20260816-004`)
+
+Tracked `capabilities/<group>.json` files now describe all 17 operative group
+folders. `src/capability-manifest.ts` validates and fingerprints them, and
+`scripts/generate-capability-matrix.ts` produces the path-free review surface at
+`docs/generated/CAPABILITY-MATRIX.md`. The release builder packages the
+manifests.
+
+Enforcement remains default off and is not deployed by this milestone. When
+enabled, container launch projects exact Claude and MCP tools, configured mount
+targets/access, and runtime ceilings from the selected manifest; recognized
+message/task/job IPC is also denied outside the manifest's host-operation set.
+The projection fingerprint is carried in container input and sidecar state.
+GroupQueue refuses another turn for a stale warm container, and startup refuses
+adoption of a stale or pre-manifest container. Existing domain authorization,
+resource grants, action safety, mount allowlists, and receipts remain
+authoritative and cumulative.
+
+This is not full P0.2/P0.3 completion: network egress remains
+`unrestricted_current`; Bash and raw mounted tools/credentials remain for some
+roles; immediate in-flight termination, value/rate ceilings, dynamic group
+onboarding, production activation, and live canaries are still open. See
+`docs/CAPABILITY-MANIFESTS.md`.
 
 ### Sales channel work-item containment (`NC-20260802-006`)
 
@@ -1384,6 +1409,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
 | `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
 | `docs/ACTION-SAFETY-CONTROL.md`         | host action envelope, safety precedence, covered boundaries, and activation gate | local/default-off under `NC-20260816-002`; warm Courses containers and standalone scripts are explicit residuals                            |
+| `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | local/default-off under `NC-20260816-004`; egress, raw-secret removal, and live canaries remain open                                        |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |
 | `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement history, current recovery state, and target loop | migration 115 is deployed collection-only; natural source-run proof, review closure, and the separately reviewed proposal packet remain open |
 | `docs/SELF-HEALING-COMPLETION-PLAN.md`  | reconciled healer current state and gated completion sequence         | action-boundary source is local until separately reviewed/deployed                                                                           |

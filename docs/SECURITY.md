@@ -72,13 +72,22 @@ into agents.
 Container isolation is necessary but not sufficient:
 
 - agent egress is currently unrestricted;
-- the agent runner invokes Claude with broad in-container tool permission;
+- production currently invokes Claude with broad in-container tool permission;
 - role-specific integrations may add raw credentials, databases, scripts, and
   host bridges;
-- every group currently sees the shared `mcp__nanoclaw__*` tool namespace.
+- production currently exposes the shared `mcp__nanoclaw__*` tool namespace.
 
 The host must therefore enforce every consequential IPC operation even when the
 tool is visible in the container.
+
+`NC-20260816-004` adds a dark, default-off per-agent capability projection.
+When separately enabled, exact tracked manifests generate Claude and MCP tool
+exposure, validate mounts and runtime ceilings, constrain recognized host IPC,
+and make pre-manifest or stale-fingerprint warm/adopted containers ineligible
+for another turn. The deterministic matrix is
+`docs/generated/CAPABILITY-MATRIX.md`; mechanics and residual gaps are in
+`docs/CAPABILITY-MANIFESTS.md`. This local source is not production activation,
+does not restrict egress, and does not remove raw mounted credentials.
 
 ### Mount and session isolation
 
@@ -369,9 +378,10 @@ per-system brakes fail closed; reads and aggregate evidence remain available.
 This source state is not production activation and does not replace any
 domain-specific approval, claim, receipt, hold, or policy. Envelope enforcement
 also remains off: current legacy callers supply no envelope and would be denied
-if it were enabled. Warm Courses containers are a residual capability until a
-separately authorized activation drains/recycles them; raw SMTP retirement and
-standalone-script coverage remain open.
+if it were enabled. The default-off manifest layer now fingerprints new
+containers and, when enabled, refuses stale warm/adopted reuse at the next turn;
+activation still requires a separately authorized drain/recycle and canary. Raw
+SMTP retirement and standalone-script coverage remain open.
 
 Never print, commit, transmit for review, or summarize secret values. Token
 selection for external model review must occur inside the invoking shell and

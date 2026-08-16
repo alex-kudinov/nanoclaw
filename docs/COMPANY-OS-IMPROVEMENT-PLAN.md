@@ -59,9 +59,9 @@ company-wide merely because one workflow implements them.
 | P0.0 blast-radius reduction | partial | Gmail containment is `deployed_unverified` under `NC-20260729-004`; healer Gate A is `deployed_unverified` under `NC-20260730-002`. Procurement CDP isolation, the universal external-write brake, and all other named boundaries remain open. |
 | P0.1 runtime contract | partial | `NC-20260728-005` restored a pinned Node 22 test baseline; `NC-20260731-003` put production on Node 22.23.2; release/runtime enforcement has advanced, but review and live-verification gates remain task-specific. |
 | P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries; raw credentials and broad agent/tool exposure have not been removed company-wide. |
-| P0.3 capability manifests | partial | Host operation matrices and role-specific checks exist, but one generated manifest does not yet control each agent's tools, mounts, data, network, model, action classes, and ceilings. |
+| P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. Production activation, egress enforcement, raw-secret removal, action-value ceilings, and live canaries remain open. |
 | P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260816-002` implements a dark content-free universal envelope plus mutation/replay tests, but legacy domains do not yet supply it and enforcement is not activated. |
-| P0.5 safety controller | partial | `NC-20260816-002` implements a dark, default-off controller with common precedence, aggregate health, and named runtime-boundary refusal tests. Production activation/drill, warm Courses-container revocation, standalone-script coverage, per-agent/class ceilings, and automatic demotion remain open. |
+| P0.5 safety controller | partial | `NC-20260816-002` implements a dark, default-off controller with common precedence, aggregate health, and named runtime-boundary refusal tests; `NC-20260816-004` adds next-turn stale warm/adoption revocation when manifest enforcement is enabled. Production activation/drill, immediate in-flight interruption, standalone-script coverage, per-action ceilings, and automatic demotion remain open. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
 | P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` applied the production schema and live-verified the bounded observer across completion, source-gap, and duplicate-only replay. SQLite remains email authority and workflow promotion plus a second pilot process are still open. |
@@ -1282,6 +1282,15 @@ tests exist. It remains dark and undeployed. Full P0.4/P0.5 still requires
 domain envelope adoption, a production drill after draining warm Courses
 containers, standalone-script coverage, ceilings/demotion, and capability
 manifests.
+
+R1 capability checkpoint: `NC-20260816-004` adds strict manifests for all 17
+tracked operative groups, generates a path-free permissions matrix, projects
+exact Claude/MCP tools plus declared mounts and runtime ceilings when enabled,
+constrains recognized host IPC, and fingerprints launches so stale warm or
+adopted containers cannot receive another turn. The switch is default off and
+this source is undeployed. P0.3 therefore remains partial pending production
+drain/canaries, destination-scoped egress, raw-credential retirement,
+action-value/rate limits, and automatic demotion evidence.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus

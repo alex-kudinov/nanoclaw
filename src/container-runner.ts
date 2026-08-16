@@ -15,6 +15,11 @@ import {
   type ActionSafetyConfig,
 } from './action-safety.js';
 import {
+  parseContainerMemoryMb,
+  projectGroupCapabilities,
+  type CapabilityProjection,
+} from './capability-manifest.js';
+import {
   CONTAINER_IMAGE,
   CONTAINER_MAX_OUTPUT_SIZE,
   CONTAINER_TIMEOUT,
@@ -105,6 +110,12 @@ export interface ContainerInput {
   assistantName?: string;
   secrets?: Record<string, string>;
   model?: string;
+  capability?: {
+    enforced: boolean;
+    fingerprint: string;
+    claudeTools: string[];
+    mcpTools: string[];
+  };
 }
 
 export interface ContainerOutput {
@@ -219,6 +230,7 @@ function computeDirHash(dir: string): string {
 function buildVolumeMounts(
   group: RegisteredGroup,
   isMain: boolean,
+  additionalMounts: AdditionalMount[],
 ): VolumeMount[] {
   const mounts: VolumeMount[] = [];
   const projectRoot = process.cwd();
@@ -403,10 +415,7 @@ function buildVolumeMounts(
   const instructionMounts = planReleaseOwnedInstructionMounts(
     codeRoot,
     group.folder,
-    filterExternalWriteMounts(
-      group.folder,
-      group.containerConfig?.additionalMounts ?? [],
-    ),
+    filterExternalWriteMounts(group.folder, additionalMounts),
   );
   if (instructionMounts.knowledgeMount) {
     mounts.push(instructionMounts.knowledgeMount);
@@ -779,6 +788,8 @@ export interface ContainerSidecar {
   startedMs: number;
   /** Bytes of outLog already parsed AND routed — adoption resumes here. */
   outOffset: number;
+  /** Exact launch capability projection; required for adoption in enforcement mode. */
+  capabilityFingerprint?: string;
 }
 
 export function containersStateDir(): string {
@@ -805,6 +816,39 @@ export function containerTimeoutRemainingMs(
   nowMs = Date.now(),
 ): number {
   return effectiveContainerTimeoutMs(group) - Math.max(0, nowMs - startedMs);
+}
+
+export function resolveGroupCapabilityProjection(
+  group: RegisteredGroup,
+  isMain: boolean,
+): CapabilityProjection {
+  const memoryRaw = process.env.CONTAINER_MEMORY || '768M';
+  const memoryMb = parseContainerMemoryMb(memoryRaw);
+  if (memoryMb === null) {
+    throw new Error(`Invalid CONTAINER_MEMORY value: ${memoryRaw}`);
+  }
+  const safeAdditionalMounts = filterExternalWriteMounts(
+    group.folder,
+    group.containerConfig?.additionalMounts ?? [],
+  );
+  return projectGroupCapabilities({
+    group: {
+      ...group,
+      containerConfig: {
+        ...group.containerConfig,
+        additionalMounts: safeAdditionalMounts,
+      },
+    },
+    isMain,
+    defaults: {
+      model: 'sonnet',
+      timeoutMs: CONTAINER_TIMEOUT,
+      spawnTimeoutMs: SPAWN_TIMEOUT,
+      idleTimeoutMs: IDLE_TIMEOUT,
+      memoryMb,
+      cpus: Number(process.env.CONTAINER_CPUS || '2'),
+    },
+  });
 }
 
 /** Remove payloads addressed to an exited container and signal unrecoverable loss. */
@@ -841,7 +885,11 @@ export function sweepExitedContainerInputs(
 export async function runContainerAgent(
   group: RegisteredGroup,
   input: ContainerInput,
-  onProcess: (proc: ChildProcess, containerName: string) => void,
+  onProcess: (
+    proc: ChildProcess,
+    containerName: string,
+    capabilityFingerprint?: string,
+  ) => void,
   onOutput?: (output: ContainerOutput) => Promise<void>,
   onActivity?: () => void,
   adopt?: AdoptInfo,
@@ -851,7 +899,18 @@ export async function runContainerAgent(
   const groupDir = resolveGroupFolderPath(group.folder);
   fs.mkdirSync(groupDir, { recursive: true });
 
-  const mounts = buildVolumeMounts(group, input.isMain);
+  const capability = resolveGroupCapabilityProjection(group, input.isMain);
+  input.capability = {
+    enforced: capability.enforced,
+    fingerprint: capability.fingerprint,
+    claudeTools: capability.claudeTools,
+    mcpTools: capability.mcpTools,
+  };
+  const mounts = buildVolumeMounts(
+    group,
+    input.isMain,
+    capability.additionalMounts,
+  );
   const safeName = group.folder.replace(/[^a-zA-Z0-9-]/g, '-');
   const containerName = `nanoclaw-${safeName}-${Date.now()}`;
   const containerArgs = buildContainerArgs(mounts, containerName, group);
@@ -919,7 +978,7 @@ export async function runContainerAgent(
     fs.closeSync(outFd);
     fs.closeSync(errFd);
 
-    onProcess(container, containerName);
+    onProcess(container, containerName, capability.fingerprint);
 
     let sidecar: ContainerSidecar | null = null;
     if (adopt) {
@@ -937,6 +996,7 @@ export async function runContainerAgent(
         pid: container.pid ?? null,
         startedMs: startTime,
         outOffset: 0,
+        capabilityFingerprint: capability.fingerprint,
       };
       try {
         fs.writeFileSync(sidecarPath, JSON.stringify(sidecar, null, 2));

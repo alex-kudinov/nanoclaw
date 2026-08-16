@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "agent": {
+    "folder": "main",
+    "owner": "Company OS",
+    "purpose": "Primary control group and operator interface"
+  },
+  "inputs": ["operator requests", "agent escalations", "scheduled tasks"],
+  "dataDomains": ["repository", "operations", "registered groups"],
+  "tools": {
+    "claude": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "Task",
+      "TaskOutput",
+      "TaskStop",
+      "TeamCreate",
+      "TeamDelete",
+      "SendMessage",
+      "TodoWrite",
+      "ToolSearch",
+      "Skill",
+      "NotebookEdit"
+    ],
+    "mcp": [
+      "send_message",
+      "send_grader_file",
+      "schedule_task",
+      "list_tasks",
+      "pause_task",
+      "resume_task",
+      "cancel_task",
+      "register_group",
+      "jobs"
+    ],
+    "hostOperations": [
+      "message",
+      "slack_file_message",
+      "schedule_task",
+      "pause_task",
+      "resume_task",
+      "cancel_task",
+      "register_group",
+      "jobs_mutate",
+      "learn_lesson"
+    ]
+  },
+  "mounts": {
+    "base": ["group", "project", "session", "ipc", "runner"],
+    "additional": []
+  },
+  "network": { "mode": "unrestricted_current", "services": ["internet"] },
+  "actions": {
+    "classes": [
+      "c1_read",
+      "c2_external_write",
+      "c3_external_communication",
+      "c5_destructive"
+    ],
+    "approval": "named_human"
+  },
+  "runtime": {
+    "models": ["sonnet", "haiku", "opus"],
+    "timeoutMsMax": 1800000,
+    "spawnTimeoutMsMax": 900000,
+    "idleTimeoutMsMax": 1200000,
+    "memoryMbMax": 2048,
+    "cpusMax": 2
+  },
+  "slo": {
+    "name": "operator request",
+    "target": "Explicit outcome, evidence, owner, and next action"
+  }
+}

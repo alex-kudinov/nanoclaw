@@ -98,6 +98,7 @@ try {
       '.nvmrc',
       'package.json',
       'package-lock.json',
+      'capabilities',
       'container',
       'groups',
       'knowledge',

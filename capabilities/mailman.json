@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "agent": {
+    "folder": "mailman",
+    "owner": "Email operations",
+    "purpose": "Email classification and guarded delivery"
+  },
+  "inputs": ["Slack requests", "Gmail events", "scheduled tasks"],
+  "dataDomains": ["email", "classification", "agent knowledge"],
+  "tools": {
+    "claude": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "ToolSearch",
+      "Skill"
+    ],
+    "mcp": [
+      "send_message",
+      "schedule_task",
+      "list_tasks",
+      "pause_task",
+      "resume_task",
+      "cancel_task",
+      "gmail_reply",
+      "gmail_send",
+      "gmail_search",
+      "gmail_read",
+      "gmail_get_thread"
+    ],
+    "hostOperations": [
+      "message",
+      "schedule_task",
+      "pause_task",
+      "resume_task",
+      "cancel_task",
+      "gmail_reply",
+      "gmail_send",
+      "gmail_search",
+      "gmail_read",
+      "gmail_get_thread",
+      "learn_lesson",
+      "classify_label_write",
+      "classify_backfill_pending",
+      "classify_backfill_confirm",
+      "classify_correction_detected"
+    ]
+  },
+  "mounts": {
+    "base": ["group", "global", "session", "ipc", "runner"],
+    "additional": [{ "target": "knowledge", "access": "read_only" }]
+  },
+  "network": { "mode": "unrestricted_current", "services": ["internet"] },
+  "actions": {
+    "classes": ["c1_read", "c2_external_write", "c3_external_communication"],
+    "approval": "named_human"
+  },
+  "runtime": {
+    "models": ["sonnet", "haiku", "opus"],
+    "timeoutMsMax": 1800000,
+    "spawnTimeoutMsMax": 900000,
+    "idleTimeoutMsMax": 1200000,
+    "memoryMbMax": 2048,
+    "cpusMax": 2
+  },
+  "slo": {
+    "name": "email delivery",
+    "target": "No send claim without a provider receipt"
+  }
+}

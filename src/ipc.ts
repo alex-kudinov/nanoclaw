@@ -17,6 +17,10 @@ import {
   isExternalWriteDeniedError,
 } from './action-safety.js';
 import {
+  assertManifestHostOperation,
+  manifestAllowsHostOperation,
+} from './capability-manifest.js';
+import {
   claimEmailActionExecution,
   clearPendingSendsByRecipient,
   confirmEmailAction,
@@ -460,6 +464,24 @@ export function startIpcWatcher(deps: IpcDeps): void {
             // so a filename allowlist here only quarantines real commands.
             try {
               const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+              if (
+                !manifestAllowsHostOperation(
+                  sourceGroup,
+                  isMain,
+                  String(data.type ?? ''),
+                )
+              ) {
+                const quarantinedAt = quarantineIpcFile(
+                  filePath,
+                  sourceGroup,
+                  'capability-denied',
+                );
+                logger.warn(
+                  { sourceGroup, type: data.type, quarantinedAt },
+                  'IPC message denied by capability manifest',
+                );
+                continue;
+              }
               if (data.type === 'message' && data.chatJid && data.text) {
                 // Resolve targetGroupFolder → chatJid if present
                 let targetJid = data.chatJid;
@@ -1910,6 +1932,7 @@ export async function processTaskIpc(
   isMain: boolean, // Verified from directory path
   deps: IpcDeps,
 ): Promise<void> {
+  assertManifestHostOperation(sourceGroup, isMain, data.type);
   const registeredGroups = deps.registeredGroups();
 
   switch (data.type) {
@@ -2198,6 +2221,7 @@ export async function processJobIpc(
   sourceGroup: string,
   deps: IpcDeps,
 ): Promise<void> {
+  assertManifestHostOperation(sourceGroup, false, 'jobs_mutate');
   const { action, name } = data;
 
   if (!name) {

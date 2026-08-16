@@ -62,9 +62,12 @@ the Things bridge, Sertifier, and business tools exposed directly inside other
 containers. Therefore P0.5 remains partial and “global” means global across the
 five named first-drill systems, not a claim of repository-wide revocation.
 An already-running Courses container may retain its old raw SMTP mount and
-credentials. A production activation must therefore engage the brake before
-launch and drain/recycle every Courses container before claiming that boundary
-effective. Retiring raw Courses SMTP behind host IPC remains required.
+credentials. `NC-20260816-004` adds a separate default-off capability
+fingerprint that, when enabled, closes a stale warm/adopted container before its
+next turn; it does not interrupt a turn already executing. A production
+activation must therefore engage the brake before launch and drain/recycle
+every Courses container before claiming that boundary effective. Retiring raw
+Courses SMTP behind host IPC remains required.
 
 ## Action envelope and replay rule
 

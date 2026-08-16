@@ -8,6 +8,50 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-004 — Add dark per-agent capability manifests and stale-container revocation
+
+- Date: 2026-08-16T16:18Z
+- Owner/client: Codex
+- State: validating at the local commit/release-package boundary; not pushed,
+  deployed, or activated
+- Commit/PR: claim commit `d40913e`; implementation commit pending on
+  `codex/nc-20260816-004-capability-manifests`; no PR
+- Change class: C5 — per-agent tool, mount, IPC, runtime, and container-reuse
+  security boundary
+- Intended outcome: make each operative agent's current capability surface
+  explicit and reviewable, then enable a separately gated fail-closed mode that
+  cannot silently widen tools or reuse a container launched under stale policy.
+- Implementation: added strict versioned manifests for all 17 tracked group
+  folders, a deterministic validator/fingerprint and path-free generated matrix,
+  exact Claude/MCP tool projection, recognized host-operation checks for
+  message/task/job IPC, declared additional-mount and runtime-ceiling checks,
+  release packaging, health aggregation, and launch/sidecar fingerprinting.
+  Warm or adopted containers with a missing or stale fingerprint are closed
+  before another turn when enforcement is enabled.
+- Compatibility and safety boundary: enforcement defaults off, so the installed
+  source preserves the legacy tool/MCP/mount surface. Existing resource grants,
+  mount allowlists, domain approvals, action-safety checks, idempotency, and
+  receipts remain cumulative host authority. Invalid enablement fails closed.
+  This milestone performs no production config change, deployment, restart,
+  live container termination, external message/write, push, or merge.
+- Verification: exact Node 22.23.2 passes 113/113 focused manifest, queue,
+  container, IPC, scheduler, webhook, and reaper tests; 634/634 email-critical
+  tests; root and build typechecks; source formatting; schema sanitizer;
+  deterministic matrix and documentation-continuity checks; and the independent
+  runner build plus 40/40 tests. The complete root suite passes 2,388/2,389; its
+  sole failure is the unchanged baseline `src/cnpc-prompt-contract.test.ts`
+  inline-registration source assertion. `git diff --check` passes.
+- Residuals/rollback: production activation requires an authorized drain/recycle
+  and group-by-group negative, launch, warm-revocation, and business-path
+  canaries. Destination-scoped egress, raw-secret retirement, action-value/rate
+  ceilings, immediate in-flight interruption, dynamic group onboarding, and
+  automatic autonomy demotion remain open. If later activated, rollback is to
+  restore `CAPABILITY_MANIFEST_ENFORCEMENT_ENABLED=0` and recycle affected
+  containers; source verification alone is not rollback evidence.
+- Documentation: added `docs/CAPABILITY-MANIFESTS.md` and the generated matrix;
+  updated environment, security, architecture, action-safety, Company OS,
+  release-packaging, active-work, and changelog authorities.
+
 ### NC-20260816-002 — Add the dark Company OS action safety control
 
 - Date: 2026-08-16T15:00Z

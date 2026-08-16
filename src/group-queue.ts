@@ -95,6 +95,8 @@ interface GroupState {
    *  index.ts, so the liveness checker must not double-clean it. */
   adopted?: boolean;
   adoptedPid?: number;
+  /** Exact host-projected capability set used when this container launched. */
+  capabilityFingerprint?: string;
   /** Snippet of the message that spawned (or was last piped into) this
    *  container — shown in pipeline status so "processing" says WHAT. */
   spawnSnippet?: string;
@@ -132,6 +134,9 @@ export class GroupQueue {
     | null = null;
   private shuttingDown = false;
   private livenessInterval: ReturnType<typeof setInterval> | null = null;
+  private capabilityFingerprintCurrentFn:
+    | ((groupFolder: string, fingerprint?: string) => boolean)
+    | null = null;
 
   /**
    * Root-message containers and scheduled tasks share one queue slot/state.
@@ -175,6 +180,33 @@ export class GroupQueue {
     fn: (groupJid: string, isoTimestamp: string) => void,
   ): void {
     this.rollbackTimestampFn = fn;
+  }
+
+  setCapabilityFingerprintCurrentFn(
+    fn: (groupFolder: string, fingerprint?: string) => boolean,
+  ): void {
+    this.capabilityFingerprintCurrentFn = fn;
+  }
+
+  private capabilityFingerprintIsCurrent(state: GroupState): boolean {
+    if (!state.groupFolder || !this.capabilityFingerprintCurrentFn) return true;
+    return this.capabilityFingerprintCurrentFn(
+      state.groupFolder,
+      state.capabilityFingerprint,
+    );
+  }
+
+  private revokeStaleContainer(groupJid: string, state: GroupState): void {
+    logger.warn(
+      {
+        event: 'container.capability.revoked',
+        groupJid,
+        groupFolder: state.groupFolder,
+        containerName: state.containerName,
+      },
+      'Closing container with a stale capability projection',
+    );
+    this.closeStdin(groupJid);
   }
 
   /**
@@ -230,6 +262,10 @@ export class GroupQueue {
 
     if (state.active) {
       state.pendingMessages = true;
+      if (!this.capabilityFingerprintIsCurrent(state)) {
+        this.revokeStaleContainer(groupJid, state);
+        return;
+      }
       logger.debug({ groupJid }, 'Container active, message queued');
       return;
     }
@@ -331,11 +367,13 @@ export class GroupQueue {
     proc: ChildProcess,
     containerName: string,
     groupFolder?: string,
+    capabilityFingerprint?: string,
   ): void {
     const state = this.getGroup(groupJid);
     state.process = proc;
     state.containerName = containerName;
     if (groupFolder) state.groupFolder = groupFolder;
+    state.capabilityFingerprint = capabilityFingerprint;
   }
 
   /**
@@ -376,6 +414,10 @@ export class GroupQueue {
    */
   notifyIdle(groupJid: string): void {
     const state = this.getGroup(groupJid);
+    if (!this.capabilityFingerprintIsCurrent(state)) {
+      this.revokeStaleContainer(groupJid, state);
+      return;
+    }
     state.idleWaiting = true;
     state.idleSinceMs = Date.now();
     if (state.pendingTasks.length > 0) {
@@ -447,6 +489,11 @@ export class GroupQueue {
       (state.isTaskContainer && !allowTaskContainer)
     )
       return { wrote: false };
+    if (!this.capabilityFingerprintIsCurrent(state)) {
+      if (opts.trackForRecovery !== false) state.pendingMessages = true;
+      this.revokeStaleContainer(groupJid, state);
+      return { wrote: false };
+    }
     state.idleWaiting = false; // Agent is about to receive work, no longer idle
     state.idleSinceMs = undefined;
 
@@ -756,6 +803,7 @@ export class GroupQueue {
       state.containerName = null;
       state.spawnSnippet = undefined;
       state.groupFolder = null;
+      state.capabilityFingerprint = undefined;
       state.resetIdleTimer = undefined;
       state.activeSinceMs = undefined;
       state.lastOutputAt = undefined;
@@ -794,6 +842,7 @@ export class GroupQueue {
       state.containerName = null;
       state.spawnSnippet = undefined;
       state.groupFolder = null;
+      state.capabilityFingerprint = undefined;
       state.resetIdleTimer = undefined;
       state.activeSinceMs = undefined;
       state.lastOutputAt = undefined;
@@ -1090,6 +1139,7 @@ export class GroupQueue {
     state.containerName = null;
     state.spawnSnippet = undefined;
     state.groupFolder = null;
+    state.capabilityFingerprint = undefined;
     state.resetIdleTimer = undefined;
     state.activeSinceMs = undefined;
     state.lastOutputAt = undefined;
@@ -1238,6 +1288,7 @@ export class GroupQueue {
     groupFolder: string,
     pid: number,
     startedMs: number,
+    capabilityFingerprint?: string,
   ): void {
     const state = this.getGroup(groupJid);
     state.active = true;
@@ -1248,6 +1299,7 @@ export class GroupQueue {
     state.isTaskContainer = false;
     state.containerName = containerName;
     state.groupFolder = groupFolder;
+    state.capabilityFingerprint = capabilityFingerprint;
     state.activeSinceMs = startedMs;
     state.lastOutputAt = Date.now();
     this.activeCount++;
@@ -1288,6 +1340,7 @@ export class GroupQueue {
     state.containerName = null;
     state.spawnSnippet = undefined;
     state.groupFolder = null;
+    state.capabilityFingerprint = undefined;
     state.idleWaiting = false;
     state.idleSinceMs = undefined;
     state.activeSinceMs = undefined;

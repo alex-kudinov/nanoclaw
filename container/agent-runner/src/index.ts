@@ -29,6 +29,10 @@ import { resolveModel, formatUsageLine } from './model-util.js';
 import { payloadIsForThisContainer } from './ipc-input-filter.js';
 import { drainBeforeClose } from './ipc-loop-policy.js';
 import { selectNextIpcTurn, type IpcTurnCandidate } from './ipc-turn-policy.js';
+import {
+  buildAllowedTools,
+  type RunnerCapabilityInput,
+} from './capability-tools.js';
 import { fileURLToPath } from 'url';
 
 interface ContainerInput {
@@ -42,6 +46,7 @@ interface ContainerInput {
   assistantName?: string;
   secrets?: Record<string, string>;
   model?: string;
+  capability?: RunnerCapabilityInput;
 }
 
 interface ContainerOutput {
@@ -96,28 +101,6 @@ const WRAPPER_IDLE_TIMEOUT_MS = parseInt(
   process.env.WRAPPER_IDLE_TIMEOUT_MS || '420000',
   10,
 );
-
-const ALLOWED_TOOLS = [
-  'Bash',
-  'Read',
-  'Write',
-  'Edit',
-  'Glob',
-  'Grep',
-  'WebSearch',
-  'WebFetch',
-  'Task',
-  'TaskOutput',
-  'TaskStop',
-  'TeamCreate',
-  'TeamDelete',
-  'SendMessage',
-  'TodoWrite',
-  'ToolSearch',
-  'Skill',
-  'NotebookEdit',
-  'mcp__nanoclaw__*',
-];
 
 function writeOutput(output: ContainerOutput): void {
   console.log(OUTPUT_START_MARKER);
@@ -342,6 +325,13 @@ async function runAgent(
               NANOCLAW_GROUP_FOLDER: containerInput.groupFolder,
               NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
               NANOCLAW_RUN_ID: runId ?? '',
+              ...(containerInput.capability?.enforced
+                ? {
+                    NANOCLAW_ALLOWED_MCP_TOOLS: JSON.stringify(
+                      containerInput.capability.mcpTools,
+                    ),
+                  }
+                : {}),
             },
           },
         },
@@ -385,7 +375,7 @@ async function runAgent(
     '--mcp-config',
     mcpConfigPath,
     '--allowedTools',
-    ALLOWED_TOOLS.join(','),
+    buildAllowedTools(containerInput.capability).join(','),
   ];
   if (globalClaudeMd) baseArgs.push('--append-system-prompt', globalClaudeMd);
   for (const dir of extraDirs) baseArgs.push('--add-dir', dir);

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "agent": {
+    "folder": "grader",
+    "owner": "Academy operations",
+    "purpose": "Isolated evidence-first submission grading"
+  },
+  "inputs": ["Slack grader submissions"],
+  "dataDomains": ["grading records", "rubric snapshots", "agent knowledge"],
+  "tools": {
+    "claude": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "ToolSearch",
+      "Skill"
+    ],
+    "mcp": ["send_message"],
+    "hostOperations": ["message", "learn_lesson"]
+  },
+  "mounts": {
+    "base": ["group", "global", "session", "ipc", "runner"],
+    "additional": [
+      { "target": "grading", "access": "read_write" },
+      { "target": "knowledge", "access": "read_write" }
+    ]
+  },
+  "network": { "mode": "unrestricted_current", "services": ["internet"] },
+  "actions": {
+    "classes": ["c1_read", "c2_external_write", "c3_external_communication"],
+    "approval": "domain_policy"
+  },
+  "runtime": {
+    "models": ["sonnet"],
+    "timeoutMsMax": 1800000,
+    "spawnTimeoutMsMax": 900000,
+    "idleTimeoutMsMax": 30000,
+    "memoryMbMax": 2048,
+    "cpusMax": 2
+  },
+  "slo": {
+    "name": "grading completion",
+    "target": "One isolated evidence-backed result per submission"
+  }
+}

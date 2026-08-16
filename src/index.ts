@@ -40,10 +40,16 @@ import {
   ContainerSidecar,
   containerTimeoutRemainingMs,
   containersStateDir,
+  resolveGroupCapabilityProjection,
   runContainerAgent,
   writeGroupsSnapshot,
   writeTasksSnapshot,
 } from './container-runner.js';
+import {
+  assertCapabilityCatalogForGroups,
+  getCapabilityManifestStatus,
+  loadCapabilityManifestConfig,
+} from './capability-manifest.js';
 import {
   cleanupOrphans,
   ensureContainerRuntimeRunning,
@@ -1046,9 +1052,15 @@ async function runAgent(
         chatJid,
         isMain,
       },
-      (proc, containerName) => {
+      (proc, containerName, capabilityFingerprint) => {
         const compositeKey = `${chatJid}||${threadTs || 'root'}`;
-        queue.registerProcess(compositeKey, proc, containerName, group.folder);
+        queue.registerProcess(
+          compositeKey,
+          proc,
+          containerName,
+          group.folder,
+          capabilityFingerprint,
+        );
         onStarted?.();
       },
       wrappedOnOutput,
@@ -1454,12 +1466,31 @@ function adoptSidecarContainer(
     sweepSidecar(sc, sidecarPath);
     return false;
   }
+  const capabilityConfig = loadCapabilityManifestConfig();
+  if (
+    !capabilityConfig.valid ||
+    (capabilityConfig.enforcementEnabled &&
+      resolveGroupCapabilityProjection(group, group.isMain === true)
+        .fingerprint !== sc.capabilityFingerprint)
+  ) {
+    logger.warn(
+      {
+        event: 'container.capability.adoption_denied',
+        containerName: sc.containerName,
+        group: sc.groupName,
+      },
+      'Refusing to adopt container with a stale capability projection',
+    );
+    sweepSidecar(sc, sidecarPath);
+    return false;
+  }
   queue.adoptContainer(
     sc.compositeKey,
     sc.containerName,
     sc.groupFolder,
     sc.pid!,
     sc.startedMs,
+    sc.capabilityFingerprint,
   );
   const parser = createOutputParser({
     onActivity: () => queue.setLastOutputAt(sc.compositeKey),
@@ -1890,13 +1921,26 @@ async function main(): Promise<void> {
         circuitBreaker: circuitBreakerStatus,
         companyWorkShadow: companyWorkShadow.getStatus(),
         actionSafety: getActionSafetyStatus(),
+        capabilityManifests: getCapabilityManifestStatus(),
       };
     },
     runAgent: runContainerAgent,
     enqueueAgentTask: (groupJid, taskId, fn) =>
       queue.enqueueTask(groupJid, taskId, fn),
-    registerProcess: (groupJid, proc, containerName, groupFolder) =>
-      queue.registerProcess(groupJid, proc, containerName, groupFolder),
+    registerProcess: (
+      groupJid,
+      proc,
+      containerName,
+      groupFolder,
+      capabilityFingerprint,
+    ) =>
+      queue.registerProcess(
+        groupJid,
+        proc,
+        containerName,
+        groupFolder,
+        capabilityFingerprint,
+      ),
     sendMessage: async (jid, rawText, opts) => {
       const channel = findChannel(channels, jid);
       if (!channel) {
@@ -2013,6 +2057,26 @@ async function main(): Promise<void> {
   }
 
   loadState();
+  assertCapabilityCatalogForGroups(registeredGroups);
+  queue.setCapabilityFingerprintCurrentFn(
+    (groupFolder, recordedFingerprint) => {
+      const config = loadCapabilityManifestConfig();
+      if (!config.valid) return false;
+      if (!config.enforcementEnabled) return true;
+      const group = Object.values(registeredGroups).find(
+        (candidate) => candidate.folder === groupFolder,
+      );
+      if (!group || !recordedFingerprint) return false;
+      try {
+        return (
+          resolveGroupCapabilityProjection(group, group.isMain === true)
+            .fingerprint === recordedFingerprint
+        );
+      } catch {
+        return false;
+      }
+    },
+  );
 
   // Graceful shutdown handlers
   const shutdown = async (signal: string) => {
@@ -2777,8 +2841,20 @@ async function main(): Promise<void> {
       registeredGroups: () => registeredGroups,
       getSessions: () => sessions,
       queue,
-      onProcess: (groupJid, proc, containerName, groupFolder) =>
-        queue.registerProcess(groupJid, proc, containerName, groupFolder),
+      onProcess: (
+        groupJid,
+        proc,
+        containerName,
+        groupFolder,
+        capabilityFingerprint,
+      ) =>
+        queue.registerProcess(
+          groupJid,
+          proc,
+          containerName,
+          groupFolder,
+          capabilityFingerprint,
+        ),
       sendMessage: async (jid, rawText, opts) => {
         const channel = findChannel(channels, jid);
         if (!channel) {

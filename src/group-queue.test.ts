@@ -472,6 +472,74 @@ describe('GroupQueue', () => {
     expect(payload.text).toBe('follow-up');
   });
 
+  it('refuses to pipe into an adopted container after its capability changes', async () => {
+    queue.setCapabilityFingerprintCurrentFn(
+      (_groupFolder, fingerprint) => fingerprint === 'current',
+    );
+    queue.adoptContainer(
+      'group1@g.us',
+      'nanoclaw-sales-stale',
+      'sales',
+      12345,
+      Date.now(),
+      'stale',
+    );
+    const writeFileSync = vi.mocked(fs.writeFileSync);
+    writeFileSync.mockClear();
+
+    expect(queue.sendMessage('group1@g.us', 'do not deliver').wrote).toBe(
+      false,
+    );
+    expect(
+      writeFileSync.mock.calls.some(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].endsWith('_close-nanoclaw-sales-stale'),
+      ),
+    ).toBe(true);
+    expect(
+      writeFileSync.mock.calls.some(
+        (call) =>
+          typeof call[1] === 'string' && call[1].includes('do not deliver'),
+      ),
+    ).toBe(false);
+  });
+
+  it('closes a warm pre-manifest container before accepting another turn', async () => {
+    let release!: () => void;
+    queue.setCapabilityFingerprintCurrentFn(
+      (_groupFolder, fingerprint) => fingerprint === 'current',
+    );
+    queue.setProcessMessagesFn(async () => {
+      queue.registerProcess(
+        'group1@g.us',
+        {} as never,
+        'nanoclaw-sales-legacy',
+        'sales',
+      );
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return true;
+    });
+    queue.enqueueMessageCheck('group1@g.us');
+    await vi.advanceTimersByTimeAsync(0);
+    const writeFileSync = vi.mocked(fs.writeFileSync);
+    writeFileSync.mockClear();
+
+    queue.enqueueMessageCheck('group1@g.us');
+
+    expect(
+      writeFileSync.mock.calls.some(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].endsWith('_close-nanoclaw-sales-legacy'),
+      ),
+    ).toBe(true);
+    release();
+    await vi.advanceTimersByTimeAsync(0);
+  });
+
   it('does not enroll ephemeral targeted results in chat-cursor rollback', async () => {
     const rollback = vi.fn();
     queue.setRollbackTimestampFn(rollback);

@@ -64,7 +64,11 @@ type RunAgentFn = (
     isMain: boolean;
     isScheduledTask?: boolean;
   },
-  onProcess: (proc: ChildProcess, containerName: string) => void,
+  onProcess: (
+    proc: ChildProcess,
+    containerName: string,
+    capabilityFingerprint?: string,
+  ) => void,
   onOutput?: (output: ContainerOutput) => Promise<void>,
 ) => Promise<ContainerOutput>;
 
@@ -82,6 +86,9 @@ export interface HealthPayload {
   lastMessageAt: string | null;
   actionSafety?: ReturnType<
     typeof import('./action-safety.js').getActionSafetyStatus
+  >;
+  capabilityManifests?: ReturnType<
+    typeof import('./capability-manifest.js').getCapabilityManifestStatus
   >;
 }
 
@@ -150,6 +157,7 @@ export interface WebhookServerDeps {
     proc: ChildProcess,
     containerName: string,
     groupFolder: string,
+    capabilityFingerprint?: string,
   ) => void;
 }
 
@@ -1303,12 +1311,13 @@ export class WebhookServer {
               isMain,
               isScheduledTask: true,
             },
-            (proc, containerName) =>
+            (proc, containerName, capabilityFingerprint) =>
               this.deps.registerProcess?.(
                 groupQueueKey,
                 proc,
                 containerName,
                 group.folder,
+                capabilityFingerprint,
               ),
             async (streamedOutput: ContainerOutput) => {
               if (!streamedOutput.result) return;

@@ -13,6 +13,7 @@ import path from 'path';
 import { CronExpressionParser } from 'cron-parser';
 
 import { queuedMessageResult } from './send-message-result.js';
+import { mcpToolIsAllowed, parseAllowedMcpTools } from './capability-tools.js';
 
 const IPC_DIR = '/workspace/ipc';
 const MESSAGES_DIR = path.join(IPC_DIR, 'messages');
@@ -46,8 +47,22 @@ const server = new McpServer({
   name: 'nanoclaw',
   version: '1.0.0',
 });
+const allowedMcpTools = parseAllowedMcpTools(
+  process.env.NANOCLAW_ALLOWED_MCP_TOOLS,
+);
+const registerTool = ((...args: unknown[]) => {
+  const name = args[0];
+  if (typeof name !== 'string' || !mcpToolIsAllowed(allowedMcpTools, name)) {
+    return undefined;
+  }
+  return Reflect.apply(
+    server.tool as (...toolArgs: unknown[]) => unknown,
+    server,
+    args,
+  );
+}) as McpServer['tool'];
 
-server.tool(
+registerTool(
   'send_message',
   "Send a message to the user or group immediately while you're still running. Use this for progress updates or to send multiple messages. You can call this multiple times. Note: when running as a scheduled task, your final output is NOT sent to the user — use this tool if you need to communicate with the user or group.",
   {
@@ -106,7 +121,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'send_grader_file',
   'Stage one local assignment file and ask the host to post it as a new #gru-grader root with the file attached in its thread. This capability is fixed to the grader and available only to the main/chief control group.',
   {
@@ -215,7 +230,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'schedule_task',
   `Schedule a recurring or one-time task. The task will run as a full agent with access to all tools.
 
@@ -353,7 +368,7 @@ SCHEDULE VALUE FORMAT (all times are LOCAL timezone):
   },
 );
 
-server.tool(
+registerTool(
   'list_tasks',
   "List all scheduled tasks. From main: shows all tasks. From other groups: shows only that group's tasks.",
   {},
@@ -417,7 +432,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'pause_task',
   'Pause a scheduled task. It will not run until resumed.',
   { task_id: z.string().describe('The task ID to pause') },
@@ -443,7 +458,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'resume_task',
   'Resume a paused task.',
   { task_id: z.string().describe('The task ID to resume') },
@@ -469,7 +484,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'cancel_task',
   'Cancel and delete a scheduled task.',
   { task_id: z.string().describe('The task ID to cancel') },
@@ -495,7 +510,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'register_group',
   `Register a new chat/group so the agent can respond to messages there. Main group only.
 
@@ -551,7 +566,7 @@ Use available_groups.json to find the JID for a group. The folder name must be c
 
 // --- Gmail tools ---
 
-server.tool(
+registerTool(
   'gmail_reply',
   'Reply to an email thread. The reply goes to the original sender with proper In-Reply-To/References headers and Gmail thread grouping.',
   {
@@ -604,7 +619,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'gmail_send',
   'Send a new email. Optionally thread into an existing Gmail conversation while using a custom subject line.',
   {
@@ -666,7 +681,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'gmail_search',
   'Search emails using Gmail search syntax. Results are delivered as a follow-up message.',
   {
@@ -703,7 +718,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'gmail_read',
   'Read a specific email by message ID. Content is delivered as a follow-up message.',
   {
@@ -729,7 +744,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'gmail_get_thread',
   'Fetch an entire Gmail thread (all messages, full bodies) by thread ID. Use this to load a conversation — do NOT pass thread:<id> to gmail_search, which is not a real Gmail operator. Result is delivered as a follow-up message.',
   {
@@ -755,7 +770,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'procurement_queue',
   'List host-normalized CaleProcure and emailed opportunities awaiting Procurement review. This is read-only and never returns raw portal snapshots or email bodies.',
   {
@@ -809,7 +824,7 @@ const caleProcureResultRow = z
   })
   .strict();
 
-server.tool(
+registerTool(
   'procurement_caleprocure_ingest',
   'Submit one bounded public CaleProcure result batch plus coverage receipts to the host validator. The host owns the planned search units and derives complete/partial/failed. This is separately enabled and never submits a bid.',
   {
@@ -875,7 +890,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'procurement_pursuit_queue',
   'List every active host-owned pursuit created by a named-human process decision. Deadlines order the queue but never hide work.',
   {
@@ -910,7 +925,7 @@ server.tool(
   },
 );
 
-server.tool(
+registerTool(
   'procurement_review_card',
   'Ask the host to create or reuse a version-bound Slack review card from current database truth. The recommendation is advisory; only a named human decision command in the card thread can change state.',
   {
@@ -953,7 +968,7 @@ server.tool(
 
 const JOBS_DIR = path.join(IPC_DIR, 'jobs');
 
-server.tool(
+registerTool(
   'jobs',
   'Manage host-level scheduled jobs. Use list to see all jobs, status to inspect a specific job, run to trigger it immediately, pause to disable it, or resume to re-enable it.',
   {

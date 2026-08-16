@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "agent": {
+    "folder": "courses",
+    "owner": "Academy operations",
+    "purpose": "Course enrichment and participant operations"
+  },
+  "inputs": ["Slack requests", "scheduled tasks", "course records"],
+  "dataDomains": [
+    "courses",
+    "meetings",
+    "instructors",
+    "email delivery",
+    "agent knowledge"
+  ],
+  "tools": {
+    "claude": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "ToolSearch",
+      "Skill"
+    ],
+    "mcp": [
+      "send_message",
+      "schedule_task",
+      "list_tasks",
+      "pause_task",
+      "resume_task",
+      "cancel_task"
+    ],
+    "hostOperations": [
+      "message",
+      "schedule_task",
+      "pause_task",
+      "resume_task",
+      "cancel_task",
+      "learn_lesson"
+    ]
+  },
+  "mounts": {
+    "base": ["group", "global", "session", "ipc", "runner"],
+    "additional": [
+      { "target": "enrichment", "access": "read_write" },
+      { "target": "meetings", "access": "read_only" },
+      { "target": "enricher", "access": "read_only" },
+      { "target": "instructors", "access": "read_only" },
+      { "target": "email", "access": "read_only" },
+      { "target": "toolbox-lib", "access": "read_only" },
+      { "target": "knowledge", "access": "read_write" }
+    ]
+  },
+  "network": { "mode": "unrestricted_current", "services": ["internet"] },
+  "actions": {
+    "classes": ["c1_read", "c2_external_write", "c3_external_communication"],
+    "approval": "named_human"
+  },
+  "runtime": {
+    "models": ["sonnet", "haiku", "opus"],
+    "timeoutMsMax": 1800000,
+    "spawnTimeoutMsMax": 900000,
+    "idleTimeoutMsMax": 1200000,
+    "memoryMbMax": 2048,
+    "cpusMax": 2
+  },
+  "slo": {
+    "name": "course operation",
+    "target": "No participant-facing action without a durable receipt"
+  }
+}
