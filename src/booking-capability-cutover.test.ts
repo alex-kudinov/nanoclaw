@@ -101,6 +101,10 @@ describe('Booking tracked capability contract', () => {
       path.join(root, 'scripts/build-release.mjs'),
       'utf8',
     );
+    const cutoverHelper = fs.readFileSync(
+      path.join(root, 'scripts/set-booking-capability-boundary.mjs'),
+      'utf8',
+    );
     const manifest = JSON.parse(
       fs.readFileSync(path.join(root, 'capabilities/booking.json'), 'utf8'),
     );
@@ -121,6 +125,9 @@ describe('Booking tracked capability contract', () => {
     );
     expect(releaseBuilder).toContain(
       "'scripts/set-booking-capability-boundary.mjs'",
+    );
+    expect(cutoverHelper).toMatch(
+      /fileURLToPath\(new URL\('\.\.\/', import\.meta\.url\)\)/,
     );
   });
 });

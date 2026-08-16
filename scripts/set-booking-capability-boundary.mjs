@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 function usage(message) {
   if (message) process.stderr.write(`${message}\n\n`);
@@ -41,8 +41,11 @@ for (let index = 0; index < args.length; index += 1) {
   values.set(arg, args[++index]);
 }
 
+const installedRoot = fs.realpathSync(
+  fileURLToPath(new URL('../', import.meta.url)),
+);
 const codeRoot = fs.realpathSync(
-  process.env.NANOCLAW_CODE_ROOT || process.cwd(),
+  process.env.NANOCLAW_CODE_ROOT || installedRoot,
 );
 const distDir = path.join(codeRoot, 'dist');
 const releaseIntegrity = await import(
