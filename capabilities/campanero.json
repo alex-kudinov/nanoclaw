@@ -3,37 +3,14 @@
   "agent": {
     "folder": "campanero",
     "owner": "Company OS",
-    "purpose": "Notification and reminder operations"
+    "purpose": "Host job scheduler management"
   },
-  "inputs": ["Slack requests", "scheduled tasks"],
-  "dataDomains": ["notifications", "agent knowledge"],
+  "inputs": ["Slack requests"],
+  "dataDomains": ["host job inventory and status"],
   "tools": {
-    "claude": [
-      "Bash",
-      "Read",
-      "Glob",
-      "Grep",
-      "WebSearch",
-      "WebFetch",
-      "ToolSearch",
-      "Skill"
-    ],
-    "mcp": [
-      "send_message",
-      "schedule_task",
-      "list_tasks",
-      "pause_task",
-      "resume_task",
-      "cancel_task"
-    ],
-    "hostOperations": [
-      "message",
-      "schedule_task",
-      "pause_task",
-      "resume_task",
-      "cancel_task",
-      "learn_lesson"
-    ]
+    "claude": [],
+    "mcp": ["jobs"],
+    "hostOperations": ["jobs_mutate"]
   },
   "mounts": {
     "base": ["group", "global", "session", "ipc", "runner"],
@@ -44,7 +21,7 @@
   },
   "network": { "mode": "unrestricted_current", "services": ["internet"] },
   "actions": {
-    "classes": ["c1_read", "c2_external_write", "c3_external_communication"],
+    "classes": ["c1_read", "c2_external_write", "c5_destructive"],
     "approval": "domain_policy"
   },
   "runtime": {
@@ -56,7 +33,7 @@
     "cpusMax": 2
   },
   "slo": {
-    "name": "notification delivery",
-    "target": "Timely notification with host receipt"
+    "name": "job operation",
+    "target": "Every requested job operation is host-validated and receipted"
   }
 }

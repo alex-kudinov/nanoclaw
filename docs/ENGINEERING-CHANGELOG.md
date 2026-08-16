@@ -8,6 +8,43 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-006 — Stage one jobs-only Campanero capability canary
+
+- Date: 2026-08-16T17:03Z
+- Owner/client: Codex
+- State: validating locally; not yet deployed or activated
+- Commit/PR: claim commit `f620b1b328597264871dfe25a6fa880fe5462eca`
+  on `codex/nc-20260816-006-campanero-canary`; implementation commit pending;
+  no PR
+- Change class: C5 — production release and one-agent capability-boundary
+  activation
+- Intended outcome: install the default-off capability-manifest release, then
+  enforce and prove only the low-risk Campanero agent without changing any
+  other registered agent.
+- Implementation: add strict `CAPABILITY_MANIFEST_ENFORCED_GROUPS` parsing and
+  startup validation; project manifests, host operations, warm fingerprints,
+  and sidecar adoption per selected folder; preserve compatibility for all
+  other groups; add a release-bundled dry-run/hostname-confirmed/backup-producing
+  atomic environment editor; and reconcile Campanero to its authoritative
+  `jobs`-only MCP role with no general Claude tools.
+- Safety boundary: unknown, malformed, duplicate, or unregistered selections
+  fail closed. Global enforcement remains off. The production canary is limited
+  to read-only job inventory plus structural proof that Bash and undeclared MCP
+  tools are absent; it excludes customer communication, email, job mutation,
+  business-database writes, other agent activation, prompt changes, push, and
+  merge.
+- Verification so far: exact Node 22.23.2 passes 15/15 focused selective-config
+  tests, the broader 172/172 capability/container/IPC/scheduler/reaper set,
+  634/634 email-critical tests, root and independent-runner builds, and all
+  40/40 runner tests. The unrestricted root suite passes 2,395/2,396; the sole
+  failure is the unchanged baseline `src/cnpc-prompt-contract.test.ts`
+  source-wrapper assertion. `git diff --check` passes.
+- Deployment/rollback: pending exact immutable release build and repeated
+  zero-work production drain check. Activate the release with controls off;
+  then back up and set only the staged group key. Restore that backup and
+  restart for config rollback, or restore the activator's exact plist for
+  release rollback. No production byte or configuration has changed yet.
+
 ### NC-20260816-004 — Add dark per-agent capability manifests and stale-container revocation
 
 - Date: 2026-08-16T16:18Z

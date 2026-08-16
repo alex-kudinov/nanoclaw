@@ -622,6 +622,14 @@ adoption of a stale or pre-manifest container. Existing domain authorization,
 resource grants, action safety, mount allowlists, and receipts remain
 authoritative and cumulative.
 
+`NC-20260816-006` adds a staged `CAPABILITY_MANIFEST_ENFORCED_GROUPS` selector
+because the live registry contains legacy dynamic folders and the global switch
+cannot satisfy a one-agent rollout. Selected folders must be tracked and
+registered; all non-selected folders remain in compatibility mode. The first
+planned canary is Campanero, narrowed to its authoritative jobs-only MCP role.
+The bundled environment editor is dry-run by default, hostname-confirmed for
+apply, backup-producing, and atomic.
+
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some
 roles; immediate in-flight termination, value/rate ceilings, dynamic group

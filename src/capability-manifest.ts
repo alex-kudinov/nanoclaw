@@ -8,6 +8,8 @@ import type { AdditionalMount, RegisteredGroup } from './types.js';
 export const CAPABILITY_MANIFEST_VERSION = 1;
 export const CAPABILITY_MANIFEST_ENV_KEY =
   'CAPABILITY_MANIFEST_ENFORCEMENT_ENABLED';
+export const CAPABILITY_MANIFEST_GROUPS_ENV_KEY =
+  'CAPABILITY_MANIFEST_ENFORCED_GROUPS';
 
 export const CLAUDE_TOOL_NAMES = [
   'Bash',
@@ -175,8 +177,9 @@ export interface CapabilityManifestV1 {
 
 export interface CapabilityManifestConfig {
   enforcementEnabled: boolean;
+  enforcedGroups?: string[];
   valid: boolean;
-  errorCode?: 'invalid_boolean';
+  errorCode?: 'invalid_boolean' | 'invalid_group_list';
 }
 
 export interface CapabilityProjection {
@@ -241,24 +244,65 @@ export function resolveCapabilityManifestConfig(
   if (!enabled.ok) {
     return {
       enforcementEnabled: true,
+      enforcedGroups: [],
       valid: false,
       errorCode: 'invalid_boolean',
     };
   }
-  return { enforcementEnabled: enabled.value, valid: true };
+  const rawGroups = env[CAPABILITY_MANIFEST_GROUPS_ENV_KEY]?.trim() ?? '';
+  const enforcedGroups = rawGroups
+    ? rawGroups.split(',').map((value) => value.trim())
+    : [];
+  if (
+    enforcedGroups.some(
+      (folder) =>
+        !ID_RE.test(folder) ||
+        !TRACKED_AGENT_FOLDERS.includes(
+          folder as (typeof TRACKED_AGENT_FOLDERS)[number],
+        ),
+    ) ||
+    new Set(enforcedGroups).size !== enforcedGroups.length
+  ) {
+    return {
+      enforcementEnabled: enabled.value,
+      enforcedGroups: [],
+      valid: false,
+      errorCode: 'invalid_group_list',
+    };
+  }
+  return {
+    enforcementEnabled: enabled.value,
+    enforcedGroups: enforcedGroups.sort(),
+    valid: true,
+  };
 }
 
 export function loadCapabilityManifestConfig(): CapabilityManifestConfig {
-  const file = readEnvFile([CAPABILITY_MANIFEST_ENV_KEY]);
-  const value = Object.prototype.hasOwnProperty.call(
-    process.env,
+  const keys = [
     CAPABILITY_MANIFEST_ENV_KEY,
-  )
-    ? process.env[CAPABILITY_MANIFEST_ENV_KEY]
-    : file[CAPABILITY_MANIFEST_ENV_KEY];
+    CAPABILITY_MANIFEST_GROUPS_ENV_KEY,
+  ];
+  const file = readEnvFile(keys);
+  const valueFor = (key: string): string | undefined =>
+    Object.prototype.hasOwnProperty.call(process.env, key)
+      ? process.env[key]
+      : file[key];
   return resolveCapabilityManifestConfig({
-    [CAPABILITY_MANIFEST_ENV_KEY]: value,
+    [CAPABILITY_MANIFEST_ENV_KEY]: valueFor(CAPABILITY_MANIFEST_ENV_KEY),
+    [CAPABILITY_MANIFEST_GROUPS_ENV_KEY]: valueFor(
+      CAPABILITY_MANIFEST_GROUPS_ENV_KEY,
+    ),
   });
+}
+
+export function capabilityManifestIsEnforced(
+  config: CapabilityManifestConfig,
+  manifestFolder: string,
+): boolean {
+  return (
+    config.enforcementEnabled ||
+    (config.enforcedGroups ?? []).includes(manifestFolder)
+  );
 }
 
 function expectRecord(value: unknown, label: string): Record<string, unknown> {
@@ -648,6 +692,7 @@ export function projectGroupCapabilities(opts: {
 }): CapabilityProjection {
   const config = opts.config ?? loadCapabilityManifestConfig();
   const selectedFolder = manifestFolderFor(opts.group.folder, opts.isMain);
+  const enforced = capabilityManifestIsEnforced(config, selectedFolder);
   let manifest: CapabilityManifestV1 | null = null;
   let manifestError: unknown;
   try {
@@ -656,7 +701,7 @@ export function projectGroupCapabilities(opts: {
     manifestError = error;
   }
 
-  if (!config.valid || (config.enforcementEnabled && !manifest)) {
+  if (!config.valid || (enforced && !manifest)) {
     if (manifestError instanceof CapabilityManifestError) throw manifestError;
     throw new CapabilityManifestError(
       'manifest_invalid',
@@ -666,7 +711,7 @@ export function projectGroupCapabilities(opts: {
   }
 
   const additionalMounts = opts.group.containerConfig?.additionalMounts ?? [];
-  if (!config.enforcementEnabled) {
+  if (!enforced) {
     const manifestFingerprint = manifest
       ? capabilityManifestFingerprint(manifest)
       : null;
@@ -756,7 +801,13 @@ export function manifestAllowsHostOperation(
 ): boolean {
   const config = opts?.config ?? loadCapabilityManifestConfig();
   if (!config.valid) return false;
-  if (!config.enforcementEnabled) return true;
+  if (
+    !capabilityManifestIsEnforced(
+      config,
+      manifestFolderFor(groupFolder, isMain),
+    )
+  )
+    return true;
   try {
     const manifest = loadCapabilityManifest(
       manifestFolderFor(groupFolder, isMain),
@@ -798,7 +849,13 @@ export function capabilityFingerprintIsCurrent(opts: {
 }): boolean {
   const config = opts.config ?? loadCapabilityManifestConfig();
   if (!config.valid) return false;
-  if (!config.enforcementEnabled) return true;
+  if (
+    !capabilityManifestIsEnforced(
+      config,
+      manifestFolderFor(opts.group.folder, opts.isMain),
+    )
+  )
+    return true;
   if (!opts.recordedFingerprint) return false;
   try {
     return (
@@ -830,12 +887,27 @@ export function assertCapabilityCatalogForGroups(
       config.errorCode ?? 'configuration is invalid',
     );
   }
-  if (!config.enforcementEnabled) return;
-  for (const group of Object.values(groups)) {
-    loadCapabilityManifest(
+  const registeredFolders = new Set(
+    Object.values(groups).map((group) =>
       manifestFolderFor(group.folder, group.isMain === true),
-      opts?.codeRoot,
-    );
+    ),
+  );
+  for (const folder of config.enforcedGroups ?? []) {
+    if (!registeredFolders.has(folder)) {
+      throw new CapabilityManifestError(
+        'manifest_invalid',
+        folder,
+        'configured group is not registered',
+      );
+    }
+  }
+  if (!config.enforcementEnabled && !(config.enforcedGroups ?? []).length)
+    return;
+  for (const group of Object.values(groups)) {
+    const folder = manifestFolderFor(group.folder, group.isMain === true);
+    if (capabilityManifestIsEnforced(config, folder)) {
+      loadCapabilityManifest(folder, opts?.codeRoot);
+    }
   }
 }
 

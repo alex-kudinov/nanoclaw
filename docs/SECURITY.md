@@ -88,6 +88,11 @@ for another turn. The deterministic matrix is
 `docs/generated/CAPABILITY-MATRIX.md`; mechanics and residual gaps are in
 `docs/CAPABILITY-MANIFESTS.md`. This local source is not production activation,
 does not restrict egress, and does not remove raw mounted credentials.
+`NC-20260816-006` adds a strict staged-group selector so one tracked,
+registered agent can be enforced without changing any other agent. A malformed,
+unknown, duplicate, or unregistered selection fails closed; the global switch
+continues to mean all registered groups and is not suitable for the first live
+canary while legacy dynamic folders remain unmanifested.
 
 ### Mount and session isolation
 

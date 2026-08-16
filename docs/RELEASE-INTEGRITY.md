@@ -218,6 +218,25 @@ never rebuilt or retried.
 authorization. The command does not replace the channel, listener, prompt-hash,
 or task-specific live checks after activation.
 
+### Staged capability activation
+
+Installing capability-manifest source and selecting an agent are separate
+changes. Deploy the exact release with both manifest controls off first. After
+release health and the drain check pass, use the release-bundled
+`scripts/set-capability-groups.mjs` in dry-run mode and then with
+`--apply --confirm-host <exact-hostname>` to change only
+`CAPABILITY_MANIFEST_ENFORCED_GROUPS` in the operational `.env`. The helper
+refuses global enforcement, duplicate keys, and invalid group names; it creates
+an exclusive same-mode backup and atomically replaces the file without printing
+other environment contents.
+
+The host reads this configuration dynamically. Require the health aggregate to
+show a valid config, global enforcement false, and only the intended group;
+then prove the actual launch and allowed/denied tool surfaces. Roll back by
+using the same helper with an empty group list or restoring its exact backup,
+and verify compatibility health before continuing. A staged selector does not
+authorize a job, message, email, or other business side effect.
+
 Production startup refuses a `NANOCLAW_CODE_ROOT` outside the verified release.
 `/health.release` reports the resolved `codeRoot` and
 `codeRootMatchesRelease`. `NANOCLAW_CODE_ROOT` makes container skills and

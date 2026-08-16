@@ -1292,6 +1292,14 @@ this source is undeployed. P0.3 therefore remains partial pending production
 drain/canaries, destination-scoped egress, raw-credential retirement,
 action-value/rate limits, and automatic demotion evidence.
 
+R1 staged-activation checkpoint: `NC-20260816-006` adds the missing per-group
+rollout selector and narrows Campanero to its authoritative jobs-only tool
+surface. This prevents the first canary from implicitly activating every
+registered agent or failing on legacy dynamic folders. Source and tests do not
+constitute deployment; the checkpoint remains open until exact release health,
+Campanero launch/tool denial, non-interference, and rollback evidence are
+recorded.
+
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus
 PostgreSQL migration 118. The schema excludes raw customer content,

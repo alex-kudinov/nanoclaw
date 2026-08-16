@@ -47,6 +47,7 @@ import {
 } from './container-runner.js';
 import {
   assertCapabilityCatalogForGroups,
+  capabilityManifestIsEnforced,
   getCapabilityManifestStatus,
   loadCapabilityManifestConfig,
 } from './capability-manifest.js';
@@ -1467,9 +1468,10 @@ function adoptSidecarContainer(
     return false;
   }
   const capabilityConfig = loadCapabilityManifestConfig();
+  const capabilityFolder = group.isMain === true ? 'main' : group.folder;
   if (
     !capabilityConfig.valid ||
-    (capabilityConfig.enforcementEnabled &&
+    (capabilityManifestIsEnforced(capabilityConfig, capabilityFolder) &&
       resolveGroupCapabilityProjection(group, group.isMain === true)
         .fingerprint !== sc.capabilityFingerprint)
   ) {
@@ -2062,10 +2064,11 @@ async function main(): Promise<void> {
     (groupFolder, recordedFingerprint) => {
       const config = loadCapabilityManifestConfig();
       if (!config.valid) return false;
-      if (!config.enforcementEnabled) return true;
       const group = Object.values(registeredGroups).find(
         (candidate) => candidate.folder === groupFolder,
       );
+      const manifestFolder = group?.isMain === true ? 'main' : groupFolder;
+      if (!capabilityManifestIsEnforced(config, manifestFolder)) return true;
       if (!group || !recordedFingerprint) return false;
       try {
         return (

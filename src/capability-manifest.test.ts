@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   CapabilityManifestError,
   TRACKED_AGENT_FOLDERS,
+  assertCapabilityCatalogForGroups,
+  capabilityManifestIsEnforced,
   getCapabilityManifestStatus,
   loadCapabilityCatalog,
   manifestAllowsHostOperation,
@@ -92,6 +94,101 @@ describe('capability manifests', () => {
     });
     expect(projection.enforced).toBe(false);
     expect(projection.mcpTools).toContain('jobs');
+  });
+
+  it('enforces only explicitly selected groups during a staged rollout', () => {
+    const config = resolveCapabilityManifestConfig({
+      CAPABILITY_MANIFEST_ENFORCEMENT_ENABLED: '0',
+      CAPABILITY_MANIFEST_ENFORCED_GROUPS: 'campanero',
+    });
+    expect(config).toEqual({
+      enforcementEnabled: false,
+      enforcedGroups: ['campanero'],
+      valid: true,
+    });
+    expect(capabilityManifestIsEnforced(config, 'campanero')).toBe(true);
+    expect(capabilityManifestIsEnforced(config, 'sales')).toBe(false);
+
+    const campanero = projectGroupCapabilities({
+      group: group('campanero', {
+        additionalMounts: [
+          { hostPath: '/opaque/knowledge', containerPath: 'knowledge' },
+          { hostPath: '/opaque/docs', containerPath: 'agent_docs' },
+        ],
+      }),
+      isMain: false,
+      defaults,
+      codeRoot: process.cwd(),
+      config,
+    });
+    expect(campanero.enforced).toBe(true);
+    expect(campanero.claudeTools).toEqual([]);
+    expect(campanero.mcpTools).toEqual(['jobs']);
+
+    const sales = projectGroupCapabilities({
+      group: group('sales'),
+      isMain: false,
+      defaults,
+      codeRoot: process.cwd(),
+      config,
+    });
+    expect(sales.enforced).toBe(false);
+    expect(sales.mcpTools).toContain('gmail_search');
+  });
+
+  it('rejects malformed, duplicate, and unknown staged group lists', () => {
+    for (const value of [
+      'campanero,campanero',
+      '../sales',
+      'feature-requests',
+    ]) {
+      expect(
+        resolveCapabilityManifestConfig({
+          CAPABILITY_MANIFEST_ENFORCEMENT_ENABLED: '0',
+          CAPABILITY_MANIFEST_ENFORCED_GROUPS: value,
+        }),
+      ).toMatchObject({ valid: false, errorCode: 'invalid_group_list' });
+    }
+  });
+
+  it('refuses a staged group that is not registered at startup', () => {
+    expect(() =>
+      assertCapabilityCatalogForGroups(
+        { sales: group('sales') },
+        {
+          codeRoot: process.cwd(),
+          config: {
+            enforcementEnabled: false,
+            enforcedGroups: ['campanero'],
+            valid: true,
+          },
+        },
+      ),
+    ).toThrow(/configured group is not registered/);
+  });
+
+  it('ignores registered legacy groups outside the staged allowlist', () => {
+    expect(() =>
+      assertCapabilityCatalogForGroups(
+        {
+          campanero: group('campanero', {
+            additionalMounts: [
+              { hostPath: '/opaque/knowledge', containerPath: 'knowledge' },
+              { hostPath: '/opaque/docs', containerPath: 'agent_docs' },
+            ],
+          }),
+          legacy: group('feature-requests'),
+        },
+        {
+          codeRoot: process.cwd(),
+          config: {
+            enforcementEnabled: false,
+            enforcedGroups: ['campanero'],
+            valid: true,
+          },
+        },
+      ),
+    ).not.toThrow();
   });
 
   it('projects only declared tools and mounts when enforcement is enabled', () => {
