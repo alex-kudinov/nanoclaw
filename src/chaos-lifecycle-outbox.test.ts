@@ -106,9 +106,7 @@ describe('enqueueStripeLifecycleFact', () => {
     });
     const params = queryMock.mock.calls[0][1] as unknown[];
     const properties = JSON.parse(params[9] as string);
-    expect(properties.canonical_product_slug).toBe(
-      'mcq-program-a-foundations',
-    );
+    expect(properties.canonical_product_slug).toBe('mcq-program-a-foundations');
   });
 
   it('fails closed: drops an invalid canonical product slug rather than persisting arbitrary text', async () => {
@@ -172,7 +170,9 @@ describe('enqueueStripeLifecycleFact', () => {
     );
     // Upgrade path: this call's properties carry the key the SQL branches on.
     expect(upgradeProperties.canonical_product_slug).toBe('acc-full');
-    expect(upgradeSql).toContain("EXCLUDED.properties ? 'canonical_product_slug'");
+    expect(upgradeSql).toContain(
+      "EXCLUDED.properties ? 'canonical_product_slug'",
+    );
     expect(upgradeSql).toContain('jsonb_set');
     expect(upgradeSql).not.toContain('properties = EXCLUDED.properties');
 

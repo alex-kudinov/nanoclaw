@@ -115,6 +115,14 @@ context, exceeding every bounded-review warning threshold; future reviews of
 this size must use narrower rounds or a native handoff instead of one prolonged
 session. No production or external write occurred during verification.
 
+**Addendum (2026-08-16T17:14Z — commit boundary):** The reviewed implementation
+and evidence were committed as `9f8f6a1` on
+`codex/nc-20260816-005-stripe-attribution`, directly descended from the exact
+live `55c97d5` lineage. The commit hook left one formatting-only test delta
+outside the index; it is incorporated with this release-candidate documentation
+update before packaging so the immutable builder receives a clean tree. State
+advanced to `ready_for_deploy`; no production state changed at this boundary.
+
 ### NC-20260816-001 — Activate the bounded Company OS email shadow
 
 - Date: 2026-08-16T13:54Z
