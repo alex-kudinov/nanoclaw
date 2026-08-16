@@ -10,7 +10,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260815-007 — Reactivate the Company OS roadmap from the current baseline
 
-- Date: 2026-08-16T04:50Z
+- Date: 2026-08-16T04:45Z
 - Owner/client: Codex
 - State: complete
 - Commit/PR: roadmap recovery commit
