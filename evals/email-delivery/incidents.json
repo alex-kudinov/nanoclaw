@@ -1,0 +1,356 @@
+{
+  "schemaVersion": 1,
+  "fixturePolicy": "Synthetic identities and content only. No Gmail, Slack, or production database access.",
+  "replayCases": [
+    {
+      "id": "approved-card-recovers-dropped-agent-handoff",
+      "historicalRefs": [
+        "Entry 938: approval lost while waiting on an asynchronous Gmail read",
+        "Lead 962: handoff printed as prose instead of routed through the tool",
+        "Lead 871: queued Gmail result was mistaken for completion"
+      ],
+      "mode": "approval_card_recovery",
+      "card": "[SALES REVIEW] Lead #7001\nCategory: other\nEmail: case7001@example.test\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Exact approved subject\n\nExact approved body with A & B and  two spaces.\n---\n\nWaiting for approval.",
+      "options": {
+        "actionId": "82c0f1d2-f124-4e3d-b06d-a4e6774f82cd",
+        "sourceGroup": "sales",
+        "originalMessage": "Synthetic request for replay testing."
+      },
+      "expected": {
+        "status": "ready",
+        "recipient": "case7001@example.test",
+        "subject": "Exact approved subject",
+        "body": "Exact approved body with A & B and  two spaces.",
+        "emailType": "initial",
+        "handoffContains": [
+          "[HANDOFF: sales→mailman]",
+          "Action-ID: 82c0f1d2-f124-4e3d-b06d-a4e6774f82cd",
+          "Entry ID: 7001",
+          "Body:\nExact approved body with A & B and  two spaces."
+        ]
+      }
+    },
+    {
+      "id": "missing-action-and-entity-drift-rehydrates-approved-bytes",
+      "historicalRefs": [
+        "Lead 1029: Action-ID was omitted and literal ampersands were HTML-escaped",
+        "Lead 1032: model-carried customer fields diverged from the approved card"
+      ],
+      "mode": "host_execution",
+      "card": "[SALES REVIEW] Lead #7002\nCategory: other\nEmail: case7002@example.test\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: A & B — exact subject\n\nKeep A & B, smart quotes “exactly,” and  two spaces.\n---",
+      "approvedContent": {
+        "subject": "A & B — exact subject",
+        "body": "Keep A & B, smart quotes “exactly,” and  two spaces."
+      },
+      "action": {
+        "actionId": "1a6d9d42-c03e-499d-b255-ad0823676355",
+        "draftTs": "fixture-card-7002",
+        "groupFolder": "sales",
+        "chatJid": "slack:FIXTURE",
+        "threadTs": "fixture-approval-7002",
+        "gmailThreadId": "gmail-fixture-7002",
+        "recipient": "case7002@example.test",
+        "approvedSubject": "A & B — exact subject",
+        "approvedAt": "2026-08-04T13:03:19.015Z",
+        "state": "mailman_started"
+      },
+      "request": {
+        "type": "gmail_send",
+        "groupFolder": "mailman",
+        "source_container": "nanoclaw-mailman-fixture",
+        "timestamp": "2026-08-04T13:04:24.950Z",
+        "to": "wrong@example.test",
+        "subject": "A &amp; B — changed subject",
+        "body": "Keep A &amp; B, smart quotes “exactly,” and two spaces.",
+        "threadId": "wrong-gmail-thread",
+        "cc": "unapproved@example.test",
+        "html": true,
+        "leadId": 7002,
+        "emailType": "follow-up",
+        "markdown": false
+      },
+      "expected": {
+        "status": "corrected",
+        "payload": {
+          "actionId": "1a6d9d42-c03e-499d-b255-ad0823676355",
+          "to": "case7002@example.test",
+          "subject": "A & B — exact subject",
+          "body": "Keep A & B, smart quotes “exactly,” and  two spaces.",
+          "threadId": "gmail-fixture-7002",
+          "approvedRecipient": "case7002@example.test",
+          "emailType": "initial",
+          "markdown": true
+        },
+        "correctedFields": [
+          "action_id",
+          "body",
+          "recipient",
+          "subject",
+          "thread_id",
+          "cc",
+          "html",
+          "lead_id",
+          "email_type",
+          "markdown"
+        ],
+        "absentFields": ["cc", "html", "leadId"]
+      }
+    },
+    {
+      "id": "follow-up-uses-approved-thread-and-classification",
+      "historicalRefs": [
+        "Follow-up handoffs previously lost or changed thread identity across approval rounds"
+      ],
+      "mode": "host_execution",
+      "card": "[FOLLOW-UP #2] Lead #7003\nCategory: followup\nEmail: case7003@example.test\nThread-ID: gmail-fixture-7003\n\nDRAFT FOLLOW-UP:\n---\nSubject: Re: Exact thread\n\nExact follow-up body.\n---",
+      "approvedContent": {
+        "subject": "Re: Exact thread",
+        "body": "Exact follow-up body."
+      },
+      "action": {
+        "actionId": "9b4f7671-5b84-4d87-a1b5-0ef5c3fd9867",
+        "draftTs": "fixture-card-7003",
+        "groupFolder": "sales",
+        "chatJid": "slack:FIXTURE",
+        "threadTs": "fixture-approval-7003",
+        "gmailThreadId": "gmail-fixture-7003",
+        "recipient": "case7003@example.test",
+        "approvedSubject": "Re: Exact thread",
+        "approvedAt": "2026-08-04T13:03:19.015Z",
+        "state": "mailman_started"
+      },
+      "request": {
+        "type": "gmail_reply",
+        "groupFolder": "mailman",
+        "source_container": "nanoclaw-mailman-fixture",
+        "timestamp": "2026-08-04T13:04:24.950Z",
+        "threadId": "wrong-gmail-thread",
+        "body": "Changed follow-up body.",
+        "emailType": "initial"
+      },
+      "expected": {
+        "status": "corrected",
+        "payload": {
+          "actionId": "9b4f7671-5b84-4d87-a1b5-0ef5c3fd9867",
+          "subject": "Re: Exact thread",
+          "body": "Exact follow-up body.",
+          "threadId": "gmail-fixture-7003",
+          "approvedRecipient": "case7003@example.test",
+          "emailType": "follow-up",
+          "markdown": true
+        },
+        "correctedFields": [
+          "action_id",
+          "body",
+          "subject",
+          "thread_id",
+          "email_type",
+          "markdown"
+        ],
+        "absentFields": ["to", "cc", "html", "leadId"]
+      }
+    },
+    {
+      "id": "malformed-card-never-becomes-an-action",
+      "historicalRefs": [
+        "A card without the canonical fenced Subject and body was previously treated as posted work"
+      ],
+      "mode": "approval_card_recovery",
+      "card": "[SALES REVIEW] Lead #7004\nEmail: case7004@example.test\n\nDRAFT RESPONSE TO LEAD:\n---\nMissing the mandatory subject line.\n---",
+      "options": {
+        "actionId": "023bd345-b691-44ee-8038-b60ff12b8cce",
+        "sourceGroup": "sales"
+      },
+      "expected": {
+        "status": "held"
+      }
+    },
+    {
+      "id": "follow-up-without-durable-thread-is-held",
+      "historicalRefs": [
+        "A follow-up without a real Thread-ID can detach from the customer conversation"
+      ],
+      "mode": "approval_card_recovery",
+      "card": "[FOLLOW-UP #1] Lead #7005\nEmail: case7005@example.test\n\nDRAFT FOLLOW-UP:\n---\nSubject: Re: Missing thread\n\nThis must not become a sendable action.\n---",
+      "options": {
+        "actionId": "ea0a7d95-96a9-4561-9f99-d9669bb1911a",
+        "sourceGroup": "sales"
+      },
+      "expected": {
+        "status": "held"
+      }
+    },
+    {
+      "id": "changed-card-after-approval-fails-hash-binding",
+      "historicalRefs": [
+        "Post-approval mutation must never produce customer traffic"
+      ],
+      "mode": "host_execution",
+      "card": "[SALES REVIEW] Lead #7006\nEmail: case7006@example.test\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Bound subject\n\nMutated body after approval.\n---",
+      "approvedContent": {
+        "subject": "Bound subject",
+        "body": "Original approved body."
+      },
+      "action": {
+        "actionId": "065933da-ec2f-49b1-b62b-f4ce95e22e12",
+        "draftTs": "fixture-card-7006",
+        "groupFolder": "sales",
+        "chatJid": "slack:FIXTURE",
+        "recipient": "case7006@example.test",
+        "approvedSubject": "Bound subject",
+        "approvedAt": "2026-08-04T13:03:19.015Z",
+        "state": "mailman_started"
+      },
+      "request": {
+        "type": "gmail_send",
+        "groupFolder": "mailman",
+        "timestamp": "2026-08-04T13:04:24.950Z",
+        "to": "case7006@example.test",
+        "subject": "Bound subject",
+        "body": "Mutated body after approval."
+      },
+      "expected": {
+        "status": "blocked",
+        "code": "approved_card_hash_mismatch"
+      }
+    },
+    {
+      "id": "reply-without-durable-thread-fails-before-gmail",
+      "historicalRefs": [
+        "A reply request must not use a model-supplied thread when the action has no durable Gmail thread"
+      ],
+      "mode": "host_execution",
+      "card": "[SALES REVIEW] Lead #7007\nEmail: case7007@example.test\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Re: Durable thread required\n\nExact reply body.\n---",
+      "approvedContent": {
+        "subject": "Re: Durable thread required",
+        "body": "Exact reply body."
+      },
+      "action": {
+        "actionId": "ca11731e-6d88-4c17-905e-0caf31e425d0",
+        "draftTs": "fixture-card-7007",
+        "groupFolder": "sales",
+        "chatJid": "slack:FIXTURE",
+        "recipient": "case7007@example.test",
+        "approvedSubject": "Re: Durable thread required",
+        "approvedAt": "2026-08-04T13:03:19.015Z",
+        "state": "mailman_started"
+      },
+      "request": {
+        "type": "gmail_reply",
+        "groupFolder": "mailman",
+        "timestamp": "2026-08-04T13:04:24.950Z",
+        "threadId": "model-invented-thread",
+        "body": "Exact reply body."
+      },
+      "expected": {
+        "status": "blocked",
+        "code": "approved_reply_thread_missing"
+      }
+    },
+    {
+      "id": "durable-action-without-host-identity-is-held",
+      "historicalRefs": [
+        "Legacy approval rows without a host Action-ID must not cross the Gmail boundary"
+      ],
+      "mode": "host_execution",
+      "card": "[SALES REVIEW] Lead #7008\nEmail: case7008@example.test\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Identity required\n\nExact approved body.\n---",
+      "approvedContent": {
+        "subject": "Identity required",
+        "body": "Exact approved body."
+      },
+      "action": {
+        "draftTs": "fixture-card-7008",
+        "groupFolder": "sales",
+        "chatJid": "slack:FIXTURE",
+        "recipient": "case7008@example.test",
+        "approvedSubject": "Identity required",
+        "approvedAt": "2026-08-04T13:03:19.015Z",
+        "state": "mailman_started"
+      },
+      "request": {
+        "type": "gmail_send",
+        "groupFolder": "mailman",
+        "timestamp": "2026-08-04T13:04:24.950Z",
+        "to": "case7008@example.test",
+        "subject": "Identity required",
+        "body": "Exact approved body."
+      },
+      "expected": {
+        "status": "blocked",
+        "code": "approved_action_identity_missing"
+      }
+    }
+  ],
+  "requiredRegressions": [
+    {
+      "id": "support-card-carries-host-resolved-entry-identity",
+      "testFile": "src/approved-send-handoff.test.ts",
+      "marker": "carries a host-resolved Entry ID when the card names no lead"
+    },
+    {
+      "id": "predecessor-schema-migrates-before-action-indexes",
+      "testFile": "src/db.test.ts",
+      "marker": "migrates the exact pre-NC-009 pending_sends schema before indexing action columns"
+    },
+    {
+      "id": "confirmed-replay-returns-receipt-without-new-execution",
+      "testFile": "src/db.test.ts",
+      "marker": "replays a confirmed action as its receipt without another execution claim"
+    },
+    {
+      "id": "restart-during-execution-holds-instead-of-retrying",
+      "testFile": "src/db.test.ts",
+      "marker": "holds an executing action after restart instead of risking a duplicate"
+    },
+    {
+      "id": "overdue-execution-becomes-uncertain",
+      "testFile": "src/db.test.ts",
+      "marker": "turns an overdue executing action uncertain without reopening Gmail"
+    },
+    {
+      "id": "missing-party-is-blocked-before-send",
+      "testFile": "src/gmail-ipc-handlers.test.ts",
+      "marker": "blocks the send when leadId is absent and host party lookup returns null"
+    },
+    {
+      "id": "pipeline-entry-hint-cannot-override-host-party",
+      "testFile": "src/gmail-ipc-handlers.test.ts",
+      "marker": "uses the host-resolved Party when Mailman puts a pipeline Entry ID in leadId"
+    },
+    {
+      "id": "bigint-party-identity-reaches-visible-receipt-path",
+      "testFile": "src/email-delivery-path.test.ts",
+      "marker": "routes a visible wake row and accepts a bigint-text party resolution"
+    },
+    {
+      "id": "ambiguous-thread-never-selects-an-action",
+      "testFile": "src/db.test.ts",
+      "marker": "reports ambiguity when one Gmail thread belongs to multiple work threads"
+    },
+    {
+      "id": "wrong-session-cannot-steal-async-gmail-result",
+      "testFile": "src/group-queue.test.ts",
+      "marker": "delivers an ephemeral Gmail result only to its exact scheduled-task container"
+    },
+    {
+      "id": "deterministic-hold-says-gmail-was-not-called",
+      "testFile": "src/ipc-gmail-auth.test.ts",
+      "marker": "Gmail was not called"
+    },
+    {
+      "id": "content-guard-blocks-before-action-is-armed",
+      "testFile": "src/send-watchdog.test.ts",
+      "marker": "does not arm exact bytes that the Gmail content guard will reject"
+    },
+    {
+      "id": "blocked-send-remains-visible-in-exact-thread",
+      "testFile": "src/send-watchdog.test.ts",
+      "marker": "ALERTS when the handoff arrived but the send was blocked"
+    },
+    {
+      "id": "scheduled-batch-requires-card-bound-terminal-receipt",
+      "testFile": "src/sales-followup-task-completion.test.ts",
+      "marker": "accepts a count-consistent receipt bound to every visible artifact"
+    }
+  ]
+}

@@ -14,6 +14,7 @@ export const EMAIL_CRITICAL_TEST_ARGS = [
   'src/classify-ipc-handlers.test.ts',
   'src/db.test.ts',
   'src/email-content-guard.test.ts',
+  'src/email-delivery-incident-replay.test.ts',
   'src/email-delivery-path.test.ts',
   'src/email-transport-canary.test.ts',
   'src/gmail-ipc-handlers.test.ts',

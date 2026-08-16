@@ -8,6 +8,54 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260815-008 — Make approved-email incidents a release-blocking replay
+
+- Date: 2026-08-16T01:13Z
+- Owner/client: Codex
+- State: ready_for_review; local and uncommitted on
+  `codex/nc-20260815-008-email-replay-gate`, based on verified production
+  commit `84607fd2ac4bcc0dd87fdc2d80d79635a69f0a6d`.
+- Change class: C5 because the assurance protects the customer-email action
+  boundary; authority and effects remained local and non-sending.
+- Root cause: the live lineage already reloads exact operator-approved bytes
+  host-side, but the incidents that led to roughly two weeks of manual email
+  rescue were distributed across comments and separate tests. Nothing made the
+  scrubbed incident set itself a visible, versioned release requirement or
+  failed when a linked stateful regression silently left the email gate.
+- Outcome: added a synthetic-only corpus with eight executable approval-card
+  and host-execution cases covering dropped/prose-only handoffs, missing action
+  identity, entity and customer-field drift, exact follow-up threading,
+  malformed cards, post-approval mutation, and missing durable thread/action
+  identity. Thirteen linked regressions pin Entry/Party resolution,
+  predecessor-schema migration, confirmed duplicate replay, restart/uncertain
+  handling, ambiguous actions, exact-session delivery, deterministic
+  pre-Gmail/content holds, blocked-send visibility, and scheduled terminal
+  receipts into the release gate.
+- Files: `evals/email-delivery/{README.md,incidents.json}`;
+  `src/email-delivery-incident-replay.test.ts`;
+  `scripts/run-email-critical-tests.{mjs,d.mts}`; `package.json`;
+  `docs/{COMPANY-OS-IMPROVEMENT-PLAN,PROJECT-MAP,RELEASE-INTEGRITY,ACTIVE-WORK,ENGINEERING-CHANGELOG}.md`.
+- Verification: exact Node 22.23.2 replay 11/11; email-critical 23 files/571
+  tests; independent agent runner 6 files/36 tests; typecheck and formatting
+  pass. The root sandbox run passed 2,270/2,316; all 45 permission-sensitive
+  failures passed in an unrestricted rerun. The sole remaining root failure is
+  the unrelated pre-existing CNPC wrapper contract on the unchanged base.
+- Deployment/migration: none. Read-only `/health` verified production commit
+  `84607fd`, matching code root, Node 22.23.2, connected Gmail/Slack, no active
+  container, and an empty queue before the branch was created. No Gmail,
+  Slack, production database, migration, service, schedule, configuration, or
+  external-message write occurred.
+- Rollback/recovery: discard this isolated branch/worktree; no production or
+  data rollback applies.
+- Documentation: the Company OS records this as the first deterministic
+  `EVAL-001` subset, while keeping prompt-injection, blinded model-quality, and
+  natural-path outcome evidence open. Project and release contracts distinguish
+  replay proof from transport canary and customer outcome.
+- Follow-up: independent review and commit; run `release:build` only from that
+  clean reviewed commit. Deployment and any canary require separate authority,
+  and rollout success still requires a natural approved customer action without
+  manual repair.
+
 ### NC-20260812-001 — Account-aware Stripe lifecycle evidence for Chaos
 
 - Date: 2026-08-12

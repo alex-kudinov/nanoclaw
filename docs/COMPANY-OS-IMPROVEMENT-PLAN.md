@@ -744,6 +744,14 @@ Build the shared harness shape for Mailman and Sales first. Expand to another
 agent only after the initial pack catches a real regression or blocks an unsafe
 change. The eventual versioned evaluation pack can contain:
 
+Implementation checkpoint (`NC-20260815-008`): the approved-email boundary now
+has the first deterministic, synthetic-only incident corpus. It replays dropped
+handoff recovery, model/entity drift, immutable approval binding, and missing
+identity/thread failures through production functions, and pins the existing
+schema/restart/replay/ambiguity/session/receipt regressions into the release
+gate. This is the first slice of `EVAL-001`, not completion of the broader
+Mailman/Sales model-quality, injection, or business-outcome harness.
+
 - golden successful cases;
 - ambiguous cases requiring escalation;
 - known incident regressions;
@@ -1174,7 +1182,9 @@ execution inventory detects a deliberately broken unit.
   `webhook_inbox`/watermark/reaper shape;
 - add correlation IDs and one compact daily exception brief;
 - transcribe the seven documented incidents plus direct/indirect
-  prompt-injection cases into the first evaluation pack.
+  prompt-injection cases into the first evaluation pack. `NC-20260815-008`
+  supplies the deterministic approved-email subset; prompt-injection and
+  blinded response-quality cases remain.
 
 Exit gate: deliberately reverting a Week-1 guard makes the pack fail.
 
@@ -1376,6 +1386,9 @@ Implementation checkpoint (2026-07-29):
 19. `REL-001` — inventory schedules and probe target existence, last run, and
     last exit status.
 20. `EVAL-001` — incident/injection regression pack for Mailman and Sales.
+    `NC-20260815-008` implements the deterministic approved-email incident
+    subset and makes it release-blocking; injection, blinded model quality, and
+    natural-path outcome evidence remain open.
 21. `DATA-003` — add and validate the PostgreSQL expression index for exact
     `interactions.metadata->>'thread_id'` authorization lookups.
 22. `SEC-014` — replace group-global Gmail resource sets with a durable,

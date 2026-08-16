@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260815-008` | Prove approved Sales-email delivery without customer traffic or manual operator rescue by reconciling the live lineage and gating releases on deterministic historical replay | Codex | `codex/nc-20260815-008-email-replay-gate` @ verified production `84607fd` | `ready_for_review` | C5 | Synthetic incident corpus; production parser/host-rehydration replay; required stateful-regression manifest; dedicated command and mandatory email-critical/release gate; Company OS, project map, release contract, continuity. Excludes Gmail/customer send, production write/migration, deployment, restart, schedule/config change, Slack post, commit, or push. | Review and commit this isolated branch; only from a clean reviewed commit run `release:build`, then separately authorize any deployment/canary and require a natural customer-path outcome before claiming rollout success | 2026-08-16T01:13Z |
 | `NC-20260812-001` | Give Chaos durable, account-aware purchase and refund events from both Stripe accounts without duplicating fulfillment or Encharge's native Stripe automation | Codex + Claude Code owner/reviewer | `codex/chaos-lifecycle-release` @ `b4d85b2` (exact live lineage) | `ready_for_deploy` | C5 | Existing n8n Stripe ingress, canonicalized NanoClaw dual-account payment/refund processing, PII-free lifecycle outbox/reaper with chief dead-letter alerting, Chaos authenticated lifecycle ingestion, aggregate 7/30/90 reconciliation, focused tests, and release documentation. Excludes customer email/contact creation, customer messaging, and payment/refund action. | Apply migration 117, update the live n8n workflow from a private backup, configure default-off secrets/coverage start, build and deploy one immutable artifact, then prove aggregate receipts before enabling the producer. Encharge and Heartbeat producers remain separate subsequent slices. | 2026-08-13T03:05Z |
 | `NC-20260811-002` | Restore daily Sales lead follow-ups by keeping exact scheduled-task Gmail and approval-card continuations alive with host-validated completion  | Codex                              | `codex/nc-20260811-002-sales-followup-continuation` @ `a33bed1` | `in_progress`         | C5    | Exact Gmail delivery, runner drain-before-close, and final-state completion validation are live; the bounded recovery posted all five cards without sending email, then exposed that rejected cards return asynchronously while accepted cards receive no exact-container acknowledgement, leaving the task unable to emit its receipt | Return `[approval_card ACCEPTED]` to the exact originating container after Slack persists the reviewed card, validate focused/broad/release gates, deploy one superseding immutable release with the reviewed Sales workflow, and prove the callback/receipt contract without duplicating Lead #472 or sending customer email                                              | 2026-08-11T22:04Z |
 | `NC-20260811-001` | Allow Sales to use an exact human-authorized commercial term in the same work thread without weakening the global invented-discount guard       | Codex                              | `codex/nc-20260811-001-human-commercial-terms` @ `194f848`   | `ready_for_deploy`    | C5    | Exact-thread human authorization for numeric commercial terms; approval-card and final Gmail guard parity; reply-scoped Gmail participant alias proof; focused adversarial tests; immutable release and live outcome verification                                                                                                             | Commit the reviewed implementation, build and independently verify one immutable release, deploy only after active work drains, then prove the natural Tom approval-to-Gmail path                                                                                                                                                         | 2026-08-11T20:12Z |
@@ -72,6 +73,67 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260815-008
+
+- Trigger: the owner approved implementation after the prior Sales/Mailman
+  rollout required roughly two weeks of manual email pushing. The owner must
+  not be used as the integration harness again.
+- Verified base: read-only `/health` at 2026-08-16T00:59Z reported immutable
+  release `84607fd2ac4bcc0dd87fdc2d80d79635a69f0a6d`, source tree
+  `c9c1eb843c6463da8d3c5a4671335dd06b7a5040`, artifact hash
+  `f706b9eb47794f38445234d17bd02a98d8dceca34242c2a32dd3018da3b8a670`,
+  Node 22.23.2, matching code root, Slack/Gmail connected, zero active
+  containers, and no queued group. This inspection made no production change.
+- Isolation: branch `codex/nc-20260815-008-email-replay-gate` and worktree
+  `/private/tmp/nanoclaw-nc-20260815-008` were created from exact live commit
+  `84607fd`. The dirty operational checkout is not an implementation or release
+  input.
+- Outcome: make approval-to-Gmail execution deterministic and host-owned;
+  encode every known failure as a scrubbed fixture; and make a non-sending
+  replay gate mandatory before any later canary or rollout.
+- Overlap: live `84607fd` already contains the accepted-card callback and exact
+  host-approved email lineage from `aff14c8`, plus Sales follow-up and human-
+  terms work. This task must preserve those behaviors and must not change the
+  active Chaos, CNPC, grader, Procurement, or unrelated Sales scopes.
+- Required cases: dropped/prose-only handoff; missing/mutated Action ID;
+  recipient/subject/body mutation including entity escaping; wrong-session
+  callback; missing Party/Entry/Thread identity; predecessor-schema migration;
+  restart/interruption around execution; guard block; ambiguous Gmail
+  acceptance; replay/duplicate; and exact-thread terminal status.
+- Scope/authority: C5 because this local assurance change protects the
+  customer-email action boundary. Authority remains limited to local source,
+  tests, scrubbed fixtures, scripts, and continuity documentation. Gmail is
+  stubbed/disabled. No customer email, production
+  database write/migration, deployment, restart, schedule/config change, Slack
+  post, commit, or push.
+- Acceptance: exact approved bytes and host identity reach one action; every
+  case ends sent-simulated, blocked, held, or uncertain with an exact-thread
+  receipt; duplicate execution is impossible; no agent prose or queued result
+  counts as delivery; the focused gate, typecheck, relevant full tests,
+  continuity, formatting, and diff checks pass under Node 22.23.2.
+- Implemented decision: live `84607fd` already makes Mailman's Gmail payload
+  execution intent rather than customer-content authority, so this slice does
+  not introduce another executor. It makes that existing host contract
+  continuously provable: eight synthetic fixture cases execute the production
+  approval parser/rehydration functions, and thirteen stateful regressions are
+  pinned by file and contract marker into the same release-blocking gate.
+- Files: `evals/email-delivery/{README.md,incidents.json}`;
+  `src/email-delivery-incident-replay.test.ts`;
+  `scripts/run-email-critical-tests.{mjs,d.mts}`; `package.json`; and the
+  Company OS, project map, release-integrity, active-work, and changelog docs.
+- Local verification at 2026-08-16T01:13Z under Node 22.23.2: replay 11/11;
+  email-critical 23 files/571 tests; independent runner 6 files/36 tests;
+  typecheck and formatting pass. The root sandbox run passed 2,270/2,316;
+  all 45 permission-sensitive failures passed in the required unrestricted
+  rerun. The only remaining root failure is the unrelated pre-existing CNPC
+  wrapper contract on this exact base; this task changes no CNPC file.
+- State: `ready_for_review`, local and uncommitted. No release build was run
+  because the release builder correctly requires a clean commit. No Gmail,
+  Slack, production database, deployment, restart, schedule, or configuration
+  mutation occurred.
+- Rollback: discard only this isolated branch/worktree and its continuity
+  entries. No production or data recovery applies.
 
 ### NC-20260812-001
 

@@ -43,7 +43,10 @@ The builder refuses to run when:
   exact-action identity and replay, SQLite receipt transitions, cross-group
   delivery, exact scheduled-task Gmail continuation and completion receipts,
   Gmail authorization, recipient/content refusal, and the realistic PostgreSQL-
-  bigint delivery path.
+  bigint delivery path. It also runs the synthetic-only approved-email incident
+  corpus in `evals/email-delivery/incidents.json`; that corpus executes the
+  production approval parser and host rehydration path and asserts that its
+  linked stateful regressions remain in this same gate.
 
 The archive is a provenance-bearing transport artifact, not a cryptographic
 signature. Its SHA-256 must be recorded out of band in the task/change record
@@ -91,6 +94,7 @@ node --version
 npm ci
 npm ci --include=dev --prefix container/agent-runner
 npm run typecheck
+npm run test:email-replay
 npm run test:email-critical
 npm test
 npm run release:build

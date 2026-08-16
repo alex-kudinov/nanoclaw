@@ -769,6 +769,16 @@ bigint party resolution, receipts, replay behavior, and exact scheduled-task
 Gmail continuation/completion. `release:build` runs that exact gate after
 proving the source tree is clean and before compiling the artifact.
 
+`NC-20260815-008` adds a versioned, synthetic-only incident corpus at
+`evals/email-delivery/incidents.json`. `npm run test:email-replay` executes its
+approval-card and host-execution cases through the production parsers and
+host-owned rehydration function without opening Gmail, Slack, or a production
+database. The corpus also names the stateful schema, receipt, restart,
+ambiguity, session-isolation, blocked-send, and completion regressions that
+must remain in `test:email-critical`; the replay test fails if either it or a
+linked regression leaves that release-blocking gate. This is local release
+assurance, not a customer-path canary or business-outcome observation.
+
 The separate `email:transport-canary` command sends fixed text to the monitored
 mailbox itself and retrieves the exact Gmail receipt without writing business
 or customer-action state. It is a transport/OAuth canary only, never evidence
