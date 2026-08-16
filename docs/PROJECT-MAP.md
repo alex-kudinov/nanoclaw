@@ -786,7 +786,10 @@ assurance, not a customer-path canary or business-outcome observation.
 failure and visible-CC loss. Host-generated Chief fallbacks now carry
 `[APPROVED-REPLY]`; approval parsing rejects ambiguous, duplicate, hidden-copy,
 or malformed recipient headers; and the durable action stores the ordered
-visible CC list for exact rehydration and final-boundary authorization.
+visible CC list for exact rehydration and final-boundary authorization. Exact
+release `12c2b049` and the reviewed Mailman instructions are deployed and
+health-verified; natural customer-path proof remains pending until a later
+approved email completes without manual recovery.
 
 The separate `email:transport-canary` command sends fixed text to the monitored
 mailbox itself and retrieves the exact Gmail receipt without writing business

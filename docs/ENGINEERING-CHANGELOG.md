@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T03:45Z
 - Owner/client: Codex
-- State: ready_for_review; implementation and release-blocking Node-22 evidence
-  are complete, while the immutable artifact, deployment, and natural-path
-  outcome evidence remain pending.
-- Commit/PR: uncommitted on
+- State: deployed_unverified; the exact runtime and Mailman instructions are
+  live and health-verified, while natural-path customer-email outcome evidence
+  remains pending.
+- Commit/PR: implementation commit
+  `12c2b049a27aadf88b2e0517e830ba91e232adc4` on
   `codex/nc-20260815-009-email-fallback-headers`, based on documentation head
   `334e15b` and deployed runtime predecessor `cfcfaae`; no PR.
 - Change class: C5 because this changes the customer-email recipient and
@@ -46,20 +47,43 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   2,333/2,334 tests; its sole failure is the unrelated CNPC source-wrapper
   assertion reproduced on unchanged base `334e15b`. The lockfile-exact install
   completed under Node 22 after first detecting and correcting a PATH leak that
-  attempted native compilation under ambient Node 26. Clean-commit release
-  build remains pending at this entry.
-- Deployment/migration: not deployed. The SQLite change is an additive
-  `approved_cc` column applied by the existing idempotent startup migration.
-  No production database, Gmail, Slack, or customer state was changed.
+  attempted native compilation under ambient Node 26.
+- Artifact: the clean commit reran email-critical 628/628 and runner 36/36,
+  then produced source tree `31c8fd4e033396fa4df567474a9384011d90af16`,
+  compiled artifact
+  `33bb2801a68479cc16563d4904d671f564eb3c40b768ea7f8170519e2f964aaa`
+  across 620 files, and archive SHA-256
+  `c4e96cd0ce971331d5860d94a2ca9af0719451afe3d2f5441cd9230f08802508`.
+  Fresh local extraction and installed-host verification both passed under
+  exact Node 22.23.2.
+- Deployment/migration: the saved `mini-claw` SSH alias still pointed at stale
+  `.204`; current authenticated Tailscale state identified the Mini at `.206`,
+  and no SSH configuration was changed. The verified archive was installed at
+  `~/.local/share/nanoclaw-releases/12c2b049a27aadf88b2e0517e830ba91e232adc4`.
+  Activation waited roughly twenty minutes for a real Mailman/Sales run to
+  finish, then required zero active containers, zero waiting groups, and zero
+  email actions in approved/handoff/mailman/executing/attention states. The
+  additive `approved_cc` startup migration is present exactly once.
+- Activation: the dry run and apply reported only the permitted code-root,
+  expected-commit, and program-argument changes. Reviewed operational Mailman
+  files were backed up under
+  `~/.local/share/nanoclaw-group-prompt-backups/cfcfaae-before-12c2b04` and
+  copied with SHA-256 `5345e060...75e5` (`CLAUDE.md`) and
+  `acd4b69d...76df` (`OUTBOUND-EMAIL.md`). Rollback plist:
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-cfcfaae03b6b-2026-08-16T04-35-16-950Z`.
+  Stable post-activation health shows sole listener PID 40936, exact release
+  and code root, Node 22.23.2, connected Gmail/Slack, and zero active/queued
+  work. A first transitional health read occurred before the predecessor PID
+  exited; deployment was not accepted until the new PID and uptime converged.
+  No synthetic or customer email was sent during this release.
 - Rollback/recovery: deploy the prior `cfcfaae` artifact through the activation
   rollback record. The additive nullable column may remain dormant. Never
   automatically retry an executing or uncertain action.
 - Documentation: updated current behavior, recipient authority, incident
   replay, Mailman procedure, and `REL-005` in the Company OS plan.
-- Follow-ups: commit the reviewed slice, build and independently verify one
-  clean immutable artifact, activate only after queue drain, verify exact
-  health, and use the next natural approved customer action as outcome proof
-  without manual recovery.
+- Follow-ups: use the next natural approved customer action as outcome proof
+  without manual recovery. Keep the release `deployed_unverified` until the
+  exact Gmail receipt and original Slack-thread completion are durable.
 
 ### NC-20260815-008 — Make approved-email incidents a release-blocking replay
 

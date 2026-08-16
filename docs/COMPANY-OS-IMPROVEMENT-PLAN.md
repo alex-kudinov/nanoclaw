@@ -764,12 +764,14 @@ email can close that gate. The same preflight also exposed live-release
 knowledge contamination, preserved it recoverably, and restored the verified
 artifact; this remains direct evidence for the R1 state-root separation work.
 
-Implementation checkpoint (`NC-20260815-009`): the runtime repair is in
-validation. Host-generated Chief fallbacks carry Mailman's executable marker;
-the approval envelope binds ordered visible CC recipients; ambiguous,
-duplicate, hidden-copy, and malformed recipient headers fail closed; and the
-2026-08-15 marker/CC incident is release-blocking. Deployment and the next
-natural-path Gmail receipt remain separate gates.
+Deployment checkpoint (`NC-20260815-009`, 2026-08-16): exact release
+`12c2b049` and its reviewed Mailman instructions are live after an immutable
+build, independent verification, real-work drain, and guarded activation.
+Host-generated Chief fallbacks carry Mailman's executable marker; the approval
+envelope binds ordered visible CC recipients; ambiguous, duplicate,
+hidden-copy, and malformed recipient headers fail closed; and the 2026-08-15
+marker/CC incident is release-blocking. The next natural-path Gmail receipt
+without manual repair remains the separate outcome gate.
 
 - golden successful cases;
 - ambiguous cases requiring escalation;
@@ -1417,9 +1419,9 @@ Implementation checkpoint (2026-07-29):
 24. `REL-005` — make the host-generated approved-email fallback conform to
     Mailman's executable marker contract, and bind every operator-visible
     recipient header, including CC, into the immutable action before execution.
-    `NC-20260815-009` implements the local runtime and regression slice; an
-    immutable deployment and one later natural-path Gmail receipt without
-    manual recovery remain required.
+    `NC-20260815-009` implements and deploys the runtime/regression slice as
+    exact release `12c2b049`; one later natural-path Gmail receipt without
+    manual recovery remains required.
 
 Deferred until evidence requires them: broader process catalog, general UI,
 full party timeline, per-process ROI program, broad privacy automation, and
