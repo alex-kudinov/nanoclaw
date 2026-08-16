@@ -30,6 +30,13 @@ export interface StripeLifecycleFact {
   account: StripeLifecycleAccount;
   source_event_id?: string;
   canonical_transaction_id: string | null;
+  /**
+   * Canonical website product slug from PaymentIntent metadata.product
+   * (Tandem checkout only — see class-stripe-checkout.php). Validated shape,
+   * never arbitrary caller text; null for Heartbeat/off-site payments that
+   * carry no Tandem metadata.
+   */
+  canonical_product_slug?: string | null;
   provider_event_id?: string | null;
   provider_object_id?: string | null;
   occurred_at: string;
@@ -114,6 +121,22 @@ function safeProductSlug(value: string | null): string | null {
   return slugify(name);
 }
 
+/**
+ * The canonical website product slug the Stripe processor read from
+ * PaymentIntent metadata.product. Re-validated here (not just at write time)
+ * so a persisted row can never carry arbitrary text into the `product_slug`
+ * Chaos receives: an unrecognized shape fails closed to null, which falls
+ * back to the name-derived `safeProductSlug` below.
+ */
+const CANONICAL_PRODUCT_SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+function validCanonicalProductSlug(value: unknown): string | null {
+  const slug = typeof value === 'string' ? value.trim() : '';
+  if (!slug || slug.length > 191 || !CANONICAL_PRODUCT_SLUG_RE.test(slug)) {
+    return null;
+  }
+  return slug;
+}
+
 /** Insert or merge one non-PII lifecycle fact after accounting succeeds. */
 export async function enqueueStripeLifecycleFact(
   fact: StripeLifecycleFact,
@@ -141,6 +164,12 @@ export async function enqueueStripeLifecycleFact(
   const properties: Record<string, unknown> = {
     account: fact.account,
   };
+  const canonicalProductSlug = validCanonicalProductSlug(
+    fact.canonical_product_slug,
+  );
+  if (canonicalProductSlug) {
+    properties.canonical_product_slug = canonicalProductSlug;
+  }
   if (fact.payment_status) properties.payment_status = fact.payment_status;
   if (fact.event_name === 'purchase_refunded') {
     properties.original_transaction_id = canonical;
@@ -168,6 +197,23 @@ export async function enqueueStripeLifecycleFact(
            EXCLUDED.provider_object_ids
          ) value WHERE value <> ''
        ),
+       -- Upgrade-only merge, never a blind overwrite: the Checkout and
+       -- PaymentIntent halves of one purchase collide on this same
+       -- (source_system, source_event_id) key, as does any retry. Whichever
+       -- call carries a validated canonical_product_slug (the JS layer above
+       -- only ever puts that key in properties when it passed
+       -- validCanonicalProductSlug) upgrades the stored slug; a call with no
+       -- valid slug leaves every existing property — including a
+       -- previously-stored valid slug — completely untouched.
+       properties = CASE
+         WHEN EXCLUDED.properties ? 'canonical_product_slug'
+         THEN jsonb_set(
+           business_v2.chaos_lifecycle_outbox.properties,
+           '{canonical_product_slug}',
+           EXCLUDED.properties -> 'canonical_product_slug'
+         )
+         ELSE business_v2.chaos_lifecycle_outbox.properties
+       END,
        updated_at = now()
      RETURNING id::text, (xmax = 0) AS inserted`,
     [
@@ -249,6 +295,13 @@ async function sendRow(
     provider_object_ids: row.provider_object_ids,
     stripe_product_id: identity.product_id,
   };
+  // Prefer the validated canonical slug the Stripe processor persisted from
+  // PaymentIntent metadata (Tandem checkout only). Heartbeat/off-site
+  // payments and any row with an invalid/missing slug fall back to the
+  // existing name-derived slug — this never passes unvalidated text through.
+  const productSlug =
+    validCanonicalProductSlug(row.properties.canonical_product_slug) ??
+    safeProductSlug(identity.product_name);
   const body = {
     event_name: row.event_name,
     source_system: row.source_system,
@@ -258,7 +311,7 @@ async function sendRow(
       email: identity.email,
       external_id: row.canonical_transaction_id,
     },
-    product_slug: safeProductSlug(identity.product_name),
+    product_slug: productSlug,
     properties,
   };
 

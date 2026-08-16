@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-005` | Make every authoritative Stripe purchase reach Chaos with a canonical product attribution, preserve one-row Checkout accounting, and repair the four unmapped lifecycle receipts | Codex + Claude Code owner/reviewer | `codex/nc-20260816-005-stripe-attribution` @ exact live `55c97d5` | `validating` | C5 | Exact-live-lineage NanoClaw Stripe processor and Chaos lifecycle outbox; focused tests; historical correction of four already-received Chaos lifecycle rows only after reviewed mapping proof. Excludes Stripe charges/refunds, fulfillment, Encharge automation, customer messaging, and unrelated NanoClaw changes. | Codex independently accepted the R2 source/SQL contract; 49 focused tests, typecheck, continuity, and diff checks pass. Full suite is 2381/2382 with one pre-existing unrelated CNPC prompt-contract failure. Commit the reviewed branch, build/verify an immutable release, preflight and activate it, then correct only the four proven historical rows with pre/post aggregate proof. | 2026-08-16T17:10Z |
 | `NC-20260816-001` | Apply the Company OS ledger schema in production and deploy a non-authoritative, default-off Mailman/Sales shadow projection | Codex | `codex/nc-20260816-001-company-os-shadow` @ deployed `052fb02`; corrective release pending | `validating` | C5 | Backup and migration 118 passed; exact release `052fb02` is healthy under Node 22.23.2 with shadow enabled since 2026-08-14. First live pass completed 3 exact cases, excluded 3 non-Mailman roots, and exposed one historical confirmed action with no Mailman-dispatch event. The observer failed open and did not change email state. A source-gap projection plus 20 focused tests is local. | Commit/build/activate the corrective immutable release, then prove 4 eligible items reconcile as 3 completed plus 1 named source gap, a second pass is duplicate-only, and SQLite/Gmail/Slack action counts remain unchanged. | 2026-08-16T14:14Z |
 | `NC-20260815-010` | Establish the first durable Company OS work-ledger foundation for the Mailman/Sales approved-email pilot without activating it in production | Codex | `codex/nc-20260815-010-company-os-ledger` @ `6e281f0` from `38810d3` | `ready_for_review` | C2 | Focused design/ADR, additive unapplied migration 118 plus history-preserving rollback, host-only typed state/receipt store, 16 focused tests, and data/project/roadmap authorities. Throwaway PostgreSQL apply/store/rollback proof passed. No runtime wiring, group behavior, live migration, production DB write, service change, or external action. | Owner reviews this milestone and chooses whether to authorize the separate production-migration plus default-off shadow-projection milestone; no live workflow dependency or promotion is implied. | 2026-08-16T05:13Z |
 | `NC-20260815-007` | Reactivate the Company OS plan against the current NanoClaw baseline and make it the single strategic roadmap for separately gated implementation slices | Codex | `codex/nc-20260815-007-company-os-reactivation` @ `b7bb65d` from `9e4977a` | `complete` | C1 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, this register, and `docs/ENGINEERING-CHANGELOG.md`; documentation and prioritization only; no source, schema, prompt, configuration, deployment, production, or external-system change | None — R0 is recovered and continuity-verified; subsequent slices use separate task IDs and isolated branches. | 2026-08-16T04:46Z |
@@ -77,6 +78,77 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-005
+
+- Trigger: live Chaos reconciliation shows both account-bound producers are
+  delivering, but four `stripe-tandem` purchases arrived as
+  `unmapped-stripe-product`: three $299 Mentor Coaching Foundations purchases
+  and one $999 Coaching Supervision Mastery inaugural purchase. The same people
+  and timestamps have nearby browser-side product slugs, so receipt delivery is
+  intact and canonical product attribution is the failed boundary.
+- Exact live base: immutable release `55c97d5`; health reports verified release
+  identity, Node 22.23.2, connected Slack/Gmail, and no active containers.
+- Related defect boundary: NC-20260815-004's one-row Checkout/PaymentIntent and
+  literal product-name fixes exist only in the dirty operational checkout and
+  are not ancestors of the live release. This task must port only the reviewed
+  payment-identity/product-preservation mechanics needed by lifecycle accuracy,
+  not the unrelated roster cleanup or operational checkout state.
+- Safety contract: Stripe remains authoritative for money; this change cannot
+  create charges, refunds, fulfillment, Encharge traffic, or customer messages.
+  Chaos remains downstream and retryable. Historical repair is restricted to
+  the four already-proven source events and requires pre/post aggregate reads.
+- Claude Code implementation round (2026-08-16T16:45Z): `tools/contador/process-payment.cjs`
+  now extracts and validates `metadata.product` from the PaymentIntent for
+  both Checkout and PaymentIntent event shapes, carries it as
+  `canonical_product_slug` in the `__CHAOS_LIFECYCLE__` sentinel, ports only
+  the reviewed product-name-preservation guard (Payment Log column read-back +
+  Postgres `CASE` guard) and removes the shell from the Postgres write
+  (`execFileSync` + `psql -v NAME=value` + `:'var'` + `-f -`, no
+  string-concatenated SQL). `src/chaos-lifecycle-outbox.ts` persists the
+  slug (re-validated, fail-closed) into the outbox's `properties` jsonb and
+  prefers it at Chaos send time, falling back to the existing name-derived
+  slug for Heartbeat/off-site rows. Did not port `NOT_A_STUDENT` /
+  `resolveRosterTargets` from the dirty-checkout evidence file — out of this
+  task's scope (roster-policy expansion). `src/stripe-payment-host.ts` and its
+  test were left unchanged: the new field is optional and flows through the
+  existing generic JSON parse with no contract change.
+- Claude Code R2 review-response round (2026-08-16T17:05Z): Codex R2 review
+  (`docs/reports/NC-20260816-005-CODEX-REQUEST-R2.md`) required two fixes
+  before commit/deploy, both closed in this round:
+  1. `enqueueStripeLifecycleFact`'s `ON CONFLICT` update previously never
+     touched `properties`, so a first enqueue without a valid slug (or an
+     earlier arrival of the Checkout/PaymentIntent twin) permanently froze
+     the row without a canonical slug even after a later call carried a
+     valid one. `properties` is now merged with an upgrade-only `CASE` +
+     `jsonb_set`: only when the incoming call's `properties` carries the
+     `canonical_product_slug` key (i.e. `validCanonicalProductSlug` passed
+     in JS) does the stored slug get set/overwritten; otherwise the
+     existing row's `properties` — including any previously-stored valid
+     slug — is left completely untouched. A new test asserts both the
+     upgrade path and the non-erasure path against the actual SQL text and
+     parameter shape (two sequential `enqueueStripeLifecycleFact` calls on
+     the same canonical id, one with a valid slug and one without).
+  2. `tools/**/*.test.ts` added to `vitest.config.ts`'s `include` (R2
+     explicitly allowed/required this edit) so
+     `tools/contador/process-payment.test.ts` runs under the tracked
+     `npm test` with no local override needed.
+- Verification (both rounds combined, local-only): 49 focused tests pass (12
+  outbox + 20 host + 17 process-payment) via the exact tracked command
+  `npm test -- --run src/chaos-lifecycle-outbox.test.ts
+  src/stripe-payment-host.test.ts tools/contador/process-payment.test.ts`
+  under pinned Node 22.23.2; `tsc --noEmit` clean; `docs:continuity-check`
+  passes; `git diff --check` clean. No commit, push, deploy, or external
+  write occurred in either round.
+- Codex independent verification (2026-08-16T17:10Z): accepted the R2
+  upgrade-only jsonb merge and tracked test-glob change after direct diff
+  review. Re-ran the 49 focused tests, typecheck, documentation continuity,
+  and `git diff --check`; all pass under Node 22.23.2. The unrestricted full
+  repository suite passes 2381/2382 tests; its sole failure is the pre-existing
+  unrelated `src/cnpc-prompt-contract.test.ts` assertion against the already
+  refactored `scripts/cnpc-register.ts` wrapper. No NC-20260816-005 file touches
+  that boundary. This baseline failure is recorded rather than folded into the
+  Stripe release.
 
 ### NC-20260816-001
 
