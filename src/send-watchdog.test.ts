@@ -220,6 +220,22 @@ describe('recordApproval', () => {
     expect(store.rows).toHaveLength(1);
   });
 
+  it('stores the exact visible approved CC list with the action', () => {
+    const store = makeStore();
+    const row = recordApproval(
+      {
+        ...base,
+        cardText: CARD.replace(
+          'Email: Oana.Tue.Coach@gmail.com',
+          'Email: Oana.Tue.Coach@gmail.com\nCc: info@tandemcoach.co, teammate@external.co',
+        ),
+      },
+      store,
+    );
+
+    expect(row?.approvedCc).toBe('info@tandemcoach.co, teammate@external.co');
+  });
+
   it('records nothing for a non-card approval', () => {
     const store = makeStore();
     expect(recordApproval({ ...base, cardText: 'ok' }, store)).toBeNull();
@@ -794,6 +810,31 @@ describe('rescueUnhandedSends', () => {
     expect(text).not.toContain('THEIR ASK');
     expect(text).not.toContain('Updated draft ready');
     expect(store.rows[0].handoffObservedAt).toBeTruthy();
+  });
+
+  it('adds the executable approval marker to a Chief fallback', async () => {
+    const supportCard = SENDABLE_CARD.replace(
+      '[SALES REVIEW]',
+      '[SUPPORT-DRAFT]',
+    ).replace('Email: jordan@example.com', 'To: jordan@example.com');
+    const store = makeStore();
+    recordApproval(
+      { ...sendableBase, groupFolder: 'chief', cardText: supportCard },
+      store,
+    );
+    const deps = rescueDeps(store, supportCard);
+
+    await rescueUnhandedSends(
+      new Date(NOW.getTime() + HANDOFF_RESCUE_MS + 1000),
+      deps,
+    );
+
+    expect(deps.emitHandoff).toHaveBeenCalledWith(
+      'chief',
+      expect.stringContaining(
+        '[HANDOFF: chief→mailman]\n[APPROVED-REPLY]\nTo: jordan@example.com',
+      ),
+    );
   });
 
   it('stays silent when the agent did hand off', async () => {

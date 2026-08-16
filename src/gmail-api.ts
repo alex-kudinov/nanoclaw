@@ -82,6 +82,19 @@ function stripTandemAddresses(
   return kept.length > 0 ? kept.join(', ') : undefined;
 }
 
+function normalizeAddress(value: string): string {
+  return (value.match(/<([^>]+)>/)?.[1] ?? value).trim().toLowerCase();
+}
+
+function addressListContains(
+  list: string | undefined,
+  candidate: string | undefined,
+): boolean {
+  if (!list || !candidate) return false;
+  const normalizedCandidate = normalizeAddress(candidate);
+  return list.split(',').map(normalizeAddress).includes(normalizedCandidate);
+}
+
 /** Cached label ID for GMAIL_LABEL (resolved once per process). */
 let cachedLabelId: string | null = null;
 
@@ -220,7 +233,9 @@ export function buildRawMessage(opts: {
   const bccHeader =
     trackingPresent && GMAIL_BCC && /tandemcoach\.co/i.test(GMAIL_BCC)
       ? undefined
-      : GMAIL_BCC;
+      : addressListContains(ccHeader, GMAIL_BCC)
+        ? undefined
+        : GMAIL_BCC;
   if (trackingPresent && (opts.cc !== ccHeader || bccHeader !== GMAIL_BCC)) {
     logger.debug(
       { originalCc: opts.cc, strippedCc: ccHeader, bccDropped: !bccHeader },

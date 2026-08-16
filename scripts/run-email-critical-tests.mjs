@@ -17,6 +17,7 @@ export const EMAIL_CRITICAL_TEST_ARGS = [
   'src/email-delivery-incident-replay.test.ts',
   'src/email-delivery-path.test.ts',
   'src/email-transport-canary.test.ts',
+  'src/gmail-api.test.ts',
   'src/gmail-ipc-handlers.test.ts',
   'src/gmail-parser.test.ts',
   'src/group-queue.test.ts',

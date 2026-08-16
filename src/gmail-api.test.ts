@@ -212,6 +212,7 @@ describe('buildRawMessage', () => {
     });
     const decoded = decodeRaw(raw);
     expect(decoded).toMatch(/^Cc: info@tandemcoach\.co$/m);
+    expect(decoded).not.toMatch(/^Bcc:/m);
   });
 
   it('passes ASCII subjects through unchanged', () => {

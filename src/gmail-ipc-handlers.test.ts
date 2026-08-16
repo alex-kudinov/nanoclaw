@@ -736,6 +736,56 @@ describe('recipient guard (tina@example.com incident)', () => {
     expect(postToChief.mock.calls[0][0]).toMatch(/EMAIL BLOCKED.*CC rejected/);
   });
 
+  it('allows a configured internal CC only when the exact action-bound card approved it', async () => {
+    await handleGmailSend(
+      makePayload({
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        cc: 'info@tandemcoach.co',
+        approvedCc: 'info@tandemcoach.co',
+      }),
+    );
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cc: 'info@tandemcoach.co',
+        body: expect.not.stringContaining('https://t.tandemcoach.co/t/'),
+      }),
+    );
+  });
+
+  it('blocks a configured internal CC that was not stamped from the approved card', async () => {
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailSend(
+      makePayload({
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        cc: 'info@tandemcoach.co',
+      }),
+      postToChief,
+    );
+
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(postToChief.mock.calls[0][0]).toMatch(/EMAIL BLOCKED.*CC rejected/);
+  });
+
+  it('blocks CC drift even when both addresses are configured internal mailboxes', async () => {
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailSend(
+      makePayload({
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        cc: 'info@tandemcoach.co',
+        approvedCc: 'different@tandemcoach.co',
+      }),
+      postToChief,
+    );
+
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(postToChief.mock.calls[0][0]).toMatch(
+      /execution recipients differ from the approved card/,
+    );
+  });
+
   it('blocks when the Gmail-derived reply recipient differs from the approved recipient', async () => {
     const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
 

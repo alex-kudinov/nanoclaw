@@ -87,11 +87,11 @@ function collectEmailAddresses(value: unknown): string[] {
 
 describe('approved-email historical incident corpus', () => {
   it('is versioned, unique, traceable, and synthetic-only', () => {
-    expect(corpus.schemaVersion).toBe(1);
+    expect(corpus.schemaVersion).toBe(2);
     expect(corpus.fixturePolicy).toContain('Synthetic identities');
     expect(corpus.fixturePolicy).toContain('No Gmail');
-    expect(corpus.replayCases.length).toBeGreaterThanOrEqual(8);
-    expect(corpus.requiredRegressions.length).toBeGreaterThanOrEqual(13);
+    expect(corpus.replayCases.length).toBeGreaterThanOrEqual(10);
+    expect(corpus.requiredRegressions.length).toBeGreaterThanOrEqual(16);
 
     const allIds = [
       ...corpus.replayCases.map((testCase) => testCase.id),

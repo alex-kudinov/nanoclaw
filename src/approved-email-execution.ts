@@ -82,6 +82,14 @@ export function buildHostApprovedEmailExecution(
         'the stored approved recipient does not match the exact Slack card',
     };
   }
+  if ((action.approvedCc ?? undefined) !== (approved.cc ?? undefined)) {
+    return {
+      ok: false,
+      code: 'approved_card_cc_mismatch',
+      reason:
+        'the stored approved CC recipients do not match the exact Slack card',
+    };
+  }
   if (request.type === 'gmail_reply' && !action.gmailThreadId) {
     return {
       ok: false,
@@ -95,6 +103,7 @@ export function buildHostApprovedEmailExecution(
     actionId: action.actionId,
     body: approved.body,
     approvedRecipient: approved.recipient,
+    approvedCc: approved.cc,
     emailType:
       approved.emailType === 'follow-up'
         ? 'follow-up'
@@ -103,7 +112,11 @@ export function buildHostApprovedEmailExecution(
           : 'initial',
     markdown: true,
   };
-  delete payload.cc;
+  if (approved.cc) payload.cc = approved.cc;
+  else {
+    delete payload.cc;
+    delete payload.approvedCc;
+  }
   delete payload.html;
   delete payload.leadId;
 
@@ -127,6 +140,7 @@ export function buildHostApprovedEmailExecution(
     changed(request.subject, payload.subject) && 'subject',
     changed(request.threadId, payload.threadId) && 'thread_id',
     changed(request.cc, payload.cc) && 'cc',
+    changed(request.approvedCc, payload.approvedCc) && 'approved_cc',
     changed(request.html, payload.html) && 'html',
     changed(request.leadId, payload.leadId) && 'lead_id',
     changed(request.emailType, payload.emailType) && 'email_type',

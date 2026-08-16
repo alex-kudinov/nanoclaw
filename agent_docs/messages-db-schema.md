@@ -167,23 +167,37 @@ Indexes:
 
 ```
   draft_ts                  TEXT         PK
+  action_id                 TEXT
   group_folder              TEXT         NOT NULL
   chat_jid                  TEXT         NOT NULL
   thread_ts                 TEXT
   gmail_thread_id           TEXT
   recipient                 TEXT
+  approved_cc               TEXT
   lead_ref                  TEXT
+  approved_subject          TEXT
+  approved_content_sha256   TEXT
   approved_at               TEXT         NOT NULL
+  state                     TEXT         NOT NULL DEFAULT='approved'
   handoff_observed_at       TEXT
   handoff_message_id        TEXT
   mailman_started_at        TEXT
   handoff_alerted_at        TEXT
+  execution_started_at      TEXT
+  gmail_message_id          TEXT
+  gmail_result_thread_id    TEXT
+  completed_at              TEXT
+  alerted_at                TEXT
+  last_error_code           TEXT
+  last_event_at             TEXT
 ```
 
 Indexes:
+  idx_pending_sends_action (action_id) UNIQUE
   idx_pending_sends_gmail_thread (gmail_thread_id,approved_at)
   idx_pending_sends_group (group_folder,approved_at)
   idx_pending_sends_handoff (handoff_observed_at,mailman_started_at,handoff_alerted_at)
+  idx_pending_sends_state (state,approved_at)
   sqlite_autoindex_pending_sends_1 (draft_ts) UNIQUE
 
 ## registered_groups

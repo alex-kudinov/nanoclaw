@@ -8,6 +8,59 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260815-009 — Bind approved recipient headers and executable fallback
+
+- Date: 2026-08-16T03:45Z
+- Owner/client: Codex
+- State: ready_for_review; implementation and release-blocking Node-22 evidence
+  are complete, while the immutable artifact, deployment, and natural-path
+  outcome evidence remain pending.
+- Commit/PR: uncommitted on
+  `codex/nc-20260815-009-email-fallback-headers`, based on documentation head
+  `334e15b` and deployed runtime predecessor `cfcfaae`; no PR.
+- Change class: C5 because this changes the customer-email recipient and
+  approval execution boundary. Local tests are non-sending.
+- Root cause: the NC-20260815-008 customer action proved that the deterministic
+  watchdog fallback generated a Chief handoff without Mailman's required
+  `[APPROVED-REPLY]` marker. It also proved that only To, subject, and body were
+  durable approval authority: a visible operator-approved CC was discarded by
+  host rehydration and then failed the customer-Party CC guard.
+- Outcome: the one approval parser now binds exactly one To/Email header and an
+  optional ordered visible CC list; duplicate, conflicting, malformed,
+  hidden-copy, or self-duplicated recipient headers fail closed. The durable
+  action stores the approved CC, execution replaces model CC with those exact
+  recipients, and a non-Party CC is allowed only when it is both action-bound
+  and one of the configured host mailbox identities. Approved internal CC
+  suppresses the open pixel so the raw Gmail layer does not remove the visible
+  copy, and a matching visible CC suppresses duplicate default BCC. Chief
+  fallbacks now carry the executable marker.
+- Files: approved-handoff/execution/watchdog/SQLite/Gmail source and focused
+  tests; `evals/email-delivery/incidents.json`; Mailman prompt/procedure;
+  structure-only SQLite schema reference; architecture, security, project map,
+  Company OS, active-work, and changelog authorities.
+- Verification: exact Node 22.23.2 focused coverage passes 7 files / 257 tests;
+  replay passes 13/13; the release-blocking email gate passes 24 files / 628
+  tests and now includes the raw Gmail header layer; the independent runner
+  builds and passes 6 files / 36 tests; typecheck, formatting, documentation
+  continuity, and `git diff --check` pass. The unrestricted root suite passes
+  2,333/2,334 tests; its sole failure is the unrelated CNPC source-wrapper
+  assertion reproduced on unchanged base `334e15b`. The lockfile-exact install
+  completed under Node 22 after first detecting and correcting a PATH leak that
+  attempted native compilation under ambient Node 26. Clean-commit release
+  build remains pending at this entry.
+- Deployment/migration: not deployed. The SQLite change is an additive
+  `approved_cc` column applied by the existing idempotent startup migration.
+  No production database, Gmail, Slack, or customer state was changed.
+- Rollback/recovery: deploy the prior `cfcfaae` artifact through the activation
+  rollback record. The additive nullable column may remain dormant. Never
+  automatically retry an executing or uncertain action.
+- Documentation: updated current behavior, recipient authority, incident
+  replay, Mailman procedure, and `REL-005` in the Company OS plan.
+- Follow-ups: commit the reviewed slice, build and independently verify one
+  clean immutable artifact, activate only after queue drain, verify exact
+  health, and use the next natural approved customer action as outcome proof
+  without manual recovery.
+
 ### NC-20260815-008 — Make approved-email incidents a release-blocking replay
 
 - Date: 2026-08-16T01:13Z

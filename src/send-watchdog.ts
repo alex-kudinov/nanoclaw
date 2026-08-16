@@ -58,6 +58,7 @@ export interface PendingSend {
   threadTs?: string;
   gmailThreadId?: string;
   recipient?: string;
+  approvedCc?: string;
   leadRef?: string;
   approvedSubject?: string;
   approvedContentSha256?: string;
@@ -197,6 +198,7 @@ export function recordApproval(
       opts.approvedGmailThreadId ??
       extractApprovedGmailThreadId(opts.cardText),
     recipient: parseApprovalCardRecipient(opts.cardText),
+    approvedCc: approved.cc,
     leadRef: opts.cardText.match(LEAD_RE)?.[1],
     approvedSubject: approved.subject,
     approvedContentSha256: hashApprovedEmailContent(

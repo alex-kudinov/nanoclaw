@@ -12,6 +12,8 @@ import {
   ASSISTANT_NAME,
   DATA_DIR,
   GMAIL_MONITORED_EMAIL,
+  GMAIL_REPLY_TO,
+  GMAIL_SEND_AS,
   GMAIL_TEST_RECIPIENT,
   TRACKING_DOMAIN,
   UNSUBSCRIBE_BASE_URL,
@@ -67,6 +69,8 @@ export interface GmailIpcPayload {
   // Host-stamped from durable approval state; container input is overwritten.
   actionId?: string;
   approvedRecipient?: string;
+  /** Host-stamped visible CC list from the exact approved card. */
+  approvedCc?: string;
   emailType?: string;
   // markdown conversion (gmail_send + gmail_reply)
   markdown?: boolean;
@@ -256,13 +260,51 @@ function splitRecipients(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
+function configuredMailboxRecipients(): Set<string> {
+  return new Set(
+    [GMAIL_MONITORED_EMAIL, GMAIL_REPLY_TO, GMAIL_SEND_AS]
+      .map(normalizeRecipient)
+      .filter(Boolean),
+  );
+}
+
+function hasApprovedConfiguredMailboxCc(data: GmailIpcPayload): boolean {
+  if (!data.actionId || !data.approvedCc) return false;
+  const configured = configuredMailboxRecipients();
+  return splitRecipients(data.approvedCc)
+    .map(normalizeRecipient)
+    .some((recipient) => configured.has(recipient));
+}
+
 function verifyAdditionalRecipients(
   value: string | undefined,
   context: VerifiedPartyContext,
+  opts: { approvedCc?: string } = {},
 ): RecipientVerification {
-  for (const recipient of splitRecipients(value)) {
+  const recipients = splitRecipients(value).map(normalizeRecipient);
+  const approved = splitRecipients(opts.approvedCc).map(normalizeRecipient);
+  if (
+    opts.approvedCc !== undefined &&
+    (recipients.length !== approved.length ||
+      recipients.some((recipient, index) => recipient !== approved[index]))
+  ) {
+    return {
+      ok: false,
+      reason: 'CC rejected: execution recipients differ from the approved card',
+    };
+  }
+  const configuredInternal = configuredMailboxRecipients();
+  const approvedInternal = new Set(approved);
+  for (const recipient of recipients) {
     const check = checkRecipient(recipient, context.emails);
-    if (!check.ok) {
+    if (
+      !check.ok &&
+      !(
+        opts.approvedCc !== undefined &&
+        approvedInternal.has(recipient) &&
+        configuredInternal.has(recipient)
+      )
+    ) {
       return {
         ok: false,
         reason: `CC rejected: ${check.reason}`,
@@ -280,19 +322,26 @@ class RecipientPolicyError extends Error {
 }
 
 /** Build email footer with tracking pixel and optional unsubscribe link. */
-function buildEmailFooter(trackingId: string, emailType: string): string {
-  const pixel = `<img src="https://${TRACKING_DOMAIN}/t/${trackingId}" width="1" height="1" alt="" style="display:none">`;
+function buildEmailFooter(
+  trackingId: string,
+  emailType: string,
+  opts: { includeOpenPixel?: boolean } = {},
+): string {
+  const pixel =
+    opts.includeOpenPixel === false
+      ? ''
+      : `<img src="https://${TRACKING_DOMAIN}/t/${trackingId}" width="1" height="1" alt="" style="display:none">`;
 
   // Only add unsubscribe link on follow-ups (not initial outreach)
   if (emailType !== 'follow-up') {
-    return `\n${pixel}`;
+    return pixel ? `\n${pixel}` : '';
   }
 
   const unsubUrl = `${UNSUBSCRIBE_BASE_URL}?t=${trackingId}`;
   return (
     `\n<div style="margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center;">` +
     `<a href="${unsubUrl}" style="color:#999;">Unsubscribe</a> from follow-up emails</div>` +
-    `\n${pixel}`
+    (pixel ? `\n${pixel}` : '')
   );
 }
 
@@ -411,7 +460,9 @@ export async function handleGmailReply(
             verification.reason || 'recipient could not be verified',
           );
         }
-        const ccCheck = verifyAdditionalRecipients(cc, verification.context);
+        const ccCheck = verifyAdditionalRecipients(cc, verification.context, {
+          approvedCc: data.actionId ? data.approvedCc : undefined,
+        });
         if (!ccCheck.ok) {
           throw new RecipientPolicyError(
             ccCheck.reason || 'CC recipient could not be verified',
@@ -428,7 +479,9 @@ export async function handleGmailReply(
               verification.context.partyId,
               data.emailType || 'reply',
             );
-            body += buildEmailFooter(trackingId, data.emailType || 'reply');
+            body += buildEmailFooter(trackingId, data.emailType || 'reply', {
+              includeOpenPixel: !hasApprovedConfiguredMailboxCc(data),
+            });
           } catch (err) {
             logger.warn(
               { err, partyId: verification.context.partyId },
@@ -619,7 +672,9 @@ export async function handleGmailSend(
     data.threadId,
   );
   const ccCheck = verification.context
-    ? verifyAdditionalRecipients(data.cc, verification.context)
+    ? verifyAdditionalRecipients(data.cc, verification.context, {
+        approvedCc: data.actionId ? data.approvedCc : undefined,
+      })
     : verification;
   if (!verification.ok || !verification.context || !ccCheck.ok) {
     const reason = verification.reason || ccCheck.reason;
@@ -707,7 +762,9 @@ export async function handleGmailSend(
         verification.context.partyId,
         data.emailType || 'initial',
       );
-      bodyForSend += buildEmailFooter(trackingId, data.emailType || 'initial');
+      bodyForSend += buildEmailFooter(trackingId, data.emailType || 'initial', {
+        includeOpenPixel: !hasApprovedConfiguredMailboxCc(data),
+      });
     } catch (err) {
       logger.warn(
         { err, partyId: verification.context.partyId },

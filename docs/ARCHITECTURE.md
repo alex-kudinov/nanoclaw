@@ -120,9 +120,10 @@ Agents emit IPC files. Host dispatches by type:
   recipient/thread resolution is authoritative, and final To/CC membership
   checks remain mandatory;
 - for a durable approved action, the host treats Mailman's call as execution
-  intent and reconstructs recipient, subject, body, Gmail thread, Action-ID,
-  rendering mode, Party hint, and email type from the exact stored approval
-  card before claim;
+  intent and reconstructs To, ordered visible CC, subject, body, Gmail thread,
+  Action-ID, rendering mode, Party hint, and email type from the exact stored
+  approval card before claim; Chief fallbacks carry Mailman's required
+  `[APPROVED-REPLY]` marker;
 - scheduled Sales follow-up cards use the same exact-card action path, while
   host-generated proposal follow-ups claim and confirm the same ledger directly
   from their PostgreSQL draft row;

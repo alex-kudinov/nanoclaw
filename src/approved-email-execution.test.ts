@@ -118,6 +118,58 @@ describe('buildHostApprovedEmailExecution', () => {
     expect(result.payload.emailType).toBe('follow-up');
   });
 
+  it('replaces model CC with the ordered operator-approved CC list', () => {
+    const cardWithCc = card.replace(
+      'Email: lead@example.co',
+      'Email: lead@example.co\nCc: info@tandemcoach.co, teammate@external.co',
+    );
+    const result = buildHostApprovedEmailExecution(
+      action({ approvedCc: 'info@tandemcoach.co, teammate@external.co' }),
+      cardWithCc,
+      request({ cc: 'attacker@evil.co' }),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.payload).toMatchObject({
+      cc: 'info@tandemcoach.co, teammate@external.co',
+      approvedCc: 'info@tandemcoach.co, teammate@external.co',
+    });
+    expect(result.correctedFields).toEqual(
+      expect.arrayContaining(['cc', 'approved_cc']),
+    );
+  });
+
+  it.each([
+    ['added', undefined, 'Cc: info@tandemcoach.co'],
+    ['removed', 'info@tandemcoach.co', ''],
+    [
+      'reordered',
+      'info@tandemcoach.co, teammate@external.co',
+      'Cc: teammate@external.co, info@tandemcoach.co',
+    ],
+  ])(
+    'blocks when approved CC is %s after arming',
+    (_label, storedCc, ccLine) => {
+      const changedCard = card.replace(
+        'Email: lead@example.co',
+        `Email: lead@example.co${ccLine ? `\n${ccLine}` : ''}`,
+      );
+      const result = buildHostApprovedEmailExecution(
+        action({ approvedCc: storedCc }),
+        changedCard,
+        request(),
+      );
+
+      expect(result).toEqual({
+        ok: false,
+        code: 'approved_card_cc_mismatch',
+        reason:
+          'the stored approved CC recipients do not match the exact Slack card',
+      });
+    },
+  );
+
   it('uses the durable thread and exact body for a reply with no model Action-ID', () => {
     const result = buildHostApprovedEmailExecution(
       action(),

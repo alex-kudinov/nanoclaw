@@ -102,6 +102,7 @@ function createSchema(database: Database.Database): void {
       thread_ts TEXT,
       gmail_thread_id TEXT,
       recipient TEXT,
+      approved_cc TEXT,
       lead_ref TEXT,
       approved_subject TEXT,
       approved_content_sha256 TEXT,
@@ -375,6 +376,7 @@ function createSchema(database: Database.Database): void {
   for (const column of [
     'action_id TEXT',
     'approved_subject TEXT',
+    'approved_cc TEXT',
     'approved_content_sha256 TEXT',
     "state TEXT NOT NULL DEFAULT 'approved'",
     'execution_started_at TEXT',
@@ -1222,6 +1224,7 @@ export interface EmailSendActionRow {
   threadTs?: string;
   gmailThreadId?: string;
   recipient?: string;
+  approvedCc?: string;
   leadRef?: string;
   approvedSubject?: string;
   approvedContentSha256?: string;
@@ -1248,6 +1251,7 @@ type EmailSendDbRow = {
   thread_ts: string | null;
   gmail_thread_id: string | null;
   recipient: string | null;
+  approved_cc: string | null;
   lead_ref: string | null;
   approved_subject: string | null;
   approved_content_sha256: string | null;
@@ -1267,7 +1271,7 @@ type EmailSendDbRow = {
 };
 
 const EMAIL_ACTION_SELECT = `action_id, draft_ts, group_folder, chat_jid,
-  thread_ts, gmail_thread_id, recipient, lead_ref, approved_subject,
+  thread_ts, gmail_thread_id, recipient, approved_cc, lead_ref, approved_subject,
   approved_content_sha256, approved_at, state, handoff_observed_at,
   handoff_message_id, mailman_started_at, handoff_alerted_at,
   execution_started_at, gmail_message_id, gmail_result_thread_id,
@@ -1282,6 +1286,7 @@ function mapEmailSendAction(row: EmailSendDbRow): EmailSendActionRow {
     threadTs: row.thread_ts ?? undefined,
     gmailThreadId: row.gmail_thread_id ?? undefined,
     recipient: row.recipient ?? undefined,
+    approvedCc: row.approved_cc ?? undefined,
     leadRef: row.lead_ref ?? undefined,
     approvedSubject: row.approved_subject ?? undefined,
     approvedContentSha256: row.approved_content_sha256 ?? undefined,
@@ -1329,6 +1334,7 @@ export function recordPendingSend(row: {
   threadTs?: string;
   gmailThreadId?: string;
   recipient?: string;
+  approvedCc?: string;
   leadRef?: string;
   approvedSubject?: string;
   approvedContentSha256?: string;
@@ -1339,13 +1345,14 @@ export function recordPendingSend(row: {
       .prepare(
         `INSERT INTO pending_sends
            (draft_ts, action_id, group_folder, chat_jid, thread_ts,
-            gmail_thread_id, recipient, lead_ref, approved_subject,
+            gmail_thread_id, recipient, approved_cc, lead_ref, approved_subject,
             approved_content_sha256, approved_at, state, last_event_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)
          ON CONFLICT(draft_ts) DO UPDATE SET
            action_id = COALESCE(pending_sends.action_id, excluded.action_id),
            gmail_thread_id = COALESCE(pending_sends.gmail_thread_id, excluded.gmail_thread_id),
            recipient = COALESCE(pending_sends.recipient, excluded.recipient),
+           approved_cc = COALESCE(pending_sends.approved_cc, excluded.approved_cc),
            approved_subject = COALESCE(pending_sends.approved_subject, excluded.approved_subject),
            approved_content_sha256 = COALESCE(pending_sends.approved_content_sha256, excluded.approved_content_sha256)`,
       )
@@ -1357,6 +1364,7 @@ export function recordPendingSend(row: {
         row.threadTs ?? null,
         row.gmailThreadId ?? null,
         row.recipient ?? null,
+        row.approvedCc ?? null,
         row.leadRef ?? null,
         row.approvedSubject ?? null,
         row.approvedContentSha256 ?? null,

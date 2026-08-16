@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildApprovedHandoff,
   isApprovalCard,
+  parseApprovalCardRecipientHeaders,
   parseMailmanHandoff,
 } from './approved-send-handoff.js';
 
@@ -103,6 +104,74 @@ describe('buildApprovedHandoff', () => {
       body: built.body,
     });
   });
+
+  it('round-trips every visible approved recipient header in order', () => {
+    const ccCard = CARD.replace(
+      'Email: jmproductionselite@gmail.com',
+      'Email: jmproductionselite@gmail.com\nCc: info@tandemcoach.co, alex@tandemcoach.co',
+    );
+    const built = buildApprovedHandoff(ccCard)!;
+
+    expect(built.cc).toBe('info@tandemcoach.co, alex@tandemcoach.co');
+    expect(built.text).toContain(
+      'Cc: info@tandemcoach.co, alex@tandemcoach.co',
+    );
+    expect(parseMailmanHandoff(built.text)).toMatchObject({
+      recipient: 'jmproductionselite@gmail.com',
+      cc: 'info@tandemcoach.co, alex@tandemcoach.co',
+    });
+  });
+
+  it('marks a host-generated Chief fallback as executable approved work', () => {
+    const supportCard = CARD.replace(
+      '[SALES REVIEW]',
+      '[SUPPORT-DRAFT]',
+    ).replace(
+      'Email: jmproductionselite@gmail.com',
+      'To: jmproductionselite@gmail.com',
+    );
+    const built = buildApprovedHandoff(supportCard, {
+      sourceGroup: 'chief',
+    });
+
+    expect(built?.text.split('\n').slice(0, 2)).toEqual([
+      '[HANDOFF: chief→mailman]',
+      '[APPROVED-REPLY]',
+    ]);
+  });
+
+  it.each([
+    [
+      'conflicting primary headers',
+      'Email: jmproductionselite@gmail.com\nTo: other@example.co',
+    ],
+    [
+      'duplicate CC headers',
+      'Email: jmproductionselite@gmail.com\nCc: info@tandemcoach.co\nCc: alex@tandemcoach.co',
+    ],
+    [
+      'duplicate CC address',
+      'Email: jmproductionselite@gmail.com\nCc: info@tandemcoach.co, info@tandemcoach.co',
+    ],
+    [
+      'primary recipient repeated as CC',
+      'Email: jmproductionselite@gmail.com\nCc: jmproductionselite@gmail.com',
+    ],
+    [
+      'hidden-copy header',
+      'Email: jmproductionselite@gmail.com\nBcc: other@example.co',
+    ],
+  ])(
+    'rejects %s instead of guessing recipient authority',
+    (_label, headers) => {
+      const candidate = CARD.replace(
+        'Email: jmproductionselite@gmail.com',
+        headers,
+      );
+      expect(parseApprovalCardRecipientHeaders(candidate)).toBeUndefined();
+      expect(buildApprovedHandoff(candidate)).toBeNull();
+    },
+  );
 
   it('tracks an exact follow-up card and marks the canonical handoff', () => {
     const followup = CARD.replace(

@@ -56,7 +56,7 @@ See `OUTBOUND-EMAIL.md` for detailed procedures.
 > **VERBATIM RULE:** Handoff Body content is pre-approved. Send it exactly as
 > written and never HTML-escape it. Omit `html`; the host applies the reviewed
 > Markdown conversion. The Gmail tool still requires body fields for backward
-> compatibility, but the host reloads recipient, subject, body, thread,
+> compatibility, but the host reloads recipient, approved visible CC, subject, body, thread,
 > rendering mode, Party hint, and email type from the exact approved card before
 > Gmail. Never rewrite.
 
@@ -67,6 +67,11 @@ customer fields with the immutable approved card, claims that action once, and
 posts the durable Gmail result into the original approval thread. On any
 refusal, stop; never retry with modified fields or claim that the email was
 sent.
+
+When an exact `Cc:` line is present in the handoff, pass it unchanged to the
+Gmail tool. Never add, remove, reorder, or rewrite a CC recipient. A Chief
+fallback is executable only when it contains `[APPROVED-REPLY]`; the host emits
+that marker for approval-bound rescues.
 
 ---
 

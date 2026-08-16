@@ -182,11 +182,12 @@ Resource rules:
   mismatch are held rather than rerouted to a sibling session. These results
   are ephemeral (`chat_cursor_recoverable=false`) because no Slack database row
   can reproduce them.
-- Human-approved Sales and Chief reply cards durably bind their Gmail Thread-ID
-  and intended recipient in `pending_sends`. Parseable approvals also bind a
-  random host action ID and the exact approved subject/body hash. That record
-  reissues Mailman's exact reply grant after restart, and the Gmail-derived
-  recipient plus immutable content must match before send.
+- Human-approved Sales and Chief reply cards durably bind their Gmail Thread-ID,
+  intended To recipient, and ordered visible CC recipients in `pending_sends`.
+  Parseable approvals also bind a random host action ID and the exact approved
+  subject/body hash. That record reissues Mailman's exact reply grant after
+  restart, and the Gmail-derived recipient plus immutable content and recipient
+  headers must match before send.
 - Other restart-stale context must be reissued by a host source. General durable
   work-item grants belong in the later ledger/capability-manifest slice.
 - Procurement receives no mailbox search, thread read, reply, or send
@@ -204,7 +205,9 @@ Gmail IPC outbound email is C3. At that final host boundary:
   a host-resolved Party from the recipient/thread is authoritative, and a
   pipeline Entry ID accidentally supplied there cannot override or block it;
 - the To address must be one of the Party's known addresses;
-- every CC must pass the same Party allowlist;
+- every CC must pass the same Party allowlist, except that an action-bound CC
+  may target an exact configured host mailbox only when the same ordered
+  address appears in the stored operator-approved card;
 - global `GMAIL_TEST_RECIPIENT` routing is refused before an action-bound
   customer send is claimed; use the dedicated host-only internal transport
   canary instead;
@@ -224,10 +227,11 @@ Gmail IPC outbound email is C3. At that final host boundary:
   request bytes may corroborate action selection but never become execution
   authority;
 - after one exact action is resolved, the model's Gmail call is execution
-  intent only. The host reloads recipient, subject, body, Gmail thread,
-  Action-ID, Party hint, email type, and rendering mode from the stored approved
-  Slack card, verifies that card against the durable hash/recipient, and
-  discards model-added CC or raw-HTML flags before authorization and claim;
+  intent only. The host reloads To, ordered visible CC, subject, body, Gmail
+  thread, Action-ID, Party hint, email type, and rendering mode from the stored
+  approved Slack card, verifies that card against the durable hash and stored
+  recipient headers, and discards model-added CC or raw-HTML flags before
+  authorization and claim;
 - scheduled Sales follow-up cards must expose the exact recipient, Gmail
   thread, subject, and body being approved; proposal follow-ups use the exact
   host-owned PostgreSQL draft and the same one-time action/receipt transitions;

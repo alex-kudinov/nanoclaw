@@ -27,7 +27,11 @@
 /** Cards carry the operator-facing summary; only the fenced draft is sendable. */
 const CARD_MARKER =
   /^\s*\[(?:SALES REVIEW|CLIENT SUPPORT REVIEW|SUPPORT-DRAFT|FOLLOW-UP\s+#\d+)\]/m;
-const EMAIL_LINE = /^\s*(?:Email|To)\s*:\s*([^\s<>,;]+@[^\s<>,;]+)\s*$/im;
+const PRIMARY_RECIPIENT_LINE = /^\s*(?:Email|To)\s*:\s*(.+?)\s*$/i;
+const CC_LINE = /^\s*Cc\s*:\s*(.+?)\s*$/i;
+const BCC_LINE = /^\s*Bcc\s*:/i;
+const BARE_EMAIL =
+  /^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+$/i;
 const LEAD_LINE = /\[(?:SALES REVIEW|FOLLOW-UP\s+#\d+)\]\s*Lead\s*#\s*(\d+)/i;
 const ACTION_LINE = /^\s*Action-ID\s*:\s*(\S+)\s*$/im;
 const THREAD_LINE = /^\s*Thread-ID\s*:\s*(\S+)\s*$/im;
@@ -53,16 +57,59 @@ export function approvalCardRejectedText(
   return `🚫 [APPROVAL CARD REJECTED] ${reason} ${authorName} must repost the full corrected card.`;
 }
 
-/** Parse only the exact, labelled recipient field from an approval-card header. */
-export function parseApprovalCardRecipient(text: string): string | undefined {
+export interface ApprovedRecipientHeaders {
+  recipient: string;
+  /** Normalized, ordered, comma-separated visible CC recipients. */
+  cc?: string;
+}
+
+function normalizeAddressList(value: string): string[] | undefined {
+  const recipients = value.split(',').map((item) => item.trim().toLowerCase());
+  if (
+    recipients.length === 0 ||
+    recipients.some((recipient) => !BARE_EMAIL.test(recipient)) ||
+    new Set(recipients).size !== recipients.length
+  ) {
+    return undefined;
+  }
+  return recipients;
+}
+
+/**
+ * Parse every operator-visible recipient header before the sendable draft.
+ * Multiple To/Email or Cc lines, duplicate addresses, Bcc, display names, and
+ * malformed lists are ambiguous and therefore make the card unapprovable.
+ */
+export function parseApprovalCardRecipientHeaders(
+  text: string,
+): ApprovedRecipientHeaders | undefined {
   const lines = text.split(/\r?\n/);
   const boundary = lines.findIndex(
     (line) => DRAFT_HEADING.test(line) || FENCE.test(line),
   );
-  const header = lines
-    .slice(0, boundary === -1 ? lines.length : boundary)
-    .join('\n');
-  return header.match(EMAIL_LINE)?.[1]?.toLowerCase();
+  const header = lines.slice(0, boundary === -1 ? lines.length : boundary);
+  if (header.some((line) => BCC_LINE.test(line))) return undefined;
+  const primaryValues = header
+    .map((line) => PRIMARY_RECIPIENT_LINE.exec(line)?.[1])
+    .filter((value): value is string => value !== undefined);
+  const ccValues = header
+    .map((line) => CC_LINE.exec(line)?.[1])
+    .filter((value): value is string => value !== undefined);
+  if (primaryValues.length !== 1 || ccValues.length > 1) return undefined;
+
+  const primary = normalizeAddressList(primaryValues[0]);
+  if (!primary || primary.length !== 1) return undefined;
+  const cc = ccValues.length === 1 ? normalizeAddressList(ccValues[0]) : [];
+  if (!cc || cc.includes(primary[0])) return undefined;
+  return {
+    recipient: primary[0],
+    ...(cc.length > 0 ? { cc: cc.join(', ') } : {}),
+  };
+}
+
+/** Parse only the exact, labelled primary recipient from an approval card. */
+export function parseApprovalCardRecipient(text: string): string | undefined {
+  return parseApprovalCardRecipientHeaders(text)?.recipient;
 }
 
 export interface ApprovedHandoff {
@@ -72,6 +119,7 @@ export interface ApprovedHandoff {
   recipient: string;
   subject: string;
   body: string;
+  cc?: string;
   emailType: 'initial' | 'follow-up';
   gmailThreadId?: string;
 }
@@ -106,14 +154,18 @@ export function parseMailmanHandoff(text: string): ParsedMailmanHandoff | null {
   if (!/^\s*\[HANDOFF:\s*[a-z0-9_-]+\s*(?:→|->)\s*mailman\]/im.test(text)) {
     return null;
   }
-  const recipient = text.match(EMAIL_LINE)?.[1]?.toLowerCase();
+  const headerText = text.split(/^\s*Original-Message\s*:\s*$/im)[0];
+  const recipientHeaders = parseApprovalCardRecipientHeaders(
+    `${headerText}\nDRAFT RESPONSE:\n---`,
+  );
   const parsed = parseSubjectAndBody(text);
-  if (!recipient || !parsed) return null;
+  if (!recipientHeaders || !parsed) return null;
   return {
     text,
-    recipient,
+    recipient: recipientHeaders.recipient,
     subject: parsed.subject,
     body: parsed.body,
+    cc: recipientHeaders.cc,
     emailType: FOLLOW_UP_LINE.test(text) ? 'follow-up' : 'initial',
     gmailThreadId: text.match(THREAD_LINE)?.[1],
     actionId: text.match(ACTION_LINE)?.[1],
@@ -137,8 +189,9 @@ export function buildApprovedHandoff(
   const cardMarker = cardText.match(CARD_MARKER)?.[0];
   if (!cardMarker) return null;
 
-  const recipient = parseApprovalCardRecipient(cardText);
-  if (!recipient) return null;
+  const recipientHeaders = parseApprovalCardRecipientHeaders(cardText);
+  if (!recipientHeaders) return null;
+  const { recipient, cc } = recipientHeaders;
 
   const lines = cardText.split('\n');
   const headingIdx = lines.findIndex((line) => DRAFT_HEADING.test(line));
@@ -189,7 +242,9 @@ export function buildApprovedHandoff(
 
   const text = [
     `[HANDOFF: ${sourceGroup}→mailman]`,
+    ...(sourceGroup === 'chief' ? ['[APPROVED-REPLY]'] : []),
     `To: ${recipient}`,
+    ...(cc ? [`Cc: ${cc}`] : []),
     `Subject: ${subject}`,
     ...(opts.actionId ? [`Action-ID: ${opts.actionId}`] : []),
     ...(leadRef ? [`Entry ID: ${leadRef}`] : []),
@@ -202,5 +257,5 @@ export function buildApprovedHandoff(
     body,
   ].join('\n');
 
-  return { text, recipient, subject, body, emailType, gmailThreadId };
+  return { text, recipient, subject, body, cc, emailType, gmailThreadId };
 }

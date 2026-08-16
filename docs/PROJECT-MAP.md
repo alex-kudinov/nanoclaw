@@ -443,8 +443,9 @@ Current local schema contains:
 - `jobs` and `job_run_logs` — host job definitions/history;
 - `email_tracking` — outbound email metadata;
 - `pending_sends` — durable approved-email actions: host action ID, approval
-  thread, normalized recipient, approved subject/body hash, current execution
-  state, Gmail receipt, and visible failure state;
+  thread, normalized To and ordered visible CC recipients, approved
+  subject/body hash, current execution state, Gmail receipt, and visible
+  failure state;
 - `email_send_events` — append-only stage history for each approved-email
   action (`approved` through Gmail-confirmed or visibly held/blocked);
 - `router_state` — durable router progress.
@@ -734,11 +735,13 @@ IDs such as `985` from blocking an exact approved action for Party `11152`.
 
 For an exact approved action, Mailman's Gmail payload is now execution intent,
 not content authority. The host reloads the approved Slack card by its durable
-`draft_ts`/channel binding, re-parses recipient, subject, and body, verifies the
-stored hash and recipient, and replaces model-supplied recipient, subject, body,
-thread, Action-ID, Party hint, email type, and rendering flags before the
-one-time claim. Model-added CC and raw-HTML flags are discarded because neither
-is represented in the approval record. Exact `[FOLLOW-UP #N]` cards now enter
+`draft_ts`/channel binding, re-parses To, ordered visible CC, subject, and body,
+verifies the stored hash and recipient headers, and replaces model-supplied
+recipient, CC, subject, body, thread, Action-ID, Party hint, email type, and
+rendering flags before the one-time claim. Model-added CC and raw-HTML flags are
+discarded; an approved CC is restored only from the action-bound card. A CC
+that is not on the customer Party may pass only when it exactly matches both
+the card and one configured host mailbox identity. Exact `[FOLLOW-UP #N]` cards now enter
 this same path and require `Email`, `Thread-ID`, fenced `Subject`, and fenced
 body fields. Host-generated proposal follow-ups use their PostgreSQL draft row
 as approval authority and the same one-time action/receipt ledger, preventing a
@@ -778,6 +781,12 @@ ambiguity, session-isolation, blocked-send, and completion regressions that
 must remain in `test:email-critical`; the replay test fails if either it or a
 linked regression leaves that release-blocking gate. This is local release
 assurance, not a customer-path canary or business-outcome observation.
+
+`NC-20260815-009` extends that corpus with the observed Chief-fallback marker
+failure and visible-CC loss. Host-generated Chief fallbacks now carry
+`[APPROVED-REPLY]`; approval parsing rejects ambiguous, duplicate, hidden-copy,
+or malformed recipient headers; and the durable action stores the ordered
+visible CC list for exact rehydration and final-boundary authorization.
 
 The separate `email:transport-canary` command sends fixed text to the monitored
 mailbox itself and retrieves the exact Gmail receipt without writing business

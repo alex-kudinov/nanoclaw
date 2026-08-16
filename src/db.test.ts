@@ -135,6 +135,7 @@ describe('pending send approvals', () => {
       groupFolder: 'sales',
       chatJid: 'slack:sales',
       recipient: 'lead@example.com',
+      approvedCc: 'info@tandemcoach.co',
       approvedSubject: 'Subject',
       approvedContentSha256: approvedHash,
       approvedAt: '2026-08-02T01:00:00.000Z',
@@ -144,6 +145,7 @@ describe('pending send approvals', () => {
       actionId,
       state: 'approved',
       approvedContentSha256: approvedHash,
+      approvedCc: 'info@tandemcoach.co',
     });
     expect(listEmailSendEvents(actionId).map((event) => event.stage)).toEqual([
       'approved',

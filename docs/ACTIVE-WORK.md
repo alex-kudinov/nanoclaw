@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260815-009` | Make the normal approved-email fallback executable and bind every operator-visible recipient header into the immutable action | Codex | `codex/nc-20260815-009-email-fallback-headers` @ `334e15b` (runtime base/deployed predecessor `cfcfaae`) | `ready_for_review` | C5 | Host fallback marker contract; approval-card To/CC parsing and immutable hashing; recipient/Party authorization; watchdog, Gmail execution, replay corpus, Mailman procedure, security/project/release/Company OS continuity. No customer email or production data write during implementation. | Commit the green Node-22 slice, build and independently verify the clean immutable artifact, drain the live queue, activate with rollback capture, and reserve the next natural approval as outcome proof. | 2026-08-16T04:07Z |
 | `NC-20260815-008` | Prove approved Sales-email delivery without customer traffic or manual operator rescue by reconciling the live lineage and gating releases on deterministic historical replay | Codex | `codex/nc-20260815-008-email-replay-gate` @ deployed `cfcfaae` from verified production `84607fd` | `deployed_unverified` | C5 | The deterministic replay gate is deployed and live-verified. The blocked customer action was recovered once with an exact card/hash/party/zero-prior-send gate and a Gmail receipt, but the natural path failed before execution because the watchdog fallback omitted Mailman's required marker; the normal immutable replay also strips an operator-approved CC. | Open a separate runtime-repair task for the fallback marker and approval-bound CC/header semantics, add both incidents to the release-blocking corpus, and deploy only after the same full gate. Prove the next naturally approved email end to end without manual recovery before calling the business path validated. | 2026-08-16T03:14Z |
 | `NC-20260812-001` | Give Chaos durable, account-aware purchase and refund events from both Stripe accounts without duplicating fulfillment or Encharge's native Stripe automation | Codex + Claude Code owner/reviewer | `codex/chaos-lifecycle-release` @ `b4d85b2` (exact live lineage) | `ready_for_deploy` | C5 | Existing n8n Stripe ingress, canonicalized NanoClaw dual-account payment/refund processing, PII-free lifecycle outbox/reaper with chief dead-letter alerting, Chaos authenticated lifecycle ingestion, aggregate 7/30/90 reconciliation, focused tests, and release documentation. Excludes customer email/contact creation, customer messaging, and payment/refund action. | Apply migration 117, update the live n8n workflow from a private backup, configure default-off secrets/coverage start, build and deploy one immutable artifact, then prove aggregate receipts before enabling the producer. Encharge and Heartbeat producers remain separate subsequent slices. | 2026-08-13T03:05Z |
 | `NC-20260811-002` | Restore daily Sales lead follow-ups by keeping exact scheduled-task Gmail and approval-card continuations alive with host-validated completion  | Codex                              | `codex/nc-20260811-002-sales-followup-continuation` @ `a33bed1` | `in_progress`         | C5    | Exact Gmail delivery, runner drain-before-close, and final-state completion validation are live; the bounded recovery posted all five cards without sending email, then exposed that rejected cards return asynchronously while accepted cards receive no exact-container acknowledgement, leaving the task unable to emit its receipt | Return `[approval_card ACCEPTED]` to the exact originating container after Slack persists the reviewed card, validate focused/broad/release gates, deploy one superseding immutable release with the reviewed Sales workflow, and prove the callback/receipt contract without duplicating Lead #472 or sending customer email                                              | 2026-08-11T22:04Z |
@@ -73,6 +74,49 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260815-009
+
+- Trigger: after the NC-20260815-008 replay-gate deployment, the next real
+  approval exposed two normal-path defects. The watchdog fallback routed the
+  exact action without Mailman's required `[APPROVED-REPLY]` marker, and the
+  host-owned rehydration discarded a visible operator-approved CC because the
+  immutable action records only one recipient.
+- Outcome: define one host-owned approved-email envelope whose executable
+  marker and every visible recipient header are parsed from approval authority,
+  hashed, stored, reloaded, authorized, and rendered consistently. The model
+  may request execution but cannot add, remove, or rewrite recipients.
+- Branch/base: isolated worktree
+  `/private/tmp/nanoclaw-nc-20260815-009` on
+  `codex/nc-20260815-009-email-fallback-headers` at documentation head
+  `334e15b`; the implemented/runtime predecessor and deployed release are
+  `cfcfaae`. The dirty operational checkout is not an implementation input.
+- Overlap: `NC-20260811-002` owns scheduled-task continuation and exact
+  approval-card acknowledgement, but this task does not change those mechanics.
+  It may touch the shared release-blocking email test registry only to add the
+  two incident regressions. `NC-20260815-008` remains the replay-gate and
+  recovery record and is not reopened.
+- Class and side effects: C5 because the change protects a customer-email
+  identity and authorization boundary. Local implementation and tests are
+  non-sending. The owner authorized deployment, but queue drain, immutable
+  artifact verification, exact activation, rollback capture, and live health
+  are separate gates. No synthetic customer email is authorized or needed.
+- Required evidence: focused red/green tests for marker omission and CC drift;
+  rejection coverage for added, removed, reordered, duplicated, malformed, and
+  unauthorized headers; Node 22 typecheck; email replay and critical gates;
+  independent runner tests; full relevant suite; continuity check; clean
+  immutable build; target artifact verification; activation health; and the
+  next natural approval's normal-path receipt before outcome validation.
+- Local validation at 2026-08-16T04:07Z under exact Node 22.23.2: focused
+  coverage passes 7 files / 257 tests; replay passes 13/13; email-critical
+  passes 24 files / 628 tests including the raw Gmail header builder; the
+  independent runner builds and passes 6 files / 36 tests; typecheck,
+  formatting, documentation continuity, and diff checks pass. The unrestricted
+  root suite passes 2,333/2,334 tests; the sole CNPC wrapper assertion fails
+  identically on unchanged base `334e15b` and no CNPC file is in this task.
+- Rollback: restore the activation-captured launchd plist and verify the prior
+  `cfcfaae` release. Any additive local schema change must remain backward
+  compatible; uncertain or executing actions are never automatically retried.
 
 ### NC-20260815-008
 

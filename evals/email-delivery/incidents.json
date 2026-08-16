@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "fixturePolicy": "Synthetic identities and content only. No Gmail, Slack, or production database access.",
   "replayCases": [
     {
@@ -148,6 +148,91 @@
           "markdown"
         ],
         "absentFields": ["to", "cc", "html", "leadId"]
+      }
+    },
+    {
+      "id": "chief-fallback-carries-mailman-execution-marker",
+      "historicalRefs": [
+        "The 2026-08-15 watchdog fallback omitted Mailman's required approved-reply marker and was refused before Gmail"
+      ],
+      "mode": "approval_card_recovery",
+      "card": "[SUPPORT-DRAFT]\nCategory: support\nTo: case7009@example.test\nThread-ID: gmail-fixture-7009\n\nDRAFT RESPONSE:\n---\nSubject: Re: Exact approved support reply\n\nExact approved support body.\n---",
+      "options": {
+        "actionId": "f725aa14-6f94-4778-858d-6d764b535716",
+        "sourceGroup": "chief",
+        "originalMessage": "Synthetic support request for replay testing."
+      },
+      "expected": {
+        "status": "ready",
+        "recipient": "case7009@example.test",
+        "subject": "Re: Exact approved support reply",
+        "body": "Exact approved support body.",
+        "emailType": "initial",
+        "gmailThreadId": "gmail-fixture-7009",
+        "handoffContains": [
+          "[HANDOFF: chief→mailman]\n[APPROVED-REPLY]",
+          "Action-ID: f725aa14-6f94-4778-858d-6d764b535716",
+          "Thread-ID: gmail-fixture-7009"
+        ]
+      }
+    },
+    {
+      "id": "approved-visible-cc-replaces-model-recipient-drift",
+      "historicalRefs": [
+        "The 2026-08-15 normal immutable replay stripped an operator-approved visible CC"
+      ],
+      "mode": "host_execution",
+      "card": "[SALES REVIEW] Lead #7010\nCategory: other\nEmail: case7010@example.test\nCc: archive7010@example.test, teammate7010@example.test\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Exact CC-bound subject\n\nExact CC-bound body.\n---",
+      "approvedContent": {
+        "subject": "Exact CC-bound subject",
+        "body": "Exact CC-bound body."
+      },
+      "action": {
+        "actionId": "65dd4d4d-976f-42e5-a6ac-3bc6bd6809cb",
+        "draftTs": "fixture-card-7010",
+        "groupFolder": "sales",
+        "chatJid": "slack:FIXTURE",
+        "threadTs": "fixture-approval-7010",
+        "recipient": "case7010@example.test",
+        "approvedCc": "archive7010@example.test, teammate7010@example.test",
+        "approvedSubject": "Exact CC-bound subject",
+        "approvedAt": "2026-08-16T03:10:00.000Z",
+        "state": "mailman_started"
+      },
+      "request": {
+        "type": "gmail_send",
+        "groupFolder": "mailman",
+        "source_container": "nanoclaw-mailman-fixture",
+        "timestamp": "2026-08-16T03:10:05.000Z",
+        "to": "wrong7010@example.test",
+        "subject": "Changed subject",
+        "body": "Changed body.",
+        "cc": "attacker7010@example.test"
+      },
+      "expected": {
+        "status": "corrected",
+        "payload": {
+          "actionId": "65dd4d4d-976f-42e5-a6ac-3bc6bd6809cb",
+          "to": "case7010@example.test",
+          "subject": "Exact CC-bound subject",
+          "body": "Exact CC-bound body.",
+          "cc": "archive7010@example.test, teammate7010@example.test",
+          "approvedRecipient": "case7010@example.test",
+          "approvedCc": "archive7010@example.test, teammate7010@example.test",
+          "emailType": "initial",
+          "markdown": true
+        },
+        "correctedFields": [
+          "action_id",
+          "body",
+          "recipient",
+          "subject",
+          "cc",
+          "approved_cc",
+          "email_type",
+          "markdown"
+        ],
+        "absentFields": ["html", "leadId"]
       }
     },
     {
@@ -351,6 +436,21 @@
       "id": "scheduled-batch-requires-card-bound-terminal-receipt",
       "testFile": "src/sales-followup-task-completion.test.ts",
       "marker": "accepts a count-consistent receipt bound to every visible artifact"
+    },
+    {
+      "id": "configured-internal-cc-requires-card-binding",
+      "testFile": "src/gmail-ipc-handlers.test.ts",
+      "marker": "allows a configured internal CC only when the exact action-bound card approved it"
+    },
+    {
+      "id": "chief-fallback-marker-contract",
+      "testFile": "src/send-watchdog.test.ts",
+      "marker": "adds the executable approval marker to a Chief fallback"
+    },
+    {
+      "id": "approved-visible-cc-suppresses-duplicate-default-bcc",
+      "testFile": "src/gmail-api.test.ts",
+      "marker": "keeps tandemcoach.co Cc when body has no tracking pixel"
     }
   ]
 }

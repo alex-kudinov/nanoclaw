@@ -15,10 +15,10 @@ logging. Mailman parses the handoff and invokes one typed Gmail tool.
 2. Copy `Action-ID` into the Gmail tool's `action_id` argument whenever it is
    present. It is issued by the host and binds this request to one approval.
    Never invent, edit, reuse, or search for an Action-ID.
-3. Use the exact `To`, `Thread-ID`, `Party ID`, `Entry ID`, and flags supplied
-   by the handoff. Never omit or alter a field to work around a host refusal.
-   Do not add CC or set `html`; CC is not part of the approved card and the host
-   owns Markdown-to-HTML conversion.
+3. Use the exact `To`, optional `Cc`, `Thread-ID`, `Party ID`, `Entry ID`, and
+   flags supplied by the handoff. Never omit or alter a field to work around a
+   host refusal. Pass an exact `Cc` through the Gmail tool when present; never
+   add one. Do not set `html`; the host owns Markdown-to-HTML conversion.
 4. Call exactly one Gmail send tool. A tool response saying “queued” is not a
    delivery receipt. The host posts the final Gmail-confirmed result into the
    originating approval thread.
@@ -37,6 +37,7 @@ logging. Mailman parses the handoff and invokes one typed Gmail tool.
 ```text
 [HANDOFF: sales→mailman]
 To: recipient@example.com
+Cc: optional-visible-copy@example.com
 Subject: Approved subject
 Action-ID: 00000000-0000-4000-8000-000000000000
 Entry ID: 123
@@ -51,7 +52,7 @@ Body:
 approved body, verbatim
 ```
 
-`Thread-ID`, `Reply`, and `Follow-Up` are optional. Placeholder values such as
+`Cc`, `Thread-ID`, `Reply`, and `Follow-Up` are optional. Placeholder values such as
 `(none)` and `N/A` are invalid; omit an unavailable optional line entirely.
 `lead_id` in the Gmail tools means the canonical `Party ID`, never `Entry ID`.
 If the handoff has no `Party ID`, omit `lead_id`; the host resolves the Party
@@ -61,19 +62,20 @@ from the exact recipient/thread. Never substitute `Entry ID` into `lead_id`.
 
 - Reply or follow-up with a real `Thread-ID`: call `gmail_reply` with
   `thread_id`, the verbatim `body`, `action_id`, the optional
-  canonical-Party `lead_id`, and `email_type` (`reply` or `follow-up`). Gmail
-  derives the recipient and subject from the assigned thread.
+  canonical-Party `lead_id`, the exact optional `cc`, and `email_type` (`reply`
+  or `follow-up`). Gmail derives the recipient and subject from the assigned
+  thread.
 - First response with a real `Thread-ID`: call `gmail_send` with the verbatim
-  `to`, `subject`, and `body`, plus `thread_id`, `action_id`,
+  `to`, `subject`, and `body`, plus the exact optional `cc`, `thread_id`, `action_id`,
   the optional canonical-Party `lead_id`, and `email_type: "initial"`.
 - Send without a thread: call `gmail_send` with the verbatim `to`, `subject`,
-  and `body`, plus `action_id`, the optional canonical-Party
+  and `body`, plus the exact optional `cc`, `action_id`, the optional canonical-Party
   `lead_id`, and the correct `email_type`.
 
-The host ignores model drift in recipient, subject, body, thread, Action-ID,
-Party hint, email type, CC, and rendering mode once it resolves one exact action. It reloads the
+The host ignores model drift in recipient, CC, subject, body, thread, Action-ID,
+Party hint, email type, and rendering mode once it resolves one exact action. It reloads the
 customer-facing values from the stored approval card, verifies that card against
-the durable subject/body hash and recipient, discards unapproved CC/HTML flags,
+the durable subject/body hash and stored To/CC headers, discards unapproved CC/HTML flags,
 and only then applies recipient/Party, Gmail-resource, content-policy, and
 one-time execution checks. A repeated confirmed action returns its existing
 receipt without another Gmail send. A process interruption after execution
