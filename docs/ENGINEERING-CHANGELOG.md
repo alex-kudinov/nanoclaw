@@ -13,8 +13,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-08-16T04:48Z
 - Owner/client: Codex
 - State: ready_for_review
-- Commit/PR: local branch `codex/nc-20260815-010-company-os-ledger`, based on
-  recovered roadmap commit `38810d3`; no PR
+- Commit/PR: implementation commit
+  `6e281f0c7627bbe5c8579befa649057732ac55b6` on local branch
+  `codex/nc-20260815-010-company-os-ledger`, based on recovered roadmap commit
+  `38810d3`; no PR
 - Change class: C2 — local, additive, default-off persistence/domain work; no
   external communication or live database write
 - Intended outcome: add the focused design/ADR, unapplied migration 118,
@@ -55,9 +57,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Deployment/migration: not applied; a later activation task must reconcile
   the live ordered-migration state and run its own preflight, backup, apply,
   validation, shadow projection, and rollback gates.
-- Documentation: active work and this changelog register the task before the
-  first implementation edit; design, data model, project map, roadmap, and
-  migration guide will be updated with the implementation.
+- Documentation: active work and this changelog registered the task before the
+  first implementation edit; the design, data model, project map, roadmap, and
+  migration guide are reconciled with the committed implementation.
 
 ### NC-20260815-007 — Reactivate the Company OS roadmap from the current baseline
 
