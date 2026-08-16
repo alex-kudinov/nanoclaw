@@ -12,13 +12,16 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T01:13Z
 - Owner/client: Codex
-- State: ready_for_review; committed locally but not pushed or merged.
+- State: deployed_unverified; exact replay gate is live, while natural-path
+  email outcome validation remains open.
 - Commit/PR: implementation commit
-  `253996b43d7ffb49d95102d2f8fb906058f885fd` on
+  `253996b43d7ffb49d95102d2f8fb906058f885fd` and verified-artifact handoff
+  commit `cfcfaae03b6b51ae13a481d32ea1476d3dc9345e` on
   `codex/nc-20260815-008-email-replay-gate`, based on verified production
   commit `84607fd2ac4bcc0dd87fdc2d80d79635a69f0a6d`; no PR.
 - Change class: C5 because the assurance protects the customer-email action
-  boundary; authority and effects remained local and non-sending.
+  boundary. The initial implementation was local and non-sending; later owner
+  authorization covered one exact customer-email recovery and activation.
 - Root cause: the live lineage already reloads exact operator-approved bytes
   host-side, but the incidents that led to roughly two weeks of manual email
   rescue were distributed across comments and separate tests. Nothing made the
@@ -50,25 +53,63 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `20a776b78413a7cb76a90e954ab2eaf1a98f7d48f3359d606e69561711103d30`.
   Fresh-directory bundled verification with `--runtime` passed under Node
   22.23.2.
-- Deployment/migration: none. Read-only `/health` verified production commit
+- Initial deployment state: read-only `/health` verified production commit
   `84607fd`, matching code root, Node 22.23.2, connected Gmail/Slack, no active
-  container, and an empty queue before the branch was created. No Gmail,
-  Slack, production database, migration, service, schedule, configuration, or
-  external-message write occurred.
-- Runtime decision: the compiled artifact hash is identical to live `84607fd`
-  because this slice changes tests, the release gate, and documentation only.
-  No activation is needed; merging the commit makes the new gate effective for
-  future releases without a provenance-only production restart.
-- Rollback/recovery: discard this isolated branch/worktree; no production or
-  data rollback applies.
+  container, and an empty queue before the branch was created.
+- Runtime note: the compiled artifact hash is identical to prior live
+  `84607fd` because this slice changes tests, the release gate, and
+  documentation only. The owner nevertheless explicitly requested deployment;
+  activation changes provenance and future release enforcement, not the email
+  execution code.
+- Rollback/recovery: restore the activation-captured launchd plist for
+  `84607fd`, then reverify prior-release health; the additive test/docs commit
+  has no data migration to undo. Preserve the contamination archive and exact
+  Gmail receipt; never roll back or resend the confirmed customer action.
 - Documentation: the Company OS records this as the first deterministic
   `EVAL-001` subset, while keeping prompt-injection, blinded model-quality, and
   natural-path outcome evidence open. Project and release contracts distinguish
   replay proof from transport canary and customer outcome.
-- Follow-up: review, push, and merge the two local task commits. No deployment
-  is needed for this test/docs-only slice. A natural approved customer action
-  without manual repair remains separate outcome evidence for the existing
-  live email path.
+- Follow-up: review, push, and merge the local task commits. Repair the newly
+  observed fallback-marker and approval-bound CC/header defects in a separate
+  runtime slice, then require a later natural approved customer action without
+  manual repair as outcome evidence.
+- Deployment addendum (2026-08-16T02:45Z): after explicit owner authorization,
+  exact head `cfcfaae03b6b51ae13a481d32ea1476d3dc9345e` rebuilt with the 571-test
+  email gate and 36-test runner gate passing. Archive SHA-256
+  `d6a14dc90257e2948d9b7238a54c5cb79d1c98b06c30dc080dfc6c3266cf71b5`
+  matched after transfer; the immutable Mini release directory passed bundled
+  runtime verification. At this checkpoint activation had not yet occurred.
+- Recovery evidence: the activation verifier caught 18 mutated tracked
+  knowledge files and 92 extra knowledge/backup files inside live release
+  `84607fd`. All were preserved under the release-contamination archive; the
+  manifest-attested copies were restored, and `84607fd` now verifies again.
+  This demonstrates the unresolved `NC-20260815-006` state-root separation
+  defect; operational knowledge bytes remain preserved in the writable state
+  checkout and contamination archive.
+- Incident root cause and recovery (2026-08-16T03:10Z): production logs showed
+  the watchdog-generated Chief fallback omitted Mailman's required
+  `[APPROVED-REPLY]` marker, so Mailman explicitly refused to call Gmail. The
+  stored approved card also included a CC that the normal immutable replay
+  deletes and the customer-Party CC guard cannot authorize. After explicit
+  owner authorization, a bounded one-time recovery revalidated the exact
+  action/card/hash, canonical Party, content policy, disabled test routing, and
+  zero prior Sent candidates before its one-time execution claim. Gmail receipt
+  `1a0088cd49ec9664` independently verified the approved To, visible CC,
+  subject, and `SENT` label. A content-free full-message verification also
+  matched the normalized 570-byte Sent body to the approved-card/ledger hash.
+  The durable ledger ended `confirmed`; the business interaction and
+  original-thread Slack receipt were also written. This was a manual recovery
+  and does not validate the unchanged natural runtime path.
+- Activation/live verification (2026-08-16T03:12Z): the post-recovery drain had
+  no active approved-send states, containers, or queued groups. Release
+  `cfcfaae03b6b51ae13a481d32ea1476d3dc9345e` activated with only the three
+  planned launchd path changes. New PID 18232 is the sole listener on port 8088;
+  health reports the exact commit, source tree
+  `7cf301987bb4df9c2dd597241ff8e941fbad65d6`, artifact
+  `f706b9eb47794f38445234d17bd02a98d8dceca34242c2a32dd3018da3b8a670`,
+  matching code root, Node 22.23.2, connected Gmail/Slack, and no active/queued
+  work. The installed 620-file release independently verifies. Rollback remains
+  the launchd plist captured by the activation tool.
 
 ### NC-20260812-001 — Account-aware Stripe lifecycle evidence for Chaos
 

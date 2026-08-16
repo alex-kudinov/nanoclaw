@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260815-008` | Prove approved Sales-email delivery without customer traffic or manual operator rescue by reconciling the live lineage and gating releases on deterministic historical replay | Codex | `codex/nc-20260815-008-email-replay-gate` @ implementation `253996b` from verified production `84607fd` | `ready_for_review` | C5 | Committed synthetic incident corpus; production parser/host-rehydration replay; 13 linked stateful regressions; dedicated command and mandatory email-critical/release gate; independently verified artifact; authoritative docs. No Gmail/customer send, production write/migration, deployment, restart, schedule/config change, Slack post, or push. | Review, push, and merge the two local task commits so future release builds inherit the gate. No runtime deployment is needed for this test/docs-only slice; separately observe a natural approved customer path before claiming email reliability. | 2026-08-16T02:31Z |
+| `NC-20260815-008` | Prove approved Sales-email delivery without customer traffic or manual operator rescue by reconciling the live lineage and gating releases on deterministic historical replay | Codex | `codex/nc-20260815-008-email-replay-gate` @ deployed `cfcfaae` from verified production `84607fd` | `deployed_unverified` | C5 | The deterministic replay gate is deployed and live-verified. The blocked customer action was recovered once with an exact card/hash/party/zero-prior-send gate and a Gmail receipt, but the natural path failed before execution because the watchdog fallback omitted Mailman's required marker; the normal immutable replay also strips an operator-approved CC. | Open a separate runtime-repair task for the fallback marker and approval-bound CC/header semantics, add both incidents to the release-blocking corpus, and deploy only after the same full gate. Prove the next naturally approved email end to end without manual recovery before calling the business path validated. | 2026-08-16T03:14Z |
 | `NC-20260812-001` | Give Chaos durable, account-aware purchase and refund events from both Stripe accounts without duplicating fulfillment or Encharge's native Stripe automation | Codex + Claude Code owner/reviewer | `codex/chaos-lifecycle-release` @ `b4d85b2` (exact live lineage) | `ready_for_deploy` | C5 | Existing n8n Stripe ingress, canonicalized NanoClaw dual-account payment/refund processing, PII-free lifecycle outbox/reaper with chief dead-letter alerting, Chaos authenticated lifecycle ingestion, aggregate 7/30/90 reconciliation, focused tests, and release documentation. Excludes customer email/contact creation, customer messaging, and payment/refund action. | Apply migration 117, update the live n8n workflow from a private backup, configure default-off secrets/coverage start, build and deploy one immutable artifact, then prove aggregate receipts before enabling the producer. Encharge and Heartbeat producers remain separate subsequent slices. | 2026-08-13T03:05Z |
 | `NC-20260811-002` | Restore daily Sales lead follow-ups by keeping exact scheduled-task Gmail and approval-card continuations alive with host-validated completion  | Codex                              | `codex/nc-20260811-002-sales-followup-continuation` @ `a33bed1` | `in_progress`         | C5    | Exact Gmail delivery, runner drain-before-close, and final-state completion validation are live; the bounded recovery posted all five cards without sending email, then exposed that rejected cards return asynchronously while accepted cards receive no exact-container acknowledgement, leaving the task unable to emit its receipt | Return `[approval_card ACCEPTED]` to the exact originating container after Slack persists the reviewed card, validate focused/broad/release gates, deploy one superseding immutable release with the reviewed Sales workflow, and prove the callback/receipt contract without duplicating Lead #472 or sending customer email                                              | 2026-08-11T22:04Z |
 | `NC-20260811-001` | Allow Sales to use an exact human-authorized commercial term in the same work thread without weakening the global invented-discount guard       | Codex                              | `codex/nc-20260811-001-human-commercial-terms` @ `194f848`   | `ready_for_deploy`    | C5    | Exact-thread human authorization for numeric commercial terms; approval-card and final Gmail guard parity; reply-scoped Gmail participant alias proof; focused adversarial tests; immutable release and live outcome verification                                                                                                             | Commit the reviewed implementation, build and independently verify one immutable release, deploy only after active work drains, then prove the natural Tom approval-to-Gmail path                                                                                                                                                         | 2026-08-11T20:12Z |
@@ -137,14 +137,85 @@ outside the current client conversation.
   `20a776b78413a7cb76a90e954ab2eaf1a98f7d48f3359d606e69561711103d30`.
   A fresh-directory `verify-release --runtime` independently passed under Node
   22.23.2.
-- State: `ready_for_review`, committed locally but not pushed or merged. The
+- Pre-deployment state: `ready_for_review`, committed locally but not pushed or
+  merged. The
   compiled runtime hash is intentionally identical to live `84607fd` because
   this slice changes tests, the release gate, and documentation rather than
-  production execution code; activating it would add risk without changing
-  runtime behavior. No Gmail, Slack, production database, deployment, restart,
-  schedule, or configuration mutation occurred.
-- Rollback: discard only this isolated branch/worktree and its continuity
-  entries. No production or data recovery applies.
+  production execution code. At this checkpoint no Gmail, Slack, production
+  database, deployment, restart, schedule, or configuration mutation had
+  occurred.
+- Rollback: after activation, restore the activation-captured launchd plist for
+  `84607fd`, then reverify prior-release health. Preserve the contamination
+  archive and exact Gmail receipt; never roll back or resend the confirmed
+  customer action.
+- Deployment attempt at 2026-08-16T02:45Z: the owner explicitly requested
+  deployment. Exact head `cfcfaae03b6b51ae13a481d32ea1476d3dc9345e`
+  rebuilt under Node 22.23.2; email-critical 571/571 and runner 36/36 passed.
+  Archive SHA-256
+  `d6a14dc90257e2948d9b7238a54c5cb79d1c98b06c30dc080dfc6c3266cf71b5`
+  matched after transfer. The target was installed at
+  `~/.local/share/nanoclaw-releases/cfcfaae03b6b51ae13a481d32ea1476d3dc9345e`
+  on the Mini and independently verified. The activation dry run reports only
+  the three allowed plist changes and passes.
+- Live-release recovery: the first dry run correctly rejected current release
+  `84607fd` after runtime writes changed 18 tracked knowledge files and added
+  92 unmanifested knowledge/backup files. Every changed/extra byte was moved
+  or copied recoverably under
+  `~/.local/share/nanoclaw-release-contamination/84607fd2ac4bcc0dd87fdc2d80d79635a69f0a6d/`;
+  the manifest-attested files were restored from the verified target, and the
+  current release then passed bundled runtime verification. The matching
+  writable operational knowledge remains in the state checkout. This is live
+  evidence for the still-open `NC-20260815-006` state-root separation defect.
+- Activation hold at 2026-08-16T02:45Z: aggregate preflight found 59 confirmed,
+  6 blocked, and 1
+  `attention_required` email action. Action
+  `30a42d6d-437f-45b4-a089-e931ae308a86` progressed through approved,
+  handoff-routed, and Mailman-started states but never entered execution; it has
+  `send_not_confirmed`, no Gmail receipt, and an operator alert. A bounded
+  read-only Gmail recipient/subject/thread/time-window check found zero
+  candidate or exact sent messages. No customer content was printed and no
+  action state changed. The documented drain gate prohibited activation until
+  the owner separately chose re-execution or block/cancel for this approved
+  customer action.
+- At the deployment hold, production remained healthy on verified `84607fd`,
+  with Slack and Gmail connected, zero active containers, an empty runtime
+  queue, and one launchd-owned listener. No restart or activation had yet
+  occurred.
+- Approved-action recovery (owner authorized, 2026-08-16T03:10Z): production
+  logs established why the email was not sent. The Chief watchdog generated a
+  fallback after approval, but that handoff omitted Mailman's required
+  `[APPROVED-REPLY]` marker. Mailman explicitly refused it, never called Gmail,
+  and the watchdog later moved the action to `attention_required`. A second
+  contract gap was found before recovery: the exact card included a visible CC,
+  while `buildHostApprovedEmailExecution` deletes `cc` and the ordinary Party
+  guard does not treat the team mailbox as a customer Party address.
+- The owner then explicitly authorized the exact stored card. A bounded
+  recovery revalidated Action-ID `30a42d6d-437f-45b4-a089-e931ae308a86`, exact
+  recipient/subject/body hash, card CC, canonical Party 10136, content policy,
+  disabled test routing, and zero prior Sent candidates before atomically
+  claiming execution. Gmail accepted exactly one message with receipt
+  `1a0088cd49ec9664`; an independent metadata read confirmed `SENT` plus the
+  approved To, visible CC, and subject. A full-message re-read then matched the
+  570-byte normalized Sent body to the approved-card/ledger hash without
+  printing its content. The ledger appended `executing` and `confirmed`, the
+  outbound interaction was recorded, and mechanical receipt
+  `1786850009.589809` was posted to the original Slack approval thread. This is
+  successful manual recovery, not proof that the natural path is fixed.
+- Activation (2026-08-16T03:12Z): after the action was confirmed, the aggregate
+  drain contained no `approved`, `handoff_routed`, `mailman_started`,
+  `executing`, or `attention_required` actions; health showed zero active
+  containers and an empty queue. The host activated exact release
+  `cfcfaae03b6b51ae13a481d32ea1476d3dc9345e`, changing only the expected three
+  launchd paths. Rollback plist:
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-84607fd2ac4b-2026-08-16T03-12-03-722Z`.
+  New PID 18232 owns the sole port-8088 listener; `/health` reports the exact
+  commit/source tree/artifact, matching code root, Node 22.23.2, connected
+  Gmail/Slack, and zero active/queued work. The installed 620-file bundle also
+  passes independent verification.
+- State: `deployed_unverified`. The release-blocking replay is live, but its
+  compiled runtime is intentionally unchanged from `84607fd`; it does not fix
+  the two newly observed handoff/header defects. The next slice must repair
+  both and use a later, independently approved natural email as outcome proof.
 
 ### NC-20260812-001
 

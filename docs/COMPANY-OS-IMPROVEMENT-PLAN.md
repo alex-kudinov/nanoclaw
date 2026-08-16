@@ -752,6 +752,18 @@ schema/restart/replay/ambiguity/session/receipt regressions into the release
 gate. This is the first slice of `EVAL-001`, not completion of the broader
 Mailman/Sales model-quality, injection, or business-outcome harness.
 
+Deployment checkpoint (2026-08-16): exact release `cfcfaae` is active and
+live-verified after the drain gate was cleared through an explicitly authorized,
+receipt-bound recovery of the blocked customer action. That recovery exposed
+two natural-path defects: the watchdog fallback omitted Mailman's required
+`[APPROVED-REPLY]` marker, and the immutable host replay does not bind/preserve
+the card's visible CC. The recovery produced one Gmail receipt with the approved
+headers, but it was manual and therefore is not natural-path outcome proof. A
+separate runtime slice must encode and fix both defects before the next approved
+email can close that gate. The same preflight also exposed live-release
+knowledge contamination, preserved it recoverably, and restored the verified
+artifact; this remains direct evidence for the R1 state-root separation work.
+
 - golden successful cases;
 - ambiguous cases requiring escalation;
 - known incident regressions;
