@@ -1807,6 +1807,117 @@ export function listEmailSendEvents(actionId: string): Array<{
   }));
 }
 
+/**
+ * Bounded, metadata-only source scan for the Company OS shadow projector.
+ * Customer fields remain in SQLite action authority and are never selected by
+ * the projector unless an existing host verifier needs them independently.
+ */
+export type EmailSendProjectionRow = Pick<
+  EmailSendActionRow,
+  | 'actionId'
+  | 'draftTs'
+  | 'groupFolder'
+  | 'chatJid'
+  | 'threadTs'
+  | 'leadRef'
+  | 'approvedContentSha256'
+  | 'approvedAt'
+  | 'state'
+  | 'gmailMessageId'
+  | 'gmailResultThreadId'
+>;
+
+export function listEmailSendActionsForProjection(
+  sinceIso: string,
+  limit: number,
+): EmailSendProjectionRow[] {
+  const boundedLimit = Math.max(1, Math.min(250, Math.trunc(limit)));
+  const rows = db
+    .prepare(
+      `SELECT action_id, draft_ts, group_folder, chat_jid, thread_ts,
+              lead_ref, approved_content_sha256, approved_at, state,
+              gmail_message_id, gmail_result_thread_id
+         FROM pending_sends
+        WHERE action_id IS NOT NULL
+          AND group_folder = 'sales'
+          AND approved_at >= ?
+        ORDER BY approved_at, rowid
+        LIMIT ?`,
+    )
+    .all(sinceIso, boundedLimit) as Array<{
+    action_id: string;
+    draft_ts: string;
+    group_folder: string;
+    chat_jid: string;
+    thread_ts: string | null;
+    lead_ref: string | null;
+    approved_content_sha256: string | null;
+    approved_at: string;
+    state: EmailActionState;
+    gmail_message_id: string | null;
+    gmail_result_thread_id: string | null;
+  }>;
+  return rows.map((row) => ({
+    actionId: row.action_id,
+    draftTs: row.draft_ts,
+    groupFolder: row.group_folder,
+    chatJid: row.chat_jid,
+    threadTs: row.thread_ts ?? undefined,
+    leadRef: row.lead_ref ?? undefined,
+    approvedContentSha256: row.approved_content_sha256 ?? undefined,
+    approvedAt: row.approved_at,
+    state: row.state,
+    gmailMessageId: row.gmail_message_id ?? undefined,
+    gmailResultThreadId: row.gmail_result_thread_id ?? undefined,
+  }));
+}
+
+export interface EmailActionOutcomeReceipt {
+  messageId: string;
+  occurredAt: string;
+}
+
+/**
+ * Prove the exact Gmail receipt was persisted in the originating Slack thread.
+ * The raw message is matched inside SQLite and is never returned or copied to
+ * the cross-agent ledger.
+ */
+export function findEmailActionOutcomeReceipt(actionId: string): {
+  receipt?: EmailActionOutcomeReceipt;
+  ambiguous: boolean;
+} {
+  const action = getPendingSendByActionId(actionId);
+  if (
+    !action ||
+    action.state !== 'confirmed' ||
+    !action.threadTs ||
+    !action.gmailMessageId
+  ) {
+    return { ambiguous: false };
+  }
+  const expected = `✅ [EMAIL SENT] Action ${actionId} was accepted by Gmail. Receipt ${action.gmailMessageId}.`;
+  const rows = db
+    .prepare(
+      `SELECT id, timestamp FROM messages
+        WHERE chat_jid = ? AND thread_ts = ? AND from_group = ?
+          AND is_from_me = 1 AND is_bot_message = 1 AND content = ?
+        ORDER BY timestamp, id LIMIT 2`,
+    )
+    .all(
+      action.chatJid,
+      action.threadTs,
+      action.groupFolder,
+      expected,
+    ) as Array<{ id: string; timestamp: string }>;
+  return {
+    receipt:
+      rows.length === 1
+        ? { messageId: rows[0].id, occurredAt: rows[0].timestamp }
+        : undefined,
+    ambiguous: rows.length > 1,
+  };
+}
+
 /** Host-approved reply binding used to reissue a mailman thread after restart. */
 export function getPendingSendByGmailThread(gmailThreadId: string): {
   action?: EmailSendActionRow;

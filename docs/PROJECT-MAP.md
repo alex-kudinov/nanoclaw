@@ -357,7 +357,7 @@ dependencies, not active runtime channels in this snapshot.
 | Area                   | Main files                                                                     | Responsibility                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
-| Company work ledger    | `src/company-work-ledger.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | dark host-only cross-agent stage/disposition/receipt foundation; not wired or migrated                       |
+| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | host-only stage/disposition/receipt projection; observer is bounded, default-off, and never email authority; production migration/release evidence lives under `NC-20260816-001` |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
 | Autonomy               | `src/autonomy-policy.ts`, `src/autonomy-ledger.ts`, `src/autonomy-hold.ts`     | category trust levels, holds, vetoes, evidence                                                               |
@@ -478,8 +478,9 @@ The modern namespace is `business_v2`, including concepts such as:
   `fn_drop_followups` and `fn_resume_followups`;
 - durable webhook inbox state.
 - migration-118 Company OS work-item, append-only event, and exact-receipt
-  structures. These are tracked but unapplied under `NC-20260815-010`; no
-  runtime path reads or writes them.
+  structures. `NC-20260816-001` adds a default-off host observer of exact
+  SQLite/Slack action facts; running migration and release state must be taken
+  from active-work/changelog evidence, not repository presence.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.
@@ -1375,7 +1376,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/ACTIVE-WORK.md`                   | current task ownership, overlap, state, and next action               | must remain concise and current                                                                                                              |
 | `docs/ENGINEERING-CHANGELOG.md`         | append-only implementation/verification/deployment history            | evidence only; do not overstate boundaries crossed                                                                                           |
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
-| `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, and activation contract | migration 118 and typed host store are local/dark under `NC-20260815-010`; no live schema or runtime wiring                                  |
+| `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |
 | `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement history, current recovery state, and target loop | migration 115 is deployed collection-only; natural source-run proof, review closure, and the separately reviewed proposal packet remain open |
 | `docs/SELF-HEALING-COMPLETION-PLAN.md`  | reconciled healer current state and gated completion sequence         | action-boundary source is local until separately reviewed/deployed                                                                           |

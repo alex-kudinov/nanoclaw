@@ -174,6 +174,16 @@ interface ExistingEventRow extends QueryResultRow {
   event_fingerprint: string;
 }
 
+interface EventIdentityRow extends ExistingEventRow {
+  work_item_version: number;
+}
+
+export interface CompanyWorkEventIdentity {
+  workItemId: string;
+  workItemVersion: number;
+  eventFingerprint: string;
+}
+
 interface ReceiptRow extends QueryResultRow {
   id: string;
   work_item_id: string;
@@ -900,4 +910,51 @@ export async function transitionCompanyWorkItem(
   return withAgentContext('company-work-ledger:host', (client) =>
     transitionCompanyWorkItemWithClient(client, input),
   );
+}
+
+/** Load one host-owned work projection without exposing it to an agent role. */
+export async function getCompanyWorkItemBySource(
+  sourceSystem: string,
+  sourceKey: string,
+): Promise<CompanyWorkItem | null> {
+  assertOpaqueId(sourceSystem, 'sourceSystem');
+  assertOpaqueId(sourceKey, 'sourceKey');
+  return withAgentContext('company-work-ledger:host', async (client) => {
+    const result = await client.query<WorkItemRow>(
+      `SELECT ${ITEM_COLUMNS}
+         FROM business_v2.company_work_items
+        WHERE workflow_type = 'sales_email'
+          AND source_system = $1 AND source_key = $2`,
+      [sourceSystem, sourceKey],
+    );
+    return result.rows[0] ? toItem(result.rows[0]) : null;
+  });
+}
+
+/**
+ * Return the immutable identity of an already-projected source event.
+ * Shadow callers use this to validate retries without guessing the historical
+ * optimistic version from the work item's current state.
+ */
+export async function getCompanyWorkEventIdentity(
+  sourceSystem: string,
+  sourceEventKey: string,
+): Promise<CompanyWorkEventIdentity | null> {
+  assertOpaqueId(sourceSystem, 'sourceSystem');
+  assertOpaqueId(sourceEventKey, 'sourceEventKey');
+  return withAgentContext('company-work-ledger:host', async (client) => {
+    const result = await client.query<EventIdentityRow>(
+      `SELECT work_item_id::text, work_item_version, event_fingerprint
+         FROM business_v2.company_work_events
+        WHERE source_system = $1 AND source_event_key = $2`,
+      [sourceSystem, sourceEventKey],
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+    return {
+      workItemId: row.work_item_id,
+      workItemVersion: row.work_item_version,
+      eventFingerprint: row.event_fingerprint,
+    };
+  });
 }

@@ -8,6 +8,47 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-001 — Activate the bounded Company OS email shadow
+
+- Date: 2026-08-16T13:54Z
+- Owner/client: Codex
+- State: validating
+- Commit/PR: local implementation on
+  `codex/nc-20260816-001-company-os-shadow` from exact ledger evidence commit
+  `3479305ba947ade6f4eaed478acd8fdc8a6f631c`; commit and release pending
+- Change class: C5 — production PostgreSQL migration, host configuration,
+  immutable release activation, and non-authoritative shadow writes
+- Intended outcome: apply migration 118 with a verified PostgreSQL backup and
+  deploy a bounded, default-off observer that reconciles exact Mailman/Sales
+  approved-email facts into the host-only work ledger without changing the
+  existing email path.
+- Safety boundary: SQLite remains approved-email action authority. No customer
+  email, Slack post, approval, retry, action-state write, ledger-driven
+  decision, workflow dependency, migration rollback, push, or promotion is in
+  scope.
+- Read-only production preflight: exact release `12c2b049a27aadf88b2e0517e830ba91e232adc4`
+  is healthy under Node 22.23.2; Slack and Gmail are connected; active
+  containers, wait queues, and actionable approved/handoff/executing actions
+  are zero. Migration-116 and migration-117 anchor objects exist while all
+  three migration-118 tables are absent. The explicit shadow lower bound
+  `2026-08-14T00:00:00.000Z` selects three confirmed Sales actions, each with
+  one exact original-thread Gmail closure.
+- Implementation: added `src/company-work-shadow.ts`, a bounded metadata-only
+  SQLite scan, exact original-thread closure receipt lookup, host-ledger retry
+  identity readers, aggregate health state, and daemon lifecycle wiring. The
+  observer is disabled unless both its enable flag and a valid lower bound are
+  present; all failures stay outside the email action path.
+- Privacy/authority: PostgreSQL calls receive only Party/pipeline/action/event
+  IDs, timestamps, named exception codes, and SHA-256 evidence. No recipient,
+  subject, body, approval-card text, customer action mutation, Slack post, or
+  Gmail call is part of the projector.
+- Verification so far: exact Node 22.23.2 typecheck passes; 19 focused
+  ledger/projector/SQLite tests pass, including full success, exact replay,
+  terminal restart convergence, block/fail/resume, per-action failure
+  isolation, default-off/misconfiguration, metadata privacy, exact-thread
+  closure, and aggregate fail-open health. Broad, release, migration, and live
+  reconciliation evidence remains pending.
+
 ### NC-20260815-010 — Establish the dark Company OS work-ledger foundation
 
 - Date: 2026-08-16T04:48Z

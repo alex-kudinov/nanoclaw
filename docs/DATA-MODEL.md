@@ -9,12 +9,14 @@
 **Current implementation addendum (2026-08-16):** This deliberation document
 predates the implemented `business_v2` migration chain. Running PostgreSQL and
 the tracked ordered migrations remain implementation authority. Separately,
-`NC-20260815-010` adds an unapplied migration-118 design for
+`NC-20260815-010` adds migration-118 structures for
 `company_work_items`, append-only `company_work_events`, and exact
 `company_work_receipts`. Those host-only tables are a cross-agent work
 projection linked to Party and pipeline IDs; they do not replace interactions,
-pipeline state, or the SQLite approved-email action authority. See
-`docs/COMPANY-OS-WORK-LEDGER.md`.
+pipeline state, or the SQLite approved-email action authority.
+`NC-20260816-001` adds a bounded, default-off host projection and owns the
+separate production migration/deployment evidence. See
+`docs/COMPANY-OS-WORK-LEDGER.md` and `docs/ACTIVE-WORK.md` for current state.
 
 ---
 

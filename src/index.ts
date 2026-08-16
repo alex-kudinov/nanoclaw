@@ -230,6 +230,7 @@ import {
   setOnCooldownExpiry,
 } from './circuit-breaker.js';
 import { drainWatchdogKills, startWatchdogIpc } from './watchdog-ipc.js';
+import { CompanyWorkShadowService } from './company-work-shadow.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -1823,6 +1824,7 @@ async function main(): Promise<void> {
   // Initialize DB before any handlers that use it (webhook server, IPC, etc.)
   initDatabase();
   logger.info('Database initialized');
+  const companyWorkShadow = new CompanyWorkShadowService();
 
   // Start webhook server — listens on all interfaces (including Tailscale)
   // for inbound trigger events from Tailscale-connected machines.
@@ -1885,6 +1887,7 @@ async function main(): Promise<void> {
         lastMessageAt: getRouterState('last_timestamp') ?? null,
         queue: queueStatus,
         circuitBreaker: circuitBreakerStatus,
+        companyWorkShadow: companyWorkShadow.getStatus(),
       };
     },
     runAgent: runContainerAgent,
@@ -2012,6 +2015,7 @@ async function main(): Promise<void> {
   // Graceful shutdown handlers
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutdown signal received');
+    companyWorkShadow.stop();
     await queue.shutdown(10000);
     // Message containers stay running (detached) for the next daemon to adopt.
     cleanupOrphans(queue.getAdoptableContainerNames());
@@ -2146,6 +2150,7 @@ async function main(): Promise<void> {
     logger.fatal('No channels connected');
     process.exit(1);
   }
+  companyWorkShadow.start();
 
   // Daemon liveness beacon — upserts business_v2.daemon_heartbeat every 30s so
   // the self-healing healer (separate process) can detect a crashed daemon.

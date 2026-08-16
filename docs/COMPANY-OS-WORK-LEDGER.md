@@ -1,8 +1,8 @@
 # Company OS work ledger — Mailman/Sales pilot
 
-Status: dark foundation implemented locally; migration 118 is tracked but
-unapplied; no runtime producer or consumer is wired
-Task: `NC-20260815-010`
+Status: host-only schema and shadow observer implemented; production migration,
+release, and reconciliation remain pending
+Tasks: foundation `NC-20260815-010`; activation `NC-20260816-001`
 Decision: the shared ledger is host-owned PostgreSQL business state, while the
 existing SQLite approved-email tables remain the action-execution authority
 
@@ -22,18 +22,18 @@ Mailman/inbound fact
   → original Slack-thread/outcome validation
 ```
 
-This task supplies only the persistence and typed transition foundation. It
-does not:
+The activation slice adds a bounded observer, but it still does not:
 
-- apply migration 118;
-- create work items from live Gmail, Slack, Sales, or Mailman events;
+- make the ledger authoritative for any workflow decision;
 - change either group prompt or tool capability;
 - replace `pending_sends` or `email_send_events`;
 - send, retry, reconcile, or close an email;
 - treat agent output, a queued tool response, service health, or a transport
   canary as progress.
 
-Migration and runtime projection require later, separately authorized tasks.
+Migration 118 and shadow deployment are authorized only under
+`NC-20260816-001`. Promotion to a workflow dependency remains a later,
+separately authorized milestone.
 
 ## 2. Decision: one projection, two authorities
 
@@ -159,14 +159,16 @@ Base-table and sequence permissions are revoked from `PUBLIC`. Only
 gets a view, write function, or base-table privilege in this slice. The host
 typed store uses the existing admin-side `withAgentContext()` transaction.
 
-The migration is deliberately unapplied here. Migration 117 belongs to active
-Chaos work and may not yet be live; an activation task must inspect the running
-schema and apply the ordered migration chain rather than assuming repository
-presence equals database state.
+Migration 118 remains unapplied until the activation evidence in
+`NC-20260816-001` records an exact production backup, explicit one-file apply,
+structural validation, and zero non-admin privileges. Migration 117 belongs to
+active Chaos work; repository numbering never authorizes applying another
+task's migration.
 
-## 7. Later shadow-projection mapping
+## 7. Shadow-projection mapping
 
-A later task may emit ledger transitions only from these host facts:
+`src/company-work-shadow.ts` may emit ledger transitions only from these host
+facts:
 
 | Ledger fact | Existing authority/source |
 | --- | --- |
@@ -183,6 +185,26 @@ duplicate the existing email path. Cutover to any dependency on the ledger
 requires parity evidence over restart, retry, duplicate, block, failure, and
 success cases plus the pending natural customer-path receipt for
 `NC-20260815-009`.
+
+### Activation contract
+
+The observer defaults off. It runs only when the host environment provides
+both `COMPANY_WORK_SHADOW_ENABLED=1` and a valid
+`COMPANY_WORK_SHADOW_SINCE` timestamp. Interval and batch size are bounded;
+missing or invalid lower-bound configuration produces a visible
+`misconfigured` health state and no PostgreSQL writes.
+
+Each scan reads only Sales action metadata from SQLite. Before creating a work
+item it proves the exact Mailman-authored root, Sales-authored approval card,
+approved-content hash, action event, pipeline-entry/Party binding, and—when
+closing—the exact mechanical Gmail receipt line in the original Slack thread.
+PostgreSQL receives opaque IDs, timestamps, named exception codes, and SHA-256
+evidence only. It receives no recipient, subject, body, card, or operator text.
+
+The daemon health document exposes only aggregate scan, skip, error,
+transition, duplicate, and completion counts. Projection errors are contained
+per action; a whole-tick source/database failure is logged and surfaced in
+health, but never thrown into the email execution path.
 
 ## 8. Verification and activation gates
 
@@ -201,10 +223,11 @@ This dark-foundation milestone exits when:
   work, and the changelog distinguish local implementation from migration,
   shadow projection, deployment, and outcome validation.
 
-The later activation milestone must stop for owner review before any production
-database migration or runtime wiring. It requires schema-first live preflight,
-backup/rollback evidence, exact migration ordering, a default-off release,
-shadow reconciliation, and a separately accepted promotion gate.
+`NC-20260816-001` is the separately authorized migration and shadow milestone.
+It must still provide schema-first live preflight, backup/restore evidence,
+exact migration ordering, immutable release identity, bounded historical
+parity, retry convergence, and unchanged SQLite/Gmail action counts. A
+separately accepted promotion gate remains mandatory.
 
 ## 9. Rollback
 

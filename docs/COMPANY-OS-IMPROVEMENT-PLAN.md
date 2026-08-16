@@ -64,7 +64,7 @@ company-wide merely because one workflow implements them.
 | P0.5 safety controller | still proposed | Domain-specific gates and circuit controls exist, but there is no one drilled global/per-system external-write safe mode with common precedence, ceilings, and evidence. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
-| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` adds the local, unapplied, default-off Mailman/Sales stage-disposition-event-receipt foundation, but no shared work-item authority is live and no runtime projection is wired. |
+| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` adds the separately gated production schema and bounded, default-off observer. SQLite remains email authority, parity/release evidence is tracked separately, and workflow promotion is still open. |
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
 | P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places; they are not normalized behind one trigger/run contract or reconciled as one inventory. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
@@ -1273,11 +1273,13 @@ workflow activation may bypass those R1 gates.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus
-unapplied PostgreSQL migration 118. The schema excludes raw customer content,
+PostgreSQL migration 118. The schema excludes raw customer content,
 the existing SQLite approved-email action ledger remains execution authority,
-and no runtime producer/consumer is wired. This is a dark foundation, not a
-live work ledger or completed R2 slice; migration, shadow projection, parity,
-and promotion remain separately gated.
+and no agent receives access. `NC-20260816-001` implements the next bounded
+step: a default-off, fail-open host observer that projects only exact action and
+receipt facts. Production migration, release, and parity are recorded in that
+task; workflow dependency/promotion and the pending natural `NC-20260815-009`
+outcome remain separate gates.
 
 Each slice receives one or more separate `NC-YYYYMMDD-NNN` tasks only when work
 starts. Do not reserve future IDs, combine these slices into one implementation
@@ -1562,9 +1564,10 @@ Implementation checkpoint (2026-07-29):
 17. `SEC-005`/`SEC-006` — generate per-agent tool, mount, action, and network
     policy from one manifest after the interim Gmail matrix is proven.
 18. `REL-002` — implement work-item transitions and source reconciliation for
-    Mailman and Sales only. `NC-20260815-010` implements the local default-off
-    state/receipt/schema foundation as unapplied migration 118; live migration,
-    shadow event projection, reconciliation parity, and promotion remain open.
+    Mailman and Sales only. `NC-20260815-010` implements the state/receipt/schema
+    foundation; `NC-20260816-001` owns the production schema plus default-off
+    shadow event projection. Live parity evidence and any promotion remain
+    explicit, separate boundaries.
 19. `REL-001` — inventory schedules and probe target existence, last run, and
     last exit status.
 20. `EVAL-001` — incident/injection regression pack for Mailman and Sales.

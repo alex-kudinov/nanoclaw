@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-001` | Apply the Company OS ledger schema in production and deploy a non-authoritative, default-off Mailman/Sales shadow projection | Codex | `codex/nc-20260816-001-company-os-shadow` @ `3479305` | `in_progress` | C5 | Live preflight passed: release `12c2b049`, Node 22.23.2, queues/action states drained, migrations 116/117 present and 118 absent. Host-only bounded observer, privacy-minimized scan, exact receipt projection, aggregate health, and 19 focused tests are implemented locally. Existing SQLite email action state remains execution authority; no customer email, workflow dependency, ledger-driven action, or promotion. | Complete broad/release/PostgreSQL gates, commit and build the immutable artifact, then capture a database backup, apply only migration 118, activate the bounded 2026-08-14 shadow window, and prove parity/retry without action-count drift. | 2026-08-16T14:01Z |
 | `NC-20260815-010` | Establish the first durable Company OS work-ledger foundation for the Mailman/Sales approved-email pilot without activating it in production | Codex | `codex/nc-20260815-010-company-os-ledger` @ `6e281f0` from `38810d3` | `ready_for_review` | C2 | Focused design/ADR, additive unapplied migration 118 plus history-preserving rollback, host-only typed state/receipt store, 16 focused tests, and data/project/roadmap authorities. Throwaway PostgreSQL apply/store/rollback proof passed. No runtime wiring, group behavior, live migration, production DB write, service change, or external action. | Owner reviews this milestone and chooses whether to authorize the separate production-migration plus default-off shadow-projection milestone; no live workflow dependency or promotion is implied. | 2026-08-16T05:13Z |
 | `NC-20260815-007` | Reactivate the Company OS plan against the current NanoClaw baseline and make it the single strategic roadmap for separately gated implementation slices | Codex | `codex/nc-20260815-007-company-os-reactivation` @ `b7bb65d` from `9e4977a` | `complete` | C1 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, this register, and `docs/ENGINEERING-CHANGELOG.md`; documentation and prioritization only; no source, schema, prompt, configuration, deployment, production, or external-system change | None — R0 is recovered and continuity-verified; subsequent slices use separate task IDs and isolated branches. | 2026-08-16T04:46Z |
 | `NC-20260815-009` | Make the normal approved-email fallback executable and bind every operator-visible recipient header into the immutable action | Codex | `codex/nc-20260815-009-email-fallback-headers` @ deployed `12c2b049` from `cfcfaae` | `deployed_unverified` | C5 | Exact runtime, additive `approved_cc` migration, and reviewed Mailman instructions are live; release/artifact/health/listener/drain evidence is complete. No synthetic customer email was used. | Observe the next naturally approved customer email through normal fallback/execution, then bind the exact Gmail receipt and original Slack-thread completion without manual repair before outcome validation. | 2026-08-16T04:36Z |
@@ -76,6 +77,42 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-001
+
+- Trigger: the owner explicitly authorized the production-migration plus
+  default-off shadow-projection milestone after reviewing the dark
+  `NC-20260815-010` foundation.
+- Outcome: make migration 118 a verified, dormant production schema and ship a
+  host-owned projection that can observe the existing Mailman/Sales approved-
+  email facts without blocking, retrying, sending, closing, or otherwise
+  controlling that path.
+- Branch/base: `codex/nc-20260816-001-company-os-shadow` from ledger evidence
+  commit `3479305ba947ade6f4eaed478acd8fdc8a6f631c` in isolated worktree
+  `/private/tmp/nanoclaw-nc-20260816-001`. The dirty operational checkout and
+  prior milestone worktrees remain untouched.
+- Scope/authority: C5 because this applies production DDL and instruments the
+  customer-email control path. Authority includes read-only live discovery;
+  reviewed backup/apply/validate of migration 118; local source, tests,
+  default-off configuration, release, activation, health, and sanitized shadow
+  evidence. It excludes customer email, Slack messages, action-state mutation,
+  ledger-driven workflow decisions, schema rollback that deletes history,
+  feature promotion, push, and merge.
+- Overlap: migration 117 belongs to `NC-20260812-001` Chaos work and migration
+  116 belongs to CNPC. Repository numbering is not proof of live application;
+  the running PostgreSQL migration history and object definitions must be
+  inspected before 118. Existing SQLite `pending_sends` and
+  `email_send_events` remain exact approved-email execution authority.
+- Acceptance: production migration is backed up and structurally validated;
+  no non-admin ledger grants exist; shadow writes are disabled by default and
+  fail open with bounded diagnostics when enabled; exact source/action/receipt
+  identities converge without raw customer content; projection retry,
+  restart, duplicate, blocked, failure, and success tests pass; immutable
+  release health is exact; a sanitized reconciliation proves shadow facts do
+  not change or duplicate the live email path.
+- Rollback: disable shadow projection first and return to the prior immutable
+  release. Leave additive host-only tables dormant. The tracked destructive
+  rollback remains forbidden once any ledger history exists.
 
 ### NC-20260815-010
 
