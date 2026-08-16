@@ -612,10 +612,10 @@ folders. `src/capability-manifest.ts` validates and fingerprints them, and
 `docs/generated/CAPABILITY-MATRIX.md`. The release builder packages the
 manifests.
 
-Enforcement remains default off and is not deployed by this milestone. When
-enabled, container launch projects exact Claude and MCP tools, configured mount
-targets/access, and runtime ceilings from the selected manifest; recognized
-message/task/job IPC is also denied outside the manifest's host-operation set.
+Global enforcement remains default off. When a group is selected, container
+launch projects exact Claude and MCP tools, configured mount targets/access,
+and runtime ceilings from the selected manifest; recognized message/task/job
+IPC is also denied outside the manifest's host-operation set.
 The projection fingerprint is carried in container input and sidecar state.
 GroupQueue refuses another turn for a stale warm container, and startup refuses
 adoption of a stale or pre-manifest container. Existing domain authorization,
@@ -626,15 +626,22 @@ authoritative and cumulative.
 because the live registry contains legacy dynamic folders and the global switch
 cannot satisfy a one-agent rollout. Selected folders must be tracked and
 registered; all non-selected folders remain in compatibility mode. The first
-planned canary is Campanero, narrowed to its authoritative jobs-only MCP role.
+live canary is Campanero, narrowed to its authoritative jobs-only MCP role.
 The bundled environment editor is dry-run by default, hostname-confirmed for
-apply, backup-producing, and atomic.
+apply, backup-producing, and atomic. Immutable combined release `2987070` is
+health-verified with only Campanero selected. Its live projection has no Claude
+tools, only MCP `jobs`, only host operation `jobs_mutate`, and read-only
+`knowledge`/`agent_docs` mounts. A read-only production-image canary returned
+the exact live 22-job inventory and structurally proved Bash and all undeclared
+MCP tools absent. Queue, email-action, job, and Campanero-task aggregates were
+unchanged after the canary; release, environment, and 18 runner-snapshot
+rollback artifacts are retained.
 
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some
 roles; immediate in-flight termination, value/rate ceilings, dynamic group
-onboarding, production activation, and live canaries are still open. See
-`docs/CAPABILITY-MANIFESTS.md`.
+onboarding, every group beyond Campanero, and broader business-path canaries are
+still open. See `docs/CAPABILITY-MANIFESTS.md`.
 
 ### Sales channel work-item containment (`NC-20260802-006`)
 
@@ -1417,7 +1424,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
 | `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
 | `docs/ACTION-SAFETY-CONTROL.md`         | host action envelope, safety precedence, covered boundaries, and activation gate | local/default-off under `NC-20260816-002`; warm Courses containers and standalone scripts are explicit residuals                            |
-| `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | local/default-off under `NC-20260816-004`; egress, raw-secret removal, and live canaries remain open                                        |
+| `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | Campanero-only canary live under `NC-20260816-006`; global rollout, egress, raw-secret removal, and wider canaries remain open                |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |
 | `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement history, current recovery state, and target loop | migration 115 is deployed collection-only; natural source-run proof, review closure, and the separately reviewed proposal packet remain open |
 | `docs/SELF-HEALING-COMPLETION-PLAN.md`  | reconciled healer current state and gated completion sequence         | action-boundary source is local until separately reviewed/deployed                                                                           |

@@ -86,13 +86,18 @@ exposure, validate mounts and runtime ceilings, constrain recognized host IPC,
 and make pre-manifest or stale-fingerprint warm/adopted containers ineligible
 for another turn. The deterministic matrix is
 `docs/generated/CAPABILITY-MATRIX.md`; mechanics and residual gaps are in
-`docs/CAPABILITY-MANIFESTS.md`. This local source is not production activation,
-does not restrict egress, and does not remove raw mounted credentials.
+`docs/CAPABILITY-MANIFESTS.md`. The global default remains compatibility mode;
+the control does not restrict egress or remove raw mounted credentials.
 `NC-20260816-006` adds a strict staged-group selector so one tracked,
 registered agent can be enforced without changing any other agent. A malformed,
 unknown, duplicate, or unregistered selection fails closed; the global switch
 continues to mean all registered groups and is not suitable for the first live
-canary while legacy dynamic folders remain unmanifested.
+canary while legacy dynamic folders remain unmanifested. Combined release
+`2987070` now live-enforces only Campanero: the production projection contains
+no Claude tools, only MCP `jobs`, only the related host operation, and its two
+declared additional mounts read-only. A read-only production-image canary
+returned the exact 22-job inventory while proving Bash and undeclared MCP tools
+absent; no job, task, email, Slack-queue, or database mutation was introduced.
 
 ### Mount and session isolation
 

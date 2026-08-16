@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260816-006` | Deploy the capability-manifest release dark, then activate and prove one low-risk Campanero canary without exposing any other agent | Codex | `codex/nc-20260816-006-campanero-canary`; integrating live `a67e081` | `validating` | C5 | Add a strict per-group activation allowlist; reconcile Campanero to its authoritative jobs-only role; preserve the concurrently deployed Stripe release; build and deploy one immutable combined release; keep global enforcement off; enable only Campanero; and prove allowed jobs inventory plus denied Bash and cross-agent MCP surfaces. Excludes customer email, job mutation, production database writes, global/all-agent activation, prompt changes, publication/mainline merge, and push. | Validate and commit the combined lineage, build the superseding immutable release, repeat the production drain check, deploy with controls off, then activate and canary only Campanero with rollback ready. | 2026-08-16T17:10Z |
+| `NC-20260816-006` | Deploy the capability-manifest release dark, then activate and prove one low-risk Campanero canary without exposing any other agent | Codex | `codex/nc-20260816-006-campanero-canary` @ deployed `2987070` | `complete` | C5 | Combined immutable release preserves live Stripe lineage `a67e081`; global manifest enforcement remains off; only Campanero is selected and live-verified with no Claude tools, only the `jobs` MCP tool, read-only declared mounts, and a read-only 22-job inventory canary. Bash and undeclared MCP surfaces were absent. Zero active/waiting work, outgoing Slack queue, actionable email sends, or job/task mutations appeared. Excludes customer email, job mutation, production database writes, global/all-agent activation, prompt changes, publication/mainline merge, and push. | None for this milestone. Any second agent, global activation, egress restriction, credential removal, or action-safety activation requires a separately tracked gate. | 2026-08-16T17:31Z |
 | `NC-20260816-005` | Make every authoritative Stripe purchase reach Chaos with a canonical product attribution, preserve one-row Checkout accounting, and repair the four unmapped lifecycle receipts | Codex + Claude Code owner/reviewer | `codex/nc-20260816-005-stripe-attribution` @ implementation `9f8f6a1` from exact live `55c97d5` | `ready_for_deploy` | C5 | Exact-live-lineage NanoClaw Stripe processor and Chaos lifecycle outbox; focused tests; historical correction of four already-received Chaos lifecycle rows only after reviewed mapping proof. Excludes Stripe charges/refunds, fulfillment, Encharge automation, customer messaging, and unrelated NanoClaw changes. | Build and independently verify the clean immutable release, preflight and activate it, then correct only the four proven historical rows with pre/post aggregate proof. The full suite baseline remains 2381/2382 because of one pre-existing unrelated CNPC prompt-contract failure. | 2026-08-16T17:14Z |
 | `NC-20260816-004` | Establish tracked per-agent capability manifests and make stale warm/adopted containers ineligible for reuse without activating the control in production | Codex | `codex/nc-20260816-004-capability-manifests` @ `72b21db` (local implementation) | `complete` | C5 | Strict manifests for all 17 tracked operative groups; deterministic matrix; default-off launch/MCP/recognized-host-operation/mount/runtime projection; launch/sidecar fingerprints; and next-turn warm/adoption revocation. Existing domain controls remain cumulative. Excludes production config/deploy/restart, external writes, raw-secret extraction, egress enforcement, push, and merge. | None for this local source milestone. Production activation requires a separate authorized drain/recycle and group-by-group negative, launch, revocation, and business-path canary task. | 2026-08-16T16:20Z |
 | `NC-20260816-002` | Add one host-owned action-envelope contract and a global/per-system external-write safe mode without activating or widening any live capability | Codex | `codex/nc-20260816-002-action-safety-control` @ `092b5b9` (local implementation) | `complete` | C5 | Implement the dark contract/controller across the first drill systems: Gmail, Slack, Courses SMTP launch, Plutio runtime tools, and Stripe processing. Default behavior and all production configuration remain unchanged; other runtime/container/script writes remain explicit P0.3/P0.5 follow-ups. | None for this local milestone. Production activation and broader capability coverage require separately authorized tasks. | 2026-08-16T15:09Z |
@@ -113,8 +113,9 @@ outside the current client conversation.
   and healthy; allowed jobs inventory succeeds without mutation; Bash and an
   undeclared MCP tool are unavailable; no queued work, email action, or job
   state changes appear; rollback artifacts and exact evidence are recorded.
-- Rollback: remove the Campanero allowlist key and restart to return the same
-  release to compatibility mode. If release health itself fails, use the
+- Rollback: remove the Campanero allowlist key, verify health returns to
+  compatibility mode, and recycle any affected container. If release health
+  itself fails, use the
   activator's rollback plist to restore verified release `a67e081`. Never retry
   an ambiguous external action; the canary intentionally performs none.
 - Local verification: exact Node 22.23.2 passes 15/15 focused staged-config
@@ -123,16 +124,41 @@ outside the current client conversation.
   40/40 runner tests. After the Stripe-lineage integration, the combined 74/74
   capability/action/Stripe tests and 2,418/2,419 unrestricted root suite pass;
   the sole failure is the unchanged CNPC source-wrapper assertion already
-  present in the deployed lineage. No Campanero production configuration or
-  host release switch has occurred yet.
+  present in the deployed lineage.
 - Concurrent-release reconciliation: production advanced from `55c97d5` to
   separately verified Stripe release `a67e081` while the first Campanero image
   build was running. No container launched in the interval. The image was
   immediately rebuilt from `a67e081`; health then showed that exact release,
   zero active/waiting containers, and all 18 runner snapshots at its exact
   `42f3674fef40cc63312d5e8c45c76de6` source hash. The Campanero branch now
-  integrates `a67e081` locally so the next candidate preserves both lineages;
-  it will receive the full release gates again before any host switch.
+  integrates `a67e081` in merge commit `2987070`, preserving both lineages.
+- Deployment: immutable release
+  `29870706dc495cab59d42e7568b842f8c2994182` is live and health-verified with
+  source tree `9849885305366c62e5a2b9f8cc2226a2093c84ce`, artifact
+  `8a82dd1a718762bef0cfa16ed20750ea242dd526c2264fef12d6f8a2f9930802`,
+  Node 22.23.2, and one listener. The combined image digest is
+  `sha256:06d1c7db5476596103c97a803b1ff3035318bcceeb2c190eb1d8fe0f1f5e0982`.
+  All 18 runner snapshots now carry source hash
+  `6bb4d7bbaaf0bda23118b79e639502ac`; 18 recoverable pre-change directories
+  remain alongside them. The activator rollback plist is
+  `com.nanoclaw.plist.rollback-a67e08106c87-2026-08-16T17-23-00-067Z`.
+- Selective activation: the release-bundled helper changed only
+  `CAPABILITY_MANIFEST_ENFORCED_GROUPS=campanero`, retained same-mode backup
+  `.env.rollback-capabilities-2026-08-16T17-24-03-525Z`, and left the global
+  switch false. Config is loaded at each projection/health read; an unsupported
+  `launchctl kickstart` attempt returned 125 without changing the healthy
+  listener, and no restart was needed. No Campanero container was live or warm,
+  so the next launch cannot reuse a pre-manifest projection.
+- Live canary: the exact production registration resolved to an enforced
+  projection with no Claude tools, MCP `jobs` only, host operation
+  `jobs_mutate` only, and read-only `knowledge`/`agent_docs` mounts. A disposable
+  production-image canary mounted Campanero IPC read-only, exposed only
+  `mcp__nanoclaw__jobs`, confirmed Bash absent, and returned the exact live
+  22-job inventory without requesting a mutation. Afterward health remained on
+  `2987070` with zero active/waiting containers and outgoing queue depth zero;
+  jobs remained 22 total/17 enabled, Campanero remained one inactive scheduled
+  task with its unchanged 2026-03-29 last run, and email actions remained 61
+  confirmed/6 blocked/zero actionable.
 
 ### NC-20260816-004
 

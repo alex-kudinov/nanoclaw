@@ -10,13 +10,15 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260816-006 — Stage one jobs-only Campanero capability canary
 
-- Date: 2026-08-16T17:03Z
+- Date: 2026-08-16T17:31Z
 - Owner/client: Codex
-- State: validating the combined live-lineage candidate; not yet activated
+- State: complete; combined release deployed and Campanero-only canary
+  live-verified
 - Commit/PR: claim commit `f620b1b328597264871dfe25a6fa880fe5462eca`
   and implementation commit `4db813c52aa4714d1e2ecff6cd6c87adf4289f03`
-  on `codex/nc-20260816-006-campanero-canary`; local integration with the
-  concurrently deployed `a67e081` Stripe release is pending commit; no PR
+  on `codex/nc-20260816-006-campanero-canary`; merge commit
+  `29870706dc495cab59d42e7568b842f8c2994182` integrates the concurrently
+  deployed `a67e081` Stripe release; no PR
 - Change class: C5 — production release and one-agent capability-boundary
   activation
 - Intended outcome: install the default-off capability-manifest release, then
@@ -47,12 +49,51 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   health then showed that release with zero active/waiting work while all 18
   runner snapshots retained its exact source hash. The first Campanero archive
   was verified and extracted but never activated. This branch now integrates
-  `a67e081`; the combined tree must pass a fresh immutable build before use.
-- Deployment/rollback: pending combined release build and repeated zero-work
-  production drain check. Activate the combined release with controls off;
-  then back up and set only the staged group key. Restore that backup and
-  restart for config rollback, or restore the activator's exact plist for
-  release rollback to `a67e081`.
+  `a67e081`; the combined tree then passed a fresh immutable build with 634/634
+  release-gate tests and 40/40 independent runner tests.
+- Immutable release: commit
+  `29870706dc495cab59d42e7568b842f8c2994182`, source tree
+  `9849885305366c62e5a2b9f8cc2226a2093c84ce`, artifact
+  `8a82dd1a718762bef0cfa16ed20750ea242dd526c2264fef12d6f8a2f9930802`,
+  and archive SHA-256
+  `2048cb76451b29cb324667ccb89012d3cb5e7da6660010d22c26d141f1870d88`
+  were independently verified before transfer and again on the host. The
+  rebuilt `nanoclaw-agent:latest` digest is
+  `sha256:06d1c7db5476596103c97a803b1ff3035318bcceeb2c190eb1d8fe0f1f5e0982`.
+- Runner/release deployment: the final preflight showed release `a67e081`, one
+  listener, connected Slack/Gmail, zero active/waiting containers, outgoing
+  depth zero, and zero actionable email sends. All 18 runner snapshots were
+  atomically replaced with hash `6bb4d7bbaaf0bda23118b79e639502ac`
+  after retaining 18 `rollback-a67e081-before-2987070` directories. The release
+  activator switched only the expected plist paths and health-verified
+  `2987070` under Node 22.23.2. Rollback plist:
+  `com.nanoclaw.plist.rollback-a67e08106c87-2026-08-16T17-23-00-067Z`.
+- Selective activation: the bundled helper dry-run resolved no current groups,
+  global enforcement false, and target `campanero`; apply changed only the
+  staged-group key and retained same-mode backup
+  `.env.rollback-capabilities-2026-08-16T17-24-03-525Z`. Health reports a valid
+  17/17 manifest catalog, global enforcement false, and only Campanero selected.
+  Config is loaded dynamically at projection and health reads. A direct
+  `launchctl kickstart` returned unsupported-action code 125 without changing
+  the healthy listener; restart was unnecessary, and no Campanero warm/live
+  container existed to recycle.
+- Live canary: the exact production registration resolved to an enforced
+  Campanero projection with no Claude tools, MCP `jobs` only, host operation
+  `jobs_mutate` only, and read-only `knowledge`/`agent_docs` mounts. A disposable
+  deployed-image canary mounted live Campanero IPC read-only, exposed only
+  `mcp__nanoclaw__jobs`, proved Bash absent, and returned the exact 22-job
+  inventory without requesting mutation. It self-removed. Final health remained
+  exact `2987070`, one listener, Slack/Gmail connected, zero active/waiting and
+  outgoing depth zero. Jobs remained 22 total/17 enabled; the sole Campanero
+  scheduled task remained inactive with its unchanged 2026-03-29 last run;
+  pending sends remained 61 confirmed/6 blocked/zero actionable. No customer
+  email, Slack post, job mutation, task mutation, or production business-row
+  write occurred.
+- Rollback: remove the staged group key with the same helper or restore the
+  exact environment backup to return the installed release to compatibility;
+  restore the exact plist backup for release rollback to `a67e081`. All prior
+  runner snapshot directories remain available until the observation window is
+  deliberately closed.
 
 ### NC-20260816-004 — Add dark per-agent capability manifests and stale-container revocation
 

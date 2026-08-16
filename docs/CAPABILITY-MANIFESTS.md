@@ -1,6 +1,6 @@
 # Agent capability manifests
 
-Status: selective rollout implementation in progress; enforcement default off
+Status: Campanero-only production canary live-verified; global enforcement off
 
 Tasks: `NC-20260816-004` foundation; `NC-20260816-006` staged activation
 
@@ -96,6 +96,24 @@ configuration with global enforcement false and only the intended group.
 Re-check active/waiting containers and relevant action queues before the first
 turn. Do not infer an allowed/denied runtime result from the config response.
 
+## First production checkpoint
+
+`NC-20260816-006` deployed combined immutable release `2987070` and selected
+only `campanero`; `/health` reports a valid 17/17 catalog, global enforcement
+false, and `enforcedGroups: ["campanero"]`. The exact live registration projects
+no Claude tools, MCP `jobs` only, host operation `jobs_mutate` only, and
+read-only `knowledge`/`agent_docs` mounts. A disposable instance of the deployed
+production image mounted Campanero IPC read-only, exposed only
+`mcp__nanoclaw__jobs`, omitted Bash, and returned the exact 22-job live snapshot
+without requesting run, pause, resume, or any other mutation.
+
+Post-canary checks found zero active/waiting NanoClaw containers, zero outgoing
+Slack queue depth, zero actionable email sends, 22 jobs with the same 17
+enabled, and the sole Campanero scheduled task still inactive with its unchanged
+last run. The environment backup, prior-release plist, and all 18 prior runner
+snapshots remain available for rollback. This proves one deliberately narrow
+agent; it does not authorize or validate a second group.
+
 Rollback is configuration-only while the source remains installed: use the
 same helper with an empty `--groups` value (or restore its exact backup), verify
 the health aggregate returns to compatibility mode, and recycle affected
@@ -116,5 +134,6 @@ from source tests alone.
   host-owned and intentionally absent from the tracked matrix.
 - This milestone closes stale reuse at the next turn/adoption boundary. It does
   not kill an already executing model turn immediately.
-- Production enablement, egress enforcement, per-action amount/rate ceilings,
-  live negative canaries, and automatic autonomy demotion remain separate gates.
+- Any second-group or global enablement, destination-scoped egress, per-action
+  amount/rate ceilings, raw-credential retirement, broader live negative
+  canaries, and automatic autonomy demotion remain separate gates.

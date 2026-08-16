@@ -59,7 +59,7 @@ company-wide merely because one workflow implements them.
 | P0.0 blast-radius reduction | partial | Gmail containment is `deployed_unverified` under `NC-20260729-004`; healer Gate A is `deployed_unverified` under `NC-20260730-002`. Procurement CDP isolation, the universal external-write brake, and all other named boundaries remain open. |
 | P0.1 runtime contract | partial | `NC-20260728-005` restored a pinned Node 22 test baseline; `NC-20260731-003` put production on Node 22.23.2; release/runtime enforcement has advanced, but review and live-verification gates remain task-specific. |
 | P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries; raw credentials and broad agent/tool exposure have not been removed company-wide. |
-| P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. Production activation, egress enforcement, raw-secret removal, action-value ceilings, and live canaries remain open. |
+| P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. `NC-20260816-006` live-verifies the first selective canary: only Campanero is enforced, its read-only 22-job inventory succeeds, and Bash/undeclared MCP tools are absent. Every other group, egress enforcement, raw-secret removal, and action-value ceilings remain open. |
 | P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260816-002` implements a dark content-free universal envelope plus mutation/replay tests, but legacy domains do not yet supply it and enforcement is not activated. |
 | P0.5 safety controller | partial | `NC-20260816-002` implements a dark, default-off controller with common precedence, aggregate health, and named runtime-boundary refusal tests; `NC-20260816-004` adds next-turn stale warm/adoption revocation when manifest enforcement is enabled. Production activation/drill, immediate in-flight interruption, standalone-script coverage, per-action ceilings, and automatic demotion remain open. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
@@ -1287,18 +1287,22 @@ R1 capability checkpoint: `NC-20260816-004` adds strict manifests for all 17
 tracked operative groups, generates a path-free permissions matrix, projects
 exact Claude/MCP tools plus declared mounts and runtime ceilings when enabled,
 constrains recognized host IPC, and fingerprints launches so stale warm or
-adopted containers cannot receive another turn. The switch is default off and
-this source is undeployed. P0.3 therefore remains partial pending production
-drain/canaries, destination-scoped egress, raw-credential retirement,
-action-value/rate limits, and automatic demotion evidence.
+adopted containers cannot receive another turn. Global enforcement remains off;
+`NC-20260816-006` selectively activates only Campanero. P0.3 therefore remains
+partial pending the remaining groups, destination-scoped egress, raw-credential
+retirement, action-value/rate limits, and automatic demotion evidence.
 
 R1 staged-activation checkpoint: `NC-20260816-006` adds the missing per-group
 rollout selector and narrows Campanero to its authoritative jobs-only tool
 surface. This prevents the first canary from implicitly activating every
-registered agent or failing on legacy dynamic folders. Source and tests do not
-constitute deployment; the checkpoint remains open until exact release health,
-Campanero launch/tool denial, non-interference, and rollback evidence are
-recorded.
+registered agent or failing on legacy dynamic folders. Combined release
+`2987070` is now health-verified in production with only Campanero selected.
+The exact live projection contains no Claude tools, only MCP `jobs`, only the
+related host operation, and read-only declared mounts; the deployed image
+returned the exact live 22-job inventory while Bash and undeclared MCP tools
+were absent. Zero-work, email-action, job/task non-interference, and recoverable
+release/environment/runner rollback artifacts close this first-agent checkpoint.
+Expansion beyond Campanero remains a separate milestone.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus
