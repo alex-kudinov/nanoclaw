@@ -83,6 +83,14 @@ cannot yet be removed safely: the previously ignored, now tracked
 events. Retiring that family requires a host-owned replacement and a separate
 business-path gate.
 
+`NC-20260816-011` implements that replacement as an unwired dark host adapter.
+It validates archived event identity, persists an opaque outbox reference,
+derives Plutio values from the archive at dispatch, passes mutation through the
+common safety controller, and uses a stable remote marker for replay. It does
+not change Booking's manifest, prompt, mounts, or current Plutio projection.
+Promotion still requires a shared rescheduled-event identity fix, a natural
+business-path canary, and proof that Plutio preserves the marker remotely.
+
 ## Change procedure
 
 1. Edit the applicable manifest and any changed group procedure together.
@@ -174,8 +182,9 @@ from source tests alone.
 - The tracked manifests truthfully record `unrestricted_current` network mode;
   they do not enforce destination-scoped egress.
 - Several agents still receive `Bash` and raw mounted tools or credentials.
-  Booking still receives Plutio until its non-booked lifecycle path moves to a
-  narrow host adapter; all other raw-credential removal remains open.
+  Booking still receives Plutio: its narrow host adapter exists only as an
+  unwired dark path and has not passed the separate natural-path/remote-marker
+  promotion gate. All other raw-credential removal remains open.
 - Manifest action classes describe the permitted role envelope; the host's
   action-safety controller and domain policies remain the actual external-write
   authority.

@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T20:26Z
 - Owner/client: Codex
-- State: in_progress; claim registered before implementation
-- Commit/PR: pending on `codex/nc-20260816-011-booking-plutio-host`; no PR
+- State: ready_for_deploy; locally verified dark candidate
+- Commit/PR: claim `3bdb6e4`; implementation commit pending on
+  `codex/nc-20260816-011-booking-plutio-host`; no PR
 - Change class: C5 — dark host-owned external-write boundary
 - Intended outcome: give the host a typed, durable, replay-safe path for
   canceled/rescheduled Booking activity so a later gate can remove Plutio
@@ -24,8 +25,24 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Natural webhook wiring, prompt/manifest change, credential removal, every
   real Trafft/Plutio call, production business-row write, customer/Slack
   message, credential rotation, push, and merge remain excluded.
-- Verification/deployment/rollback: pending. This release must remain dark;
-  rollback is the prior exact release `ba5fe74` and requires no data reversal.
+- Discovery correction: the shared extractor does not include the flattened
+  `appointmentStartDateTime` value in rescheduled event identity. The dark
+  adapter reconstructs and verifies that canonical key locally; changing the
+  live dedup extractor is deferred to the separately canaried promotion gate.
+- Implementation: add the typed Booking lifecycle parser; an opaque,
+  advisory-locked enqueue using the existing outbox; archive-reloading host
+  dispatch; Plutio ID validation and HTML escaping; action-safety-gated person
+  upsert/activity write; a stable remote marker and opaque receipt; and
+  Booking-only stale in-flight reclaim. Classify `list-notes.sh` as a read while
+  retaining mutation guards, and bundle an installed injected verifier.
+- Verification: exact Node 22.23.2 passes typecheck; 58/58 focused tests;
+  182/182 broader boundary, Booking, Plutio, webhook, manifest, and runner
+  tests; 635/635 email-critical tests; and independent runner build plus 40/40
+  tests. The unrestricted root suite passes 2,456/2,457; its sole failure is the
+  unchanged unrelated CNPC source-wrapper assertion. No real external or
+  database call occurred. Final documentation/release gates remain pending.
+- Deployment/rollback: pending. This release must remain dark; rollback is the
+  prior exact release `ba5fe74` and requires no data reversal.
 
 ### NC-20260816-010 — Project business credential families and remove Trafft from Booking
 

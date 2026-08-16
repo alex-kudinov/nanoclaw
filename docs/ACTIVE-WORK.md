@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260816-011` | Build and deploy the dark host-owned Booking-to-Plutio lifecycle adapter without invoking Plutio or changing Booking's current capability | Codex | `codex/nc-20260816-011-booking-plutio-host` @ `61d440e` | `in_progress` | C5 | Typed host parsing, durable existing-outbox enqueue/dispatch, action-safety enforcement, exact archived-event validation, replay-safe Plutio activity markers, focused tests, immutable release/deployment, and an installed injected no-network canary. Excludes wiring the natural webhook path, changing the Booking prompt/manifest, removing container Plutio access, any Trafft/Plutio request, production business-row write, customer/Slack message, credential rotation, push, and merge. | Implement and verify the dark adapter, deploy one immutable release, then prove the installed code with injected DB/child tripwires. Promotion and raw Plutio removal require the next separately tracked gate. | 2026-08-16T20:26Z |
+| `NC-20260816-011` | Build and deploy the dark host-owned Booking-to-Plutio lifecycle adapter without invoking Plutio or changing Booking's current capability | Codex | `codex/nc-20260816-011-booking-plutio-host` @ claim `3bdb6e4` | `ready_for_deploy` | C5 | Typed host parsing, opaque durable existing-outbox enqueue/dispatch, action-safety enforcement, exact archived-event validation, replay-safe Plutio activity markers, focused tests, immutable release/deployment, and an installed injected no-network/no-database canary. The implementation is locally verified; deployment is next. Excludes wiring the natural webhook path, changing the Booking prompt/manifest, removing container Plutio access, any Trafft/Plutio request, production business-row write, customer/Slack message, credential rotation, push, and merge. | Commit and build the verified candidate, deploy one immutable dark release, then prove the installed code with injected fakes and unchanged production aggregates. Promotion and raw Plutio removal require the next separately tracked gate. | 2026-08-16T20:46Z |
 | `NC-20260816-010` | Remove raw Trafft credentials from an enforced Booking container while preserving the separately identified legacy Plutio path | Codex | `codex/nc-20260816-010-booking-credential-boundary` @ deployed `ba5fe74` | `complete` | C5 | Exact release `ba5fe74` projects declared credential families and selectively enforces Campanero plus Booking. The installed no-network verifier proved all three configured Trafft names absent from Booking and the required DB/Plutio names present. The discovered non-booked-event Plutio path remains explicitly declared until a host-owned replacement is proven. No external or business-row write occurred. | None for this milestone. Next replace Booking's non-booked Plutio path with a host-owned adapter, then separately gate Plutio credential removal; destination-scoped egress remains a later control. | 2026-08-16T20:06Z |
 | `NC-20260816-009` | Extend the common external-write brake to the Things HTTP bridge without creating a real to-do | Codex | `codex/nc-20260816-009-things-safety` @ deployed `47019c9` | `complete` | C5 | Exact release `47019c9` denies the host Things `/add-todo` POST before fetch; the Slack-facing caller returns false/no success reaction; the live bundled drill returned all eight denials with no tripwire, exact config restoration, and unchanged aggregates. Excludes any real Things task, Slack message/reaction, bridge credential/config change, other integration coverage, envelope enforcement, push, and merge. | None for this milestone. Next extend the controller to a non-overlapping container-exposed write boundary or add separately gated ceilings/demotion. | 2026-08-16T19:40Z |
 | `NC-20260816-008` | Extend the common external-write brake to Hive/Firestore without consuming retry budget or performing a real write | Codex | `codex/nc-20260816-008-hive-safety` @ deployed `d32fda08` | `complete` | C5 | Exact release `d32fda08` denies Hive composite/direct mutations before Firebase initialization; inline work remains retryable; reaper denial is held without attempt/dead-letter/alert; live bundled drill returned all seven denials with no tripwire, exact config restoration, and unchanged aggregates. Excludes any real external write, classification/schema change, Chaos overlap, other integration coverage, envelope enforcement, push, and merge. | None for this milestone. Next extend the controller to Things or a container-exposed write boundary without overlapping active Chaos work. | 2026-08-16T19:14Z |
@@ -114,11 +114,32 @@ outside the current client conversation.
   crash-after-write replay from duplicating the activity; the installed
   release proves allowed, denied, and replay behavior with injected fakes; and
   production remains behaviorally unchanged until a separate promotion gate.
-- Planned sequence: commit this claim, implement the dark parser/enqueue/reaper
-  boundary and verifier, run focused and release gates under exact Node 22,
-  build and independently verify one immutable artifact, deploy it without
-  natural-path activation, execute only the injected canary, and record exact
-  health/non-interference/rollback evidence.
+- Discovery correction: the shared Trafft extractor currently omits the
+  flattened `appointmentStartDateTime` field from rescheduled event identity,
+  although the archived fixture and host parser contain it. This dark adapter
+  derives and validates the canonical reschedule identity locally. Changing
+  the shared extractor would alter live webhook deduplication, so that change
+  and its production canary are explicit prerequisites of the later promotion
+  gate rather than being smuggled into this dark release.
+- Implementation: `src/booking-plutio-host.ts` validates archived Trafft
+  lifecycle rows, persists only opaque inbox/event identifiers in the existing
+  Plutio outbox, re-loads the archive at dispatch, derives all external values
+  host-side, routes Plutio writes through the common safety controller, records
+  a stable remote marker, and returns an opaque receipt. The existing reaper
+  reclaims only stale Booking-specific in-flight rows; legacy proposal/invoice
+  behavior is unchanged. `list-notes.sh` is classified as read-only while
+  upsert/activity mutation remains safety-gated.
+- Local evidence: exact Node 22.23.2 passes typecheck; 58/58 focused tests;
+  182/182 broader action-safety, Booking, Plutio, webhook, manifest, and runner
+  tests; 635/635 email-critical tests; and the independent runner build plus
+  40/40 tests. The unrestricted root suite passes 2,456/2,457; the sole failure
+  is the unchanged unrelated CNPC source-wrapper assertion. No real external
+  or database call occurred. Formatting, continuity, capability, release, and
+  installed-canary gates remain before deployment.
+- Next sequence: commit the candidate and docs, build and independently verify
+  one immutable artifact, deploy it without natural-path activation, execute
+  only the injected canary, and record exact health, non-interference, and
+  rollback evidence.
 
 ### NC-20260816-010
 

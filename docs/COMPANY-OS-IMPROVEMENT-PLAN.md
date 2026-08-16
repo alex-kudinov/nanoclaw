@@ -58,7 +58,7 @@ company-wide merely because one workflow implements them.
 | --- | --- | --- |
 | P0.0 blast-radius reduction | partial | Gmail containment is `deployed_unverified` under `NC-20260729-004`; healer Gate A is `deployed_unverified` under `NC-20260730-002`. Procurement CDP isolation, the universal external-write brake, and all other named boundaries remain open. |
 | P0.1 runtime contract | partial | `NC-20260728-005` restored a pinned Node 22 test baseline; `NC-20260731-003` put production on Node 22.23.2; release/runtime enforcement has advanced, but review and live-verification gates remain task-specific. |
-| P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries. `NC-20260816-010` adds a fail-closed business-credential-family projection and removes Trafft credentials from enforced Booking while explicitly retaining its still-used Plutio family. Company-wide adapter migration, red-team proof, and credential rotation remain open. |
+| P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries. `NC-20260816-010` removes Trafft credentials from enforced Booking while retaining its still-used Plutio family; `NC-20260816-011` adds the unwired dark Booking-to-Plutio host adapter with opaque durable references, archive-derived values, safety enforcement, and replay receipts. Natural-path promotion, raw Plutio removal/rotation, company-wide adapter migration, and red-team proof remain open. |
 | P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. `NC-20260816-006` live-verifies Campanero; exact release `ba5fe74` under `NC-20260816-010` live-verifies Booking as the second selective canary with Trafft absent and required DB/Plutio names present. Other groups, egress enforcement, broader raw-secret removal, and action-value ceilings remain open. |
 | P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260816-002` implements a dark content-free universal envelope plus mutation/replay tests, but legacy domains do not yet supply it and enforcement is not activated. |
 | P0.5 safety controller | partial | The `NC-20260816-002` controller remains default-off; exact release `d32fda08` deploys and live-verifies a dry-run-first, auto-restored production transaction across Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, and Hive/Firestore with no external write, queue mutation, or Hive retry consumption. `NC-20260816-004` adds next-turn stale warm/adoption revocation when manifest enforcement is enabled. Immediate in-flight interruption, standalone-script/remaining-integration coverage, per-action ceilings, and automatic demotion remain open. |
@@ -1337,6 +1337,16 @@ business DB and Plutio names; it performs no network or database call. Health,
 queues, email evidence, and scheduled-task aggregates remained unchanged.
 Plutio remains intentionally available for the tracked canceled/rescheduled
 procedure until a host-owned replacement receives its own business-path gate.
+
+R1 Booking host-boundary checkpoint: `NC-20260816-011` adds the replacement as
+an unwired dark path. Only archived canceled/rescheduled Trafft events can form
+an action; the durable outbox stores opaque identity, dispatch re-loads the
+archive and derives values host-side, Plutio mutation passes through the common
+safety controller, and a stable remote marker supports replay-safe recovery.
+The Booking prompt/manifest and Plutio projection remain unchanged. Promotion
+is separate and requires the shared flattened reschedule-identity repair, a
+natural business-path canary, and empirical proof that Plutio preserves the
+marker before the container credential/mount is removed.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus

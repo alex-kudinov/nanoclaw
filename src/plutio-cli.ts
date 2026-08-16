@@ -22,7 +22,11 @@ const execFileAsync = promisify(execFile);
 const TOOLBOX_DIR =
   process.env.TOOLBOX_DIR || path.join(process.env.HOME || '', 'dev/toolbox');
 const PLUTIO_TOOL_DIR = path.join(TOOLBOX_DIR, 'shared/plutio/tools/plutio');
-const READ_ONLY_SCRIPTS = new Set(['list-proposals.sh', 'list-people.sh']);
+const READ_ONLY_SCRIPTS = new Set([
+  'list-notes.sh',
+  'list-proposals.sh',
+  'list-people.sh',
+]);
 
 type PlutioExecFile = (
   file: string,

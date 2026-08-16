@@ -342,7 +342,7 @@ dependencies, not active runtime channels in this snapshot.
 | ---------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | Lead/identity    | `src/lead-matcher.ts`, `src/identity-join.ts`                                       | business identity resolution                                        |
 | Pipeline         | `src/pipeline-status.ts`, `src/email-interaction-log.ts`                            | interaction and reply-state evidence                                |
-| Plutio           | `src/plutio-cli.ts`, `src/plutio-proposals.ts`, `src/plutio-outbox-reaper.ts`       | proposal and outbox integration                                     |
+| Plutio           | `src/plutio-cli.ts`, `src/plutio-proposals.ts`, `src/plutio-outbox-reaper.ts`, `src/booking-plutio-host.ts` | proposal/outbox integration and the dark Booking lifecycle host adapter |
 | Proposal replies | `src/proposal-reply*.ts`                                                            | accept/decline detection and actions                                |
 | Follow-up        | `src/proposal-followup*.ts`, `src/followup-drop*.ts`, migration 113                 | approval-gated nudge lifecycle and durable party-scoped suppression |
 | Trafft           | `src/trafft-custom-fields.ts`, `src/trafft-sweeper.ts`, `src/booking-host-write.ts` | booking ingestion and recovery                                      |
@@ -657,6 +657,24 @@ three configured Trafft source names absent from Booking's projected stdin and
 all five required DB/Plutio names present. Health remained 17/17 valid with
 zero active/waiting/outgoing work, and the email/task aggregates were unchanged.
 This is credential-boundary evidence, not a natural non-booked lifecycle run.
+
+`NC-20260816-011` builds the next dark boundary without changing live Booking
+behavior. The host adapter accepts only an archived Trafft `canceled` or
+`rescheduled` event, validates its stored identity, persists only opaque
+inbox/event references in the existing Plutio outbox, re-loads the archive at
+dispatch, derives every external value host-side, and routes writes through
+the common Plutio safety control. A stable marker plus an opaque receipt allows
+Booking-specific stale in-flight rows to be retried without intentionally
+duplicating an activity. Legacy proposal/invoice reclaim behavior is unchanged.
+
+The adapter is not connected to webhook ingress, and the Booking prompt,
+manifest, Plutio credentials, and mounts are unchanged. The shared rescheduled
+event extractor also omits the flattened `appointmentStartDateTime` value that
+the archived payload uses; the adapter corrects this only inside its dark
+parser. Promotion must first change and canary the shared identity extractor,
+then prove that Plutio preserves the remote marker before removing the current
+container path. Local or injected replay proof is not natural business-path
+evidence.
 
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some

@@ -20,6 +20,11 @@ import { getAllRegisteredGroups } from './db.js';
 import { readEnvFile } from './env.js';
 import { logger } from './logger.js';
 import { stripToJson } from './plutio-cli.js';
+import {
+  dispatchBookingPlutioOutboxRow,
+  isBookingPlutioOutboxRow,
+  type BookingPlutioReceipt,
+} from './booking-plutio-host.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -47,13 +52,19 @@ export interface ReaperResult {
   deadLetterDetails: Array<{ id: number; error: string }>;
 }
 
-async function markSuccess(id: number): Promise<void> {
+async function markSuccess(
+  id: number,
+  receipt?: BookingPlutioReceipt,
+): Promise<void> {
   await query(
     `UPDATE business_v2.plutio_outbox
         SET status = 'processed', last_attempted_at = NOW(),
-            last_error = NULL, last_updated_by = 'plutio-reaper'
+            last_error = NULL, last_updated_by = 'plutio-reaper',
+            payload = CASE WHEN $2::jsonb IS NULL THEN payload
+                           ELSE payload || jsonb_build_object('receipt', $2::jsonb)
+                      END
       WHERE id = $1`,
-    [id],
+    [id, receipt ? JSON.stringify(receipt) : null],
   );
 }
 
@@ -193,8 +204,14 @@ function splitName(displayName: string): { first: string; last: string } {
   return { first: parts[0], last: parts.slice(1).join(' ') };
 }
 
-async function dispatchRow(row: OutboxRow): Promise<void> {
+async function dispatchRow(
+  row: OutboxRow,
+): Promise<BookingPlutioReceipt | undefined> {
   const { operation, kind, party_id, document_id, payload } = row;
+
+  if (isBookingPlutioOutboxRow(row)) {
+    return dispatchBookingPlutioOutboxRow(row);
+  }
 
   if (operation === 'sync' && kind === 'party' && party_id) {
     const email = await lookupPartyEmail(party_id);
@@ -349,6 +366,10 @@ export async function runReaper(): Promise<ReaperResult> {
       `SELECT id, operation, kind, party_id, document_id, payload, attempts
          FROM business_v2.plutio_outbox
         WHERE status IN ('pending', 'failed')
+           OR (status = 'in_flight'
+               AND operation = 'sync'
+               AND kind LIKE 'booking_activity:%'
+               AND last_attempted_at < NOW() - INTERVAL '30 minutes')
         ORDER BY attempts ASC, created_at ASC
         LIMIT $1
         FOR UPDATE SKIP LOCKED`,
@@ -371,8 +392,8 @@ export async function runReaper(): Promise<ReaperResult> {
 
   for (const row of rows) {
     try {
-      await dispatchRow(row);
-      await markSuccess(row.id);
+      const receipt = await dispatchRow(row);
+      await markSuccess(row.id, receipt);
       result.succeeded++;
     } catch (err) {
       // execFile errors carry the real failure reason in `stderr`. Without

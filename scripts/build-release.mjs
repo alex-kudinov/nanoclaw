@@ -118,6 +118,7 @@ try {
     'scripts/set-action-safety-mode.mjs',
     'scripts/set-capability-groups.mjs',
     'scripts/verify-booking-secret-projection.mjs',
+    'scripts/verify-booking-plutio-host-boundary.mjs',
     'scripts/register-caleprocure-collector.mjs',
     'scripts/start-procurement-browser.sh',
   );

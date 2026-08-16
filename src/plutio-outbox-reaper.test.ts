@@ -4,9 +4,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock business-db
 const mockQuery = vi.fn();
 const mockWithAgentContext = vi.fn();
+const mockIsBookingPlutioOutboxRow = vi.fn<(row: any) => boolean>(() => false);
+const mockDispatchBookingPlutioOutboxRow = vi.fn<(row: any) => Promise<any>>();
 vi.mock('./business-db.js', () => ({
   query: (...args: any[]) => mockQuery(...args),
   withAgentContext: (...args: any[]) => mockWithAgentContext(...args),
+}));
+vi.mock('./booking-plutio-host.js', () => ({
+  isBookingPlutioOutboxRow: (row: any) => mockIsBookingPlutioOutboxRow(row),
+  dispatchBookingPlutioOutboxRow: (row: any) =>
+    mockDispatchBookingPlutioOutboxRow(row),
 }));
 
 // Mock config
@@ -41,6 +48,7 @@ import { runReaper } from './plutio-outbox-reaper.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockIsBookingPlutioOutboxRow.mockReturnValue(false);
 });
 
 describe('runReaper', () => {
@@ -77,6 +85,55 @@ describe('runReaper', () => {
       'plutio-reaper',
       expect.any(Function),
     );
+    expect(String(claimQuery.mock.calls[0][0])).toContain(
+      "kind LIKE 'booking_activity:%'",
+    );
+  });
+
+  it('dispatches the typed Booking row and stores its opaque receipt', async () => {
+    const row = {
+      id: 77,
+      operation: 'sync',
+      kind: `booking_activity:${'a'.repeat(64)}`,
+      party_id: 42,
+      document_id: null,
+      payload: {
+        schema_version: 1,
+        kind: `booking_activity:${'a'.repeat(64)}`,
+        webhook_inbox_id: 91,
+        event_id: 'appt:47:canceled',
+      },
+      attempts: 0,
+    };
+    const receipt = {
+      eventId: 'appt:47:canceled',
+      marker: `<!-- nanoclaw-booking:${'b'.repeat(64)} -->`,
+      plutioPersonId: 'person_1',
+      noteId: 'note_1',
+      remoteStatus: 'recorded' as const,
+    };
+    mockWithAgentContext.mockImplementation(
+      async (_agent: string, fn: (client: any) => Promise<any>) => {
+        const client = {
+          query: vi
+            .fn()
+            .mockResolvedValueOnce({ rows: [row] })
+            .mockResolvedValue({ rows: [] }),
+        };
+        return fn(client);
+      },
+    );
+    mockIsBookingPlutioOutboxRow.mockReturnValue(true);
+    mockDispatchBookingPlutioOutboxRow.mockResolvedValue(receipt);
+    mockQuery.mockResolvedValue({ rows: [] });
+
+    const result = await runReaper();
+    expect(result).toMatchObject({ processed: 1, succeeded: 1 });
+    expect(mockDispatchBookingPlutioOutboxRow).toHaveBeenCalledWith(row);
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('receipt'), [
+      77,
+      JSON.stringify(receipt),
+    ]);
   });
 
   it('marks rows as failed on dispatch error and dead-letters after max attempts', async () => {
