@@ -7,6 +7,7 @@
   },
   "inputs": ["Slack requests", "Heartbeat work"],
   "dataDomains": ["course completion", "student feedback"],
+  "credentials": { "families": [] },
   "tools": {
     "claude": [
       "Bash",

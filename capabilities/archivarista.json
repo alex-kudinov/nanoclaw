@@ -7,6 +7,7 @@
   },
   "inputs": ["Slack requests", "scheduled tasks"],
   "dataDomains": ["archives", "email read models", "agent knowledge"],
+  "credentials": { "families": ["obsidian"] },
   "tools": {
     "claude": [
       "Bash",

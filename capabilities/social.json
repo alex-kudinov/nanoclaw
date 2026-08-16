@@ -7,6 +7,7 @@
   },
   "inputs": ["Slack requests", "scheduled tasks"],
   "dataDomains": ["LinkedIn", "editorial content", "voice assets"],
+  "credentials": { "families": [] },
   "tools": {
     "claude": [
       "Bash",

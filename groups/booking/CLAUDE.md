@@ -27,7 +27,12 @@ If `/workspace/extra/knowledge/SCHEDULE.md` exists, read it for upcoming program
 - Read/write files in your workspace (`/workspace/group/`)
 - Run bash commands (`psql` for business DB — pre-configured, no credentials needed)
 - `mcp__nanoclaw__send_message` — send a message to this channel
-- `curl` — for future Trafft API queries (credentials available as env vars: TRAFFT_API_URL, TRAFFT_CLIENT_ID, TRAFFT_CLIENT_SECRET)
+- No Trafft API client is available in this container. Live webhook ingestion
+  and the read-only reconciliation sweep are host-owned; use the business DB
+  read model for booking lookups.
+- The Plutio scripts documented in `EXECUTION-STEPS.md` remain a legacy,
+  explicitly declared capability for non-booked lifecycle events. Do not use
+  them to create, change, or cancel a Trafft appointment.
 
 ## How You Get Triggered
 
@@ -58,6 +63,9 @@ To check recent events:
 ### 1. Appointment Booked
 
 The prompt contains `[TYPE: booked]`. A new appointment was created in Trafft.
+Valid booked events are normally written and notified mechanically by the host,
+without an agent run. You receive one only when the host cannot validate the
+payload or an operator explicitly asks for follow-up.
 
 ### 2. Appointment Canceled
 
@@ -83,7 +91,9 @@ See `EXECUTION-STEPS.md` for detailed procedures.
 
 - All DB writes are [AUTO] — no approval needed
 - Slack notifications are [AUTO]
-- No external actions (email, certificates) — no approval needed
+- The existing non-booked-event Plutio sync in `EXECUTION-STEPS.md` is [AUTO]
+  and non-blocking. No other external write is permitted.
+- No email, certificate, or Trafft mutation capability is available.
 
 ## Edge Cases
 

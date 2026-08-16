@@ -1,15 +1,18 @@
 # Agent capability manifests
 
-Status: Campanero-only production canary live-verified; global enforcement off
+Status: Campanero-only production canary live-verified; Booking credential
+projection implemented for the next selective gate; global enforcement off
 
-Tasks: `NC-20260816-004` foundation; `NC-20260816-006` staged activation
+Tasks: `NC-20260816-004` foundation; `NC-20260816-006` staged activation;
+`NC-20260816-010` credential-family projection and Booking gate
 
 ## Purpose
 
 Every tracked operative agent has one versioned JSON manifest under
 `capabilities/`. The manifest records its owner, purpose, inputs, data domains,
 Claude CLI tools, MCP tools, host IPC operations, mount targets and access,
-network posture, action classes and approval policy, runtime ceilings, and SLO.
+credential families, network posture, action classes and approval policy,
+runtime ceilings, and SLO.
 `docs/generated/CAPABILITY-MATRIX.md` is a deterministic review surface derived
 from those files. It contains no host paths or credentials.
 
@@ -43,6 +46,8 @@ container capability is an identity boundary, not traffic shaping.
 - the in-container MCP server registers only the selected tools;
 - the host rejects message, task, and job IPC outside the selected host
   operation set;
+- the host sends only the declared business credential families over container
+  stdin; undeclared and newly introduced secret names fail closed;
 - the exact projection is fingerprinted into the runner input and adoption
   sidecar;
 - a warm or adopted container without the current fingerprint is closed and
@@ -60,13 +65,30 @@ configured `knowledge` and `agent_docs` mounts remain read-only. Read-only job
 inventory is the permitted live canary; run, pause, and resume are excluded from
 the canary even though the role can request those host-validated operations.
 
+`NC-20260816-010` extends the same projection to business credential families.
+Claude runtime authentication remains an explicit platform exception; path-only
+runner inputs are also separate from business credentials. In compatibility
+mode the legacy secret payload is unchanged. In enforced mode, the final stdin
+projection allows only the selected manifest's families. Every tracked
+manifest now records the current family inventory so a future selected group
+does not gain credentials by accident when host code learns a new secret name.
+
+Booking is the second candidate. Its normal `booked` webhook write and the
+Trafft reconciliation sweep already run on the host. The enforced Booking
+manifest therefore omits `trafft` and keeps only its least-privilege
+`business_db` connection plus the explicitly retained `plutio` family. Plutio
+cannot yet be removed safely: the previously ignored, now tracked
+`groups/booking/EXECUTION-STEPS.md` still uses it for canceled/rescheduled
+events. Retiring that family requires a host-owned replacement and a separate
+business-path gate.
+
 ## Change procedure
 
 1. Edit the applicable manifest and any changed group procedure together.
 2. Run `npm run capabilities:generate`.
 3. Review the manifest diff and generated permissions-matrix diff. A newly
-   exposed tool, mount, host operation, action class, or runtime ceiling is a
-   security-relevant permission change.
+   exposed credential family, tool, mount, host operation, action class, or
+   runtime ceiling is a security-relevant permission change.
 4. Run `npm run capabilities:check`, focused negative tests, root typecheck and
    tests, the independent agent-runner build/tests, and
    `npm run docs:continuity-check` under `.nvmrc` Node.
@@ -83,11 +105,11 @@ other bytes, makes an exclusive same-mode backup, and atomically changes only
 ```bash
 node <release>/scripts/set-capability-groups.mjs \
   --env-file <absolute-operational-.env> \
-  --groups campanero
+  --groups campanero,booking
 
 node <release>/scripts/set-capability-groups.mjs \
   --env-file <absolute-operational-.env> \
-  --groups campanero \
+  --groups campanero,booking \
   --apply --confirm-host <exact-hostname>
 ```
 
@@ -95,6 +117,13 @@ After apply, require `/health.capabilityManifests.config` to report a valid
 configuration with global enforcement false and only the intended group.
 Re-check active/waiting containers and relevant action queues before the first
 turn. Do not infer an allowed/denied runtime result from the config response.
+
+For the Booking gate, run the installed
+`scripts/verify-booking-secret-projection.mjs` from the operational project
+root after health confirms selection. It reads the real host configuration,
+performs no network or database call, never prints secret values, and fails
+unless all three configured Trafft source credentials are absent from the
+projected Booking stdin payload while the declared DB and Plutio inputs remain.
 
 ## First production checkpoint
 
@@ -126,7 +155,8 @@ from source tests alone.
 - The tracked manifests truthfully record `unrestricted_current` network mode;
   they do not enforce destination-scoped egress.
 - Several agents still receive `Bash` and raw mounted tools or credentials.
-  P0.2 removal behind narrow host adapters remains open.
+  Booking still receives Plutio until its non-booked lifecycle path moves to a
+  narrow host adapter; all other raw-credential removal remains open.
 - Manifest action classes describe the permitted role envelope; the host's
   action-safety controller and domain policies remain the actual external-write
   authority.
@@ -134,6 +164,6 @@ from source tests alone.
   host-owned and intentionally absent from the tracked matrix.
 - This milestone closes stale reuse at the next turn/adoption boundary. It does
   not kill an already executing model turn immediately.
-- Any second-group or global enablement, destination-scoped egress, per-action
+- Global enablement, destination-scoped egress, per-action
   amount/rate ceilings, raw-credential retirement, broader live negative
   canaries, and automatic autonomy demotion remain separate gates.

@@ -12,6 +12,9 @@
     "service accounts",
     "agent knowledge"
   ],
+  "credentials": {
+    "families": ["business_db", "sheets", "stripe"]
+  },
   "tools": {
     "claude": [
       "Bash",

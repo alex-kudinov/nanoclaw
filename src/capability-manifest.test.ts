@@ -6,8 +6,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   CapabilityManifestError,
+  MANIFEST_CREDENTIAL_FAMILIES,
   TRACKED_AGENT_FOLDERS,
   assertCapabilityCatalogForGroups,
+  capabilityManifestFingerprint,
   capabilityManifestIsEnforced,
   getCapabilityManifestStatus,
   loadCapabilityCatalog,
@@ -57,6 +59,10 @@ describe('capability manifests', () => {
       validManifestCount: 17,
       invalidManifestCount: 0,
     });
+    expect(
+      catalog.find((manifest) => manifest.agent.folder === 'booking')
+        ?.credentials.families,
+    ).toEqual(['business_db', 'plutio']);
     const operativeFolders = fs
       .readdirSync(path.join(process.cwd(), 'groups'), { withFileTypes: true })
       .filter(
@@ -94,6 +100,9 @@ describe('capability manifests', () => {
     });
     expect(projection.enforced).toBe(false);
     expect(projection.mcpTools).toContain('jobs');
+    expect(projection.credentialFamilies).toEqual([
+      ...MANIFEST_CREDENTIAL_FAMILIES,
+    ]);
   });
 
   it('enforces only explicitly selected groups during a staged rollout', () => {
@@ -124,6 +133,7 @@ describe('capability manifests', () => {
     expect(campanero.enforced).toBe(true);
     expect(campanero.claudeTools).toEqual([]);
     expect(campanero.mcpTools).toEqual(['jobs']);
+    expect(campanero.credentialFamilies).toEqual([]);
 
     const sales = projectGroupCapabilities({
       group: group('sales'),
@@ -134,6 +144,7 @@ describe('capability manifests', () => {
     });
     expect(sales.enforced).toBe(false);
     expect(sales.mcpTools).toContain('gmail_search');
+    expect(sales.credentialFamilies).toEqual([...MANIFEST_CREDENTIAL_FAMILIES]);
   });
 
   it('rejects malformed, duplicate, and unknown staged group lists', () => {
@@ -207,6 +218,37 @@ describe('capability manifests', () => {
     expect(projection.mcpTools).toContain('gmail_search');
     expect(projection.mcpTools).not.toContain('gmail_send');
     expect(projection.additionalMounts).toHaveLength(1);
+    expect(projection.credentialFamilies).toEqual(['business_db', 'plutio']);
+  });
+
+  it('rejects unknown credential families instead of widening secret access', () => {
+    const manifest = JSON.parse(
+      fs.readFileSync(
+        path.join(process.cwd(), 'capabilities', 'booking.json'),
+        'utf8',
+      ),
+    );
+    manifest.credentials.families.push('trafft_admin');
+    expect(() => validateCapabilityManifest(manifest, 'booking')).toThrow(
+      /credentials\.families contains an unknown value/,
+    );
+  });
+
+  it('binds credential-family changes into the adoption fingerprint', () => {
+    const manifest = validateCapabilityManifest(
+      JSON.parse(
+        fs.readFileSync(
+          path.join(process.cwd(), 'capabilities', 'booking.json'),
+          'utf8',
+        ),
+      ),
+      'booking',
+    );
+    const narrowed = structuredClone(manifest);
+    narrowed.credentials.families = ['business_db'];
+    expect(capabilityManifestFingerprint(narrowed)).not.toBe(
+      capabilityManifestFingerprint(manifest),
+    );
   });
 
   it('denies an undeclared cross-agent mount and an oversized runtime', () => {

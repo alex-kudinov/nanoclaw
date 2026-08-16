@@ -7,6 +7,7 @@
   },
   "inputs": ["Slack grader submissions"],
   "dataDomains": ["grading records", "rubric snapshots", "agent knowledge"],
+  "credentials": { "families": [] },
   "tools": {
     "claude": [
       "Bash",

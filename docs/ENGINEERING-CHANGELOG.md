@@ -8,6 +8,46 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-010 — Project business credential families and remove Trafft from Booking
+
+- Date: 2026-08-16T20:00Z
+- Owner/client: Codex
+- State: ready_for_deploy; implementation verified locally, while immutable
+  release/deployment and the side-effect-free production Booking canary are
+  pending
+- Commit/PR: claim commit `b4c3afc`; implementation is the changelog-bearing
+  commit on `codex/nc-20260816-010-booking-credential-boundary`; no PR
+- Change class: C5 — container credential and selective capability boundary
+- Intended outcome: prevent an enforced Booking container from receiving raw
+  Trafft credentials while keeping host-owned webhook persistence and
+  reconciliation unchanged.
+- Discovery correction: Booking's tracked prompt referenced an ignored
+  `groups/booking/EXECUTION-STEPS.md` that still performs direct Plutio work for
+  canceled/rescheduled events. The procedure is now Git-trackable and aligned
+  with the host-owned booked path. Plutio remains explicitly declared until a
+  separate host-owned replacement is proved; silently removing it would be a
+  workflow regression.
+- Implementation: add a strict eight-family credential vocabulary to all 17
+  manifests and the generated matrix; bind families into launch/adoption
+  fingerprints; preserve compatibility-mode inputs; apply a final fail-closed
+  name allowlist before container stdin; export the same read path to a bundled
+  Booking verifier; and remove `trafft` from the enforced Booking declaration
+  while retaining `business_db` and `plutio`.
+- Safety boundary: no Trafft or Plutio request, booking/customer creation,
+  Slack/customer message, production business-row write, global enforcement,
+  credential rotation, push, or merge is authorized. Claude runtime auth is a
+  documented platform exception; Booking egress and Bash remain open residuals.
+- Verification: exact Node 22.23.2 passes typecheck, source formatting, 73/73
+  focused capability/runner/Booking/Trafft tests, 635/635 email-critical tests,
+  independent runner build plus 40/40 tests, capability matrix generation and
+  check, schema sanitizer, documentation continuity, script syntax, and
+  `git diff --check`. The unrestricted suite passes 2,446/2,447; its sole
+  failure is the unchanged unrelated CNPC source-wrapper assertion.
+- Deployment/rollback: pending. Source rollback is the prior exact release;
+  selective rollout rollback removes Booking from
+  `CAPABILITY_MANIFEST_ENFORCED_GROUPS` with the bundled atomic helper and
+  recycles only idle Booking state.
+
 ### NC-20260816-009 — Extend the common external-write brake to Things
 
 - Date: 2026-08-16T19:27Z

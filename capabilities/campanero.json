@@ -7,6 +7,7 @@
   },
   "inputs": ["Slack requests"],
   "dataDomains": ["host job inventory and status"],
+  "credentials": { "families": [] },
   "tools": {
     "claude": [],
     "mcp": ["jobs"],

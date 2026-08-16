@@ -87,6 +87,17 @@ export const MANIFEST_ACTION_CLASSES = [
   'c5_destructive',
 ] as const;
 
+export const MANIFEST_CREDENTIAL_FAMILIES = [
+  'business_db',
+  'heartbeat',
+  'obsidian',
+  'plutio',
+  'sheets',
+  'smtp',
+  'stripe',
+  'trafft',
+] as const;
+
 export const TRACKED_AGENT_FOLDERS = [
   'archivarista',
   'booking',
@@ -111,6 +122,8 @@ export type ClaudeToolName = (typeof CLAUDE_TOOL_NAMES)[number];
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 export type HostOperationName = (typeof HOST_OPERATION_NAMES)[number];
 export type ManifestActionClass = (typeof MANIFEST_ACTION_CLASSES)[number];
+export type ManifestCredentialFamily =
+  (typeof MANIFEST_CREDENTIAL_FAMILIES)[number];
 
 const MCP_HOST_OPERATION: Partial<Record<McpToolName, HostOperationName>> = {
   send_message: 'message',
@@ -141,6 +154,9 @@ export interface CapabilityManifestV1 {
   };
   inputs: string[];
   dataDomains: string[];
+  credentials: {
+    families: ManifestCredentialFamily[];
+  };
   tools: {
     claude: ClaudeToolName[];
     mcp: McpToolName[];
@@ -191,6 +207,7 @@ export interface CapabilityProjection {
   mcpTools: string[];
   hostOperations: string[];
   additionalMounts: AdditionalMount[];
+  credentialFamilies: ManifestCredentialFamily[];
 }
 
 export class CapabilityManifestError extends Error {
@@ -383,6 +400,7 @@ export function validateCapabilityManifest(
       'agent',
       'inputs',
       'dataDomains',
+      'credentials',
       'tools',
       'mounts',
       'network',
@@ -405,6 +423,8 @@ export function validateCapabilityManifest(
 
   const tools = expectRecord(root.tools, 'tools');
   exactKeys(tools, ['claude', 'mcp', 'hostOperations'], 'tools');
+  const credentials = expectRecord(root.credentials, 'credentials');
+  exactKeys(credentials, ['families'], 'credentials');
   const mounts = expectRecord(root.mounts, 'mounts');
   exactKeys(mounts, ['base', 'additional'], 'mounts');
   if (!Array.isArray(mounts.additional)) {
@@ -489,6 +509,13 @@ export function validateCapabilityManifest(
     },
     inputs: stringArray(root.inputs, 'inputs'),
     dataDomains: stringArray(root.dataDomains, 'dataDomains'),
+    credentials: {
+      families: enumArray(
+        credentials.families,
+        MANIFEST_CREDENTIAL_FAMILIES,
+        'credentials.families',
+      ),
+    },
     tools: {
       claude: claudeTools,
       mcp: mcpTools,
@@ -724,11 +751,13 @@ export function projectGroupCapabilities(opts: {
         manifestFingerprint,
         claudeTools: CLAUDE_TOOL_NAMES,
         mcpTools: MCP_TOOL_NAMES,
+        credentialFamilies: MANIFEST_CREDENTIAL_FAMILIES,
       }),
       claudeTools: [...CLAUDE_TOOL_NAMES],
       mcpTools: [...MCP_TOOL_NAMES],
       hostOperations: [...HOST_OPERATION_NAMES],
       additionalMounts,
+      credentialFamilies: [...MANIFEST_CREDENTIAL_FAMILIES],
     };
   }
 
@@ -778,6 +807,7 @@ export function projectGroupCapabilities(opts: {
       manifestFingerprint,
       claudeTools: exactManifest.tools.claude,
       mcpTools: exactManifest.tools.mcp,
+      credentialFamilies: exactManifest.credentials.families,
       mounts: additionalMounts.map((mount) => ({
         target: configuredMountTarget(mount),
         access: mount.readonly === false ? 'read_write' : 'read_only',
@@ -787,6 +817,7 @@ export function projectGroupCapabilities(opts: {
     mcpTools: [...exactManifest.tools.mcp],
     hostOperations: [...exactManifest.tools.hostOperations],
     additionalMounts,
+    credentialFamilies: [...exactManifest.credentials.families],
   };
 }
 

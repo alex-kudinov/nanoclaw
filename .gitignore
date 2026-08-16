@@ -28,6 +28,7 @@ groups/*
 groups/*/*
 !groups/*/CLAUDE.md
 !groups/*/CLAUDE-MAIN.md
+!groups/booking/EXECUTION-STEPS.md
 !groups/*/WORKFLOWS.md
 !groups/*/VOICE-AND-TONE.md
 !groups/*/EMAIL-RESPONSE-GUIDELINES.md

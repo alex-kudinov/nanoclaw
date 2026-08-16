@@ -12,6 +12,7 @@
     "opportunity records",
     "agent knowledge"
   ],
+  "credentials": { "families": ["business_db"] },
   "tools": {
     "claude": [
       "Bash",

@@ -13,6 +13,7 @@
     "email delivery",
     "agent knowledge"
   ],
+  "credentials": { "families": ["heartbeat", "smtp"] },
   "tools": {
     "claude": [
       "Bash",

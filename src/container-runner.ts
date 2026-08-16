@@ -18,6 +18,7 @@ import {
   parseContainerMemoryMb,
   projectGroupCapabilities,
   type CapabilityProjection,
+  type ManifestCredentialFamily,
 } from './capability-manifest.js';
 import {
   CONTAINER_IMAGE,
@@ -48,6 +49,52 @@ import {
 } from './container-runtime.js';
 import { validateAdditionalMounts } from './mount-security.js';
 import { AdditionalMount, RegisteredGroup } from './types.js';
+
+const CREDENTIAL_ENV_BY_FAMILY: Record<
+  ManifestCredentialFamily,
+  readonly string[]
+> = {
+  business_db: ['BUSINESS_DB_URL', 'PGOPTIONS'],
+  heartbeat: ['HEARTBEAT_API_KEY'],
+  obsidian: ['OBSIDIAN_API_KEY'],
+  plutio: [
+    'PLUTIO_API_CLIENTID',
+    'PLUTIO_API_CLIENTSECRET',
+    'PLUTIO_SUBDOMAIN',
+  ],
+  sheets: ['SHEETS_PAYMENTS_ID', 'SHEETS_ROSTER_ID'],
+  smtp: ['EMAIL_USER', 'EMAIL_PASS'],
+  stripe: ['STRIPE_RESTRICTED_KEY', 'STRIPE_SECRET_KEY_ALT'],
+  trafft: ['TRAFFT_API_URL', 'TRAFFT_CLIENT_ID', 'TRAFFT_CLIENT_SECRET'],
+};
+
+const ALWAYS_PROJECTED_RUNNER_INPUTS = new Set([
+  'CLAUDE_CONFIG_DIR',
+  'CLAUDE_CODE_OAUTH_TOKEN',
+  'CLAUDE_TOKEN_POOL',
+  'ANTHROPIC_API_KEY_FALLBACK',
+  'INSTRUCTORS_DIR',
+  'TOOLBOX_ROOT',
+]);
+
+/**
+ * Final allowlist before the host sends secrets over container stdin. An
+ * enforced manifest cannot receive an undeclared business credential, and a
+ * newly added secret name fails closed until it is assigned to a family.
+ */
+export function projectSecretsForCredentialFamilies(
+  secrets: Record<string, string>,
+  credentialFamilies?: readonly ManifestCredentialFamily[],
+): Record<string, string> {
+  if (credentialFamilies === undefined) return { ...secrets };
+  const allowed = new Set(ALWAYS_PROJECTED_RUNNER_INPUTS);
+  for (const family of credentialFamilies) {
+    for (const key of CREDENTIAL_ENV_BY_FAMILY[family]) allowed.add(key);
+  }
+  return Object.fromEntries(
+    Object.entries(secrets).filter(([key]) => allowed.has(key)),
+  );
+}
 
 /**
  * Resolve an OAuth token from the token pool via round-robin rotation.
@@ -502,9 +549,10 @@ function tokenPolicyFor(
  * as ANTHROPIC_API_KEY_FALLBACK. CLAUDE_CONFIG_DIR points to the mounted .claude
  * dir for settings/skills.
  */
-async function readSecrets(
+export async function readContainerSecrets(
   groupFolder?: string,
   policyOverride?: 'eager' | 'lazy',
+  credentialFamilies?: readonly ManifestCredentialFamily[],
 ): Promise<Record<string, string>> {
   const configured = readEnvFile([
     'CLAUDE_CODE_OAUTH_TOKEN',
@@ -582,12 +630,14 @@ async function readSecrets(
     // so an active name would divert all traffic to paid billing immediately.
     ...(apiKey ? { ANTHROPIC_API_KEY_FALLBACK: apiKey } : {}),
   };
+  const allowsCredential = (family: ManifestCredentialFamily): boolean =>
+    credentialFamilies === undefined || credentialFamilies.includes(family);
 
   // Add per-agent business DB credentials
   const dbHost = configured.BUSINESS_DB_HOST;
   const dbPort = configured.BUSINESS_DB_PORT;
   const dbName = configured.BUSINESS_DB_NAME;
-  if (dbHost && dbName && groupFolder) {
+  if (allowsCredential('business_db') && dbHost && dbName && groupFolder) {
     const roleMap: Record<string, { role: string; pass: string }> = {
       inbox: {
         role: configured.BUSINESS_DB_ROLE_INBOX || '',
@@ -636,7 +686,7 @@ async function readSecrets(
   }
 
   // Inject Obsidian REST API key for El Archivarista
-  if (groupFolder === 'archivarista') {
+  if (groupFolder === 'archivarista' && allowsCredential('obsidian')) {
     const obsidianKey = configured.OBSIDIAN_API_KEY;
     if (obsidianKey) {
       secrets.OBSIDIAN_API_KEY = obsidianKey;
@@ -644,7 +694,7 @@ async function readSecrets(
   }
 
   // Inject Trafft API credentials for Booking Coordinator
-  if (groupFolder === 'booking') {
+  if (groupFolder === 'booking' && allowsCredential('trafft')) {
     if (configured.TRAFFT_API_URL) {
       secrets.TRAFFT_API_URL = configured.TRAFFT_API_URL;
     }
@@ -659,15 +709,25 @@ async function readSecrets(
   // Inject credentials + path overrides for Course Session Coordinator
   if (groupFolder === 'courses') {
     const hbKey = configured.HEARTBEAT_API_KEY;
-    if (hbKey) secrets.HEARTBEAT_API_KEY = hbKey;
-    Object.assign(secrets, projectCoursesSmtpSecrets(groupFolder, configured));
+    if (hbKey && allowsCredential('heartbeat')) {
+      secrets.HEARTBEAT_API_KEY = hbKey;
+    }
+    if (allowsCredential('smtp')) {
+      Object.assign(
+        secrets,
+        projectCoursesSmtpSecrets(groupFolder, configured),
+      );
+    }
     // Container path overrides for distribute_session.py
     secrets.INSTRUCTORS_DIR = '/workspace/extra/instructors';
     secrets.TOOLBOX_ROOT = '/workspace/extra';
   }
 
   // Inject Plutio credentials for agents that use Plutio tools
-  if (['inbox', 'booking', 'sales', 'certifier'].includes(groupFolder || '')) {
+  if (
+    allowsCredential('plutio') &&
+    ['inbox', 'booking', 'sales', 'certifier'].includes(groupFolder || '')
+  ) {
     for (const key of [
       'PLUTIO_API_CLIENTID',
       'PLUTIO_API_CLIENTSECRET',
@@ -690,21 +750,21 @@ async function readSecrets(
 
   // Inject Stripe + Sheets secrets for El Contador
   if (groupFolder === 'contador') {
-    if (configured.STRIPE_RESTRICTED_KEY) {
+    if (allowsCredential('stripe') && configured.STRIPE_RESTRICTED_KEY) {
       secrets.STRIPE_RESTRICTED_KEY = configured.STRIPE_RESTRICTED_KEY;
     }
-    if (configured.STRIPE_SECRET_KEY_ALT) {
+    if (allowsCredential('stripe') && configured.STRIPE_SECRET_KEY_ALT) {
       secrets.STRIPE_SECRET_KEY_ALT = configured.STRIPE_SECRET_KEY_ALT;
     }
-    if (configured.SHEETS_PAYMENTS_ID) {
+    if (allowsCredential('sheets') && configured.SHEETS_PAYMENTS_ID) {
       secrets.SHEETS_PAYMENTS_ID = configured.SHEETS_PAYMENTS_ID;
     }
-    if (configured.SHEETS_ROSTER_ID) {
+    if (allowsCredential('sheets') && configured.SHEETS_ROSTER_ID) {
       secrets.SHEETS_ROSTER_ID = configured.SHEETS_ROSTER_ID;
     }
   }
 
-  return secrets;
+  return projectSecretsForCredentialFamilies(secrets, credentialFamilies);
 }
 
 function buildContainerArgs(
@@ -951,9 +1011,10 @@ export async function runContainerAgent(
   fs.mkdirSync(logsDir, { recursive: true });
 
   // Resolve secrets before spawning (async for CDP URL fetch)
-  const resolvedSecrets = await readSecrets(
+  const resolvedSecrets = await readContainerSecrets(
     input.groupFolder,
     group.containerConfig?.tokenPolicy,
+    capability.credentialFamilies,
   );
 
   // Per-group model override (T11). Resolution lives ONLY here — the host-side

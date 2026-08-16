@@ -7,6 +7,7 @@
   },
   "inputs": ["Slack inbox items", "webhook events"],
   "dataDomains": ["operations inbox", "agent knowledge"],
+  "credentials": { "families": ["business_db", "plutio"] },
   "tools": {
     "claude": [
       "Bash",

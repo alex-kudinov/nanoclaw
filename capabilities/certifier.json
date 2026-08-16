@@ -7,6 +7,7 @@
   },
   "inputs": ["Slack requests", "completion events"],
   "dataDomains": ["certification", "Plutio"],
+  "credentials": { "families": ["plutio"] },
   "tools": {
     "claude": [
       "Bash",

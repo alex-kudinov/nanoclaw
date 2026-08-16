@@ -613,8 +613,9 @@ folders. `src/capability-manifest.ts` validates and fingerprints them, and
 manifests.
 
 Global enforcement remains default off. When a group is selected, container
-launch projects exact Claude and MCP tools, configured mount targets/access,
-and runtime ceilings from the selected manifest; recognized message/task/job
+launch projects exact Claude and MCP tools, declared business credential
+families, configured mount targets/access, and runtime ceilings from the
+selected manifest; recognized message/task/job
 IPC is also denied outside the manifest's host-operation set.
 The projection fingerprint is carried in container input and sidecar state.
 GroupQueue refuses another turn for a stale warm container, and startup refuses
@@ -637,11 +638,23 @@ MCP tools absent. Queue, email-action, job, and Campanero-task aggregates were
 unchanged after the canary; release, environment, and 18 runner-snapshot
 rollback artifacts are retained.
 
+`NC-20260816-010` adds a final fail-closed credential-family allowlist to the
+same projection. Compatibility mode preserves the legacy payload. Enforced
+agents receive only declared business credential families, and any new secret
+name is withheld until classified. The Booking manifest omits Trafft because
+live webhook persistence and reconciliation are host-owned; it retains the
+least-privilege business DB family and the existing Plutio family. The latter
+cannot be removed without replacing the tracked non-booked lifecycle procedure
+in `groups/booking/EXECUTION-STEPS.md`. Claude runtime authentication remains a
+documented platform exception. The bundled Booking verifier reads the real
+host configuration but emits only names/counts and performs no network or
+database call.
+
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some
 roles; immediate in-flight termination, value/rate ceilings, dynamic group
-onboarding, every group beyond Campanero, and broader business-path canaries are
-still open. See `docs/CAPABILITY-MANIFESTS.md`.
+onboarding, every group beyond the selectively proven canaries, and broader
+business-path canaries are still open. See `docs/CAPABILITY-MANIFESTS.md`.
 
 ### Sales channel work-item containment (`NC-20260802-006`)
 

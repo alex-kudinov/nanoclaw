@@ -160,6 +160,7 @@ import {
   coursesSmtpCapabilityAllowed,
   filterExternalWriteMounts,
   planReleaseOwnedInstructionMounts,
+  projectSecretsForCredentialFamilies,
   resolveOAuthToken,
   sweepExitedContainerInputs,
 } from './container-runner.js';
@@ -179,6 +180,55 @@ const testInput = {
   chatJid: 'test@g.us',
   isMain: false,
 };
+
+describe('manifest credential projection', () => {
+  const candidateSecrets = {
+    CLAUDE_CONFIG_DIR: '/home/node/.claude',
+    CLAUDE_CODE_OAUTH_TOKEN: 'runtime-token',
+    BUSINESS_DB_URL: 'postgresql://booking',
+    PGOPTIONS: '-c app.current_agent=booking',
+    PLUTIO_API_CLIENTID: 'plutio-id',
+    PLUTIO_API_CLIENTSECRET: 'plutio-secret',
+    PLUTIO_SUBDOMAIN: 'plutio-subdomain',
+    TRAFFT_API_URL: 'https://trafft.invalid',
+    TRAFFT_CLIENT_ID: 'trafft-id',
+    TRAFFT_CLIENT_SECRET: 'trafft-secret',
+    FUTURE_UNDECLARED_SECRET: 'must-not-project',
+  };
+
+  it('preserves compatibility-mode inputs when no family projection is supplied', () => {
+    expect(projectSecretsForCredentialFamilies(candidateSecrets)).toEqual(
+      candidateSecrets,
+    );
+  });
+
+  it('projects Booking runtime, DB, and declared Plutio inputs but no Trafft secrets', () => {
+    const projected = projectSecretsForCredentialFamilies(candidateSecrets, [
+      'business_db',
+      'plutio',
+    ]);
+    expect(projected).toMatchObject({
+      CLAUDE_CONFIG_DIR: '/home/node/.claude',
+      CLAUDE_CODE_OAUTH_TOKEN: 'runtime-token',
+      BUSINESS_DB_URL: 'postgresql://booking',
+      PGOPTIONS: '-c app.current_agent=booking',
+      PLUTIO_API_CLIENTID: 'plutio-id',
+      PLUTIO_API_CLIENTSECRET: 'plutio-secret',
+      PLUTIO_SUBDOMAIN: 'plutio-subdomain',
+    });
+    expect(Object.keys(projected)).not.toContain('TRAFFT_API_URL');
+    expect(Object.keys(projected)).not.toContain('TRAFFT_CLIENT_ID');
+    expect(Object.keys(projected)).not.toContain('TRAFFT_CLIENT_SECRET');
+    expect(Object.keys(projected)).not.toContain('FUTURE_UNDECLARED_SECRET');
+  });
+
+  it('projects no business credentials for a zero-family agent', () => {
+    expect(projectSecretsForCredentialFamilies(candidateSecrets, [])).toEqual({
+      CLAUDE_CONFIG_DIR: '/home/node/.claude',
+      CLAUDE_CODE_OAUTH_TOKEN: 'runtime-token',
+    });
+  });
+});
 
 describe('release-owned instruction mounts', () => {
   beforeEach(() => {

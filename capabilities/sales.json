@@ -11,6 +11,7 @@
     "email search results"
   ],
   "dataDomains": ["sales", "email read models", "Plutio", "agent knowledge"],
+  "credentials": { "families": ["business_db", "plutio"] },
   "tools": {
     "claude": [
       "Bash",
