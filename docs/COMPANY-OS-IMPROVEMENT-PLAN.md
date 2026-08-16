@@ -59,7 +59,7 @@ company-wide merely because one workflow implements them.
 | P0.0 blast-radius reduction | partial | Gmail containment is `deployed_unverified` under `NC-20260729-004`; healer Gate A is `deployed_unverified` under `NC-20260730-002`. Procurement CDP isolation, the universal external-write brake, and all other named boundaries remain open. |
 | P0.1 runtime contract | partial | `NC-20260728-005` restored a pinned Node 22 test baseline; `NC-20260731-003` put production on Node 22.23.2; release/runtime enforcement has advanced, but review and live-verification gates remain task-specific. |
 | P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries. `NC-20260816-010` adds a fail-closed business-credential-family projection and removes Trafft credentials from enforced Booking while explicitly retaining its still-used Plutio family. Company-wide adapter migration, red-team proof, and credential rotation remain open. |
-| P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. `NC-20260816-006` live-verifies the first selective canary, Campanero. `NC-20260816-010` makes all manifests declare credential families and prepares Booking as the second selective canary. Other groups, egress enforcement, broader raw-secret removal, and action-value ceilings remain open. |
+| P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. `NC-20260816-006` live-verifies Campanero; exact release `ba5fe74` under `NC-20260816-010` live-verifies Booking as the second selective canary with Trafft absent and required DB/Plutio names present. Other groups, egress enforcement, broader raw-secret removal, and action-value ceilings remain open. |
 | P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260816-002` implements a dark content-free universal envelope plus mutation/replay tests, but legacy domains do not yet supply it and enforcement is not activated. |
 | P0.5 safety controller | partial | The `NC-20260816-002` controller remains default-off; exact release `d32fda08` deploys and live-verifies a dry-run-first, auto-restored production transaction across Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, and Hive/Firestore with no external write, queue mutation, or Hive retry consumption. `NC-20260816-004` adds next-turn stale warm/adoption revocation when manifest enforcement is enabled. Immediate in-flight interruption, standalone-script/remaining-integration coverage, per-action ceilings, and automatic demotion remain open. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
@@ -1311,7 +1311,8 @@ tracked operative groups, generates a path-free permissions matrix, projects
 exact Claude/MCP tools plus declared mounts and runtime ceilings when enabled,
 constrains recognized host IPC, and fingerprints launches so stale warm or
 adopted containers cannot receive another turn. Global enforcement remains off;
-`NC-20260816-006` selectively activates only Campanero. P0.3 therefore remains
+`NC-20260816-006` selectively activates Campanero, and `NC-20260816-010`
+selectively adds Booking with a credential-family gate. P0.3 therefore remains
 partial pending the remaining groups, destination-scoped egress, raw-credential
 retirement, action-value/rate limits, and automatic demotion evidence.
 
@@ -1325,7 +1326,17 @@ related host operation, and read-only declared mounts; the deployed image
 returned the exact live 22-job inventory while Bash and undeclared MCP tools
 were absent. Zero-work, email-action, job/task non-interference, and recoverable
 release/environment/runner rollback artifacts close this first-agent checkpoint.
-Expansion beyond Campanero remains a separate milestone.
+Expansion beyond Campanero remained a separate milestone.
+
+R1 second-agent checkpoint: `NC-20260816-010` adds strict business credential
+families to all manifests and a final fail-closed stdin allowlist. Exact release
+`ba5fe74` is live with only Campanero and Booking selected and global enforcement
+off. The installed real-configuration verifier proves Booking receives none of
+the three configured Trafft credential names while retaining all required
+business DB and Plutio names; it performs no network or database call. Health,
+queues, email evidence, and scheduled-task aggregates remained unchanged.
+Plutio remains intentionally available for the tracked canceled/rescheduled
+procedure until a host-owned replacement receives its own business-path gate.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus

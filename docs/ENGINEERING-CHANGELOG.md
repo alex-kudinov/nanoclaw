@@ -10,13 +10,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260816-010 — Project business credential families and remove Trafft from Booking
 
-- Date: 2026-08-16T20:00Z
+- Date: 2026-08-16T20:06Z
 - Owner/client: Codex
-- State: ready_for_deploy; implementation verified locally, while immutable
-  release/deployment and the side-effect-free production Booking canary are
-  pending
-- Commit/PR: claim commit `b4c3afc`; implementation is the changelog-bearing
-  commit on `codex/nc-20260816-010-booking-credential-boundary`; no PR
+- State: complete; immutable release deployed and the side-effect-free
+  production Booking credential-projection canary live-verified
+- Commit/PR: claim `b4c3afc`, implementation `a36fce7`, and release
+  `ba5fe74e93e7d58582079a153d85aaf30a651c86` on
+  `codex/nc-20260816-010-booking-credential-boundary`; no PR
 - Change class: C5 — container credential and selective capability boundary
 - Intended outcome: prevent an enforced Booking container from receiving raw
   Trafft credentials while keeping host-owned webhook persistence and
@@ -43,10 +43,39 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   check, schema sanitizer, documentation continuity, script syntax, and
   `git diff --check`. The unrestricted suite passes 2,446/2,447; its sole
   failure is the unchanged unrelated CNPC source-wrapper assertion.
-- Deployment/rollback: pending. Source rollback is the prior exact release;
-  selective rollout rollback removes Booking from
-  `CAPABILITY_MANIFEST_ENFORCED_GROUPS` with the bundled atomic helper and
-  recycles only idle Booking state.
+- Release/deployment evidence: the immutable 652-file release
+  `ba5fe74e93e7d58582079a153d85aaf30a651c86` has source tree
+  `a17f27e7dc07a574d69b21a437db1f4fd58ffe49`, artifact hash
+  `96c23295615459de76c37afd5b6fbe97d2c354d840a993134e34323e035f1f6e`,
+  and archive SHA-256
+  `d6b8bd54560409f11008a7ef2330fdebce19fd5362452ebf0ebea18e5a5682bb`.
+  It independently verified locally and on `mini-claw.local` under Node
+  22.23.2. Activation from exact `47019c9` changed only the three permitted
+  plist values, left zero active/waiting containers, and retained rollback
+  `com.nanoclaw.plist.rollback-47019c937d38-2026-08-16T20-03-24-541Z`.
+- Live proof: the bundled dry-run-first helper changed only
+  `CAPABILITY_MANIFEST_ENFORCED_GROUPS` from `campanero` to
+  `booking,campanero`, retained backup
+  `.env.rollback-capabilities-2026-08-16T20-03-55-585Z`, and left global
+  enforcement false. The backup hash is
+  `0c95d71db6cc751e57f8be40c88727d6bae675c05679fb0a6d1afcad1d16be73`;
+  the activated environment hash is
+  `a302579aae2916d898ea03dff8328d080b2e0cb3d88e01c66b06ec4d5c39f7d3`.
+  Health reports exact `ba5fe74`, one matching listener,
+  17/17 valid manifests, connected Gmail/Slack, and zero
+  active/waiting/outgoing work. The installed verifier observed all three
+  Trafft source credential names configured, projected zero into Booking, and
+  found all five required DB/Plutio names in its eight-name payload; it emitted
+  names/counts only, returned manifest fingerprint
+  `00cf489fe0ff70d638e32d696711722507b3095ef70290947af14ed49979b186`,
+  and performed no network or database call.
+- Final production evidence: email actions remained 61 confirmed/6 blocked,
+  send events remained 334, Campanero retained one completed scheduled task,
+  and Booking had no scheduled-task rows. No Trafft/Plutio request,
+  booking/customer creation, customer or Slack message, production business-row
+  write, credential rotation, push, or merge occurred. Configuration rollback
+  restores the exact environment backup or removes Booking with the same
+  helper; release rollback restores the retained prior plist.
 
 ### NC-20260816-009 — Extend the common external-write brake to Things
 

@@ -650,6 +650,14 @@ documented platform exception. The bundled Booking verifier reads the real
 host configuration but emits only names/counts and performs no network or
 database call.
 
+Immutable release `ba5fe74e93e7d58582079a153d85aaf30a651c86` is now
+health-verified on `mini-claw.local` with only Booking and Campanero selected
+and global enforcement false. The installed no-network verifier found all
+three configured Trafft source names absent from Booking's projected stdin and
+all five required DB/Plutio names present. Health remained 17/17 valid with
+zero active/waiting/outgoing work, and the email/task aggregates were unchanged.
+This is credential-boundary evidence, not a natural non-booked lifecycle run.
+
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some
 roles; immediate in-flight termination, value/rate ceilings, dynamic group
@@ -1437,7 +1445,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
 | `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
 | `docs/ACTION-SAFETY-CONTROL.md`         | host action envelope, safety precedence, covered boundaries, and activation/drill transaction | seven-system boundary through Things is live-proven in exact release `47019c9` under `NC-20260816-009`; controls remain default-off and residuals explicit |
-| `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | Campanero-only canary live under `NC-20260816-006`; global rollout, egress, raw-secret removal, and wider canaries remain open                |
+| `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | Campanero and Booking selective canaries are live under `NC-20260816-006`/`010`; global rollout, egress, remaining raw-secret removal, and wider canaries remain open |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |
 | `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement history, current recovery state, and target loop | migration 115 is deployed collection-only; natural source-run proof, review closure, and the separately reviewed proposal packet remain open |
 | `docs/SELF-HEALING-COMPLETION-PLAN.md`  | reconciled healer current state and gated completion sequence         | action-boundary source is local until separately reviewed/deployed                                                                           |

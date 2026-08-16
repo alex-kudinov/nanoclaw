@@ -1,7 +1,7 @@
 # Agent capability manifests
 
-Status: Campanero-only production canary live-verified; Booking credential
-projection implemented for the next selective gate; global enforcement off
+Status: Campanero and Booking selective production canaries live-verified;
+global enforcement off
 
 Tasks: `NC-20260816-004` foundation; `NC-20260816-006` staged activation;
 `NC-20260816-010` credential-family projection and Booking gate
@@ -28,7 +28,8 @@ tool surface, the full shared MCP catalog remains registered, and configured
 mounts still pass through the existing action-safety filter and mount allowlist.
 Manifests are nevertheless parsed for the inventory and health aggregate.
 
-`CAPABILITY_MANIFEST_ENFORCED_GROUPS=campanero` is the staged-rollout mode. It
+`CAPABILITY_MANIFEST_ENFORCED_GROUPS=campanero,booking` is the current
+staged-rollout mode. It
 enforces only the named tracked and currently registered folders while the
 global switch remains off. Other registered groups retain compatibility mode.
 Unknown, malformed, duplicate, or unregistered selected groups fail closed.
@@ -73,7 +74,7 @@ projection allows only the selected manifest's families. Every tracked
 manifest now records the current family inventory so a future selected group
 does not gain credentials by accident when host code learns a new secret name.
 
-Booking is the second candidate. Its normal `booked` webhook write and the
+Booking is the second selected canary. Its normal `booked` webhook write and the
 Trafft reconciliation sweep already run on the host. The enforced Booking
 manifest therefore omits `trafft` and keeps only its least-privilege
 `business_db` connection plus the explicitly retained `plutio` family. Plutio
@@ -114,7 +115,7 @@ node <release>/scripts/set-capability-groups.mjs \
 ```
 
 After apply, require `/health.capabilityManifests.config` to report a valid
-configuration with global enforcement false and only the intended group.
+configuration with global enforcement false and only the intended groups.
 Re-check active/waiting containers and relevant action queues before the first
 turn. Do not infer an allowed/denied runtime result from the config response.
 
@@ -140,8 +141,26 @@ Post-canary checks found zero active/waiting NanoClaw containers, zero outgoing
 Slack queue depth, zero actionable email sends, 22 jobs with the same 17
 enabled, and the sole Campanero scheduled task still inactive with its unchanged
 last run. The environment backup, prior-release plist, and all 18 prior runner
-snapshots remain available for rollback. This proves one deliberately narrow
-agent; it does not authorize or validate a second group.
+snapshots remain available for rollback. At that checkpoint this proved one
+deliberately narrow agent; the second group required the separate gate below.
+
+## Second production checkpoint
+
+`NC-20260816-010` deployed immutable release `ba5fe74` and changed only the
+selective group key from `campanero` to `booking,campanero`. `/health` reports
+the exact release under Node 22.23.2, a valid 17/17 catalog, global enforcement
+false, zero active/waiting containers, and zero outgoing Slack queue depth. The
+environment and prior-release plist backups are retained.
+
+The installed side-effect-free verifier read the real layered host
+configuration and found all three Trafft source credential names configured
+but none projected into Booking. It also found all five required DB/Plutio
+names in Booking's eight-name projected payload. The verifier emitted only
+names/counts and made no network or database call. Email actions remained 61
+confirmed/6 blocked, send events remained 334, Campanero retained one completed
+scheduled task, and Booking had no scheduled-task rows. This proves the
+credential-name projection and non-interference boundary; it does not prove a
+natural canceled/rescheduled Booking run or authorize removal of Plutio.
 
 Rollback is configuration-only while the source remains installed: use the
 same helper with an empty `--groups` value (or restore its exact backup), verify

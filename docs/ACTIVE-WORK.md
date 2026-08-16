@@ -2,7 +2,7 @@
 
 Status: shared current-state register
 Protocol: `docs/CHANGE-PROTOCOL.md`
-Last reviewed: 2026-08-03
+Last reviewed: 2026-08-16
 
 Read this file before editing. Entries describe non-trivial work that may exist
 outside the current client conversation.
@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260816-010` | Remove raw Trafft credentials from an enforced Booking container while preserving the separately identified legacy Plutio path | Codex | `codex/nc-20260816-010-booking-credential-boundary` @ claim `b4c3afc` | `ready_for_deploy` | C5 | Capability-manifest credential declaration/projection, tracked Booking authority, focused no-Trafft/no-network tests, immutable deployment, and one side-effect-free Booking canary. The discovered non-booked-event Plutio path remains explicitly declared until a host-owned replacement is proven. Excludes Trafft or Plutio mutation during this task, synthetic/live booking creation, customer or Slack messages, production business-row writes, global manifest activation, credential rotation, push, and merge. | Commit the verified implementation, build and independently verify the immutable release, preflight/activate it, select Campanero plus Booking, then run the installed no-network secret-name verifier and record unchanged aggregates. | 2026-08-16T20:00Z |
+| `NC-20260816-010` | Remove raw Trafft credentials from an enforced Booking container while preserving the separately identified legacy Plutio path | Codex | `codex/nc-20260816-010-booking-credential-boundary` @ deployed `ba5fe74` | `complete` | C5 | Exact release `ba5fe74` projects declared credential families and selectively enforces Campanero plus Booking. The installed no-network verifier proved all three configured Trafft names absent from Booking and the required DB/Plutio names present. The discovered non-booked-event Plutio path remains explicitly declared until a host-owned replacement is proven. No external or business-row write occurred. | None for this milestone. Next replace Booking's non-booked Plutio path with a host-owned adapter, then separately gate Plutio credential removal; destination-scoped egress remains a later control. | 2026-08-16T20:06Z |
 | `NC-20260816-009` | Extend the common external-write brake to the Things HTTP bridge without creating a real to-do | Codex | `codex/nc-20260816-009-things-safety` @ deployed `47019c9` | `complete` | C5 | Exact release `47019c9` denies the host Things `/add-todo` POST before fetch; the Slack-facing caller returns false/no success reaction; the live bundled drill returned all eight denials with no tripwire, exact config restoration, and unchanged aggregates. Excludes any real Things task, Slack message/reaction, bridge credential/config change, other integration coverage, envelope enforcement, push, and merge. | None for this milestone. Next extend the controller to a non-overlapping container-exposed write boundary or add separately gated ceilings/demotion. | 2026-08-16T19:40Z |
 | `NC-20260816-008` | Extend the common external-write brake to Hive/Firestore without consuming retry budget or performing a real write | Codex | `codex/nc-20260816-008-hive-safety` @ deployed `d32fda08` | `complete` | C5 | Exact release `d32fda08` denies Hive composite/direct mutations before Firebase initialization; inline work remains retryable; reaper denial is held without attempt/dead-letter/alert; live bundled drill returned all seven denials with no tripwire, exact config restoration, and unchanged aggregates. Excludes any real external write, classification/schema change, Chaos overlap, other integration coverage, envelope enforcement, push, and merge. | None for this milestone. Next extend the controller to Things or a container-exposed write boundary without overlapping active Chaos work. | 2026-08-16T19:14Z |
 | `NC-20260816-007` | Deploy and live-drill the common external-write safety brake without performing an external write | Codex | `codex/nc-20260816-007-action-safety-drill` @ deployed `ab2ace1` | `complete` | C5 | Exact release `ab2ace1` live-verifies the dry-run-first, hostname-confirmed, backup-producing global safe-mode transaction across actual Gmail send/reply, Slack, Courses SMTP projection, Plutio, and Stripe boundaries. All six calls denied before invocation; config restored byte-for-byte; queues, jobs/tasks, email evidence, and Plutio/Chaos outboxes remained unchanged. Excludes envelope enforcement, real external writes, other-system coverage, ceilings/demotion, push, and merge. | None for this milestone. Extend coverage to standalone and remaining integration surfaces, then add ceilings/demotion as separately gated Company OS slices. | 2026-08-16T18:19Z |
@@ -135,6 +135,28 @@ outside the current client conversation.
   generation/check, schema sanitizer, and continuity. The unrestricted suite
   passes 2,446/2,447; the sole failure is the unchanged unrelated CNPC
   source-wrapper assertion.
+- Release/live proof: claim `b4c3afc`, implementation `a36fce7`, and immutable
+  release `ba5fe74e93e7d58582079a153d85aaf30a651c86` are committed on the
+  isolated branch. The 652-file artifact has source tree `a17f27e7`, artifact
+  hash `96c23295`, and archive SHA-256 `d6b8bd54`; it independently verified
+  locally and on `mini-claw.local` under Node 22.23.2. Activation from exact
+  `47019c9` changed only the permitted plist paths and retained rollback
+  `com.nanoclaw.plist.rollback-47019c937d38-2026-08-16T20-03-24-541Z`.
+- Selective activation/live proof: the bundled helper changed only
+  `CAPABILITY_MANIFEST_ENFORCED_GROUPS` from `campanero` to
+  `booking,campanero`, retained environment backup
+  `.env.rollback-capabilities-2026-08-16T20-03-55-585Z`, and left global
+  enforcement false. Final health reports exact release `ba5fe74`, one matching
+  Node 22 listener, 17/17 valid manifests, connected Gmail/Slack, and zero
+  active/waiting/outgoing work. The installed verifier found three configured
+  Trafft source names, projected zero of them, and found all five required
+  DB/Plutio names in the eight-name Booking payload. It performed no network or
+  database call and printed no values.
+- Non-interference: email evidence remained 61 confirmed/6 blocked actions and
+  334 send events; Campanero remained one completed scheduled task; Booking had
+  no scheduled-task rows. No Trafft/Plutio request, booking/customer creation,
+  customer or Slack message, production business-row write, credential
+  rotation, push, or merge occurred.
 
 ### NC-20260816-009
 
