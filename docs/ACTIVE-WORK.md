@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-009` | Extend the common external-write brake to the Things HTTP bridge without creating a real to-do | Codex | `codex/nc-20260816-009-things-safety` @ `8e2844ea` | `in_progress` | C5 | Guard the host-owned Things `/add-todo` POST before network invocation; preserve the Slack caller's false/no-success-reaction behavior on denial; extend the installed no-network release drill and production proof. Excludes any real Things task, Slack message/reaction, bridge credential/config change, other integration coverage, envelope enforcement, push, and merge. | Add the typed Things denial boundary and focused injected-fetch tests; run focused/full/release gates; package/deploy the exact immutable release; live-run an auto-restored safe-mode drill with unchanged aggregates. | 2026-08-16T19:27Z |
 | `NC-20260816-008` | Extend the common external-write brake to Hive/Firestore without consuming retry budget or performing a real write | Codex | `codex/nc-20260816-008-hive-safety` @ deployed `d32fda08` | `complete` | C5 | Exact release `d32fda08` denies Hive composite/direct mutations before Firebase initialization; inline work remains retryable; reaper denial is held without attempt/dead-letter/alert; live bundled drill returned all seven denials with no tripwire, exact config restoration, and unchanged aggregates. Excludes any real external write, classification/schema change, Chaos overlap, other integration coverage, envelope enforcement, push, and merge. | None for this milestone. Next extend the controller to Things or a container-exposed write boundary without overlapping active Chaos work. | 2026-08-16T19:14Z |
 | `NC-20260816-007` | Deploy and live-drill the common external-write safety brake without performing an external write | Codex | `codex/nc-20260816-007-action-safety-drill` @ deployed `ab2ace1` | `complete` | C5 | Exact release `ab2ace1` live-verifies the dry-run-first, hostname-confirmed, backup-producing global safe-mode transaction across actual Gmail send/reply, Slack, Courses SMTP projection, Plutio, and Stripe boundaries. All six calls denied before invocation; config restored byte-for-byte; queues, jobs/tasks, email evidence, and Plutio/Chaos outboxes remained unchanged. Excludes envelope enforcement, real external writes, other-system coverage, ceilings/demotion, push, and merge. | None for this milestone. Extend coverage to standalone and remaining integration surfaces, then add ceilings/demotion as separately gated Company OS slices. | 2026-08-16T18:19Z |
 | `NC-20260816-006` | Deploy the capability-manifest release dark, then activate and prove one low-risk Campanero canary without exposing any other agent | Codex | `codex/nc-20260816-006-campanero-canary` @ deployed `2987070` | `complete` | C5 | Combined immutable release preserves live Stripe lineage `a67e081`; global manifest enforcement remains off; only Campanero is selected and live-verified with no Claude tools, only the `jobs` MCP tool, read-only declared mounts, and a read-only 22-job inventory canary. Bash and undeclared MCP surfaces were absent. Zero active/waiting work, outgoing Slack queue, actionable email sends, or job/task mutations appeared. Excludes customer email, job mutation, production database writes, global/all-agent activation, prompt changes, publication/mainline merge, and push. | None for this milestone. Any second agent, global activation, egress restriction, credential removal, or action-safety activation requires a separately tracked gate. | 2026-08-16T17:31Z |
@@ -83,6 +84,35 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-009
+
+- Trigger: after `NC-20260816-008` live-verified the Hive boundary, the owner
+  instructed Codex to continue the Company OS roadmap.
+- Base/live lineage: isolated worktree
+  `/private/tmp/nanoclaw-nc-20260816-009` branches from clean evidence commit
+  `8e2844eace147123fad148184a369d2eb2a02348`; exact production release remains
+  `d32fda08e818bb803463f7006484abd19291b9e6` at task start.
+- Overlap decision: no active task owns `src/brief-promote.ts`. The existing
+  Slack reaction caller is verified but deliberately left untouched, and the
+  active Stripe/Chaos lineage remains excluded.
+- Scope/authority: C5 safety-boundary change. Authority covers local
+  source/tests/docs, immutable release/deployment, one bounded auto-restored
+  global-safe-mode window, a synthetic injected-fetch Things denial canary,
+  and aggregate-only health evidence. It excludes a real Things task, Slack
+  message or reaction, bridge configuration/credential changes, other
+  integrations, action-envelope enforcement, push, and merge.
+- Acceptance: the direct Things POST rejects with a typed denial before fetch
+  under global or Things-only safe mode; default-off behavior and the existing
+  missing-key/non-OK handling remain compatible; the Slack-facing promotion
+  wrapper returns false on denial so no success reaction follows; the installed
+  release drill reports an eighth denial with the Things fetch tripwire false;
+  production configuration restores byte-for-byte and observed work/outbound
+  aggregates remain unchanged.
+- Next executable sequence: register and commit this claim; implement the
+  boundary plus focused injection/denial tests; run the Node 22 focused, broad,
+  release, and continuity gates; build and independently verify one immutable
+  artifact; preflight, deploy, live-drill, restore, and record exact evidence.
 
 ### NC-20260816-008
 
