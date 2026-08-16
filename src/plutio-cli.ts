@@ -24,11 +24,25 @@ const TOOLBOX_DIR =
 const PLUTIO_TOOL_DIR = path.join(TOOLBOX_DIR, 'shared/plutio/tools/plutio');
 const READ_ONLY_SCRIPTS = new Set(['list-proposals.sh', 'list-people.sh']);
 
+type PlutioExecFile = (
+  file: string,
+  args: readonly string[],
+  options: {
+    env: NodeJS.ProcessEnv;
+    cwd: string;
+    timeout: number;
+  },
+) => Promise<{ stdout: string; stderr: string }>;
+
 /** Run a Plutio toolbox script (e.g. 'list-proposals.sh') and return stdout. */
 export async function callPlutioTool(
   script: string,
   args: string[],
   timeoutMs = 30_000,
+  deps?: {
+    /** Production defaults to execFileAsync; the installed safety drill injects a no-child tripwire. */
+    execFile?: PlutioExecFile;
+  },
 ): Promise<string> {
   const toolPath = path.join(PLUTIO_TOOL_DIR, script);
   if (!READ_ONLY_SCRIPTS.has(script)) {
@@ -52,7 +66,7 @@ export async function callPlutioTool(
     ...creds,
     TOOLBOX_LIB: path.join(TOOLBOX_DIR, 'lib'),
   };
-  const { stdout } = await execFileAsync(toolPath, args, {
+  const { stdout } = await (deps?.execFile ?? execFileAsync)(toolPath, args, {
     env,
     cwd: TOOLBOX_DIR,
     timeout: timeoutMs,

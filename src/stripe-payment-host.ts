@@ -72,6 +72,21 @@ export interface StripePaymentResult {
   lifecycleEnqueued: boolean;
 }
 
+export interface StripePaymentHostDeps {
+  /** Production defaults to execFileAsync; the installed safety drill injects a no-child tripwire. */
+  execFile?: (
+    file: string,
+    args: readonly string[],
+    options: {
+      env: NodeJS.ProcessEnv;
+      timeout: number;
+      maxBuffer: number;
+    },
+  ) => Promise<{ stdout: string; stderr: string }>;
+  /** Production defaults to the durable lifecycle outbox writer. */
+  enqueueLifecycleFact?: typeof enqueueStripeLifecycleFact;
+}
+
 /** Read + validate the Stripe id from the n8n `{stripe_id, event_type}` envelope. */
 export function parseStripePayload(payload: unknown): string {
   const p =
@@ -179,6 +194,7 @@ function buildScriptEnv(): NodeJS.ProcessEnv {
  */
 export async function handleStripePayment(
   payload: unknown,
+  deps: StripePaymentHostDeps = {},
 ): Promise<StripePaymentResult> {
   const stripeId = parseStripePayload(payload);
   const eventType = parseEventType(payload);
@@ -214,11 +230,15 @@ export async function handleStripePayment(
     actionClass: isRefund ? 'c4_financial' : 'c2_external_write',
     source: 'host:stripe-payment',
   });
-  const { stdout } = await execFileAsync(process.execPath, args, {
-    env: buildScriptEnv(),
-    timeout: 120_000,
-    maxBuffer: 4 * 1024 * 1024,
-  });
+  const { stdout } = await (deps.execFile ?? execFileAsync)(
+    process.execPath,
+    args,
+    {
+      env: buildScriptEnv(),
+      timeout: 120_000,
+      maxBuffer: 4 * 1024 * 1024,
+    },
+  );
   const parsed = parseLifecycleSentinel(stdout);
   let lifecycleEnqueued = false;
   if (parsed.fact?.eligible) {
@@ -227,7 +247,9 @@ export async function handleStripePayment(
         `Stripe account mismatch: perimeter=${account}, resolver=${parsed.fact.account}`,
       );
     }
-    const result = await enqueueStripeLifecycleFact({
+    const result = await (
+      deps.enqueueLifecycleFact ?? enqueueStripeLifecycleFact
+    )({
       ...parsed.fact,
       provider_event_id: providerEventId,
       provider_object_id: parsed.fact.provider_object_id ?? stripeId,

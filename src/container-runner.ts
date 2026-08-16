@@ -151,6 +151,24 @@ export function coursesSmtpCapabilityAllowed(
   ).allowed;
 }
 
+export function projectCoursesSmtpSecrets(
+  groupFolder: string | undefined,
+  configured: { EMAIL_USER?: string; EMAIL_PASS?: string },
+  config: ActionSafetyConfig = loadActionSafetyConfig(),
+): Record<string, string> {
+  if (
+    groupFolder !== 'courses' ||
+    !coursesSmtpCapabilityAllowed(groupFolder, config)
+  ) {
+    return {};
+  }
+  return {
+    ...(configured.EMAIL_USER ? { EMAIL_USER: configured.EMAIL_USER } : {}),
+    ...(configured.EMAIL_PASS ? { EMAIL_PASS: configured.EMAIL_PASS } : {}),
+    EMAIL_TOOL: '/workspace/extra/email/send-email.sh',
+  };
+}
+
 /** Remove the raw Courses SMTP tool mount before container launch. */
 export function filterExternalWriteMounts(
   groupFolder: string,
@@ -642,18 +660,9 @@ async function readSecrets(
   if (groupFolder === 'courses') {
     const hbKey = configured.HEARTBEAT_API_KEY;
     if (hbKey) secrets.HEARTBEAT_API_KEY = hbKey;
-    const smtpAllowed = coursesSmtpCapabilityAllowed(groupFolder);
-    if (smtpAllowed && configured.EMAIL_USER) {
-      secrets.EMAIL_USER = configured.EMAIL_USER;
-    }
-    if (smtpAllowed && configured.EMAIL_PASS) {
-      secrets.EMAIL_PASS = configured.EMAIL_PASS;
-    }
+    Object.assign(secrets, projectCoursesSmtpSecrets(groupFolder, configured));
     // Container path overrides for distribute_session.py
     secrets.INSTRUCTORS_DIR = '/workspace/extra/instructors';
-    if (smtpAllowed) {
-      secrets.EMAIL_TOOL = '/workspace/extra/email/send-email.sh';
-    }
     secrets.TOOLBOX_ROOT = '/workspace/extra';
   }
 

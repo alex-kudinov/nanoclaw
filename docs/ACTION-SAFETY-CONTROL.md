@@ -1,7 +1,8 @@
 # Host action safety control
 
-Status: implemented and committed locally under `NC-20260816-002`; dark, not
-pushed, deployed, or activated
+Status: controller deployed default-off in combined release `2987070`; a
+release-bundled activation/drill transaction is ready for deployment under
+`NC-20260816-007`; no production safe-mode window has yet been claimed
 
 ## Purpose and authority
 
@@ -93,3 +94,55 @@ the named Gmail/Slack/Courses/Plutio/Stripe refusal drill, proof that inbound an
 evidence reads continue, `/health.actionSafety` evidence, and restoration to
 the prior default-off state. Enabling envelope enforcement is later still: no
 current legacy caller is authorized to bypass its missing-envelope denial.
+
+## Bundled drill transaction
+
+`NC-20260816-007` adds two release-owned operator surfaces. Both are dry-run by
+default and reject unknown or duplicate arguments:
+
+- `scripts/set-action-safety-mode.mjs` strictly parses the three controller
+  keys, rejects duplicate keys/systems and envelope-enabled configuration,
+  creates an exclusive same-directory backup, changes only the two brake keys
+  through an atomic replacement, verifies the write, and requires the exact
+  hostname for apply or restore.
+- `scripts/run-action-safety-drill.mjs` requires a full expected release
+  commit, verified release/code-root health, connected Gmail/Slack, zero active
+  containers, an empty execution and Slack outbound queue, valid default-off
+  action safety, and unchanged valid capability-manifest health. It arms global
+  safe mode, prints the exact rollback path immediately, observes the running
+  daemon report the brake, executes the installed refusal drill, restores the
+  exact prior environment in `finally`, and observes default-off health again.
+
+The installed refusal drill changes into a disposable directory containing
+synthetic credentials before importing the real boundary modules. Gmail,
+Plutio, and Stripe receive injected tripwires that throw if their guards permit
+client/child/outbox execution; both Gmail new-send and reply-send are exercised,
+with the reply's prerequisite read supplied by a synthetic client. Slack is
+never connected and must retain an empty local outbound queue. Courses must
+project neither SMTP credentials nor the raw email-tool mount. All six guarded
+operations across the five systems return `global_safe_mode`; the drill itself
+performs no database or external-system write.
+
+Example from inside an extracted release (dry-run first):
+
+```bash
+node scripts/run-action-safety-drill.mjs \
+  --env-file /absolute/path/to/NanoClaw/.env \
+  --expected-release <full-40-character-commit>
+```
+
+Apply additionally requires `--apply --confirm-host <exact-hostname>`. If the
+process is terminated after arming, safe mode deliberately remains on rather
+than guessing that restoration occurred. Use the already printed backup path:
+
+```bash
+node scripts/set-action-safety-mode.mjs \
+  --env-file /absolute/path/to/NanoClaw/.env \
+  --restore /absolute/path/to/NanoClaw/.env.rollback-action-safety-<timestamp> \
+  --confirm-host <exact-hostname>
+```
+
+This transaction proves operator control across the five named runtime
+boundaries only. It does not enable action-envelope enforcement, interrupt a
+write already in flight, cover the residual standalone/integration surfaces,
+or satisfy the later ceilings and automatic-demotion work.

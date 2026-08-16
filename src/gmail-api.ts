@@ -274,20 +274,26 @@ export function buildRawMessage(opts: {
 }
 
 /** Send a new email. Optionally thread into an existing conversation. */
-export async function sendEmail(opts: {
-  to: string;
-  subject: string;
-  body: string;
-  cc?: string;
-  html?: boolean;
-  threadId?: string;
-}): Promise<{ messageId: string; threadId: string }> {
+export async function sendEmail(
+  opts: {
+    to: string;
+    subject: string;
+    body: string;
+    cc?: string;
+    html?: boolean;
+    threadId?: string;
+  },
+  deps?: {
+    /** Production defaults to getGmailClient; the installed safety drill injects a no-network tripwire. */
+    getClient?: () => gmail_v1.Gmail;
+  },
+): Promise<{ messageId: string; threadId: string }> {
   assertExternalWriteAllowed({
     system: 'gmail',
     actionClass: 'c3_external_communication',
     source: 'host:gmail-api',
   });
-  const gmail = getGmailClient();
+  const gmail = deps?.getClient ? deps.getClient() : getGmailClient();
 
   // When threading into an existing conversation, derive the RFC In-Reply-To /
   // References from the thread so the reply threads in the recipient's external
@@ -338,24 +344,30 @@ export async function sendEmail(opts: {
 }
 
 /** Reply to an existing thread. */
-export async function replyToThread(opts: {
-  threadId: string;
-  body: string;
-  html?: boolean;
-  cc?: string;
-  recipientOverride?: string;
-  prepareSend?: (recipients: {
-    to: string;
+export async function replyToThread(
+  opts: {
+    threadId: string;
+    body: string;
+    html?: boolean;
     cc?: string;
-  }) => Promise<{ body: string }>;
-}): Promise<{
+    recipientOverride?: string;
+    prepareSend?: (recipients: {
+      to: string;
+      cc?: string;
+    }) => Promise<{ body: string }>;
+  },
+  deps?: {
+    /** Production defaults to getGmailClient; the installed safety drill injects a synthetic read/send tripwire client. */
+    getClient?: () => gmail_v1.Gmail;
+  },
+): Promise<{
   messageId: string;
   threadId: string;
   to: string;
   originalTo: string;
   subject: string;
 }> {
-  const gmail = getGmailClient();
+  const gmail = deps?.getClient ? deps.getClient() : getGmailClient();
 
   // Fetch the thread to get the last message's headers for In-Reply-To
   const thread = await gmail.users.threads.get({

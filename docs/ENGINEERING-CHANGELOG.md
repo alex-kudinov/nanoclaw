@@ -8,6 +8,58 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-007 — Package a fail-safe production drill for the common external-write brake
+
+- Date: 2026-08-16T18:00Z
+- Owner/client: Codex
+- State: ready_for_deploy; not yet committed, packaged, deployed, or
+  live-drilled
+- Commit/PR: claim commit `3ae28e8` on
+  `codex/nc-20260816-007-action-safety-drill`; no PR
+- Change class: C5 — temporary production activation of a common outbound
+  safety control
+- Intended outcome: prove an operator can engage one global brake across the
+  five already-guarded runtime systems while inbound/read evidence remains
+  available, without causing any external write, queued retry, or durable
+  business mutation, then restore the exact prior state.
+- Implementation: add a strict, dry-run-first environment transaction with
+  exclusive same-mode backup, atomic write/readback, exact-host apply/restore,
+  and envelope-enforcement refusal; add an exact-release/drained-service health
+  orchestrator that always restores in `finally`; package both CLIs in the
+  immutable release. The installed drill calls the real Gmail, Slack, Courses
+  SMTP projection, Plutio, and Stripe boundaries using synthetic inputs in an
+  isolated configuration. Both Gmail new-send and reply-send are exercised;
+  the reply's prerequisite read comes from a synthetic client. Injectable Gmail
+  send, Plutio/Stripe child, and Stripe-outbox tripwires make any guard bypass
+  fail before a network, child process, or durable enqueue; Slack is
+  disconnected and must queue nothing.
+- Safety boundary: the wrapper requires valid exact-release/code-root health,
+  connected Gmail/Slack, zero active containers, an empty execution/Slack
+  outbound queue, default-off envelope/safe-mode configuration, and unchanged
+  valid capability-manifest health. It prints the rollback path immediately
+  after arming. Caught failures restore exactly; an abrupt process death leaves
+  the brake engaged for explicit recovery. No envelope enforcement, customer
+  communication, Plutio/Stripe action, production database write, uncovered
+  integration, push, or merge is included.
+- Verification to this boundary: exact Node 22.23.2 passes root typecheck;
+  242/242 focused controller, transaction, Gmail, Slack, Courses, Plutio, and
+  Stripe tests; 634/634 email-critical tests; independent runner build plus
+  40/40 tests; source formatting; schema sanitizer; capability matrix; and
+  documentation continuity. The unrestricted root suite passes 2,429/2,430;
+  its sole failure is the unchanged baseline
+  `src/cnpc-prompt-contract.test.ts` inline-registration source assertion. All
+  five external-client/child/outbox tripwires remain false, Slack queue depth
+  is zero, Courses projects no SMTP secrets or email mount, and
+  `git diff --check` passes.
+- Deployment/live proof: pending immutable build, transfer, activation with all
+  action controls off, read-only preflight, one short auto-restored drill, and
+  post-drill non-interference evidence.
+- Residuals/rollback: this proves only the five named boundaries at invocation
+  time. Already-in-flight actions, standalone scripts, Trafft, Hive/Firebase,
+  Chaos delivery, Things, Sertifier, and other container-exposed tools remain
+  outside the controller. Envelope adoption, per-agent/class circuit breakers,
+  volume/value/retry ceilings, and automatic autonomy demotion remain open.
+
 ### NC-20260816-006 — Stage one jobs-only Campanero capability canary
 
 - Date: 2026-08-16T17:31Z

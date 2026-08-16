@@ -114,6 +114,8 @@ try {
   tracked.push(
     'scripts/verify-release.mjs',
     'scripts/activate-release.mjs',
+    'scripts/run-action-safety-drill.mjs',
+    'scripts/set-action-safety-mode.mjs',
     'scripts/set-capability-groups.mjs',
     'scripts/register-caleprocure-collector.mjs',
     'scripts/start-procurement-browser.sh',
