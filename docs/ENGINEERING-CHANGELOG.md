@@ -8,6 +8,25 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-011 — Build the dark Booking-to-Plutio host boundary
+
+- Date: 2026-08-16T20:26Z
+- Owner/client: Codex
+- State: in_progress; claim registered before implementation
+- Commit/PR: pending on `codex/nc-20260816-011-booking-plutio-host`; no PR
+- Change class: C5 — dark host-owned external-write boundary
+- Intended outcome: give the host a typed, durable, replay-safe path for
+  canceled/rescheduled Booking activity so a later gate can remove Plutio
+  credentials from the Booking container.
+- Scope: archived Trafft-event validation, existing Plutio-outbox
+  enqueue/dispatch, stable remote idempotency markers, common action-safety
+  enforcement, tests, immutable deployment, and an injected installed canary.
+  Natural webhook wiring, prompt/manifest change, credential removal, every
+  real Trafft/Plutio call, production business-row write, customer/Slack
+  message, credential rotation, push, and merge remain excluded.
+- Verification/deployment/rollback: pending. This release must remain dark;
+  rollback is the prior exact release `ba5fe74` and requires no data reversal.
+
 ### NC-20260816-010 — Project business credential families and remove Trafft from Booking
 
 - Date: 2026-08-16T20:06Z
