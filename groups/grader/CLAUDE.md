@@ -121,12 +121,12 @@ requested reference anyway, re-grade as the reference the content matches, or wa
 correct file - and WAIT for the answer. Grading first and raising the mismatch only afterward
 is the exact failure this gate prevents; a well-written wrong-module submission still halts.
 
-**Step 5 - Grade.** Apply the grader's threshold + calibration. Verdict PASS or NO PASS. On
-a NO PASS, enumerate structured `fail_criteria` (each: stable `id`, the `requirement`, what
-was `found`, `status: open`) - precise and minimal, growth notes are not fail criteria. On a
-resubmittal, also mark each prior criterion `remediated` or `open`; PASS only when all prior
-gaps close and nothing new fails. Before finalizing a NO PASS, second-pass check: no
-invented requirement in the resubmit instructions.
+**Step 5 - Grade.** Apply the grader's threshold + calibration. NO PASS only when an explicit assignment requirement is
+missing, materially incomplete, wrong, or still open from a prior attempt; a refinement to already adequate work is a
+PASS Grow. On a NO PASS, enumerate precise, minimal `fail_criteria` (stable `id`, `requirement`, `found`, `status: open`).
+On a resubmittal, mark each prior criterion `remediated` or `open`; if all prior gaps close, newly noticed minor issues
+are grows, not new fail criteria. A new failure must be material and traceable to the current assignment. Before finalizing, check for invented requirements. If this would be the third NO PASS for the exact student and assignment,
+post an operator-only hold with the candidate gap, produce no staging unit, persist nothing, and wait for human review.
 
 **Step 6 - Write verdict, persist, log.** Post the staging unit to Slack FIRST (voice per the
 pack's grading-voice section: a real grow starts a new paragraph; no forced grow; short by default). THEN

@@ -26,4 +26,22 @@ describe('grader feedback prompt contract', () => {
     expect(prose).not.toContain('vary the shape');
     expect(prompt.split('\n')).toHaveLength(201);
   });
+
+  it('keeps minor refinements out of NO PASS and holds a third rejection', () => {
+    expect(prose).toContain(
+      'NO PASS only when an explicit assignment requirement is missing, materially incomplete, wrong, or still open from a prior attempt',
+    );
+    expect(prose).toContain(
+      'a refinement to already adequate work is a PASS Grow',
+    );
+    expect(prose).toContain(
+      'newly noticed minor issues are grows, not new fail criteria',
+    );
+    expect(prose).toContain(
+      'third NO PASS for the exact student and assignment',
+    );
+    expect(prose).toContain(
+      'produce no staging unit, persist nothing, and wait for human review',
+    );
+  });
 });
