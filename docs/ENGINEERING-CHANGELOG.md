@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T18:00Z
 - Owner/client: Codex
-- State: ready_for_deploy; not yet committed, packaged, deployed, or
-  live-drilled
+- State: in_progress; first release deployed and brake behavior proved, but a
+  canary-only Slack SDK network-read defect requires a superseding release and
+  clean repeat before completion
 - Commit/PR: claim commit `3ae28e8` on
   `codex/nc-20260816-007-action-safety-drill`; no PR
 - Change class: C5 — temporary production activation of a common outbound
@@ -51,9 +52,32 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   five external-client/child/outbox tripwires remain false, Slack queue depth
   is zero, Courses projects no SMTP secrets or email mount, and
   `git diff --check` passes.
-- Deployment/live proof: pending immutable build, transfer, activation with all
-  action controls off, read-only preflight, one short auto-restored drill, and
-  post-drill non-interference evidence.
+- First deployment/live attempt: implementation commit and immutable release
+  `c2c21585e086476de6092d3892a8bb44584517d4` (source tree
+  `6bb1c9fa507ee3287b95a393a5283fbde4599c0d`, 652-file artifact
+  `f857d14e7089f0d9cd6206cf08b9d32157ab45b5edef04062e96fa9f9cf5527d`,
+  archive SHA-256
+  `1d6fed5d6ecae62b36c4a951deeafa154dd7f10f4a8ca8d021903123face00a2`)
+  was independently verified, transferred, re-verified, and activated from
+  exact live `2987070`; rollback plist is
+  `com.nanoclaw.plist.rollback-29870706dc49-2026-08-16T18-08-08-224Z`.
+  The dry run passed, the live daemon observed global safe mode, all six
+  Gmail-send/Gmail-reply/Slack/Courses/Plutio/Stripe mutations returned
+  `global_safe_mode`, every write tripwire remained false, Slack queued zero,
+  Courses projected no SMTP secret/mount, and the helper restored the exact
+  environment backup
+  `.env.rollback-action-safety-2026-08-16T18-09-04-285Z` with default-off
+  health restored.
+- Live defect and containment: constructing `SlackChannel` also constructs the
+  Slack SDK, which asynchronously issued `auth.test` with the deliberately fake
+  token and logged `invalid_auth` after the otherwise successful drill. It made
+  no Slack post or queue entry and no authenticated account call; all email,
+  send-event, task, jobs-file, Plutio-outbox, and Chaos-outbox aggregates were
+  unchanged. The daemon remains healthy on `c2c2158` with controls default-off.
+  The canary now bypasses the SDK-owning constructor and instantiates only the
+  installed `sendMessage` prototype plus local queue fields; this turns any
+  missed guard into a local queue failure with no SDK/network initialization.
+  A superseding release and clean repeat are pending.
 - Residuals/rollback: this proves only the five named boundaries at invocation
   time. Already-in-flight actions, standalone scripts, Trafft, Hive/Firebase,
   Chaos delivery, Things, Sertifier, and other container-exposed tools remain

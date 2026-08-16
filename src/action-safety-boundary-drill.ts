@@ -106,8 +106,6 @@ export async function runInstalledActionSafetyBoundaryDrill(): Promise<ActionSaf
         'ACTION_SAFETY_ENFORCEMENT_ENABLED=0',
         'EXTERNAL_WRITE_SAFE_MODE=1',
         'EXTERNAL_WRITE_DISABLED_SYSTEMS=',
-        'SLACK_BOT_TOKEN=xoxb-action-safety-drill',
-        'SLACK_APP_TOKEN=xapp-action-safety-drill',
         'GMAIL_CLIENT_ID=action-safety-drill',
         'GMAIL_CLIENT_SECRET=action-safety-drill',
         'GMAIL_REFRESH_TOKEN=action-safety-drill',
@@ -221,10 +219,20 @@ export async function runInstalledActionSafetyBoundaryDrill(): Promise<ActionSaf
       ),
     );
 
-    const slack = new SlackChannel({
-      onMessage: async () => {},
-      onChatMetadata: async () => {},
-      registeredGroups: () => ({}),
+    // Deliberately bypass the SDK-owning constructor. @slack/bolt may start an
+    // asynchronous auth.test from App construction even when start/connect is
+    // never called. The send method itself needs only these local fields before
+    // its disconnected-queue branch, so this still exercises the installed
+    // mutation boundary and turns a missed guard into a local queue failure.
+    const slack = Object.create(SlackChannel.prototype) as InstanceType<
+      typeof SlackChannel
+    >;
+    Object.assign(slack as unknown as Record<string, unknown>, {
+      connected: false,
+      outgoingQueue: [],
+      outgoingRetryAttempt: 0,
+      leadResolverDowngradeCount: 0,
+      lastLeadResolverDowngradeAt: null,
     });
     denials.push(
       await expectGlobalDenial('slack', () =>
