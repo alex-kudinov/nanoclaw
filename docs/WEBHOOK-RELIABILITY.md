@@ -67,8 +67,8 @@ CREATE INDEX webhook_inbox_reaper_idx
 5. Treat both a rejected run and a resolved `status='error'` result as failed;
    neither may become `handled` or authorize a downstream action.
 6. Mark handled only after source-specific completion gates pass. Under the
-   NC-013 Booking candidate, canceled/rescheduled delivery must also enqueue its
-   durable Plutio action from the archived row.
+   deployed NC-013 Booking path, canceled/rescheduled delivery must also enqueue
+   its durable Plutio action from the archived row.
 
 ### 3.3 Identity-join layer (Trafft ↔ Plutio via email)
 
@@ -106,7 +106,7 @@ Two complementary jobs; both follow the existing `plutio-outbox-reaper.ts` shape
 - **`webhook-inbox-reaper.ts`** (5-min cron) — claim rows in `('received', 'failed', 'dispatched-stale')`, re-render prompt, re-`runAgent`, apply the same source completion gate as initial delivery, and dead-letter at `MAX_ATTEMPTS=5` to `#gru-chief`.
 - **`plutio-outbox-reaper.ts`** — processes the general Plutio outbox plus replay-safe `booking_activity:*` rows; Booking dispatch re-loads the archived Trafft event and stores its remote marker receipt.
 
-### 3.4a Booking lifecycle completion gate (NC-013 candidate)
+### 3.4a Booking lifecycle completion gate (NC-013 deployed_unverified)
 
 Canceled/rescheduled interactions use `webhook_inbox.event_id` as their
 `interactions.source_id`, not the appointment id shared by the original booked
@@ -120,9 +120,12 @@ interaction. Initial delivery and inbox replay both require:
 Only then may the host insert or reuse one opaque `booking_activity:*` outbox
 row and mark the inbox row handled with its party, interaction, and outbox
 references. A missing interaction or enqueue error leaves the inbox retryable.
-The container never receives the Plutio secret or tool path. This section
-describes exact NC-013 candidate `77064e9`; production remains on NC-012 until
-a separately authorized deployment and natural receipt/replay gate pass.
+The container never receives the Plutio secret or tool path. Exact NC-013
+release `77064e9` is live, and installed negative verification proves Booking
+receives only `business_db`, `knowledge`, and `agent_docs`; all configured
+Trafft/Plutio source names and legacy mounts are absent. The sanitized normal
+ingress canary was not sent, so interaction/outbox/remote-receipt/no-write
+replay proof remains pending explicit authorization.
 
 ### 3.5a Customer-event sweep is skipped by design
 

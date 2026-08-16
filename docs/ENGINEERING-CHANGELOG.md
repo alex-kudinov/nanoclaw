@@ -10,11 +10,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260816-013 — Cut Booking lifecycle Plutio writes over to the host
 
-- Date: 2026-08-16T21:29Z
+- Date: 2026-08-16T22:11Z
 - Owner/client: Codex
-- State: ready_for_deploy; production unchanged
+- State: deployed_unverified; capability boundary live, outcome canary not sent
 - Commit/PR: claim `58778d9`; implementation `08cbb9b`; release-path correction
-  and immutable candidate `77064e9` on
+  and immutable release `77064e9` on
   `codex/nc-20260816-013-booking-plutio-cutover` from `f10c572`; no PR
 - Change class: C5 — external-write capability cutover
 - Intended outcome: enqueue canceled/rescheduled Booking activity through the
@@ -24,11 +24,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `status='error'` as handled. Enqueue after `runAgent` alone is insufficient;
   both paths must also require successful completion and a matching persisted
   Booking interaction derived from the archived Trafft event.
-- Scope/safety: local source, tests, Booking prompt/procedure, capability and
-  registration source, and architecture/roadmap evidence. Deployment,
-  production config/data, natural or synthetic webhook delivery, Plutio/Trafft
-  request, Slack/customer message, credential rotation, push, and merge remain
-  excluded pending a separately recorded promotion authority.
+- Scope/safety: source, tests, Booking prompt/procedure, capability and
+  registration source, architecture/roadmap evidence, exact-release
+  installation, Booking drain, registered-mount transaction, prompt activation,
+  and side-effect-free live boundary verification. The approved deployment did
+  not authorize customer traffic, email, Trafft mutation, credential rotation,
+  push, or merge. The proposed sanitized normal-ingress canary was blocked
+  before execution, so it created no production Booking/Slack/outbox/Plutio
+  side effect.
 - Implementation: canceled/rescheduled Booking interactions now use the exact
   archive-derived event id. Initial receiver and inbox replay both reject a
   resolved container error, require the persisted interaction's event id,
@@ -44,7 +47,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   passes 2,472/2,473; the sole failure is the unchanged unrelated CNPC
   wrapper-string assertion expecting literal `folder: 'cnpc'`. No production
   database, webhook, Slack, Trafft, or Plutio action occurred.
-- Release: exact candidate
+- Release artifact:
   `77064e99c4dc2e1342993ba8659a820fd2a1bf05` has source tree
   `f83601b26773952947ba54d7efc647e22f7c913c`, 664-file artifact hash
   `88b2de9c56af4326b6e88592e022cc17c8f4a3f6f7e9528e752b81eeb14b545f`,
@@ -54,11 +57,24 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   operational root proved release-root/data-root separation, wrong host and
   release denial, exact two-mount removal, no-change replay, mode-0600 backup,
   and exact restore without touching production.
-- Promotion boundary: production remains exact NC-012 release `13ca192` with
-  its legacy Booking registration. Installation, Booking drain and config
-  mutation, activation, negative secret/mount launch proof, and one sanitized
-  natural interaction/outbox/remote-receipt/no-write-replay canary are the next
-  separately authorized milestone.
+- Deployment: the archive independently verified on `mini-claw.local`, then
+  installed at exact release `77064e9`. Booking drained with zero active or
+  waiting containers. The registration helper removed only `plutio` and
+  `toolbox-lib`, preserved an exclusive rollback snapshot, and returned a
+  no-change plan on replay. The two live Booking procedure files match the
+  release, and activation preserved the prior `13ca192` LaunchAgent.
+- Live boundary verification: one healthy Node 22.23.2 listener reports exact
+  verified release `77064e9`; Gmail and Slack are connected; work and outgoing
+  Slack queues are empty. Booking mounts are exactly `knowledge` and
+  `agent_docs`. The installed verifier reports only `business_db`, all
+  configured Trafft and Plutio source names absent, and all required DB inputs
+  present. No retryable lifecycle row or `booking_activity:*` outbox row exists.
+- Outcome boundary: the sanitized webhook call was rejected by the external
+  approval gate before execution. No webhook, synthetic party, Booking
+  interaction, Slack notice, durable Plutio outbox work, or Plutio activity was
+  created. One explicitly authorized normal-ingress canary and immediate
+  duplicate replay remain before outcome validation; email and Trafft mutation
+  remain excluded.
 
 ### NC-20260816-012 — Prove Booking reschedule identity and the real Plutio marker
 

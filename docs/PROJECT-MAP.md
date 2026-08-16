@@ -702,12 +702,13 @@ text-only `[nanoclaw-booking:<sha256>]`. Exact release `13ca192` is now live;
 the authorized correction produced exactly one visible marker and immediate
 replay returned `already_recorded` without calling the activity writer.
 Independent readback found one note and exactly one marker, while health and
-NanoClaw aggregates remained stable. This closes the shared-identity and remote
-marker prerequisites only. Natural ingress, durable outbox receipt, Booking
-procedure/manifest/mount cutover, and container Plutio removal remain NC-013.
+NanoClaw aggregates remained stable. At the NC-012 boundary this closed the
+shared-identity and remote-marker prerequisites only and assigned natural
+ingress, durable outbox receipt, procedure/manifest/mount cutover, and container
+Plutio removal to NC-013. The current NC-013 state follows.
 
-`NC-20260816-013` is now an isolated local cutover candidate, not a production
-state claim. It gives canceled/rescheduled interactions the archive-derived
+`NC-20260816-013` is now deployed as exact release `77064e9`. It gives
+canceled/rescheduled interactions the archive-derived
 event key, fixes receiver and inbox-reaper handling so a returned container
 error stays retryable, and requires that exact persisted lifecycle interaction
 before either path can enqueue the opaque Booking Plutio action. The Booking
@@ -715,13 +716,18 @@ prompt/procedure, manifest, generated matrix, and registration source remove
 direct Plutio/toolbox access together. A bundled dry-run-first registration
 helper preserves every other group field, rejects a partial legacy mount state,
 requires the exact host and release for apply, and writes an exclusive rollback
-snapshot. Exact immutable candidate `77064e9` passes the full local gates,
-fresh extraction, and a separate disposable operational-root
-remove/idempotency/restore rehearsal. Deployment, runtime registration
-migration, credential/mount-negative launch proof, natural archived-event
-outbox/remote receipt, and replay evidence remain open. The current Mini
-therefore remains exact release `13ca192` with the NC-012 Booking projection and
-no NC-013 behavior.
+snapshot. The immutable bundle passed local gates, fresh extraction, and a
+separate disposable operational-root remove/idempotency/restore rehearsal. On
+the Mini, Booking drained cleanly; the helper removed exactly the two legacy
+mounts; the live procedure files match the release; and activation preserved
+both registration, prompt, and LaunchAgent rollback artifacts. One healthy
+Node 22.23.2 listener reports exact verified release `77064e9`. Installed
+negative proof shows Booking receives only `business_db`, `knowledge`, and
+`agent_docs`, with all configured Trafft/Plutio source names and legacy mounts
+absent. The sanitized natural canary was blocked before execution, so no
+synthetic party, interaction, Slack notice, outbox work, or Plutio activity was
+created. Natural archived-event outbox/remote receipt and no-write replay
+evidence remain open; this is `deployed_unverified`, not outcome validation.
 
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some

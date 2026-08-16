@@ -58,8 +58,8 @@ company-wide merely because one workflow implements them.
 | --- | --- | --- |
 | P0.0 blast-radius reduction | partial | Gmail containment is `deployed_unverified` under `NC-20260729-004`; healer Gate A is `deployed_unverified` under `NC-20260730-002`. Procurement CDP isolation, the universal external-write brake, and all other named boundaries remain open. |
 | P0.1 runtime contract | partial | `NC-20260728-005` restored a pinned Node 22 test baseline; `NC-20260731-003` put production on Node 22.23.2; release/runtime enforcement has advanced, but review and live-verification gates remain task-specific. |
-| P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries. `NC-20260816-010` removes Trafft credentials from enforced Booking while retaining its still-used Plutio family; `NC-20260816-011` adds the unwired dark Booking-to-Plutio host adapter with opaque durable references, archive-derived values, safety enforcement, and replay receipts. Exact release `13ca192` under `NC-20260816-012` deploys shared reschedule identity and empirically proves a visible remote marker plus no-write replay after the HTML-comment candidate failed closed. `NC-20260816-013` locally wires initial/replay enqueue behind successful-agent plus exact-persisted-interaction gates and removes Booking's direct Plutio procedure, but deployment and natural receipt proof remain open. Company-wide adapter migration and red-team proof also remain open. |
-| P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. `NC-20260816-006` live-verifies Campanero; exact release `ba5fe74` under `NC-20260816-010` live-verifies Booking as the second selective canary with Trafft absent and required DB/Plutio names present. The NC-013 source candidate narrows Booking to `business_db` and removes its Plutio/toolbox mounts, but production still runs the NC-012 projection. Other groups, egress enforcement, broader raw-secret removal, and action-value ceilings remain open. |
+| P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries. `NC-20260816-010` removes Trafft credentials from enforced Booking while retaining its then-used Plutio family; `NC-20260816-011` adds the dark Booking-to-Plutio host adapter with opaque durable references, archive-derived values, safety enforcement, and replay receipts. Exact release `13ca192` under `NC-20260816-012` deploys shared reschedule identity and empirically proves a visible remote marker plus no-write replay after the HTML-comment candidate failed closed. Exact release `77064e9` under `NC-20260816-013` now wires initial/replay enqueue behind successful-agent plus exact-persisted-interaction gates and removes Booking's direct Plutio procedure. The capability boundary is live-verified, but the normal-ingress interaction/outbox/remote-receipt/no-write-replay proof remains open, so no full P0.2 credit is claimed. Company-wide adapter migration and red-team proof also remain open. |
+| P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. `NC-20260816-006` live-verifies Campanero; exact release `ba5fe74` under `NC-20260816-010` live-verifies Booking as the second selective canary with Trafft absent and required DB/Plutio names present. Exact production release `77064e9` under NC-013 narrows Booking to `business_db`, removes its Plutio/toolbox mounts, and has installed secret/mount-negative proof. Natural business-path proof remains pending. Other groups, egress enforcement, broader raw-secret removal, and action-value ceilings remain open. |
 | P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260816-002` implements a dark content-free universal envelope plus mutation/replay tests, but legacy domains do not yet supply it and enforcement is not activated. |
 | P0.5 safety controller | partial | The `NC-20260816-002` controller remains default-off; exact release `d32fda08` deploys and live-verifies a dry-run-first, auto-restored production transaction across Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, and Hive/Firestore with no external write, queue mutation, or Hive retry consumption. `NC-20260816-004` adds next-turn stale warm/adoption revocation when manifest enforcement is enabled. Immediate in-flight interruption, standalone-script/remaining-integration coverage, per-action ceilings, and automatic demotion remain open. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
@@ -1369,11 +1369,12 @@ authorized one corrective entry, and the locally verified replacement emits
 visible text-only `[nanoclaw-booking:<sha256>]`. Exact release `13ca192` is now
 live; the correction read back exactly one marker and immediate replay returned
 `already_recorded` without calling the activity writer. Health and all named
-NanoClaw aggregates remained stable. This closes the marker prerequisite, not
-promotion: natural ingress, durable outbox receipt, Booking procedure/manifest
-cutover, and container Plutio removal remain the separate NC-013 milestone.
+NanoClaw aggregates remained stable. At the NC-012 boundary this closed the
+marker prerequisite, not promotion, and assigned natural ingress, durable
+outbox receipt, procedure/manifest cutover, and container Plutio removal to the
+separate NC-013 milestone. The current NC-013 state follows.
 
-R1 Booking cutover candidate: `NC-20260816-013` now wires both the initial
+R1 Booking cutover deployment: `NC-20260816-013` now wires both the initial
 receiver and inbox reaper to the durable host adapter, but only after a
 successful container result and an exact lifecycle interaction whose
 archive-derived key, appointment, and event type all match. This corrects the
@@ -1382,12 +1383,18 @@ the older appointment-only dedup collision with the original booking. The
 Booking prompt/procedure, manifest, generated matrix, registration source, and
 side-effect-free verifier now remove direct Plutio credentials and mounts
 together. A dry-run-first registration helper provides exact-host/release
-confirmation and rollback snapshots. Exact candidate `77064e9` passes fresh
+confirmation and rollback snapshots. Exact release `77064e9` passed fresh
 bundle verification plus a separate disposable operational-root
-remove/idempotency/restore rehearsal. These remain pre-production facts only:
-production drain/config/activation, negative launch proof, and one separately
-authorized sanitized natural outbox/remote receipt/replay remain before
-P0.2/P0.3 credit changes.
+remove/idempotency/restore rehearsal, then activated on the Mini after a clean
+Booking drain and an exact two-mount registration transaction. Prompt,
+registration, and LaunchAgent rollback artifacts are preserved. One healthy
+Node 22.23.2 listener reports the exact verified release, and installed
+negative proof shows only `business_db`, `knowledge`, and `agent_docs`, with
+all configured Trafft/Plutio source names and legacy mounts absent. The
+sanitized normal-ingress canary was blocked before execution, so it created no
+party, interaction, Slack notice, outbox work, or Plutio activity. Natural
+outbox/remote receipt and duplicate no-write replay remain before additional
+P0.2/P0.3 credit.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus

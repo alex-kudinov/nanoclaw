@@ -1,12 +1,12 @@
 # Agent capability manifests
 
-Status: Campanero and Booking selective production canaries live-verified;
-NC-013 Booking Plutio-removal candidate is ready for a separately authorized
-deployment; global enforcement off
+Status: Campanero and Booking selective enforcement live-verified; NC-013
+Booking Plutio removal is deployed and capability-boundary-verified, while its
+normal-ingress outcome canary remains pending; global enforcement off
 
 Tasks: `NC-20260816-004` foundation; `NC-20260816-006` staged activation;
 `NC-20260816-010` credential-family projection and Booking gate;
-`NC-20260816-013` Booking Plutio cutover candidate
+`NC-20260816-013` Booking Plutio cutover deployment
 
 ## Purpose
 
@@ -114,23 +114,26 @@ The corrective candidate now uses visible text-only
 authorized one additional entry on the same synthetic contact. Exact release
 `13ca192` is live, and that correction produced exactly one remotely preserved
 marker plus an immediate `already_recorded` replay without an activity write.
-This still does not change the capability state: Booking keeps its Plutio
-family and the host adapter stays unwired until NC-013 changes the procedure,
-manifest, mounts, and ingress together and proves the natural durable path.
+At the NC-012 boundary this did not change the capability state: Booking still
+kept its Plutio family and the host adapter stayed unwired. NC-013's deployment
+state and remaining natural-path gate follow.
 
-`NC-20260816-013` now implements that cutover in source without activating it.
+`NC-20260816-013` implements and activates that cutover.
 Canceled/rescheduled interactions use the same archive-derived event id as the
 webhook inbox, so they no longer collide with the original booked interaction.
 Both initial delivery and inbox replay reject a returned container error and
 require the exact persisted lifecycle interaction before enqueuing one opaque
 Booking Plutio outbox row. The tracked Booking prompt/procedure no longer calls
-Plutio, and the candidate manifest/registration retain only `business_db`,
+Plutio, and the live manifest/registration retain only `business_db`,
 `knowledge`, and `agent_docs`. A dry-run-first exact-host/exact-release helper
 removes the two legacy registered mounts with an exclusive rollback snapshot.
-Exact immutable candidate `77064e9` passes the full local release gate and a
-separate operational-root registration rehearsal. Production remains release
-`13ca192` with the old projection until it receives separate promotion
-authority; neither a local artifact nor a rehearsal is live evidence.
+Exact immutable release `77064e9` passes the full release gate and is live on
+the Mini. Post-activation health and installed no-network verification prove
+that Booking receives only `business_db`, `knowledge`, and `agent_docs`; every
+configured Trafft and Plutio source name and both legacy mounts are absent.
+This is capability-boundary evidence, not natural business-path proof. The
+sanitized normal-ingress canary was not sent and its interaction, outbox,
+remote receipt, and no-write replay remain pending explicit authorization.
 
 ## Change procedure
 
@@ -175,10 +178,11 @@ performs no network or database call, never prints secret values, and fails
 unless all configured Trafft and Plutio source credentials are absent from the
 projected Booking stdin payload while both declared DB inputs remain.
 
-Before activating an NC-013 release, drain Booking and run the installed
-registration helper in dry-run mode. Apply requires the exact host and full
-release commit; it backs up the current Booking registration before removing
-only `plutio` and `toolbox-lib`. Run these commands from the operational project
+Before activating or restoring an NC-013-class release, drain Booking and run
+the installed registration helper in dry-run mode. Apply requires the exact
+host and full release commit; it backs up the current Booking registration
+before removing only `plutio` and `toolbox-lib`. Run these commands from the
+operational project
 root: the helper loads code from its installed release path while resolving
 `store/` and `data/` from that working directory. The running daemon keeps its
 in-memory group snapshot until activation restarts it, so apply the registration
@@ -248,9 +252,10 @@ from source tests alone.
 - The tracked manifests truthfully record `unrestricted_current` network mode;
   they do not enforce destination-scoped egress.
 - Several agents still receive `Bash` and raw mounted tools or credentials.
-  Exact production release `13ca192` still gives Booking Plutio; the NC-013
-  source candidate removes it but is not deployed or naturally verified. All
-  other raw-credential removal remains open.
+  Exact production release `77064e9` removes Booking's direct Plutio projection
+  and legacy mounts, with installed negative proof. Its natural archived-event
+  business path is not yet outcome-validated. All other raw-credential removal
+  remains open.
 - Manifest action classes describe the permitted role envelope; the host's
   action-safety controller and domain policies remain the actual external-write
   authority.
