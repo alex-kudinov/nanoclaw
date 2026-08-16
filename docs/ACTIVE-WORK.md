@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-006` | Deploy the capability-manifest release dark, then activate and prove one low-risk Campanero canary without exposing any other agent | Codex | `codex/nc-20260816-006-campanero-canary` @ `a20ced5` (local-only claim) | `in_progress` | C5 | Add a strict per-group activation allowlist; reconcile Campanero to its authoritative jobs-only role; build and deploy one immutable release; keep global enforcement off; enable only Campanero; drain/recycle its idle state; prove allowed jobs inventory plus denied Bash and cross-agent MCP surfaces. Excludes customer email, job mutation, production database writes, global/all-agent activation, prompt changes, push, and merge. | Commit this claim, implement and verify selective enforcement, then deploy only after a repeated zero-work drain check and run the bounded Campanero canaries with rollback ready. | 2026-08-16T16:51Z |
 | `NC-20260816-004` | Establish tracked per-agent capability manifests and make stale warm/adopted containers ineligible for reuse without activating the control in production | Codex | `codex/nc-20260816-004-capability-manifests` @ `72b21db` (local implementation) | `complete` | C5 | Strict manifests for all 17 tracked operative groups; deterministic matrix; default-off launch/MCP/recognized-host-operation/mount/runtime projection; launch/sidecar fingerprints; and next-turn warm/adoption revocation. Existing domain controls remain cumulative. Excludes production config/deploy/restart, external writes, raw-secret extraction, egress enforcement, push, and merge. | None for this local source milestone. Production activation requires a separate authorized drain/recycle and group-by-group negative, launch, revocation, and business-path canary task. | 2026-08-16T16:20Z |
 | `NC-20260816-002` | Add one host-owned action-envelope contract and a global/per-system external-write safe mode without activating or widening any live capability | Codex | `codex/nc-20260816-002-action-safety-control` @ `092b5b9` (local implementation) | `complete` | C5 | Implement the dark contract/controller across the first drill systems: Gmail, Slack, Courses SMTP launch, Plutio runtime tools, and Stripe processing. Default behavior and all production configuration remain unchanged; other runtime/container/script writes remain explicit P0.3/P0.5 follow-ups. | None for this local milestone. Production activation and broader capability coverage require separately authorized tasks. | 2026-08-16T15:09Z |
 | `NC-20260816-001` | Apply the Company OS ledger schema in production and deploy a non-authoritative, default-off Mailman/Sales shadow projection | Codex | `codex/nc-20260816-001-company-os-shadow` @ deployed `55c97d5` | `complete` | C5 | Migration 118 is backed up, applied, minimized, append-only, and host-admin-only. Exact Node 22.23.2 release `55c97d5` is live with a bounded shadow since 2026-08-14: 4 eligible items reconcile as 3 completed plus 1 named source gap; the next pass was duplicate-only. SQLite stayed authoritative with 67 actions, 61 confirmed, 6 blocked, and zero actionable sends; Gmail/Slack stayed connected and no deployment send/post occurred. | None for this milestone. Any ledger authority, workflow dependency, wider history, or second-workflow projection requires a new separately authorized task. | 2026-08-16T14:21Z |
@@ -79,6 +80,42 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-006
+
+- Trigger: the owner explicitly authorized deployment and instructed Codex to
+  proceed with one low-risk agent after `NC-20260816-004` completed locally.
+- Preflight: production release `55c97d5` is verified under Node 22.23.2 with
+  one listener, connected Slack/Gmail, zero active/waiting containers, zero
+  actionable email sends, and a healthy non-authoritative Company OS shadow.
+  Manifest enforcement is absent/default-off. The live registry also contains
+  legacy dynamic group folders without tracked manifests, so enabling the
+  existing global-only switch would fail startup and violate the one-agent
+  rollout boundary.
+- Canary choice: Campanero has no active scheduled agent tasks, its last channel
+  activity predates the activation window, and its live additional mount targets
+  (`knowledge`, `agent_docs`) already match the tracked declaration. Its
+  authoritative prompt says to use only the host `jobs` MCP tool; the broad
+  initial inventory manifest must therefore be narrowed before activation.
+- Scope/authority: C5 production release and capability-boundary activation.
+  Authority covers a strict group allowlist, Campanero manifest/tests, release
+  build/transfer/activation, runner image and recoverably backed-up runner
+  snapshots, one operational environment-key change, a Campanero-only recycle,
+  read-only/denied internal canaries, rollback, health verification, and the
+  relevant security/project/roadmap/continuity documents. It excludes global
+  activation, customer communication, job run/pause/resume, database mutation,
+  other group prompts/configuration, credentials, push, and merge.
+- Acceptance: an absent allowlist preserves compatibility; a malformed or
+  unknown allowlist fails startup; only listed tracked groups receive manifest
+  projection; Campanero receives only the `jobs` MCP tool and no Bash or shared
+  MCP wildcard; other groups preserve compatibility; the exact release is live
+  and healthy; allowed jobs inventory succeeds without mutation; Bash and an
+  undeclared MCP tool are unavailable; no queued work, email action, or job
+  state changes appear; rollback artifacts and exact evidence are recorded.
+- Rollback: remove the Campanero allowlist key and restart to return the same
+  release to compatibility mode. If release health itself fails, use the
+  activator's rollback plist to restore verified release `55c97d5`. Never retry
+  an ambiguous external action; the canary intentionally performs none.
 
 ### NC-20260816-004
 
