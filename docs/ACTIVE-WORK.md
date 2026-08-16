@@ -134,6 +134,7 @@ outside the current client conversation.
   SQLite remained 61 confirmed plus 6 blocked actions, 334 events, and zero
   active actions. Slack/Gmail stayed connected, queues stayed empty, and the
   shadow observer continued duplicate-only with zero transitions.
+- Continuity evidence commit: `360b0ae`.
 - Rollback: the release activator's exclusive saved plist restores the exact
   prior immutable release, followed by one bounded reload and health proof. No
   database rollback applies because this task performs no migration or write.

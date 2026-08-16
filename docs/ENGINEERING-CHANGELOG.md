@@ -13,8 +13,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-08-16T23:51Z
 - Owner/client: Codex
 - State: complete; deployed and live read-verified
-- Commit/PR: deployment claim/release `cf9625847bb2cbb0faa167f68a0f842d645e1807`
-  on `codex/nc-20260816-015-work-ledger-report-deploy`; no PR
+- Commit/PR: deployment claim/release `cf9625847bb2cbb0faa167f68a0f842d645e1807`;
+  evidence `360b0ae` on
+  `codex/nc-20260816-015-work-ledger-report-deploy`; no PR
 - Change class: C2 reversible service activation plus C0 production read
 - Preflight: `mini-claw.local` served verified release `02ce48f` from one
   listener with connected Slack/Gmail, zero active containers, empty runtime
