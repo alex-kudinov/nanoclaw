@@ -389,8 +389,9 @@ inline sync remains retryable, while its reaper reports the work held without
 incrementing/dead-lettering or alerting.
 
 `NC-20260816-007` live-verified the first five systems in an exact-release,
-auto-restored no-write production drill. `NC-20260816-008` adds Hive locally and
-remains pending release/live proof. The controls are default-off in production
+auto-restored no-write production drill. `NC-20260816-008` deploys and
+live-verifies the Hive extension with an injected Firestore tripwire and
+unchanged retry/business aggregates. The controls are default-off in production
 and do not replace any domain-specific approval, claim, receipt, hold, or
 policy. Envelope enforcement also remains off: current legacy callers supply
 no envelope and would be denied if it were enabled. The default-off manifest

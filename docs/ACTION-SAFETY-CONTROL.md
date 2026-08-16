@@ -1,10 +1,9 @@
 # Host action safety control
 
-Status: the five-system first-drill boundary is deployed and live-verified in
-release `ab2ace1a658111131a2519e1cd7257fe8a207ffb` under
-`NC-20260816-007`; `NC-20260816-008` adds Hive/Firestore as a sixth guarded
-system and is pending release/live proof. All production controls remain
-default-off and the broader repository-wide controller remains partial.
+Status: the six-system boundary is deployed and live-verified in release
+`d32fda08e818bb803463f7006484abd19291b9e6` under `NC-20260816-008`.
+All production controls were restored default-off after the drill and the
+broader repository-wide controller remains partial.
 
 ## Purpose and authority
 
@@ -63,8 +62,8 @@ by the daemon controller and remain an inventory item for capability manifests.
 Other runtime integrations not yet routed through this controller include
 Trafft writes, Chaos lifecycle HTTP delivery, the Things bridge, Sertifier, and
 business tools exposed directly inside other containers. Therefore P0.5
-remains partial and “global” means global across the six named systems after
-`NC-20260816-008` is deployed, not a claim of repository-wide revocation.
+remains partial and “global” means global across the six named guarded systems,
+not a claim of repository-wide revocation.
 
 | Remaining perimeter | Current mutation path | Next control decision |
 | --- | --- | --- |
@@ -103,8 +102,9 @@ can enter enforcement mode.
 Production activation is a separate C5 task. It requires an immutable release,
 config backup/rollback, zero active Courses containers followed by recycle,
 the named Gmail/Slack/Courses/Plutio/Stripe/Hive refusal drill, proof that
-inbound and evidence reads continue, `/health.actionSafety` evidence, and restoration to
-the prior default-off state. Enabling envelope enforcement is later still: no
+inbound and evidence reads continue, `/health.actionSafety` evidence, and
+restoration to the prior default-off state. Enabling envelope enforcement is
+later still: no
 current legacy caller is authorized to bypass its missing-envelope denial.
 
 ## Bundled drill transaction
@@ -156,9 +156,8 @@ node scripts/set-action-safety-mode.mjs \
   --confirm-host <exact-hostname>
 ```
 
-After the `NC-20260816-008` release/live gate, this transaction will prove
-operator control across the six named runtime systems only. It does not enable
-action-envelope enforcement, interrupt a
+This transaction now proves operator control across the six named runtime
+systems only. It does not enable action-envelope enforcement, interrupt a
 write already in flight, cover the residual standalone/integration surfaces,
 or satisfy the later ceilings and automatic-demotion work.
 
@@ -200,3 +199,32 @@ Campanero task, jobs hash
 `b3fc5040565df2ff2f2bcdc962320a7ff27a69df9b56176b19de365da6ab164c`,
 Plutio outbox 1,257 processed/15 dead, and Chaos outbox 5 sent. No real outbound
 action or production business-row mutation was performed by the drill.
+
+## Live evidence — NC-20260816-008
+
+Immutable release `d32fda08e818bb803463f7006484abd19291b9e6` has source tree
+`cff19fb332bac875d37e3a2ffa0e64bf86174005`, 652-file artifact hash
+`d2b872659baaff5a51aba1f49401cfddd1340cb963452d5476561a47f41530a6`,
+and archive SHA-256
+`4c02b02b7f2664e7d2c3de34c86af225effb7e9738e860d2ee8bbfc36a09db1f`.
+It was independently verified locally and on `mini-claw.local`, then activated
+from `ab2ace1a658111131a2519e1cd7257fe8a207ffb`; rollback plist is
+`com.nanoclaw.plist.rollback-ab2ace1a6581-2026-08-16T19-11-54-990Z`.
+
+The clean apply drill retained environment backup
+`.env.rollback-action-safety-2026-08-16T19-12-32-233Z`, observed the live
+daemon in global safe mode, and returned `global_safe_mode` from Gmail
+new-send, Gmail reply-send, Slack, Courses SMTP, Plutio, Stripe, and
+Hive/Firestore. Every client, child, outbox, and Firestore tripwire remained
+false; Slack queue depth stayed zero; and Courses projected no SMTP secret or
+email mount. The live environment and backup both hash to
+`0c95d71db6cc751e57f8be40c88727d6bae675c05679fb0a6d1afcad1d16be73`.
+
+Final health showed exact release `d32fda08` under Node 22.23.2, one listener,
+connected Gmail/Slack, zero active/waiting/outgoing work, action-safety
+enforcement false, global safe mode false, no disabled systems, and Campanero
+still the only selectively enforced capability group. Pre/post evidence matched
+exactly: 61 confirmed/6 blocked email actions, 334 send events, one completed
+Campanero task, jobs hash `b3fc5040565d`; Hive 110 eligible/0 unsynced/0 retry
+attempts/0 dead letters; Plutio 1,258 processed/15 dead; and Chaos 5 sent. No
+real outbound action or production business-row mutation was performed.

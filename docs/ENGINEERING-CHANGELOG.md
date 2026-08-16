@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T19:01Z
 - Owner/client: Codex
-- State: in_progress; implementation and focused verification complete,
-  immutable release/deployment/live proof pending
-- Commit/PR: claim commit `2fcc570` on
-  `codex/nc-20260816-008-hive-safety`; implementation commit pending; no PR
+- State: complete; immutable release deployed and the seven-call no-write drill
+  live-verified with exact restoration and unchanged evidence aggregates
+- Commit/PR: claim commit `2fcc570` plus implementation/release commit
+  `d32fda08e818bb803463f7006484abd19291b9e6` on
+  `codex/nc-20260816-008-hive-safety`; no PR
 - Change class: C5 — extend a common production external-write safety boundary
 - Intended outcome: stop Hive conversation mutations through the same dynamic
   global/per-system brake without initializing Firebase, consuming retry
@@ -30,8 +31,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   explicit remaining perimeter rather than implying universal coverage.
 - Safety boundary: no real Gmail, Slack, Firestore, Plutio, Stripe, SMTP, or
   other external write is authorized. No schema/taxonomy change, Chaos overlap,
-  envelope enforcement, push, or merge is included. Production controls remain
-  default-off until the bounded drill and must be restored exactly afterward.
+  envelope enforcement, push, or merge is included. Production controls were
+  enabled only for the bounded safe-mode window and restored exactly afterward.
 - Verification to this boundary: focused Hive/classifier/installed-drill tests
   pass 51/51. The broader action-safety, Hive, classifier, webhook, and job set
   passes 102/102 outside the network-bind sandbox; the sandbox-only run's 35
@@ -40,12 +41,37 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   matrix, docs continuity, 635/635 email-critical tests, and independent runner
   build plus 40/40 tests pass. The unrestricted root suite passes 2,435/2,436;
   its sole failure is the unchanged `src/cnpc-prompt-contract.test.ts`
-  source-wrapper assertion. Immutable artifact evidence, deployment, aggregate
-  before/after evidence, and the live auto-restored drill remain pending.
-- Residuals/rollback: guard removal is a source rollback; production config is
-  not changed by this local state. An already-in-flight write can complete.
-  Standalone scripts and remaining integrations are outside the controller;
-  envelope adoption, ceilings, and automatic demotion remain open.
+  source-wrapper assertion.
+- Release/deployment evidence: immutable release
+  `d32fda08e818bb803463f7006484abd19291b9e6` has source tree
+  `cff19fb332bac875d37e3a2ffa0e64bf86174005`, 652-file artifact hash
+  `d2b872659baaff5a51aba1f49401cfddd1340cb963452d5476561a47f41530a6`,
+  and archive SHA-256
+  `4c02b02b7f2664e7d2c3de34c86af225effb7e9738e860d2ee8bbfc36a09db1f`.
+  It independently verified locally and on `mini-claw.local`; activation from
+  exact `ab2ace1a658111131a2519e1cd7257fe8a207ffb` changed only the three
+  permitted plist paths and retained rollback
+  `com.nanoclaw.plist.rollback-ab2ace1a6581-2026-08-16T19-11-54-990Z`.
+- Live proof: dry-run and apply passed. Apply retained environment backup
+  `.env.rollback-action-safety-2026-08-16T19-12-32-233Z`, observed the live
+  daemon in global safe mode, and returned `global_safe_mode` from Gmail
+  new-send/reply, Slack, Courses SMTP, Plutio, Stripe, and Hive. Every
+  client/child/outbox/Firestore tripwire stayed false; Slack queued zero; and
+  Courses projected no SMTP secret/mount. The restored `.env` and backup both
+  hash to `0c95d71db6cc751e57f8be40c88727d6bae675c05679fb0a6d1afcad1d16be73`.
+- Final production evidence: one listener on exact `d32fda08` under Node
+  22.23.2; Gmail/Slack connected; zero active/waiting/outgoing work; action
+  safety restored enforcement/global false with no disabled systems; Campanero
+  remained the only selected capability group. Pre/post evidence matched:
+  61 confirmed/6 blocked pending sends, 334 email events, one completed
+  Campanero task, jobs hash `b3fc5040565d`; Hive 110 eligible/0 unsynced/0
+  retry attempts/0 dead letters; Plutio 1,258 processed/15 dead; and Chaos 5
+  sent. No real outbound action or production business-row mutation occurred.
+- Residuals/rollback: use the retained plist to return to `ab2ace1`; the
+  environment remained byte-identical to its retained backup. An
+  already-in-flight write can complete. Standalone scripts and remaining
+  integrations are outside the controller; envelope adoption, ceilings, and
+  automatic demotion remain open.
 
 ### NC-20260816-007 — Package a fail-safe production drill for the common external-write brake
 
