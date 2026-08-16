@@ -8,6 +8,49 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260815-007 — Reactivate the Company OS roadmap from the current baseline
+
+- Date: 2026-08-16T04:50Z
+- Owner/client: Codex
+- State: ready_for_review
+- Commit/PR: local branch
+  `codex/nc-20260815-007-company-os-reactivation`, based on verified lineage
+  `9e4977ac339ff9ef149f33ea11dbd6faf2d54dc7`; no PR
+- Change class: C1 — internal strategy and documentation only
+- Affected systems: Company OS planning and shared continuity records; no
+  runtime or external system
+- Outcome:
+  - reactivates `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` as the one strategic
+    roadmap rather than creating a parallel Spark/agent-platform plan;
+  - inventories every P0/P1/P2 program item conservatively as implemented,
+    partial, deployed-unverified, still proposed, or superseded, while keeping
+    `ACTIVE-WORK` and this changelog authoritative for actual lifecycle state;
+  - defines Task, Trigger (including Schedule), Skill, Action Envelope, and
+    Receipt as separate first-class contracts so procedure or activation never
+    silently grants mutation authority;
+  - adds dependency-gated R0-R5 slices: rebaseline, finish safety prerequisites,
+    prove the Mailman/Sales work ledger, normalize triggers/skills, operate by
+    exception, then evidence-gate execution profiles and parent/child work;
+  - extends the stable planning backlog for normalized triggers, versioned
+    skills, durable child tasks, host-selected execution profiles, and the
+    smallest ledger-backed exception surface.
+- Files: `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, `docs/ACTIVE-WORK.md`, this
+  entry
+- Verification: exact Node 22.23.2 documentation continuity and focused
+  `git diff --check` are required before review; no product/runtime tests are
+  required because this task changes only C1 planning and continuity docs.
+- Deployment/migration: not applicable; no source, schema, prompt,
+  configuration, service, deployment, browser, database, Slack, Gmail, or
+  other external-system state changed
+- Rollback/recovery: revert only the three `NC-20260815-007` documentation
+  edits; no production or data recovery applies
+- Documentation: active roadmap, current-work ledger, and append-only evidence
+  record updated together
+- Follow-up: after review, start the selected ledger foundation under a new
+  task ID and isolated branch. The foundation may be default-off and locally
+  tested; live migration or workflow activation must still satisfy the named
+  R1 gates.
+
 ### NC-20260815-009 — Bind approved recipient headers and executable fallback
 
 - Date: 2026-08-16T03:45Z

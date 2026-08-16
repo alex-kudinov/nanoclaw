@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260815-007` | Reactivate the Company OS plan against the current NanoClaw baseline and make it the single strategic roadmap for separately gated implementation slices | Codex | `codex/nc-20260815-007-company-os-reactivation` @ `9e4977a` | `ready_for_review` | C1 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, this register, and `docs/ENGINEERING-CHANGELOG.md`; documentation and prioritization only; no source, schema, prompt, configuration, deployment, production, or external-system change | Confirm the recovered R0 roadmap continuity, then start the first default-off R2 ledger foundation under a new task ID without activating a production migration or workflow. | 2026-08-16T04:50Z |
 | `NC-20260815-009` | Make the normal approved-email fallback executable and bind every operator-visible recipient header into the immutable action | Codex | `codex/nc-20260815-009-email-fallback-headers` @ deployed `12c2b049` from `cfcfaae` | `deployed_unverified` | C5 | Exact runtime, additive `approved_cc` migration, and reviewed Mailman instructions are live; release/artifact/health/listener/drain evidence is complete. No synthetic customer email was used. | Observe the next naturally approved customer email through normal fallback/execution, then bind the exact Gmail receipt and original Slack-thread completion without manual repair before outcome validation. | 2026-08-16T04:36Z |
 | `NC-20260815-008` | Prove approved Sales-email delivery without customer traffic or manual operator rescue by reconciling the live lineage and gating releases on deterministic historical replay | Codex | `codex/nc-20260815-008-email-replay-gate` @ deployed `cfcfaae` from verified production `84607fd` | `deployed_unverified` | C5 | The deterministic replay gate is deployed and live-verified. The blocked customer action was recovered once with an exact card/hash/party/zero-prior-send gate and a Gmail receipt, but the natural path failed before execution because the watchdog fallback omitted Mailman's required marker; the normal immutable replay also strips an operator-approved CC. | Open a separate runtime-repair task for the fallback marker and approval-bound CC/header semantics, add both incidents to the release-blocking corpus, and deploy only after the same full gate. Prove the next naturally approved email end to end without manual recovery before calling the business path validated. | 2026-08-16T03:14Z |
 | `NC-20260812-001` | Give Chaos durable, account-aware purchase and refund events from both Stripe accounts without duplicating fulfillment or Encharge's native Stripe automation | Codex + Claude Code owner/reviewer | `codex/chaos-lifecycle-release` @ `b4d85b2` (exact live lineage) | `ready_for_deploy` | C5 | Existing n8n Stripe ingress, canonicalized NanoClaw dual-account payment/refund processing, PII-free lifecycle outbox/reaper with chief dead-letter alerting, Chaos authenticated lifecycle ingestion, aggregate 7/30/90 reconciliation, focused tests, and release documentation. Excludes customer email/contact creation, customer messaging, and payment/refund action. | Apply migration 117, update the live n8n workflow from a private backup, configure default-off secrets/coverage start, build and deploy one immutable artifact, then prove aggregate receipts before enabling the producer. Encharge and Heartbeat producers remain separate subsequent slices. | 2026-08-13T03:05Z |
@@ -74,6 +75,38 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260815-007
+
+- Trigger: the owner chose to resurrect the Company OS plan and incorporate the
+  always-on agent/control ideas into that strategy while keeping implementation
+  changes separately reviewable.
+- Outcome: reactivate `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` as the one strategic
+  roadmap; reconcile program items conservatively against tracked task and
+  changelog evidence; define Task, Trigger, Skill, Action Envelope, and Receipt
+  as separate contracts; and sequence implementation through dependency-gated
+  slices rather than a parallel plan or one large implementation branch.
+- Branch/base: `codex/nc-20260815-007-company-os-reactivation` from verified
+  documentation/deployment lineage `9e4977ac339ff9ef149f33ea11dbd6faf2d54dc7`
+  in isolated worktree `/private/tmp/nanoclaw-nc-20260815-007-recovery`. The
+  dirty operational checkout remains untouched.
+- Scope: this plan, this active-work entry, and the factual changelog record.
+  No source, test, schema, migration, prompt, configuration, service,
+  deployment, browser, database, Slack, Gmail, or external-system change.
+- Overlap: the task links current release, healer, Procurement, CNPC, grader,
+  Sales, and Contador evidence but does not alter their status, files, or
+  external systems. `NC-20260815-009` remains the current deployed email
+  lineage and natural-path validation remains pending.
+- Decisions: one Company OS roadmap; separately allocated implementation task
+  IDs; safety prerequisites before live ledger activation; normalized triggers
+  and versioned skills after ledger semantics; operator exception UX after
+  trustworthy transitions/receipts; execution profiles and parent/child work
+  only after evaluations, telemetry, cancellation, and joins.
+- Verification: exact Node 22.23.2 documentation continuity and focused diff
+  checks are required before review. No product/runtime suite is required for
+  this C1 documentation task.
+- Rollback: revert only the `NC-20260815-007` edits in the plan, active-work
+  register, and changelog. No production or data recovery is applicable.
 
 ### NC-20260815-009
 

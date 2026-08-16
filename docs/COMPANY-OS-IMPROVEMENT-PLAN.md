@@ -1,19 +1,96 @@
 # NanoClaw company operating system improvement plan
 
-Status: proposed roadmap, twice adversarially reviewed and source-verified
-Baseline: repository commit `cd78ad2` plus the disclosed dirty worktree,
-2026-07-29
+Status: active strategic roadmap, twice adversarially reviewed and
+source-verified
+Validated baseline: repository commit `cd78ad2` plus the disclosed dirty
+worktree, 2026-07-29
+Reactivation baseline: verified documentation/deployment lineage `9e4977a`,
+2026-08-15
 Scope: functionality, architecture, agent quality, security, privacy, data,
 reliability, performance, operations, developer experience, governance,
 continuity, and business value
 Authority: this is a plan, not implemented state
 
-Implementation checkpoint: `NC-20260729-004` implemented, independently
-reviewed, committed, and deployed the first host containment slice, including
-remediation of Claude Opus's two blocking findings. Live denial and
-restart-grant canaries passed, and the installed healer implementation flag is
-off. The task remains `deployed_unverified` until an explicitly approved real
-or test-routed end-to-end send validates the success path and business outcome.
+Implementation state is governed by `docs/ACTIVE-WORK.md` and factual evidence
+in `docs/ENGINEERING-CHANGELOG.md`. This roadmap links to those records; it
+does not promote local source, a passing test, or a deployment into a stronger
+state. `NC-20260815-007` reactivates and re-sequences the roadmap but changes no
+runtime, schema, prompt, configuration, deployment, or external system.
+
+## 0. Reactivation decision and current baseline
+
+### One roadmap, separately gated implementation
+
+The Company OS plan is the single strategic roadmap for the always-on control
+model. New ideas are reconciled into this document rather than maintained as a
+parallel Spark, agent-platform, or automation plan. Implementation remains a
+series of narrow `NC-YYYYMMDD-NNN` tasks, each with its own owner, authority,
+acceptance evidence, rollback, review, deployment, and live-verification
+boundary.
+
+The document split is deliberate:
+
+| Surface | Owns |
+| --- | --- |
+| this plan | target architecture, priorities, dependencies, stage gates, and outcome measures |
+| `docs/ACTIVE-WORK.md` | current owner, exact status, scope, overlap, and next action |
+| focused design/runbook documents | schemas, protocols, acceptance cases, activation, and recovery |
+| `docs/ENGINEERING-CHANGELOG.md` | factual implementation, commit, migration, deployment, and live evidence |
+
+### Evidence-state vocabulary
+
+- **implemented** — the scoped plan outcome and required verification are
+  complete according to its linked task record;
+- **partial** — useful mechanics exist, but the plan outcome or universal
+  boundary is incomplete;
+- **deployed_unverified** — a linked slice is live but still lacks its named
+  verification or outcome gate;
+- **still proposed** — no current evidence establishes the planned outcome;
+- **superseded** — a later recorded decision replaces the item. No program item
+  is classified as superseded at this baseline.
+
+### Conservative implementation inventory — 2026-08-15
+
+This inventory is intentionally conservative. Narrow controls do not become
+company-wide merely because one workflow implements them.
+
+| Program item | Evidence state | Current evidence and next gate |
+| --- | --- | --- |
+| P0.0 blast-radius reduction | partial | Gmail containment is `deployed_unverified` under `NC-20260729-004`; healer Gate A is `deployed_unverified` under `NC-20260730-002`. Procurement CDP isolation, the universal external-write brake, and all other named boundaries remain open. |
+| P0.1 runtime contract | partial | `NC-20260728-005` restored a pinned Node 22 test baseline; `NC-20260731-003` put production on Node 22.23.2; release/runtime enforcement has advanced, but review and live-verification gates remain task-specific. |
+| P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries; raw credentials and broad agent/tool exposure have not been removed company-wide. |
+| P0.3 capability manifests | partial | Host operation matrices and role-specific checks exist, but one generated manifest does not yet control each agent's tools, mounts, data, network, model, action classes, and ceilings. |
+| P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260815-009` now binds visible To/CC headers for approved email, but one universal action envelope and mutation/replay suite do not yet cover every consequential action. |
+| P0.5 safety controller | still proposed | Domain-specific gates and circuit controls exist, but there is no one drilled global/per-system external-write safe mode with common precedence, ceilings, and evidence. |
+| P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
+| P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
+| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. There is no shared work-item authority, and the Mailman → Sales → approval → Mailman → Gmail receipt pilot remains the first cross-agent slice. |
+| P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
+| P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places; they are not normalized behind one trigger/run contract or reconciled as one inventory. |
+| P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
+| P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist; correlation through one work item and one compact exception surface is incomplete. |
+| P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
+| P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable; Gmail history-expiry reconciliation and a common source-watermark contract remain open. |
+| P1.8 migration discipline | partial | Ordered tracked `business_v2` migrations and structure-only schema checks exist; checksums, fresh-database CI, portability, and universal migration/restore gates remain incomplete. |
+| P1.9 canonical identity and lineage | partial | Party-scoped authorization, entry/email resolution, and canonical Slack lead threads improved lineage; first-touch and cross-process lineage are not universal. |
+| P1.10 privacy and records governance | still proposed | Data is protected by scoped roles and handling rules in places, but classification, retention, deletion, legal hold, and subject-access operations are not one accepted system. |
+| P1.11 shared evaluation harness | partial | Sales has request-first fixtures and grader has calibrated contract/corpus work; there is no shared versioned runner joining behavior, safety, cost, and outcome evidence across agents. |
+| P1.12 minimum decision envelope | partial | Action IDs, run context, receipts, release identity, and policy evidence exist in selected paths; prompt/knowledge/model/tool/policy versions are not uniformly bound to every work item and action. |
+| P1.13 knowledge and learning | partial | Bounded regeneration, fact-drift, and conflict controls exist; promotion/quarantine/provenance are not enforced uniformly across every operative knowledge copy. |
+| P1.14 risk-adjusted autonomy | partial | Autonomy policy/ledger/hold mechanics exist, but promotion is not yet governed by sampled outcome evidence, common thresholds, and automatic demotion across workflows. |
+| P2.1 measurement before architecture | partial | Focused workflows collect useful test and operational evidence; no stable workload/cost baseline yet justifies broad architecture changes. |
+| P2.2 scheduling fairness | partial | Per-group serialization, concurrency, warm workers, and capacity controls exist; priority classes and SLO-backed fairness remain incomplete. |
+| P2.3 containers and networks | partial | Container limits and role mounts exist, but measured right-sizing and default-deny, destination-scoped network policy do not. |
+| P2.4 context and spend | partial | Role context, task context, model settings, and bounded prompts exist in selected paths; task-specific context manifests and host-selected execution profiles are not one versioned contract. |
+| P2.5 database tuning | still proposed | Tuning is incident-specific; workload-backed index/query/retention policy is not a program. |
+| P2.6 modular-monolith decomposition | still proposed | Helpers have been extracted opportunistically, but no further decomposition is authorized without a measured ownership, testability, reliability, or performance blocker. |
+| P2.7 typed configuration | partial | Typed policy modules, setup code, and examples exist, but effective configuration still spans environment, SQLite JSON, launchd, code, and local state. |
+| P2.8 safe integration environment | partial | Focused fixtures, synthetic canaries, and extensive tests exist; a reusable side-effect-free environment covering the two pilot workflows remains incomplete. |
+| P2.9 explicit releases | partial | Exact release provenance and code/state-root checks are live on the current email lineage; those controls are not yet universal release and recovery proof for every workflow. |
+| P2.10 exception inbox | still proposed | Watchdogs, digests, Slack cards, and review queues are separate surfaces; one ledger-backed operator work panel does not exist. |
+| P2.11 relationship timeline | partial | `business_v2`, interactions, canonical lead keys, and thread anchoring provide parts of the timeline; one reconciled party/work/action/outcome view remains incomplete. |
+| P2.12 functional closure | partial | Procurement, CNPC, grader, Sales, and Contador now have stronger closed-loop pieces, but each process still needs an explicit completion definition, receipt, exception path, and outcome check. |
+| P2.13 management briefs | partial | Brief and digest generators exist, but they are not derived from the shared work ledger and do not yet report accepted, completed, blocked, stale, and outcome-validated work consistently. |
 
 ## 1. Executive recommendation
 
@@ -293,6 +370,46 @@ For a one-engineer system, group them into three internal modules by default:
 The migration/admin role is a separate operator trust context even if it uses
 the same repository and executable. This is an intentional exception to the
 one-daemon runtime, not a hidden second application service.
+
+### First-class control objects
+
+The architecture should make five contracts explicit. They may share storage
+and code, but their authority must not be conflated:
+
+1. **Task — what should happen.** A durable unit of intent with source event,
+   business entity, owner, state, priority, deadline, dependencies, input
+   references, context manifest, and completion definition.
+2. **Trigger — when a task should be created or resumed.** Time/cron, Gmail,
+   Slack, webhook, topic, and business-condition adapters normalize external
+   facts into a common trigger record. A trigger may request work; it does not
+   perform the consequential action itself. A schedule is one trigger type.
+3. **Skill — how work is attempted.** A versioned procedure package declaring
+   inputs, outputs, allowed capabilities, knowledge/context dependencies,
+   model compatibility, evaluation pack, owner, and rollback. Installing or
+   selecting a skill does not grant action authority.
+4. **Action envelope — whether a mutation may occur.** A host-owned proposed
+   action binds work item, action class, exact target, normalized arguments or
+   content hash, idempotency key, policy version, approval requirements,
+   ceilings, expiry, and current resource version. Agents propose; the host
+   authorizes and executes through a narrow capability.
+5. **Receipt — what actually happened.** Requested, policy-decided, approved,
+   attempted, externally acknowledged, reconciled, and outcome-validated are
+   separate facts. A receipt binds the external result back to the exact task,
+   trigger, skill version, action envelope, and evidence.
+
+Required invariants:
+
+- changing a trigger does not silently change the skill or action authority;
+- changing a skill invalidates approval when its action bytes or material
+  inputs change;
+- a successful agent turn is not a completed task without the task's defined
+  receipt and closure condition;
+- retries reuse the same idempotency identity or fail closed;
+- the host chooses capability exposure and execution profile; prompts may not
+  self-select more authority, cost, or depth;
+- every child task has a durable parent, bounded budget/deadline, scoped
+  context, and join/cancellation semantics before multi-agent delegation is
+  treated as dependable work.
 
 ## 6. P0 program: establish control before expansion
 
@@ -1129,6 +1246,35 @@ one-to-two-week Wave 0 was not credible for this staffing model. Re-estimate
 after every wave and stop when the next control costs more than the risk it
 reduces.
 
+The week/month labels below are retained as historical sizing from the
+validated plan. The 2026-08-15 reactivation uses dependency gates, not elapsed
+calendar time, and starts from the conservative inventory in section 0.
+
+### Reactivated implementation order
+
+| Slice | Outcome | Entry gate | Exit gate |
+| --- | --- | --- | --- |
+| R0 — rebaseline | one current strategic roadmap and conservative evidence inventory (`NC-20260815-007`) | documentation-only authority | continuity/diff checks pass; owner can choose the next bounded task from tracked files |
+| R1 — finish safety prerequisites | capability manifests, one action envelope/safe-mode contract, and healer Gate B/C typed-action separation | reconcile active overlapping Gmail, release, Procurement, CNPC, grader, and healer tasks | negative capability tests, mutation/replay tests, safe-mode drill, actions default off, and separately recorded deployment state |
+| R2 — prove the work ledger | Mailman → Sales → approval → Mailman → Gmail receipt is one durable parent work item with transitions, reconciliation, and closure | R1 final-send/action boundary is accepted; exact pilot schema/design receives its own task | restart/retry/duplicate/blocked/success cases reconcile to one work item and no stage is inferred from agent prose |
+| R3 — normalize triggers and skills | time, Gmail, webhook, topic, and condition adapters create/resume tasks through one contract; selected procedures are versioned skills | R2 ledger semantics stable enough to receive multiple sources | trigger replay/deduplication and skill-version rollback tests pass; trigger, skill, and authority changes remain independent |
+| R4 — operate by exception | compact exception brief and minimal operator work panel show blocked, stale, waiting-approval, failed, and outcome-missing work | R2 transition/receipt data is trustworthy and R3 adds source/run identity | operator can resolve or route exceptions without reading raw logs or treating a dashboard as process truth |
+| R5 — evidence-gated execution depth | host-selected deterministic/fast/deep profiles plus durable bounded parent/child tasks | shared evaluations, cost/latency telemetry, cancellation, and joins are proven | deeper or delegated execution improves named quality/cost/SLO measures without widening action authority |
+
+R1 checkpoint: `NC-20260815-008` made deterministic approved-email incident
+replay release-blocking, and `NC-20260815-009` repaired and deployed the
+fallback-marker and approval-bound CC execution path as exact release
+`12c2b049`. The release, migration, health, and drain evidence is complete, but
+the next natural approved customer email is still required for outcome
+validation. Other R1 capability-manifest, universal action-envelope/safe-mode,
+and healer decisions remain open. A default-off, non-activated R2 ledger
+foundation may be designed and tested in isolation; no live ledger migration or
+workflow activation may bypass those R1 gates.
+
+Each slice receives one or more separate `NC-YYYYMMDD-NNN` tasks only when work
+starts. Do not reserve future IDs, combine these slices into one implementation
+branch, or let R3-R5 bypass unfinished R1/R2 controls.
+
 ### Wave 0: containment and proof (week 1–6)
 
 One primary engineer/operator, sequentially. Each week must reach its exit gate
@@ -1349,7 +1495,12 @@ Examples:
 | privacy over-retention | medium-high | inventory, retention, deletion, access logs |
 | over-automation without value | medium | causal measurement chain and stage gates |
 
-## 17. First 20 implementation tickets
+## 17. Ordered implementation-ticket backlog
+
+The numbering is a stable planning key, not an `ACTIVE-WORK` task ID. The
+section-0 inventory is the current status authority for the roadmap; the older
+2026-07-29 checkpoint below is retained because it explains the ordering and
+the containment work already attempted.
 
 Implementation checkpoint (2026-07-29):
 
@@ -1416,7 +1567,23 @@ Implementation checkpoint (2026-07-29):
     bounded, work-item-scoped grant ledger and explicit revocation.
 23. `OBS-003` — define quarantine metrics, alert thresholds, retention, and an
     operator review/replay runbook.
-24. `REL-005` — make the host-generated approved-email fallback conform to
+24. `REL-003` — define one normalized trigger contract for time, Gmail,
+    webhook, topic, and business-condition sources; make schedules a trigger
+    subtype and require replay/deduplication evidence.
+25. `CAP-001` — define versioned skill packages with declared inputs, outputs,
+    context, capability dependencies, compatible execution profiles,
+    evaluation pack, owner, and rollback; skill selection never grants an
+    action.
+26. `REL-004` — add durable parent/child task relationships, budgets,
+    deadlines, cancellation, and join semantics before using subagents for
+    unattended company work.
+27. `OPS-002` — let the host select deterministic, fast, or deep execution
+    profiles from task class and evaluation evidence; prompts cannot raise
+    their own model, budget, tools, or action authority.
+28. `UX-001` — build the smallest ledger-backed exception brief/work panel for
+    waiting approval, blocked, stale, failed, dead-letter, and
+    outcome-unvalidated work; retain source-system links and receipts.
+29. `REL-005` — make the host-generated approved-email fallback conform to
     Mailman's executable marker contract, and bind every operator-visible
     recipient header, including CC, into the immutable action before execution.
     `NC-20260815-009` implements and deploys the runtime/regression slice as
@@ -1427,7 +1594,7 @@ Deferred until evidence requires them: broader process catalog, general UI,
 full party timeline, per-process ROI program, broad privacy automation, and
 file decomposition not blocking a current change. `SEC-001`, `OBS-001`, and
 the minimum data-class/retention decision remain required supporting work but
-do not displace the twenty ordered implementation tickets above.
+do not displace the ordered implementation backlog above.
 
 ## 18. Decisions required from leadership
 
@@ -1461,6 +1628,16 @@ do not displace the twenty ordered implementation tickets above.
 Pending a later explicit reversal, `NC-20260729-004` and subsequent planning use
 these conservative defaults:
 
+- this document is the single Company OS strategy; adjacent architecture ideas
+  are reconciled here and implemented as separately gated tasks;
+- Task, Trigger (including Schedule), Skill, Action Envelope, and Receipt are
+  separate contracts. A prompt, trigger, or installed skill grants no external
+  write authority;
+- Mailman → Sales → approval → Mailman → Gmail receipt remains the first
+  shared-work-ledger pilot unless a newer incident supplies a documented,
+  higher-risk replacement;
+- execution profiles and durable parent/child agent work wait for shared
+  evaluation, cost/latency telemetry, cancellation, and join evidence;
 - healer implementation remains off until disposable-worktree isolation and
   live verification;
 - Procurement browser access must be network-isolated or retired;
@@ -1600,3 +1777,35 @@ The document intentionally remains comprehensive so the company can see the
 whole risk and capability landscape. Only Immediate Containment and the first
 current wave are commitments. Later waves are option sets that require
 re-baselining, measured need, and explicit leadership decisions.
+
+### Reactivation record
+
+**Date:** 2026-08-15
+
+**Task:** `NC-20260815-007`
+
+**Method:** documentation-only reconciliation against the verified `9e4977a`
+lineage, current project map, active-work register, change protocol, linked
+engineering-changelog evidence, the 2026-07-29 source-connected validation,
+and the current plan. No live system was queried for this reactivation, and
+local uncommitted implementation claims were not promoted beyond their
+recorded state.
+
+**Decisions incorporated:**
+
+- retain one Company OS strategic roadmap and reject a parallel Spark plan;
+- implement the roadmap through independently scoped and reversible tasks;
+- add explicit Task, Trigger, Skill, Action Envelope, and Receipt contracts;
+- keep the Mailman/Sales approved-email path as the first shared ledger pilot;
+- sequence safety boundaries before ledger expansion, triggers/skills before
+  operator UX, and evidence before execution profiles or subagent graphs;
+- replace calendar-led reactivation with dependency gates while retaining the
+  earlier estimates as historical sizing;
+- classify every program item conservatively and link state to shared task and
+  changelog evidence rather than plan prose.
+
+**Not authorized or performed by this task:** source, test, schema, migration,
+prompt, configuration, service, deployment, browser, database, Slack, Gmail,
+or other external-system changes. Every runtime slice above still requires a
+new task ID, overlap check, focused design, acceptance/rollback contract, and
+the authority appropriate to its change class.
