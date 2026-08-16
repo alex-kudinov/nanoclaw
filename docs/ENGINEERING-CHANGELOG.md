@@ -12,9 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T16:18Z
 - Owner/client: Codex
-- State: validating at the local commit/release-package boundary; not pushed,
-  deployed, or activated
-- Commit/PR: claim commit `d40913e`; implementation commit pending on
+- State: complete for the local source and release-package milestone; not
+  pushed, deployed, or activated. Deployment is explicitly not applicable to
+  this default-off milestone and requires a separate authorized task.
+- Commit/PR: claim commit `d40913e` and implementation commit
+  `72b21db43d1270a3d0994ca525f0137262f54409` on
   `codex/nc-20260816-004-capability-manifests`; no PR
 - Change class: C5 — per-agent tool, mount, IPC, runtime, and container-reuse
   security boundary
@@ -41,6 +43,15 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   runner build plus 40/40 tests. The complete root suite passes 2,388/2,389; its
   sole failure is the unchanged baseline `src/cnpc-prompt-contract.test.ts`
   inline-registration source assertion. `git diff --check` passes.
+- Release-package evidence: the clean committed source tree
+  `4717c4f3d5a66bf22c93dc373e3f2dbc08a2fda2` passed the exact Node 22.23.2
+  release gate, including another 634/634 email-critical tests and runner build
+  plus 40/40 tests. The verified 636-file artifact SHA-256 is
+  `3e5dfec313bec49092f56f89f6c506587970ac40dac1d9d43ffcf032cde2f64b`;
+  the local archive SHA-256 is
+  `8ea90b587e0ba157212042d580c729de473f098259a96d2ff4094f07a5162564`.
+  Archive inspection confirms all 17 capability JSON files are present. This
+  is packaging evidence, not deployment or live behavior proof.
 - Residuals/rollback: production activation requires an authorized drain/recycle
   and group-by-group negative, launch, warm-revocation, and business-path
   canaries. Destination-scoped egress, raw-secret retirement, action-value/rate
