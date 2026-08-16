@@ -8,6 +8,39 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-009 — Extend the common external-write brake to Things
+
+- Date: 2026-08-16T19:27Z
+- Owner/client: Codex
+- State: validating; source and focused no-network proof complete, immutable
+  release/deployment pending
+- Commit/PR: claim commit `16dbc22`; implementation is the clean branch-head
+  commit containing this entry on `codex/nc-20260816-009-things-safety`; no PR
+- Change class: C5 — extend a common production external-write safety boundary
+- Intended outcome: stop decision-brief promotion at the host Things HTTP
+  boundary under global or Things-only safe mode without creating a to-do or
+  misleadingly adding a Slack success reaction.
+- Implementation: register `things`; split the parsed-item POST into an
+  injectable host function; assert the C2 boundary immediately before fetch;
+  preserve missing-key, non-OK, and transport-failure behavior; return false to
+  the existing Slack-facing wrapper on a typed denial; and add an injected
+  Things-fetch tripwire as the eighth operation in the installed refusal drill.
+- Safety boundary: no real Things task, Slack message/reaction, bridge
+  credential/configuration change, other integration change, envelope
+  enforcement, push, or merge is authorized.
+- Verification so far: 31/31 focused parser/boundary/controller/config/drill
+  tests, 152/152 expanded action-safety/Slack regressions, 635/635
+  email-critical tests, exact Node 22.23.2 typecheck/source formatting,
+  independent runner build plus 40/40 tests, and continuity/capability checks
+  pass. The unrestricted root suite passes 2,441/2,442; its sole failure is the
+  unchanged, unrelated `src/cnpc-prompt-contract.test.ts` source-wrapper
+  assertion. Immutable packaging, deployment, and live auto-restored proof
+  remain next.
+- Residuals/rollback: the controller still does not interrupt an already
+  in-flight fetch. Chaos, Booking/Trafft, Certifier/Sertifier,
+  container-exposed writes, and standalone tools remain outside universal
+  coverage; envelope adoption, ceilings, and automatic demotion remain open.
+
 ### NC-20260816-008 — Extend the common external-write brake to Hive/Firestore
 
 - Date: 2026-08-16T19:01Z

@@ -1292,6 +1292,14 @@ no-network drill gains a seventh denial. Exact release `d32fda08` is deployed;
 the live drill returned seven `global_safe_mode` denials, crossed no tripwire,
 restored the exact environment, and left email, job, Hive, Plutio, and Chaos
 aggregates unchanged.
+`NC-20260816-009` extends the same control to the host Things bridge. The
+direct `/add-todo` function denies before fetch in global or Things-only safe
+mode, while the existing Slack-facing wrapper returns false so the caller adds
+no success reaction. The installed no-network drill now expects an eighth
+denial across seven systems and includes an injected Things-fetch tripwire.
+Immutable deployment and live restoration/non-interference evidence remain the
+exit gate for this slice.
+
 Full P0.4/P0.5 still requires domain envelope
 adoption, standalone-script and remaining-integration coverage, immediate
 in-flight interruption, ceilings, and demotion.

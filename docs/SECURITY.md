@@ -376,28 +376,32 @@ that bypasses Gmail recipient/content/test-routing/interaction controls. The
 working decision is to retire it behind a host-owned capability. Until cutover,
 it must be included in safe-mode and secret inventories.
 
-### Common external-write safety control (`NC-20260816-002`, `-007`, `-008`)
+### Common external-write safety control (`NC-20260816-002`, `-007`, `-008`, `-009`)
 
 `src/action-safety.ts` now defines the dark, default-off common controller and
 content-free action-envelope contract documented in
 `docs/ACTION-SAFETY-CONTROL.md`. Gmail, Slack, Courses SMTP container launch,
 Plutio runtime tools, the Stripe payment/refund host processor, and
 Hive/Firestore conversation synchronization consult it at their mutation
-boundaries. Misconfiguration, the global brake, and matching per-system brakes
-fail closed; reads and aggregate evidence remain available. A denied Hive
+boundaries. `NC-20260816-009` adds the Things `/add-todo` HTTP boundary before
+fetch and preserves the Slack reaction caller's false/no-success behavior on
+denial. Misconfiguration, the global brake, and matching per-system brakes fail
+closed; reads and aggregate evidence remain available. A denied Hive
 inline sync remains retryable, while its reaper reports the work held without
 incrementing/dead-lettering or alerting.
 
 `NC-20260816-007` live-verified the first five systems in an exact-release,
 auto-restored no-write production drill. `NC-20260816-008` deploys and
 live-verifies the Hive extension with an injected Firestore tripwire and
-unchanged retry/business aggregates. The controls are default-off in production
-and do not replace any domain-specific approval, claim, receipt, hold, or
-policy. Envelope enforcement also remains off: current legacy callers supply
-no envelope and would be denied if it were enabled. The default-off manifest
-layer now fingerprints new containers and, when enabled, refuses stale
-warm/adopted reuse at the next turn; activation still requires a separately
-authorized drain/recycle and canary. Raw SMTP retirement,
+unchanged retry/business aggregates. The Things extension is implemented and
+locally verifies an eighth denial with an injected fetch tripwire; production
+deployment remains separately recorded. The controls are default-off in
+production and do not replace any domain-specific approval, claim, receipt,
+hold, or policy. Envelope enforcement also remains off: current legacy callers
+supply no envelope and would be denied if it were enabled. The default-off
+manifest layer now fingerprints new containers and, when enabled, refuses
+stale warm/adopted reuse at the next turn; activation still requires a
+separately authorized drain/recycle and canary. Raw SMTP retirement,
 standalone-script/remaining-integration coverage, and immediate interruption of
 already-running writes remain open.
 

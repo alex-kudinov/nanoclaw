@@ -31,6 +31,7 @@ export interface ActionSafetyBoundaryDrillResult {
     stripeChild: boolean;
     stripeLifecycleEnqueue: boolean;
     hiveFirestore: boolean;
+    thingsBridge: boolean;
   };
   slackOutgoingQueueDepth: number;
   courses: {
@@ -99,6 +100,7 @@ export async function runInstalledActionSafetyBoundaryDrill(): Promise<ActionSaf
     stripeChild: false,
     stripeLifecycleEnqueue: false,
     hiveFirestore: false,
+    thingsBridge: false,
   };
 
   try {
@@ -138,15 +140,23 @@ export async function runInstalledActionSafetyBoundaryDrill(): Promise<ActionSaf
       );
     }
 
-    const [gmailApi, { SlackChannel }, containerRunner, plutio, stripe, hive] =
-      await Promise.all([
-        import('./gmail-api.js'),
-        import('./channels/slack.js'),
-        import('./container-runner.js'),
-        import('./plutio-cli.js'),
-        import('./stripe-payment-host.js'),
-        import('./hive-bridge.js'),
-      ]);
+    const [
+      gmailApi,
+      { SlackChannel },
+      containerRunner,
+      plutio,
+      stripe,
+      hive,
+      things,
+    ] = await Promise.all([
+      import('./gmail-api.js'),
+      import('./channels/slack.js'),
+      import('./container-runner.js'),
+      import('./plutio-cli.js'),
+      import('./stripe-payment-host.js'),
+      import('./hive-bridge.js'),
+      import('./brief-promote.js'),
+    ]);
 
     const denials: ActionSafetyBoundaryDrillResult['denials'] = [];
     denials.push(
@@ -327,6 +337,26 @@ export async function runInstalledActionSafetyBoundaryDrill(): Promise<ActionSaf
             getFirestore: () => {
               tripwires.hiveFirestore = true;
               throw new BoundaryTripwireError('Hive Firestore client');
+            },
+          },
+        ),
+      ),
+    );
+
+    denials.push(
+      await expectGlobalDenial('things', () =>
+        things.postBriefItemToThings(
+          {
+            title: 'Synthetic action-safety drill',
+            domain: 'dev',
+            due: '2026-08-17',
+          },
+          {
+            bridgeKey: 'action-safety-drill',
+            bridgeUrl: 'http://things.example.invalid',
+            fetch: async () => {
+              tripwires.thingsBridge = true;
+              throw new BoundaryTripwireError('Things HTTP bridge');
             },
           },
         ),
