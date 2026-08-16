@@ -1347,6 +1347,11 @@ The Booking prompt/manifest and Plutio projection remain unchanged. Promotion
 is separate and requires the shared flattened reschedule-identity repair, a
 natural business-path canary, and empirical proof that Plutio preserves the
 marker before the container credential/mount is removed.
+Exact release `63ed4aa` is live with this path still dark. The installed
+injected canary proves first-pass/replay/denial logic without DB, child, or
+network calls, while live email/task/Plutio aggregates and selective capability
+configuration remain unchanged. That closes the dark foundation checkpoint;
+it does not close the promotion, raw-secret removal, or outcome gate.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus

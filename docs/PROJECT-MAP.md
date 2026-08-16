@@ -676,6 +676,14 @@ then prove that Plutio preserves the remote marker before removing the current
 container path. Local or injected replay proof is not natural business-path
 evidence.
 
+Exact release `63ed4aacf41e3026037912ed3f5ffccfbdc95e59` is now live on
+`mini-claw.local`. The installed injected canary proves allowed, denied, and
+replay control flow while making zero database, child-process, or network calls.
+Health, channels, listener/drain state, capability selection, email/task
+aggregates, and legacy Plutio outbox totals remained stable; no
+`booking_activity:%` row exists. This is deployment proof of the dark control
+surface only, not remote Plutio idempotency or a natural lifecycle outcome.
+
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some
 roles; immediate in-flight termination, value/rate ceilings, dynamic group

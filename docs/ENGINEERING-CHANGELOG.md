@@ -12,8 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T20:26Z
 - Owner/client: Codex
-- State: ready_for_deploy; locally verified dark candidate
-- Commit/PR: claim `3bdb6e4`; implementation commit pending on
+- State: complete; immutable dark release deployed and installed injected
+  canary plus production non-interference evidence verified
+- Commit/PR: claim `3bdb6e4`, implementation and release
+  `63ed4aacf41e3026037912ed3f5ffccfbdc95e59` on
   `codex/nc-20260816-011-booking-plutio-host`; no PR
 - Change class: C5 — dark host-owned external-write boundary
 - Intended outcome: give the host a typed, durable, replay-safe path for
@@ -41,8 +43,30 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   tests. The unrestricted root suite passes 2,456/2,457; its sole failure is the
   unchanged unrelated CNPC source-wrapper assertion. No real external or
   database call occurred. Final documentation/release gates remain pending.
-- Deployment/rollback: pending. This release must remain dark; rollback is the
-  prior exact release `ba5fe74` and requires no data reversal.
+- Release/deployment evidence: clean immutable release `63ed4aa` has source
+  tree `0c5545b392456d8fbb6e9d805a967012569bb446`, 656-file artifact hash
+  `8f82da2c9b9439ff9486249a2259807c2ca51da3530d9ae485f61444b2f01917`,
+  and archive SHA-256
+  `247c62f7c7a64c394165924f7ddea04c59fcbf4ef532967157d92e7f1dd9399a`.
+  Local extraction and remote installation independently verified under Node
+  22.23.2. The dry-run and applied transaction changed only the two release
+  environment pointers and executable; rollback plist
+  `com.nanoclaw.plist.rollback-ba5fe74e93e7-2026-08-16T20-48-32-586Z`
+  retains the prior exact `ba5fe74` release.
+- Installed/live proof: the bundled synthetic verifier returned a recorded
+  first pass, an already-recorded replay without the fake write, and booked
+  denial while reporting zero database, child-process, and network calls.
+  Health proves exact `63ed4aa`, matching code root, Node 22.23.2, one listener,
+  connected Gmail/Slack, 17/17 manifests, `booking,campanero` selected, and zero
+  active/waiting/outgoing work. Email actions remain 61 confirmed/6 blocked,
+  send events 334, Campanero one completed task, legacy Plutio outbox 1,259
+  processed/15 dead, and Booking-specific outbox rows zero. No Trafft/Plutio
+  request, production business-row write, customer/Slack message,
+  credential/configuration change, push, or merge occurred.
+- Final boundary: this is a deployed dark foundation, not a natural Booking
+  lifecycle outcome. Promotion requires a separate shared reschedule-identity
+  repair/canary and empirical proof that Plutio preserves the remote marker
+  before ingress wiring or container Plutio removal.
 
 ### NC-20260816-010 — Project business credential families and remove Trafft from Booking
 

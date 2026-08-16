@@ -90,6 +90,11 @@ common safety controller, and uses a stable remote marker for replay. It does
 not change Booking's manifest, prompt, mounts, or current Plutio projection.
 Promotion still requires a shared rescheduled-event identity fix, a natural
 business-path canary, and proof that Plutio preserves the marker remotely.
+Exact release `63ed4aa` deploys this dark code without changing the selected
+groups or projected inputs. Its installed injected verifier made no database,
+child-process, or network call; production still contains zero Booking-specific
+Plutio outbox rows. This proves code installation and non-interference, not
+capability removal readiness.
 
 ## Change procedure
 
