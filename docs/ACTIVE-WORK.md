@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-004` | Establish tracked per-agent capability manifests and make stale warm/adopted containers ineligible for reuse without activating the control in production | Codex | `codex/nc-20260816-004-capability-manifests` @ `ac21fde` (local-only claim) | `in_progress` | C5 | Add one versioned manifest per tracked operative group; validate and fingerprint declared Claude/MCP tools, mounts, data/network/action policy, model, time/resource ceilings, owner, and SLO; project the selected manifest into container launch; keep existing host authorization authoritative; add default-off enforcement, human-readable matrix generation, negative cross-agent tests, and reuse/adoption revocation on fingerprint drift. Excludes production config/deploy/restart, external writes, raw-secret extraction, egress enforcement, push, and merge. | Map the exact current launch/MCP/IPC surface, commit this claim, then implement the dark manifest compiler, projection, drift/revocation tests, and authoritative documentation. | 2026-08-16T15:51Z |
 | `NC-20260816-002` | Add one host-owned action-envelope contract and a global/per-system external-write safe mode without activating or widening any live capability | Codex | `codex/nc-20260816-002-action-safety-control` @ `092b5b9` (local implementation) | `complete` | C5 | Implement the dark contract/controller across the first drill systems: Gmail, Slack, Courses SMTP launch, Plutio runtime tools, and Stripe processing. Default behavior and all production configuration remain unchanged; other runtime/container/script writes remain explicit P0.3/P0.5 follow-ups. | None for this local milestone. Production activation and broader capability coverage require separately authorized tasks. | 2026-08-16T15:09Z |
 | `NC-20260816-001` | Apply the Company OS ledger schema in production and deploy a non-authoritative, default-off Mailman/Sales shadow projection | Codex | `codex/nc-20260816-001-company-os-shadow` @ deployed `55c97d5` | `complete` | C5 | Migration 118 is backed up, applied, minimized, append-only, and host-admin-only. Exact Node 22.23.2 release `55c97d5` is live with a bounded shadow since 2026-08-14: 4 eligible items reconcile as 3 completed plus 1 named source gap; the next pass was duplicate-only. SQLite stayed authoritative with 67 actions, 61 confirmed, 6 blocked, and zero actionable sends; Gmail/Slack stayed connected and no deployment send/post occurred. | None for this milestone. Any ledger authority, workflow dependency, wider history, or second-workflow projection requires a new separately authorized task. | 2026-08-16T14:21Z |
 | `NC-20260815-010` | Establish the first durable Company OS work-ledger foundation for the Mailman/Sales approved-email pilot without activating it in production | Codex | `codex/nc-20260815-010-company-os-ledger` @ `6e281f0` from `38810d3` | `complete` | C2 | Focused design/ADR, additive migration 118 plus history-preserving rollback, host-only typed state/receipt store, 16 focused tests, and data/project/roadmap authorities passed review through the separately authorized NC-20260816-001 activation. | None. Production application and non-authoritative shadow evidence are recorded under `NC-20260816-001`; promotion remains separate. | 2026-08-16T14:21Z |
@@ -78,6 +79,48 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-004
+
+- Trigger: after `NC-20260816-002` completed the dark common action-safety
+  contract, the owner instructed Codex to continue to the next Company OS
+  milestone.
+- Outcome: create a tracked versioned manifest for every operative group in the
+  current source tree, a host compiler/validator and reviewable permissions
+  matrix, and a launch/reuse contract that can mechanically project the
+  declared Claude/MCP tool surface and refuse stale warm/adopted containers.
+- Branch/base: isolated worktree `/private/tmp/nanoclaw-nc-20260816-004` on
+  `codex/nc-20260816-004-capability-manifests`, based on descendant commit
+  `ac21fde213000f29a9cc79140153cb49281289cd`. That base includes the completed
+  `NC-20260816-002` control plus a later isolated grader prompt refinement. The
+  dirty operational checkout and the other session's worktree remain untouched.
+- Scope/authority: C5 because manifest projection and warm-container revocation
+  change the agent capability boundary. Authority covers local source,
+  container-runner source/protocol, tests, tracked manifest and matrix files,
+  `.env.example`, release packaging inputs, and relevant
+  security/project/roadmap/continuity documents. It excludes production
+  configuration, deployment, restart, live container termination, database or
+  external-system writes, credential rotation, action-envelope activation,
+  push, and merge.
+- Compatibility boundary: enforcement remains explicitly default-off. Existing
+  Gmail/resource checks, Procurement/grader host authorization, mount allowlist,
+  action-safety controller, prompts, and registered-group configuration remain
+  independently authoritative. Manifest projection may narrow but never widen
+  those controls.
+- Acceptance: every tracked operative group has one schema-valid manifest; the
+  generated matrix is deterministic and contains no secret values or host
+  paths; unknown/malformed manifests and undeclared tools/mounts fail closed in
+  enforcement mode; selected MCP registration and Claude allowed-tools come
+  from the manifest; fingerprints bind the launch and sidecar; stale or
+  pre-manifest warm/adopted containers cannot receive another turn when
+  enforcement is enabled; compatibility mode preserves the current surface;
+  focused negative tests, exact Node typecheck, root and independent-runner
+  gates, continuity, formatting, and diff checks pass.
+- Residual scope: least-privilege reduction is constrained to declared tool and
+  mount surfaces in this milestone. Raw business credentials, default-deny
+  network egress, per-action volume/money ceilings, immediate termination of an
+  in-flight container, production activation/drill, and dynamic untracked group
+  onboarding remain separate gates.
 
 ### NC-20260816-002
 
