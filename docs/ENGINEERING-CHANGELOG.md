@@ -12,9 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T20:55Z
 - Owner/client: Codex
-- State: ready_for_deploy; visible-marker correction passes local gates and the
-  owner authorized exactly one corrective synthetic Activity Log entry
-- Commit/PR: claim `65c6d1b`; implementation/release `ed957d3` on
+- State: complete; corrected release deployed and real marker readback plus
+  immediate no-write replay verified
+- Commit/PR: claim `65c6d1b`; initial implementation/release `ed957d3`;
+  corrective implementation/release `13ca192` on
   `codex/nc-20260816-012-booking-plutio-marker`; no PR
 - Change class: C5 — shared webhook identity plus bounded external canary
 - Intended outcome: make the shared Trafft reschedule key correct for the
@@ -76,6 +77,32 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   22.23.2 passes typecheck, source formatting, 55/55 focused tests, 635/635
   email-critical tests, runner build plus 40/40 tests, and 2,462/2,463 root
   tests; the sole failure remains the unrelated CNPC wrapper-string baseline.
+- Corrective release: exact commit
+  `13ca192e56f8860cc961e5178a73fd4e809aa6c9`, source tree
+  `0c9e4d696b00571058a3ec10ab9b62b26a6b36ad`, 660-file artifact hash
+  `fcfb7b6ae45d45d50500125babdde7a7d62587d1cf1442164fedce9979837152`,
+  and archive SHA-256
+  `c9dcc39f607b2d8bbfa6d3b4cb090361de789fa05bdfdeb5f2003436bea81296`
+  independently verified locally and on the Mini. Activation from `ed957d3`
+  changed only the expected three plist values; rollback is
+  `com.nanoclaw.plist.rollback-ed957d35877a-2026-08-16T21-22-00-130Z`.
+- Corrective canary: pre-read showed one note, one entry, and zero visible
+  markers. The final authorized apply appended the visible digest once,
+  confirmed exactly one occurrence, and returned `already_recorded` on replay
+  after only person upsert and note read; replay never called the activity
+  writer. Independent post-read showed one note, two retained evidence entries,
+  and exactly one visible marker.
+- Final live evidence: refreshed PID `84353` owns the sole listener and reports
+  exact `13ca192`, Node 22.23.2, connected Gmail/Slack, 17/17 valid manifests,
+  selected groups `booking,campanero`, and zero active/waiting/outgoing work.
+  Email actions remain 61 confirmed/6 blocked, send events 334, selected task
+  counts unchanged, Plutio outbox 1,259 processed/15 dead, and zero
+  `booking_activity:%`. The remote transfer archive was removed. No customer
+  data/message, Trafft call, or NanoClaw production-database write occurred.
+- Follow-up: NC-013 must separately wire the host path, change Booking's
+  procedure/prompt/manifest/mounts, remove container Plutio access, deploy, and
+  prove a sanitized natural archived-event durable receipt and replay. NC-012
+  does not authorize or claim that cutover.
 
 ### NC-20260816-011 — Build the dark Booking-to-Plutio host boundary
 

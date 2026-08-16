@@ -698,9 +698,13 @@ zero occurrences and refused replay before a second write. Health and all
 NanoClaw aggregates remained stable. Booking ingress, prompt, procedure,
 manifest, mounts, and Plutio projection remain unchanged. The owner authorized
 one corrective entry, and the locally verified replacement uses visible
-text-only `[nanoclaw-booking:<sha256>]`. Promotion remains blocked until that
-candidate is immutably deployed and its exact-one readback plus no-write replay
-passes.
+text-only `[nanoclaw-booking:<sha256>]`. Exact release `13ca192` is now live;
+the authorized correction produced exactly one visible marker and immediate
+replay returned `already_recorded` without calling the activity writer.
+Independent readback found one note and exactly one marker, while health and
+NanoClaw aggregates remained stable. This closes the shared-identity and remote
+marker prerequisites only. Natural ingress, durable outbox receipt, Booking
+procedure/manifest/mount cutover, and container Plutio removal remain NC-013.
 
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some

@@ -109,9 +109,12 @@ must remain unwired.
 
 The corrective candidate now uses visible text-only
 `[nanoclaw-booking:<sha256>]` and passes local exact-runtime gates. The owner
-authorized one additional entry on the same synthetic contact, but this does
-not change the capability state: immutable deployment and successful remote
-readback/replay are still required before cutover.
+authorized one additional entry on the same synthetic contact. Exact release
+`13ca192` is live, and that correction produced exactly one remotely preserved
+marker plus an immediate `already_recorded` replay without an activity write.
+This still does not change the capability state: Booking keeps its Plutio
+family and the host adapter stays unwired until NC-013 changes the procedure,
+manifest, mounts, and ingress together and proves the natural durable path.
 
 ## Change procedure
 
