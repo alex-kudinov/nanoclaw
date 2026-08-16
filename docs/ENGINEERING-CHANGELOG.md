@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T20:55Z
 - Owner/client: Codex
-- State: blocked; exact release deployed, but Plutio stripped the marker and
-  the canary refused replay before a second write
+- State: in_progress; exact release deployed, Plutio stripped the first marker,
+  and the owner authorized exactly one corrective synthetic Activity Log entry
 - Commit/PR: claim `65c6d1b`; implementation/release `ed957d3` on
   `codex/nc-20260816-012-booking-plutio-marker`; no PR
 - Change class: C5 — shared webhook identity plus bounded external canary
@@ -66,6 +66,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   authority for one additional corrective synthetic Activity Log mutation and
   prove exact-one readback plus immediate no-write replay. Natural ingress and
   Plutio capability removal remain prohibited until that succeeds.
+- Authority extension (2026-08-16T21:17Z): the owner approved that one
+  additional mutation on the existing synthetic contact. A third entry,
+  deletion/rewriting of the negative evidence, customer data, natural ingress,
+  database mutation, and Booking capability removal remain outside scope.
 
 ### NC-20260816-011 — Build the dark Booking-to-Plutio host boundary
 
