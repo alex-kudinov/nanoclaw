@@ -119,6 +119,14 @@ describe('CNPC webhook host boundary', () => {
         status: 'success' as const,
         result: null,
       })),
+      enqueueBookingPlutioActivity: vi.fn(async () => ({
+        outboxId: 1,
+        eventId: 'unused',
+        kind: `booking_activity:${'a'.repeat(64)}`,
+        partyId: 1,
+        interactionId: 1,
+        duplicate: false,
+      })),
       enqueueAgentTask: vi.fn((_jid, _id, fn) => void fn()),
       sendMessage: vi.fn(async () => {}),
       getHealth: () => ({

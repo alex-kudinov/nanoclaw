@@ -83,6 +83,14 @@ function makeDeps(overrides?: Partial<WebhookServerDeps>): WebhookServerDeps {
     heartbeatPath: '/tmp/nanoclaw-heartbeat.json',
     getRegisteredGroups: () => ({ 'slack:C123': testGroup }),
     runAgent: vi.fn(async () => ({ status: 'success' as const, result: null })),
+    enqueueBookingPlutioActivity: vi.fn(async () => ({
+      outboxId: 701,
+      eventId: 'appt:47:canceled',
+      kind: `booking_activity:${'a'.repeat(64)}`,
+      partyId: 42,
+      interactionId: 501,
+      duplicate: false,
+    })),
     // Stub of GroupQueue.enqueueTask: run the task fn immediately, as the
     // real queue does when no container is active for the group.
     enqueueAgentTask: vi.fn((_groupJid, _taskId, fn: () => Promise<void>) => {
@@ -670,6 +678,7 @@ vi.mock('./booking-host-write.js', async () => {
 
 import { bookingHostWrite } from './booking-host-write.js';
 import bookedFixture from './fixtures/booked-webhook.json' with { type: 'json' };
+import canceledFixture from './fixtures/canceled-webhook.json' with { type: 'json' };
 
 describe('WebhookServer — host-side booking write (T03b)', () => {
   const trafftWebhook: WebhookDefinition = {
@@ -693,7 +702,10 @@ describe('WebhookServer — host-side booking write (T03b)', () => {
   };
   const mockBookingWrite = bookingHostWrite as ReturnType<typeof vi.fn>;
 
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    recordSuccess('booking');
+  });
 
   async function fireTrafft(
     body: unknown,
@@ -789,6 +801,87 @@ describe('WebhookServer — host-side booking write (T03b)', () => {
     expect(mockBookingWrite).not.toHaveBeenCalled();
     expect(d.runAgent).toHaveBeenCalledTimes(1);
     expect(markWebhookHandled).not.toHaveBeenCalled();
+  });
+
+  it('enqueues a persisted canceled event before marking the inbox handled', async () => {
+    const enqueueBookingPlutioActivity = vi.fn(async () => ({
+      outboxId: 702,
+      eventId: 'appt:47:canceled',
+      kind: `booking_activity:${'b'.repeat(64)}`,
+      partyId: 42,
+      interactionId: 502,
+      duplicate: false,
+    }));
+    const markWebhookHandled = vi.fn(async () => {});
+    const d = makeDeps({
+      getRegisteredGroups: () => ({ 'slack:CBOOKING': bookingGroup }),
+      archiveWebhook: vi.fn(async () => ({ id: 79, isDuplicate: false })),
+      enqueueBookingPlutioActivity,
+      markWebhookHandled,
+    });
+
+    await fireTrafft(canceledFixture, d);
+
+    expect(d.runAgent).toHaveBeenCalledTimes(1);
+    expect(enqueueBookingPlutioActivity).toHaveBeenCalledWith(79);
+    expect(markWebhookHandled).toHaveBeenCalledWith(79, {
+      handled_by: 'booking',
+      party_id: 42,
+      related_entity: {
+        kind: 'booking_plutio_outbox',
+        id: 702,
+        interaction_id: 502,
+      },
+    });
+  });
+
+  it('does not enqueue or mark handled when the Booking agent returns an error', async () => {
+    const enqueueBookingPlutioActivity = vi.fn();
+    const markWebhookHandled = vi.fn(async () => {});
+    const markWebhookFailed = vi.fn(async () => {});
+    const d = makeDeps({
+      getRegisteredGroups: () => ({ 'slack:CBOOKING': bookingGroup }),
+      archiveWebhook: vi.fn(async () => ({ id: 80, isDuplicate: false })),
+      runAgent: vi.fn(async () => ({
+        status: 'error' as const,
+        result: null,
+        error: 'container exit 137',
+      })),
+      enqueueBookingPlutioActivity,
+      markWebhookHandled,
+      markWebhookFailed,
+    });
+
+    await fireTrafft(canceledFixture, d);
+
+    expect(enqueueBookingPlutioActivity).not.toHaveBeenCalled();
+    expect(markWebhookHandled).not.toHaveBeenCalled();
+    expect(markWebhookFailed).toHaveBeenCalledWith(
+      80,
+      expect.stringContaining('container exit 137'),
+    );
+  });
+
+  it('keeps the webhook retryable when durable Plutio enqueue fails', async () => {
+    const markWebhookHandled = vi.fn(async () => {});
+    const markWebhookFailed = vi.fn(async () => {});
+    const d = makeDeps({
+      getRegisteredGroups: () => ({ 'slack:CBOOKING': bookingGroup }),
+      archiveWebhook: vi.fn(async () => ({ id: 81, isDuplicate: false })),
+      enqueueBookingPlutioActivity: vi.fn(async () => {
+        throw new Error('matching persisted lifecycle interaction not found');
+      }),
+      markWebhookHandled,
+      markWebhookFailed,
+    });
+
+    await fireTrafft(canceledFixture, d);
+
+    expect(markWebhookHandled).not.toHaveBeenCalled();
+    expect(markWebhookFailed).toHaveBeenCalledWith(
+      81,
+      expect.stringContaining('persisted lifecycle interaction'),
+    );
   });
 
   // The webhook dispatch path spawns agent containers directly, bypassing the

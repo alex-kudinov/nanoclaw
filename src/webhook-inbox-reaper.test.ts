@@ -17,6 +17,7 @@ vi.spyOn(fs, 'mkdirSync').mockImplementation(() => '');
 vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
 
 import { runReaper } from './webhook-inbox-reaper.js';
+import canceledFixture from './fixtures/canceled-webhook.json' with { type: 'json' };
 
 const testWebhook = {
   id: 'course-recap',
@@ -45,7 +46,7 @@ const chiefGroup = {
 
 function makeDeps(
   runAgent = vi.fn(async () => ({ status: 'success', result: null }) as any),
-) {
+): Parameters<typeof runReaper>[0] {
   vi.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify([testWebhook]));
   return {
     webhooksFile: '/tmp/webhooks.json',
@@ -54,6 +55,14 @@ function makeDeps(
       'slack:C0AHDHX1NBH': chiefGroup,
     }),
     runAgent,
+    enqueueBookingPlutioActivity: vi.fn(async () => ({
+      outboxId: 701,
+      eventId: 'appt:47:canceled',
+      kind: `booking_activity:${'a'.repeat(64)}`,
+      partyId: 42,
+      interactionId: 501,
+      duplicate: false,
+    })),
   };
 }
 
@@ -143,6 +152,116 @@ describe('runReaper', () => {
       c[0].includes("status = 'failed'"),
     );
     expect(failedCall).toBeDefined();
+  });
+
+  it('treats a returned container error as a retryable failure', async () => {
+    const claimed = [
+      {
+        id: 21,
+        source: 'course-recap',
+        event_type: 'session-recap',
+        raw_body: {},
+        attempts: 0,
+      },
+    ];
+    mockWithAgentContext.mockImplementation(async (_role: string, fn: any) => {
+      const client = {
+        query: vi
+          .fn()
+          .mockResolvedValueOnce({ rows: claimed })
+          .mockResolvedValue({ rows: [] }),
+      };
+      return fn(client);
+    });
+    mockQuery.mockResolvedValue({ rows: [] });
+
+    const runAgent = vi.fn(
+      async () =>
+        ({
+          status: 'error',
+          result: null,
+          error: 'container exit 137',
+        }) as any,
+    );
+    const r = await runReaper(makeDeps(runAgent));
+
+    expect(r.retried).toBe(1);
+    expect(
+      mockQuery.mock.calls.some((call) =>
+        call[0].includes("status = 'handled'"),
+      ),
+    ).toBe(false);
+  });
+
+  it('enqueues replayed Booking lifecycle work before marking it handled', async () => {
+    const claimed = [
+      {
+        id: 22,
+        source: 'trafft',
+        event_type: 'canceled',
+        raw_body: canceledFixture,
+        attempts: 0,
+      },
+    ];
+    mockWithAgentContext.mockImplementation(async (_role: string, fn: any) => {
+      const client = {
+        query: vi
+          .fn()
+          .mockResolvedValueOnce({ rows: claimed })
+          .mockResolvedValue({ rows: [] }),
+      };
+      return fn(client);
+    });
+    mockQuery.mockResolvedValue({ rows: [] });
+    const enqueueBookingPlutioActivity = vi.fn(async () => ({
+      outboxId: 702,
+      eventId: 'appt:47:canceled',
+      kind: `booking_activity:${'b'.repeat(64)}`,
+      partyId: 42,
+      interactionId: 502,
+      duplicate: false,
+    }));
+    const deps = makeDeps();
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(
+      JSON.stringify([
+        {
+          id: 'trafft',
+          name: 'Trafft',
+          group: 'booking',
+          chat_jid: 'slack:CBOOKING',
+          prompt_template: '{{payload}}',
+          context_mode: 'isolated',
+          created_at: '2026-04-02T00:00:00Z',
+        },
+      ]),
+    );
+    deps.getRegisteredGroups = () => ({
+      'slack:CBOOKING': {
+        name: 'Booking',
+        folder: 'booking',
+        trigger: '@Gru',
+        added_at: '2026-04-02T00:00:00Z',
+      },
+    });
+    deps.enqueueBookingPlutioActivity = enqueueBookingPlutioActivity;
+
+    const r = await runReaper(deps);
+
+    expect(r.succeeded).toBe(1);
+    expect(enqueueBookingPlutioActivity).toHaveBeenCalledWith(22);
+    const handled = mockQuery.mock.calls.find((call) =>
+      call[0].includes("status = 'handled'"),
+    );
+    expect(handled?.[1]).toEqual([
+      22,
+      'booking:reaper',
+      42,
+      JSON.stringify({
+        kind: 'booking_plutio_outbox',
+        id: 702,
+        interaction_id: 502,
+      }),
+    ]);
   });
 
   it('dead-letters when attempt count exceeds MAX_ATTEMPTS', async () => {

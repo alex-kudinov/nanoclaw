@@ -62,7 +62,7 @@ describe('capability manifests', () => {
     expect(
       catalog.find((manifest) => manifest.agent.folder === 'booking')
         ?.credentials.families,
-    ).toEqual(['business_db', 'plutio']);
+    ).toEqual(['business_db']);
     const operativeFolders = fs
       .readdirSync(path.join(process.cwd(), 'groups'), { withFileTypes: true })
       .filter(
@@ -245,7 +245,7 @@ describe('capability manifests', () => {
       'booking',
     );
     const narrowed = structuredClone(manifest);
-    narrowed.credentials.families = ['business_db'];
+    narrowed.credentials.families = [];
     expect(capabilityManifestFingerprint(narrowed)).not.toBe(
       capabilityManifestFingerprint(manifest),
     );

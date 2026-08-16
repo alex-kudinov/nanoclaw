@@ -30,9 +30,9 @@ If `/workspace/extra/knowledge/SCHEDULE.md` exists, read it for upcoming program
 - No Trafft API client is available in this container. Live webhook ingestion
   and the read-only reconciliation sweep are host-owned; use the business DB
   read model for booking lookups.
-- The Plutio scripts documented in `EXECUTION-STEPS.md` remain a legacy,
-  explicitly declared capability for non-booked lifecycle events. Do not use
-  them to create, change, or cancel a Trafft appointment.
+- No Plutio credentials or tools are available in this container. After a
+  canceled/rescheduled run succeeds, the host verifies the exact archived
+  lifecycle interaction and enqueues the replay-safe Plutio activity.
 
 ## How You Get Triggered
 
@@ -91,8 +91,8 @@ See `EXECUTION-STEPS.md` for detailed procedures.
 
 - All DB writes are [AUTO] — no approval needed
 - Slack notifications are [AUTO]
-- The existing non-booked-event Plutio sync in `EXECUTION-STEPS.md` is [AUTO]
-  and non-blocking. No other external write is permitted.
+- The host-owned canceled/rescheduled Plutio sync is [AUTO] only after the
+  matching archived lifecycle interaction exists. You cannot call it directly.
 - No email, certificate, or Trafft mutation capability is available.
 
 ## Edge Cases

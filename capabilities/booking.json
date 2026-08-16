@@ -6,8 +6,8 @@
     "purpose": "Booking and client scheduling operations"
   },
   "inputs": ["Slack requests", "booking events", "scheduled tasks"],
-  "dataDomains": ["booking", "Plutio", "agent knowledge"],
-  "credentials": { "families": ["business_db", "plutio"] },
+  "dataDomains": ["booking", "agent knowledge"],
+  "credentials": { "families": ["business_db"] },
   "tools": {
     "claude": [
       "Bash",
@@ -40,8 +40,6 @@
     "base": ["group", "global", "session", "ipc", "runner"],
     "additional": [
       { "target": "knowledge", "access": "read_only" },
-      { "target": "plutio", "access": "read_only" },
-      { "target": "toolbox-lib", "access": "read_only" },
       { "target": "agent_docs", "access": "read_only" }
     ]
   },

@@ -202,20 +202,19 @@ describe('manifest credential projection', () => {
     );
   });
 
-  it('projects Booking runtime, DB, and declared Plutio inputs but no Trafft secrets', () => {
+  it('projects Booking runtime and DB but no retired Plutio or Trafft secrets', () => {
     const projected = projectSecretsForCredentialFamilies(candidateSecrets, [
       'business_db',
-      'plutio',
     ]);
     expect(projected).toMatchObject({
       CLAUDE_CONFIG_DIR: '/home/node/.claude',
       CLAUDE_CODE_OAUTH_TOKEN: 'runtime-token',
       BUSINESS_DB_URL: 'postgresql://booking',
       PGOPTIONS: '-c app.current_agent=booking',
-      PLUTIO_API_CLIENTID: 'plutio-id',
-      PLUTIO_API_CLIENTSECRET: 'plutio-secret',
-      PLUTIO_SUBDOMAIN: 'plutio-subdomain',
     });
+    expect(Object.keys(projected)).not.toContain('PLUTIO_API_CLIENTID');
+    expect(Object.keys(projected)).not.toContain('PLUTIO_API_CLIENTSECRET');
+    expect(Object.keys(projected)).not.toContain('PLUTIO_SUBDOMAIN');
     expect(Object.keys(projected)).not.toContain('TRAFFT_API_URL');
     expect(Object.keys(projected)).not.toContain('TRAFFT_CLIENT_ID');
     expect(Object.keys(projected)).not.toContain('TRAFFT_CLIENT_SECRET');

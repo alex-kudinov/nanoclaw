@@ -53,6 +53,7 @@ import {
   stripCnpcMatchResult,
   type CnpcMatchResult,
 } from './cnpc-match-result.js';
+import type { BookingPlutioEnqueueResult } from './booking-plutio-host.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -132,6 +133,9 @@ export interface WebhookServerDeps {
       related_entity?: unknown;
     },
   ) => Promise<void>;
+  enqueueBookingPlutioActivity: (
+    webhookInboxId: number,
+  ) => Promise<BookingPlutioEnqueueResult>;
   // CNPC intake is validated and written by the host before the minion sees a
   // bounded match pool. The minion never receives database or Plutio writes.
   handleCnpcIntake?: (
@@ -1383,23 +1387,51 @@ export class WebhookServer {
               }
             },
           );
-          // Feed the circuit breaker so a run of failures opens it and the
-          // skip-guard above engages on subsequent deliveries.
+          // A resolved promise can still carry an errored container result.
+          // Treat it as a failed webhook so it remains retryable and never
+          // authorizes a downstream host action.
           if (output.status === 'error') {
-            recordFailure(webhook.group);
-          } else {
-            recordSuccess(webhook.group);
+            throw new Error(
+              `webhook agent returned error: ${output.error || 'unknown error'}`,
+            );
           }
+          let bookingPlutio: BookingPlutioEnqueueResult | undefined;
+          if (
+            hookId === 'trafft' &&
+            (bookingEventType === 'canceled' ||
+              bookingEventType === 'rescheduled')
+          ) {
+            if (inboxId === null) {
+              throw new Error(
+                'Booking Plutio enqueue requires an archived webhook row',
+              );
+            }
+            bookingPlutio =
+              await this.deps.enqueueBookingPlutioActivity(inboxId);
+          }
+          recordSuccess(webhook.group);
           logger.info(
-            { hookId, requestId, inboxId },
+            {
+              hookId,
+              requestId,
+              inboxId,
+              bookingPlutioOutboxId: bookingPlutio?.outboxId,
+              bookingPlutioDuplicate: bookingPlutio?.duplicate,
+            },
             'Webhook agent completed',
           );
           if (inboxId !== null && this.deps.markWebhookHandled) {
             await this.deps
               .markWebhookHandled(inboxId, {
                 handled_by: webhook.group,
-                related_entity:
-                  cnpcIntakeId !== null
+                party_id: bookingPlutio?.partyId,
+                related_entity: bookingPlutio
+                  ? {
+                      kind: 'booking_plutio_outbox',
+                      id: bookingPlutio.outboxId,
+                      interaction_id: bookingPlutio.interactionId,
+                    }
+                  : cnpcIntakeId !== null
                     ? { kind: 'cnpc_intake', id: cnpcIntakeId }
                     : undefined,
               })
@@ -1415,7 +1447,7 @@ export class WebhookServer {
           recordFailure(webhook.group);
           logger.error(
             { hookId, requestId, inboxId, err },
-            'Webhook agent error',
+            'Webhook agent or completion-gate error',
           );
           if (inboxId !== null && this.deps.markWebhookFailed) {
             const msg = err instanceof Error ? err.message : String(err);

@@ -117,6 +117,7 @@ try {
     'scripts/run-action-safety-drill.mjs',
     'scripts/set-action-safety-mode.mjs',
     'scripts/set-capability-groups.mjs',
+    'scripts/set-booking-capability-boundary.mjs',
     'scripts/verify-booking-secret-projection.mjs',
     'scripts/verify-booking-plutio-host-boundary.mjs',
     'scripts/run-booking-plutio-marker-canary.mjs',

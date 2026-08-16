@@ -39,6 +39,8 @@ export interface BookingPlutioEnqueueResult {
   outboxId: number;
   eventId: string;
   kind: string;
+  partyId: number;
+  interactionId: number;
   duplicate: boolean;
 }
 
@@ -75,6 +77,11 @@ interface BookingOutboxPayload {
   kind: string;
   webhook_inbox_id: number;
   event_id: string;
+}
+
+interface PersistedBookingInteractionRow {
+  id: string;
+  party_id: string;
 }
 
 function requiredString(
@@ -360,13 +367,30 @@ async function enqueueWithClient(
     throw new Error('booking plutio archived event type mismatch');
   }
   const kind = bookingPlutioKind(event.eventId);
-  let partyId = row.party_id ? Number(row.party_id) : null;
-  if (!partyId) {
-    const party = await client.query<{ id: string | null }>(
-      `SELECT business_v2.best_party_by_email($1::citext)::text AS id`,
-      [event.customerEmail],
+  const persisted = await client.query<PersistedBookingInteractionRow>(
+    `SELECT id::text, party_id::text
+       FROM business_v2.interactions
+      WHERE channel = 'booking'
+        AND source_provider = 'trafft'
+        AND source_id = $1
+        AND metadata->>'trafft_appointment_id' = $2
+        AND metadata->>'event_type' = $3
+      ORDER BY id ASC
+      LIMIT 1
+      FOR SHARE`,
+    [event.eventId, event.appointmentId, event.eventType],
+  );
+  const interactionId = Number(persisted.rows[0]?.id || 0);
+  const partyId = Number(persisted.rows[0]?.party_id || 0);
+  if (
+    !Number.isSafeInteger(interactionId) ||
+    interactionId <= 0 ||
+    !Number.isSafeInteger(partyId) ||
+    partyId <= 0
+  ) {
+    throw new Error(
+      'booking plutio matching persisted lifecycle interaction not found',
     );
-    partyId = Number(party.rows[0]?.id || 0) || null;
   }
   await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
     `booking-plutio:${event.eventId}`,
@@ -386,6 +410,8 @@ async function enqueueWithClient(
       outboxId: Number(existing.rows[0].id),
       eventId: event.eventId,
       kind,
+      partyId,
+      interactionId,
       duplicate: true,
     };
   }
@@ -406,11 +432,13 @@ async function enqueueWithClient(
     outboxId: Number(inserted.rows[0].id),
     eventId: event.eventId,
     kind,
+    partyId,
+    interactionId,
     duplicate: false,
   };
 }
 
-/** Persist one opaque action. NC-20260816-011 does not wire this into ingress. */
+/** Persist one opaque action only after its lifecycle interaction exists. */
 export async function enqueueBookingPlutioActivity(
   webhookInboxId: number,
   deps?: {

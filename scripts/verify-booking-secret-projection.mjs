@@ -15,13 +15,12 @@ const TRAFFT_NAMES = [
   'TRAFFT_CLIENT_ID',
   'TRAFFT_CLIENT_SECRET',
 ];
-const REQUIRED_PROJECTED_NAMES = [
-  'BUSINESS_DB_URL',
-  'PGOPTIONS',
+const PLUTIO_NAMES = [
   'PLUTIO_API_CLIENTID',
   'PLUTIO_API_CLIENTSECRET',
   'PLUTIO_SUBDOMAIN',
 ];
+const REQUIRED_PROJECTED_NAMES = ['BUSINESS_DB_URL', 'PGOPTIONS'];
 
 const releaseRoot = fileURLToPath(new URL('../', import.meta.url));
 const config = loadCapabilityManifestConfig();
@@ -32,8 +31,9 @@ if (!config.valid || !capabilityManifestIsEnforced(config, 'booking')) {
 const manifest = loadCapabilityManifest('booking', releaseRoot);
 if (
   manifest.credentials.families.includes('trafft') ||
+  manifest.credentials.families.includes('plutio') ||
   !manifest.credentials.families.includes('business_db') ||
-  !manifest.credentials.families.includes('plutio')
+  manifest.credentials.families.length !== 1
 ) {
   throw new Error(
     'Booking credential-family declaration is not the expected boundary',
@@ -41,11 +41,18 @@ if (
 }
 
 const configuredTrafft = readEnvFile(TRAFFT_NAMES);
+const configuredPlutio = readEnvFile(PLUTIO_NAMES);
 const sourceTrafftCredentialCount = TRAFFT_NAMES.filter((name) =>
   Boolean(configuredTrafft[name]),
 ).length;
 if (sourceTrafftCredentialCount !== TRAFFT_NAMES.length) {
   throw new Error('Operational Trafft source credentials are incomplete');
+}
+const sourcePlutioCredentialCount = PLUTIO_NAMES.filter((name) =>
+  Boolean(configuredPlutio[name]),
+).length;
+if (sourcePlutioCredentialCount !== PLUTIO_NAMES.length) {
+  throw new Error('Operational Plutio source credentials are incomplete');
 }
 
 const projected = await readContainerSecrets(
@@ -55,20 +62,27 @@ const projected = await readContainerSecrets(
 );
 const projectedNames = Object.keys(projected).sort();
 const projectedTrafftNames = TRAFFT_NAMES.filter((name) => name in projected);
+const projectedPlutioNames = PLUTIO_NAMES.filter((name) => name in projected);
 const missingRequiredNames = REQUIRED_PROJECTED_NAMES.filter(
   (name) => !(name in projected),
 );
 
 const evidence = {
-  ok: projectedTrafftNames.length === 0 && missingRequiredNames.length === 0,
+  ok:
+    projectedTrafftNames.length === 0 &&
+    projectedPlutioNames.length === 0 &&
+    missingRequiredNames.length === 0,
   group: 'booking',
   globalEnforcement: config.enforcementEnabled,
   enforcedGroups: config.enforcedGroups,
   credentialFamilies: manifest.credentials.families,
   manifestFingerprint: capabilityManifestFingerprint(manifest),
   sourceTrafftCredentialCount,
+  sourcePlutioCredentialCount,
   projectedTrafftCredentialCount: projectedTrafftNames.length,
   projectedTrafftNames,
+  projectedPlutioCredentialCount: projectedPlutioNames.length,
+  projectedPlutioNames,
   requiredProjectedCredentialCount: REQUIRED_PROJECTED_NAMES.length,
   missingRequiredNames,
   projectedNameCount: projectedNames.length,

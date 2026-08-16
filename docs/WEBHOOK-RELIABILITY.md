@@ -1,7 +1,7 @@
 # Webhook Reliability — Design & Process
 
 Owner: NanoClaw core
-Status: Phase 0 complete (2026-04-27); Phases 1-7 planned
+Status: implementation active; the phase table below is authoritative
 Related: [ARCHITECTURE.md](ARCHITECTURE.md), [DATA-MODEL.md](DATA-MODEL.md), [REQUIREMENTS.md](REQUIREMENTS.md)
 First report: [reports/webhook-reconciliation-2026-04-27.md](reports/webhook-reconciliation-2026-04-27.md)
 
@@ -63,9 +63,12 @@ CREATE INDEX webhook_inbox_reaper_idx
 1. Compute `event_id` via per-source extractor.
 2. `INSERT … ON CONFLICT (source, event_id) DO NOTHING RETURNING id` — true idempotency at perimeter.
 3. If conflict (duplicate), respond 200 immediately and stop. Updates `status='duplicate'` is implicit (the original row still wins).
-4. Pass `webhook_inbox.id` into the agent prompt.
-5. Mark `dispatched` after successful agent spawn.
-6. Agent's tool flow ends with `webhook_inbox_complete --id N --linked-to interaction:183` → row → `handled` with `related_entity`.
+4. Mark `dispatched` before the queued agent task begins.
+5. Treat both a rejected run and a resolved `status='error'` result as failed;
+   neither may become `handled` or authorize a downstream action.
+6. Mark handled only after source-specific completion gates pass. Under the
+   NC-013 Booking candidate, canceled/rescheduled delivery must also enqueue its
+   durable Plutio action from the archived row.
 
 ### 3.3 Identity-join layer (Trafft ↔ Plutio via email)
 
@@ -100,8 +103,26 @@ The unifying invariant: **every Trafft customer_id and every form submission mus
 
 Two complementary jobs; both follow the existing `plutio-outbox-reaper.ts` shape.
 
-- **`webhook-inbox-reaper.ts`** (5-min cron) — claim rows in `('received', 'failed', 'dispatched-stale')`, re-render prompt, re-`runAgent`, dead-letter at `MAX_ATTEMPTS=5` to `#gru-chief`.
-- **`plutio-outbox-reaper.ts`** (existing) — unchanged.
+- **`webhook-inbox-reaper.ts`** (5-min cron) — claim rows in `('received', 'failed', 'dispatched-stale')`, re-render prompt, re-`runAgent`, apply the same source completion gate as initial delivery, and dead-letter at `MAX_ATTEMPTS=5` to `#gru-chief`.
+- **`plutio-outbox-reaper.ts`** — processes the general Plutio outbox plus replay-safe `booking_activity:*` rows; Booking dispatch re-loads the archived Trafft event and stores its remote marker receipt.
+
+### 3.4a Booking lifecycle completion gate (NC-013 candidate)
+
+Canceled/rescheduled interactions use `webhook_inbox.event_id` as their
+`interactions.source_id`, not the appointment id shared by the original booked
+interaction. Initial delivery and inbox replay both require:
+
+1. an archived `source='trafft'` canceled/rescheduled row with a valid event id;
+2. `runAgent` to return success;
+3. a persisted Booking interaction matching that event id, appointment id, and
+   event type.
+
+Only then may the host insert or reuse one opaque `booking_activity:*` outbox
+row and mark the inbox row handled with its party, interaction, and outbox
+references. A missing interaction or enqueue error leaves the inbox retryable.
+The container never receives the Plutio secret or tool path. This section
+describes the NC-013 source candidate; production remains on NC-012 until a
+separately authorized deployment and natural receipt/replay gate pass.
 
 ### 3.5a Customer-event sweep is skipped by design
 
@@ -160,8 +181,8 @@ n8n hardening catches F2/F4/F5 (provider→n8n, n8n→NC HTTP). Sweepers cover F
 | n8n → NC HTTP | NC offline / Tailscale blip | n8n retryOnFail (Phase 6) | seconds |
 | n8n → NC HTTP | sustained NC outage | sweeper + n8n error workflow | seconds-6h |
 | NC receive | bad secret / malformed JSON | NC log + chief alert | seconds |
-| NC dispatch | runAgent throws | webhook-inbox-reaper | 5 min |
-| Agent execution | agent runs but no DB write (F8) | webhook-inbox-reaper (status stays `dispatched`) | 5 min after deadline |
+| NC dispatch | runAgent throws or returns `status='error'` | webhook-inbox-reaper | 5 min |
+| Agent execution | Booking lifecycle run has no exact DB interaction (F8) | receiver/reaper completion gate | immediate, then 5-min retry |
 | Agent partial (F9) | agent writes Slack but not DB | webhook-inbox-reaper deadline + sweeper | 5 min - 6h |
 
 ## 4. Phase plan

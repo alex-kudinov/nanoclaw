@@ -36,6 +36,7 @@ import {
   parseAndValidateCnpcMatchResult,
   recordCnpcMatchResult,
 } from './cnpc-match-result.js';
+import type { BookingPlutioEnqueueResult } from './booking-plutio-host.js';
 
 const MAX_ATTEMPTS = 5;
 const BATCH_SIZE = 20;
@@ -64,6 +65,9 @@ interface ReaperDeps {
     onProcess: () => void,
     onOutput?: (output: ContainerOutput) => Promise<void>,
   ) => Promise<ContainerOutput>;
+  enqueueBookingPlutioActivity: (
+    webhookInboxId: number,
+  ) => Promise<BookingPlutioEnqueueResult>;
 }
 
 export interface ReaperResult {
@@ -231,6 +235,12 @@ async function dispatchRow(row: InboxRow, deps: ReaperDeps): Promise<void> {
     () => {},
   );
 
+  if (output.status === 'error') {
+    throw new Error(
+      `webhook agent returned error: ${output.error || 'unknown error'}`,
+    );
+  }
+
   if (
     cnpcPrepared?.eligibility.status === 'eligible' &&
     cnpcPrepared.match_pool.candidate_count > 0
@@ -248,10 +258,24 @@ async function dispatchRow(row: InboxRow, deps: ReaperDeps): Promise<void> {
     );
   }
 
+  let bookingPlutio: BookingPlutioEnqueueResult | undefined;
+  if (
+    row.source === 'trafft' &&
+    (row.event_type === 'canceled' || row.event_type === 'rescheduled')
+  ) {
+    bookingPlutio = await deps.enqueueBookingPlutioActivity(row.id);
+  }
+
   await markHandled(row.id, {
     handled_by: `${webhook.group}:reaper`,
-    related_entity:
-      cnpcIntakeId !== null
+    party_id: bookingPlutio?.partyId,
+    related_entity: bookingPlutio
+      ? {
+          kind: 'booking_plutio_outbox',
+          id: bookingPlutio.outboxId,
+          interaction_id: bookingPlutio.interactionId,
+        }
+      : cnpcIntakeId !== null
         ? { kind: 'cnpc_intake', id: cnpcIntakeId }
         : undefined,
   });

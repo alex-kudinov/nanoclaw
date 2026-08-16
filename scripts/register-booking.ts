@@ -9,7 +9,9 @@ import { initDatabase, setRegisteredGroup } from '../src/db.js';
 
 const channelId = process.argv[2];
 if (!channelId) {
-  console.error('Usage: npx tsx scripts/register-booking.ts <slack_channel_id>');
+  console.error(
+    'Usage: npx tsx scripts/register-booking.ts <slack_channel_id>',
+  );
   console.error('Example: npx tsx scripts/register-booking.ts C0XXXXXXXXX');
   process.exit(1);
 }
@@ -29,16 +31,6 @@ setRegisteredGroup(jid, {
       {
         hostPath: 'knowledge/agents/booking',
         containerPath: 'knowledge',
-        readonly: true,
-      },
-      {
-        hostPath: '~/dev/toolbox/shared/plutio',
-        containerPath: 'plutio',
-        readonly: true,
-      },
-      {
-        hostPath: '~/dev/toolbox/lib',
-        containerPath: 'toolbox-lib',
         readonly: true,
       },
       {

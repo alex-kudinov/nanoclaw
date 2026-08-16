@@ -1,10 +1,12 @@
 # Agent capability manifests
 
 Status: Campanero and Booking selective production canaries live-verified;
-global enforcement off
+NC-013 Booking Plutio-removal candidate is locally validating; global
+enforcement off
 
 Tasks: `NC-20260816-004` foundation; `NC-20260816-006` staged activation;
-`NC-20260816-010` credential-family projection and Booking gate
+`NC-20260816-010` credential-family projection and Booking gate;
+`NC-20260816-013` Booking Plutio cutover candidate
 
 ## Purpose
 
@@ -116,6 +118,19 @@ This still does not change the capability state: Booking keeps its Plutio
 family and the host adapter stays unwired until NC-013 changes the procedure,
 manifest, mounts, and ingress together and proves the natural durable path.
 
+`NC-20260816-013` now implements that cutover in source without activating it.
+Canceled/rescheduled interactions use the same archive-derived event id as the
+webhook inbox, so they no longer collide with the original booked interaction.
+Both initial delivery and inbox replay reject a returned container error and
+require the exact persisted lifecycle interaction before enqueuing one opaque
+Booking Plutio outbox row. The tracked Booking prompt/procedure no longer calls
+Plutio, and the candidate manifest/registration retain only `business_db`,
+`knowledge`, and `agent_docs`. A dry-run-first exact-host/exact-release helper
+removes the two legacy registered mounts with an exclusive rollback snapshot.
+Production remains release `13ca192` with the old projection until this
+candidate passes the full release gate and receives separate promotion
+authority; no source diff is live evidence.
+
 ## Change procedure
 
 1. Edit the applicable manifest and any changed group procedure together.
@@ -156,8 +171,31 @@ For the Booking gate, run the installed
 `scripts/verify-booking-secret-projection.mjs` from the operational project
 root after health confirms selection. It reads the real host configuration,
 performs no network or database call, never prints secret values, and fails
-unless all three configured Trafft source credentials are absent from the
-projected Booking stdin payload while the declared DB and Plutio inputs remain.
+unless all configured Trafft and Plutio source credentials are absent from the
+projected Booking stdin payload while both declared DB inputs remain.
+
+Before activating an NC-013 release, drain Booking and run the installed
+registration helper in dry-run mode. Apply requires the exact host and full
+release commit; it backs up the current Booking registration before removing
+only `plutio` and `toolbox-lib`. The running daemon keeps its in-memory group
+snapshot until activation restarts it, so apply the registration change only
+inside the bounded drain/activation transaction:
+
+```bash
+node <release>/scripts/set-booking-capability-boundary.mjs
+
+node <release>/scripts/set-booking-capability-boundary.mjs \
+  --apply --confirm-host <exact-hostname> --confirm-release <full-sha>
+```
+
+Rollback restores the recorded backup with the same installed helper and exact
+confirmations before reactivating the prior release:
+
+```bash
+node <release>/scripts/set-booking-capability-boundary.mjs \
+  --restore <absolute-backup.json> \
+  --apply --confirm-host <exact-hostname> --confirm-release <full-sha>
+```
 
 ## First production checkpoint
 
@@ -207,9 +245,9 @@ from source tests alone.
 - The tracked manifests truthfully record `unrestricted_current` network mode;
   they do not enforce destination-scoped egress.
 - Several agents still receive `Bash` and raw mounted tools or credentials.
-  Booking still receives Plutio: its narrow host adapter exists only as an
-  unwired dark path and has not passed the separate natural-path/remote-marker
-  promotion gate. All other raw-credential removal remains open.
+  Exact production release `13ca192` still gives Booking Plutio; the NC-013
+  source candidate removes it but is not deployed or naturally verified. All
+  other raw-credential removal remains open.
 - Manifest action classes describe the permitted role envelope; the host's
   action-safety controller and domain policies remain the actual external-write
   authority.

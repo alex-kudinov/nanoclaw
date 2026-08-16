@@ -12,9 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T21:29Z
 - Owner/client: Codex
-- State: in_progress; local cutover implementation only
-- Commit/PR: claim pending on
-  `codex/nc-20260816-013-booking-plutio-cutover` from `f10c572`; no PR
+- State: validating; local cutover implementation only
+- Commit/PR: claim `58778d9` on
+  `codex/nc-20260816-013-booking-plutio-cutover` from `f10c572`; implementation
+  commit pending; no PR
 - Change class: C5 — external-write capability cutover
 - Intended outcome: enqueue canceled/rescheduled Booking activity through the
   durable, replay-safe host Plutio adapter and remove raw Plutio secrets/tools
@@ -28,6 +29,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   production config/data, natural or synthetic webhook delivery, Plutio/Trafft
   request, Slack/customer message, credential rotation, push, and merge remain
   excluded pending a separately recorded promotion authority.
+- Implementation: canceled/rescheduled Booking interactions now use the exact
+  archive-derived event id. Initial receiver and inbox replay both reject a
+  resolved container error, require the persisted interaction's event id,
+  appointment id, and event type, and only then insert or reuse the opaque
+  durable Plutio action. Booking's direct Plutio procedure, credential family,
+  and `plutio`/`toolbox-lib` mounts are removed together. The installed
+  registration cutover is dry-run-first, exact-host/release-bound for apply,
+  fail-closed on partial legacy state, and backup/restore capable; its inclusion
+  in the immutable release inventory has a source contract test.
+- Verification: exact Node 22.23.2 passes typecheck, build, formatting,
+  documentation continuity, 144/144 focused tests, 635/635 email-critical root
+  tests, and the independent runner build plus 40/40 tests. The full root suite
+  passes 2,472/2,473; the sole failure is the unchanged unrelated CNPC
+  wrapper-string assertion expecting literal `folder: 'cnpc'`. No production
+  database, webhook, Slack, Trafft, or Plutio action occurred.
 
 ### NC-20260816-012 — Prove Booking reschedule identity and the real Plutio marker
 

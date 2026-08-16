@@ -135,6 +135,7 @@ import {
   markHandled as markHandledImpl,
 } from './webhook-inbox.js';
 import { runReaper as runWebhookInboxReaper } from './webhook-inbox-reaper.js';
+import { enqueueBookingPlutioActivity } from './booking-plutio-host.js';
 import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
 import { startHeartbeat } from './heartbeat.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
@@ -2004,6 +2005,7 @@ async function main(): Promise<void> {
     markWebhookDispatched: markDispatchedImpl,
     markWebhookFailed: markFailedImpl,
     markWebhookHandled: markHandledImpl,
+    enqueueBookingPlutioActivity,
     handleCnpcIntake: prepareCnpcIntake,
     recordCnpcMatchResult,
     gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
@@ -2492,6 +2494,7 @@ async function main(): Promise<void> {
       webhooksFile: WEBHOOKS_FILE,
       getRegisteredGroups: () => registeredGroups,
       runAgent: runContainerAgent,
+      enqueueBookingPlutioActivity,
     }).catch((err) => {
       logger.error({ err }, 'webhook-inbox-reaper: unhandled error');
     });

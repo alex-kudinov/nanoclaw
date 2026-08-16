@@ -119,6 +119,7 @@ describe('enqueueBookingPlutioActivity', () => {
           },
         ],
       })
+      .mockResolvedValueOnce({ rows: [{ id: '501', party_id: '42' }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: '701' }] });
@@ -129,9 +130,11 @@ describe('enqueueBookingPlutioActivity', () => {
       outboxId: 701,
       eventId,
       kind: bookingPlutioKind(eventId),
+      partyId: 42,
+      interactionId: 501,
       duplicate: false,
     });
-    const insertedPayload = JSON.parse(String(query.mock.calls[3][1][2]));
+    const insertedPayload = JSON.parse(String(query.mock.calls[4][1][2]));
     expect(insertedPayload).toEqual({
       schema_version: 1,
       kind: bookingPlutioKind(eventId),
@@ -159,7 +162,7 @@ describe('enqueueBookingPlutioActivity', () => {
           },
         ],
       })
-      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: '501', party_id: '42' }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: '700' }] });
     const result = await enqueueBookingPlutioActivity(91, {
@@ -167,7 +170,38 @@ describe('enqueueBookingPlutioActivity', () => {
     });
     expect(result.duplicate).toBe(true);
     expect(result.outboxId).toBe(700);
+    expect(result.partyId).toBe(42);
+    expect(result.interactionId).toBe(501);
     expect(query).toHaveBeenCalledTimes(4);
+  });
+
+  it('fails closed without the exact persisted lifecycle interaction', async () => {
+    const eventId = extractEventKey('trafft', canceledFixture).event_id!;
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: '91',
+            source: 'trafft',
+            event_id: eventId,
+            event_type: 'canceled',
+            raw_body: canceledFixture,
+            party_id: '42',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await expect(
+      enqueueBookingPlutioActivity(91, {
+        withContext: async (fn) => fn({ query } as never),
+      }),
+    ).rejects.toThrow(/matching persisted lifecycle interaction not found/);
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(
+      query.mock.calls.some((call) => call[0].includes('INSERT INTO')),
+    ).toBe(false);
   });
 });
 

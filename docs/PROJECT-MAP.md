@@ -706,6 +706,21 @@ NanoClaw aggregates remained stable. This closes the shared-identity and remote
 marker prerequisites only. Natural ingress, durable outbox receipt, Booking
 procedure/manifest/mount cutover, and container Plutio removal remain NC-013.
 
+`NC-20260816-013` is now an isolated local cutover candidate, not a production
+state claim. It gives canceled/rescheduled interactions the archive-derived
+event key, fixes receiver and inbox-reaper handling so a returned container
+error stays retryable, and requires that exact persisted lifecycle interaction
+before either path can enqueue the opaque Booking Plutio action. The Booking
+prompt/procedure, manifest, generated matrix, and registration source remove
+direct Plutio/toolbox access together. A bundled dry-run-first registration
+helper preserves every other group field, rejects a partial legacy mount state,
+requires the exact host and release for apply, and writes an exclusive rollback
+snapshot. Local focused gates pass; release build, deployment, runtime
+registration migration, credential/mount-negative launch proof, natural
+archived-event outbox/remote receipt, and replay evidence remain open. The
+current Mini therefore remains exact release `13ca192` with the NC-012 Booking
+projection and no NC-013 behavior.
+
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some
 roles; immediate in-flight termination, value/rate ceilings, dynamic group
