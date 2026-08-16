@@ -97,6 +97,7 @@ function extractTrafft(p: Payload): ExtractedKey {
       asStr(p.bookingStart) ??
       asStr(p.appointmentStart) ??
       asStr(p.start_date_time) ??
+      asStr(p.appointmentStartDateTime) ??
       '';
     return { event_id: `appt:${apptId}:rescheduled:${start}`, event_type };
   }

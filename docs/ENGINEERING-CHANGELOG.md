@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T20:55Z
 - Owner/client: Codex
-- State: in_progress; claim registered before implementation
-- Commit/PR: pending on `codex/nc-20260816-012-booking-plutio-marker`; no PR
+- State: ready_for_deploy; local implementation and release gates verified
+- Commit/PR: claim `65c6d1b`; implementation pending on
+  `codex/nc-20260816-012-booking-plutio-marker`; no PR
 - Change class: C5 — shared webhook identity plus bounded external canary
 - Intended outcome: make the shared Trafft reschedule key correct for the
   flattened production payload and empirically prove that the NC-011 replay
@@ -24,9 +25,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   outbox enqueue, Booking prompt/manifest/mount changes, Plutio credential
   removal/rotation, Trafft calls, production DB writes, customer/Slack messages,
   push, and merge remain excluded.
-- Verification/deployment/rollback: pending. Source rollback is the current
-  exact release `63ed4aa`; the synthetic Plutio canary record is intentionally
-  retained as the replay receipt rather than destructively deleted.
+- Implementation: add flattened `appointmentStartDateTime` to the shared
+  Trafft reschedule identity and remove NC-011's divergent Booking-only repair.
+  Bundle a stable synthetic marker canary that verifies exact installed release
+  integrity, requires full host/release confirmation for apply, requires exactly
+  one read-back marker before replay, and blocks a replay activity call at the
+  injected caller. Booking behavior, procedure, prompt, manifest, mounts, and
+  credential projection remain unchanged.
+- Verification: exact Node 22.23.2 passes typecheck and source formatting;
+  54/54 focused tests; 179/179 broader tests; 635/635 email-critical tests; and
+  independent runner build plus 40/40 tests. The unrestricted root suite passes
+  2,461/2,462; its sole failure is the unchanged unrelated CNPC wrapper-string
+  assertion. No external or production-database call occurred.
+- Deployment/rollback: pending. Source rollback is the current exact release
+  `63ed4aa`; the synthetic Plutio canary record will be intentionally retained
+  as the replay receipt rather than destructively deleted.
 
 ### NC-20260816-011 — Build the dark Booking-to-Plutio host boundary
 

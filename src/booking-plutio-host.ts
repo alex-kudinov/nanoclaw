@@ -153,23 +153,7 @@ export function parseBookingPlutioEvent(
     throw new Error('booking plutio event payload must be an object');
   }
   const raw = payload as Record<string, unknown>;
-  const extractedKey = extractEventKey('trafft', raw);
-  const rescheduledStart = optionalString(
-    raw.bookingStart ??
-      raw.appointmentStart ??
-      raw.start_date_time ??
-      raw.appointmentStartDateTime,
-    160,
-  );
-  const key =
-    extractedKey.event_type === 'rescheduled' &&
-    extractedKey.event_id?.endsWith(':rescheduled:') &&
-    rescheduledStart
-      ? {
-          event_type: extractedKey.event_type,
-          event_id: `${extractedKey.event_id}${rescheduledStart}`,
-        }
-      : extractedKey;
+  const key = extractEventKey('trafft', raw);
   if (
     (key.event_type !== 'canceled' && key.event_type !== 'rescheduled') ||
     !key.event_id

@@ -34,6 +34,19 @@ describe('extractEventKey — trafft', () => {
     });
   });
 
+  it('uses the flattened Trafft appointmentStartDateTime field', () => {
+    expect(
+      extractEventKey('trafft', {
+        event_type: 'rescheduled',
+        appointmentId: 38,
+        appointmentStartDateTime: '2026-05-20 8:00 am',
+      }),
+    ).toEqual({
+      event_id: 'appt:38:rescheduled:2026-05-20 8:00 am',
+      event_type: 'rescheduled',
+    });
+  });
+
   it('status_changed keys on target status', () => {
     expect(
       extractEventKey('trafft', {

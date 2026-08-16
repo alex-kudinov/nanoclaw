@@ -119,6 +119,7 @@ try {
     'scripts/set-capability-groups.mjs',
     'scripts/verify-booking-secret-projection.mjs',
     'scripts/verify-booking-plutio-host-boundary.mjs',
+    'scripts/run-booking-plutio-marker-canary.mjs',
     'scripts/register-caleprocure-collector.mjs',
     'scripts/start-procurement-browser.sh',
   );
