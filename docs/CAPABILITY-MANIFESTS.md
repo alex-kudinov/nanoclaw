@@ -1,8 +1,8 @@
 # Agent capability manifests
 
 Status: Campanero and Booking selective production canaries live-verified;
-NC-013 Booking Plutio-removal candidate is locally validating; global
-enforcement off
+NC-013 Booking Plutio-removal candidate is ready for a separately authorized
+deployment; global enforcement off
 
 Tasks: `NC-20260816-004` foundation; `NC-20260816-006` staged activation;
 `NC-20260816-010` credential-family projection and Booking gate;
@@ -127,9 +127,10 @@ Booking Plutio outbox row. The tracked Booking prompt/procedure no longer calls
 Plutio, and the candidate manifest/registration retain only `business_db`,
 `knowledge`, and `agent_docs`. A dry-run-first exact-host/exact-release helper
 removes the two legacy registered mounts with an exclusive rollback snapshot.
-Production remains release `13ca192` with the old projection until this
-candidate passes the full release gate and receives separate promotion
-authority; no source diff is live evidence.
+Exact immutable candidate `77064e9` passes the full local release gate and a
+separate operational-root registration rehearsal. Production remains release
+`13ca192` with the old projection until it receives separate promotion
+authority; neither a local artifact nor a rehearsal is live evidence.
 
 ## Change procedure
 
@@ -177,9 +178,11 @@ projected Booking stdin payload while both declared DB inputs remain.
 Before activating an NC-013 release, drain Booking and run the installed
 registration helper in dry-run mode. Apply requires the exact host and full
 release commit; it backs up the current Booking registration before removing
-only `plutio` and `toolbox-lib`. The running daemon keeps its in-memory group
-snapshot until activation restarts it, so apply the registration change only
-inside the bounded drain/activation transaction:
+only `plutio` and `toolbox-lib`. Run these commands from the operational project
+root: the helper loads code from its installed release path while resolving
+`store/` and `data/` from that working directory. The running daemon keeps its
+in-memory group snapshot until activation restarts it, so apply the registration
+change only inside the bounded drain/activation transaction:
 
 ```bash
 node <release>/scripts/set-booking-capability-boundary.mjs

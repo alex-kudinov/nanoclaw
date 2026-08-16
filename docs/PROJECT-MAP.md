@@ -715,11 +715,13 @@ prompt/procedure, manifest, generated matrix, and registration source remove
 direct Plutio/toolbox access together. A bundled dry-run-first registration
 helper preserves every other group field, rejects a partial legacy mount state,
 requires the exact host and release for apply, and writes an exclusive rollback
-snapshot. Local focused gates pass; release build, deployment, runtime
-registration migration, credential/mount-negative launch proof, natural
-archived-event outbox/remote receipt, and replay evidence remain open. The
-current Mini therefore remains exact release `13ca192` with the NC-012 Booking
-projection and no NC-013 behavior.
+snapshot. Exact immutable candidate `77064e9` passes the full local gates,
+fresh extraction, and a separate disposable operational-root
+remove/idempotency/restore rehearsal. Deployment, runtime registration
+migration, credential/mount-negative launch proof, natural archived-event
+outbox/remote receipt, and replay evidence remain open. The current Mini
+therefore remains exact release `13ca192` with the NC-012 Booking projection and
+no NC-013 behavior.
 
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some

@@ -1382,10 +1382,12 @@ the older appointment-only dedup collision with the original booking. The
 Booking prompt/procedure, manifest, generated matrix, registration source, and
 side-effect-free verifier now remove direct Plutio credentials and mounts
 together. A dry-run-first registration helper provides exact-host/release
-confirmation and rollback snapshots. These are local candidate facts only:
-immutable release proof, production drain/config/activation, negative launch
-proof, and one separately authorized sanitized natural outbox/remote
-receipt/replay remain before P0.2/P0.3 credit changes.
+confirmation and rollback snapshots. Exact candidate `77064e9` passes fresh
+bundle verification plus a separate disposable operational-root
+remove/idempotency/restore rehearsal. These remain pre-production facts only:
+production drain/config/activation, negative launch proof, and one separately
+authorized sanitized natural outbox/remote receipt/replay remain before
+P0.2/P0.3 credit changes.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus

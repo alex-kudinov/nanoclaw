@@ -12,10 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T21:29Z
 - Owner/client: Codex
-- State: validating; local cutover implementation only
-- Commit/PR: claim `58778d9` on
-  `codex/nc-20260816-013-booking-plutio-cutover` from `f10c572`; implementation
-  commit pending; no PR
+- State: ready_for_deploy; production unchanged
+- Commit/PR: claim `58778d9`; implementation `08cbb9b`; release-path correction
+  and immutable candidate `77064e9` on
+  `codex/nc-20260816-013-booking-plutio-cutover` from `f10c572`; no PR
 - Change class: C5 — external-write capability cutover
 - Intended outcome: enqueue canceled/rescheduled Booking activity through the
   durable, replay-safe host Plutio adapter and remove raw Plutio secrets/tools
@@ -44,6 +44,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   passes 2,472/2,473; the sole failure is the unchanged unrelated CNPC
   wrapper-string assertion expecting literal `folder: 'cnpc'`. No production
   database, webhook, Slack, Trafft, or Plutio action occurred.
+- Release: exact candidate
+  `77064e99c4dc2e1342993ba8659a820fd2a1bf05` has source tree
+  `f83601b26773952947ba54d7efc647e22f7c913c`, 664-file artifact hash
+  `88b2de9c56af4326b6e88592e022cc17c8f4a3f6f7e9528e752b81eeb14b545f`,
+  and archive SHA-256
+  `2aebc8f4490a6d34affcd1eefcf5efa802fd2495fb257db8dda381212edffc24`.
+  Fresh extraction verified the entire bundle. A separate disposable
+  operational root proved release-root/data-root separation, wrong host and
+  release denial, exact two-mount removal, no-change replay, mode-0600 backup,
+  and exact restore without touching production.
+- Promotion boundary: production remains exact NC-012 release `13ca192` with
+  its legacy Booking registration. Installation, Booking drain and config
+  mutation, activation, negative secret/mount launch proof, and one sanitized
+  natural interaction/outbox/remote-receipt/no-write-replay canary are the next
+  separately authorized milestone.
 
 ### NC-20260816-012 — Prove Booking reschedule identity and the real Plutio marker
 

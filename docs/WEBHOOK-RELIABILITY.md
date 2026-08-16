@@ -121,8 +121,8 @@ Only then may the host insert or reuse one opaque `booking_activity:*` outbox
 row and mark the inbox row handled with its party, interaction, and outbox
 references. A missing interaction or enqueue error leaves the inbox retryable.
 The container never receives the Plutio secret or tool path. This section
-describes the NC-013 source candidate; production remains on NC-012 until a
-separately authorized deployment and natural receipt/replay gate pass.
+describes exact NC-013 candidate `77064e9`; production remains on NC-012 until
+a separately authorized deployment and natural receipt/replay gate pass.
 
 ### 3.5a Customer-event sweep is skipped by design
 
