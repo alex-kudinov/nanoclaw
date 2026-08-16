@@ -45,9 +45,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   duplicate, receipt-gap, overdue, waiting-approval, and outcome-missing counts
   were zero.
 - No-write proof: the Company OS count/version/timestamp fingerprint and SQLite
-  email counts were byte-for-value identical after the report. No migration,
-  configuration, prompt, workflow transition, email, Slack post, customer
-  traffic, production data write, push, or merge occurred.
+  email counts were byte-for-value identical after the report. No task-authored
+  message, migration, configuration, prompt, workflow transition, email,
+  production data write, push, or merge occurred.
+- Ambient activity addendum, 2026-08-16T23:58Z: after the 23:50Z bounded
+  report/comparison window, the normally running service recorded one
+  Booking-group outbound Slack row at 23:56:54Z (two allowed Slack boundary
+  checks). Its content was not inspected, it was not task-authored, and it is
+  not counted as NC-015 or NC-013 outcome evidence.
 - Rollback: restore the retained exact plist and health-verify release
   `02ce48f`; no database rollback or external side-effect recovery applies.
 
