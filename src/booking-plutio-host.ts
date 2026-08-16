@@ -132,7 +132,9 @@ function splitName(payload: Record<string, unknown>): {
 
 export function bookingPlutioMarker(eventId: string): string {
   const digest = crypto.createHash('sha256').update(eventId).digest('hex');
-  return `<!-- nanoclaw-booking:${digest} -->`;
+  // Plutio sanitizes HTML comments from descriptionHTML. Keep the receipt
+  // visible and text-only so the exact bytes survive the remote round trip.
+  return `[nanoclaw-booking:${digest}]`;
 }
 
 export function bookingPlutioKind(eventId: string): string {

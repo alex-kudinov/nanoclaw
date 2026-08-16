@@ -107,6 +107,12 @@ marker proves exactly one occurrence and an immediate no-write replay, Booking
 must continue to receive its declared Plutio family and the dark host adapter
 must remain unwired.
 
+The corrective candidate now uses visible text-only
+`[nanoclaw-booking:<sha256>]` and passes local exact-runtime gates. The owner
+authorized one additional entry on the same synthetic contact, but this does
+not change the capability state: immutable deployment and successful remote
+readback/replay are still required before cutover.
+
 ## Change procedure
 
 1. Edit the applicable manifest and any changed group procedure together.

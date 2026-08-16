@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T20:55Z
 - Owner/client: Codex
-- State: in_progress; exact release deployed, Plutio stripped the first marker,
-  and the owner authorized exactly one corrective synthetic Activity Log entry
+- State: ready_for_deploy; visible-marker correction passes local gates and the
+  owner authorized exactly one corrective synthetic Activity Log entry
 - Commit/PR: claim `65c6d1b`; implementation/release `ed957d3` on
   `codex/nc-20260816-012-booking-plutio-marker`; no PR
 - Change class: C5 — shared webhook identity plus bounded external canary
@@ -70,6 +70,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   additional mutation on the existing synthetic contact. A third entry,
   deletion/rewriting of the negative evidence, customer data, natural ingress,
   database mutation, and Booking capability removal remain outside scope.
+- Correction: replace the stripped HTML comment with visible text-only
+  `[nanoclaw-booking:<sha256>]`, preserving the same canonical event binding,
+  exact-one remote readback, and replay activity-write tripwire. Exact Node
+  22.23.2 passes typecheck, source formatting, 55/55 focused tests, 635/635
+  email-critical tests, runner build plus 40/40 tests, and 2,462/2,463 root
+  tests; the sole failure remains the unrelated CNPC wrapper-string baseline.
 
 ### NC-20260816-011 — Build the dark Booking-to-Plutio host boundary
 

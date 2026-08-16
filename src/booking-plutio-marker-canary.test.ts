@@ -16,6 +16,12 @@ const persistedNote = JSON.stringify([
 ]);
 
 describe('runBookingPlutioMarkerCanary', () => {
+  it('uses a visible text-safe marker that Plutio can preserve', () => {
+    expect(event.marker).toMatch(/^\[nanoclaw-booking:[0-9a-f]{64}\]$/);
+    expect(event.marker).not.toMatch(/[<>]/);
+    expect(event.activityEntry).toContain(event.marker);
+  });
+
   it('records once, reads the marker back, and replays without another write', async () => {
     const callTool = vi
       .fn()

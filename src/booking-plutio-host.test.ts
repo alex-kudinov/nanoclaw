@@ -35,6 +35,9 @@ describe('parseBookingPlutioEvent', () => {
     expect(event.activityEntry).not.toContain('<script>');
     expect(event.activityEntry).toContain('&lt;script&gt;');
     expect(event.marker).toBe(bookingPlutioMarker(eventId));
+    expect(event.marker).toMatch(/^\[nanoclaw-booking:[0-9a-f]{64}\]$/);
+    expect(event.marker).not.toMatch(/[<>]/);
+    expect(event.activityEntry).toContain(event.marker);
     expect(() =>
       parseBookingPlutioEvent(canceledFixture, 'appt:other:canceled'),
     ).toThrow(/identity mismatch/);

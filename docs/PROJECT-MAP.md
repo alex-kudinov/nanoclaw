@@ -696,9 +696,11 @@ confirmation gates pass. The one authorized Plutio first pass persisted one
 synthetic activity but stripped its HTML-comment marker; exact readback found
 zero occurrences and refused replay before a second write. Health and all
 NanoClaw aggregates remained stable. Booking ingress, prompt, procedure,
-manifest, mounts, and Plutio projection remain unchanged. Promotion is blocked
-until a visible digest marker receives a separately authorized corrective
-remote write and no-write replay proof.
+manifest, mounts, and Plutio projection remain unchanged. The owner authorized
+one corrective entry, and the locally verified replacement uses visible
+text-only `[nanoclaw-booking:<sha256>]`. Promotion remains blocked until that
+candidate is immutably deployed and its exact-one readback plus no-write replay
+passes.
 
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some
