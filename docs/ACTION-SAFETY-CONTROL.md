@@ -1,7 +1,7 @@
 # Host action safety control
 
-Status: implemented locally under `NC-20260816-002`; dark, uncommitted, and not
-deployed or activated
+Status: implemented and committed locally under `NC-20260816-002`; dark, not
+pushed, deployed, or activated
 
 ## Purpose and authority
 

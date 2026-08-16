@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T15:00Z
 - Owner/client: Codex
-- State: ready for local implementation commit; not deployed or activated
-- Commit/PR: claim commit `37c6353` on
-  `codex/nc-20260816-002-action-safety-control`; implementation commit pending;
-  no PR
+- State: complete for the local source milestone; not pushed, deployed, or
+  activated
+- Commit/PR: claim commit `37c6353` and implementation commit
+  `092b5b9b8d96d4ac474dce33ae173ecc44799b62` on
+  `codex/nc-20260816-002-action-safety-control`; no PR
 - Change class: C5 — common security boundary for external writes
 - Intended outcome: define one content-free host action envelope and one
   default-off global/per-system brake without changing current live behavior or
@@ -39,7 +40,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   agent-runner build plus 36/36 tests. The root sandbox run passes
   2,332/2,378; all 45 permission-sensitive webhook/migration tests pass
   unrestricted, leaving only the unchanged base CNPC source-wrapper assertion.
-  `git diff --check` passes. Final implementation commit evidence is pending.
+  `git diff --check` passes.
 
 ### NC-20260816-001 — Activate the bounded Company OS email shadow
 
