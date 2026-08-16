@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-007` | Deploy and live-drill the common external-write safety brake without performing an external write | Codex | `codex/nc-20260816-007-action-safety-drill` @ `4abe369` | `in_progress` | C5 | Preserve the live Campanero/Stripe lineage; add a release-bundled, dry-run-first, hostname-confirmed, backup-producing global safe-mode drill; exercise the actual Gmail, Slack, Courses SMTP, Plutio, and Stripe runtime boundaries with synthetic inputs that must deny before invocation; prove health/evidence reads and non-interference; restore the exact prior configuration. Excludes action-envelope enforcement, customer email, Slack posts, Courses mail, Plutio mutation, Stripe processing, database writes, other-system coverage, push, and merge. | Implement the fail-closed config transaction and installed-boundary drill with rollback tests; run focused/full release gates; deploy controls off; repeat production drain checks; execute one short auto-restored safe-mode window; verify exact health, denials, and unchanged business/action state. | 2026-08-16T17:43Z |
 | `NC-20260816-006` | Deploy the capability-manifest release dark, then activate and prove one low-risk Campanero canary without exposing any other agent | Codex | `codex/nc-20260816-006-campanero-canary` @ deployed `2987070` | `complete` | C5 | Combined immutable release preserves live Stripe lineage `a67e081`; global manifest enforcement remains off; only Campanero is selected and live-verified with no Claude tools, only the `jobs` MCP tool, read-only declared mounts, and a read-only 22-job inventory canary. Bash and undeclared MCP surfaces were absent. Zero active/waiting work, outgoing Slack queue, actionable email sends, or job/task mutations appeared. Excludes customer email, job mutation, production database writes, global/all-agent activation, prompt changes, publication/mainline merge, and push. | None for this milestone. Any second agent, global activation, egress restriction, credential removal, or action-safety activation requires a separately tracked gate. | 2026-08-16T17:31Z |
 | `NC-20260816-005` | Make every authoritative Stripe purchase reach Chaos with a canonical product attribution, preserve one-row Checkout accounting, and repair the four unmapped lifecycle receipts | Codex + Claude Code owner/reviewer | `codex/nc-20260816-005-stripe-attribution` @ implementation `9f8f6a1` from exact live `55c97d5` | `ready_for_deploy` | C5 | Exact-live-lineage NanoClaw Stripe processor and Chaos lifecycle outbox; focused tests; historical correction of four already-received Chaos lifecycle rows only after reviewed mapping proof. Excludes Stripe charges/refunds, fulfillment, Encharge automation, customer messaging, and unrelated NanoClaw changes. | Build and independently verify the clean immutable release, preflight and activate it, then correct only the four proven historical rows with pre/post aggregate proof. The full suite baseline remains 2381/2382 because of one pre-existing unrelated CNPC prompt-contract failure. | 2026-08-16T17:14Z |
 | `NC-20260816-004` | Establish tracked per-agent capability manifests and make stale warm/adopted containers ineligible for reuse without activating the control in production | Codex | `codex/nc-20260816-004-capability-manifests` @ `72b21db` (local implementation) | `complete` | C5 | Strict manifests for all 17 tracked operative groups; deterministic matrix; default-off launch/MCP/recognized-host-operation/mount/runtime projection; launch/sidecar fingerprints; and next-turn warm/adoption revocation. Existing domain controls remain cumulative. Excludes production config/deploy/restart, external writes, raw-secret extraction, egress enforcement, push, and merge. | None for this local source milestone. Production activation requires a separate authorized drain/recycle and group-by-group negative, launch, revocation, and business-path canary task. | 2026-08-16T16:20Z |
@@ -81,6 +82,38 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-007
+
+- Trigger: after the Campanero-only capability checkpoint completed, the owner
+  instructed Codex to move on to the next Company OS milestone.
+- Base/live lineage: isolated worktree
+  `/private/tmp/nanoclaw-nc-20260816-007` branches from evidence commit
+  `4abe369`, whose deployed source ancestor is combined release `2987070`.
+  That release already contains the dark `NC-20260816-002` controller and
+  reports valid action-safety configuration with enforcement false, global safe
+  mode false, and no disabled systems. Campanero remains the only selectively
+  enforced capability group.
+- Scope/authority: C5 production security-control drill. Authority covers local
+  source/tests/docs, immutable release/deployment, a same-mode environment
+  backup, one bounded global safe-mode window, synthetic denial canaries at the
+  five already-guarded boundaries, exact config restoration, and read-only
+  health/action/job checks. It excludes enabling envelope enforcement, any real
+  email/Slack/Courses/Plutio/Stripe action, production data mutation, expansion
+  to unguarded systems, prompt/group changes, push, and merge.
+- Safety design: the production drill must be dry-run by default, require exact
+  hostname confirmation, verify a drained service and default-off starting
+  state, atomically back up and enable the brake, observe live health, call the
+  installed boundary functions only with synthetic inputs, assert every call
+  is refused before its external client/child process, and restore the exact
+  prior environment in `finally`. A failed drill is not retried while any
+  external action is ambiguous.
+- Acceptance: all five actual runtime boundaries return the expected safe-mode
+  denial; Slack queues nothing; Courses exposes neither SMTP secret/tool nor
+  raw email mount; Gmail never constructs/sends a message; Plutio and Stripe
+  never invoke a child; health/evidence reads remain available; the live config
+  returns to its exact pre-drill state; queues, email actions, jobs/tasks, and
+  release identity remain unchanged; rollback evidence is recorded.
 
 ### NC-20260816-006
 
