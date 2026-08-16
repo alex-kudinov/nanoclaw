@@ -42,12 +42,30 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   IDs, timestamps, named exception codes, and SHA-256 evidence. No recipient,
   subject, body, approval-card text, customer action mutation, Slack post, or
   Gmail call is part of the projector.
-- Verification so far: exact Node 22.23.2 typecheck passes; 19 focused
+- Verification so far: exact Node 22.23.2 typecheck passes; 20 focused
   ledger/projector/SQLite tests pass, including full success, exact replay,
   terminal restart convergence, block/fail/resume, per-action failure
   isolation, default-off/misconfiguration, metadata privacy, exact-thread
   closure, and aggregate fail-open health. Broad, release, migration, and live
   reconciliation evidence remains pending.
+- First production boundary: custom-format PostgreSQL backup
+  `NC-20260816-001-20260816T1405Z/nanoclaw_business_pre_118.dump` is 2,574,495
+  bytes, has SHA-256 `932a9aea3e96a2befca8a5f335d04bc9db46d7bd7229b350216834d9ab5510dd`,
+  and yields an 899-line `pg_restore --list` catalog. Exact migration 118 SHA-256
+  `7aa14b087335b11afe7d637aba07c47268f0a1c8d9ec475091478e5c12f65d4a`
+  applied alone. Production then had three empty admin-owned tables, two enabled
+  append-only triggers, zero non-admin grants, and zero raw-content columns.
+- First release boundary: immutable `052fb0222ceadab3f99d99e551b9e19d2c6a879f`
+  (source tree `5f0f82d1`, artifact SHA-256 `63d225fd`, archive SHA-256
+  `ffb01719`) activated with automatic rollback health verification. The
+  bounded observer was healthy and failed open: its first pass completed three
+  exact cases, excluded three non-Mailman origins, and surfaced one historical
+  confirmed action whose source event history skips Mailman dispatch.
+- Live defect response: the missing mandatory source fact is not permission to
+  infer progress from the later Gmail receipt. The corrective implementation
+  records `source_gap:mailman_dispatch_missing` at the last verified stage and
+  refuses later promotion. Exact Node 22 typecheck and 20 focused tests pass;
+  corrective release and live duplicate-only reconciliation remain pending.
 
 ### NC-20260815-010 — Establish the dark Company OS work-ledger foundation
 

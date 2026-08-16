@@ -201,6 +201,12 @@ closing—the exact mechanical Gmail receipt line in the original Slack thread.
 PostgreSQL receives opaque IDs, timestamps, named exception codes, and SHA-256
 evidence only. It receives no recipient, subject, body, card, or operator text.
 
+Historical actions may contain a later execution/confirmation fact without the
+required Mailman-dispatch or action-claim event. The observer records that as a
+named `source_gap:*` failure at the last verified stage and does not invent the
+missing transition from Gmail success. Later source facts remain visible in
+SQLite but cannot promote the work item across the gap.
+
 The daemon health document exposes only aggregate scan, skip, error,
 transition, duplicate, and completion counts. Projection errors are contained
 per action; a whole-tick source/database failure is logged and surfaced in

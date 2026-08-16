@@ -402,6 +402,50 @@ describe('Company OS email shadow projection', () => {
     });
   });
 
+  it('records a historical source gap without inventing Mailman progress', async () => {
+    const events: SourceEvent[] = [
+      { sequence: 1, stage: 'approved', occurredAt: NOW },
+      {
+        sequence: 2,
+        stage: 'executing',
+        occurredAt: '2026-08-14T12:00:01.000Z',
+      },
+      {
+        sequence: 3,
+        stage: 'confirmed',
+        occurredAt: '2026-08-14T12:00:02.000Z',
+        gmailMessageId: 'gmail-action-good',
+        gmailThreadId: 'thread-action-good',
+      },
+    ];
+    const { deps, ledger } = fixture([action()], { 'action-good': events });
+    const first = await runCompanyWorkShadowProjection(deps, CONFIG);
+    expect(first).toMatchObject({
+      eligible: 1,
+      projected: 1,
+      transitionsApplied: 5,
+      completed: 0,
+      errors: {},
+    });
+    expect(ledger.items.get('action-good')).toMatchObject({
+      stage: 'approved',
+      disposition: 'failed',
+      failureCode: 'source_gap:mailman_dispatch_missing',
+      version: 4,
+    });
+
+    expect(await runCompanyWorkShadowProjection(deps, CONFIG)).toMatchObject({
+      transitionsApplied: 0,
+      duplicateFacts: 5,
+      completed: 0,
+      errors: {},
+    });
+    expect(ledger.items.get('action-good')).toMatchObject({
+      stage: 'approved',
+      disposition: 'failed',
+    });
+  });
+
   it('skips an untrusted origin and isolates one broken action from the next', async () => {
     const badOrigin = action({ actionId: 'bad-origin' });
     const broken = action({ actionId: 'broken' });

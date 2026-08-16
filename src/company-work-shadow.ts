@@ -428,6 +428,7 @@ async function projectAction(
   );
 
   let mailmanProjected = false;
+  let actionClaimedProjected = false;
   let exceptionOpen = false;
   for (const event of events) {
     if (event.sequence <= approvedEvent.sequence) continue;
@@ -464,6 +465,31 @@ async function projectAction(
       continue;
     }
     if (event.stage === 'executing') {
+      if (!mailmanProjected) {
+        if (!exceptionOpen) {
+          countMutation(
+            await applyDesiredTransition(
+              deps,
+              actionId,
+              transition(actionId, `${eventSuffix}:mailman-source-gap`, {
+                eventType: 'failed',
+                occurredAt: event.occurredAt,
+                exceptionCode: 'source_gap:mailman_dispatch_missing',
+                evidenceSha256: hashCompanyWorkShadowEvidence([
+                  'source-gap-v1',
+                  actionId,
+                  event.sequence,
+                  'mailman_dispatch_missing',
+                  event.occurredAt,
+                ]),
+              }),
+            ),
+            counters,
+          );
+          exceptionOpen = true;
+        }
+        continue;
+      }
       if (exceptionOpen) {
         countMutation(
           await applyResume(deps, actionId, eventSuffix, event.occurredAt),
@@ -497,11 +523,37 @@ async function projectAction(
         ),
         counters,
       );
+      actionClaimedProjected = true;
       continue;
     }
     if (event.stage === 'confirmed') {
       if (!event.gmailMessageId || !event.gmailThreadId) {
         throw new Error('confirmed_event_missing_gmail_receipt');
+      }
+      if (!actionClaimedProjected) {
+        if (!exceptionOpen) {
+          countMutation(
+            await applyDesiredTransition(
+              deps,
+              actionId,
+              transition(actionId, `${eventSuffix}:claim-source-gap`, {
+                eventType: 'failed',
+                occurredAt: event.occurredAt,
+                exceptionCode: 'source_gap:action_claim_missing',
+                evidenceSha256: hashCompanyWorkShadowEvidence([
+                  'source-gap-v1',
+                  actionId,
+                  event.sequence,
+                  'action_claim_missing',
+                  event.occurredAt,
+                ]),
+              }),
+            ),
+            counters,
+          );
+          exceptionOpen = true;
+        }
+        continue;
       }
       if (exceptionOpen) {
         countMutation(
