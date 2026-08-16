@@ -98,12 +98,12 @@ describe('action-safety configuration file', () => {
     const result = setActionSafetyMode({
       envFile,
       mode: 'systems',
-      systems: 'stripe,gmail',
+      systems: 'stripe,hive_firestore,gmail',
       apply: false,
     });
     expect(result.target).toMatchObject({
       globalSafeMode: false,
-      disabledSystems: ['gmail', 'stripe'],
+      disabledSystems: ['gmail', 'hive_firestore', 'stripe'],
       valid: true,
     });
   });

@@ -49,6 +49,7 @@ vi.mock('./db.js', () => ({
 }));
 
 import { runReaper } from './hive-sync-reaper.js';
+import { ExternalWriteDeniedError } from './action-safety.js';
 
 function staleRow(overrides: Record<string, any> = {}) {
   return {
@@ -99,6 +100,7 @@ describe('runReaper', () => {
     expect(res).toEqual({
       processed: 0,
       recovered: 0,
+      held: 0,
       retried: 0,
       deadLettered: 0,
       deadLetterDetails: [],
@@ -135,6 +137,27 @@ describe('runReaper', () => {
     expect(res.deadLettered).toBe(0);
     const updateCall = mockQuery.mock.calls[1];
     expect(updateCall[1]).toEqual([3, false, 'msg-1']);
+  });
+
+  it('holds a safety-denied row without consuming retries or alerting', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [staleRow({ reaper_attempts: 4 })],
+    });
+    mockRecord.mockRejectedValueOnce(
+      new ExternalWriteDeniedError('global_safe_mode', 'hive_firestore'),
+    );
+
+    const res = await runReaper();
+
+    expect(res).toMatchObject({
+      processed: 1,
+      recovered: 0,
+      held: 1,
+      retried: 0,
+      deadLettered: 0,
+    });
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(listChiefMessages()).toEqual([]);
   });
 
   it('dead-letters a row and alerts chief when attempts reach the max', async () => {

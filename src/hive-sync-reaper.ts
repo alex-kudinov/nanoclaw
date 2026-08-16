@@ -13,6 +13,7 @@
 import fs from 'fs';
 import path from 'path';
 
+import { isExternalWriteDeniedError } from './action-safety.js';
 import { DATA_DIR } from './config.js';
 import { query } from './business-db.js';
 import { getAllRegisteredGroups } from './db.js';
@@ -34,6 +35,7 @@ interface StaleRow {
 export interface ReaperResult {
   processed: number;
   recovered: number;
+  held: number;
   retried: number;
   deadLettered: number;
   deadLetterDetails: Array<{ gmail_message_id: string; error: string }>;
@@ -133,6 +135,7 @@ export async function runReaper(): Promise<ReaperResult> {
   const result: ReaperResult = {
     processed: rows.length,
     recovered: 0,
+    held: 0,
     retried: 0,
     deadLettered: 0,
     deadLetterDetails: [],
@@ -148,6 +151,10 @@ export async function runReaper(): Promise<ReaperResult> {
       await markSuccess(row.gmail_message_id);
       result.recovered++;
     } catch (err) {
+      if (isExternalWriteDeniedError(err) && err.system === 'hive_firestore') {
+        result.held++;
+        continue;
+      }
       const errMsg = err instanceof Error ? err.message : String(err);
       const dead = await markFailure(row);
       if (dead) {
@@ -168,6 +175,7 @@ export async function runReaper(): Promise<ReaperResult> {
     {
       processed: result.processed,
       recovered: result.recovered,
+      held: result.held,
       retried: result.retried,
       deadLettered: result.deadLettered,
     },

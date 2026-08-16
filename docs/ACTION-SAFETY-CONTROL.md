@@ -2,8 +2,9 @@
 
 Status: the five-system first-drill boundary is deployed and live-verified in
 release `ab2ace1a658111131a2519e1cd7257fe8a207ffb` under
-`NC-20260816-007`; all controls were restored default-off after the drill and
-the broader repository-wide controller remains partial
+`NC-20260816-007`; `NC-20260816-008` adds Hive/Firestore as a sixth guarded
+system and is pending release/live proof. All production controls remain
+default-off and the broader repository-wide controller remains partial.
 
 ## Purpose and authority
 
@@ -30,7 +31,7 @@ boundary so a brake does not depend on a daemon restart:
   enabled, a missing verified envelope fails closed.
 - `EXTERNAL_WRITE_SAFE_MODE=0` is the global brake.
 - `EXTERNAL_WRITE_DISABLED_SYSTEMS=` is a comma-separated subset of
-  `gmail,slack,courses_smtp,plutio,stripe`.
+  `gmail,slack,courses_smtp,plutio,stripe,hive_firestore`.
 
 Precedence is deterministic:
 
@@ -55,14 +56,24 @@ aggregate allow/deny counts, decision codes, system names, and last denial time.
 | Courses SMTP | container secret construction and additional-mount plan | new Courses containers receive neither `EMAIL_USER`/`EMAIL_PASS`/`EMAIL_TOOL` nor the raw `email` mount |
 | Plutio | shared CLI and outbox-reaper tool invocation | mutation and unknown scripts deny before `execFile`; the two explicit proposal/people list operations remain available |
 | Stripe | payment/refund processor invocation | denies before the deterministic child process can write Sheets/PostgreSQL |
+| Hive/Firestore | composite classification sync plus assignment, status, and tag merge | denies before Firebase credential/SDK initialization; the inline row remains retryable and the reaper reports `held` without consuming an attempt or alerting |
 
 Standalone/operator scripts outside these runtime entry points are not governed
 by the daemon controller and remain an inventory item for capability manifests.
 Other runtime integrations not yet routed through this controller include
-Trafft writes, Hive/Firebase synchronization, Chaos lifecycle HTTP delivery,
-the Things bridge, Sertifier, and business tools exposed directly inside other
-containers. Therefore P0.5 remains partial and “global” means global across the
-five named first-drill systems, not a claim of repository-wide revocation.
+Trafft writes, Chaos lifecycle HTTP delivery, the Things bridge, Sertifier, and
+business tools exposed directly inside other containers. Therefore P0.5
+remains partial and “global” means global across the six named systems after
+`NC-20260816-008` is deployed, not a claim of repository-wide revocation.
+
+| Remaining perimeter | Current mutation path | Next control decision |
+| --- | --- | --- |
+| Things | host HTTP bridge in `src/brief-promote.ts` | add a host final-boundary guard and no-network tripwire |
+| Chaos | toolbox event writer and durable lifecycle HTTP outbox | reconcile with the active Stripe/Chaos lineage before changing shared files |
+| Booking/Trafft | host reads plus raw credential/tool exposure in the Booking container | separate read inventory from write capability, then retire writes behind typed host IPC |
+| Certifier/Sertifier | Bash/shared-toolbox execution inside the Certifier container | move issuance behind a receipt-bound host action rather than trusting prompt policy |
+| Contador/Sheets and standalone tools | container or operator scripts outside the daemon guard | inventory exact commands, then remove raw credentials or route each write through the host controller |
+
 An already-running Courses container may retain its old raw SMTP mount and
 credentials. `NC-20260816-004` adds a separate default-off capability
 fingerprint that, when enabled, closes a stale warm/adopted container before its
@@ -91,8 +102,8 @@ can enter enforcement mode.
 
 Production activation is a separate C5 task. It requires an immutable release,
 config backup/rollback, zero active Courses containers followed by recycle,
-the named Gmail/Slack/Courses/Plutio/Stripe refusal drill, proof that inbound and
-evidence reads continue, `/health.actionSafety` evidence, and restoration to
+the named Gmail/Slack/Courses/Plutio/Stripe/Hive refusal drill, proof that
+inbound and evidence reads continue, `/health.actionSafety` evidence, and restoration to
 the prior default-off state. Enabling envelope enforcement is later still: no
 current legacy caller is authorized to bypass its missing-envelope denial.
 
@@ -116,15 +127,15 @@ default and reject unknown or duplicate arguments:
 
 The installed refusal drill changes into a disposable directory containing
 synthetic credentials before importing the real boundary modules. Gmail,
-Plutio, and Stripe receive injected tripwires that throw if their guards permit
-client/child/outbox execution; both Gmail new-send and reply-send are exercised,
-with the reply's prerequisite read supplied by a synthetic client. Slack is
-instantiated from the installed `sendMessage` prototype without constructing
-the network-owning SDK, is never connected, and must retain an empty local
-outbound queue. Courses must
-project neither SMTP credentials nor the raw email-tool mount. All six guarded
-operations across the five systems return `global_safe_mode`; the drill itself
-performs no database or external-system write.
+Plutio, Stripe, and Hive receive injected tripwires that throw if their guards
+permit client/child/outbox/Firestore execution; both Gmail new-send and
+reply-send are exercised, with the reply's prerequisite read supplied by a
+synthetic client. Slack is instantiated from the installed `sendMessage`
+prototype without constructing the network-owning SDK, is never connected,
+and must retain an empty local outbound queue. Courses must project neither
+SMTP credentials nor the raw email-tool mount. All seven guarded operations
+across the six systems return `global_safe_mode`; the drill itself performs no
+database or external-system write.
 
 Example from inside an extracted release (dry-run first):
 
@@ -145,8 +156,9 @@ node scripts/set-action-safety-mode.mjs \
   --confirm-host <exact-hostname>
 ```
 
-This transaction proves operator control across the five named runtime
-boundaries only. It does not enable action-envelope enforcement, interrupt a
+After the `NC-20260816-008` release/live gate, this transaction will prove
+operator control across the six named runtime systems only. It does not enable
+action-envelope enforcement, interrupt a
 write already in flight, cover the residual standalone/integration surfaces,
 or satisfy the later ceilings and automatic-demotion work.
 

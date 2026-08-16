@@ -53,6 +53,7 @@ const boundaryResult = {
     { system: 'courses_smtp' as const, code: 'global_safe_mode' as const },
     { system: 'plutio' as const, code: 'global_safe_mode' as const },
     { system: 'stripe' as const, code: 'global_safe_mode' as const },
+    { system: 'hive_firestore' as const, code: 'global_safe_mode' as const },
   ],
   tripwires: {
     gmailClient: false,
@@ -60,6 +61,7 @@ const boundaryResult = {
     plutioChild: false,
     stripeChild: false,
     stripeLifecycleEnqueue: false,
+    hiveFirestore: false,
   },
   slackOutgoingQueueDepth: 0,
   courses: {

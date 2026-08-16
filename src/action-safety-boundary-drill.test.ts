@@ -20,6 +20,7 @@ it('denies every installed guarded boundary without crossing a side-effect tripw
     { system: 'courses_smtp', code: 'global_safe_mode' },
     { system: 'plutio', code: 'global_safe_mode' },
     { system: 'stripe', code: 'global_safe_mode' },
+    { system: 'hive_firestore', code: 'global_safe_mode' },
   ]);
   expect(result.tripwires).toEqual({
     gmailClient: false,
@@ -27,6 +28,7 @@ it('denies every installed guarded boundary without crossing a side-effect tripw
     plutioChild: false,
     stripeChild: false,
     stripeLifecycleEnqueue: false,
+    hiveFirestore: false,
   });
   expect(result.slackOutgoingQueueDepth).toBe(0);
   expect(result.courses).toEqual({

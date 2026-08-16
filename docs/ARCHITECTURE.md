@@ -486,7 +486,7 @@ Syncthing syncs NanoClaw source between machines. **Excluded from sync** (`.stig
 |---------|---------|-------------------|
 | Gmail API | Email send/receive/labels | OAuth2 via `gmail-auth.ts` |
 | Pub/Sub (`hive-gmail-push` topic) | Gmail push notifications | n8n → webhook-server |
-| Hive Firestore | Shared email classification state | `hive-bridge.ts` via Firebase Admin SDK |
+| Hive Firestore | Shared email classification state | `hive-bridge.ts` via Firebase Admin SDK; final conversation mutations use the common host brake, and denied reaper work is held without consuming retries |
 | Slack API | Chat channel | Bolt SDK, Socket Mode |
 | Claude Agent SDK | Agent execution | Inside containers |
 | Claude Print Bridge | External script → Claude calls | HTTP on Mini port 40960 |

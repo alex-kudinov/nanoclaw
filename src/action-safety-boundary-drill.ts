@@ -30,6 +30,7 @@ export interface ActionSafetyBoundaryDrillResult {
     plutioChild: boolean;
     stripeChild: boolean;
     stripeLifecycleEnqueue: boolean;
+    hiveFirestore: boolean;
   };
   slackOutgoingQueueDepth: number;
   courses: {
@@ -97,6 +98,7 @@ export async function runInstalledActionSafetyBoundaryDrill(): Promise<ActionSaf
     plutioChild: false,
     stripeChild: false,
     stripeLifecycleEnqueue: false,
+    hiveFirestore: false,
   };
 
   try {
@@ -136,13 +138,14 @@ export async function runInstalledActionSafetyBoundaryDrill(): Promise<ActionSaf
       );
     }
 
-    const [gmailApi, { SlackChannel }, containerRunner, plutio, stripe] =
+    const [gmailApi, { SlackChannel }, containerRunner, plutio, stripe, hive] =
       await Promise.all([
         import('./gmail-api.js'),
         import('./channels/slack.js'),
         import('./container-runner.js'),
         import('./plutio-cli.js'),
         import('./stripe-payment-host.js'),
+        import('./hive-bridge.js'),
       ]);
 
     const denials: ActionSafetyBoundaryDrillResult['denials'] = [];
@@ -309,6 +312,21 @@ export async function runInstalledActionSafetyBoundaryDrill(): Promise<ActionSaf
             enqueueLifecycleFact: async () => {
               tripwires.stripeLifecycleEnqueue = true;
               throw new BoundaryTripwireError('Stripe lifecycle outbox');
+            },
+          },
+        ),
+      ),
+    );
+
+    denials.push(
+      await expectGlobalDenial('hive_firestore', () =>
+        hive.assignConversation(
+          'thread_action_safety_drill',
+          'uid_action_safety_drill',
+          {
+            getFirestore: () => {
+              tripwires.hiveFirestore = true;
+              throw new BoundaryTripwireError('Hive Firestore client');
             },
           },
         ),

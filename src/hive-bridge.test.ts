@@ -92,11 +92,19 @@ beforeEach(() => {
     HIVE_PROJECT_ID: process.env.HIVE_PROJECT_ID,
     TEAM_UID_ALEX: process.env.TEAM_UID_ALEX,
     TEAM_UID_CHERIE: process.env.TEAM_UID_CHERIE,
+    ACTION_SAFETY_ENFORCEMENT_ENABLED:
+      process.env.ACTION_SAFETY_ENFORCEMENT_ENABLED,
+    EXTERNAL_WRITE_SAFE_MODE: process.env.EXTERNAL_WRITE_SAFE_MODE,
+    EXTERNAL_WRITE_DISABLED_SYSTEMS:
+      process.env.EXTERNAL_WRITE_DISABLED_SYSTEMS,
   };
   process.env.HIVE_FIRESTORE_KEY_PATH = '/fake/path/key.json';
   process.env.HIVE_PROJECT_ID = 'test-proj';
   delete process.env.TEAM_UID_ALEX;
   delete process.env.TEAM_UID_CHERIE;
+  process.env.ACTION_SAFETY_ENFORCEMENT_ENABLED = '0';
+  process.env.EXTERNAL_WRITE_SAFE_MODE = '0';
+  process.env.EXTERNAL_WRITE_DISABLED_SYSTEMS = '';
   mockGetApps.mockReturnValue([{ name: 'hive-bridge' }]);
   mockInitApp.mockReset();
   mockGetFirestore.mockReset();
@@ -204,9 +212,70 @@ describe('assignConversation / setConversationStatus / tagConversation', () => {
     await tagConversation('thr-1', []);
     expect(conversationsDoc.set).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ['global', '1', '', 'global_safe_mode'],
+    ['per-system', '0', 'hive_firestore', 'system_safe_mode'],
+  ])(
+    'denies every %s safe-mode mutation before Firestore initialization',
+    async (_mode, globalSafeMode, disabledSystems, expectedCode) => {
+      process.env.EXTERNAL_WRITE_SAFE_MODE = globalSafeMode;
+      process.env.EXTERNAL_WRITE_DISABLED_SYSTEMS = disabledSystems;
+      const getFirestoreTripwire = vi.fn(() => {
+        throw new Error('Firestore must not initialize');
+      });
+
+      await expect(
+        assignConversation('thr-1', 'uid-abc', {
+          getFirestore: getFirestoreTripwire,
+        }),
+      ).rejects.toMatchObject({
+        system: 'hive_firestore',
+        code: expectedCode,
+      });
+      await expect(
+        setConversationStatus('thr-1', 'open', {
+          getFirestore: getFirestoreTripwire,
+        }),
+      ).rejects.toMatchObject({
+        system: 'hive_firestore',
+        code: expectedCode,
+      });
+      await expect(
+        tagConversation('thr-1', ['MrGru/financial/receipt'], {
+          getFirestore: getFirestoreTripwire,
+        }),
+      ).rejects.toMatchObject({
+        system: 'hive_firestore',
+        code: expectedCode,
+      });
+      expect(getFirestoreTripwire).not.toHaveBeenCalled();
+      expect(mockGetFirestore).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe('recordClassification', () => {
+  it.each([
+    ['global', '1', '', 'global_safe_mode'],
+    ['per-system', '0', 'hive_firestore', 'system_safe_mode'],
+  ])(
+    'denies the composite %s safe-mode operation before Firestore initialization',
+    async (_mode, globalSafeMode, disabledSystems, expectedCode) => {
+      process.env.EXTERNAL_WRITE_SAFE_MODE = globalSafeMode;
+      process.env.EXTERNAL_WRITE_DISABLED_SYSTEMS = disabledSystems;
+
+      await expect(
+        recordClassification('thr-1', 'MrGru/financial/receipt', ['cherie']),
+      ).rejects.toMatchObject({
+        system: 'hive_firestore',
+        code: expectedCode,
+      });
+      expect(mockGetFirestore).not.toHaveBeenCalled();
+      expect(mockInitApp).not.toHaveBeenCalled();
+    },
+  );
+
   it('creates conversation doc via merge when it does not exist', async () => {
     const { firestore, conversationsDoc } = buildFirestoreMock();
     conversationsDoc.get.mockResolvedValue({ exists: false });

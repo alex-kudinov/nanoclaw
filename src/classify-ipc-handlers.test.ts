@@ -43,6 +43,7 @@ import {
   removeLabelsFromThread,
 } from './gmail-labels.js';
 import { recordClassification } from './hive-bridge.js';
+import { ExternalWriteDeniedError } from './action-safety.js';
 import {
   _initTestDatabase,
   storeChatMetadata,
@@ -495,6 +496,29 @@ describe('handleClassifyLabelWrite', () => {
     await handleClassifyLabelWrite(basePayload());
     // No UPDATE hive_synced call — INSERT + taxonomy + dedup check + routed_at update
     expect(mockQuery).toHaveBeenCalledTimes(4);
+  });
+
+  it('keeps a safety-denied Hive classification retryable', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: ['alex'], auto_archive: false }],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] });
+    mockRecord.mockRejectedValueOnce(
+      new ExternalWriteDeniedError('global_safe_mode', 'hive_firestore'),
+    );
+
+    await handleClassifyLabelWrite(basePayload());
+
+    expect(mockQuery).toHaveBeenCalledTimes(4);
+    expect(
+      mockQuery.mock.calls.some(([sql]) =>
+        String(sql).includes('SET hive_synced'),
+      ),
+    ).toBe(false);
   });
 });
 

@@ -14,6 +14,7 @@ export const ACTION_SYSTEMS = [
   'courses_smtp',
   'plutio',
   'stripe',
+  'hive_firestore',
 ] as const;
 
 export const ACTION_CLASSES = [

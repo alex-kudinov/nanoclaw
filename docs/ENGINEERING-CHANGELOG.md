@@ -8,6 +8,45 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-008 — Extend the common external-write brake to Hive/Firestore
+
+- Date: 2026-08-16T19:01Z
+- Owner/client: Codex
+- State: in_progress; implementation and focused verification complete,
+  immutable release/deployment/live proof pending
+- Commit/PR: claim commit `2fcc570` on
+  `codex/nc-20260816-008-hive-safety`; implementation commit pending; no PR
+- Change class: C5 — extend a common production external-write safety boundary
+- Intended outcome: stop Hive conversation mutations through the same dynamic
+  global/per-system brake without initializing Firebase, consuming retry
+  budget, dead-lettering, alerting, or performing a real Firestore write.
+- Implementation: register `hive_firestore`; reject both the composite
+  classification operation and direct assignment/status/tag merges before
+  Firebase initialization; preserve standalone read helpers; treat the typed
+  denial as `held` in the Hive reaper before any attempt/dead-letter update or
+  chief alert; and add an injected Firestore tripwire as the seventh operation
+  in the installed no-network refusal drill. Inventory records Things, Chaos,
+  Booking/Trafft, Certifier/Sertifier, Contador/Sheets, and standalone tools as
+  explicit remaining perimeter rather than implying universal coverage.
+- Safety boundary: no real Gmail, Slack, Firestore, Plutio, Stripe, SMTP, or
+  other external write is authorized. No schema/taxonomy change, Chaos overlap,
+  envelope enforcement, push, or merge is included. Production controls remain
+  default-off until the bounded drill and must be restored exactly afterward.
+- Verification to this boundary: focused Hive/classifier/installed-drill tests
+  pass 51/51. The broader action-safety, Hive, classifier, webhook, and job set
+  passes 102/102 outside the network-bind sandbox; the sandbox-only run's 35
+  webhook failures were all `listen EPERM`, while its other 67 tests passed.
+  Exact Node 22.23.2 typecheck, source formatting, schema sanitizer, capability
+  matrix, docs continuity, 635/635 email-critical tests, and independent runner
+  build plus 40/40 tests pass. The unrestricted root suite passes 2,435/2,436;
+  its sole failure is the unchanged `src/cnpc-prompt-contract.test.ts`
+  source-wrapper assertion. Immutable artifact evidence, deployment, aggregate
+  before/after evidence, and the live auto-restored drill remain pending.
+- Residuals/rollback: guard removal is a source rollback; production config is
+  not changed by this local state. An already-in-flight write can complete.
+  Standalone scripts and remaining integrations are outside the controller;
+  envelope adoption, ceilings, and automatic demotion remain open.
+
 ### NC-20260816-007 — Package a fail-safe production drill for the common external-write brake
 
 - Date: 2026-08-16T18:00Z

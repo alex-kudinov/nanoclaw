@@ -16,6 +16,7 @@ import {
   getFirestore as sdkGetFirestore,
 } from 'firebase-admin/firestore';
 
+import { assertExternalWriteAllowed } from './action-safety.js';
 import { readEnvFile } from './env.js';
 import { logger } from './logger.js';
 
@@ -31,6 +32,18 @@ let cachedFirestore: Firestore | null = null;
 const teamCache = new Map<string, { uid: string | null; at: number }>();
 let writeWindowStart = 0;
 let writeCount = 0;
+
+export interface HiveWriteDependencies {
+  getFirestore?: () => Firestore;
+}
+
+function assertHiveWriteAllowed(): void {
+  assertExternalWriteAllowed({
+    system: 'hive_firestore',
+    actionClass: 'c2_external_write',
+    source: 'host:hive-bridge',
+  });
+}
 
 function loadHiveEnv(): { keyPath: string; projectId: string } {
   const env = readEnvFile(['HIVE_FIRESTORE_KEY_PATH', 'HIVE_PROJECT_ID']);
@@ -104,9 +117,11 @@ async function loadExistingConversation(
 async function mergeConversation(
   threadId: string,
   patch: Record<string, unknown>,
+  deps: HiveWriteDependencies = {},
 ): Promise<void> {
+  assertHiveWriteAllowed();
   await throttleIfBursting();
-  await getFirestore()
+  await (deps.getFirestore ?? getFirestore)()
     .collection('conversations')
     .doc(threadId)
     .set(patch, { merge: true });
@@ -115,23 +130,30 @@ async function mergeConversation(
 export async function assignConversation(
   threadId: string,
   assigneeUid: string | null,
+  deps: HiveWriteDependencies = {},
 ): Promise<void> {
-  await mergeConversation(threadId, { assignee: assigneeUid });
+  await mergeConversation(threadId, { assignee: assigneeUid }, deps);
 }
 
 export async function setConversationStatus(
   threadId: string,
   status: ConversationStatus,
+  deps: HiveWriteDependencies = {},
 ): Promise<void> {
-  await mergeConversation(threadId, { status });
+  await mergeConversation(threadId, { status }, deps);
 }
 
 export async function tagConversation(
   threadId: string,
   tags: string[],
+  deps: HiveWriteDependencies = {},
 ): Promise<void> {
   if (tags.length === 0) return;
-  await mergeConversation(threadId, { tags: FieldValue.arrayUnion(...tags) });
+  await mergeConversation(
+    threadId,
+    { tags: FieldValue.arrayUnion(...tags) },
+    deps,
+  );
 }
 
 function needsUpdate(
@@ -173,6 +195,10 @@ export async function recordClassification(
   label: string,
   hiveShareTarget: string[] | null,
 ): Promise<void> {
+  // This composite operation reads before deciding which writes to apply. Deny
+  // it at entry so safe mode does not initialize Firebase credentials merely
+  // to compute a patch. Standalone read helpers remain available.
+  assertHiveWriteAllowed();
   let targetUid: string | null = null;
   if (hiveShareTarget && hiveShareTarget.length > 0) {
     for (const slug of hiveShareTarget) {
