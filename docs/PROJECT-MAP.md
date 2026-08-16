@@ -684,18 +684,21 @@ aggregates, and legacy Plutio outbox totals remained stable; no
 `booking_activity:%` row exists. This is deployment proof of the dark control
 surface only, not remote Plutio idempotency or a natural lifecycle outcome.
 
-`NC-20260816-012` is the separately gated promotion prerequisite. Its local
-candidate makes the shared Trafft extractor authoritative for flattened
+`NC-20260816-012` is the separately gated promotion prerequisite. Its deployed
+release `ed957d3` makes the shared Trafft extractor authoritative for flattened
 `appointmentStartDateTime` reschedule payloads and removes the dark adapter's
 private identity repair. The immutable bundle now contains a dry-run-first,
 exact-host/full-release-confirmed synthetic Plutio marker canary. Apply is
 limited to one stable non-customer person/activity record; it requires exactly
 one remote marker occurrence before replay and blocks any replay attempt to
-call the activity writer. The candidate passes focused, broader, email-critical,
-runner, type, and format gates but is not deployed and has made no external
-call. Booking ingress, prompt, procedure, manifest, mounts, and Plutio
-projection remain unchanged, so this does not yet prove marker persistence or
-authorize cutover.
+call the activity writer. Local, release, install, activation, and negative
+confirmation gates pass. The one authorized Plutio first pass persisted one
+synthetic activity but stripped its HTML-comment marker; exact readback found
+zero occurrences and refused replay before a second write. Health and all
+NanoClaw aggregates remained stable. Booking ingress, prompt, procedure,
+manifest, mounts, and Plutio projection remain unchanged. Promotion is blocked
+until a visible digest marker receives a separately authorized corrective
+remote write and no-write replay proof.
 
 This is not full P0.2/P0.3 completion: network egress remains
 `unrestricted_current`; Bash and raw mounted tools/credentials remain for some

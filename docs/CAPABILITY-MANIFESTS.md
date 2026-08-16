@@ -96,13 +96,16 @@ child-process, or network call; production still contains zero Booking-specific
 Plutio outbox rows. This proves code installation and non-interference, not
 capability removal readiness.
 
-`NC-20260816-012` locally repairs the shared flattened reschedule identity and
-packages the separately confirmed real-Plutio marker canary. It deliberately
+`NC-20260816-012` deploys the shared flattened reschedule-identity repair and
+the separately confirmed real-Plutio marker canary. It deliberately
 does not change Booking's manifest, prompt, procedure, mounts, selected groups,
 or credential projection: those are cutover changes, not marker-test changes.
-Until the installed canary proves exactly one persistent marker and an
-immediate no-write replay, Booking must continue to receive its declared
-Plutio family and the dark host adapter must remain unwired.
+The real first pass proved Plutio strips the HTML-comment digest while
+preserving the surrounding visible activity text. Readback therefore failed
+closed at zero markers and no replay write occurred. Until a visible digest
+marker proves exactly one occurrence and an immediate no-write replay, Booking
+must continue to receive its declared Plutio family and the dark host adapter
+must remain unwired.
 
 ## Change procedure
 

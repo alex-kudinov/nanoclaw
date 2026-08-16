@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T20:55Z
 - Owner/client: Codex
-- State: ready_for_deploy; local implementation and release gates verified
-- Commit/PR: claim `65c6d1b`; implementation pending on
+- State: blocked; exact release deployed, but Plutio stripped the marker and
+  the canary refused replay before a second write
+- Commit/PR: claim `65c6d1b`; implementation/release `ed957d3` on
   `codex/nc-20260816-012-booking-plutio-marker`; no PR
 - Change class: C5 — shared webhook identity plus bounded external canary
 - Intended outcome: make the shared Trafft reschedule key correct for the
@@ -37,9 +38,34 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   independent runner build plus 40/40 tests. The unrestricted root suite passes
   2,461/2,462; its sole failure is the unchanged unrelated CNPC wrapper-string
   assertion. No external or production-database call occurred.
-- Deployment/rollback: pending. Source rollback is the current exact release
-  `63ed4aa`; the synthetic Plutio canary record will be intentionally retained
-  as the replay receipt rather than destructively deleted.
+- Release/deployment: exact release
+  `ed957d35877a33b0258d4af00362e54d63705e08` has source tree
+  `60f1fb02dd640d9cb127267efbd3e358888e82eb`, 660-file artifact hash
+  `ff8bcf0c1f779e6ec2640ebb35938fb3c30029d84302e3b09da48f02c65585da`,
+  and archive SHA-256
+  `9cbff2f953ca691139d78a299ff6e29eff821e591c10deff5ff646c5a08127d4`.
+  Fresh local extraction and the installed Mini bundle independently verified.
+  Activation from `63ed4aa` changed only the expected three plist values;
+  rollback is
+  `com.nanoclaw.plist.rollback-63ed4aacf41e-2026-08-16T21-08-37-509Z`.
+- Live canary: wrong-host and wrong-release apply both failed before Plutio, and
+  the dry run was side-effect-free. The one authorized apply created the stable
+  synthetic person and appended exactly one Activity Log entry. A read-only
+  lookup proved Plutio preserved the visible entry but stripped the HTML-comment
+  digest marker. The canary saw zero marker occurrences and refused replay,
+  adding no second activity. Root cause is therefore the remote representation,
+  not identity extraction or replay control flow.
+- Non-interference/rollback: exact `ed957d3` is healthy with one listener,
+  Gmail/Slack connected, 17/17 manifests, `booking,campanero` selected, and no
+  active/waiting/outgoing work. Email, task, and Plutio-outbox aggregates are
+  unchanged at 61 confirmed/6 blocked, 334 send events, one completed Campanero
+  task/no Booking task, 1,259 processed/15 dead, and zero
+  `booking_activity:%`. The transferred archive was removed. The installed
+  release and rollback remain, and the synthetic Plutio evidence is retained.
+- Follow-up gate: use a visible text-safe digest marker, then obtain explicit
+  authority for one additional corrective synthetic Activity Log mutation and
+  prove exact-one readback plus immediate no-write replay. Natural ingress and
+  Plutio capability removal remain prohibited until that succeeds.
 
 ### NC-20260816-011 — Build the dark Booking-to-Plutio host boundary
 
