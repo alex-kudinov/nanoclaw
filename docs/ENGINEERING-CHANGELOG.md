@@ -8,6 +8,27 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-013 — Cut Booking lifecycle Plutio writes over to the host
+
+- Date: 2026-08-16T21:29Z
+- Owner/client: Codex
+- State: in_progress; local cutover implementation only
+- Commit/PR: claim pending on
+  `codex/nc-20260816-013-booking-plutio-cutover` from `f10c572`; no PR
+- Change class: C5 — external-write capability cutover
+- Intended outcome: enqueue canceled/rescheduled Booking activity through the
+  durable, replay-safe host Plutio adapter and remove raw Plutio secrets/tools
+  from the Booking container.
+- Discovery: receiver and inbox-reaper agent paths currently treat a returned
+  `status='error'` as handled. Enqueue after `runAgent` alone is insufficient;
+  both paths must also require successful completion and a matching persisted
+  Booking interaction derived from the archived Trafft event.
+- Scope/safety: local source, tests, Booking prompt/procedure, capability and
+  registration source, and architecture/roadmap evidence. Deployment,
+  production config/data, natural or synthetic webhook delivery, Plutio/Trafft
+  request, Slack/customer message, credential rotation, push, and merge remain
+  excluded pending a separately recorded promotion authority.
+
 ### NC-20260816-012 — Prove Booking reschedule identity and the real Plutio marker
 
 - Date: 2026-08-16T20:55Z

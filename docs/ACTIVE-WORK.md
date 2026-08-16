@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-013` | Cut canceled/rescheduled Booking activity over to the durable host Plutio boundary and remove raw Plutio access from the Booking container | Codex | `codex/nc-20260816-013-booking-plutio-cutover` @ `f10c572` | `in_progress` | C5 | Local source, tests, group procedure/prompt, capability manifest, registration source, and authoritative docs. Enqueue must require archived Trafft identity, successful agent completion, and a matching persisted Booking interaction on both initial and reaper paths. Deployment, production config/data, natural/synthetic webhook delivery, Plutio write, Slack/customer message, credential rotation, push, and merge are excluded until a separately recorded promotion authority. | Implement the fail-closed initial/replay enqueue path, remove Booking's Plutio procedure/credential/mount declarations, run exact-runtime focused and broad gates, and prepare an immutable reviewable release without activating it. | 2026-08-16T21:29Z |
 | `NC-20260816-012` | Repair shared Trafft reschedule identity and empirically prove the dark Booking host adapter's remote Plutio replay marker before any cutover | Codex | `codex/nc-20260816-012-booking-plutio-marker` @ deployed `13ca192` | `complete` | C5 | Shared reschedule identity and the visible digest marker are live. The retained synthetic note contains the original negative entry plus the authorized correction, exactly one visible marker, and immediate replay returned `already_recorded` without a second corrective write. Natural ingress/outbox, Booking prompt/manifest/mount, credential removal/rotation, Trafft, production DB, customer/Slack, push, and merge remained excluded. | None; this prerequisite milestone is complete. | 2026-08-16T21:24Z |
 | `NC-20260816-011` | Build and deploy the dark host-owned Booking-to-Plutio lifecycle adapter without invoking Plutio or changing Booking's current capability | Codex | `codex/nc-20260816-011-booking-plutio-host` @ deployed `63ed4aa` | `complete` | C5 | Exact release `63ed4aa` contains the typed archived-event parser, opaque durable outbox path, host-derived dispatch, action-safety enforcement, replay marker/receipt, and Booking-only stale reclaim. The installed injected canary proves first pass, replay, and booked-event denial with zero DB/child/network calls; live email/task/Plutio aggregates are unchanged and Booking-specific outbox rows remain zero. Natural ingress, the Booking prompt/manifest, and container Plutio access are unchanged. | None for this dark milestone. Next separately fix/canary shared reschedule identity, prove remote marker persistence on an authorized business-path canary, wire ingress, then remove Booking's Plutio credential/mount only if those gates pass. | 2026-08-16T20:49Z |
 | `NC-20260816-010` | Remove raw Trafft credentials from an enforced Booking container while preserving the separately identified legacy Plutio path | Codex | `codex/nc-20260816-010-booking-credential-boundary` @ deployed `ba5fe74` | `complete` | C5 | Exact release `ba5fe74` projects declared credential families and selectively enforces Campanero plus Booking. The installed no-network verifier proved all three configured Trafft names absent from Booking and the required DB/Plutio names present. The discovered non-booked-event Plutio path remains explicitly declared until a host-owned replacement is proven. No external or business-row write occurred. | None for this milestone. Next replace Booking's non-booked Plutio path with a host-owned adapter, then separately gate Plutio credential removal; destination-scoped egress remains a later control. | 2026-08-16T20:06Z |
@@ -87,6 +88,37 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-013
+
+- Trigger/base: after the owner instructed Codex to continue the Company OS
+  roadmap and explicitly authorized NC-012's one corrective canary entry, that
+  prerequisite passed and was sealed at `f10c572`. NC-013 uses a fresh isolated
+  worktree and branch from that exact checkpoint; production remains exact
+  release `13ca192` at task start.
+- Overlap: no active task owns Booking webhook completion, the Booking lifecycle
+  adapter, Booking prompt/procedure/manifest, or Booking registration mounts.
+  Active Stripe/Chaos, email, CNPC, Procurement, grader, and other agent work is
+  excluded.
+- Discovery: the current receiver and inbox reaper both mark an agent-dispatched
+  webhook handled even when `runAgent` returns `status='error'`. A naive
+  enqueue-after-return would therefore create a Plutio action without proof that
+  Booking persisted its database row. The cutover must reject errored runs and
+  require the archived appointment's matching Booking interaction before enqueue
+  on both paths.
+- Scope/authority: local implementation, negative/replay tests, Booking behavior
+  documentation, capability/registration source, and continuity evidence only.
+  No production deployment/config/data change, webhook delivery, external
+  Plutio or Trafft request, Slack/customer message, credential rotation, push,
+  or merge is authorized by this claim.
+- Acceptance: only an archived `trafft` `canceled`/`rescheduled` event whose
+  agent run succeeded and whose matching Booking interaction is persisted can
+  enqueue one opaque `booking_activity:*` outbox row; receiver and reaper share
+  the same rule; duplicate enqueue stays no-op; error/missing archive/missing
+  interaction/booked events fail closed; and the Booking container receives no
+  Plutio credentials, Plutio mount, toolbox-lib mount, or direct-Plutio
+  procedure. Deployment and natural receipt/replay proof remain a separately
+  recorded promotion boundary.
 
 ### NC-20260816-012
 
