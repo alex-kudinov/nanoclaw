@@ -359,7 +359,7 @@ dependencies, not active runtime channels in this snapshot.
 | Area                   | Main files                                                                     | Responsibility                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
-| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | live host-only stage/disposition/receipt projection; observer is bounded, default-off, fail-open, and never email authority; exact migration/release/shadow evidence lives under `NC-20260816-001` |
+| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-work-report.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | live host-only stage/disposition/receipt projection; observer is bounded, default-off, fail-open, and never email authority; NC-014 adds a local bounded SELECT-only exception report that is not daemon-wired or deployed |
 | External-write control | `src/action-safety.ts`, `src/action-safety-drill-exec.ts`, `docs/ACTION-SAFETY-CONTROL.md` | deployed/default-off common action envelope and dynamic global/per-system brakes; exact release `47019c9` live-verifies Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, Hive/Firestore, and Things; in-flight interruption, standalone scripts, remaining integrations, ceilings, and demotion remain open |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
@@ -486,6 +486,11 @@ The modern namespace is `business_v2`, including concepts such as:
   outcomes plus one named source gap, with duplicate-only replay. SQLite
   remains action authority; running state must still be taken from
   active-work/changelog evidence, not repository presence.
+- `NC-20260816-014` adds a local read-only reconciliation/exception report over
+  those privacy-minimized tables. It detects state/event contradictions,
+  receipt gaps, duplicate facts, named source gaps, blocked/failed/waiting,
+  stale/overdue, and outcome-missing work through one bounded SELECT. It is not
+  daemon-wired or deployed and cannot affect the approved-email path.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.

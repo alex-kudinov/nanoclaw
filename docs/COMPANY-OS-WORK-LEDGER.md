@@ -1,8 +1,10 @@
 # Company OS work ledger — Mailman/Sales pilot
 
 Status: host-only schema and non-authoritative shadow observer live-verified;
-workflow authority and promotion remain separate
-Tasks: foundation `NC-20260815-010`; activation `NC-20260816-001`
+local read-only exception brief implemented; workflow authority, deployment,
+and promotion remain separate
+Tasks: foundation `NC-20260815-010`; activation `NC-20260816-001`; read-only
+brief `NC-20260816-014`
 Decision: the shared ledger is host-owned PostgreSQL business state, while the
 existing SQLite approved-email tables remain the action-execution authority
 
@@ -22,7 +24,8 @@ Mailman/inbound fact
   → original Slack-thread/outcome validation
 ```
 
-The activation slice adds a bounded observer, but it still does not:
+The activation slice adds a bounded observer, and NC-014 adds a separate local
+read-only reconciliation report, but neither does any of the following:
 
 - make the ledger authoritative for any workflow decision;
 - change either group prompt or tool capability;
@@ -238,7 +241,48 @@ original-thread closure without manual repair. That is outcome evidence for the
 existing email path; it does not promote this ledger into that path. A
 separately accepted authority/promotion gate remains mandatory.
 
-## 9. Rollback
+## 9. Read-only reconciliation and exception brief
+
+`NC-20260816-014` adds `src/company-work-report.ts` and the compiled
+`company-work-report-cli` as an operator-facing, read-only view over the
+privacy-minimized ledger. It is not imported by the daemon or shadow observer.
+Its database boundary is one static, bounded `SELECT`; it has no transition,
+approval, retry, channel, or email dependency.
+
+After a local or immutable release build, run:
+
+```bash
+npm run company-work:exceptions
+npm run company-work:exceptions -- --json --limit 100 --stale-after-hours 24
+```
+
+The report separates completed, cancelled, and healthy-open work from items
+that require observation. One item may carry multiple independently counted
+reasons:
+
+- contradictory current/event state or a broken event-version chain;
+- duplicate milestone or receipt facts;
+- a required operator/action/Gmail/outcome/cancellation receipt is absent;
+- a named `source_gap:*` failure;
+- blocked or failed disposition;
+- elapsed deadline or transition-age threshold;
+- waiting for operator approval;
+- exact Gmail acknowledgment without original-thread outcome validation.
+
+Output contains only internal work/Party/pipeline IDs, opaque source identity,
+stage/disposition, timestamps/age, named codes, and aggregate counts. It never
+selects recipient, subject, body, approval text, evidence bytes, or credentials.
+A database/query failure returns only `ledger_query_failed` and cannot affect
+the shadow projector or email path.
+
+This is a local, non-authoritative R2 evidence surface. It has not been
+deployed or run against production under NC-014, does not satisfy R4's operator
+resolution/work-panel gate, and cannot promote a ledger fact into workflow
+authority. A later deployment may prove the exact compiled report read-only;
+any Slack brief, schedule, acknowledgment, resolution action, or workflow
+dependency requires its own task and authority.
+
+## 10. Rollback
 
 Before migration: revert the branch; there is no data or service recovery.
 

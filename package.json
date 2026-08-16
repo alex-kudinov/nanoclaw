@@ -24,6 +24,7 @@
     "test:email-critical": "node scripts/run-email-critical-tests.mjs",
     "test:email-replay": "vitest run src/email-delivery-incident-replay.test.ts --pool=forks --no-file-parallelism --maxWorkers=1",
     "email:transport-canary": "node dist/email-transport-canary.js",
+    "company-work:exceptions": "node dist/company-work-report-cli.js",
     "test:watch": "vitest",
     "release:build": "node scripts/build-release.mjs",
     "release:verify": "node scripts/verify-release.mjs",

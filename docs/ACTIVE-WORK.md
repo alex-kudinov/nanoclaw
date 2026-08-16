@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-014` | Turn the Mailman/Sales shadow ledger into a read-only reconciliation and compact exception brief without changing email behavior | Codex | `codex/nc-20260816-014-work-ledger-exceptions` @ `ec18d6f` from deployed `02ce48f` | `in_progress` | C2 | Existing host-only Company OS ledger projection, metadata-only exception classification/reporting, focused tests, and ledger/project/roadmap continuity. Excludes Sales scheduled-task continuation files, agent prompts, email approval/draft/send/retry/closure behavior, production writes, deployment, Slack/Gmail posts, push, and merge. | Map the current shadow/store contract, implement a deterministic fail-open read-only report for waiting, blocked, failed, stale, source-gap, and outcome-missing work, then run exact Node 22 focused and continuity gates. | 2026-08-16T23:16Z |
 | `NC-20260816-013` | Cut canceled/rescheduled Booking activity over to the durable host Plutio boundary and remove raw Plutio access from the Booking container | Codex | `codex/nc-20260816-013-booking-plutio-cutover` @ deployed `02ce48f` | `deployed_unverified` | C5 | Booking is constrained to `business_db`; direct Plutio/toolbox mounts and credentials are absent. The authorized canary created inbox `4469`, party `11333`, interaction `3034`, two Booking notices, party-sync row `1311`, and activity row `1312`, exposing and containing scheduled-task exit, receipt-cast, and mutable-checkout launcher defects. Exact release `02ce48f` is healthy with all three repaired. The real scheduled launcher replayed only row `1312` to terminal `already_recorded` with durable receipts and no second activity; the authorized duplicate webhook returned 200 with stable counts. | Observe the next fresh natural canceled/rescheduled event and require one agent turn, one Booking notice, automatic durable enqueue/receipt, and no operator recovery. No synthetic distinct webhook, email, or Trafft mutation is authorized. | 2026-08-16T22:55Z |
 | `NC-20260816-012` | Repair shared Trafft reschedule identity and empirically prove the dark Booking host adapter's remote Plutio replay marker before any cutover | Codex | `codex/nc-20260816-012-booking-plutio-marker` @ deployed `13ca192` | `complete` | C5 | Shared reschedule identity and the visible digest marker are live. The retained synthetic note contains the original negative entry plus the authorized correction, exactly one visible marker, and immediate replay returned `already_recorded` without a second corrective write. Natural ingress/outbox, Booking prompt/manifest/mount, credential removal/rotation, Trafft, production DB, customer/Slack, push, and merge remained excluded. | None; this prerequisite milestone is complete. | 2026-08-16T21:24Z |
 | `NC-20260816-011` | Build and deploy the dark host-owned Booking-to-Plutio lifecycle adapter without invoking Plutio or changing Booking's current capability | Codex | `codex/nc-20260816-011-booking-plutio-host` @ deployed `63ed4aa` | `complete` | C5 | Exact release `63ed4aa` contains the typed archived-event parser, opaque durable outbox path, host-derived dispatch, action-safety enforcement, replay marker/receipt, and Booking-only stale reclaim. The installed injected canary proves first pass, replay, and booked-event denial with zero DB/child/network calls; live email/task/Plutio aggregates are unchanged and Booking-specific outbox rows remain zero. Natural ingress, the Booking prompt/manifest, and container Plutio access are unchanged. | None for this dark milestone. Next separately fix/canary shared reschedule identity, prove remote marker persistence on an authorized business-path canary, wire ingress, then remove Booking's Plutio credential/mount only if those gates pass. | 2026-08-16T20:49Z |
@@ -88,6 +89,45 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-014
+
+- Trigger/base: the owner approved the next Company OS milestone after the
+  bounded Mailman/Sales ledger foundation and shadow projection were
+  live-verified. This task uses an isolated worktree from documentation head
+  `ec18d6f`, whose source tree matches exact active release `02ce48f`.
+- Outcome: expose a deterministic, privacy-minimized reconciliation summary
+  and compact exception brief from existing Company OS work-item facts so an
+  operator can see what needs attention without reading raw logs or allowing
+  the ledger to control email.
+- Scope/authority: C2 local reversible implementation. The report may read the
+  host-only PostgreSQL ledger and derive named exception classes, ages, and
+  aggregate counts. It must not mutate the ledger, SQLite email authority,
+  Sales/Mailman state, Slack, Gmail, or any external system. Production
+  deployment and any workflow dependency require a later explicit gate.
+- Overlap: `NC-20260811-002` owns Sales scheduled follow-up continuation and
+  exact approval-card callbacks. This task will not change its source, prompt,
+  workflow, task state, or completion contract. Existing email replay and
+  approved-send boundaries remain authoritative and unchanged.
+- Acceptance: exact stage/disposition/receipt facts classify waiting approval,
+  blocked, failed, stale, source-gap, and outcome-missing work; completed and
+  healthy open work remain distinguishable; output contains only opaque IDs,
+  named codes, timestamps/ages, and counts; invalid or unavailable ledger data
+  fails open and cannot affect email; focused exact-runtime and continuity
+  gates pass.
+- Implementation: `src/company-work-report.ts` performs one static bounded
+  SELECT over the host-only items/events/receipts and reconciles event versions,
+  current-versus-latest state, milestone and receipt presence, duplicate facts,
+  deadlines, age, disposition, source gaps, and missing outcome closure. The
+  separate compiled CLI emits compact text or JSON, accepts only read bounds,
+  and returns a content-free unavailable result on database failure. It is not
+  imported by `src/index.ts` or `src/company-work-shadow.ts`.
+- Verification so far: exact Node 22.23.2 passes 28/28 focused
+  ledger/shadow/report tests and root typecheck. Tests prove the SQL contains no
+  mutation verb, clamp the row limit, keep independent multi-reason counts,
+  reject action-like CLI arguments, and redact database failure details.
+- Rollback: revert the local report/source/docs changes. No schema, production,
+  message, email, or other external recovery applies at this milestone.
 
 ### NC-20260816-013
 

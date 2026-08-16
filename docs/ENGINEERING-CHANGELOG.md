@@ -8,6 +8,39 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-014 — Add a read-only Company OS exception brief
+
+- Date: 2026-08-16T23:27Z
+- Owner/client: Codex
+- State: ready_for_review; local milestone only
+- Commit/PR: pending on
+  `codex/nc-20260816-014-work-ledger-exceptions`; no PR
+- Change class: C2 — local, reversible, read-only operator tooling
+- Intended outcome: turn the live-verified Mailman/Sales shadow ledger into a
+  privacy-minimized reconciliation summary and compact exception brief without
+  allowing the ledger to control email.
+- Implementation: one static bounded PostgreSQL `SELECT` reconciles work-item,
+  event-version, milestone, receipt, deadline, source-gap, disposition, and
+  outcome-closure facts. The compiled CLI exposes text or JSON output with
+  read bounds only and returns a content-free `ledger_query_failed` result when
+  the read boundary is unavailable. It is not imported by the daemon or shadow
+  observer.
+- Safety: output is limited to opaque work/source/Party/pipeline identities,
+  state, timestamps/ages, codes, and aggregate counts. The change does not
+  alter schema, agent prompts, SQLite email authority, approval/send/retry/
+  closure behavior, schedules, Slack, Gmail, or any external system. It was
+  not deployed and was not run against production under this task.
+- Verification: exact Node 22.23.2 passes 28/28 focused ledger/shadow/report
+  tests, typecheck, build, source formatting, 635/635 email-critical root tests,
+  and the independent runner build plus 43/43 tests. The full root suite passes
+  2,484/2,485 after the 48 permission-sensitive tests pass in an unrestricted
+  rerun; the sole failure is the unchanged unrelated CNPC wrapper-string
+  assertion expecting literal `folder: 'cnpc'`. Schema sanitization,
+  capability-matrix verification, and continuity checks pass.
+- Rollback: revert the report, CLI, test, package script, and documentation
+  changes. No database, deployment, message, email, or external-state recovery
+  applies.
+
 ### NC-20260816-013 — Cut Booking lifecycle Plutio writes over to the host
 
 - Date: 2026-08-16T22:55Z
