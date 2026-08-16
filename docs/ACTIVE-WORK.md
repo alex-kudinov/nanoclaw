@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-008` | Extend the common external-write brake to Hive/Firestore without consuming retry budget or performing a real write | Codex | `codex/nc-20260816-008-hive-safety` @ `919fa59` | `in_progress` | C5 | Inventory the remaining outbound surfaces; add `hive_firestore` to the common controller; guard the final Firestore merge before SDK initialization; make the host reaper hold rather than increment/dead-letter while safety denies; extend the release-bundled no-network denial drill; validate, package, deploy, and run one auto-restored production drill. Excludes any Gmail/Slack/Firestore write, classification/schema change, Chaos overlap, other integration coverage, envelope enforcement, push, and merge. | Reconcile the exact Hive inline/reaper mechanics, add focused denial/hold/no-network tests, then run the full release gates before any separately evidenced activation. | 2026-08-16T18:52Z |
 | `NC-20260816-007` | Deploy and live-drill the common external-write safety brake without performing an external write | Codex | `codex/nc-20260816-007-action-safety-drill` @ deployed `ab2ace1` | `complete` | C5 | Exact release `ab2ace1` live-verifies the dry-run-first, hostname-confirmed, backup-producing global safe-mode transaction across actual Gmail send/reply, Slack, Courses SMTP projection, Plutio, and Stripe boundaries. All six calls denied before invocation; config restored byte-for-byte; queues, jobs/tasks, email evidence, and Plutio/Chaos outboxes remained unchanged. Excludes envelope enforcement, real external writes, other-system coverage, ceilings/demotion, push, and merge. | None for this milestone. Extend coverage to standalone and remaining integration surfaces, then add ceilings/demotion as separately gated Company OS slices. | 2026-08-16T18:19Z |
 | `NC-20260816-006` | Deploy the capability-manifest release dark, then activate and prove one low-risk Campanero canary without exposing any other agent | Codex | `codex/nc-20260816-006-campanero-canary` @ deployed `2987070` | `complete` | C5 | Combined immutable release preserves live Stripe lineage `a67e081`; global manifest enforcement remains off; only Campanero is selected and live-verified with no Claude tools, only the `jobs` MCP tool, read-only declared mounts, and a read-only 22-job inventory canary. Bash and undeclared MCP surfaces were absent. Zero active/waiting work, outgoing Slack queue, actionable email sends, or job/task mutations appeared. Excludes customer email, job mutation, production database writes, global/all-agent activation, prompt changes, publication/mainline merge, and push. | None for this milestone. Any second agent, global activation, egress restriction, credential removal, or action-safety activation requires a separately tracked gate. | 2026-08-16T17:31Z |
 | `NC-20260816-005` | Make every authoritative Stripe purchase reach Chaos with a canonical product attribution, preserve one-row Checkout accounting, and repair the four unmapped lifecycle receipts | Codex + Claude Code owner/reviewer | `codex/nc-20260816-005-stripe-attribution` @ implementation `9f8f6a1` from exact live `55c97d5` | `ready_for_deploy` | C5 | Exact-live-lineage NanoClaw Stripe processor and Chaos lifecycle outbox; focused tests; historical correction of four already-received Chaos lifecycle rows only after reviewed mapping proof. Excludes Stripe charges/refunds, fulfillment, Encharge automation, customer messaging, and unrelated NanoClaw changes. | Build and independently verify the clean immutable release, preflight and activate it, then correct only the four proven historical rows with pre/post aggregate proof. The full suite baseline remains 2381/2382 because of one pre-existing unrelated CNPC prompt-contract failure. | 2026-08-16T17:14Z |
@@ -82,6 +83,35 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-008
+
+- Trigger: after `NC-20260816-007` live-verified the first five-system brake,
+  the owner instructed Codex to proceed with the next Company OS milestone.
+- Base/live lineage: isolated worktree
+  `/private/tmp/nanoclaw-nc-20260816-008` branches from clean evidence commit
+  `919fa5900f426dc60e4e5e9fb50e02b142f5e842`; its deployed source ancestor is
+  exact production release `ab2ace1a658111131a2519e1cd7257fe8a207ffb`.
+  Production action controls are valid and restored default-off; Campanero is
+  the only selectively enforced capability group.
+- Overlap decision: the active Stripe/Chaos lineage owns
+  `src/chaos-lifecycle-outbox.ts`, so this task will not modify or deploy Chaos
+  delivery code. Hive/Firestore has no active source owner in the work register
+  and exposes one host-owned merge boundary plus a durable retry path.
+- Scope/authority: C5 safety-boundary change. Authority covers local
+  source/tests/docs, immutable release/deployment, one bounded auto-restored
+  global-safe-mode window, synthetic Hive denial canaries, and aggregate-only
+  health/classification evidence. It excludes a real Firestore mutation,
+  Gmail/Slack communication, schema or taxonomy changes, consuming a Hive
+  retry/dead-letter attempt during safe mode, other integration changes,
+  envelope enforcement, push, and merge.
+- Acceptance: every Hive conversation mutation denies before Firebase SDK or
+  credential initialization under global or Hive-only safe mode; normal
+  default-off behavior remains compatible; the inline classifier leaves the
+  row retryable; the reaper records a held result without updating attempts or
+  sending dead-letter alerts; the installed drill adds a seventh no-network
+  denial; exact environment restoration and unchanged aggregate evidence are
+  live-verified before completion.
 
 ### NC-20260816-007
 
