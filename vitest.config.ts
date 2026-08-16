@@ -7,6 +7,7 @@ export default defineConfig({
       'setup/**/*.test.ts',
       'skills-engine/**/*.test.ts',
       'scripts/**/*.test.ts',
+      'tools/**/*.test.ts',
     ],
   },
 });

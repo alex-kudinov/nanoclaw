@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T17:03Z
 - Owner/client: Codex
-- State: validating locally; not yet deployed or activated
+- State: validating the combined live-lineage candidate; not yet activated
 - Commit/PR: claim commit `f620b1b328597264871dfe25a6fa880fe5462eca`
-  on `codex/nc-20260816-006-campanero-canary`; implementation commit pending;
-  no PR
+  and implementation commit `4db813c52aa4714d1e2ecff6cd6c87adf4289f03`
+  on `codex/nc-20260816-006-campanero-canary`; local integration with the
+  concurrently deployed `a67e081` Stripe release is pending commit; no PR
 - Change class: C5 — production release and one-agent capability-boundary
   activation
 - Intended outcome: install the default-off capability-manifest release, then
@@ -36,14 +37,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Verification so far: exact Node 22.23.2 passes 15/15 focused selective-config
   tests, the broader 172/172 capability/container/IPC/scheduler/reaper set,
   634/634 email-critical tests, root and independent-runner builds, and all
-  40/40 runner tests. The unrestricted root suite passes 2,395/2,396; the sole
-  failure is the unchanged baseline `src/cnpc-prompt-contract.test.ts`
+  40/40 runner tests. The combined Company OS/action/Stripe integration passes
+  74/74 focused tests and the unrestricted root suite passes 2,418/2,419; the
+  sole failure is the unchanged baseline `src/cnpc-prompt-contract.test.ts`
   source-wrapper assertion. `git diff --check` passes.
-- Deployment/rollback: pending exact immutable release build and repeated
-  zero-work production drain check. Activate the release with controls off;
+- Concurrent deployment handling: production advanced from `55c97d5` to
+  verified Stripe release `a67e081` during the first candidate's image build.
+  No container launched. The image was immediately rebuilt from `a67e081`, and
+  health then showed that release with zero active/waiting work while all 18
+  runner snapshots retained its exact source hash. The first Campanero archive
+  was verified and extracted but never activated. This branch now integrates
+  `a67e081`; the combined tree must pass a fresh immutable build before use.
+- Deployment/rollback: pending combined release build and repeated zero-work
+  production drain check. Activate the combined release with controls off;
   then back up and set only the staged group key. Restore that backup and
   restart for config rollback, or restore the activator's exact plist for
-  release rollback. No production byte or configuration has changed yet.
+  release rollback to `a67e081`.
 
 ### NC-20260816-004 — Add dark per-agent capability manifests and stale-container revocation
 
@@ -133,6 +142,121 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   2,332/2,378; all 45 permission-sensitive webhook/migration tests pass
   unrestricted, leaving only the unchanged base CNPC source-wrapper assertion.
   `git diff --check` passes.
+
+### NC-20260816-005 — Carry the canonical website product slug into Chaos and stop degrading Checkout product identity
+
+- Date: 2026-08-16T16:45Z
+- Owner/client: Codex + Claude Code owner/reviewer
+- State: ready_for_review
+- Commit/PR: local implementation on
+  `codex/nc-20260816-005-stripe-attribution` from exact live lineage
+  `55c97d5`; uncommitted
+- Change class: C5 — the live payment pipeline and the Chaos lifecycle
+  attribution feeding it
+- Affected systems: `tools/contador/process-payment.cjs`,
+  `tools/contador/process-payment.test.ts` (new),
+  `src/chaos-lifecycle-outbox.ts`, `src/chaos-lifecycle-outbox.test.ts`
+- Outcome: Tandem's checkout writes the canonical website product slug into
+  the underlying PaymentIntent's `metadata.product` key
+  (`class-stripe-checkout.php`). `process-payment.cjs` now reads and validates
+  that metadata for both the Checkout and PaymentIntent event shapes
+  (kebab-case shape check, fail-closed to `null` on anything else — including
+  HTML, SQL/shell metacharacters, and literal Stripe product-name junk) and
+  carries it as `canonical_product_slug` in the existing `__CHAOS_LIFECYCLE__`
+  sentinel. `chaos-lifecycle-outbox.ts` re-validates on both write and read,
+  persists it into the outbox's PII-free `properties` jsonb (no new column;
+  migration 117 already provides it), and prefers it at Chaos send time,
+  falling back to the existing name-derived `safeProductSlug` for
+  Heartbeat/off-site payments that carry no Tandem metadata. Ported, from the
+  reviewed but uncommitted NC-20260815-004 evidence, only the
+  product-name-preservation guard (Payment Log column-E read-back before
+  overwrite; a Postgres `ON CONFLICT` `CASE` guard) and the removal of the
+  shell from the Postgres write (`execFileSync` + `psql -v NAME=value` +
+  `:'var'` + `-f -`, replacing the `execSync` shell command that let the
+  SHELL — not psql — expand `$999`/`$(...)`/backticks before psql ever saw
+  the value). Did not port `NOT_A_STUDENT` / `resolveRosterTargets` — that is
+  unrelated roster-policy expansion, out of this task's scope. One-row
+  Checkout/PaymentIntent convergence on a shared `pi_*` id was already present
+  in the live lineage and is unchanged. `src/stripe-payment-host.ts` and its
+  test are unchanged: `canonical_product_slug` is an additive optional field
+  that flows through the existing generic JSON parse with no contract change.
+- Verification: 48 focused tests pass under pinned Node 22.23.2 (11
+  `chaos-lifecycle-outbox.test.ts`, 20 `stripe-payment-host.test.ts`, 17 new
+  `process-payment.test.ts`, covering valid/invalid canonical slugs, Chaos
+  send-time precedence and fail-closed fallback, Heartbeat fallback,
+  checkout-then-intent and intent-then-checkout product preservation, and
+  literal `$`/quotes/command-substitution-shaped product names surviving
+  `buildPsqlVarArgs` unmodified as discrete argv elements). `tsc --noEmit`
+  clean. `tools/contador/process-payment.test.ts` does not run under the
+  tracked `npm test` yet: this worktree's `vitest.config.ts` `include` glob
+  has no `tools/**` entry (present in the live NanoClaw checkout's config but
+  not in this immutable-lineage worktree, and `vitest.config.ts` is outside
+  this task's allowed edit paths) — verified locally with a temporary include
+  addition, reverted before finishing; see the NC-20260816-005 task-detail
+  note in `docs/ACTIVE-WORK.md`. `npm run docs:continuity-check` passes.
+- Deployment/migration: none. No build, commit, migration, or deploy
+  occurred; no Stripe, Postgres, Sheets, or Chaos write occurred (all
+  verification was static/typecheck/unit-test only).
+- Rollback/recovery: no state changed; discard the worktree diff to revert.
+- Documentation: this entry and the `docs/ACTIVE-WORK.md` NC-20260816-005 row
+  and task-detail section; response artifact at
+  `docs/reports/NC-20260816-005-CLAUDE-RESPONSE-R1.md`.
+- Follow-ups: Codex review/commit/build/deploy per the original task's
+  Authority section; after deploy, the four already-proven historical
+  `unmapped-stripe-product` rows remain to be corrected per the original
+  task's historical-repair scope. (The `vitest.config.ts` test-glob follow-up
+  below this line at R1 time is resolved — see the 2026-08-16T17:05Z addendum.)
+
+**Addendum (2026-08-16T17:05Z — R2 review-response round, Claude Code):**
+Codex R2 review (`docs/reports/NC-20260816-005-CODEX-REQUEST-R2.md`) returned
+`CHANGES_REQUIRED` on two integration gaps in the R1 diff, both fixed here:
+1. `enqueueStripeLifecycleFact`'s `ON CONFLICT` update never touched
+   `properties`, so a first enqueue without a valid slug — or the earlier
+   arrival of the Checkout/PaymentIntent twin, which collide on the same
+   `(source_system, source_event_id)` — permanently froze the row without a
+   canonical slug even after a later call carried a valid one. Fixed with an
+   upgrade-only `properties = CASE WHEN EXCLUDED.properties ? 'canonical_product_slug'
+   THEN jsonb_set(...) ELSE <unchanged> END`: a call whose (already
+   JS-validated) `properties` carries the slug key upgrades the stored value;
+   a call without it leaves every existing property, including a
+   previously-stored valid slug, untouched — never a blind
+   `properties = EXCLUDED.properties` overwrite. A new
+   `chaos-lifecycle-outbox.test.ts` case asserts both the upgrade and the
+   non-erasure path against the actual SQL text and parameter shape across two
+   sequential calls on the same canonical id.
+2. Added `tools/**/*.test.ts` to `vitest.config.ts`'s `include` (R2 explicitly
+   allowed this edit), so `tools/contador/process-payment.test.ts` now runs
+   under the tracked `npm test` with no local override — the R1 follow-up
+   item above is resolved, not deferred.
+   Verification: 49 focused tests pass (12 outbox + 20 host + 17
+   process-payment, up from 48/11 at R1) via the exact tracked command
+   `npm test -- --run src/chaos-lifecycle-outbox.test.ts
+   src/stripe-payment-host.test.ts tools/contador/process-payment.test.ts`
+   under pinned Node 22.23.2; `tsc --noEmit` clean; `npm run
+   docs:continuity-check` passes; `git diff --check` clean. No commit, push,
+   deploy, or external write occurred. Response artifact:
+   `docs/reports/NC-20260816-005-CLAUDE-RESPONSE-R2.md`.
+
+**Addendum (2026-08-16T17:10Z — independent Codex verification):** Codex
+accepted the R2 implementation after reviewing the exact source and SQL
+contract, including upgrade-only/non-erasing jsonb behavior. The 49 focused
+tests, `tsc --noEmit`, documentation continuity, and `git diff --check` pass
+under Node 22.23.2. The unrestricted repository suite passes 2381/2382 tests;
+the only failure is the pre-existing, unrelated CNPC prompt-contract assertion
+against the already-refactored `scripts/cnpc-register.ts` wrapper. None of this
+task's changed files intersects that boundary. Claude session usage was also
+audited: 169 model calls, 88,715 output tokens, and a 326,943-token maximum
+context, exceeding every bounded-review warning threshold; future reviews of
+this size must use narrower rounds or a native handoff instead of one prolonged
+session. No production or external write occurred during verification.
+
+**Addendum (2026-08-16T17:14Z — commit boundary):** The reviewed implementation
+and evidence were committed as `9f8f6a1` on
+`codex/nc-20260816-005-stripe-attribution`, directly descended from the exact
+live `55c97d5` lineage. The commit hook left one formatting-only test delta
+outside the index; it is incorporated with this release-candidate documentation
+update before packaging so the immutable builder receives a clean tree. State
+advanced to `ready_for_deploy`; no production state changed at this boundary.
 
 ### NC-20260816-001 — Activate the bounded Company OS email shadow
 

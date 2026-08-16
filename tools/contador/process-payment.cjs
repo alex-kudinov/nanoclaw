@@ -21,16 +21,18 @@
 const https = require('https');
 const crypto = require('crypto');
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const STRIPE_ID = process.argv[2];
-if (!STRIPE_ID) {
+// Only enforced when run as a CLI. Importing the module (to test its pure
+// slug/product-preservation logic) must not exit the importing process.
+if (!STRIPE_ID && require.main === module) {
   console.error('Usage: node process-payment.js <cs_... or pi_...>');
   process.exit(1);
 }
-const ID_TYPE = STRIPE_ID.startsWith('cs_') ? 'checkout' : 'payment_intent';
+const ID_TYPE = (STRIPE_ID || '').startsWith('cs_') ? 'checkout' : 'payment_intent';
 
 const ACCOUNT_ARG = (() => {
   const i = process.argv.indexOf('--account');
@@ -54,7 +56,7 @@ const STRIPE_ACCOUNTS = [
 const STRIPE_KEYS = ACCOUNT_ARG
   ? STRIPE_ACCOUNTS.filter((account) => account.label === ACCOUNT_ARG)
   : STRIPE_ACCOUNTS;
-if (STRIPE_KEYS.length === 0) {
+if (STRIPE_KEYS.length === 0 && require.main === module) {
   console.error(
     ACCOUNT_ARG
       ? `ERROR: Stripe key for account ${ACCOUNT_ARG} is not configured`
@@ -62,8 +64,8 @@ if (STRIPE_KEYS.length === 0) {
   );
   process.exit(1);
 }
-let STRIPE_KEY = STRIPE_KEYS[0].key;
-let STRIPE_ACCOUNT = STRIPE_KEYS[0].label;
+let STRIPE_KEY = STRIPE_KEYS[0]?.key;
+let STRIPE_ACCOUNT = STRIPE_KEYS[0]?.label;
 
 const SHEETS_PAYMENTS_ID = process.env.SHEETS_PAYMENTS_ID;
 const SHEETS_ROSTER_ID = process.env.SHEETS_ROSTER_ID;
@@ -304,8 +306,56 @@ function colIndexToLetter(index) {
   return result;
 }
 
-function sqlEscape(str) {
-  return (str || '').replace(/'/g, "''");
+// (sqlEscape removed: the Postgres write now passes values as psql -v
+// variables referenced by :'name', which psql quotes itself. A hand-rolled
+// escaper left lying around invites the next writer to build a query by
+// string concatenation again — see the Postgres insert section below.)
+
+// Tandem's checkout writes the canonical website product slug into the
+// underlying PaymentIntent's metadata.product key (class-stripe-checkout.php),
+// using the same kebab-case shape as data/checkout/products.json keys (e.g.
+// "mcq-program-a-foundations"). This is the only trusted source for canonical
+// product identity — validate the shape and fail closed (null, never the raw
+// text) so a malformed or absent value can never reach Chaos as if it were a
+// real slug.
+const CANONICAL_PRODUCT_SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+function validateCanonicalProductSlug(value) {
+  const slug = String(value || '').trim();
+  if (!slug || slug.length > 191 || !CANONICAL_PRODUCT_SLUG_RE.test(slug)) {
+    return null;
+  }
+  return slug;
+}
+
+/**
+ * Build psql `-v NAME=value` argv pairs. Each value becomes ONE argv element
+ * handed to execFileSync — never a shell, never concatenated into a command
+ * or SQL string — so a product name containing `$`, backticks, single
+ * quotes, or `$(...)` reaches psql as inert text with no interpretation step
+ * in between. psql's own `:'var'` substitution (see the Postgres insert
+ * below) is what turns the value into a safely quoted SQL string literal;
+ * this function performs no escaping of its own on purpose.
+ */
+function buildPsqlVarArgs(params) {
+  return Object.entries(params).flatMap(([k, v]) => ['-v', `${k}=${v ?? ''}`]);
+}
+
+/**
+ * Which product name survives when both halves of one purchase (Checkout's
+ * cs_ event and its PaymentIntent's pi_ event) write the same accounting row.
+ * The checkout event expands the line item and knows the real product name;
+ * the payment-intent half often carries only a generic description
+ * ("Unknown", "Individual Mentor Coaching"). Whichever arrives second must
+ * not degrade what the checkout event already recorded. Applied identically
+ * to the Payment Log sheet and mirrored by the Postgres CASE guard below, so
+ * a real Checkout and its PaymentIntent twin converge on one row with the
+ * richer name in both stores regardless of arrival order.
+ */
+function preferredProductName(incoming, existing, eventType) {
+  const keep = String(existing || '').trim();
+  if (!keep || keep.toLowerCase() === 'unknown') return incoming;
+  if (eventType === 'checkout.session.completed') return incoming;
+  return keep;
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -362,6 +412,7 @@ async function fetchPaymentData() {
   let productName, productId, customerEmail, customerName;
   let amountCents, currency, paymentStatus, eventType;
   let canonicalTransactionId = ID_TYPE === 'payment_intent' ? STRIPE_ID : '';
+  let canonicalProductSlug = null;
   let feeCents = 0;
   let refundedCents = 0;
   let lineItems = [];
@@ -390,6 +441,10 @@ async function fetchPaymentData() {
           : session.payment_intent.id || '';
       try {
         const pi = await stripeGet(`/v1/payment_intents/${canonicalTransactionId}`);
+        // Same underlying PaymentIntent the pi_ half of this purchase will
+        // also fetch, so both halves read the identical metadata.product —
+        // no drift/preservation logic is needed for the slug itself.
+        canonicalProductSlug = validateCanonicalProductSlug(pi.metadata?.product);
         if (pi.latest_charge) {
           const charge = await stripeGet(`/v1/charges/${pi.latest_charge}?expand[]=balance_transaction`);
           feeCents = charge.balance_transaction?.fee || 0;
@@ -404,6 +459,7 @@ async function fetchPaymentData() {
     const pi = await stripeGet(`/v1/payment_intents/${STRIPE_ID}`);
     productName = pi.description || 'Unknown';
     productId = '';
+    canonicalProductSlug = validateCanonicalProductSlug(pi.metadata?.product);
     // Subscription / installment payments carry a useless PI description
     // ("Subscription creation"); the real product is on the invoice line item.
     // Follow pi.invoice → invoice line → product so the Product Map lookup and
@@ -459,7 +515,7 @@ async function fetchPaymentData() {
     productName, productId, customerEmail, customerName,
     amountCents, currency, paymentStatus, eventType,
     feeCents, refundedCents, lineItems, stripeCreatedAt,
-    canonicalTransactionId,
+    canonicalTransactionId, canonicalProductSlug,
   };
 }
 
@@ -509,7 +565,7 @@ async function main() {
     productName, productId, customerEmail, customerName,
     amountCents, currency, paymentStatus, eventType,
     feeCents, refundedCents, lineItems, stripeCreatedAt,
-    canonicalTransactionId, stripeAccount,
+    canonicalTransactionId, stripeAccount, canonicalProductSlug,
   } = fetchResult;
   const accountingStripeId = canonicalTransactionId || STRIPE_ID;
 
@@ -559,8 +615,13 @@ async function main() {
       );
       if (existingRow >= 0) {
         const sheetRow = existingRow + 1;
+        // Read the row back before overwriting it: the payment-intent half of
+        // a Checkout purchase would otherwise replace the real product name
+        // (column E) with its own generic description.
+        const prior = await sheetsGet(SHEETS_PAYMENTS_ID, `Payment Log!E${sheetRow}`);
+        logRow[4] = preferredProductName(productName, prior.values?.[0]?.[0], eventType);
         await sheetsUpdate(SHEETS_PAYMENTS_ID, `Payment Log!A${sheetRow}:K${sheetRow}`, [logRow]);
-        results.sheets_log = 'OK (updated existing)';
+        results.sheets_log = `OK (updated existing${logRow[4] === productName ? '' : ', kept richer product name'})`;
       } else {
         const appendResult = await sheetsAppend(SHEETS_PAYMENTS_ID, 'Payment Log!A:K', [logRow]);
         results.sheets_log = 'OK';
@@ -759,15 +820,58 @@ async function main() {
   }
 
   // 3. PostgreSQL insert
+  //
+  // Values are passed as psql variables and referenced as :'name', never
+  // interpolated into a shell-built command string. The previous version ran
+  // one shell command with the values inline, so the SHELL expanded them
+  // before psql ever saw them: a product named "... ($999/mo x4)" was stored
+  // as "... (99/mo x4)" and "... ($500/mo)" as "... (00/mo)" — $9 and $5 read
+  // as positional shell parameters. The same interpolation could have
+  // EXECUTED a product name containing backticks or $(...). execFileSync
+  // removes the shell entirely — there is no metacharacter surface at all.
   try {
-    const duplicateDelete =
-      accountingStripeId !== STRIPE_ID
-        ? ` DELETE FROM payments WHERE stripe_session_id='${sqlEscape(STRIPE_ID)}';`
-        : '';
-    execSync(
-      `psql -c "BEGIN; INSERT INTO payments (email, name, product_name, product_id, amount_cents, currency, stripe_session_id, payment_status, event_type, paid_at) VALUES ('${sqlEscape(customerEmail)}', '${sqlEscape(customerName)}', '${sqlEscape(productName)}', '${sqlEscape(productId)}', ${amountCents}, '${sqlEscape(currency)}', '${sqlEscape(accountingStripeId)}', '${sqlEscape(paymentStatus)}', '${sqlEscape(eventType)}', '${transactionDateISO}') ON CONFLICT (stripe_session_id) DO UPDATE SET email=EXCLUDED.email, name=EXCLUDED.name, product_name=EXCLUDED.product_name, product_id=EXCLUDED.product_id, amount_cents=EXCLUDED.amount_cents, currency=EXCLUDED.currency, payment_status=EXCLUDED.payment_status, event_type=EXCLUDED.event_type, paid_at=EXCLUDED.paid_at;${duplicateDelete} COMMIT;"`,
-      { stdio: 'pipe' },
-    );
+    const params = {
+      email: customerEmail, name: customerName, product: productName,
+      prodid: productId, amount: String(amountCents), currency,
+      sid: accountingStripeId, status: paymentStatus, evt: eventType,
+      paid: transactionDateISO, legacy: STRIPE_ID,
+    };
+    const args = buildPsqlVarArgs(params);
+    const sql = `
+      BEGIN;
+      INSERT INTO payments (email, name, product_name, product_id, amount_cents,
+                            currency, stripe_session_id, payment_status, event_type, paid_at)
+      VALUES (:'email', :'name', :'product', :'prodid', :'amount'::int,
+              :'currency', :'sid', :'status', :'evt', :'paid'::date)
+      ON CONFLICT (stripe_session_id) DO UPDATE SET
+        email = EXCLUDED.email, name = EXCLUDED.name,
+        amount_cents = EXCLUDED.amount_cents,
+        currency = EXCLUDED.currency,
+        payment_status = EXCLUDED.payment_status,
+        paid_at = EXCLUDED.paid_at,
+        -- The checkout event expands the line item and knows the real
+        -- product; the payment-intent half of the SAME purchase carries only
+        -- a generic description ("Unknown", "Individual Mentor Coaching") and
+        -- no product id. Now that both halves converge on ONE row (keyed on
+        -- the shared pi_*), whichever arrives second must not degrade what
+        -- the checkout event already recorded — mirrors preferredProductName.
+        product_name = CASE
+          WHEN EXCLUDED.event_type = 'checkout.session.completed'
+            OR payments.event_type <> 'checkout.session.completed'
+          THEN EXCLUDED.product_name ELSE payments.product_name END,
+        product_id = CASE WHEN EXCLUDED.product_id <> '' THEN EXCLUDED.product_id
+                          ELSE payments.product_id END,
+        event_type = CASE
+          WHEN EXCLUDED.event_type = 'checkout.session.completed'
+          THEN EXCLUDED.event_type ELSE payments.event_type END;
+      DELETE FROM payments WHERE stripe_session_id = :'legacy' AND :'legacy' <> :'sid';
+      COMMIT;`;
+    // Fed on stdin via -f -, not -c: psql performs :'var' interpolation only
+    // when reading a script, never for -c strings (where :'sid' would reach
+    // the server verbatim and fail with a syntax error).
+    execFileSync('psql', [...args, '-v', 'ON_ERROR_STOP=1', '-f', '-'], {
+      input: sql, stdio: ['pipe', 'pipe', 'pipe'],
+    });
     results.db = 'OK';
   } catch (e) {
     results.db = `ERROR: ${e.stderr?.toString().trim() || e.message}`;
@@ -803,6 +907,7 @@ async function main() {
     event_name: 'purchase_completed',
     account: stripeAccount,
     canonical_transaction_id: canonicalTransactionId || null,
+    canonical_product_slug: canonicalProductSlug || null,
     provider_object_id: STRIPE_ID,
     occurred_at: new Date(txnDateObj).toISOString(),
     amount_cents: amountCents,
@@ -814,7 +919,16 @@ async function main() {
   );
 }
 
-main().catch((err) => {
-  console.error(`[EL CONTADOR] ERROR: ${err.message}`);
-  process.exit(1);
-});
+// Only run when executed directly. Without this guard, importing the file to
+// test its pure slug/product-preservation logic would fire the whole
+// Stripe → Sheets → Postgres pipeline as a side effect of the import.
+module.exports = {
+  validateCanonicalProductSlug, preferredProductName, buildPsqlVarArgs,
+};
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(`[EL CONTADOR] ERROR: ${err.message}`);
+    process.exit(1);
+  });
+}

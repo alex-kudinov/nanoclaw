@@ -90,6 +90,112 @@ describe('enqueueStripeLifecycleFact', () => {
     expect(params).toContain('pi_original123');
     expect(params).toContain(2500);
   });
+
+  it('persists a validated canonical product slug from PaymentIntent metadata', async () => {
+    queryMock.mockResolvedValue({ rows: [{ id: '11', inserted: true }] });
+    await enqueueStripeLifecycleFact({
+      eligible: true,
+      event_name: 'purchase_completed',
+      account: 'tandem',
+      canonical_transaction_id: 'pi_meta123',
+      canonical_product_slug: 'mcq-program-a-foundations',
+      occurred_at: '2026-08-16T12:00:00.000Z',
+      amount_cents: 29900,
+      currency: 'usd',
+      payment_status: 'succeeded',
+    });
+    const params = queryMock.mock.calls[0][1] as unknown[];
+    const properties = JSON.parse(params[9] as string);
+    expect(properties.canonical_product_slug).toBe('mcq-program-a-foundations');
+  });
+
+  it('fails closed: drops an invalid canonical product slug rather than persisting arbitrary text', async () => {
+    queryMock.mockResolvedValue({ rows: [{ id: '12', inserted: true }] });
+    await enqueueStripeLifecycleFact({
+      eligible: true,
+      event_name: 'purchase_completed',
+      account: 'tandem',
+      canonical_transaction_id: 'pi_meta456',
+      canonical_product_slug: '<script>alert(1)</script>',
+      occurred_at: '2026-08-16T12:00:00.000Z',
+      amount_cents: 29900,
+      currency: 'usd',
+      payment_status: 'succeeded',
+    });
+    const params = queryMock.mock.calls[0][1] as unknown[];
+    const properties = JSON.parse(params[9] as string);
+    expect(properties.canonical_product_slug).toBeUndefined();
+  });
+
+  it('fails closed: drops a missing/blank canonical product slug (Heartbeat has no Tandem metadata)', async () => {
+    queryMock.mockResolvedValue({ rows: [{ id: '13', inserted: true }] });
+    await enqueueStripeLifecycleFact({
+      eligible: true,
+      event_name: 'purchase_completed',
+      account: 'heartbeat',
+      canonical_transaction_id: 'pi_hb123',
+      occurred_at: '2026-08-16T12:00:00.000Z',
+      amount_cents: 9900,
+      currency: 'usd',
+      payment_status: 'succeeded',
+    });
+    const params = queryMock.mock.calls[0][1] as unknown[];
+    const properties = JSON.parse(params[9] as string);
+    expect(properties.canonical_product_slug).toBeUndefined();
+  });
+
+  // The Checkout and PaymentIntent halves of one purchase — and any retry —
+  // collide on the same (source_system, source_event_id) key and hit the
+  // ON CONFLICT path. This asserts the SQL/parameter contract boundary the JS
+  // layer controls: an upgrade path keyed on the incoming properties actually
+  // carrying the validated slug, and a preserve/non-erasure path that never
+  // does a blind `properties = EXCLUDED.properties` overwrite.
+  it('on conflict, upgrades the stored slug only when the incoming call carries a validated one, and never erases it otherwise', async () => {
+    queryMock.mockResolvedValue({ rows: [{ id: '14', inserted: false }] });
+
+    await enqueueStripeLifecycleFact({
+      eligible: true,
+      event_name: 'purchase_completed',
+      account: 'tandem',
+      canonical_transaction_id: 'pi_twin123',
+      canonical_product_slug: 'acc-full',
+      occurred_at: '2026-08-16T12:00:00.000Z',
+      amount_cents: 29900,
+      currency: 'usd',
+      payment_status: 'succeeded',
+    });
+    const upgradeSql = queryMock.mock.calls[0][0] as string;
+    const upgradeProperties = JSON.parse(
+      (queryMock.mock.calls[0][1] as unknown[])[9] as string,
+    );
+    // Upgrade path: this call's properties carry the key the SQL branches on.
+    expect(upgradeProperties.canonical_product_slug).toBe('acc-full');
+    expect(upgradeSql).toContain(
+      "EXCLUDED.properties ? 'canonical_product_slug'",
+    );
+    expect(upgradeSql).toContain('jsonb_set');
+    expect(upgradeSql).not.toContain('properties = EXCLUDED.properties');
+
+    await enqueueStripeLifecycleFact({
+      eligible: true,
+      event_name: 'purchase_completed',
+      account: 'tandem',
+      canonical_transaction_id: 'pi_twin123',
+      occurred_at: '2026-08-16T12:00:05.000Z',
+      amount_cents: 29900,
+      currency: 'usd',
+      payment_status: 'succeeded',
+    });
+    const preserveSql = queryMock.mock.calls[1][0] as string;
+    const preserveProperties = JSON.parse(
+      (queryMock.mock.calls[1][1] as unknown[])[9] as string,
+    );
+    // Non-erasure path: this call's properties carry no slug key at all, so
+    // the same static SQL's ELSE branch keeps the existing row's properties
+    // (including whatever slug the first call upgraded it to) untouched.
+    expect(preserveProperties.canonical_product_slug).toBeUndefined();
+    expect(preserveSql).toBe(upgradeSql);
+  });
 });
 
 describe('runChaosLifecycleOutbox', () => {
@@ -161,6 +267,120 @@ describe('runChaosLifecycleOutbox', () => {
       'X-Chaos-Token': 'test-secret',
     });
     expect(queryMock.mock.calls.at(-1)![0]).toContain("status='sent'");
+  });
+
+  it('prefers the persisted validated canonical slug over the name-derived fallback', async () => {
+    readEnvFileMock.mockReturnValue({
+      CHAOS_LIFECYCLE_ENABLED: 'true',
+      CHAOS_LIFECYCLE_URL: 'https://example.test/lifecycle',
+      CHAOS_WEBHOOK_SECRET: 'test-secret',
+    });
+    const row = {
+      id: 8,
+      event_name: 'purchase_completed',
+      source_system: 'stripe-tandem',
+      source_event_id: 'pi_meta123',
+      canonical_transaction_id: 'pi_meta123',
+      provider_event_ids: ['evt_meta'],
+      provider_object_ids: ['pi_meta123'],
+      occurred_at: '2026-08-16T12:00:00.000Z',
+      amount_cents: 29900,
+      currency: 'USD',
+      // A name that would otherwise map to 'unmapped-stripe-product' via
+      // safeProductSlug — proves the persisted slug wins, not just that both
+      // happen to agree.
+      properties: {
+        account: 'tandem',
+        canonical_product_slug: 'mcq-program-a-foundations',
+      },
+      attempts: 0,
+    };
+    const client = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [row] })
+        .mockResolvedValue({ rows: [] }),
+    };
+    withAgentContextMock.mockImplementation(async (_name: string, fn: any) =>
+      fn(client),
+    );
+    queryMock
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            email: 'buyer@example.com',
+            product_name: 'Invoice #tca-371 (retail price, unmapped)',
+            product_id: '',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}', { status: 200 }));
+
+    await expect(runChaosLifecycleOutbox()).resolves.toMatchObject({
+      status: 'success',
+      sent: 1,
+    });
+    const request = fetchMock.mock.calls[0][1]!;
+    const body = JSON.parse(String(request.body));
+    expect(body.product_slug).toBe('mcq-program-a-foundations');
+  });
+
+  it('fails closed to the name-derived slug when the persisted slug is invalid', async () => {
+    readEnvFileMock.mockReturnValue({
+      CHAOS_LIFECYCLE_ENABLED: 'true',
+      CHAOS_LIFECYCLE_URL: 'https://example.test/lifecycle',
+      CHAOS_WEBHOOK_SECRET: 'test-secret',
+    });
+    const row = {
+      id: 9,
+      event_name: 'purchase_completed',
+      source_system: 'stripe-tandem',
+      source_event_id: 'pi_bad123',
+      canonical_transaction_id: 'pi_bad123',
+      provider_event_ids: [],
+      provider_object_ids: ['pi_bad123'],
+      occurred_at: '2026-08-16T12:00:00.000Z',
+      amount_cents: 29900,
+      currency: 'USD',
+      // Simulates a stale/tampered row — never trust properties blindly even
+      // though enqueue already validated at write time.
+      properties: { account: 'tandem', canonical_product_slug: 'DROP TABLE' },
+      attempts: 0,
+    };
+    const client = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [row] })
+        .mockResolvedValue({ rows: [] }),
+    };
+    withAgentContextMock.mockImplementation(async (_name: string, fn: any) =>
+      fn(client),
+    );
+    queryMock
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            email: 'buyer@example.com',
+            product_name: 'Supervision Inaugural',
+            product_id: 'prod_sup',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}', { status: 200 }));
+
+    await expect(runChaosLifecycleOutbox()).resolves.toMatchObject({
+      status: 'success',
+      sent: 1,
+    });
+    const request = fetchMock.mock.calls[0][1]!;
+    const body = JSON.parse(String(request.body));
+    expect(body.product_slug).toBe('supervision-inaugural');
   });
 
   it('alerts chief exactly once when a row becomes dead-lettered', async () => {

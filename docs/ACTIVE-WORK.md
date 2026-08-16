@@ -11,7 +11,8 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260816-006` | Deploy the capability-manifest release dark, then activate and prove one low-risk Campanero canary without exposing any other agent | Codex | `codex/nc-20260816-006-campanero-canary` @ `a20ced5` (local-only claim) | `validating` | C5 | Add a strict per-group activation allowlist; reconcile Campanero to its authoritative jobs-only role; build and deploy one immutable release; keep global enforcement off; enable only Campanero; drain/recycle its idle state; prove allowed jobs inventory plus denied Bash and cross-agent MCP surfaces. Excludes customer email, job mutation, production database writes, global/all-agent activation, prompt changes, push, and merge. | Commit the verified implementation, build the immutable release, repeat the production drain check, deploy with controls off, then activate and canary only Campanero with rollback ready. | 2026-08-16T17:03Z |
+| `NC-20260816-006` | Deploy the capability-manifest release dark, then activate and prove one low-risk Campanero canary without exposing any other agent | Codex | `codex/nc-20260816-006-campanero-canary`; integrating live `a67e081` | `validating` | C5 | Add a strict per-group activation allowlist; reconcile Campanero to its authoritative jobs-only role; preserve the concurrently deployed Stripe release; build and deploy one immutable combined release; keep global enforcement off; enable only Campanero; and prove allowed jobs inventory plus denied Bash and cross-agent MCP surfaces. Excludes customer email, job mutation, production database writes, global/all-agent activation, prompt changes, publication/mainline merge, and push. | Validate and commit the combined lineage, build the superseding immutable release, repeat the production drain check, deploy with controls off, then activate and canary only Campanero with rollback ready. | 2026-08-16T17:10Z |
+| `NC-20260816-005` | Make every authoritative Stripe purchase reach Chaos with a canonical product attribution, preserve one-row Checkout accounting, and repair the four unmapped lifecycle receipts | Codex + Claude Code owner/reviewer | `codex/nc-20260816-005-stripe-attribution` @ implementation `9f8f6a1` from exact live `55c97d5` | `ready_for_deploy` | C5 | Exact-live-lineage NanoClaw Stripe processor and Chaos lifecycle outbox; focused tests; historical correction of four already-received Chaos lifecycle rows only after reviewed mapping proof. Excludes Stripe charges/refunds, fulfillment, Encharge automation, customer messaging, and unrelated NanoClaw changes. | Build and independently verify the clean immutable release, preflight and activate it, then correct only the four proven historical rows with pre/post aggregate proof. The full suite baseline remains 2381/2382 because of one pre-existing unrelated CNPC prompt-contract failure. | 2026-08-16T17:14Z |
 | `NC-20260816-004` | Establish tracked per-agent capability manifests and make stale warm/adopted containers ineligible for reuse without activating the control in production | Codex | `codex/nc-20260816-004-capability-manifests` @ `72b21db` (local implementation) | `complete` | C5 | Strict manifests for all 17 tracked operative groups; deterministic matrix; default-off launch/MCP/recognized-host-operation/mount/runtime projection; launch/sidecar fingerprints; and next-turn warm/adoption revocation. Existing domain controls remain cumulative. Excludes production config/deploy/restart, external writes, raw-secret extraction, egress enforcement, push, and merge. | None for this local source milestone. Production activation requires a separate authorized drain/recycle and group-by-group negative, launch, revocation, and business-path canary task. | 2026-08-16T16:20Z |
 | `NC-20260816-002` | Add one host-owned action-envelope contract and a global/per-system external-write safe mode without activating or widening any live capability | Codex | `codex/nc-20260816-002-action-safety-control` @ `092b5b9` (local implementation) | `complete` | C5 | Implement the dark contract/controller across the first drill systems: Gmail, Slack, Courses SMTP launch, Plutio runtime tools, and Stripe processing. Default behavior and all production configuration remain unchanged; other runtime/container/script writes remain explicit P0.3/P0.5 follow-ups. | None for this local milestone. Production activation and broader capability coverage require separately authorized tasks. | 2026-08-16T15:09Z |
 | `NC-20260816-001` | Apply the Company OS ledger schema in production and deploy a non-authoritative, default-off Mailman/Sales shadow projection | Codex | `codex/nc-20260816-001-company-os-shadow` @ deployed `55c97d5` | `complete` | C5 | Migration 118 is backed up, applied, minimized, append-only, and host-admin-only. Exact Node 22.23.2 release `55c97d5` is live with a bounded shadow since 2026-08-14: 4 eligible items reconcile as 3 completed plus 1 named source gap; the next pass was duplicate-only. SQLite stayed authoritative with 67 actions, 61 confirmed, 6 blocked, and zero actionable sends; Gmail/Slack stayed connected and no deployment send/post occurred. | None for this milestone. Any ledger authority, workflow dependency, wider history, or second-workflow projection requires a new separately authorized task. | 2026-08-16T14:21Z |
@@ -114,14 +115,24 @@ outside the current client conversation.
   state changes appear; rollback artifacts and exact evidence are recorded.
 - Rollback: remove the Campanero allowlist key and restart to return the same
   release to compatibility mode. If release health itself fails, use the
-  activator's rollback plist to restore verified release `55c97d5`. Never retry
+  activator's rollback plist to restore verified release `a67e081`. Never retry
   an ambiguous external action; the canary intentionally performs none.
 - Local verification: exact Node 22.23.2 passes 15/15 focused staged-config
   tests, the broader 172/172 capability/container/IPC/scheduler/reaper set,
   634/634 email-critical tests, root and independent-runner builds, and all
-  40/40 runner tests. The unrestricted root suite passes 2,395/2,396; the sole
-  failure is the unchanged CNPC source-wrapper assertion already present in the
-  deployed lineage. No production byte or configuration has changed yet.
+  40/40 runner tests. After the Stripe-lineage integration, the combined 74/74
+  capability/action/Stripe tests and 2,418/2,419 unrestricted root suite pass;
+  the sole failure is the unchanged CNPC source-wrapper assertion already
+  present in the deployed lineage. No Campanero production configuration or
+  host release switch has occurred yet.
+- Concurrent-release reconciliation: production advanced from `55c97d5` to
+  separately verified Stripe release `a67e081` while the first Campanero image
+  build was running. No container launched in the interval. The image was
+  immediately rebuilt from `a67e081`; health then showed that exact release,
+  zero active/waiting containers, and all 18 runner snapshots at its exact
+  `42f3674fef40cc63312d5e8c45c76de6` source hash. The Campanero branch now
+  integrates `a67e081` locally so the next candidate preserves both lineages;
+  it will receive the full release gates again before any host switch.
 
 ### NC-20260816-004
 
@@ -230,6 +241,82 @@ outside the current client conversation.
   Hive/Firebase, Chaos lifecycle delivery, Things, Sertifier, other
   container-held capabilities, standalone scripts, ceilings/demotion, and
   per-agent manifest generation remain later gates.
+
+### NC-20260816-005
+
+- Trigger: live Chaos reconciliation shows both account-bound producers are
+  delivering, but four `stripe-tandem` purchases arrived as
+  `unmapped-stripe-product`: three $299 Mentor Coaching Foundations purchases
+  and one $999 Coaching Supervision Mastery inaugural purchase. The same people
+  and timestamps have nearby browser-side product slugs, so receipt delivery is
+  intact and canonical product attribution is the failed boundary.
+- Exact live base: immutable release `55c97d5`; health reports verified release
+  identity, Node 22.23.2, connected Slack/Gmail, and no active containers.
+- Related defect boundary: NC-20260815-004's one-row Checkout/PaymentIntent and
+  literal product-name fixes exist only in the dirty operational checkout and
+  are not ancestors of the live release. This task must port only the reviewed
+  payment-identity/product-preservation mechanics needed by lifecycle accuracy,
+  not the unrelated roster cleanup or operational checkout state.
+- Safety contract: Stripe remains authoritative for money; this change cannot
+  create charges, refunds, fulfillment, Encharge traffic, or customer messages.
+  Chaos remains downstream and retryable. Historical repair is restricted to
+  the four already-proven source events and requires pre/post aggregate reads.
+- Claude Code implementation round (2026-08-16T16:45Z): `tools/contador/process-payment.cjs`
+  now extracts and validates `metadata.product` from the PaymentIntent for
+  both Checkout and PaymentIntent event shapes, carries it as
+  `canonical_product_slug` in the `__CHAOS_LIFECYCLE__` sentinel, ports only
+  the reviewed product-name-preservation guard (Payment Log column read-back +
+  Postgres `CASE` guard) and removes the shell from the Postgres write
+  (`execFileSync` + `psql -v NAME=value` + `:'var'` + `-f -`, no
+  string-concatenated SQL). `src/chaos-lifecycle-outbox.ts` persists the
+  slug (re-validated, fail-closed) into the outbox's `properties` jsonb and
+  prefers it at Chaos send time, falling back to the existing name-derived
+  slug for Heartbeat/off-site rows. Did not port `NOT_A_STUDENT` /
+  `resolveRosterTargets` from the dirty-checkout evidence file — out of this
+  task's scope (roster-policy expansion). `src/stripe-payment-host.ts` and its
+  test were left unchanged: the new field is optional and flows through the
+  existing generic JSON parse with no contract change.
+- Claude Code R2 review-response round (2026-08-16T17:05Z): Codex R2 review
+  (`docs/reports/NC-20260816-005-CODEX-REQUEST-R2.md`) required two fixes
+  before commit/deploy, both closed in this round:
+  1. `enqueueStripeLifecycleFact`'s `ON CONFLICT` update previously never
+     touched `properties`, so a first enqueue without a valid slug (or an
+     earlier arrival of the Checkout/PaymentIntent twin) permanently froze
+     the row without a canonical slug even after a later call carried a
+     valid one. `properties` is now merged with an upgrade-only `CASE` +
+     `jsonb_set`: only when the incoming call's `properties` carries the
+     `canonical_product_slug` key (i.e. `validCanonicalProductSlug` passed
+     in JS) does the stored slug get set/overwritten; otherwise the
+     existing row's `properties` — including any previously-stored valid
+     slug — is left completely untouched. A new test asserts both the
+     upgrade path and the non-erasure path against the actual SQL text and
+     parameter shape (two sequential `enqueueStripeLifecycleFact` calls on
+     the same canonical id, one with a valid slug and one without).
+  2. `tools/**/*.test.ts` added to `vitest.config.ts`'s `include` (R2
+     explicitly allowed/required this edit) so
+     `tools/contador/process-payment.test.ts` runs under the tracked
+     `npm test` with no local override needed.
+- Verification (both rounds combined, local-only): 49 focused tests pass (12
+  outbox + 20 host + 17 process-payment) via the exact tracked command
+  `npm test -- --run src/chaos-lifecycle-outbox.test.ts
+  src/stripe-payment-host.test.ts tools/contador/process-payment.test.ts`
+  under pinned Node 22.23.2; `tsc --noEmit` clean; `docs:continuity-check`
+  passes; `git diff --check` clean. No commit, push, deploy, or external
+  write occurred in either round.
+- Codex independent verification (2026-08-16T17:10Z): accepted the R2
+  upgrade-only jsonb merge and tracked test-glob change after direct diff
+  review. Re-ran the 49 focused tests, typecheck, documentation continuity,
+  and `git diff --check`; all pass under Node 22.23.2. The unrestricted full
+  repository suite passes 2381/2382 tests; its sole failure is the pre-existing
+  unrelated `src/cnpc-prompt-contract.test.ts` assertion against the already
+  refactored `scripts/cnpc-register.ts` wrapper. No NC-20260816-005 file touches
+  that boundary. This baseline failure is recorded rather than folded into the
+  Stripe release.
+- Commit boundary (2026-08-16T17:14Z): reviewed implementation and evidence
+  committed as `9f8f6a1`. The commit hook formatted one test file after the
+  index snapshot; that formatting-only delta is included in the subsequent
+  release-candidate documentation commit before building, leaving a clean
+  provenance-bearing release source tree.
 
 ### NC-20260816-001
 
