@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-012` | Repair shared Trafft reschedule identity and empirically prove the dark Booking host adapter's remote Plutio replay marker before any cutover | Codex | `codex/nc-20260816-012-booking-plutio-marker` @ `d954639` | `in_progress` | C5 | Shared Trafft extractor plus Booking adapter/tests; fail-closed dry-run/apply installed canary; immutable release/deployment; one stable synthetic Plutio contact/activity write and immediate replay read. Excludes natural ingress/outbox enqueue, Booking prompt/manifest/mount change, Plutio credential removal/rotation, Trafft request, production DB write, customer/Slack message, push, and merge. | Commit the claim, make the shared flattened reschedule key authoritative, build and deploy dark, dry-run the installed canary, then apply exactly one synthetic Plutio marker test and prove immediate replay skips the activity write. Stop before cutover. | 2026-08-16T20:55Z |
 | `NC-20260816-011` | Build and deploy the dark host-owned Booking-to-Plutio lifecycle adapter without invoking Plutio or changing Booking's current capability | Codex | `codex/nc-20260816-011-booking-plutio-host` @ deployed `63ed4aa` | `complete` | C5 | Exact release `63ed4aa` contains the typed archived-event parser, opaque durable outbox path, host-derived dispatch, action-safety enforcement, replay marker/receipt, and Booking-only stale reclaim. The installed injected canary proves first pass, replay, and booked-event denial with zero DB/child/network calls; live email/task/Plutio aggregates are unchanged and Booking-specific outbox rows remain zero. Natural ingress, the Booking prompt/manifest, and container Plutio access are unchanged. | None for this dark milestone. Next separately fix/canary shared reschedule identity, prove remote marker persistence on an authorized business-path canary, wire ingress, then remove Booking's Plutio credential/mount only if those gates pass. | 2026-08-16T20:49Z |
 | `NC-20260816-010` | Remove raw Trafft credentials from an enforced Booking container while preserving the separately identified legacy Plutio path | Codex | `codex/nc-20260816-010-booking-credential-boundary` @ deployed `ba5fe74` | `complete` | C5 | Exact release `ba5fe74` projects declared credential families and selectively enforces Campanero plus Booking. The installed no-network verifier proved all three configured Trafft names absent from Booking and the required DB/Plutio names present. The discovered non-booked-event Plutio path remains explicitly declared until a host-owned replacement is proven. No external or business-row write occurred. | None for this milestone. Next replace Booking's non-booked Plutio path with a host-owned adapter, then separately gate Plutio credential removal; destination-scoped egress remains a later control. | 2026-08-16T20:06Z |
 | `NC-20260816-009` | Extend the common external-write brake to the Things HTTP bridge without creating a real to-do | Codex | `codex/nc-20260816-009-things-safety` @ deployed `47019c9` | `complete` | C5 | Exact release `47019c9` denies the host Things `/add-todo` POST before fetch; the Slack-facing caller returns false/no success reaction; the live bundled drill returned all eight denials with no tripwire, exact config restoration, and unchanged aggregates. Excludes any real Things task, Slack message/reaction, bridge credential/config change, other integration coverage, envelope enforcement, push, and merge. | None for this milestone. Next extend the controller to a non-overlapping container-exposed write boundary or add separately gated ceilings/demotion. | 2026-08-16T19:40Z |
@@ -86,6 +87,41 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-012
+
+- Trigger: after `NC-20260816-011` deployed the unwired host adapter, the owner
+  instructed Codex to continue with the named promotion prerequisites.
+- Base/live lineage: isolated worktree
+  `/private/tmp/nanoclaw-nc-20260816-012` branches from NC-011 evidence commit
+  `d954639a90f845aa91924863fdbc951e51c9320f`; exact production release is
+  `63ed4aacf41e3026037912ed3f5ffccfbdc95e59` at task start.
+- Overlap decision: no active entry owns `src/webhook-extractors.ts`,
+  `src/booking-plutio-host.ts`, or an installed Booking marker canary. Existing
+  Sales, Procurement, CNPC, grader, Stripe/Chaos, Gmail, and proposal/invoice
+  behavior remains excluded.
+- Scope/authority: C5 release plus one explicitly bounded real integration
+  canary. Authority covers local source/tests/docs, an immutable dark release,
+  and one stable synthetic Plutio person/activity record whose sole purpose is
+  to prove that the idempotency marker survives a real round trip. The canary
+  must be dry-run by default, bind apply to the exact hostname and full release
+  commit, contain no customer data, and immediately replay through the same
+  adapter. Natural webhook/outbox wiring, Booking prompt/manifest/mount change,
+  Plutio credential removal/rotation, Trafft calls, production business-row
+  writes, customer/Slack messages, push, and merge are excluded.
+- Acceptance: the shared Trafft extractor includes flattened
+  `appointmentStartDateTime` for reschedules and the Booking adapter no longer
+  carries a divergent local repair; existing event-key variants remain stable;
+  local/release gates pass; the installed canary refuses mutation without exact
+  host/release confirmation; the applied synthetic first pass records or finds
+  exactly one marker and the immediate replay returns `already_recorded`
+  without a second activity write; production health and database/email/task
+  aggregates remain unchanged.
+- Planned sequence: commit this claim, implement the shared identity repair and
+  guarded canary, verify under exact Node 22, build and independently verify one
+  immutable artifact, deploy while drained, run canary dry-run, apply the one
+  authorized synthetic Plutio test, prove replay/non-interference, and stop at
+  the milestone before any natural-path cutover.
 
 ### NC-20260816-011
 

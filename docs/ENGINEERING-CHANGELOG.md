@@ -8,6 +8,26 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-012 — Prove Booking reschedule identity and the real Plutio marker
+
+- Date: 2026-08-16T20:55Z
+- Owner/client: Codex
+- State: in_progress; claim registered before implementation
+- Commit/PR: pending on `codex/nc-20260816-012-booking-plutio-marker`; no PR
+- Change class: C5 — shared webhook identity plus bounded external canary
+- Intended outcome: make the shared Trafft reschedule key correct for the
+  flattened production payload and empirically prove that the NC-011 replay
+  marker survives a real Plutio write/read cycle before any Booking cutover.
+- Scope/safety: shared extractor and adapter tests, a dry-run-first exact-host
+  and exact-release-bound canary, immutable release/deployment, and one stable
+  synthetic Plutio person/activity plus immediate replay. Natural ingress,
+  outbox enqueue, Booking prompt/manifest/mount changes, Plutio credential
+  removal/rotation, Trafft calls, production DB writes, customer/Slack messages,
+  push, and merge remain excluded.
+- Verification/deployment/rollback: pending. Source rollback is the current
+  exact release `63ed4aa`; the synthetic Plutio canary record is intentionally
+  retained as the replay receipt rather than destructively deleted.
+
 ### NC-20260816-011 — Build the dark Booking-to-Plutio host boundary
 
 - Date: 2026-08-16T20:26Z
