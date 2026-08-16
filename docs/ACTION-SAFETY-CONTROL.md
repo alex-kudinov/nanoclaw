@@ -1,8 +1,9 @@
 # Host action safety control
 
-Status: controller deployed default-off in combined release `2987070`; a
-release-bundled activation/drill transaction is ready for deployment under
-`NC-20260816-007`; no production safe-mode window has yet been claimed
+Status: the five-system first-drill boundary is deployed and live-verified in
+release `ab2ace1a658111131a2519e1cd7257fe8a207ffb` under
+`NC-20260816-007`; all controls were restored default-off after the drill and
+the broader repository-wide controller remains partial
 
 ## Purpose and authority
 
@@ -118,7 +119,9 @@ synthetic credentials before importing the real boundary modules. Gmail,
 Plutio, and Stripe receive injected tripwires that throw if their guards permit
 client/child/outbox execution; both Gmail new-send and reply-send are exercised,
 with the reply's prerequisite read supplied by a synthetic client. Slack is
-never connected and must retain an empty local outbound queue. Courses must
+instantiated from the installed `sendMessage` prototype without constructing
+the network-owning SDK, is never connected, and must retain an empty local
+outbound queue. Courses must
 project neither SMTP credentials nor the raw email-tool mount. All six guarded
 operations across the five systems return `global_safe_mode`; the drill itself
 performs no database or external-system write.
@@ -146,3 +149,42 @@ This transaction proves operator control across the five named runtime
 boundaries only. It does not enable action-envelope enforcement, interrupt a
 write already in flight, cover the residual standalone/integration surfaces,
 or satisfy the later ceilings and automatic-demotion work.
+
+## Live evidence — NC-20260816-007
+
+The first production attempt on release `c2c2158` denied all six calls and
+restored the exact environment, but constructing the Slack SDK for the
+synthetic canary also initiated an asynchronous fake-token `auth.test`. It made
+no authenticated account call, post, or queue entry. The attempt was not
+accepted as completion; the canary was changed to exercise the installed
+method without constructing the SDK, then rebuilt and redeployed.
+
+The superseding immutable release is
+`ab2ace1a658111131a2519e1cd7257fe8a207ffb`, source tree
+`72dd932b92e79497e89d8170a547e027d64e42e4`, artifact hash
+`cfbf6d3846a9a7c7748011ecd5d3fac109fee842b5e101e7b1056307d1e343b8`
+across 652 files, and archive SHA-256
+`a7b8ab3aaa4d82bcc4b0bcc745af3c495473ee33a47e260d586708fb975f3f31`.
+It was independently verified locally and on `mini-claw.local`, then activated
+with rollback plist
+`com.nanoclaw.plist.rollback-c2c21585e086-2026-08-16T18-15-27-825Z`.
+
+The clean apply drill retained environment backup
+`.env.rollback-action-safety-2026-08-16T18-18-24-265Z`, observed the running
+daemon in global safe mode, and returned `global_safe_mode` from Gmail new-send,
+Gmail reply-send, Slack, Courses SMTP, Plutio, and Stripe. Every client, child,
+and durable-outbox tripwire remained false; Slack queue depth stayed zero; and
+Courses projected no SMTP secret or email mount. The drill emitted no Slack
+authentication error. It restored the environment byte-for-byte: the live file
+and backup both hashed to
+`0c95d71db6cc751e57f8be40c88727d6bae675c05679fb0a6d1afcad1d16be73`.
+
+Post-drill health showed the exact release under Node 22.23.2, one listener,
+connected Gmail/Slack, zero active or waiting work, action-safety enforcement
+false, global safe mode false, no disabled systems, and Campanero still the
+only selectively enforced capability group. Aggregate evidence was unchanged:
+61 confirmed and 6 blocked email actions, 334 send events, one completed
+Campanero task, jobs hash
+`b3fc5040565df2ff2f2bcdc962320a7ff27a69df9b56176b19de365da6ab164c`,
+Plutio outbox 1,257 processed/15 dead, and Chaos outbox 5 sent. No real outbound
+action or production business-row mutation was performed by the drill.

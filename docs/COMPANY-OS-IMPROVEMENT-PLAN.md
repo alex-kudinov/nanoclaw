@@ -61,7 +61,7 @@ company-wide merely because one workflow implements them.
 | P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries; raw credentials and broad agent/tool exposure have not been removed company-wide. |
 | P0.3 capability manifests | partial | `NC-20260816-004` adds one strict tracked manifest for each operative group, a deterministic matrix, default-off launch/MCP/host-operation projection, and stale warm/adoption revocation. `NC-20260816-006` live-verifies the first selective canary: only Campanero is enforced, its read-only 22-job inventory succeeds, and Bash/undeclared MCP tools are absent. Every other group, egress enforcement, raw-secret removal, and action-value ceilings remain open. |
 | P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260816-002` implements a dark content-free universal envelope plus mutation/replay tests, but legacy domains do not yet supply it and enforcement is not activated. |
-| P0.5 safety controller | partial | The `NC-20260816-002` controller is deployed default-off in combined release `2987070`; `NC-20260816-007` adds a dry-run-first, exact-release, auto-restored production transaction and tripwired installed-boundary drill, pending deployment/live proof. `NC-20260816-004` adds next-turn stale warm/adoption revocation when manifest enforcement is enabled. Immediate in-flight interruption, standalone-script/integration coverage, per-action ceilings, and automatic demotion remain open. |
+| P0.5 safety controller | partial | The `NC-20260816-002` controller remains default-off; `NC-20260816-007` deploys and live-verifies a dry-run-first, exact-release, auto-restored production transaction across Gmail send/reply, Slack, Courses SMTP projection, Plutio, and Stripe with no external write or queue mutation. `NC-20260816-004` adds next-turn stale warm/adoption revocation when manifest enforcement is enabled. Immediate in-flight interruption, standalone-script/remaining-integration coverage, per-action ceilings, and automatic demotion remain open. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
 | P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` applied the production schema and live-verified the bounded observer across completion, source-gap, and duplicate-only replay. SQLite remains email authority and workflow promotion plus a second pilot process are still open. |
@@ -1278,13 +1278,13 @@ content-free envelope and dynamic global/per-system brake. Gmail holds
 before its execution claim; Slack denials do not queue; new Courses containers
 lose both SMTP secrets and mount; Plutio mutation and Stripe processors deny
 before child invocation; aggregate health and focused refusal/mutation/replay
-tests exist. The controller is present in live combined release `2987070` with
-all action controls default-off. `NC-20260816-007` now supplies a candidate
-production transaction that verifies exact release/drain/channel/queue health,
-backs up and atomically arms the global brake, exercises all five installed
-boundaries with synthetic inputs and hard no-invocation tripwires, restores the
-exact prior configuration, and re-verifies health. Deployment and the recorded
-live drill remain pending. Full P0.4/P0.5 still requires domain envelope
+tests exist. `NC-20260816-007` deploys exact release `ab2ace1` and live-verifies
+the production transaction: it checks release/drain/channel/queue health,
+backs up and atomically arms the global brake, denies all six installed Gmail
+send/reply, Slack, Courses SMTP, Plutio, and Stripe calls before every external
+client/child/outbox tripwire, restores the exact prior configuration, and
+leaves production aggregates unchanged. Action controls are again default-off.
+Full P0.4/P0.5 still requires domain envelope
 adoption, standalone-script and remaining-integration coverage, immediate
 in-flight interruption, ceilings, and demotion.
 
@@ -1584,7 +1584,10 @@ Implementation checkpoint (2026-07-29):
    expiry, displayed-card authorization binding, and typed-listener/proposal
    convergence recorded in `NC-20260802-010` before calling SEC-007 closed
    across the Company OS.
-5. `SEC-004` — implement and drill global/per-system external-write safe mode.
+5. `SEC-004` — named first-drill boundary complete under `NC-20260816-007` for
+   Gmail send/reply, Slack, Courses SMTP projection, Plutio, and Stripe;
+   continue the controller through the remaining standalone and integration
+   surfaces before calling it universal.
 6. `SEC-009` — isolate or retire the shared-gateway Procurement CDP bridge.
 7. `CICD-002` — contain skill-PR execution and remove shell `eval`.
 8. `OPS-001` — enforce one selected LTS runtime in CI, startup, launchd, and

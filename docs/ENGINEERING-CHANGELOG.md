@@ -12,11 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T18:00Z
 - Owner/client: Codex
-- State: in_progress; first release deployed and brake behavior proved, but a
-  canary-only Slack SDK network-read defect requires a superseding release and
-  clean repeat before completion
-- Commit/PR: claim commit `3ae28e8` on
-  `codex/nc-20260816-007-action-safety-drill`; no PR
+- State: complete; superseding release deployed and the clean no-write drill
+  live-verified with exact restoration and unchanged evidence aggregates
+- Commit/PR: implementation `c2c21585e086476de6092d3892a8bb44584517d4`
+  plus offline-canary fix `ab2ace1a658111131a2519e1cd7257fe8a207ffb`
+  on `codex/nc-20260816-007-action-safety-drill`; no PR
 - Change class: C5 — temporary production activation of a common outbound
   safety control
 - Intended outcome: prove an operator can engage one global brake across the
@@ -77,7 +77,31 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   The canary now bypasses the SDK-owning constructor and instantiates only the
   installed `sendMessage` prototype plus local queue fields; this turns any
   missed guard into a local queue failure with no SDK/network initialization.
-  A superseding release and clean repeat are pending.
+  The superseding release and accepted clean repeat are recorded below.
+- Superseding release/clean proof: exact release
+  `ab2ace1a658111131a2519e1cd7257fe8a207ffb` (source tree
+  `72dd932b92e79497e89d8170a547e027d64e42e4`, 652-file artifact
+  `cfbf6d3846a9a7c7748011ecd5d3fac109fee842b5e101e7b1056307d1e343b8`,
+  archive SHA-256
+  `a7b8ab3aaa4d82bcc4b0bcc745af3c495473ee33a47e260d586708fb975f3f31`)
+  independently verified locally and on `mini-claw.local`. Activation from
+  `c2c2158` changed only the three permitted plist paths and retained rollback
+  `com.nanoclaw.plist.rollback-c2c21585e086-2026-08-16T18-15-27-825Z`.
+  Dry-run and apply both passed. Apply retained environment backup
+  `.env.rollback-action-safety-2026-08-16T18-18-24-265Z`; its SHA-256 exactly
+  matched the restored `.env`. Live health observed the armed brake, all six
+  installed calls denied with `global_safe_mode`, all client/child/outbox
+  tripwires stayed false, Slack queued zero, and Courses projected no SMTP
+  secret/mount. The command emitted no asynchronous auth error.
+- Final production evidence: one listener on exact `ab2ace1` under Node
+  22.23.2; Gmail/Slack connected; zero active/waiting/outgoing work; valid
+  action safety restored to enforcement false, global false, and no disabled
+  systems; Campanero remained the only selected capability group. Pre/post
+  evidence matched exactly: 61 confirmed/6 blocked pending sends, 334 email
+  events, one completed Campanero task, jobs hash `b3fc5040565d`, Plutio outbox
+  1,257 processed/15 dead, Chaos outbox 5 sent, and zero service-log
+  `invalid_auth` matches. No external write or production business-row
+  mutation was performed by the drill.
 - Residuals/rollback: this proves only the five named boundaries at invocation
   time. Already-in-flight actions, standalone scripts, Trafft, Hive/Firebase,
   Chaos delivery, Things, Sertifier, and other container-exposed tools remain
