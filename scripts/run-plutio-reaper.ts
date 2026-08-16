@@ -8,27 +8,8 @@
  *   1 — unrecoverable failure
  */
 
-import { runReaper } from '../src/plutio-outbox-reaper.js';
-import { initDatabase } from '../src/db.js';
+import { main } from '../src/plutio-outbox-reaper-cli.js';
 import { logger } from '../src/logger.js';
-
-async function main(): Promise<void> {
-  // SQLite must be init'd before alertChief can resolve the chief
-  // jid via getAllRegisteredGroups. Standalone script = fresh process
-  // = always needs init.
-  initDatabase();
-  logger.info('run-plutio-reaper: starting');
-  const result = await runReaper();
-  logger.info(
-    {
-      processed: result.processed,
-      succeeded: result.succeeded,
-      retried: result.retried,
-      deadLettered: result.deadLettered,
-    },
-    'run-plutio-reaper: done',
-  );
-}
 
 main().catch((err) => {
   logger.error({ err }, 'run-plutio-reaper: fatal');

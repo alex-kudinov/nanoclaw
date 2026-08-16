@@ -105,6 +105,7 @@ try {
       'launchd',
       'setup/launchd',
       'tools/contador',
+      'tools/plutio',
     ],
     { cwd: root },
   )

@@ -15,7 +15,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - State: validating; capability boundary live, authorized canary exposed two
   release blockers
 - Commit/PR: claim `58778d9`; implementation `08cbb9b`; release-path correction
-  and immutable release `77064e9` on
+  and immutable release `77064e9`; scheduled-task/receipt correction `67f16d5`
+  on
   `codex/nc-20260816-013-booking-plutio-cutover` from `f10c572`; no PR
 - Change class: C5 — external-write capability cutover
 - Intended outcome: enqueue canceled/rescheduled Booking activity through the
@@ -68,6 +69,24 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   update now binds `$1::text`. Focused receiver/inbox/Booking/reaper checks pass
   59/59; the full independent runner passes 43/43; both packages build and root
   typecheck passes. A read-only production PostgreSQL probe confirms the cast.
+- Corrective deployment: immutable release `67f16d5a412e6b96312c9bf41d6ac068ef229347`
+  is live with source tree `990b1f3bea03afc34d2b1b96aa293e891cb7b2d0`,
+  artifact hash `bc18e6c165a6d14e725c7ed49c36e63a4aeeeb29ddfc538cf1a00d8d02cbf2d4`,
+  rebuilt runner image `sha256:0618fbecf88cc0298fa9665db1c0c2c0ad368da37d471d148fb984e310ca835e`,
+  and 18 refreshed runner snapshots at source hash
+  `94cd1d978f34de9195c659e21d251b05`. Fresh launchd PID `17509` serves the
+  exact verified release with connected Gmail/Slack and an empty container
+  queue; rollback plist
+  `com.nanoclaw.plist.rollback-77064e99c4dc-2026-08-16T22-45-35-278Z`
+  remains available.
+- Third canary blocker: before the controlled retry, the existing scheduled
+  Plutio job invoked `tools/plutio/run-reaper.sh`, which still runs `npx tsx`
+  against the operational checkout rather than the active release. Its
+  local-only dispatch did not recognize the Booking kind and moved row `1312`
+  to failed attempt 2 without a Plutio call. The repair adds a compiled release
+  CLI, includes the Plutio launcher in immutable bundles, and makes the
+  operational launcher verify and execute the code root and Node interpreter
+  named by the installed launchd service.
 - Release artifact:
   `77064e99c4dc2e1342993ba8659a820fd2a1bf05` has source tree
   `f83601b26773952947ba54d7efc647e22f7c913c`, 664-file artifact hash
@@ -91,7 +110,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   configured Trafft and Plutio source names absent, and all required DB inputs
   present. No retryable lifecycle row or `booking_activity:*` outbox row exists.
 - Outcome boundary: the capability cutover remains live, but the normal path is
-  not outcome-validated. Build and deploy a superseding immutable release, then
+  not outcome-validated. Build and deploy the immutable reaper-launcher repair,
+  then
   replay only failed outbox row `1312`; remote readback must return
   `already_recorded`, the SQL update must succeed, and the row must become
   terminal without a second activity. The already-authorized duplicate replay
