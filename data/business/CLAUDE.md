@@ -6,6 +6,11 @@ remain implementation authority; ordered migrations in
 
 PostgreSQL database for CRM and business operations. All agents access via `business_v2` schema views (reads) and SECURITY DEFINER helper functions (writes). Agent identity is transparently injected via PGOPTIONS session variables.
 
+Migration 118 is a tracked, unapplied dark foundation for the Company OS work
+ledger. It grants no agent access and has no runtime producer or consumer. Do
+not query or apply it as though repository presence proves live schema state;
+follow `docs/COMPANY-OS-WORK-LEDGER.md` and the later activation task.
+
 ## Connection
 
 ```bash

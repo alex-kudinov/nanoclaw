@@ -8,6 +8,57 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260815-010 — Establish the dark Company OS work-ledger foundation
+
+- Date: 2026-08-16T04:48Z
+- Owner/client: Codex
+- State: ready_for_review
+- Commit/PR: local branch `codex/nc-20260815-010-company-os-ledger`, based on
+  recovered roadmap commit `38810d3`; no PR
+- Change class: C2 — local, additive, default-off persistence/domain work; no
+  external communication or live database write
+- Intended outcome: add the focused design/ADR, unapplied migration 118,
+  non-auto-discovered rollback, host-only typed work-item transition/receipt
+  store, and focused contract tests for the Mailman/Sales approved-email pilot.
+- Safety boundary: do not wire runtime producers/consumers, change group
+  behavior, apply the migration, deploy, restart, or write Slack/Gmail/production
+  data. Existing SQLite approved-email action state remains authoritative.
+- Acceptance: local schema/domain evidence must cover restart, retry, duplicate,
+  stale-version, invalid-transition, blocked, failure, exact receipt, and full
+  success semantics without storing raw customer content or trusting agent
+  prose.
+- Outcome: added `docs/COMPANY-OS-WORK-LEDGER.md`; unapplied migration 118 and a
+  non-auto-discovered history-preserving rollback; a host-admin-only typed
+  PostgreSQL store/state machine; 16 focused state/store/migration tests; and
+  data model, database guide, migration guide, project map, and roadmap
+  reconciliation. Stage and disposition are separate, receipts bind exact
+  actions/evidence, optimistic versions reject stale writers, and source plus
+  idempotency identities converge only when their facts match.
+- Verification:
+  - exact Node 22.23.2 focused tests pass 2 files / 16 tests; typecheck,
+    full-source formatting, documentation continuity (58 active/ready rows and
+    54 changelog entries), and `git diff --check` pass;
+  - the sandbox root suite passes 2,304/2,350. All 45 permission-sensitive
+    webhook/CNPC/child-process cases pass in an unrestricted rerun. The sole
+    remaining failure is the pre-existing CNPC source-wrapper assertion on
+    files unchanged from base `38810d3`;
+  - the initial dependency install deliberately disabled lifecycle scripts and
+    therefore lacked the Node-22 SQLite native binding. Rebuilding
+    `better-sqlite3` under pinned Node 22 corrected the environment before the
+    root result above was accepted;
+  - migration 118 applied cleanly to a throwaway Unix-socket-only PostgreSQL 16
+    cluster. The typed store's synthetic path ended
+    `outcome_validated/completed`, version 9, with 10 events and 4 receipts;
+    stale version, exact retry, block/resume, receipt binding, and zero
+    non-admin grants were verified. The rollback refused to erase populated
+    history, after which the cluster and temporary script were deleted.
+- Deployment/migration: not applied; a later activation task must reconcile
+  the live ordered-migration state and run its own preflight, backup, apply,
+  validation, shadow projection, and rollback gates.
+- Documentation: active work and this changelog register the task before the
+  first implementation edit; design, data model, project map, roadmap, and
+  migration guide will be updated with the implementation.
+
 ### NC-20260815-007 — Reactivate the Company OS roadmap from the current baseline
 
 - Date: 2026-08-16T04:45Z

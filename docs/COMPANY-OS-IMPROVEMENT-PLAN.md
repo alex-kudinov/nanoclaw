@@ -64,7 +64,7 @@ company-wide merely because one workflow implements them.
 | P0.5 safety controller | still proposed | Domain-specific gates and circuit controls exist, but there is no one drilled global/per-system external-write safe mode with common precedence, ceilings, and evidence. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
-| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. There is no shared work-item authority, and the Mailman → Sales → approval → Mailman → Gmail receipt pilot remains the first cross-agent slice. |
+| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` adds the local, unapplied, default-off Mailman/Sales stage-disposition-event-receipt foundation, but no shared work-item authority is live and no runtime projection is wired. |
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
 | P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places; they are not normalized behind one trigger/run contract or reconciled as one inventory. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
@@ -1271,6 +1271,14 @@ and healer decisions remain open. A default-off, non-activated R2 ledger
 foundation may be designed and tested in isolation; no live ledger migration or
 workflow activation may bypass those R1 gates.
 
+R2 foundation checkpoint: `NC-20260815-010` defines the exact
+Mailman/Sales pilot contract and implements host-only typed transitions plus
+unapplied PostgreSQL migration 118. The schema excludes raw customer content,
+the existing SQLite approved-email action ledger remains execution authority,
+and no runtime producer/consumer is wired. This is a dark foundation, not a
+live work ledger or completed R2 slice; migration, shadow projection, parity,
+and promotion remain separately gated.
+
 Each slice receives one or more separate `NC-YYYYMMDD-NNN` tasks only when work
 starts. Do not reserve future IDs, combine these slices into one implementation
 branch, or let R3-R5 bypass unfinished R1/R2 controls.
@@ -1554,7 +1562,9 @@ Implementation checkpoint (2026-07-29):
 17. `SEC-005`/`SEC-006` — generate per-agent tool, mount, action, and network
     policy from one manifest after the interim Gmail matrix is proven.
 18. `REL-002` — implement work-item transitions and source reconciliation for
-    Mailman and Sales only.
+    Mailman and Sales only. `NC-20260815-010` implements the local default-off
+    state/receipt/schema foundation as unapplied migration 118; live migration,
+    shadow event projection, reconciliation parity, and promotion remain open.
 19. `REL-001` — inventory schedules and probe target existence, last run, and
     last exit status.
 20. `EVAL-001` — incident/injection regression pack for Mailman and Sales.

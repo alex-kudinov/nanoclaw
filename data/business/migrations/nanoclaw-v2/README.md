@@ -36,7 +36,23 @@ Ships the `business_v2` PostgreSQL schema as a **dormant** replacement for the a
 | `90_smoke_tests.sql` | T15 | 20 smoke tests (transactional, no data persists) |
 | `validate.sql` | T16 | AC-1 through AC-20 assertions |
 
-`run_migration.sh` executes files matching `[0-9][0-9]_*.sql` in sort order (includes `90_smoke_tests.sql`). `validate.sql` runs separately via `validate.sh`.
+`run_migration.sh` executes two- and three-digit ordered files matching
+`[0-9][0-9]*_*.sql` in version-sort order. It includes `90_smoke_tests.sql` and
+incremental migrations through the latest tracked number. `validate.sql` runs
+separately via `validate.sh`.
+
+## Incremental migration state
+
+Repository presence is portable source history, not evidence that a migration
+is live. Inspect the running schema and shared active-work/changelog records
+before applying anything.
+
+- migrations 114-117 are owned by separately tracked Procurement, CNPC, and
+  Chaos tasks with their own deployment state;
+- migration 118 (`NC-20260815-010`) is the unapplied, host-only Company OS work
+  ledger foundation;
+- `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
+  and refuses to erase any recorded work history.
 
 ## Rollback
 

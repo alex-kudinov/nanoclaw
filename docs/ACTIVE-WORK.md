@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260815-010` | Establish the first durable Company OS work-ledger foundation for the Mailman/Sales approved-email pilot without activating it in production | Codex | `codex/nc-20260815-010-company-os-ledger` @ `38810d3` | `ready_for_review` | C2 | Focused design/ADR, additive unapplied migration 118 plus history-preserving rollback, host-only typed state/receipt store, 16 focused tests, and data/project/roadmap authorities. Throwaway PostgreSQL apply/store/rollback proof passed. No runtime wiring, group behavior, live migration, production DB write, service change, or external action. | Review and commit the dark foundation. The next large milestone is a separately authorized production migration plus default-off shadow projection; do not combine it with live workflow dependency or promotion. | 2026-08-16T05:08Z |
 | `NC-20260815-007` | Reactivate the Company OS plan against the current NanoClaw baseline and make it the single strategic roadmap for separately gated implementation slices | Codex | `codex/nc-20260815-007-company-os-reactivation` @ `b7bb65d` from `9e4977a` | `complete` | C1 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, this register, and `docs/ENGINEERING-CHANGELOG.md`; documentation and prioritization only; no source, schema, prompt, configuration, deployment, production, or external-system change | None — R0 is recovered and continuity-verified; subsequent slices use separate task IDs and isolated branches. | 2026-08-16T04:46Z |
 | `NC-20260815-009` | Make the normal approved-email fallback executable and bind every operator-visible recipient header into the immutable action | Codex | `codex/nc-20260815-009-email-fallback-headers` @ deployed `12c2b049` from `cfcfaae` | `deployed_unverified` | C5 | Exact runtime, additive `approved_cc` migration, and reviewed Mailman instructions are live; release/artifact/health/listener/drain evidence is complete. No synthetic customer email was used. | Observe the next naturally approved customer email through normal fallback/execution, then bind the exact Gmail receipt and original Slack-thread completion without manual repair before outcome validation. | 2026-08-16T04:36Z |
 | `NC-20260815-008` | Prove approved Sales-email delivery without customer traffic or manual operator rescue by reconciling the live lineage and gating releases on deterministic historical replay | Codex | `codex/nc-20260815-008-email-replay-gate` @ deployed `cfcfaae` from verified production `84607fd` | `deployed_unverified` | C5 | The deterministic replay gate is deployed and live-verified. The blocked customer action was recovered once with an exact card/hash/party/zero-prior-send gate and a Gmail receipt, but the natural path failed before execution because the watchdog fallback omitted Mailman's required marker; the normal immutable replay also strips an operator-approved CC. | Open a separate runtime-repair task for the fallback marker and approval-bound CC/header semantics, add both incidents to the release-blocking corpus, and deploy only after the same full gate. Prove the next naturally approved email end to end without manual recovery before calling the business path validated. | 2026-08-16T03:14Z |
@@ -75,6 +76,67 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260815-010
+
+- Trigger: after the Company OS reactivation and deployed approved-email repair,
+  the owner authorized continued roadmap implementation while stopping only at
+  large milestones. The first ledger work must not put Sales/Mailman or the
+  owner back into a live integration-test loop.
+- Outcome: define and implement the default-off persistence/domain foundation
+  for one Mailman → Sales → approval → Mailman → Gmail-receipt work item. The
+  foundation must make stage, exception disposition, exact source event,
+  action/receipt evidence, version, and idempotency explicit without inferring
+  progress from agent prose.
+- Branch/base: `codex/nc-20260815-010-company-os-ledger` from recovered roadmap
+  commit `38810d3` in isolated worktree
+  `/private/tmp/nanoclaw-nc-20260815-010`. The dirty operational checkout and
+  the deployed `NC-20260815-009` worktree remain untouched.
+- Scope/authority: C2 local reversible implementation work only. Expected files
+  are a focused Company OS ledger design/ADR, ordered migration 118 and a
+  non-auto-discovered rollback, a host-only typed store/state machine, focused
+  tests, and structure-only data/project/roadmap continuity docs. No runtime
+  integration, group prompt change, live migration, production DB write,
+  deployment, restart, Slack/Gmail action, push, or merge.
+- Overlap: migration 117 belongs to active Chaos work and remains unapplied;
+  migration 116 belongs to CNPC; this task allocates 118 and does not change
+  either file or workflow. `pending_sends`/`email_send_events` remain SQLite
+  action authority; this task references them by opaque identifiers and does
+  not replace or mutate them. Natural-path validation for `NC-20260815-009`
+  remains separately pending.
+- Acceptance: schema and types contain no raw message body, email address, or
+  approval content; only the host admin can write; duplicate source/event and
+  idempotency identities converge or conflict visibly; optimistic versions
+  reject stale transitions; blocked/failed dispositions preserve stage;
+  external acknowledgment and outcome validation require exact receipts;
+  restart/retry/duplicate/blocked/success tests pass. No stage is derived from
+  agent text.
+- Migration/activation: migration 118 remains Git-tracked and unapplied in this
+  task. A later task must inspect the live schema, reconcile 116/117 deployment
+  state, apply in order, and separately wire shadow event projection before any
+  workflow can depend on this ledger.
+- Result: the focused design, migration/rollback, typed host store/state
+  machine, tests, and authoritative documentation are `ready_for_review`.
+  Migration 118 applied cleanly to a throwaway PostgreSQL 16 cluster. Synthetic
+  create → dispatch → block → retry → resume → approval → claim → Gmail receipt
+  → outcome validation ended `outcome_validated/completed` at version 9 with
+  exactly 10 events and 4 receipts. A stale version failed, an exact committed
+  retry converged, non-admin table grants were zero, and rollback refused to
+  erase the populated history. The cluster and temporary smoke script were
+  removed afterward.
+- Verification: exact Node 22.23.2 focused tests pass 2 files / 16 tests;
+  typecheck, full-source formatting, documentation continuity (58 active/ready
+  rows and 54 changelog entries), and diff checks pass. The sandbox root suite
+  passes 2,304/2,350 and reports 46 failures: all 45 permission-sensitive
+  webhook/CNPC/child-migration cases pass in their required unrestricted rerun;
+  the sole remaining failure is the pre-existing CNPC wrapper assertion on
+  unchanged base files. The first install intentionally skipped lifecycle
+  scripts; the native binding failure was corrected by rebuilding
+  `better-sqlite3` under pinned Node 22 before interpreting root results.
+- Rollback: before activation, revert the branch. After a later migration-only
+  activation, use the tracked rollback only if no dependent rows/objects exist;
+  otherwise leave the additive host-only tables dormant and roll back runtime
+  wiring.
 
 ### NC-20260815-007
 
