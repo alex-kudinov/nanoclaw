@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-16T04:50Z
 - Owner/client: Codex
-- State: ready_for_review
-- Commit/PR: local branch
+- State: complete
+- Commit/PR: roadmap recovery commit
+  `b7bb65d9b3aec003a0e507b3c0831effcbfca3a1` on local branch
   `codex/nc-20260815-007-company-os-reactivation`, based on verified lineage
   `9e4977ac339ff9ef149f33ea11dbd6faf2d54dc7`; no PR
 - Change class: C1 — internal strategy and documentation only
@@ -36,9 +37,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
     smallest ledger-backed exception surface.
 - Files: `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, `docs/ACTIVE-WORK.md`, this
   entry
-- Verification: exact Node 22.23.2 documentation continuity and focused
-  `git diff --check` are required before review; no product/runtime tests are
-  required because this task changes only C1 planning and continuity docs.
+- Verification: exact Node 22.23.2 documentation continuity passed with 57
+  active/ready task rows and 53 changelog entries; focused `git diff --check`
+  passed. No product/runtime tests were required because this task changes only
+  C1 planning and continuity docs.
 - Deployment/migration: not applicable; no source, schema, prompt,
   configuration, service, deployment, browser, database, Slack, Gmail, or
   other external-system state changed
