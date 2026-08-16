@@ -80,6 +80,9 @@ export interface HealthPayload {
   >;
   activeContainers: number;
   lastMessageAt: string | null;
+  actionSafety?: ReturnType<
+    typeof import('./action-safety.js').getActionSafetyStatus
+  >;
 }
 
 export interface WebhookServerDeps {

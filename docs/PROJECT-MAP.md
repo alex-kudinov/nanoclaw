@@ -315,6 +315,7 @@ session files.
 | Queue          | `src/group-queue.ts`                                                | per-work-unit serialization, concurrency, warm workers |
 | Containers     | `src/container-runner.ts`, `src/container-runtime.ts`               | mounts, lifecycle, adoption, resource limits           |
 | IPC            | `src/ipc.ts`, `src/ipc-writer.ts`, `src/watchdog-ipc.ts`            | agent/host protocol and action dispatch                |
+| Action safety  | `src/action-safety.ts`, `docs/ACTION-SAFETY-CONTROL.md`             | content-free action envelope, global/per-system external-write brake, aggregate health |
 | Scheduling     | `src/task-scheduler.ts`, `src/job-registry.ts`, `src/job-runner.ts` | agent tasks and host jobs                              |
 
 ### Channels and messaging
@@ -358,6 +359,7 @@ dependencies, not active runtime channels in this snapshot.
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
 | Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | live host-only stage/disposition/receipt projection; observer is bounded, default-off, fail-open, and never email authority; exact migration/release/shadow evidence lives under `NC-20260816-001` |
+| External-write control | `src/action-safety.ts`, `docs/ACTION-SAFETY-CONTROL.md`             | default-off common action envelope and dynamic global/per-system brakes; local-only under `NC-20260816-002`, not activated |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
 | Autonomy               | `src/autonomy-policy.ts`, `src/autonomy-ledger.ts`, `src/autonomy-hold.ts`     | category trust levels, holds, vetoes, evidence                                                               |
@@ -1381,6 +1383,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/ENGINEERING-CHANGELOG.md`         | append-only implementation/verification/deployment history            | evidence only; do not overstate boundaries crossed                                                                                           |
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
 | `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
+| `docs/ACTION-SAFETY-CONTROL.md`         | host action envelope, safety precedence, covered boundaries, and activation gate | local/default-off under `NC-20260816-002`; warm Courses containers and standalone scripts are explicit residuals                            |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |
 | `docs/PROCUREMENT-RESURRECTION-PLAN.md` | verified Procurement history, current recovery state, and target loop | migration 115 is deployed collection-only; natural source-run proof, review closure, and the separately reviewed proposal packet remain open |
 | `docs/SELF-HEALING-COMPLETION-PLAN.md`  | reconciled healer current state and gated completion sequence         | action-boundary source is local until separately reviewed/deployed                                                                           |

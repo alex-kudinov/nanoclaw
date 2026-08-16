@@ -16,6 +16,10 @@ import {
   extractOdfText,
 } from '../attachment-convert.js';
 import {
+  assertExternalWriteAllowed,
+  isExternalWriteDeniedError,
+} from '../action-safety.js';
+import {
   approvalCardRejectedText,
   buildApprovedHandoff,
   isApprovalCard,
@@ -496,6 +500,11 @@ export class SlackChannel implements Channel {
       const ok = await promoteBriefItem(text);
       if (!ok) return;
       try {
+        assertExternalWriteAllowed({
+          system: 'slack',
+          actionClass: 'c3_external_communication',
+          source: 'host:slack-channel',
+        });
         await this.app.client.reactions.add({
           channel: channelId,
           timestamp: event.item.ts,
@@ -846,6 +855,13 @@ export class SlackChannel implements Channel {
     text: string,
     opts?: SendMessageOpts,
   ): Promise<void> {
+    // Check before the disconnected queue: safe mode must not create work that
+    // silently escapes after reconnect.
+    assertExternalWriteAllowed({
+      system: 'slack',
+      actionClass: 'c3_external_communication',
+      source: 'host:slack-channel',
+    });
     if (!this.connected) {
       this.outgoingQueue.push({ kind: 'logical', jid, text, opts });
       logger.info(
@@ -1083,6 +1099,11 @@ export class SlackChannel implements Channel {
 
       // Slack limits messages to ~4000 characters; split if needed
       if (displayText.length <= MAX_MESSAGE_LENGTH) {
+        assertExternalWriteAllowed({
+          system: 'slack',
+          actionClass: 'c3_external_communication',
+          source: 'host:slack-channel',
+        });
         const result = await this.app.client.chat.postMessage({
           ...baseOpts,
           text: displayText,
@@ -1112,11 +1133,17 @@ export class SlackChannel implements Channel {
           const chunk = chunks[index];
           let result;
           try {
+            assertExternalWriteAllowed({
+              system: 'slack',
+              actionClass: 'c3_external_communication',
+              source: 'host:slack-channel',
+            });
             result = await this.app.client.chat.postMessage({
               ...baseOpts,
               text: chunk,
             } as ChatPostMessageArguments);
           } catch (err) {
+            if (isExternalWriteDeniedError(err)) throw err;
             if (index > 0 && effectiveThreadTs) {
               this.queueOutgoingRetry(
                 {
@@ -1187,6 +1214,7 @@ export class SlackChannel implements Channel {
         'Slack message sent',
       );
     } catch (err) {
+      if (isExternalWriteDeniedError(err)) throw err;
       this.queueOutgoingRetry(
         {
           kind: 'logical',
@@ -1248,6 +1276,11 @@ export class SlackChannel implements Channel {
     text: string,
     threadTs?: string,
   ): Promise<string | undefined> {
+    assertExternalWriteAllowed({
+      system: 'slack',
+      actionClass: 'c3_external_communication',
+      source: 'host:slack-channel',
+    });
     if (!this.connected) {
       logger.warn({ jid }, 'postTracked: slack disconnected, dropping');
       return undefined;
@@ -1265,6 +1298,7 @@ export class SlackChannel implements Channel {
         return result.ts;
       }
     } catch (err) {
+      if (isExternalWriteDeniedError(err)) throw err;
       logger.warn({ jid, err }, 'postTracked: send failed');
     }
     return undefined;
@@ -1275,6 +1309,11 @@ export class SlackChannel implements Channel {
     text: string,
     threadTs: string | undefined,
   ): Promise<string> {
+    assertExternalWriteAllowed({
+      system: 'slack',
+      actionClass: 'c3_external_communication',
+      source: 'host:slack-channel',
+    });
     if (!this.connected) {
       throw new Error('Slack is disconnected; grader message was not queued');
     }
@@ -1331,6 +1370,11 @@ export class SlackChannel implements Channel {
     filename: string,
     sourceGroup: string,
   ): Promise<{ messageTs: string; fileIds: string[] }> {
+    assertExternalWriteAllowed({
+      system: 'slack',
+      actionClass: 'c3_external_communication',
+      source: 'host:slack-channel',
+    });
     if (!this.connected) {
       throw new Error('Slack is disconnected; grader file was not queued');
     }
@@ -1801,6 +1845,11 @@ export class SlackChannel implements Channel {
     for (let index = 0; index < item.chunks.length; index++) {
       const chunk = item.chunks[index];
       try {
+        assertExternalWriteAllowed({
+          system: 'slack',
+          actionClass: 'c3_external_communication',
+          source: 'host:slack-channel',
+        });
         const result = await this.app.client.chat.postMessage({
           channel,
           thread_ts: item.threadTs,
@@ -1816,6 +1865,7 @@ export class SlackChannel implements Channel {
           );
         }
       } catch (err) {
+        if (isExternalWriteDeniedError(err)) throw err;
         this.queueOutgoingRetry(
           { ...item, chunks: item.chunks.slice(index) },
           err,

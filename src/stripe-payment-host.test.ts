@@ -22,12 +22,32 @@ import {
 } from './stripe-payment-host.js';
 
 beforeEach(() => {
+  delete process.env.EXTERNAL_WRITE_SAFE_MODE;
   // Default: the script succeeds with a summary.
   execFileImpl = (_file: string, _args: string[], _opts: any, cb: any) =>
     cb(null, {
       stdout: '[PAYMENT RECEIVED]\nProduct: MCS - Standard path\n',
       stderr: '',
     });
+});
+
+describe('Stripe external-write brake', () => {
+  it('denies before invoking the payment processor', async () => {
+    const invocation = vi.fn();
+    execFileImpl = (...args: any[]) => invocation(...args);
+    process.env.EXTERNAL_WRITE_SAFE_MODE = '1';
+    try {
+      await expect(
+        handleStripePayment({ stripe_id: 'pi_abc123' }),
+      ).rejects.toMatchObject({
+        name: 'ExternalWriteDeniedError',
+        code: 'global_safe_mode',
+      });
+      expect(invocation).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.EXTERNAL_WRITE_SAFE_MODE;
+    }
+  });
 });
 
 describe('parseStripePayload', () => {

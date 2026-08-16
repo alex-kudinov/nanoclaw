@@ -18,6 +18,7 @@ import {
   GMAIL_REPLY_TO,
   GMAIL_SEND_AS,
 } from './config.js';
+import { assertExternalWriteAllowed } from './action-safety.js';
 import { getGmailClient } from './gmail-auth.js';
 
 const CANARY_CONFIRMATION = 'NC-009-INTERNAL-TRANSPORT-CANARY';
@@ -95,6 +96,11 @@ export async function runEmailTransportCanary(opts: {
   if (!/^[0-9a-f]{40}$/i.test(opts.commit)) {
     throw new Error('email transport canary requires an exact release commit');
   }
+  assertExternalWriteAllowed({
+    system: 'gmail',
+    actionClass: 'c3_external_communication',
+    source: 'host:gmail-transport-canary',
+  });
   const sent = await opts.gmail.users.messages.send({
     userId: 'me',
     requestBody: {

@@ -10,6 +10,7 @@
 
 import { WebClient } from '@slack/web-api';
 
+import { assertExternalWriteAllowed } from './action-safety.js';
 import { setRouterState } from './db.js';
 import { readEnvFile } from './env.js';
 import { sendEmail } from './gmail-api.js';
@@ -92,6 +93,11 @@ async function sendSlackDm(
   }
   const client = new WebClient(token);
   try {
+    assertExternalWriteAllowed({
+      system: 'slack',
+      actionClass: 'c3_external_communication',
+      source: 'host:digest-delivery',
+    });
     await client.chat.postMessage({
       channel: targets.slackUid,
       text: `Daily digest sent: ${itemCount} items. Check your inbox.`,

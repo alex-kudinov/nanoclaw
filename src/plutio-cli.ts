@@ -14,6 +14,7 @@ import { execFile } from 'child_process';
 import path from 'path';
 import { promisify } from 'util';
 
+import { assertExternalWriteAllowed } from './action-safety.js';
 import { readEnvFile } from './env.js';
 
 const execFileAsync = promisify(execFile);
@@ -21,6 +22,7 @@ const execFileAsync = promisify(execFile);
 const TOOLBOX_DIR =
   process.env.TOOLBOX_DIR || path.join(process.env.HOME || '', 'dev/toolbox');
 const PLUTIO_TOOL_DIR = path.join(TOOLBOX_DIR, 'shared/plutio/tools/plutio');
+const READ_ONLY_SCRIPTS = new Set(['list-proposals.sh', 'list-people.sh']);
 
 /** Run a Plutio toolbox script (e.g. 'list-proposals.sh') and return stdout. */
 export async function callPlutioTool(
@@ -29,6 +31,17 @@ export async function callPlutioTool(
   timeoutMs = 30_000,
 ): Promise<string> {
   const toolPath = path.join(PLUTIO_TOOL_DIR, script);
+  if (!READ_ONLY_SCRIPTS.has(script)) {
+    assertExternalWriteAllowed({
+      system: 'plutio',
+      actionClass: /(?:invoice|proposal|contract)/.test(script)
+        ? 'c4_financial'
+        : /delete-/.test(script)
+          ? 'c5_destructive'
+          : 'c2_external_write',
+      source: 'host:plutio-cli',
+    });
+  }
   const creds = readEnvFile([
     'PLUTIO_API_CLIENTID',
     'PLUTIO_API_CLIENTSECRET',

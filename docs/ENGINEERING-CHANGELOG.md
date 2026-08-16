@@ -8,6 +8,39 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-002 — Add the dark Company OS action safety control
+
+- Date: 2026-08-16T15:00Z
+- Owner/client: Codex
+- State: ready for local implementation commit; not deployed or activated
+- Commit/PR: claim commit `37c6353` on
+  `codex/nc-20260816-002-action-safety-control`; implementation commit pending;
+  no PR
+- Change class: C5 — common security boundary for external writes
+- Intended outcome: define one content-free host action envelope and one
+  default-off global/per-system brake without changing current live behavior or
+  granting any capability.
+- Implementation: `src/action-safety.ts` provides dynamic strict configuration,
+  deterministic precedence, exact envelope fingerprint/expiry/approval/claim
+  validation, typed denials, and aggregate health. Guards cover Gmail IPC/final
+  sends, Slack runtime/digest/healer output, new Courses SMTP mounts/secrets,
+  Plutio runtime mutation tools, and the Stripe payment/refund processor.
+- Critical ordering: Gmail safe-mode refusal occurs before
+  `claimEmailActionExecution`, so a held action is blocked rather than marked as
+  an uncertain attempt. Slack safety denials bypass reconnect/retry queues.
+  Plutio reads remain available.
+- Boundaries: existing domain approvals/claims/receipts remain authoritative;
+  envelope enforcement is off; production config/restart/deployment, external
+  messages/writes, push, merge, and ledger promotion are excluded. Warm Courses
+  containers and standalone scripts remain explicit activation/follow-up gaps.
+- Verification: exact Node 22.23.2 passes 219/219 focused safety/boundary
+  tests, 632/632 email-critical tests, root typecheck, source formatting,
+  schema sanitizer self-test, documentation continuity, and the independent
+  agent-runner build plus 36/36 tests. The root sandbox run passes
+  2,332/2,378; all 45 permission-sensitive webhook/migration tests pass
+  unrestricted, leaving only the unchanged base CNPC source-wrapper assertion.
+  `git diff --check` passes. Final implementation commit evidence is pending.
+
 ### NC-20260816-001 — Activate the bounded Company OS email shadow
 
 - Date: 2026-08-16T13:54Z

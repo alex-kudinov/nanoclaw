@@ -13,6 +13,7 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
+import { assertExternalWriteAllowed } from './action-safety.js';
 import { DATA_DIR } from './config.js';
 import { query, withAgentContext } from './business-db.js';
 import { getAllRegisteredGroups } from './db.js';
@@ -107,6 +108,15 @@ function alertChief(text: string): void {
 
 async function callPlutioTool(script: string, args: string[]): Promise<string> {
   const toolPath = path.join(PLUTIO_TOOL_DIR, script);
+  assertExternalWriteAllowed({
+    system: 'plutio',
+    actionClass: /(?:invoice|proposal|contract)/.test(script)
+      ? 'c4_financial'
+      : /delete-/.test(script)
+        ? 'c5_destructive'
+        : 'c2_external_write',
+    source: 'host:plutio-outbox-reaper',
+  });
   // env.ts deliberately keeps secrets off process.env. Inject Plutio creds
   // explicitly here so the bash script's plutio_load_env (which only sources
   // .env from cwd) finds them.

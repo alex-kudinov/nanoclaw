@@ -179,12 +179,14 @@ async function triggerMessageEvent(
 
 describe('SlackChannel', () => {
   beforeEach(() => {
+    delete process.env.EXTERNAL_WRITE_SAFE_MODE;
     vi.clearAllMocks();
     vi.mocked(getMessageById).mockReturnValue(undefined);
     vi.mocked(getLatestBotMessageInThread).mockReturnValue(undefined);
   });
 
   afterEach(() => {
+    delete process.env.EXTERNAL_WRITE_SAFE_MODE;
     vi.restoreAllMocks();
   });
 
@@ -928,6 +930,22 @@ describe('SlackChannel', () => {
   // --- sendMessage ---
 
   describe('sendMessage', () => {
+    it('does not post or queue when the global external-write brake is active', async () => {
+      const channel = new SlackChannel(createTestOpts());
+      await channel.connect();
+      process.env.EXTERNAL_WRITE_SAFE_MODE = '1';
+
+      await expect(
+        channel.sendMessage('slack:C0123456789', 'Held message'),
+      ).rejects.toMatchObject({
+        name: 'ExternalWriteDeniedError',
+        code: 'global_safe_mode',
+      });
+
+      expect(currentApp().client.chat.postMessage).not.toHaveBeenCalled();
+      expect(channel.getDiagnostics().outgoingQueueDepth).toBe(0);
+    });
+
     it('sends message via Slack client', async () => {
       const opts = createTestOpts();
       const channel = new SlackChannel(opts);

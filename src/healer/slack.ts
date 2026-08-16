@@ -9,6 +9,7 @@
 
 import { WebClient } from '@slack/web-api';
 
+import { assertExternalWriteAllowed } from '../action-safety.js';
 import { readEnvFile } from '../env.js';
 import { logger } from '../logger.js';
 
@@ -43,6 +44,11 @@ export async function postIncidents(
   const client = getClient();
   if (!client) return false;
   try {
+    assertExternalWriteAllowed({
+      system: 'slack',
+      actionClass: 'c3_external_communication',
+      source: 'host:healer-slack',
+    });
     await client.chat.postMessage({
       channel: INCIDENTS_CHANNEL,
       text,
@@ -63,6 +69,11 @@ export async function postIncidentsRef(
   const client = getClient();
   if (!client) return null;
   try {
+    assertExternalWriteAllowed({
+      system: 'slack',
+      actionClass: 'c3_external_communication',
+      source: 'host:healer-slack',
+    });
     const r = await client.chat.postMessage({
       channel: INCIDENTS_CHANNEL,
       text,

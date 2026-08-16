@@ -13,6 +13,7 @@ import {
   GMAIL_SEND_AS,
   TRACKING_DOMAIN,
 } from './config.js';
+import { assertExternalWriteAllowed } from './action-safety.js';
 import { getGmailClient } from './gmail-auth.js';
 import {
   formatEmailForAgent,
@@ -281,6 +282,11 @@ export async function sendEmail(opts: {
   html?: boolean;
   threadId?: string;
 }): Promise<{ messageId: string; threadId: string }> {
+  assertExternalWriteAllowed({
+    system: 'gmail',
+    actionClass: 'c3_external_communication',
+    source: 'host:gmail-api',
+  });
   const gmail = getGmailClient();
 
   // When threading into an existing conversation, derive the RFC In-Reply-To /
@@ -303,6 +309,13 @@ export async function sendEmail(opts: {
     references,
   });
 
+  // Re-check at the final mutation boundary. Reads above deliberately remain
+  // available in safe mode; a brake applied during preparation still wins.
+  assertExternalWriteAllowed({
+    system: 'gmail',
+    actionClass: 'c3_external_communication',
+    source: 'host:gmail-api',
+  });
   const res = await gmail.users.messages.send({
     userId: 'me',
     requestBody: { raw, ...(opts.threadId ? { threadId: opts.threadId } : {}) },
@@ -442,6 +455,11 @@ export async function replyToThread(opts: {
     ...threadHeaders(messages, opts.threadId),
   });
 
+  assertExternalWriteAllowed({
+    system: 'gmail',
+    actionClass: 'c3_external_communication',
+    source: 'host:gmail-api',
+  });
   const res = await gmail.users.messages.send({
     userId: 'me',
     requestBody: { raw, threadId: opts.threadId },

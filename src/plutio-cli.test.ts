@@ -1,6 +1,45 @@
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { stripToJson } from './plutio-cli.js';
+const exec = vi.hoisted(() => vi.fn());
+
+vi.mock('child_process', () => ({ execFile: exec }));
+vi.mock('./env.js', () => ({ readEnvFile: vi.fn(() => ({})) }));
+
+import { callPlutioTool, stripToJson } from './plutio-cli.js';
+
+beforeEach(() => {
+  delete process.env.EXTERNAL_WRITE_SAFE_MODE;
+  exec.mockReset();
+  exec.mockImplementation(
+    (
+      _file: string,
+      _args: string[],
+      _options: unknown,
+      callback: (
+        error: null,
+        result: { stdout: string; stderr: string },
+      ) => void,
+    ) => callback(null, { stdout: 'OK []', stderr: '' }),
+  );
+});
+
+describe('Plutio external-write brake', () => {
+  it('keeps reads available while denying writes before tool invocation', async () => {
+    process.env.EXTERNAL_WRITE_SAFE_MODE = '1';
+    await expect(callPlutioTool('list-proposals.sh', [])).resolves.toBe(
+      'OK []',
+    );
+    expect(exec).toHaveBeenCalledTimes(1);
+
+    await expect(
+      callPlutioTool('create-proposal.sh', ['--data', '{}']),
+    ).rejects.toMatchObject({
+      name: 'ExternalWriteDeniedError',
+      code: 'global_safe_mode',
+    });
+    expect(exec).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('stripToJson', () => {
   it('strips the OK status prefix before an object', () => {

@@ -14,6 +14,7 @@ import { execFile } from 'child_process';
 import path from 'path';
 import { promisify } from 'util';
 
+import { assertExternalWriteAllowed } from './action-safety.js';
 import { DATA_DIR } from './config.js';
 import {
   enqueueStripeLifecycleFact,
@@ -208,6 +209,11 @@ export async function handleStripePayment(
         ...(refundId ? ['--refund-id', refundId] : []),
       ]
     : [SCRIPT, stripeId, ...(account ? ['--account', account] : [])];
+  assertExternalWriteAllowed({
+    system: 'stripe',
+    actionClass: isRefund ? 'c4_financial' : 'c2_external_write',
+    source: 'host:stripe-payment',
+  });
   const { stdout } = await execFileAsync(process.execPath, args, {
     env: buildScriptEnv(),
     timeout: 120_000,

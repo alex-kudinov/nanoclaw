@@ -403,5 +403,30 @@ describe('Gmail IPC watcher authorization', () => {
       expect.any(String),
     );
     testState.testRecipient = '';
+
+    // Company OS emergency brake: hold before consuming the durable one-time
+    // claim, and never enter the Gmail dispatcher.
+    const claimCountBeforeBrake = testState.claim.mock.calls.length;
+    const dispatchCountBeforeBrake = testState.dispatch.mock.calls.length;
+    process.env.EXTERNAL_WRITE_SAFE_MODE = '1';
+    try {
+      const safeModeRequest = writeRequest('mailman', 'safe-mode-action.json', {
+        actionId,
+      });
+      await vi.advanceTimersByTimeAsync(1100);
+      expect(fs.existsSync(safeModeRequest)).toBe(false);
+      expect(testState.claim).toHaveBeenCalledTimes(claimCountBeforeBrake);
+      expect(testState.dispatch).toHaveBeenCalledTimes(
+        dispatchCountBeforeBrake,
+      );
+      expect(testState.fail).toHaveBeenCalledWith(
+        actionId,
+        'blocked',
+        'action_safety_global_safe_mode',
+        expect.any(String),
+      );
+    } finally {
+      delete process.env.EXTERNAL_WRITE_SAFE_MODE;
+    }
   });
 });

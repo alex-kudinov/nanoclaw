@@ -60,8 +60,8 @@ company-wide merely because one workflow implements them.
 | P0.1 runtime contract | partial | `NC-20260728-005` restored a pinned Node 22 test baseline; `NC-20260731-003` put production on Node 22.23.2; release/runtime enforcement has advanced, but review and live-verification gates remain task-specific. |
 | P0.2 host-owned capabilities | partial | Gmail, Procurement, CNPC, grader delivery, and selected business flows use typed host boundaries; raw credentials and broad agent/tool exposure have not been removed company-wide. |
 | P0.3 capability manifests | partial | Host operation matrices and role-specific checks exist, but one generated manifest does not yet control each agent's tools, mounts, data, network, model, action classes, and ceilings. |
-| P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260815-009` now binds visible To/CC headers for approved email, but one universal action envelope and mutation/replay suite do not yet cover every consequential action. |
-| P0.5 safety controller | still proposed | Domain-specific gates and circuit controls exist, but there is no one drilled global/per-system external-write safe mode with common precedence, ceilings, and evidence. |
+| P0.4 unforgeable approval | partial | Durable pending-send, Procurement action-card, grader receipt, and healer proposal bindings prove the pattern. `NC-20260816-002` implements a dark content-free universal envelope plus mutation/replay tests, but legacy domains do not yet supply it and enforcement is not activated. |
+| P0.5 safety controller | partial | `NC-20260816-002` implements a dark, default-off controller with common precedence, aggregate health, and named runtime-boundary refusal tests. Production activation/drill, warm Courses-container revocation, standalone-script coverage, per-agent/class ceilings, and automatic demotion remain open. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
 | P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` applied the production schema and live-verified the bounded observer across completion, source-gap, and duplicate-only replay. SQLite remains email authority and workflow promotion plus a second pilot process are still open. |
@@ -1272,6 +1272,16 @@ Mailman execution, exact Gmail receipt, and one original-thread closure without
 manual recovery, closing both tasks' named customer-path gate. Other R1
 capability-manifest, universal action-envelope/safe-mode, and healer decisions
 remain open; no ledger promotion may bypass them.
+
+R1 control-layer checkpoint: `NC-20260816-002` implements the versioned
+content-free envelope and dynamic global/per-system brake locally. Gmail holds
+before its execution claim; Slack denials do not queue; new Courses containers
+lose both SMTP secrets and mount; Plutio mutation and Stripe processors deny
+before child invocation; aggregate health and focused refusal/mutation/replay
+tests exist. It remains dark and undeployed. Full P0.4/P0.5 still requires
+domain envelope adoption, a production drill after draining warm Courses
+containers, standalone-script coverage, ceilings/demotion, and capability
+manifests.
 
 R2 foundation checkpoint: `NC-20260815-010` defines the exact
 Mailman/Sales pilot contract and implements host-only typed transitions plus

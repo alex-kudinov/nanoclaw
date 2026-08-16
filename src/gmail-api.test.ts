@@ -26,6 +26,7 @@ import {
   getThread,
   replyToThread,
   searchEmails,
+  sendEmail,
   threadHeaders,
 } from './gmail-api.js';
 import type { gmail_v1 } from 'googleapis';
@@ -544,6 +545,61 @@ describe('replyToThread external-party addressing', () => {
     expect(ccLine(send)).toBeUndefined();
     expect(result.originalTo).toBe('Carl Customer <carl@acme.com>');
     expect(result.to).toBe('test@tandemcoach.co');
+  });
+});
+
+describe('Gmail external-write brake', () => {
+  it('denies before constructing a Gmail client', async () => {
+    const clientCallsBeforeBrake = vi.mocked(getGmailClient).mock.calls.length;
+    process.env.EXTERNAL_WRITE_SAFE_MODE = '1';
+    try {
+      await expect(
+        sendEmail({
+          to: 'person@example.test',
+          subject: 'Held',
+          body: 'No external call',
+        }),
+      ).rejects.toMatchObject({
+        name: 'ExternalWriteDeniedError',
+        code: 'global_safe_mode',
+      });
+      expect(getGmailClient).toHaveBeenCalledTimes(clientCallsBeforeBrake);
+    } finally {
+      delete process.env.EXTERNAL_WRITE_SAFE_MODE;
+    }
+  });
+
+  it('allows reply evidence reads but denies the final send', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: {
+        messages: [
+          {
+            payload: {
+              headers: [
+                { name: 'From', value: 'Person <person@example.test>' },
+                { name: 'To', value: 'info@tandemcoach.co' },
+                { name: 'Subject', value: 'Question' },
+                { name: 'Message-ID', value: '<question@example.test>' },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    const send = vi.fn();
+    vi.mocked(getGmailClient).mockReturnValue({
+      users: { threads: { get }, messages: { send } },
+    } as never);
+    process.env.EXTERNAL_WRITE_SAFE_MODE = '1';
+    try {
+      await expect(
+        replyToThread({ threadId: 'thread-safe-mode', body: 'Held' }),
+      ).rejects.toMatchObject({ code: 'global_safe_mode' });
+      expect(get).toHaveBeenCalledTimes(1);
+      expect(send).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.EXTERNAL_WRITE_SAFE_MODE;
+    }
   });
 });
 

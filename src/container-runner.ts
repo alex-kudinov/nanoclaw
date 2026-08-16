@@ -10,6 +10,11 @@ import path from 'path';
 import os from 'os';
 
 import {
+  evaluateExternalWrite,
+  loadActionSafetyConfig,
+  type ActionSafetyConfig,
+} from './action-safety.js';
+import {
   CONTAINER_IMAGE,
   CONTAINER_MAX_OUTPUT_SIZE,
   CONTAINER_TIMEOUT,
@@ -118,6 +123,36 @@ export interface VolumeMount {
 export interface ReleaseOwnedInstructionMountPlan {
   knowledgeMount: VolumeMount | null;
   additionalMounts: AdditionalMount[];
+}
+
+export function coursesSmtpCapabilityAllowed(
+  groupFolder: string | undefined,
+  config: ActionSafetyConfig = loadActionSafetyConfig(),
+): boolean {
+  if (groupFolder !== 'courses') return true;
+  return evaluateExternalWrite(
+    {
+      system: 'courses_smtp',
+      actionClass: 'c3_external_communication',
+      source: 'host:container-runner',
+    },
+    config,
+  ).allowed;
+}
+
+/** Remove the raw Courses SMTP tool mount before container launch. */
+export function filterExternalWriteMounts(
+  groupFolder: string,
+  additionalMounts: AdditionalMount[],
+  config: ActionSafetyConfig = loadActionSafetyConfig(),
+): AdditionalMount[] {
+  if (coursesSmtpCapabilityAllowed(groupFolder, config)) {
+    return additionalMounts;
+  }
+  return additionalMounts.filter((mount) => {
+    const containerPath = mount.containerPath || path.basename(mount.hostPath);
+    return containerPath !== 'email';
+  });
 }
 
 /**
@@ -368,7 +403,10 @@ function buildVolumeMounts(
   const instructionMounts = planReleaseOwnedInstructionMounts(
     codeRoot,
     group.folder,
-    group.containerConfig?.additionalMounts ?? [],
+    filterExternalWriteMounts(
+      group.folder,
+      group.containerConfig?.additionalMounts ?? [],
+    ),
   );
   if (instructionMounts.knowledgeMount) {
     mounts.push(instructionMounts.knowledgeMount);
@@ -595,11 +633,18 @@ async function readSecrets(
   if (groupFolder === 'courses') {
     const hbKey = configured.HEARTBEAT_API_KEY;
     if (hbKey) secrets.HEARTBEAT_API_KEY = hbKey;
-    if (configured.EMAIL_USER) secrets.EMAIL_USER = configured.EMAIL_USER;
-    if (configured.EMAIL_PASS) secrets.EMAIL_PASS = configured.EMAIL_PASS;
+    const smtpAllowed = coursesSmtpCapabilityAllowed(groupFolder);
+    if (smtpAllowed && configured.EMAIL_USER) {
+      secrets.EMAIL_USER = configured.EMAIL_USER;
+    }
+    if (smtpAllowed && configured.EMAIL_PASS) {
+      secrets.EMAIL_PASS = configured.EMAIL_PASS;
+    }
     // Container path overrides for distribute_session.py
     secrets.INSTRUCTORS_DIR = '/workspace/extra/instructors';
-    secrets.EMAIL_TOOL = '/workspace/extra/email/send-email.sh';
+    if (smtpAllowed) {
+      secrets.EMAIL_TOOL = '/workspace/extra/email/send-email.sh';
+    }
     secrets.TOOLBOX_ROOT = '/workspace/extra';
   }
 

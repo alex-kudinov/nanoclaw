@@ -13,6 +13,10 @@ import {
 } from './config.js';
 import { AvailableGroup } from './container-runner.js';
 import {
+  assertExternalWriteAllowed,
+  isExternalWriteDeniedError,
+} from './action-safety.js';
+import {
   claimEmailActionExecution,
   clearPendingSendsByRecipient,
   confirmEmailAction,
@@ -1373,6 +1377,55 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   } else {
                     await postBoundaryFailure(
                       `🚫 [GMAIL REQUEST HELD] ${data.type} was denied by the host boundary. Its result was not delivered to another Mailman session.`,
+                    );
+                  }
+                  continue;
+                }
+                try {
+                  // This must precede claimEmailActionExecution. An emergency
+                  // brake is a pre-execution hold, not an uncertain Gmail
+                  // attempt, and must not consume the one-time action claim.
+                  assertExternalWriteAllowed({
+                    system: 'gmail',
+                    actionClass: 'c3_external_communication',
+                    source: 'host:gmail-ipc',
+                  });
+                } catch (err) {
+                  if (!isExternalWriteDeniedError(err)) throw err;
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'gmail',
+                  );
+                  logger.warn(
+                    {
+                      sourceGroup,
+                      type: data.type,
+                      code: err.code,
+                      quarantinedAt,
+                    },
+                    'Gmail IPC held by action safety control before execution claim',
+                  );
+                  writeDeniedGmailInput(
+                    sourceGroup,
+                    data.type,
+                    `action safety control: ${err.code}`,
+                    data.source_container,
+                    deps.deliverSourceInput,
+                  );
+                  if (approvedAction?.actionId) {
+                    failEmailAction(
+                      approvedAction.actionId,
+                      'blocked',
+                      `action_safety_${err.code}`,
+                      new Date().toISOString(),
+                    );
+                    await postActionStatus(
+                      `🚫 [EMAIL HELD] Action ${approvedAction.actionId} was NOT sent: the host external-write safety control is active (${err.code}). Gmail was not called and the execution claim was not consumed.`,
+                    );
+                  } else {
+                    await postBoundaryFailure(
+                      `🚫 [GMAIL REQUEST HELD] ${data.type} was stopped by the host external-write safety control (${err.code}). Gmail was not called.`,
                     );
                   }
                   continue;

@@ -68,6 +68,34 @@ describe('email transport canary', () => {
     });
   });
 
+  it('refuses before Gmail when the external-write brake is active', async () => {
+    const gmail = {
+      users: {
+        messages: {
+          send: vi.fn(),
+          get: vi.fn(),
+        },
+      },
+    };
+    process.env.EXTERNAL_WRITE_SAFE_MODE = '1';
+    try {
+      await expect(
+        runEmailTransportCanary({
+          gmail,
+          recipient: 'internal@example.com',
+          from: 'NanoClaw <info@example.com>',
+          replyTo: 'info@example.com',
+          commit,
+          nonce: 'canary-nonce',
+          sentAt: '2026-08-02T00:00:00.000Z',
+        }),
+      ).rejects.toMatchObject({ code: 'global_safe_mode' });
+      expect(gmail.users.messages.send).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.EXTERNAL_WRITE_SAFE_MODE;
+    }
+  });
+
   it('fails when Gmail does not return a durable exact receipt', async () => {
     const gmail = {
       users: {

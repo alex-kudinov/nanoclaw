@@ -231,6 +231,7 @@ import {
 } from './circuit-breaker.js';
 import { drainWatchdogKills, startWatchdogIpc } from './watchdog-ipc.js';
 import { CompanyWorkShadowService } from './company-work-shadow.js';
+import { getActionSafetyStatus } from './action-safety.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -1888,6 +1889,7 @@ async function main(): Promise<void> {
         queue: queueStatus,
         circuitBreaker: circuitBreakerStatus,
         companyWorkShadow: companyWorkShadow.getStatus(),
+        actionSafety: getActionSafetyStatus(),
       };
     },
     runAgent: runContainerAgent,

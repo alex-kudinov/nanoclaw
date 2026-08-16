@@ -157,6 +157,8 @@ import {
   effectiveContainerTimeoutMs,
   runContainerAgent,
   ContainerOutput,
+  coursesSmtpCapabilityAllowed,
+  filterExternalWriteMounts,
   planReleaseOwnedInstructionMounts,
   resolveOAuthToken,
   sweepExitedContainerInputs,
@@ -298,6 +300,81 @@ describe('release-owned instruction mounts', () => {
         configured,
       ),
     ).toEqual({ knowledgeMount: null, additionalMounts: configured });
+  });
+});
+
+describe('Courses SMTP capability boundary', () => {
+  const mounts = [
+    {
+      hostPath: '/tools/email',
+      containerPath: 'email',
+      readonly: true,
+    },
+    {
+      hostPath: '/tools/instructors',
+      containerPath: 'instructors',
+      readonly: true,
+    },
+  ];
+
+  it('preserves the current mount in compatibility mode', () => {
+    expect(
+      filterExternalWriteMounts('courses', mounts, {
+        enforcementEnabled: false,
+        globalSafeMode: false,
+        disabledSystems: [],
+        valid: true,
+      }),
+    ).toEqual(mounts);
+  });
+
+  it.each([
+    {
+      name: 'global safe mode',
+      config: {
+        enforcementEnabled: false,
+        globalSafeMode: true,
+        disabledSystems: [] as const,
+        valid: true,
+      },
+    },
+    {
+      name: 'per-system safe mode',
+      config: {
+        enforcementEnabled: false,
+        globalSafeMode: false,
+        disabledSystems: ['courses_smtp'] as const,
+        valid: true,
+      },
+    },
+    {
+      name: 'envelope enforcement',
+      config: {
+        enforcementEnabled: true,
+        globalSafeMode: false,
+        disabledSystems: [] as const,
+        valid: true,
+      },
+    },
+  ])('withholds only the raw SMTP mount under $name', ({ config }) => {
+    expect(
+      filterExternalWriteMounts('courses', mounts, {
+        ...config,
+        disabledSystems: [...config.disabledSystems],
+      }),
+    ).toEqual([mounts[1]]);
+    expect(
+      coursesSmtpCapabilityAllowed('courses', {
+        ...config,
+        disabledSystems: [...config.disabledSystems],
+      }),
+    ).toBe(false);
+    expect(
+      coursesSmtpCapabilityAllowed('sales', {
+        ...config,
+        disabledSystems: [...config.disabledSystems],
+      }),
+    ).toBe(true);
   });
 });
 

@@ -357,6 +357,22 @@ that bypasses Gmail recipient/content/test-routing/interaction controls. The
 working decision is to retire it behind a host-owned capability. Until cutover,
 it must be included in safe-mode and secret inventories.
 
+### Common external-write safety control (`NC-20260816-002`)
+
+`src/action-safety.ts` now defines the dark, default-off common controller and
+content-free action-envelope contract documented in
+`docs/ACTION-SAFETY-CONTROL.md`. Gmail, Slack, Courses SMTP container launch,
+Plutio runtime tools, and the Stripe payment/refund host processor consult it at
+their mutation boundaries. Misconfiguration, the global brake, and matching
+per-system brakes fail closed; reads and aggregate evidence remain available.
+
+This source state is not production activation and does not replace any
+domain-specific approval, claim, receipt, hold, or policy. Envelope enforcement
+also remains off: current legacy callers supply no envelope and would be denied
+if it were enabled. Warm Courses containers are a residual capability until a
+separately authorized activation drains/recycles them; raw SMTP retirement and
+standalone-script coverage remain open.
+
 Never print, commit, transmit for review, or summarize secret values. Token
 selection for external model review must occur inside the invoking shell and
 only sanitized source/diff content may leave the machine.
