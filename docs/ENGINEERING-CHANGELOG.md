@@ -12,11 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17T19:23Z
 - Owner/client: Codex
-- State: validating; local proposal-only adapter and authoritative contract are
-  implemented, with final continuity/diff/commit evidence still pending
-- Commit/PR: claim `10945e94` on
-  `codex/nc-20260817-005-gmail-gap-reconciliation`; implementation not yet
-  committed; no PR
+- State: complete; local proposal-only adapter, tests, authoritative contract,
+  and continuity evidence are committed and verified
+- Commit/PR: claim `10945e94`; implementation `fc1fdb32` on
+  `codex/nc-20260817-005-gmail-gap-reconciliation`; no PR
 - Change class: C2 — local reversible source/contract addition with no external
   or production write
 - Source reconciliation: inbound push owns SQLite `gmail_history_id`; the
@@ -42,8 +41,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   email-critical tests, and independent runner build plus 43/43 tests. The
   ordinary unrestricted full suite is 2,624/2,625; its sole failure is the
   unchanged unrelated CNPC wrapper-string assertion expecting literal
-  `folder: 'cnpc'`. Root formatting, schema-sanitizer self-test, and capability
-  continuity pass. Documentation continuity is rerun after this required entry.
+  `folder: 'cnpc'`. Root formatting, schema-sanitizer self-test,
+  documentation/capability continuity, and staged/final diff checks pass.
 - Deployment/migration: not applicable. No production schema/data/config,
   source row, watermark event/state, Gmail call, SQLite cursor, service,
   channel, message, task, group, prompt, skill, capability, approval, action,
