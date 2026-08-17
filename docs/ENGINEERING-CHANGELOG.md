@@ -8,6 +8,51 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-016 — Add a dark Campanero host-job ledger pilot
+
+- Date: 2026-08-17T00:36Z
+- Owner/client: Codex
+- State: complete; local dark milestone only
+- Commit/PR: claim `496c9d3`; implementation `9fb0437` on
+  `codex/nc-20260816-016-campanero-ledger-shadow`; no PR
+- Change class: C2 — local, reversible schema and host-only projection
+- Intended outcome: establish host-job executions managed through Campanero as
+  the second Company OS work-ledger pilot without changing scheduler behavior
+  or displacing the SQLite job registry/`job_run_logs` authority.
+- Schema: unapplied migration 119 adds the non-Party `host_job_run` workflow,
+  `execution_started`/receipt-bound `execution_failed` facts, and a
+  workflow-specific identity/completion constraint while preserving migration
+  118's append-only events/receipts, optimistic versions, idempotency, unique
+  source identity, ownership, and no-agent-grant controls. Its tracked rollback
+  refuses to discard or narrow any host-job history.
+- Projection: a new injected single-run projector accepts only structural
+  job/run identity, timestamps, status, duration, exit/PID presence, retry, and
+  timeout facts. One immutable `job_run_logs.id` becomes one work item. Exact
+  success/failure rows receive terminal receipts; contradictory or incomplete
+  facts fail closed as named source gaps without an invented receipt. It has no
+  SQLite reader, timer, daemon/scheduler import, channel dependency, or job
+  mutation. Existing email APIs are workflow-guarded, and the deployed report
+  remains explicitly `sales_email`-only.
+- Verification: exact Node 22.23.2 passes 35/35 focused ledger/shadow tests,
+  typecheck, build, source formatting, 635/635 email-critical tests, and the
+  independent runner build plus 43/43 tests. The unrestricted full root suite
+  passes 2,501/2,502; the sole failure is the unchanged unrelated CNPC wrapper
+  assertion expecting literal `folder: 'cnpc'`. Schema sanitization,
+  capability-matrix verification, diff checks, and documentation continuity
+  pass.
+- Data proof: disposable PostgreSQL 16.15 proved migration 118 -> 119 preserves
+  existing `sales_email` history, accepts one exact receipt-bound failed host
+  run, rejects Party/pipeline binding on a host run, and refuses rollback while
+  host history exists. A separate 118 -> 119 -> rollback rehearsal with no host
+  history preserved the email row and restored both Party/pipeline columns to
+  NOT NULL.
+- Boundary: migration 119 was not applied; no production read/write, runtime
+  import, job run/pause/resume, schedule change, Campanero prompt/capability
+  change, deployment, Slack/Gmail message, push, or merge occurred. The known
+  `already_running` path still has no durable run row and is not inferred.
+- Rollback: revert the local commits. No database, service, scheduler, channel,
+  job, message, or external-state recovery applies.
+
 ### NC-20260816-015 — Deploy and prove the read-only Company OS brief
 
 - Date: 2026-08-16T23:51Z
