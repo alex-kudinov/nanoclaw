@@ -53,10 +53,13 @@ history-preserving rollback, and
 apply or enable the operator loop. Backup, one-file migration, structural
 verification, default-off service activation, redacted config dry-run/apply,
 restart, and natural Chief-channel acknowledgment remain separate recorded
-gates. The helper refuses a release mismatch, defaults to dry-run, accepts only
-approved existing named-operator sources, requires the exact hostname for
-mutation, creates an exclusive backup, and writes atomically without printing
-UID values.
+gates. The helper refuses a release mismatch, defaults to dry-run, requires the
+exact hostname for mutation, creates an exclusive backup, and writes atomically
+without printing UID values. Release `0d2c8ec` accepts only approved existing
+named-operator sources. The next NC-018 activation candidate additionally
+accepts one owner-readable, owner-only regular file containing exactly one
+valid Slack UID; that path rejects symlinks, group/other permissions, multiple
+or malformed IDs, ambiguous source selection, and wrong-owner files.
 
 NC-018 crossed the archive, backup, one-file schema, and default-off service
 gates under exact release `0d2c8ec`. Fresh local/production extraction matched;

@@ -10,7 +10,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260816-018 — Add the default-off Company Work operator exception loop
 
-- Date: 2026-08-17T02:50Z
+- Date: 2026-08-17T03:03Z
 - Owner/client: Codex
 - State: deployed_unverified; exact release and schema are live dark, while
   named-operator activation and natural acknowledgment remain pending
@@ -89,6 +89,19 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   discovery evidence, not a C5 authority grant. No allowlist was manufactured
   and no Slack canary was posted. The prior launchd plist is retained as
   `com.nanoclaw.plist.rollback-999f2a44f773-2026-08-17T02-47-05-260Z`.
+- Operator decision: at 2026-08-17T02:57Z the owner explicitly confirmed Alex
+  Kudinov as the sole Company Work exception operator. That confirmation grants
+  attention acknowledgment only; it does not confer Procurement, Healer,
+  approval, email, job, or workflow authority. The activation candidate adds a
+  dedicated, value-redacted bootstrap from one owner-only regular file because
+  no approved existing source key contains this identity. It rejects symlinks,
+  permissive or wrong-owner files, multiple/malformed IDs, and ambiguous source
+  selection; public results contain only the operator count.
+- Activation-delta verification: exact Node 22.23.2 typecheck and 28 focused
+  tests pass; the email-critical suite remains 637/637 and the independent
+  runner build plus 43/43 tests pass. The unrestricted full root suite is
+  2,538/2,539 with only the unchanged unrelated CNPC wrapper-string assertion
+  expecting literal `folder: 'cnpc'`.
 - Boundary: production migration 120 and exact dark release activation did
   occur. No operator configuration, Slack/customer message, email/job action,
   container wake, workflow authority, prompt, capability, push, or merge

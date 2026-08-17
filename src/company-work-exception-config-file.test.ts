@@ -19,6 +19,16 @@ function fixture(contents: string): string {
   return file;
 }
 
+function operatorUidFixture(
+  envFile: string,
+  contents = 'U1234567\n',
+  mode = 0o600,
+): string {
+  const file = path.join(path.dirname(envFile), 'company-work-operator.uid');
+  fs.writeFileSync(file, contents, { mode });
+  return file;
+}
+
 afterEach(() => {
   for (const directory of directories.splice(0)) {
     fs.rmSync(directory, { recursive: true, force: true });
@@ -62,6 +72,71 @@ describe('Company Work exception-loop environment transaction', () => {
         apply: false,
       }),
     ).toThrow('absent or empty');
+  });
+
+  it('accepts one owner-only UID file without exposing its value', () => {
+    const file = fixture('UNCHANGED=yes\n');
+    const operatorUidFile = operatorUidFixture(file);
+    const before = fs.readFileSync(file, 'utf8');
+    const result = setCompanyWorkExceptionConfig({
+      envFile: file,
+      mode: 'on',
+      operatorUidFile,
+      apply: false,
+    });
+    expect(result).toMatchObject({
+      mode: 'dry-run',
+      target: { active: true, operatorCount: 1 },
+      backupPath: null,
+    });
+    expect(JSON.stringify(result)).not.toContain('U1234567');
+    expect(fs.readFileSync(file, 'utf8')).toBe(before);
+  });
+
+  it('refuses ambiguous, permissive, linked, or malformed UID files', () => {
+    const file = fixture('UNCHANGED=yes\n');
+    const secure = operatorUidFixture(file);
+    expect(() =>
+      setCompanyWorkExceptionConfig({
+        envFile: file,
+        mode: 'on',
+        operatorSourceKey: 'HEALER_OPERATOR_UID',
+        operatorUidFile: secure,
+        apply: false,
+      }),
+    ).toThrow('exactly one');
+
+    fs.chmodSync(secure, 0o644);
+    expect(() =>
+      setCompanyWorkExceptionConfig({
+        envFile: file,
+        mode: 'on',
+        operatorUidFile: secure,
+        apply: false,
+      }),
+    ).toThrow('owner-only');
+
+    fs.chmodSync(secure, 0o600);
+    const linked = path.join(path.dirname(file), 'operator-link.uid');
+    fs.symlinkSync(secure, linked);
+    expect(() =>
+      setCompanyWorkExceptionConfig({
+        envFile: file,
+        mode: 'on',
+        operatorUidFile: linked,
+        apply: false,
+      }),
+    ).toThrow('regular file');
+
+    fs.writeFileSync(secure, 'U1234567,U7654321\n', { mode: 0o600 });
+    expect(() =>
+      setCompanyWorkExceptionConfig({
+        envFile: file,
+        mode: 'on',
+        operatorUidFile: secure,
+        apply: false,
+      }),
+    ).toThrow('exactly one valid Slack UID');
   });
 
   it('refuses values outside the runtime safety bounds', () => {

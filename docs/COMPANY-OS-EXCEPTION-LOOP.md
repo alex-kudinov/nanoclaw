@@ -89,9 +89,11 @@ reports mode, counts, limits, running state, last result, and error code, never
 the operator IDs.
 
 Use only the helper bundled in the exact immutable release. It verifies the
-full expected release commit, accepts only a small allowlist of existing
-named-operator configuration keys, defaults to dry-run, prints no UID values,
-and requires the exact hostname for apply:
+full expected release commit. The currently live `0d2c8ec` helper accepts only
+the small allowlist of existing named-operator configuration keys; the
+activation candidate additionally accepts one owner-readable, owner-only
+regular file containing exactly one valid Slack UID. Both paths default to
+dry-run, print no UID values, and require the exact hostname for apply:
 
 ```bash
 node scripts/set-company-work-exception-loop.mjs \
@@ -102,16 +104,25 @@ node scripts/set-company-work-exception-loop.mjs \
   --dry-run
 ```
 
+For an explicitly confirmed dedicated Company Work operator when no approved
+source key exists, replace `--operator-source-key ...` with
+`--operator-uid-file <absolute-owner-only-file>`. The helper rejects symlinks,
+group/other permissions, multiple IDs, malformed IDs, ambiguous source
+selection, and wrong-owner files. Remove the temporary input after the applied
+configuration has been verified; rollback uses the environment backup, not the
+input file.
+
 Apply creates an exclusive same-mode backup and atomically replaces the env
 file. Restart is required because NanoClaw reads file configuration at startup.
 The first enabled startup tick is the bounded Slack canary; do not manufacture
 or alter a source exception merely to make a brief appear.
 
-Production currently has no approved existing named-operator source key for
-this helper to copy. Chief-channel membership is discovery evidence, not an
-authority grant. Do not infer or create a Company Work operator allowlist until
-the owner explicitly confirms the named person and the dedicated configuration
-path is reviewed.
+Production has no approved existing named-operator source key for this helper
+to copy. Chief-channel membership was discovery evidence, not an authority
+grant; the owner separately confirmed Alex Kudinov as the sole Company Work
+operator at 2026-08-17T02:57Z. Use the dedicated owner-only-file path without
+creating or inheriting Procurement, Healer, approval, email, job, or workflow
+authority.
 
 ## Recovery
 

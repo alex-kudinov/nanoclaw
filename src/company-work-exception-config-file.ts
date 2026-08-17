@@ -12,11 +12,14 @@ const ALLOWED_OPERATOR_SOURCE_KEYS = new Set([
   'HEALER_OPERATOR_UIDS',
   'HEALER_OPERATOR_UID',
 ]);
+const SLACK_UID_PATTERN = /^[UW][A-Z0-9]{6,31}$/;
+const MAX_OPERATOR_UID_FILE_BYTES = 128;
 
 export interface CompanyWorkExceptionConfigFileOptions {
   envFile: string;
   mode: 'off' | 'on';
   operatorSourceKey?: string;
+  operatorUidFile?: string;
   intervalMs?: number;
   reportLimit?: number;
   staleAfterHours?: number;
@@ -126,6 +129,45 @@ function positiveInteger(
   return resolved;
 }
 
+function readOperatorUidFile(file: string): string {
+  const initialStat = assertAbsoluteRegularFile(file, 'operator UID file');
+  const descriptor = fs.openSync(
+    file,
+    fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW,
+  );
+  try {
+    const stat = fs.fstatSync(descriptor);
+    if (
+      !stat.isFile() ||
+      stat.dev !== initialStat.dev ||
+      stat.ino !== initialStat.ino
+    ) {
+      throw new Error('operator UID file changed during validation');
+    }
+    if ((stat.mode & 0o077) !== 0 || (stat.mode & 0o400) === 0) {
+      throw new Error(
+        'operator UID file must be owner-readable and owner-only',
+      );
+    }
+    const uid = process.getuid?.();
+    if (uid !== undefined && stat.uid !== uid) {
+      throw new Error('operator UID file must be owned by the current user');
+    }
+    if (stat.size <= 0 || stat.size > MAX_OPERATOR_UID_FILE_BYTES) {
+      throw new Error('operator UID file has an invalid size');
+    }
+    const value = fs.readFileSync(descriptor, 'utf8').trim();
+    if (!SLACK_UID_PATTERN.test(value)) {
+      throw new Error(
+        'operator UID file must contain exactly one valid Slack UID',
+      );
+    }
+    return value;
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
 function renderTarget(
   contents: string,
   options: CompanyWorkExceptionConfigFileOptions,
@@ -138,12 +180,24 @@ function renderTarget(
     );
   }
   const sourceKey = options.operatorSourceKey;
-  if (!sourceKey || !ALLOWED_OPERATOR_SOURCE_KEYS.has(sourceKey)) {
-    throw new Error('on mode requires an allowed named-operator source key');
+  const sourceFile = options.operatorUidFile;
+  if (Boolean(sourceKey) === Boolean(sourceFile)) {
+    throw new Error(
+      'on mode requires exactly one named-operator source key or UID file',
+    );
   }
-  const operatorUids = readSingleValue(contents, sourceKey);
-  if (!operatorUids?.trim()) {
-    throw new Error(`${sourceKey} is absent or empty`);
+  let operatorUids: string;
+  if (sourceFile) {
+    operatorUids = readOperatorUidFile(sourceFile);
+  } else {
+    if (!sourceKey || !ALLOWED_OPERATOR_SOURCE_KEYS.has(sourceKey)) {
+      throw new Error('on mode requires an allowed named-operator source key');
+    }
+    const existingOperatorUids = readSingleValue(contents, sourceKey);
+    if (!existingOperatorUids?.trim()) {
+      throw new Error(`${sourceKey} is absent or empty`);
+    }
+    operatorUids = existingOperatorUids;
   }
   let rendered = contents;
   const values: Record<string, string> = {

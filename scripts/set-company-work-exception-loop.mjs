@@ -15,7 +15,8 @@ function usage(message) {
   node ${path.join(scriptDir, 'set-company-work-exception-loop.mjs')} --env-file <absolute-path> --expected-release <full-commit> --restore <absolute-backup-path> --confirm-host <hostname>
 
 Options:
-  --operator-source-key <key>  Required for on; copies only an existing named-operator UID list
+  --operator-source-key <key>  On-mode source: copy an approved existing operator UID list
+  --operator-uid-file <path>   On-mode source: owner-only file containing exactly one UID
   --interval-ms <integer>      Default 86400000
   --report-limit <integer>     Default 100
   --stale-after-hours <int>    Default 24
@@ -35,6 +36,7 @@ const valueArgs = new Set([
   '--expected-release',
   '--mode',
   '--operator-source-key',
+  '--operator-uid-file',
   '--interval-ms',
   '--report-limit',
   '--stale-after-hours',
@@ -80,9 +82,10 @@ if (restore) {
   if (
     applyFlag ||
     values.has('--mode') ||
-    values.has('--operator-source-key')
+    values.has('--operator-source-key') ||
+    values.has('--operator-uid-file')
   ) {
-    usage('--restore cannot be combined with mode/operator/apply flags');
+    usage('--restore cannot be combined with mode/operator-source/apply flags');
   }
   result = restoreCompanyWorkExceptionConfig({
     envFile,
@@ -103,6 +106,7 @@ if (restore) {
     envFile,
     mode,
     operatorSourceKey: values.get('--operator-source-key'),
+    operatorUidFile: values.get('--operator-uid-file'),
     intervalMs: integer('--interval-ms'),
     reportLimit: integer('--report-limit'),
     staleAfterHours: integer('--stale-after-hours'),
