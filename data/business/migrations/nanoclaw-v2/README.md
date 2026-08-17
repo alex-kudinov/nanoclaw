@@ -52,13 +52,22 @@ before applying anything.
 - migration 118 is the host-only Company OS work-ledger foundation created by
   `NC-20260815-010`; `NC-20260816-001` records its separately backed-up,
   explicit production apply and live-verified default-off observer deployment;
-- migration 119 is the local, unapplied `NC-20260816-016` host-job extension.
-  It has no runtime producer and grants no agent access; see
-  `docs/COMPANY-OS-JOB-LEDGER.md`;
+- migration 119 is the host-job extension created locally by
+  `NC-20260816-016`; `NC-20260816-017` records its separately backed-up,
+  explicit production apply and bounded default-off projection proof;
+- migration 120 is the host-only Company Work operator-attention state created
+  and activated by `NC-20260816-018`; it grants no agent access and never
+  mutates source work. See `docs/COMPANY-OS-EXCEPTION-LOOP.md`;
+- migration 121 is the local, unapplied `NC-20260817-001` normalized trigger
+  occurrence foundation. It stores content-free identities/hashes only and has
+  no runtime producer or task/action authority. See
+  `docs/COMPANY-OS-TRIGGER-CONTRACT.md`;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
-  refuses to narrow the schema while any host-job history exists.
+  refuses to narrow the schema while any host-job history exists;
+- rollbacks 120 and 121 are non-auto-discovered and refuse to erase populated
+  operator-attention or trigger-occurrence history.
 
 ## Rollback
 

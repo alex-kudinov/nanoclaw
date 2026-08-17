@@ -10,9 +10,10 @@ and structurally verified in production on 2026-07-30. Run
 these overlays with generated evidence.
 
 Structure-only Company OS overlay: migrations 118, 119, and 120 are live under
-`NC-20260816-001/017/018`. Migration 120's operator-attention tables are empty
-and its exact release is deployed dark; the loop remains disabled pending a
-separately approved named-operator activation and natural canary.
+`NC-20260816-001/017/018`. Exact release `a2e6d35` runs migration 120's active
+one-operator attention loop; one natural brief, exact acknowledgment, and
+threaded receipt are verified. Migration 121 below is the local unapplied
+target created by `NC-20260817-001`, not running-schema evidence.
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -128,6 +129,27 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   event_key                     text                 NOT NULL
   evidence_sha256               text                 NOT NULL
   occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_trigger_occurrences (migration 121 local target, unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_trigger_occurrences_id_seq'::regclass)
+  contract_version              smallint             NOT NULL
+  definition_id                 text                 NOT NULL
+  occurrence_id                 text                 NOT NULL
+  semantic_fingerprint          text                 NOT NULL
+  trigger_kind                  text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_key                    text                 NOT NULL
+  occurrence_key                text                 NOT NULL
+  observed_at                   timestamp with time zone NOT NULL
+  payload_sha256                text                 NOT NULL
+  requested_operation           text                 NOT NULL
+  workflow_type                 text                 NOT NULL
+  work_source_system            text                 NOT NULL
+  work_source_key               text                 NOT NULL
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 

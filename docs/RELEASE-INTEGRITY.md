@@ -76,6 +76,14 @@ fingerprint unchanged. Later natural source resolution remains a separate gate.
 Exact digests, paths, fingerprints, and rollback identities are recorded in
 `docs/ENGINEERING-CHANGELOG.md`.
 
+Beginning with NC-20260817-001, the archive also binds migration 121 and its
+history-preserving rollback. Those bytes are a local dark trigger-occurrence
+foundation only. Bundling them does not apply the schema, import the trigger
+module into the daemon, wire a schedule/channel/webhook/condition adapter,
+create or resume a task, select a skill, or grant action authority. Production
+backup, explicit one-migration apply, disabled-adapter deployment, per-source
+replay proof, and any task wiring remain separately authorized gates.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

@@ -34,6 +34,14 @@ and multi-workflow report in exact release `999f2a4`. Five exact successful job
 runs now exist as 5 items/15 events/5 receipts; exact replay was duplicate-only
 and all source/email parity hashes remained unchanged. The reader still opens
 SQLite read-only, selects no result content, and is unscheduled/default-off.
+`NC-20260816-018` applies migration 120 and activates the separate host-owned
+operator-attention loop in exact release `a2e6d35`; one natural brief, exact
+named acknowledgment, and threaded receipt are verified without changing the
+source work ledger. `NC-20260817-001` adds an unapplied migration-121 target
+for content-free normalized trigger occurrences across time, Gmail, webhook,
+topic, and business-condition sources. It has no runtime producer and grants
+no task, skill, capability, approval, or action authority. See
+`docs/COMPANY-OS-TRIGGER-CONTRACT.md`.
 
 ---
 

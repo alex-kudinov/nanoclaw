@@ -262,6 +262,15 @@ current occurrences and the threaded receipt is posted.
 See `docs/COMPANY-OS-EXCEPTION-LOOP.md`; production state must be taken from the
 NC-018 active-work/changelog evidence, not repository presence.
 
+`NC-20260817-001` adds the next local-only R3 foundation: an unwired
+content-free trigger-occurrence contract for `time`, `gmail`, `webhook`,
+`topic`, and `business_condition` sources plus unapplied migration 121. Stable
+definition/occurrence/fingerprint identities make exact replay converge and
+semantic drift fail closed. The table is append-only/admin-only and stores no
+raw source content. The module is not imported by the daemon and cannot
+create/resume work, select a skill, or grant approval/capability/action
+authority. See `docs/COMPANY-OS-TRIGGER-CONTRACT.md`.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container
@@ -543,6 +552,11 @@ The modern namespace is `business_v2`, including concepts such as:
   reason cases and durably posted one natural Chief brief without changing the
   source work ledger. The named reaction acknowledged all three current cases
   with a posted threaded receipt; natural source resolution remains pending.
+- `NC-20260817-001` adds local, unapplied migration 121 plus an unwired typed
+  store for normalized trigger occurrences. The target is admin-only,
+  append-only, content-free, and replay-safe across five closed source kinds.
+  It is repository target state only: production migration, source adapters,
+  task creation/resume, skills, and every action authority remain unchanged.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.

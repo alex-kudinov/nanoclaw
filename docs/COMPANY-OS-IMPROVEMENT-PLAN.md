@@ -66,7 +66,7 @@ company-wide merely because one workflow implements them.
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
 | P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales foundation; `NC-20260816-001` applies it and proves bounded shadow/replay; `NC-20260816-014/015` add and deploy its read-only exception report. `NC-20260816-016/017` add, deploy, and live-verify the second Campanero host-job contract: five exact runs, 15 events, five receipts, duplicate-only replay, and unchanged source/email parity. SQLite remains authority; recurring observation and either workflow's promotion remain open. |
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
-| P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places. `NC-20260816-016/017` define and live-prove one immutable `job_run_logs.id` execution contract without controlling it, while exposing the `already_running` durability gap. Definitions, skipped attempts, launchd, n8n, reapers, and all trigger types are not normalized as one inventory. |
+| P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places. `NC-20260816-016/017` define and live-prove one immutable `job_run_logs.id` execution contract without controlling it, while exposing the `already_running` durability gap. `NC-20260817-001` adds the local, unwired normalized occurrence/replay contract across five trigger kinds, but definitions, skipped attempts, launchd, n8n, reapers, source adapters, and the full trigger inventory are not yet normalized or live. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
 | P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface; NC-017 adds a proven host-job source. Exact release `a2e6d35` activates NC-018's first combined recurring brief for one owner-confirmed operator; its first natural Chief delivery, exact named acknowledgment, and threaded receipt are durable with aggregate health and fail-closed state. Normalized correlation, weekly quality/cost evidence, and wider coverage remain incomplete. |
 | P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
@@ -1450,6 +1450,18 @@ job report had zero exceptions, and source/job/task/email parity held. The CLI
 remains unscheduled/default-off. Recurring briefs, acknowledgment/resolution,
 trigger normalization, and workflow promotion are later gates.
 
+R3 trigger-contract dark checkpoint: `NC-20260817-001` defines one strict,
+content-free occurrence envelope for time/schedule, Gmail, webhook, topic, and
+business-condition sources. Versioned definition, occurrence, and semantic
+hashes make exact delivery replay duplicate-only and same-identity fact drift a
+hard conflict. Unapplied migration 121 adds one admin-only append-only table;
+the injected host store performs no task, work-ledger, skill, capability,
+approval, or action mutation. Disposable PostgreSQL proves all five kinds,
+exact replay, conflict refusal, append-only enforcement, zero non-admin grants,
+populated rollback refusal, and empty rollback. Production schema, adapters,
+watermarks, inventory, task wiring, and authority promotion remain later R3
+gates.
+
 R4 first operator-loop checkpoint: exact release `a2e6d35` activates
 `NC-20260816-018` with live migration 120, an additive host-only
 case/brief/event ledger, and recurring Chief-channel delivery over
@@ -1775,7 +1787,10 @@ Implementation checkpoint (2026-07-29):
     operator review/replay runbook.
 24. `REL-003` — define one normalized trigger contract for time, Gmail,
     webhook, topic, and business-condition sources; make schedules a trigger
-    subtype and require replay/deduplication evidence.
+    subtype and require replay/deduplication evidence. `NC-20260817-001` adds
+    the local dark contract, unapplied durable store, and synthetic five-family
+    replay/conflict proof; production adapters, watermarks, inventory, and task
+    create/resume wiring remain separately gated.
 25. `CAP-001` — define versioned skill packages with declared inputs, outputs,
     context, capability dependencies, compatible execution profiles,
     evaluation pack, owner, and rollback; skill selection never grants an
