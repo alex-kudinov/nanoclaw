@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260817-008` | Make every newly observed inbound Gmail candidate end in one durable content-free accepted/rejected receipt or hold the history cursor for retry | Codex | `codex/nc-20260817-008-gmail-disposition-receipts` @ `7f889cbe` (local claim from deployed `de815e1d`) | `in_progress` | C2 | Append-only SQLite disposition contract/store; exact replay/conflict and privacy controls; typed mapping for current Gmail terminal paths; cursor non-advance on unknown/failed accounting; read-only reconciliation lookup; focused and broad regression proof. Local only: no production schema/data, Gmail call, runtime deploy, migration 123, source row, message/action, push, or merge. | Map every current poll/push terminal path and existing durable evidence, then implement the smallest receipt boundary that preserves present processing while refusing history advance across any unaccounted candidate. Historical receipt backfill and production activation remain separate gates. | 2026-08-17T22:08Z |
 | `NC-20260817-007` | Deploy the exact NC-006 Gmail reconciliation-shadow release dark while leaving migration 123 unapplied and every Gmail/source/runtime path unchanged | Codex | `codex/nc-20260817-007-gmail-shadow-dark-deploy` @ deployed `de815e1d` | `complete` | C2 | Exact release `de815e1d` is live with the NC-006 bytes installed but unwired. Migration 123 remains absent; no source registration/bootstrap, live Gmail read, shadow row, 404 interception, cursor, task, action, message, push, or merge occurred. | None for this deployment milestone. Durable real candidate-disposition receipts are the next local prerequisite; migration 123 application, source bootstrap, live read-only shadow proof, and any 404/cursor authority remain separate later gates. | 2026-08-17T22:04Z |
 | `NC-20260817-006` | Add the durable, resumable, read-only shadow foundation needed to prove large inbound Gmail gap snapshots without changing production ingestion | Codex | `codex/nc-20260817-006-gmail-reconciliation-shadow` @ `67870546` (local implementation) | `complete` | C2 | Committed exact read-only Google list/profile wrapper; content-free resumable snapshot/candidate receipt contract and unapplied schema/store; synthetic and disposable-PostgreSQL proof. No production source registration, cursor, 404 interception, message read/recovery, task, agent, action, send, deploy, push, or merge. | None for this local milestone. Durable real disposition receipts, dark migration/source bootstrap, bounded live read-only shadow proof, and any runtime recovery or cursor authority require separately tracked gates. | 2026-08-17T20:21Z |
 | `NC-20260817-005` | Add a dark, source-specific bounded reconciliation adapter for the inbound Gmail history-expiry gap without changing current ingestion | Codex | `codex/nc-20260817-005-gmail-gap-reconciliation` @ `fc1fdb32` (local implementation) | `complete` | C2 | Committed pure/injected inbound Gmail source, gap and capped full-snapshot reconciliation proposals; synthetic negative/positive tests; dedicated contract and Company OS continuity. No runtime import, source row, Google call, database/cursor write, message recovery, task, agent, or action. Label-poll remains separate. | None for this local milestone. Durable candidate receipts, large-mailbox resumability, a real read-only Google wrapper, production source registration/bootstrap, shadow proof, cursor/runtime wiring, watermark-age attention, and label-poll recovery require separate tracked gates. | 2026-08-17T19:26Z |
@@ -100,6 +101,47 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260817-008
+
+- Trigger/base: the owner told Codex to deploy and proceed with the next steps.
+  NC-007 deployed exact release `de815e1d` dark and closed out at `7f889cbe`;
+  migration 123 remains absent and no live Gmail read/source/shadow producer
+  exists. This isolated worktree starts from that exact closeout, while the
+  shared dirty operational checkout and every earlier worktree remain
+  untouched. The claim is local-only until explicitly pushed.
+- Verified current gap: `GmailChannel` uses an in-memory `processedIds` set as
+  its fast duplicate guard. Terminal paths include ordinary SQLite persistence,
+  direct classified routing, rule-based auto-archive, own-outbound exclusion,
+  Spam/Trash exclusion, empty-content exclusion, and hard-filter exclusion.
+  Several exclusions add only the in-memory ID; fetch/process errors are logged
+  while the push loop still advances the global history cursor. Existing
+  `messages` rows prove some accepted candidates but do not provide one closed,
+  content-free disposition/evidence contract for reconciliation.
+- Outcome: add one host-owned append-only SQLite receipt per terminal candidate,
+  with a closed accepted/rejected reason vocabulary, semantic fingerprint,
+  source-evidence hash, exact replay convergence, and changed-replay refusal.
+  Refactor the current Gmail processing boundary so a history delta advances
+  only when every candidate is already durably receipted or produces one exact
+  terminal receipt; an error/unknown leaves the prior cursor fixed for replay.
+  Expose a read-only receipt lookup compatible with the NC-006 reconciliation
+  accounting port. Do not store sender, recipient, address, subject, body,
+  header, label text, prompt, task, approval, action, or arbitrary metadata.
+- Authority boundary: local source/schema/tests/documentation only. No
+  production SQLite/PostgreSQL write, migration-123 apply, source registration
+  or bootstrap, live Gmail/profile/list/get call, current history-cursor change,
+  404 interception, message delivery/classification, task/agent/action/send,
+  service restart/deployment, push, or merge is authorized. Historical receipt
+  backfill is explicitly out of scope and must remain dry-run-first under a
+  separate task.
+- Acceptance: SQLite schema creation/reopen, append-only triggers, exact
+  replay/conflict, malformed/privacy-negative, and read-only accounting tests;
+  executable tests for every current Gmail terminal decision, duplicate/restart
+  behavior, partial-batch failure with no cursor advance, complete-batch
+  advance, and ordinary poll non-regression. Run exact Node 22.23.2 focused,
+  Company OS/Gmail, typecheck/build, 638-test email-critical plus independent
+  runner, full-suite baseline, formatting, schema/documentation continuity, and
+  diff checks. Deployment is not applicable to this milestone.
 
 ### NC-20260817-007
 
