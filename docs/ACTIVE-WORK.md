@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260817-003` | Add a durable Company OS trigger-source inventory and fail-closed watermark/reconciliation contract before any second source adapter | Codex | `codex/nc-20260817-003-trigger-source-watermarks` @ `7aaf7caa` | `in_progress` | C2 | Isolated local dark foundation only: reconcile implemented source/cursor mechanics; add content-free host-owned source registration, versioned watermark state, append-only checkpoint/gap history, compare-and-swap and replay/conflict semantics, migration/rollback/tests, and Company OS/project/data continuity. Existing Gmail, webhook, scheduler, topic, condition, group, daemon, production database/config, tasks, messages, and action paths remain read-only/unwired. | Implement and rehearse the generic inventory/watermark store against disposable PostgreSQL; prove exact replay, stale-version/conflict refusal, monotonic advance, gap freeze, explicit reconciliation, append-only history, and zero non-admin grants. Stop before production migration, daemon wiring, a second adapter, or any task/action authority. | 2026-08-17T15:46Z |
 | `NC-20260817-002` | Apply the normalized-trigger schema and live-prove one bounded, source-read-only scheduled-task occurrence observer without granting task or action authority | Codex | `codex/nc-20260817-002-time-trigger-activation` @ deployed `baed66d` | `complete` | C2 | Migration 121 and exact release `baed66d` are live. A drained, disabled deployment produced zero rows; one exact existing task's natural `2026-08-17T14:00:00.000Z` claim then inserted one `time` occurrence at 14:00:11Z, and exact release-bound replay was duplicate-only. The one-boundary config was expired back to disabled with daemon health retaining 1 matched/1 applied/0 failures. No task was created/resumed and no prompt, agent, capability, approval, message, or action authority was granted. Ambient email/work-ledger changes and the existing exception loop's restart brief were separately attributed; no push or merge occurred. | None for this activation milestone. Other trigger families, loss-recovery watermarks, recurring definitions, or task create/resume authority require separate tracked gates. | 2026-08-17T14:04Z |
 | `NC-20260817-001` | Establish one durable, replay-safe Company OS trigger-occurrence contract for time, Gmail, webhook, topic, and business-condition sources without wiring production behavior | Codex | `codex/nc-20260817-001-trigger-contract` @ `ec49ac68` (local implementation) | `complete` | C2 | Committed local dark foundation: a content-free normalized trigger type, stable definition/occurrence/fingerprint identities, exact replay/conflict semantics, additive unapplied migration 121 plus history-preserving rollback, injected host store, focused tests, and Company OS/project/data continuity. The daemon does not import the module. Production schema/data/config, schedules/channels/adapters, task creation/resume, agent/skill/prompt/capability changes, external messages/actions, push, and merge remain unchanged. | None for this local milestone. Production backup/migration, disabled-adapter deployment, source inventory/watermarks, one bounded source adapter, and any task create/resume authority require separately tracked activation work. | 2026-08-17T12:17Z |
 | `NC-20260816-018` | Give the two proven Company OS pilots one host-owned, deduplicated Chief-channel exception loop with named-operator acknowledgment and source-derived resolution | Codex | `codex/nc-20260816-018-company-work-exception-loop` @ deployed `a2e6d35` | `deployed_unverified` | C5 | Exact release `a2e6d35` is healthy on `mini-claw.local`; the dedicated config has one owner-confirmed operator and the one-use UID file was removed after redacted verification. The first bounded run posted one durably bound Chief brief for three exact reasons on one naturally present exception. Alex's exact check reaction acknowledged all three current cases and the threaded receipt is durably posted. Source Company Work, email, job, task, and channel-definition fingerprints stayed unchanged; zero containers or queued work appeared. | Passively observe a later complete report where an exact source reason disappears and require source-derived resolution with no workflow mutation. Do not manufacture or alter the source exception; R3 trigger normalization can proceed as a separate task. | 2026-08-17T11:56Z |
@@ -95,6 +96,47 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260817-003
+
+- Trigger/base: the owner said to continue the Company OS roadmap after the
+  completed NC-002 activation milestone. The isolated worktree starts from
+  exact closeout `7aaf7caa`; the shared dirty operational checkout and prior
+  worktrees remain untouched. This claim is local-only until explicitly
+  pushed.
+- Verified source inventory at claim time: the one normalized adapter is the
+  now-disabled exact-boundary scheduled-task observer. Gmail push and Gmail
+  label correction each persist independent history IDs in mutable SQLite
+  `router_state`; both currently re-bootstrap after history expiry, and the
+  inbound push path explicitly accepts an unmeasured data-loss window.
+  Generic webhooks archive provider event IDs when extractors can supply them,
+  but some sources legitimately or provisionally use NULL IDs; only the
+  Trafft sweeper has the older mutable PostgreSQL watermark implementation.
+  Gmail Pub/Sub is a transport, not a generic topic adapter. No normalized
+  topic or business-condition adapter exists.
+- Outcome: establish a versioned, content-free source definition registry and
+  durable watermark state machine before any other trigger family can be
+  promoted. Exact registration replay must converge; changed facts under the
+  same definition must conflict. Watermark events must use optimistic state
+  versions, preserve append-only history, advance only across a source-specific
+  monotonic cursor with complete `observed = accepted + rejected` accounting,
+  freeze on a durable gap, and resume only through an event bound to that exact
+  open gap. Registration or watermark state grants no task, skill, capability,
+  approval, message, or action authority.
+- Scope/risk: C2 reversible local source/schema/documentation work with no
+  production application. Likely files are a focused typed host module/test,
+  additive migration/rollback 122, structure-only schema/data docs, trigger
+  contract, project map, roadmap, changelog, and this register. Existing
+  source adapters and cursor stores are evidence only and will not be changed
+  or wired. No active task claims the new module or migration; documentation
+  overlap is controlled in this isolated branch.
+- Acceptance: focused contract and migration tests plus disposable PostgreSQL
+  rehearsal prove registration replay/conflict, monotonic and CAS refusal,
+  exact checkpoint replay, gap freeze, explicit gap reconciliation,
+  accounting checks, append-only history, history-preserving rollback, and
+  zero agent grants. Then run pinned Node typecheck/build, applicable Company
+  OS/email/runner/full tests, formatting, continuity, and diff checks. No live
+  schema/config/service/source/task/channel/message/action state may change.
 
 ### NC-20260817-002
 
