@@ -69,10 +69,12 @@ extraction verification. A redacted dry-run/apply/verify transaction configured
 one operator, retained an environment backup, and removed the one-use input.
 One bounded restart converged to exact healthy release `a2e6d35`; its first
 run posted and durably bound one natural Chief brief while source Company Work,
-email, job, task, and channel-definition fingerprints remained unchanged.
-The named check reaction, threaded acknowledgment receipt, and later natural
-source resolution remain separate gates. Exact digests, paths, fingerprints,
-and rollback identities are recorded in `docs/ENGINEERING-CHANGELOG.md`.
+email, job, task, and channel-definition fingerprints remained unchanged. The
+sole named operator's exact check reaction acknowledged all three current
+occurrences, posted the threaded receipt, and again left every protected source
+fingerprint unchanged. Later natural source resolution remains a separate gate.
+Exact digests, paths, fingerprints, and rollback identities are recorded in
+`docs/ENGINEERING-CHANGELOG.md`.
 
 The builder refuses to run when:
 

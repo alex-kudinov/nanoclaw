@@ -3,9 +3,10 @@
 Status: exact release `a2e6d35` and migration 120 are live under
 `NC-20260816-018`. The loop is active for the sole owner-confirmed operator,
 and its first bounded run durably posted one naturally sourced Chief brief for
-three exact reasons on one exception item. The named check-reaction receipt
-and later natural source-derived resolution remain separately evidence-gated
-in active work and the engineering changelog.
+three exact reasons on one exception item. The sole operator's exact check
+reaction acknowledged all three current occurrences, and the threaded receipt
+is durably posted. Later natural source-derived resolution remains separately
+evidence-gated in active work and the engineering changelog.
 
 ## Purpose and authority
 

@@ -257,7 +257,8 @@ resolution requires a later complete report where the exact reason is absent.
 The only shared Slack change is backward-compatible delivery of exact
 user/source provenance to host approval listeners. The production loop is
 active for one owner-confirmed operator and has posted one naturally sourced,
-durably bound Chief brief; the exact check-reaction receipt remains pending.
+durably bound Chief brief; the exact check reaction acknowledged all three
+current occurrences and the threaded receipt is posted.
 See `docs/COMPANY-OS-EXCEPTION-LOOP.md`; production state must be taken from the
 NC-018 active-work/changelog evidence, not repository presence.
 
@@ -540,7 +541,8 @@ The modern namespace is `business_v2`, including concepts such as:
   agent access and never mutate the three work-ledger tables. The loop is
   active for one owner-confirmed operator; the first bounded run opened three
   reason cases and durably posted one natural Chief brief without changing the
-  source work ledger. Named reaction acknowledgment remains pending.
+  source work ledger. The named reaction acknowledged all three current cases
+  with a posted threaded receipt; natural source resolution remains pending.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.

@@ -13,8 +13,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-08-17T03:03Z
 - Owner/client: Codex
 - State: deployed_unverified; exact release, schema, one-operator configuration,
-  and naturally sourced Chief brief are live, while the named check-reaction
-  acknowledgment and later source-derived resolution remain pending
+  naturally sourced Chief brief, named check-reaction acknowledgment, and
+  threaded receipt are live-verified; later source-derived resolution remains
+  pending
 - Commit/PR: claim `a036f5a`; implementation `bb417fb`; dark release
   `0d2c8ecfab96311db18c58db66cd277a6cb92c68`; activation release
   `a2e6d35c3d50fe562bafd10b848b2cedecf8df34` on
@@ -130,21 +131,34 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   and durably bound in Chief. The complete report remained 8 completed, zero
   healthy open, one exception across 4 Sales-email and 5 host-job items; its
   exact reasons were one each of source gap, failed, and stale. Attention state
-  is 3 open cases, 1 posted brief, and 6 append-only events (3 opened and 3
-  briefed). No acknowledgment has yet been recorded.
+  began as 3 open cases, 1 posted brief, and 6 append-only events (3 opened and
+  3 briefed).
+- Named acknowledgment: at `2026-08-17T11:54:24.096Z`, Alex's exact check
+  reaction on brief 1 acknowledged all three current occurrences in one
+  transaction. The brief and all three cases carry the same acknowledgment
+  instant; three append-only `acknowledged` events were added, and the threaded
+  acknowledgment receipt is durably `posted`. Current attention state is 3
+  acknowledged cases, 1 posted/acknowledged brief, and 9 events split exactly
+  3 opened, 3 briefed, and 3 acknowledged. Operator identity remained redacted
+  from operational evidence.
 - Non-interference proof: one value-redacted verifier captured identical before
   and post-canary hashes for 9 Company Work items
   (`2294c17e...`), 44 events (`d6e62606...`), 18 receipts (`c139a6fa...`),
   67 email action rows (`511a0b96...`), 334 email events (`4f3f3b66...`),
   22 job definitions/17 enabled (`9834e713...`), 11 task definitions
   (`ae9c5caf...`), and 20 channel definitions (`58e3a0ba...`). The only writes
-  were the expected separate attention records and Chief brief.
+  were the expected separate attention records, Chief brief, acknowledgment,
+  and threaded receipt. Final health remains exact release `a2e6d35` on sole
+  PID 4213 with connected Slack/Gmail, zero active containers, empty
+  active/waiting queues, active one-operator loop, one successful run, and zero
+  loop failures.
 - Boundary: production migration 120 and exact dark release activation did
   occur, followed by the explicitly authorized one-operator configuration,
   restart, and one naturally sourced Chief brief. No customer message,
   email/job/workflow action, container wake, prompt, capability, push, or merge
-  occurred. Named check-reaction acknowledgment, its threaded receipt, and
-  later natural source resolution remain unverified.
+  occurred. Named check-reaction acknowledgment and its threaded receipt are
+  verified; later natural source resolution remains unverified and must not be
+  manufactured by changing source work.
 
 ### NC-20260816-017 — Activate bounded Campanero host-job ledger observation
 
