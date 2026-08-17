@@ -97,6 +97,14 @@ configuration, natural occurrence, exact replay, and expiry are recorded in
 the active-work/changelog evidence. Reusing the helper for another task or
 boundary is a new production configuration operation, not implied authority.
 
+Beginning with NC-20260817-003, a future clean archive also binds migration
+122 and its history-preserving rollback. The files define the dark
+trigger-source inventory and watermark/gap state only. Bundling does not apply
+the schema, register or enable a source, reconcile a live gap, wire an adapter,
+or grant task/action authority. Production backup, migration, source
+registration, adapter deployment, bounded source proof, and any create/resume
+promotion remain separate recorded gates. NC-003 performs none of them.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

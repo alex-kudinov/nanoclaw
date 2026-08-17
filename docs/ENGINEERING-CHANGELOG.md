@@ -8,6 +8,60 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-003 — Add durable trigger-source watermarks and gap recovery
+
+- Date: 2026-08-17T16:08Z
+- Owner/client: Codex
+- State: ready_for_review; local dark foundation implemented and rehearsed,
+  not deployed or activated
+- Commit/PR: claim `917497d8`; implementation pending on
+  `codex/nc-20260817-003-trigger-source-watermarks`; no PR
+- Change class: C2 — additive local contract and unapplied host-only schema
+- Source reconciliation: the existing exact-boundary scheduled-task observer
+  is the only normalized adapter and is disabled. Gmail push and label-poll
+  paths keep separate SQLite history IDs and currently re-bootstrap on expiry;
+  the push path explicitly accepts an unmeasured loss window. Generic webhooks
+  deduplicate non-null provider IDs, while some extractors produce NULL; only
+  the Trafft sweeper has an older source-specific PostgreSQL watermark. Gmail
+  Pub/Sub is transport, not a generic topic adapter, and no normalized topic
+  or business-condition adapter exists.
+- Implementation: a host-only typed contract registers immutable,
+  content-free source definitions and maintains a versioned cursor head backed
+  by append-only `bootstrap`, `advance`, `gap_detected`, and `gap_reconciled`
+  events. Cursor and reconciliation modes are explicit. Exact replay converges;
+  same-key drift, stale versions, backward movement, invalid accounting, and
+  ordinary advancement across an open gap fail closed. Gap reconciliation must
+  bind to the exact open gap. Results have fixed `actionAuthority: none`.
+- Durable target: unapplied migration 122 adds admin-only source, watermark
+  event, and state tables. Composite constraints bind current/open-gap events
+  to the same source, immutable triggers protect source and history rows, and
+  the state head changes only through host-admin compare-and-swap. Immutable
+  release construction binds migration and rollback bytes. Populated rollback
+  refuses history deletion; empty rollback removes the three tables.
+- Disposable PostgreSQL evidence: PostgreSQL 16 applied migrations 121 and
+  122, returned applied then duplicate registration, refused changed source
+  facts, froze cursor 100 at a durable gap, reconciled that exact gap to cursor
+  500, made late exact replay duplicate-only, refused a stale version, enforced
+  append-only history, and exposed zero non-admin grants. Final state was one
+  source, three events, state version 3, status current, cursor 500. Populated
+  rollback exited 3 with all rows intact; empty rollback succeeded. The
+  disposable cluster, smoke script, and temporary environment were removed.
+- Verification: exact Node 22.23.2 passes 58/58 focused source/trigger tests,
+  157/157 combined Company OS tests, typecheck, root build, 638/638
+  email-critical tests, and the independent runner build plus 43/43 tests. The
+  unrestricted full root suite is 2,609/2,610; its sole failure is the
+  unchanged unrelated CNPC wrapper-string assertion expecting literal
+  `folder: 'cnpc'`. Formatting, documentation continuity/capability, and diff
+  checks pass; the capability check required its ordinary unrestricted IPC
+  environment after the sandbox refused the local `tsx` socket.
+- Boundary: no runtime entry point imports the module; migration 122 remains
+  unapplied and unseeded. No existing Gmail/webhook/scheduler cursor or adapter
+  changed. No production schema/data/config/deploy, source registration,
+  schedule, channel, task create/resume, work-ledger write, agent/skill/prompt/
+  capability, approval, message/action, push, or merge occurred. Production
+  migration and any source-specific bounded recovery adapter remain separate
+  gates.
+
 ### NC-20260817-002 — Activate one bounded scheduled-time trigger source
 
 - Date: 2026-08-17T14:04Z

@@ -42,6 +42,17 @@ message, or action authority. Other source adapters, recurring definitions,
 watermarks, and task/action promotion remain separately gated. Use NC-002's
 active-work/changelog evidence for exact backup, release, and canary state.
 
+Migration 122 is the local, unapplied `NC-20260817-003` trigger-source
+inventory and watermark foundation. It adds immutable, content-free source
+definitions, a host-owned compare-and-swap cursor head, and append-only
+checkpoint/gap history. Complete ranges require exact
+`observed = accepted + rejected` accounting and source-specific monotonic
+cursors. A gap event leaves the prior cursor fixed and blocks ordinary
+advancement; only a reconciliation event bound to that exact open gap may
+resume it. The typed store is not imported by the daemon, no source is seeded,
+and no adapter, task, agent, approval, message, or action authority is added.
+Repository presence is not production application or activation evidence.
+
 ## Connection
 
 ```bash

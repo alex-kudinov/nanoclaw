@@ -172,18 +172,30 @@ function hash(parts: readonly unknown[]): string {
   return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 }
 
+/**
+ * Stable definition identity shared by the occurrence and source-inventory
+ * contracts. Callers must validate the three inputs before invoking this
+ * helper; it deliberately performs only the versioned identity derivation.
+ */
+export function deriveCompanyTriggerDefinitionId(
+  kind: CompanyTriggerKind,
+  sourceSystem: string,
+  sourceKey: string,
+): string {
+  return hash(['company-trigger-definition:v1', kind, sourceSystem, sourceKey]);
+}
+
 function freezeOccurrence(
   occurrence: Omit<
     CompanyTriggerOccurrence,
     'definitionId' | 'occurrenceId' | 'semanticFingerprint'
   >,
 ): CompanyTriggerOccurrence {
-  const definitionId = hash([
-    'company-trigger-definition:v1',
+  const definitionId = deriveCompanyTriggerDefinitionId(
     occurrence.kind,
     occurrence.sourceSystem,
     occurrence.sourceKey,
-  ]);
+  );
   const occurrenceId = hash([
     'company-trigger-occurrence:v1',
     definitionId,

@@ -156,6 +156,61 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
+## business_v2.company_trigger_sources (migration 122 local, unapplied)
+
+```
+  registry_version              smallint             NOT NULL
+  definition_id                 text                 NOT NULL
+  source_fingerprint            text                 NOT NULL
+  trigger_kind                  text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_key                    text                 NOT NULL
+  adapter_key                   text                 NOT NULL
+  adapter_version               text                 NOT NULL
+  cursor_kind                   text                 NOT NULL
+  reconciliation_mode           text                 NOT NULL
+  max_reconciliation_window_seconds integer
+  freshness_budget_seconds      integer
+  owner_key                     text                 NOT NULL
+  alert_route_key               text                 NOT NULL
+  registered_at                 timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_trigger_watermark_events (migration 122 local, unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_trigger_watermark_events_id_seq'::regclass)
+  definition_id                 text                 NOT NULL
+  event_key                     text                 NOT NULL
+  event_fingerprint             text                 NOT NULL
+  event_type                    text                 NOT NULL
+  expected_version              bigint               NOT NULL
+  previous_cursor               text
+  next_cursor                   text                 NOT NULL
+  observed_from                 timestamp with time zone NOT NULL
+  observed_through              timestamp with time zone NOT NULL
+  evidence_sha256               text                 NOT NULL
+  observed_count                integer              NOT NULL
+  accepted_count                integer              NOT NULL
+  rejected_count                integer              NOT NULL
+  gap_reason                    text
+  resolves_event_id             bigint
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_trigger_watermark_state (migration 122 local, unapplied)
+
+```
+  definition_id                 text                 NOT NULL
+  version                       bigint               NOT NULL DEFAULT=0
+  status                        text                 NOT NULL DEFAULT='uninitialized'::text
+  cursor_value                  text
+  cursor_observed_at            timestamp with time zone
+  open_gap_event_id             bigint
+  last_event_id                 bigint
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## booking_events
 
 ```

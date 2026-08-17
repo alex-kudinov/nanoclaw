@@ -58,16 +58,21 @@ before applying anything.
 - migration 120 is the host-only Company Work operator-attention state created
   and activated by `NC-20260816-018`; it grants no agent access and never
   mutates source work. See `docs/COMPANY-OS-EXCEPTION-LOOP.md`;
-- migration 121 is the local, unapplied `NC-20260817-001` normalized trigger
-  occurrence foundation. It stores content-free identities/hashes only and has
-  no runtime producer or task/action authority. See
-  `docs/COMPANY-OS-TRIGGER-CONTRACT.md`;
+- migration 121 is the normalized trigger occurrence foundation created by
+  `NC-20260817-001` and applied/live-proved for one scheduled-time boundary by
+  `NC-20260817-002`. It stores content-free identities/hashes only; the
+  one-boundary configuration is now disabled and no task/action authority was
+  granted. See `docs/COMPANY-OS-TRIGGER-CONTRACT.md`;
+- migration 122 is the local, unapplied `NC-20260817-003` source-inventory and
+  watermark target. It adds immutable source definitions, versioned cursor
+  state, and append-only checkpoint/gap/reconciliation history. It is unwired,
+  seeds no source, and grants no agent or task/action authority;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120 and 121 are non-auto-discovered and refuse to erase populated
-  operator-attention or trigger-occurrence history.
+- rollbacks 120-122 are non-auto-discovered and refuse to erase populated
+  operator-attention, trigger-occurrence, or source/watermark history.
 
 ## Rollback
 

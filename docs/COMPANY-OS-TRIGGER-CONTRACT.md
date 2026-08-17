@@ -4,8 +4,9 @@ Status: the strict foundation was completed locally under `NC-20260817-001`.
 `NC-20260817-002` applied migration 121 and deployed exact release `baed66d`,
 then live-proved one default-off, exact-boundary scheduled-task observer on one
 natural claim. Exact replay was duplicate-only and the configuration was
-expired back to disabled. Gmail, webhook, topic, and business-condition
-adapters remain absent.
+expired back to disabled. `NC-20260817-003` adds a local, unapplied, unwired
+source-inventory and watermark/gap foundation in migration 122. Gmail,
+webhook, topic, and business-condition adapters remain absent.
 
 ## Purpose
 
@@ -91,6 +92,55 @@ exact. Any split or drift is a conflict.
 No agent role receives table access. The rollback drops the table only while
 empty; once evidence exists, runtime rollback leaves it dormant.
 
+## Source inventory and watermark foundation
+
+Migration 122 defines the durable prerequisite for every later source adapter;
+it does not register a live source by itself. Each immutable source definition
+binds the existing trigger `definitionId` to:
+
+- a versioned adapter identity;
+- one cursor kind: no cursor, unsigned integer, or UTC timestamp;
+- one recovery mode: not applicable, bounded scan, full snapshot, or explicitly
+  unsupported;
+- a maximum reconciliation window and freshness budget when recovery exists;
+- stable content-free owner and alert-route keys;
+- a semantic source fingerprint. Exact registration replay converges; changing
+  adapter/recovery/ownership facts under the same source definition conflicts.
+
+There is deliberately no enabled flag, task target, prompt, skill, capability,
+credential, approval, message, arbitrary metadata, or action field. A source
+definition is inventory, not permission.
+
+Reconcileable sources receive a host-owned compare-and-swap cursor head plus
+append-only events:
+
+| Event | Required prior state | Durable effect |
+| --- | --- | --- |
+| `bootstrap` | version 0, uninitialized | establishes the first closed cursor |
+| `advance` | current exact version/cursor | advances strictly forward across one completely accounted range |
+| `gap_detected` | current exact version/cursor | records the attempted range and reason but leaves the durable cursor fixed; state becomes `gap` |
+| `gap_reconciled` | exact open gap ID, version, and cursor | closes that one gap and advances to the proven cursor |
+
+Every event uses a stable event key and semantic fingerprint. Exact replay is
+duplicate-only; same-key drift conflicts. `observed_count` must equal
+`accepted_count + rejected_count`, observation windows cannot reverse, and
+unsigned/timestamp cursors must move strictly forward. While state is `gap`,
+ordinary advancement is refused. The append-only history and mutable cursor
+head remain host-admin-only.
+
+This contract does not pretend that all existing sources are equally ready:
+
+| Family | Verified current mechanics | Normalized-adapter readiness |
+| --- | --- | --- |
+| time | one exact scheduled-task claim observer was proven and is now disabled; intended boundary is the occurrence identity | proven for that one no-cursor source only |
+| Gmail | inbound push and label-correction polling keep separate mutable history IDs in SQLite; both re-bootstrap on expiry, and inbound push explicitly accepts an unmeasured loss window | blocked until a source-specific bounded reconciliation path records and closes expiry gaps |
+| webhook | `webhook_inbox` deduplicates non-null provider event IDs; some extractors still return NULL; only the older Trafft sweeper has a mutable source watermark | eligible only source by source after immutable ID and complete bounded scan proof |
+| topic | Gmail Pub/Sub exists as Gmail transport, not as a generic authenticated topic adapter | absent |
+| business condition | condition-oriented jobs/loops exist, but none emits the normalized occurrence contract from a complete versioned snapshot/window | absent |
+
+The older `business_v2.sweeper_watermarks` table remains source-specific legacy
+evidence. Migration 122 does not migrate, reinterpret, or silently promote it.
+
 ## First source adapter: scheduled-task claim observation
 
 The NC-002 observer observes only the scheduler's existing successful
@@ -173,14 +223,19 @@ NC-002 completed gates 1-7 for the first scheduled-time source:
 6. compare schedule/channel/work/action fingerprints before and after;
 7. retain task creation/resume and every action authority behind later gates;
 
-Gate 8 remains open for later adapters: define source watermarks and bounded
-reconciliation before claiming loss recovery, especially for Gmail history
-expiry.
+NC-003 completes only the generic dark portion of gate 8: immutable source
+registration, compare-and-swap cursor state, complete-range accounting, gap
+freeze, and exact-gap reconciliation semantics. It applies no production
+schema, seeds no source, and wires no adapter. Gate 8 remains open per later
+source: implement and prove the source-specific bounded scan/full snapshot,
+then register and observe it before claiming loss recovery. Gmail history
+expiry is explicitly blocked until that proof exists.
 
 No source exception or external event may be manufactured merely to satisfy an
 activation test.
 
 These gates prove only the single scheduled-time source and boundary above.
 Every recurring definition, Gmail/webhook/topic/business-condition adapter,
-source inventory/watermark, loss-recovery claim, task create/resume operation,
-and action authority remains a separate tracked and authorized milestone.
+production source registration/watermark activation, source-specific recovery
+claim, task create/resume operation, and action authority remains a separate
+tracked and authorized milestone.
