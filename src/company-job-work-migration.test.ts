@@ -15,6 +15,10 @@ const rollback = fs.readFileSync(
   ),
   'utf8',
 );
+const releaseBuilder = fs.readFileSync(
+  new URL('../scripts/build-release.mjs', import.meta.url),
+  'utf8',
+);
 
 describe('migration 119 dark host-job work projection', () => {
   it('adds one non-Party workflow without replacing the email contract', () => {
@@ -55,5 +59,14 @@ describe('migration 119 dark host-job work projection', () => {
     expect(rollback).not.toContain('DELETE FROM');
     expect(rollback).not.toContain('DROP TABLE');
     expect(rollback).toContain('ALTER COLUMN party_id SET NOT NULL');
+  });
+
+  it('binds the exact migration and rollback into the verified release', () => {
+    expect(releaseBuilder).toContain(
+      "'data/business/migrations/nanoclaw-v2/119_company_work_job_runs.sql'",
+    );
+    expect(releaseBuilder).toContain(
+      "'data/business/migrations/nanoclaw-v2/rollback_119_company_work_job_runs.sql'",
+    );
   });
 });

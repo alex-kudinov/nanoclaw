@@ -6,6 +6,7 @@ import {
   type CompanyWorkExceptionReport,
   type CompanyWorkExceptionResult,
   type CompanyWorkReportOptions,
+  type CompanyWorkReportWorkflowFilter,
 } from './company-work-report.js';
 
 interface CliOptions extends CompanyWorkReportOptions {
@@ -17,6 +18,15 @@ function positiveInteger(raw: string | undefined, flag: string): number {
     throw new Error(`${flag} requires a positive integer`);
   }
   return Number(raw);
+}
+
+function workflowFilter(
+  raw: string | undefined,
+): CompanyWorkReportWorkflowFilter {
+  if (raw === 'all' || raw === 'sales_email' || raw === 'host_job_run') {
+    return raw;
+  }
+  throw new Error('--workflow requires all, sales_email, or host_job_run');
 }
 
 export function parseCompanyWorkReportArgs(args: string[]): CliOptions {
@@ -32,6 +42,8 @@ export function parseCompanyWorkReportArgs(args: string[]): CliOptions {
         args[++index],
         '--stale-after-hours',
       );
+    } else if (arg === '--workflow') {
+      options.workflow = workflowFilter(args[++index]);
     } else {
       throw new Error(`unknown argument: ${arg}`);
     }
@@ -42,7 +54,7 @@ export function parseCompanyWorkReportArgs(args: string[]): CliOptions {
 function formatOkReport(report: CompanyWorkExceptionReport): string {
   const lines = [
     `Company work exceptions — ${report.generatedAt}`,
-    `scanned=${report.scanned}/${report.totalAvailable} completed=${report.summary.completed} healthy_open=${report.summary.healthyOpen} exceptions=${report.summary.exceptionItems} critical=${report.summary.critical} attention=${report.summary.attention} watch=${report.summary.watch}`,
+    `scanned=${report.scanned}/${report.totalAvailable} sales=${report.summary.byWorkflow.sales_email} jobs=${report.summary.byWorkflow.host_job_run} completed=${report.summary.completed} healthy_open=${report.summary.healthyOpen} exceptions=${report.summary.exceptionItems} critical=${report.summary.critical} attention=${report.summary.attention} watch=${report.summary.watch}`,
   ];
   if (report.truncated) {
     lines.push(
@@ -55,7 +67,7 @@ function formatOkReport(report: CompanyWorkExceptionReport): string {
   for (const item of report.exceptions) {
     const age = item.ageMinutes === null ? 'unknown' : `${item.ageMinutes}m`;
     lines.push(
-      `[${item.severity.toUpperCase()}] work=${item.workItemId} source=${item.sourceSystem}/${item.sourceKey} party=${item.partyId} pipeline=${item.pipelineEntryId} state=${item.stage}/${item.disposition} age=${age} reasons=${item.reasons.map((reason) => `${reason.kind}:${reason.code}`).join(',')}`,
+      `[${item.severity.toUpperCase()}] workflow=${item.workflowType} work=${item.workItemId} source=${item.sourceSystem}/${item.sourceKey} party=${item.partyId ?? '-'} pipeline=${item.pipelineEntryId ?? '-'} state=${item.stage}/${item.disposition} age=${age} reasons=${item.reasons.map((reason) => `${reason.kind}:${reason.code}`).join(',')}`,
     );
   }
   return `${lines.join('\n')}\n`;

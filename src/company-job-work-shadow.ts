@@ -1,15 +1,21 @@
 /**
  * Unwired Company OS projection for one authoritative SQLite host-job run.
  *
- * The caller supplies already-read structural facts. This module cannot query
- * SQLite, run/pause/resume a job, schedule polling, post to Slack, or import
- * the daemon. PostgreSQL receives only opaque job/run identity, timestamps,
- * named status codes, and SHA-256 evidence; output, error text, log paths,
- * scripts, arguments, and environment values are not accepted by the type.
+ * The per-run projector consumes already-read structural facts. NC-017 adds a
+ * separately invoked, fixed-window source reader; it cannot run/pause/resume a
+ * job, schedule polling, post to Slack, or import the daemon. PostgreSQL
+ * receives only opaque job/run identity, timestamps, named status codes, and
+ * SHA-256 evidence; output, error text, log paths, scripts, arguments, and
+ * environment values are not accepted by the type.
  */
 
 import { createHash } from 'crypto';
 
+import {
+  listJobRunsForProjection,
+  type JobRunProjectionBatch,
+  type JobRunProjectionFact,
+} from './db.js';
 import {
   createCompanyJobWorkItem,
   fingerprintCompanyJobWorkTransition,
@@ -64,6 +70,32 @@ export interface CompanyJobWorkShadowDeps {
   transitionWorkItem: typeof transitionCompanyJobWorkItem;
   getWorkItemBySource: typeof getCompanyJobWorkItemBySource;
   getEventIdentity: typeof getCompanyWorkEventIdentity;
+}
+
+export interface CompanyJobWorkProjectionDeps extends CompanyJobWorkShadowDeps {
+  listRuns(
+    sinceIso: string,
+    throughIso: string,
+    limit: number,
+  ): JobRunProjectionBatch;
+}
+
+export interface CompanyJobWorkProjectionWindow {
+  since: string;
+  through: string;
+  batchLimit: number;
+}
+
+export interface CompanyJobWorkProjectionSummary {
+  scanned: number;
+  projected: number;
+  transitionsApplied: number;
+  duplicateFacts: number;
+  completed: number;
+  failed: number;
+  truncated: boolean;
+  skipped: Record<string, number>;
+  errors: Record<string, number>;
 }
 
 export interface CompanyJobWorkProjectionResult {
@@ -431,5 +463,113 @@ export async function projectCompanyJobRun(
     duplicateFacts: counts.duplicates,
     completed: item.disposition === 'completed',
     failed: item.disposition === 'failed',
+  };
+}
+
+function increment(target: Record<string, number>, key: string): void {
+  target[key] = (target[key] ?? 0) + 1;
+}
+
+function projectionErrorCode(error: unknown): string {
+  if (error instanceof CompanyJobProjectionError) return error.code;
+  if (error instanceof Error && /^[a-z0-9_:-]+$/.test(error.message)) {
+    return error.message;
+  }
+  return 'projection_failed';
+}
+
+function toRunFact(
+  row: JobRunProjectionFact & { timeoutMs: number },
+): CompanyJobRunFact {
+  return {
+    id: row.id,
+    jobName: row.jobName,
+    triggeredBy: row.triggeredBy,
+    startedAt: row.startedAt,
+    finishedAt: row.finishedAt,
+    durationMs: row.durationMs,
+    exitCode: row.exitCode,
+    pid: row.pid,
+    status: row.status,
+    retryAttempt: row.retryAttempt,
+    timeoutMs: row.timeoutMs,
+  };
+}
+
+/**
+ * Run one bounded, fixed-window observation. It is deliberately not scheduled
+ * or daemon-wired; a caller must supply both time bounds and a batch ceiling.
+ */
+export async function runCompanyJobWorkProjection(
+  deps: CompanyJobWorkProjectionDeps,
+  window: CompanyJobWorkProjectionWindow,
+): Promise<CompanyJobWorkProjectionSummary> {
+  const sinceMs = Date.parse(window.since);
+  const throughMs = Date.parse(window.through);
+  if (
+    !Number.isFinite(sinceMs) ||
+    !Number.isFinite(throughMs) ||
+    throughMs < sinceMs
+  ) {
+    throw new CompanyJobProjectionError('invalid_projection_window');
+  }
+  if (
+    !Number.isInteger(window.batchLimit) ||
+    window.batchLimit < 1 ||
+    window.batchLimit > 250
+  ) {
+    throw new CompanyJobProjectionError('invalid_projection_batch_limit');
+  }
+
+  const batch = deps.listRuns(
+    new Date(sinceMs).toISOString(),
+    new Date(throughMs).toISOString(),
+    window.batchLimit,
+  );
+  if (batch.truncated) {
+    throw new CompanyJobProjectionError('projection_window_truncated');
+  }
+  if (batch.rows.some((row) => row.timeoutMs === null)) {
+    throw new CompanyJobProjectionError('job_definition_missing');
+  }
+  const runs = batch.rows.map((row) =>
+    toRunFact({ ...row, timeoutMs: row.timeoutMs as number }),
+  );
+  for (const run of runs) validateFact(run);
+  const summary: CompanyJobWorkProjectionSummary = {
+    scanned: batch.rows.length,
+    projected: 0,
+    transitionsApplied: 0,
+    duplicateFacts: 0,
+    completed: 0,
+    failed: 0,
+    truncated: batch.truncated,
+    skipped: {},
+    errors: {},
+  };
+  for (const run of runs) {
+    try {
+      const result = await projectCompanyJobRun(run, deps);
+      summary.projected++;
+      summary.transitionsApplied += result.transitionsApplied;
+      summary.duplicateFacts += result.duplicateFacts;
+      if (result.completed) summary.completed++;
+      if (result.failed) summary.failed++;
+    } catch (error) {
+      increment(summary.errors, projectionErrorCode(error));
+    }
+  }
+  return summary;
+}
+
+export function makeCompanyJobWorkProjectionDeps(
+  listRuns: CompanyJobWorkProjectionDeps['listRuns'] = listJobRunsForProjection,
+): CompanyJobWorkProjectionDeps {
+  return {
+    listRuns,
+    createWorkItem: createCompanyJobWorkItem,
+    transitionWorkItem: transitionCompanyJobWorkItem,
+    getWorkItemBySource: getCompanyJobWorkItemBySource,
+    getEventIdentity: getCompanyWorkEventIdentity,
   };
 }

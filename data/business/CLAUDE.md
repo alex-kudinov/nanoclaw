@@ -13,11 +13,13 @@ does not grant agents access or become email authority. Do not infer the
 current release or configuration from repository presence; follow
 `docs/COMPANY-OS-WORK-LEDGER.md` and the active-work/changelog evidence.
 
-Migration 119 is a local, unapplied `NC-20260816-016` target that widens the
-same host-only tables for an unwired `host_job_run` pilot. SQLite `jobs` and
-`job_run_logs` remain authority, and Campanero receives no database access.
-Follow `docs/COMPANY-OS-JOB-LEDGER.md`; repository presence is not migration or
-deployment evidence.
+Migration 119 is the local, unapplied `NC-20260816-016` target selected for the
+separately authorized `NC-20260816-017` activation. It widens the same host-only
+tables for `host_job_run`. The NC-017 observer candidate opens SQLite read-only,
+requires a fixed time window and batch ceiling, and is not daemon- or
+scheduler-wired. SQLite `jobs`/`job_run_logs` remain authority and Campanero
+receives no database access. Follow `docs/COMPANY-OS-JOB-LEDGER.md`; repository
+or release presence is not migration/deployment/projection evidence.
 
 ## Connection
 

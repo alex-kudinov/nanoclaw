@@ -241,6 +241,14 @@ output, error text, log paths, scripts, arguments, or environment. Migration
 job registry remain authority, and Campanero's jobs-only role is unchanged.
 See `docs/COMPANY-OS-JOB-LEDGER.md`.
 
+`NC-20260816-017` is the separately authorized activation slice. Its candidate
+adds a read-only SQLite source connection plus an exact-confirmation,
+fixed-window, batch-bounded projection CLI and widens the SELECT-only exception
+report with separate email/job state and receipt rules. Neither component is
+daemon- or scheduler-wired; Campanero and the job registry remain unchanged.
+Migration, deployment, and production parity are recorded only after their
+individual gates complete.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container
@@ -367,7 +375,7 @@ dependencies, not active runtime channels in this snapshot.
 | Area                   | Main files                                                                     | Responsibility                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
-| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-job-work-shadow.ts`, `src/company-work-report.ts`, migrations 118-119, `docs/COMPANY-OS-WORK-LEDGER.md`, `docs/COMPANY-OS-JOB-LEDGER.md` | Mailman/Sales projection and bounded SELECT-only report are live/non-authoritative under NC-015; NC-016 adds an unapplied, unwired host-job state/receipt contract. SQLite remains authority for both sources, and the existing report still filters `sales_email` only. |
+| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-job-work-shadow.ts`, `src/company-job-work-shadow-cli.ts`, `src/company-work-report.ts`, migrations 118-119, `docs/COMPANY-OS-WORK-LEDGER.md`, `docs/COMPANY-OS-JOB-LEDGER.md` | Mailman/Sales projection and the original bounded report are live/non-authoritative under NC-015. NC-016 adds the host-job state/receipt contract; NC-017 adds the explicit fixed-window CLI candidate and workflow-specific report widening. SQLite remains authority and neither job component is daemon/scheduler-wired. |
 | External-write control | `src/action-safety.ts`, `src/action-safety-drill-exec.ts`, `docs/ACTION-SAFETY-CONTROL.md` | deployed/default-off common action envelope and dynamic global/per-system brakes; exact release `47019c9` live-verifies Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, Hive/Firestore, and Things; in-flight interruption, standalone scripts, remaining integrations, ceilings, and demotion remain open |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
@@ -507,6 +515,11 @@ The modern namespace is `business_v2`, including concepts such as:
   exact start/terminal-failure events, and retains host-admin-only access.
   This is source/state-machine evidence only: no production schema, observer,
   report, scheduler, job, Campanero, or channel state changes under NC-016.
+- `NC-20260816-017` adds the separately invoked read-only-SQLite/bounded-write
+  observer and multi-workflow SELECT-only report candidate. The release bundle
+  binds migration 119 and its history-preserving rollback by hash. Applying the
+  migration, activating the release, and projecting a closed production window
+  remain distinct evidence boundaries.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.
@@ -1558,7 +1571,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/ENGINEERING-CHANGELOG.md`         | append-only implementation/verification/deployment history            | evidence only; do not overstate boundaries crossed                                                                                           |
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
 | `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
-| `docs/COMPANY-OS-JOB-LEDGER.md`         | Campanero host-job run identity, state, receipt, privacy, and activation contract | NC-016 is local/unapplied/unwired; SQLite jobs/job-run logs remain authority and activation requires a separate task |
+| `docs/COMPANY-OS-JOB-LEDGER.md`         | Campanero host-job run identity, state, receipt, privacy, and activation contract | NC-016 foundation is complete; NC-017 activation is in progress with SQLite still authoritative and no daemon/scheduler wiring |
 | `docs/ACTION-SAFETY-CONTROL.md`         | host action envelope, safety precedence, covered boundaries, and activation/drill transaction | seven-system boundary through Things is live-proven in exact release `47019c9` under `NC-20260816-009`; controls remain default-off and residuals explicit |
 | `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | Campanero and Booking selective canaries are live under `NC-20260816-006`/`010`; global rollout, egress, remaining raw-secret removal, and wider canaries remain open |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |

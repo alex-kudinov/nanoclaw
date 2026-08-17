@@ -113,6 +113,8 @@ try {
     .split('\0')
     .filter(Boolean);
   tracked.push(
+    'data/business/migrations/nanoclaw-v2/119_company_work_job_runs.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_119_company_work_job_runs.sql',
     'scripts/verify-release.mjs',
     'scripts/activate-release.mjs',
     'scripts/run-action-safety-drill.mjs',

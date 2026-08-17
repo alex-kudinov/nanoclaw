@@ -11,9 +11,12 @@ import {
 import {
   CompanyJobProjectionError,
   projectCompanyJobRun,
+  runCompanyJobWorkProjection,
   type CompanyJobRunFact,
+  type CompanyJobWorkProjectionDeps,
   type CompanyJobWorkShadowDeps,
 } from './company-job-work-shadow.js';
+import { parseCompanyJobWorkShadowArgs } from './company-job-work-shadow-cli.js';
 
 const STARTED = '2026-08-16T20:00:00.000Z';
 const FINISHED = '2026-08-16T20:01:00.000Z';
@@ -230,5 +233,119 @@ describe('dark Campanero host-job projection', () => {
       projectCompanyJobRun(run({ jobName: 'calendar refresh' }), fake.deps),
     ).rejects.toEqual(new CompanyJobProjectionError('invalid_job_name'));
     expect(fake.createWorkItem).not.toHaveBeenCalled();
+  });
+
+  it('runs one exact closed window and makes replay duplicate-only', async () => {
+    const fake = makeDeps();
+    const listRuns = vi.fn(() => ({
+      rows: [run()],
+      truncated: false,
+    }));
+    const deps = {
+      ...fake.deps,
+      listRuns,
+    } as CompanyJobWorkProjectionDeps;
+    const window = {
+      since: '2026-08-16T19:59:00.000Z',
+      through: '2026-08-16T20:02:00.000Z',
+      batchLimit: 10,
+    };
+
+    await expect(
+      runCompanyJobWorkProjection(deps, window),
+    ).resolves.toMatchObject({
+      scanned: 1,
+      projected: 1,
+      transitionsApplied: 3,
+      duplicateFacts: 0,
+      completed: 1,
+      truncated: false,
+    });
+    await expect(
+      runCompanyJobWorkProjection(deps, window),
+    ).resolves.toMatchObject({
+      transitionsApplied: 0,
+      duplicateFacts: 3,
+      completed: 1,
+    });
+    expect(listRuns).toHaveBeenCalledWith(
+      '2026-08-16T19:59:00.000Z',
+      '2026-08-16T20:02:00.000Z',
+      10,
+    );
+  });
+
+  it('refuses a truncated or definition-less window before ledger writes', async () => {
+    for (const batch of [
+      { rows: [run()], truncated: true },
+      { rows: [{ ...run(), timeoutMs: null }], truncated: false },
+    ]) {
+      const fake = makeDeps();
+      const deps = {
+        ...fake.deps,
+        listRuns: vi.fn(() => batch),
+      } as unknown as CompanyJobWorkProjectionDeps;
+      await expect(
+        runCompanyJobWorkProjection(deps, {
+          since: '2026-08-16T19:59:00.000Z',
+          through: '2026-08-16T20:02:00.000Z',
+          batchLimit: 1,
+        }),
+      ).rejects.toBeInstanceOf(CompanyJobProjectionError);
+      expect(fake.createWorkItem).not.toHaveBeenCalled();
+    }
+  });
+
+  it('validates every source row before the first ledger write', async () => {
+    const fake = makeDeps();
+    const deps = {
+      ...fake.deps,
+      listRuns: vi.fn(() => ({
+        rows: [run(), run({ id: 'run-456', jobName: 'unsafe job name' })],
+        truncated: false,
+      })),
+    } as CompanyJobWorkProjectionDeps;
+
+    await expect(
+      runCompanyJobWorkProjection(deps, {
+        since: '2026-08-16T19:59:00.000Z',
+        through: '2026-08-16T20:02:00.000Z',
+        batchLimit: 10,
+      }),
+    ).rejects.toEqual(new CompanyJobProjectionError('invalid_job_name'));
+    expect(fake.createWorkItem).not.toHaveBeenCalled();
+  });
+});
+
+describe('Campanero host-job projection CLI gate', () => {
+  const args = [
+    '--since',
+    '2026-08-16T20:00:00Z',
+    '--through',
+    '2026-08-16T20:01:00Z',
+    '--batch-limit',
+    '10',
+    '--confirm-shadow-projection',
+    'NC-017-HOST-JOB-SHADOW',
+  ];
+
+  it('requires exact confirmation and a closed bounded window', () => {
+    expect(
+      parseCompanyJobWorkShadowArgs(args, new Date('2026-08-16T20:02:00Z')),
+    ).toEqual({
+      since: '2026-08-16T20:00:00.000Z',
+      through: '2026-08-16T20:01:00.000Z',
+      batchLimit: 10,
+      confirmation: 'NC-017-HOST-JOB-SHADOW',
+    });
+    expect(() =>
+      parseCompanyJobWorkShadowArgs(
+        args.slice(0, -2),
+        new Date('2026-08-16T20:02:00Z'),
+      ),
+    ).toThrow(/confirmation/);
+    expect(() =>
+      parseCompanyJobWorkShadowArgs(args, new Date('2026-08-16T19:00:00Z')),
+    ).toThrow(/closed historical bound/);
   });
 });

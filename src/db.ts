@@ -2402,6 +2402,109 @@ export function getJobRunLogs(jobName: string, limit = 10): JobRunLog[] {
     .all(jobName, limit) as JobRunLog[];
 }
 
+/** Structural host-job facts for the Company OS shadow only. Raw output,
+ * errors, log paths, scripts, arguments, and environment are never selected. */
+export interface JobRunProjectionFact {
+  id: string;
+  jobName: string;
+  triggeredBy: string;
+  startedAt: string;
+  finishedAt: string | null;
+  durationMs: number | null;
+  exitCode: number | null;
+  pid: number | null;
+  status: JobRunLog['status'];
+  retryAttempt: number;
+  timeoutMs: number | null;
+}
+
+export interface JobRunProjectionBatch {
+  rows: JobRunProjectionFact[];
+  truncated: boolean;
+}
+
+function selectJobRunsForProjection(
+  database: Database.Database,
+  sinceIso: string,
+  throughIso: string,
+  limit: number,
+): JobRunProjectionBatch {
+  const sinceMs = Date.parse(sinceIso);
+  const throughMs = Date.parse(throughIso);
+  if (
+    !Number.isFinite(sinceMs) ||
+    !Number.isFinite(throughMs) ||
+    throughMs < sinceMs
+  ) {
+    throw new Error('invalid_job_projection_window');
+  }
+  const boundedLimit = Math.max(1, Math.min(250, Math.trunc(limit)));
+  const rows = database
+    .prepare(
+      `SELECT r.id, r.job_name, r.triggered_by, r.started_at, r.finished_at,
+              r.duration_ms, r.exit_code, r.pid, r.status, r.retry_attempt,
+              j.timeout_ms
+         FROM job_run_logs r
+         LEFT JOIN jobs j ON j.name = r.job_name
+        WHERE r.started_at >= ? AND r.started_at <= ?
+        ORDER BY r.started_at, r.rowid
+        LIMIT ?`,
+    )
+    .all(sinceIso, throughIso, boundedLimit + 1) as Array<{
+    id: string;
+    job_name: string;
+    triggered_by: string;
+    started_at: string;
+    finished_at: string | null;
+    duration_ms: number | null;
+    exit_code: number | null;
+    pid: number | null;
+    status: JobRunLog['status'];
+    retry_attempt: number;
+    timeout_ms: number | null;
+  }>;
+  return {
+    rows: rows.slice(0, boundedLimit).map((row) => ({
+      id: row.id,
+      jobName: row.job_name,
+      triggeredBy: row.triggered_by,
+      startedAt: row.started_at,
+      finishedAt: row.finished_at,
+      durationMs: row.duration_ms,
+      exitCode: row.exit_code,
+      pid: row.pid,
+      status: row.status,
+      retryAttempt: row.retry_attempt,
+      timeoutMs: row.timeout_ms,
+    })),
+    truncated: rows.length > boundedLimit,
+  };
+}
+
+export function listJobRunsForProjection(
+  sinceIso: string,
+  throughIso: string,
+  limit: number,
+): JobRunProjectionBatch {
+  return selectJobRunsForProjection(db, sinceIso, throughIso, limit);
+}
+
+/** A CLI-safe source that cannot mutate or initialize the authoritative DB. */
+export function openReadOnlyJobRunProjectionSource(): {
+  listRuns: typeof listJobRunsForProjection;
+  close(): void;
+} {
+  const database = new Database(path.join(STORE_DIR, 'messages.db'), {
+    readonly: true,
+    fileMustExist: true,
+  });
+  return {
+    listRuns: (sinceIso, throughIso, limit) =>
+      selectJobRunsForProjection(database, sinceIso, throughIso, limit),
+    close: () => database.close(),
+  };
+}
+
 export function getRunningJobNames(): string[] {
   // A row stuck at 'running' beyond the job's timeout (plus a 5-minute grace)
   // is an orphan — its process was killed or the daemon restarted before the

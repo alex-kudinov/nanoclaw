@@ -260,6 +260,88 @@ describe('company work exception reconciliation', () => {
     );
     expect(result.exceptions[0].ageMinutes).toBeNull();
   });
+
+  it('validates a completed host-job run with job-specific milestones', () => {
+    const result = report([
+      row({
+        workflow_type: 'host_job_run',
+        source_system: 'sqlite_host_job_run',
+        source_key: 'calendar-refresh:run-123',
+        party_id: null,
+        pipeline_entry_id: null,
+        completion_definition: 'host_job_terminal_receipt',
+        version: 2,
+        event_count: 3,
+        event_version_count: 3,
+        max_event_version: 2,
+        event_types: ['accepted', 'execution_started', 'outcome_validated'],
+        receipt_types: ['outcome_validation'],
+      }),
+    ]);
+
+    expect(result.exceptions).toEqual([]);
+    expect(result.summary).toMatchObject({
+      completed: 1,
+      byWorkflow: { sales_email: 0, host_job_run: 1 },
+    });
+  });
+
+  it('distinguishes receipt-backed job failure from a critical source gap', () => {
+    const base = {
+      workflow_type: 'host_job_run',
+      source_system: 'sqlite_host_job_run',
+      party_id: null,
+      pipeline_entry_id: null,
+      completion_definition: 'host_job_terminal_receipt',
+      stage: 'execution_started',
+      disposition: 'failed',
+      version: 2,
+      event_count: 3,
+      event_version_count: 3,
+      max_event_version: 2,
+      latest_to_stage: 'execution_started',
+      latest_to_disposition: 'failed',
+    } as const;
+    const result = report([
+      row({
+        ...base,
+        id: '2',
+        source_key: 'calendar-refresh:run-failed',
+        failure_code: 'job_run:timeout',
+        event_types: ['accepted', 'execution_started', 'execution_failed'],
+        receipt_types: ['outcome_validation'],
+        total_available: 2,
+      }),
+      row({
+        ...base,
+        id: '3',
+        source_key: 'calendar-refresh:run-gap',
+        failure_code: 'source_gap:terminal_fields_missing',
+        event_types: ['accepted', 'execution_started', 'failed'],
+        receipt_types: [],
+        total_available: 2,
+      }),
+    ]);
+
+    expect(result.exceptions).toHaveLength(2);
+    expect(
+      result.exceptions.find((item) => item.workItemId === '2'),
+    ).toMatchObject({
+      severity: 'attention',
+      reasons: [{ kind: 'failed', code: 'job_run:timeout' }],
+    });
+    expect(
+      result.exceptions.find((item) => item.workItemId === '3'),
+    ).toMatchObject({
+      severity: 'critical',
+      reasons: expect.arrayContaining([
+        {
+          kind: 'source_gap',
+          code: 'source_gap:terminal_fields_missing',
+        },
+      ]),
+    });
+  });
 });
 
 describe('company work report read boundary', () => {
@@ -274,9 +356,16 @@ describe('company work report read boundary', () => {
 
     const [sql, values] = querySpy.mock.calls[0];
     expect(sql).toContain('FROM business_v2.company_work_items');
-    expect(sql).toContain("WHERE i.workflow_type = 'sales_email'");
+    expect(sql).toContain('$2::text IS NULL');
     expect(sql).not.toMatch(/\b(?:INSERT|UPDATE|DELETE|TRUNCATE|CALL)\b/i);
-    expect(values).toEqual([500]);
+    expect(values).toEqual([500, null]);
+
+    await readCompanyWorkExceptionReportWithClient(client, {
+      workflow: 'host_job_run',
+      limit: 10,
+      now: NOW,
+    });
+    expect(querySpy.mock.calls[1][1]).toEqual([10, 'host_job_run']);
   });
 
   it('fails open with a content-free unavailable result', async () => {
@@ -305,8 +394,15 @@ describe('company work exception CLI', () => {
         '25',
         '--stale-after-hours',
         '48',
+        '--workflow',
+        'host_job_run',
       ]),
-    ).toEqual({ json: true, limit: 25, staleAfterHours: 48 });
+    ).toEqual({
+      json: true,
+      limit: 25,
+      staleAfterHours: 48,
+      workflow: 'host_job_run',
+    });
     expect(() => parseCompanyWorkReportArgs(['--apply'])).toThrow(
       'unknown argument: --apply',
     );

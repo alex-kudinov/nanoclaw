@@ -1,8 +1,9 @@
 # Company OS work ledger — Campanero host-job pilot
 
-Status: local, dark foundation only; migration 119 is not applied and no
-runtime producer, report, schedule, or workflow dependency is wired
-Task: `NC-20260816-016`
+Status: NC-016 dark foundation complete; NC-017 activation candidate adds an
+explicit fixed-window observer and multi-workflow read-only report. Migration
+119 remains unapplied until the recorded production gate is crossed.
+Tasks: foundation `NC-20260816-016`; activation `NC-20260816-017`
 Decision: SQLite `jobs` and `job_run_logs` remain host-job authority; the
 PostgreSQL ledger may only project exact structural run facts
 
@@ -29,6 +30,14 @@ execution authority. The authoritative sources remain:
 NC-016 does not import the projector from the daemon, query either database,
 run/pause/resume a job, change a schedule, post a result, alter Campanero's
 prompt/capability, apply migration 119, or deploy a release.
+
+NC-017 retains that execution boundary. It adds a separately invoked CLI whose
+SQLite connection is opened read-only and whose PostgreSQL writes require an
+exact confirmation string, lower timestamp, closed upper timestamp, and batch
+ceiling. A truncated window or missing job definition is refused before the
+first ledger write, and every structural row is validated before projection
+begins. The CLI is not imported by the daemon or scheduler and no recurring
+observation is armed.
 
 ## 2. Work identity and source facts
 
@@ -88,29 +97,47 @@ Migration 119 widens migration 118 rather than creating a parallel ledger:
 The non-auto-discovered rollback refuses to narrow the schema while any
 `host_job_run` history exists. Existing Mailman/Sales history is never deleted.
 
-## 5. Local implementation state
+## 5. Activation implementation state
 
 `src/company-work-ledger.ts` contains the host-only typed job create/transition
-contract. `src/company-job-work-shadow.ts` is a single-run injected projector.
-It has no source reader, timer, daemon import, channel dependency, or scheduler
-dependency. That makes the NC-016 proof a local state-machine and
-privacy/duplicate contract, not a production observation.
+contract. `src/company-job-work-shadow.ts` retains the injected per-run
+projector and adds one fixed-window batch coordinator.
+`src/db.ts#listJobRunsForProjection` selects only structural columns and has a
+separate read-only connection for the CLI. `src/company-job-work-shadow-cli.ts`
+is the explicit write gate; repository presence, release deployment, or an
+environment key alone cannot invoke it.
 
-The existing Company OS exception CLI still filters `sales_email`; it must not
-be described as covering host jobs. A later report change must add
-workflow-specific receipt/state checks without making one workflow's stage
-rules apply to the other.
+The Company OS exception report now accepts `all`, `sales_email`, or
+`host_job_run` filters through one static bounded SELECT. Email rows keep their
+eight-stage Gmail/approval receipt rules. Job rows require only accepted,
+execution-started, and terminal facts appropriate to their state; a
+receipt-backed `job_run:*` failure is distinguished from a receipt-less
+`source_gap:*` failure. Null Party/pipeline identity is valid only for job work.
 
-## 6. Separate activation gates
+The projection CLI has no defaults for its write boundary:
 
-If the local foundation is accepted, activation requires a new task and all of
-the following:
+```bash
+npm run company-job-work:project -- \
+  --since <inclusive-ISO-timestamp> \
+  --through <closed-inclusive-ISO-timestamp> \
+  --batch-limit <1-250> \
+  --confirm-shadow-projection NC-017-HOST-JOB-SHADOW
+```
+
+Run it from the operational working directory with the absolute verified
+release CLI so its read-only SQLite source and existing PostgreSQL connection
+resolve correctly. Count the structural source window first; do not raise the
+limit merely to hide truncation.
+
+## 6. NC-017 activation gates
+
+Activation requires all of the following under NC-017:
 
 1. reconcile migration 119 with the then-live schema and concurrent migration
    owners;
 2. take an exact backup and explicitly apply only migration 119;
-3. add a default-off, bounded observer with a required lower-bound timestamp
-   and batch limit;
+3. use the default-off observer only with required lower/closed-upper
+   timestamps, exact confirmation, and a batch limit;
 4. prove historical running, success, failure, timeout/dispatch, source-gap,
    and duplicate-only cases without changing `jobs` or `job_run_logs`;
 5. widen the read-only exception report with workflow-specific validation;
@@ -131,8 +158,9 @@ later, separately authorized milestones.
   work by immutable run ID and does not claim a versioned job-definition
   catalog.
 - Retry attempts have no durable parent link yet.
-- No production rows, parity history, recurring brief, or business outcome are
-  proven by NC-016.
+- NC-016 proves no production rows or parity history. NC-017 production state
+  must be recorded separately after migration, release, bounded projection,
+  duplicate replay, report, and before/after fingerprint checks complete.
 
 ## 8. Rollback
 

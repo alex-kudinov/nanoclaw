@@ -8,6 +8,59 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-017 — Activate bounded Campanero host-job ledger observation
+
+- Date: 2026-08-17T01:42Z
+- Owner/client: Codex
+- State: validating; local implementation verified, production
+  migration/deployment/projection pending
+- Commit/PR: claim `8d209e5` on
+  `codex/nc-20260816-017-campanero-ledger-activation`; no PR
+- Change class: C2 — production schema/write plus reversible service activation
+- Production preflight: `mini-claw.local` serves exact verified release
+  `cf9625847bb2cbb0faa167f68a0f842d645e1807` from one Node 22.23.2 listener
+  with connected Slack/Gmail, zero active containers, empty runtime/outgoing
+  queues, and zero active email actions. Migration 118 is live and migration
+  119 is absent. The existing ledger has 4 `sales_email` items/version sum 25,
+  29 events, and 13 receipts. No `COMPANY_JOB_WORK_SHADOW_*` configuration is
+  present.
+- Source parity baseline: SQLite has 22 job definitions/17 enabled and 106,497
+  run rows through cutoff `2026-08-17T01:22:35.120Z`. Privacy-minimized job
+  definition, job runtime, and run-history hashes are respectively
+  `9834e713831290e3f221b1efbf5c441e0c8e71509b96e8dbb04f730bd9d03cdd`,
+  `d2d6ca5cf9e6717d3b4789fbb6ae1c9c67d7cbd89295d0b5c8a1516eb4bb4e51`,
+  and `1f03094cfbb35f88ee333d94a1058d1bf9826c0aa031bcebb1be55252518ff1c`.
+  The 11 scheduled-task definitions hash to
+  `0a6378eba45332dafee2aa979b353707a25b4a5696127deb890aec82c39baed5`.
+- Implementation: the explicit projection CLI opens SQLite read-only, requires
+  an inclusive lower timestamp, closed inclusive upper timestamp, 1-250 batch
+  ceiling, and exact `NC-017-HOST-JOB-SHADOW` confirmation. A truncated window,
+  missing job definition, or any malformed structural row is rejected before
+  the first ledger write. It selects no output, error text, log path, script,
+  arguments, environment, prompt, or customer content and is not imported by
+  the daemon/scheduler. Migration 119 plus its guarded rollback are bound into
+  the verified release. The existing read-only report now applies distinct
+  email/job milestone, identity, failure, and receipt rules and can filter
+  either workflow or both.
+- Verification: exact Node 22.23.2 passes 125/125 focused tests, typecheck,
+  build, source formatting, 636/636 email-critical tests, and the independent
+  runner build plus 43/43 tests. The unrestricted full root suite passes
+  2,508/2,509; the sole failure is the unchanged unrelated CNPC wrapper-string
+  assertion expecting literal `folder: 'cnpc'`.
+- Data proof: disposable PostgreSQL 16.15 proved migration 118 -> 119, then the
+  compiled CLI projected one exact successful SQLite fixture as three
+  transitions plus one terminal receipt. Exact-window replay applied zero
+  transitions and classified all three facts as duplicates. The real
+  job-filtered PostgreSQL report returned one completed item and zero
+  exceptions. The disposable cluster and fixture were stopped and removed.
+- Current boundary: no production migration, backup, release activation,
+  projection, report read, job/schedule mutation, Campanero prompt/capability
+  change, Slack/Gmail message, push, or merge has occurred yet.
+- Rollback: before production projection, restore the prior immutable release
+  and leave migration 119 dormant. After host history exists, disable the
+  observer and restore the release while retaining append-only history; never
+  delete history to force the schema rollback.
+
 ### NC-20260816-016 — Add a dark Campanero host-job ledger pilot
 
 - Date: 2026-08-17T00:36Z

@@ -35,6 +35,12 @@ Older releases without packaged knowledge retain the configured operational
 mount so rollback remains viable. `FILES.sha256` therefore attests the group
 prompt and the procedures to which it delegates as one release identity.
 
+Beginning with NC-017, the archive also binds migration 119 and its guarded
+rollback as exact regular files. This makes the reviewed bytes transportable
+and independently verifiable; it does not apply the migration. Database backup,
+daemon drain, one-file application, structural validation, and rollback policy
+remain separate recorded operations.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

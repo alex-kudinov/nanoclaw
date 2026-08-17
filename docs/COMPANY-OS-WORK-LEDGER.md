@@ -168,10 +168,12 @@ Base-table and sequence permissions are revoked from `PUBLIC`. Only
 gets a view, write function, or base-table privilege in this slice. The host
 typed store uses the existing admin-side `withAgentContext()` transaction.
 
-Migration 119 is tracked only as an unapplied NC-016 target. It widens the same
-tables for `host_job_run` under workflow-specific identity checks; it does not
-alter deployed Mailman/Sales facts or make the existing report multi-workflow.
-Repository presence is not migration evidence.
+Migration 119 is tracked as the unapplied NC-016 target selected for the
+separately authorized NC-017 activation. It widens the same tables for
+`host_job_run` under workflow-specific identity checks without altering
+Mailman/Sales facts. The NC-017 report candidate is multi-workflow, but
+repository presence and a release build remain neither migration nor
+production-observation evidence.
 
 Migration 118 was applied in production only under `NC-20260816-001`, after an
 exact custom-format backup and explicit one-file apply. Live validation found
@@ -265,6 +267,7 @@ After a local or immutable release build, run:
 ```bash
 npm run company-work:exceptions
 npm run company-work:exceptions -- --json --limit 100 --stale-after-hours 24
+npm run company-work:exceptions -- --workflow host_job_run --limit 100
 ```
 
 The report separates completed, cancelled, and healthy-open work from items
@@ -285,6 +288,13 @@ stage/disposition, timestamps/age, named codes, and aggregate counts. It never
 selects recipient, subject, body, approval text, evidence bytes, or credentials.
 A database/query failure returns only `ledger_query_failed` and cannot affect
 the shadow projector or email path.
+
+NC-017 widens the same static bounded SELECT to `sales_email`, `host_job_run`,
+or both. Its reconciliation rules are workflow-specific: email milestones do
+not require job execution events, and job runs do not require Party, approval,
+claim, Gmail, or thread-closure receipts. The default text view renders absent
+job Party/pipeline identity as `-`; it still selects no raw email or job-result
+content. The report remains disconnected from both execution paths.
 
 NC-014 established this as a local, non-authoritative R2 evidence surface.
 NC-015 deploys exact release `cf96258` and live-verifies one bounded production

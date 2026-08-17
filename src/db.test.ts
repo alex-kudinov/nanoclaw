@@ -12,6 +12,7 @@ import {
   getDueJobs,
   getJob,
   getJobRunLogs,
+  listJobRunsForProjection,
   getMessagesSince,
   getThreadContext,
   getHumanMessagesInThread,
@@ -1595,6 +1596,61 @@ describe('insertJobRunLog / getJobRunLogs', () => {
 
     const logs = getJobRunLogs('limit-job', 3);
     expect(logs).toHaveLength(3);
+  });
+
+  it('returns a fixed structural projection window without raw result fields', () => {
+    upsertJobDefinition({
+      name: 'projection-job',
+      description: '',
+      project: 'proj',
+      project_root: '/proj',
+      script: 'run.sh',
+      args: [],
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      retries: 0,
+      retry_delay_ms: 60000,
+      alert_level: 'alert',
+      timeout_ms: 90000,
+      lockfile: null,
+      enabled: true,
+    });
+    for (let index = 0; index < 3; index++) {
+      insertJobRunLog({
+        id: `projection-run-${index}`,
+        job_name: 'projection-job',
+        triggered_by: 'cron',
+        started_at: `2026-08-16T20:0${index}:00.000Z`,
+        finished_at: `2026-08-16T20:0${index}:01.000Z`,
+        duration_ms: 1000,
+        exit_code: 0,
+        status: 'ok',
+        pid: 1200 + index,
+        retry_attempt: 0,
+        output: 'private output',
+        error: 'private error',
+        log_file: '/private/log',
+      });
+    }
+
+    const batch = listJobRunsForProjection(
+      '2026-08-16T20:00:00.000Z',
+      '2026-08-16T20:02:00.000Z',
+      2,
+    );
+    expect(batch).toMatchObject({ truncated: true });
+    expect(batch.rows).toHaveLength(2);
+    expect(batch.rows[0]).toMatchObject({
+      id: 'projection-run-0',
+      jobName: 'projection-job',
+      timeoutMs: 90000,
+    });
+    expect(JSON.stringify(batch)).not.toMatch(
+      /private output|private error|private\/log/,
+    );
+    expect(batch.rows[0]).not.toHaveProperty('output');
+    expect(batch.rows[0]).not.toHaveProperty('error');
+    expect(batch.rows[0]).not.toHaveProperty('logFile');
   });
 });
 
