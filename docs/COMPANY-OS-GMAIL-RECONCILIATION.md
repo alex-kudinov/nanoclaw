@@ -1,14 +1,15 @@
 # Company OS inbound Gmail gap reconciliation
 
 Status: NC-005's proposal adapter and NC-006's unwired resumable shadow are
-implemented. NC-007 deploys those exact bytes in release `de815e1d`, but
-migration 123 remains unapplied and the release has no runtime import. NC-008
-locally adds the missing real-ingestion disposition contract and cursor
-holdback. NC-009 has completed read-only production compatibility preflight
-and local restart hardening; receipt-schema deployment and natural proof are
-still pending. No production source registration/bootstrap, live
-reconciliation read, cursor write, message recovery, or ingestion change has
-occurred under NC-009.
+implemented. NC-007 deploys those exact bytes, and NC-008/009 add and activate
+the real-ingestion disposition contract and cursor holdback in exact release
+`263ac7c4`. The additive SQLite receipt table and two append-only triggers are
+live after a WAL-safe backup; service/channel/non-interference checks pass.
+No natural Gmail candidate appeared during the bounded observation, so the
+table remains empty and first producer behavior is `deployed_unverified`.
+Migration 123 remains unapplied with no runtime import, source
+registration/bootstrap, live reconciliation read, 404 recovery, or message
+recovery.
 
 ## Decision
 
@@ -187,7 +188,7 @@ Each invocation performs this sequence:
 
 ## Real-ingestion disposition evidence
 
-NC-008 adds the local SQLite producer/reader needed by the shadow accounting
+NC-008 adds the SQLite producer/reader needed by the shadow accounting
 port. `gmail_inbound_disposition_receipts` contains one immutable terminal row
 per Gmail message ID and no email content or address fields. Accepted reasons
 cover ordinary message persistence, direct classified-route persistence,
@@ -269,16 +270,29 @@ every current Gmail terminal reason, split-write and restart convergence,
 partial-batch cursor hold, complete-batch advance, existing-receipt replay, and
 non-terminal page-20 refusal. The exact focused set passes 143/143, combined
 Company OS/Gmail passes 405/405, and the expanded email-critical gate passes
-685/685 plus the independent runner's 43/43. The production daemon and SQLite
-database still run the pre-NC-008 release/schema.
+685/685 plus the independent runner's 43/43. NC-009 is the separately tracked
+production activation and evidence gate for those bytes.
 
-NC-009's aggregate-only production preflight confirms the receipt table and
-both append-only triggers are absent, SQLite `quick_check` is `ok`, critical
-pending email actions are zero, and the selected Gmail cursor fingerprint is
+NC-009's aggregate-only production preflight confirmed the receipt table and
+both append-only triggers were absent, SQLite `quick_check` was `ok`, critical
+pending email actions were zero, and the selected Gmail cursor fingerprint was
 stable at the pre-activation baseline. The staged-route split above contains
 no duplicate or mixed classification rows. Exact Node 22.23.2 passes the new
-label/thread starvation regressions locally; immutable release and live proof
-remain pending.
+label/thread starvation regressions locally.
+
+Exact release `263ac7c4a25a6033adef13e4085c147d1237b559` was then built,
+freshly extracted, transferred, independently verified, and activated after a
+drained WAL-safe mode-0600 SQLite backup. Live readback proves Node 22.23.2,
+one listener, connected Gmail/Slack, empty runtime/outgoing queues, SQLite
+`quick_check` `ok`, and the receipt table plus its no-update/no-delete triggers.
+Migration 123's three tables remain absent. During more than ten minutes of
+bounded observation, one safety poll completed with zero Gmail candidates,
+zero Gmail-row change, zero receipts, and zero Gmail errors or holds. Two
+ambient message rows and two allowed action-safety decisions were attributable
+to Slack only. Normal watch renewal and the successful empty safety poll
+explain the changed Gmail lease/history/liveness state; critical pending counts
+remain unchanged. This proves structure and non-interference, not natural
+receipt creation.
 
 This is not yet a live Gmail recovery fix:
 
@@ -286,9 +300,9 @@ This is not yet a live Gmail recovery fix:
 - migration 123 is tracked but unapplied;
 - the exact Google wrapper is installed but has not called a live mailbox;
 - current inbound push still resets `gmail_history_id` on 404;
-- NC-008 durable rejection evidence is local and unproven against the live
-  mailbox; historical IDs without a receipt, exact retained ordinary inbound
-  row, or durable routed marker still account as unknown;
+- NC-008/009 durable rejection evidence is deployed but no natural candidate
+  has yet exercised it; historical IDs without a receipt, exact retained
+  ordinary inbound row, or durable routed marker still account as unknown;
 - the resumable design proves more than 10,000 candidates synthetically but
   has no production runtime, storage-cost, token-lifetime, or latency evidence;
 - a message permanently deleted before a full snapshot is no longer visible in
@@ -302,13 +316,14 @@ These are activation blockers, not successful-recovery claims.
 
 The next production-facing milestones must remain separately tracked and must:
 
-1. back up production SQLite, deploy the NC-008 receipt producer, verify the
-   additive table/triggers and natural receipt creation, and prove no duplicate
-   wake, cursor regression, classification change, or external action;
-2. dry-run historical coverage and quantify unknown IDs without inventing
+1. passively observe the first genuine Gmail candidate and prove exactly one
+   terminal receipt, exact replay/non-duplication, no cursor regression,
+   classification change, duplicate wake, or external action; do not generate
+   email to satisfy this gate;
+2. only after that proof, dry-run historical coverage and quantify unknown IDs without inventing
    dispositions or treating the in-memory cache as authority;
 3. back up PostgreSQL, apply migration 123 dark, and verify all three tables
-   empty/admin-only before any producer exists;
+   empty/admin-only before any reconciliation-shadow producer exists;
 4. register and bootstrap one inbound source in production without changing
    `gmail_history_id` or wiring 404 behavior;
 5. deploy the wrapper and shadow store still default-off, then observe a

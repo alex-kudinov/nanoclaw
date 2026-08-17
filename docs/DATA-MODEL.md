@@ -67,15 +67,19 @@ completion replay, append-only enforcement, admin-only grants, and guarded
 rollback. Production schema, source/watermark rows, Gmail cursors, and runtime
 imports remain unchanged; see
 `docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
-`NC-20260817-008` adds a separate local SQLite target for the current Gmail
+`NC-20260817-008` adds a separate SQLite target for the current Gmail
 ingestion boundary: one append-only, content-free terminal disposition receipt
 per immutable message ID. It records only contract/source identity,
 accepted/rejected reason, hashes, and timestamps; it stores no sender, address,
 subject, body, prompt, task, approval, action, or arbitrary metadata. Existing
 exact ordinary inbound message rows can supply lazy legacy acceptance evidence;
 direct-route staging rows additionally require the exact PostgreSQL routed
-marker, and outbound rows cannot qualify. The current production release predates this table; no
-production SQLite row or schema has changed under NC-008.
+marker, and outbound rows cannot qualify. `NC-20260817-009` activates that
+additive table and its two append-only triggers in exact release `263ac7c4`
+after a WAL-safe backup. Structural and service proof pass, but the bounded
+observation saw no natural Gmail candidate, so the table remains empty and
+producer behavior is `deployed_unverified`. Migration 123 and every
+reconciliation source/runtime path remain absent.
 
 ---
 
@@ -94,6 +98,7 @@ This document is **deliberation-stage**. Nothing here is built. Fields, enums, r
 **In scope:** the operational data model for people, programs, engagements, interactions, documents, and the pipeline funnel. Everything needed for inbox, sales, mailman, booking, contador, certifier, and courses agents to answer questions with a single SQL query instead of UNIONing across islands.
 
 **Out of scope (explicitly):**
+
 - Agent runtime state (that lives in `store/messages.db` — SQLite, not business DB)
 - Agent knowledge (KNOWLEDGE.md files, not database)
 - Email classification pipeline internals (`email_classifications`, `classification_taxonomy`, `classification_rules` — stays as-is, just gains a `party_id` FK)
@@ -103,7 +108,7 @@ This document is **deliberation-stage**. Nothing here is built. Fields, enums, r
 
 ## Guiding principles
 
-1. **The Party is stable; everything else is a relationship.** A human being does not change. What they *are* to us (prospect, client, coach, trainer, vendor) is a role relationship with a start and an end. Model the human as an identity, model the roles as rows.
+1. **The Party is stable; everything else is a relationship.** A human being does not change. What they _are_ to us (prospect, client, coach, trainer, vendor) is a role relationship with a start and an end. Model the human as an identity, model the roles as rows.
 
 2. **Our DB is authoritative. Plutio is a sync target, not a dependency.** Every write path hits our Postgres first, in a single transaction. Plutio is updated asynchronously via an outbox queue. If Plutio is down for a week, nothing in NanoClaw breaks. When Plutio comes back, the outbox drains.
 
@@ -285,15 +290,15 @@ The stable "who" layer. These tables change rarely after a party is created. Nam
 
 The abstract root. A party is either a person or an organization, and the rest of the system refers to party_id as the universal foreign key.
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | Our internal canonical identity. Never exposed to external systems as the key. |
-| `party_type` | `party_type_t NOT NULL` | Enum: `person`, `organization`. |
-| `canonical_name` | `text NOT NULL` | The display name we use. For persons, typically "First Last". For orgs, legal or common name. Mutable. |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `updated_at` | `timestamptz NOT NULL DEFAULT now()` | Trigger-maintained. |
-| `merged_into` | `bigint NULL REFERENCES parties(id)` | If this party was deduped/merged, points at the surviving party. Soft-delete semantic. |
-| `merged_at` | `timestamptz NULL` | When the merge happened. Paired with `merged_into` — both NULL or both set. |
+| column           | type                                 | notes                                                                                                  |
+| ---------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `id`             | `bigserial PK`                       | Our internal canonical identity. Never exposed to external systems as the key.                         |
+| `party_type`     | `party_type_t NOT NULL`              | Enum: `person`, `organization`.                                                                        |
+| `canonical_name` | `text NOT NULL`                      | The display name we use. For persons, typically "First Last". For orgs, legal or common name. Mutable. |
+| `created_at`     | `timestamptz NOT NULL DEFAULT now()` |                                                                                                        |
+| `updated_at`     | `timestamptz NOT NULL DEFAULT now()` | Trigger-maintained.                                                                                    |
+| `merged_into`    | `bigint NULL REFERENCES parties(id)` | If this party was deduped/merged, points at the surviving party. Soft-delete semantic.                 |
+| `merged_at`      | `timestamptz NULL`                   | When the merge happened. Paired with `merged_into` — both NULL or both set.                            |
 
 Constraint:
 
@@ -398,51 +403,52 @@ Attached to `party_emails`, `party_phones`, `party_handles`, `party_roles`, `pip
 
 1:1 subtype of `parties` where `party_type='person'`. Person-specific fields live here to keep `parties` narrow.
 
-| column | type | notes |
-|---|---|---|
-| `party_id` | `bigint PK REFERENCES parties(id) ON DELETE RESTRICT` | 1:1 with parties. |
-| `first_name` | `text` | |
-| `last_name` | `text` | |
-| `preferred_name` | `text NULL` | "Call me Cherie", overrides first_name in salutations. |
-| `pronouns` | `text NULL` | |
-| `timezone` | `text NULL` | IANA tz — "America/Chicago", "Europe/Rome". |
-| `country` | `text NULL` | ISO-3166-1 alpha-2. |
-| `languages` | `text[] NULL` | For agent tone and translation hints. |
-| `linkedin_url` | `text NULL` | |
-| `key` | `text NULL UNIQUE` | Short alias for agent-prompt references. NULL for most people. Set for staff and frequent collaborators: `alex`, `cherie`, `kalina`, `karen`, `toni`. Agents reference people by key in their prompts rather than by party_id. Note: Kalina's name is spelled with a K (Kalina Terzieva, Bulgarian). |
-| `tandemweb_coach_slug` | `text NULL` | Superficial link to a coach's page on tandemweb. If set, tandemweb is the source of truth for that coach's bio, photo, long-form content, and about-us presence. This DB does NOT mirror or enrich tandemweb bio data (see Resolved Decisions § #3). |
-| `notes` | `text NULL` | Free-form, for anything that doesn't fit. |
+| column                 | type                                                  | notes                                                                                                                                                                                                                                                                                                |
+| ---------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `party_id`             | `bigint PK REFERENCES parties(id) ON DELETE RESTRICT` | 1:1 with parties.                                                                                                                                                                                                                                                                                    |
+| `first_name`           | `text`                                                |                                                                                                                                                                                                                                                                                                      |
+| `last_name`            | `text`                                                |                                                                                                                                                                                                                                                                                                      |
+| `preferred_name`       | `text NULL`                                           | "Call me Cherie", overrides first_name in salutations.                                                                                                                                                                                                                                               |
+| `pronouns`             | `text NULL`                                           |                                                                                                                                                                                                                                                                                                      |
+| `timezone`             | `text NULL`                                           | IANA tz — "America/Chicago", "Europe/Rome".                                                                                                                                                                                                                                                          |
+| `country`              | `text NULL`                                           | ISO-3166-1 alpha-2.                                                                                                                                                                                                                                                                                  |
+| `languages`            | `text[] NULL`                                         | For agent tone and translation hints.                                                                                                                                                                                                                                                                |
+| `linkedin_url`         | `text NULL`                                           |                                                                                                                                                                                                                                                                                                      |
+| `key`                  | `text NULL UNIQUE`                                    | Short alias for agent-prompt references. NULL for most people. Set for staff and frequent collaborators: `alex`, `cherie`, `kalina`, `karen`, `toni`. Agents reference people by key in their prompts rather than by party_id. Note: Kalina's name is spelled with a K (Kalina Terzieva, Bulgarian). |
+| `tandemweb_coach_slug` | `text NULL`                                           | Superficial link to a coach's page on tandemweb. If set, tandemweb is the source of truth for that coach's bio, photo, long-form content, and about-us presence. This DB does NOT mirror or enrich tandemweb bio data (see Resolved Decisions § #3).                                                 |
+| `notes`                | `text NULL`                                           | Free-form, for anything that doesn't fit.                                                                                                                                                                                                                                                            |
 
 ### `organizations`
 
 1:1 subtype of `parties` where `party_type='organization'`.
 
-| column | type | notes |
-|---|---|---|
-| `party_id` | `bigint PK REFERENCES parties(id) ON DELETE RESTRICT` | |
-| `legal_name` | `text NULL` | |
-| `industry` | `text NULL` | |
-| `size_bucket` | `text NULL` | "1-10", "11-50", "51-200", "201-1000", "1000+". |
-| `website` | `text NULL` | |
-| `tax_id` | `text NULL` | EIN / VAT / equivalent. |
-| `notes` | `text NULL` | |
+| column        | type                                                  | notes                                           |
+| ------------- | ----------------------------------------------------- | ----------------------------------------------- |
+| `party_id`    | `bigint PK REFERENCES parties(id) ON DELETE RESTRICT` |                                                 |
+| `legal_name`  | `text NULL`                                           |                                                 |
+| `industry`    | `text NULL`                                           |                                                 |
+| `size_bucket` | `text NULL`                                           | "1-10", "11-50", "51-200", "201-1000", "1000+". |
+| `website`     | `text NULL`                                           |                                                 |
+| `tax_id`      | `text NULL`                                           | EIN / VAT / equivalent.                         |
+| `notes`       | `text NULL`                                           |                                                 |
 
 ### `party_emails`
 
 This is where the Luna problem is solved. Many emails per party — **and one email can belong to more than one party** (shared inboxes, couples, assistants). v1.1 reshaped this after the frontier-model review caught that globally-unique email breaks on `info@`, `billing@`, family addresses, etc.
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `party_id` | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` | When a party is hard-deleted (rare), emails go with it. |
-| `email` | `citext NOT NULL` | `citext` is the case-insensitive text type. Luna.Tovaglieri@... and luna.tovaglieri@... collapse to one match. |
-| `is_primary` | `boolean NOT NULL DEFAULT false` | Exactly one primary per party, enforced by partial unique index. |
-| `verified_at` | `timestamptz NULL` | Set when we confirm the email works (received a reply, opt-in click, etc). |
-| `first_seen_source` | `text NOT NULL` | Where we learned of this email — 'contact-form', 'gmail-inbound', 'trafft-booking', 'stripe-payment', 'manual', 'plutio-sync'. |
-| `first_seen_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column              | type                                                       | notes                                                                                                                          |
+| ------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                | `bigserial PK`                                             |                                                                                                                                |
+| `party_id`          | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` | When a party is hard-deleted (rare), emails go with it.                                                                        |
+| `email`             | `citext NOT NULL`                                          | `citext` is the case-insensitive text type. Luna.Tovaglieri@... and luna.tovaglieri@... collapse to one match.                 |
+| `is_primary`        | `boolean NOT NULL DEFAULT false`                           | Exactly one primary per party, enforced by partial unique index.                                                               |
+| `verified_at`       | `timestamptz NULL`                                         | Set when we confirm the email works (received a reply, opt-in click, etc).                                                     |
+| `first_seen_source` | `text NOT NULL`                                            | Where we learned of this email — 'contact-form', 'gmail-inbound', 'trafft-booking', 'stripe-payment', 'manual', 'plutio-sync'. |
+| `first_seen_at`     | `timestamptz NOT NULL DEFAULT now()`                       |                                                                                                                                |
+| `created_at`        | `timestamptz NOT NULL DEFAULT now()`                       |                                                                                                                                |
 
 Indexes:
+
 - `CREATE UNIQUE INDEX ON party_emails (party_id, email);` — one row per (party, email) pair. An email can appear on multiple parties; the same party cannot have the same email twice.
 - `CREATE UNIQUE INDEX ON party_emails (party_id) WHERE is_primary;` — exactly one primary per party.
 - `CREATE INDEX ON party_emails (email);` — the hot lookup path for inbound emails.
@@ -481,6 +487,7 @@ $$;
 Both resolvers run `canonical_party_id()` on the result so merged (tombstoned) parties are transparently redirected to their survivors. Agents never see loser party IDs.
 
 **Agent guidance:**
+
 - Routing a single inbound email to one party → `best_party_by_email('...')`
 - "Who are all the parties that could own this address?" (e.g., during merge review or ambiguous intake) → `resolve_parties_by_email('...')`
 - Never join on `email` directly; always go through a resolver.
@@ -489,30 +496,30 @@ Both resolvers run `canonical_party_id()` on the result so merged (tombstoned) p
 
 Same pattern as `party_emails`.
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `party_id` | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` | |
-| `phone_e164` | `text NOT NULL` | E.164 format: +14155551234. |
-| `label` | `text NULL` | 'mobile', 'office', 'whatsapp'. |
-| `is_primary` | `boolean NOT NULL DEFAULT false` | |
-| `verified_at` | `timestamptz NULL` | |
-| `first_seen_source` | `text NOT NULL` | |
-| `first_seen_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column              | type                                                       | notes                           |
+| ------------------- | ---------------------------------------------------------- | ------------------------------- |
+| `id`                | `bigserial PK`                                             |                                 |
+| `party_id`          | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` |                                 |
+| `phone_e164`        | `text NOT NULL`                                            | E.164 format: +14155551234.     |
+| `label`             | `text NULL`                                                | 'mobile', 'office', 'whatsapp'. |
+| `is_primary`        | `boolean NOT NULL DEFAULT false`                           |                                 |
+| `verified_at`       | `timestamptz NULL`                                         |                                 |
+| `first_seen_source` | `text NOT NULL`                                            |                                 |
+| `first_seen_at`     | `timestamptz NOT NULL DEFAULT now()`                       |                                 |
 
 ### `party_handles`
 
 Social/messaging handles that aren't emails or phones. LinkedIn, X/Twitter, Slack user IDs, Discord tags.
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `party_id` | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` | |
-| `platform` | `text NOT NULL` | 'linkedin', 'twitter', 'slack', 'discord', 'instagram', etc. |
-| `handle` | `text NOT NULL` | The identifier on that platform. |
-| `url` | `text NULL` | Direct link if known. |
-| `first_seen_source` | `text NOT NULL` | |
-| `first_seen_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column              | type                                                       | notes                                                        |
+| ------------------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
+| `id`                | `bigserial PK`                                             |                                                              |
+| `party_id`          | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` |                                                              |
+| `platform`          | `text NOT NULL`                                            | 'linkedin', 'twitter', 'slack', 'discord', 'instagram', etc. |
+| `handle`            | `text NOT NULL`                                            | The identifier on that platform.                             |
+| `url`               | `text NULL`                                                | Direct link if known.                                        |
+| `first_seen_source` | `text NOT NULL`                                            |                                                              |
+| `first_seen_at`     | `timestamptz NOT NULL DEFAULT now()`                       |                                                              |
 
 Composite unique: `(platform, handle)` — one party per platform handle.
 
@@ -522,23 +529,24 @@ Connections between two parties, with a role-in-relationship descriptor. This is
 
 Plutio's company-contact model is the inspiration: their `contact belongs to company` with a free-form "role at company" field. We extend it with a controlled set of role_in_relationship values so billing contacts and contracting contacts are first-class.
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `from_party_id` | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` | The "subject" of the relationship — usually a person. |
-| `to_party_id` | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` | The "object" — usually an organization, but can be another person. |
-| `relationship_type` | `text NOT NULL REFERENCES relationship_types(key)` | 'employed-by', 'represents', 'affiliated-with', 'refers', 'reports-to', 'coaches'. |
-| `contact_role_key` | `text NULL REFERENCES contact_roles(key)` | For org relationships: the person's controlled role inside that org. FK-enforced, no free text. One of `billing-contact`, `contracting-contact`, etc. (see lookup below). |
-| `role_note` | `text NULL` | Free-form annotation paired with `contact_role_key`. Use this for "billing contact but only for the US entity" style nuance that doesn't warrant a new lookup value. Never used for filtering. |
-| `is_primary_contact` | `boolean NOT NULL DEFAULT false` | One "primary" contact per org — the default person to contact. |
-| `started_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `ended_at` | `timestamptz NULL` | NULL = currently active. Time-bounded like roles. |
-| `metadata` | `jsonb NOT NULL DEFAULT '{}'` | Structured sidecars only (per principle #11). Never stage/status. |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column               | type                                                       | notes                                                                                                                                                                                          |
+| -------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `bigserial PK`                                             |                                                                                                                                                                                                |
+| `from_party_id`      | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` | The "subject" of the relationship — usually a person.                                                                                                                                          |
+| `to_party_id`        | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` | The "object" — usually an organization, but can be another person.                                                                                                                             |
+| `relationship_type`  | `text NOT NULL REFERENCES relationship_types(key)`         | 'employed-by', 'represents', 'affiliated-with', 'refers', 'reports-to', 'coaches'.                                                                                                             |
+| `contact_role_key`   | `text NULL REFERENCES contact_roles(key)`                  | For org relationships: the person's controlled role inside that org. FK-enforced, no free text. One of `billing-contact`, `contracting-contact`, etc. (see lookup below).                      |
+| `role_note`          | `text NULL`                                                | Free-form annotation paired with `contact_role_key`. Use this for "billing contact but only for the US entity" style nuance that doesn't warrant a new lookup value. Never used for filtering. |
+| `is_primary_contact` | `boolean NOT NULL DEFAULT false`                           | One "primary" contact per org — the default person to contact.                                                                                                                                 |
+| `started_at`         | `timestamptz NOT NULL DEFAULT now()`                       |                                                                                                                                                                                                |
+| `ended_at`           | `timestamptz NULL`                                         | NULL = currently active. Time-bounded like roles.                                                                                                                                              |
+| `metadata`           | `jsonb NOT NULL DEFAULT '{}'`                              | Structured sidecars only (per principle #11). Never stage/status.                                                                                                                              |
+| `created_at`         | `timestamptz NOT NULL DEFAULT now()`                       |                                                                                                                                                                                                |
 
 **v1.1 correction:** v1.0 defined `role_in_relationship` as "free-text OR references contact_roles" — exactly the string-drift this document tries to eliminate. v1.1 splits it into the FK-enforced `contact_role_key` column and a separate `role_note` annotation. Agents MUST use `contact_role_key` for any routing filter; `role_note` is display-only.
 
 Indexes:
+
 - `CREATE INDEX ON party_relationships (to_party_id, relationship_type) WHERE ended_at IS NULL;` — "find all current employees of ThoughtSpot"
 - `CREATE INDEX ON party_relationships (from_party_id) WHERE ended_at IS NULL;` — "what orgs is this person currently affiliated with?"
 - `CREATE UNIQUE INDEX ON party_relationships (to_party_id) WHERE is_primary_contact AND ended_at IS NULL;` — at most one active primary contact per org
@@ -547,41 +555,41 @@ Indexes:
 
 Controlled set of relationship kinds between parties. v1.0 referenced this table in the `party_relationships.relationship_type` FK but never declared it — reviewer flagged as a hard correctness hole. Fixed in v1.1.
 
-| key | meaning |
-|---|---|
-| `employed-by` | Person works for organization. The most common relationship for contact cards. |
-| `represents` | Person acts as the public-facing agent/rep for an org or another person. |
-| `affiliated-with` | Looser association than employment — advisor, board member, alumni. |
-| `refers` | One party refers leads to another (used to track referral sources). |
-| `reports-to` | Internal hierarchy within a party's employment (e.g., Courtney reports to their manager at ThoughtSpot). |
-| `coaches` | Outside of formal engagement participation — e.g., informal coaching, mentorship relationships. |
-| `partnered-with` | Business partnership between two orgs we work with. |
+| key               | meaning                                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------- |
+| `employed-by`     | Person works for organization. The most common relationship for contact cards.                           |
+| `represents`      | Person acts as the public-facing agent/rep for an org or another person.                                 |
+| `affiliated-with` | Looser association than employment — advisor, board member, alumni.                                      |
+| `refers`          | One party refers leads to another (used to track referral sources).                                      |
+| `reports-to`      | Internal hierarchy within a party's employment (e.g., Courtney reports to their manager at ThoughtSpot). |
+| `coaches`         | Outside of formal engagement participation — e.g., informal coaching, mentorship relationships.          |
+| `partnered-with`  | Business partnership between two orgs we work with.                                                      |
 
 Lookup row shape:
 
-| column | type | notes |
-|---|---|---|
-| `key` | `text PK` | |
-| `label` | `text NOT NULL` | Human-readable. |
-| `description` | `text NOT NULL` | Plain-language explanation for agent prompts. |
-| `enabled` | `boolean NOT NULL DEFAULT true` | |
+| column        | type                            | notes                                         |
+| ------------- | ------------------------------- | --------------------------------------------- |
+| `key`         | `text PK`                       |                                               |
+| `label`       | `text NOT NULL`                 | Human-readable.                               |
+| `description` | `text NOT NULL`                 | Plain-language explanation for agent prompts. |
+| `enabled`     | `boolean NOT NULL DEFAULT true` |                                               |
 
 ### `contact_roles` (lookup — the Plutio-extension value)
 
 Controlled set of "this person's role inside that organization." Plutio has a free-text field here; we use a controlled vocabulary so agents can route accordingly.
 
-| key | meaning |
-|---|---|
-| `primary-contact` | Default person to contact for anything. |
-| `billing-contact` | Receives invoices and payment reminders. |
-| `contracting-contact` | Signs contracts and legal documents. |
-| `technical-contact` | Handles technical/integration questions. |
-| `decision-maker` | Has authority to approve purchases. |
-| `participant` | Will be in the engagement but isn't the buyer. |
-| `champion` | Internal advocate for our services. |
-| `gatekeeper` | Screens inquiries before they reach decision-makers. |
-| `assistant` | Scheduling and logistics on behalf of someone else. |
-| `other` | Use sparingly — annotate in `role_note`. |
+| key                   | meaning                                              |
+| --------------------- | ---------------------------------------------------- |
+| `primary-contact`     | Default person to contact for anything.              |
+| `billing-contact`     | Receives invoices and payment reminders.             |
+| `contracting-contact` | Signs contracts and legal documents.                 |
+| `technical-contact`   | Handles technical/integration questions.             |
+| `decision-maker`      | Has authority to approve purchases.                  |
+| `participant`         | Will be in the engagement but isn't the buyer.       |
+| `champion`            | Internal advocate for our services.                  |
+| `gatekeeper`          | Screens inquiries before they reach decision-makers. |
+| `assistant`           | Scheduling and logistics on behalf of someone else.  |
+| `other`               | Use sparingly — annotate in `role_note`.             |
 
 ### Why we reversed course on `party_relationships`
 
@@ -599,17 +607,18 @@ A party's role is what they ARE to us at a given point in time. Roles overlap, r
 
 ### `party_roles`
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `party_id` | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` | |
-| `role_type` | `text NOT NULL REFERENCES role_types(key)` | Lookup table, not enum — role types grow over time. |
-| `started_at` | `timestamptz NOT NULL` | When this role began. |
-| `ended_at` | `timestamptz NULL` | NULL = currently active. |
-| `context` | `jsonb NOT NULL DEFAULT '{}'` | Role-specific fields. See examples below. |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column       | type                                                       | notes                                               |
+| ------------ | ---------------------------------------------------------- | --------------------------------------------------- |
+| `id`         | `bigserial PK`                                             |                                                     |
+| `party_id`   | `bigint NOT NULL REFERENCES parties(id) ON DELETE CASCADE` |                                                     |
+| `role_type`  | `text NOT NULL REFERENCES role_types(key)`                 | Lookup table, not enum — role types grow over time. |
+| `started_at` | `timestamptz NOT NULL`                                     | When this role began.                               |
+| `ended_at`   | `timestamptz NULL`                                         | NULL = currently active.                            |
+| `context`    | `jsonb NOT NULL DEFAULT '{}'`                              | Role-specific fields. See examples below.           |
+| `created_at` | `timestamptz NOT NULL DEFAULT now()`                       |                                                     |
 
 Indexes:
+
 - `CREATE INDEX ON party_roles (party_id, role_type);`
 - `CREATE INDEX ON party_roles (role_type) WHERE ended_at IS NULL;` (find all current coaches, etc.)
 - `CREATE UNIQUE INDEX ON party_roles (party_id, role_type) WHERE ended_at IS NULL;` — **at most one ACTIVE role of each type per party** (partial unique index). Historical rows are unconstrained.
@@ -620,29 +629,29 @@ Indexes:
 
 ### `role_types` (lookup table)
 
-| column | type | notes |
-|---|---|---|
-| `key` | `text PK` | Short key: 'prospect', 'client', 'coach', 'vendor', etc. |
-| `label` | `text NOT NULL` | Human-readable: "Prospect", "Client", "Coach". |
-| `description` | `text NOT NULL` | What this role means in plain language. |
-| `category` | `text NOT NULL` | 'buyer', 'provider', 'internal', 'other' — coarse grouping. |
+| column           | type                             | notes                                                                          |
+| ---------------- | -------------------------------- | ------------------------------------------------------------------------------ |
+| `key`            | `text PK`                        | Short key: 'prospect', 'client', 'coach', 'vendor', etc.                       |
+| `label`          | `text NOT NULL`                  | Human-readable: "Prospect", "Client", "Coach".                                 |
+| `description`    | `text NOT NULL`                  | What this role means in plain language.                                        |
+| `category`       | `text NOT NULL`                  | 'buyer', 'provider', 'internal', 'other' — coarse grouping.                    |
 | `is_person_only` | `boolean NOT NULL DEFAULT false` | 'coach' and 'staff' don't apply to orgs; 'vendor' and 'partner' can be either. |
-| `enabled` | `boolean NOT NULL DEFAULT true` | |
+| `enabled`        | `boolean NOT NULL DEFAULT true`  |                                                                                |
 
 Seed values (the canonical set — see glossary for details). **Note: `student` and `alumni` are deliberately NOT role types** — everyone who buys anything is a `client`, and what they bought (and whether they're actively learning in a cohort) is captured in `engagement_participants`. See Resolved Decisions § #1-2.
 
-| key | category | is_person_only |
-|---|---|---|
-| `prospect` | buyer | false |
-| `client` | buyer | false |
-| `coach` | provider | true |
-| `trainer` | provider | true |
-| `mentor` | provider | true |
-| `supervisor` | provider | true |
-| `vendor` | provider | false |
-| `partner` | provider | false |
-| `staff` | internal | true |
-| `contact` | other | false |
+| key          | category | is_person_only |
+| ------------ | -------- | -------------- |
+| `prospect`   | buyer    | false          |
+| `client`     | buyer    | false          |
+| `coach`      | provider | true           |
+| `trainer`    | provider | true           |
+| `mentor`     | provider | true           |
+| `supervisor` | provider | true           |
+| `vendor`     | provider | false          |
+| `partner`    | provider | false          |
+| `staff`      | internal | true           |
+| `contact`    | other    | false          |
 
 **Why a lookup table instead of an enum:** adding a new role type tomorrow (e.g., "beta tester", "advisory board member") should not require a schema migration. Lookup table is a simple insert. Enforced via FK.
 
@@ -679,38 +688,38 @@ Slowly-changing reference data: the programs we sell and deliver.
 
 The abstract offering. "ACC Level 1" is a program. Every cohort of it is a `program_variant` or an `engagement` (discussed below).
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `key` | `text NOT NULL UNIQUE` | Short slug: 'acc-level-1', 'pcc-bridge', 'actc-full'. Used in URLs and agent references. |
-| `name` | `text NOT NULL` | Display name. |
-| `kind` | `text NOT NULL REFERENCES program_kinds(key)` | Lookup: 'cohort', 'self-paced', 'coaching-service', 'mentor-service', 'supervision', 'certification'. |
-| `icf_level` | `text NULL` | 'ACC', 'PCC', 'MCC', or NULL. |
-| `description` | `text NULL` | |
-| `duration_weeks` | `integer NULL` | NULL for open-ended services. |
-| `base_price_cents` | `integer NULL` | Informational — actual price per variant. |
-| `currency` | `text NOT NULL DEFAULT 'USD'` | |
-| `status` | `text NOT NULL DEFAULT 'active'` | `active`, `archived`, `draft`. |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `updated_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column             | type                                          | notes                                                                                                 |
+| ------------------ | --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `id`               | `bigserial PK`                                |                                                                                                       |
+| `key`              | `text NOT NULL UNIQUE`                        | Short slug: 'acc-level-1', 'pcc-bridge', 'actc-full'. Used in URLs and agent references.              |
+| `name`             | `text NOT NULL`                               | Display name.                                                                                         |
+| `kind`             | `text NOT NULL REFERENCES program_kinds(key)` | Lookup: 'cohort', 'self-paced', 'coaching-service', 'mentor-service', 'supervision', 'certification'. |
+| `icf_level`        | `text NULL`                                   | 'ACC', 'PCC', 'MCC', or NULL.                                                                         |
+| `description`      | `text NULL`                                   |                                                                                                       |
+| `duration_weeks`   | `integer NULL`                                | NULL for open-ended services.                                                                         |
+| `base_price_cents` | `integer NULL`                                | Informational — actual price per variant.                                                             |
+| `currency`         | `text NOT NULL DEFAULT 'USD'`                 |                                                                                                       |
+| `status`           | `text NOT NULL DEFAULT 'active'`              | `active`, `archived`, `draft`.                                                                        |
+| `created_at`       | `timestamptz NOT NULL DEFAULT now()`          |                                                                                                       |
+| `updated_at`       | `timestamptz NOT NULL DEFAULT now()`          |                                                                                                       |
 
 ### `program_variants`
 
 A specific instance — a cohort with dates, a pricing tier, a regional offering.
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `program_id` | `bigint NOT NULL REFERENCES programs(id)` | |
-| `key` | `text NOT NULL` | 'acc-2026-q2' — unique within program. |
-| `name` | `text NOT NULL` | 'ACC Level 1 — April 2026 Cohort'. |
-| `start_date` | `date NULL` | |
-| `end_date` | `date NULL` | |
-| `seats_total` | `integer NULL` | Capacity if the variant is capped. NULL = no cap. |
-| `price_cents` | `integer NOT NULL` | Overrides `programs.base_price_cents`. |
-| `status` | `text NOT NULL DEFAULT 'planned'` | `planned`, `open`, `closed`, `in-progress`, `completed`, `cancelled`. |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `updated_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column        | type                                      | notes                                                                 |
+| ------------- | ----------------------------------------- | --------------------------------------------------------------------- |
+| `id`          | `bigserial PK`                            |                                                                       |
+| `program_id`  | `bigint NOT NULL REFERENCES programs(id)` |                                                                       |
+| `key`         | `text NOT NULL`                           | 'acc-2026-q2' — unique within program.                                |
+| `name`        | `text NOT NULL`                           | 'ACC Level 1 — April 2026 Cohort'.                                    |
+| `start_date`  | `date NULL`                               |                                                                       |
+| `end_date`    | `date NULL`                               |                                                                       |
+| `seats_total` | `integer NULL`                            | Capacity if the variant is capped. NULL = no cap.                     |
+| `price_cents` | `integer NOT NULL`                        | Overrides `programs.base_price_cents`.                                |
+| `status`      | `text NOT NULL DEFAULT 'planned'`         | `planned`, `open`, `closed`, `in-progress`, `completed`, `cancelled`. |
+| `created_at`  | `timestamptz NOT NULL DEFAULT now()`      |                                                                       |
+| `updated_at`  | `timestamptz NOT NULL DEFAULT now()`      |                                                                       |
 
 Composite unique: `(program_id, key)`.
 
@@ -743,34 +752,34 @@ Where catalog meets reality. An engagement is a concrete thing we're doing with 
 
 ### `engagements`
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `program_variant_id` | `bigint NULL REFERENCES program_variants(id)` | NULL for bespoke/ad-hoc engagements. |
-| `kind` | `text NOT NULL REFERENCES engagement_kinds(key)` | Lookup: 'cohort-delivery', 'coaching-package', 'mentor-pair', 'supervision-series', 'speaking-gig', 'bespoke'. |
-| `name` | `text NOT NULL` | Human-readable: 'PCC Cohort Q2 2026', 'Luna ACTC coaching package'. |
-| `status` | `text NOT NULL DEFAULT 'planned'` | `planned`, `active`, `completed`, `cancelled`, `on-hold`. |
-| `started_at` | `timestamptz NULL` | |
-| `ended_at` | `timestamptz NULL` | |
-| `metadata` | `jsonb NOT NULL DEFAULT '{}'` | Engagement-kind-specific fields. |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `updated_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column               | type                                             | notes                                                                                                          |
+| -------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `bigserial PK`                                   |                                                                                                                |
+| `program_variant_id` | `bigint NULL REFERENCES program_variants(id)`    | NULL for bespoke/ad-hoc engagements.                                                                           |
+| `kind`               | `text NOT NULL REFERENCES engagement_kinds(key)` | Lookup: 'cohort-delivery', 'coaching-package', 'mentor-pair', 'supervision-series', 'speaking-gig', 'bespoke'. |
+| `name`               | `text NOT NULL`                                  | Human-readable: 'PCC Cohort Q2 2026', 'Luna ACTC coaching package'.                                            |
+| `status`             | `text NOT NULL DEFAULT 'planned'`                | `planned`, `active`, `completed`, `cancelled`, `on-hold`.                                                      |
+| `started_at`         | `timestamptz NULL`                               |                                                                                                                |
+| `ended_at`           | `timestamptz NULL`                               |                                                                                                                |
+| `metadata`           | `jsonb NOT NULL DEFAULT '{}'`                    | Engagement-kind-specific fields.                                                                               |
+| `created_at`         | `timestamptz NOT NULL DEFAULT now()`             |                                                                                                                |
+| `updated_at`         | `timestamptz NOT NULL DEFAULT now()`             |                                                                                                                |
 
 ### `engagement_participants`
 
 Who is in the engagement, and in what capacity. A cohort has 15 students + 1-2 instructors + maybe a mentor. All one `engagement_id`, N rows.
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `engagement_id` | `bigint NOT NULL REFERENCES engagements(id) ON DELETE CASCADE` | |
-| `party_id` | `bigint NOT NULL REFERENCES parties(id) ON DELETE RESTRICT` | Cannot delete a party that's in an engagement. |
-| `participant_role` | `text NOT NULL REFERENCES participant_roles(key)` | 'student', 'instructor', 'mentor', 'supervisor', 'observer', 'client', 'coach'. |
-| `started_at` | `timestamptz NOT NULL` | |
-| `ended_at` | `timestamptz NULL` | |
-| `seat_cost_cents` | `integer NULL` | What the participant paid (students) or was paid (instructors). |
-| `metadata` | `jsonb NOT NULL DEFAULT '{}'` | e.g., seat number, assessment scores. |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column             | type                                                           | notes                                                                           |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `id`               | `bigserial PK`                                                 |                                                                                 |
+| `engagement_id`    | `bigint NOT NULL REFERENCES engagements(id) ON DELETE CASCADE` |                                                                                 |
+| `party_id`         | `bigint NOT NULL REFERENCES parties(id) ON DELETE RESTRICT`    | Cannot delete a party that's in an engagement.                                  |
+| `participant_role` | `text NOT NULL REFERENCES participant_roles(key)`              | 'student', 'instructor', 'mentor', 'supervisor', 'observer', 'client', 'coach'. |
+| `started_at`       | `timestamptz NOT NULL`                                         |                                                                                 |
+| `ended_at`         | `timestamptz NULL`                                             |                                                                                 |
+| `seat_cost_cents`  | `integer NULL`                                                 | What the participant paid (students) or was paid (instructors).                 |
+| `metadata`         | `jsonb NOT NULL DEFAULT '{}'`                                  | e.g., seat number, assessment scores.                                           |
+| `created_at`       | `timestamptz NOT NULL DEFAULT now()`                           |                                                                                 |
 
 Composite unique: `(engagement_id, party_id, participant_role)` — a party can't hold the same role twice in the same engagement (but can hold different roles, e.g., mentor + observer).
 
@@ -791,23 +800,23 @@ The pre-sale funnel. A party can be in the funnel for multiple programs at the s
 
 ### `pipeline_entries`
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `party_id` | `bigint NOT NULL REFERENCES parties(id) ON DELETE RESTRICT` | Never cascade; losing a party must not silently drop its funnel history. Use merge, not delete. |
-| `program_id` | `bigint NOT NULL REFERENCES programs(id)` | |
-| `stage` | `text NOT NULL REFERENCES pipeline_stages(key)` | 'new', 'qualified', 'sent', 'replied', 'won', 'lost'. Six stages, no more. See Resolved Decisions § #5-6. |
-| `source` | `text NOT NULL` | 'contact-form', 'email', 'booking', 'event', 'referral'. |
-| `dedupe_key` | `text NOT NULL UNIQUE` | Idempotency key for externally-triggered creation. Format: `<source>:<ext-id>:program:<program-key>`, e.g. `gmail-thread:19d7cf3b2b4bb86a:program:actc-full`. On retry, the second INSERT fails on the unique constraint and the caller recovers by reading the existing row. |
-| `entered_funnel_at` | `timestamptz NOT NULL DEFAULT now()` | When they first appeared in the pipeline for this program. |
-| `entered_stage_at` | `timestamptz NOT NULL DEFAULT now()` | When they entered the CURRENT stage. Reset on stage transition. |
-| `won_at` | `timestamptz NULL` | Set when stage transitions to 'won' (they bought). |
-| `lost_at` | `timestamptz NULL` | Set when stage transitions to 'lost'. |
-| `lost_reason` | `text NULL REFERENCES lost_reasons(key)` | Why they're lost. Distinguishes "explicit no" from "went silent" etc. — see glossary. |
-| `assigned_to` | `bigint NULL REFERENCES parties(id)` | FK to a staff party (Alex, Cherie, or future staff). |
-| `notes` | `text NULL` | |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `updated_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column              | type                                                        | notes                                                                                                                                                                                                                                                                         |
+| ------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                | `bigserial PK`                                              |                                                                                                                                                                                                                                                                               |
+| `party_id`          | `bigint NOT NULL REFERENCES parties(id) ON DELETE RESTRICT` | Never cascade; losing a party must not silently drop its funnel history. Use merge, not delete.                                                                                                                                                                               |
+| `program_id`        | `bigint NOT NULL REFERENCES programs(id)`                   |                                                                                                                                                                                                                                                                               |
+| `stage`             | `text NOT NULL REFERENCES pipeline_stages(key)`             | 'new', 'qualified', 'sent', 'replied', 'won', 'lost'. Six stages, no more. See Resolved Decisions § #5-6.                                                                                                                                                                     |
+| `source`            | `text NOT NULL`                                             | 'contact-form', 'email', 'booking', 'event', 'referral'.                                                                                                                                                                                                                      |
+| `dedupe_key`        | `text NOT NULL UNIQUE`                                      | Idempotency key for externally-triggered creation. Format: `<source>:<ext-id>:program:<program-key>`, e.g. `gmail-thread:19d7cf3b2b4bb86a:program:actc-full`. On retry, the second INSERT fails on the unique constraint and the caller recovers by reading the existing row. |
+| `entered_funnel_at` | `timestamptz NOT NULL DEFAULT now()`                        | When they first appeared in the pipeline for this program.                                                                                                                                                                                                                    |
+| `entered_stage_at`  | `timestamptz NOT NULL DEFAULT now()`                        | When they entered the CURRENT stage. Reset on stage transition.                                                                                                                                                                                                               |
+| `won_at`            | `timestamptz NULL`                                          | Set when stage transitions to 'won' (they bought).                                                                                                                                                                                                                            |
+| `lost_at`           | `timestamptz NULL`                                          | Set when stage transitions to 'lost'.                                                                                                                                                                                                                                         |
+| `lost_reason`       | `text NULL REFERENCES lost_reasons(key)`                    | Why they're lost. Distinguishes "explicit no" from "went silent" etc. — see glossary.                                                                                                                                                                                         |
+| `assigned_to`       | `bigint NULL REFERENCES parties(id)`                        | FK to a staff party (Alex, Cherie, or future staff).                                                                                                                                                                                                                          |
+| `notes`             | `text NULL`                                                 |                                                                                                                                                                                                                                                                               |
+| `created_at`        | `timestamptz NOT NULL DEFAULT now()`                        |                                                                                                                                                                                                                                                                               |
+| `updated_at`        | `timestamptz NOT NULL DEFAULT now()`                        |                                                                                                                                                                                                                                                                               |
 
 Indexes + constraints:
 
@@ -830,16 +839,16 @@ Indexes + constraints:
 
 Event-sourced history of stage transitions. Every time `pipeline_entries.stage` changes, append a row here.
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `pipeline_entry_id` | `bigint NOT NULL REFERENCES pipeline_entries(id) ON DELETE CASCADE` | |
-| `from_stage` | `text NULL` | NULL for initial entry. |
-| `to_stage` | `text NOT NULL` | |
-| `transitioned_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `transitioned_by` | `text NOT NULL` | 'inbox-agent', 'sales-agent', 'mailman-agent', 'alex', 'cherie', 'booking-webhook', 'follow-up-cron'. |
-| `reason` | `text NULL` | |
-| `metadata` | `jsonb NOT NULL DEFAULT '{}'` | |
+| column              | type                                                                | notes                                                                                                 |
+| ------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `id`                | `bigserial PK`                                                      |                                                                                                       |
+| `pipeline_entry_id` | `bigint NOT NULL REFERENCES pipeline_entries(id) ON DELETE CASCADE` |                                                                                                       |
+| `from_stage`        | `text NULL`                                                         | NULL for initial entry.                                                                               |
+| `to_stage`          | `text NOT NULL`                                                     |                                                                                                       |
+| `transitioned_at`   | `timestamptz NOT NULL DEFAULT now()`                                |                                                                                                       |
+| `transitioned_by`   | `text NOT NULL`                                                     | 'inbox-agent', 'sales-agent', 'mailman-agent', 'alex', 'cherie', 'booking-webhook', 'follow-up-cron'. |
+| `reason`            | `text NULL`                                                         |                                                                                                       |
+| `metadata`          | `jsonb NOT NULL DEFAULT '{}'`                                       |                                                                                                       |
 
 This gives us "how long was Donovan in `replied` before someone did something?" queries for free, and an audit trail of who did what.
 
@@ -849,14 +858,14 @@ Because agents maintain these stages — not humans — the model must specify *
 
 Each stage has an **entry criterion** (what causes a party to land here), an **exit criterion** (what causes them to leave), and an **expected agent** (which agent is responsible for the transition). A party that violates these rules is a data-quality incident the janitor catches.
 
-| stage | entry criterion | exit criterion | expected transition agent |
-|---|---|---|---|
-| `new` | A contact-form submission, inbound email classified as a lead, or a direct consultation booking creates the pipeline_entries row | Triage decision by inbox agent: qualified → `qualified`, not a real lead → `lost` with `lost_reason='wrong-fit'` or `spam` | inbox |
-| `qualified` | Inbox set `stage='qualified'` — the party is a genuine inquiry for this program | Sales sends initial info → `sent`. Sales disqualifies → `lost` with `lost_reason='wrong-fit'` | sales |
-| `sent` | Mailman confirms an outbound email was sent (not when sales "approves" a draft — the gap in the current `approved` status gets fixed here) | Lead replies → `replied`. Follow-up cycle exhausts → `lost` with `lost_reason='went-silent'` | mailman (on send confirmation); sales follow-up cron (on exhaustion) |
-| `replied` | Mailman detects a reply-match on inbound email that links to this pipeline_entries row (via thread_id or party_id lookup) | Sales drafts next response → back to `sent` on mailman confirm. Lead signs/pays → `won`. Lead explicitly declines → `lost` with `lost_reason='explicit-no'` | sales |
-| `won` | A `documents` row with `kind='contract'` and `status='signed'` OR `kind='invoice'` with `status='paid'` is created for this pipeline_entry | TERMINAL. `won_at` is set. Creates or extends `role_type='client'` and an `engagements` row + `engagement_participants` row | contador (on payment) or sales (on contract signing) |
-| `lost` | Any of: explicit decline, disqualification, 30+ days silence after final follow-up, marked duplicate, marked spam | TERMINAL. `lost_at` and `lost_reason` are set | inbox (spam/wrong-fit), sales (explicit-no, went-silent), janitor (exhausted follow-up) |
+| stage       | entry criterion                                                                                                                            | exit criterion                                                                                                                                              | expected transition agent                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `new`       | A contact-form submission, inbound email classified as a lead, or a direct consultation booking creates the pipeline_entries row           | Triage decision by inbox agent: qualified → `qualified`, not a real lead → `lost` with `lost_reason='wrong-fit'` or `spam`                                  | inbox                                                                                   |
+| `qualified` | Inbox set `stage='qualified'` — the party is a genuine inquiry for this program                                                            | Sales sends initial info → `sent`. Sales disqualifies → `lost` with `lost_reason='wrong-fit'`                                                               | sales                                                                                   |
+| `sent`      | Mailman confirms an outbound email was sent (not when sales "approves" a draft — the gap in the current `approved` status gets fixed here) | Lead replies → `replied`. Follow-up cycle exhausts → `lost` with `lost_reason='went-silent'`                                                                | mailman (on send confirmation); sales follow-up cron (on exhaustion)                    |
+| `replied`   | Mailman detects a reply-match on inbound email that links to this pipeline_entries row (via thread_id or party_id lookup)                  | Sales drafts next response → back to `sent` on mailman confirm. Lead signs/pays → `won`. Lead explicitly declines → `lost` with `lost_reason='explicit-no'` | sales                                                                                   |
+| `won`       | A `documents` row with `kind='contract'` and `status='signed'` OR `kind='invoice'` with `status='paid'` is created for this pipeline_entry | TERMINAL. `won_at` is set. Creates or extends `role_type='client'` and an `engagements` row + `engagement_participants` row                                 | contador (on payment) or sales (on contract signing)                                    |
+| `lost`      | Any of: explicit decline, disqualification, 30+ days silence after final follow-up, marked duplicate, marked spam                          | TERMINAL. `lost_at` and `lost_reason` are set                                                                                                               | inbox (spam/wrong-fit), sales (explicit-no, went-silent), janitor (exhausted follow-up) |
 
 **Critical invariant: terminal stages are sticky.** `won` and `lost` entries are never re-entered. If a lost prospect comes back for a new program, that's a NEW `pipeline_entries` row with a new `program_id`. If a won client comes back for another product, also a new row. The history of each entry is preserved; old terminal entries are never reopened.
 
@@ -889,6 +898,7 @@ CREATE TRIGGER trg_pipeline_stage_history
 ```
 
 **v1.1 correction — trigger hardening:**
+
 - **COALESCE on `current_setting`:** v1.0 had `transitioned_by text NOT NULL` in `pipeline_stage_history` but relied on a nullable `current_setting()` result. If an agent forgot `SET LOCAL app.current_agent`, the NOT NULL constraint would fire and the agent's UPDATE would abort mid-transaction — a day-one production bug. v1.1 wraps the call in `COALESCE(..., 'unknown')` so the trigger never crashes the UPDATE.
 - **Terminal-stage exit rejection:** v1.0 said "terminal stages are sticky" but had no enforcement. v1.1 raises an exception if an UPDATE attempts to transition out of `won` or `lost`.
 - **`entered_stage_at` reset is now in the trigger**, not in application code (another maintained-state drift trap avoided).
@@ -916,19 +926,19 @@ These are read from triggers (`current_setting('app.current_agent', true)` retur
 
 A mopping-up routine that runs on a cadence (every 6 hours — TBD) and fixes bullshit state. What it looks for and how it reacts:
 
-| anomaly detected | action |
-|---|---|
-| `stage='new'` older than 24 hours | Warn to chief. Triage is stuck. |
-| `stage='qualified'` older than 3 days with no interactions | Warn to sales. Lead is dropping through. |
-| `stage='sent'` older than 30 days, `follow_up_count >= 3`, no reply | Auto-transition to `lost` with `lost_reason='went-silent'`. Log to pipeline_stage_history with `transitioned_by='janitor'`. |
-| `stage='replied'` older than 5 days, no outbound interactions | Surface to `#gru-sales` for human response (the Donovan case — see § next subsection). |
-| `stage='won'` but no `documents` row with paid/signed status | Warning. Either a human set it manually (acceptable — log the override) or there's a sync gap. Report both to chief. |
-| `stage='lost'` but `lost_reason IS NULL` | Fix: set `lost_reason='other'` with a note. |
-| `pipeline_entries` row exists but the party's `role_type='client'` is NULL and stage='won' | Error. `won` MUST produce a client role. Janitor creates the missing role retroactively. |
-| Two active (non-terminal) `pipeline_entries` rows for the same `(party_id, program_id)` | **No longer possible** as of v1.1 — the partial unique index on `(party_id, program_id) WHERE stage NOT IN ('won','lost')` makes this a write-time error, not a janitor cleanup. If the janitor sees one, the index is corrupted and the right action is alert+halt. |
+| anomaly detected                                                                                                                      | action                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stage='new'` older than 24 hours                                                                                                     | Warn to chief. Triage is stuck.                                                                                                                                                                                                                                                                             |
+| `stage='qualified'` older than 3 days with no interactions                                                                            | Warn to sales. Lead is dropping through.                                                                                                                                                                                                                                                                    |
+| `stage='sent'` older than 30 days, `follow_up_count >= 3`, no reply                                                                   | Auto-transition to `lost` with `lost_reason='went-silent'`. Log to pipeline_stage_history with `transitioned_by='janitor'`.                                                                                                                                                                                 |
+| `stage='replied'` older than 5 days, no outbound interactions                                                                         | Surface to `#gru-sales` for human response (the Donovan case — see § next subsection).                                                                                                                                                                                                                      |
+| `stage='won'` but no `documents` row with paid/signed status                                                                          | Warning. Either a human set it manually (acceptable — log the override) or there's a sync gap. Report both to chief.                                                                                                                                                                                        |
+| `stage='lost'` but `lost_reason IS NULL`                                                                                              | Fix: set `lost_reason='other'` with a note.                                                                                                                                                                                                                                                                 |
+| `pipeline_entries` row exists but the party's `role_type='client'` is NULL and stage='won'                                            | Error. `won` MUST produce a client role. Janitor creates the missing role retroactively.                                                                                                                                                                                                                    |
+| Two active (non-terminal) `pipeline_entries` rows for the same `(party_id, program_id)`                                               | **No longer possible** as of v1.1 — the partial unique index on `(party_id, program_id) WHERE stage NOT IN ('won','lost')` makes this a write-time error, not a janitor cleanup. If the janitor sees one, the index is corrupted and the right action is alert+halt.                                        |
 | `interactions.channel='booking'` AND `engagement_id IS NULL` AND party has an active `coaching-package` engagement for the same coach | **Booking Reconciler:** match the booking to the most-recent active coaching-package engagement for the party (one with the same coach if Trafft includes employee), set `interactions.engagement_id`. v1.1 added — Trafft webhooks land with NULL engagement because Trafft doesn't know our internal IDs. |
-| `interactions` row with `unresolved_contact IS NOT NULL` older than 24h | **Resolve-intake:** surface to `#gru-inbox` for human review (or to the inbox agent for one more attempt). Never auto-create a new party — manual disambiguation only. Prevents identity re-fragmentation. |
-| `plutio_outbox` row in `dead_letter` for >24h | Surface to chief as escalation. The reaper has given up; humans need to know. |
+| `interactions` row with `unresolved_contact IS NOT NULL` older than 24h                                                               | **Resolve-intake:** surface to `#gru-inbox` for human review (or to the inbox agent for one more attempt). Never auto-create a new party — manual disambiguation only. Prevents identity re-fragmentation.                                                                                                  |
+| `plutio_outbox` row in `dead_letter` for >24h                                                                                         | Surface to chief as escalation. The reaper has given up; humans need to know.                                                                                                                                                                                                                               |
 
 The janitor is the **only** component that can unilaterally transition a stage without a real-world event. Its transitions are always `transitioned_by='janitor'` so they're visible in history.
 
@@ -960,24 +970,24 @@ The unified event log. Everything that happened between us and a party flows her
 
 ### `interactions`
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `party_id` | `bigint NULL REFERENCES parties(id) ON DELETE RESTRICT` | NULL **only** for explicit unresolved-intake state (paired with `unresolved_contact`). NEVER null after resolve-intake. **v1.1: changed from `ON DELETE SET NULL` to `ON DELETE RESTRICT`** — interactions are the authoritative event backbone; orphaning them contradicts "DB is authoritative." Use merge, not delete. |
-| `unresolved_contact` | `jsonb NULL` | When `party_id IS NULL`: the raw contact info we received (email, name, phone, source) so resolve-intake can promote this row to a real party_id later. CHECK ensures at least one of `(party_id, unresolved_contact)` is set. |
-| `channel` | `text NOT NULL REFERENCES interaction_channels(key)` | 'email', 'meeting', 'call', 'form-submission', 'booking', 'payment', 'slack', 'document-signed', 'sms', 'whatsapp'. |
-| `direction` | `text NOT NULL CHECK (direction IN ('inbound','outbound','internal'))` | 'internal' for things like "coach logged a note." |
-| `occurred_at` | `timestamptz NOT NULL` | When the event happened (not when we recorded it). |
-| `recorded_at` | `timestamptz NOT NULL DEFAULT now()` | When we wrote the row. |
-| `thread_key` | `text NULL` | For grouping: gmail thread_id, meeting series id, stripe customer id. |
-| `subject` | `text NULL` | Short description. Email subject, meeting title, payment descriptor. |
-| `body_excerpt` | `text NULL` | First 500 chars of body. Searchable but not the full content. |
-| `metadata` | `jsonb NOT NULL DEFAULT '{}'` | Channel-specific structured sidecars (attachments list, phone duration, etc.). NEVER status/state — those are typed columns. |
-| `source_provider` | `text NULL REFERENCES source_providers(key)` | Where this row came from: 'gmail', 'stripe', 'trafft', 'plutio', 'sertifier', 'manual', 'slack'. v1.1: replaces the prefixed `external_ref` string. |
-| `source_id` | `text NULL` | The provider's own ID for this event: `19d7cf3b2b4bb86a` (gmail message id), `cs_xxx` (stripe session id), `12345` (trafft appointment id). v1.1: split out from `external_ref`. |
-| `engagement_id` | `bigint NULL REFERENCES engagements(id) ON DELETE RESTRICT` | Tie to an engagement if applicable. Booking webhooks land with NULL — Booking Reconciler attaches them later. |
-| `pipeline_entry_id` | `bigint NULL REFERENCES pipeline_entries(id) ON DELETE RESTRICT` | Tie to a pipeline entry if applicable. |
-| `document_id` | `bigint NULL REFERENCES documents(id) ON DELETE RESTRICT` | For interactions like "document sent" or "document signed." |
+| column               | type                                                                   | notes                                                                                                                                                                                                                                                                                                                     |
+| -------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `bigserial PK`                                                         |                                                                                                                                                                                                                                                                                                                           |
+| `party_id`           | `bigint NULL REFERENCES parties(id) ON DELETE RESTRICT`                | NULL **only** for explicit unresolved-intake state (paired with `unresolved_contact`). NEVER null after resolve-intake. **v1.1: changed from `ON DELETE SET NULL` to `ON DELETE RESTRICT`** — interactions are the authoritative event backbone; orphaning them contradicts "DB is authoritative." Use merge, not delete. |
+| `unresolved_contact` | `jsonb NULL`                                                           | When `party_id IS NULL`: the raw contact info we received (email, name, phone, source) so resolve-intake can promote this row to a real party_id later. CHECK ensures at least one of `(party_id, unresolved_contact)` is set.                                                                                            |
+| `channel`            | `text NOT NULL REFERENCES interaction_channels(key)`                   | 'email', 'meeting', 'call', 'form-submission', 'booking', 'payment', 'slack', 'document-signed', 'sms', 'whatsapp'.                                                                                                                                                                                                       |
+| `direction`          | `text NOT NULL CHECK (direction IN ('inbound','outbound','internal'))` | 'internal' for things like "coach logged a note."                                                                                                                                                                                                                                                                         |
+| `occurred_at`        | `timestamptz NOT NULL`                                                 | When the event happened (not when we recorded it).                                                                                                                                                                                                                                                                        |
+| `recorded_at`        | `timestamptz NOT NULL DEFAULT now()`                                   | When we wrote the row.                                                                                                                                                                                                                                                                                                    |
+| `thread_key`         | `text NULL`                                                            | For grouping: gmail thread_id, meeting series id, stripe customer id.                                                                                                                                                                                                                                                     |
+| `subject`            | `text NULL`                                                            | Short description. Email subject, meeting title, payment descriptor.                                                                                                                                                                                                                                                      |
+| `body_excerpt`       | `text NULL`                                                            | First 500 chars of body. Searchable but not the full content.                                                                                                                                                                                                                                                             |
+| `metadata`           | `jsonb NOT NULL DEFAULT '{}'`                                          | Channel-specific structured sidecars (attachments list, phone duration, etc.). NEVER status/state — those are typed columns.                                                                                                                                                                                              |
+| `source_provider`    | `text NULL REFERENCES source_providers(key)`                           | Where this row came from: 'gmail', 'stripe', 'trafft', 'plutio', 'sertifier', 'manual', 'slack'. v1.1: replaces the prefixed `external_ref` string.                                                                                                                                                                       |
+| `source_id`          | `text NULL`                                                            | The provider's own ID for this event: `19d7cf3b2b4bb86a` (gmail message id), `cs_xxx` (stripe session id), `12345` (trafft appointment id). v1.1: split out from `external_ref`.                                                                                                                                          |
+| `engagement_id`      | `bigint NULL REFERENCES engagements(id) ON DELETE RESTRICT`            | Tie to an engagement if applicable. Booking webhooks land with NULL — Booking Reconciler attaches them later.                                                                                                                                                                                                             |
+| `pipeline_entry_id`  | `bigint NULL REFERENCES pipeline_entries(id) ON DELETE RESTRICT`       | Tie to a pipeline entry if applicable.                                                                                                                                                                                                                                                                                    |
+| `document_id`        | `bigint NULL REFERENCES documents(id) ON DELETE RESTRICT`              | For interactions like "document sent" or "document signed."                                                                                                                                                                                                                                                               |
 
 Constraints + indexes:
 
@@ -993,16 +1003,16 @@ Constraints + indexes:
 
 v1.1: introduced when external_ref was split. Closed set; new providers require a one-row INSERT, not a migration.
 
-| key | meaning |
-|---|---|
-| `gmail` | Inbound or outbound Gmail message (uses gmail message id). |
-| `stripe` | Stripe payment / charge / session. |
-| `trafft` | Trafft booking appointment. |
-| `plutio` | Plutio entity (rarely the source — usually we push to it, but webhooks back from Plutio land here). |
-| `sertifier` | Sertifier certificate issuance event. |
-| `manual` | Hand-entered by a human or agent (no provider id required — `source_id` is a UUID we mint). |
-| `slack` | Slack message (for parties that use our Slack). |
-| `webform` | Contact form submission (`source_id` is the form submission UUID). |
+| key         | meaning                                                                                             |
+| ----------- | --------------------------------------------------------------------------------------------------- |
+| `gmail`     | Inbound or outbound Gmail message (uses gmail message id).                                          |
+| `stripe`    | Stripe payment / charge / session.                                                                  |
+| `trafft`    | Trafft booking appointment.                                                                         |
+| `plutio`    | Plutio entity (rarely the source — usually we push to it, but webhooks back from Plutio land here). |
+| `sertifier` | Sertifier certificate issuance event.                                                               |
+| `manual`    | Hand-entered by a human or agent (no provider id required — `source_id` is a UUID we mint).         |
+| `slack`     | Slack message (for parties that use our Slack).                                                     |
+| `webform`   | Contact form submission (`source_id` is the form submission UUID).                                  |
 
 ### Resolve-intake workflow (replaces ad-hoc party creation)
 
@@ -1017,8 +1027,8 @@ This eliminates the most common AI-agent identity-fragmentation pattern: "I don'
 
 ### What belongs in `interactions` vs elsewhere
 
-- **Belongs here:** the *event that happened.* "Luna booked a consultation." "Abhinav sent us an email." "Alex sent a reply." "Stripe charged $800." "Cherie had a meeting."
-- **Does NOT belong here:** the resulting *state*. The consultation appointment itself (date, duration, location, Zoom link) lives in `engagements` or `metadata`. The reply body lives in our email system (or `body_excerpt` if short). The Stripe payment detail (amount, method, receipt) lives in `documents`. The meeting notes live in the vault.
+- **Belongs here:** the _event that happened._ "Luna booked a consultation." "Abhinav sent us an email." "Alex sent a reply." "Stripe charged $800." "Cherie had a meeting."
+- **Does NOT belong here:** the resulting _state_. The consultation appointment itself (date, duration, location, Zoom link) lives in `engagements` or `metadata`. The reply body lives in our email system (or `body_excerpt` if short). The Stripe payment detail (amount, method, receipt) lives in `documents`. The meeting notes live in the vault.
 
 **Rule of thumb:** `interactions` records WHAT happened and WHEN. Other tables record CURRENT STATE derived from those events.
 
@@ -1030,27 +1040,28 @@ Proposals, contracts, invoices, receipts, certificates. Anything with a "status"
 
 ### `documents`
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `kind` | `text NOT NULL REFERENCES document_kinds(key)` | 'proposal', 'contract', 'invoice', 'receipt', 'certificate', 'agreement'. |
-| `party_id` | `bigint NOT NULL REFERENCES parties(id) ON DELETE RESTRICT` | The recipient/subject of the document. |
-| `engagement_id` | `bigint NULL REFERENCES engagements(id) ON DELETE RESTRICT` | What engagement this document is for. Proposals precede engagements, so NULL is common. |
-| `pipeline_entry_id` | `bigint NULL REFERENCES pipeline_entries(id) ON DELETE RESTRICT` | |
-| `status` | `text NOT NULL REFERENCES document_statuses(key)` | 'draft', 'sent', 'viewed', 'signed', 'paid', 'overdue', 'void', 'cancelled', 'issued'. |
-| `amount_cents` | `integer NULL` | |
-| `currency` | `text NULL DEFAULT 'USD'` | |
-| `issued_at` | `timestamptz NULL` | |
-| `due_at` | `timestamptz NULL` | |
-| `resolved_at` | `timestamptz NULL` | When status became terminal (paid, void, signed). |
-| `source_provider` | `text NULL REFERENCES source_providers(key)` | v1.1: structured replacement for prefixed `external_ref`. 'plutio', 'stripe', 'sertifier', 'manual'. |
-| `source_id` | `text NULL` | The provider's own ID for this document. |
-| `file_path` | `text NULL` | Local cache if we pulled a PDF copy. |
-| `metadata` | `jsonb NOT NULL DEFAULT '{}'` | kind-specific structured sidecars (line items, signing history). NEVER status. |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `updated_at` | `timestamptz NOT NULL DEFAULT now()` | |
+| column              | type                                                             | notes                                                                                                |
+| ------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `id`                | `bigserial PK`                                                   |                                                                                                      |
+| `kind`              | `text NOT NULL REFERENCES document_kinds(key)`                   | 'proposal', 'contract', 'invoice', 'receipt', 'certificate', 'agreement'.                            |
+| `party_id`          | `bigint NOT NULL REFERENCES parties(id) ON DELETE RESTRICT`      | The recipient/subject of the document.                                                               |
+| `engagement_id`     | `bigint NULL REFERENCES engagements(id) ON DELETE RESTRICT`      | What engagement this document is for. Proposals precede engagements, so NULL is common.              |
+| `pipeline_entry_id` | `bigint NULL REFERENCES pipeline_entries(id) ON DELETE RESTRICT` |                                                                                                      |
+| `status`            | `text NOT NULL REFERENCES document_statuses(key)`                | 'draft', 'sent', 'viewed', 'signed', 'paid', 'overdue', 'void', 'cancelled', 'issued'.               |
+| `amount_cents`      | `integer NULL`                                                   |                                                                                                      |
+| `currency`          | `text NULL DEFAULT 'USD'`                                        |                                                                                                      |
+| `issued_at`         | `timestamptz NULL`                                               |                                                                                                      |
+| `due_at`            | `timestamptz NULL`                                               |                                                                                                      |
+| `resolved_at`       | `timestamptz NULL`                                               | When status became terminal (paid, void, signed).                                                    |
+| `source_provider`   | `text NULL REFERENCES source_providers(key)`                     | v1.1: structured replacement for prefixed `external_ref`. 'plutio', 'stripe', 'sertifier', 'manual'. |
+| `source_id`         | `text NULL`                                                      | The provider's own ID for this document.                                                             |
+| `file_path`         | `text NULL`                                                      | Local cache if we pulled a PDF copy.                                                                 |
+| `metadata`          | `jsonb NOT NULL DEFAULT '{}'`                                    | kind-specific structured sidecars (line items, signing history). NEVER status.                       |
+| `created_at`        | `timestamptz NOT NULL DEFAULT now()`                             |                                                                                                      |
+| `updated_at`        | `timestamptz NOT NULL DEFAULT now()`                             |                                                                                                      |
 
 Constraints + indexes:
+
 - `CHECK ((source_provider IS NULL) = (source_id IS NULL))`
 - `CREATE INDEX ON documents (party_id, kind, status);`
 - `CREATE UNIQUE INDEX ON documents (source_provider, source_id) WHERE source_provider IS NOT NULL;`
@@ -1141,17 +1152,17 @@ This is the pattern that makes Plutio a sync target, not a dependency.
 
 Maps our entities to their Plutio IDs. Read-only cache.
 
-| column | type | notes |
-|---|---|---|
-| `entity_type` | `text NOT NULL` | 'party', 'engagement', 'document', 'interaction'. |
-| `entity_id` | `bigint NOT NULL` | FK to the relevant table — cannot be a formal FK because the target table varies. |
-| `plutio_entity_type` | `text NOT NULL` | 'contact', 'project', 'proposal', 'contract', 'invoice', 'note'. |
-| `plutio_id` | `text NOT NULL` | |
-| `plutio_url` | `text NULL` | Direct link — useful in Slack notifications. |
-| `last_pushed_at` | `timestamptz NULL` | |
-| `last_pulled_at` | `timestamptz NULL` | |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| | | PRIMARY KEY: `(entity_type, entity_id)` |
+| column               | type                                 | notes                                                                             |
+| -------------------- | ------------------------------------ | --------------------------------------------------------------------------------- |
+| `entity_type`        | `text NOT NULL`                      | 'party', 'engagement', 'document', 'interaction'.                                 |
+| `entity_id`          | `bigint NOT NULL`                    | FK to the relevant table — cannot be a formal FK because the target table varies. |
+| `plutio_entity_type` | `text NOT NULL`                      | 'contact', 'project', 'proposal', 'contract', 'invoice', 'note'.                  |
+| `plutio_id`          | `text NOT NULL`                      |                                                                                   |
+| `plutio_url`         | `text NULL`                          | Direct link — useful in Slack notifications.                                      |
+| `last_pushed_at`     | `timestamptz NULL`                   |                                                                                   |
+| `last_pulled_at`     | `timestamptz NULL`                   |                                                                                   |
+| `created_at`         | `timestamptz NOT NULL DEFAULT now()` |                                                                                   |
+|                      |                                      | PRIMARY KEY: `(entity_type, entity_id)`                                           |
 
 Also: `CREATE UNIQUE INDEX ON plutio_refs (plutio_entity_type, plutio_id);` — reverse lookup.
 
@@ -1159,23 +1170,24 @@ Also: `CREATE UNIQUE INDEX ON plutio_refs (plutio_entity_type, plutio_id);` — 
 
 Queue of pending pushes. Every write path that wants to sync to Plutio appends here in the same transaction as the local write.
 
-| column | type | notes |
-|---|---|---|
-| `id` | `bigserial PK` | |
-| `entity_type` | `text NOT NULL` | What local entity this push is about. |
-| `entity_id` | `bigint NOT NULL` | |
-| `operation` | `text NOT NULL REFERENCES plutio_outbox_operations(key)` | v1.1: FK-enforced. 'create', 'update', 'delete', 'add-note', 'log-activity'. |
-| `payload` | `jsonb NOT NULL` | Snapshot of what to push. Immutable — retries use the same payload. v1.1: shape validated by per-operation CHECK (see below). |
-| `payload_hash` | `text NOT NULL` | `md5(payload::text)`. Maintained by BEFORE INSERT trigger. Used for the in-flight dedupe partial unique. |
-| `correlation_id` | `text NULL` | v1.1: from `app.correlation_id` session var. Lets us trace a single agent run across multiple outbox rows + audit logs. |
-| `status` | `text NOT NULL DEFAULT 'pending'` | `pending`, `in_flight`, `done`, `dead_letter`. |
-| `attempts` | `integer NOT NULL DEFAULT 0` | |
-| `next_attempt_at` | `timestamptz NOT NULL DEFAULT now()` | Reaper only picks up rows where this is in the past. |
-| `last_error` | `text NULL` | |
-| `created_at` | `timestamptz NOT NULL DEFAULT now()` | |
-| `resolved_at` | `timestamptz NULL` | |
+| column            | type                                                     | notes                                                                                                                         |
+| ----------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `id`              | `bigserial PK`                                           |                                                                                                                               |
+| `entity_type`     | `text NOT NULL`                                          | What local entity this push is about.                                                                                         |
+| `entity_id`       | `bigint NOT NULL`                                        |                                                                                                                               |
+| `operation`       | `text NOT NULL REFERENCES plutio_outbox_operations(key)` | v1.1: FK-enforced. 'create', 'update', 'delete', 'add-note', 'log-activity'.                                                  |
+| `payload`         | `jsonb NOT NULL`                                         | Snapshot of what to push. Immutable — retries use the same payload. v1.1: shape validated by per-operation CHECK (see below). |
+| `payload_hash`    | `text NOT NULL`                                          | `md5(payload::text)`. Maintained by BEFORE INSERT trigger. Used for the in-flight dedupe partial unique.                      |
+| `correlation_id`  | `text NULL`                                              | v1.1: from `app.correlation_id` session var. Lets us trace a single agent run across multiple outbox rows + audit logs.       |
+| `status`          | `text NOT NULL DEFAULT 'pending'`                        | `pending`, `in_flight`, `done`, `dead_letter`.                                                                                |
+| `attempts`        | `integer NOT NULL DEFAULT 0`                             |                                                                                                                               |
+| `next_attempt_at` | `timestamptz NOT NULL DEFAULT now()`                     | Reaper only picks up rows where this is in the past.                                                                          |
+| `last_error`      | `text NULL`                                              |                                                                                                                               |
+| `created_at`      | `timestamptz NOT NULL DEFAULT now()`                     |                                                                                                                               |
+| `resolved_at`     | `timestamptz NULL`                                       |                                                                                                                               |
 
 Indexes:
+
 - `CREATE INDEX ON plutio_outbox (status, next_attempt_at);` — reaper's hot query
 - `CREATE INDEX ON plutio_outbox (entity_type, entity_id);` — debug: "show me all pending pushes for party X"
 - `CREATE UNIQUE INDEX ON plutio_outbox (entity_type, entity_id, operation, payload_hash) WHERE status IN ('pending','in_flight');` — **v1.1: prevents duplicate in-flight pushes.** Two agents racing on the same entity → second INSERT silently dedupes against the first. Done/dead-letter rows are exempt so the same operation can re-fire after a successful prior push.
@@ -1222,13 +1234,13 @@ The required-keys table is intentionally simple (no nested validation) — the r
 
 ### `plutio_outbox_operations` (lookup)
 
-| key | meaning |
-|---|---|
-| `create` | New entity (party → Plutio contact, document → Plutio proposal, etc.). |
-| `update` | Mutate an existing entity by Plutio ID. |
-| `delete` | Soft-delete in Plutio. We rarely use this. |
-| `add-note` | Append a note to an existing Plutio entity. |
-| `log-activity` | Append a timeline activity event. |
+| key            | meaning                                                                |
+| -------------- | ---------------------------------------------------------------------- |
+| `create`       | New entity (party → Plutio contact, document → Plutio proposal, etc.). |
+| `update`       | Mutate an existing entity by Plutio ID.                                |
+| `delete`       | Soft-delete in Plutio. We rarely use this.                             |
+| `add-note`     | Append a note to an existing Plutio entity.                            |
+| `log-activity` | Append a timeline activity event.                                      |
 
 ### The reaper loop
 
@@ -1354,6 +1366,7 @@ WHERE pe.stage NOT IN ('won', 'lost');
 ```
 
 Agent queries become trivial:
+
 - "Stuck leads in `replied`" → `SELECT * FROM v_active_pipeline WHERE stage='replied' AND days_in_stage > 5`
 - "All my leads" → `SELECT * FROM v_active_pipeline WHERE assigned_to_name = 'Alex Kudinov'`
 
@@ -1437,25 +1450,25 @@ The canonical values. Anything not in this list needs a migration to add.
 
 ### `party_type`
 
-| value | meaning |
-|---|---|
-| `person` | Individual human. |
+| value          | meaning                                         |
+| -------------- | ----------------------------------------------- |
+| `person`       | Individual human.                               |
 | `organization` | Company, school, non-profit, government entity. |
 
 ### `role_types`
 
-| key | category | meaning |
-|---|---|---|
-| `prospect` | buyer | In the funnel for at least one program but hasn't bought anything yet. |
-| `client` | buyer | Has bought any product — coaching hours, cohort enrollment, mentor coaching, consulting. The specific product is captured in `engagement_participants`, not the role. |
-| `coach` | provider | Provides coaching services under our umbrella. **This role drives tandemweb bio content** (About Us pages, individual coach pages). A coach we also pay externally has `coach` + `vendor` simultaneously — see Resolved Decisions § #3. |
-| `trainer` | provider | Teaches in our programs. Usually held alongside `coach` by the same person. |
-| `mentor` | provider | Provides mentor coaching (for ACC renewal, etc.). |
-| `supervisor` | provider | Provides coaching supervision. |
-| `vendor` | provider | Third party we buy from — SaaS (Sertifier, Plutio), contractors (bookkeeping), the EA (Toni), freelance coaches we pay. Can be person or organization. |
-| `partner` | provider | Strategic partner (referral, co-delivery). |
-| `staff` | internal | Alex + Cherie only. Co-founders/owners. Not expanding. Everyone else providing services is `coach` + `vendor` or just `vendor`. |
-| `contact` | other | Someone we know with no active relationship (past inquiry, acquaintance, intro). |
+| key          | category | meaning                                                                                                                                                                                                                                 |
+| ------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prospect`   | buyer    | In the funnel for at least one program but hasn't bought anything yet.                                                                                                                                                                  |
+| `client`     | buyer    | Has bought any product — coaching hours, cohort enrollment, mentor coaching, consulting. The specific product is captured in `engagement_participants`, not the role.                                                                   |
+| `coach`      | provider | Provides coaching services under our umbrella. **This role drives tandemweb bio content** (About Us pages, individual coach pages). A coach we also pay externally has `coach` + `vendor` simultaneously — see Resolved Decisions § #3. |
+| `trainer`    | provider | Teaches in our programs. Usually held alongside `coach` by the same person.                                                                                                                                                             |
+| `mentor`     | provider | Provides mentor coaching (for ACC renewal, etc.).                                                                                                                                                                                       |
+| `supervisor` | provider | Provides coaching supervision.                                                                                                                                                                                                          |
+| `vendor`     | provider | Third party we buy from — SaaS (Sertifier, Plutio), contractors (bookkeeping), the EA (Toni), freelance coaches we pay. Can be person or organization.                                                                                  |
+| `partner`    | provider | Strategic partner (referral, co-delivery).                                                                                                                                                                                              |
+| `staff`      | internal | Alex + Cherie only. Co-founders/owners. Not expanding. Everyone else providing services is `coach` + `vendor` or just `vendor`.                                                                                                         |
+| `contact`    | other    | Someone we know with no active relationship (past inquiry, acquaintance, intro).                                                                                                                                                        |
 
 **Why no `student` role:** A student is just a client whose engagement is a cohort enrollment. Their "student-ness" is visible via `engagement_participants.participant_role='student'` joined against an active cohort engagement. `role_type='student'` would be redundant with engagement participation and would drift out of sync when someone moves ACC → PCC → ACTC over multiple years. Agents querying "is this person a student of anything right now?" use:
 
@@ -1517,79 +1530,79 @@ So "Kalina is a past client but now a prospect for the ACTC advanced series" is 
 
 ### `program.kind` (values in `program_kinds` lookup)
 
-| key | meaning |
-|---|---|
-| `cohort` | Scheduled group program with fixed dates. |
-| `self-paced` | On-demand content, no schedule. |
-| `coaching-service` | 1:1 coaching hours. |
-| `mentor-service` | Mentor coaching for credential renewal. |
-| `supervision` | Supervision hours. |
-| `certification` | Certification issuance (e.g., Sertifier-backed). |
+| key                | meaning                                          |
+| ------------------ | ------------------------------------------------ |
+| `cohort`           | Scheduled group program with fixed dates.        |
+| `self-paced`       | On-demand content, no schedule.                  |
+| `coaching-service` | 1:1 coaching hours.                              |
+| `mentor-service`   | Mentor coaching for credential renewal.          |
+| `supervision`      | Supervision hours.                               |
+| `certification`    | Certification issuance (e.g., Sertifier-backed). |
 
 ### `engagement.kind` (values in `engagement_kinds` lookup)
 
-| key | meaning |
-|---|---|
-| `cohort-delivery` | One cohort instance of a cohort program. |
-| `coaching-package` | A bundled set of coaching hours for one client. |
-| `mentor-pair` | A mentor pairing for an ACC renewal candidate. |
-| `supervision-series` | A supervision engagement. |
-| `speaking-gig` | A paid speaking engagement (we are the vendor). |
-| `bespoke` | Custom engagement that doesn't fit the others. |
+| key                  | meaning                                         |
+| -------------------- | ----------------------------------------------- |
+| `cohort-delivery`    | One cohort instance of a cohort program.        |
+| `coaching-package`   | A bundled set of coaching hours for one client. |
+| `mentor-pair`        | A mentor pairing for an ACC renewal candidate.  |
+| `supervision-series` | A supervision engagement.                       |
+| `speaking-gig`       | A paid speaking engagement (we are the vendor). |
+| `bespoke`            | Custom engagement that doesn't fit the others.  |
 
 ### `participant_role` (values in `participant_roles` lookup)
 
-| key | meaning |
-|---|---|
-| `student` | Enrolled learner in a cohort. |
-| `instructor` | Teaching the cohort. |
-| `mentor` | Providing mentor coaching within the engagement. |
-| `supervisor` | Providing supervision. |
-| `observer` | Auditing, shadowing, or trainer-in-training. |
-| `client` | The buying party of a coaching-package or bespoke engagement. |
-| `coach` | The delivering party of a coaching-package. |
+| key          | meaning                                                       |
+| ------------ | ------------------------------------------------------------- |
+| `student`    | Enrolled learner in a cohort.                                 |
+| `instructor` | Teaching the cohort.                                          |
+| `mentor`     | Providing mentor coaching within the engagement.              |
+| `supervisor` | Providing supervision.                                        |
+| `observer`   | Auditing, shadowing, or trainer-in-training.                  |
+| `client`     | The buying party of a coaching-package or bespoke engagement. |
+| `coach`      | The delivering party of a coaching-package.                   |
 
 ### `pipeline_stages` (lookup)
 
 Six stages. Booking a consultation is an `interactions` row, not a stage transition. Signing/paying is a `won` transition and also creates a `client` role + engagement.
 
-| key | meaning |
-|---|---|
-| `new` | Just entered the funnel — not yet triaged. |
-| `qualified` | Inbox has triaged and confirmed genuine interest in a program we offer. |
-| `sent` | Sales has sent initial information (or subsequent follow-ups). |
-| `replied` | Lead responded to our outreach. Awaiting next action from us. |
-| `won` | Terminal — they bought. `won_at` set, `client` role created, engagement started. |
-| `lost` | Terminal — they didn't buy. `lost_at` + `lost_reason` set. Same party can re-enter the funnel later for a different program — that's a NEW `pipeline_entries` row. |
+| key         | meaning                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `new`       | Just entered the funnel — not yet triaged.                                                                                                                         |
+| `qualified` | Inbox has triaged and confirmed genuine interest in a program we offer.                                                                                            |
+| `sent`      | Sales has sent initial information (or subsequent follow-ups).                                                                                                     |
+| `replied`   | Lead responded to our outreach. Awaiting next action from us.                                                                                                      |
+| `won`       | Terminal — they bought. `won_at` set, `client` role created, engagement started.                                                                                   |
+| `lost`      | Terminal — they didn't buy. `lost_at` + `lost_reason` set. Same party can re-enter the funnel later for a different program — that's a NEW `pipeline_entries` row. |
 
 ### `lost_reasons` (lookup)
 
 Distinguishes flavors of "didn't buy" so we can report on them meaningfully.
 
-| key | meaning |
-|---|---|
-| `explicit-no` | They said no explicitly (price, fit, timing, went with competitor). |
+| key           | meaning                                                                                |
+| ------------- | -------------------------------------------------------------------------------------- |
+| `explicit-no` | They said no explicitly (price, fit, timing, went with competitor).                    |
 | `went-silent` | Follow-up cycle exhausted, no response. (This is what the old `cold` status captured.) |
-| `wrong-fit` | We determined they weren't a fit and disqualified them. |
-| `duplicate` | Duplicate inquiry — the real pipeline entry is elsewhere. |
-| `spam` | Wasn't a real lead. |
-| `other` | Free-text explanation in `pipeline_entries.notes`. |
+| `wrong-fit`   | We determined they weren't a fit and disqualified them.                                |
+| `duplicate`   | Duplicate inquiry — the real pipeline entry is elsewhere.                              |
+| `spam`        | Wasn't a real lead.                                                                    |
+| `other`       | Free-text explanation in `pipeline_entries.notes`.                                     |
 
 ### `interaction_channels` (lookup)
 
-| key | meaning |
-|---|---|
-| `email` | Inbound or outbound email. |
-| `meeting` | In-person or video meeting. |
-| `call` | Phone call. |
-| `form-submission` | Web form (contact form, newsletter signup). |
-| `booking` | Scheduling tool event (Trafft). |
-| `payment` | Payment event (Stripe, PayPal). |
-| `slack` | Slack message (for parties that use our Slack, e.g. staff, coaches). |
-| `document-signed` | Plutio/DocuSign/manual signature event. |
-| `sms` | SMS/text. |
-| `whatsapp` | WhatsApp message. |
-| `note` | Internal note recorded by an agent or human. |
+| key               | meaning                                                              |
+| ----------------- | -------------------------------------------------------------------- |
+| `email`           | Inbound or outbound email.                                           |
+| `meeting`         | In-person or video meeting.                                          |
+| `call`            | Phone call.                                                          |
+| `form-submission` | Web form (contact form, newsletter signup).                          |
+| `booking`         | Scheduling tool event (Trafft).                                      |
+| `payment`         | Payment event (Stripe, PayPal).                                      |
+| `slack`           | Slack message (for parties that use our Slack, e.g. staff, coaches). |
+| `document-signed` | Plutio/DocuSign/manual signature event.                              |
+| `sms`             | SMS/text.                                                            |
+| `whatsapp`        | WhatsApp message.                                                    |
+| `note`            | Internal note recorded by an agent or human.                         |
 
 ### `document_kinds` / `document_statuses` (lookups)
 
@@ -1607,12 +1620,14 @@ Concrete mappings of real situations into the model.
 ### Kalina Terzieva (client, coach, trainer — all the same person)
 
 **Layer 1:**
+
 - `parties`: id=100, party_type='person', canonical_name='Kalina Terzieva'
 - `persons`: party_id=100, first_name='Kalina', last_name='Terzieva', key='kalina' (short agent-prompt alias)
 - `party_emails`: 1+ rows for party_id=100
 - `party_phones`: 1 row
 
 **Layer 2 — her concurrent roles (no `student` or `alumni` — those are derived from engagement history):**
+
 ```
 party_roles:
   id=1: party_id=100, role_type='client',  started=2023-01-01, ended=NULL  (she bought the PCC cohort)
@@ -1624,6 +1639,7 @@ party_roles:
 Four roles: `client` (she bought from us), `coach` (she provides coaching, and her record feeds tandemweb bio pages), `trainer` (she teaches cohorts), `vendor` (the financial side — we pay her per engagement).
 
 **Layer 4 — her engagement history captures the studentness that used to live in `role_type='student'`:**
+
 ```
 engagement_participants:
   engagement=PCC-2023-Q1-delivery, party_id=100, participant_role='student',    started=2023-01-01, ended=2023-06-01
@@ -1634,6 +1650,7 @@ engagement_participants:
 The first row — `participant_role='student'` with `ended_at` set — is her PCC history. If she decides to pursue ACTC next year, that's a NEW `engagement_participants` row. No role change required. The system handles "ACC student → PCC student → ACTC student" as a sequence of engagement participations, not role transitions.
 
 **Queries this enables:**
+
 - "Show me everyone who was ever a student and is now a trainer." — Join `engagement_participants` (filter `participant_role='student'`) against `party_roles` (filter `role_type='trainer'`).
 - "What's Kalina's full history with us?" — one query across `party_roles` + `engagement_participants` + `interactions` + `documents` filtered by party_id=100.
 - "Find all active trainers." — `SELECT party_id FROM party_roles WHERE role_type='trainer' AND ended_at IS NULL`.
@@ -1643,6 +1660,7 @@ The first row — `participant_role='student'` with `ended_at` set — is her PC
 ### Luna Tovaglieri (the original problem)
 
 **Layer 1:**
+
 - `parties`: id=200, party_type='person', canonical_name='Luna Tovaglieri'
 - `persons`: party_id=200, country='IT', timezone='Europe/Rome'
 - `party_emails`:
@@ -1650,13 +1668,16 @@ The first row — `participant_role='student'` with `ended_at` set — is her PC
   - `(party_id=200, email='evaluna15@msn.com', is_primary=false, first_seen_source='trafft-booking', first_seen_at='2026-04-08')`
 
 **Layer 2:**
+
 - `party_roles`: id=X, role_type='prospect', started=2026-03-26, ended=NULL
 
 **Layer 5:**
+
 - `pipeline_entries`: party_id=200, program_id=(ACTC), stage='replied', source='contact-form', entered_funnel_at=2026-03-26, entered_stage_at=2026-04-08
 - `pipeline_stage_history`: 4 rows — new → qualified → sent → replied (the booking is what flipped her to `replied` — it's how she responded)
 
 **Layer 6:**
+
 - `interactions` (chronological):
   - 2026-03-26: channel='form-submission', direction='inbound', subject='ACTC inquiry'
   - 2026-03-27: channel='email', direction='outbound', subject='Re: ACTC program details'
@@ -1665,6 +1686,7 @@ The first row — `participant_role='student'` with `ended_at` set — is her PC
 **Note:** the booking is an `interactions` row, not a stage. Her stage is `replied` (she responded to our outreach — she just happened to respond by booking a call instead of writing back). If the consultation call converts her to a paying client, the stage flips to `won` and a new `engagements` row + `engagement_participants` row are created.
 
 **Layer 8:**
+
 - `plutio_refs`: `(entity_type='party', entity_id=200) → plutio_id='BZkESDS8cPRBjvaYo'`
 
 **The Luna problem is solved.** When an inbound email arrives from `evaluna15@msn.com`, mailman's first query (using the v1.1 resolver + view layer) is:
@@ -1713,6 +1735,7 @@ Surfaces Donovan to `#gru-sales` (via bot post, not agent-triggering — same pa
 **Layer 1:** party_id=1 (staff get low IDs by convention), `persons` row.
 
 **Layer 2:**
+
 - `party_roles`: role_type='staff', started=(company founding), ended=NULL
 - `party_roles`: role_type='coach', started=(company founding), ended=NULL
 - `party_roles`: role_type='trainer', started=(company founding), ended=NULL
@@ -1724,10 +1747,12 @@ Surfaces Donovan to `#gru-sales` (via bot post, not agent-triggering — same pa
 ### A vendor that is a company (Sertifier)
 
 **Layer 1:**
+
 - `parties`: party_type='organization', canonical_name='Sertifier'
 - `organizations`: website='https://sertifier.com', industry='saas'
 
 **Layer 2:**
+
 - `party_roles`: role_type='vendor', context='{"vendor_kind":"saas","monthly_cost_usd":49,"renewal_date":"2026-12-31"}'
 
 **Layer 7:** their monthly invoices flow into `documents` with kind='invoice', party_id pointing at Sertifier's party.
@@ -1735,10 +1760,12 @@ Surfaces Donovan to `#gru-sales` (via bot post, not agent-triggering — same pa
 ### A vendor that is a person (freelance bookkeeper)
 
 **Layer 1:**
+
 - `parties`: party_type='person', canonical_name='Jane Smith'
 - `persons`: ...
 
 **Layer 2:**
+
 - `party_roles`: role_type='vendor', context='{"vendor_kind":"professional-service","specialty":"bookkeeping"}'
 
 Same mechanics. The `party_type` branch just changes which subtype table is populated.
@@ -1751,35 +1778,35 @@ For each current table, what it maps to, and how.
 
 ### `leads` (39 rows) → parties + persons + party_emails + party_roles + pipeline_entries + interactions
 
-| current column | new location |
-|---|---|
-| `id` | becomes `pipeline_entries.id` for the funnel row |
-| `source` | `pipeline_entries.source` + first `interactions.channel` |
-| `status` | `pipeline_entries.stage` (with value mapping — see below) |
-| `name` | `persons.first_name` + `persons.last_name` split |
-| `email` | `party_emails.email` with `is_primary=true` |
-| `company` | If set, create `organizations` party + `party_relationships` row with `relationship_type='employed-by'` and `role_in_relationship='primary-contact'` (default — can be refined later). Many-to-one: multiple leads at the same company create one org, multiple person→org relationships. |
-| `message` | First `interactions.body_excerpt` with channel='form-submission' |
-| `assigned_to` | `pipeline_entries.assigned_to` (resolved to staff party_id) |
-| `follow_up_count` | derivable from `pipeline_stage_history` count where to_stage IN ('sent','follow-up-sent'); drop the column |
-| `last_contact_at` | derivable from `MAX(interactions.occurred_at) WHERE direction='outbound'`; drop the column |
-| `thread_id` | `interactions.thread_key` on the first email interaction |
-| `plutio_person_id` | `plutio_refs` row |
+| current column     | new location                                                                                                                                                                                                                                                                              |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | becomes `pipeline_entries.id` for the funnel row                                                                                                                                                                                                                                          |
+| `source`           | `pipeline_entries.source` + first `interactions.channel`                                                                                                                                                                                                                                  |
+| `status`           | `pipeline_entries.stage` (with value mapping — see below)                                                                                                                                                                                                                                 |
+| `name`             | `persons.first_name` + `persons.last_name` split                                                                                                                                                                                                                                          |
+| `email`            | `party_emails.email` with `is_primary=true`                                                                                                                                                                                                                                               |
+| `company`          | If set, create `organizations` party + `party_relationships` row with `relationship_type='employed-by'` and `role_in_relationship='primary-contact'` (default — can be refined later). Many-to-one: multiple leads at the same company create one org, multiple person→org relationships. |
+| `message`          | First `interactions.body_excerpt` with channel='form-submission'                                                                                                                                                                                                                          |
+| `assigned_to`      | `pipeline_entries.assigned_to` (resolved to staff party_id)                                                                                                                                                                                                                               |
+| `follow_up_count`  | derivable from `pipeline_stage_history` count where to_stage IN ('sent','follow-up-sent'); drop the column                                                                                                                                                                                |
+| `last_contact_at`  | derivable from `MAX(interactions.occurred_at) WHERE direction='outbound'`; drop the column                                                                                                                                                                                                |
+| `thread_id`        | `interactions.thread_key` on the first email interaction                                                                                                                                                                                                                                  |
+| `plutio_person_id` | `plutio_refs` row                                                                                                                                                                                                                                                                         |
 
 **Status value mapping:**
 
-| current | new stage | new `lost_reason` | notes |
-|---|---|---|---|
-| `new` | `new` | — | |
-| `qualified` | `qualified` | — | |
-| `sent` | `sent` | — | |
-| `follow-up-sent` | `sent` | — | Follow-up count derived from history |
-| `replied` | `replied` | — | |
-| `approved` | ? | — | **OPEN** — `approved` in current leads table is ambiguous. Need migration-time audit to determine whether it means "draft approved to send" (internal state, map to `sent`) or "prospect became a client" (map to `won`). See Emerged Questions. |
-| `completed` | `won` | — | They bought. |
-| `closed` | `lost` | `explicit-no` | |
-| `cold` | `lost` | `went-silent` | |
-| `archived` | `lost` | `other` | |
+| current          | new stage   | new `lost_reason` | notes                                                                                                                                                                                                                                            |
+| ---------------- | ----------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `new`            | `new`       | —                 |                                                                                                                                                                                                                                                  |
+| `qualified`      | `qualified` | —                 |                                                                                                                                                                                                                                                  |
+| `sent`           | `sent`      | —                 |                                                                                                                                                                                                                                                  |
+| `follow-up-sent` | `sent`      | —                 | Follow-up count derived from history                                                                                                                                                                                                             |
+| `replied`        | `replied`   | —                 |                                                                                                                                                                                                                                                  |
+| `approved`       | ?           | —                 | **OPEN** — `approved` in current leads table is ambiguous. Need migration-time audit to determine whether it means "draft approved to send" (internal state, map to `sent`) or "prospect became a client" (map to `won`). See Emerged Questions. |
+| `completed`      | `won`       | —                 | They bought.                                                                                                                                                                                                                                     |
+| `closed`         | `lost`      | `explicit-no`     |                                                                                                                                                                                                                                                  |
+| `cold`           | `lost`      | `went-silent`     |                                                                                                                                                                                                                                                  |
+| `archived`       | `lost`      | `other`           |                                                                                                                                                                                                                                                  |
 
 ### `clients` (0 rows) → drop
 
@@ -1817,6 +1844,7 @@ Empty. Replaced by `party_roles` with `role_type='vendor'`.
 ### `booking_events` (26 rows) → interactions + engagements (maybe)
 
 Each row becomes an `interactions` row (created via `fn_log_interaction`) with:
+
 - channel='booking'
 - direction='inbound'
 - source_provider='trafft', source_id=trafft_appointment_id
@@ -1858,6 +1886,7 @@ Standalone system (Bonfire scraping, RFP tracking). No party relationship by def
 The key invariant: **no synchronous call to Plutio from an agent's hot path**.
 
 Today, agents call `toolbox/shared/plutio/tools/plutio/*.sh` directly during a container run. That's:
+
 - A shell exec out of the agent
 - Which calls Plutio's HTTPS API
 - With a 60-120 second timeout against the container's total budget
@@ -1865,6 +1894,7 @@ Today, agents call `toolbox/shared/plutio/tools/plutio/*.sh` directly during a c
 - With the agent's output blocked until Plutio returns
 
 Under the new pattern:
+
 - Agent writes to local Postgres (sub-millisecond)
 - Same transaction appends to `plutio_outbox` (sub-millisecond)
 - Agent returns immediately
@@ -1874,6 +1904,7 @@ Under the new pattern:
 This is the same pattern used for `hive-sync-reaper.ts` for Hive writes, and for `classify-backfill.ts` for the email classification retry queue. **Three existing proofs that the pattern works in this codebase.**
 
 **What we lose:** immediate confirmation of Plutio IDs. If an agent creates a new lead and needs the Plutio person ID in the same run (e.g., to include in a Slack message), it won't have it — the reaper hasn't pushed yet. Workarounds:
+
 - For human-readable links, the Slack message says "Plutio: (sync pending)" and a follow-up comment adds the link when the reaper completes
 - For agent-to-agent handoffs, the party_id (our local ID) is what gets passed. Plutio ID is looked up later if needed.
 
@@ -1975,13 +2006,13 @@ This means agents that want "the owners" query `WHERE role_type='staff' AND ende
 
 Confirmed. Column added to `persons` schema above. Seed values:
 
-| key | full name |
-|---|---|
-| `alex` | Alex Kudinov |
-| `cherie` | Cherie Silas |
+| key      | full name       |
+| -------- | --------------- |
+| `alex`   | Alex Kudinov    |
+| `cherie` | Cherie Silas    |
 | `kalina` | Kalina Terzieva |
-| `karen` | Karen Bruns |
-| `toni` | Toni Silas (EA) |
+| `karen`  | Karen Bruns     |
+| `toni`   | Toni Silas (EA) |
 
 Agent prompts reference people by `key` instead of full name or party_id. CLAUDE.md docs can say "assign to kalina" or "Toni handles the contracts" and resolve at query time via `SELECT party_id FROM persons WHERE key = 'kalina'`.
 
@@ -1998,6 +2029,7 @@ Default: no archival. Add Postgres declarative partitioning by `occurred_at` ran
 Sertifier's own data model has a "student" concept, but we don't integrate at that level. What we DO provide to Sertifier on certificate issuance is a name, email, and the cert requirements (e.g., hours completed). What we DON'T currently do is ensure that cert recipient exists in our DB as a client — that's a gap.
 
 **Decision:**
+
 - Certificates become `documents` rows with `kind='certificate'`.
 - Issuing a cert creates an `interactions` row (`channel='certificate-issued'`) and the `documents` row, linked to the party.
 - **Pre-flight check required:** before the cert-issuance script can run, the recipient MUST already exist in our DB as `role_type='client'`. If they don't, the script either creates the party + role itself (with source='sertifier-issuance') or refuses to issue and errors.
@@ -2016,11 +2048,11 @@ This fully closes question B — no discovery pass in tandemweb needed before mi
 
 Queried the DB during the review. The three `approved` leads are:
 
-| id | name | email | source | summary |
-|---|---|---|---|---|
-| 13 | Lynne Mangan | lynne@oboeweb.com | contact-form | Interested in ICF cert path, asking about module timing |
-| 23 | Nancy Hamilton | nhamilton927@gmail.com | email | MSW + 30y executive coaching, interested in Level 2 PCC |
-| 27 | Nataliia Petrushina | petrushina.coach@gmail.com | contact-form | "Exam preparation" short inquiry |
+| id  | name                | email                      | source       | summary                                                 |
+| --- | ------------------- | -------------------------- | ------------ | ------------------------------------------------------- |
+| 13  | Lynne Mangan        | lynne@oboeweb.com          | contact-form | Interested in ICF cert path, asking about module timing |
+| 23  | Nancy Hamilton      | nhamilton927@gmail.com     | email        | MSW + 30y executive coaching, interested in Level 2 PCC |
+| 27  | Nataliia Petrushina | petrushina.coach@gmail.com | contact-form | "Exam preparation" short inquiry                        |
 
 All three are mid-funnel prospects, not customers. The `approved` label came from sales's current workflow setting `status='approved'` when Alex approves a draft to send. **The underlying bug:** there's no transition from `approved` back to `sent` after mailman sends — so these leads are stuck in an internal sales state.
 

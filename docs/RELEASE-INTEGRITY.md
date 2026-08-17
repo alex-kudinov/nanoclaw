@@ -139,15 +139,38 @@ backup, drain, exact release activation, table/trigger readback, natural
 receipt/cursor non-interference evidence, and rollback planning. No such
 deployment or schema application occurs under NC-008.
 
-NC-20260817-009 begins that separate activation gate. Read-only production
-preflight verifies SQLite integrity, no active approved-email execution, an
-absent receipt table, and 57 legacy direct-route staging rows. Twenty-one have
-their exact routed marker; 36 remain unknown and must never be accepted by
-inference. Cursorless recurring scans are hardened locally to hold only that
-candidate so a legacy row cannot starve unrelated mail, while push retains its
-whole-batch cursor. Immutable build, WAL-safe backup, activation, table/trigger
-readback, and natural non-interference proof are still required before this
-task may be called deployed or complete.
+NC-20260817-009 crosses that separate schema/service gate under exact release
+`263ac7c4a25a6033adef13e4085c147d1237b559` and source tree
+`bac62eea397f944033c79b74f79e29e2b6c13378`. Read-only production preflight
+verified SQLite integrity, no active approved-email execution, an absent
+receipt table, and 57 legacy direct-route staging rows. Twenty-one have their
+exact routed marker; 36 remain unknown and must never be accepted by inference.
+Cursorless recurring scans now hold only that candidate so a legacy row cannot
+starve unrelated mail, while push retains its whole-batch cursor.
+
+The clean archive contains 724 files with artifact SHA-256
+`b12416a44839ddb08092566f81e9a4fd1568ddf597bf194b091fbf295f3bbef2`
+and transport SHA-256
+`74e282695eeff312e544e23f933c00a8a547f158747c74da49c04a09df21d622`;
+fresh local and production extraction both verified. A drained, WAL-safe,
+mode-0600 SQLite backup at
+`~/.local/share/nanoclaw-backups/NC-20260817-009-2026-08-17T23-36-26Z/messages.db.sqlite3`
+passed `quick_check` and hashes to
+`6b23f4d9329865cae93bc86dbc98f87383079ba34441ed524bbf4c7b5eec8996`.
+Recovery-safe activation retained rollback plist
+`com.nanoclaw.plist.rollback-de815e1dfb1f-2026-08-17T23-37-22-828Z`.
+
+Independent live readback proves the exact release, Node 22.23.2, one listener,
+connected Gmail/Slack, empty execution/outgoing queues, SQLite `quick_check`
+`ok`, the receipt table plus both append-only triggers, unchanged critical
+pending state, and absent migration-123 tables. The first ten-minute safety
+cycle completed without a Gmail error or cursor hold but returned zero message
+candidates: Gmail row aggregates and receipt count remained unchanged, while
+two ambient new rows and two allowed action-safety decisions were Slack-only.
+The Gmail history/liveness cursor changes are therefore attributable to the
+successful empty safety poll, and the watch expiry changed on normal restart
+renewal. Structural and non-interference proof pass; first natural receipt
+creation remains `deployed_unverified` rather than being manufactured.
 
 The builder refuses to run when:
 

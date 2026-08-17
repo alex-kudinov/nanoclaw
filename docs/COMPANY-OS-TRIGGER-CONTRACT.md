@@ -55,13 +55,13 @@ reviewed adapter; weakening the common contract is not the fallback.
 This task defines the shared target, not the adapters. A later source-specific
 task must prove the following immutable identities before wiring:
 
-| Trigger kind | Definition key | Occurrence key | Existing evidence source |
-| --- | --- | --- | --- |
-| `time` | scheduled-task ID, host-job name, or another registered schedule ID | the exact intended firing boundary, not scheduler poll time | SQLite `scheduled_tasks`/`jobs`; a schedule is one trigger subtype |
-| `gmail` | approved account alias plus subscription purpose | immutable Gmail message ID; a history cursor alone is not an occurrence | Gmail history delta and message metadata |
-| `webhook` | registered source/hook identity | source-issued immutable event ID | `business_v2.webhook_inbox`; null/unstable event IDs cannot be promoted |
-| `topic` | registered topic/publisher identity | publisher-issued immutable event ID | an authenticated topic envelope; delivery attempt IDs are not business facts |
-| `business_condition` | registered condition/version identity | exact evaluation window or source snapshot identity | a complete condition read plus source watermark/evidence digest |
+| Trigger kind         | Definition key                                                      | Occurrence key                                                          | Existing evidence source                                                     |
+| -------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `time`               | scheduled-task ID, host-job name, or another registered schedule ID | the exact intended firing boundary, not scheduler poll time             | SQLite `scheduled_tasks`/`jobs`; a schedule is one trigger subtype           |
+| `gmail`              | approved account alias plus subscription purpose                    | immutable Gmail message ID; a history cursor alone is not an occurrence | Gmail history delta and message metadata                                     |
+| `webhook`            | registered source/hook identity                                     | source-issued immutable event ID                                        | `business_v2.webhook_inbox`; null/unstable event IDs cannot be promoted      |
+| `topic`              | registered topic/publisher identity                                 | publisher-issued immutable event ID                                     | an authenticated topic envelope; delivery attempt IDs are not business facts |
+| `business_condition` | registered condition/version identity                               | exact evaluation window or source snapshot identity                     | a complete condition read plus source watermark/evidence digest              |
 
 The observation time must be source-derived when available. Ingest/retry time
 is operational evidence and is deliberately excluded from the occurrence
@@ -78,12 +78,12 @@ All hashes use canonical JSON arrays and explicit version domains:
 
 Therefore:
 
-| Existing row | Candidate | Result |
-| --- | --- | --- |
-| no matching occurrence/source identity | any valid candidate | insert once |
-| same occurrence ID and same semantic fingerprint | later delivery/retry | exact duplicate; no second row |
-| same occurrence/source identity and different fingerprint | mutated or contradictory replay | conflict; fail closed |
-| different immutable occurrence key | valid later fact | new occurrence |
+| Existing row                                              | Candidate                       | Result                         |
+| --------------------------------------------------------- | ------------------------------- | ------------------------------ |
+| no matching occurrence/source identity                    | any valid candidate             | insert once                    |
+| same occurrence ID and same semantic fingerprint          | later delivery/retry            | exact duplicate; no second row |
+| same occurrence/source identity and different fingerprint | mutated or contradictory replay | conflict; fail closed          |
+| different immutable occurrence key                        | valid later fact                | new occurrence                 |
 
 Changing an ingest timestamp cannot mint a new occurrence because ingest time
 is not accepted. Changing material source/work facts under the same occurrence
@@ -123,12 +123,12 @@ definition is inventory, not permission.
 Reconcileable sources receive a host-owned compare-and-swap cursor head plus
 append-only events:
 
-| Event | Required prior state | Durable effect |
-| --- | --- | --- |
-| `bootstrap` | version 0, uninitialized | establishes the first closed cursor |
-| `advance` | current exact version/cursor | advances strictly forward across one completely accounted range |
-| `gap_detected` | current exact version/cursor | records the attempted range and reason but leaves the durable cursor fixed; state becomes `gap` |
-| `gap_reconciled` | exact open gap ID, version, and cursor | closes that one gap and advances to the proven cursor |
+| Event            | Required prior state                   | Durable effect                                                                                  |
+| ---------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `bootstrap`      | version 0, uninitialized               | establishes the first closed cursor                                                             |
+| `advance`        | current exact version/cursor           | advances strictly forward across one completely accounted range                                 |
+| `gap_detected`   | current exact version/cursor           | records the attempted range and reason but leaves the durable cursor fixed; state becomes `gap` |
+| `gap_reconciled` | exact open gap ID, version, and cursor | closes that one gap and advances to the proven cursor                                           |
 
 Every event uses a stable event key and semantic fingerprint. Exact replay is
 duplicate-only; same-key drift conflicts. `observed_count` must equal
@@ -139,13 +139,13 @@ head remain host-admin-only.
 
 This contract does not pretend that all existing sources are equally ready:
 
-| Family | Verified current mechanics | Normalized-adapter readiness |
-| --- | --- | --- |
-| time | one exact scheduled-task claim observer was proven and is now disabled; intended boundary is the occurrence identity | proven for that one no-cursor source only |
-| Gmail | inbound push and label-correction polling keep separate mutable history IDs in SQLite; both still re-bootstrap on expiry. NC-008 locally makes ordinary inbound-push advancement conditional on one durable terminal receipt per returned candidate and refuses a non-terminal page 20, but those bytes are not deployed. | NC-005 locally proves the strict proposal contract. NC-006 adds the exact read-only wrapper and resumable shadow ledger over 10,001 candidates. NC-008 adds the local real-ingestion receipt producer/reader without wiring recovery. Activation remains blocked on production SQLite backup/deployment and natural proof, historical unknown accounting, migration-123 apply, source registration/bootstrap, live shadow proof, and 404 runtime wiring. Label correction remains unaddressed. |
-| webhook | `webhook_inbox` deduplicates non-null provider event IDs; some extractors still return NULL; only the older Trafft sweeper has a mutable source watermark | eligible only source by source after immutable ID and complete bounded scan proof |
-| topic | Gmail Pub/Sub exists as Gmail transport, not as a generic authenticated topic adapter | absent |
-| business condition | condition-oriented jobs/loops exist, but none emits the normalized occurrence contract from a complete versioned snapshot/window | absent |
+| Family             | Verified current mechanics                                                                                                                                                                                                                                                                                                                                                                                                                                              | Normalized-adapter readiness                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| time               | one exact scheduled-task claim observer was proven and is now disabled; intended boundary is the occurrence identity                                                                                                                                                                                                                                                                                                                                                    | proven for that one no-cursor source only                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Gmail              | inbound push and label-correction polling keep separate mutable history IDs in SQLite; both still re-bootstrap on expiry. Exact release `263ac7c4` now makes ordinary inbound-push advancement conditional on one durable terminal receipt per returned candidate and refuses a non-terminal page 20. Its additive receipt table/triggers are live, but no natural candidate appeared in the bounded observation window, so first producer behavior remains unverified. | NC-005 proves the strict proposal contract. NC-006 adds the exact read-only wrapper and resumable shadow ledger over 10,001 candidates. NC-008/009 add and deploy the real-ingestion receipt producer/reader without wiring recovery. Promotion remains blocked on first natural receipt proof, historical unknown accounting, migration-123 apply, source registration/bootstrap, live shadow proof, and 404 runtime wiring. Label correction remains unaddressed. |
+| webhook            | `webhook_inbox` deduplicates non-null provider event IDs; some extractors still return NULL; only the older Trafft sweeper has a mutable source watermark                                                                                                                                                                                                                                                                                                               | eligible only source by source after immutable ID and complete bounded scan proof                                                                                                                                                                                                                                                                                                                                                                                   |
+| topic              | Gmail Pub/Sub exists as Gmail transport, not as a generic authenticated topic adapter                                                                                                                                                                                                                                                                                                                                                                                   | absent                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| business condition | condition-oriented jobs/loops exist, but none emits the normalized occurrence contract from a complete versioned snapshot/window                                                                                                                                                                                                                                                                                                                                        | absent                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 The older `business_v2.sweeper_watermarks` table remains source-specific legacy
 evidence. Migration 122 does not migrate, reinterpret, or silently promote it.

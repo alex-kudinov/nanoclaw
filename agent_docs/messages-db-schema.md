@@ -3,7 +3,10 @@
 Generated: 2026-07-26T08:00:56Z
 Structure-only reconciliation: 2026-08-17T22:24Z
 
-NC-20260817-008 local code target; not yet applied to production.
+NC-20260817-009 production structure verified 2026-08-17T23:38Z. The table
+and both append-only triggers are live; the table remained empty during the
+bounded post-activation observation because no natural Gmail candidate
+appeared. This snapshot is structure-only.
 
 ## autonomy_draft_events
 
@@ -19,8 +22,8 @@ NC-20260817-008 local code target; not yet applied to production.
 ```
 
 Indexes:
-  idx_autonomy_events_pending (outcome,group_folder)
-  sqlite_autoindex_autonomy_draft_events_1 (draft_id) UNIQUE
+idx_autonomy_events_pending (outcome,group_folder)
+sqlite_autoindex_autonomy_draft_events_1 (draft_id) UNIQUE
 
 ## autonomy_pending
 
@@ -38,8 +41,8 @@ Indexes:
 ```
 
 Indexes:
-  idx_autonomy_pending_status (status,expires_at)
-  sqlite_autoindex_autonomy_pending_1 (draft_id) UNIQUE
+idx_autonomy_pending_status (status,expires_at)
+sqlite_autoindex_autonomy_pending_1 (draft_id) UNIQUE
 
 ## autonomy_trust
 
@@ -57,7 +60,7 @@ Indexes:
 ```
 
 Indexes:
-  sqlite_autoindex_autonomy_trust_1 (group_folder,category) UNIQUE
+sqlite_autoindex_autonomy_trust_1 (group_folder,category) UNIQUE
 
 ## chats
 
@@ -70,7 +73,7 @@ Indexes:
 ```
 
 Indexes:
-  sqlite_autoindex_chats_1 (jid) UNIQUE
+sqlite_autoindex_chats_1 (jid) UNIQUE
 
 ## email_tracking
 
@@ -87,7 +90,7 @@ Indexes:
 ```
 
 Indexes:
-  sqlite_autoindex_email_tracking_1 (tracking_id) UNIQUE
+sqlite_autoindex_email_tracking_1 (tracking_id) UNIQUE
 
 ## job_run_logs
 
@@ -108,9 +111,9 @@ Indexes:
 ```
 
 Indexes:
-  idx_job_run_logs_status (status)
-  idx_job_run_logs_name (job_name,started_at)
-  sqlite_autoindex_job_run_logs_1 (id) UNIQUE
+idx_job_run_logs_status (status)
+idx_job_run_logs_name (job_name,started_at)
+sqlite_autoindex_job_run_logs_1 (id) UNIQUE
 
 ## jobs
 
@@ -138,9 +141,9 @@ Indexes:
 ```
 
 Indexes:
-  idx_jobs_enabled (enabled)
-  idx_jobs_next_run (next_run)
-  sqlite_autoindex_jobs_1 (name) UNIQUE
+idx_jobs_enabled (enabled)
+idx_jobs_next_run (next_run)
+sqlite_autoindex_jobs_1 (name) UNIQUE
 
 ## messages
 
@@ -158,12 +161,12 @@ Indexes:
 ```
 
 Foreign keys:
-  chat_jid -> chats(jid)
+chat_jid -> chats(jid)
 
 Indexes:
-  idx_thread (chat_jid,thread_ts,timestamp)
-  idx_timestamp (timestamp)
-  sqlite_autoindex_messages_1 (id,chat_jid) UNIQUE
+idx_thread (chat_jid,thread_ts,timestamp)
+idx_timestamp (timestamp)
+sqlite_autoindex_messages_1 (id,chat_jid) UNIQUE
 
 ## gmail_inbound_disposition_receipts
 
@@ -180,12 +183,12 @@ Indexes:
 ```
 
 Indexes:
-  sqlite_autoindex_gmail_inbound_disposition_receipts_1 (gmail_message_id) UNIQUE
-  sqlite_autoindex_gmail_inbound_disposition_receipts_2 (receipt_fingerprint) UNIQUE
+sqlite_autoindex_gmail_inbound_disposition_receipts_1 (gmail_message_id) UNIQUE
+sqlite_autoindex_gmail_inbound_disposition_receipts_2 (receipt_fingerprint) UNIQUE
 
 Triggers:
-  gmail_inbound_disposition_receipts_no_update
-  gmail_inbound_disposition_receipts_no_delete
+gmail_inbound_disposition_receipts_no_update
+gmail_inbound_disposition_receipts_no_delete
 
 The table is content-free terminal source evidence. Accepted reasons are
 `inbound_message_persisted`, `classified_route_persisted`,
@@ -223,12 +226,12 @@ are `own_outbound`, `spam_or_trash`, `empty_message`, `hard_filter`, and
 ```
 
 Indexes:
-  idx_pending_sends_action (action_id) UNIQUE
-  idx_pending_sends_gmail_thread (gmail_thread_id,approved_at)
-  idx_pending_sends_group (group_folder,approved_at)
-  idx_pending_sends_handoff (handoff_observed_at,mailman_started_at,handoff_alerted_at)
-  idx_pending_sends_state (state,approved_at)
-  sqlite_autoindex_pending_sends_1 (draft_ts) UNIQUE
+idx_pending_sends_action (action_id) UNIQUE
+idx_pending_sends_gmail_thread (gmail_thread_id,approved_at)
+idx_pending_sends_group (group_folder,approved_at)
+idx_pending_sends_handoff (handoff_observed_at,mailman_started_at,handoff_alerted_at)
+idx_pending_sends_state (state,approved_at)
+sqlite_autoindex_pending_sends_1 (draft_ts) UNIQUE
 
 ## registered_groups
 
@@ -244,8 +247,8 @@ Indexes:
 ```
 
 Indexes:
-  sqlite_autoindex_registered_groups_2 (folder) UNIQUE
-  sqlite_autoindex_registered_groups_1 (jid) UNIQUE
+sqlite_autoindex_registered_groups_2 (folder) UNIQUE
+sqlite_autoindex_registered_groups_1 (jid) UNIQUE
 
 ## router_state
 
@@ -255,7 +258,7 @@ Indexes:
 ```
 
 Indexes:
-  sqlite_autoindex_router_state_1 (key) UNIQUE
+sqlite_autoindex_router_state_1 (key) UNIQUE
 
 ## scheduled_tasks
 
@@ -275,9 +278,9 @@ Indexes:
 ```
 
 Indexes:
-  idx_status (status)
-  idx_next_run (next_run)
-  sqlite_autoindex_scheduled_tasks_1 (id) UNIQUE
+idx_status (status)
+idx_next_run (next_run)
+sqlite_autoindex_scheduled_tasks_1 (id) UNIQUE
 
 ## sessions
 
@@ -287,7 +290,7 @@ Indexes:
 ```
 
 Indexes:
-  sqlite_autoindex_sessions_1 (group_folder) UNIQUE
+sqlite_autoindex_sessions_1 (group_folder) UNIQUE
 
 ## slack_thread_anchors
 
@@ -300,7 +303,7 @@ Indexes:
 ```
 
 Indexes:
-  sqlite_autoindex_slack_thread_anchors_1 (channel,thread_key) UNIQUE
+sqlite_autoindex_slack_thread_anchors_1 (channel,thread_key) UNIQUE
 
 ## task_run_logs
 
@@ -315,7 +318,7 @@ Indexes:
 ```
 
 Foreign keys:
-  task_id -> scheduled_tasks(id)
+task_id -> scheduled_tasks(id)
 
 Indexes:
-  idx_task_run_logs (task_id,run_at)
+idx_task_run_logs (task_id,run_at)

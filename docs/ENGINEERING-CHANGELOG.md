@@ -12,9 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17
 - Owner/client: Codex
-- State: ready_for_deploy; read-only production preflight and local restart
-  hardening verified, immutable build/backup/activation pending
-- Commit/PR: claim `2d994656` on
+- State: deployed_unverified; exact schema/service activation and bounded
+  non-interference proof pass, first natural disposition receipt unobserved
+- Commit/PR: claim `2d994656`; implementation/release
+  `263ac7c4a25a6033adef13e4085c147d1237b559` on
   `codex/nc-20260817-009-gmail-receipt-activation`; no PR
 - Change class: C2 — additive production SQLite schema and recovery-safe exact
   release activation without manufactured Gmail traffic or action authority
@@ -43,11 +44,47 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   pass. The unrestricted full baseline passes 2,661/2,662; its sole failure is
   the unchanged CNPC literal wrapper assertion in
   `src/cnpc-prompt-contract.test.ts`.
-- Boundary: production access has been read-only. No SQLite/PostgreSQL row or
-  schema, Gmail API write/send, cursor, message, classification, task, action,
-  source, service, release, configuration, push, or merge changed. Backup,
-  exact release construction, activation, natural proof, and final recovery
-  evidence remain pending.
+- Exact release: source tree
+  `bac62eea397f944033c79b74f79e29e2b6c13378`; 724-file artifact SHA-256
+  `b12416a44839ddb08092566f81e9a4fd1568ddf597bf194b091fbf295f3bbef2`;
+  archive SHA-256
+  `74e282695eeff312e544e23f933c00a8a547f158747c74da49c04a09df21d622`.
+  Clean construction plus fresh local and production extraction verified.
+  Migration 123 and its rollback are present as verified release files but
+  remain unapplied.
+- Recovery: after a final green drain, SQLite's online backup wrote the
+  owner-only mode-0600 file
+  `~/.local/share/nanoclaw-backups/NC-20260817-009-2026-08-17T23-36-26Z/messages.db.sqlite3`.
+  It passes `quick_check`, preserved the pre-schema 66 confirmed/6 blocked and
+  zero-critical state, and hashes to
+  `6b23f4d9329865cae93bc86dbc98f87383079ba34441ed524bbf4c7b5eec8996`.
+  The activator retained rollback plist
+  `com.nanoclaw.plist.rollback-de815e1dfb1f-2026-08-17T23-37-22-828Z`.
+- Activation/live structure: redacted dry-run named only the three expected
+  release-pointer paths; recovery-safe apply converged to exact release
+  `263ac7c4` under Node 22.23.2. Independent readback proves one listener,
+  connected Gmail/Slack, empty runtime/outgoing queues, SQLite `quick_check`
+  `ok`, the receipt table plus its no-update/no-delete triggers, zero receipts,
+  unchanged critical pending state, and absent migration-123 tables. The
+  health heartbeat and sole listener converged to PID 58925 after its expected
+  30-second file refresh; the initial old PID was stale heartbeat data, not a
+  second listener.
+- Bounded natural observation: after more than ten minutes, one successful
+  Gmail safety poll reported zero candidates, zero Gmail errors/holds, zero
+  Gmail-row change, and zero receipts. Two ambient new message rows and two
+  allowed action-safety decisions were Slack-only. Normal watch renewal
+  explains the lease change; the successful empty safety poll explains the
+  history/liveness advance; `last_check` remained unchanged. Critical pending
+  state remained 66 confirmed/6 blocked and zero active/critical.
+- Boundary/follow-up: production writes were limited to the recovery backup,
+  immutable release install/pointer activation, startup's additive SQLite
+  schema, normal Gmail watch renewal/history/liveness, and ambient Slack state.
+  No synthetic/customer/internal email, Gmail send/reply, historical receipt,
+  PostgreSQL schema/row, migration 123, source registration/bootstrap, shadow
+  read, 404 change, classification, task, approved-email action, push, or merge
+  occurred. Passively wait for a genuine Gmail candidate and prove exactly one
+  terminal receipt plus replay/cursor/non-duplication safety before any later
+  Company OS promotion gate.
 
 ### NC-20260817-008 — Add durable Gmail inbound disposition receipts
 
