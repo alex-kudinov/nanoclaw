@@ -2,9 +2,11 @@
 
 Status: NC-005's proposal adapter and NC-006's unwired resumable shadow are
 implemented. NC-007 deploys those exact bytes in release `de815e1d`, but
-migration 123 remains unapplied and the release has no runtime import. No
-production source registration/bootstrap, live Gmail read, cursor write,
-message recovery, or ingestion change has occurred.
+migration 123 remains unapplied and the release has no runtime import. NC-008
+locally adds the missing real-ingestion disposition contract and cursor
+holdback; it is not deployed. No production source registration/bootstrap,
+live Gmail read, cursor write, message recovery, or ingestion change has
+occurred under NC-008.
 
 ## Decision
 
@@ -181,6 +183,32 @@ Each invocation performs this sequence:
 6. Mark only the shadow snapshot complete. The generic watermark state remains
    unchanged until a later, separately authorized caller records the proposal.
 
+## Real-ingestion disposition evidence
+
+NC-008 adds the local SQLite producer/reader needed by the shadow accounting
+port. `gmail_inbound_disposition_receipts` contains one immutable terminal row
+per Gmail message ID and no email content or address fields. Accepted reasons
+cover ordinary message persistence, direct classified-route persistence,
+completed rule auto-archive, and an exact pre-existing inbound message row.
+Rejected reasons cover own outbound, Spam/Trash, empty messages, hard filters,
+and outbound messages found by the thread scanner.
+
+The receipt follows the durable terminal operation. Exact semantic replay
+converges even when the retry timestamp differs; a changed disposition, reason,
+or evidence hash conflicts. An existing receipt skips Gmail refetch after
+restart. If ordinary message persistence succeeded but receipt insertion
+failed, only an exact row for the same Gmail JID with `is_from_me = 0` and
+`is_bot_message = 0` can mint the bounded legacy receipt. The no-wake row staged
+before direct host routing additionally requires the exact rules-runner
+classification `routed_at` marker; an ambiguous staged route holds the cursor.
+The in-memory `processedIds` set and outbound rows are never evidence.
+
+For inbound push, every history candidate must already have or produce a
+receipt. Any fetch, processing, receipt-storage, or accounting failure leaves
+the prior `gmail_history_id` unchanged for replay. Separately, a delta whose
+20th page still has `nextPageToken` now throws before any returned candidate is
+processed, so truncated pagination cannot advance the cursor.
+
 ## Fail-closed outcomes
 
 No reconciliation proposal exists when any of these occurs:
@@ -224,14 +252,24 @@ actions, unchanged Gmail cursors, trigger counts 1/0/0/0, and absent
 migration-123 tables. This is release availability, not a Gmail or database
 shadow observation.
 
+NC-008 focused local proof covers schema creation, append-only trigger
+enforcement, exact replay/conflict, privacy, accepted/rejected accounting,
+every current Gmail terminal reason, split-write and restart convergence,
+partial-batch cursor hold, complete-batch advance, existing-receipt replay, and
+non-terminal page-20 refusal. The exact focused set passes 143/143, combined
+Company OS/Gmail passes 405/405, and the expanded email-critical gate passes
+685/685 plus the independent runner's 43/43. The production daemon and SQLite
+database still run the pre-NC-008 release/schema.
+
 This is not yet a live Gmail recovery fix:
 
 - no production source row or watermark state exists;
 - migration 123 is tracked but unapplied;
 - the exact Google wrapper is installed but has not called a live mailbox;
 - current inbound push still resets `gmail_history_id` on 404;
-- current rejection paths are often in-memory rather than durably receipted, so
-  a real accounting callback cannot yet classify every full-snapshot candidate;
+- NC-008 durable rejection evidence is local and unproven against the live
+  mailbox; historical IDs without a receipt, exact retained ordinary inbound
+  row, or durable routed marker still account as unknown;
 - the resumable design proves more than 10,000 candidates synthetically but
   has no production runtime, storage-cost, token-lifetime, or latency evidence;
 - a message permanently deleted before a full snapshot is no longer visible in
@@ -245,23 +283,26 @@ These are activation blockers, not successful-recovery claims.
 
 The next production-facing milestones must remain separately tracked and must:
 
-1. define durable accepted/rejected evidence for every current-mailbox message
-   without treating the in-memory `processedIds` cache as authority;
-2. back up PostgreSQL, apply migration 123 dark, and verify all three tables
+1. back up production SQLite, deploy the NC-008 receipt producer, verify the
+   additive table/triggers and natural receipt creation, and prove no duplicate
+   wake, cursor regression, classification change, or external action;
+2. dry-run historical coverage and quantify unknown IDs without inventing
+   dispositions or treating the in-memory cache as authority;
+3. back up PostgreSQL, apply migration 123 dark, and verify all three tables
    empty/admin-only before any producer exists;
-3. register and bootstrap one inbound source in production without changing
+4. register and bootstrap one inbound source in production without changing
    `gmail_history_id` or wiring 404 behavior;
-4. deploy the wrapper and shadow store still default-off, then observe a
+5. deploy the wrapper and shadow store still default-off, then observe a
    natural source gap or approve a separate gap-independent audit design; do
    not manufacture an expiry merely to exercise the ledger;
-5. run a real read-only shadow and prove terminality, stable head, exact
+6. run a real read-only shadow and prove terminality, stable head, exact
    durable candidate accounting, privacy/token cleanup, runtime/API cost, and
    no source/work/email mutation;
-6. only after those gates, separately promote natural-404 handling to
+7. only after those gates, separately promote natural-404 handling to
    `gap_detected`, recover any missing eligible candidates through the ordinary
    durable inbound path, and record `gap_reconciled` before advancing;
-7. add watermark-age/operator attention and rollback/demotion evidence;
-8. design and prove the label-correction source independently.
+8. add watermark-age/operator attention and rollback/demotion evidence;
+9. design and prove the label-correction source independently.
 
 A forced expiry, synthetic production email, customer/internal message, task,
 or action is not authorized by this dark milestone.

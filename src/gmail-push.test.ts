@@ -24,6 +24,7 @@ import {
   ensureHistoryIdBaseline,
   HISTORY_ID_KEY,
   HistoryExpiredError,
+  HistoryPageLimitError,
   WATCH_EXPIRES_KEY,
   getStoredHistoryId,
   getWatchExpiresAt,
@@ -213,6 +214,32 @@ describe('processHistoryDelta', () => {
     expect(result.messageIds.sort()).toEqual(['a', 'b']);
     expect(result.lastHistoryId).toBe('200');
     expect(gmail.users.history.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails closed when page 20 is still non-terminal', async () => {
+    let call = 0;
+    const gmail = makeGmailMock({
+      historyList: async () => {
+        call++;
+        return {
+          data: {
+            history: [
+              {
+                id: String(100 + call),
+                messagesAdded: [{ message: { id: `m-${call}` } }],
+              },
+            ],
+            historyId: String(100 + call),
+            nextPageToken: `page-${call + 1}`,
+          },
+        };
+      },
+    });
+
+    await expect(processHistoryDelta(gmail, '50')).rejects.toBeInstanceOf(
+      HistoryPageLimitError,
+    );
+    expect(gmail.users.history.list).toHaveBeenCalledTimes(20);
   });
 
   it('throws HistoryExpiredError on 404', async () => {

@@ -67,6 +67,15 @@ completion replay, append-only enforcement, admin-only grants, and guarded
 rollback. Production schema, source/watermark rows, Gmail cursors, and runtime
 imports remain unchanged; see
 `docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
+`NC-20260817-008` adds a separate local SQLite target for the current Gmail
+ingestion boundary: one append-only, content-free terminal disposition receipt
+per immutable message ID. It records only contract/source identity,
+accepted/rejected reason, hashes, and timestamps; it stores no sender, address,
+subject, body, prompt, task, approval, action, or arbitrary metadata. Existing
+exact ordinary inbound message rows can supply lazy legacy acceptance evidence;
+direct-route staging rows additionally require the exact PostgreSQL routed
+marker, and outbound rows cannot qualify. The current production release predates this table; no
+production SQLite row or schema has changed under NC-008.
 
 ---
 

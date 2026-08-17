@@ -22,8 +22,11 @@ import {
   GMAIL_PUSH_SAFETY_POLL_INTERVAL,
 } from '../config.js';
 import {
+  getGmailInboundDispositionReceipt,
   getMessageIdsForJid,
   getRouterState,
+  getStoredInboundMessageEvidence,
+  recordGmailInboundDisposition,
   setRouterState,
   storeMessageDirect,
 } from '../db.js';
@@ -31,6 +34,7 @@ import { getGmailClient } from '../gmail-auth.js';
 import { grantHostGmailResources } from '../gmail-ipc-policy.js';
 import {
   handleClassifyLabelWrite,
+  isClassificationRouted,
   isAutoArchiveLabel,
   markClassificationRouted,
 } from '../classify-ipc-handlers.js';
@@ -57,6 +61,12 @@ import {
   setStoredHistoryId,
   startWatch,
 } from '../gmail-push.js';
+import {
+  GmailInboundDispositionError,
+  hashGmailInboundSourceEvidence,
+  type GmailInboundDisposition,
+  type GmailInboundDispositionReason,
+} from '../gmail-inbound-disposition.js';
 import { logger } from '../logger.js';
 import {
   Channel,
@@ -335,6 +345,101 @@ export class GmailChannel implements Channel {
     }, 120_000);
   }
 
+  private markProcessed(messageId: string): void {
+    this.processedIds.add(messageId);
+    if (this.processedIds.size <= 5000) return;
+    const iter = this.processedIds.values();
+    for (let i = 0; i < 1000; i++) iter.next();
+    const keep = new Set<string>();
+    for (const value of iter) keep.add(value);
+    this.processedIds = keep;
+  }
+
+  private messageObservedAt(message: gmail_v1.Schema$Message): string {
+    if (message.internalDate && /^\d+$/.test(message.internalDate)) {
+      const milliseconds = Number(message.internalDate);
+      if (Number.isFinite(milliseconds)) {
+        return new Date(milliseconds).toISOString();
+      }
+    }
+    return new Date().toISOString();
+  }
+
+  private recordTerminalDisposition(input: {
+    messageId: string;
+    disposition: GmailInboundDisposition;
+    reasonKey: GmailInboundDispositionReason;
+    observedAt: string;
+    evidenceParts: readonly unknown[];
+  }): void {
+    recordGmailInboundDisposition({
+      messageId: input.messageId,
+      disposition: input.disposition,
+      reasonKey: input.reasonKey,
+      sourceEvidenceSha256: hashGmailInboundSourceEvidence(
+        input.reasonKey,
+        input.evidenceParts,
+      ),
+      observedAt: input.observedAt,
+    });
+    this.markProcessed(input.messageId);
+  }
+
+  /**
+   * True only when an immutable terminal receipt exists. A pre-NC-008 message
+   * row may bridge only when it is ordinary persisted inbound, or when a
+   * direct-route staging row has its exact PostgreSQL routed marker. An
+   * in-memory ID alone is never accounting evidence.
+   */
+  private async ensureDurableDisposition(messageId: string): Promise<boolean> {
+    if (getGmailInboundDispositionReceipt(messageId)) {
+      this.markProcessed(messageId);
+      return true;
+    }
+    const legacyEvidence = getStoredInboundMessageEvidence(messageId, this.jid);
+    if (legacyEvidence === 'ordinary_persisted') {
+      this.recordTerminalDisposition({
+        messageId,
+        disposition: 'accepted',
+        reasonKey: 'legacy_message_persisted',
+        observedAt: new Date().toISOString(),
+        evidenceParts: [messageId, 'sqlite_messages'],
+      });
+      return true;
+    }
+    if (legacyEvidence === 'direct_route_staged') {
+      let routed: boolean;
+      try {
+        routed = await isClassificationRouted(messageId, 'rules-runner-v1');
+      } catch (error) {
+        throw new GmailInboundDispositionError(
+          'storage_unavailable',
+          'Gmail direct-route receipt lookup failed',
+          { cause: error },
+        );
+      }
+      if (!routed) {
+        throw new GmailInboundDispositionError(
+          'storage_unavailable',
+          'Gmail direct-route staging row has no durable route receipt',
+        );
+      }
+      this.recordTerminalDisposition({
+        messageId,
+        disposition: 'accepted',
+        reasonKey: 'classified_route_persisted',
+        observedAt: new Date().toISOString(),
+        evidenceParts: [
+          messageId,
+          'rules-runner-v1',
+          'classification_routed_at',
+        ],
+      });
+      return true;
+    }
+    return false;
+  }
+
   private async poll(): Promise<void> {
     if (!this.gmail || !this.labelId) return;
     this.pollCount++;
@@ -383,8 +488,8 @@ export class GmailChannel implements Channel {
     for (const ref of messageRefs) {
       if (!ref.id) continue;
 
-      // Deduplicate: skip already-processed messages
-      if (this.processedIds.has(ref.id)) continue;
+      // Deduplicate only through a durable receipt (or a verified legacy row).
+      if (await this.ensureDurableDisposition(ref.id)) continue;
 
       const msg = await this.fetchAndProcess(ref.id);
       if (msg) newCount++;
@@ -417,14 +522,23 @@ export class GmailChannel implements Channel {
     });
 
     const msg = res.data;
-    if (!msg.payload || !msg.id) return false;
+    if (!msg.payload || !msg.id || msg.id !== messageId) {
+      throw new Error('Gmail message response is missing or mismatched');
+    }
+    const observedAt = this.messageObservedAt(msg);
 
     // Skip our own outbound (SENT/DRAFT not in inbox). Self-addressed
     // inbound (contact-form mail from a send-as alias) keeps INBOX and is
     // processed normally.
     const labels = msg.labelIds || [];
     if (isOwnOutbound(labels)) {
-      this.processedIds.add(msg.id);
+      this.recordTerminalDisposition({
+        messageId: msg.id,
+        disposition: 'rejected',
+        reasonKey: 'own_outbound',
+        observedAt,
+        evidenceParts: [msg.id, ...[...labels].sort()],
+      });
       return false;
     }
 
@@ -435,7 +549,13 @@ export class GmailChannel implements Channel {
       this.pushMode &&
       (labels.includes('SPAM') || labels.includes('TRASH'))
     ) {
-      this.processedIds.add(msg.id);
+      this.recordTerminalDisposition({
+        messageId: msg.id,
+        disposition: 'rejected',
+        reasonKey: 'spam_or_trash',
+        observedAt,
+        evidenceParts: [msg.id, ...[...labels].sort()],
+      });
       return false;
     }
 
@@ -448,7 +568,13 @@ export class GmailChannel implements Channel {
     }
 
     if (!body && !headers.subject) {
-      this.processedIds.add(msg.id);
+      this.recordTerminalDisposition({
+        messageId: msg.id,
+        disposition: 'rejected',
+        reasonKey: 'empty_message',
+        observedAt,
+        evidenceParts: [msg.id, msg.threadId || msg.id],
+      });
       return false;
     }
 
@@ -522,10 +648,17 @@ export class GmailChannel implements Channel {
         } catch {
           /* skip audit log */
         }
-        this.processedIds.add(msg.id);
+        this.recordTerminalDisposition({
+          messageId: msg.id,
+          disposition: 'rejected',
+          reasonKey: 'hard_filter',
+          observedAt,
+          evidenceParts: [msg.id, hardFilter.id],
+        });
         return false;
       }
     } catch (err) {
+      if (err instanceof GmailInboundDispositionError) throw err;
       logger.error(
         { err, messageId: msg.id },
         'Gmail: hard filter error, proceeding',
@@ -585,7 +718,18 @@ export class GmailChannel implements Channel {
             },
             'Gmail: pre-classified via rule runner, skipped mailman',
           );
-          this.processedIds.add(msg.id);
+          this.recordTerminalDisposition({
+            messageId: msg.id,
+            disposition: 'accepted',
+            reasonKey: 'rule_auto_archive_completed',
+            observedAt,
+            evidenceParts: [
+              msg.id,
+              ruleMatch.rule_id,
+              ruleMatch.target_label,
+              'rules-runner-v1',
+            ],
+          });
           return true;
         }
         // Actionable label — fall through to mailman for routing
@@ -638,35 +782,36 @@ export class GmailChannel implements Channel {
           });
           if (routeResult.routed) {
             await markClassificationRouted(msg.id, 'rules-runner-v1');
-            this.processedIds.add(msg.id);
+            this.recordTerminalDisposition({
+              messageId: msg.id,
+              disposition: 'accepted',
+              reasonKey: 'classified_route_persisted',
+              observedAt,
+              evidenceParts: [
+                msg.id,
+                threadId,
+                ruleMatch.rule_id,
+                'rules-runner-v1',
+              ],
+            });
             return true;
           }
           // else: fall through to formatEmailForAgent -> mailman path
         } catch (routeErr) {
+          if (routeErr instanceof GmailInboundDispositionError) throw routeErr;
           logger.error(
             { err: routeErr, messageId: msg.id, label: ruleMatch.target_label },
             'Gmail: host-router failed, falling through to mailman',
           );
         }
       } catch (err) {
+        if (err instanceof GmailInboundDispositionError) throw err;
         logger.error(
           { err, messageId: msg.id, ruleId: ruleMatch.rule_id },
           'classify-rules: pre-classification failed, falling through to mailman',
         );
         // Fall through to the onMessage path below.
       }
-    }
-
-    this.processedIds.add(msg.id);
-
-    // Cap processedIds to prevent unbounded growth
-    if (this.processedIds.size > 5000) {
-      const iter = this.processedIds.values();
-      for (let i = 0; i < 1000; i++) iter.next();
-      // Rebuild set from remaining entries
-      const keep = new Set<string>();
-      for (const v of iter) keep.add(v);
-      this.processedIds = keep;
     }
 
     this.onMessage(this.jid, {
@@ -679,6 +824,14 @@ export class GmailChannel implements Channel {
       is_from_me: false,
       is_bot_message: false,
       thread_ts: threadId,
+    });
+
+    this.recordTerminalDisposition({
+      messageId: msg.id,
+      disposition: 'accepted',
+      reasonKey: 'inbound_message_persisted',
+      observedAt,
+      evidenceParts: [msg.id, threadId, 'sqlite_messages'],
     });
 
     return true;
@@ -712,11 +865,17 @@ export class GmailChannel implements Channel {
       });
 
       for (const msg of thread.data.messages || []) {
-        if (!msg.id || this.processedIds.has(msg.id)) continue;
+        if (!msg.id || (await this.ensureDurableDisposition(msg.id))) continue;
 
         const labels = msg.labelIds || [];
         if (labels.includes('SENT') || labels.includes('DRAFT')) {
-          this.processedIds.add(msg.id);
+          this.recordTerminalDisposition({
+            messageId: msg.id,
+            disposition: 'rejected',
+            reasonKey: 'thread_outbound',
+            observedAt: this.messageObservedAt(msg),
+            evidenceParts: [msg.id, ...[...labels].sort()],
+          });
           continue;
         }
 
@@ -796,16 +955,34 @@ export class GmailChannel implements Channel {
     }
 
     let newCount = 0;
+    let unaccountedCount = 0;
     for (const id of result.messageIds) {
-      if (this.processedIds.has(id)) continue;
       try {
+        if (await this.ensureDurableDisposition(id)) continue;
         if (await this.fetchAndProcess(id)) newCount++;
+        if (!getGmailInboundDispositionReceipt(id)) {
+          throw new Error('Gmail candidate produced no durable disposition');
+        }
       } catch (err) {
+        unaccountedCount++;
         logger.warn(
           { err, messageId: id },
           'Gmail push: fetchAndProcess failed',
         );
       }
+    }
+
+    if (unaccountedCount > 0) {
+      logger.warn(
+        {
+          scanned: result.messageIds.length,
+          unaccountedCount,
+          start,
+          retainedHistoryId: start,
+        },
+        'Gmail push retained history cursor for unaccounted candidates',
+      );
+      return;
     }
 
     // Advance stored historyId to max(notifHistoryId, lastHistoryId).

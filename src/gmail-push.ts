@@ -35,6 +35,18 @@ export class HistoryExpiredError extends Error {
 }
 
 /**
+ * Thrown when history pagination is still non-terminal after the hard page
+ * bound. The caller must retain the prior cursor; advancing would silently
+ * skip every unlisted page.
+ */
+export class HistoryPageLimitError extends Error {
+  constructor() {
+    super('Gmail history delta exceeded the 20-page safety bound');
+    this.name = 'HistoryPageLimitError';
+  }
+}
+
+/**
  * Register (or refresh) a push subscription on the user's mailbox.
  * Idempotent — calling again simply resets the expiration clock.
  * Returns the current historyId and expiration (ms epoch).
@@ -192,6 +204,10 @@ export async function processHistoryDelta(
 
     pageToken = res.data.nextPageToken ?? undefined;
     if (!pageToken) break;
+  }
+
+  if (pageToken) {
+    throw new HistoryPageLimitError();
   }
 
   return { messageIds: [...messageIds], lastHistoryId };

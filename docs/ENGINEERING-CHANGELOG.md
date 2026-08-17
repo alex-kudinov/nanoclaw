@@ -8,6 +8,45 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-008 — Add durable Gmail inbound disposition receipts
+
+- Date: 2026-08-17
+- Owner/client: Codex
+- State: validating; local implementation only, not deployed or applied to
+  production SQLite
+- Commit/PR: claim `db6850eb` on
+  `codex/nc-20260817-008-gmail-disposition-receipts`; no PR
+- Change class: C2 — additive local SQLite schema and fail-closed inbound cursor
+  behavior with no live Gmail, production database, message, or action write
+- Implementation: adds an append-only, content-free receipt keyed by immutable
+  Gmail message ID, with bounded accepted/rejected reasons, exact semantic
+  replay, changed-replay conflict, source-evidence and receipt hashes, and a
+  read-only Company OS accounting adapter. Current ordinary persistence,
+  classified routing, rule auto-archive, own outbound, Spam/Trash, empty,
+  hard-filter, and thread-outbound terminals now receipt only after their
+  matching durable path completes.
+- Retry/cursor safety: an existing receipt survives restart and skips refetch.
+  An exact ordinary inbound SQLite row can bridge a receipt lost after message
+  persistence. A direct-route staging row additionally requires the exact
+  PostgreSQL `routed_at` marker; an in-memory marker, outbound row, or ambiguous
+  staged route cannot bridge. Any unaccounted history candidate retains the prior cursor. A history delta still
+  carrying a page token after page 20 now fails before any candidate processing
+  or cursor write rather than returning truncated success.
+- Verification: exact Node 22.23.2 typecheck and root build pass; 5 focused
+  files / 143 tests and 32 combined Company OS/Gmail files / 405 tests pass.
+  The expanded email-critical gate passes 27 files / 685 tests plus the
+  independent runner build and 43/43 tests. Formatting, schema sanitizer,
+  documentation continuity, capability parity, and diff checks pass. The
+  unrestricted full baseline passes 2,659/2,660; its sole failure is the
+  unchanged CNPC literal wrapper assertion in
+  `src/cnpc-prompt-contract.test.ts`.
+- Boundary: no production SQLite/PostgreSQL change, migration-123 application,
+  source registration/bootstrap, live Gmail request, current cursor change,
+  404 behavior change, message classification/delivery, task, action, service
+  restart, deployment, push, or merge occurred. Deploying these bytes later
+  will create the additive SQLite table at startup and therefore requires a
+  separate backup, drain, activation, and live non-interference task.
+
 ### NC-20260817-007 — Deploy the Gmail reconciliation shadow dark
 
 - Date: 2026-08-17T22:04Z

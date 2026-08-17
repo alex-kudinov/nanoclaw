@@ -1,7 +1,9 @@
 # Schema: messages.db
 
 Generated: 2026-07-26T08:00:56Z
-Structure-only reconciliation: 2026-07-30T17:50Z
+Structure-only reconciliation: 2026-08-17T22:24Z
+
+NC-20260817-008 local code target; not yet applied to production.
 
 ## autonomy_draft_events
 
@@ -162,6 +164,34 @@ Indexes:
   idx_thread (chat_jid,thread_ts,timestamp)
   idx_timestamp (timestamp)
   sqlite_autoindex_messages_1 (id,chat_jid) UNIQUE
+
+## gmail_inbound_disposition_receipts
+
+```
+  contract_version          INTEGER      NOT NULL CHECK (= 1)
+  source_key               TEXT         NOT NULL CHECK (= 'gmail:inbound-v1')
+  gmail_message_id         TEXT         PK
+  disposition              TEXT         NOT NULL CHECK (accepted|rejected)
+  reason_key               TEXT         NOT NULL (closed vocabulary)
+  source_evidence_sha256   TEXT         NOT NULL (64 lowercase hex)
+  receipt_fingerprint      TEXT         NOT NULL (64 lowercase hex)
+  observed_at              TEXT         NOT NULL
+  recorded_at              TEXT         NOT NULL DEFAULT current UTC time
+```
+
+Indexes:
+  sqlite_autoindex_gmail_inbound_disposition_receipts_1 (gmail_message_id) UNIQUE
+  sqlite_autoindex_gmail_inbound_disposition_receipts_2 (receipt_fingerprint) UNIQUE
+
+Triggers:
+  gmail_inbound_disposition_receipts_no_update
+  gmail_inbound_disposition_receipts_no_delete
+
+The table is content-free terminal source evidence. Accepted reasons are
+`inbound_message_persisted`, `classified_route_persisted`,
+`rule_auto_archive_completed`, and `legacy_message_persisted`; rejected reasons
+are `own_outbound`, `spam_or_trash`, `empty_message`, `hard_filter`, and
+`thread_outbound`.
 
 ## pending_sends
 

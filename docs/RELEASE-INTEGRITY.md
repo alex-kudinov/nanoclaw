@@ -130,6 +130,15 @@ Node 22.23.2, connected Gmail/Slack, empty queues, unchanged email/cursor/source
 aggregates, and absent migration-123 tables. No migration, Gmail call, source
 row, shadow evidence, message, task, or action occurred.
 
+NC-20260817-008 locally expands the email-critical release gate to include the
+real Gmail channel, history pagination, and inbound disposition receipt tests.
+The added SQLite table is created by normal host schema initialization, so a
+future deployment is also a production schema operation and must not be called
+successful from archive verification alone. It requires a WAL-safe SQLite
+backup, drain, exact release activation, table/trigger readback, natural
+receipt/cursor non-interference evidence, and rollback planning. No such
+deployment or schema application occurs under NC-008.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;
@@ -137,8 +146,9 @@ The builder refuses to run when:
 - the serial email-critical suite fails. This gate covers approval parsing,
   exact-action identity and replay, SQLite receipt transitions, cross-group
   delivery, exact scheduled-task Gmail continuation and completion receipts,
-  Gmail authorization, recipient/content refusal, and the realistic PostgreSQL-
-  bigint delivery path. It also runs the synthetic-only approved-email incident
+  Gmail inbound terminal receipts and cursor holdback, bounded history
+  pagination, Gmail authorization, recipient/content refusal, and the realistic
+  PostgreSQL-bigint delivery path. It also runs the synthetic-only approved-email incident
   corpus in `evals/email-delivery/incidents.json`; that corpus executes the
   production approval parser and host rehydration path and asserts that its
   linked stateful regressions remain in this same gate.

@@ -179,6 +179,18 @@ export async function markClassificationRouted(
   }
 }
 
+/** Read-only exact route receipt used to reconcile a split SQLite receipt. */
+export async function isClassificationRouted(
+  gmailMessageId: string,
+  classifierVersion: string,
+): Promise<boolean> {
+  const result = await query<{ routed_at: string | null }>(
+    'SELECT routed_at FROM email_classifications WHERE gmail_message_id = $1 AND classifier_version = $2',
+    [gmailMessageId, classifierVersion],
+  );
+  return Boolean(result.rows[0]?.routed_at);
+}
+
 // ---------- Post-classify routing ----------
 
 /**

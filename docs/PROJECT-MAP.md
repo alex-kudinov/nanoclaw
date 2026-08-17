@@ -331,6 +331,15 @@ occurrence/source/event/state counts at 1/0/0/0. The three shadow tables remain
 absent and no runtime entry point imports or calls the wrapper/store. This is a
 dark release deployment, not a live Gmail or recovery observation.
 
+`NC-20260817-008` adds a local-only SQLite disposition producer/reader for the
+current Gmail channel. Every returned history candidate must have one durable
+terminal accepted/rejected receipt before the cursor advances; a non-terminal
+page 20 fails before candidate processing. Exact ordinary inbound message rows
+can bridge receipt-write splits; direct-route staging rows also require the
+exact PostgreSQL routed marker. Outbound rows and the in-memory cache cannot
+bridge. These bytes and schema are not deployed, and the current 404 reset
+remains unchanged.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container
@@ -424,7 +433,7 @@ session files.
 | Registry        | `src/channels/registry.ts`, `src/channels/index.ts`                                                                             | channel self-registration and active imports                                                    |
 | Slack           | `src/channels/slack.ts`, `src/slack-approval.ts`, `src/lead-thread-key.ts`, `src/message-split.ts`, `src/attachment-convert.ts` | Socket Mode, canonical lead threads, reactions/approvals, safe splitting, attachment extraction |
 | Gmail           | `src/channels/gmail.ts`, `src/gmail-api.ts`, `src/gmail-auth.ts`                                                                | mailbox channel, OAuth, API operations                                                          |
-| Gmail ingest    | `src/gmail-push.ts`, `src/gmail-label-poll.ts`, `src/gmail-parser.ts`                                                           | push/poll detection and normalization                                                           |
+| Gmail ingest    | `src/gmail-push.ts`, `src/gmail-label-poll.ts`, `src/gmail-parser.ts`, `src/gmail-inbound-disposition.ts`                       | push/poll detection, normalization, and local durable terminal accounting target               |
 | Gmail IPC       | `src/gmail-ipc-handlers.ts`, `src/classify-ipc-handlers.ts`                                                                     | host-side action execution                                                                      |
 | Outbound safety | `src/email-recipient-guard.ts`, `src/email-content-guard.ts`, `src/ai-tells.ts`                                                 | destination, content, and AI-tell enforcement                                                   |
 | Tracking        | `src/email-tracking.ts`, `src/email-unsubscribe.ts`                                                                             | delivery metadata and unsubscribe handling                                                      |
@@ -458,7 +467,7 @@ dependencies, not active runtime channels in this snapshot.
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
 | Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-job-work-shadow.ts`, `src/company-job-work-shadow-cli.ts`, `src/company-work-report.ts`, migrations 118-119, `docs/COMPANY-OS-WORK-LEDGER.md`, `docs/COMPANY-OS-JOB-LEDGER.md` | Mailman/Sales projection plus the multi-workflow bounded report are live/non-authoritative. NC-016/017 add and live-prove the host-job state/receipt contract and explicit fixed-window CLI for five runs. SQLite remains authority and neither job component is daemon/scheduler-wired. |
-| Gmail gap reconciliation | `src/company-gmail-reconciliation.ts`, `src/company-gmail-reconciliation-shadow.ts`, `src/company-gmail-reconciliation-shadow-store.ts`, migration 123, `docs/COMPANY-OS-GMAIL-RECONCILIATION.md` | NC-005's local proposal proof now has NC-006's local exact read-only wrapper and resumable content-free shadow ledger. Synthetic/disposable proof crosses 10,000 candidates without weakening terminal/stable/exact accounting. Migration 123 is unapplied and all code remains unwired; real durable rejection evidence, live Gmail shadow proof, source registration/bootstrap, cursor/recovery wiring, and label-poll recovery remain absent. |
+| Gmail gap reconciliation | `src/company-gmail-reconciliation.ts`, `src/company-gmail-reconciliation-shadow.ts`, `src/company-gmail-reconciliation-shadow-store.ts`, `src/gmail-inbound-disposition.ts`, migration 123, `docs/COMPANY-OS-GMAIL-RECONCILIATION.md` | NC-005/006 provide the installed-but-unwired proposal/wrapper/shadow. NC-008 locally adds real-ingestion terminal receipts and cursor holdback, but is not deployed. Migration 123, live shadow proof, source registration/bootstrap, 404 recovery wiring, historical unknown coverage, and label-poll recovery remain absent. |
 | External-write control | `src/action-safety.ts`, `src/action-safety-drill-exec.ts`, `docs/ACTION-SAFETY-CONTROL.md` | deployed/default-off common action envelope and dynamic global/per-system brakes; exact release `47019c9` live-verifies Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, Hive/Firestore, and Things; in-flight interruption, standalone scripts, remaining integrations, ceilings, and demotion remain open |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
@@ -551,6 +560,8 @@ Current local schema contains:
   failure state;
 - `email_send_events` — append-only stage history for each approved-email
   action (`approved` through Gmail-confirmed or visibly held/blocked);
+- `gmail_inbound_disposition_receipts` — NC-008's local, not-yet-deployed
+  append-only content-free terminal accounting for current Gmail ingestion;
 - `router_state` — durable router progress.
 
 Inspect `.schema` before every manual query. Do not copy a live WAL-backed
@@ -1700,7 +1711,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
 | `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
 | `docs/COMPANY-OS-JOB-LEDGER.md`         | Campanero host-job run identity, state, receipt, privacy, and activation contract | NC-017 is deployed/live-verified for one five-run window; SQLite remains authoritative and there is no daemon/scheduler wiring |
-| `docs/COMPANY-OS-GMAIL-RECONCILIATION.md` | inbound Gmail history-expiry source, full-snapshot, accounting, refusal, and promotion contract | NC-005 is local/proposal-only; current Gmail ingestion and both SQLite history cursors remain unchanged |
+| `docs/COMPANY-OS-GMAIL-RECONCILIATION.md` | inbound Gmail history-expiry source, full-snapshot, accounting, refusal, and promotion contract | NC-005/006 are deployed but unwired; NC-008's real-ingestion receipt/cursor changes are local only; current production cursors/404 behavior remain unchanged |
 | `docs/ACTION-SAFETY-CONTROL.md`         | host action envelope, safety precedence, covered boundaries, and activation/drill transaction | seven-system boundary through Things is live-proven in exact release `47019c9` under `NC-20260816-009`; controls remain default-off and residuals explicit |
 | `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | Campanero and Booking selective canaries are live under `NC-20260816-006`/`010`; global rollout, egress, remaining raw-secret removal, and wider canaries remain open |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |

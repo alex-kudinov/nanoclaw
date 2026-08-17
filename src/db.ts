@@ -4,6 +4,15 @@ import path from 'path';
 
 import { ASSISTANT_NAME, DATA_DIR, STORE_DIR } from './config.js';
 import { isGraderStudentVerdictUnit } from './grader-output-gate.js';
+import {
+  GmailInboundDispositionError,
+  gmailInboundReceiptToCandidateAccounting,
+  normalizeGmailInboundDispositionInput,
+  normalizeGmailInboundDispositionReceipt,
+  normalizeGmailInboundMessageId,
+  type GmailInboundDispositionInput,
+  type GmailInboundDispositionReceipt,
+} from './gmail-inbound-disposition.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import type { EmailActionState } from './email-action.js';
@@ -41,6 +50,55 @@ function createSchema(database: Database.Database): void {
       FOREIGN KEY (chat_jid) REFERENCES chats(jid)
     );
     CREATE INDEX IF NOT EXISTS idx_timestamp ON messages(timestamp);
+
+    -- NC-20260817-008: content-free terminal accounting for each Gmail inbound
+    -- candidate. This is source-process evidence only; it carries no task,
+    -- approval, action, message content, address, subject, or arbitrary JSON.
+    CREATE TABLE IF NOT EXISTS gmail_inbound_disposition_receipts (
+      contract_version INTEGER NOT NULL CHECK (contract_version = 1),
+      source_key TEXT NOT NULL CHECK (source_key = 'gmail:inbound-v1'),
+      gmail_message_id TEXT PRIMARY KEY,
+      disposition TEXT NOT NULL CHECK (disposition IN ('accepted', 'rejected')),
+      reason_key TEXT NOT NULL,
+      source_evidence_sha256 TEXT NOT NULL CHECK (
+        length(source_evidence_sha256) = 64
+        AND source_evidence_sha256 NOT GLOB '*[^0-9a-f]*'
+      ),
+      receipt_fingerprint TEXT NOT NULL UNIQUE CHECK (
+        length(receipt_fingerprint) = 64
+        AND receipt_fingerprint NOT GLOB '*[^0-9a-f]*'
+      ),
+      observed_at TEXT NOT NULL,
+      recorded_at TEXT NOT NULL DEFAULT (
+        strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+      ),
+      CHECK (
+        (disposition = 'accepted' AND reason_key IN (
+          'inbound_message_persisted',
+          'classified_route_persisted',
+          'rule_auto_archive_completed',
+          'legacy_message_persisted'
+        ))
+        OR
+        (disposition = 'rejected' AND reason_key IN (
+          'own_outbound',
+          'spam_or_trash',
+          'empty_message',
+          'hard_filter',
+          'thread_outbound'
+        ))
+      )
+    );
+    CREATE TRIGGER IF NOT EXISTS gmail_inbound_disposition_receipts_no_update
+      BEFORE UPDATE ON gmail_inbound_disposition_receipts
+      BEGIN
+        SELECT RAISE(ABORT, 'gmail inbound disposition receipts are append-only');
+      END;
+    CREATE TRIGGER IF NOT EXISTS gmail_inbound_disposition_receipts_no_delete
+      BEFORE DELETE ON gmail_inbound_disposition_receipts
+      BEGIN
+        SELECT RAISE(ABORT, 'gmail inbound disposition receipts are append-only');
+      END;
 
     CREATE TABLE IF NOT EXISTS scheduled_tasks (
       id TEXT PRIMARY KEY,
@@ -795,6 +853,198 @@ export function getMessageIdsForJid(chatJid: string): string[] {
     .prepare('SELECT id FROM messages WHERE chat_jid = ?')
     .all(chatJid) as Array<{ id: string }>;
   return rows.map((r) => r.id);
+}
+
+export interface GmailInboundDispositionStoreResult {
+  receipt: GmailInboundDispositionReceipt;
+  applied: boolean;
+  duplicate: boolean;
+}
+
+type GmailInboundDispositionRow = {
+  contractVersion: number;
+  sourceKey: string;
+  messageId: string;
+  disposition: string;
+  reasonKey: string;
+  sourceEvidenceSha256: string;
+  receiptFingerprint: string;
+  observedAt: string;
+  recordedAt: string;
+};
+
+function readGmailInboundDispositionReceipt(
+  messageId: string,
+): GmailInboundDispositionReceipt | undefined {
+  const row = db
+    .prepare(
+      `SELECT contract_version AS contractVersion,
+              source_key AS sourceKey,
+              gmail_message_id AS messageId,
+              disposition,
+              reason_key AS reasonKey,
+              source_evidence_sha256 AS sourceEvidenceSha256,
+              receipt_fingerprint AS receiptFingerprint,
+              observed_at AS observedAt,
+              recorded_at AS recordedAt
+         FROM gmail_inbound_disposition_receipts
+        WHERE gmail_message_id = ?`,
+    )
+    .get(messageId) as GmailInboundDispositionRow | undefined;
+  if (!row) return undefined;
+  return normalizeGmailInboundDispositionReceipt(
+    row as GmailInboundDispositionReceipt,
+  );
+}
+
+/**
+ * Append one immutable terminal Gmail candidate receipt. Exact semantic replay
+ * converges even when the later caller observed it at a different retry time;
+ * any changed disposition, reason, or source evidence conflicts.
+ */
+export function recordGmailInboundDisposition(
+  input: GmailInboundDispositionInput,
+): GmailInboundDispositionStoreResult {
+  const candidate = normalizeGmailInboundDispositionInput(input);
+  let applied = false;
+  try {
+    const result = db
+      .prepare(
+        `INSERT INTO gmail_inbound_disposition_receipts (
+           contract_version,
+           source_key,
+           gmail_message_id,
+           disposition,
+           reason_key,
+           source_evidence_sha256,
+           receipt_fingerprint,
+           observed_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT DO NOTHING`,
+      )
+      .run(
+        candidate.contractVersion,
+        candidate.sourceKey,
+        candidate.messageId,
+        candidate.disposition,
+        candidate.reasonKey,
+        candidate.sourceEvidenceSha256,
+        candidate.receiptFingerprint,
+        candidate.observedAt,
+      );
+    applied = result.changes === 1;
+  } catch (error) {
+    throw new GmailInboundDispositionError(
+      'storage_unavailable',
+      'Gmail disposition receipt insert failed',
+      { cause: error },
+    );
+  }
+
+  let winner: GmailInboundDispositionReceipt | undefined;
+  try {
+    winner = readGmailInboundDispositionReceipt(candidate.messageId);
+  } catch (error) {
+    if (error instanceof GmailInboundDispositionError) throw error;
+    throw new GmailInboundDispositionError(
+      'storage_unavailable',
+      'Gmail disposition receipt readback failed',
+      { cause: error },
+    );
+  }
+  if (!winner) {
+    throw new GmailInboundDispositionError(
+      'storage_unavailable',
+      'Gmail disposition receipt insert produced no durable winner',
+    );
+  }
+  if (winner.receiptFingerprint !== candidate.receiptFingerprint) {
+    throw new GmailInboundDispositionError(
+      'conflict',
+      'Gmail disposition receipt conflicts with durable history',
+    );
+  }
+  return { receipt: winner, applied, duplicate: !applied };
+}
+
+/** Read-only terminal receipt lookup used by reconciliation accounting. */
+export function getGmailInboundDispositionReceipt(
+  messageIdValue: string,
+): GmailInboundDispositionReceipt | undefined {
+  const messageId = normalizeGmailInboundMessageId(messageIdValue);
+  try {
+    return readGmailInboundDispositionReceipt(messageId);
+  } catch (error) {
+    if (error instanceof GmailInboundDispositionError) throw error;
+    throw new GmailInboundDispositionError(
+      'storage_unavailable',
+      'Gmail disposition receipt lookup failed',
+      { cause: error },
+    );
+  }
+}
+
+/**
+ * Read-only adapter for NC-006. A missing receipt is deliberately `unknown`;
+ * reconciliation cannot infer rejection from absence.
+ */
+export function getGmailInboundCandidateAccounting(messageId: string) {
+  return gmailInboundReceiptToCandidateAccounting(
+    messageId,
+    getGmailInboundDispositionReceipt(messageId),
+  );
+}
+
+export type GmailInboundMessageEvidence =
+  | 'ordinary_persisted'
+  | 'direct_route_staged';
+
+/**
+ * Classify exact durable Gmail-row evidence without conflating the normal
+ * inbound path with the no-wake copy staged before direct host routing.
+ */
+export function getStoredInboundMessageEvidence(
+  messageIdValue: string,
+  chatJid: string,
+): GmailInboundMessageEvidence | undefined {
+  const messageId = normalizeGmailInboundMessageId(messageIdValue);
+  const row = db
+    .prepare(
+      `SELECT is_bot_message AS isBotMessage,
+              from_group AS fromGroup
+         FROM messages
+        WHERE id = ?
+          AND chat_jid = ?
+          AND is_from_me = 0`,
+    )
+    .get(messageId, chatJid) as
+    | { isBotMessage: number | null; fromGroup: string | null }
+    | undefined;
+  if (!row) return undefined;
+  if ((row.isBotMessage ?? 0) === 0) return 'ordinary_persisted';
+  if (row.isBotMessage === 1 && row.fromGroup === 'mailman') {
+    return 'direct_route_staged';
+  }
+  return undefined;
+}
+
+/** @internal - tests only; both mutations must be refused by SQLite triggers. */
+export function _attemptGmailDispositionMutationForTest(
+  action: 'update' | 'delete',
+  messageIdValue: string,
+): void {
+  const messageId = normalizeGmailInboundMessageId(messageIdValue);
+  if (action === 'update') {
+    db.prepare(
+      `UPDATE gmail_inbound_disposition_receipts
+          SET observed_at = observed_at
+        WHERE gmail_message_id = ?`,
+    ).run(messageId);
+    return;
+  }
+  db.prepare(
+    'DELETE FROM gmail_inbound_disposition_receipts WHERE gmail_message_id = ?',
+  ).run(messageId);
 }
 
 /**

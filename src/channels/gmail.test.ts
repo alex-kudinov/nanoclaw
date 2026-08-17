@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+const dispositionState = vi.hoisted(() => ({
+  receipts: new Map<string, Record<string, unknown>>(),
+}));
+
 // Mock logger
 vi.mock('../logger.js', () => ({
   logger: {
@@ -37,6 +41,7 @@ vi.mock('../host-router.js', () => ({
 
 vi.mock('../classify-ipc-handlers.js', () => ({
   handleClassifyLabelWrite: vi.fn().mockResolvedValue(undefined),
+  isClassificationRouted: vi.fn().mockResolvedValue(false),
   isAutoArchiveLabel: vi.fn().mockResolvedValue(false),
   markClassificationRouted: vi.fn().mockResolvedValue(undefined),
 }));
@@ -61,6 +66,24 @@ vi.mock('../db.js', () => ({
   setRouterState: vi.fn(),
   getMessageIdsForJid: vi.fn().mockReturnValue([]),
   storeMessageDirect: vi.fn(),
+  getStoredInboundMessageEvidence: vi.fn().mockReturnValue(undefined),
+  getGmailInboundDispositionReceipt: vi.fn((messageId: string) =>
+    dispositionState.receipts.get(messageId),
+  ),
+  recordGmailInboundDisposition: vi.fn(
+    (input: Record<string, unknown> & { messageId: string }) => {
+      const receipt = {
+        ...input,
+        contractVersion: 1,
+        sourceKey: 'gmail:inbound-v1',
+        receiptFingerprint: 'a'.repeat(64),
+        recordedAt: input.observedAt,
+      };
+      const duplicate = dispositionState.receipts.has(input.messageId);
+      dispositionState.receipts.set(input.messageId, receipt);
+      return { receipt, applied: !duplicate, duplicate };
+    },
+  ),
 }));
 
 // Mock gmail-auth
@@ -68,6 +91,16 @@ const mockGmail = {
   users: {
     messages: {
       list: vi.fn().mockResolvedValue({ data: { messages: [] } }),
+      get: vi.fn(),
+      modify: vi.fn().mockResolvedValue({ data: {} }),
+    },
+    history: {
+      list: vi.fn().mockResolvedValue({
+        data: { history: [], historyId: '200' },
+      }),
+    },
+    threads: {
+      list: vi.fn().mockResolvedValue({ data: { threads: [] } }),
       get: vi.fn(),
     },
     labels: {
@@ -102,15 +135,29 @@ vi.mock('./registry.js', () => ({
 }));
 
 import { GmailChannel, isOwnOutbound } from './gmail.js';
+import {
+  getStoredInboundMessageEvidence,
+  getRouterState,
+  recordGmailInboundDisposition,
+  setRouterState,
+} from '../db.js';
 import { logger } from '../logger.js';
 import { routeClassifiedEmail } from '../host-router.js';
 import { matchRule } from '../classify-rules-runner.js';
+import { matchHardFilter } from '../hard-filters.js';
+import {
+  isClassificationRouted,
+  isAutoArchiveLabel,
+  markClassificationRouted,
+} from '../classify-ipc-handlers.js';
 import { storeMessageDirect } from '../db.js';
 import {
+  parseEmailBody,
   parseEmailHeaders,
   resolveForwardedIdentity,
 } from '../gmail-parser.js';
 import { grantHostGmailResources } from '../gmail-ipc-policy.js';
+import { GmailInboundDispositionError } from '../gmail-inbound-disposition.js';
 
 const mockRouteClassifiedEmail = routeClassifiedEmail as ReturnType<
   typeof vi.fn
@@ -118,10 +165,26 @@ const mockRouteClassifiedEmail = routeClassifiedEmail as ReturnType<
 const mockMatchRule = matchRule as ReturnType<typeof vi.fn>;
 const mockStoreMessageDirect = storeMessageDirect as ReturnType<typeof vi.fn>;
 const mockParseEmailHeaders = parseEmailHeaders as ReturnType<typeof vi.fn>;
+const mockParseEmailBody = parseEmailBody as ReturnType<typeof vi.fn>;
 const mockResolveForwardedIdentity = resolveForwardedIdentity as ReturnType<
   typeof vi.fn
 >;
 const mockGrantHostGmailResources = grantHostGmailResources as ReturnType<
+  typeof vi.fn
+>;
+const mockRecordDisposition = recordGmailInboundDisposition as ReturnType<
+  typeof vi.fn
+>;
+const mockGetStoredInboundEvidence =
+  getStoredInboundMessageEvidence as ReturnType<typeof vi.fn>;
+const mockGetRouterState = getRouterState as ReturnType<typeof vi.fn>;
+const mockSetRouterState = setRouterState as ReturnType<typeof vi.fn>;
+const mockMatchHardFilter = matchHardFilter as ReturnType<typeof vi.fn>;
+const mockIsAutoArchiveLabel = isAutoArchiveLabel as ReturnType<typeof vi.fn>;
+const mockIsClassificationRouted = isClassificationRouted as ReturnType<
+  typeof vi.fn
+>;
+const mockMarkClassificationRouted = markClassificationRouted as ReturnType<
   typeof vi.fn
 >;
 
@@ -137,6 +200,25 @@ function createTestOpts() {
 describe('GmailChannel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    dispositionState.receipts.clear();
+    mockGetRouterState.mockReturnValue('100');
+    mockGetStoredInboundEvidence.mockReturnValue(undefined);
+    mockIsClassificationRouted.mockResolvedValue(false);
+    mockMatchHardFilter.mockReturnValue(null);
+    mockMatchRule.mockResolvedValue(null);
+    mockIsAutoArchiveLabel.mockResolvedValue(false);
+    mockRouteClassifiedEmail.mockResolvedValue({
+      routed: false,
+      action: 'unhandled',
+    });
+    mockParseEmailHeaders.mockReturnValue({
+      from: 'sender@example.com',
+      fromName: 'Sender',
+      replyTo: '',
+      subject: 'Test',
+    });
+    mockParseEmailBody.mockReturnValue('body');
+    mockResolveForwardedIdentity.mockReturnValue(null);
     vi.useFakeTimers();
   });
 
@@ -210,6 +292,17 @@ describe('GmailChannel', () => {
       expect(opts.onMessage).not.toHaveBeenCalled();
       expect(mockStoreMessageDirect.mock.invocationCallOrder[0]).toBeLessThan(
         mockRouteClassifiedEmail.mock.invocationCallOrder[0],
+      );
+      expect(mockMarkClassificationRouted).toHaveBeenCalledWith(
+        'msg-actionable',
+        'rules-runner-v1',
+      );
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'msg-actionable',
+          disposition: 'accepted',
+          reasonKey: 'classified_route_persisted',
+        }),
       );
     });
 
@@ -306,6 +399,372 @@ describe('GmailChannel', () => {
         messageId: 'msg-forwarded',
         emailAddresses: ['cherie@tandemcoach.co', 'prospect@example.com'],
       });
+    });
+  });
+
+  describe('durable terminal dispositions', () => {
+    const gmailMessage = (id: string, labelIds: string[] = ['INBOX']) => ({
+      data: {
+        id,
+        threadId: `thread-${id}`,
+        internalDate: '1787004000000',
+        labelIds,
+        payload: { headers: [] },
+      },
+    });
+
+    it('receipts ordinary persisted inbound before reporting success', async () => {
+      mockGmail.users.messages.get.mockResolvedValueOnce(
+        gmailMessage('msg-inbound'),
+      );
+      const opts = createTestOpts();
+      const channel = new GmailChannel(opts);
+      await channel.connect();
+
+      await expect(
+        (channel as any).fetchAndProcess('msg-inbound'),
+      ).resolves.toBe(true);
+
+      expect(opts.onMessage).toHaveBeenCalledOnce();
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'msg-inbound',
+          disposition: 'accepted',
+          reasonKey: 'inbound_message_persisted',
+        }),
+      );
+      expect(opts.onMessage.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRecordDisposition.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('receipts own outbound, Spam/Trash, empty, and hard-filter terminals', async () => {
+      const opts = createTestOpts();
+      const channel = new GmailChannel(opts);
+      await channel.connect();
+
+      mockGmail.users.messages.get.mockResolvedValueOnce(
+        gmailMessage('msg-own', ['SENT']),
+      );
+      await expect((channel as any).fetchAndProcess('msg-own')).resolves.toBe(
+        false,
+      );
+
+      (channel as any).pushMode = true;
+      mockGmail.users.messages.get.mockResolvedValueOnce(
+        gmailMessage('msg-spam', ['SPAM']),
+      );
+      await expect((channel as any).fetchAndProcess('msg-spam')).resolves.toBe(
+        false,
+      );
+
+      mockParseEmailBody.mockReturnValueOnce('');
+      mockParseEmailHeaders.mockReturnValueOnce({
+        from: 'sender@example.com',
+        fromName: 'Sender',
+        replyTo: '',
+        subject: '',
+      });
+      mockGmail.users.messages.get.mockResolvedValueOnce(
+        gmailMessage('msg-empty'),
+      );
+      await expect((channel as any).fetchAndProcess('msg-empty')).resolves.toBe(
+        false,
+      );
+
+      mockMatchHardFilter.mockReturnValueOnce({
+        id: 'filter-1',
+        reason: 'fixture',
+      });
+      mockGmail.users.messages.get.mockResolvedValueOnce(
+        gmailMessage('msg-filtered'),
+      );
+      await expect(
+        (channel as any).fetchAndProcess('msg-filtered'),
+      ).resolves.toBe(false);
+
+      expect(mockRecordDisposition.mock.calls).toEqual(
+        expect.arrayContaining([
+          [
+            expect.objectContaining({
+              messageId: 'msg-own',
+              reasonKey: 'own_outbound',
+            }),
+          ],
+          [
+            expect.objectContaining({
+              messageId: 'msg-spam',
+              reasonKey: 'spam_or_trash',
+            }),
+          ],
+          [
+            expect.objectContaining({
+              messageId: 'msg-empty',
+              reasonKey: 'empty_message',
+            }),
+          ],
+          [
+            expect.objectContaining({
+              messageId: 'msg-filtered',
+              reasonKey: 'hard_filter',
+            }),
+          ],
+        ]),
+      );
+    });
+
+    it('receipts completed rule auto-archive as accepted', async () => {
+      mockGmail.users.messages.get.mockResolvedValueOnce(
+        gmailMessage('msg-autoarchive'),
+      );
+      mockMatchRule.mockResolvedValueOnce({
+        rule_id: 200,
+        target_label: 'MrGru/notification',
+        pattern_type: 'sender_exact',
+        pattern_value: 'sender@example.com',
+      });
+      mockIsAutoArchiveLabel.mockResolvedValueOnce(true);
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+
+      await expect(
+        (channel as any).fetchAndProcess('msg-autoarchive'),
+      ).resolves.toBe(true);
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'msg-autoarchive',
+          disposition: 'accepted',
+          reasonKey: 'rule_auto_archive_completed',
+        }),
+      );
+    });
+
+    it('propagates receipt-store failure instead of silently changing route', async () => {
+      mockGmail.users.messages.get.mockResolvedValueOnce(
+        gmailMessage('msg-store-error'),
+      );
+      mockMatchHardFilter.mockReturnValueOnce({
+        id: 'filter-1',
+        reason: 'fixture',
+      });
+      mockRecordDisposition.mockImplementationOnce(() => {
+        throw new GmailInboundDispositionError(
+          'storage_unavailable',
+          'receipt store unavailable',
+        );
+      });
+      const opts = createTestOpts();
+      const channel = new GmailChannel(opts);
+      await channel.connect();
+
+      await expect(
+        (channel as any).fetchAndProcess('msg-store-error'),
+      ).rejects.toMatchObject({ code: 'storage_unavailable' });
+      expect(opts.onMessage).not.toHaveBeenCalled();
+      expect(mockMatchRule).not.toHaveBeenCalled();
+    });
+
+    it('bridges only an exact durable inbound row, including after restart', async () => {
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+
+      await expect(
+        (channel as any).ensureDurableDisposition('legacy-1'),
+      ).resolves.toBe(false);
+      mockGetStoredInboundEvidence.mockReturnValueOnce('ordinary_persisted');
+      await expect(
+        (channel as any).ensureDurableDisposition('legacy-1'),
+      ).resolves.toBe(true);
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'legacy-1',
+          disposition: 'accepted',
+          reasonKey: 'legacy_message_persisted',
+        }),
+      );
+    });
+
+    it('bridges a staged direct route only from its durable routed marker', async () => {
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+      mockGetStoredInboundEvidence.mockReturnValue('direct_route_staged');
+
+      await expect(
+        (channel as any).ensureDurableDisposition('route-1'),
+      ).rejects.toMatchObject({ code: 'storage_unavailable' });
+      expect(mockRecordDisposition).not.toHaveBeenCalled();
+
+      mockIsClassificationRouted.mockResolvedValueOnce(true);
+      await expect(
+        (channel as any).ensureDurableDisposition('route-1'),
+      ).resolves.toBe(true);
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'route-1',
+          disposition: 'accepted',
+          reasonKey: 'classified_route_persisted',
+        }),
+      );
+    });
+
+    it('receipts the thread-scanner outbound terminal without fetching content', async () => {
+      mockGmail.users.threads.list.mockResolvedValueOnce({
+        data: { threads: [{ id: 'thread-1' }] },
+      });
+      mockGmail.users.threads.get.mockResolvedValueOnce({
+        data: {
+          messages: [
+            {
+              id: 'msg-thread-own',
+              internalDate: '1787004000000',
+              labelIds: ['SENT'],
+            },
+          ],
+        },
+      });
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+
+      await expect((channel as any).pollThreadReplies()).resolves.toBe(0);
+      expect(mockGmail.users.messages.get).not.toHaveBeenCalled();
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'msg-thread-own',
+          disposition: 'rejected',
+          reasonKey: 'thread_outbound',
+        }),
+      );
+    });
+  });
+
+  describe('history cursor accounting', () => {
+    function historyWith(messageIds: string[]) {
+      return {
+        data: {
+          history: [
+            {
+              id: '150',
+              messagesAdded: messageIds.map((id) => ({ message: { id } })),
+            },
+          ],
+          historyId: '200',
+        },
+      };
+    }
+
+    function fullMessage(id: string) {
+      return {
+        data: {
+          id,
+          threadId: `thread-${id}`,
+          internalDate: '1787004000000',
+          labelIds: ['INBOX'],
+          payload: { headers: [] },
+        },
+      };
+    }
+
+    it('retains the prior cursor when any history candidate is unaccounted', async () => {
+      mockGmail.users.history.list.mockResolvedValueOnce(
+        historyWith(['msg-ok', 'msg-failed']),
+      );
+      mockGmail.users.messages.get
+        .mockResolvedValueOnce(fullMessage('msg-ok'))
+        .mockRejectedValueOnce(new Error('Gmail unavailable'));
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await (channel as any).processPush('200');
+
+      expect(dispositionState.receipts.get('msg-ok')).toBeDefined();
+      expect(dispositionState.receipts.get('msg-failed')).toBeUndefined();
+      expect(mockSetRouterState).not.toHaveBeenCalledWith(
+        'gmail_history_id',
+        expect.anything(),
+      );
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          unaccountedCount: 1,
+          start: '100',
+          retainedHistoryId: '100',
+        }),
+        'Gmail push retained history cursor for unaccounted candidates',
+      );
+    });
+
+    it('advances only after every history candidate has a durable receipt', async () => {
+      mockGmail.users.history.list.mockResolvedValueOnce(
+        historyWith(['msg-1', 'msg-2']),
+      );
+      mockGmail.users.messages.get
+        .mockResolvedValueOnce(fullMessage('msg-1'))
+        .mockResolvedValueOnce(fullMessage('msg-2'));
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await (channel as any).processPush('200');
+
+      expect(dispositionState.receipts.get('msg-1')).toBeDefined();
+      expect(dispositionState.receipts.get('msg-2')).toBeDefined();
+      expect(mockSetRouterState).toHaveBeenCalledWith(
+        'gmail_history_id',
+        '200',
+      );
+    });
+
+    it('reuses an existing receipt after restart without refetching the message', async () => {
+      dispositionState.receipts.set('msg-existing', {
+        messageId: 'msg-existing',
+        disposition: 'accepted',
+      });
+      mockGmail.users.history.list.mockResolvedValueOnce(
+        historyWith(['msg-existing']),
+      );
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await (channel as any).processPush('200');
+
+      expect(mockGmail.users.messages.get).not.toHaveBeenCalled();
+      expect(mockRecordDisposition).not.toHaveBeenCalled();
+      expect(mockSetRouterState).toHaveBeenCalledWith(
+        'gmail_history_id',
+        '200',
+      );
+    });
+
+    it('retains the cursor and processes nothing when page 20 is non-terminal', async () => {
+      for (let page = 1; page <= 20; page++) {
+        mockGmail.users.history.list.mockResolvedValueOnce({
+          data: {
+            history: [
+              {
+                id: String(100 + page),
+                messagesAdded: [{ message: { id: `msg-${page}` } }],
+              },
+            ],
+            historyId: String(100 + page),
+            nextPageToken: `page-${page + 1}`,
+          },
+        });
+      }
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await expect((channel as any).processPush('200')).rejects.toMatchObject({
+        name: 'HistoryPageLimitError',
+      });
+
+      expect(mockGmail.users.messages.get).not.toHaveBeenCalled();
+      expect(mockRecordDisposition).not.toHaveBeenCalled();
+      expect(mockSetRouterState).not.toHaveBeenCalledWith(
+        'gmail_history_id',
+        expect.anything(),
+      );
     });
   });
 

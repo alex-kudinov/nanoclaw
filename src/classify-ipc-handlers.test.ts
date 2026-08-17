@@ -56,6 +56,7 @@ import {
   handleClassifyBackfillConfirm,
   handleClassifyBackfillPending,
   handleClassifyCorrectionDetected,
+  isClassificationRouted,
   markClassificationRouted,
 } from './classify-ipc-handlers.js';
 
@@ -582,6 +583,29 @@ describe('markClassificationRouted', () => {
     await expect(
       markClassificationRouted('msg-66', 'rules-runner-v1'),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe('isClassificationRouted', () => {
+  it('returns only the exact durable routed marker', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ routed_at: '2026-08-17T22:00:00Z' }] })
+      .mockResolvedValueOnce({ rows: [{ routed_at: null }] });
+
+    await expect(
+      isClassificationRouted('msg-77', 'rules-runner-v1'),
+    ).resolves.toBe(true);
+    await expect(
+      isClassificationRouted('msg-78', 'rules-runner-v1'),
+    ).resolves.toBe(false);
+    expect(mockQuery.mock.calls[0][1]).toEqual(['msg-77', 'rules-runner-v1']);
+  });
+
+  it('propagates lookup failure so Gmail retains its cursor', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('pg pool drained'));
+    await expect(
+      isClassificationRouted('msg-77', 'rules-runner-v1'),
+    ).rejects.toThrow('pg pool drained');
   });
 });
 
