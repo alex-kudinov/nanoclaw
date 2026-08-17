@@ -7,7 +7,10 @@ natural claim. Exact replay was duplicate-only and the configuration was
 expired back to disabled. `NC-20260817-003` adds the unwired source-inventory
 and watermark/gap foundation in migration 122; `NC-20260817-004` applies it and
 deploys exact release `070cde38` dark with all three tables empty and
-admin-only. Gmail, webhook, topic, and business-condition adapters remain
+admin-only. `NC-20260817-005` adds a local, unwired, proposal-only inbound Gmail
+full-snapshot adapter; production registration, Google-client reads, durable
+candidate accounting, cursor/runtime wiring, and the separate label-correction
+source remain absent. Webhook, topic, and business-condition adapters remain
 absent.
 
 ## Purpose
@@ -135,7 +138,7 @@ This contract does not pretend that all existing sources are equally ready:
 | Family | Verified current mechanics | Normalized-adapter readiness |
 | --- | --- | --- |
 | time | one exact scheduled-task claim observer was proven and is now disabled; intended boundary is the occurrence identity | proven for that one no-cursor source only |
-| Gmail | inbound push and label-correction polling keep separate mutable history IDs in SQLite; both re-bootstrap on expiry, and inbound push explicitly accepts an unmeasured loss window | blocked until a source-specific bounded reconciliation path records and closes expiry gaps |
+| Gmail | inbound push and label-correction polling keep separate mutable history IDs in SQLite; both re-bootstrap on expiry, and inbound push explicitly accepts an unmeasured loss window | NC-005 locally proves a strict proposal-only full-snapshot contract for inbound push; activation remains blocked on durable per-message accounting, a real read-only Google wrapper, mailbox-size handling, source registration/bootstrap, shadow proof, and runtime wiring. Label correction remains unaddressed. |
 | webhook | `webhook_inbox` deduplicates non-null provider event IDs; some extractors still return NULL; only the older Trafft sweeper has a mutable source watermark | eligible only source by source after immutable ID and complete bounded scan proof |
 | topic | Gmail Pub/Sub exists as Gmail transport, not as a generic authenticated topic adapter | absent |
 | business condition | condition-oriented jobs/loops exist, but none emits the normalized occurrence contract from a complete versioned snapshot/window | absent |
@@ -232,7 +235,13 @@ deploys it dark while keeping source/event/state row counts at zero. Neither
 task seeds or registers a source or wires an adapter. Gate 8 remains open per later
 source: implement and prove the source-specific bounded scan/full snapshot,
 then register and observe it before claiming loss recovery. Gmail history
-expiry is explicitly blocked until that proof exists.
+expiry is explicitly blocked until that proof exists. NC-005 completes only the
+local proposal layer for the inbound source: a 404 can map to `gap_detected`,
+and `gap_reconciled` exists only after a capped unfiltered full snapshot reaches
+a terminal page, every unique message ID receives durable accepted/rejected
+evidence, the profile history head stays fixed, and the age/freshness budgets
+hold. It performs no Gmail read or store write, and current production behavior
+is unchanged. See `docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
 
 No source exception or external event may be manufactured merely to satisfy an
 activation test.

@@ -8,6 +8,58 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-005 — Add dark inbound Gmail gap-reconciliation proposals
+
+- Date: 2026-08-17T19:23Z
+- Owner/client: Codex
+- State: validating; local proposal-only adapter and authoritative contract are
+  implemented, with final continuity/diff/commit evidence still pending
+- Commit/PR: claim `10945e94` on
+  `codex/nc-20260817-005-gmail-gap-reconciliation`; implementation not yet
+  committed; no PR
+- Change class: C2 — local reversible source/contract addition with no external
+  or production write
+- Source reconciliation: inbound push owns SQLite `gmail_history_id`; the
+  label-correction job independently owns `gmail_label_poll_history_id`. Both
+  still re-bootstrap on history 404, and inbound push explicitly accepts an
+  unmeasured loss window. Gmail's history API directs stale-ID callers to a full
+  sync, so the adapter does not use a recent-date or label-filtered shortcut.
+- Implementation: `src/company-gmail-reconciliation.ts` derives one immutable,
+  non-address inbound source with no authority; maps a 404 to a deterministic
+  `gap_detected` proposal; and constructs `gap_reconciled` only for the exact
+  durable gap after an unfiltered, Spam/Trash-inclusive full snapshot reaches a
+  terminal page within 20 x 500 IDs. Every ID must be valid, unique, and
+  durably accepted/rejected; the before/after profile head must be identical;
+  the gap must be at most eight days old and the attempt at most twenty minutes.
+  The injected port exposes no write, delivery, task, agent, or action method.
+- Fail-closed proof: wrong source/state/gap, stale target, over-age/freshness,
+  unavailable source, head behind/drift, oversized/non-terminal/cyclic pages,
+  invalid/duplicate IDs, and unknown/malformed accounting all throw before a
+  reconciliation proposal exists. Deterministic replay yields the same event
+  and evidence digest for the same closed snapshot.
+- Verification: exact Node 22.23.2 passes 61/61 focused Gmail/source tests,
+  172/172 combined Company OS tests, typecheck, root build, 638/638
+  email-critical tests, and independent runner build plus 43/43 tests. The
+  ordinary unrestricted full suite is 2,624/2,625; its sole failure is the
+  unchanged unrelated CNPC wrapper-string assertion expecting literal
+  `folder: 'cnpc'`. Root formatting, schema-sanitizer self-test, and capability
+  continuity pass. Documentation continuity is rerun after this required entry.
+- Deployment/migration: not applicable. No production schema/data/config,
+  source row, watermark event/state, Gmail call, SQLite cursor, service,
+  channel, message, task, group, prompt, skill, capability, approval, action,
+  push, or merge changed. The current 404 reset remains live and unmodified.
+- Rollback/recovery: remove the new pure module/test and documentation updates;
+  there is no runtime, database, or external state to restore.
+- Documentation: added `docs/COMPANY-OS-GMAIL-RECONCILIATION.md`; updated the
+  trigger contract, project map, Company OS roadmap, active work, and this
+  changelog.
+- Follow-ups: a separate production-facing task must define durable per-message
+  accounting, large-mailbox resumability, the exact read-only Google wrapper,
+  source registration/bootstrap, bounded shadow proof, and only then runtime
+  gap/recovery wiring plus watermark-age attention. Label-correction recovery
+  remains a separate source. A forced expiry or synthetic production email is
+  not authorized.
+
 ### NC-20260817-004 — Deploy the trigger-source watermark foundation dark
 
 - Date: 2026-08-17T18:17Z

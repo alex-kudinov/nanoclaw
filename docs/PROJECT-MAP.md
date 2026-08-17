@@ -296,6 +296,19 @@ no daemon/adapter imports the module.
 Current Gmail push and label-poll history-expiry behavior therefore remains a
 known loss window, not a recovery claim.
 
+`NC-20260817-005` adds a local-only inbound-Gmail recovery proposal layer. An
+expired history cursor can map to a content-free `gap_detected` event, while
+`gap_reconciled` is constructed only after an unfiltered, Spam/Trash-inclusive
+full-mailbox listing reaches a terminal page within 20 pages, every unique
+message ID has durable accepted/rejected evidence, the before/after Gmail
+profile history head is identical, and the gap-age/freshness budgets hold. The
+module is pure/injected and no runtime entry point imports it. It does not call
+Gmail, register or bootstrap a production source, write a watermark, recover a
+message, or alter the existing SQLite reset. Current per-message rejection
+evidence and large-mailbox resumability are not yet sufficient for activation;
+the separate label-correction cursor remains unaddressed. See
+`docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container
@@ -423,6 +436,7 @@ dependencies, not active runtime channels in this snapshot.
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
 | Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-job-work-shadow.ts`, `src/company-job-work-shadow-cli.ts`, `src/company-work-report.ts`, migrations 118-119, `docs/COMPANY-OS-WORK-LEDGER.md`, `docs/COMPANY-OS-JOB-LEDGER.md` | Mailman/Sales projection plus the multi-workflow bounded report are live/non-authoritative. NC-016/017 add and live-prove the host-job state/receipt contract and explicit fixed-window CLI for five runs. SQLite remains authority and neither job component is daemon/scheduler-wired. |
+| Gmail gap reconciliation | `src/company-gmail-reconciliation.ts`, `docs/COMPANY-OS-GMAIL-RECONCILIATION.md` | NC-005 local, unwired proposal-only adapter for inbound history expiry; terminal/stable/exact full-snapshot proof exists synthetically, while live Gmail reads, durable candidate accounting, source registration/bootstrap, large-mailbox completion, cursor wiring, and label-poll recovery remain absent. |
 | External-write control | `src/action-safety.ts`, `src/action-safety-drill-exec.ts`, `docs/ACTION-SAFETY-CONTROL.md` | deployed/default-off common action envelope and dynamic global/per-system brakes; exact release `47019c9` live-verifies Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, Hive/Firestore, and Things; in-flight interruption, standalone scripts, remaining integrations, ceilings, and demotion remain open |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
@@ -598,6 +612,10 @@ The modern namespace is `business_v2`, including concepts such as:
   the schema and deploys exact release `070cde38` dark with zero source,
   watermark-event, and state rows plus zero non-admin grants. Current source
   cursors and adapters remain unchanged.
+- `NC-20260817-005` adds no schema or production rows. Its pure injected
+  inbound-Gmail adapter can construct validated gap/reconciliation proposals
+  only; the live migration-122 tables remain at the NC-004 dark boundary until
+  separately registered/bootstrap work occurs.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.
@@ -1650,6 +1668,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
 | `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
 | `docs/COMPANY-OS-JOB-LEDGER.md`         | Campanero host-job run identity, state, receipt, privacy, and activation contract | NC-017 is deployed/live-verified for one five-run window; SQLite remains authoritative and there is no daemon/scheduler wiring |
+| `docs/COMPANY-OS-GMAIL-RECONCILIATION.md` | inbound Gmail history-expiry source, full-snapshot, accounting, refusal, and promotion contract | NC-005 is local/proposal-only; current Gmail ingestion and both SQLite history cursors remain unchanged |
 | `docs/ACTION-SAFETY-CONTROL.md`         | host action envelope, safety precedence, covered boundaries, and activation/drill transaction | seven-system boundary through Things is live-proven in exact release `47019c9` under `NC-20260816-009`; controls remain default-off and residuals explicit |
 | `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | Campanero and Booking selective canaries are live under `NC-20260816-006`/`010`; global rollout, egress, remaining raw-secret removal, and wider canaries remain open |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |

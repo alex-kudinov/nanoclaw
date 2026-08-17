@@ -70,7 +70,7 @@ company-wide merely because one workflow implements them.
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
 | P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface; NC-017 adds a proven host-job source. Exact release `a2e6d35` activates NC-018's first combined recurring brief for one owner-confirmed operator, and active release `baed66d` preserves it; its first natural Chief delivery, exact named acknowledgment, and threaded receipt are durable with aggregate health and fail-closed state. Normalized correlation, weekly quality/cost evidence, and wider coverage remain incomplete. |
 | P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
-| P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable. `NC-20260817-003` implements the generic source-watermark contract: monotonic CAS advance, complete accepted/rejected accounting, gap freeze, exact-gap reconciliation, append-only history, and zero agent grants pass disposable PostgreSQL rehearsal. `NC-20260817-004` applies migration 122 and deploys it dark with zero source/event/state rows and no runtime import. Gmail push and label-poll still re-bootstrap after expiry, so source registration, bounded reconciliation, watermark-age alerts, and production recovery proof remain open. |
+| P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable. `NC-20260817-003` implements the generic source-watermark contract: monotonic CAS advance, complete accepted/rejected accounting, gap freeze, exact-gap reconciliation, append-only history, and zero agent grants pass disposable PostgreSQL rehearsal. `NC-20260817-004` applies migration 122 and deploys it dark with zero source/event/state rows and no runtime import. `NC-20260817-005` adds a local proposal-only inbound-Gmail full-snapshot adapter that refuses non-terminal, unstable, over-budget, duplicate, or incompletely accounted scans. It is not registered or wired; durable per-message accounting, large-mailbox completion, real read-only Gmail shadow proof, watermark-age alerts, production recovery, and label-poll expiry remain open. |
 | P1.8 migration discipline | partial | Ordered tracked `business_v2` migrations and structure-only schema checks exist; checksums, fresh-database CI, portability, and universal migration/restore gates remain incomplete. |
 | P1.9 canonical identity and lineage | partial | Party-scoped authorization, entry/email resolution, and canonical Slack lead threads improved lineage; first-touch and cross-process lineage are not universal. |
 | P1.10 privacy and records governance | still proposed | Data is protected by scoped roles and handling rules in places, but classification, retention, deletion, legal hold, and subject-access operations are not one accepted system. |
@@ -1490,6 +1490,19 @@ state tables remain empty and admin-only; no runtime imports the store. Gmail's
 existing history-expiry loss window remains open pending a source-specific
 adapter gate.
 
+R3 inbound-Gmail reconciliation dark checkpoint: `NC-20260817-005` adds a
+pure, injected proposal layer for the inbound push source only. A history 404
+maps to a content-free gap proposal that preserves the prior cursor. A
+reconciliation proposal requires an unfiltered, Spam/Trash-inclusive full
+mailbox snapshot to reach a terminal page inside 20 pages, exact durable
+accepted/rejected evidence for every unique message ID, a stable before/after
+profile history head, and fixed age/freshness budgets. Synthetic tests cover
+success, deterministic replay, and fail-closed head, pagination, candidate,
+accounting, source, age, and freshness cases. The module does not call Gmail,
+register/bootstrap a source, write a watermark, change the current 404 reset,
+or cover label correction. Current rejection evidence and mailbox-size handling
+remain explicit activation blockers.
+
 R4 first operator-loop checkpoint: exact release `a2e6d35` activates
 `NC-20260816-018` with live migration 120, an additive host-only
 case/brief/event ledger, and recurring Chief-channel delivery over
@@ -1822,9 +1835,12 @@ Implementation checkpoint (2026-07-29):
     replay, then expires config. `NC-20260817-003` adds the dark
     inventory/watermark target with fail-closed gap semantics;
     `NC-20260817-004` applies and deploys that empty admin-only schema without
-    runtime wiring. Populated production source registration, source-specific
-    loss recovery, recurring definitions, other adapters, and task
-    create/resume wiring remain separately gated.
+    runtime wiring. `NC-20260817-005` adds the local proposal-only inbound-Gmail
+    full-snapshot contract, but performs no live read, registration, bootstrap,
+    cursor write, or recovery. Durable candidate accounting, large-mailbox
+    completion, production source registration/shadow/runtime proof, label-poll
+    recovery, recurring definitions, other adapters, and task create/resume
+    wiring remain separately gated.
 25. `CAP-001` — define versioned skill packages with declared inputs, outputs,
     context, capability dependencies, compatible execution profiles,
     evaluation pack, owner, and rollback; skill selection never grants an
