@@ -66,9 +66,9 @@ company-wide merely because one workflow implements them.
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
 | P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales foundation; `NC-20260816-001` applies it and proves bounded shadow/replay; `NC-20260816-014/015` add and deploy its read-only exception report. `NC-20260816-016/017` add, deploy, and live-verify the second Campanero host-job contract: five exact runs, 15 events, five receipts, duplicate-only replay, and unchanged source/email parity. SQLite remains authority; recurring observation and either workflow's promotion remain open. |
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
-| P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places. `NC-20260816-016/017` define and live-prove one immutable `job_run_logs.id` execution contract without controlling it, while exposing the `already_running` durability gap. `NC-20260817-001` adds the local normalized occurrence/replay contract across five trigger kinds; `NC-20260817-002` adds a local default-off candidate for one exact post-claim scheduled-task boundary. Production proof, definitions, skipped attempts, launchd, n8n, reapers, other adapters, and the full trigger inventory remain incomplete. |
+| P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places. `NC-20260816-016/017` define and live-prove one immutable `job_run_logs.id` execution contract without controlling it, while exposing the `already_running` durability gap. `NC-20260817-001` adds the normalized occurrence/replay contract across five trigger kinds; exact release `baed66d` under `NC-20260817-002` applies its append-only store and live-proves one natural scheduled-task boundary plus duplicate-only replay without controlling the task, then expires config back to disabled. Recurring definitions, skipped attempts, launchd, n8n, reapers, other adapters, and the full trigger inventory remain incomplete. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
-| P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface; NC-017 adds a proven host-job source. Exact release `a2e6d35` activates NC-018's first combined recurring brief for one owner-confirmed operator; its first natural Chief delivery, exact named acknowledgment, and threaded receipt are durable with aggregate health and fail-closed state. Normalized correlation, weekly quality/cost evidence, and wider coverage remain incomplete. |
+| P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface; NC-017 adds a proven host-job source. Exact release `a2e6d35` activates NC-018's first combined recurring brief for one owner-confirmed operator, and active release `baed66d` preserves it; its first natural Chief delivery, exact named acknowledgment, and threaded receipt are durable with aggregate health and fail-closed state. Normalized correlation, weekly quality/cost evidence, and wider coverage remain incomplete. |
 | P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
 | P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable; Gmail history-expiry reconciliation and a common source-watermark contract remain open. |
 | P1.8 migration discipline | partial | Ordered tracked `business_v2` migrations and structure-only schema checks exist; checksums, fresh-database CI, portability, and universal migration/restore gates remain incomplete. |
@@ -1454,22 +1454,26 @@ R3 trigger-contract dark checkpoint: `NC-20260817-001` defines one strict,
 content-free occurrence envelope for time/schedule, Gmail, webhook, topic, and
 business-condition sources. Versioned definition, occurrence, and semantic
 hashes make exact delivery replay duplicate-only and same-identity fact drift a
-hard conflict. Unapplied migration 121 adds one admin-only append-only table;
+hard conflict. Migration 121 adds one admin-only append-only table;
 the injected host store performs no task, work-ledger, skill, capability,
 approval, or action mutation. Disposable PostgreSQL proves all five kinds,
 exact replay, conflict refusal, append-only enforcement, zero non-admin grants,
-populated rollback refusal, and empty rollback. Production schema, adapters,
-watermarks, inventory, task wiring, and authority promotion remain later R3
-gates.
+populated rollback refusal, and empty rollback. NC-002 subsequently applied the
+schema for one bounded source; other adapters, watermarks, inventory, task
+wiring, and authority promotion remain later R3 gates.
 
-R3 first-adapter candidate: `NC-20260817-002` places a default-off,
+R3 first-adapter activation: exact release `baed66d` under `NC-20260817-002`
+deploys a default-off,
 fail-isolated observer after the existing SQLite scheduled-task claim. One
 exact task ID and intended boundary are configured through a release-bound,
 redacted, backup-producing transaction; only hashed schedule facts reach the
-admin-only trigger store. Local tests and disposable PostgreSQL prove mapping,
-exact replay, semantic conflict, append-only enforcement, permission
-minimization, and rollback policy. Production migration, dark release,
-configuration, natural claim, and non-interference evidence remain open gates.
+admin-only trigger store. After drained migration/dark deployment, one natural
+`2026-08-17T14:00:00.000Z` claim inserted exactly once and exact replay was
+duplicate-only. Configuration was expired back to disabled with 1 matched/1
+applied/0 failures retained in health. Ambient Sales-email shadow and existing
+exception-loop changes were separately attributable; the trigger path created
+no task, work transition, message, or action. Other source families, recurring
+definitions, watermarks, loss recovery, and authority promotion remain open.
 
 R4 first operator-loop checkpoint: exact release `a2e6d35` activates
 `NC-20260816-018` with live migration 120, an additive host-only
@@ -1797,11 +1801,11 @@ Implementation checkpoint (2026-07-29):
 24. `REL-003` — define one normalized trigger contract for time, Gmail,
     webhook, topic, and business-condition sources; make schedules a trigger
     subtype and require replay/deduplication evidence. `NC-20260817-001` adds
-    the local dark contract, unapplied durable store, and synthetic five-family
-    replay/conflict proof. `NC-20260817-002` adds the local default-off
-    scheduled-task claim adapter candidate; production proof, other adapters,
-    watermarks, inventory, and task create/resume wiring remain separately
-    gated.
+    the dark contract, durable store, and synthetic five-family replay/conflict
+    proof. Exact release `baed66d` under `NC-20260817-002` applies the store and
+    live-proves one default-off scheduled-task boundary plus duplicate-only
+    replay, then expires config. Other adapters, recurring definitions,
+    watermarks, inventory, and task create/resume wiring remain separately gated.
 25. `CAP-001` — define versioned skill packages with declared inputs, outputs,
     context, capability dependencies, compatible execution profiles,
     evaluation pack, owner, and rollback; skill selection never grants an

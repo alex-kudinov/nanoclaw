@@ -37,16 +37,18 @@ SQLite read-only, selects no result content, and is unscheduled/default-off.
 `NC-20260816-018` applies migration 120 and activates the separate host-owned
 operator-attention loop in exact release `a2e6d35`; one natural brief, exact
 named acknowledgment, and threaded receipt are verified without changing the
-source work ledger. `NC-20260817-001` adds an unapplied migration-121 target
+source work ledger. `NC-20260817-001` adds migration 121's normalized target
 for content-free normalized trigger occurrences across time, Gmail, webhook,
-topic, and business-condition sources. It has no runtime producer and grants
-no task, skill, capability, approval, or action authority. See
+topic, and business-condition sources. It grants no task, skill, capability,
+approval, or action authority. See
 `docs/COMPANY-OS-TRIGGER-CONTRACT.md`.
-`NC-20260817-002` adds the local default-off producer candidate for one exact
-scheduled-task claim boundary. It hashes only bounded schedule facts and writes
-through the same host-admin store after SQLite's authoritative claim. It has no
-prompt/result access and no task/message/action authority; production
-migration, deployment, configuration, and natural-row evidence remain pending.
+`NC-20260817-002` applied migration 121 and deployed exact release `baed66d`
+with the default-off producer for one exact scheduled-task claim boundary. It
+hashes only bounded schedule facts and writes through the host-admin store after
+SQLite's authoritative claim. One natural boundary inserted once, exact replay
+was duplicate-only, and configuration was expired back to disabled. The live
+table retains one append-only row. The producer has no prompt/result access and
+no task/message/action authority.
 
 ---
 

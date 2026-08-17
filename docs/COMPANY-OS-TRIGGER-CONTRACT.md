@@ -1,10 +1,11 @@
 # Company OS normalized trigger contract
 
 Status: the strict foundation was completed locally under `NC-20260817-001`.
-`NC-20260817-002` adds a default-off, exact-boundary scheduled-task observer as
-an unapplied/unreleased activation candidate. Migration 121 remains unapplied
-until that task records a separate production gate. Gmail, webhook, topic, and
-business-condition adapters remain absent.
+`NC-20260817-002` applied migration 121 and deployed exact release `baed66d`,
+then live-proved one default-off, exact-boundary scheduled-task observer on one
+natural claim. Exact replay was duplicate-only and the configuration was
+expired back to disabled. Gmail, webhook, topic, and business-condition
+adapters remain absent.
 
 ## Purpose
 
@@ -92,7 +93,7 @@ empty; once evidence exists, runtime rollback leaves it dormant.
 
 ## First source adapter: scheduled-task claim observation
 
-The NC-002 candidate observes only the scheduler's existing successful
+The NC-002 observer observes only the scheduler's existing successful
 compare-and-swap claim. The scheduler passes the adapter the already-loaded
 task ID, schedule type/value, and exact pre-claim `next_run` value. The adapter:
 
@@ -118,6 +119,32 @@ An occurrence row proves only that the already-authoritative scheduler claimed
 that boundary. The task's eventual success, failure, messages, approvals, or
 business outcome remain separate evidence.
 
+## Production activation evidence
+
+Exact release `baed66dba21dd35edf4d472c537a1d69c5fa867a` was independently
+verified and deployed disabled after a zero-work drain, mode-0600 PostgreSQL
+backup, and explicit migration-121 apply. Dark health showed zero calls and
+zero rows. The existing weekday task's intended
+`2026-08-17T14:00:00.000Z` boundary was then selected through the redacted,
+backup-producing helper without changing or creating a task.
+
+The scheduler naturally claimed that boundary at `2026-08-17T14:00:11.382Z`.
+Daemon health recorded one call, one match, one applied occurrence, and zero
+failures. The durable table contains exactly one content-free
+`time`/`scheduled_task` row; an exact activated-release replay returned
+duplicate and row count remained one. Configuration was then expired back to
+disabled while the daemon retained its one-call evidence counters. The natural
+task later completed under scheduler authority; its result was not inspected
+and is not trigger outcome evidence.
+
+Normal activity during the wait was separately attributable to existing email,
+Company Work shadow, and exception-loop producers. Task/job/channel definition
+counts stayed fixed, active email actions stayed zero, and the trigger observer
+wrote no task, Company Work, approval, message, capability, or action state.
+The deployment restart did cause the already-enabled daily exception loop to
+post its next deduplicated Chief brief; that existing producer and its three
+`briefed` events are not trigger-adapter output.
+
 ## Authority boundaries
 
 Recording an occurrence:
@@ -135,7 +162,7 @@ acknowledgment, and outcome validation.
 
 ## Activation gates
 
-The NC-001 foundation stops before production. NC-002 must separately:
+NC-002 completed gates 1-7 for the first scheduled-time source:
 
 1. reconcile the then-live schema and trigger inventory;
 2. back up PostgreSQL and explicitly apply only migration 121;
@@ -145,8 +172,15 @@ The NC-001 foundation stops before production. NC-002 must separately:
 5. prove that one natural claim inserts once and exact replay is duplicate;
 6. compare schedule/channel/work/action fingerprints before and after;
 7. retain task creation/resume and every action authority behind later gates;
-8. define source watermarks and bounded reconciliation before claiming loss
-   recovery, especially for Gmail history expiry.
+
+Gate 8 remains open for later adapters: define source watermarks and bounded
+reconciliation before claiming loss recovery, especially for Gmail history
+expiry.
 
 No source exception or external event may be manufactured merely to satisfy an
 activation test.
+
+These gates prove only the single scheduled-time source and boundary above.
+Every recurring definition, Gmail/webhook/topic/business-condition adapter,
+source inventory/watermark, loss-recovery claim, task create/resume operation,
+and action authority remains a separate tracked and authorized milestone.

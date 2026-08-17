@@ -10,11 +10,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260817-002 — Activate one bounded scheduled-time trigger source
 
-- Date: 2026-08-17T12:44Z
+- Date: 2026-08-17T14:04Z
 - Owner/client: Codex
-- State: ready_for_deploy; local candidate and disposable database proof
-  complete, production migration/deployment/configuration not started
-- Commit/PR: claim `5561cfe6`; implementation `96e93494` on
+- State: complete; exact release, migration, natural one-boundary occurrence,
+  duplicate-only replay, config expiry, and non-interference attribution verified
+- Commit/PR: claim `5561cfe6`; implementation `96e93494`; deployed release
+  `baed66dba21dd35edf4d472c537a1d69c5fa867a` on
   `codex/nc-20260817-002-time-trigger-activation`; no PR
 - Change class: C2 — additive production schema target, exact-release service
   deployment, and one append-only internal trigger occurrence
@@ -30,7 +31,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   exclusive same-mode backup, and writes atomically. Dynamic configuration
   does not require a restart. Recording grants no task create/resume, agent,
   skill, capability, approval, message, or action authority.
-- Local verification so far: 49/49 focused trigger/scheduler tests, exact Node
+- Local verification: 49/49 focused trigger/scheduler tests, exact Node
   22.23.2 typecheck, root build, 105/105 combined Company OS tests, 638/638
   email-critical tests, independent runner build plus 43/43 tests, formatting,
   documentation continuity/capability checks, and diff checks pass. The
@@ -43,17 +44,67 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   exposed zero non-admin grants, refused populated rollback with the row
   intact, and removed an empty table in a second database. The cluster and
   smoke script were removed.
-- Production boundary: current read-only preflight found exact release
+- Production preflight: initial read-only discovery found exact release
   `a2e6d35`, sole PID 4213, connected Slack/Gmail, empty outgoing/waiting and
   active-email queues, one ambient Sales container, migrations 118-120 live,
   and migration 121 absent. SQLite has one active cron whose next natural
   boundary is `2026-08-17T14:00:00.000Z`. No drain, backup, migration, release,
   config, task, message, or production trigger row changed during preflight.
-- Pending gates: clean implementation/release commits, immutable archive and
-  extraction proof, fresh drain, production backup and explicit migration 121
-  apply, all-adapters-off deployment,
-  redacted one-boundary activation, natural insert plus duplicate replay, and
-  protected-state comparison.
+- Release: exact commit `baed66d` binds source tree
+  `b27b68cf572ac5b4945239b8233fb9d8967223a2`, 704-file artifact digest
+  `db45a60a58d5be706e5c02bfd87347e44cf03f9abeeac25fd39a2a660597143f`,
+  Node 22.23.2, and archive SHA-256
+  `47796922cd7bb45e942c8fb8ae1af3bf44c148bb8188f12a9bc95cfb63aa27a6`.
+  Clean build plus fresh local and production extraction passed the bundled
+  verifier.
+- Drain/backup/migration: ambient work was allowed to finish naturally from a
+  peak of five containers. The final gate had zero active/waiting containers,
+  outgoing queue depth zero, and zero active email actions. Mode-0600 backup
+  `company-trigger-before-121-2026-08-17T13-24-49Z.dump` is 54,091 bytes,
+  contains 79 selected catalog entries, and has SHA-256
+  `03bb242b240f0b7202330b1774626c9f4691030049ebbff63ecedab13ce8175b`.
+  Only release-bound migration 121 (SHA-256
+  `c8f06c5642965557c02a37c4a47d82b42246bc278a197bbb4aef133fe2b394a1`)
+  was applied. Its empty table was admin-owned and append-only with zero
+  non-admin table/sequence grants and zero forbidden raw/authority columns.
+- Dark deployment: recovery-safe activation moved exact release `a2e6d35` to
+  `baed66d`, retaining rollback plist
+  `com.nanoclaw.plist.rollback-a2e6d35c3d50-2026-08-17T13-27-07-780Z`.
+  One Node 22.23.2 listener proved exact release/code-root identity, connected
+  Gmail/Slack, empty queues, disabled observer with zero calls, zero active
+  email actions, and zero trigger rows.
+- Natural canary and replay: value-redacted configuration selected the one
+  existing active weekday task and exact intended boundary
+  `2026-08-17T14:00:00.000Z`, retaining
+  `.env.rollback-company-time-trigger-2026-08-17T13-28-07-142Z`. Its natural
+  SQLite claim at `2026-08-17T14:00:11.382Z` produced daemon health of one
+  call/one match/one apply/zero failures and exactly one admin-only
+  `time`/`scheduled_task` row. The task advanced to its next natural boundary;
+  it then completed under scheduler authority at
+  `2026-08-17T14:02:30.772Z`, moving task-run count 207 to 208. Result content
+  was not inspected and remains separate scheduler evidence. An exact release-bound
+  replay returned duplicate and row count stayed one. The one-boundary config
+  was then expired to disabled, retaining
+  `.env.rollback-company-time-trigger-2026-08-17T14-01-54-108Z`; health keeps
+  the 1/1/1/0 counters while exposing zero configured tasks.
+- Non-interference and ambient attribution: task/job/channel definition counts
+  remained 11, 22 (17 enabled), and 20, and active email actions stayed zero.
+  Three ordinary approved-email actions completed during the wait, adding 15
+  correctly staged events. The pre-existing shadow projected the two eligible
+  Sales-email actions as 2 items/16 events/8 receipts; Company Work moved from
+  9 items/version sum 35/44 events/18 receipts to 11/49/60/26. The existing
+  exception loop's post-restart daily run posted Chief brief 2 for the same
+  three cases and added three `briefed` events, moving attention state from
+  3 cases/1 brief/9 events to 3/2/12. Those rows name their existing producers;
+  the new observer wrote only the separate trigger occurrence and has no work,
+  message, or action path.
+- Boundary: production migration/deploy/configuration and one natural internal
+  occurrence did occur. No synthetic task run, task create/resume, schedule
+  definition/prompt, agent/skill/capability, trigger-created approval,
+  trigger-driven customer or internal message, Company Work transition,
+  action authority, push, or merge
+  occurred. Other trigger families, recurring definitions, source watermarks,
+  loss recovery, and every task/action promotion remain separately gated.
 
 ### NC-20260817-001 — Add the normalized Company OS trigger contract
 

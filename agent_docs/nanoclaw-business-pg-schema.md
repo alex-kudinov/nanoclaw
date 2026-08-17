@@ -10,10 +10,13 @@ and structurally verified in production on 2026-07-30. Run
 these overlays with generated evidence.
 
 Structure-only Company OS overlay: migrations 118, 119, and 120 are live under
-`NC-20260816-001/017/018`. Exact release `a2e6d35` runs migration 120's active
-one-operator attention loop; one natural brief, exact acknowledgment, and
-threaded receipt are verified. Migration 121 below is the local unapplied
-target created by `NC-20260817-001`, not running-schema evidence.
+`NC-20260816-001/017/018`. Exact active release `baed66d` preserves migration
+120's one-operator attention loop; its first natural brief, exact
+acknowledgment, and threaded receipt are verified. Migration 121 below was
+applied under `NC-20260817-002`; exact release `baed66d` live-proved one natural scheduled-time
+occurrence plus duplicate-only replay, then expired the observer configuration
+back to disabled. The live append-only table contains one row. This overlay is
+structure-only; running PostgreSQL remains row/count/permission authority.
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -132,7 +135,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_trigger_occurrences (migration 121 local target, unapplied)
+## business_v2.company_trigger_occurrences (migration 121 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_trigger_occurrences_id_seq'::regclass)

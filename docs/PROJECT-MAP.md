@@ -262,23 +262,26 @@ current occurrences and the threaded receipt is posted.
 See `docs/COMPANY-OS-EXCEPTION-LOOP.md`; production state must be taken from the
 NC-018 active-work/changelog evidence, not repository presence.
 
-`NC-20260817-001` adds the next local-only R3 foundation: an unwired
+`NC-20260817-001` added the local R3 foundation: an initially unwired
 content-free trigger-occurrence contract for `time`, `gmail`, `webhook`,
-`topic`, and `business_condition` sources plus unapplied migration 121. Stable
+`topic`, and `business_condition` sources plus migration 121. Stable
 definition/occurrence/fingerprint identities make exact replay converge and
 semantic drift fail closed. The table is append-only/admin-only and stores no
-raw source content. The module is not imported by the daemon and cannot
+raw source content. The common store itself cannot
 create/resume work, select a skill, or grant approval/capability/action
 authority. See `docs/COMPANY-OS-TRIGGER-CONTRACT.md`.
 
-`NC-20260817-002` adds the first source-adapter activation candidate. After the
+`NC-20260817-002` deployed the first bounded source adapter in exact release
+`baed66d` and applied migration 121. After the
 existing SQLite scheduler successfully claims a task's exact pre-claim
 `next_run`, a default-off fire-and-forget observer can record only a normalized
 time occurrence for one configured task ID and one exact boundary. It hashes
 the ID/schedule facts, receives no prompt/chat/result content, and cannot block
-or retry the task. The module, health surface, and release-bound redacted
-configuration transaction are local/unreleased; migration 121 and production
-configuration remain unchanged until separately recorded deployment gates.
+or retry the task. One natural `2026-08-17T14:00:00.000Z` claim inserted
+exactly one occurrence; exact replay was duplicate-only, and the one-boundary
+configuration was expired back to disabled with zero daemon failures. The
+table remains live with that one append-only row. No task create/resume or
+action authority was introduced.
 
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
@@ -552,7 +555,8 @@ The modern namespace is `business_v2`, including concepts such as:
   items/15 events/5 receipts, and replay was duplicate-only. SQLite remains
   authority; the observer is not scheduled or daemon-wired.
 - `NC-20260816-018` deploys migration 120 plus a daemon-owned attention loop in
-  exact release `a2e6d35`. The three live admin-only
+  exact release `a2e6d35`; active release `baed66d` preserves it. The three live
+  admin-only
   tables store exact reason cases, deduplicated/bound Slack briefs, and
   append-only acknowledgment/resolution evidence without raw customer, email,
   job-output, approval, prompt, or arbitrary payload content. They grant no
@@ -561,16 +565,17 @@ The modern namespace is `business_v2`, including concepts such as:
   reason cases and durably posted one natural Chief brief without changing the
   source work ledger. The named reaction acknowledged all three current cases
   with a posted threaded receipt; natural source resolution remains pending.
-- `NC-20260817-001` adds local, unapplied migration 121 plus an unwired typed
-  store for normalized trigger occurrences. The target is admin-only,
+- `NC-20260817-001` added migration 121 plus a typed store for normalized
+  trigger occurrences. The target is admin-only,
   append-only, content-free, and replay-safe across five closed source kinds.
-  It is repository target state only: production migration, source adapters,
-  task creation/resume, skills, and every action authority remain unchanged.
-- `NC-20260817-002` adds a local activation candidate that can append one
+  `NC-20260817-002` records its exact production application; task
+  creation/resume, skills, and every action authority remain unchanged.
+- `NC-20260817-002` deploys the default-off observer that can append one
   allowlisted scheduled-task boundary after SQLite has already claimed it.
-  Source reads remain content-free and scheduler authority is unchanged. The
-  migration, release, config, and natural occurrence are not production facts
-  until the NC-002 change record crosses those gates.
+  Source reads remain content-free and scheduler authority is unchanged. One
+  natural boundary inserted once, exact replay was duplicate-only, and config
+  is disabled after the canary. Other source adapters and every task/action
+  promotion remain absent.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.

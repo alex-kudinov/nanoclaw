@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260817-002` | Apply the normalized-trigger schema and live-prove one bounded, source-read-only scheduled-task occurrence observer without granting task or action authority | Codex | `codex/nc-20260817-002-time-trigger-activation` @ `96e93494` (local implementation) | `ready_for_deploy` | C2 | Committed and locally validated candidate: exact post-claim observer, one-task/one-boundary dynamic config, aggregate health, release-bound redacted backup/apply/restore helper, scheduler isolation, tests, and authority docs. Production migration/deployment/config remain pending. Excludes task definition/state/prompt changes, synthetic task runs, task creation/resume, scheduler authority, agent/skill/capability changes, customer or Slack/Gmail messages, other trigger families, push, and merge. | Build and independently verify the clean immutable candidate; require a fresh drain, backup/apply only migration 121, dark deployment, then arm the exact natural boundary and compare protected state. | 2026-08-17T12:50Z |
+| `NC-20260817-002` | Apply the normalized-trigger schema and live-prove one bounded, source-read-only scheduled-task occurrence observer without granting task or action authority | Codex | `codex/nc-20260817-002-time-trigger-activation` @ deployed `baed66d` | `complete` | C2 | Migration 121 and exact release `baed66d` are live. A drained, disabled deployment produced zero rows; one exact existing task's natural `2026-08-17T14:00:00.000Z` claim then inserted one `time` occurrence at 14:00:11Z, and exact release-bound replay was duplicate-only. The one-boundary config was expired back to disabled with daemon health retaining 1 matched/1 applied/0 failures. No task was created/resumed and no prompt, agent, capability, approval, message, or action authority was granted. Ambient email/work-ledger changes and the existing exception loop's restart brief were separately attributed; no push or merge occurred. | None for this activation milestone. Other trigger families, loss-recovery watermarks, recurring definitions, or task create/resume authority require separate tracked gates. | 2026-08-17T14:04Z |
 | `NC-20260817-001` | Establish one durable, replay-safe Company OS trigger-occurrence contract for time, Gmail, webhook, topic, and business-condition sources without wiring production behavior | Codex | `codex/nc-20260817-001-trigger-contract` @ `ec49ac68` (local implementation) | `complete` | C2 | Committed local dark foundation: a content-free normalized trigger type, stable definition/occurrence/fingerprint identities, exact replay/conflict semantics, additive unapplied migration 121 plus history-preserving rollback, injected host store, focused tests, and Company OS/project/data continuity. The daemon does not import the module. Production schema/data/config, schedules/channels/adapters, task creation/resume, agent/skill/prompt/capability changes, external messages/actions, push, and merge remain unchanged. | None for this local milestone. Production backup/migration, disabled-adapter deployment, source inventory/watermarks, one bounded source adapter, and any task create/resume authority require separately tracked activation work. | 2026-08-17T12:17Z |
 | `NC-20260816-018` | Give the two proven Company OS pilots one host-owned, deduplicated Chief-channel exception loop with named-operator acknowledgment and source-derived resolution | Codex | `codex/nc-20260816-018-company-work-exception-loop` @ deployed `a2e6d35` | `deployed_unverified` | C5 | Exact release `a2e6d35` is healthy on `mini-claw.local`; the dedicated config has one owner-confirmed operator and the one-use UID file was removed after redacted verification. The first bounded run posted one durably bound Chief brief for three exact reasons on one naturally present exception. Alex's exact check reaction acknowledged all three current cases and the threaded receipt is durably posted. Source Company Work, email, job, task, and channel-definition fingerprints stayed unchanged; zero containers or queued work appeared. | Passively observe a later complete report where an exact source reason disappears and require source-derived resolution with no workflow mutation. Do not manufacture or alter the source exception; R3 trigger normalization can proceed as a separate task. | 2026-08-17T11:56Z |
 | `NC-20260816-017` | Activate the Campanero host-job work-ledger pilot with bounded shadow projection and workflow-specific read-only reporting while leaving SQLite and the scheduler authoritative | Codex | `codex/nc-20260816-017-campanero-ledger-activation` @ deployed `999f2a4` | `complete` | C2 | Migration 119 and exact release `999f2a4` are live. One explicitly invoked five-run closed window produced exactly 5 items/15 events/5 receipts; exact replay was duplicate-only; the job report showed 5 completed/0 exceptions. All source/job/task/email hashes and channel/queue boundaries remained unchanged. SQLite and the scheduler remain authority; the observer is unscheduled/default-off. No job, schedule, prompt/capability, recurring message, push, or merge occurred. | None for this activation milestone. Recurring delivery, exception acknowledgment/resolution, scheduler-source normalization, or authority promotion require separate tasks and approval. | 2026-08-17T01:55Z |
@@ -107,7 +107,7 @@ outside the current client conversation.
   only after the scheduler's existing compare-and-swap claim, hashes bounded
   schedule facts without prompt/chat/result content, and records no task,
   Company Work, agent, approval, capability, message, or action state.
-- Live preflight: `mini-claw.local` currently serves exact verified release
+- Initial live preflight: `mini-claw.local` served exact verified release
   `a2e6d35` from sole PID 4213 under Node 22.23.2 with connected Slack/Gmail,
   zero waiting groups, empty outgoing Slack queue, and zero active email
   actions. One ordinary Sales container was active during the read-only check,
@@ -138,11 +138,10 @@ outside the current client conversation.
   store, and exposes aggregate health without the task ID. The release helper
   is value-redacted, release-bound, dry-run-first, exact-host confirmed,
   backup-producing, atomic, and restorable.
-- Commit: local implementation `96e93494` contains the observer, scheduler
+- Commits: local implementation `96e93494` contains the observer, scheduler
   isolation, dynamic aggregate health, release-bound config transaction,
-  release inventory, tests, and authoritative documentation. It has not been
-  built as an immutable artifact, migrated, deployed, or configured in
-  production yet.
+  release inventory, tests, and authoritative documentation. Ready-for-deploy
+  continuity commit `baed66db` is the exact deployed release source.
 - Local evidence: 49/49 focused trigger/scheduler tests, exact Node 22.23.2
   typecheck, root build, 105/105 combined Company OS tests, 638/638
   email-critical tests, independent runner build plus 43/43 tests, formatting,
@@ -157,6 +156,67 @@ outside the current client conversation.
   non-admin grants, refused populated rollback with the row intact, and removed
   an empty table in a second database. The cluster and smoke script were
   stopped and removed.
+- Immutable release: clean commit
+  `baed66dba21dd35edf4d472c537a1d69c5fa867a` binds source tree
+  `b27b68cf572ac5b4945239b8233fb9d8967223a2`, 704 artifact files with digest
+  `db45a60a58d5be706e5c02bfd87347e44cf03f9abeeac25fd39a2a660597143f`,
+  Node 22.23.2, and archive digest
+  `47796922cd7bb45e942c8fb8ae1af3bf44c148bb8188f12a9bc95cfb63aa27a6`.
+  Fresh local extraction and the transferred archive independently verified.
+- Drain/backup/migration: after ambient work fell from five active containers
+  to zero without intervention, the final gate had zero active/waiting work,
+  outbound queue depth zero, and zero active email actions. The mode-0600,
+  54,091-byte custom-format backup
+  `company-trigger-before-121-2026-08-17T13-24-49Z.dump` contains 79 selected
+  catalog entries and has SHA-256
+  `03bb242b240f0b7202330b1774626c9f4691030049ebbff63ecedab13ce8175b`.
+  Only bundled migration 121, digest
+  `c8f06c5642965557c02a37c4a47d82b42246bc278a197bbb4aef133fe2b394a1`,
+  was applied. The empty table was admin-owned, append-only, had zero
+  non-admin table/sequence grants, and exposed zero forbidden raw/authority
+  columns.
+- Dark deployment: recovery-safe activation moved exact release `a2e6d35` to
+  `baed66d` and retained
+  `com.nanoclaw.plist.rollback-a2e6d35c3d50-2026-08-17T13-27-07-780Z`.
+  One listener under Node 22.23.2 proved the exact commit/tree/artifact and code
+  root, connected Slack/Gmail, empty active/waiting/outgoing queues, zero active
+  email actions, observer `disabled` with zero calls, and zero trigger rows.
+- Natural canary/replay/expiry: value-redacted apply selected the existing
+  active weekday cron and its exact `2026-08-17T14:00:00.000Z` intended
+  boundary, retaining
+  `.env.rollback-company-time-trigger-2026-08-17T13-28-07-142Z`. The scheduler
+  naturally claimed it at `2026-08-17T14:00:11.382Z`; daemon health recorded
+  one call, one match, one applied row, and zero failures. PostgreSQL contains
+  exactly one `time`/`scheduled_task` occurrence with valid content-free hashes
+  and fixed `create` intent; the existing task advanced to the next natural
+  boundary without definition or status change, then completed under scheduler
+  authority at `2026-08-17T14:02:30.772Z` as task-run row 208. Result content
+  was not inspected and is not trigger evidence. An exact activated-release
+  replay returned `duplicate` and left row count one. The config was then
+  expired to disabled, retaining
+  `.env.rollback-company-time-trigger-2026-08-17T14-01-54-108Z`; daemon health
+  preserves the 1 matched/1 applied/0 failures evidence while exposing zero
+  configured tasks.
+- Non-interference/ambient attribution: task, job, and channel definition counts
+  remained 11, 22 (17 enabled), and 20; active email-action count remained zero.
+  During the long natural wait, three ordinary approved-email actions completed,
+  adding exactly three each of approved, routed, Mailman-started, executing,
+  and Gmail-confirmed events. The existing Company Work shadow independently
+  projected the two eligible Sales-email actions as 2 items/16 events/8
+  receipts, moving aggregate state from 9/35 versions/44/18 to
+  11/49/60/26. The already-active exception loop's expected post-restart daily
+  run posted Chief brief 2 for the same three cases and added three `briefed`
+  events, moving attention counts from 3 cases/1 brief/9 events to 3/2/12.
+  Those baseline producers are named in their rows and health; the trigger
+  adapter wrote only the single separate occurrence. The natural task's one
+  added run row is scheduler evidence, not trigger outcome evidence.
+- Boundary: production schema, release, one natural occurrence, exact replay,
+  and config expiry occurred. No synthetic task run, task create/resume,
+  schedule definition/prompt, agent/skill/capability, trigger-created approval,
+  trigger-driven customer or Slack/Gmail message, Company Work transition, action authority,
+  push, or merge occurred. Gmail, webhook, topic, business-condition adapters,
+  recurring time definitions, source watermarks, and loss recovery remain
+  separate gates.
 
 ### NC-20260817-001
 
@@ -189,8 +249,9 @@ outside the current client conversation.
   stable definition/occurrence/semantic SHA-256 identities, exact replay and
   split/drift conflict handling, an injected host PostgreSQL store, migration
   121 and guarded rollback, immutable-release bundling, 29 focused tests, and
-  the normalized-trigger design/data/project/roadmap authorities. No runtime
-  entry point imports the module, and migration 121 is unapplied.
+  the normalized-trigger design/data/project/roadmap authorities. At NC-001's
+  local closeout no runtime entry point imported the module and migration 121
+  was unapplied; NC-002 records the later production activation above.
 - Disposable database evidence: PostgreSQL 16 recorded all five trigger kinds
   as five rows, classified exact replay as duplicate, refused same-identity
   semantic drift, refused UPDATE/DELETE through the append-only trigger, and

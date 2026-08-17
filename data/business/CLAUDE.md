@@ -22,22 +22,25 @@ ceiling, and remains unscheduled and absent from the daemon/scheduler. SQLite
 access. Follow `docs/COMPANY-OS-JOB-LEDGER.md`; release presence alone does not
 authorize another projection.
 
-Migration 120 is live under exact release `a2e6d35` and the
-`NC-20260816-018` operator-attention loop is active for one owner-confirmed
-operator. One naturally sourced brief, exact named acknowledgment, and threaded
+Migration 120 went live under exact release `a2e6d35`; active release
+`baed66d` preserves it and the `NC-20260816-018` operator-attention loop for one
+owner-confirmed operator. One naturally sourced brief, exact named
+acknowledgment, and threaded
 receipt are verified; later source-derived resolution remains pending.
 Acknowledgment records only that the operator saw exact cases, and no exception
 operation may mutate a work item, event, receipt, job, email action, or
 workflow. Follow `docs/COMPANY-OS-EXCEPTION-LOOP.md` and the current active-work
 evidence rather than inferring state from schema presence.
 
-Migration 121 is the local, unapplied normalized-trigger target from
-`NC-20260817-001`. `NC-20260817-002` adds an unreleased default-off candidate
-that observes one exact scheduled-task claim boundary and writes only hashed,
-content-free source evidence through the host-admin store. It receives no task
-prompt/result and grants no task, agent, approval, capability, message, or
-action authority. Production application and the natural canary must be taken
-from NC-002's later recorded evidence, not repository presence.
+Migration 121 is live under exact release `baed66d` through
+`NC-20260817-002`. Its default-off observer live-proved one exact natural
+scheduled-task claim boundary, wrote one hashed/content-free occurrence, and
+returned duplicate on exact replay. The one-boundary configuration was expired
+back to disabled; the append-only table retains that one evidence row. It
+receives no task prompt/result and grants no task, agent, approval, capability,
+message, or action authority. Other source adapters, recurring definitions,
+watermarks, and task/action promotion remain separately gated. Use NC-002's
+active-work/changelog evidence for exact backup, release, and canary state.
 
 ## Connection
 

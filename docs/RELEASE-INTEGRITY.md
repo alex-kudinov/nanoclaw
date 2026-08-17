@@ -77,23 +77,25 @@ Exact digests, paths, fingerprints, and rollback identities are recorded in
 `docs/ENGINEERING-CHANGELOG.md`.
 
 Beginning with NC-20260817-001, the archive also binds migration 121 and its
-history-preserving rollback. Those bytes are a local dark trigger-occurrence
-foundation only. Bundling them does not apply the schema, import the trigger
-module into the daemon, wire a schedule/channel/webhook/condition adapter,
-create or resume a task, select a skill, or grant action authority. Production
-backup, explicit one-migration apply, disabled-adapter deployment, per-source
-replay proof, and any task wiring remain separately authorized gates.
+history-preserving rollback. NC-20260817-002 applied that migration and deployed
+exact release `baed66d` after archive verification, drain, and backup. One
+natural scheduled-time boundary inserted once, exact replay was duplicate-only,
+and configuration was expired back to disabled. Bundling still does not apply
+the schema, enable another adapter, create or resume a task, select a skill, or
+grant action authority. Every later source/definition/promotion remains a
+separately authorized gate.
 
-The NC-20260817-002 activation candidate additionally bundles
+The NC-20260817-002 release additionally bundles
 `scripts/set-company-time-trigger.mjs`. Bundling does not enable the observer.
 The helper verifies its immutable release, defaults to a value-redacted dry
 run, selects exactly one task ID and one intended boundary, requires exact-host
 confirmation for apply/restore, creates an exclusive environment backup, and
 writes atomically. The daemon resolves those keys dynamically, but the observer
 runs only after the scheduler's existing successful SQLite claim and is
-fire-and-forget. Migration apply, dark deployment, configuration, natural
-occurrence proof, and configuration restore/expiry remain separately recorded
-operations.
+fire-and-forget. NC-002's migration apply, dark deployment, one-boundary
+configuration, natural occurrence, exact replay, and expiry are recorded in
+the active-work/changelog evidence. Reusing the helper for another task or
+boundary is a new production configuration operation, not implied authority.
 
 The builder refuses to run when:
 
