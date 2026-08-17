@@ -233,6 +233,14 @@ There are two schedulers:
 They have different tables, execution paths, failure modes, and trust levels.
 Do not treat the terms “task” and “job” as interchangeable in code.
 
+`NC-20260816-016` adds a local-only second Company OS pilot contract for host
+job runs. One SQLite `job_run_logs.id` maps to one `host_job_run` work item;
+PID and terminal row facts map to start/outcome events without accepting raw
+output, error text, log paths, scripts, arguments, or environment. Migration
+119 and the injected projector are not applied or daemon-wired. SQLite and the
+job registry remain authority, and Campanero's jobs-only role is unchanged.
+See `docs/COMPANY-OS-JOB-LEDGER.md`.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container
@@ -359,7 +367,7 @@ dependencies, not active runtime channels in this snapshot.
 | Area                   | Main files                                                                     | Responsibility                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
-| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-work-report.ts`, migration 118, `docs/COMPANY-OS-WORK-LEDGER.md` | live host-only stage/disposition/receipt projection; observer is bounded, default-off, fail-open, and never email authority; NC-015 deploys/live-verifies the bounded SELECT-only exception CLI, which remains disconnected from the daemon and workflows |
+| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-job-work-shadow.ts`, `src/company-work-report.ts`, migrations 118-119, `docs/COMPANY-OS-WORK-LEDGER.md`, `docs/COMPANY-OS-JOB-LEDGER.md` | Mailman/Sales projection and bounded SELECT-only report are live/non-authoritative under NC-015; NC-016 adds an unapplied, unwired host-job state/receipt contract. SQLite remains authority for both sources, and the existing report still filters `sales_email` only. |
 | External-write control | `src/action-safety.ts`, `src/action-safety-drill-exec.ts`, `docs/ACTION-SAFETY-CONTROL.md` | deployed/default-off common action envelope and dynamic global/per-system brakes; exact release `47019c9` live-verifies Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, Hive/Firestore, and Things; in-flight interruption, standalone scripts, remaining integrations, ceilings, and demotion remain open |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
@@ -493,6 +501,12 @@ The modern namespace is `business_v2`, including concepts such as:
   `NC-20260816-015` deploys exact release `cf96258` and verifies one full
   four-item production read plus unchanged PostgreSQL and SQLite fingerprints.
   It is not daemon-wired and cannot affect the approved-email path.
+- `NC-20260816-016` adds local, unapplied migration 119 and an unwired injected
+  projector for `host_job_run`. The target schema preserves Party/pipeline
+  requirements for `sales_email`, requires neither for a host job run, adds
+  exact start/terminal-failure events, and retains host-admin-only access.
+  This is source/state-machine evidence only: no production schema, observer,
+  report, scheduler, job, Campanero, or channel state changes under NC-016.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.
@@ -1544,6 +1558,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/ENGINEERING-CHANGELOG.md`         | append-only implementation/verification/deployment history            | evidence only; do not overstate boundaries crossed                                                                                           |
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
 | `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
+| `docs/COMPANY-OS-JOB-LEDGER.md`         | Campanero host-job run identity, state, receipt, privacy, and activation contract | NC-016 is local/unapplied/unwired; SQLite jobs/job-run logs remain authority and activation requires a separate task |
 | `docs/ACTION-SAFETY-CONTROL.md`         | host action envelope, safety precedence, covered boundaries, and activation/drill transaction | seven-system boundary through Things is live-proven in exact release `47019c9` under `NC-20260816-009`; controls remain default-off and residuals explicit |
 | `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | Campanero and Booking selective canaries are live under `NC-20260816-006`/`010`; global rollout, egress, remaining raw-secret removal, and wider canaries remain open |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |

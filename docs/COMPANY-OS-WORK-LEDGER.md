@@ -8,6 +8,11 @@ brief `NC-20260816-014`; report deployment/proof `NC-20260816-015`
 Decision: the shared ledger is host-owned PostgreSQL business state, while the
 existing SQLite approved-email tables remain the action-execution authority
 
+Second-pilot note: `NC-20260816-016` adds a local, unapplied migration-119
+target and unwired host-job projector. It does not change this pilot's email
+state machine, report filter, production schema, or authority. See
+`docs/COMPANY-OS-JOB-LEDGER.md`.
+
 ## 1. Outcome and boundary
 
 The first pilot represents one customer-response cycle as one durable work
@@ -162,6 +167,11 @@ Base-table and sequence permissions are revoked from `PUBLIC`. Only
 `nanoclaw_admin` receives access. No Sales, Mailman, Chief, or other agent role
 gets a view, write function, or base-table privilege in this slice. The host
 typed store uses the existing admin-side `withAgentContext()` transaction.
+
+Migration 119 is tracked only as an unapplied NC-016 target. It widens the same
+tables for `host_job_run` under workflow-specific identity checks; it does not
+alter deployed Mailman/Sales facts or make the existing report multi-workflow.
+Repository presence is not migration evidence.
 
 Migration 118 was applied in production only under `NC-20260816-001`, after an
 exact custom-format backup and explicit one-file apply. Live validation found

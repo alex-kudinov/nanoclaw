@@ -3,9 +3,11 @@
  *
  * NC-20260815-010 introduced this module without runtime wiring. The separately
  * authorized NC-20260816-001 milestone applied migration 118 and wired a
- * bounded, non-authoritative shadow observer. The existing SQLite approved-
- * email action ledger remains execution authority. This module stores opaque
- * IDs and SHA-256 evidence only; raw customer/approval content is not accepted.
+ * bounded, non-authoritative email shadow observer. NC-20260816-016 adds an
+ * unwired host-job contract for the second pilot; SQLite jobs/job_run_logs and
+ * the existing SQLite approved-email action ledger remain execution authority.
+ * This module stores opaque IDs and SHA-256 evidence only; raw customer,
+ * approval, job-output, and error content is not accepted.
  */
 
 import { createHash } from 'crypto';
@@ -21,6 +23,7 @@ export const COMPANY_WORK_STAGES = [
   'mailman_dispatched',
   'action_claimed',
   'external_acknowledged',
+  'execution_started',
   'outcome_validated',
 ] as const;
 
@@ -44,6 +47,8 @@ export const COMPANY_WORK_EVENT_TYPES = [
   'mailman_dispatched',
   'action_claimed',
   'external_acknowledged',
+  'execution_started',
+  'execution_failed',
   'outcome_validated',
   'blocked',
   'failed',
@@ -52,6 +57,17 @@ export const COMPANY_WORK_EVENT_TYPES = [
 ] as const;
 
 export type CompanyWorkEventType = (typeof COMPANY_WORK_EVENT_TYPES)[number];
+
+export type SalesEmailCompanyWorkEventType = Exclude<
+  CompanyWorkEventType,
+  'execution_started' | 'execution_failed'
+>;
+
+export type CompanyJobWorkEventType =
+  | 'execution_started'
+  | 'execution_failed'
+  | 'outcome_validated'
+  | 'failed';
 
 export const COMPANY_WORK_RECEIPT_TYPES = [
   'operator_approval',
@@ -66,12 +82,14 @@ export type CompanyWorkReceiptType =
 
 export interface CompanyWorkItem {
   id: string;
-  workflowType: 'sales_email';
+  workflowType: 'sales_email' | 'host_job_run';
   sourceSystem: string;
   sourceKey: string;
-  partyId: string;
-  pipelineEntryId: string;
-  completionDefinition: 'gmail_ack_and_thread_close';
+  partyId: string | null;
+  pipelineEntryId: string | null;
+  completionDefinition:
+    | 'gmail_ack_and_thread_close'
+    | 'host_job_terminal_receipt';
   stage: CompanyWorkStage;
   disposition: CompanyWorkDisposition;
   version: number;
@@ -109,13 +127,38 @@ export interface CreateCompanyWorkItemInput {
 export interface TransitionCompanyWorkItemInput {
   workItemId: string;
   expectedVersion: number;
-  eventType: CompanyWorkEventType;
+  eventType: SalesEmailCompanyWorkEventType;
   actor: string;
   sourceSystem: string;
   sourceEventKey: string;
   idempotencyKey: string;
   occurredAt: string;
   evidenceSha256?: string | null;
+  exceptionCode?: string | null;
+  receipt?: CompanyWorkReceiptInput | null;
+}
+
+export interface CreateCompanyJobWorkItemInput {
+  sourceSystem: string;
+  sourceKey: string;
+  sourceEventKey: string;
+  idempotencyKey: string;
+  actor: string;
+  evidenceSha256: string;
+  occurredAt: string;
+  deadlineAt: string;
+}
+
+export interface TransitionCompanyJobWorkItemInput {
+  workItemId: string;
+  expectedVersion: number;
+  eventType: CompanyJobWorkEventType;
+  actor: string;
+  sourceSystem: string;
+  sourceEventKey: string;
+  idempotencyKey: string;
+  occurredAt: string;
+  evidenceSha256: string;
   exceptionCode?: string | null;
   receipt?: CompanyWorkReceiptInput | null;
 }
@@ -152,12 +195,14 @@ export interface CompanyWorkLedgerClient {
 
 interface WorkItemRow extends QueryResultRow {
   id: string;
-  workflow_type: 'sales_email';
+  workflow_type: 'sales_email' | 'host_job_run';
   source_system: string;
   source_key: string;
-  party_id: string;
-  pipeline_entry_id: string;
-  completion_definition: 'gmail_ack_and_thread_close';
+  party_id: string | null;
+  pipeline_entry_id: string | null;
+  completion_definition:
+    | 'gmail_ack_and_thread_close'
+    | 'host_job_terminal_receipt';
   stage: CompanyWorkStage;
   disposition: CompanyWorkDisposition;
   version: number;
@@ -318,6 +363,25 @@ export function fingerprintCompanyWorkTransition(
   ]);
 }
 
+/** @internal Exported for deterministic host-job retry/duplicate tests. */
+export function fingerprintCompanyJobWorkTransition(
+  input: TransitionCompanyJobWorkItemInput,
+): string {
+  return fingerprint([
+    'host-job-transition-v1',
+    input.workItemId,
+    input.expectedVersion,
+    input.eventType,
+    input.actor,
+    input.sourceSystem,
+    input.sourceEventKey,
+    input.occurredAt,
+    input.evidenceSha256,
+    input.exceptionCode ?? null,
+    ...receiptFingerprintParts(input.receipt),
+  ]);
+}
+
 function activeDispositionForStage(
   stage: CompanyWorkStage,
 ): CompanyWorkDisposition {
@@ -327,7 +391,7 @@ function activeDispositionForStage(
 /** Pure transition policy. It consumes typed host facts, never agent text. */
 export function planCompanyWorkTransition(
   current: Pick<CompanyWorkItem, 'stage' | 'disposition'>,
-  eventType: CompanyWorkEventType,
+  eventType: SalesEmailCompanyWorkEventType,
   options: {
     evidenceSha256?: string | null;
     exceptionCode?: string | null;
@@ -345,7 +409,7 @@ export function planCompanyWorkTransition(
   }
 
   const requiredReceiptByEvent: Partial<
-    Record<CompanyWorkEventType, CompanyWorkReceiptType>
+    Record<SalesEmailCompanyWorkEventType, CompanyWorkReceiptType>
   > = {
     approved: 'operator_approval',
     action_claimed: 'action_claim',
@@ -453,7 +517,7 @@ export function planCompanyWorkTransition(
 
   const edges: Partial<
     Record<
-      CompanyWorkEventType,
+      SalesEmailCompanyWorkEventType,
       {
         fromStage: CompanyWorkStage;
         fromDisposition: CompanyWorkDisposition;
@@ -525,6 +589,139 @@ export function planCompanyWorkTransition(
   };
 }
 
+/** Pure host-job policy. The failed run is terminal source evidence, while a
+ * generic `failed` event represents a projection/source gap and has no
+ * receipt. Neither path retries or mutates the authoritative job. */
+export function planCompanyJobWorkTransition(
+  current: Pick<CompanyWorkItem, 'stage' | 'disposition'>,
+  eventType: CompanyJobWorkEventType,
+  options: {
+    evidenceSha256?: string | null;
+    exceptionCode?: string | null;
+    receipt?: CompanyWorkReceiptInput | null;
+  } = {},
+): PlannedTransition {
+  if (
+    current.disposition === 'completed' ||
+    current.disposition === 'cancelled'
+  ) {
+    throw new CompanyWorkLedgerError(
+      'invalid_transition',
+      `terminal host-job work item cannot accept ${eventType}`,
+    );
+  }
+  if (!options.evidenceSha256) {
+    throw new CompanyWorkLedgerError(
+      'invalid_transition',
+      `${eventType} requires exact SHA-256 evidence`,
+    );
+  }
+
+  if (eventType === 'failed') {
+    if (!options.exceptionCode) {
+      throw new CompanyWorkLedgerError(
+        'invalid_transition',
+        'failed requires a named source-gap code',
+      );
+    }
+    if (options.receipt) {
+      throw new CompanyWorkLedgerError(
+        'invalid_transition',
+        'source-gap failure does not accept a terminal job receipt',
+      );
+    }
+    if (current.disposition !== 'open') {
+      throw new CompanyWorkLedgerError(
+        'invalid_transition',
+        'only open host-job work can record a source gap',
+      );
+    }
+    return {
+      stage: current.stage,
+      disposition: 'failed',
+      blockCode: null,
+      failureCode: options.exceptionCode,
+      requiredReceipt: null,
+    };
+  }
+
+  const requiresTerminalReceipt =
+    eventType === 'execution_failed' || eventType === 'outcome_validated';
+  if (requiresTerminalReceipt) {
+    if (
+      !options.receipt ||
+      options.receipt.type !== 'outcome_validation' ||
+      !options.receipt.externalActionId
+    ) {
+      throw new CompanyWorkLedgerError(
+        'invalid_transition',
+        `${eventType} requires an exact outcome_validation receipt bound to the run`,
+      );
+    }
+    if (options.receipt.evidenceSha256 !== options.evidenceSha256) {
+      throw new CompanyWorkLedgerError(
+        'invalid_transition',
+        `${eventType} evidence must match its exact receipt`,
+      );
+    }
+  } else if (options.receipt) {
+    throw new CompanyWorkLedgerError(
+      'invalid_transition',
+      `${eventType} does not accept a receipt`,
+    );
+  }
+
+  if (eventType === 'execution_started') {
+    if (current.stage !== 'accepted' || current.disposition !== 'open') {
+      throw new CompanyWorkLedgerError(
+        'invalid_transition',
+        `invalid ${current.stage}/${current.disposition} -> execution_started transition`,
+      );
+    }
+    return {
+      stage: 'execution_started',
+      disposition: 'open',
+      blockCode: null,
+      failureCode: null,
+      requiredReceipt: null,
+    };
+  }
+
+  if (eventType === 'execution_failed') {
+    if (
+      (current.stage !== 'accepted' && current.stage !== 'execution_started') ||
+      current.disposition !== 'open' ||
+      !options.exceptionCode
+    ) {
+      throw new CompanyWorkLedgerError(
+        'invalid_transition',
+        `invalid ${current.stage}/${current.disposition} -> execution_failed transition`,
+      );
+    }
+    return {
+      stage: current.stage,
+      disposition: 'failed',
+      blockCode: null,
+      failureCode: options.exceptionCode,
+      requiredReceipt: 'outcome_validation',
+    };
+  }
+
+  if (current.stage !== 'execution_started' || current.disposition !== 'open') {
+    throw new CompanyWorkLedgerError(
+      'invalid_transition',
+      `invalid ${current.stage}/${current.disposition} -> outcome_validated transition`,
+    );
+  }
+  return {
+    stage: 'outcome_validated',
+    disposition: 'completed',
+    blockCode: null,
+    failureCode: null,
+    requiredReceipt: 'outcome_validation',
+  };
+}
+
 function validateCreate(input: CreateCompanyWorkItemInput): void {
   assertOpaqueId(input.sourceSystem, 'sourceSystem');
   assertOpaqueId(input.sourceKey, 'sourceKey');
@@ -538,7 +735,35 @@ function validateCreate(input: CreateCompanyWorkItemInput): void {
   if (input.deadlineAt) assertTimestamp(input.deadlineAt, 'deadlineAt');
 }
 
-function validateTransition(input: TransitionCompanyWorkItemInput): void {
+function validateJobCreate(input: CreateCompanyJobWorkItemInput): void {
+  assertOpaqueId(input.sourceSystem, 'sourceSystem');
+  assertOpaqueId(input.sourceKey, 'sourceKey');
+  assertOpaqueId(input.sourceEventKey, 'sourceEventKey');
+  assertOpaqueId(input.idempotencyKey, 'idempotencyKey');
+  assertOpaqueId(input.actor, 'actor');
+  assertSha256(input.evidenceSha256, 'evidenceSha256');
+  assertTimestamp(input.occurredAt, 'occurredAt');
+  assertTimestamp(input.deadlineAt, 'deadlineAt');
+  if (Date.parse(input.deadlineAt) <= Date.parse(input.occurredAt)) {
+    invalid('deadlineAt must be after occurredAt for a host job run');
+  }
+}
+
+function validateTransition(
+  input: Pick<
+    TransitionCompanyWorkItemInput,
+    | 'workItemId'
+    | 'expectedVersion'
+    | 'actor'
+    | 'sourceSystem'
+    | 'sourceEventKey'
+    | 'idempotencyKey'
+    | 'occurredAt'
+    | 'evidenceSha256'
+    | 'exceptionCode'
+    | 'receipt'
+  >,
+): void {
   assertPositiveIntegerId(input.workItemId, 'workItemId');
   if (!Number.isInteger(input.expectedVersion) || input.expectedVersion < 0) {
     invalid('expectedVersion must be a non-negative integer');
@@ -624,6 +849,20 @@ function createFingerprint(input: CreateCompanyWorkItemInput): string {
     input.evidenceSha256,
     input.occurredAt,
     input.deadlineAt ?? null,
+  ]);
+}
+
+function createJobFingerprint(input: CreateCompanyJobWorkItemInput): string {
+  return fingerprint([
+    'host-job-create-v1',
+    'host_job_run',
+    input.sourceSystem,
+    input.sourceKey,
+    input.sourceEventKey,
+    input.actor,
+    input.evidenceSha256,
+    input.occurredAt,
+    input.deadlineAt,
   ]);
 }
 
@@ -757,6 +996,143 @@ export async function createCompanyWorkItemWithClient(
   return { item, applied: true, duplicate: false };
 }
 
+/** @internal The caller must supply a client inside an open transaction. */
+export async function createCompanyJobWorkItemWithClient(
+  client: CompanyWorkLedgerClient,
+  input: CreateCompanyJobWorkItemInput,
+): Promise<CompanyWorkMutationResult> {
+  validateJobCreate(input);
+  const eventFingerprint = createJobFingerprint(input);
+
+  const duplicateByEvent = await client.query<ExistingEventRow>(
+    `SELECT work_item_id::text, event_fingerprint
+       FROM business_v2.company_work_events
+      WHERE idempotency_key = $1
+         OR (source_system = $2 AND source_event_key = $3)
+      ORDER BY id ASC`,
+    [input.idempotencyKey, input.sourceSystem, input.sourceEventKey],
+  );
+  if (duplicateByEvent.rows.length > 1) {
+    throw new CompanyWorkLedgerError(
+      'conflict',
+      'host-job create identities resolve differently',
+    );
+  }
+  if (duplicateByEvent.rows[0]) {
+    if (duplicateByEvent.rows[0].event_fingerprint !== eventFingerprint) {
+      throw new CompanyWorkLedgerError(
+        'conflict',
+        'host-job create identity was reused with different facts',
+      );
+    }
+    const item = await loadWorkItem(
+      client,
+      duplicateByEvent.rows[0].work_item_id,
+      false,
+    );
+    if (item.workflowType !== 'host_job_run') {
+      throw new CompanyWorkLedgerError(
+        'conflict',
+        'host-job create identity resolved to another workflow',
+      );
+    }
+    return { item, applied: false, duplicate: true };
+  }
+
+  const inserted = await client.query<WorkItemRow>(
+    `INSERT INTO business_v2.company_work_items
+       (workflow_type, source_system, source_key, party_id,
+        pipeline_entry_id, completion_definition, deadline_at,
+        last_transition_at, last_transition_by)
+     VALUES ('host_job_run', $1, $2, NULL, NULL,
+             'host_job_terminal_receipt', $3, $4, $5)
+     ON CONFLICT (workflow_type, source_system, source_key) DO NOTHING
+     RETURNING ${ITEM_COLUMNS}`,
+    [
+      input.sourceSystem,
+      input.sourceKey,
+      input.deadlineAt,
+      input.occurredAt,
+      input.actor,
+    ],
+  );
+
+  let item: CompanyWorkItem;
+  let created = false;
+  if (inserted.rows[0]) {
+    item = toItem(inserted.rows[0]);
+    created = true;
+  } else {
+    const existing = await client.query<WorkItemRow>(
+      `SELECT ${ITEM_COLUMNS}
+         FROM business_v2.company_work_items
+        WHERE workflow_type = 'host_job_run'
+          AND source_system = $1 AND source_key = $2
+        FOR UPDATE`,
+      [input.sourceSystem, input.sourceKey],
+    );
+    if (!existing.rows[0]) {
+      throw new CompanyWorkLedgerError(
+        'conflict',
+        'host-job create lost its uniqueness race without a durable row',
+      );
+    }
+    item = toItem(existing.rows[0]);
+    if (
+      item.workflowType !== 'host_job_run' ||
+      item.partyId !== null ||
+      item.pipelineEntryId !== null ||
+      item.completionDefinition !== 'host_job_terminal_receipt' ||
+      !timestampsMatch(item.deadlineAt, input.deadlineAt)
+    ) {
+      throw new CompanyWorkLedgerError(
+        'conflict',
+        'host-job source identity was reused with different immutable facts',
+      );
+    }
+  }
+
+  if (!created) {
+    const sourceEvent = await client.query<ExistingEventRow>(
+      `SELECT work_item_id::text, event_fingerprint
+         FROM business_v2.company_work_events
+        WHERE source_system = $1 AND source_event_key = $2`,
+      [input.sourceSystem, input.sourceEventKey],
+    );
+    if (
+      sourceEvent.rows[0]?.work_item_id === item.id &&
+      sourceEvent.rows[0]?.event_fingerprint === eventFingerprint
+    ) {
+      return { item, applied: false, duplicate: true };
+    }
+    throw new CompanyWorkLedgerError(
+      'conflict',
+      'existing host-job work item is missing its exact accepted event',
+    );
+  }
+
+  await client.query(
+    `INSERT INTO business_v2.company_work_events
+       (work_item_id, work_item_version, event_type, from_stage, to_stage,
+        from_disposition, to_disposition, actor, source_system,
+        source_event_key, idempotency_key, event_fingerprint,
+        evidence_sha256, occurred_at)
+     VALUES ($1, 0, 'accepted', NULL, 'accepted', NULL, 'open', $2, $3, $4,
+             $5, $6, $7, $8)`,
+    [
+      item.id,
+      input.actor,
+      input.sourceSystem,
+      input.sourceEventKey,
+      input.idempotencyKey,
+      eventFingerprint,
+      input.evidenceSha256,
+      input.occurredAt,
+    ],
+  );
+  return { item, applied: true, duplicate: false };
+}
+
 async function insertOrValidateReceipt(
   client: CompanyWorkLedgerClient,
   workItemId: string,
@@ -823,6 +1199,12 @@ export async function transitionCompanyWorkItemWithClient(
   if (duplicate) return duplicate;
 
   const current = await loadWorkItem(client, input.workItemId, true);
+  if (current.workflowType !== 'sales_email') {
+    throw new CompanyWorkLedgerError(
+      'invalid_transition',
+      'approved-email transition cannot mutate another workflow type',
+    );
+  }
   if (current.version !== input.expectedVersion) {
     throw new CompanyWorkLedgerError(
       'stale_version',
@@ -897,6 +1279,97 @@ export async function transitionCompanyWorkItemWithClient(
   return { item, applied: true, duplicate: false };
 }
 
+/** @internal The caller must supply a client inside an open transaction. */
+export async function transitionCompanyJobWorkItemWithClient(
+  client: CompanyWorkLedgerClient,
+  input: TransitionCompanyJobWorkItemInput,
+): Promise<CompanyWorkMutationResult> {
+  validateTransition(input);
+  const eventFingerprint = fingerprintCompanyJobWorkTransition(input);
+  const duplicate = await findDuplicateEvent(client, input, eventFingerprint);
+  if (duplicate) return duplicate;
+
+  const current = await loadWorkItem(client, input.workItemId, true);
+  if (current.workflowType !== 'host_job_run') {
+    throw new CompanyWorkLedgerError(
+      'invalid_transition',
+      'host-job transition cannot mutate another workflow type',
+    );
+  }
+  if (current.version !== input.expectedVersion) {
+    throw new CompanyWorkLedgerError(
+      'stale_version',
+      `work item ${input.workItemId} is version ${current.version}, not ${input.expectedVersion}`,
+    );
+  }
+  const planned = planCompanyJobWorkTransition(current, input.eventType, {
+    evidenceSha256: input.evidenceSha256,
+    exceptionCode: input.exceptionCode,
+    receipt: input.receipt,
+  });
+  if (input.receipt) validateReceipt(input.receipt);
+  const receiptId = input.receipt
+    ? await insertOrValidateReceipt(client, current.id, input.receipt)
+    : null;
+
+  const updated = await client.query<WorkItemRow>(
+    `UPDATE business_v2.company_work_items
+        SET stage = $2, disposition = $3, version = version + 1,
+            block_code = $4, failure_code = $5,
+            updated_at = now(), last_transition_at = $6,
+            last_transition_by = $7
+      WHERE id = $1 AND version = $8
+      RETURNING ${ITEM_COLUMNS}`,
+    [
+      current.id,
+      planned.stage,
+      planned.disposition,
+      planned.blockCode,
+      planned.failureCode,
+      input.occurredAt,
+      input.actor,
+      input.expectedVersion,
+    ],
+  );
+  if (!updated.rows[0]) {
+    throw new CompanyWorkLedgerError(
+      'stale_version',
+      `work item ${current.id} changed during host-job transition`,
+    );
+  }
+  const item = toItem(updated.rows[0]);
+
+  await client.query(
+    `INSERT INTO business_v2.company_work_events
+       (work_item_id, work_item_version, event_type, from_stage, to_stage,
+        from_disposition, to_disposition, actor, source_system,
+        source_event_key, idempotency_key, event_fingerprint,
+        evidence_sha256, exception_code, receipt_id, occurred_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+             $14, $15, $16)`,
+    [
+      current.id,
+      item.version,
+      input.eventType,
+      current.stage,
+      item.stage,
+      current.disposition,
+      item.disposition,
+      input.actor,
+      input.sourceSystem,
+      input.sourceEventKey,
+      input.idempotencyKey,
+      eventFingerprint,
+      input.evidenceSha256,
+      input.exceptionCode ?? null,
+      receiptId,
+      input.occurredAt,
+    ],
+  );
+
+  return { item, applied: true, duplicate: false };
+}
+
 export async function createCompanyWorkItem(
   input: CreateCompanyWorkItemInput,
 ): Promise<CompanyWorkMutationResult> {
@@ -905,11 +1378,27 @@ export async function createCompanyWorkItem(
   );
 }
 
+export async function createCompanyJobWorkItem(
+  input: CreateCompanyJobWorkItemInput,
+): Promise<CompanyWorkMutationResult> {
+  return withAgentContext('company-job-work-ledger:host', (client) =>
+    createCompanyJobWorkItemWithClient(client, input),
+  );
+}
+
 export async function transitionCompanyWorkItem(
   input: TransitionCompanyWorkItemInput,
 ): Promise<CompanyWorkMutationResult> {
   return withAgentContext('company-work-ledger:host', (client) =>
     transitionCompanyWorkItemWithClient(client, input),
+  );
+}
+
+export async function transitionCompanyJobWorkItem(
+  input: TransitionCompanyJobWorkItemInput,
+): Promise<CompanyWorkMutationResult> {
+  return withAgentContext('company-job-work-ledger:host', (client) =>
+    transitionCompanyJobWorkItemWithClient(client, input),
   );
 }
 
@@ -925,6 +1414,25 @@ export async function getCompanyWorkItemBySource(
       `SELECT ${ITEM_COLUMNS}
          FROM business_v2.company_work_items
         WHERE workflow_type = 'sales_email'
+          AND source_system = $1 AND source_key = $2`,
+      [sourceSystem, sourceKey],
+    );
+    return result.rows[0] ? toItem(result.rows[0]) : null;
+  });
+}
+
+/** Load one host-job projection. SQLite jobs/job_run_logs remain authority. */
+export async function getCompanyJobWorkItemBySource(
+  sourceSystem: string,
+  sourceKey: string,
+): Promise<CompanyWorkItem | null> {
+  assertOpaqueId(sourceSystem, 'sourceSystem');
+  assertOpaqueId(sourceKey, 'sourceKey');
+  return withAgentContext('company-job-work-ledger:host', async (client) => {
+    const result = await client.query<WorkItemRow>(
+      `SELECT ${ITEM_COLUMNS}
+         FROM business_v2.company_work_items
+        WHERE workflow_type = 'host_job_run'
           AND source_system = $1 AND source_key = $2`,
       [sourceSystem, sourceKey],
     );

@@ -13,6 +13,12 @@ does not grant agents access or become email authority. Do not infer the
 current release or configuration from repository presence; follow
 `docs/COMPANY-OS-WORK-LEDGER.md` and the active-work/changelog evidence.
 
+Migration 119 is a local, unapplied `NC-20260816-016` target that widens the
+same host-only tables for an unwired `host_job_run` pilot. SQLite `jobs` and
+`job_run_logs` remain authority, and Campanero receives no database access.
+Follow `docs/COMPANY-OS-JOB-LEDGER.md`; repository presence is not migration or
+deployment evidence.
+
 ## Connection
 
 ```bash
@@ -283,6 +289,6 @@ historical coverage.
 ## Schema File Reference
 
 - DDL: `data/business/migrations/nanoclaw-v2/` (01-18 base/cutover plus ordered
-  post-cutover migrations 90-115)
+  post-cutover migrations through the latest tracked number)
 - Validation: `data/business/migrations/nanoclaw-v2/validate.sql` (20 acceptance criteria)
 - Smoke tests: `data/business/migrations/nanoclaw-v2/90_smoke_tests.sql`

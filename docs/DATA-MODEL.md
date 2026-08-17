@@ -23,6 +23,12 @@ privacy-minimized structures; it changes no schema or authority.
 `NC-20260816-015` deploys and live-verifies one bounded four-item production
 read under exact release `cf96258`, with unchanged item/version/event/receipt
 and SQLite email fingerprints before and after.
+`NC-20260816-016` adds an unapplied migration-119 target plus an unwired typed
+projection for a second `host_job_run` pilot. It permits null Party/pipeline
+references only for that workflow under a workflow-specific constraint;
+`sales_email` still requires both. SQLite `jobs`/`job_run_logs` remain host-job
+authority, and no production schema or runtime state changes under NC-016. See
+`docs/COMPANY-OS-JOB-LEDGER.md`.
 
 ---
 

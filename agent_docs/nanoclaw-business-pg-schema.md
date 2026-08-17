@@ -9,9 +9,73 @@ and structurally verified in production on 2026-07-30. Run
 `tools/refresh-schemas.sh` after the next authorized schema refresh to replace
 these overlays with generated evidence.
 
+Structure-only Company OS overlay: migration 118 is live under
+`NC-20260816-001`. Migration 119 is a local, unapplied `NC-20260816-016`
+target; its nullable Party/pipeline columns remain workflow-constrained and do
+not describe current production until separately applied and refreshed.
+
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
 business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
+
+## business_v2.company_work_items (migration 118 live; migration 119 target overlay)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_items_id_seq'::regclass)
+  workflow_type                 text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_key                    text                 NOT NULL
+  party_id                      bigint
+  pipeline_entry_id             bigint
+  completion_definition         text                 NOT NULL DEFAULT='gmail_ack_and_thread_close'::text
+  stage                         text                 NOT NULL DEFAULT='accepted'::text
+  disposition                   text                 NOT NULL DEFAULT='open'::text
+  version                       integer              NOT NULL DEFAULT=0
+  block_code                    text
+  failure_code                  text
+  deadline_at                   timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_transition_at            timestamp with time zone NOT NULL DEFAULT=now()
+  last_transition_by            text                 NOT NULL DEFAULT='company-work-ledger:host'::text
+```
+
+## business_v2.company_work_receipts (migration 118 live)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_receipts_id_seq'::regclass)
+  work_item_id                  bigint               NOT NULL
+  receipt_type                  text                 NOT NULL
+  receipt_system                text                 NOT NULL
+  receipt_key                   text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  external_action_id            text
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_work_events (migration 118 live; migration 119 target overlay)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_events_id_seq'::regclass)
+  work_item_id                  bigint               NOT NULL
+  work_item_version             integer              NOT NULL
+  event_type                    text                 NOT NULL
+  from_stage                    text
+  to_stage                      text                 NOT NULL
+  from_disposition              text
+  to_disposition                text                 NOT NULL
+  actor                         text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_event_key              text                 NOT NULL
+  idempotency_key               text                 NOT NULL
+  event_fingerprint             text                 NOT NULL
+  evidence_sha256               text
+  exception_code                text
+  receipt_id                    bigint
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
 
 ## booking_events
 

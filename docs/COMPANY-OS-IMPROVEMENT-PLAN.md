@@ -64,9 +64,9 @@ company-wide merely because one workflow implements them.
 | P0.5 safety controller | partial | The `NC-20260816-002` controller remains default-off; exact release `d32fda08` deploys and live-verifies a dry-run-first, auto-restored production transaction across Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, and Hive/Firestore with no external write, queue mutation, or Hive retry consumption. `NC-20260816-004` adds next-turn stale warm/adoption revocation when manifest enforcement is enabled. Immediate in-flight interruption, standalone-script/remaining-integration coverage, per-action ceilings, and automatic demotion remain open. |
 | P0.6 trusted build and supply chain | partial | Release provenance and exact-runtime checks are deployed for the current email lineage; immutable workflow pins, least privilege, dependency/secret controls, and the skill-PR boundary remain incomplete. |
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
-| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` applied the production schema and live-verified the bounded observer across completion, source-gap, and duplicate-only replay; `NC-20260816-014` adds the read-only integrity/exception report and `NC-20260816-015` deploys and live-verifies one full bounded production read with unchanged state. SQLite remains email authority and workflow promotion plus a second pilot process are still open. |
+| P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales stage-disposition-event-receipt foundation; `NC-20260816-001` applied the production schema and live-verified the bounded observer across completion, source-gap, and duplicate-only replay; `NC-20260816-014` adds the read-only integrity/exception report and `NC-20260816-015` deploys and live-verifies one full bounded production read with unchanged state. `NC-20260816-016` adds an unapplied, unwired second-pilot contract for Campanero host-job runs with exact success/failure receipts and no raw job result fields. SQLite remains authority; second-pilot production parity and either workflow's promotion remain open. |
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
-| P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places; they are not normalized behind one trigger/run contract or reconciled as one inventory. |
+| P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places. `NC-20260816-016` defines one immutable `job_run_logs.id` execution contract and exposes the `already_running` durability gap, but it is local/unwired and does not normalize definitions, skipped attempts, launchd, n8n, reapers, or all trigger types as one inventory. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
 | P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014` adds the compact exception surface for the Mailman/Sales ledger pilot and `NC-20260816-015` proves it against production, but a second workflow, normalized correlation, and recurring briefs remain incomplete. |
 | P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
@@ -1429,6 +1429,18 @@ deadline, and outcome-missing work. `NC-20260816-015` deploys it and proves one
 full production read with unchanged ledger/email fingerprints. It is not
 daemon-wired, supplies no resolution action, and does not bypass the R3 trigger
 or R4 operator-workflow gates.
+
+R2 second-pilot local checkpoint: `NC-20260816-016` selects Campanero host-job
+runs because the role is already constrained to the jobs-only host boundary.
+Migration 119 widens the ledger under workflow-specific identity checks, and
+an injected projector maps one immutable SQLite `job_run_logs.id` through
+accepted, execution-started, exact successful outcome or exact failed-run
+receipt. The type excludes output/error/log/script/environment content and the
+projector is not imported by the daemon. The migration is not applied, the
+existing report remains `sales_email`-only, and no job/schedule/Campanero or
+production state changes. Production schema, bounded observation/parity,
+multi-workflow reporting, trigger normalization, and authority remain separate
+gates.
 
 Each slice receives one or more separate `NC-YYYYMMDD-NNN` tasks only when work
 starts. Do not reserve future IDs, combine these slices into one implementation

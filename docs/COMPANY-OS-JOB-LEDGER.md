@@ -1,0 +1,144 @@
+# Company OS work ledger — Campanero host-job pilot
+
+Status: local, dark foundation only; migration 119 is not applied and no
+runtime producer, report, schedule, or workflow dependency is wired
+Task: `NC-20260816-016`
+Decision: SQLite `jobs` and `job_run_logs` remain host-job authority; the
+PostgreSQL ledger may only project exact structural run facts
+
+## 1. Outcome and boundary
+
+The second pilot represents one host job execution attempt as one durable work
+item:
+
+```text
+job_run_logs row inserted
+  → child process PID recorded
+  → exact terminal row recorded
+  → successful outcome receipt or named failed-run receipt
+```
+
+Campanero is the jobs-only management interface. It is not the scheduler or
+execution authority. The authoritative sources remain:
+
+- the host job registry plus the SQLite `jobs` row for definition/enabled/next
+  run state;
+- the SQLite `job_run_logs` row for one exact execution attempt;
+- `src/job-runner.ts` and `src/task-scheduler.ts` for execution mechanics.
+
+NC-016 does not import the projector from the daemon, query either database,
+run/pause/resume a job, change a schedule, post a result, alter Campanero's
+prompt/capability, apply migration 119, or deploy a release.
+
+## 2. Work identity and source facts
+
+One `job_run_logs.id` is one work item. The privacy-minimized source identity is
+`sqlite_host_job_run` plus `<job-name>:<run-id>`. Retry attempts retain their
+own run IDs and therefore remain separate work items; parent/child retry joins
+belong to the later R5 task model and are not inferred here.
+
+The projector type accepts only:
+
+- run ID and job name;
+- structural trigger identity;
+- start/finish timestamps;
+- status, duration, exit code, PID presence, retry attempt, and timeout.
+
+It cannot accept job output, error text, log path, script, arguments, prompt,
+environment, credentials, or arbitrary payload. PostgreSQL receives opaque
+identity, timestamps, named codes, and SHA-256 evidence only.
+
+## 3. State and receipt mapping
+
+| Ledger fact | Exact SQLite source | Ledger result |
+| --- | --- | --- |
+| `accepted` | inserted `job_run_logs` row with run ID/start time | `accepted/open` |
+| `execution_started` | positive host-recorded PID | `execution_started/open` |
+| `outcome_validated` | `ok`, exact finish/duration, PID, and exit code 0 | `outcome_validated/completed` plus `outcome_validation` receipt |
+| `execution_failed` | exact terminal `fail`, `timeout`, or `dispatch_error` row | last verified stage/`failed` plus terminal receipt and named code |
+| `failed` source gap | contradictory or incomplete structural facts | last verified stage/`failed`, no invented terminal receipt |
+
+An `ok` row without durable PID evidence does not become complete. A running
+row stays open; its deadline is start + configured timeout + the job runner's
+five-minute orphan grace. A terminal row missing finish/duration facts becomes
+an explicit `source_gap:*` failure. No model text can supply or repair a fact.
+
+Terminal failure codes are bounded to:
+
+- `job_run:timeout`;
+- `job_run:dispatch_error`;
+- `job_run:prelaunch_failure`;
+- `job_run:exit_nonzero`;
+- `job_run:process_error`.
+
+## 4. Schema decision
+
+Migration 119 widens migration 118 rather than creating a parallel ledger:
+
+- `workflow_type` adds `host_job_run`;
+- `completion_definition` adds `host_job_terminal_receipt`;
+- the job-only `execution_started` and `execution_failed` events are added;
+- Party and pipeline IDs become nullable at the column level but a
+  workflow-specific constraint still requires both for `sales_email` and
+  forbids both for `host_job_run`;
+- terminal success and failure require exact receipts;
+- all existing append-only, source identity, idempotency, optimistic version,
+  ownership, and no-agent-grant controls remain.
+
+The non-auto-discovered rollback refuses to narrow the schema while any
+`host_job_run` history exists. Existing Mailman/Sales history is never deleted.
+
+## 5. Local implementation state
+
+`src/company-work-ledger.ts` contains the host-only typed job create/transition
+contract. `src/company-job-work-shadow.ts` is a single-run injected projector.
+It has no source reader, timer, daemon import, channel dependency, or scheduler
+dependency. That makes the NC-016 proof a local state-machine and
+privacy/duplicate contract, not a production observation.
+
+The existing Company OS exception CLI still filters `sales_email`; it must not
+be described as covering host jobs. A later report change must add
+workflow-specific receipt/state checks without making one workflow's stage
+rules apply to the other.
+
+## 6. Separate activation gates
+
+If the local foundation is accepted, activation requires a new task and all of
+the following:
+
+1. reconcile migration 119 with the then-live schema and concurrent migration
+   owners;
+2. take an exact backup and explicitly apply only migration 119;
+3. add a default-off, bounded observer with a required lower-bound timestamp
+   and batch limit;
+4. prove historical running, success, failure, timeout/dispatch, source-gap,
+   and duplicate-only cases without changing `jobs` or `job_run_logs`;
+5. widen the read-only exception report with workflow-specific validation;
+6. verify pre/post job catalog/run fingerprints, scheduler health, queues, and
+   channel state;
+7. retain SQLite and the job registry as authority.
+
+Scheduling the observer, sending a brief, resolving an exception, retrying a
+job, normalizing all trigger types, or making the ledger authoritative are
+later, separately authorized milestones.
+
+## 7. Known gaps
+
+- `already_running` advances `jobs.next_run` but creates no `job_run_logs` row,
+  so this pilot cannot project that skipped attempt. Fixing source durability
+  belongs to scheduler ownership/trigger normalization, not this shadow.
+- Registry definitions are mutable cached state; this pilot keys execution
+  work by immutable run ID and does not claim a versioned job-definition
+  catalog.
+- Retry attempts have no durable parent link yet.
+- No production rows, parity history, recurring brief, or business outcome are
+  proven by NC-016.
+
+## 8. Rollback
+
+Before schema application, revert the local source/migration/documentation
+change. There is no service, database, scheduler, message, or job recovery.
+
+After any future schema application, disable/remove the observer first. Leave
+recorded history dormant. Use the tracked rollback only when its host-job
+history precheck passes; never delete work history to make rollback convenient.

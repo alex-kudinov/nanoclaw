@@ -52,8 +52,13 @@ before applying anything.
 - migration 118 is the host-only Company OS work-ledger foundation created by
   `NC-20260815-010`; `NC-20260816-001` records its separately backed-up,
   explicit production apply and live-verified default-off observer deployment;
+- migration 119 is the local, unapplied `NC-20260816-016` host-job extension.
+  It has no runtime producer and grants no agent access; see
+  `docs/COMPANY-OS-JOB-LEDGER.md`;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
-  and refuses to erase any recorded work history.
+  and refuses to erase any recorded work history;
+- `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
+  refuses to narrow the schema while any host-job history exists.
 
 ## Rollback
 

@@ -92,6 +92,44 @@ outside the current client conversation.
 
 ## Task details
 
+### NC-20260816-016
+
+- Trigger/base: the owner approved the next Company OS milestone after the
+  read-only Mailman/Sales brief was deployed and live read-verified. This task
+  uses an isolated worktree from documentation head `b4712bd`; it does not
+  assume that a local candidate is active production code.
+- Outcome: establish Campanero host-job executions as the second work-ledger
+  pilot while keeping the existing SQLite job registry and `job_run_logs` as
+  execution authority.
+- Scope/authority: C2 local, reversible, dark implementation only. It may add
+  an unapplied additive migration/rollback, host-only typed transition policy,
+  privacy-minimized injected projector, tests, and continuity documentation.
+  It must not apply schema, read or write production, import the projector into
+  the daemon/scheduler, change a job or schedule, alter Campanero's prompt or
+  capability, deploy, send a message, push, or merge.
+- Implementation: migration 119 adds the `host_job_run` workflow and exact
+  start/terminal-failure facts while retaining every migration-118 append-only,
+  ownership, version, idempotency, and no-agent-grant control. One
+  `job_run_logs.id` maps to one non-Party work item. The unwired single-run
+  projector accepts structural run fields only and records exact terminal
+  receipts; contradictory or incomplete facts become named source gaps without
+  an invented receipt. Existing email APIs remain workflow-guarded and the
+  read-only report remains explicitly `sales_email`-only.
+- Verification: exact Node 22.23.2 passes 35/35 focused ledger/shadow tests,
+  typecheck, build, source formatting, 635/635 email-critical tests, and the
+  independent runner build plus 43/43 tests. The unrestricted full root suite
+  passes 2,501/2,502; the sole failure is the unchanged unrelated CNPC wrapper
+  string assertion. Disposable PostgreSQL 16.15 proved 118 -> 119 preserves an
+  email row, accepts a receipt-bound host terminal failure, rejects Party-bound
+  job work, and refuses rollback with host history; a separate 118 -> 119 ->
+  rollback run restored the email-only NOT NULL contract without data loss.
+- Known gap: `already_running` has no durable `job_run_logs` row and therefore
+  cannot be projected. Source durability/trigger normalization belongs to a
+  later scheduler-owned task; it is not inferred from mutable job state here.
+- Rollback: revert this local branch. Migration 119 is not applied and the
+  projector is not runtime-wired, so no database, job, schedule, service,
+  channel, or external-state recovery applies.
+
 ### NC-20260816-015
 
 - Trigger/base: the owner approved NC-014's separately gated next milestone
