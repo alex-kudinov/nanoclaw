@@ -14,9 +14,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Owner/client: Codex
 - State: in_progress; local implementation and disposable-data proof complete,
   production migration/release/activation/natural acknowledgment pending
-- Commit/PR: claim `a036f5a` on
-  `codex/nc-20260816-018-company-work-exception-loop`; implementation commit
-  pending; no PR
+- Commit/PR: claim `a036f5a`; implementation `bb417fb` on
+  `codex/nc-20260816-018-company-work-exception-loop`; no PR
 - Change class: C5 — exact Slack UID operator identity, C3 internal Slack
   delivery, and C2 host-only PostgreSQL attention state
 - Implementation: migration 120 adds admin-only current reason cases, exact
