@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-017` | Activate the Campanero host-job work-ledger pilot with bounded shadow projection and workflow-specific read-only reporting while leaving SQLite and the scheduler authoritative | Codex | `codex/nc-20260816-017-campanero-ledger-activation` @ `d8f198d` | `in_progress` | C2 | Reconcile live release/schema/jobs, add a default-off timestamp/batch-bounded host observer and job-aware exception reporting, verify exact Node/data/continuity gates, apply only migration 119, deploy one exact immutable release, run a bounded production observation, and prove job/schedule/channel/ledger parity. Excludes job run/pause/resume, schedule or registry mutation, Campanero prompt/capability changes, recurring delivery, Slack/Gmail messages, external writes, push, and merge. | Read current production identity/schema/job fingerprints and overlap, then implement and verify the observer/report slice before any migration or deployment. | 2026-08-17T00:39Z |
 | `NC-20260816-016` | Establish Campanero host-job runs as the second Company OS work-ledger pilot without changing scheduler behavior or applying production schema | Codex | `codex/nc-20260816-016-campanero-ledger-shadow` @ `9fb0437` | `complete` | C2 | Local-only migration 119/rollback, host-only typed job-run transitions, privacy-minimized injected projection, tests, and Company OS/data/project continuity are committed. SQLite remains authority; the migration/projector are unapplied and unwired. No job, schedule, Campanero prompt/capability, production data, service, deployment, or external-message state changed. | None for this local milestone. Production migration, a default-off bounded observer, historical/live parity proof, and workflow-specific report widening require a separate activation task and authority. | 2026-08-17T00:36Z |
 | `NC-20260816-015` | Deploy the exact read-only Company OS exception brief and prove one bounded production read without changing workflow or email state | Codex | `codex/nc-20260816-015-work-ledger-report-deploy` @ deployed `cf96258` | `complete` | C2 | Exact release `cf96258` is live with one listener, healthy Slack/Gmail, empty runtime/email queues, and the daemon-disconnected report. One bounded production read classified 3 completed items and one known critical stale source gap. Before/after fingerprints remained 4 work items, version sum 25, 29 events, 13 receipts, 61 confirmed/6 blocked email actions, and 334 email events. No task-authored message or production-data write occurred; one later ambient Booking Slack output is not NC-015 evidence. | None for this deployment/read-proof milestone. Recurring delivery, operator acknowledgment/resolution, workflow authority, and a second pilot process require separate tasks and authority. | 2026-08-16T23:58Z |
 | `NC-20260816-014` | Turn the Mailman/Sales shadow ledger into a read-only reconciliation and compact exception brief without changing email behavior | Codex | `codex/nc-20260816-014-work-ledger-exceptions` @ `7ee3f67` from deployed `02ce48f` | `complete` | C2 | Existing host-only Company OS ledger projection, metadata-only exception classification/reporting, focused tests, and ledger/project/roadmap continuity. Excludes Sales scheduled-task continuation files, agent prompts, email approval/draft/send/retry/closure behavior, production writes, deployment, Slack/Gmail posts, push, and merge. | None for this local milestone. Deployment, production read proof, recurring Slack delivery, operator resolution, or workflow dependency require separate tasks and authority. | 2026-08-16T23:29Z |
@@ -91,6 +92,39 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-017
+
+- Trigger/base: the owner approved NC-016's separately gated production
+  activation milestone after its dark schema/projector foundation was committed
+  and locally verified. This task starts from exact NC-016 closeout `d8f198d`
+  and must re-read current production state rather than infer it from NC-015.
+- Outcome: apply the compatible ledger schema, project a bounded set of exact
+  SQLite host-job run facts into PostgreSQL, and make host-job exceptions
+  visible through the read-only Company OS report without allowing the ledger
+  or Campanero to control execution.
+- Scope/authority: C2 production schema/write plus reversible service
+  activation. Add a default-off observer with required lower-bound timestamp
+  and batch ceiling, workflow-specific report rules, tests, release and
+  rollback evidence; explicitly apply only migration 119; deploy the exact
+  verified release; run one bounded projection/report; compare before/after
+  job definitions, run logs, schedules, channels, email state, and ledger
+  fingerprints. No job run/pause/resume, job definition/schedule mutation,
+  agent prompt/capability change, recurring task, Slack/Gmail/customer message,
+  other external write, push, or merge is authorized.
+- Acceptance: reconcile the then-live schema/release first; historical
+  success/failure/timeout/dispatch/source-gap/running rows and exact retries are
+  covered; the observer is disabled by default and cannot accept raw output or
+  error content; report validation is workflow-specific; exact Node 22.23.2
+  focused/full/email/runner/data/docs gates pass; deployment converges to one
+  healthy listener; and the bounded production proof changes only the expected
+  PostgreSQL work-ledger rows while SQLite job/schedule/run fingerprints and
+  channel/email state remain unchanged.
+- Rollback: before projection, restore the prior immutable release and leave
+  migration 119 dormant. After projection, disable the observer and restore the
+  prior release; retain append-only host-job history. Use the tracked schema
+  rollback only if its no-host-history precondition still passes; never delete
+  history to force a rollback.
 
 ### NC-20260816-016
 
