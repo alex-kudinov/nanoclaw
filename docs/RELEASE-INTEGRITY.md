@@ -47,6 +47,17 @@ preceded explicit migration 119 application, and recovery-safe activation
 retained the prior `cf96258` plist. Exact digests and paths are recorded in
 `docs/ENGINEERING-CHANGELOG.md`.
 
+Beginning with NC-018, the archive also binds migration 120, its
+history-preserving rollback, and
+`scripts/set-company-work-exception-loop.mjs`. Bundling these bytes does not
+apply or enable the operator loop. Backup, one-file migration, structural
+verification, default-off service activation, redacted config dry-run/apply,
+restart, and natural Chief-channel acknowledgment remain separate recorded
+gates. The helper refuses a release mismatch, defaults to dry-run, accepts only
+approved existing named-operator sources, requires the exact hostname for
+mutation, creates an exclusive backup, and writes atomically without printing
+UID values.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;
