@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17T16:08Z
 - Owner/client: Codex
-- State: ready_for_review; local dark foundation implemented and rehearsed,
+- State: complete; local dark foundation implemented, rehearsed, and committed,
   not deployed or activated
-- Commit/PR: claim `917497d8`; implementation pending on
+- Commit/PR: claim `917497d8`; implementation `070e781a` on
   `codex/nc-20260817-003-trigger-source-watermarks`; no PR
 - Change class: C2 — additive local contract and unapplied host-only schema
 - Source reconciliation: the existing exact-boundary scheduled-task observer
