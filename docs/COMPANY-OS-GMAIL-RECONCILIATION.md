@@ -1,8 +1,9 @@
 # Company OS inbound Gmail gap reconciliation
 
-Status: local dark adapter implemented under `NC-20260817-005`; no production
-source registration, Gmail wrapper, cursor bootstrap, runtime import, or
-ingestion change
+Status: NC-005's local proposal adapter plus NC-006's local, unwired resumable
+shadow foundation are implemented. Migration 123 is unapplied; no production
+source registration/bootstrap, live Gmail read, runtime import, cursor write,
+message recovery, or ingestion change has occurred.
 
 ## Decision
 
@@ -12,11 +13,19 @@ full-mailbox snapshot reaches a terminal page and every returned immutable
 message ID has an explicit accepted or rejected disposition from durable
 evidence.
 
-The adapter is proposal-only. It can construct a content-free
+The NC-005 adapter is proposal-only. It can construct a content-free
 `gap_detected` or `gap_reconciled` input for the generic Company OS watermark
 store. It cannot register a source, write either database, call the live Gmail
 client by itself, route or deliver an email, create work, or grant action
 authority.
+
+NC-006 adds a separate shadow ledger around that same proof boundary. Its
+Google wrapper exposes only `users.getProfile` and unfiltered
+`users.messages.list`; its local store writes only resumable scan state and
+content-free candidate receipts. A terminal shadow still calls the NC-005
+proposal function, so resumability cannot weaken the original stable-head,
+freshness, uniqueness, or exact-accounting requirements. The shadow does not
+record the proposed generic watermark event.
 
 This decision covers the inbound push source only. The separately scheduled
 Gmail label-correction poll owns `gmail_label_poll_history_id`, has different
@@ -39,12 +48,23 @@ The dark adapter instead models unfiltered `users.messages.list` pagination:
 - no label filter;
 - `includeSpamTrash: true`;
 - 500 IDs per page;
-- no more than 20 pages (10,000 current mailbox messages);
+- the one-shot NC-005 reader stops at 20 pages;
 - the final page must omit `nextPageToken`.
 
-The page cap, eight-day gap-age limit, and twenty-minute freshness budget make
-the attempt bounded. Hitting any bound leaves the gap open. Gmail's
+NC-006 retains the 20-page bound per invocation but persists an opaque
+continuation token and immutable page/candidate receipts across invocations.
+It allows at most 10,000 total pages while retaining the same eight-day gap-age
+and twenty-minute whole-attempt freshness budgets. A 20-page chunk therefore
+returns `pending`, not truncated success; only the total cap invalidates the
+attempt. Gmail's
 `resultSizeEstimate` is deliberately not accepted as exact accounting.
+
+Google documents `pageToken` only as the token used to retrieve a particular
+result page; it does not document a frozen-mailbox snapshot guarantee. The
+token therefore supplies resumability, not correctness. NanoClaw's additional
+proof is that the current profile `historyId` equals the initial head before
+every resumed chunk and again after the terminal page. Any drift invalidates
+the attempt.
 
 References: [Gmail history list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list),
 [Gmail messages list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list),
@@ -117,6 +137,49 @@ gap ID, with the stable profile head as the proposed next cursor and one digest
 over the source, gap, bounds, page count, sorted IDs, dispositions, reason keys,
 and per-candidate evidence. It returns no raw email content or addresses.
 
+## Resumable read-only shadow
+
+`createCompanyGmailReadOnlyPort()` is the exact Google client boundary:
+
+- `users.getProfile({userId: 'me'})` returns only `historyId` to the adapter;
+- `users.messages.list` always uses `userId: 'me'`, `maxResults: 500`, and
+  `includeSpamTrash: true`;
+- a null page token is omitted and a non-null token is passed unchanged;
+- `q`, `labelIds`, `messages.get`, label mutation, send, and reply are absent.
+
+Migration 123 defines three unapplied, host-admin-only tables:
+
+| Table | Durable purpose |
+| --- | --- |
+| `company_gmail_reconciliation_snapshots` | exact source/gap binding, stable initial head, versioned status/counts, and the one active opaque continuation token |
+| `company_gmail_reconciliation_pages` | append-only page index, token hashes, candidate counts, and page fingerprint |
+| `company_gmail_reconciliation_candidates` | one append-only Gmail message ID plus accepted/rejected disposition, bounded reason key, and SHA-256 evidence |
+
+No table has a sender, recipient, address, subject, header, snippet, body,
+payload, prompt, task, approval, capability, action, or arbitrary metadata
+field. Page and candidate tables are append-only. One partial unique index
+allows only one `pending`/`listed` attempt per exact source gap. Snapshot state
+uses compare-and-swap versioning; exact page replay converges and changed or
+stale replay fails closed. The raw continuation token exists only in the
+admin-only active snapshot row and is cleared at terminal completion or
+invalidation; append-only page history retains hashes only.
+
+Each invocation performs this sequence:
+
+1. Revalidate the source, watermark version, prior cursor, exact open gap,
+   target, start time, and initial history head.
+2. Read the current profile and invalidate on head drift.
+3. Fetch and durably account at most 20 pages, committing each page and all of
+   its candidate receipts atomically. An unknown candidate leaves the page
+   uncommitted and the snapshot pending.
+4. Return sanitized pending counts when a continuation remains; never expose
+   the token.
+5. After a terminal page, read the profile again, load every durable candidate
+   receipt, verify stored counts, and pass the closed snapshot through the
+   common NC-005 proposal function.
+6. Mark only the shadow snapshot complete. The generic watermark state remains
+   unchanged until a later, separately authorized caller records the proposal.
+
 ## Fail-closed outcomes
 
 No reconciliation proposal exists when any of these occurs:
@@ -125,13 +188,17 @@ No reconciliation proposal exists when any of these occurs:
 - stale/reversed cursor or profile head behind the notification;
 - gap-age or freshness budget exceeded;
 - Gmail/profile/list/accounting read failure;
-- invalid/oversized page, repeated page token, residual page token at the cap;
+- invalid/oversized page, repeated page token, or the total-page cap;
 - invalid or duplicate message ID;
 - unknown or malformed candidate disposition/evidence;
 - profile head drift during the snapshot.
 
-Because the function never writes the generic store, all failures leave the
-durable gap untouched when a later caller follows the proposal/record boundary.
+Because neither path writes the generic watermark store, all failures leave
+the durable gap untouched. The shadow invalidates a permanently contradictory
+attempt (head drift, pagination cycle, duplicate candidate, freshness expiry,
+or total-page cap) and clears its raw token. A source error or unknown durable
+disposition leaves the current page uncommitted so a later bounded retry can
+resume safely.
 
 ## Evidence and limitations
 
@@ -139,15 +206,25 @@ NC-005 uses injected synthetic ports only. Focused tests prove deterministic
 source/gap identity, terminal multi-page success, stable replay evidence,
 empty-snapshot accounting, exact request bounds, and the refusal paths above.
 
+NC-006 adds exact-wrapper, resumability, migration/privacy, replay, drift,
+unknown-accounting, and pagination-cycle tests. A disposable PostgreSQL 16
+rehearsal applied migrations 122 and 123, completed 10,001 candidates over 21
+pages in two bounded advances, produced exact 5,001 accepted plus 5,000
+rejected accounting, returned the same completion evidence on replay,
+enforced append-only candidate rows, exposed only `nanoclaw_admin` table
+grants, refused populated rollback, and accepted empty rollback. All data and
+the cluster were synthetic and removed after the rehearsal.
+
 This is not yet a live Gmail recovery fix:
 
 - no production source row or watermark state exists;
-- no Google client wrapper calls `users.getProfile` or `users.messages.list`;
+- migration 123 is tracked but unapplied;
+- the exact Google wrapper has not called a live mailbox;
 - current inbound push still resets `gmail_history_id` on 404;
 - current rejection paths are often in-memory rather than durably receipted, so
   a real accounting callback cannot yet classify every full-snapshot candidate;
-- a mailbox above 10,000 current messages will retain the gap until a reviewed
-  resumable/partitioned full-sync design exists;
+- the resumable design proves more than 10,000 candidates synthetically but
+  has no production runtime, storage-cost, token-lifetime, or latency evidence;
 - a message permanently deleted before a full snapshot is no longer visible in
   Gmail's current authoritative mailbox and cannot be recovered by this API;
 - active mailboxes may need retry until one attempt observes a stable head;
@@ -157,21 +234,21 @@ These are activation blockers, not successful-recovery claims.
 
 ## Promotion gates
 
-The next production-facing milestone must remain separately tracked and must:
+The next production-facing milestones must remain separately tracked and must:
 
 1. define durable accepted/rejected evidence for every current-mailbox message
    without treating the in-memory `processedIds` cache as authority;
-2. implement and test the exact read-only Google client wrapper, preserving the
-   unfiltered/full-snapshot request contract;
-3. decide how a mailbox over 10,000 messages can complete through resumable,
-   immutable partitions without weakening stable-head and exact-accounting
-   proof;
-4. register and bootstrap one inbound source in production without changing
+2. back up PostgreSQL, apply migration 123 dark, and verify all three tables
+   empty/admin-only before any producer exists;
+3. register and bootstrap one inbound source in production without changing
    `gmail_history_id` or wiring 404 behavior;
-5. run a read-only shadow snapshot and prove terminality, stable head, exact
-   candidate accounting, privacy bounds, runtime cost, and no source/work/email
-   mutation;
-6. only after those gates, separately intercept a natural 404 as
+4. deploy the wrapper and shadow store still default-off, then observe a
+   natural source gap or approve a separate gap-independent audit design; do
+   not manufacture an expiry merely to exercise the ledger;
+5. run a real read-only shadow and prove terminality, stable head, exact
+   durable candidate accounting, privacy/token cleanup, runtime/API cost, and
+   no source/work/email mutation;
+6. only after those gates, separately promote natural-404 handling to
    `gap_detected`, recover any missing eligible candidates through the ordinary
    durable inbound path, and record `gap_reconciled` before advancing;
 7. add watermark-age/operator attention and rollback/demotion evidence;

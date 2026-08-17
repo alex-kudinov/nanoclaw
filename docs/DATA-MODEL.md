@@ -57,6 +57,16 @@ cursor until reconciliation names that exact gap. `NC-20260817-004` applies
 the schema and deploys exact release `070cde38` dark: all three tables are live,
 empty, and admin-only. The module remains unwired, no source is registered or
 seeded, and runtime/task/action authority is unchanged.
+`NC-20260817-006` adds unapplied migration 123 for the inbound-Gmail
+reconciliation shadow: one host-admin resumable snapshot row plus append-only
+page and per-message-ID accepted/rejected receipts. It stores no sender,
+address, subject, header, body, prompt, approval, task, or action data, and the
+active opaque continuation token is cleared on completion/invalidation.
+Disposable PostgreSQL proves 10,001 synthetic candidates over 21 pages, exact
+completion replay, append-only enforcement, admin-only grants, and guarded
+rollback. Production schema, source/watermark rows, Gmail cursors, and runtime
+imports remain unchanged; see
+`docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
 
 ---
 

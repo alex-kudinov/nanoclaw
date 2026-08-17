@@ -70,7 +70,7 @@ company-wide merely because one workflow implements them.
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
 | P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface; NC-017 adds a proven host-job source. Exact release `a2e6d35` activates NC-018's first combined recurring brief for one owner-confirmed operator, and active release `baed66d` preserves it; its first natural Chief delivery, exact named acknowledgment, and threaded receipt are durable with aggregate health and fail-closed state. Normalized correlation, weekly quality/cost evidence, and wider coverage remain incomplete. |
 | P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
-| P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable. `NC-20260817-003` implements the generic source-watermark contract: monotonic CAS advance, complete accepted/rejected accounting, gap freeze, exact-gap reconciliation, append-only history, and zero agent grants pass disposable PostgreSQL rehearsal. `NC-20260817-004` applies migration 122 and deploys it dark with zero source/event/state rows and no runtime import. `NC-20260817-005` adds a local proposal-only inbound-Gmail full-snapshot adapter that refuses non-terminal, unstable, over-budget, duplicate, or incompletely accounted scans. It is not registered or wired; durable per-message accounting, large-mailbox completion, real read-only Gmail shadow proof, watermark-age alerts, production recovery, and label-poll expiry remain open. |
+| P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable. `NC-20260817-003` implements the generic source-watermark contract: monotonic CAS advance, complete accepted/rejected accounting, gap freeze, exact-gap reconciliation, append-only history, and zero agent grants pass disposable PostgreSQL rehearsal. `NC-20260817-004` applies migration 122 and deploys it dark with zero source/event/state rows and no runtime import. `NC-20260817-005` adds the local proposal-only inbound-Gmail full-snapshot proof. `NC-20260817-006` adds an unwired exact read-only Google wrapper plus unapplied migration 123's resumable content-free shadow ledger; disposable PostgreSQL completes 10,001 synthetic candidates over 21 pages with stable replay, guarded rollback, and admin-only grants. It is not registered, migrated, live-read, or wired; real durable rejection evidence, production source/bootstrap and shadow proof, watermark-age alerts, natural-404 recovery, and label-poll expiry remain open. |
 | P1.8 migration discipline | partial | Ordered tracked `business_v2` migrations and structure-only schema checks exist; checksums, fresh-database CI, portability, and universal migration/restore gates remain incomplete. |
 | P1.9 canonical identity and lineage | partial | Party-scoped authorization, entry/email resolution, and canonical Slack lead threads improved lineage; first-touch and cross-process lineage are not universal. |
 | P1.10 privacy and records governance | still proposed | Data is protected by scoped roles and handling rules in places, but classification, retention, deletion, legal hold, and subject-access operations are not one accepted system. |
@@ -1503,6 +1503,21 @@ register/bootstrap a source, write a watermark, change the current 404 reset,
 or cover label correction. Current rejection evidence and mailbox-size handling
 remain explicit activation blockers.
 
+R3 inbound-Gmail resumable-shadow checkpoint: `NC-20260817-006` adds the
+unwired exact Google profile/list wrapper and migration 123's admin-only
+snapshot/page/candidate target. The wrapper omits query and label filters,
+includes Spam/Trash, returns IDs only, and exposes no message read or write
+method. The shadow advances at most 20 pages per invocation, retains one opaque
+active continuation token plus append-only token hashes and per-ID
+accepted/rejected receipts, rechecks the profile head before every resume and
+after terminal listing, and reuses NC-005's final proof. Disposable PostgreSQL
+completes 10,001 candidates across 21 pages, returns replay-stable completion,
+enforces append-only receipts and admin-only grants, refuses populated
+rollback, and permits empty rollback. Migration 123 remains unapplied and no
+production source, Gmail call, cursor, 404 path, recovery, task, or action is
+changed. Real durable rejection evidence and production shadow observation are
+still activation blockers.
+
 R4 first operator-loop checkpoint: exact release `a2e6d35` activates
 `NC-20260816-018` with live migration 120, an additive host-only
 case/brief/event ledger, and recurring Chief-channel delivery over
@@ -1836,9 +1851,11 @@ Implementation checkpoint (2026-07-29):
     inventory/watermark target with fail-closed gap semantics;
     `NC-20260817-004` applies and deploys that empty admin-only schema without
     runtime wiring. `NC-20260817-005` adds the local proposal-only inbound-Gmail
-    full-snapshot contract, but performs no live read, registration, bootstrap,
-    cursor write, or recovery. Durable candidate accounting, large-mailbox
-    completion, production source registration/shadow/runtime proof, label-poll
+    full-snapshot contract. `NC-20260817-006` adds the exact read-only wrapper
+    and unapplied resumable shadow target, with synthetic/disposable proof past
+    10,000 candidates, but performs no live read, registration, bootstrap,
+    cursor write, or recovery. Real durable rejection accounting, migration-123
+    dark apply, production source registration/shadow/runtime proof, label-poll
     recovery, recurring definitions, other adapters, and task create/resume
     wiring remain separately gated.
 25. `CAP-001` — define versioned skill packages with declared inputs, outputs,

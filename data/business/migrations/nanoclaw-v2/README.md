@@ -69,12 +69,21 @@ before applying anything.
   and append-only checkpoint/gap/reconciliation history are live but empty and
   admin-only. It remains unwired, registers no source, and grants no agent or
   task/action authority;
+- migration 123 is the local, unapplied inbound-Gmail reconciliation shadow
+  target created by `NC-20260817-006`. It adds admin-only resumable snapshot
+  state plus append-only page and per-message-ID accepted/rejected receipts.
+  The one active opaque page token is cleared at terminal or invalidation;
+  append-only history stores token hashes only. Disposable PostgreSQL proves a
+  21-page/10,001-candidate terminal attempt, replay stability, permissions, and
+  guarded rollback. It is not production schema presence, source registration,
+  live Gmail evidence, cursor wiring, message recovery, or action authority;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-122 are non-auto-discovered and refuse to erase populated
-  operator-attention, trigger-occurrence, or source/watermark history.
+- rollbacks 120-123 are non-auto-discovered and refuse to erase populated
+  operator-attention, trigger-occurrence, source/watermark, or Gmail-shadow
+  history.
 
 ## Rollback
 

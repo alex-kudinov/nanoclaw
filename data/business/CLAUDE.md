@@ -55,6 +55,18 @@ task, agent, approval, message, or action authority is added. Use NC-004's
 active-work/changelog evidence for the exact backup, migration, release, and
 zero-row proof; schema presence is not source activation evidence.
 
+Migration 123 is tracked but unapplied under `NC-20260817-006`. It defines the
+admin-only resumable state, append-only page receipts, and immutable per-Gmail-
+message-ID accepted/rejected evidence for the inbound full-snapshot shadow.
+The local wrapper can call only Gmail profile and unfiltered ID listing, and a
+terminal shadow must pass the same NC-005 stable-head/freshness/accounting
+proof. Disposable PostgreSQL completes 10,001 synthetic candidates over 21
+pages and proves replay, permission, append-only, and rollback behavior. No
+production table, source row, Gmail read, cursor, 404 handler, recovered
+message, task, or action exists; repository migration presence is not live
+schema or recovery evidence. Follow
+`docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
+
 ## Connection
 
 ```bash

@@ -8,10 +8,12 @@ expired back to disabled. `NC-20260817-003` adds the unwired source-inventory
 and watermark/gap foundation in migration 122; `NC-20260817-004` applies it and
 deploys exact release `070cde38` dark with all three tables empty and
 admin-only. `NC-20260817-005` adds a local, unwired, proposal-only inbound Gmail
-full-snapshot adapter; production registration, Google-client reads, durable
-candidate accounting, cursor/runtime wiring, and the separate label-correction
-source remain absent. Webhook, topic, and business-condition adapters remain
-absent.
+full-snapshot adapter. `NC-20260817-006` adds a local exact read-only Google
+wrapper and resumable content-free shadow target in unapplied migration 123;
+synthetic/disposable proof crosses 10,000 candidates, but production
+registration, migration, live Google reads, real durable rejection accounting,
+cursor/runtime wiring, and the separate label-correction source remain absent.
+Webhook, topic, and business-condition adapters remain absent.
 
 ## Purpose
 
@@ -138,7 +140,7 @@ This contract does not pretend that all existing sources are equally ready:
 | Family | Verified current mechanics | Normalized-adapter readiness |
 | --- | --- | --- |
 | time | one exact scheduled-task claim observer was proven and is now disabled; intended boundary is the occurrence identity | proven for that one no-cursor source only |
-| Gmail | inbound push and label-correction polling keep separate mutable history IDs in SQLite; both re-bootstrap on expiry, and inbound push explicitly accepts an unmeasured loss window | NC-005 locally proves a strict proposal-only full-snapshot contract for inbound push; activation remains blocked on durable per-message accounting, a real read-only Google wrapper, mailbox-size handling, source registration/bootstrap, shadow proof, and runtime wiring. Label correction remains unaddressed. |
+| Gmail | inbound push and label-correction polling keep separate mutable history IDs in SQLite; both re-bootstrap on expiry, and inbound push explicitly accepts an unmeasured loss window | NC-005 locally proves the strict proposal contract. NC-006 adds the exact read-only wrapper and resumable shadow ledger, with local proof over 10,001 candidates. Activation remains blocked on real durable rejection accounting, migration-123 apply, source registration/bootstrap, live shadow proof, and runtime wiring. Label correction remains unaddressed. |
 | webhook | `webhook_inbox` deduplicates non-null provider event IDs; some extractors still return NULL; only the older Trafft sweeper has a mutable source watermark | eligible only source by source after immutable ID and complete bounded scan proof |
 | topic | Gmail Pub/Sub exists as Gmail transport, not as a generic authenticated topic adapter | absent |
 | business condition | condition-oriented jobs/loops exist, but none emits the normalized occurrence contract from a complete versioned snapshot/window | absent |
@@ -241,7 +243,13 @@ and `gap_reconciled` exists only after a capped unfiltered full snapshot reaches
 a terminal page, every unique message ID receives durable accepted/rejected
 evidence, the profile history head stays fixed, and the age/freshness budgets
 hold. It performs no Gmail read or store write, and current production behavior
-is unchanged. See `docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
+is unchanged. NC-006 completes the next local prerequisite: exact
+profile/unfiltered-list calls plus an unapplied admin-only resumable ledger.
+Its terminal path reuses NC-005's proof, and disposable PostgreSQL verifies a
+21-page/10,001-candidate attempt, exact replay, append-only receipts, and
+guarded rollback. It performs no live Gmail read, production migration/source
+write, cursor update, recovery, task, or action. See
+`docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
 
 No source exception or external event may be manufactured merely to satisfy an
 activation test.

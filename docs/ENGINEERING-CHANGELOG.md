@@ -8,6 +8,68 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-006 — Add resumable inbound Gmail reconciliation shadow
+
+- Date: 2026-08-17T20:19Z
+- Owner/client: Codex
+- State: validating; the local unwired implementation, disposable-database
+  rehearsal, and verification evidence are staged for commit
+- Commit/PR: claim `4ec32bf4` on
+  `codex/nc-20260817-006-gmail-reconciliation-shadow`; implementation pending;
+  no PR
+- Change class: C2 — additive local host-only schema and exact read-only Gmail
+  wrapper with no production or external write
+- Implementation: an exact `users.getProfile` plus unfiltered,
+  Spam/Trash-inclusive `users.messages.list` port now feeds a host-owned
+  resumable shadow orchestrator. Each invocation consumes at most 20 pages;
+  the attempt cap is 10,000 pages. Content-free candidate receipts, page
+  hashes, counts, source/gap identity, and before/after history heads survive
+  restarts without granting message-read, classification, task, action, or
+  cursor authority. Terminal completion reuses the NC-005 immutable proposal
+  contract and marks only the shadow ledger complete.
+- Fail-closed proof: exact begin/page/completion replays converge; changed or
+  stale state, head drift, invalid/repeated IDs, repeated page tokens,
+  freshness expiry, unknown accepted/rejected accounting, non-terminal scans,
+  and count mismatches invalidate or remain pending without producing
+  `gap_reconciled`. Raw continuation tokens are admin-only and are cleared at
+  terminal completion or invalidation; progress output exposes hashes only.
+- Schema/store: unapplied migration 123 adds admin-only snapshot, page, and
+  candidate tables. Page/candidate history is append-only, snapshot progress
+  uses compare-and-swap, one active attempt is enforced, and populated rollback
+  refuses destructive removal. The release builder includes both migration and
+  rollback, but no runtime entry point imports the new orchestrator or store.
+- Disposable PostgreSQL proof: migration 122 then 123 applied on PostgreSQL 16.
+  The real store completed one synthetic 10,001-candidate snapshot in 21 pages
+  across two bounded advances: 5,001 accepted, 5,000 rejected, stable head,
+  exact completed replay, and cleared token. Candidate mutation was refused;
+  only `nanoclaw_admin` held table privileges; populated rollback exited 3 and
+  refused; exact-table truncation followed by empty rollback succeeded. The
+  disposable cluster was stopped and removed.
+- Verification: exact Node 22.23.2 passes 29/29 focused reconciliation and
+  migration tests, 219/219 combined Company OS/Gmail tests, typecheck, root
+  build, 638/638 email-critical tests, and independent runner build plus 43/43
+  tests. Formatting, schema-sanitizer self-test, documentation/capability
+  continuity, and diff checks pass. The unrestricted full suite is
+  2,638/2,639 across 208 files; its sole failure is the unchanged unrelated
+  CNPC wrapper-string assertion expecting literal `folder: 'cnpc'`.
+- Deployment/migration: not performed. No production schema/data/config,
+  trigger source, gap/watermark, Gmail request, SQLite cursor, runtime import,
+  service, message, task, group, prompt, skill, capability, approval, action,
+  send, push, or merge changed. The current history-404 reset path remains live
+  and unmodified.
+- Rollback/recovery: before activation, revert/remove the local module, store,
+  tests, and unapplied migration. If migration 123 is later applied, its
+  rollback is intentionally empty-only; populated evidence must be retained or
+  explicitly migrated under a separately reviewed task.
+- Documentation: updated the Gmail reconciliation contract, trigger contract,
+  Company OS roadmap, project/data maps, business-data guide, migration index,
+  active work, and this changelog.
+- Follow-ups: durable real accepted/rejected ingestion receipts, a separately
+  authorized dark migration/source bootstrap, bounded live read-only shadow
+  proof, and only then production 404 interception or cursor advancement. The
+  label-correction source remains separate; neither live reads nor forced
+  expiry/synthetic customer mail are authorized here.
+
 ### NC-20260817-005 — Add dark inbound Gmail gap-reconciliation proposals
 
 - Date: 2026-08-17T19:23Z

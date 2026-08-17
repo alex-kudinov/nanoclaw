@@ -133,6 +133,28 @@ export interface CompanyGmailReconciliationResult {
   actionAuthority: 'none';
 }
 
+export interface CompanyGmailCandidateReceipt extends CompanyGmailCandidateAccounting {
+  messageId: string;
+}
+
+export interface CompanyGmailClosedSnapshot {
+  startedAt: string;
+  completedAt: string;
+  beforeHistoryId: string;
+  afterHistoryId: string;
+  pagesRead: number;
+  candidates: readonly CompanyGmailCandidateReceipt[];
+}
+
+export interface CompanyGmailReconciliationContext {
+  source: CompanyTriggerSourceDefinition;
+  cursor: string;
+  cursorObservedAt: string;
+  gapEventId: string;
+  targetHistoryId: string;
+  startedAt: string;
+}
+
 function fail(
   code: CompanyGmailReconciliationErrorCode,
   message: string,
@@ -421,16 +443,16 @@ function validateAccounting(
 }
 
 /**
- * Read and account one terminal full-mailbox snapshot.
+ * Validate the immutable source/gap/time boundary before a Gmail call.
  *
- * Success means only that a `gap_reconciled` proposal is safe to submit. The
- * function never submits it. Every refusal throws before a proposal exists, so
- * the durable source remains frozen on its open gap.
+ * The resumable shadow uses the same check at begin and again at completion;
+ * it does not get a weaker recovery contract merely because paging spans more
+ * than one bounded invocation.
  */
-export async function reconcileCompanyGmailHistoryGap(
+export function validateCompanyGmailReconciliationContext(
   input: CompanyGmailReconciliationInput,
-  port: CompanyGmailReconciliationPort,
-): Promise<CompanyGmailReconciliationResult> {
+  startedAtValue: string,
+): CompanyGmailReconciliationContext {
   const source = requireInboundSource(input.source);
   const { cursor, cursorObservedAt } = requireStateCursor(
     source,
@@ -449,7 +471,7 @@ export async function reconcileCompanyGmailHistoryGap(
     fail('gap_mismatch', 'open gap target does not advance the durable cursor');
   }
 
-  const startedAt = normalizeTimestamp(port.now(), 'snapshot startedAt');
+  const startedAt = normalizeTimestamp(startedAtValue, 'snapshot startedAt');
   const gapAgeSeconds =
     (Date.parse(startedAt) - Date.parse(cursorObservedAt)) / 1000;
   if (gapAgeSeconds < 0) {
@@ -462,16 +484,178 @@ export async function reconcileCompanyGmailHistoryGap(
     fail('window_exceeded', 'Gmail gap exceeds the bounded recovery window');
   }
 
+  return Object.freeze({
+    source,
+    cursor,
+    cursorObservedAt,
+    gapEventId,
+    targetHistoryId,
+    startedAt,
+  });
+}
+
+export function validateCompanyGmailReconciliationHead(
+  context: CompanyGmailReconciliationContext,
+  historyIdValue: string,
+): string {
+  const historyId = normalizeHistoryId(historyIdValue, 'profile.historyId');
+  if (compareHistoryIds(historyId, context.targetHistoryId) < 0) {
+    fail('head_behind_gap', 'Gmail profile head is behind the open gap target');
+  }
+  return historyId;
+}
+
+/**
+ * Construct the final proposal from a closed, content-free snapshot.
+ *
+ * This is the common proof boundary for the original one-shot reader and the
+ * resumable shadow ledger. Neither caller can reconcile a gap without the same
+ * exact stable-head, freshness, uniqueness, and accounting checks.
+ */
+export function proposeCompanyGmailSnapshotReconciliation(
+  input: CompanyGmailReconciliationInput,
+  snapshot: CompanyGmailClosedSnapshot,
+): CompanyGmailReconciliationResult {
+  const context = validateCompanyGmailReconciliationContext(
+    input,
+    snapshot.startedAt,
+  );
+  const beforeHead = validateCompanyGmailReconciliationHead(
+    context,
+    snapshot.beforeHistoryId,
+  );
+  const afterHead = normalizeHistoryId(
+    snapshot.afterHistoryId,
+    'profile.historyId',
+  );
+  if (afterHead !== beforeHead) {
+    fail('head_changed', 'Gmail mailbox changed during the full snapshot');
+  }
+
+  const completedAt = normalizeTimestamp(
+    snapshot.completedAt,
+    'snapshot completedAt',
+  );
+  const elapsedSeconds =
+    (Date.parse(completedAt) - Date.parse(context.startedAt)) / 1000;
+  if (elapsedSeconds < 0) {
+    fail('invalid_input', 'snapshot completion predates its start');
+  }
+  if (elapsedSeconds > COMPANY_GMAIL_RECONCILIATION_FRESHNESS_SECONDS) {
+    fail('freshness_exceeded', 'Gmail snapshot exceeded its freshness budget');
+  }
+  if (!Number.isSafeInteger(snapshot.pagesRead) || snapshot.pagesRead < 1) {
+    fail('invalid_input', 'snapshot pagesRead is invalid');
+  }
+  if (!Array.isArray(snapshot.candidates)) {
+    fail('invalid_input', 'snapshot candidates are invalid');
+  }
+
+  const seenMessageIds = new Set<string>();
+  const accountingEvidence: Array<readonly [string, string, string, string]> =
+    [];
+  let acceptedCount = 0;
+  let rejectedCount = 0;
+  for (const rawReceipt of [...snapshot.candidates].sort((left, right) =>
+    String(left?.messageId).localeCompare(String(right?.messageId)),
+  )) {
+    const messageId = normalizeMessageId(rawReceipt?.messageId);
+    if (seenMessageIds.has(messageId)) {
+      fail('duplicate_candidate', 'Gmail snapshot repeated a message ID');
+    }
+    seenMessageIds.add(messageId);
+    const accounting = validateAccounting(rawReceipt);
+    if (accounting.disposition === 'accepted') acceptedCount++;
+    else rejectedCount++;
+    accountingEvidence.push([
+      messageId,
+      accounting.disposition,
+      accounting.reasonKey,
+      accounting.evidenceSha256,
+    ]);
+  }
+
+  const candidateCount = snapshot.candidates.length;
+  if (candidateCount !== acceptedCount + rejectedCount) {
+    fail('candidate_unaccounted', 'Gmail snapshot accounting is incomplete');
+  }
+
+  const evidenceSha256 = hash([
+    'company-gmail-full-snapshot:v1',
+    context.source.definitionId,
+    context.gapEventId,
+    context.cursor,
+    context.cursorObservedAt,
+    context.targetHistoryId,
+    beforeHead,
+    context.startedAt,
+    completedAt,
+    snapshot.pagesRead,
+    COMPANY_GMAIL_RECONCILIATION_PAGE_SIZE,
+    true,
+    accountingEvidence,
+  ]);
+  const eventKey = `gmail:reconcile:${hash([
+    'company-gmail-full-snapshot-key:v1',
+    context.source.definitionId,
+    context.gapEventId,
+    beforeHead,
+    context.startedAt,
+    completedAt,
+    evidenceSha256,
+  ])}`;
+  const event = normalizeCompanyTriggerWatermarkEvent(
+    context.source.cursorKind,
+    {
+      definitionId: context.source.definitionId,
+      eventKey,
+      eventType: 'gap_reconciled',
+      expectedVersion: input.state.version,
+      previousCursor: context.cursor,
+      nextCursor: beforeHead,
+      observedFrom: context.startedAt,
+      observedThrough: completedAt,
+      evidenceSha256,
+      observedCount: candidateCount,
+      acceptedCount,
+      rejectedCount,
+      gapReason: null,
+      resolvesEventId: context.gapEventId,
+    },
+  );
+
+  return Object.freeze({
+    event,
+    stableHistoryId: beforeHead,
+    pagesRead: snapshot.pagesRead,
+    candidateCount,
+    acceptedCount,
+    rejectedCount,
+    evidenceSha256,
+    actionAuthority: 'none' as const,
+  });
+}
+
+/**
+ * Read and account one terminal full-mailbox snapshot.
+ *
+ * Success means only that a `gap_reconciled` proposal is safe to submit. The
+ * function never submits it. Every refusal throws before a proposal exists, so
+ * the durable source remains frozen on its open gap.
+ */
+export async function reconcileCompanyGmailHistoryGap(
+  input: CompanyGmailReconciliationInput,
+  port: CompanyGmailReconciliationPort,
+): Promise<CompanyGmailReconciliationResult> {
+  const context = validateCompanyGmailReconciliationContext(input, port.now());
+
   const beforeProfile = await sourceCall('Gmail profile read', () =>
     port.getProfile(),
   );
-  const beforeHead = normalizeHistoryId(
+  const beforeHead = validateCompanyGmailReconciliationHead(
+    context,
     beforeProfile?.historyId,
-    'profile.historyId',
   );
-  if (compareHistoryIds(beforeHead, targetHistoryId) < 0) {
-    fail('head_behind_gap', 'Gmail profile head is behind the open gap target');
-  }
 
   const messageIds: string[] = [];
   const seenMessageIds = new Set<string>();
@@ -519,101 +703,30 @@ export async function reconcileCompanyGmailHistoryGap(
     fail('page_limit', 'Gmail snapshot did not reach a terminal page');
   }
 
-  const accountingEvidence: Array<readonly [string, string, string, string]> =
-    [];
-  let acceptedCount = 0;
-  let rejectedCount = 0;
+  const candidates: CompanyGmailCandidateReceipt[] = [];
   for (const messageId of [...messageIds].sort()) {
     const accounting = validateAccounting(
       await sourceCall('Gmail candidate accounting', () =>
         port.accountCandidate(messageId),
       ),
     );
-    if (accounting.disposition === 'accepted') acceptedCount++;
-    else rejectedCount++;
-    accountingEvidence.push([
+    candidates.push({
       messageId,
-      accounting.disposition,
-      accounting.reasonKey,
-      accounting.evidenceSha256,
-    ]);
+      disposition: accounting.disposition,
+      reasonKey: accounting.reasonKey,
+      evidenceSha256: accounting.evidenceSha256,
+    });
   }
 
   const afterProfile = await sourceCall('Gmail profile verification', () =>
     port.getProfile(),
   );
-  const afterHead = normalizeHistoryId(
-    afterProfile?.historyId,
-    'profile.historyId',
-  );
-  if (afterHead !== beforeHead) {
-    fail('head_changed', 'Gmail mailbox changed during the full snapshot');
-  }
-
-  const completedAt = normalizeTimestamp(port.now(), 'snapshot completedAt');
-  const elapsedSeconds =
-    (Date.parse(completedAt) - Date.parse(startedAt)) / 1000;
-  if (elapsedSeconds < 0) {
-    fail('invalid_input', 'snapshot completion predates its start');
-  }
-  if (elapsedSeconds > COMPANY_GMAIL_RECONCILIATION_FRESHNESS_SECONDS) {
-    fail('freshness_exceeded', 'Gmail snapshot exceeded its freshness budget');
-  }
-
-  const candidateCount = messageIds.length;
-  if (candidateCount !== acceptedCount + rejectedCount) {
-    fail('candidate_unaccounted', 'Gmail snapshot accounting is incomplete');
-  }
-
-  const evidenceSha256 = hash([
-    'company-gmail-full-snapshot:v1',
-    source.definitionId,
-    gapEventId,
-    cursor,
-    cursorObservedAt,
-    targetHistoryId,
-    beforeHead,
-    startedAt,
-    completedAt,
+  return proposeCompanyGmailSnapshotReconciliation(input, {
+    startedAt: context.startedAt,
+    completedAt: port.now(),
+    beforeHistoryId: beforeHead,
+    afterHistoryId: afterProfile?.historyId,
     pagesRead,
-    COMPANY_GMAIL_RECONCILIATION_PAGE_SIZE,
-    true,
-    accountingEvidence,
-  ]);
-  const eventKey = `gmail:reconcile:${hash([
-    'company-gmail-full-snapshot-key:v1',
-    source.definitionId,
-    gapEventId,
-    beforeHead,
-    startedAt,
-    completedAt,
-    evidenceSha256,
-  ])}`;
-  const event = normalizeCompanyTriggerWatermarkEvent(source.cursorKind, {
-    definitionId: source.definitionId,
-    eventKey,
-    eventType: 'gap_reconciled',
-    expectedVersion: input.state.version,
-    previousCursor: cursor,
-    nextCursor: beforeHead,
-    observedFrom: startedAt,
-    observedThrough: completedAt,
-    evidenceSha256,
-    observedCount: candidateCount,
-    acceptedCount,
-    rejectedCount,
-    gapReason: null,
-    resolvesEventId: gapEventId,
-  });
-
-  return Object.freeze({
-    event,
-    stableHistoryId: beforeHead,
-    pagesRead,
-    candidateCount,
-    acceptedCount,
-    rejectedCount,
-    evidenceSha256,
-    actionAuthority: 'none' as const,
+    candidates,
   });
 }

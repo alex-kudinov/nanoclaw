@@ -309,6 +309,19 @@ evidence and large-mailbox resumability are not yet sufficient for activation;
 the separate label-correction cursor remains unaddressed. See
 `docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
 
+`NC-20260817-006` adds the next local, unwired prerequisite without changing
+that production boundary. An exact Google wrapper exposes only profile history
+head and unfiltered 500-ID message pages including Spam and Trash. A resumable
+shadow can persist more than 10,000 content-free candidate receipts across
+20-page invocations, but terminal success still passes through NC-005's common
+stable-head/freshness/exact-accounting proposal function. Unapplied migration
+123 defines admin-only snapshot state plus append-only page/candidate receipts;
+the active raw continuation token is cleared at completion/invalidation and is
+never exposed in sanitized progress. Disposable PostgreSQL proves 10,001
+candidates over 21 pages, exact replay, append-only receipts, guarded rollback,
+and zero non-admin grants. No live Google call, production schema/source/cursor,
+404 interception, message recovery, runtime import, task, or action exists.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container
@@ -436,7 +449,7 @@ dependencies, not active runtime channels in this snapshot.
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
 | Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-job-work-shadow.ts`, `src/company-job-work-shadow-cli.ts`, `src/company-work-report.ts`, migrations 118-119, `docs/COMPANY-OS-WORK-LEDGER.md`, `docs/COMPANY-OS-JOB-LEDGER.md` | Mailman/Sales projection plus the multi-workflow bounded report are live/non-authoritative. NC-016/017 add and live-prove the host-job state/receipt contract and explicit fixed-window CLI for five runs. SQLite remains authority and neither job component is daemon/scheduler-wired. |
-| Gmail gap reconciliation | `src/company-gmail-reconciliation.ts`, `docs/COMPANY-OS-GMAIL-RECONCILIATION.md` | NC-005 local, unwired proposal-only adapter for inbound history expiry; terminal/stable/exact full-snapshot proof exists synthetically, while live Gmail reads, durable candidate accounting, source registration/bootstrap, large-mailbox completion, cursor wiring, and label-poll recovery remain absent. |
+| Gmail gap reconciliation | `src/company-gmail-reconciliation.ts`, `src/company-gmail-reconciliation-shadow.ts`, `src/company-gmail-reconciliation-shadow-store.ts`, migration 123, `docs/COMPANY-OS-GMAIL-RECONCILIATION.md` | NC-005's local proposal proof now has NC-006's local exact read-only wrapper and resumable content-free shadow ledger. Synthetic/disposable proof crosses 10,000 candidates without weakening terminal/stable/exact accounting. Migration 123 is unapplied and all code remains unwired; real durable rejection evidence, live Gmail shadow proof, source registration/bootstrap, cursor/recovery wiring, and label-poll recovery remain absent. |
 | External-write control | `src/action-safety.ts`, `src/action-safety-drill-exec.ts`, `docs/ACTION-SAFETY-CONTROL.md` | deployed/default-off common action envelope and dynamic global/per-system brakes; exact release `47019c9` live-verifies Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, Hive/Firestore, and Things; in-flight interruption, standalone scripts, remaining integrations, ceilings, and demotion remain open |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
@@ -616,6 +629,14 @@ The modern namespace is `business_v2`, including concepts such as:
   inbound-Gmail adapter can construct validated gap/reconciliation proposals
   only; the live migration-122 tables remain at the NC-004 dark boundary until
   separately registered/bootstrap work occurs.
+- `NC-20260817-006` adds unapplied migration 123 plus an unwired exact Gmail
+  read-only wrapper and resumable shadow store. The target stores one opaque
+  active continuation token, append-only page-token hashes, immutable Gmail
+  IDs, accepted/rejected dispositions, bounded reason keys, and evidence
+  hashes only. Disposable PostgreSQL proves a 21-page/10,001-candidate terminal
+  attempt, exact completion replay, append-only enforcement, populated rollback
+  refusal, empty rollback, and admin-only grants. Production PostgreSQL,
+  migration-122 row counts, Gmail cursors, and runtime imports remain unchanged.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.
