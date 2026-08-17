@@ -8,6 +8,49 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-001 — Add the normalized Company OS trigger contract
+
+- Date: 2026-08-17T12:17Z
+- Owner/client: Codex
+- State: complete local dark foundation; not deployed or activated
+- Commit/PR: claim `79d18921`; implementation `ec49ac68` on
+  `codex/nc-20260817-001-trigger-contract`; no PR
+- Change class: C2 — additive local contract and unapplied host-only schema
+- Implementation: a strict content-free v1 envelope normalizes `time`, `gmail`,
+  `webhook`, `topic`, and `business_condition` occurrences. Versioned
+  definition, occurrence, and semantic SHA-256 identities make exact replay
+  duplicate-only and same-identity drift or split identities fail closed.
+  Unknown/raw/authority/skill fields, malformed identities, non-SHA-256
+  evidence, and invalid clocks are rejected. Accepted occurrences have fixed
+  `actionAuthority: none`.
+- Durable target: unapplied migration 121 adds one admin-only append-only table
+  containing opaque keys, hashes, normalized work intent, and timestamps only.
+  The injected host store inserts once and accepts a uniqueness winner as a
+  duplicate only when occurrence identity and semantic fingerprint both match.
+  Populated rollback refuses history deletion; immutable releases now bind the
+  migration and rollback bytes.
+- Disposable PostgreSQL evidence: PostgreSQL 16 inserted exactly five rows
+  across all five kinds, returned exact replay as duplicate, refused semantic
+  drift and UPDATE/DELETE, exposed zero non-admin grants and zero forbidden
+  raw/action columns, retained all five rows after populated rollback refusal,
+  and removed the table in a separate empty-database rollback. The applicable
+  ordered fresh fixture chain reached migration 121; legacy migrations 17 and
+  91 were skipped because the deliberately empty fixture lacks their expected
+  pre-v2 public tables. The disposable cluster and smoke script were removed.
+- Verification: exact Node 22.23.2 passes 29/29 focused tests, the 100/100
+  combined Company OS suite, typecheck, root build, 637/637 email-critical
+  tests, independent runner build plus 43/43 tests, formatting, documentation
+  continuity/capability checks, and diff checks. The unrestricted full root
+  suite is 2,567/2,568; its sole failure is the unchanged unrelated CNPC
+  wrapper-string assertion expecting literal `folder: 'cnpc'`.
+- Boundary: no runtime entry point imports the module; migration 121 remains
+  unapplied. No production data/schema/config/deploy, source adapter, schedule,
+  channel, task creation/resume, work-ledger write, agent/skill/prompt/
+  capability, external message/action, push, or merge occurred. Backup and
+  explicit migration apply, disabled-adapter deployment, source inventory and
+  watermarks, one bounded source proof, and every work/action authority remain
+  separately gated.
+
 ### NC-20260816-018 — Add the default-off Company Work operator exception loop
 
 - Date: 2026-08-17T03:03Z
