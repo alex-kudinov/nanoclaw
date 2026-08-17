@@ -29,12 +29,11 @@ references only for that workflow under a workflow-specific constraint;
 `sales_email` still requires both. SQLite `jobs`/`job_run_logs` remain host-job
 authority, and no production schema or runtime state changes under NC-016. See
 `docs/COMPANY-OS-JOB-LEDGER.md`.
-`NC-20260816-017` adds the activation candidate: migration 119 and its guarded
-rollback are bound into the verified release, the one-shot source reader opens
-SQLite read-only and selects no result content, and the PostgreSQL report
-reconciles `sales_email` and `host_job_run` with distinct milestone/receipt
-rules. Schema application and projected production rows remain separate
-evidence boundaries until the NC-017 deployment record says otherwise.
+`NC-20260816-017` applies migration 119 and deploys the one-shot source reader
+and multi-workflow report in exact release `999f2a4`. Five exact successful job
+runs now exist as 5 items/15 events/5 receipts; exact replay was duplicate-only
+and all source/email parity hashes remained unchanged. The reader still opens
+SQLite read-only, selects no result content, and is unscheduled/default-off.
 
 ---
 

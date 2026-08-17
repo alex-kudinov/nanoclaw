@@ -241,13 +241,12 @@ output, error text, log paths, scripts, arguments, or environment. Migration
 job registry remain authority, and Campanero's jobs-only role is unchanged.
 See `docs/COMPANY-OS-JOB-LEDGER.md`.
 
-`NC-20260816-017` is the separately authorized activation slice. Its candidate
-adds a read-only SQLite source connection plus an exact-confirmation,
-fixed-window, batch-bounded projection CLI and widens the SELECT-only exception
-report with separate email/job state and receipt rules. Neither component is
-daemon- or scheduler-wired; Campanero and the job registry remain unchanged.
-Migration, deployment, and production parity are recorded only after their
-individual gates complete.
+`NC-20260816-017` applies migration 119 and deploys the read-only-SQLite,
+exact-confirmation, fixed-window projection CLI plus the multi-workflow
+SELECT-only report in exact release `999f2a4`. One five-run production window
+and duplicate-only replay passed with unchanged source/email parity. Neither
+component is daemon- or scheduler-wired; Campanero and the job registry remain
+unchanged, and another projection requires separate authorization.
 
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
@@ -375,7 +374,7 @@ dependencies, not active runtime channels in this snapshot.
 | Area                   | Main files                                                                     | Responsibility                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Webhook durability     | `src/webhook-server.ts`, `src/webhook-inbox.ts`, `src/webhook-inbox-reaper.ts` | ingest, archive, idempotency, retry                                                                          |
-| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-job-work-shadow.ts`, `src/company-job-work-shadow-cli.ts`, `src/company-work-report.ts`, migrations 118-119, `docs/COMPANY-OS-WORK-LEDGER.md`, `docs/COMPANY-OS-JOB-LEDGER.md` | Mailman/Sales projection and the original bounded report are live/non-authoritative under NC-015. NC-016 adds the host-job state/receipt contract; NC-017 adds the explicit fixed-window CLI candidate and workflow-specific report widening. SQLite remains authority and neither job component is daemon/scheduler-wired. |
+| Company work ledger    | `src/company-work-ledger.ts`, `src/company-work-shadow.ts`, `src/company-job-work-shadow.ts`, `src/company-job-work-shadow-cli.ts`, `src/company-work-report.ts`, migrations 118-119, `docs/COMPANY-OS-WORK-LEDGER.md`, `docs/COMPANY-OS-JOB-LEDGER.md` | Mailman/Sales projection plus the multi-workflow bounded report are live/non-authoritative. NC-016/017 add and live-prove the host-job state/receipt contract and explicit fixed-window CLI for five runs. SQLite remains authority and neither job component is daemon/scheduler-wired. |
 | External-write control | `src/action-safety.ts`, `src/action-safety-drill-exec.ts`, `docs/ACTION-SAFETY-CONTROL.md` | deployed/default-off common action envelope and dynamic global/per-system brakes; exact release `47019c9` live-verifies Gmail send/reply, Slack, Courses SMTP projection, Plutio, Stripe, Hive/Firestore, and Things; in-flight interruption, standalone scripts, remaining integrations, ceilings, and demotion remain open |
 | Circuit control        | `src/circuit-breaker.ts`, `src/hard-filters.ts`                                | bounded failures and deterministic rejection                                                                 |
 | Token failover         | `src/token-cooldown.ts`, `src/claude-token.ts`, `src/claude-bridge.ts`         | auth failure classification and fallback                                                                     |
@@ -515,11 +514,11 @@ The modern namespace is `business_v2`, including concepts such as:
   exact start/terminal-failure events, and retains host-admin-only access.
   This is source/state-machine evidence only: no production schema, observer,
   report, scheduler, job, Campanero, or channel state changes under NC-016.
-- `NC-20260816-017` adds the separately invoked read-only-SQLite/bounded-write
-  observer and multi-workflow SELECT-only report candidate. The release bundle
-  binds migration 119 and its history-preserving rollback by hash. Applying the
-  migration, activating the release, and projecting a closed production window
-  remain distinct evidence boundaries.
+- `NC-20260816-017` applies migration 119 and deploys the separately invoked
+  read-only-SQLite/bounded-write observer plus multi-workflow SELECT-only report
+  in exact release `999f2a4`. A five-run closed window produced exactly 5
+  items/15 events/5 receipts, and replay was duplicate-only. SQLite remains
+  authority; the observer is not scheduled or daemon-wired.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.
@@ -776,7 +775,7 @@ controlled retry: `tools/plutio/run-reaper.sh` still executed operational
 TypeScript rather than immutable release code. Release `02ce48f` added a
 compiled reaper CLI, included the launcher in the bundle, and made the
 operational launcher verify and execute launchd's exact code root and Node
-interpreter; exact active release `cf96258` preserves those bytes and controls.
+interpreter; exact active release `999f2a4` preserves those bytes and controls.
 The real launcher processed only row `1312`; remote readback
 returned `already_recorded`, persisted marker/person/note receipts and
 interaction metadata, and emptied the queue without a second activity. The
@@ -1571,7 +1570,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/ENGINEERING-CHANGELOG.md`         | append-only implementation/verification/deployment history            | evidence only; do not overstate boundaries crossed                                                                                           |
 | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`   | active, dependency-gated strategic roadmap                            | roadmap state is not implementation state; use active work/changelog evidence                                                               |
 | `docs/COMPANY-OS-WORK-LEDGER.md`        | Mailman/Sales work-ledger decision, state, receipt, shadow, and activation contract | SQLite remains email authority; migration/release/shadow state is tracked under `NC-20260816-001`; promotion remains separate               |
-| `docs/COMPANY-OS-JOB-LEDGER.md`         | Campanero host-job run identity, state, receipt, privacy, and activation contract | NC-016 foundation is complete; NC-017 activation is in progress with SQLite still authoritative and no daemon/scheduler wiring |
+| `docs/COMPANY-OS-JOB-LEDGER.md`         | Campanero host-job run identity, state, receipt, privacy, and activation contract | NC-017 is deployed/live-verified for one five-run window; SQLite remains authoritative and there is no daemon/scheduler wiring |
 | `docs/ACTION-SAFETY-CONTROL.md`         | host action envelope, safety precedence, covered boundaries, and activation/drill transaction | seven-system boundary through Things is live-proven in exact release `47019c9` under `NC-20260816-009`; controls remain default-off and residuals explicit |
 | `docs/CAPABILITY-MANIFESTS.md`           | per-agent manifest mechanics, review procedure, activation gate, and limitations | Campanero and Booking selective canaries are live under `NC-20260816-006`/`010`; global rollout, egress, remaining raw-secret removal, and wider canaries remain open |
 | `docs/RELEASE-INTEGRITY.md`             | production build, activation, health, and rollback contract           | archive integrity is not publisher authenticity                                                                                              |

@@ -8,10 +8,10 @@ brief `NC-20260816-014`; report deployment/proof `NC-20260816-015`
 Decision: the shared ledger is host-owned PostgreSQL business state, while the
 existing SQLite approved-email tables remain the action-execution authority
 
-Second-pilot note: `NC-20260816-016` adds a local, unapplied migration-119
-target and unwired host-job projector. It does not change this pilot's email
-state machine, report filter, production schema, or authority. See
-`docs/COMPANY-OS-JOB-LEDGER.md`.
+Second-pilot note: `NC-20260816-016/017` add, deploy, and live-verify migration
+119 plus the separately invoked host-job projector and multi-workflow report.
+Five job runs are projected without changing this pilot's email state machine
+or authority. See `docs/COMPANY-OS-JOB-LEDGER.md`.
 
 ## 1. Outcome and boundary
 
@@ -168,12 +168,12 @@ Base-table and sequence permissions are revoked from `PUBLIC`. Only
 gets a view, write function, or base-table privilege in this slice. The host
 typed store uses the existing admin-side `withAgentContext()` transaction.
 
-Migration 119 is tracked as the unapplied NC-016 target selected for the
-separately authorized NC-017 activation. It widens the same tables for
-`host_job_run` under workflow-specific identity checks without altering
-Mailman/Sales facts. The NC-017 report candidate is multi-workflow, but
-repository presence and a release build remain neither migration nor
-production-observation evidence.
+Migration 119 was applied and live-verified under NC-017. It widens the same
+tables for `host_job_run` under workflow-specific identity checks without
+altering Mailman/Sales facts. The multi-workflow report is live in exact release
+`999f2a4`; one five-run job projection and its duplicate-only replay are the
+only authorized production job history. Release presence alone does not
+authorize another projection.
 
 Migration 118 was applied in production only under `NC-20260816-001`, after an
 exact custom-format backup and explicit one-file apply. Live validation found

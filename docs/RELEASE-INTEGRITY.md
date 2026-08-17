@@ -41,6 +41,12 @@ and independently verifiable; it does not apply the migration. Database backup,
 daemon drain, one-file application, structural validation, and rollback policy
 remain separate recorded operations.
 
+NC-017 crossed those boundaries under exact release `999f2a4`: fresh local and
+production extraction verified the same archive, a narrow custom-format backup
+preceded explicit migration 119 application, and recovery-safe activation
+retained the prior `cf96258` plist. Exact digests and paths are recorded in
+`docs/ENGINEERING-CHANGELOG.md`.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

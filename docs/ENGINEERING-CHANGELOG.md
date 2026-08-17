@@ -10,11 +10,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260816-017 — Activate bounded Campanero host-job ledger observation
 
-- Date: 2026-08-17T01:42Z
+- Date: 2026-08-17T01:55Z
 - Owner/client: Codex
-- State: validating; local implementation verified, production
-  migration/deployment/projection pending
-- Commit/PR: claim `8d209e5` on
+- State: complete; deployed and live-verified
+- Commit/PR: claim `8d209e5`; implementation and immutable release
+  `999f2a44f7737d624e4c588f8a057a17ff5ca783` on
   `codex/nc-20260816-017-campanero-ledger-activation`; no PR
 - Change class: C2 — production schema/write plus reversible service activation
 - Production preflight: `mini-claw.local` serves exact verified release
@@ -53,13 +53,57 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   transitions and classified all three facts as duplicates. The real
   job-filtered PostgreSQL report returned one completed item and zero
   exceptions. The disposable cluster and fixture were stopped and removed.
-- Current boundary: no production migration, backup, release activation,
-  projection, report read, job/schedule mutation, Campanero prompt/capability
-  change, Slack/Gmail message, push, or merge has occurred yet.
-- Rollback: before production projection, restore the prior immutable release
-  and leave migration 119 dormant. After host history exists, disable the
-  observer and restore the release while retaining append-only history; never
-  delete history to force the schema rollback.
+- Release: exact Node 22.23.2 built clean commit `999f2a4` with source tree
+  `7f484757f9db890165110536b83966d97fd6da6d`, 684-file artifact
+  `e2056f328630a2f4383f129a22ac9c38dcce97869d97ccda808803a0346accfb`,
+  and archive SHA-256
+  `e1c929ccd59f0e527fd6956c9f63ee372159975cd9e1a0d639de93a6db63a0ce`.
+  Fresh local extraction and production extraction independently passed the
+  bundled verifier. Dry-run activation reported exactly the three permitted
+  plist pointer changes.
+- Migration/backup: after drain and explicit service stop, a mode-0600,
+  27,993-byte custom-format backup of the three Company OS tables was validated
+  at
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/company-work-before-119-2026-08-17T01-50-18Z.dump`
+  with SHA-256
+  `4a75642e2215e983a9d8cac5c2f9258d7589c3986de7eea32c08d1b7488628c5`.
+  Only bundled migration 119 (SHA-256
+  `b02ba2bd51e19dab5c2b48eb90628e5f41cbff1ac428f143954623c330e20283`)
+  was applied. Four required constraints, three admin-owned tables, zero PUBLIC
+  grants, and the unchanged 4-item/25-version/29-event/13-receipt email ledger
+  were verified before restart.
+- Deployment: recovery-safe activation moved `cf96258` to exact release
+  `999f2a4`, retained rollback plist
+  `com.nanoclaw.plist.rollback-cf9625847bb2-2026-08-17T01-51-57-754Z`, and
+  converged launchd, the sole port-8088 listener, and heartbeat to PID `74446`.
+  Health proves the exact commit/tree/artifact and Node pin, connected
+  Slack/Gmail, zero active containers, empty runtime/outgoing queues, and a
+  healthy unchanged email shadow. No job-observer environment key exists.
+- Production proof: the closed inclusive window
+  `2026-08-17T01:45:40.000Z` -> `2026-08-17T01:48:41.000Z` contained exactly
+  five complete successful runs below batch limit 10. First pass applied 15
+  transitions and five receipts with no error/truncation; exact replay applied
+  zero and recognized all 15 facts as duplicates. The job-only report returned
+  5 completed/0 exceptions. The combined report returned 9 items, 8 completed,
+  and only the unchanged critical/stale
+  `source_gap:mailman_dispatch_missing` email exception.
+- Parity: source-window SHA-256
+  `31209131f0d271b4f32d6d1c1654e2e78d1974df8d166dff9445605ac9470eca`,
+  22-job definition SHA-256
+  `f469526d807786e44a5c66c54d90c70eb3cea3cab8a5d7c8e1d497d02dc00e7e`,
+  11-task definition SHA-256
+  `20baa943f07bff839edbe7eb78e1cf4a599e356c465a4936023b6df9d8e314a8`,
+  and all three Mailman/Sales table hashes were byte-for-value unchanged. Email
+  state remained zero active actions/334 events. PostgreSQL changed by exactly
+  the expected five items/version sum 10, 15 events, and five receipts.
+- Boundary: SQLite and the scheduler remain authoritative. The CLI is
+  default-off and unscheduled. No job run/pause/resume, definition/schedule,
+  Campanero prompt/capability, recurring task, Slack/Gmail/customer message,
+  other external write, push, or merge occurred.
+- Rollback: restore the retained `cf96258` plist/release and leave the new
+  append-only rows dormant. Because five `host_job_run` rows now exist, the
+  guarded schema rollback correctly must not run; never delete history to force
+  it.
 
 ### NC-20260816-016 — Add a dark Campanero host-job ledger pilot
 

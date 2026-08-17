@@ -1,8 +1,9 @@
 # Company OS work ledger — Campanero host-job pilot
 
-Status: NC-016 dark foundation complete; NC-017 activation candidate adds an
+Status: NC-016 dark foundation complete; NC-017 deployed and live-verified an
 explicit fixed-window observer and multi-workflow read-only report. Migration
-119 remains unapplied until the recorded production gate is crossed.
+119 is applied and five exact host-job runs are projected; the observer remains
+unscheduled/default-off.
 Tasks: foundation `NC-20260816-016`; activation `NC-20260816-017`
 Decision: SQLite `jobs` and `job_run_logs` remain host-job authority; the
 PostgreSQL ledger may only project exact structural run facts
@@ -145,6 +146,14 @@ Activation requires all of the following under NC-017:
    channel state;
 7. retain SQLite and the job registry as authority.
 
+All seven gates passed under exact release `999f2a4`. The production window
+`2026-08-17T01:45:40.000Z` -> `2026-08-17T01:48:41.000Z` contained five
+complete successful runs. It produced 5 items, 15 events, and 5 receipts;
+exact replay produced 15 duplicate facts and no write. The job report shows all
+five complete with zero exceptions. Pre/post source-window, job-definition,
+task-definition, and Mailman/Sales ledger hashes are identical. The deployment
+and backup receipts are recorded in `docs/ENGINEERING-CHANGELOG.md`.
+
 Scheduling the observer, sending a brief, resolving an exception, retrying a
 job, normalizing all trigger types, or making the ledger authoritative are
 later, separately authorized milestones.
@@ -158,15 +167,16 @@ later, separately authorized milestones.
   work by immutable run ID and does not claim a versioned job-definition
   catalog.
 - Retry attempts have no durable parent link yet.
-- NC-016 proves no production rows or parity history. NC-017 production state
-  must be recorded separately after migration, release, bounded projection,
-  duplicate replay, report, and before/after fingerprint checks complete.
+- The five-run proof covers successful terminal rows in production. Failure,
+  timeout, dispatch-error, running, and source-gap behavior is contract-tested
+  and disposable-database-tested but has not been manufactured on production.
 
 ## 8. Rollback
 
 Before schema application, revert the local source/migration/documentation
 change. There is no service, database, scheduler, message, or job recovery.
 
-After any future schema application, disable/remove the observer first. Leave
-recorded history dormant. Use the tracked rollback only when its host-job
-history precheck passes; never delete work history to make rollback convenient.
+Migration 119 is now applied and five host-job rows exist. Restore the retained
+prior immutable release if needed and leave recorded history dormant. The
+tracked schema rollback must refuse while host-job history exists; never delete
+work history to make rollback convenient.
