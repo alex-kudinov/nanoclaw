@@ -51,6 +51,10 @@ export interface SchedulerDependencies {
     startedAtMs: number,
     result: string | null,
   ) => Promise<void>;
+  observeScheduledTaskClaim?: (
+    task: ScheduledTask,
+    scheduledFor: string,
+  ) => Promise<unknown>;
 }
 
 export interface HostJobDeps {
@@ -151,12 +155,28 @@ async function runTask(
   } else {
     claimedNextRun = null;
   }
-  if (!task.next_run || !claimTaskRun(task.id, task.next_run, claimedNextRun)) {
+  const scheduledFor = task.next_run;
+  if (!scheduledFor || !claimTaskRun(task.id, scheduledFor, claimedNextRun)) {
     logger.info(
       { taskId: task.id, group: task.group_folder },
       'Scheduled task was already claimed',
     );
     return;
+  }
+
+  // The optional Company OS observer is downstream of the authoritative
+  // SQLite compare-and-swap claim. It is deliberately fire-and-forget: an
+  // observer refusal, PostgreSQL outage, or synchronous adapter defect cannot
+  // block, retry, or otherwise alter the already-claimed scheduled task.
+  if (deps.observeScheduledTaskClaim) {
+    Promise.resolve()
+      .then(() => deps.observeScheduledTaskClaim!(task, scheduledFor))
+      .catch((err) => {
+        logger.error(
+          { err, taskId: task.id, group: task.group_folder },
+          'Scheduled-task trigger observer failed after claim',
+        );
+      });
   }
 
   logger.info(

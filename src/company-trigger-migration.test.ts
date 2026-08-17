@@ -98,5 +98,6 @@ describe('Company OS normalized trigger migration', () => {
     expect(releaseBuilder).toContain(
       "'data/business/migrations/nanoclaw-v2/rollback_121_company_trigger_occurrences.sql'",
     );
+    expect(releaseBuilder).toContain("'scripts/set-company-time-trigger.mjs'");
   });
 });

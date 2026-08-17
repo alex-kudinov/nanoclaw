@@ -8,6 +8,53 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-002 — Activate one bounded scheduled-time trigger source
+
+- Date: 2026-08-17T12:44Z
+- Owner/client: Codex
+- State: validating; local candidate and disposable database proof complete,
+  production migration/deployment/configuration not started
+- Commit/PR: claim `5561cfe6`; implementation pending on
+  `codex/nc-20260817-002-time-trigger-activation`; no PR
+- Change class: C2 — additive production schema target, exact-release service
+  deployment, and one append-only internal trigger occurrence
+- Implementation: a default-off observer receives only the already-loaded task
+  ID, schedule type/value, and exact pre-claim `next_run` after the scheduler's
+  successful SQLite compare-and-swap. One exact configured task/boundary maps
+  to hashed definition/work aliases and a versioned schedule-evidence digest.
+  The observer is fire-and-forget, so refusal, conflict, or PostgreSQL failure
+  cannot block, retry, or roll back the task. Aggregate health omits task ID.
+- Configuration/recovery: the release-bound helper defaults to value-redacted
+  dry-run, changes only three dedicated keys, selects one exact task and
+  boundary, requires exact-host confirmation for apply/restore, creates an
+  exclusive same-mode backup, and writes atomically. Dynamic configuration
+  does not require a restart. Recording grants no task create/resume, agent,
+  skill, capability, approval, message, or action authority.
+- Local verification so far: 49/49 focused trigger/scheduler tests, exact Node
+  22.23.2 typecheck, root build, 105/105 combined Company OS tests, 638/638
+  email-critical tests, independent runner build plus 43/43 tests, formatting,
+  documentation continuity/capability checks, and diff checks pass. The
+  unrestricted full root suite is 2,580/2,581; its sole failure is the
+  unchanged unrelated CNPC wrapper-string assertion expecting literal
+  `folder: 'cnpc'`. A
+  disposable PostgreSQL 16 cluster applied migration 121, recorded one time
+  occurrence, converged exact replay, refused changed schedule semantics,
+  rejected wrong task/boundary before the store, enforced append-only history,
+  exposed zero non-admin grants, refused populated rollback with the row
+  intact, and removed an empty table in a second database. The cluster and
+  smoke script were removed.
+- Production boundary: current read-only preflight found exact release
+  `a2e6d35`, sole PID 4213, connected Slack/Gmail, empty outgoing/waiting and
+  active-email queues, one ambient Sales container, migrations 118-120 live,
+  and migration 121 absent. SQLite has one active cron whose next natural
+  boundary is `2026-08-17T14:00:00.000Z`. No drain, backup, migration, release,
+  config, task, message, or production trigger row changed during preflight.
+- Pending gates: clean implementation/release commits, immutable archive and
+  extraction proof, fresh drain, production backup and explicit migration 121
+  apply, all-adapters-off deployment,
+  redacted one-boundary activation, natural insert plus duplicate replay, and
+  protected-state comparison.
+
 ### NC-20260817-001 — Add the normalized Company OS trigger contract
 
 - Date: 2026-08-17T12:17Z

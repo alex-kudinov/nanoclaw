@@ -42,6 +42,11 @@ for content-free normalized trigger occurrences across time, Gmail, webhook,
 topic, and business-condition sources. It has no runtime producer and grants
 no task, skill, capability, approval, or action authority. See
 `docs/COMPANY-OS-TRIGGER-CONTRACT.md`.
+`NC-20260817-002` adds the local default-off producer candidate for one exact
+scheduled-task claim boundary. It hashes only bounded schedule facts and writes
+through the same host-admin store after SQLite's authoritative claim. It has no
+prompt/result access and no task/message/action authority; production
+migration, deployment, configuration, and natural-row evidence remain pending.
 
 ---
 

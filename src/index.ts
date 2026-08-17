@@ -138,6 +138,7 @@ import { runReaper as runWebhookInboxReaper } from './webhook-inbox-reaper.js';
 import { enqueueBookingPlutioActivity } from './booking-plutio-host.js';
 import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
 import { startHeartbeat } from './heartbeat.js';
+import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
 import {
   extractApprovedGmailThreadId,
@@ -1864,6 +1865,7 @@ async function main(): Promise<void> {
   initDatabase();
   logger.info('Database initialized');
   const companyWorkShadow = new CompanyWorkShadowService();
+  const companyTimeTriggerObserver = new CompanyTimeTriggerObserver();
   const companyWorkExceptionLoop = new CompanyWorkExceptionLoopService(
     makeCompanyWorkExceptionLoopDeps({
       resolveTargetJid: (folder) =>
@@ -1954,6 +1956,7 @@ async function main(): Promise<void> {
         circuitBreaker: circuitBreakerStatus,
         companyWorkShadow: companyWorkShadow.getStatus(),
         companyWorkExceptionLoop: companyWorkExceptionLoop.getStatus(),
+        companyTimeTriggerObserver: companyTimeTriggerObserver.getStatus(),
         actionSafety: getActionSafetyStatus(),
         capabilityManifests: getCapabilityManifestStatus(),
       };
@@ -2921,6 +2924,8 @@ async function main(): Promise<void> {
         await validateProcurementTaskCompletion(task, startedAtMs);
         validateSalesFollowupTaskCompletion(task, startedAtMs, result);
       },
+      observeScheduledTaskClaim: (task, scheduledFor) =>
+        companyTimeTriggerObserver.observeClaim(task, scheduledFor),
     },
     hostJobDeps,
   );

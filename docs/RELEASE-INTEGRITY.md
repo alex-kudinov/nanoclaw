@@ -84,6 +84,17 @@ create or resume a task, select a skill, or grant action authority. Production
 backup, explicit one-migration apply, disabled-adapter deployment, per-source
 replay proof, and any task wiring remain separately authorized gates.
 
+The NC-20260817-002 activation candidate additionally bundles
+`scripts/set-company-time-trigger.mjs`. Bundling does not enable the observer.
+The helper verifies its immutable release, defaults to a value-redacted dry
+run, selects exactly one task ID and one intended boundary, requires exact-host
+confirmation for apply/restore, creates an exclusive environment backup, and
+writes atomically. The daemon resolves those keys dynamically, but the observer
+runs only after the scheduler's existing successful SQLite claim and is
+fire-and-forget. Migration apply, dark deployment, configuration, natural
+occurrence proof, and configuration restore/expiry remain separately recorded
+operations.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

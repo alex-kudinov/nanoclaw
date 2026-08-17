@@ -1,8 +1,10 @@
 # Company OS normalized trigger contract
 
-Status: local dark foundation under `NC-20260817-001`. Migration 121 is
-unapplied, and no scheduler, Gmail, webhook, topic, condition, task, agent, or
-runtime path imports this contract.
+Status: the strict foundation was completed locally under `NC-20260817-001`.
+`NC-20260817-002` adds a default-off, exact-boundary scheduled-task observer as
+an unapplied/unreleased activation candidate. Migration 121 remains unapplied
+until that task records a separate production gate. Gmail, webhook, topic, and
+business-condition adapters remain absent.
 
 ## Purpose
 
@@ -88,6 +90,34 @@ exact. Any split or drift is a conflict.
 No agent role receives table access. The rollback drops the table only while
 empty; once evidence exists, runtime rollback leaves it dormant.
 
+## First source adapter: scheduled-task claim observation
+
+The NC-002 candidate observes only the scheduler's existing successful
+compare-and-swap claim. The scheduler passes the adapter the already-loaded
+task ID, schedule type/value, and exact pre-claim `next_run` value. The adapter:
+
+- is disabled by default;
+- requires one exact task ID and one exact intended firing boundary;
+- hashes the task identity into content-free definition/work aliases;
+- hashes a versioned array of task ID, schedule type/value, and boundary as
+  evidence;
+- uses the intended boundary as occurrence key and observation time;
+- records `create` as source intent while granting no create authority;
+- never receives the prompt, group/chat identity, task result, agent state, or
+  action arguments;
+- is fire-and-forget after claim, so refusal, conflict, or PostgreSQL failure
+  cannot block, retry, roll back, or change the scheduled task.
+
+The release-bound configuration helper changes only three dedicated keys,
+defaults to value-redacted dry-run, requires the exact hostname to apply or
+restore, creates an exclusive same-mode backup, and writes atomically. Health
+exposes one configured task as a count, its non-secret boundary, aggregate
+outcomes, and the last error code; it does not expose the task ID.
+
+An occurrence row proves only that the already-authoritative scheduler claimed
+that boundary. The task's eventual success, failure, messages, approvals, or
+business outcome remain separate evidence.
+
 ## Authority boundaries
 
 Recording an occurrence:
@@ -105,15 +135,17 @@ acknowledgment, and outcome validation.
 
 ## Activation gates
 
-This foundation stops before production. A later task must separately:
+The NC-001 foundation stops before production. NC-002 must separately:
 
 1. reconcile the then-live schema and trigger inventory;
 2. back up PostgreSQL and explicitly apply only migration 121;
 3. deploy an exact verified release with all adapters disabled;
-4. prove one source adapter at a time against closed replay windows;
-5. compare schedule/channel/work/action fingerprints before and after;
-6. retain task creation/resume and every action authority behind later gates;
-7. define source watermarks and bounded reconciliation before claiming loss
+4. deploy the scheduled-task observer disabled, then arm one exact task and
+   one exact intended boundary;
+5. prove that one natural claim inserts once and exact replay is duplicate;
+6. compare schedule/channel/work/action fingerprints before and after;
+7. retain task creation/resume and every action authority behind later gates;
+8. define source watermarks and bounded reconciliation before claiming loss
    recovery, especially for Gmail history expiry.
 
 No source exception or external event may be manufactured merely to satisfy an

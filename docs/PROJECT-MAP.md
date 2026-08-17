@@ -271,6 +271,15 @@ raw source content. The module is not imported by the daemon and cannot
 create/resume work, select a skill, or grant approval/capability/action
 authority. See `docs/COMPANY-OS-TRIGGER-CONTRACT.md`.
 
+`NC-20260817-002` adds the first source-adapter activation candidate. After the
+existing SQLite scheduler successfully claims a task's exact pre-claim
+`next_run`, a default-off fire-and-forget observer can record only a normalized
+time occurrence for one configured task ID and one exact boundary. It hashes
+the ID/schedule facts, receives no prompt/chat/result content, and cannot block
+or retry the task. The module, health surface, and release-bound redacted
+configuration transaction are local/unreleased; migration 121 and production
+configuration remain unchanged until separately recorded deployment gates.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container
@@ -355,7 +364,7 @@ session files.
 | IPC            | `src/ipc.ts`, `src/ipc-writer.ts`, `src/watchdog-ipc.ts`            | agent/host protocol and action dispatch                |
 | Capabilities   | `src/capability-manifest.ts`, `capabilities/*.json`                 | default-off per-agent launch, MCP, IPC, mount, and runtime projection |
 | Action safety  | `src/action-safety.ts`, `docs/ACTION-SAFETY-CONTROL.md`             | content-free action envelope, global/per-system external-write brake, aggregate health |
-| Scheduling     | `src/task-scheduler.ts`, `src/job-registry.ts`, `src/job-runner.ts` | agent tasks and host jobs                              |
+| Scheduling     | `src/task-scheduler.ts`, `src/job-registry.ts`, `src/job-runner.ts`, `src/company-time-trigger.ts` | agent tasks and host jobs; default-off post-claim trigger observation candidate |
 
 ### Channels and messaging
 
@@ -557,6 +566,11 @@ The modern namespace is `business_v2`, including concepts such as:
   append-only, content-free, and replay-safe across five closed source kinds.
   It is repository target state only: production migration, source adapters,
   task creation/resume, skills, and every action authority remain unchanged.
+- `NC-20260817-002` adds a local activation candidate that can append one
+  allowlisted scheduled-task boundary after SQLite has already claimed it.
+  Source reads remain content-free and scheduler authority is unchanged. The
+  migration, release, config, and natural occurrence are not production facts
+  until the NC-002 change record crosses those gates.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.

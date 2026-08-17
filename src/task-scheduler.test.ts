@@ -128,6 +128,63 @@ describe('task scheduler', () => {
     expect(getTaskById('task-once-slow')?.status).toBe('completed');
   });
 
+  it('observes the exact pre-claim boundary without letting observer failure block the task', async () => {
+    const scheduledFor = new Date(Date.now() - 60_000).toISOString();
+    createTask({
+      id: 'task-trigger-observer',
+      group_folder: 'sales',
+      chat_jid: 'sales@example.test',
+      prompt: 'ordinary scheduled work',
+      schedule_type: 'once',
+      schedule_value: scheduledFor,
+      context_mode: 'isolated',
+      next_run: scheduledFor,
+      status: 'active',
+      created_at: '2026-08-17T00:00:00.000Z',
+    });
+    vi.mocked(runContainerAgent).mockResolvedValue({
+      status: 'success',
+      result: 'done',
+    });
+    const observeScheduledTaskClaim = vi
+      .fn()
+      .mockRejectedValue(new Error('observer unavailable'));
+
+    startSchedulerLoop({
+      registeredGroups: () => ({
+        sales: {
+          name: 'Sales',
+          folder: 'sales',
+          trigger: '',
+          added_at: '2026-08-17T00:00:00.000Z',
+        },
+      }),
+      getSessions: () => ({}),
+      queue: {
+        enqueueTask: (
+          _groupJid: string,
+          _taskId: string,
+          fn: () => Promise<void>,
+        ) => void fn(),
+        closeStdin: vi.fn(),
+        notifyIdle: vi.fn(),
+      } as any,
+      onProcess: () => {},
+      sendMessage: async () => {},
+      validateTaskCompletion: async () => {},
+      observeScheduledTaskClaim,
+    });
+
+    await vi.advanceTimersByTimeAsync(10);
+
+    expect(observeScheduledTaskClaim).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'task-trigger-observer' }),
+      scheduledFor,
+    );
+    expect(runContainerAgent).toHaveBeenCalledOnce();
+    expect(getTaskById('task-trigger-observer')?.status).toBe('completed');
+  });
+
   it('resets the close window after each asynchronous continuation turn', async () => {
     createTask({
       id: 'task-followup-daily',
