@@ -8,6 +8,52 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260816-018 — Add the default-off Company Work operator exception loop
+
+- Date: 2026-08-17T02:34Z
+- Owner/client: Codex
+- State: in_progress; local implementation and disposable-data proof complete,
+  production migration/release/activation/natural acknowledgment pending
+- Commit/PR: claim `a036f5a` on
+  `codex/nc-20260816-018-company-work-exception-loop`; implementation commit
+  pending; no PR
+- Change class: C5 — exact Slack UID operator identity, C3 internal Slack
+  delivery, and C2 host-only PostgreSQL attention state
+- Implementation: migration 120 adds admin-only current reason cases, exact
+  Slack brief/delivery state, and append-only lifecycle events separate from
+  Company Work workflow state. The default-off host loop refuses unavailable or
+  truncated reports, claims Chicago-day/change fingerprints before Slack,
+  never retries ambiguous delivery, bounds visible content, and source-resolves
+  a case only when a later complete report omits the exact reason.
+- Acknowledgment boundary: the Slack callback now supplies exact UID and
+  reaction/text provenance to backward-compatible host listeners. Only a
+  configured UID's check reaction on the exact durably bound brief acknowledges
+  current occurrences. Typed approval, unnamed users, old briefs, and unbound
+  delivered messages fail closed with best-effort visible receipts. Nothing in
+  this path resolves, approves, retries, sends, pauses/resumes, or advances a
+  work item.
+- Configuration/recovery: tracked defaults are off. Enabled mode fails closed
+  on empty/malformed operator identity or invalid numeric bounds. The bundled
+  release-bound helper defaults to redacted dry-run, copies only an approved
+  existing named-operator source, requires exact hostname for apply/restore,
+  backs up the env file, and writes atomically. Recorded schema history is left
+  dormant on runtime rollback; the DDL rollback refuses populated tables.
+- Verification so far: exact Node 22.23.2 typecheck, 131 focused boundary tests,
+  the 85-test combined Company Work suite, 637/637 email-critical tests, and the
+  independent runner build plus 43/43 tests pass. The unrestricted full root
+  suite is 2,536/2,537; its sole failure is the unchanged unrelated CNPC
+  wrapper-string assertion expecting literal `folder: 'cnpc'`.
+  A disposable PostgreSQL 16 run applied migrations 118 -> 119 -> 120 and
+  proved open/dedupe/source-resolution/reopen, old-brief occurrence isolation,
+  exact acknowledgment/receipt, append-only rejection, populated rollback
+  refusal, and unchanged source-ledger cardinality (1 item/1 event/0 receipts;
+  1 case/2 briefs/6 attention events). A second empty cluster proved the
+  guarded rollback removes all three empty tables. Both disposable clusters
+  were stopped.
+- Boundary: no production migration, configuration, deployment, Slack/customer
+  message, email/job action, container wake, workflow authority, prompt,
+  capability, push, or merge has occurred at this checkpoint.
+
 ### NC-20260816-017 — Activate bounded Campanero host-job ledger observation
 
 - Date: 2026-08-17T01:55Z

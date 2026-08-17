@@ -248,6 +248,16 @@ and duplicate-only replay passed with unchanged source/email parity. Neither
 component is daemon- or scheduler-wired; Campanero and the job registry remain
 unchanged, and another projection requires separate authorization.
 
+`NC-20260816-018` adds a separate default-off host operator-attention loop over
+that combined report. Migration 120 stores reason cases, exact Slack brief
+delivery, named-UID acknowledgment, and append-only lifecycle facts outside the
+work state machine. Acknowledgment cannot resolve, retry, approve, send, or
+change a job/workflow; resolution requires a later complete report where the
+exact reason is absent. The only shared Slack change is backward-compatible
+delivery of exact user/source provenance to host approval listeners. See
+`docs/COMPANY-OS-EXCEPTION-LOOP.md`; production state must be taken from the
+NC-018 active-work/changelog evidence, not repository presence.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container
@@ -519,6 +529,12 @@ The modern namespace is `business_v2`, including concepts such as:
   in exact release `999f2a4`. A five-run closed window produced exactly 5
   items/15 events/5 receipts, and replay was duplicate-only. SQLite remains
   authority; the observer is not scheduled or daemon-wired.
+- `NC-20260816-018` adds migration 120 plus a default-off daemon-owned
+  attention loop. The three new admin-only tables store exact reason cases,
+  deduplicated/bound Slack briefs, and append-only acknowledgment/resolution
+  evidence without raw customer, email, job-output, approval, prompt, or
+  arbitrary payload content. They grant no agent access and never mutate the
+  three work-ledger tables.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.

@@ -1,10 +1,11 @@
 # Company OS work ledger — Mailman/Sales pilot
 
 Status: host-only schema, non-authoritative shadow observer, and read-only
-exception brief deployed and live-verified; workflow authority and promotion
-remain separate
+exception report deployed and live-verified; a default-off host operator loop
+is implemented under NC-018; workflow authority and promotion remain separate
 Tasks: foundation `NC-20260815-010`; activation `NC-20260816-001`; read-only
-brief `NC-20260816-014`; report deployment/proof `NC-20260816-015`
+brief `NC-20260816-014`; report deployment/proof `NC-20260816-015`; operator
+loop `NC-20260816-018`
 Decision: the shared ledger is host-owned PostgreSQL business state, while the
 existing SQLite approved-email tables remain the action-execution authority
 
@@ -307,12 +308,30 @@ items, version sum 25, 29 events, 13 receipts, and unchanged maximum
 timestamps; SQLite remained 61 confirmed/6 blocked actions and 334 events with
 zero active actions.
 
-The report is still not daemon- or scheduler-wired, does not satisfy R4's
-operator resolution/work-panel gate, and cannot promote a ledger fact into
-workflow authority. Any Slack brief, schedule, acknowledgment, resolution
-action, or workflow dependency requires its own task and authority.
+The standalone report remains separately invokable and read-only. NC-018 uses
+the same safe reader behind a default-off host interval to maintain separate
+operator-attention cases and optionally post an exact Chief-channel brief. Its
+acknowledgment is an attention receipt, not an exception-resolution action, and
+it cannot promote a ledger fact into workflow authority. See
+`docs/COMPANY-OS-EXCEPTION-LOOP.md`.
 
-## 10. Rollback
+## 10. Operator exception loop
+
+Migration 120 and `src/company-work-exception-loop.ts` keep operator-attention
+state separate from the work-item/event/receipt state machine. Only a complete,
+non-truncated report can open, re-observe, reopen, or source-resolve a case.
+Daily/change fingerprints are claimed before Slack delivery; ambiguous sends
+are not retried. Only a configured Slack UID reacting to the exact durably
+bound brief can acknowledge its current case occurrences. No case operation
+mutates `company_work_items`, `company_work_events`, or
+`company_work_receipts`.
+
+Repository presence and deployment do not arm it. It defaults off and requires
+a separately applied production migration, a non-empty named-operator list,
+and an explicit config/restart canary. Production state is authoritative only
+when the NC-018 active-work/changelog record says those gates passed.
+
+## 11. Rollback
 
 Before migration: revert the branch; there is no data or service recovery.
 
@@ -323,3 +342,7 @@ because work-item, receipt, and event history now exists.
 After shadow wiring: roll back the runtime projection first. Never delete work
 history or use a ledger rollback to resend/cancel an email action. The SQLite
 action authority and Gmail receipt remain independent evidence.
+
+After the exception loop records any case/brief/event, disarm its configuration
+and leave migration-120 history dormant. Its guarded rollback refuses to
+destroy recorded attention or delivery evidence.

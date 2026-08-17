@@ -68,7 +68,7 @@ company-wide merely because one workflow implements them.
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
 | P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places. `NC-20260816-016/017` define and live-prove one immutable `job_run_logs.id` execution contract without controlling it, while exposing the `already_running` durability gap. Definitions, skipped attempts, launchd, n8n, reapers, and all trigger types are not normalized as one inventory. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
-| P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface. `NC-20260816-017` adds and live-proves workflow-filtered host-job reconciliation for five exact runs. Normalized correlation and recurring briefs remain incomplete. |
+| P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface; NC-017 adds a proven host-job source. `NC-20260816-018` implements the first default-off combined recurring brief with aggregate health and fail-closed delivery state. Production activation, normalized correlation, weekly quality/cost evidence, and wider coverage remain incomplete. |
 | P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
 | P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable; Gmail history-expiry reconciliation and a common source-watermark contract remain open. |
 | P1.8 migration discipline | partial | Ordered tracked `business_v2` migrations and structure-only schema checks exist; checksums, fresh-database CI, portability, and universal migration/restore gates remain incomplete. |
@@ -87,10 +87,10 @@ company-wide merely because one workflow implements them.
 | P2.7 typed configuration | partial | Typed policy modules, setup code, and examples exist, but effective configuration still spans environment, SQLite JSON, launchd, code, and local state. |
 | P2.8 safe integration environment | partial | Focused fixtures, synthetic canaries, and extensive tests exist; a reusable side-effect-free environment covering the two pilot workflows remains incomplete. |
 | P2.9 explicit releases | partial | Exact release provenance and code/state-root checks are live on the current email lineage; those controls are not yet universal release and recovery proof for every workflow. |
-| P2.10 exception inbox | partial | `NC-20260816-014/015` implement and live-prove the smallest SELECT-only ledger exception brief for Mailman/Sales. NC-017 deploys and live-proves a second workflow with distinct validation. It still has no Slack schedule, acknowledgment/resolution action, or work panel; existing watchdogs, digests, cards, and queues remain separate surfaces. |
+| P2.10 exception inbox | partial | `NC-20260816-014/015` implement and live-prove the smallest SELECT-only ledger exception report; NC-017 adds the second workflow. `NC-20260816-018` implements separate durable reason cases, deduplicated Chief-channel delivery, exact named-operator acknowledgment, and source-derived resolution while retaining zero workflow authority. Production canary/natural acknowledgment, routing, dead-letter/credential/policy coverage, and any volume-justified work panel remain open. |
 | P2.11 relationship timeline | partial | `business_v2`, interactions, canonical lead keys, and thread anchoring provide parts of the timeline; one reconciled party/work/action/outcome view remains incomplete. |
 | P2.12 functional closure | partial | Procurement, CNPC, grader, Sales, and Contador now have stronger closed-loop pieces, but each process still needs an explicit completion definition, receipt, exception path, and outcome check. |
-| P2.13 management briefs | partial | Brief and digest generators exist, but they are not derived from the shared work ledger and do not yet report accepted, completed, blocked, stale, and outcome-validated work consistently. |
+| P2.13 management briefs | partial | Existing digest generators remain separate, but `NC-20260816-018` implements the first bounded recurring brief directly from the shared pilot ledger's exception projection. It is an urgent-attention brief only; accepted/completed trends, weekly/monthly outcomes, cost/quality, links, and broader process coverage remain open. |
 
 ## 1. Executive recommendation
 
@@ -1450,6 +1450,17 @@ job report had zero exceptions, and source/job/task/email parity held. The CLI
 remains unscheduled/default-off. Recurring briefs, acknowledgment/resolution,
 trigger normalization, and workflow promotion are later gates.
 
+R4 first operator-loop checkpoint: `NC-20260816-018` implements an additive,
+host-only case/brief/event ledger and default-off recurring Chief-channel
+delivery over both proven sources. It claims before posting, refuses incomplete
+reports and ambiguous retries, accepts only an exact check reaction from a
+configured Slack UID, and keeps acknowledgment separate from source-derived
+resolution. Disposable PostgreSQL proves daily deduplication, append-only
+history, reopened-occurrence isolation, exact acknowledgment, and no source
+ledger cardinality change. Production migration, activation, and natural
+acknowledgment remain governed by the task evidence; routing/resolution action
+and a general work panel are not part of this checkpoint.
+
 Each slice receives one or more separate `NC-YYYYMMDD-NNN` tasks only when work
 starts. Do not reserve future IDs, combine these slices into one implementation
 branch, or let R3-R5 bypass unfinished R1/R2 controls.
@@ -1774,9 +1785,12 @@ Implementation checkpoint (2026-07-29):
     waiting approval, blocked, stale, failed, dead-letter, and
     outcome-unvalidated work; retain source-system links and receipts.
     `NC-20260816-014` implements the read-only Mailman/Sales brief and
-    `NC-20260816-015` deploys/live-verifies one bounded invocation; dead-letter
-    coverage, operator resolution, Slack scheduling, and any wider work panel
-    remain open.
+    `NC-20260816-015` deploys/live-verifies one bounded invocation.
+    `NC-20260816-018` implements default-off recurring Chief delivery, exact
+    named-operator attention acknowledgment, and source-derived case resolution
+    for both proven pilots. Production canary/natural acknowledgment,
+    dead-letter and wider-process coverage, operator routing/resolution actions,
+    and any volume-justified work panel remain open.
 29. `REL-005` — make the host-generated approved-email fallback conform to
     Mailman's executable marker contract, and bind every operator-visible
     recipient header, including CC, into the immutable action before execution.

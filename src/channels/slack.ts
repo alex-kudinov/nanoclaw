@@ -182,6 +182,13 @@ export interface SlackChannelOpts {
   resolveLeadEmail?: (entryId: number) => Promise<string | undefined>;
 }
 
+export interface SlackApprovalProvenance {
+  jid: string;
+  reactorUid?: string;
+  source: 'reaction' | 'text';
+  threadTs?: string;
+}
+
 export class SlackChannel implements Channel {
   name = 'slack';
 
@@ -222,7 +229,11 @@ export class SlackChannel implements Channel {
   // injection is suppressed so a host-owned draft (e.g. a proposal follow-up)
   // doesn't also wake the channel's container.
   private approvalListeners: Array<
-    (ts: string, reactor: string) => Promise<boolean>
+    (
+      ts: string,
+      reactor: string,
+      provenance: SlackApprovalProvenance,
+    ) => Promise<boolean>
   > = [];
 
   // Host-side rejection listeners. A 👎 on a Mr Gru message is offered to each;
@@ -389,7 +400,16 @@ export class SlackChannel implements Channel {
           if (approvedMessage) {
             for (const listener of this.approvalListeners) {
               try {
-                if (await listener(approvedMessage.id, senderName)) return;
+                if (
+                  await listener(approvedMessage.id, senderName, {
+                    jid,
+                    reactorUid: msg.user,
+                    source: 'text',
+                    threadTs,
+                  })
+                ) {
+                  return;
+                }
               } catch (err) {
                 logger.warn({ err }, 'Slack: text approval listener threw');
               }
@@ -438,7 +458,15 @@ export class SlackChannel implements Channel {
       // channel's container.
       for (const listener of this.approvalListeners) {
         try {
-          if (await listener(event.item.ts, reactor)) return;
+          if (
+            await listener(event.item.ts, reactor, {
+              jid,
+              reactorUid: event.user,
+              source: 'reaction',
+            })
+          ) {
+            return;
+          }
         } catch (err) {
           logger.warn({ err }, 'Slack: approval listener threw');
         }
@@ -1238,7 +1266,11 @@ export class SlackChannel implements Channel {
    * message; return true to claim it (suppressing the agent-approval path).
    */
   registerApprovalListener(
-    fn: (ts: string, reactor: string) => Promise<boolean>,
+    fn: (
+      ts: string,
+      reactor: string,
+      provenance: SlackApprovalProvenance,
+    ) => Promise<boolean>,
   ): void {
     this.approvalListeners.push(fn);
   }

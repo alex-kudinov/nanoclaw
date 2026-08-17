@@ -43,6 +43,7 @@ const appRef = vi.hoisted(() => ({ current: null as any }));
 vi.mock('@slack/bolt', () => ({
   App: class MockApp {
     eventHandlers = new Map<string, Handler>();
+    allEventHandlers = new Map<string, Handler[]>();
     errorHandler: Handler | null = null;
     token: string;
     appToken: string;
@@ -79,6 +80,9 @@ vi.mock('@slack/bolt', () => ({
 
     event(name: string, handler: Handler) {
       this.eventHandlers.set(name, handler);
+      const handlers = this.allEventHandlers.get(name) ?? [];
+      handlers.push(handler);
+      this.allEventHandlers.set(name, handlers);
     }
 
     error(handler: Handler) {
@@ -175,6 +179,12 @@ async function triggerMessageEvent(
   if (handler) await handler({ event });
 }
 
+async function triggerAllEvents(name: string, event: unknown) {
+  for (const handler of currentApp().allEventHandlers.get(name) ?? []) {
+    await handler({ event });
+  }
+}
+
 // --- Tests ---
 
 describe('SlackChannel', () => {
@@ -240,6 +250,37 @@ describe('SlackChannel', () => {
   // --- Message handling ---
 
   describe('message handling', () => {
+    it('passes exact Slack UID and reaction provenance to approval listeners', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      const listener = vi.fn(async () => true);
+      channel.registerApprovalListener(listener);
+
+      await triggerAllEvents('reaction_added', {
+        reaction: 'white_check_mark',
+        user: 'U_OPERATOR_7',
+        item_user: 'U_BOT_123',
+        event_ts: '1800000000.000002',
+        item: {
+          type: 'message',
+          channel: 'C0123456789',
+          ts: '1800000000.000001',
+        },
+      });
+
+      expect(listener).toHaveBeenCalledWith(
+        '1800000000.000001',
+        'Alice Smith',
+        {
+          jid: 'slack:C0123456789',
+          reactorUid: 'U_OPERATOR_7',
+          source: 'reaction',
+        },
+      );
+      expect(opts.onMessage).not.toHaveBeenCalled();
+    });
+
     it('delivers message for registered channel', async () => {
       const opts = createTestOpts();
       const channel = new SlackChannel(opts);
@@ -294,7 +335,12 @@ describe('SlackChannel', () => {
         'slack:C0123456789',
         'thread-root',
       );
-      expect(listener).toHaveBeenCalledWith('draft-ts', 'Alice Smith');
+      expect(listener).toHaveBeenCalledWith('draft-ts', 'Alice Smith', {
+        jid: 'slack:C0123456789',
+        reactorUid: 'U_USER_456',
+        source: 'text',
+        threadTs: 'thread-root',
+      });
       expect(opts.onMessage).toHaveBeenCalledWith(
         'slack:C0123456789',
         expect.objectContaining({

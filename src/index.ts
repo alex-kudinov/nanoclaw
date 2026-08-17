@@ -239,6 +239,10 @@ import {
 } from './circuit-breaker.js';
 import { drainWatchdogKills, startWatchdogIpc } from './watchdog-ipc.js';
 import { CompanyWorkShadowService } from './company-work-shadow.js';
+import {
+  CompanyWorkExceptionLoopService,
+  makeCompanyWorkExceptionLoopDeps,
+} from './company-work-exception-loop.js';
 import { getActionSafetyStatus } from './action-safety.js';
 
 // Re-export for backwards compatibility during refactor
@@ -1860,6 +1864,32 @@ async function main(): Promise<void> {
   initDatabase();
   logger.info('Database initialized');
   const companyWorkShadow = new CompanyWorkShadowService();
+  const companyWorkExceptionLoop = new CompanyWorkExceptionLoopService(
+    makeCompanyWorkExceptionLoopDeps({
+      resolveTargetJid: (folder) =>
+        (() => {
+          const matches = Object.entries(registeredGroups).filter(
+            ([jid, group]) =>
+              jid.startsWith('slack:') && group.folder === folder,
+          );
+          return matches.length === 1 ? matches[0][0] : null;
+        })(),
+      postBrief: async (jid, text) => {
+        const slack = channels.find(
+          (channel): channel is SlackChannel => channel instanceof SlackChannel,
+        );
+        if (!slack) return undefined;
+        return slack.postTracked(jid, text);
+      },
+      postThread: async (jid, threadTs, text) => {
+        const slack = channels.find(
+          (channel): channel is SlackChannel => channel instanceof SlackChannel,
+        );
+        if (!slack) return undefined;
+        return slack.postTracked(jid, text, threadTs);
+      },
+    }),
+  );
 
   // Start webhook server — listens on all interfaces (including Tailscale)
   // for inbound trigger events from Tailscale-connected machines.
@@ -1923,6 +1953,7 @@ async function main(): Promise<void> {
         queue: queueStatus,
         circuitBreaker: circuitBreakerStatus,
         companyWorkShadow: companyWorkShadow.getStatus(),
+        companyWorkExceptionLoop: companyWorkExceptionLoop.getStatus(),
         actionSafety: getActionSafetyStatus(),
         capabilityManifests: getCapabilityManifestStatus(),
       };
@@ -2087,6 +2118,7 @@ async function main(): Promise<void> {
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutdown signal received');
     companyWorkShadow.stop();
+    companyWorkExceptionLoop.stop();
     await queue.shutdown(10000);
     // Message containers stay running (detached) for the next daemon to adopt.
     cleanupOrphans(queue.getAdoptableContainerNames());
@@ -2222,6 +2254,19 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   companyWorkShadow.start();
+
+  // Company OS exception briefs are host-owned operator-attention records.
+  // Claim only exact, durably bound brief messages so a check reaction cannot
+  // fall through to the normal agent/email approval path.
+  {
+    const slackForCompanyWork = channels.find(
+      (channel): channel is SlackChannel => channel instanceof SlackChannel,
+    );
+    slackForCompanyWork?.registerApprovalListener((ts, reactor, provenance) =>
+      companyWorkExceptionLoop.handleApproval(ts, reactor, provenance),
+    );
+  }
+  companyWorkExceptionLoop.start();
 
   // Daemon liveness beacon — upserts business_v2.daemon_heartbeat every 30s so
   // the self-healing healer (separate process) can detect a crashed daemon.

@@ -9,16 +9,16 @@ and structurally verified in production on 2026-07-30. Run
 `tools/refresh-schemas.sh` after the next authorized schema refresh to replace
 these overlays with generated evidence.
 
-Structure-only Company OS overlay: migration 118 is live under
-`NC-20260816-001`. Migration 119 is a local, unapplied `NC-20260816-016`
-target; its nullable Party/pipeline columns remain workflow-constrained and do
-not describe current production until separately applied and refreshed.
+Structure-only Company OS overlay: migrations 118 and 119 are live under
+`NC-20260816-001/017`. Migration 120 is the default-off `NC-20260816-018`
+operator-attention target; it does not describe production until separately
+applied and recorded in the active-work/changelog evidence.
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
 business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
 
-## business_v2.company_work_items (migration 118 live; migration 119 target overlay)
+## business_v2.company_work_items (migrations 118-119 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_items_id_seq'::regclass)
@@ -54,7 +54,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_work_events (migration 118 live; migration 119 target overlay)
+## business_v2.company_work_events (migrations 118-119 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_events_id_seq'::regclass)
@@ -73,6 +73,60 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   evidence_sha256               text
   exception_code                text
   receipt_id                    bigint
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_work_exception_cases (migration 120 target overlay)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_cases_id_seq'::regclass)
+  case_key                      text                 NOT NULL
+  work_item_id                  bigint               NOT NULL
+  occurrence                    integer              NOT NULL DEFAULT=1
+  work_item_version             integer              NOT NULL
+  reason_kind                   text                 NOT NULL
+  reason_code                   text                 NOT NULL
+  severity                      text                 NOT NULL
+  state                         text                 NOT NULL DEFAULT='open'::text
+  opened_at                     timestamp with time zone NOT NULL
+  last_seen_at                  timestamp with time zone NOT NULL
+  acknowledged_at               timestamp with time zone
+  acknowledged_by_uid           text
+  resolved_at                   timestamp with time zone
+```
+
+## business_v2.company_work_exception_briefs (migration 120 target overlay)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_briefs_id_seq'::regclass)
+  brief_fingerprint             text                 NOT NULL
+  window_key                    date                 NOT NULL
+  report_generated_at           timestamp with time zone NOT NULL
+  exception_count               integer              NOT NULL
+  status                        text                 NOT NULL DEFAULT='pending'::text
+  slack_channel_jid             text
+  slack_message_ts              text
+  posted_at                     timestamp with time zone
+  failure_code                  text
+  acknowledged_at               timestamp with time zone
+  acknowledged_by_uid           text
+  ack_receipt_status            text                 NOT NULL DEFAULT='none'::text
+  ack_receipt_ts                text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_work_exception_events (migration 120 target overlay)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_events_id_seq'::regclass)
+  case_id                       bigint               NOT NULL
+  occurrence                    integer              NOT NULL
+  event_type                    text                 NOT NULL
+  brief_id                      bigint
+  actor_uid                     text
+  event_key                     text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
   occurred_at                   timestamp with time zone NOT NULL
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```

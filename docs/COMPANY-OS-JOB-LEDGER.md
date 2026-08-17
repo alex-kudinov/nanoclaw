@@ -3,8 +3,10 @@
 Status: NC-016 dark foundation complete; NC-017 deployed and live-verified an
 explicit fixed-window observer and multi-workflow read-only report. Migration
 119 is applied and five exact host-job runs are projected; the observer remains
-unscheduled/default-off.
-Tasks: foundation `NC-20260816-016`; activation `NC-20260816-017`
+unscheduled/default-off. NC-018 implements a separate default-off host operator
+loop over the combined report without changing job authority.
+Tasks: foundation `NC-20260816-016`; activation `NC-20260816-017`; operator
+loop `NC-20260816-018`
 Decision: SQLite `jobs` and `job_run_logs` remain host-job authority; the
 PostgreSQL ledger may only project exact structural run facts
 
@@ -154,9 +156,12 @@ five complete with zero exceptions. Pre/post source-window, job-definition,
 task-definition, and Mailman/Sales ledger hashes are identical. The deployment
 and backup receipts are recorded in `docs/ENGINEERING-CHANGELOG.md`.
 
-Scheduling the observer, sending a brief, resolving an exception, retrying a
-job, normalizing all trigger types, or making the ledger authoritative are
-later, separately authorized milestones.
+Scheduling the projector, retrying a job, normalizing all trigger types, or
+making the ledger authoritative are later, separately authorized milestones.
+NC-018's separately gated host loop may send a combined Chief-channel brief and
+record an attention acknowledgment, but it cannot resolve or route a job. A
+case resolves only when a later complete source report proves its exact reason
+absent. See `docs/COMPANY-OS-EXCEPTION-LOOP.md`.
 
 ## 7. Known gaps
 
