@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260817-005` | Add a dark, source-specific bounded reconciliation adapter for the inbound Gmail history-expiry gap without changing current ingestion | Codex | `codex/nc-20260817-005-gmail-gap-reconciliation` @ `70ff5acb` (local-only claim) | `in_progress` | C2 | Isolated pure/injected Gmail adapter, synthetic tests, and Company OS continuity. The adapter may construct content-free source and watermark proposals only after a terminal, stable-head, exactly accounted snapshot. Existing push/label-poll runtime, SQLite cursors, production source rows, daemon wiring, messages, tasks, agents, and actions remain untouched. | Implement and validate the inbound-push adapter locally. Prove 404 gap detection freezes the prior cursor; terminal pagination plus stable Gmail head and exact accepted/rejected accounting are required for reconciliation; every incomplete/unknown/drift/page-limit path must leave the gap open. | 2026-08-17T19:11Z |
 | `NC-20260817-004` | Apply migration 122 and deploy the trigger-source/watermark foundation dark with no source rows, adapter wiring, or task/action authority | Codex | `codex/nc-20260817-004-trigger-source-dark-deploy` @ deployed `070cde38` | `complete` | C2 | Exact release `070cde38` is live after a prolonged natural drain, mode-0600 backup, one-file migration 122, structural/permission verification, and recovery-safe activation. The three new tables remain empty/admin-only, no runtime entry point imports the store, and the prior occurrence plus schedule/job/channel definitions are unchanged. One ordinary approved email completed during the drain and is separately attributable to SQLite/Gmail receipts. | None for this dark deployment milestone. Source registration, cursor bootstrap, Gmail bounded reconciliation, any adapter wiring, and every task create/resume or action authority require separate tracked gates. | 2026-08-17T18:17Z |
 | `NC-20260817-003` | Add a durable Company OS trigger-source inventory and fail-closed watermark/reconciliation contract before any second source adapter | Codex | `codex/nc-20260817-003-trigger-source-watermarks` @ `070e781a` (local implementation) | `complete` | C2 | Committed local dark foundation: content-free immutable source registration, versioned cursor head, append-only checkpoint/gap history, compare-and-swap and replay/conflict semantics, migration/rollback/tests, and Company OS/project/data continuity. Existing Gmail, webhook, scheduler, topic, condition, group, daemon, production database/config, tasks, messages, and action paths remain read-only/unwired. | None for this local milestone. Production migration, source registration, daemon wiring, a source-specific bounded recovery adapter, and any task/action authority require separately tracked gates. | 2026-08-17T16:11Z |
 | `NC-20260817-002` | Apply the normalized-trigger schema and live-prove one bounded, source-read-only scheduled-task occurrence observer without granting task or action authority | Codex | `codex/nc-20260817-002-time-trigger-activation` @ deployed `baed66d` | `complete` | C2 | Migration 121 and exact release `baed66d` are live. A drained, disabled deployment produced zero rows; one exact existing task's natural `2026-08-17T14:00:00.000Z` claim then inserted one `time` occurrence at 14:00:11Z, and exact release-bound replay was duplicate-only. The one-boundary config was expired back to disabled with daemon health retaining 1 matched/1 applied/0 failures. No task was created/resumed and no prompt, agent, capability, approval, message, or action authority was granted. Ambient email/work-ledger changes and the existing exception loop's restart brief were separately attributed; no push or merge occurred. | None for this activation milestone. Other trigger families, loss-recovery watermarks, recurring definitions, or task create/resume authority require separate tracked gates. | 2026-08-17T14:04Z |
@@ -97,6 +98,40 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260817-005
+
+- Trigger/base: the owner said to proceed after the NC-004 dark deployment.
+  This isolated worktree starts from exact NC-004 closeout `70ff5acb`; the
+  shared dirty operational checkout and all earlier worktrees remain untouched.
+  The claim is local-only until explicitly pushed.
+- Verified current mechanics: inbound Gmail push persists
+  `gmail_history_id`; the separate label-correction job persists
+  `gmail_label_poll_history_id`. Both re-bootstrap after a Gmail history 404.
+  The inbound push path explicitly moves to the notification cursor and accepts
+  an unmeasured loss window. The two purposes and side effects are different,
+  so this task covers inbound push only and must not claim label-poll recovery.
+- Outcome: add one pure, injected adapter that maps an inbound history 404 to a
+  content-free `gap_detected` proposal and can construct `gap_reconciled` only
+  from a bounded Gmail message snapshot with a stable before/after profile
+  history head, terminal pagination, unique immutable message IDs, and exact
+  accepted/rejected accounting for every candidate. Unknown disposition,
+  duplicate/invalid IDs, head drift, source failure, reversed or over-budget
+  windows, and a residual page token must fail closed with no reconciliation
+  proposal.
+- Authority boundary: the adapter may produce validated source and watermark
+  inputs but does not register a source or write PostgreSQL, SQLite, Gmail,
+  Company Work, trigger occurrences, tasks, groups, prompts, skills,
+  capabilities, approvals, messages, or actions. No runtime entry point may
+  import it in this milestone; existing Gmail cursors and behavior remain
+  unchanged.
+- Acceptance: synthetic tests prove deterministic source identity, strict gap
+  proposal semantics, terminal/stable/exact reconciliation, replay-stable
+  evidence, and every fail-closed path above. Run exact Node 22.23.2 focused and
+  combined Company OS/Gmail tests, typecheck/build, email-critical and runner
+  gates, formatting, documentation continuity, and diff checks. Deployment,
+  production source registration/bootstrap, real Gmail reads, and live gap
+  forcing are not applicable to this local milestone.
 
 ### NC-20260817-004
 
