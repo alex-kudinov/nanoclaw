@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17T12:44Z
 - Owner/client: Codex
-- State: validating; local candidate and disposable database proof complete,
-  production migration/deployment/configuration not started
-- Commit/PR: claim `5561cfe6`; implementation pending on
+- State: ready_for_deploy; local candidate and disposable database proof
+  complete, production migration/deployment/configuration not started
+- Commit/PR: claim `5561cfe6`; implementation `96e93494` on
   `codex/nc-20260817-002-time-trigger-activation`; no PR
 - Change class: C2 — additive production schema target, exact-release service
   deployment, and one append-only internal trigger occurrence
