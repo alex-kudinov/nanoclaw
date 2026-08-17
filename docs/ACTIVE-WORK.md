@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260817-007` | Deploy the exact NC-006 Gmail reconciliation-shadow release dark while leaving migration 123 unapplied and every Gmail/source/runtime path unchanged | Codex | `codex/nc-20260817-007-gmail-shadow-dark-deploy` @ `6ccc8368` (local claim) | `in_progress` | C2 | Clean immutable release build, independent archive verification, production preflight/drain, transfer, recovery-safe activation, and live release/channel/non-interference proof. Migration 123 remains unapplied; no source registration/bootstrap, live Gmail read, shadow row, 404 interception, cursor, task, action, message, push, or merge. | Commit the claim/release contract, build and verify the exact artifact, then require a clean production drain before one bounded activation. Stop and leave the current release intact if health, queues, email-action state, archive identity, or exact-three-field dry run disagrees. | 2026-08-17T21:58Z |
+| `NC-20260817-007` | Deploy the exact NC-006 Gmail reconciliation-shadow release dark while leaving migration 123 unapplied and every Gmail/source/runtime path unchanged | Codex | `codex/nc-20260817-007-gmail-shadow-dark-deploy` @ deployed `de815e1d` | `complete` | C2 | Exact release `de815e1d` is live with the NC-006 bytes installed but unwired. Migration 123 remains absent; no source registration/bootstrap, live Gmail read, shadow row, 404 interception, cursor, task, action, message, push, or merge occurred. | None for this deployment milestone. Durable real candidate-disposition receipts are the next local prerequisite; migration 123 application, source bootstrap, live read-only shadow proof, and any 404/cursor authority remain separate later gates. | 2026-08-17T22:04Z |
 | `NC-20260817-006` | Add the durable, resumable, read-only shadow foundation needed to prove large inbound Gmail gap snapshots without changing production ingestion | Codex | `codex/nc-20260817-006-gmail-reconciliation-shadow` @ `67870546` (local implementation) | `complete` | C2 | Committed exact read-only Google list/profile wrapper; content-free resumable snapshot/candidate receipt contract and unapplied schema/store; synthetic and disposable-PostgreSQL proof. No production source registration, cursor, 404 interception, message read/recovery, task, agent, action, send, deploy, push, or merge. | None for this local milestone. Durable real disposition receipts, dark migration/source bootstrap, bounded live read-only shadow proof, and any runtime recovery or cursor authority require separately tracked gates. | 2026-08-17T20:21Z |
 | `NC-20260817-005` | Add a dark, source-specific bounded reconciliation adapter for the inbound Gmail history-expiry gap without changing current ingestion | Codex | `codex/nc-20260817-005-gmail-gap-reconciliation` @ `fc1fdb32` (local implementation) | `complete` | C2 | Committed pure/injected inbound Gmail source, gap and capped full-snapshot reconciliation proposals; synthetic negative/positive tests; dedicated contract and Company OS continuity. No runtime import, source row, Google call, database/cursor write, message recovery, task, agent, or action. Label-poll remains separate. | None for this local milestone. Durable candidate receipts, large-mailbox resumability, a real read-only Google wrapper, production source registration/bootstrap, shadow proof, cursor/runtime wiring, watermark-age attention, and label-poll recovery require separate tracked gates. | 2026-08-17T19:26Z |
 | `NC-20260817-004` | Apply migration 122 and deploy the trigger-source/watermark foundation dark with no source rows, adapter wiring, or task/action authority | Codex | `codex/nc-20260817-004-trigger-source-dark-deploy` @ deployed `070cde38` | `complete` | C2 | Exact release `070cde38` is live after a prolonged natural drain, mode-0600 backup, one-file migration 122, structural/permission verification, and recovery-safe activation. The three new tables remain empty/admin-only, no runtime entry point imports the store, and the prior occurrence plus schedule/job/channel definitions are unchanged. One ordinary approved email completed during the drain and is separately attributable to SQLite/Gmail receipts. | None for this dark deployment milestone. Source registration, cursor bootstrap, Gmail bounded reconciliation, any adapter wiring, and every task create/resume or action authority require separate tracked gates. | 2026-08-17T18:17Z |
@@ -131,6 +131,38 @@ outside the current client conversation.
   unchanged protected aggregate state apart from independently attributable
   ambient work. Any disagreement stops before mutation or triggers the
   activator's automatic rollback.
+- Release: exact commit `de815e1dfb1fa4c709ebf67b1974f5c0411395e5`
+  binds source tree `c2594e33d8e08dc98b6f6047f104947253f0d26f`, a
+  720-file artifact with digest
+  `a17328de31c82e78db6e001b11ae58710238b4dc7cae20461fbd453aeb784cb3`,
+  Node 22.23.2, and archive SHA-256
+  `23c00a50c8f6ff69ed876410a003bcc87cc5431d86692b39209754899bcb54d5`.
+  The release gate passed 638/638 email-critical tests plus independent runner
+  build and 43/43 tests; focused reconciliation passed 29/29 and typecheck
+  passed. Fresh local and production extraction independently verified the
+  archive and both migration-123 files.
+- Preflight/activation: production began on exact `070cde38` with one listener,
+  connected Gmail/Slack, zero active/waiting/outgoing work, zero active email
+  actions, valid disabled action-safety/time-observer configuration, and the
+  selective Booking/Campanero capability configuration unchanged. The dry run
+  named only code root, expected commit, and daemon path. One bounded apply at
+  `2026-08-17T22:03:56Z` retained rollback plist
+  `com.nanoclaw.plist.rollback-070cde380242-2026-08-17T22-03-56-272Z` and
+  health-verified the target.
+- Live/non-interference proof: launchd PID 60236 owns the sole port-8088
+  listener and executes the exact immutable release under Node 22.23.2.
+  Independent runtime verification, release/code-root health, connected
+  Gmail/Slack, and zero active/waiting/outgoing work pass. Pending-email state
+  remains 66 confirmed/6 blocked/0 active; tasks/jobs/groups remain 11/22/20;
+  both Gmail history cursors are byte-identical; trigger occurrence/source/
+  event/state counts remain 1/0/0/0. All three migration-123 tables remain
+  absent. No deployment-authored message, Gmail call, business row, or source
+  event occurred; the transferred temporary archive was removed after install.
+- Boundary/rollback: immutable release installation and one service restart
+  occurred. Migration 123 was not applied and the shadow remains unwired, so
+  database rollback is not applicable. Runtime rollback is the retained prior
+  plist and exact `070cde38` release. No source/cursor/recovery, task, prompt,
+  skill, capability, approval, action, send, push, or merge changed.
 
 ### NC-20260817-006
 

@@ -1,8 +1,9 @@
 # Company OS inbound Gmail gap reconciliation
 
-Status: NC-005's local proposal adapter plus NC-006's local, unwired resumable
-shadow foundation are implemented. Migration 123 is unapplied; no production
-source registration/bootstrap, live Gmail read, runtime import, cursor write,
+Status: NC-005's proposal adapter and NC-006's unwired resumable shadow are
+implemented. NC-007 deploys those exact bytes in release `de815e1d`, but
+migration 123 remains unapplied and the release has no runtime import. No
+production source registration/bootstrap, live Gmail read, cursor write,
 message recovery, or ingestion change has occurred.
 
 ## Decision
@@ -215,11 +216,19 @@ enforced append-only candidate rows, exposed only `nanoclaw_admin` table
 grants, refused populated rollback, and accepted empty rollback. All data and
 the cluster were synthetic and removed after the rehearsal.
 
+NC-007 deploys exact release `de815e1d` with the NC-006 wrapper, orchestrator,
+store, migration, and rollback bytes independently verified but deliberately
+inactive. Production pre/post checks retain connected Gmail/Slack, empty
+execution/outgoing queues, 66 confirmed plus six blocked and zero active email
+actions, unchanged Gmail cursors, trigger counts 1/0/0/0, and absent
+migration-123 tables. This is release availability, not a Gmail or database
+shadow observation.
+
 This is not yet a live Gmail recovery fix:
 
 - no production source row or watermark state exists;
 - migration 123 is tracked but unapplied;
-- the exact Google wrapper has not called a live mailbox;
+- the exact Google wrapper is installed but has not called a live mailbox;
 - current inbound push still resets `gmail_history_id` on 404;
 - current rejection paths are often in-memory rather than durably receipted, so
   a real accounting callback cannot yet classify every full-snapshot candidate;

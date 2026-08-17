@@ -8,6 +8,58 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-007 — Deploy the Gmail reconciliation shadow dark
+
+- Date: 2026-08-17T22:04Z
+- Owner/client: Codex
+- State: complete; exact release is live-verified while migration 123 and every
+  Gmail/source producer remain inactive
+- Commit/PR: deployed release
+  `de815e1dfb1fa4c709ebf67b1974f5c0411395e5` on
+  `codex/nc-20260817-007-gmail-shadow-dark-deploy`; no PR
+- Change class: C2 — recovery-safe immutable service deployment with no schema,
+  source, Gmail, message, task, or action write
+- Preflight: `mini-claw.local` served exact verified release `070cde38` from one
+  Node 22.23.2 listener with matching code root, connected Gmail/Slack, zero
+  active/waiting/outgoing work, and zero active approved-email actions. Pending
+  email state was 66 confirmed/6 blocked; tasks/jobs/groups were 11/22/20;
+  trigger occurrence/source/event/state counts were 1/0/0/0; both Gmail history
+  cursors matched; all three migration-123 tables were absent.
+- Release verification: exact-runtime typecheck and 29/29 focused Gmail-shadow
+  tests pass. The clean release gate passes 638/638 email-critical tests plus
+  independent runner build and 43/43 tests. Exact commit `de815e1d` binds
+  source tree `c2594e33d8e08dc98b6f6047f104947253f0d26f`, 720 artifact files,
+  artifact digest
+  `a17328de31c82e78db6e001b11ae58710238b4dc7cae20461fbd453aeb784cb3`,
+  Node 22.23.2, and archive SHA-256
+  `23c00a50c8f6ff69ed876410a003bcc87cc5431d86692b39209754899bcb54d5`.
+  Fresh local and production extractions independently verified the archive
+  and its release-bound migration/rollback 123 files.
+- Activation: the final drain repeated zero active/waiting/outgoing work, zero
+  active email actions, and absent migration-123 tables. The release-bundled
+  dry run named only code root, expected commit, and daemon path. The bounded
+  apply at `2026-08-17T22:03:56Z` retained rollback plist
+  `com.nanoclaw.plist.rollback-070cde380242-2026-08-17T22-03-56-272Z` and
+  health-verified the target.
+- Live proof: launchd PID 60236 owns the sole listener and runs exact release
+  `de815e1d` under Node 22.23.2. Independent installed-bundle verification,
+  release/code-root health, connected Gmail/Slack, empty queues, disabled time
+  observer, and unchanged action/capability configuration pass. Pending email,
+  task/job/group, Gmail-cursor, and trigger aggregates are unchanged; all three
+  migration-123 tables remain absent.
+- Boundary/rollback: one immutable release directory and one recovery-safe
+  service restart occurred. No migration, PostgreSQL/SQLite row, source
+  registration/bootstrap, live Gmail request, shadow evidence, 404 handling,
+  cursor change, message, task, group, prompt, skill, capability, approval,
+  action, send, push, or merge occurred. Restore the retained prior plist to
+  return to exact release `070cde38`; no database rollback is needed.
+- Documentation: updated release integrity, the Gmail/trigger contracts,
+  project map, Company OS roadmap, active work, and this changelog.
+- Follow-ups: implement durable accepted/rejected evidence for real current
+  ingestion locally. Applying migration 123, registering/bootstrapping the
+  source, any live read-only shadow, and natural-404 recovery remain separately
+  tracked promotion gates.
+
 ### NC-20260817-006 — Add resumable inbound Gmail reconciliation shadow
 
 - Date: 2026-08-17T20:19Z

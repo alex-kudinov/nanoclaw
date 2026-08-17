@@ -119,6 +119,17 @@ create shadow evidence, intercept history 404, or advance either Gmail cursor.
 unapplied; durable real disposition receipts remain the next prerequisite
 before database/source activation or any live shadow read.
 
+Exact release `de815e1d` crossed only the archive and recovery-safe service
+activation gates. Local and production extraction verified the same 720-file
+artifact and archive SHA-256. Production remained drained before activation;
+the dry run named only the three release-pointer paths; the applied transaction
+retained rollback plist
+`com.nanoclaw.plist.rollback-070cde380242-2026-08-17T22-03-56-272Z`.
+Independent readback proves one launchd listener, matching release/code root and
+Node 22.23.2, connected Gmail/Slack, empty queues, unchanged email/cursor/source
+aggregates, and absent migration-123 tables. No migration, Gmail call, source
+row, shadow evidence, message, task, or action occurred.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

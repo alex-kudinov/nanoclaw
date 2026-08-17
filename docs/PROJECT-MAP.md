@@ -322,6 +322,15 @@ candidates over 21 pages, exact replay, append-only receipts, guarded rollback,
 and zero non-admin grants. No live Google call, production schema/source/cursor,
 404 interception, message recovery, runtime import, task, or action exists.
 
+`NC-20260817-007` deploys those exact NC-006 bytes in immutable release
+`de815e1d` while deliberately leaving migration 123 unapplied. Production
+pre/post proof retains connected Gmail/Slack, empty execution/outgoing queues,
+66 confirmed plus six blocked and zero active email actions, tasks/jobs/groups
+at 11/22/20, byte-identical inbound and label-poll Gmail cursors, and trigger
+occurrence/source/event/state counts at 1/0/0/0. The three shadow tables remain
+absent and no runtime entry point imports or calls the wrapper/store. This is a
+dark release deployment, not a live Gmail or recovery observation.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container
@@ -637,6 +646,8 @@ The modern namespace is `business_v2`, including concepts such as:
   attempt, exact completion replay, append-only enforcement, populated rollback
   refusal, empty rollback, and admin-only grants. Production PostgreSQL,
   migration-122 row counts, Gmail cursors, and runtime imports remain unchanged.
+  `NC-20260817-007` deploys exact release `de815e1d` with the migration still
+  absent and all source/cursor/runtime boundaries unchanged.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.
