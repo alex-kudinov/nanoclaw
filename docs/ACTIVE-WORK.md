@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260817-002` | Apply the normalized-trigger schema and live-prove one bounded, source-read-only scheduled-task occurrence observer without granting task or action authority | Codex | `codex/nc-20260817-002-time-trigger-activation` @ `2d256cd8` (local-only claim) | `in_progress` | C2 | Exact-release production migration/deployment plus one default-off host adapter on the existing scheduled-task claim boundary. The adapter may read the already-claimed task ID, schedule type/value, and intended firing boundary and append only a normalized trigger occurrence for one allowlisted closed window. Excludes task definition/state/prompt changes, synthetic task runs, task creation/resume, scheduler authority, agent/skill/capability changes, customer or Slack/Gmail messages, other trigger families, push, and merge. | Reconcile exact live release/schema/schedule state; implement a fail-isolated bounded observer, health/config and recovery helper with negative/replay tests; pass exact Node 22 and disposable PostgreSQL gates; build/verify an immutable release; drain, back up/apply only migration 121, deploy adapters off, then dry-run/apply one task/window and observe its next natural claim with protected-state comparison. | 2026-08-17T12:33Z |
 | `NC-20260817-001` | Establish one durable, replay-safe Company OS trigger-occurrence contract for time, Gmail, webhook, topic, and business-condition sources without wiring production behavior | Codex | `codex/nc-20260817-001-trigger-contract` @ `ec49ac68` (local implementation) | `complete` | C2 | Committed local dark foundation: a content-free normalized trigger type, stable definition/occurrence/fingerprint identities, exact replay/conflict semantics, additive unapplied migration 121 plus history-preserving rollback, injected host store, focused tests, and Company OS/project/data continuity. The daemon does not import the module. Production schema/data/config, schedules/channels/adapters, task creation/resume, agent/skill/prompt/capability changes, external messages/actions, push, and merge remain unchanged. | None for this local milestone. Production backup/migration, disabled-adapter deployment, source inventory/watermarks, one bounded source adapter, and any task create/resume authority require separately tracked activation work. | 2026-08-17T12:17Z |
 | `NC-20260816-018` | Give the two proven Company OS pilots one host-owned, deduplicated Chief-channel exception loop with named-operator acknowledgment and source-derived resolution | Codex | `codex/nc-20260816-018-company-work-exception-loop` @ deployed `a2e6d35` | `deployed_unverified` | C5 | Exact release `a2e6d35` is healthy on `mini-claw.local`; the dedicated config has one owner-confirmed operator and the one-use UID file was removed after redacted verification. The first bounded run posted one durably bound Chief brief for three exact reasons on one naturally present exception. Alex's exact check reaction acknowledged all three current cases and the threaded receipt is durably posted. Source Company Work, email, job, task, and channel-definition fingerprints stayed unchanged; zero containers or queued work appeared. | Passively observe a later complete report where an exact source reason disappears and require source-derived resolution with no workflow mutation. Do not manufacture or alter the source exception; R3 trigger normalization can proceed as a separate task. | 2026-08-17T11:56Z |
 | `NC-20260816-017` | Activate the Campanero host-job work-ledger pilot with bounded shadow projection and workflow-specific read-only reporting while leaving SQLite and the scheduler authoritative | Codex | `codex/nc-20260816-017-campanero-ledger-activation` @ deployed `999f2a4` | `complete` | C2 | Migration 119 and exact release `999f2a4` are live. One explicitly invoked five-run closed window produced exactly 5 items/15 events/5 receipts; exact replay was duplicate-only; the job report showed 5 completed/0 exceptions. All source/job/task/email hashes and channel/queue boundaries remained unchanged. SQLite and the scheduler remain authority; the observer is unscheduled/default-off. No job, schedule, prompt/capability, recurring message, push, or merge occurred. | None for this activation milestone. Recurring delivery, exception acknowledgment/resolution, scheduler-source normalization, or authority promotion require separate tasks and approval. | 2026-08-17T01:55Z |
@@ -94,6 +95,42 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260817-002
+
+- Trigger/base: the owner approved NC-001's next production-gated milestone.
+  This isolated worktree starts from exact local closeout `2d256cd8`; the main
+  operational checkout and the completed NC-001 worktree remain untouched.
+- Outcome: make migration 121 live, deploy the normalized-trigger code with all
+  adapters disabled, then enable one source-read-only observer for one existing
+  scheduled-task ID and one closed intended-boundary window. The observer runs
+  only after the scheduler's existing compare-and-swap claim, hashes bounded
+  schedule facts without prompt/chat/result content, and records no task,
+  Company Work, agent, approval, capability, message, or action state.
+- Live preflight: `mini-claw.local` currently serves exact verified release
+  `a2e6d35` from sole PID 4213 under Node 22.23.2 with connected Slack/Gmail,
+  zero waiting groups, empty outgoing Slack queue, and zero active email
+  actions. One ordinary Sales container was active during the read-only check,
+  so migration/deployment drain has not begun. Migrations 118-120 are present;
+  migration 121 is absent. SQLite has 11 task definitions: one active cron,
+  two paused cron, eight completed once; 207 task-run rows; and 22 jobs/17
+  enabled. The sole active cron is the existing Sales daily-followup task with
+  its next natural intended boundary at `2026-08-17T14:00:00.000Z`.
+- Authority and failure boundary: normal scheduler claim/execution remains
+  authoritative. Observer refusal or PostgreSQL failure must be visible in
+  aggregate health but cannot undo, retry, delay materially, or prevent the
+  already-claimed task. The canary must not manufacture a task occurrence,
+  widen the source ID/window, inspect raw prompt/result content, or treat the
+  trigger row as permission to create/resume work.
+- Acceptance: exact Node 22 focused/type/full/email/runner/docs/release gates;
+  disposable PostgreSQL insert/replay/conflict/append-only/rollback evidence;
+  clean immutable archive and fresh local/production verification; production
+  backup and explicit one-file migration apply; one healthy dark deployment;
+  one value-redacted config dry-run/apply; exactly one naturally sourced row
+  for the allowlisted intended boundary plus duplicate-only replay; and
+  unchanged schedule definitions, protected Company Work/email/job/channel
+  facts apart from ordinary ambient execution. Any natural task output is
+  baseline scheduler behavior, not adapter outcome evidence.
 
 ### NC-20260817-001
 
