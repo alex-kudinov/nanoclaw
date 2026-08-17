@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260816-018` | Give the two proven Company OS pilots one host-owned, deduplicated Chief-channel exception loop with named-operator acknowledgment and source-derived resolution | Codex | `codex/nc-20260816-018-company-work-exception-loop` @ implementation `bb417fb` | `in_progress` | C5 | Migration 120, host case/brief/event store, bounded default-off loop, exact Chief message/UID binding, explicit non-resolution receipt, redacted atomic config helper, health, tests, and continuity are committed. Disposable PostgreSQL proved daily dedupe, source resolution/reopen, stale-brief isolation, exact acknowledgment, append-only history, guarded rollback, and unchanged source-ledger counts. No production migration/config/deployment/message, workflow action, push, or merge yet. | Build/verify the exact immutable release; then re-read production, back up/apply only migration 120, deploy dark, and separately activate one bounded natural Chief canary. | 2026-08-17T02:42Z |
+| `NC-20260816-018` | Give the two proven Company OS pilots one host-owned, deduplicated Chief-channel exception loop with named-operator acknowledgment and source-derived resolution | Codex | `codex/nc-20260816-018-company-work-exception-loop` @ deployed `0d2c8ec` | `deployed_unverified` | C5 | Exact release `0d2c8ec` and backed-up migration 120 are live on `mini-claw.local`. The sole Node 22.23.2 daemon is healthy with Slack/Gmail connected; the loop is dark (`disabled`, zero configured operators, zero attempts/results), all three attention tables are empty, and Company Work/email fingerprints are unchanged. No task-authored message, workflow action, config grant, push, or merge occurred. | Owner confirms the exact named Company Work operator (candidate: Alex Kudinov); then add a dedicated Company-only allowlist through a reviewed guarded path, restart, require one naturally sourced Chief brief plus exact check-reaction receipt, and prove zero workflow/email/job side effects. | 2026-08-17T02:50Z |
 | `NC-20260816-017` | Activate the Campanero host-job work-ledger pilot with bounded shadow projection and workflow-specific read-only reporting while leaving SQLite and the scheduler authoritative | Codex | `codex/nc-20260816-017-campanero-ledger-activation` @ deployed `999f2a4` | `complete` | C2 | Migration 119 and exact release `999f2a4` are live. One explicitly invoked five-run closed window produced exactly 5 items/15 events/5 receipts; exact replay was duplicate-only; the job report showed 5 completed/0 exceptions. All source/job/task/email hashes and channel/queue boundaries remained unchanged. SQLite and the scheduler remain authority; the observer is unscheduled/default-off. No job, schedule, prompt/capability, recurring message, push, or merge occurred. | None for this activation milestone. Recurring delivery, exception acknowledgment/resolution, scheduler-source normalization, or authority promotion require separate tasks and approval. | 2026-08-17T01:55Z |
 | `NC-20260816-016` | Establish Campanero host-job runs as the second Company OS work-ledger pilot without changing scheduler behavior or applying production schema | Codex | `codex/nc-20260816-016-campanero-ledger-shadow` @ `9fb0437` | `complete` | C2 | Local-only migration 119/rollback, host-only typed job-run transitions, privacy-minimized injected projection, tests, and Company OS/data/project continuity are committed. SQLite remains authority; the migration/projector are unapplied and unwired. No job, schedule, Campanero prompt/capability, production data, service, deployment, or external-message state changed. | None for this local milestone. Production migration, a default-off bounded observer, historical/live parity proof, and workflow-specific report widening require a separate activation task and authority. | 2026-08-17T00:36Z |
 | `NC-20260816-015` | Deploy the exact read-only Company OS exception brief and prove one bounded production read without changing workflow or email state | Codex | `codex/nc-20260816-015-work-ledger-report-deploy` @ deployed `cf96258` | `complete` | C2 | Exact release `cf96258` is live with one listener, healthy Slack/Gmail, empty runtime/email queues, and the daemon-disconnected report. One bounded production read classified 3 completed items and one known critical stale source gap. Before/after fingerprints remained 4 work items, version sum 25, 29 events, 13 receipts, 61 confirmed/6 blocked email actions, and 334 email events. No task-authored message or production-data write occurred; one later ambient Booking Slack output is not NC-015 evidence. | None for this deployment/read-proof milestone. Recurring delivery, operator acknowledgment/resolution, workflow authority, and a second pilot process require separate tasks and authority. | 2026-08-16T23:58Z |
@@ -146,6 +146,39 @@ outside the current client conversation.
   attention state reached 1 case/2 briefs/6 events; populated rollback refused.
   A second empty cluster proved clean rollback removes all three tables. Both
   disposable clusters were stopped.
+- Release evidence: clean release commit
+  `0d2c8ecfab96311db18c58db66cd277a6cb92c68` binds source-tree hash
+  `f8d83fe7c1690c546f13cd800b9aa0036562343a`, 692-file artifact digest
+  `d42825ce1af42e5ec589f7fdda0fafbcde056cdf441f3c90b5a5b9a4fd40f7a5`,
+  and archive digest
+  `d1a38fe69e4ce3316704978e1b98b07af0461e1f18f8522f1bdd12e46b5b64ad`.
+  Fresh local and production extraction both passed before activation.
+- Production migration: the exact preflight found release `999f2a4`, one
+  healthy Node 22.23.2 listener, connected Slack/Gmail, empty queues, zero
+  active containers/actions, one Chief target, live migrations 118/119, and
+  migration 120 absent. Backup
+  `company-work-before-120-2026-08-17T02-46-42-864Z.dump` is mode 0600, has 56
+  catalog entries, and hashes to
+  `c3454457d9802706ee5037427c679923c8b807d773cb99c22e6b5f72172d1799`.
+  Only migration 120 was applied. All three new tables are admin-owned with
+  zero non-admin grants, append-only history enforcement, no raw-content
+  columns, and zero rows.
+- Dark deployment: `mini-claw.local` now serves exact release `0d2c8ec` from
+  sole PID 92811 under Node 22.23.2; Slack/Gmail are connected, queues and
+  active containers/actions remain empty, and the shadow observer is
+  duplicate-only healthy. Exception-loop health is exactly disabled with zero
+  configured operators, zero attempts, and no result. The 9 work items/version
+  sum 35, 44 events, 18 receipts, 334 email events, and their recorded hashes
+  are unchanged. Attention tables remain 0/0/0. Ordinary host scheduling added
+  four run-log rows during the window, while 22 job definitions/17 enabled and
+  11 task definitions remained stable; the disabled loop did not run.
+- Rollback/activation gate: the prior `999f2a4` launchd plist is retained at
+  `com.nanoclaw.plist.rollback-999f2a44f773-2026-08-17T02-47-05-260Z`.
+  No approved named-operator source key exists in production configuration.
+  Privacy-minimized Chief membership metadata identifies Alex Kudinov as the
+  sole human participant, but membership is not an authority grant. Owner
+  confirmation and a dedicated Company-only allowlist path are required before
+  restart or the first natural Chief canary; no Slack message was posted.
 
 ### NC-20260816-017
 

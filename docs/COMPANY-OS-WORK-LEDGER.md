@@ -1,8 +1,9 @@
 # Company OS work ledger — Mailman/Sales pilot
 
 Status: host-only schema, non-authoritative shadow observer, and read-only
-exception report deployed and live-verified; a default-off host operator loop
-is implemented under NC-018; workflow authority and promotion remain separate
+exception report deployed and live-verified; exact release `0d2c8ec` deploys
+the NC-018 host operator loop dark with migration 120 applied, zero operators,
+and zero attention rows; workflow authority and promotion remain separate
 Tasks: foundation `NC-20260815-010`; activation `NC-20260816-001`; read-only
 brief `NC-20260816-014`; report deployment/proof `NC-20260816-015`; operator
 loop `NC-20260816-018`
@@ -326,10 +327,11 @@ bound brief can acknowledge its current case occurrences. No case operation
 mutates `company_work_items`, `company_work_events`, or
 `company_work_receipts`.
 
-Repository presence and deployment do not arm it. It defaults off and requires
-a separately applied production migration, a non-empty named-operator list,
-and an explicit config/restart canary. Production state is authoritative only
-when the NC-018 active-work/changelog record says those gates passed.
+Repository presence and deployment do not arm it. Migration 120 and the exact
+release are live, but the loop remains disabled and requires a non-empty
+owner-approved named-operator list plus an explicit config/restart canary.
+Production state is authoritative only when the NC-018 active-work/changelog
+record says those gates passed.
 
 ## 11. Rollback
 

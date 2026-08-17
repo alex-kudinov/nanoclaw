@@ -1,8 +1,9 @@
 # Company OS operator exception loop
 
-Status: implemented default-off under `NC-20260816-018`; production migration,
-release, activation, and natural operator acknowledgment remain separately
-evidence-gated until recorded in active work and the engineering changelog
+Status: exact release `0d2c8ec` and migration 120 are deployed dark under
+`NC-20260816-018`; the loop is disabled with zero configured operators and
+zero attention rows. Named-operator activation and natural acknowledgment
+remain separately evidence-gated in active work and the engineering changelog.
 
 ## Purpose and authority
 
@@ -105,6 +106,12 @@ Apply creates an exclusive same-mode backup and atomically replaces the env
 file. Restart is required because NanoClaw reads file configuration at startup.
 The first enabled startup tick is the bounded Slack canary; do not manufacture
 or alter a source exception merely to make a brief appear.
+
+Production currently has no approved existing named-operator source key for
+this helper to copy. Chief-channel membership is discovery evidence, not an
+authority grant. Do not infer or create a Company Work operator allowlist until
+the owner explicitly confirms the named person and the dedicated configuration
+path is reviewed.
 
 ## Recovery
 

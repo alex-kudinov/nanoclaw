@@ -58,6 +58,16 @@ approved existing named-operator sources, requires the exact hostname for
 mutation, creates an exclusive backup, and writes atomically without printing
 UID values.
 
+NC-018 crossed the archive, backup, one-file schema, and default-off service
+gates under exact release `0d2c8ec`. Fresh local/production extraction matched;
+the production backup and migration structure were verified; one Node 22.23.2
+listener returned healthy Slack/Gmail plus disabled exception-loop health; the
+three attention tables remained empty; and source Company Work/email evidence
+remained unchanged. The operator configuration gate did not pass because no
+approved existing named-operator source exists, so no allowlist, restart, Slack
+brief, or acknowledgment was attempted. Exact digests, paths, and rollback
+identity are recorded in `docs/ENGINEERING-CHANGELOG.md`.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

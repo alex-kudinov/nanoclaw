@@ -9,10 +9,10 @@ and structurally verified in production on 2026-07-30. Run
 `tools/refresh-schemas.sh` after the next authorized schema refresh to replace
 these overlays with generated evidence.
 
-Structure-only Company OS overlay: migrations 118 and 119 are live under
-`NC-20260816-001/017`. Migration 120 is the default-off `NC-20260816-018`
-operator-attention target; it does not describe production until separately
-applied and recorded in the active-work/changelog evidence.
+Structure-only Company OS overlay: migrations 118, 119, and 120 are live under
+`NC-20260816-001/017/018`. Migration 120's operator-attention tables are empty
+and its exact release is deployed dark; the loop remains disabled pending a
+separately approved named-operator activation and natural canary.
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -77,7 +77,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_work_exception_cases (migration 120 target overlay)
+## business_v2.company_work_exception_cases (migration 120 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_cases_id_seq'::regclass)
@@ -96,7 +96,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   resolved_at                   timestamp with time zone
 ```
 
-## business_v2.company_work_exception_briefs (migration 120 target overlay)
+## business_v2.company_work_exception_briefs (migration 120 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_briefs_id_seq'::regclass)
@@ -116,7 +116,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_work_exception_events (migration 120 target overlay)
+## business_v2.company_work_exception_events (migration 120 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_events_id_seq'::regclass)

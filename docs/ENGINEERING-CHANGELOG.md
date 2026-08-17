@@ -10,11 +10,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260816-018 — Add the default-off Company Work operator exception loop
 
-- Date: 2026-08-17T02:34Z
+- Date: 2026-08-17T02:50Z
 - Owner/client: Codex
-- State: in_progress; local implementation and disposable-data proof complete,
-  production migration/release/activation/natural acknowledgment pending
-- Commit/PR: claim `a036f5a`; implementation `bb417fb` on
+- State: deployed_unverified; exact release and schema are live dark, while
+  named-operator activation and natural acknowledgment remain pending
+- Commit/PR: claim `a036f5a`; implementation `bb417fb`; release
+  `0d2c8ecfab96311db18c58db66cd277a6cb92c68` on
   `codex/nc-20260816-018-company-work-exception-loop`; no PR
 - Change class: C5 — exact Slack UID operator identity, C3 internal Slack
   delivery, and C2 host-only PostgreSQL attention state
@@ -49,9 +50,50 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   1 case/2 briefs/6 attention events). A second empty cluster proved the
   guarded rollback removes all three empty tables. Both disposable clusters
   were stopped.
-- Boundary: no production migration, configuration, deployment, Slack/customer
-  message, email/job action, container wake, workflow authority, prompt,
-  capability, push, or merge has occurred at this checkpoint.
+- Release artifact: the clean commit binds source-tree hash
+  `f8d83fe7c1690c546f13cd800b9aa0036562343a`, 692-file artifact digest
+  `d42825ce1af42e5ec589f7fdda0fafbcde056cdf441f3c90b5a5b9a4fd40f7a5`,
+  and `.release/nanoclaw-0d2c8ecfab96.tar.gz` digest
+  `d1a38fe69e4ce3316704978e1b98b07af0461e1f18f8522f1bdd12e46b5b64ad`.
+  Fresh local and production extraction both verified the archive.
+- Production preflight/migration: `mini-claw.local` began on exact release
+  `999f2a44f7737d624e4c588f8a057a17ff5ca783`, one Node 22.23.2 listener,
+  connected Slack/Gmail, empty queues, zero active containers/actions, one
+  Chief target, migrations 118/119 live, and migration 120 absent. The mode-0600
+  custom-format backup
+  `company-work-before-120-2026-08-17T02-46-42-864Z.dump` has 56 catalog
+  entries and SHA-256
+  `c3454457d9802706ee5037427c679923c8b807d773cb99c22e6b5f72172d1799`.
+  Only migration 120 was applied. Its three empty tables are owned by the admin
+  role, have zero non-admin grants, include the append-only event trigger, and
+  expose zero raw-content columns.
+- Dark activation: the host now serves exact release `0d2c8ec` from sole PID
+  92811 under Node 22.23.2 with Slack/Gmail connected, zero active containers,
+  empty runtime/outgoing queues, duplicate-only Company Work shadow health,
+  and zero active email actions. Exception-loop health is `disabled`, with zero
+  configured operators, interval 86,400,000 ms, report limit 100, stale bound
+  24 hours, target `chief`, no running tick, zero attempts, and no last result.
+  All attention tables remain empty. Company Work stayed at 9 items/version sum
+  35, 44 events, and 18 receipts with hashes
+  `39f56d8e4c3d75bac9497e83a6d0f0c8377f5a378effc64b09339c6161214d7d`,
+  `b2304b3af1d608259ae4ebf7261ff49844168f9198df71576c70cc8439c41502`,
+  and `ff29662cb0faa53ab882f03e59c6721a17b7178d7b86dbf13d5a9697dfd1d56d`.
+  Email actions/events retained hashes
+  `fbe8540f66f84cf2426387bca1708a6dd80c716752b1d54f9624589884e4bcc7`
+  and `82ba3d894e4a665e91db1dd1aa6ea36fe7b618a77100a1f83452d0cb37f30bcc`.
+  Four ordinary scheduler run rows appeared during the deployment window;
+  job-definition/task counts remained 22/11 and the disabled loop never ran.
+- Operator gate and rollback: none of the approved named-operator source keys
+  exists in production configuration. Privacy-minimized Chief membership
+  metadata identifies Alex Kudinov as the sole human participant, but this is
+  discovery evidence, not a C5 authority grant. No allowlist was manufactured
+  and no Slack canary was posted. The prior launchd plist is retained as
+  `com.nanoclaw.plist.rollback-999f2a44f773-2026-08-17T02-47-05-260Z`.
+- Boundary: production migration 120 and exact dark release activation did
+  occur. No operator configuration, Slack/customer message, email/job action,
+  container wake, workflow authority, prompt, capability, push, or merge
+  occurred. Natural brief delivery, named check-reaction acknowledgment,
+  threaded receipt, and natural source resolution remain unverified.
 
 ### NC-20260816-017 — Activate bounded Campanero host-job ledger observation
 

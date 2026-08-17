@@ -22,14 +22,15 @@ ceiling, and remains unscheduled and absent from the daemon/scheduler. SQLite
 access. Follow `docs/COMPANY-OS-JOB-LEDGER.md`; release presence alone does not
 authorize another projection.
 
-Migration 120 is the default-off `NC-20260816-018` operator-attention target.
-It adds admin-only exception case, exact Slack brief, and append-only lifecycle
-tables outside the Company Work state machine. Acknowledgment records only that
-a named Slack UID saw an exact posted brief; only a later complete source
-report can resolve a case. No agent receives access and no exception operation
-may mutate a work item, event, receipt, job, email action, or workflow. Follow
-`docs/COMPANY-OS-EXCEPTION-LOOP.md`; repository presence is not production
-application or activation evidence.
+Migration 120 is live under the default-off `NC-20260816-018`
+operator-attention release. Its admin-only exception case, exact Slack brief,
+and append-only lifecycle tables remain empty; the deployed loop is disabled
+with zero configured operators. Acknowledgment records only that a named Slack
+UID saw an exact posted brief; only a later complete source report can resolve
+a case. No agent receives access and no exception operation may mutate a work
+item, event, receipt, job, email action, or workflow. Follow
+`docs/COMPANY-OS-EXCEPTION-LOOP.md`; live schema/release presence is not named
+operator activation or natural-canary evidence.
 
 ## Connection
 

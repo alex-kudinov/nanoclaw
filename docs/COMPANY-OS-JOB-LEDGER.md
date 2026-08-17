@@ -3,8 +3,9 @@
 Status: NC-016 dark foundation complete; NC-017 deployed and live-verified an
 explicit fixed-window observer and multi-workflow read-only report. Migration
 119 is applied and five exact host-job runs are projected; the observer remains
-unscheduled/default-off. NC-018 implements a separate default-off host operator
-loop over the combined report without changing job authority.
+unscheduled/default-off. Exact release `0d2c8ec` deploys the NC-018 host
+operator loop dark over the combined report, with migration 120 live, zero
+operators, and zero attention rows, without changing job authority.
 Tasks: foundation `NC-20260816-016`; activation `NC-20260816-017`; operator
 loop `NC-20260816-018`
 Decision: SQLite `jobs` and `job_run_logs` remain host-job authority; the
