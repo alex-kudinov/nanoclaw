@@ -12,11 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17T20:19Z
 - Owner/client: Codex
-- State: validating; the local unwired implementation, disposable-database
-  rehearsal, and verification evidence are staged for commit
+- State: complete; the local unwired implementation, disposable-database
+  rehearsal, and verification evidence are committed and verified
 - Commit/PR: claim `4ec32bf4` on
-  `codex/nc-20260817-006-gmail-reconciliation-shadow`; implementation pending;
-  no PR
+  `codex/nc-20260817-006-gmail-reconciliation-shadow`; implementation
+  `67870546`; no PR
 - Change class: C2 — additive local host-only schema and exact read-only Gmail
   wrapper with no production or external write
 - Implementation: an exact `users.getProfile` plus unfiltered,
