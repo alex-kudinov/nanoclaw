@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260817-004` | Apply migration 122 and deploy the trigger-source/watermark foundation dark with no source rows, adapter wiring, or task/action authority | Codex | `codex/nc-20260817-004-trigger-source-dark-deploy` @ `c60dc6cf` | `in_progress` | C2 | Isolated production-gated continuation of NC-003: exact clean release, backup, one-file migration 122, structural/permission/zero-row verification, recovery-safe activation, and live health/non-interference proof. No source registration, watermark event/state initialization beyond schema defaults, daemon import, Gmail/webhook/scheduler/topic/condition adapter change, source cursor read/write, prompt/capability, task create/resume, message, or action is in scope. | Commit this local-only claim; build and independently verify the exact clean release. Wait for the existing two production containers and all email actions to drain, then back up, apply only migration 122, verify empty admin-only structures, activate once, and require exact release/channel/listener/queue health with all new tables still empty. | 2026-08-17T17:22Z |
 | `NC-20260817-003` | Add a durable Company OS trigger-source inventory and fail-closed watermark/reconciliation contract before any second source adapter | Codex | `codex/nc-20260817-003-trigger-source-watermarks` @ `070e781a` (local implementation) | `complete` | C2 | Committed local dark foundation: content-free immutable source registration, versioned cursor head, append-only checkpoint/gap history, compare-and-swap and replay/conflict semantics, migration/rollback/tests, and Company OS/project/data continuity. Existing Gmail, webhook, scheduler, topic, condition, group, daemon, production database/config, tasks, messages, and action paths remain read-only/unwired. | None for this local milestone. Production migration, source registration, daemon wiring, a source-specific bounded recovery adapter, and any task/action authority require separately tracked gates. | 2026-08-17T16:11Z |
 | `NC-20260817-002` | Apply the normalized-trigger schema and live-prove one bounded, source-read-only scheduled-task occurrence observer without granting task or action authority | Codex | `codex/nc-20260817-002-time-trigger-activation` @ deployed `baed66d` | `complete` | C2 | Migration 121 and exact release `baed66d` are live. A drained, disabled deployment produced zero rows; one exact existing task's natural `2026-08-17T14:00:00.000Z` claim then inserted one `time` occurrence at 14:00:11Z, and exact release-bound replay was duplicate-only. The one-boundary config was expired back to disabled with daemon health retaining 1 matched/1 applied/0 failures. No task was created/resumed and no prompt, agent, capability, approval, message, or action authority was granted. Ambient email/work-ledger changes and the existing exception loop's restart brief were separately attributed; no push or merge occurred. | None for this activation milestone. Other trigger families, loss-recovery watermarks, recurring definitions, or task create/resume authority require separate tracked gates. | 2026-08-17T14:04Z |
 | `NC-20260817-001` | Establish one durable, replay-safe Company OS trigger-occurrence contract for time, Gmail, webhook, topic, and business-condition sources without wiring production behavior | Codex | `codex/nc-20260817-001-trigger-contract` @ `ec49ac68` (local implementation) | `complete` | C2 | Committed local dark foundation: a content-free normalized trigger type, stable definition/occurrence/fingerprint identities, exact replay/conflict semantics, additive unapplied migration 121 plus history-preserving rollback, injected host store, focused tests, and Company OS/project/data continuity. The daemon does not import the module. Production schema/data/config, schedules/channels/adapters, task creation/resume, agent/skill/prompt/capability changes, external messages/actions, push, and merge remain unchanged. | None for this local milestone. Production backup/migration, disabled-adapter deployment, source inventory/watermarks, one bounded source adapter, and any task create/resume authority require separately tracked activation work. | 2026-08-17T12:17Z |
@@ -96,6 +97,45 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260817-004
+
+- Trigger/base: after NC-003 completed the local trigger-source/watermark
+  foundation, the owner said to proceed with the explicitly named next dark
+  production milestone. This isolated worktree starts from exact NC-003
+  closeout `c60dc6cf`; the shared dirty operational checkout and all prior
+  worktrees remain untouched. The claim is local-only until explicitly pushed.
+- Initial production preflight: `mini-claw.local` serves exact verified release
+  `baed66dba21dd35edf4d472c537a1d69c5fa867a` from one listener under the
+  plist-pinned Node 22.23.2 runtime and matching immutable code root. Slack and
+  Gmail are connected, the outgoing Slack queue is empty, the normalized time
+  observer is disabled, and capability/action-safety configuration is valid.
+  Two ordinary containers were active, so no drain, backup, migration, transfer,
+  or activation has begun. Migration 121 is present; all three migration-122
+  tables are absent.
+- Outcome: produce and independently verify one clean immutable release that
+  binds migration/rollback 122, create a narrow mode-0600 database backup, apply
+  exactly that release-bound migration, prove its three tables are structurally
+  correct, empty, append-only where required, and admin-only, then activate the
+  same release through the recovery-safe exact-three-field service transaction.
+  Health must prove the full commit/code root, one listener, connected required
+  channels, empty waiting/outgoing queues, and no source/watermark rows.
+- Authority boundary: schema presence is inventory capacity only. This task may
+  not register a source, initialize a cursor, detect or reconcile a live gap,
+  import the NC-003 module into the daemon, enable or change any source adapter,
+  create/resume a task, select an agent/skill, change a capability or approval,
+  or send a Slack/Gmail/external message or action. Existing time-occurrence,
+  schedule, job, channel, Company Work, email-action, and source-cursor facts
+  remain authority and must be compared only through content-free aggregates.
+- Acceptance: exact Node 22.23.2 clean build and release gate; fresh local and
+  production archive verification with recorded SHA-256; zero active/waiting
+  containers, zero outgoing queue, and zero active email actions before schema
+  or service mutation; backup validation; single-file migration application;
+  table/constraint/owner/grant/row-count proof; bounded activator dry-run/apply;
+  exact `/health` release/channel/listener proof; unchanged protected aggregates
+  apart from attributable ambient work; documentation continuity and a
+  recoverable prior plist/release. Stop before source registration or adapter
+  implementation.
 
 ### NC-20260817-003
 
