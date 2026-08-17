@@ -12,10 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17T03:03Z
 - Owner/client: Codex
-- State: deployed_unverified; exact release and schema are live dark, while
-  named-operator activation and natural acknowledgment remain pending
-- Commit/PR: claim `a036f5a`; implementation `bb417fb`; release
-  `0d2c8ecfab96311db18c58db66cd277a6cb92c68` on
+- State: deployed_unverified; exact release, schema, one-operator configuration,
+  and naturally sourced Chief brief are live, while the named check-reaction
+  acknowledgment and later source-derived resolution remain pending
+- Commit/PR: claim `a036f5a`; implementation `bb417fb`; dark release
+  `0d2c8ecfab96311db18c58db66cd277a6cb92c68`; activation release
+  `a2e6d35c3d50fe562bafd10b848b2cedecf8df34` on
   `codex/nc-20260816-018-company-work-exception-loop`; no PR
 - Change class: C5 — exact Slack UID operator identity, C3 internal Slack
   delivery, and C2 host-only PostgreSQL attention state
@@ -102,11 +104,47 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   runner build plus 43/43 tests pass. The unrestricted full root suite is
   2,538/2,539 with only the unchanged unrelated CNPC wrapper-string assertion
   expecting literal `folder: 'cnpc'`.
+- Activation artifact: clean commit
+  `a2e6d35c3d50fe562bafd10b848b2cedecf8df34` binds source tree
+  `a1b746d8ca8e0dac7a9bba8638b83e87682acc5e`, a 692-file artifact with
+  SHA-256 `641555c5eb41ae703539cb3b036cae9c0b3987d7370b348376106dedb6682264`,
+  and archive `.release/nanoclaw-a2e6d35c3d50.tar.gz` with SHA-256
+  `0875c982ab5ae60d11e38bb487f65dea79321b691aa45e67c31684b76e230c54`.
+  Fresh local and production extraction passed the bundled verifier. The
+  recovery-safe activation moved exact release `0d2c8ec` to `a2e6d35` and
+  retained
+  `com.nanoclaw.plist.rollback-0d2c8ecfab96-2026-08-17T03-10-57-251Z`.
+- Operator configuration: the value-redacted resolver found exactly one Slack
+  UID for the owner-confirmed Alex Kudinov identity from 128 human Chief
+  messages. Dry-run showed disabled/zero operators to active/one operator.
+  Apply created
+  `.env.rollback-company-work-exceptions-2026-08-17T03-15-38-698Z`; a second
+  redacted pass reported the active one-operator configuration unchanged. The
+  exact temporary UID file and resolver were then removed. This grant remains
+  attention acknowledgment only.
+- Live canary: a bounded restart moved PID 2035 to sole PID 4213. Exact release
+  `a2e6d35` is verified with a matching code root, connected Slack/Gmail, zero
+  active containers, and empty active/waiting queues. The first loop run at
+  `2026-08-17T03:17:16Z` succeeded: 9 items scanned, one naturally present
+  critical exception item, three exact reason cases opened, and brief 1 posted
+  and durably bound in Chief. The complete report remained 8 completed, zero
+  healthy open, one exception across 4 Sales-email and 5 host-job items; its
+  exact reasons were one each of source gap, failed, and stale. Attention state
+  is 3 open cases, 1 posted brief, and 6 append-only events (3 opened and 3
+  briefed). No acknowledgment has yet been recorded.
+- Non-interference proof: one value-redacted verifier captured identical before
+  and post-canary hashes for 9 Company Work items
+  (`2294c17e...`), 44 events (`d6e62606...`), 18 receipts (`c139a6fa...`),
+  67 email action rows (`511a0b96...`), 334 email events (`4f3f3b66...`),
+  22 job definitions/17 enabled (`9834e713...`), 11 task definitions
+  (`ae9c5caf...`), and 20 channel definitions (`58e3a0ba...`). The only writes
+  were the expected separate attention records and Chief brief.
 - Boundary: production migration 120 and exact dark release activation did
-  occur. No operator configuration, Slack/customer message, email/job action,
-  container wake, workflow authority, prompt, capability, push, or merge
-  occurred. Natural brief delivery, named check-reaction acknowledgment,
-  threaded receipt, and natural source resolution remain unverified.
+  occur, followed by the explicitly authorized one-operator configuration,
+  restart, and one naturally sourced Chief brief. No customer message,
+  email/job/workflow action, container wake, prompt, capability, push, or merge
+  occurred. Named check-reaction acknowledgment, its threaded receipt, and
+  later natural source resolution remain unverified.
 
 ### NC-20260816-017 — Activate bounded Campanero host-job ledger observation
 

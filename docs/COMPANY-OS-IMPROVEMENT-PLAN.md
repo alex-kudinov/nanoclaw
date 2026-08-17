@@ -68,7 +68,7 @@ company-wide merely because one workflow implements them.
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
 | P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places. `NC-20260816-016/017` define and live-prove one immutable `job_run_logs.id` execution contract without controlling it, while exposing the `already_running` durability gap. Definitions, skipped attempts, launchd, n8n, reapers, and all trigger types are not normalized as one inventory. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
-| P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface; NC-017 adds a proven host-job source. Exact release `0d2c8ec` deploys NC-018's first default-off combined recurring brief dark with aggregate health and fail-closed delivery state. Named-operator activation, normalized correlation, weekly quality/cost evidence, and wider coverage remain incomplete. |
+| P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface; NC-017 adds a proven host-job source. Exact release `a2e6d35` activates NC-018's first combined recurring brief for one owner-confirmed operator; its first natural Chief delivery is durably bound with aggregate health and fail-closed state. Named reaction receipt, normalized correlation, weekly quality/cost evidence, and wider coverage remain incomplete. |
 | P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
 | P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable; Gmail history-expiry reconciliation and a common source-watermark contract remain open. |
 | P1.8 migration discipline | partial | Ordered tracked `business_v2` migrations and structure-only schema checks exist; checksums, fresh-database CI, portability, and universal migration/restore gates remain incomplete. |
@@ -87,10 +87,10 @@ company-wide merely because one workflow implements them.
 | P2.7 typed configuration | partial | Typed policy modules, setup code, and examples exist, but effective configuration still spans environment, SQLite JSON, launchd, code, and local state. |
 | P2.8 safe integration environment | partial | Focused fixtures, synthetic canaries, and extensive tests exist; a reusable side-effect-free environment covering the two pilot workflows remains incomplete. |
 | P2.9 explicit releases | partial | Exact release provenance and code/state-root checks are live on the current email lineage; those controls are not yet universal release and recovery proof for every workflow. |
-| P2.10 exception inbox | partial | `NC-20260816-014/015` implement and live-prove the smallest SELECT-only ledger exception report; NC-017 adds the second workflow. Exact release `0d2c8ec` and live migration 120 deploy NC-018's separate durable reason cases, deduplicated Chief-channel delivery, exact named-operator acknowledgment, and source-derived resolution dark while retaining zero workflow authority. Named-operator canary/natural acknowledgment, routing, dead-letter/credential/policy coverage, and any volume-justified work panel remain open. |
+| P2.10 exception inbox | partial | `NC-20260816-014/015` implement and live-prove the smallest SELECT-only ledger exception report; NC-017 adds the second workflow. Exact release `a2e6d35` and live migration 120 activate NC-018's separate durable reason cases and deduplicated Chief delivery for one owner-confirmed operator while retaining zero workflow authority. The first natural brief is posted; its named reaction receipt, later source resolution, routing, dead-letter/credential/policy coverage, and any volume-justified work panel remain open. |
 | P2.11 relationship timeline | partial | `business_v2`, interactions, canonical lead keys, and thread anchoring provide parts of the timeline; one reconciled party/work/action/outcome view remains incomplete. |
 | P2.12 functional closure | partial | Procurement, CNPC, grader, Sales, and Contador now have stronger closed-loop pieces, but each process still needs an explicit completion definition, receipt, exception path, and outcome check. |
-| P2.13 management briefs | partial | Existing digest generators remain separate, but exact release `0d2c8ec` deploys NC-018's first bounded recurring brief dark directly from the shared pilot ledger's exception projection. It is an urgent-attention brief only; named-operator activation, accepted/completed trends, weekly/monthly outcomes, cost/quality, links, and broader process coverage remain open. |
+| P2.13 management briefs | partial | Existing digest generators remain separate, but exact release `a2e6d35` activates NC-018's first bounded recurring urgent-attention brief directly from the shared pilot ledger's exception projection. One natural Chief brief is durably posted; its named reaction receipt, accepted/completed trends, weekly/monthly outcomes, cost/quality, links, and broader process coverage remain open. |
 
 ## 1. Executive recommendation
 
@@ -1450,19 +1450,20 @@ job report had zero exceptions, and source/job/task/email parity held. The CLI
 remains unscheduled/default-off. Recurring briefs, acknowledgment/resolution,
 trigger normalization, and workflow promotion are later gates.
 
-R4 first operator-loop checkpoint: exact release `0d2c8ec` deploys
-`NC-20260816-018` dark with live migration 120, an additive host-only
-case/brief/event ledger, and default-off recurring Chief-channel delivery over
+R4 first operator-loop checkpoint: exact release `a2e6d35` activates
+`NC-20260816-018` with live migration 120, an additive host-only
+case/brief/event ledger, and recurring Chief-channel delivery over
 both proven sources. It claims before posting, refuses incomplete reports and
 ambiguous retries, accepts only an exact check reaction from a configured Slack
 UID, and keeps acknowledgment separate from source-derived resolution.
 Disposable PostgreSQL proves daily deduplication, append-only history,
 reopened-occurrence isolation, exact acknowledgment, and no source-ledger
-cardinality change. Production dark health proves zero operators, attempts,
-results, attention rows, or workflow/email side effects. Named-operator
-activation and natural acknowledgment remain governed by the task evidence;
-routing/resolution action and a general work panel are not part of this
-checkpoint.
+cardinality change. Production has one owner-confirmed operator; the first
+bounded run opened three reason cases and durably posted one naturally sourced
+brief with zero source-work/email/job/task/channel-definition side effects.
+The named check-reaction receipt and later natural source resolution remain
+governed by the task evidence; routing/resolution action and a general work
+panel are not part of this checkpoint.
 
 Each slice receives one or more separate `NC-YYYYMMDD-NNN` tasks only when work
 starts. Do not reserve future IDs, combine these slices into one implementation
@@ -1789,10 +1790,10 @@ Implementation checkpoint (2026-07-29):
     outcome-unvalidated work; retain source-system links and receipts.
     `NC-20260816-014` implements the read-only Mailman/Sales brief and
     `NC-20260816-015` deploys/live-verifies one bounded invocation.
-    exact release `0d2c8ec` deploys `NC-20260816-018` dark with default-off
-    recurring Chief delivery, exact named-operator attention acknowledgment,
-    and source-derived case resolution for both proven pilots. Named-operator
-    canary/natural acknowledgment,
+    exact release `a2e6d35` activates `NC-20260816-018` with recurring Chief
+    delivery, exact named-operator attention acknowledgment, and source-derived
+    case resolution for both proven pilots. One natural brief is durably posted;
+    its named check-reaction receipt and later source resolution,
     dead-letter and wider-process coverage, operator routing/resolution actions,
     and any volume-justified work panel remain open.
 29. `REL-005` — make the host-generated approved-email fallback conform to

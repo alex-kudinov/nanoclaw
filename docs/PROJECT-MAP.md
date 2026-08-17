@@ -248,16 +248,17 @@ and duplicate-only replay passed with unchanged source/email parity. Neither
 component is daemon- or scheduler-wired; Campanero and the job registry remain
 unchanged, and another projection requires separate authorization.
 
-Exact release `0d2c8ec` deploys `NC-20260816-018` dark with migration 120 and a
-separate default-off host operator-attention loop over that combined report.
-The live empty tables store reason cases, exact Slack brief delivery, named-UID
-acknowledgment, and append-only lifecycle facts outside the work state machine.
+Exact release `a2e6d35` deploys and activates `NC-20260816-018` with migration
+120 and a separately configured host operator-attention loop over that combined
+report. The live tables store reason cases, exact Slack brief delivery,
+named-UID acknowledgment, and append-only lifecycle facts outside the work state machine.
 Acknowledgment cannot resolve, retry, approve, send, or change a job/workflow;
 resolution requires a later complete report where the exact reason is absent.
 The only shared Slack change is backward-compatible delivery of exact
-user/source provenance to host approval listeners. The production loop remains
-disabled with zero operators pending explicit named-person confirmation. See
-`docs/COMPANY-OS-EXCEPTION-LOOP.md`; production state must be taken from the
+user/source provenance to host approval listeners. The production loop is
+active for one owner-confirmed operator and has posted one naturally sourced,
+durably bound Chief brief; the exact check-reaction receipt remains pending.
+See `docs/COMPANY-OS-EXCEPTION-LOOP.md`; production state must be taken from the
 NC-018 active-work/changelog evidence, not repository presence.
 
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
@@ -531,13 +532,15 @@ The modern namespace is `business_v2`, including concepts such as:
   in exact release `999f2a4`. A five-run closed window produced exactly 5
   items/15 events/5 receipts, and replay was duplicate-only. SQLite remains
   authority; the observer is not scheduled or daemon-wired.
-- `NC-20260816-018` deploys migration 120 plus a default-off daemon-owned
-  attention loop in exact release `0d2c8ec`. The three live, empty admin-only
+- `NC-20260816-018` deploys migration 120 plus a daemon-owned attention loop in
+  exact release `a2e6d35`. The three live admin-only
   tables store exact reason cases, deduplicated/bound Slack briefs, and
   append-only acknowledgment/resolution evidence without raw customer, email,
   job-output, approval, prompt, or arbitrary payload content. They grant no
-  agent access and never mutate the three work-ledger tables. The loop remains
-  disabled with zero operators pending explicit named-person confirmation.
+  agent access and never mutate the three work-ledger tables. The loop is
+  active for one owner-confirmed operator; the first bounded run opened three
+  reason cases and durably posted one natural Chief brief without changing the
+  source work ledger. Named reaction acknowledgment remains pending.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.

@@ -1,9 +1,11 @@
 # Company OS operator exception loop
 
-Status: exact release `0d2c8ec` and migration 120 are deployed dark under
-`NC-20260816-018`; the loop is disabled with zero configured operators and
-zero attention rows. Named-operator activation and natural acknowledgment
-remain separately evidence-gated in active work and the engineering changelog.
+Status: exact release `a2e6d35` and migration 120 are live under
+`NC-20260816-018`. The loop is active for the sole owner-confirmed operator,
+and its first bounded run durably posted one naturally sourced Chief brief for
+three exact reasons on one exception item. The named check-reaction receipt
+and later natural source-derived resolution remain separately evidence-gated
+in active work and the engineering changelog.
 
 ## Purpose and authority
 
@@ -89,10 +91,10 @@ reports mode, counts, limits, running state, last result, and error code, never
 the operator IDs.
 
 Use only the helper bundled in the exact immutable release. It verifies the
-full expected release commit. The currently live `0d2c8ec` helper accepts only
-the small allowlist of existing named-operator configuration keys; the
-activation candidate additionally accepts one owner-readable, owner-only
-regular file containing exactly one valid Slack UID. Both paths default to
+full expected release commit. The earlier dark `0d2c8ec` helper accepts only
+the small allowlist of existing named-operator configuration keys; live release
+`a2e6d35` additionally accepts one owner-readable, owner-only regular file
+containing exactly one valid Slack UID. Both paths default to
 dry-run, print no UID values, and require the exact hostname for apply:
 
 ```bash
@@ -120,9 +122,11 @@ or alter a source exception merely to make a brief appear.
 Production has no approved existing named-operator source key for this helper
 to copy. Chief-channel membership was discovery evidence, not an authority
 grant; the owner separately confirmed Alex Kudinov as the sole Company Work
-operator at 2026-08-17T02:57Z. Use the dedicated owner-only-file path without
-creating or inheriting Procurement, Healer, approval, email, job, or workflow
-authority.
+operator at 2026-08-17T02:57Z. Activation used the dedicated owner-only-file
+path, verified one redacted operator, and removed the exact temporary input
+after apply. The durable environment backup is recorded in the engineering
+changelog. No Procurement, Healer, approval, email, job, or workflow authority
+was created or inherited.
 
 ## Recovery
 

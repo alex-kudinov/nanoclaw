@@ -62,14 +62,17 @@ valid Slack UID; that path rejects symlinks, group/other permissions, multiple
 or malformed IDs, ambiguous source selection, and wrong-owner files.
 
 NC-018 crossed the archive, backup, one-file schema, and default-off service
-gates under exact release `0d2c8ec`. Fresh local/production extraction matched;
-the production backup and migration structure were verified; one Node 22.23.2
-listener returned healthy Slack/Gmail plus disabled exception-loop health; the
-three attention tables remained empty; and source Company Work/email evidence
-remained unchanged. The operator configuration gate did not pass because no
-approved existing named-operator source exists, so no allowlist, restart, Slack
-brief, or acknowledgment was attempted. Exact digests, paths, and rollback
-identity are recorded in `docs/ENGINEERING-CHANGELOG.md`.
+gates under exact release `0d2c8ec`. After explicit owner confirmation of the
+sole operator, clean activation release `a2e6d35` added the restrictive
+owner-only-file bootstrap and independently passed local and production
+extraction verification. A redacted dry-run/apply/verify transaction configured
+one operator, retained an environment backup, and removed the one-use input.
+One bounded restart converged to exact healthy release `a2e6d35`; its first
+run posted and durably bound one natural Chief brief while source Company Work,
+email, job, task, and channel-definition fingerprints remained unchanged.
+The named check reaction, threaded acknowledgment receipt, and later natural
+source resolution remain separate gates. Exact digests, paths, fingerprints,
+and rollback identities are recorded in `docs/ENGINEERING-CHANGELOG.md`.
 
 The builder refuses to run when:
 
