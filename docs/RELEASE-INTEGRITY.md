@@ -139,6 +139,16 @@ backup, drain, exact release activation, table/trigger readback, natural
 receipt/cursor non-interference evidence, and rollback planning. No such
 deployment or schema application occurs under NC-008.
 
+NC-20260817-009 begins that separate activation gate. Read-only production
+preflight verifies SQLite integrity, no active approved-email execution, an
+absent receipt table, and 57 legacy direct-route staging rows. Twenty-one have
+their exact routed marker; 36 remain unknown and must never be accepted by
+inference. Cursorless recurring scans are hardened locally to hold only that
+candidate so a legacy row cannot starve unrelated mail, while push retains its
+whole-batch cursor. Immutable build, WAL-safe backup, activation, table/trigger
+readback, and natural non-interference proof are still required before this
+task may be called deployed or complete.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

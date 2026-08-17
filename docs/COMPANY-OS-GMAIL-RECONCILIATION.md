@@ -4,9 +4,11 @@ Status: NC-005's proposal adapter and NC-006's unwired resumable shadow are
 implemented. NC-007 deploys those exact bytes in release `de815e1d`, but
 migration 123 remains unapplied and the release has no runtime import. NC-008
 locally adds the missing real-ingestion disposition contract and cursor
-holdback; it is not deployed. No production source registration/bootstrap,
-live Gmail read, cursor write, message recovery, or ingestion change has
-occurred under NC-008.
+holdback. NC-009 has completed read-only production compatibility preflight
+and local restart hardening; receipt-schema deployment and natural proof are
+still pending. No production source registration/bootstrap, live
+reconciliation read, cursor write, message recovery, or ingestion change has
+occurred under NC-009.
 
 ## Decision
 
@@ -78,16 +80,16 @@ and [Gmail profile](https://developers.google.com/workspace/gmail/api/reference/
 `createCompanyGmailInboundSource()` derives one immutable definition from a
 non-address account alias:
 
-| Field | Value |
-| --- | --- |
-| trigger kind / system | `gmail` / `gmail` |
-| source key | `mailbox:<alias>:inbound-v1` |
-| adapter | `gmail_inbound_full_snapshot` version `1.0.0` |
-| cursor | unsigned Gmail history ID |
-| recovery | `full_snapshot` |
-| maximum gap age | 691,200 seconds (eight days) |
-| maximum attempt freshness | 1,200 seconds |
-| authority | fixed `none` |
+| Field                     | Value                                         |
+| ------------------------- | --------------------------------------------- |
+| trigger kind / system     | `gmail` / `gmail`                             |
+| source key                | `mailbox:<alias>:inbound-v1`                  |
+| adapter                   | `gmail_inbound_full_snapshot` version `1.0.0` |
+| cursor                    | unsigned Gmail history ID                     |
+| recovery                  | `full_snapshot`                               |
+| maximum gap age           | 691,200 seconds (eight days)                  |
+| maximum attempt freshness | 1,200 seconds                                 |
+| authority                 | fixed `none`                                  |
 
 An email address is rejected as an alias. The common source normalizer derives
 and verifies the definition ID and semantic fingerprint. Changing the adapter,
@@ -152,11 +154,11 @@ and per-candidate evidence. It returns no raw email content or addresses.
 
 Migration 123 defines three unapplied, host-admin-only tables:
 
-| Table | Durable purpose |
-| --- | --- |
-| `company_gmail_reconciliation_snapshots` | exact source/gap binding, stable initial head, versioned status/counts, and the one active opaque continuation token |
-| `company_gmail_reconciliation_pages` | append-only page index, token hashes, candidate counts, and page fingerprint |
-| `company_gmail_reconciliation_candidates` | one append-only Gmail message ID plus accepted/rejected disposition, bounded reason key, and SHA-256 evidence |
+| Table                                     | Durable purpose                                                                                                      |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `company_gmail_reconciliation_snapshots`  | exact source/gap binding, stable initial head, versioned status/counts, and the one active opaque continuation token |
+| `company_gmail_reconciliation_pages`      | append-only page index, token hashes, candidate counts, and page fingerprint                                         |
+| `company_gmail_reconciliation_candidates` | one append-only Gmail message ID plus accepted/rejected disposition, bounded reason key, and SHA-256 evidence        |
 
 No table has a sender, recipient, address, subject, header, snippet, body,
 payload, prompt, task, approval, capability, action, or arbitrary metadata
@@ -209,6 +211,15 @@ the prior `gmail_history_id` unchanged for replay. Separately, a delta whose
 20th page still has `nextPageToken` now throws before any returned candidate is
 processed, so truncated pagination cannot advance the cursor.
 
+NC-009's preflight found a live restart-compatibility case that is distinct
+from push cursor safety. Of 57 exact legacy SQLite rows staged for direct
+Mailman routing, 21 have their one exact `rules-runner-v1` routed marker and 36
+have no matching classification. The latter remain unknown; NanoClaw must not
+mint an accepted receipt or refetch/deliver them. Cursorless label and thread
+polls now isolate that per-candidate hold, continue unrelated messages, and
+retry the unknown row on a later catch-up. Push processing deliberately keeps
+the stronger whole-batch cursor hold.
+
 ## Fail-closed outcomes
 
 No reconciliation proposal exists when any of these occurs:
@@ -260,6 +271,14 @@ non-terminal page-20 refusal. The exact focused set passes 143/143, combined
 Company OS/Gmail passes 405/405, and the expanded email-critical gate passes
 685/685 plus the independent runner's 43/43. The production daemon and SQLite
 database still run the pre-NC-008 release/schema.
+
+NC-009's aggregate-only production preflight confirms the receipt table and
+both append-only triggers are absent, SQLite `quick_check` is `ok`, critical
+pending email actions are zero, and the selected Gmail cursor fingerprint is
+stable at the pre-activation baseline. The staged-route split above contains
+no duplicate or mixed classification rows. Exact Node 22.23.2 passes the new
+label/thread starvation regressions locally; immutable release and live proof
+remain pending.
 
 This is not yet a live Gmail recovery fix:
 

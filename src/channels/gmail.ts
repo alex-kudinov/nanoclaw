@@ -489,7 +489,18 @@ export class GmailChannel implements Channel {
       if (!ref.id) continue;
 
       // Deduplicate only through a durable receipt (or a verified legacy row).
-      if (await this.ensureDurableDisposition(ref.id)) continue;
+      try {
+        if (await this.ensureDurableDisposition(ref.id)) continue;
+      } catch (err) {
+        // Polling has no loss-bearing source cursor. Hold this exact candidate
+        // for a later catch-up scan, but do not let one unresolved legacy
+        // direct-route row starve every unrelated labeled message.
+        logger.warn(
+          { err, messageId: ref.id, scan: 'label_poll' },
+          'Gmail poll held unresolved candidate',
+        );
+        continue;
+      }
 
       const msg = await this.fetchAndProcess(ref.id);
       if (msg) newCount++;
@@ -865,7 +876,18 @@ export class GmailChannel implements Channel {
       });
 
       for (const msg of thread.data.messages || []) {
-        if (!msg.id || (await this.ensureDurableDisposition(msg.id))) continue;
+        if (!msg.id) continue;
+        try {
+          if (await this.ensureDurableDisposition(msg.id)) continue;
+        } catch (err) {
+          // Thread scans are recurring and cursorless. Preserve the exact
+          // unresolved candidate for retry without blocking other threads.
+          logger.warn(
+            { err, messageId: msg.id, scan: 'thread_poll' },
+            'Gmail poll held unresolved candidate',
+          );
+          continue;
+        }
 
         const labels = msg.labelIds || [];
         if (labels.includes('SENT') || labels.includes('DRAFT')) {

@@ -607,6 +607,44 @@ describe('GmailChannel', () => {
       );
     });
 
+    it('holds an unresolved staged row without starving later label-poll candidates', async () => {
+      mockGmail.users.messages.list.mockResolvedValueOnce({
+        data: {
+          messages: [{ id: 'route-unresolved' }, { id: 'msg-after' }],
+        },
+      });
+      mockGetStoredInboundEvidence.mockImplementation((messageId: string) =>
+        messageId === 'route-unresolved' ? 'direct_route_staged' : undefined,
+      );
+      mockGmail.users.messages.get.mockResolvedValueOnce(
+        gmailMessage('msg-after'),
+      );
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await expect((channel as any).poll()).resolves.toBeUndefined();
+
+      expect(mockGmail.users.messages.get).toHaveBeenCalledTimes(1);
+      expect(mockGmail.users.messages.get).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'msg-after' }),
+      );
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({ messageId: 'msg-after' }),
+      );
+      expect(mockSetRouterState).toHaveBeenCalledWith(
+        'gmail_last_check',
+        expect.any(String),
+      );
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'route-unresolved',
+          scan: 'label_poll',
+        }),
+        'Gmail poll held unresolved candidate',
+      );
+    });
+
     it('receipts the thread-scanner outbound terminal without fetching content', async () => {
       mockGmail.users.threads.list.mockResolvedValueOnce({
         data: { threads: [{ id: 'thread-1' }] },
@@ -633,6 +671,42 @@ describe('GmailChannel', () => {
           disposition: 'rejected',
           reasonKey: 'thread_outbound',
         }),
+      );
+    });
+
+    it('holds an unresolved staged thread row and receipts later terminals', async () => {
+      mockGmail.users.threads.list.mockResolvedValueOnce({
+        data: { threads: [{ id: 'thread-1' }] },
+      });
+      mockGmail.users.threads.get.mockResolvedValueOnce({
+        data: {
+          messages: [
+            { id: 'route-unresolved', labelIds: ['INBOX'] },
+            { id: 'msg-thread-own', labelIds: ['SENT'] },
+          ],
+        },
+      });
+      mockGetStoredInboundEvidence.mockImplementation((messageId: string) =>
+        messageId === 'route-unresolved' ? 'direct_route_staged' : undefined,
+      );
+      const channel = new GmailChannel(createTestOpts());
+      await channel.connect();
+
+      await expect((channel as any).pollThreadReplies()).resolves.toBe(0);
+
+      expect(mockGmail.users.messages.get).not.toHaveBeenCalled();
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'msg-thread-own',
+          reasonKey: 'thread_outbound',
+        }),
+      );
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'route-unresolved',
+          scan: 'thread_poll',
+        }),
+        'Gmail poll held unresolved candidate',
       );
     });
   });

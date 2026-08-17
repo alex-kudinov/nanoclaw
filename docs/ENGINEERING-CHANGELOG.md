@@ -8,6 +8,47 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-009 — Activate durable Gmail disposition receipts
+
+- Date: 2026-08-17
+- Owner/client: Codex
+- State: ready_for_deploy; read-only production preflight and local restart
+  hardening verified, immutable build/backup/activation pending
+- Commit/PR: claim `2d994656` on
+  `codex/nc-20260817-009-gmail-receipt-activation`; no PR
+- Change class: C2 — additive production SQLite schema and recovery-safe exact
+  release activation without manufactured Gmail traffic or action authority
+- Preflight: `mini-claw.local` remains on verified exact release `de815e1d`
+  under Node 22.23.2 with one listener, matching code root, connected
+  Gmail/Slack, zero active/waiting/outgoing work, and zero critical pending
+  email actions. SQLite `quick_check` is `ok`; the receipt table/triggers are
+  absent; pending email state is 66 confirmed/6 blocked; the selected Gmail
+  cursor fingerprint is
+  `cfe9db8b9cd36e880e16a5ef63538b100d35621beb381c6ed19591db46cb7705`.
+  The operational database has no WAL/SHM sidecars at this snapshot.
+- Compatibility finding and repair: aggregate-only reconciliation found 57
+  exact Gmail/Mailman direct-route staging rows. Twenty-one have one matching
+  `rules-runner-v1` classification with `routed_at`; 36 have no matching
+  classification; none is duplicate, mixed, or unrouted-only. NC-008 already
+  refuses to invent receipts for the 36 unresolved rows, but a recurring
+  label/thread scan could abort on the first refusal and starve unrelated
+  mail. NC-009 catches that exact per-candidate hold in cursorless scans,
+  continues unrelated candidates, and leaves the row for later catch-up.
+  Push history keeps its stricter whole-batch cursor hold.
+- Local verification: exact Node 22.23.2 focused Gmail/disposition,
+  classification, and pagination tests pass 75/75, including new label- and
+  thread-scan starvation regressions. Typecheck and root build pass. The
+  email-critical gate passes 687/687 plus the independent runner build and
+  43/43 tests. Documentation/capability continuity, formatting, and diff checks
+  pass. The unrestricted full baseline passes 2,661/2,662; its sole failure is
+  the unchanged CNPC literal wrapper assertion in
+  `src/cnpc-prompt-contract.test.ts`.
+- Boundary: production access has been read-only. No SQLite/PostgreSQL row or
+  schema, Gmail API write/send, cursor, message, classification, task, action,
+  source, service, release, configuration, push, or merge changed. Backup,
+  exact release construction, activation, natural proof, and final recovery
+  evidence remain pending.
+
 ### NC-20260817-008 — Add durable Gmail inbound disposition receipts
 
 - Date: 2026-08-17
@@ -1687,13 +1728,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 **Addendum (2026-08-16T17:05Z — R2 review-response round, Claude Code):**
 Codex R2 review (`docs/reports/NC-20260816-005-CODEX-REQUEST-R2.md`) returned
 `CHANGES_REQUIRED` on two integration gaps in the R1 diff, both fixed here:
+
 1. `enqueueStripeLifecycleFact`'s `ON CONFLICT` update never touched
    `properties`, so a first enqueue without a valid slug — or the earlier
    arrival of the Checkout/PaymentIntent twin, which collide on the same
    `(source_system, source_event_id)` — permanently froze the row without a
    canonical slug even after a later call carried a valid one. Fixed with an
    upgrade-only `properties = CASE WHEN EXCLUDED.properties ? 'canonical_product_slug'
-   THEN jsonb_set(...) ELSE <unchanged> END`: a call whose (already
+THEN jsonb_set(...) ELSE <unchanged> END`: a call whose (already
    JS-validated) `properties` carries the slug key upgrades the stored value;
    a call without it leaves every existing property, including a
    previously-stored valid slug, untouched — never a blind
@@ -1708,9 +1750,9 @@ Codex R2 review (`docs/reports/NC-20260816-005-CODEX-REQUEST-R2.md`) returned
    Verification: 49 focused tests pass (12 outbox + 20 host + 17
    process-payment, up from 48/11 at R1) via the exact tracked command
    `npm test -- --run src/chaos-lifecycle-outbox.test.ts
-   src/stripe-payment-host.test.ts tools/contador/process-payment.test.ts`
+src/stripe-payment-host.test.ts tools/contador/process-payment.test.ts`
    under pinned Node 22.23.2; `tsc --noEmit` clean; `npm run
-   docs:continuity-check` passes; `git diff --check` clean. No commit, push,
+docs:continuity-check` passes; `git diff --check` clean. No commit, push,
    deploy, or external write occurred. Response artifact:
    `docs/reports/NC-20260816-005-CLAUDE-RESPONSE-R2.md`.
 
@@ -2570,14 +2612,14 @@ advanced to `ready_for_deploy`; no production state changed at this boundary.
 - Independent review: Claude R12 approved the architecture; R13 required six
   bounded race, abort, row-budget, unit-isolation, bridge-retirement, and output
   flush repairs; R14 accepted all six and returned `GO for commit and shadow
-  deployment`. R14's remaining count-mismatch whole-run abort was also changed
+deployment`. R14's remaining count-mismatch whole-run abort was also changed
   to a per-unit `reconciliation_failed` diagnostic. The focused exact-Node
   22.23.2 gate passes 6 files / 47 tests. Production activation and all shadow
   and live claims remain pending; review stays disabled.
 - Final candidate review: Claude R15 independently reproduced the focused
   6-file / 47-test gate, traced `reconciliation_failed` through the migration
   115 receipt boundary, and returned `GO for commit and immutable shadow
-  deployment` with no blocker or high regression. Codex's final exact-Node
+deployment` with no blocker or high regression. Codex's final exact-Node
   22.23.2 evidence also includes the host build, typecheck, formatting,
   continuity, `git diff --check`, the complete 157-file / 2,006-test suite, and
   the independent runner build plus 4-file / 29-test suite. No deployment or
@@ -2638,7 +2680,7 @@ advanced to `ready_for_deploy`; no production state changed at this boundary.
   a `search()` regression. A bounded no-write diagnostic proved one exact-path
   POST per search, HTTP 200 JSON, and one exact query capture. `coaching` uses
   the full terminal message `No event met your search criteria. Please change
-  your search criteria and try again`, whereas the parser expected only the
+your search criteria and try again`, whereas the parser expected only the
   shorter UI label. `facilitation` retains its one visible reconciled row and
   has no error text. This disproves wrong-response/status/content-type causes
   and isolates the string-contract mismatch.
@@ -2661,7 +2703,7 @@ advanced to `ready_for_deploy`; no production state changed at this boundary.
   timeout, visible-zero, and cross-keyword terminal payloads. A bounded public
   DOM diagnostic on `executive coaching` observed the full normalized message
   `No event met your search criteria. Please change your search criteria and try
-  again`, exactly matching the verified response text, so all four exact DOM
+again`, exactly matching the verified response text, so all four exact DOM
   call sites now use that full string. The repaired loop samples the flag first,
   rejects only visible results summary/grid, prefers an agreeing visible zero,
   and uses response provenance only when the portal renders no state. The four
@@ -2671,7 +2713,7 @@ advanced to `ready_for_deploy`; no production state changed at this boundary.
   convergence, full verification, immutable release, and three shadows remain
   pending; all Procurement gates remain off.
 - Claude R20 returned `GO for commit, immutable deployment, and the unchanged
-  three-shadow gate`, with no blocker/high. Its remaining Medium is the intended
+three-shadow gate`, with no blocker/high. Its remaining Medium is the intended
   fail-closed Clear Criteria check becoming load-bearing now that the full empty
   marker is matched; shadow 1 will prove whether the portal removes that marker
   before the next keyword. The synthetic timeout test now uses 50 ms rather
@@ -2703,7 +2745,7 @@ advanced to `ready_for_deploy`; no production state changed at this boundary.
   Zeros now require the exact query-bound response tuple; positives require a
   visible summary and reconciliation; marker visibility is a non-authoritative
   public diagnostic. Claude R22 returned `GO FOR COMMIT AND SUPERSEDING
-  IMMUTABLE SHADOW RELEASE`, with no blocker/high code issue. Exact Node 22.23.2
+IMMUTABLE SHADOW RELEASE`, with no blocker/high code issue. Exact Node 22.23.2
   passes 3 focused files / 26 tests, the complete 165-file / 2,219-test root
   suite, typecheck, build, formatting, documentation continuity,
   `git diff --check`, and the independent runner build plus 5 files / 34 tests.
