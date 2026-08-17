@@ -110,6 +110,15 @@ admin-only with no runtime import. Source registration, cursor initialization,
 adapter deployment, bounded source proof, and every create/resume promotion
 remain separate gates.
 
+Beginning with NC-20260817-006, clean archives also bind migration 123 and its
+empty-only rollback. The release contains the exact read-only Gmail profile and
+full-mailbox-list wrapper plus an unwired resumable shadow store, but bundling
+those bytes does not apply the schema, register/bootstrap a source, call Gmail,
+create shadow evidence, intercept history 404, or advance either Gmail cursor.
+`NC-20260817-007` deploys that exact release with migration 123 deliberately
+unapplied; durable real disposition receipts remain the next prerequisite
+before database/source activation or any live shadow read.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;
