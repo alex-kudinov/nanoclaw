@@ -11,6 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `NC-20260816-018` | Give the two proven Company OS pilots one host-owned, deduplicated Chief-channel exception loop with named-operator acknowledgment and source-derived resolution | Codex | `codex/nc-20260816-018-company-work-exception-loop` @ `9f1f576` | `in_progress` | C5 | Migration 120; privacy-minimized exception-case/brief history; bounded complete-report reconciliation; default-off recurring host loop; one exact `#gru-chief` target; named Slack UID acknowledgment; explicit receipt; tests and Company OS/data/project/release continuity. Acknowledgment records attention only; resolution requires a later complete ledger read where the exception is absent. No agent/container, job/email retry, workflow transition/authority, customer message, prompt/capability, push, or merge. | Commit this local claim, then implement and adversarially verify the dark boundary before any migration, configuration, deployment, or Slack canary. | 2026-08-17T02:11Z |
 | `NC-20260816-017` | Activate the Campanero host-job work-ledger pilot with bounded shadow projection and workflow-specific read-only reporting while leaving SQLite and the scheduler authoritative | Codex | `codex/nc-20260816-017-campanero-ledger-activation` @ deployed `999f2a4` | `complete` | C2 | Migration 119 and exact release `999f2a4` are live. One explicitly invoked five-run closed window produced exactly 5 items/15 events/5 receipts; exact replay was duplicate-only; the job report showed 5 completed/0 exceptions. All source/job/task/email hashes and channel/queue boundaries remained unchanged. SQLite and the scheduler remain authority; the observer is unscheduled/default-off. No job, schedule, prompt/capability, recurring message, push, or merge occurred. | None for this activation milestone. Recurring delivery, exception acknowledgment/resolution, scheduler-source normalization, or authority promotion require separate tasks and approval. | 2026-08-17T01:55Z |
 | `NC-20260816-016` | Establish Campanero host-job runs as the second Company OS work-ledger pilot without changing scheduler behavior or applying production schema | Codex | `codex/nc-20260816-016-campanero-ledger-shadow` @ `9fb0437` | `complete` | C2 | Local-only migration 119/rollback, host-only typed job-run transitions, privacy-minimized injected projection, tests, and Company OS/data/project continuity are committed. SQLite remains authority; the migration/projector are unapplied and unwired. No job, schedule, Campanero prompt/capability, production data, service, deployment, or external-message state changed. | None for this local milestone. Production migration, a default-off bounded observer, historical/live parity proof, and workflow-specific report widening require a separate activation task and authority. | 2026-08-17T00:36Z |
 | `NC-20260816-015` | Deploy the exact read-only Company OS exception brief and prove one bounded production read without changing workflow or email state | Codex | `codex/nc-20260816-015-work-ledger-report-deploy` @ deployed `cf96258` | `complete` | C2 | Exact release `cf96258` is live with one listener, healthy Slack/Gmail, empty runtime/email queues, and the daemon-disconnected report. One bounded production read classified 3 completed items and one known critical stale source gap. Before/after fingerprints remained 4 work items, version sum 25, 29 events, 13 receipts, 61 confirmed/6 blocked email actions, and 334 email events. No task-authored message or production-data write occurred; one later ambient Booking Slack output is not NC-015 evidence. | None for this deployment/read-proof milestone. Recurring delivery, operator acknowledgment/resolution, workflow authority, and a second pilot process require separate tasks and authority. | 2026-08-16T23:58Z |
@@ -92,6 +93,41 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260816-018
+
+- Trigger/base: after NC-017 deployed and live-verified the second bounded
+  work-ledger source, the owner instructed Codex to continue to the next named
+  Company OS milestone, previously identified as the operator exception loop.
+  This task starts from NC-017 evidence closeout `9f1f576`; current production
+  state must be re-read before any external-state change.
+- Outcome: turn the two privacy-minimized pilot projections into one small
+  operator attention loop. A complete, non-truncated ledger read opens or
+  re-observes exact exception cases, resolves a case only when that exception is
+  absent from a later complete read, and posts only a new/due bounded brief to
+  the registered Chief channel. A named operator's check reaction acknowledges
+  the cases bound to that exact posted brief and receives a mechanical receipt.
+- Authority boundary: acknowledgment means only "a named operator has seen
+  these exceptions." It cannot resolve, cancel, retry, approve, dispatch, send,
+  pause/resume, or advance a work item. Source disappearance is the only
+  resolution authority. Unavailable or truncated reports, ambiguous Slack
+  delivery, unknown message timestamps, unnamed users, and stale/replayed
+  callbacks fail closed.
+- Scope/risk: C5 because Slack UID becomes an operator-identity boundary, plus
+  C3 internal Slack delivery and C2 host-only PostgreSQL state. Likely files are
+  migration/rollback 120, the structure-only schema reference, a focused
+  exception-loop module/tests, the minimal Slack UID callback plumbing,
+  composition/health/config wiring, and Company OS/project/release continuity.
+  The active `NC-20260811-002` row also names Slack approval callbacks; this
+  isolated branch will not alter approval-card semantics and will limit shared
+  Slack changes to backward-compatible UID provenance for exact host listeners.
+- Activation gate: implementation ships default off. Before enabling, require
+  exact Node 22 focused/full/email/runner/release gates, disposable PostgreSQL
+  migration/reconciliation/replay/rollback proof, a production backup and
+  explicit one-migration apply, exact release/drain/health proof, a configured
+  non-empty named-operator allowlist, and one bounded Chief-channel canary.
+  No customer message, email/job action, workflow promotion, push, or merge is
+  authorized.
 
 ### NC-20260816-017
 
