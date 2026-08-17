@@ -11,7 +11,7 @@ outside the current client conversation.
 
 | Task ID           | Outcome                                                                                                                                         | Owner/client                       | Branch @ base                                                | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                | Next action                                                                                                                                                                                                                                                                                                                                                             | Updated           |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `NC-20260817-004` | Apply migration 122 and deploy the trigger-source/watermark foundation dark with no source rows, adapter wiring, or task/action authority | Codex | `codex/nc-20260817-004-trigger-source-dark-deploy` @ `c60dc6cf` | `in_progress` | C2 | Isolated production-gated continuation of NC-003: exact clean release, backup, one-file migration 122, structural/permission/zero-row verification, recovery-safe activation, and live health/non-interference proof. No source registration, watermark event/state initialization beyond schema defaults, daemon import, Gmail/webhook/scheduler/topic/condition adapter change, source cursor read/write, prompt/capability, task create/resume, message, or action is in scope. | Commit this local-only claim; build and independently verify the exact clean release. Wait for the existing two production containers and all email actions to drain, then back up, apply only migration 122, verify empty admin-only structures, activate once, and require exact release/channel/listener/queue health with all new tables still empty. | 2026-08-17T17:22Z |
+| `NC-20260817-004` | Apply migration 122 and deploy the trigger-source/watermark foundation dark with no source rows, adapter wiring, or task/action authority | Codex | `codex/nc-20260817-004-trigger-source-dark-deploy` @ deployed `070cde38` | `complete` | C2 | Exact release `070cde38` is live after a prolonged natural drain, mode-0600 backup, one-file migration 122, structural/permission verification, and recovery-safe activation. The three new tables remain empty/admin-only, no runtime entry point imports the store, and the prior occurrence plus schedule/job/channel definitions are unchanged. One ordinary approved email completed during the drain and is separately attributable to SQLite/Gmail receipts. | None for this dark deployment milestone. Source registration, cursor bootstrap, Gmail bounded reconciliation, any adapter wiring, and every task create/resume or action authority require separate tracked gates. | 2026-08-17T18:17Z |
 | `NC-20260817-003` | Add a durable Company OS trigger-source inventory and fail-closed watermark/reconciliation contract before any second source adapter | Codex | `codex/nc-20260817-003-trigger-source-watermarks` @ `070e781a` (local implementation) | `complete` | C2 | Committed local dark foundation: content-free immutable source registration, versioned cursor head, append-only checkpoint/gap history, compare-and-swap and replay/conflict semantics, migration/rollback/tests, and Company OS/project/data continuity. Existing Gmail, webhook, scheduler, topic, condition, group, daemon, production database/config, tasks, messages, and action paths remain read-only/unwired. | None for this local milestone. Production migration, source registration, daemon wiring, a source-specific bounded recovery adapter, and any task/action authority require separately tracked gates. | 2026-08-17T16:11Z |
 | `NC-20260817-002` | Apply the normalized-trigger schema and live-prove one bounded, source-read-only scheduled-task occurrence observer without granting task or action authority | Codex | `codex/nc-20260817-002-time-trigger-activation` @ deployed `baed66d` | `complete` | C2 | Migration 121 and exact release `baed66d` are live. A drained, disabled deployment produced zero rows; one exact existing task's natural `2026-08-17T14:00:00.000Z` claim then inserted one `time` occurrence at 14:00:11Z, and exact release-bound replay was duplicate-only. The one-boundary config was expired back to disabled with daemon health retaining 1 matched/1 applied/0 failures. No task was created/resumed and no prompt, agent, capability, approval, message, or action authority was granted. Ambient email/work-ledger changes and the existing exception loop's restart brief were separately attributed; no push or merge occurred. | None for this activation milestone. Other trigger families, loss-recovery watermarks, recurring definitions, or task create/resume authority require separate tracked gates. | 2026-08-17T14:04Z |
 | `NC-20260817-001` | Establish one durable, replay-safe Company OS trigger-occurrence contract for time, Gmail, webhook, topic, and business-condition sources without wiring production behavior | Codex | `codex/nc-20260817-001-trigger-contract` @ `ec49ac68` (local implementation) | `complete` | C2 | Committed local dark foundation: a content-free normalized trigger type, stable definition/occurrence/fingerprint identities, exact replay/conflict semantics, additive unapplied migration 121 plus history-preserving rollback, injected host store, focused tests, and Company OS/project/data continuity. The daemon does not import the module. Production schema/data/config, schedules/channels/adapters, task creation/resume, agent/skill/prompt/capability changes, external messages/actions, push, and merge remain unchanged. | None for this local milestone. Production backup/migration, disabled-adapter deployment, source inventory/watermarks, one bounded source adapter, and any task create/resume authority require separately tracked activation work. | 2026-08-17T12:17Z |
@@ -136,6 +136,57 @@ outside the current client conversation.
   apart from attributable ambient work; documentation continuity and a
   recoverable prior plist/release. Stop before source registration or adapter
   implementation.
+- Release: exact commit `070cde380242767d281641bdba34f525a33f650b`
+  binds source tree `c1af83c9035b75b630a7d71c2c7d861ebf652ea7`, a
+  708-file compiled artifact with digest
+  `00394081299e1258b2ac7098aebd510b0b6fe8ecd6ca3ed602282133c114ce27`,
+  Node 22.23.2, and archive SHA-256
+  `24baf0e8912501520dc02d85d332fb4d0dd2a2eaa55c413191ae0d746b07c1b1`.
+  The clean builder's email-critical 638/638 and independent runner build plus
+  43/43 tests passed; fresh local and production extraction verified the same
+  archive. Focused trigger tests pass 58/58, combined Company OS tests 157/157,
+  and exact-runtime typecheck passes. Formatting, schema-sanitizer,
+  documentation-continuity/capability, and diff checks pass.
+- Drain/backup/migration: ordinary Chief, Sales, Mailman, and Courses work was
+  allowed to finish naturally; no container was interrupted. The final three
+  mutation gates each required zero active/waiting containers, zero outgoing
+  Slack queue, and zero active approved-email actions. Mode-0600 custom backup
+  `company-trigger-before-122-2026-08-17T18-14-16Z.dump` is 9,046 bytes,
+  contains 28 listed entries, and has SHA-256
+  `b9d232ccc4439783f3ff7d4719e251added3db625c2f6c666957db42d670adcb`.
+  Only release-bound migration 122 (SHA-256
+  `bb4ebfa8cde9c54a62bb8f11a60abab0096bbfd0ccb5599a3519b45037d4f6a7`)
+  was applied.
+- Schema proof: `company_trigger_sources`,
+  `company_trigger_watermark_events`, and `company_trigger_watermark_state`
+  are owned by `nanoclaw_admin`; table/sequence grants to non-admin roles are
+  zero, both immutable-table append-only triggers exist, and forbidden
+  raw/message/prompt/action columns are zero. Source, event, and state row
+  counts are all zero; the existing occurrence count remains one.
+- Activation/live proof: the activator dry-run named only the exact three
+  documented plist paths. Applied activation moved exact release `baed66d` to
+  `070cde38`, retained rollback plist
+  `com.nanoclaw.plist.rollback-baed66dba21d-2026-08-17T18-15-44-734Z`, and
+  health-verified the target. Independent readback found one listener, exact
+  Node 22.23.2 release/code-root identity, connected Gmail/Slack, empty active,
+  waiting, and outgoing queues, disabled time observer with zero new calls,
+  valid capability/action-safety configuration, and all new tables still empty.
+  A later stability read at `2026-08-17T18:20:54Z` again found one exact-release
+  listener, connected channels, zero outgoing queue, disabled observer with
+  zero calls, and 0/0/0 source/event/state rows.
+- Ambient attribution/non-interference: one ordinary approved email completed
+  during the prolonged drain, moving confirmed actions 65 to 66 and Company
+  Work from 12 items/version sum 53/65 events/27 receipts to 13/60/73/31. The
+  new item is independently classified as completed `sales_email` from
+  `sqlite_email_action` with approval, action-claim, Gmail-delivery, and
+  outcome receipts. Scheduled tasks remain 11, jobs 22 (17 enabled), groups
+  20, blocked email actions 6, the normalized time occurrence one, and every
+  migration-122 table zero. No NC-004 message or action occurred.
+- Boundary: production backup, additive schema application, immutable release
+  installation, and one bounded service restart did occur. No source was
+  registered or bootstrapped; no cursor/gap event was written; no source
+  adapter, current source cursor, task, prompt, agent, capability, approval,
+  customer/internal message, or action path changed. No push or merge occurred.
 
 ### NC-20260817-003
 

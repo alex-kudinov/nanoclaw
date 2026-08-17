@@ -49,12 +49,14 @@ SQLite's authoritative claim. One natural boundary inserted once, exact replay
 was duplicate-only, and configuration was expired back to disabled. The live
 table retains one append-only row. The producer has no prompt/result access and
 no task/message/action authority.
-`NC-20260817-003` adds local, unapplied migration 122: immutable content-free
+`NC-20260817-003` adds migration 122: immutable content-free
 trigger-source definitions, a versioned host-owned cursor head, and append-only
 checkpoint/gap/reconciliation history. Exact accounting and monotonic cursor
 advancement are enforced by the typed store; an open gap freezes the prior
-cursor until reconciliation names that exact gap. The module is unwired, no
-source is seeded, and production schema/runtime/authority are unchanged.
+cursor until reconciliation names that exact gap. `NC-20260817-004` applies
+the schema and deploys exact release `070cde38` dark: all three tables are live,
+empty, and admin-only. The module remains unwired, no source is registered or
+seeded, and runtime/task/action authority is unchanged.
 
 ---
 

@@ -97,13 +97,18 @@ configuration, natural occurrence, exact replay, and expiry are recorded in
 the active-work/changelog evidence. Reusing the helper for another task or
 boundary is a new production configuration operation, not implied authority.
 
-Beginning with NC-20260817-003, a future clean archive also binds migration
+Beginning with NC-20260817-003, clean archives also bind migration
 122 and its history-preserving rollback. The files define the dark
 trigger-source inventory and watermark/gap state only. Bundling does not apply
 the schema, register or enable a source, reconcile a live gap, wire an adapter,
 or grant task/action authority. Production backup, migration, source
 registration, adapter deployment, bounded source proof, and any create/resume
-promotion remain separate recorded gates. NC-003 performs none of them.
+promotion remain separate recorded gates. `NC-20260817-004` crossed only the
+archive, narrow backup, one-file schema, and default-off service gates under
+exact release `070cde38`. Structural/live proof kept all three tables empty and
+admin-only with no runtime import. Source registration, cursor initialization,
+adapter deployment, bounded source proof, and every create/resume promotion
+remain separate gates.
 
 The builder refuses to run when:
 

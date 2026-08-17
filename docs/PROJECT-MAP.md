@@ -283,14 +283,16 @@ configuration was expired back to disabled with zero daemon failures. The
 table remains live with that one append-only row. No task create/resume or
 action authority was introduced.
 
-`NC-20260817-003` adds the next local-only R3 prerequisite: migration 122 and
+`NC-20260817-003` adds the next R3 prerequisite: migration 122 and
 an unwired host store for immutable source definitions, compare-and-swap
 watermark state, and append-only checkpoint/gap/reconciliation history.
 Complete ranges require exact accepted/rejected accounting and monotonic
 unsigned/timestamp cursors. A gap leaves the prior cursor fixed and blocks
 ordinary advancement until a reconciliation event binds the exact gap. The
-source registry has no enable switch or task/action fields. The migration is
-unapplied, no source is seeded, and no daemon/adapter imports the module.
+source registry has no enable switch or task/action fields. `NC-20260817-004`
+applies the schema and deploys exact release `070cde38` dark; the three new
+tables are live, empty, and admin-only. No source is registered or seeded, and
+no daemon/adapter imports the module.
 Current Gmail push and label-poll history-expiry behavior therefore remains a
 known loss window, not a recovery claim.
 
@@ -587,14 +589,15 @@ The modern namespace is `business_v2`, including concepts such as:
   natural boundary inserted once, exact replay was duplicate-only, and config
   is disabled after the canary. Other source adapters and every task/action
   promotion remain absent.
-- `NC-20260817-003` adds local, unapplied migration 122 and an unwired typed
+- `NC-20260817-003` adds migration 122 and an unwired typed
   store for immutable trigger-source definitions, versioned cursor state, and
   append-only watermark/gap history. Disposable PostgreSQL proves exact
   registration/event replay, source-fact conflicts, monotonic and stale-version
   refusal, gap freeze, exact-gap reconciliation, append-only history,
-  history-preserving rollback, and zero agent grants. This is portable target
-  state only; production schema, current source cursors, and adapters remain
-  unchanged.
+  history-preserving rollback, and zero agent grants. `NC-20260817-004` applies
+  the schema and deploys exact release `070cde38` dark with zero source,
+  watermark-event, and state rows plus zero non-admin grants. Current source
+  cursors and adapters remain unchanged.
 
 The database also contains classification tables and older/public integration
 tables. Their coexistence is why the repository mandates schema-first work.

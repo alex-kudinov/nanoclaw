@@ -63,10 +63,12 @@ before applying anything.
   `NC-20260817-002`. It stores content-free identities/hashes only; the
   one-boundary configuration is now disabled and no task/action authority was
   granted. See `docs/COMPANY-OS-TRIGGER-CONTRACT.md`;
-- migration 122 is the local, unapplied `NC-20260817-003` source-inventory and
-  watermark target. It adds immutable source definitions, versioned cursor
-  state, and append-only checkpoint/gap/reconciliation history. It is unwired,
-  seeds no source, and grants no agent or task/action authority;
+- migration 122 is the source-inventory and watermark target created by
+  `NC-20260817-003` and applied dark under exact release `070cde38` by
+  `NC-20260817-004`. Its immutable source definitions, versioned cursor state,
+  and append-only checkpoint/gap/reconciliation history are live but empty and
+  admin-only. It remains unwired, registers no source, and grants no agent or
+  task/action authority;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and

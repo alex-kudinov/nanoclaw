@@ -66,11 +66,11 @@ company-wide merely because one workflow implements them.
 | P0.7 live security model | partial | Security authorities have been reconciled for Gmail, Procurement, healer, grader, and release work, but the implementation-verified whole-system threat model and machine-control checks remain incomplete. |
 | P1.1 durable work ledger | partial | Procurement, CNPC, webhook, grader, approval, and receipt tables demonstrate durable patterns. `NC-20260815-010` supplies the Mailman/Sales foundation; `NC-20260816-001` applies it and proves bounded shadow/replay; `NC-20260816-014/015` add and deploy its read-only exception report. `NC-20260816-016/017` add, deploy, and live-verify the second Campanero host-job contract: five exact runs, 15 events, five receipts, duplicate-only replay, and unchanged source/email parity. SQLite remains authority; recurring observation and either workflow's promotion remain open. |
 | P1.2 process catalog | still proposed | Agent and subsystem inventories exist, but the deliberately small company-process catalog with owners, sources, classes, SLOs, and closure conditions has not been accepted. |
-| P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places. `NC-20260816-016/017` define and live-prove one immutable `job_run_logs.id` execution contract without controlling it, while exposing the `already_running` durability gap. `NC-20260817-001` adds the normalized occurrence/replay contract across five trigger kinds; exact release `baed66d` under `NC-20260817-002` applies its append-only store and live-proves one natural scheduled-task boundary plus duplicate-only replay without controlling the task, then expires config back to disabled. `NC-20260817-003` adds a local, unapplied source-definition and cursor/gap target with stable owner/alert keys, but registers no live definition. Recurring definitions, skipped attempts, launchd, n8n, reapers, other adapters, and the populated trigger inventory remain incomplete. |
+| P1.3 scheduling ownership | partial | SQLite tasks, host jobs, launchd, n8n, and reapers are observable in places. `NC-20260816-016/017` define and live-prove one immutable `job_run_logs.id` execution contract without controlling it, while exposing the `already_running` durability gap. `NC-20260817-001` adds the normalized occurrence/replay contract across five trigger kinds; exact release `baed66d` under `NC-20260817-002` applies its append-only store and live-proves one natural scheduled-task boundary plus duplicate-only replay without controlling the task, then expires config back to disabled. `NC-20260817-003/004` add and deploy dark the source-definition and cursor/gap target with stable owner/alert keys, but register no live definition. Recurring definitions, skipped attempts, launchd, n8n, reapers, other adapters, and the populated trigger inventory remain incomplete. |
 | P1.4 three service indicators | still proposed | Individual workflows record latency/failure evidence, but accepted-versus-completed, stale/dead-letter work, and outcome quality are not measured consistently across the two pilot processes. |
 | P1.5 operational telemetry | partial | Health, watchdog, release identity, queue, and receipt evidence exist. `NC-20260816-014/015` add and live-prove the compact Mailman/Sales exception surface; NC-017 adds a proven host-job source. Exact release `a2e6d35` activates NC-018's first combined recurring brief for one owner-confirmed operator, and active release `baed66d` preserves it; its first natural Chief delivery, exact named acknowledgment, and threaded receipt are durable with aggregate health and fail-closed state. Normalized correlation, weekly quality/cost evidence, and wider coverage remain incomplete. |
 | P1.6 backup/restore/continuity | still proposed | Release rollback artifacts exist, but approved RPO/RTO, encrypted data backups, isolated restore evidence, and a current disaster-recovery runbook do not form one verified control. |
-| P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable. `NC-20260817-003` implements the generic source-watermark contract locally: monotonic CAS advance, complete accepted/rejected accounting, gap freeze, exact-gap reconciliation, append-only history, and zero agent grants pass disposable PostgreSQL rehearsal. Migration 122 is unapplied/unwired and no source is registered. Gmail push and label-poll still re-bootstrap after expiry, so their source-specific bounded reconciliation and production watermark proof remain open. |
+| P1.7 ingestion loss windows | partial | Webhook inbox/reaper patterns are durable. `NC-20260817-003` implements the generic source-watermark contract: monotonic CAS advance, complete accepted/rejected accounting, gap freeze, exact-gap reconciliation, append-only history, and zero agent grants pass disposable PostgreSQL rehearsal. `NC-20260817-004` applies migration 122 and deploys it dark with zero source/event/state rows and no runtime import. Gmail push and label-poll still re-bootstrap after expiry, so source registration, bounded reconciliation, watermark-age alerts, and production recovery proof remain open. |
 | P1.8 migration discipline | partial | Ordered tracked `business_v2` migrations and structure-only schema checks exist; checksums, fresh-database CI, portability, and universal migration/restore gates remain incomplete. |
 | P1.9 canonical identity and lineage | partial | Party-scoped authorization, entry/email resolution, and canonical Slack lead threads improved lineage; first-touch and cross-process lineage are not universal. |
 | P1.10 privacy and records governance | still proposed | Data is protected by scoped roles and handling rules in places, but classification, retention, deletion, legal hold, and subject-access operations are not one accepted system. |
@@ -1475,17 +1475,20 @@ exception-loop changes were separately attributable; the trigger path created
 no task, work transition, message, or action. Other source families, recurring
 definitions, watermarks, loss recovery, and authority promotion remain open.
 
-R3 source-inventory/watermark dark checkpoint: `NC-20260817-003` adds local,
-unapplied migration 122 plus an unwired typed host store. Immutable source
+R3 source-inventory/watermark dark checkpoint: `NC-20260817-003` adds migration
+122 plus an unwired typed host store. Immutable source
 definitions bind adapter version, cursor/recovery mode, freshness/window
 budgets, owner, and alert route without an enable or authority field. Versioned
 cursor state advances only across monotonic, completely accounted ranges;
 append-only gap events freeze the old cursor, and only exact-gap reconciliation
 can resume. Focused tests and disposable PostgreSQL prove exact replay,
 changed-fact/stale-version/regression refusal, gap freeze/reconciliation,
-append-only enforcement, guarded rollback, and zero agent grants. No source is
-seeded, no production schema/config/runtime changes, and Gmail's existing
-history-expiry loss window remains open pending a source-specific adapter gate.
+append-only enforcement, guarded rollback, and zero agent grants.
+`NC-20260817-004` applies the migration and deploys exact release `070cde38`
+dark after a drained backup/activation sequence. The live source, event, and
+state tables remain empty and admin-only; no runtime imports the store. Gmail's
+existing history-expiry loss window remains open pending a source-specific
+adapter gate.
 
 R4 first operator-loop checkpoint: exact release `a2e6d35` activates
 `NC-20260816-018` with live migration 120, an additive host-only
@@ -1816,11 +1819,12 @@ Implementation checkpoint (2026-07-29):
     the dark contract, durable store, and synthetic five-family replay/conflict
     proof. Exact release `baed66d` under `NC-20260817-002` applies the store and
     live-proves one default-off scheduled-task boundary plus duplicate-only
-    replay, then expires config. Other adapters, recurring definitions,
-    `NC-20260817-003` adds the local dark inventory/watermark target with
-    fail-closed gap semantics; it remains unapplied and unwired. Populated
-    production source registration, source-specific loss recovery, other
-    adapters, and task create/resume wiring remain separately gated.
+    replay, then expires config. `NC-20260817-003` adds the dark
+    inventory/watermark target with fail-closed gap semantics;
+    `NC-20260817-004` applies and deploys that empty admin-only schema without
+    runtime wiring. Populated production source registration, source-specific
+    loss recovery, recurring definitions, other adapters, and task
+    create/resume wiring remain separately gated.
 25. `CAP-001` — define versioned skill packages with declared inputs, outputs,
     context, capability dependencies, compatible execution profiles,
     evaluation pack, owner, and rollback; skill selection never grants an

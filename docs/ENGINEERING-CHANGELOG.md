@@ -8,6 +8,77 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-004 — Deploy the trigger-source watermark foundation dark
+
+- Date: 2026-08-17T18:17Z
+- Owner/client: Codex
+- State: complete; migration 122 and exact release are live-verified dark with
+  zero source, watermark-event, and watermark-state rows
+- Commit/PR: claim and deployed release
+  `070cde380242767d281641bdba34f525a33f650b` on
+  `codex/nc-20260817-004-trigger-source-dark-deploy`; no PR
+- Change class: C2 — additive production schema and recovery-safe exact-release
+  service deployment without source or action activation
+- Preflight: `mini-claw.local` began on exact verified release `baed66d` with
+  one Node 22.23.2 listener, matching code root, connected Gmail/Slack, empty
+  outgoing/waiting queues, disabled time observer, migration 121 present, and
+  all migration-122 tables absent. Two ordinary containers were active, so no
+  mutation began.
+- Local/release verification: exact-runtime typecheck, 58/58 focused trigger
+  tests, and 157/157 combined Company OS tests pass. The clean release gate
+  passes 638/638 email-critical tests plus the independent runner build and
+  43/43 tests. Exact commit `070cde38` binds source tree
+  `c1af83c9035b75b630a7d71c2c7d861ebf652ea7`, a 708-file artifact digest
+  `00394081299e1258b2ac7098aebd510b0b6fe8ecd6ca3ed602282133c114ce27`,
+  Node 22.23.2, and archive SHA-256
+  `24baf0e8912501520dc02d85d332fb4d0dd2a2eaa55c413191ae0d746b07c1b1`.
+  Fresh local and production extraction independently verified the archive.
+  Formatting, schema-sanitizer, documentation-continuity/capability, and diff
+  checks pass.
+- Drain: Chief, Sales, Mailman, and Courses work was allowed to finish
+  naturally across the busy window. No container was interrupted. Backup,
+  migration, and activation each rechecked zero active/waiting containers,
+  zero outgoing Slack queue, connected required channels, and zero email
+  actions in approved, handoff, Mailman, executing, or attention states.
+- Backup/migration: mode-0600 custom backup
+  `company-trigger-before-122-2026-08-17T18-14-16Z.dump` is 9,046 bytes with
+  28 listed entries and SHA-256
+  `b9d232ccc4439783f3ff7d4719e251added3db625c2f6c666957db42d670adcb`.
+  Only release-bound migration 122, SHA-256
+  `bb4ebfa8cde9c54a62bb8f11a60abab0096bbfd0ccb5599a3519b45037d4f6a7`,
+  was applied. Its rollback is bound at SHA-256
+  `32a94f452182cc5273586321d882376396e176c4fb5336fb8c8c9f8541503b06`.
+- Schema proof: all three new tables are owned by `nanoclaw_admin`, have zero
+  non-admin table/sequence grants and zero forbidden raw/message/prompt/action
+  columns, and both immutable tables have their append-only triggers. Source,
+  event, and state counts remain 0/0/0; the prior trigger-occurrence count
+  remains one.
+- Activation: the release-bundled dry-run named only code root, expected
+  commit, and daemon path. Applied activation moved `baed66d` to `070cde38`,
+  retaining rollback plist
+  `com.nanoclaw.plist.rollback-baed66dba21d-2026-08-17T18-15-44-734Z`.
+  Independent readback found one PID 81347 listener, exact verified
+  release/code-root/Node identity, connected Gmail/Slack, empty queues,
+  disabled time observer with zero new calls, valid capability/action-safety
+  configuration, and all migration-122 tables still empty.
+  A later `2026-08-17T18:20:54Z` stability read again found one exact-release
+  listener, connected channels, zero outgoing queue, disabled observer with
+  zero calls, and 0/0/0 source/event/state rows.
+- Ambient attribution: one ordinary approved email completed during the long
+  drain, moving confirmed actions 65 to 66 and Company Work from 12
+  items/version sum 53/65 events/27 receipts to 13/60/73/31. The new row is
+  independently attributable to completed `sales_email` source
+  `sqlite_email_action` plus approval, action-claim, Gmail-delivery, and outcome
+  receipts. Tasks stayed 11, jobs 22 (17 enabled), groups 20, blocked email
+  actions 6, and the normalized occurrence count one.
+- Boundary/rollback: backup, additive schema application, immutable release
+  installation, and one service restart occurred. Runtime rollback is the
+  retained prior plist/release; the additive empty schema may remain dormant,
+  while DDL rollback is separately reviewed. No source registration/cursor,
+  adapter wiring, Gmail/webhook/scheduler/topic/condition change, task
+  create/resume, prompt/skill/capability/approval, NC-004 message/action, push,
+  or merge occurred.
+
 ### NC-20260817-003 — Add durable trigger-source watermarks and gap recovery
 
 - Date: 2026-08-17T16:08Z

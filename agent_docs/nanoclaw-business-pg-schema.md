@@ -156,7 +156,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_trigger_sources (migration 122 local, unapplied)
+## business_v2.company_trigger_sources (migration 122 live, dark under NC-20260817-004)
 
 ```
   registry_version              smallint             NOT NULL
@@ -176,7 +176,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   registered_at                 timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_trigger_watermark_events (migration 122 local, unapplied)
+## business_v2.company_trigger_watermark_events (migration 122 live, dark under NC-20260817-004)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_trigger_watermark_events_id_seq'::regclass)
@@ -198,7 +198,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_trigger_watermark_state (migration 122 local, unapplied)
+## business_v2.company_trigger_watermark_state (migration 122 live, dark under NC-20260817-004)
 
 ```
   definition_id                 text                 NOT NULL

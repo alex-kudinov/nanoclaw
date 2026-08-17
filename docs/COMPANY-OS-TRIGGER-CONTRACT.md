@@ -4,9 +4,11 @@ Status: the strict foundation was completed locally under `NC-20260817-001`.
 `NC-20260817-002` applied migration 121 and deployed exact release `baed66d`,
 then live-proved one default-off, exact-boundary scheduled-task observer on one
 natural claim. Exact replay was duplicate-only and the configuration was
-expired back to disabled. `NC-20260817-003` adds a local, unapplied, unwired
-source-inventory and watermark/gap foundation in migration 122. Gmail,
-webhook, topic, and business-condition adapters remain absent.
+expired back to disabled. `NC-20260817-003` adds the unwired source-inventory
+and watermark/gap foundation in migration 122; `NC-20260817-004` applies it and
+deploys exact release `070cde38` dark with all three tables empty and
+admin-only. Gmail, webhook, topic, and business-condition adapters remain
+absent.
 
 ## Purpose
 
@@ -223,10 +225,11 @@ NC-002 completed gates 1-7 for the first scheduled-time source:
 6. compare schedule/channel/work/action fingerprints before and after;
 7. retain task creation/resume and every action authority behind later gates;
 
-NC-003 completes only the generic dark portion of gate 8: immutable source
+NC-003 completes the generic contract portion of gate 8: immutable source
 registration, compare-and-swap cursor state, complete-range accounting, gap
-freeze, and exact-gap reconciliation semantics. It applies no production
-schema, seeds no source, and wires no adapter. Gate 8 remains open per later
+freeze, and exact-gap reconciliation semantics. NC-004 applies that schema and
+deploys it dark while keeping source/event/state row counts at zero. Neither
+task seeds or registers a source or wires an adapter. Gate 8 remains open per later
 source: implement and prove the source-specific bounded scan/full snapshot,
 then register and observe it before claiming loss recovery. Gmail history
 expiry is explicitly blocked until that proof exists.
@@ -236,6 +239,6 @@ activation test.
 
 These gates prove only the single scheduled-time source and boundary above.
 Every recurring definition, Gmail/webhook/topic/business-condition adapter,
-production source registration/watermark activation, source-specific recovery
+source registration/watermark activation, source-specific recovery
 claim, task create/resume operation, and action authority remains a separate
 tracked and authorized milestone.
