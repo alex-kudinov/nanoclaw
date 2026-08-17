@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17
 - Owner/client: Codex
-- State: validating; local implementation only, not deployed or applied to
+- State: complete; local implementation only, not deployed or applied to
   production SQLite
 - Commit/PR: claim `db6850eb` on
-  `codex/nc-20260817-008-gmail-disposition-receipts`; no PR
+  `codex/nc-20260817-008-gmail-disposition-receipts`; implementation
+  `77dda13d`; no PR
 - Change class: C2 — additive local SQLite schema and fail-closed inbound cursor
   behavior with no live Gmail, production database, message, or action write
 - Implementation: adds an append-only, content-free receipt keyed by immutable
