@@ -26,6 +26,7 @@
     "email:transport-canary": "node dist/email-transport-canary.js",
     "company-work:exceptions": "node dist/company-work-report-cli.js",
     "company-job-work:project": "node dist/company-job-work-shadow-cli.js",
+    "company-gmail:coverage": "node dist/gmail-historical-coverage-cli.js",
     "test:watch": "vitest",
     "release:build": "node scripts/build-release.mjs",
     "release:verify": "node scripts/verify-release.mjs",

@@ -10,9 +10,13 @@ Subsequent aggregate-only proof finds 18 unique terminal receipts: three
 ordinary inbound persists, ten completed rule auto-archives, and five
 own-outbound rejections. The current process has 67 successful push/safety
 cycles with zero receipt, processing, or cursor-hold failures, so NC-009 is
-complete. Migration 123 remains unapplied with no runtime import, source
-registration/bootstrap, live reconciliation read, 404 recovery, or message
-recovery.
+complete. NC-010's default-off retained-host coverage auditor is now complete:
+one aggregate-only production dry run accounts for all 3,041 retained IDs as
+23 terminal receipts, 1,675 recoverable IDs, and 1,343 unknown IDs, with
+identical before/after protected-state fingerprints. It did not query Gmail and
+does not claim mailbox completeness. Migration 123 remains unapplied with no
+runtime import, source registration/bootstrap, live reconciliation read, 404
+recovery, or message recovery.
 
 ## Decision
 
@@ -224,6 +228,54 @@ polls now isolate that per-candidate hold, continue unrelated messages, and
 retry the unknown row on a later catch-up. Push processing deliberately keeps
 the stronger whole-batch cursor hold.
 
+## Retained-host historical coverage audit
+
+NC-010 adds a separate default-off audit boundary before migration 123. It does
+not call Gmail and is deliberately **not** a mailbox-completeness scan. Its
+candidate scope is the content-free union of:
+
+- immutable IDs already present in
+  `gmail_inbound_disposition_receipts`; and
+- immutable IDs retained in SQLite `messages` for the one configured Gmail
+  channel JID.
+
+The SQLite connection is opened `readonly` with `fileMustExist` and
+`query_only`; its one bounded query selects only IDs, receipt fields,
+`is_from_me`, `is_bot_message`, and `from_group`. Sender, sender name, address,
+subject, content, thread content, and arbitrary metadata are never selected.
+The explicit invocation bound is at most 100,000 IDs; exceeding it refuses the
+report instead of truncating.
+
+The audit separates five evidence outcomes without minting a receipt:
+
+1. an existing validated terminal receipt;
+2. an exact ordinary inbound SQLite row that can support later bounded
+   acceptance;
+3. direct-route staging with exactly one routed `rules-runner-v1`
+   classification;
+4. unresolved direct-route, outbound-without-receipt, or unsupported retained
+   rows; and
+5. contradiction or unavailable storage, which refuses the report.
+
+PostgreSQL is entered with `BEGIN TRANSACTION READ ONLY`, selects grouped
+content-free route-marker counts for only the staged IDs, and is always rolled
+back. Duplicate IDs, a route marker outside the requested set, a routed marker
+mixed with another classification, receipt/row mismatch, or an ID with neither
+receipt nor retained row fails closed. Both databases are read twice; a change
+to any coverage-relevant evidence between passes produces `source_drift`.
+
+Output contains only closed aggregate categories plus mailbox-scope,
+source-evidence, and report SHA-256 fingerprints. It explicitly reports
+`basis=retained_host_evidence`, `mailboxComplete=false`, and
+`gmailQueried=false`; raw IDs and the configured mailbox identity are hashed
+into evidence but never printed. An unresolved retained ID returns a distinct
+non-zero CLI status so automation cannot treat an incomplete inventory as a
+promotion pass.
+
+This audit cannot discover a message ID that exists only in Gmail and has no
+retained host receipt or row. Closing that outer mailbox-coverage question
+still requires the later separately gated live read-only full-snapshot design.
+
 ## Fail-closed outcomes
 
 No reconciliation proposal exists when any of these occurs:
@@ -316,6 +368,8 @@ This is not yet a live Gmail recovery fix:
 - NC-008/009 durable disposition evidence is deployed and naturally exercised;
   historical IDs without a receipt, exact retained
   ordinary inbound row, or durable routed marker still account as unknown;
+- NC-010's completed retained-host audit does not enumerate Gmail-only IDs;
+  1,343 retained IDs remain unknown and non-authoritative;
 - the resumable design proves more than 10,000 candidates synthetically but
   has no production runtime, storage-cost, token-lifetime, or latency evidence;
 - a message permanently deleted before a full snapshot is no longer visible in
@@ -329,8 +383,10 @@ These are activation blockers, not successful-recovery claims.
 
 The next production-facing milestones must remain separately tracked and must:
 
-1. dry-run historical coverage and quantify unknown IDs without inventing
-   dispositions or treating the in-memory cache as authority;
+1. **complete under NC-010:** dry-run retained-host historical coverage and
+   quantify unknown IDs without inventing dispositions or treating the
+   in-memory cache as authority; this remains explicitly distinct from mailbox
+   completeness;
 2. back up PostgreSQL, apply migration 123 dark, and verify all three tables
    empty/admin-only before any reconciliation-shadow producer exists;
 3. register and bootstrap one inbound source in production without changing
