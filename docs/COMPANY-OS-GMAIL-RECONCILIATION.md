@@ -16,11 +16,13 @@ one aggregate-only production dry run accounts for all 3,041 retained IDs as
 identical before/after protected-state fingerprints. It did not query Gmail and
 does not claim mailbox completeness. NC-013 applies migration 123 dark after a
 verified backup; its three live tables are empty/admin-only and the runtime
-remains unwired. NC-20260818-001 adds a separately invoked, default-refuse
-host bootstrap CLI and proves it against read-only SQLite plus disposable
-PostgreSQL; the production source remains unregistered until that task's live
-gate. There is still no live reconciliation read, 404 recovery, or message
-recovery.
+remains unwired. NC-20260818-001 adds a separately invoked, default-refuse host
+bootstrap CLI, installs its exact immutable candidate without activating the
+daemon, and live-proves one atomic source/bootstrap transaction plus duplicate-
+only replay. Production now has exactly one inbound source, one zero-count
+bootstrap event, and one version-1 current state; migration-123 shadow rows
+remain 0/0/0. There is still no live reconciliation read, 404 recovery, or
+message recovery.
 
 ## Decision
 
@@ -187,7 +189,7 @@ and per-candidate evidence. It returns no raw email content or addresses.
 - a null page token is omitted and a non-null token is passed unchanged;
 - `q`, `labelIds`, `messages.get`, label mutation, send, and reply are absent.
 
-Migration 123 defines three unapplied, host-admin-only tables:
+Migration 123 defines three live, empty, host-admin-only tables:
 
 | Table                                     | Durable purpose                                                                                                      |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -403,9 +405,20 @@ receipt arrived during the post-check while Gmail message rows and email
 action/event fingerprints stayed fixed; it is ambient current-ingestion
 evidence, not an NC-013 Gmail call or shadow row.
 
+NC-20260818-001 then completes only the source-bootstrap gate. Exact candidate
+`1b70de94` was installed read-only beside the active service but not activated.
+After a zero-work gate and a complete unfiltered `business_v2` custom backup,
+one transaction registered `mailbox:primary:inbound-v1` and recorded one
+zero-count bootstrap event from the unchanged query-only SQLite cursor. Exact
+replay was duplicate-only. Source/event/state are 1/1/1 with version 1/current;
+shadow tables remain 0/0/0; admin ownership, zero non-admin grants, protected
+Company Work/occurrence fingerprints, PID 47982, active release `dc3e5f0d`, and
+channel health are unchanged.
+
 This is not yet a live Gmail recovery fix:
 
-- no production source row or watermark state exists;
+- one production source and version-1 current watermark exist, but no daemon or
+  shadow producer imports or advances them;
 - migration 123 is live but all three tables are empty and unwired;
 - the exact Google wrapper is installed but has not called a live mailbox;
 - current inbound push still resets `gmail_history_id` on 404;
@@ -434,8 +447,9 @@ The next production-facing milestones must remain separately tracked and must:
 2. **complete under NC-013:** back up PostgreSQL, apply migration 123 dark,
    and verify all three tables empty/admin-only before any reconciliation-
    shadow producer exists;
-3. register and bootstrap one inbound source in production without changing
-   `gmail_history_id` or wiring 404 behavior;
+3. **complete under NC-20260818-001:** register and bootstrap one inbound
+   source in production without changing `gmail_history_id` or wiring 404
+   behavior;
 4. deploy the wrapper and shadow store still default-off, then observe a
    natural source gap or approve a separate gap-independent audit design; do
    not manufacture an expiry merely to exercise the ledger;

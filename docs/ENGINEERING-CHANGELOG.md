@@ -12,11 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-18
 - Owner/client: Codex
-- State: validating; local implementation and disposable evidence complete,
-  production source/event/state rows remain absent
+- State: complete; exactly one production source/bootstrap/current state is
+  live, while Gmail shadow and runtime wiring remain absent
 - Commit/PR: claim `0d7f8e7a` on
   `codex/nc-20260818-001-gmail-source-bootstrap`; implementation `5ed917c2`;
-  no PR
+  self-contained installed candidate `1b70de94`; no PR
 - Change class: C2 — one separately invoked, reversible internal inventory/
   watermark write with no Gmail, daemon, cursor, shadow, work, or action path
 - Implementation: `company-gmail:bootstrap` binds only
@@ -37,11 +37,41 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   documentation continuity pass. The unrestricted root suite passes
   2,707/2,709 with one separately green integration test skipped by default;
   its sole failure is the unchanged CNPC wrapper-literal assertion.
-- Boundary: no production query/write, backup, release install/activation,
-  daemon import/restart, Gmail API call, SQLite cursor write, migration-123
-  shadow row, 404 behavior, message recovery, work/task/action, external
-  message, push, or merge has occurred. Production preflight, verified backup,
-  one atomic apply/replay, and post-state/non-interference evidence remain.
+- Release/install: archive SHA-256
+  `16bd31ea9b6036bdb7ed179d91e8a2d78fa51c06bb98abc98e8376e766b16f49`
+  independently verified on Mini as commit `1b70de94fca6da7f0368c452aa9d8f6f3b0eb55b`,
+  source tree `8ac3fc8afbb07fb13fa7bf3be83b736db0a2c5a0`, artifact
+  `d4f166e122ba330376e3376a3183a2ba5099f88cc67b9e8fe6fd606099ae73de`,
+  748 files, Node 22.23.2. The installed directory is read-only and was never
+  activated; the daemon stayed on `dc3e5f0d`.
+- Recovery: a complete unfiltered `business_v2` custom dump in mode-0700
+  `NC-20260818-001-20260818T132631Z/` is 2,040,161 bytes, mode 0600, SHA-256
+  `3123afef31f42c9a6833b23915a2ffa649c924e072d731273ad2b42a3d7af578`.
+  Its mode-0600 713-entry restore catalog is 58,392 bytes with SHA-256
+  `ec3a3c68a49a7394893b6f1e6622e5711e9d848bbdf17f3cd0b87b2ea1465ea8`.
+  Whole-database attempts failed before mutation because an unrelated public
+  Procurement table enforces row-level security. The platform correctly
+  rejected a filtered whole-database dump; three invalid partial dumps were
+  deleted, and only the complete affected-schema backup remains.
+- Production apply/replay: the final gate had zero active/waiting/outgoing
+  work, no active email action, connected Gmail/Slack, source/event/state and
+  shadow counts 0/0/0, and an unchanged contextual SQLite cursor SHA-256. The
+  dry-run opened no PostgreSQL transaction. One exact confirmed transaction
+  registered definition
+  `9e039880e01c26ad73186807e97380982190ea0c58ea0970f6052f33fe3af109`
+  and bootstrap event ID 1 with zero observed/accepted/rejected counts; the
+  current state is version 1/current with no gap. Immediate exact replay was
+  duplicate-only for both source and event.
+- Non-interference/boundary: post-state counts are source/event/state 1/1/1
+  and shadow 0/0/0. The redacted PostgreSQL cursor digest equals the unchanged
+  SQLite digest; quick-check is `ok`; email actions/events remain 76/377 with
+  zero active states; Company Work stays 16/97/43 and occurrences 1 with all
+  four protected fingerprints identical. PID 47982 still serves exact verified
+  release `dc3e5f0d` under Node 22.23.2 with connected channels and empty
+  queues. No Gmail API/profile/list/read, SQLite write, daemon activation/
+  restart/import, shadow row, 404/gap/reconciliation behavior, recovered
+  message, work/task/action authority, external message, push, or merge
+  occurred. Stop before live shadow.
 
 ### NC-20260817-013 — Apply the Gmail reconciliation shadow schema dark
 
