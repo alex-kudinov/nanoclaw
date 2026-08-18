@@ -273,7 +273,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_gmail_mailbox_audits (migration 124 proposed under NC-20260818-002)
+## business_v2.company_gmail_mailbox_audits (migration 124 live under NC-20260818-002)
 
 ```
   audit_id                      text                 NOT NULL
@@ -302,7 +302,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_gmail_mailbox_audit_pages (migration 124 proposed under NC-20260818-002)
+## business_v2.company_gmail_mailbox_audit_pages (migration 124 live under NC-20260818-002)
 
 ```
   audit_id                      text                 NOT NULL
@@ -317,7 +317,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_gmail_mailbox_audit_candidates (migration 124 proposed under NC-20260818-002)
+## business_v2.company_gmail_mailbox_audit_candidates (migration 124 live under NC-20260818-002)
 
 ```
   audit_id                      text                 NOT NULL

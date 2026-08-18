@@ -68,14 +68,15 @@ rollback. `NC-20260817-013` applies that schema dark after a verified backup;
 all three live tables are empty/admin-only. Source/watermark rows, Gmail
 cursors, runtime imports, and recovery behavior remain unchanged; see
 `docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
-`NC-20260818-002` adds unapplied migration 124 as a separate gap-independent
-mailbox-audit model: one resumable host-admin audit plus append-only page and
-per-Gmail-ID accepted/rejected/unknown evidence. It binds the exact registered
-source and watermark version through a cursor digest, clears its raw page token
-at a terminal boundary, grants no agent access, and cannot update a watermark
-or become recovery authority. Missing SQLite terminal receipts remain
-`unknown`; local and disposable-PostgreSQL validation pass, while production
-migration and live Gmail proof remain pending.
+`NC-20260818-002` applies migration 124 as a separate gap-independent mailbox-
+audit model: one resumable host-admin audit plus append-only page and per-Gmail-
+ID accepted/rejected/unknown evidence. It binds the exact registered source and
+watermark version through a cursor digest, clears its raw page token at a
+terminal boundary, grants no agent access, and cannot update a watermark or
+become recovery authority. One stable live terminal audit accounts for 85,076
+IDs as 67 accepted, 39 rejected, and 84,970 unknown without changing protected
+source/cursor/work/email/service state. Missing SQLite terminal receipts remain
+`unknown`; they do not become rejection or recovery authority.
 `NC-20260817-008` adds a separate SQLite target for the current Gmail
 ingestion boundary: one append-only, content-free terminal disposition receipt
 per immutable message ID. It records only contract/source identity,

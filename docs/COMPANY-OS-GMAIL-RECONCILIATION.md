@@ -21,14 +21,15 @@ bootstrap CLI, installs its exact immutable candidate without activating the
 daemon, and live-proves one atomic source/bootstrap transaction plus duplicate-
 only replay. Production now has exactly one inbound source, one zero-count
 bootstrap event, and one version-1 current state; migration-123 shadow rows
-remain 0/0/0. NC-20260818-002 adds a separate gap-independent mailbox-audit
-target in migration 124 plus a default-refuse CLI. Its local wrapper can call
-only profile and unfiltered ID listing; its query-only SQLite reader treats a
-validated terminal receipt as accepted/rejected and every missing receipt as
-`unknown`. Disposable PostgreSQL proves the separate three-way accounting,
-source-drift refusal, and terminal token cleanup. Migration 124 is not yet
-applied and no live Gmail audit has run. There is still no 404 recovery or
-message recovery.
+remain 0/0/0. NC-20260818-002 adds and applies a separate gap-independent
+mailbox-audit target in migration 124 plus a default-refuse CLI. Its wrapper
+can call only profile and unfiltered ID listing; its query-only SQLite reader
+treats a validated terminal receipt as accepted/rejected and every missing
+receipt as `unknown`. Disposable PostgreSQL proves the separate three-way
+accounting, source-drift refusal, and terminal token cleanup. One live audit
+then reaches a stable terminal page over 85,076 IDs: 67 accepted, 39 rejected,
+and 84,970 unknown, with no retained token and exact pre/post non-interference.
+There is still no 404 recovery or message recovery.
 
 ## Decision
 
@@ -350,6 +351,19 @@ freshness expiry, pagination cycle, duplicate ID, total-page cap, or changed
 source authority refuses completion; `complete` is audit evidence only and is
 not a recovery proposal.
 
+Production proof under NC-20260818-002 applies migration 124 after a complete
+mode-0600 `business_v2` backup. Its three tables begin empty, are owned only by
+`nanoclaw_admin`, expose zero non-admin grants, and retain two append-only
+page/candidate triggers. One attempt completes within the twenty-minute budget
+over 171 pages / 85,076 unfiltered Spam/Trash-inclusive IDs. Closed accounting
+is 67 accepted + 39 rejected + 84,970 unknown; audit evidence is
+`38e0e0c035cdfc7df3a55e9851fe0953203d3bc449a5c1d199cea3a556a25680`,
+and no continuation token remains. Pre/post source, generic watermark,
+migration-123 shadow, Company Work, trigger occurrence, SQLite cursor/message/
+receipt/email-action, daemon release, channel, and queue evidence is unchanged.
+The 84,970 unknown IDs are coverage evidence, not rejection or recovery
+authority.
+
 ## Fail-closed outcomes
 
 No reconciliation proposal exists when any of these occurs:
@@ -495,15 +509,13 @@ The next production-facing milestones must remain separately tracked and must:
 3. **complete under NC-20260818-001:** register and bootstrap one inbound
    source in production without changing `gmail_history_id` or wiring 404
    behavior;
-4. deploy the wrapper and shadow store still default-off, then observe a
-   natural source gap or approve a separate gap-independent audit design; do
-   not manufacture an expiry merely to exercise the ledger. **The separate
-   audit design and disposable proof are implemented under NC-20260818-002;
-   production migration and live proof remain pending.**
-5. run the bounded gap-independent audit against the live mailbox and prove
-   stable head or honest pending state, exact accepted/rejected/unknown
-   accounting, privacy/token handling, runtime/API cost, and no source/work/
-   email mutation. This does not satisfy gap-recovery accounting by itself;
+4. **complete under NC-20260818-002:** deploy the wrapper and audit store
+   default-off, apply migration 124 after backup, and retain no daemon import or
+   manufactured expiry;
+5. **complete under NC-20260818-002:** run the bounded gap-independent audit
+   against the live mailbox and prove a stable terminal head, exact
+   accepted/rejected/unknown accounting, privacy/token handling, and no source/
+   work/email mutation. This does not satisfy gap-recovery accounting by itself;
 6. only after those gates, separately promote natural-404 handling to
    `gap_detected`, recover any missing eligible candidates through the ordinary
    durable inbound path, and record `gap_reconciled` before advancing;

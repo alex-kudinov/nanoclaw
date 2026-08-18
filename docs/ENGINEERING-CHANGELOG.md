@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-18
 - Owner/client: Codex
-- State: validating; separate audit-only implementation and disposable
-  PostgreSQL proof complete, no Gmail call or production mutation yet
-- Commit/PR: branch `codex/nc-20260818-002-gmail-live-shadow` from
-  `fb1cfd209079350c6736a7b01cfe827df650e05d`; no PR
+- State: complete; migration 124 is live and one gap-independent read-only
+  mailbox audit reached a stable terminal page without changing ingestion
+- Commit/PR: claim `3c0cfa18`; implementation
+  `2328c7e1ac15ae99f38dc3f102feacec8018e30b` on
+  `codex/nc-20260818-002-gmail-live-shadow`; no PR
 - Change class: C2 — bounded Gmail metadata reads plus reversible internal
   content-free audit state; no external communication or action authority
 - Implementation: migration 124 and guarded empty-only rollback add a separate
@@ -39,12 +40,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   rows after source/version/cursor drift. The temporary cluster was stopped and
   removed. The unrestricted root suite passes 2,723/2,724 with three skips; its
   sole failure is the unchanged CNPC wrapper-literal assertion.
-- Current production boundary: NC-001 remains one exact inbound source, one
-  zero-count bootstrap event, and one version-1 current watermark. Migration-
-  123 shadow rows are 0/0/0 and the live daemon remains exact release
-  `dc3e5f0d`. Migration 124 is unapplied; no live Gmail call, production write,
-  gap/404, cursor change, recovered/routed message, task/work/action authority,
-  external message, push, or merge has occurred.
+- Exact release/install: source tree
+  `52af229a391d8262667c49071122ff0a7006ac09`, 764 compiled files, artifact
+  digest `5b22a024e8ac8dd25ecf66706c126c73c09a6448f5d7fc34bbdd47b7a5836fd1`,
+  and archive SHA-256
+  `99d465ecfb2119384d7ba6f4f32f4cb1ccae8feb9b20561e8a4059759bce2ecd`
+  independently verify. The candidate is installed read-only on the Mini
+  beside the daemon and was not activated.
+- Production gate/backup: immediately before migration, verified release
+  `dc3e5f0d` PID 47982 had connected Gmail/Slack, zero containers, waiting
+  groups, outgoing Slack, active/waiting Company Work, or active email actions.
+  The complete custom-format `business_v2` backup at
+  `~/.local/share/nanoclaw-backups/NC-20260818-002-20260818T174439Z/business_v2.pre-migration-124.dump`
+  is mode 0600, 2,052,817 bytes, has 728 catalog lines, and SHA-256
+  `0751e0d09c2eb40a54c431213bb440a168620495c8d3da1fc11d8bd4b2f2f1f1`.
+- Migration/live audit: exact migration SHA-256
+  `f0bb33ce61bd8dd980f45699bc59621fd3cfee86f52eb4ed2fb2011c6037dbad`
+  created three empty `nanoclaw_admin` tables with zero non-admin grants and
+  two append-only evidence triggers. One resumable attempt then reached a
+  stable terminal page within its 20-minute freshness budget: 171 pages and
+  85,076 unfiltered Spam/Trash-inclusive IDs account exactly as 67 accepted,
+  39 rejected, and 84,970 unknown. Evidence SHA-256 is
+  `38e0e0c035cdfc7df3a55e9851fe0953203d3bc449a5c1d199cea3a556a25680`;
+  no continuation token remains.
+- Non-interference/boundary: source/event/state remain 1/1/1 at version
+  1/current, migration-123 remains 0/0/0, and exact pre/post Company Work,
+  trigger occurrence/source/watermark, SQLite cursor/message/receipt/pending-
+  send/email-event aggregates and fingerprints match. PID 47982 still runs
+  verified `dc3e5f0d` with connected channels and empty queues. The audit read
+  no message content and wrote neither Gmail nor SQLite nor the generic
+  watermark. It created no gap/404, recovery/routing, work/task/action
+  authority, external message, push, or merge. The 84,970 unknowns remain
+  non-authoritative and cannot be treated as rejected or recovered.
 
 ### NC-20260818-001 — Gate one inbound Gmail source bootstrap
 

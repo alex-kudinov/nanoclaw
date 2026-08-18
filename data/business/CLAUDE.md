@@ -61,21 +61,21 @@ defines the resumable state, append-only page receipts, and immutable per-
 Gmail-message-ID accepted/rejected evidence for the inbound full-snapshot
 shadow. The exact release-bound migration was applied only after a zero-work
 drain and verified custom-format backup; all three production tables contain
-zero rows and have zero non-admin grants. The installed wrapper can call only
-Gmail profile and unfiltered ID listing, but it remains unwired and has not
-called the live mailbox. One separately bootstrapped source/current watermark
-now exists, but no snapshot/page/candidate row, cursor or 404 change, recovered
+zero rows and have zero non-admin grants. Its recovery producer remains
+unwired. One separately bootstrapped source/current watermark now exists, but
+no migration-123 snapshot/page/candidate row, cursor or 404 change, recovered
 message, task, or action authority exists;
 schema presence is inventory capacity, not recovery evidence. Follow
 `docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
 
-Migration 124 is proposed and unapplied under `NC-20260818-002`. It is a
-separate host-admin-only, gap-independent mailbox-audit target with resumable
-state and append-only page/per-ID accepted/rejected/unknown evidence. It cannot
-write the generic watermark, recover a message, create work, or grant action
-authority. Local and disposable PostgreSQL validation pass, but repository
-presence is not production schema or live Gmail evidence. Follow the active
-work/changelog before applying or invoking it.
+Migration 124 is live under `NC-20260818-002`. It is a separate host-admin-only,
+gap-independent mailbox-audit target with resumable state and append-only page/
+per-ID accepted/rejected/unknown evidence. After backup and an empty/admin-only
+schema check, one separately invoked read-only audit reached a stable terminal
+page with no retained token. It cannot write the generic watermark, recover a
+message, create work, or grant action authority. The migration-123 recovery
+tables remain empty and unwired; follow the active work/changelog before any
+404 or recovery promotion.
 
 ## Connection
 

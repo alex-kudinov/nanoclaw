@@ -123,6 +123,12 @@ Beginning with NC-20260818-002, clean archives additionally bind migration 124
 and its empty-only rollback for the separate gap-independent Gmail mailbox
 audit. This packaging rule grants no migration, Gmail-read, cursor, recovery,
 or daemon-activation authority.
+Exact NC-20260818-002 candidate `2328c7e1` independently verifies a 764-file
+artifact and archive SHA-256
+`99d465ecfb2119384d7ba6f4f32f4cb1ccae8feb9b20561e8a4059759bce2ecd`.
+It is installed read-only beside the active daemon, not activated. Migration
+124 and the separately invoked live audit were promoted only after the later
+zero-work/backup gates; daemon release `dc3e5f0d` remained unchanged.
 
 Exact release `de815e1d` crossed only the archive and recovery-safe service
 activation gates. Local and production extraction verified the same 720-file
