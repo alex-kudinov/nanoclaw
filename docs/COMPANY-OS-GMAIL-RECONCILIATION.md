@@ -10,10 +10,13 @@ Subsequent aggregate-only proof finds 18 unique terminal receipts: three
 ordinary inbound persists, ten completed rule auto-archives, and five
 own-outbound rejections. The current process has 67 successful push/safety
 cycles with zero receipt, processing, or cursor-hold failures, so NC-009 is
-complete. NC-010 now adds a local, default-off retained-host coverage auditor;
-its production dry run is still pending. Migration 123 remains unapplied with
-no runtime import, source registration/bootstrap, live reconciliation read,
-404 recovery, or message recovery.
+complete. NC-010's default-off retained-host coverage auditor is now complete:
+one aggregate-only production dry run accounts for all 3,041 retained IDs as
+23 terminal receipts, 1,675 recoverable IDs, and 1,343 unknown IDs, with
+identical before/after protected-state fingerprints. It did not query Gmail and
+does not claim mailbox completeness. Migration 123 remains unapplied with no
+runtime import, source registration/bootstrap, live reconciliation read, 404
+recovery, or message recovery.
 
 ## Decision
 
@@ -365,8 +368,8 @@ This is not yet a live Gmail recovery fix:
 - NC-008/009 durable disposition evidence is deployed and naturally exercised;
   historical IDs without a receipt, exact retained
   ordinary inbound row, or durable routed marker still account as unknown;
-- NC-010's retained-host auditor does not enumerate Gmail-only IDs and its
-  production aggregate dry run remains pending;
+- NC-010's completed retained-host audit does not enumerate Gmail-only IDs;
+  1,343 retained IDs remain unknown and non-authoritative;
 - the resumable design proves more than 10,000 candidates synthetically but
   has no production runtime, storage-cost, token-lifetime, or latency evidence;
 - a message permanently deleted before a full snapshot is no longer visible in
@@ -380,9 +383,10 @@ These are activation blockers, not successful-recovery claims.
 
 The next production-facing milestones must remain separately tracked and must:
 
-1. dry-run historical coverage and quantify unknown IDs without inventing
-   dispositions or treating the in-memory cache as authority; retained-host
-   coverage must remain distinct from mailbox completeness;
+1. **complete under NC-010:** dry-run retained-host historical coverage and
+   quantify unknown IDs without inventing dispositions or treating the
+   in-memory cache as authority; this remains explicitly distinct from mailbox
+   completeness;
 2. back up PostgreSQL, apply migration 123 dark, and verify all three tables
    empty/admin-only before any reconciliation-shadow producer exists;
 3. register and bootstrap one inbound source in production without changing

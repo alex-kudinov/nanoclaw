@@ -12,11 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17
 - Owner/client: Codex
-- State: validating; local implementation is green and the aggregate-only
-  production dry run remains pending
+- State: complete; retained-host coverage is measured read-only with identical
+  before/after protected-state fingerprints
 - Commit/PR: claim `ddc5a7c9` on
-  `codex/nc-20260817-010-gmail-historical-coverage`; implementation commit
-  pending; no PR
+  `codex/nc-20260817-010-gmail-historical-coverage`; implementation
+  `6bc9da26a7a6a2c48b4e3ea3e538cf669ebdcd18`; no PR
 - Change class: C2 — local default-off audit code with a separately gated
   read-only production execution; no Gmail, cursor, schema, message, or action
   authority
@@ -40,14 +40,40 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   documentation continuity. The unrestricted full baseline passes
   2,678/2,679; its sole failure is the unchanged CNPC literal wrapper
   assertion in `src/cnpc-prompt-contract.test.ts`.
+- Exact audit artifact: source tree
+  `d3be1c6e26ea546f5c22c5f7e2321a081a7ffe6d`; 736-file compiled artifact
+  SHA-256 `e76bf1cddafa7a429ad87a0901dac097b7634990f2d0aa38004f62606a4c3f6b`;
+  archive SHA-256
+  `9ed3fe1da44b81bc18a0fb5054b1a3b4dffec0c4725de2af440e362f9fff81b5`.
+  The archive verified locally and from the private one-off production audit
+  directory without activation.
+- Production aggregate proof: the closed 3,041-ID retained-host inventory has
+  23 terminal receipts, 1,675 recoverable IDs, and 1,343 unknown IDs. Terminal
+  receipts are 14 accepted and 9 rejected: four ordinary inbound persists, ten
+  completed rule auto-archives, eight own-outbound rejections, and one
+  Spam/Trash rejection. Recoverable evidence is 1,654 exact ordinary rows plus
+  21 exact single-marker routed rows. Unknown evidence is 36 unresolved staged
+  routes, 517 outbound rows without receipts, and 790 unsupported retained
+  inbound rows. The report fingerprint is
+  `3be9a997fd64dcafff3e301e7e4c66dc7a6344825afec0e00081a1a45f9600a9`;
+  it exits 2 by contract because unknowns remain.
+- Non-interference proof: before and after both hash to protected-state
+  fingerprint
+  `2935c1914e97419f380b927b14efe84870619fb4d09c11fac16c357d5c7d5f5f`.
+  SQLite `quick_check`, 3,026 Gmail-channel rows, 23 receipts, four selected
+  router-state values, 76 pending-send rows (70 confirmed/6 blocked), 7,247
+  classification rows, and all corresponding content-free fingerprints are
+  identical. Migration 123's three tables remain absent. The live service
+  remains verified release `dc3e5f0d` under Node 22.23.2 with one listener and
+  connected Gmail/Slack; it was not restarted or activated.
 - Deployment/migration: not performed. No Gmail API request, receipt mint,
   SQLite/PostgreSQL business write, history cursor, migration 123,
   source/bootstrap, shadow, 404 behavior, task/work/action, service, push, or
   merge changed.
 - Limitation/follow-up: this gate cannot discover IDs present only in Gmail;
-  mailbox completeness remains a later full-snapshot proof. Commit the clean
-  local boundary, then run one aggregate-only production dry run with stable
-  protected-state fingerprints before closing NC-010.
+  mailbox completeness remains a later full-snapshot proof. The 1,343 unknown
+  retained IDs remain unknown and cannot authorize recovery or cursor advance.
+  NC-010 closes here; migration 123 is the next separate dark-schema gate.
 - Documentation: Gmail reconciliation contract, project map, Company OS plan,
   active work, package script, email-critical gate, and this changelog.
 
