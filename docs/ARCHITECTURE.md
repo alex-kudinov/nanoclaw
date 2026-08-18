@@ -155,6 +155,10 @@ Agents emit IPC files. Host dispatches by type:
 - **SDK:** Bolt framework, Socket Mode (no public URL needed)
 - **Events:** `GenericMessageEvent`, `BotMessageEvent`
 - **Chunking:** Messages >4000 chars split across multiple `chat.postMessage` calls
+- **Attachments:** text/documents are inlined or converted; supported raster
+  images are signature-validated and staged under the destination group's
+  host-owned inbound tree, exposed to the minion through an exact read-only
+  `/workspace/ipc/inbound/...` path
 - **Health monitor:** Periodic `auth.test` + WebSocket staleness detection → auto-reconnect
 
 ### Registration (`src/channels/registry.ts`)
@@ -300,6 +304,11 @@ Apple Containers (macOS 26). Runtime abstracted in `container-runtime.ts` — sw
 4. Spawns container: `container run -i --rm --name nanoclaw-{group}-{ts} ...`
 5. Pipes prompt to stdin as JSON, reads results from stdout
 6. Streams results to `onOutput` callback
+
+Each group also receives a host-owned inbound-artifact overlay at
+`/workspace/ipc/inbound`. It is mounted read-only after the writable group IPC
+mount so channel evidence such as Slack screenshots cannot be replaced by the
+container that is asked to inspect it.
 
 ### Agent Runner (`container/agent-runner/`)
 

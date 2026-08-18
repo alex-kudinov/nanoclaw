@@ -444,7 +444,7 @@ session files.
 | Area            | Main files                                                                                                                      | Responsibility                                                                                  |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Registry        | `src/channels/registry.ts`, `src/channels/index.ts`                                                                             | channel self-registration and active imports                                                    |
-| Slack           | `src/channels/slack.ts`, `src/slack-approval.ts`, `src/lead-thread-key.ts`, `src/message-split.ts`, `src/attachment-convert.ts` | Socket Mode, canonical lead threads, reactions/approvals, safe splitting, attachment extraction |
+| Slack           | `src/channels/slack.ts`, `src/slack-image-stage.ts`, `src/slack-approval.ts`, `src/lead-thread-key.ts`, `src/message-split.ts`, `src/attachment-convert.ts` | Socket Mode, canonical lead threads, reactions/approvals, safe splitting, text extraction, and host-staged raster vision |
 | Gmail           | `src/channels/gmail.ts`, `src/gmail-api.ts`, `src/gmail-auth.ts`                                                                | mailbox channel, OAuth, API operations                                                          |
 | Gmail ingest    | `src/gmail-push.ts`, `src/gmail-label-poll.ts`, `src/gmail-parser.ts`, `src/gmail-inbound-disposition.ts`                       | push/poll detection, normalization, and local durable terminal accounting target                |
 | Gmail IPC       | `src/gmail-ipc-handlers.ts`, `src/classify-ipc-handlers.ts`                                                                     | host-side action execution                                                                      |
@@ -1004,6 +1004,25 @@ capability; it does not call Slack directly or inject message rows.
 This path shipped in release `0a39380`, was live-canaried through the toolbox,
 and remains present in current production release `aa1c821`. Its durable
 receipt and duplicate replay were verified before the later release switch.
+
+### Slack raster-vision checkpoint (`NC-20260817-011`)
+
+The Slack adapter previously classified every image as unreadable and did not
+download it; the resulting note instructed the minion to ask the operator for
+text. Supported inbound PNG, JPEG, GIF, and WebP files are now bounded at 10 MB,
+downloaded with the existing Slack `files:read` token, validated from file
+signature rather than filename or MIME metadata, and atomically staged beneath
+the destination group's host-owned `data/inbound/<group>/slack/` tree. Raw file
+and message identifiers never become path segments.
+
+The runner overlays that one group's inbound tree read-only at
+`/workspace/ipc/inbound`; the surrounding IPC mount stays writable for normal
+agent-to-host operations. The message carries the exact staged path and tells
+an image-capable minion to use `Read`. Image text remains untrusted input, not
+authorization. Unsupported/spoofed bytes, missing download metadata, oversize
+files, and download/staging failures yield explicit notes. Derived local copies
+expire after 30 days; Slack remains the source of truth. This checkpoint does
+not grant a new credential, action, recipient, or outbound-message authority.
 
 ### Gmail IPC containment checkpoint (`NC-20260729-004`)
 

@@ -40,7 +40,11 @@ import {
   selectTokenOrder,
   applyTokenEvents,
 } from './token-cooldown.js';
-import { resolveGroupFolderPath, resolveGroupIpcPath } from './group-folder.js';
+import {
+  resolveGroupFolderPath,
+  resolveGroupInboundPath,
+  resolveGroupIpcPath,
+} from './group-folder.js';
 import { logger } from './logger.js';
 import {
   CONTAINER_RUNTIME_BIN,
@@ -292,7 +296,7 @@ function computeDirHash(dir: string): string {
   return hash.digest('hex');
 }
 
-function buildVolumeMounts(
+export function buildVolumeMounts(
   group: RegisteredGroup,
   isMain: boolean,
   additionalMounts: AdditionalMount[],
@@ -435,6 +439,18 @@ function buildVolumeMounts(
     hostPath: groupIpcDir,
     containerPath: '/workspace/ipc',
     readonly: false,
+  });
+
+  // Inbound channel artifacts are host-owned evidence. Mount them over a
+  // nested IPC path read-only so a minion can inspect an image but cannot
+  // replace the bytes before or after Read. This is part of the existing
+  // host-defined `ipc` base plan rather than a configurable additional mount.
+  const groupInboundDir = resolveGroupInboundPath(group.folder);
+  fs.mkdirSync(groupInboundDir, { recursive: true, mode: 0o700 });
+  mounts.push({
+    hostPath: groupInboundDir,
+    containerPath: '/workspace/ipc/inbound',
+    readonly: true,
   });
 
   // Copy agent-runner source into a per-group writable location so agents

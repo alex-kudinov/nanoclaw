@@ -37,7 +37,8 @@ External world
     │  groups/{name}/CLAUDE.md │  ← minion identity + protocol
     │  /workspace/group/       │  ← minion's persistent files
     │  /workspace/extra/       │  ← additional mounts (tools, knowledge)
-    │  /workspace/ipc/         │  ← outbound IPC (handoffs, learn_lesson, gmail)
+    │  /workspace/ipc/         │  ← writable outbound IPC
+    │    └── inbound/          │  ← host-owned per-group artifacts (read-only)
     └──────────────────────────┘
                │
                ▼

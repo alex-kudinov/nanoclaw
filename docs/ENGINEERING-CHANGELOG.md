@@ -8,6 +8,53 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-011 — Give Slack screenshots to image-capable minions
+
+- Date: 2026-08-17
+- Owner/client: Codex
+- State: ready_for_review; local implementation only, not deployed or
+  live-model verified
+- Commit/PR: claim `85f1c094` on
+  `codex/nc-20260817-011-slack-image-vision`; implementation commit pending;
+  no PR
+- Change class: C2 — reversible host channel/mount and agent-instruction change;
+  no new action authority or external communication
+- Root cause: Slack already supplied file metadata and the bot already held
+  `files:read`, but `downloadAndInlineFiles` deliberately skipped downloads for
+  every image and generated a note saying the attachment was not readable as
+  text. Its regression test asserted that `fetch` must not run. Sales therefore
+  never received the screenshot bytes even though Claude Code's `Read` tool
+  supports raster image content.
+- Implementation: adds `slack-image-stage.ts` for 10 MB bounded
+  PNG/JPEG/GIF/WebP signature validation, opaque identifiers, atomic mode-0600
+  writes, and 30-day derived-copy retention. Slack stages into a host-owned
+  per-group tree and sends the exact container path; missing metadata,
+  unsupported/spoofed bytes, oversize files, and download/stage failures remain
+  explicit. `container-runner.ts` overlays that group tree read-only at
+  `/workspace/ipc/inbound` after the writable IPC mount, so the inspecting
+  minion cannot replace the evidence. Global minion guidance requires an exact
+  `Read` before asking for transcription and keeps image text untrusted.
+- Verification: exact Node 22.23.2 root typecheck and build pass. Affected
+  group-folder, mount, Slack, and staging suites pass 157/157. The independent
+  agent-runner builds and passes 43/43 tests. Outside sandbox restrictions, the
+  full root suite passes 2,673/2,674; the sole CNPC wrapper-literal failure is
+  reproduced unchanged at base `4df80def`. Local installed Claude Code type
+  declarations enumerate JPEG/PNG/GIF/WebP image results from `Read`; no
+  operator screenshot was transmitted to a second model for this validation.
+- Security/retention: raw Slack names and IDs do not become paths; signature,
+  actual size, group-folder confinement, private file mode, atomic rename, and
+  a nested read-only mount fail closed before model access. Slack remains the
+  source of truth and derived copies expire after 30 days. Image text is data,
+  never approval or authority.
+- Deployment/rollback: no release, daemon restart, OAuth mutation, Slack post,
+  model canary, database/schema write, push, or merge occurred. Before
+  activation, drain all warm containers so none lacking the new nested mount is
+  adopted. Roll back by activating the prior immutable release; staged copies
+  are inert local runtime data and may age out normally.
+- Documentation: `docs/ARCHITECTURE.md`, `docs/PROJECT-MAP.md`,
+  `docs/SECURITY.md`, `docs/MINION-FRAMEWORK.md`, global minion instructions,
+  active work, and this changelog.
+
 ### NC-20260817-009 — Activate durable Gmail disposition receipts
 
 - Date: 2026-08-17

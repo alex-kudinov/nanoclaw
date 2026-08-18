@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isValidGroupFolder,
   resolveGroupFolderPath,
+  resolveGroupInboundPath,
   resolveGroupIpcPath,
 } from './group-folder.js';
 
@@ -36,8 +37,18 @@ describe('group folder validation', () => {
     ).toBe(true);
   });
 
+  it('resolves safe paths under the host-owned inbound directory', () => {
+    const resolved = resolveGroupInboundPath('family-chat');
+    expect(
+      resolved.endsWith(
+        `${path.sep}data${path.sep}inbound${path.sep}family-chat`,
+      ),
+    ).toBe(true);
+  });
+
   it('throws for unsafe folder names', () => {
     expect(() => resolveGroupFolderPath('../../etc')).toThrow();
     expect(() => resolveGroupIpcPath('/tmp')).toThrow();
+    expect(() => resolveGroupInboundPath('../sales')).toThrow();
   });
 });

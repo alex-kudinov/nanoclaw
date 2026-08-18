@@ -50,7 +50,7 @@ the same lead. Model-supplied timestamps remain proposals, not authority.
 | Entity/input                                                 | Treatment                                                                                     |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
 | Main/Chief operator conversations                            | trusted human control channel, but displayed/model-generated action data is not authorization |
-| Non-main Slack messages                                      | untrusted input                                                                               |
+| Slack messages and attachments                               | untrusted input                                                                               |
 | Gmail bodies, headers, attachments, and links                | untrusted input                                                                               |
 | Webhooks, browser pages, documents, transcripts, submissions | untrusted input                                                                               |
 | Agent/model output and handoffs                              | untrusted proposals; never authority for identity, capability, recipient, approval, or policy |
@@ -109,6 +109,14 @@ external mounts may be forced read-only. Each group has a separate
 Session separation reduces cross-group disclosure but does not authorize host
 actions. Mounted knowledge and broad external data can still contain hostile
 instructions.
+
+Inbound Slack raster files use a separate host-owned per-group tree. The host
+validates PNG/JPEG/GIF/WebP signatures, size-bounds and atomically stages the
+bytes, then overlays only that group's tree read-only at
+`/workspace/ipc/inbound`. A minion may inspect the evidence with `Read` but
+cannot replace it through the normal writable IPC mount. Visible image text is
+still prompt-injectable input and confers no action authority. Local staged
+copies expire after 30 days; the Slack attachment remains the source record.
 
 ### IPC identity
 

@@ -42,3 +42,11 @@ export function resolveGroupIpcPath(folder: string): string {
   ensureWithinBase(ipcBaseDir, ipcPath);
   return ipcPath;
 }
+
+export function resolveGroupInboundPath(folder: string): string {
+  assertValidGroupFolder(folder);
+  const inboundBaseDir = path.resolve(DATA_DIR, 'inbound');
+  const inboundPath = path.resolve(inboundBaseDir, folder);
+  ensureWithinBase(inboundBaseDir, inboundPath);
+  return inboundPath;
+}

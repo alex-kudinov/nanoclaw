@@ -153,6 +153,7 @@ vi.mock('child_process', async () => {
 });
 
 import {
+  buildVolumeMounts,
   containerTimeoutRemainingMs,
   effectiveContainerTimeoutMs,
   runContainerAgent,
@@ -180,6 +181,26 @@ const testInput = {
   chatJid: 'test@g.us',
   isMain: false,
 };
+
+describe('host-owned inbound mounts', () => {
+  it('overlays each writable IPC mount with a group-isolated read-only inbox', () => {
+    const mounts = buildVolumeMounts(testGroup, false, []);
+    const ipcIndex = mounts.findIndex(
+      (mount) => mount.containerPath === '/workspace/ipc',
+    );
+    const inboundIndex = mounts.findIndex(
+      (mount) => mount.containerPath === '/workspace/ipc/inbound',
+    );
+
+    expect(ipcIndex).toBeGreaterThanOrEqual(0);
+    expect(inboundIndex).toBeGreaterThan(ipcIndex);
+    expect(mounts[inboundIndex]).toEqual({
+      hostPath: '/tmp/nanoclaw-test-data/inbound/test-group',
+      containerPath: '/workspace/ipc/inbound',
+      readonly: true,
+    });
+  });
+});
 
 describe('manifest credential projection', () => {
   const candidateSecrets = {
