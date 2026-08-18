@@ -21,7 +21,13 @@ bootstrap CLI, installs its exact immutable candidate without activating the
 daemon, and live-proves one atomic source/bootstrap transaction plus duplicate-
 only replay. Production now has exactly one inbound source, one zero-count
 bootstrap event, and one version-1 current state; migration-123 shadow rows
-remain 0/0/0. There is still no live reconciliation read, 404 recovery, or
+remain 0/0/0. NC-20260818-002 adds a separate gap-independent mailbox-audit
+target in migration 124 plus a default-refuse CLI. Its local wrapper can call
+only profile and unfiltered ID listing; its query-only SQLite reader treats a
+validated terminal receipt as accepted/rejected and every missing receipt as
+`unknown`. Disposable PostgreSQL proves the separate three-way accounting,
+source-drift refusal, and terminal token cleanup. Migration 124 is not yet
+applied and no live Gmail audit has run. There is still no 404 recovery or
 message recovery.
 
 ## Decision
@@ -305,6 +311,45 @@ This audit cannot discover a message ID that exists only in Gmail and has no
 retained host receipt or row. Closing that outer mailbox-coverage question
 still requires the later separately gated live read-only full-snapshot design.
 
+## Gap-independent live mailbox audit
+
+NC-20260818-002 defines the approved audit design for a current source when no
+natural history gap exists. It is deliberately separate from migration 123:
+the recovery ledger requires an exact open gap and closed accepted/rejected
+accounting, while an audit must not turn missing host evidence into rejection.
+
+Migration 124 therefore defines three host-admin-only tables:
+
+| Table                                             | Stored boundary                                                                                                      |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `company_gmail_mailbox_audits`                    | exact source/watermark fingerprint, stable initial head, resumable token, aggregate accepted/rejected/unknown counts |
+| `company_gmail_mailbox_audit_pages`               | append-only page index, token hashes, closed three-way counts, and page fingerprint                                  |
+| `company_gmail_mailbox_audit_candidates`          | immutable Gmail ID, accepted/rejected/unknown disposition, bounded reason key, and evidence hash                    |
+
+The raw registered cursor is represented only by a source/version-bound
+SHA-256 digest. The only raw opaque token is host-admin state for an active
+attempt; terminal completion or invalidation clears it. No sender, address,
+subject, header, snippet, body, prompt, approval, task, or action data is
+stored, and no agent receives a grant.
+
+The default-refuse `company-gmail:audit` CLI requires the exact NC-002
+confirmation and a one-to-twenty-page invocation bound. Start reads the Gmail
+profile, then each page uses unfiltered `users.messages.list` with 500 IDs and
+`includeSpamTrash: true`. It never supplies `q` or `labelIds`, and no
+`messages.get`, modify, archive, send, or reply operation is reachable through
+the wrapper. SQLite is opened `readonly`, `fileMustExist`, and `query_only`;
+only immutable terminal receipt fields are selected. A missing receipt becomes
+`unknown/receipt_missing`, never rejected or recovered.
+
+The store rechecks that the one registered source remains exact,
+version-matched, and `current` before every page and completion. One active
+audit may resume by opaque audit ID, but it cannot update the generic
+watermark. Only a terminal page plus an unchanged final profile head within
+the twenty-minute attempt budget can produce `complete`. A moving head,
+freshness expiry, pagination cycle, duplicate ID, total-page cap, or changed
+source authority refuses completion; `complete` is audit evidence only and is
+not a recovery proposal.
+
 ## Fail-closed outcomes
 
 No reconciliation proposal exists when any of these occurs:
@@ -452,10 +497,13 @@ The next production-facing milestones must remain separately tracked and must:
    behavior;
 4. deploy the wrapper and shadow store still default-off, then observe a
    natural source gap or approve a separate gap-independent audit design; do
-   not manufacture an expiry merely to exercise the ledger;
-5. run a real read-only shadow and prove terminality, stable head, exact
-   durable candidate accounting, privacy/token cleanup, runtime/API cost, and
-   no source/work/email mutation;
+   not manufacture an expiry merely to exercise the ledger. **The separate
+   audit design and disposable proof are implemented under NC-20260818-002;
+   production migration and live proof remain pending.**
+5. run the bounded gap-independent audit against the live mailbox and prove
+   stable head or honest pending state, exact accepted/rejected/unknown
+   accounting, privacy/token handling, runtime/API cost, and no source/work/
+   email mutation. This does not satisfy gap-recovery accounting by itself;
 6. only after those gates, separately promote natural-404 handling to
    `gap_detected`, recover any missing eligible candidates through the ordinary
    durable inbound path, and record `gap_reconciled` before advancing;

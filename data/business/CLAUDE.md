@@ -49,11 +49,12 @@ checkpoint/gap history. Complete ranges require exact
 `observed = accepted + rejected` accounting and source-specific monotonic
 cursors. A gap event leaves the prior cursor fixed and blocks ordinary
 advancement; only a reconciliation event bound to that exact open gap may
-resume it. The live tables are empty and admin-only. The typed store is not
-imported by the daemon, no source is registered or seeded, and no adapter,
-task, agent, approval, message, or action authority is added. Use NC-004's
-active-work/changelog evidence for the exact backup, migration, release, and
-zero-row proof; schema presence is not source activation evidence.
+resume it. The live tables remain admin-only and the typed store is not
+imported by the daemon. `NC-20260818-001` registered exactly one inbound
+Gmail source plus one zero-count bootstrap event and version-1 current state
+from the unchanged query-only SQLite cursor; no adapter runtime, task, agent,
+approval, message, or action authority was added. Use NC-001's active-work/
+changelog evidence rather than the older NC-004 zero-row checkpoint.
 
 Migration 123 is live, empty, and admin-only under `NC-20260817-013`. It
 defines the resumable state, append-only page receipts, and immutable per-
@@ -62,10 +63,19 @@ shadow. The exact release-bound migration was applied only after a zero-work
 drain and verified custom-format backup; all three production tables contain
 zero rows and have zero non-admin grants. The installed wrapper can call only
 Gmail profile and unfiltered ID listing, but it remains unwired and has not
-called the live mailbox. No source row/bootstrap, snapshot/page/candidate row,
-cursor or 404 change, recovered message, task, or action authority exists;
+called the live mailbox. One separately bootstrapped source/current watermark
+now exists, but no snapshot/page/candidate row, cursor or 404 change, recovered
+message, task, or action authority exists;
 schema presence is inventory capacity, not recovery evidence. Follow
 `docs/COMPANY-OS-GMAIL-RECONCILIATION.md`.
+
+Migration 124 is proposed and unapplied under `NC-20260818-002`. It is a
+separate host-admin-only, gap-independent mailbox-audit target with resumable
+state and append-only page/per-ID accepted/rejected/unknown evidence. It cannot
+write the generic watermark, recover a message, create work, or grant action
+authority. Local and disposable PostgreSQL validation pass, but repository
+presence is not production schema or live Gmail evidence. Follow the active
+work/changelog before applying or invoking it.
 
 ## Connection
 

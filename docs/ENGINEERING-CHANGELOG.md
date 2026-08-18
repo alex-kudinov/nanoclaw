@@ -12,21 +12,39 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-18
 - Owner/client: Codex
-- State: in_progress; task claimed, no Gmail call or production mutation yet
+- State: validating; separate audit-only implementation and disposable
+  PostgreSQL proof complete, no Gmail call or production mutation yet
 - Commit/PR: branch `codex/nc-20260818-002-gmail-live-shadow` from
   `fb1cfd209079350c6736a7b01cfe827df650e05d`; no PR
 - Change class: C2 — bounded Gmail metadata reads plus reversible internal
   content-free audit state; no external communication or action authority
-- Outcome boundary: inspect the existing gap-bound wrapper/shadow/store and
-  implement a separate honest audit-only path if required. The live gate may
-  call only profile and unfiltered message-ID listing, must distinguish unknown
-  from rejected, and must not manufacture a gap, call `messages.get`, write
-  Gmail/SQLite/generic watermark state, recover/route a message, wire/restart
-  the daemon, create work/task/action authority, send a message, push, or merge.
-- Current evidence: NC-001 production state is one exact inbound source, one
+- Implementation: migration 124 and guarded empty-only rollback add a separate
+  host-admin resumable audit plus append-only page and per-ID evidence with
+  closed accepted/rejected/unknown accounting. The store binds the exact
+  registered source, watermark version, and a cursor digest before each page
+  and completion; it cannot write a watermark or recovery proposal. The raw
+  continuation token exists only on an active host-admin attempt.
+- Read boundary: the default-refuse `company-gmail:audit` CLI requires exact
+  NC-002 confirmation and one-to-twenty pages. Its wrapper calls only profile
+  and unfiltered, Spam/Trash-inclusive ID listing; no query, label, content,
+  modify, archive, send, or reply method is reachable. SQLite opens read-only,
+  file-required, and query-only and selects only terminal receipt fields.
+  Missing receipts become `unknown/receipt_missing`, never rejection.
+- Local evidence: exact Node 22.23.2 typecheck/build, 15 focused tests, 706/706
+  email-critical tests, independent runner build plus 43/43 tests, schema
+  sanitizer, documentation continuity, and capability parity pass. A real
+  disposable PostgreSQL 16 cluster accepted migration 124; two transaction
+  tests prove one closed 1 accepted / 0 rejected / 1 unknown terminal audit,
+  raw-token cleanup, exact durable counts, and rollback with zero page/candidate
+  rows after source/version/cursor drift. The temporary cluster was stopped and
+  removed. The unrestricted root suite passes 2,723/2,724 with three skips; its
+  sole failure is the unchanged CNPC wrapper-literal assertion.
+- Current production boundary: NC-001 remains one exact inbound source, one
   zero-count bootstrap event, and one version-1 current watermark. Migration-
   123 shadow rows are 0/0/0 and the live daemon remains exact release
-  `dc3e5f0d`. Repository mapping and production preflight remain.
+  `dc3e5f0d`. Migration 124 is unapplied; no live Gmail call, production write,
+  gap/404, cursor change, recovered/routed message, task/work/action authority,
+  external message, push, or merge has occurred.
 
 ### NC-20260818-001 — Gate one inbound Gmail source bootstrap
 

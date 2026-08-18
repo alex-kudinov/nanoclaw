@@ -273,6 +273,63 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
+## business_v2.company_gmail_mailbox_audits (migration 124 proposed under NC-20260818-002)
+
+```
+  audit_id                      text                 NOT NULL
+  audit_fingerprint             text                 NOT NULL
+  definition_id                 text                 NOT NULL
+  source_fingerprint            text                 NOT NULL
+  expected_watermark_version    bigint               NOT NULL
+  cursor_evidence_sha256        text                 NOT NULL
+  started_at                    timestamp with time zone NOT NULL
+  initial_history_id            text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='pending'
+  version                       bigint               NOT NULL DEFAULT=0
+  next_page_token               text
+  next_page_token_sha256        text
+  pages_read                    integer              NOT NULL DEFAULT=0
+  candidate_count               integer              NOT NULL DEFAULT=0
+  accepted_count                integer              NOT NULL DEFAULT=0
+  rejected_count                integer              NOT NULL DEFAULT=0
+  unknown_count                 integer              NOT NULL DEFAULT=0
+  completed_at                  timestamp with time zone
+  final_history_id              text
+  audit_evidence_sha256         text
+  invalid_reason                text
+  invalidated_at                timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_gmail_mailbox_audit_pages (migration 124 proposed under NC-20260818-002)
+
+```
+  audit_id                      text                 NOT NULL
+  page_index                    integer              NOT NULL
+  page_fingerprint              text                 NOT NULL
+  request_page_token_sha256     text
+  next_page_token_sha256        text
+  candidate_count               integer              NOT NULL
+  accepted_count                integer              NOT NULL
+  rejected_count                integer              NOT NULL
+  unknown_count                 integer              NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_gmail_mailbox_audit_candidates (migration 124 proposed under NC-20260818-002)
+
+```
+  audit_id                      text                 NOT NULL
+  gmail_message_id              text                 NOT NULL
+  page_index                    integer              NOT NULL
+  disposition                   text                 NOT NULL
+  reason_key                    text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  candidate_fingerprint         text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## booking_events
 
 ```

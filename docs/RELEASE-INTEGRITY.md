@@ -119,6 +119,11 @@ create shadow evidence, intercept history 404, or advance either Gmail cursor.
 unapplied; durable real disposition receipts remain the next prerequisite
 before database/source activation or any live shadow read.
 
+Beginning with NC-20260818-002, clean archives additionally bind migration 124
+and its empty-only rollback for the separate gap-independent Gmail mailbox
+audit. This packaging rule grants no migration, Gmail-read, cursor, recovery,
+or daemon-activation authority.
+
 Exact release `de815e1d` crossed only the archive and recovery-safe service
 activation gates. Local and production extraction verified the same 720-file
 artifact and archive SHA-256. Production remained drained before activation;

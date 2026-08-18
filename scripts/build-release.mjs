@@ -123,6 +123,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_122_company_trigger_source_watermarks.sql',
     'data/business/migrations/nanoclaw-v2/123_company_gmail_reconciliation_shadow.sql',
     'data/business/migrations/nanoclaw-v2/rollback_123_company_gmail_reconciliation_shadow.sql',
+    'data/business/migrations/nanoclaw-v2/124_company_gmail_mailbox_audit.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_124_company_gmail_mailbox_audit.sql',
     'scripts/verify-release.mjs',
     'scripts/activate-release.mjs',
     'scripts/run-action-safety-drill.mjs',
