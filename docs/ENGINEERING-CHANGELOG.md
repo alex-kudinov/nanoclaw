@@ -12,11 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17
 - Owner/client: Codex
-- State: ready_for_review; local implementation only, not deployed or
+- State: ready_for_deploy; committed local implementation only, not deployed or
   live-model verified
-- Commit/PR: claim `85f1c094` on
-  `codex/nc-20260817-011-slack-image-vision`; implementation commit pending;
-  no PR
+- Commit/PR: claim `85f1c094`; implementation `9abdf2fd` on
+  `codex/nc-20260817-011-slack-image-vision`; no PR
 - Change class: C2 — reversible host channel/mount and agent-instruction change;
   no new action authority or external communication
 - Root cause: Slack already supplied file metadata and the bot already held
