@@ -16,8 +16,11 @@ one aggregate-only production dry run accounts for all 3,041 retained IDs as
 identical before/after protected-state fingerprints. It did not query Gmail and
 does not claim mailbox completeness. NC-013 applies migration 123 dark after a
 verified backup; its three live tables are empty/admin-only and the runtime
-remains unwired. There is still no source registration/bootstrap, live
-reconciliation read, 404 recovery, or message recovery.
+remains unwired. NC-20260818-001 adds a separately invoked, default-refuse
+host bootstrap CLI and proves it against read-only SQLite plus disposable
+PostgreSQL; the production source remains unregistered until that task's live
+gate. There is still no live reconciliation read, 404 recovery, or message
+recovery.
 
 ## Decision
 
@@ -104,6 +107,29 @@ An email address is rejected as an alias. The common source normalizer derives
 and verifies the definition ID and semantic fingerprint. Changing the adapter,
 budgets, owner, or alert route under the same source identity is a conflict at
 registration time.
+
+## Source registration and bootstrap gate
+
+`company-gmail:bootstrap` is a one-shot host operation, not a daemon adapter.
+It registers only `mailbox:primary:inbound-v1` with owner `core:gmail` and
+alert route `group:chief`, then records one zero-count `bootstrap` event from
+the existing SQLite `router_state.gmail_history_id` in the same PostgreSQL
+transaction. The generic source and watermark stores remain the only writers.
+
+The CLI opens SQLite with `readonly` and `query_only`, runs `quick_check`, and
+compares the cursor before the transaction, immediately before and after both
+PostgreSQL writes, and after commit. The operator supplies only a lowercase
+SHA-256 cursor fingerprint plus a canonical, at-most-ten-minute-old UTC
+observation time. The raw cursor is rejected as a CLI option and is absent from
+the sanitized report. Apply additionally requires the exact task-bound
+confirmation string. Dry-run opens no PostgreSQL transaction; apply is exact-
+replay safe, and any in-transaction cursor drift rolls back both rows.
+
+The command imports no Gmail client/auth module and has no Gmail profile,
+history, list, get, modify, send, snapshot, or shadow port. Registration and
+bootstrap do not change SQLite cursor authority, wire the daemon or 404 path,
+create work, or grant action authority. NC-20260818-001 must stop after the
+single source/event/state proof; a live shadow is a separate milestone.
 
 ## Gap detection proposal
 

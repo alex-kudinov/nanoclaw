@@ -8,6 +8,41 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260818-001 — Gate one inbound Gmail source bootstrap
+
+- Date: 2026-08-18
+- Owner/client: Codex
+- State: validating; local implementation and disposable evidence complete,
+  production source/event/state rows remain absent
+- Commit/PR: claim `0d7f8e7a` on
+  `codex/nc-20260818-001-gmail-source-bootstrap`; implementation commit pending;
+  no PR
+- Change class: C2 — one separately invoked, reversible internal inventory/
+  watermark write with no Gmail, daemon, cursor, shadow, work, or action path
+- Implementation: `company-gmail:bootstrap` binds only
+  `mailbox:primary:inbound-v1`, rejects raw cursor arguments in favor of a
+  lowercase SHA-256 fingerprint, requires a canonical fresh observation and
+  exact apply confirmation, opens SQLite read-only/query-only, and performs
+  source registration plus one zero-count bootstrap event in one PostgreSQL
+  transaction. Reports omit the raw cursor and expose fixed
+  `actionAuthority: none`.
+- Local evidence: exact Node 22.23.2 typecheck/build pass; 64 focused generic-
+  source/Gmail tests pass. A real synthetic SQLite CLI dry run preserved the
+  database SHA-256, emitted no raw cursor, opened no PostgreSQL transaction,
+  and called neither Gmail nor the shadow. PostgreSQL 16.15 disposable proof
+  first exposed and drove correction of a derived-field/store-boundary
+  mismatch, then passed real drift rollback, first apply, exact replay, and
+  durable 1 source / 1 event / 1 current version-1 state assertions. The 706
+  email-critical tests, independent runner build plus 43/43 tests, and
+  documentation continuity pass. The unrestricted root suite passes
+  2,707/2,709 with one separately green integration test skipped by default;
+  its sole failure is the unchanged CNPC wrapper-literal assertion.
+- Boundary: no production query/write, backup, release install/activation,
+  daemon import/restart, Gmail API call, SQLite cursor write, migration-123
+  shadow row, 404 behavior, message recovery, work/task/action, external
+  message, push, or merge has occurred. Production preflight, verified backup,
+  one atomic apply/replay, and post-state/non-interference evidence remain.
+
 ### NC-20260817-013 — Apply the Gmail reconciliation shadow schema dark
 
 - Date: 2026-08-18T04:31Z
