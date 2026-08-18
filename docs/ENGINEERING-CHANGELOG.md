@@ -8,6 +8,26 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260818-002 — Prove a gap-independent live Gmail mailbox shadow
+
+- Date: 2026-08-18
+- Owner/client: Codex
+- State: in_progress; task claimed, no Gmail call or production mutation yet
+- Commit/PR: branch `codex/nc-20260818-002-gmail-live-shadow` from
+  `fb1cfd209079350c6736a7b01cfe827df650e05d`; no PR
+- Change class: C2 — bounded Gmail metadata reads plus reversible internal
+  content-free audit state; no external communication or action authority
+- Outcome boundary: inspect the existing gap-bound wrapper/shadow/store and
+  implement a separate honest audit-only path if required. The live gate may
+  call only profile and unfiltered message-ID listing, must distinguish unknown
+  from rejected, and must not manufacture a gap, call `messages.get`, write
+  Gmail/SQLite/generic watermark state, recover/route a message, wire/restart
+  the daemon, create work/task/action authority, send a message, push, or merge.
+- Current evidence: NC-001 production state is one exact inbound source, one
+  zero-count bootstrap event, and one version-1 current watermark. Migration-
+  123 shadow rows are 0/0/0 and the live daemon remains exact release
+  `dc3e5f0d`. Repository mapping and production preflight remain.
+
 ### NC-20260818-001 — Gate one inbound Gmail source bootstrap
 
 - Date: 2026-08-18
