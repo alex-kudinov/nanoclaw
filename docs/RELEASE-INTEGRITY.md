@@ -190,6 +190,20 @@ cursor-hold failures. Two recent one-candidate scans each record one new message
 and advance monotonically. NC-009's natural producer gate is therefore complete
 without manufactured traffic.
 
+NC-20260818-003 makes one later additive change to that SQLite schema after a
+natural production poll proved Gmail history can name a message whose exact
+full-message fetch then returns 404. The new
+`rejected/message_unavailable` reason is content-free and is terminal only for
+that exact method/status combination; every other fetch error remains
+fail-closed. Existing hosts must transactionally rebuild only the receipt table
+because SQLite cannot alter its closed reason `CHECK` in place. A release that
+contains this change is also a production schema release: activation requires
+a fresh WAL-safe backup, copied-live-database migration proof, preserved row and
+fingerprint aggregates, both recreated append-only triggers, and
+`quick_check`. Older rollback code does not understand the new reason and may
+fail startup after such a receipt exists; that fail-closed behavior is not
+permission to delete or rewrite receipt history.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

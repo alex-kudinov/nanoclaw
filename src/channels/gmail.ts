@@ -100,6 +100,21 @@ export function isOwnOutbound(labelIds: string[]): boolean {
   return isSentOrDraft && !labelIds.includes('INBOX');
 }
 
+function isGmailMessageNotFound(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as {
+    code?: unknown;
+    status?: unknown;
+    response?: { status?: unknown; data?: { error?: { code?: unknown } } };
+  };
+  return [
+    candidate.code,
+    candidate.status,
+    candidate.response?.status,
+    candidate.response?.data?.error?.code,
+  ].some((value) => value === 404);
+}
+
 export class GmailChannel implements Channel {
   name = 'gmail';
 
@@ -542,11 +557,25 @@ export class GmailChannel implements Channel {
   private async fetchAndProcess(messageId: string): Promise<boolean> {
     if (!this.gmail) return false;
 
-    const res = await this.gmail.users.messages.get({
-      userId: 'me',
-      id: messageId,
-      format: 'full',
-    });
+    let res;
+    try {
+      res = await this.gmail.users.messages.get({
+        userId: 'me',
+        id: messageId,
+        format: 'full',
+      });
+    } catch (error) {
+      if (!isGmailMessageNotFound(error)) throw error;
+      this.recordTerminalDisposition({
+        messageId,
+        disposition: 'rejected',
+        reasonKey: 'message_unavailable',
+        observedAt: new Date().toISOString(),
+        evidenceParts: [messageId, 'users.messages.get', 404],
+      });
+      logger.info('Gmail message unavailable; recorded terminal disposition');
+      return false;
+    }
 
     const msg = res.data;
     if (!msg.payload || !msg.id || msg.id !== messageId) {

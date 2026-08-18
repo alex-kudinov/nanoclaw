@@ -30,7 +30,8 @@ export type GmailInboundRejectedReason =
   | 'spam_or_trash'
   | 'empty_message'
   | 'hard_filter'
-  | 'thread_outbound';
+  | 'thread_outbound'
+  | 'message_unavailable';
 
 export type GmailInboundDispositionReason =
   | GmailInboundAcceptedReason
@@ -93,6 +94,7 @@ const REJECTED_REASONS = new Set<GmailInboundDispositionReason>([
   'empty_message',
   'hard_filter',
   'thread_outbound',
+  'message_unavailable',
 ]);
 
 function fail(

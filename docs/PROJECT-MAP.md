@@ -418,6 +418,20 @@ perform the full snapshot, record `gap_reconciled`, recover/deliver a message,
 create work, or grant action authority. Deployment and natural-404 proof must
 be established separately from local code presence.
 
+The first production safety poll of exact release `b7aab9b7` exposed one
+additional current-ingestion terminal: `history.list(messageAdded)` can return
+an ID that `users.messages.get(format=full)` later reports as exact HTTP 404
+because the message is no longer available. The deployed bridge correctly
+held both equal cursors, but the original receipt vocabulary could not close
+that candidate. The NC-003 repair adds only
+`rejected/message_unavailable`, derived from the exact message-get 404 with a
+content-free evidence hash. Other fetch failures still hold the cursor. Because
+SQLite cannot alter a `CHECK` constraint in place, startup transactionally
+rebuilds only `gmail_inbound_disposition_receipts`, copies every existing row,
+and recreates both append-only refusal triggers. Production promotion requires
+a fresh WAL-safe backup plus row/fingerprint/trigger proof; rollback code that
+does not understand the new reason remains fail-closed.
+
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result
 asynchronously. The host may pipe that result into a scheduled-task container

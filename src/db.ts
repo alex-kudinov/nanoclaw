@@ -28,6 +28,104 @@ import {
 
 let db: Database.Database;
 
+/**
+ * NC-20260818-003: extend the closed rejected-reason vocabulary without
+ * weakening append-only receipt history. SQLite cannot alter a CHECK
+ * constraint in place, so existing hosts rebuild this one content-free table
+ * transactionally and recreate both refusal triggers. Any failure rolls the
+ * entire schema change back.
+ */
+function migrateGmailDispositionMessageUnavailable(
+  database: Database.Database,
+): void {
+  const table = database
+    .prepare(
+      `SELECT sql
+         FROM sqlite_master
+        WHERE type = 'table'
+          AND name = 'gmail_inbound_disposition_receipts'`,
+    )
+    .get() as { sql?: string } | undefined;
+  if (!table?.sql) {
+    throw new Error('Gmail disposition receipt schema is unavailable');
+  }
+  if (table.sql.includes("'message_unavailable'")) return;
+  const stale = database
+    .prepare(
+      `SELECT 1
+         FROM sqlite_master
+        WHERE name = 'gmail_inbound_disposition_receipts_before_nc003'`,
+    )
+    .get();
+  if (stale) {
+    throw new Error('Gmail disposition receipt migration staging exists');
+  }
+  database.transaction(() => {
+    database.exec(`
+      DROP TRIGGER gmail_inbound_disposition_receipts_no_update;
+      DROP TRIGGER gmail_inbound_disposition_receipts_no_delete;
+      ALTER TABLE gmail_inbound_disposition_receipts
+        RENAME TO gmail_inbound_disposition_receipts_before_nc003;
+      CREATE TABLE gmail_inbound_disposition_receipts (
+        contract_version INTEGER NOT NULL CHECK (contract_version = 1),
+        source_key TEXT NOT NULL CHECK (source_key = 'gmail:inbound-v1'),
+        gmail_message_id TEXT PRIMARY KEY,
+        disposition TEXT NOT NULL CHECK (disposition IN ('accepted', 'rejected')),
+        reason_key TEXT NOT NULL,
+        source_evidence_sha256 TEXT NOT NULL CHECK (
+          length(source_evidence_sha256) = 64
+          AND source_evidence_sha256 NOT GLOB '*[^0-9a-f]*'
+        ),
+        receipt_fingerprint TEXT NOT NULL UNIQUE CHECK (
+          length(receipt_fingerprint) = 64
+          AND receipt_fingerprint NOT GLOB '*[^0-9a-f]*'
+        ),
+        observed_at TEXT NOT NULL,
+        recorded_at TEXT NOT NULL DEFAULT (
+          strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        ),
+        CHECK (
+          (disposition = 'accepted' AND reason_key IN (
+            'inbound_message_persisted',
+            'classified_route_persisted',
+            'rule_auto_archive_completed',
+            'legacy_message_persisted'
+          ))
+          OR
+          (disposition = 'rejected' AND reason_key IN (
+            'own_outbound',
+            'spam_or_trash',
+            'empty_message',
+            'hard_filter',
+            'thread_outbound',
+            'message_unavailable'
+          ))
+        )
+      );
+      INSERT INTO gmail_inbound_disposition_receipts (
+        contract_version, source_key, gmail_message_id, disposition,
+        reason_key, source_evidence_sha256, receipt_fingerprint,
+        observed_at, recorded_at
+      )
+      SELECT contract_version, source_key, gmail_message_id, disposition,
+             reason_key, source_evidence_sha256, receipt_fingerprint,
+             observed_at, recorded_at
+        FROM gmail_inbound_disposition_receipts_before_nc003;
+      DROP TABLE gmail_inbound_disposition_receipts_before_nc003;
+      CREATE TRIGGER gmail_inbound_disposition_receipts_no_update
+        BEFORE UPDATE ON gmail_inbound_disposition_receipts
+        BEGIN
+          SELECT RAISE(ABORT, 'gmail inbound disposition receipts are append-only');
+        END;
+      CREATE TRIGGER gmail_inbound_disposition_receipts_no_delete
+        BEFORE DELETE ON gmail_inbound_disposition_receipts
+        BEGIN
+          SELECT RAISE(ABORT, 'gmail inbound disposition receipts are append-only');
+        END;
+    `);
+  })();
+}
+
 function createSchema(database: Database.Database): void {
   database.exec(`
     CREATE TABLE IF NOT EXISTS chats (
@@ -85,7 +183,8 @@ function createSchema(database: Database.Database): void {
           'spam_or_trash',
           'empty_message',
           'hard_filter',
-          'thread_outbound'
+          'thread_outbound',
+          'message_unavailable'
         ))
       )
     );
@@ -299,6 +398,8 @@ function createSchema(database: Database.Database): void {
       ON autonomy_pending(status, expires_at);
   `);
 
+  migrateGmailDispositionMessageUnavailable(database);
+
   // Add context_mode column if it doesn't exist (migration for existing DBs)
   try {
     database.exec(
@@ -484,6 +585,70 @@ export function initDatabase(): void {
 /** @internal - for tests only. Creates a fresh in-memory database. */
 export function _initTestDatabase(): void {
   db = new Database(':memory:');
+  createSchema(db);
+}
+
+/** @internal - reproduces the receipt reason constraint before NC-003. */
+export function _initLegacyGmailDispositionTestDatabase(): void {
+  db = new Database(':memory:');
+  db.exec(`
+    CREATE TABLE gmail_inbound_disposition_receipts (
+      contract_version INTEGER NOT NULL CHECK (contract_version = 1),
+      source_key TEXT NOT NULL CHECK (source_key = 'gmail:inbound-v1'),
+      gmail_message_id TEXT PRIMARY KEY,
+      disposition TEXT NOT NULL CHECK (disposition IN ('accepted', 'rejected')),
+      reason_key TEXT NOT NULL,
+      source_evidence_sha256 TEXT NOT NULL,
+      receipt_fingerprint TEXT NOT NULL UNIQUE,
+      observed_at TEXT NOT NULL,
+      recorded_at TEXT NOT NULL,
+      CHECK (
+        (disposition = 'accepted' AND reason_key IN (
+          'inbound_message_persisted', 'classified_route_persisted',
+          'rule_auto_archive_completed', 'legacy_message_persisted'
+        ))
+        OR
+        (disposition = 'rejected' AND reason_key IN (
+          'own_outbound', 'spam_or_trash', 'empty_message',
+          'hard_filter', 'thread_outbound'
+        ))
+      )
+    );
+    CREATE TRIGGER gmail_inbound_disposition_receipts_no_update
+      BEFORE UPDATE ON gmail_inbound_disposition_receipts
+      BEGIN
+        SELECT RAISE(ABORT, 'gmail inbound disposition receipts are append-only');
+      END;
+    CREATE TRIGGER gmail_inbound_disposition_receipts_no_delete
+      BEFORE DELETE ON gmail_inbound_disposition_receipts
+      BEGIN
+        SELECT RAISE(ABORT, 'gmail inbound disposition receipts are append-only');
+      END;
+  `);
+  const legacy = normalizeGmailInboundDispositionInput({
+    messageId: 'legacy-pre-nc003',
+    disposition: 'accepted',
+    reasonKey: 'inbound_message_persisted',
+    sourceEvidenceSha256: 'a'.repeat(64),
+    observedAt: '2026-08-18T20:00:00.000Z',
+  });
+  db.prepare(
+    `INSERT INTO gmail_inbound_disposition_receipts (
+       contract_version, source_key, gmail_message_id, disposition,
+       reason_key, source_evidence_sha256, receipt_fingerprint,
+       observed_at, recorded_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    legacy.contractVersion,
+    legacy.sourceKey,
+    legacy.messageId,
+    legacy.disposition,
+    legacy.reasonKey,
+    legacy.sourceEvidenceSha256,
+    legacy.receiptFingerprint,
+    legacy.observedAt,
+    legacy.observedAt,
+  );
   createSchema(db);
 }
 

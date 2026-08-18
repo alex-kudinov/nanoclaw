@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   _attemptGmailDispositionMutationForTest,
+  _initLegacyGmailDispositionTestDatabase,
   _initTestDatabase,
   getGmailInboundCandidateAccounting,
   getGmailInboundDispositionReceipt,
@@ -173,6 +174,39 @@ describe('Gmail inbound disposition receipts', () => {
       _attemptGmailDispositionMutationForTest('delete', 'msg-1'),
     ).toThrow(/append-only/);
     expect(getGmailInboundDispositionReceipt('msg-1')).toBeDefined();
+  });
+
+  it('atomically extends a legacy receipt table while preserving rows and refusal triggers', () => {
+    _initLegacyGmailDispositionTestDatabase();
+
+    expect(getGmailInboundDispositionReceipt('legacy-pre-nc003')).toMatchObject(
+      {
+        disposition: 'accepted',
+        reasonKey: 'inbound_message_persisted',
+      },
+    );
+    const unavailable = recordGmailInboundDisposition({
+      messageId: 'missing-after-history',
+      disposition: 'rejected',
+      reasonKey: 'message_unavailable',
+      sourceEvidenceSha256: hashGmailInboundSourceEvidence(
+        'message_unavailable',
+        ['missing-after-history', 'users.messages.get', 404],
+      ),
+      observedAt,
+    });
+
+    expect(unavailable.applied).toBe(true);
+    expect(unavailable.receipt.reasonKey).toBe('message_unavailable');
+    expect(() =>
+      _attemptGmailDispositionMutationForTest('update', 'legacy-pre-nc003'),
+    ).toThrow(/append-only/);
+    expect(() =>
+      _attemptGmailDispositionMutationForTest(
+        'delete',
+        'missing-after-history',
+      ),
+    ).toThrow(/append-only/);
   });
 
   it('keeps the tracked schema content-free and reason-bounded', () => {

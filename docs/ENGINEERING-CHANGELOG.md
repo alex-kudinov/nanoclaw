@@ -12,18 +12,20 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-18
 - Owner/client: Codex
-- State: ready_for_review; production install, cursor alignment,
-  activation, and natural-404 evidence pending
+- State: in_progress; initial active release is safely holding a live batch,
+  and the additive exact-message-404 repair is locally verified but not yet
+  released or deployed
 - Commit/PR: claim `a85def4a` on
-  `codex/nc-20260818-003-gmail-gap-freeze`; implementation commit pending; no
-  PR
+  `codex/nc-20260818-003-gmail-gap-freeze`; initial implementation
+  `b7aab9b7ef6baa6e41a9227723ecbd8fb39fe5df`; repair commit pending; no PR
 - Change class: C2 — host-owned cursor/watermark behavior plus one separately
   confirmed, receipt-backed Gmail metadata read and internal PostgreSQL advance
-- Live prerequisite: a content-free query-only preflight found the current
-  SQLite Gmail cursor stable but ahead of the exact version-1/current Company
-  OS source watermark. The daemon remains PID 47982 on verified `dc3e5f0d`;
-  logs contain zero prior history-expired resets. No preflight write or Gmail
-  content read occurred.
+- Initial release: source tree
+  `30d95ec00032c8dfd8031769311dcefbf4ae13a2`, 780 compiled files, artifact
+  SHA-256 `d8e47691c9b9330f10451dc9f7a9c7856123e79f1c45f490cb2fc3b686ba037b`,
+  and archive SHA-256
+  `ad541d8cd8a8977baa365c82976348cc429cb92f076c0b09850fd69e9120b6a2`
+  independently verified locally and on the Mini.
 - Implementation: `COMPANY_GMAIL_RUNTIME_WATERMARK_MODE` defaults to
   `freeze_only`, which retains the exact SQLite cursor on 404. After an exact
   separately confirmed alignment, `active` preflights source/state/SQLite,
@@ -40,19 +42,56 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Apply rechecks both authorities and SQLite stability inside the PostgreSQL
   transaction; reports contain only counts, fingerprints, and fixed
   `actionAuthority: none`.
-- Verification: exact Node 22.23.2 typecheck/build and 118 focused Company
-  OS/Gmail tests pass; email-critical is 712/712; the independent runner build
-  and 43/43 tests, formatting, schema sanitizer, documentation continuity, and
-  capability parity pass. A real disposable PostgreSQL 16 cluster applied
+- Initial local verification: exact Node 22.23.2 typecheck/build and 118 focused
+  Company OS/Gmail tests passed; email-critical was 712/712; the independent
+  runner build and 43/43 tests, formatting, schema sanitizer, documentation
+  continuity, and capability parity passed. A real disposable PostgreSQL 16
+  cluster applied
   migration 122, committed one receipt-backed alignment, allowed only the
   exact SQLite crash catch-up, recorded one gap with the prior cursor fixed,
   and rejected ordinary advancement while open. The stopped temporary cluster
   was removed. The unrestricted suite is 2,743/2,744 with four skips; its sole
   failure is the unchanged CNPC wrapper-literal assertion.
-- Boundary: no production database/cursor/config/release/daemon state, Gmail
-  message or body, mailbox content, gap, recovery, task/work/action authority,
-  external message, push, or merge has changed. Full-snapshot recovery,
-  `gap_reconciled`, natural-404 proof, and label-poll expiry remain later gates.
+- Pre-activation safety: Procurement drained naturally before the prior daemon
+  stopped. Mode-0600 dual backups at
+  `~/.local/share/nanoclaw-backups/NC-20260818-003-20260818T201125Z` include a
+  WAL-safe 116,154,368-byte SQLite database with `quick_check` `ok` and SHA-256
+  `2a9ab60bf61b535cc678bda4ac2a313feb5e617f1859ef101a6d7f945fa91f9d`,
+  plus a 9,620,996-byte PostgreSQL custom dump with 733 catalog entries and
+  SHA-256 `4148afc7135d8b9d11d8818e57ee238cc2cd1bb3398e2892c672becd53f8785b`.
+- Alignment/activation: a fixed one-page chronological walk accounted for all
+  60 candidates as 34 accepted and 26 rejected, zero unknown. Apply advanced
+  the generic source exactly once to version 2/current with event fingerprint
+  `4a36c191387324c7f556aab003516692aedd60dfd49ca37849ae0d36f15f004d`
+  while SQLite remained query-only. Active mode was then armed and exact
+  release `b7aab9b7` started as fresh PID 65196 under Node 22.23.2 with Gmail
+  and Slack connected. Its rollback plist is
+  `com.nanoclaw.plist.rollback-dc3e5f0da185-2026-08-18T20-13-26-998Z`.
+- Separately attributed restart effect: one existing Procurement source
+  exception caused the Company Work loop to post a source-derived Chief brief.
+  The Gmail bridge itself created no task, action, email, or external message.
+- Natural finding: the first ordinary ten-minute Gmail safety poll scanned 11
+  candidates and held its cursor with two unaccounted IDs. Exact logs prove
+  `history.list(messageAdded)` returned both IDs and
+  `users.messages.get(format=full)` returned exact HTTP 404 for each. The
+  deployed bridge correctly kept SQLite and the generic version-2 watermark
+  equal/current, recorded no gap, and caused no work/action side effect, but
+  the original closed receipt vocabulary had no honest terminal for this case.
+- Repair: exact full-message 404 now writes immutable
+  `rejected/message_unavailable` with content-free evidence and lets ordinary
+  accounting continue; all non-404 fetch failures still throw and hold. Startup
+  transactionally widens the SQLite reason constraint while preserving rows
+  and recreating both append-only refusal triggers. Focused tests are 51/51,
+  email-critical is 715/715, the independent runner build and 43/43 tests and
+  typecheck pass. The unrestricted suite is 2,746/2,747 with four skips; its
+  sole failure is the unchanged CNPC wrapper-literal assertion.
+- Boundary/next gate: do not call the stalled batch lost or recovered. Commit
+  and independently verify an immutable repair artifact, prove its migration on
+  a copy of the live SQLite database, drain, take a fresh WAL-safe backup, and
+  activate it. Only the same ordinary Gmail safety path may prove the two new
+  terminal receipts and a version-3 mirrored advance. No history-list 404 may
+  be manufactured. Full-snapshot recovery, `gap_reconciled`, natural
+  history-expiry proof, and label-poll expiry remain later gates.
 
 ### NC-20260818-002 — Prove a gap-independent live Gmail mailbox shadow
 

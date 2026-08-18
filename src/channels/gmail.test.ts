@@ -158,7 +158,10 @@ import {
   resolveForwardedIdentity,
 } from '../gmail-parser.js';
 import { grantHostGmailResources } from '../gmail-ipc-policy.js';
-import { GmailInboundDispositionError } from '../gmail-inbound-disposition.js';
+import {
+  GmailInboundDispositionError,
+  normalizeGmailInboundDispositionInput,
+} from '../gmail-inbound-disposition.js';
 
 const mockRouteClassifiedEmail = routeClassifiedEmail as ReturnType<
   typeof vi.fn
@@ -540,6 +543,29 @@ describe('GmailChannel', () => {
       );
     });
 
+    it('receipts an exact Gmail message-get 404 as terminal unavailable', async () => {
+      mockGmail.users.messages.get.mockRejectedValueOnce({
+        code: 404,
+        response: { status: 404, data: { error: { code: 404 } } },
+      });
+      const opts = createTestOpts();
+      const channel = new GmailChannel(opts);
+      await channel.connect();
+
+      await expect(
+        (channel as any).fetchAndProcess('msg-unavailable'),
+      ).resolves.toBe(false);
+
+      expect(opts.onMessage).not.toHaveBeenCalled();
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'msg-unavailable',
+          disposition: 'rejected',
+          reasonKey: 'message_unavailable',
+        }),
+      );
+    });
+
     it('propagates receipt-store failure instead of silently changing route', async () => {
       mockGmail.users.messages.get.mockResolvedValueOnce(
         gmailMessage('msg-store-error'),
@@ -802,6 +828,55 @@ describe('GmailChannel', () => {
       expect(mockSetRouterState).toHaveBeenCalledWith(
         'gmail_history_id',
         '200',
+      );
+    });
+
+    it('advances both active cursors after exact message-get 404s are durably rejected', async () => {
+      mockGmail.users.history.list.mockResolvedValueOnce(
+        historyWith(['msg-unavailable']),
+      );
+      mockGmail.users.messages.get.mockRejectedValueOnce({ code: 404 });
+      mockRecordDisposition.mockImplementationOnce((input) => {
+        const normalized = normalizeGmailInboundDispositionInput(input as any);
+        const receipt = { ...normalized, recordedAt: normalized.observedAt };
+        dispositionState.receipts.set(normalized.messageId, receipt);
+        return { receipt, applied: true, duplicate: false };
+      });
+      const bridge = runtimeWatermark();
+      const channel = new GmailChannel({
+        ...createTestOpts(),
+        runtimeWatermarkMode: 'active',
+        runtimeWatermark: bridge as any,
+      });
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await (channel as any).processPush('200');
+
+      expect(dispositionState.receipts.get('msg-unavailable')).toMatchObject({
+        disposition: 'rejected',
+        reasonKey: 'message_unavailable',
+      });
+      expect(bridge.recordAdvance).toHaveBeenCalledWith(
+        expect.objectContaining({
+          previousCursor: '100',
+          nextCursor: '200',
+          candidates: [
+            expect.objectContaining({
+              messageId: 'msg-unavailable',
+              disposition: 'rejected',
+              reasonKey: 'message_unavailable',
+            }),
+          ],
+        }),
+      );
+      expect(mockSetRouterState).toHaveBeenCalledWith(
+        'gmail_history_id',
+        '200',
+      );
+      expect(logger.warn).not.toHaveBeenCalledWith(
+        expect.anything(),
+        'Gmail push retained history cursor for unaccounted candidates',
       );
     });
 

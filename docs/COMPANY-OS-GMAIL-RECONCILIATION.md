@@ -237,7 +237,12 @@ per Gmail message ID and no email content or address fields. Accepted reasons
 cover ordinary message persistence, direct classified-route persistence,
 completed rule auto-archive, and an exact pre-existing inbound message row.
 Rejected reasons cover own outbound, Spam/Trash, empty messages, hard filters,
-and outbound messages found by the thread scanner.
+outbound messages found by the thread scanner, and an exact
+`users.messages.get(format=full)` 404 after history named the message. That
+last terminal is `message_unavailable`; its evidence is content-free and binds
+only the message ID, exact Gmail method, and status code. Timeouts, permission
+errors, rate limits, malformed responses, and every other fetch failure remain
+non-terminal and hold the cursor.
 
 The receipt follows the durable terminal operation. Exact semantic replay
 converges even when the retry timestamp differs; a changed disposition, reason,
@@ -248,6 +253,15 @@ failed, only an exact row for the same Gmail JID with `is_from_me = 0` and
 before direct host routing additionally requires the exact rules-runner
 classification `routed_at` marker; an ambiguous staged route holds the cursor.
 The in-memory `processedIds` set and outbound rows are never evidence.
+
+`message_unavailable` is an additive repair to the version-1 receipt contract,
+not a recovery claim. SQLite cannot widen the closed reason `CHECK` in place,
+so an existing host transactionally rebuilds only the receipt table, copies all
+rows, and recreates both append-only refusal triggers during startup. Any stale
+staging table, missing trigger, copy/constraint failure, or commit failure aborts
+startup and leaves the prior schema transactionally intact. Production requires
+a fresh WAL-safe backup plus row, fingerprint, schema, trigger, and
+`quick_check` proof before activation.
 
 For inbound push, every history candidate must already have or produce a
 receipt. Any fetch, processing, receipt-storage, or accounting failure leaves
@@ -496,12 +510,17 @@ action authority.
 
 This is still not a live Gmail recovery fix:
 
-- one production source and version-1 current watermark exist, but no daemon or
-  shadow producer imports or advances them;
+- exact release `b7aab9b7` is live in `active` mode after one receipt-backed
+  chronological alignment advanced the generic watermark to version 2/current
+  at the unchanged SQLite head;
 - migration 123 is live but all three tables are empty and unwired;
-- the exact Google wrapper is installed but has not called a live mailbox;
-- the candidate removes the inbound-push reset, but deployment, active cursor
-  alignment, and a natural 404 observation are not established by local code;
+- the first ordinary safety poll scanned 11 candidates and honestly held both
+  equal cursors when two history IDs returned exact full-message 404s; this was
+  not a history-list expiry and therefore created no gap;
+- the additive `message_unavailable` repair is locally verified but still
+  requires immutable release, copied-live-database migration, fresh backup,
+  exact activation, and ordinary retry evidence before the normal-delta gate is
+  complete;
 - NC-008/009 durable disposition evidence is deployed and naturally exercised;
   historical IDs without a receipt, exact retained
   ordinary inbound row, or durable routed marker still account as unknown;
@@ -514,7 +533,7 @@ This is still not a live Gmail recovery fix:
 - active mailboxes may need retry until one attempt observes a stable head;
 - label-correction history expiry remains unchanged.
 
-These are activation blockers, not successful-recovery claims.
+These are promotion blockers, not successful-recovery claims.
 
 ## Promotion gates
 
@@ -537,11 +556,12 @@ The next production-facing milestones must remain separately tracked and must:
    against the live mailbox and prove a stable terminal head, exact
    accepted/rejected/unknown accounting, privacy/token handling, and no source/
    work/email mutation. This does not satisfy gap-recovery accounting by itself;
-6. **under NC-20260818-003:** install the exact default-freeze candidate, stop
-   the daemon after a natural zero-work drain, back up both SQLite and
-   PostgreSQL, close pre-existing SQLite-ahead drift only from chronological
-   history plus exact accepted/rejected receipts, arm active mode, and prove
-   normal-delta mirroring and non-interference without manufacturing a 404;
+6. **under NC-20260818-003:** complete the already established install, drain,
+   dual-backup, receipt-backed alignment, and active-mode gates; migrate the
+   additive exact message-get-404 terminal only after copied-live-database and
+   fresh WAL-safe backup proof, then require the same ordinary safety retry to
+   advance both cursors and prove non-interference without manufacturing a
+   history-list 404;
 7. observe one natural 404 recording `gap_detected` with both cursors frozen;
    do not force expiry or skip ahead merely to close the proof gate;
 8. only after that gap exists, separately recover any missing eligible
