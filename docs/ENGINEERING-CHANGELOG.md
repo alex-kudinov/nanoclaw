@@ -8,12 +8,55 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-012 — Deploy the Slack screenshot-reading boundary
+
+- Date: 2026-08-17
+- Owner/client: Codex
+- State: complete for exact deployment and mount proof; model-level screenshot
+  interpretation remains pending under NC-011
+- Commit/PR: exact release
+  `dc3e5f0da18576094c4c9e1af95c064d2c2b17d4` on
+  `codex/nc-20260817-012-slack-image-release`; no PR
+- Change class: C2 — reversible release, global prompt, and host mount
+  activation without external communication or action authority
+- Build/transfer: clean source tree
+  `c7e45b9522dc6cbf0dac4134c02d1f3450bbad25`, artifact
+  `da9438b27cfafe772a8ac22c6c5491e38e77be3ebd5c2baab42ac49cf2143b75`
+  across 728 files, and Node 22.23.2 were verified from a fresh local
+  extraction and again on Mini. The transferred archive independently matched
+  SHA-256
+  `3563844763a0708f7b3170c8a44fc199ab56bd53d2631d9af25febd9d5ced510`.
+- Drain/activation: the exact prior `263ac7c4` release had one listener,
+  connected Gmail/Slack, zero active/waiting containers, an empty outgoing
+  Slack queue, no Apple containers, and only 69 confirmed/6 blocked pending
+  email rows. The activator dry run named exactly the permitted three plist
+  fields. Exact-host activation health-verified `dc3e5f0d` at its matching code
+  root under Node 22.23.2 and retained rollback plist
+  `com.nanoclaw.plist.rollback-263ac7c4a25a-2026-08-18T02-51-22-029Z`.
+- Prompt/rollback: the operational global prompt was privately backed up at
+  mode 0600 with hash
+  `399408327c533489da834614884dbd82fb9f21ef99cf9f26d7ef5f1ec693c919`,
+  then atomically replaced from the verified release. Active/release hashes
+  both equal
+  `fb84bec9f411dd6918771f73c00cbc323149ee18ec7b74574342978af78e37ca`.
+- Mount proof: a host-created mode-0600 empty fixture under mode-0700 inbound
+  directories was readable through `/workspace/ipc/inbound` in a disposable
+  no-agent container and a write attempt failed. The exact fixture was
+  removed. Two ambient, naturally launched post-release Sales/Mailman
+  containers independently reported group-specific inbound mounts with option
+  `ro`; their business content was not inspected.
+- Boundaries: NC-012 caused no Slack post/replay, operator-image export,
+  customer message, Gmail action, schema/data write, OAuth change, task/action
+  authority, push, or merge. This proves delivery and confinement, not that a
+  minion understood a real screenshot; use a fresh user-resubmitted image for
+  that outcome.
+
 ### NC-20260817-011 — Give Slack screenshots to image-capable minions
 
 - Date: 2026-08-17
 - Owner/client: Codex
-- State: ready_for_deploy; committed local implementation only, not deployed or
-  live-model verified
+- State: deployed_unverified; exact service and mount behavior are live, but a
+  real screenshot has not yet been interpreted
 - Commit/PR: claim `85f1c094`; implementation `9abdf2fd` on
   `codex/nc-20260817-011-slack-image-vision`; no PR
 - Change class: C2 — reversible host channel/mount and agent-instruction change;
@@ -45,11 +88,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   a nested read-only mount fail closed before model access. Slack remains the
   source of truth and derived copies expire after 30 days. Image text is data,
   never approval or authority.
-- Deployment/rollback: no release, daemon restart, OAuth mutation, Slack post,
-  model canary, database/schema write, push, or merge occurred. Before
-  activation, drain all warm containers so none lacking the new nested mount is
-  adopted. Roll back by activating the prior immutable release; staged copies
-  are inert local runtime data and may age out normally.
+- Deployment/rollback: NC-012 activated exact release `dc3e5f0d` from a
+  zero-container drain, installed the reviewed global prompt with a private
+  rollback copy, and proved the nested mount read-only both in a disposable
+  container and on two later natural group containers. Rollback release
+  `263ac7c4` remains available. No OAuth mutation, Slack post, model canary,
+  database/schema write, push, or merge occurred; staged copies are inert local
+  runtime data and may age out normally.
 - Documentation: `docs/ARCHITECTURE.md`, `docs/PROJECT-MAP.md`,
   `docs/SECURITY.md`, `docs/MINION-FRAMEWORK.md`, global minion instructions,
   active work, and this changelog.
