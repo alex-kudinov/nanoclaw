@@ -14,9 +14,10 @@ complete. NC-010's default-off retained-host coverage auditor is now complete:
 one aggregate-only production dry run accounts for all 3,041 retained IDs as
 23 terminal receipts, 1,675 recoverable IDs, and 1,343 unknown IDs, with
 identical before/after protected-state fingerprints. It did not query Gmail and
-does not claim mailbox completeness. Migration 123 remains unapplied with no
-runtime import, source registration/bootstrap, live reconciliation read, 404
-recovery, or message recovery.
+does not claim mailbox completeness. NC-013 applies migration 123 dark after a
+verified backup; its three live tables are empty/admin-only and the runtime
+remains unwired. There is still no source registration/bootstrap, live
+reconciliation read, 404 recovery, or message recovery.
 
 ## Decision
 
@@ -359,10 +360,27 @@ receipt, processing, safety-poll, or cursor-hold errors. Two recent natural
 one-candidate scans each report `newCount: 1` and monotonic cursor advancement.
 SQLite `quick_check` remains `ok` and exact release/channel health is green.
 
+NC-010 then measures retained-host coverage without calling Gmail. Its bounded
+production dry run accounts for 3,041 retained IDs as 23 terminal, 1,675
+recoverable, and 1,343 unknown while explicitly refusing mailbox-completeness
+or authority claims.
+
+NC-013 completes only the next dark-schema gate. After ordinary Sales work
+drained naturally, a mode-0600 custom-format PostgreSQL backup and 1,023-entry
+restore catalog were verified, then exact live-release migration 123 was
+applied as one transaction. The snapshot/page/candidate tables are owned by
+`nanoclaw_admin`, expose zero non-admin grants, contain 27/9/8 columns and zero
+rows, and retain the expected constraints, six indexes, and two append-only
+triggers. Protected Company Work, source/watermark, occurrence, and
+classification fingerprints are unchanged. One normal `own_outbound` Gmail
+receipt arrived during the post-check while Gmail message rows and email
+action/event fingerprints stayed fixed; it is ambient current-ingestion
+evidence, not an NC-013 Gmail call or shadow row.
+
 This is not yet a live Gmail recovery fix:
 
 - no production source row or watermark state exists;
-- migration 123 is tracked but unapplied;
+- migration 123 is live but all three tables are empty and unwired;
 - the exact Google wrapper is installed but has not called a live mailbox;
 - current inbound push still resets `gmail_history_id` on 404;
 - NC-008/009 durable disposition evidence is deployed and naturally exercised;
@@ -387,8 +405,9 @@ The next production-facing milestones must remain separately tracked and must:
    quantify unknown IDs without inventing dispositions or treating the
    in-memory cache as authority; this remains explicitly distinct from mailbox
    completeness;
-2. back up PostgreSQL, apply migration 123 dark, and verify all three tables
-   empty/admin-only before any reconciliation-shadow producer exists;
+2. **complete under NC-013:** back up PostgreSQL, apply migration 123 dark,
+   and verify all three tables empty/admin-only before any reconciliation-
+   shadow producer exists;
 3. register and bootstrap one inbound source in production without changing
    `gmail_history_id` or wiring 404 behavior;
 4. deploy the wrapper and shadow store still default-off, then observe a

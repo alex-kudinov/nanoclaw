@@ -8,6 +8,66 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-013 — Apply the Gmail reconciliation shadow schema dark
+
+- Date: 2026-08-18T04:31Z
+- Owner/client: Codex
+- State: complete; migration 123 is live, empty, admin-only, and unwired
+- Commit/PR: claim `6d15280c`; NC-010/NC-012 convergence merge `3ee10533` on
+  `codex/nc-20260817-013-gmail-shadow-schema`; no PR
+- Change class: C2 — additive production schema with verified recovery and no
+  runtime, source, Gmail, cursor, message, work, or action activation
+- Candidate verification: live release `dc3e5f0d` and the reconciled branch
+  carry byte-identical migration SHA-256
+  `e9d2b7bb384d4ead97ee1b9b0b6b17c564c0b21ba2944a5818e977de90f15062`
+  and rollback SHA-256
+  `ec71364d003294d80d8d15daccb0d45cfd99fa4bd15646f100c99b8cb6fcb9b9`.
+  PostgreSQL 16.13, admin membership, migration-122 dependencies, empty
+  0/0/0 source/event/state tables, one prior occurrence, and absent
+  migration-123 targets were independently verified read-only.
+- Local validation: exact Node 22.23.2 typecheck/build pass; 197 focused tests,
+  706 email-critical tests, runner build/43 tests, and documentation continuity
+  pass. The full root suite passes 2,690/2,691; the sole CNPC wrapper-string
+  assertion is the unchanged baseline failure.
+- Drain: one ordinary Sales container and its approved email were allowed to
+  finish naturally. No process was interrupted. Backup and migration gates
+  each found zero active/waiting work, zero outgoing Slack queue, connected
+  Gmail/Slack, and zero email actions in approved/handoff/Mailman/executing/
+  attention states.
+- Recovery: mode-0600 custom dump
+  `NC-20260817-013-20260818T042031Z/nanoclaw_business_pre_123.dump` is
+  2,720,522 bytes with SHA-256
+  `793e4a673bcb42fa2a97f656ba3f371ffc9265438df62eab7e57c3c54caf17a4`.
+  Its mode-0600 restore catalog is 80,883 bytes, lists 1,023 entries, and has
+  SHA-256
+  `53136bc7312d424defcf49a1136fc46a25357a2767d1e2005dd8a6e5c5c1fec6`.
+  The containing directory is mode 0700. The tracked DDL rollback remains safe
+  only while all three tables are empty; the dump is the authoritative
+  pre-migration recovery artifact.
+- Migration/schema proof: only the exact release-bound migration was applied,
+  as one transaction. Snapshot/page/candidate tables have 27/9/8 columns and
+  zero rows; each is owned by `nanoclaw_admin`, exposes all seven admin table
+  privileges and zero non-admin grants, and contains zero forbidden content,
+  address, prompt, task, approval, or action columns. Expected constraints and
+  six indexes exist; page and candidate rows have UPDATE/DELETE append-only
+  triggers.
+- Non-interference: Company Work remains 16 items/97 events/43 receipts;
+  occurrence/source/watermark counts remain 1/0/0/0; classifications remain
+  7,251; every protected PostgreSQL fingerprint is identical pre/post. SQLite
+  quick-check is `ok`; Gmail messages remain 3,026, email actions 76, email
+  events 377, tasks/jobs/groups 11/22/20, and active email actions zero. One
+  ambient `rejected/own_outbound` receipt recorded at
+  `2026-08-18T04:30:37.489Z` during post-check; Gmail message and email-action/
+  event fingerprints stayed fixed, while normal cursor/job liveness changed.
+- Live boundary: a 2026-08-18T04:38:21Z stability read finds all target rows
+  0/0/0, all three admin owners, zero non-admin grants, and unchanged backup
+  hashes. PID 47982 continues exact verified release `dc3e5f0d` under Node
+  22.23.2 with matching code root, connected Gmail/Slack, and empty active/
+  waiting/outgoing queues. No restart/deploy, source row/bootstrap,
+  Gmail API/profile/list/read, snapshot/page/candidate row, 404/cursor change,
+  message recovery, work/task/action, external message, push, or merge
+  occurred. The next separately tracked gate is source registration/bootstrap.
+
 ### NC-20260817-012 — Deploy the Slack screenshot-reading boundary
 
 - Date: 2026-08-17

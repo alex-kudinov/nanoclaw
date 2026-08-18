@@ -17,6 +17,9 @@ applied under `NC-20260817-002`; exact release `baed66d` live-proved one natural
 occurrence plus duplicate-only replay, then expired the observer configuration
 back to disabled. The live append-only table contains one row. This overlay is
 structure-only; running PostgreSQL remains row/count/permission authority.
+Migration 122's source/watermark tables are live and empty under NC-004.
+Migration 123's Gmail reconciliation shadow tables are live, empty, and admin-
+only under NC-013; no source or shadow producer is activated.
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -209,6 +212,65 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   open_gap_event_id             bigint
   last_event_id                 bigint
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_gmail_reconciliation_snapshots (migration 123 live, dark under NC-20260817-013)
+
+```
+  snapshot_id                   text                 NOT NULL
+  snapshot_fingerprint          text                 NOT NULL
+  definition_id                 text                 NOT NULL
+  source_fingerprint            text                 NOT NULL
+  gap_event_id                  bigint               NOT NULL
+  expected_watermark_version    bigint               NOT NULL
+  previous_cursor               text                 NOT NULL
+  cursor_observed_at            timestamp with time zone NOT NULL
+  target_history_id             text                 NOT NULL
+  started_at                    timestamp with time zone NOT NULL
+  initial_history_id            text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='pending'::text
+  version                       bigint               NOT NULL DEFAULT=0
+  next_page_token               text
+  next_page_token_sha256        text
+  pages_read                    integer              NOT NULL DEFAULT=0
+  candidate_count               integer              NOT NULL DEFAULT=0
+  accepted_count                integer              NOT NULL DEFAULT=0
+  rejected_count                integer              NOT NULL DEFAULT=0
+  completed_at                  timestamp with time zone
+  final_history_id              text
+  reconciliation_evidence_sha256 text
+  proposed_event_fingerprint    text
+  invalid_reason                text
+  invalidated_at                timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_gmail_reconciliation_pages (migration 123 live, dark under NC-20260817-013)
+
+```
+  snapshot_id                   text                 NOT NULL
+  page_index                    integer              NOT NULL
+  page_fingerprint              text                 NOT NULL
+  request_page_token_sha256     text
+  next_page_token_sha256        text
+  candidate_count               integer              NOT NULL
+  accepted_count                integer              NOT NULL
+  rejected_count                integer              NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_gmail_reconciliation_candidates (migration 123 live, dark under NC-20260817-013)
+
+```
+  snapshot_id                   text                 NOT NULL
+  gmail_message_id              text                 NOT NULL
+  page_index                    integer              NOT NULL
+  disposition                   text                 NOT NULL
+  reason_key                    text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  candidate_fingerprint         text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## booking_events

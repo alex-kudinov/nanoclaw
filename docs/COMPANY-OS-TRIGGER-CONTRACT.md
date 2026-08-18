@@ -9,12 +9,13 @@ and watermark/gap foundation in migration 122; `NC-20260817-004` applies it and
 deploys exact release `070cde38` dark with all three tables empty and
 admin-only. `NC-20260817-005` adds a local, unwired, proposal-only inbound Gmail
 full-snapshot adapter. `NC-20260817-006` adds a local exact read-only Google
-wrapper and resumable content-free shadow target in unapplied migration 123.
+wrapper and resumable content-free shadow target in migration 123.
 `NC-20260817-007` deploys those exact bytes in release `de815e1d` with the
 migration still absent and no runtime import. Synthetic/disposable proof crosses
-10,000 candidates, but production registration, migration, live Google reads,
-real durable rejection accounting, cursor/runtime wiring, and the separate
-label-correction source remain absent.
+10,000 candidates. `NC-20260817-013` applies migration 123 dark with all three
+tables empty/admin-only. Production registration/bootstrap, live Google reads,
+shadow evidence, cursor/runtime wiring, and the separate label-correction
+source remain absent.
 Webhook, topic, and business-condition adapters remain absent.
 
 ## Purpose
