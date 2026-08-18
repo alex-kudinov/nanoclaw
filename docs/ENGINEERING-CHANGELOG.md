@@ -15,7 +15,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - State: validating; local implementation and disposable evidence complete,
   production source/event/state rows remain absent
 - Commit/PR: claim `0d7f8e7a` on
-  `codex/nc-20260818-001-gmail-source-bootstrap`; implementation commit pending;
+  `codex/nc-20260818-001-gmail-source-bootstrap`; implementation `5ed917c2`;
   no PR
 - Change class: C2 — one separately invoked, reversible internal inventory/
   watermark write with no Gmail, daemon, cursor, shadow, work, or action path
