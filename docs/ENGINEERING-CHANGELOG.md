@@ -12,12 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-18
 - Owner/client: Codex
-- State: in_progress; initial active release is safely holding a live batch,
-  and the additive exact-message-404 repair is locally verified but not yet
-  released or deployed
+- State: deployed_unverified; normal cursor mirroring and the exact-message-404
+  repair are live-verified, while a natural history-list expiry remains pending
 - Commit/PR: claim `a85def4a` on
   `codex/nc-20260818-003-gmail-gap-freeze`; initial implementation
-  `b7aab9b7ef6baa6e41a9227723ecbd8fb39fe5df`; repair commit pending; no PR
+  `b7aab9b7ef6baa6e41a9227723ecbd8fb39fe5df`; repair
+  `64f1421e4650c64b2f9a173cc4e8c51a2dc8c36b`; no PR
 - Change class: C2 — host-owned cursor/watermark behavior plus one separately
   confirmed, receipt-backed Gmail metadata read and internal PostgreSQL advance
 - Initial release: source tree
@@ -85,13 +85,50 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   email-critical is 715/715, the independent runner build and 43/43 tests and
   typecheck pass. The unrestricted suite is 2,746/2,747 with four skips; its
   sole failure is the unchanged CNPC wrapper-literal assertion.
-- Boundary/next gate: do not call the stalled batch lost or recovered. Commit
-  and independently verify an immutable repair artifact, prove its migration on
-  a copy of the live SQLite database, drain, take a fresh WAL-safe backup, and
-  activate it. Only the same ordinary Gmail safety path may prove the two new
-  terminal receipts and a version-3 mirrored advance. No history-list 404 may
-  be manufactured. Full-snapshot recovery, `gap_reconciled`, natural
-  history-expiry proof, and label-poll expiry remain later gates.
+- Repair artifact: source tree
+  `f45c6c10fc653f3ece45778e705bc6100917d471`, 780 compiled files, artifact
+  SHA-256 `27038b4919572d2cd3952df36d219d2d29495754a6ba65aedfbfcac1a34d5a1b`,
+  and archive SHA-256
+  `d346e49ef4c751df61e2a274d416cce83f07aa8777be057feef4da4b83d87136`
+  independently verified after fresh local and production extraction.
+- Copied-live migration: a WAL-consistent temporary copy preserved all 133
+  receipt rows at aggregate SHA-256
+  `6779093a457dbb265583355715aba2f6474fc53bc623bdd6be1df055e2ac0905`,
+  added the exact reason constraint, recreated both named append-only triggers,
+  executably refused update/delete, and retained `quick_check` `ok`.
+- Repair drain/backup: the guarded helper refused until attempt 3, then stopped
+  exact prior PID 65196 only with zero containers, active/waiting queues, Slack
+  outgoing messages, or active email actions. The fresh owner-only dual backup
+  at `~/.local/share/nanoclaw-backups/NC-20260818-003-20260818T204301Z`
+  contains a 116,174,848-byte SQLite backup with `quick_check` `ok` and SHA-256
+  `33ca21cf8c20ef7ffbec967695d8907b0e7f0438cc84597a7cff10fa4b116774`,
+  plus a 9,622,465-byte PostgreSQL custom dump with 733 catalog entries and
+  SHA-256 `ef738c22783c78d91dfbe0f74e62e148944ad7376391a1e309c4bc6df2130017`.
+- Live schema/activation: the startup migration preserved all 136 pre-cutover
+  receipt rows at aggregate SHA-256
+  `069b075ac1f8f8e6831fbcb1949d615e6381aba9209950229b0ee30b78644cc9`,
+  widened only the reason constraint, retained both executable triggers, and
+  passed `quick_check`. Recovery-safe activation changed only the three release
+  pointers, retained rollback plist
+  `com.nanoclaw.plist.rollback-b7aab9b7ef6b-2026-08-18T20-44-20-160Z`, and
+  started exact fresh listener PID 10482 with Gmail/Slack connected.
+- Natural normal-delta proof: an unmanufactured Gmail push retried the stalled
+  range, recorded exactly two `rejected/message_unavailable` receipts, and
+  committed version 3 as 17 observed = 10 accepted + 7 rejected. Two more
+  natural pushes committed 2 = 2 + 0 and 0 = 0 + 0, leaving version 5/current,
+  no open gap, and both cursors equal. Receipt count moved 136 to 142 from two
+  unavailable, two rule-auto-archive, one own-outbound, and one Spam/Trash
+  terminal. Gmail messages, email actions/events, Company Work items/events/
+  receipts, scheduled tasks, groups, and trigger occurrences are unchanged;
+  two new classifications are attributable ambient inbound processing. Queues
+  are empty and the production error log is unchanged since 2026-08-15.
+- Boundary/next gate: normal mirroring is live-verified, but a message-get 404
+  is not a history-list expiry and did not create a gap or recover content.
+  Observe one natural `users.history.list` expiry and require one
+  `history_expired` gap with both cursors frozen before any separately approved
+  snapshot/reconciliation work. Do not manufacture expiry or skip a cursor.
+  Full-snapshot recovery, `gap_reconciled`, and label-poll expiry remain later
+  gates.
 
 ### NC-20260818-002 — Prove a gap-independent live Gmail mailbox shadow
 

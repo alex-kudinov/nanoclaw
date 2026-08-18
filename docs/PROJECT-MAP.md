@@ -428,9 +428,14 @@ that candidate. The NC-003 repair adds only
 content-free evidence hash. Other fetch failures still hold the cursor. Because
 SQLite cannot alter a `CHECK` constraint in place, startup transactionally
 rebuilds only `gmail_inbound_disposition_receipts`, copies every existing row,
-and recreates both append-only refusal triggers. Production promotion requires
-a fresh WAL-safe backup plus row/fingerprint/trigger proof; rollback code that
-does not understand the new reason remains fail-closed.
+and recreates both append-only refusal triggers. Production promotion required
+and passed a fresh WAL-safe backup plus copied-live and live
+row/fingerprint/trigger proof. Exact release `64f1421e` then retried the range
+through a natural push, recorded exactly two `message_unavailable` receipts,
+and mirrored three natural advances to version 5/current with both cursors
+equal and no open gap. Protected work and email-action fingerprints stayed
+fixed. Rollback code that does not understand the new reason remains
+fail-closed.
 
 Scheduled agent tasks can span multiple model turns when a host tool, notably a
 Gmail read, returns a queued acknowledgement and delivers the real result

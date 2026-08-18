@@ -510,17 +510,18 @@ action authority.
 
 This is still not a live Gmail recovery fix:
 
-- exact release `b7aab9b7` is live in `active` mode after one receipt-backed
-  chronological alignment advanced the generic watermark to version 2/current
-  at the unchanged SQLite head;
+- exact repair release `64f1421e` is live in `active` mode after the earlier
+  receipt-backed chronological alignment advanced the generic watermark to
+  version 2/current at the unchanged SQLite head;
 - migration 123 is live but all three tables are empty and unwired;
 - the first ordinary safety poll scanned 11 candidates and honestly held both
   equal cursors when two history IDs returned exact full-message 404s; this was
   not a history-list expiry and therefore created no gap;
-- the additive `message_unavailable` repair is locally verified but still
-  requires immutable release, copied-live-database migration, fresh backup,
-  exact activation, and ordinary retry evidence before the normal-delta gate is
-  complete;
+- the additive `message_unavailable` repair passed immutable release,
+  copied-live-database migration, fresh backup, exact activation, and ordinary
+  retry gates: one natural push recorded exactly two such receipts and advanced
+  both cursors, followed by two more natural advances to version 5/current with
+  no open gap;
 - NC-008/009 durable disposition evidence is deployed and naturally exercised;
   historical IDs without a receipt, exact retained
   ordinary inbound row, or durable routed marker still account as unknown;
@@ -556,12 +557,11 @@ The next production-facing milestones must remain separately tracked and must:
    against the live mailbox and prove a stable terminal head, exact
    accepted/rejected/unknown accounting, privacy/token handling, and no source/
    work/email mutation. This does not satisfy gap-recovery accounting by itself;
-6. **under NC-20260818-003:** complete the already established install, drain,
-   dual-backup, receipt-backed alignment, and active-mode gates; migrate the
-   additive exact message-get-404 terminal only after copied-live-database and
-   fresh WAL-safe backup proof, then require the same ordinary safety retry to
-   advance both cursors and prove non-interference without manufacturing a
-   history-list 404;
+6. **complete under NC-20260818-003:** establish install, drain, dual-backup,
+   receipt-backed alignment, active mode, copied-live-database migration, fresh
+   WAL-safe backup, and the exact message-get-404 terminal; require the ordinary
+   runtime path to advance both cursors and prove non-interference without
+   manufacturing a history-list 404;
 7. observe one natural 404 recording `gap_detected` with both cursors frozen;
    do not force expiry or skip ahead merely to close the proof gate;
 8. only after that gap exists, separately recover any missing eligible

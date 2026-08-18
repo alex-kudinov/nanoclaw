@@ -204,6 +204,28 @@ fingerprint aggregates, both recreated append-only triggers, and
 fail startup after such a receipt exists; that fail-closed behavior is not
 permission to delete or rewrite receipt history.
 
+Exact repair release `64f1421e4650c64b2f9a173cc4e8c51a2dc8c36b`
+contains 780 compiled files with source tree
+`f45c6c10fc653f3ece45778e705bc6100917d471`, artifact SHA-256
+`27038b4919572d2cd3952df36d219d2d29495754a6ba65aedfbfcac1a34d5a1b`,
+and archive SHA-256
+`d346e49ef4c751df61e2a274d416cce83f07aa8777be057feef4da4b83d87136`;
+fresh local and Mini extraction independently verified them. A copied-live
+database retained all 133 rows and their aggregate hash through migration and
+executably refused update/delete. After a zero-work drain, the fresh mode-0600
+WAL-safe backup at
+`~/.local/share/nanoclaw-backups/NC-20260818-003-20260818T204301Z/messages.db.sqlite3`
+passed `quick_check` and hashes to
+`33ca21cf8c20ef7ffbec967695d8907b0e7f0438cc84597a7cff10fa4b116774`.
+The stopped live migration then retained all 136 current rows and their exact
+aggregate hash, widened the constraint, and recreated both triggers. Activation
+retained rollback plist
+`com.nanoclaw.plist.rollback-b7aab9b7ef6b-2026-08-18T20-44-20-160Z` and
+started fresh listener PID 10482. One natural push recorded exactly two new
+`message_unavailable` receipts and three natural advances left both cursors
+equal at version 5/current. Gmail/Slack health and protected work/email-action
+fingerprints pass; the production error log remains unchanged since August 15.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;
