@@ -4,9 +4,9 @@ Generated: 2026-07-26T08:00:56Z
 Structure-only reconciliation: 2026-08-17T22:24Z
 
 NC-20260817-009 production structure verified 2026-08-17T23:38Z. The table
-and both append-only triggers are live; the table remained empty during the
-bounded post-activation observation because no natural Gmail candidate
-appeared. This snapshot is structure-only.
+and both append-only triggers are live. Natural proof through
+2026-08-18T02:07Z found 18 content-free receipts with 18 distinct message IDs
+and fingerprints. This snapshot is structure-only and contains no live rows.
 
 ## autonomy_draft_events
 

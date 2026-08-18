@@ -77,9 +77,13 @@ direct-route staging rows additionally require the exact PostgreSQL routed
 marker, and outbound rows cannot qualify. `NC-20260817-009` activates that
 additive table and its two append-only triggers in exact release `263ac7c4`
 after a WAL-safe backup. Structural and service proof pass, but the bounded
-observation saw no natural Gmail candidate, so the table remains empty and
-producer behavior is `deployed_unverified`. Migration 123 and every
-reconciliation source/runtime path remain absent.
+observation initially saw no natural Gmail candidate. Subsequent aggregate-only
+proof found 18 immutable receipts with 18 distinct message IDs and
+fingerprints: three ordinary inbound persists, ten completed rule auto-archives,
+and five own-outbound rejections. Sixty-seven current-process push/safety
+cycles show zero receipt, processing, or cursor-hold failures, so NC-009 is
+complete. Migration 123 and every reconciliation source/runtime path remain
+absent.
 
 ---
 

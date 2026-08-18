@@ -5,9 +5,12 @@ implemented. NC-007 deploys those exact bytes, and NC-008/009 add and activate
 the real-ingestion disposition contract and cursor holdback in exact release
 `263ac7c4`. The additive SQLite receipt table and two append-only triggers are
 live after a WAL-safe backup; service/channel/non-interference checks pass.
-No natural Gmail candidate appeared during the bounded observation, so the
-table remains empty and first producer behavior is `deployed_unverified`.
-Migration 123 remains unapplied with no runtime import, source
+No natural Gmail candidate appeared during the initial bounded observation.
+Subsequent aggregate-only proof finds 18 unique terminal receipts: three
+ordinary inbound persists, ten completed rule auto-archives, and five
+own-outbound rejections. The current process has 67 successful push/safety
+cycles with zero receipt, processing, or cursor-hold failures, so NC-009 is
+complete. Migration 123 remains unapplied with no runtime import, source
 registration/bootstrap, live reconciliation read, 404 recovery, or message
 recovery.
 
@@ -294,14 +297,24 @@ explain the changed Gmail lease/history/liveness state; critical pending counts
 remain unchanged. This proves structure and non-interference, not natural
 receipt creation.
 
+The later natural observation closes that remaining gate. The live table holds
+18 receipts with 18 distinct message IDs and 18 distinct fingerprints. Three
+are `accepted/inbound_message_persisted`, each with its matching SQLite message
+row; ten are `accepted/rule_auto_archive_completed`; five are
+`rejected/own_outbound`. Receipt timestamps span 2026-08-18T00:01:04Z through
+2026-08-18T01:58:53Z. The current PID completes 67 push/safety cycles with zero
+receipt, processing, safety-poll, or cursor-hold errors. Two recent natural
+one-candidate scans each report `newCount: 1` and monotonic cursor advancement.
+SQLite `quick_check` remains `ok` and exact release/channel health is green.
+
 This is not yet a live Gmail recovery fix:
 
 - no production source row or watermark state exists;
 - migration 123 is tracked but unapplied;
 - the exact Google wrapper is installed but has not called a live mailbox;
 - current inbound push still resets `gmail_history_id` on 404;
-- NC-008/009 durable rejection evidence is deployed but no natural candidate
-  has yet exercised it; historical IDs without a receipt, exact retained
+- NC-008/009 durable disposition evidence is deployed and naturally exercised;
+  historical IDs without a receipt, exact retained
   ordinary inbound row, or durable routed marker still account as unknown;
 - the resumable design proves more than 10,000 candidates synthetically but
   has no production runtime, storage-cost, token-lifetime, or latency evidence;
@@ -316,27 +329,23 @@ These are activation blockers, not successful-recovery claims.
 
 The next production-facing milestones must remain separately tracked and must:
 
-1. passively observe the first genuine Gmail candidate and prove exactly one
-   terminal receipt, exact replay/non-duplication, no cursor regression,
-   classification change, duplicate wake, or external action; do not generate
-   email to satisfy this gate;
-2. only after that proof, dry-run historical coverage and quantify unknown IDs without inventing
+1. dry-run historical coverage and quantify unknown IDs without inventing
    dispositions or treating the in-memory cache as authority;
-3. back up PostgreSQL, apply migration 123 dark, and verify all three tables
+2. back up PostgreSQL, apply migration 123 dark, and verify all three tables
    empty/admin-only before any reconciliation-shadow producer exists;
-4. register and bootstrap one inbound source in production without changing
+3. register and bootstrap one inbound source in production without changing
    `gmail_history_id` or wiring 404 behavior;
-5. deploy the wrapper and shadow store still default-off, then observe a
+4. deploy the wrapper and shadow store still default-off, then observe a
    natural source gap or approve a separate gap-independent audit design; do
    not manufacture an expiry merely to exercise the ledger;
-6. run a real read-only shadow and prove terminality, stable head, exact
+5. run a real read-only shadow and prove terminality, stable head, exact
    durable candidate accounting, privacy/token cleanup, runtime/API cost, and
    no source/work/email mutation;
-7. only after those gates, separately promote natural-404 handling to
+6. only after those gates, separately promote natural-404 handling to
    `gap_detected`, recover any missing eligible candidates through the ordinary
    durable inbound path, and record `gap_reconciled` before advancing;
-8. add watermark-age/operator attention and rollback/demotion evidence;
-9. design and prove the label-correction source independently.
+7. add watermark-age/operator attention and rollback/demotion evidence;
+8. design and prove the label-correction source independently.
 
 A forced expiry, synthetic production email, customer/internal message, task,
 or action is not authorized by this dark milestone.

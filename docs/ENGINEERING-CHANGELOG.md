@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-17
 - Owner/client: Codex
-- State: deployed_unverified; exact schema/service activation and bounded
-  non-interference proof pass, first natural disposition receipt unobserved
+- State: complete; exact schema/service activation, bounded non-interference,
+  and natural disposition-receipt behavior live-verified
 - Commit/PR: claim `2d994656`; implementation/release
   `263ac7c4a25a6033adef13e4085c147d1237b559` on
   `codex/nc-20260817-009-gmail-receipt-activation`; no PR
@@ -64,7 +64,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   release-pointer paths; recovery-safe apply converged to exact release
   `263ac7c4` under Node 22.23.2. Independent readback proves one listener,
   connected Gmail/Slack, empty runtime/outgoing queues, SQLite `quick_check`
-  `ok`, the receipt table plus its no-update/no-delete triggers, zero receipts,
+  `ok`, the receipt table plus its no-update/no-delete triggers,
   unchanged critical pending state, and absent migration-123 tables. The
   health heartbeat and sole listener converged to PID 58925 after its expected
   30-second file refresh; the initial old PID was stale heartbeat data, not a
@@ -76,15 +76,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   explains the lease change; the successful empty safety poll explains the
   history/liveness advance; `last_check` remained unchanged. Critical pending
   state remained 66 confirmed/6 blocked and zero active/critical.
+- Natural producer proof: later aggregate-only readback contains 18 terminal
+  receipts with 18 distinct Gmail message IDs and 18 distinct receipt
+  fingerprints. Three are `accepted/inbound_message_persisted`, each with its
+  matching SQLite message row; ten are
+  `accepted/rule_auto_archive_completed`; five are
+  `rejected/own_outbound`. Timestamps span 2026-08-18T00:01:04Z through
+  2026-08-18T01:58:53Z. The same PID 58925 completed 67 push/safety cycles with
+  zero receipt, processing, safety-poll, or cursor-hold failures. Two recent
+  one-candidate cycles each reported `newCount: 1` and advanced the history
+  cursor monotonically. SQLite `quick_check` remains `ok`; exact release,
+  listener, and channel health remain green.
 - Boundary/follow-up: production writes were limited to the recovery backup,
   immutable release install/pointer activation, startup's additive SQLite
   schema, normal Gmail watch renewal/history/liveness, and ambient Slack state.
   No synthetic/customer/internal email, Gmail send/reply, historical receipt,
   PostgreSQL schema/row, migration 123, source registration/bootstrap, shadow
   read, 404 change, classification, task, approved-email action, push, or merge
-  occurred. Passively wait for a genuine Gmail candidate and prove exactly one
-  terminal receipt plus replay/cursor/non-duplication safety before any later
-  Company OS promotion gate.
+  occurred during activation. Natural Gmail traffic later exercised the normal
+  inbound disposition path; no synthetic traffic or historical backfill was
+  used. NC-009 is complete. Historical unknown accounting is the next separate
+  read-only milestone; migration 123, source bootstrap, live shadow, and 404
+  handling remain later gates.
 
 ### NC-20260817-008 — Add durable Gmail inbound disposition receipts
 

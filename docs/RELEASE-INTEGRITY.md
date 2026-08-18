@@ -169,8 +169,15 @@ candidates: Gmail row aggregates and receipt count remained unchanged, while
 two ambient new rows and two allowed action-safety decisions were Slack-only.
 The Gmail history/liveness cursor changes are therefore attributable to the
 successful empty safety poll, and the watch expiry changed on normal restart
-renewal. Structural and non-interference proof pass; first natural receipt
-creation remains `deployed_unverified` rather than being manufactured.
+renewal. Structural and non-interference proof pass. Later natural traffic
+creates 18 receipts with 18 distinct message IDs and fingerprints: three
+ordinary inbound persists, ten completed rule auto-archives, and five
+own-outbound rejections. All three persisted receipts have their matching
+SQLite message row; auto-archive receipts correctly have none. The same process
+completes 67 push/safety cycles with zero receipt, processing, safety-poll, or
+cursor-hold failures. Two recent one-candidate scans each record one new message
+and advance monotonically. NC-009's natural producer gate is therefore complete
+without manufactured traffic.
 
 The builder refuses to run when:
 
