@@ -8,6 +8,49 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260817-010 — Measure retained Gmail disposition coverage read-only
+
+- Date: 2026-08-17
+- Owner/client: Codex
+- State: validating; local implementation is green and the aggregate-only
+  production dry run remains pending
+- Commit/PR: claim `ddc5a7c9` on
+  `codex/nc-20260817-010-gmail-historical-coverage`; implementation commit
+  pending; no PR
+- Change class: C2 — local default-off audit code with a separately gated
+  read-only production execution; no Gmail, cursor, schema, message, or action
+  authority
+- Scope/contract: the auditor measures only IDs durably retained in the live
+  receipt table or the configured Gmail channel's SQLite message rows. It
+  separates validated terminal receipts, exact ordinary rows, direct-route
+  rows with one exact routed `rules-runner-v1` marker, unresolved direct-route
+  rows, outbound rows without receipts, and unsupported retained rows.
+  Duplicate IDs, receipt/row contradictions, ambiguous markers, source drift,
+  unavailable storage, and an explicit-bound overflow refuse the report.
+- Read-only/privacy boundary: SQLite opens `readonly`, `fileMustExist`, and
+  `query_only`; its bounded query selects no sender/address/subject/content
+  column. PostgreSQL begins `TRANSACTION READ ONLY`, selects grouped marker
+  counts for only staged IDs, and always rolls back. Both sources are read
+  twice. Output contains aggregates and SHA-256 fingerprints only, with
+  `basis=retained_host_evidence`, `mailboxComplete=false`, and
+  `gmailQueried=false`; raw IDs and mailbox identity are never printed.
+- Verification: exact Node 22.23.2 passes 47/47 focused
+  audit/disposition/reconciliation tests, typecheck, root build, 704/704
+  email-critical tests, independent runner build plus 43/43 tests, and
+  documentation continuity. The unrestricted full baseline passes
+  2,678/2,679; its sole failure is the unchanged CNPC literal wrapper
+  assertion in `src/cnpc-prompt-contract.test.ts`.
+- Deployment/migration: not performed. No Gmail API request, receipt mint,
+  SQLite/PostgreSQL business write, history cursor, migration 123,
+  source/bootstrap, shadow, 404 behavior, task/work/action, service, push, or
+  merge changed.
+- Limitation/follow-up: this gate cannot discover IDs present only in Gmail;
+  mailbox completeness remains a later full-snapshot proof. Commit the clean
+  local boundary, then run one aggregate-only production dry run with stable
+  protected-state fingerprints before closing NC-010.
+- Documentation: Gmail reconciliation contract, project map, Company OS plan,
+  active work, package script, email-critical gate, and this changelog.
+
 ### NC-20260817-009 — Activate durable Gmail disposition receipts
 
 - Date: 2026-08-17
