@@ -181,6 +181,7 @@ const gmailEnv = readEnvFile([
   'GMAIL_PUBSUB_TOPIC',
   'GMAIL_PUSH_WEBHOOK_SECRET',
   'GMAIL_PUSH_SAFETY_POLL_INTERVAL',
+  'COMPANY_GMAIL_RUNTIME_WATERMARK_MODE',
 ]);
 
 export const GMAIL_POLL_INTERVAL = parseInt(
@@ -306,6 +307,17 @@ export const GMAIL_PUSH_SAFETY_POLL_INTERVAL = parseInt(
     '600000',
   10,
 );
+
+// The Company OS watermark bridge is fail-safe by default. `freeze_only`
+// preserves ordinary SQLite ingestion but never resets an expired cursor;
+// `active` additionally requires exact PostgreSQL/SQLite cursor authority and
+// mirrors every closed delta before SQLite advances.
+export type CompanyGmailRuntimeWatermarkMode = 'freeze_only' | 'active';
+const companyGmailRuntimeWatermarkMode =
+  process.env.COMPANY_GMAIL_RUNTIME_WATERMARK_MODE ||
+  gmailEnv.COMPANY_GMAIL_RUNTIME_WATERMARK_MODE;
+export const COMPANY_GMAIL_RUNTIME_WATERMARK_MODE: CompanyGmailRuntimeWatermarkMode =
+  companyGmailRuntimeWatermarkMode === 'active' ? 'active' : 'freeze_only';
 
 // router_state key: epoch-ms of the last time inbound Gmail delivery was proven
 // alive — written when the 5-min label-poll cron completes a full history walk

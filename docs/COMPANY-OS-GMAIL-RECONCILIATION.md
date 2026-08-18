@@ -474,13 +474,34 @@ shadow tables remain 0/0/0; admin ownership, zero non-admin grants, protected
 Company Work/occurrence fingerprints, PID 47982, active release `dc3e5f0d`, and
 channel health are unchanged.
 
-This is not yet a live Gmail recovery fix:
+NC-20260818-003 now adds the separately gated runtime-freeze candidate. Its
+default `freeze_only` mode removes the old 404 reset without writing the
+generic ledger. Promotion to `active` first requires `company-gmail:align-runtime`
+to close any existing SQLite-ahead drift from chronological Gmail history and
+immutable terminal receipts. The command accepts cursor fingerprints, never
+raw cursor arguments, reads only `users.history.list(messageAdded)`, caps the
+walk at 20 pages, filters the closed range at the fixed SQLite target, and
+keeps SQLite read-only/query-only. Apply rechecks the SQLite cursor and exact
+Company OS version inside the same PostgreSQL transaction as one normal
+`advance` event.
+
+Once active, each ordinary push preflights the exact source/state/SQLite head,
+records a content-free normal `advance` before SQLite moves, and permits
+SQLite-only crash catch-up solely when the generic ledger's last event is the
+exact one-step advance from SQLite to its current cursor. A natural 404 records
+one `gap_detected` and retains SQLite; subsequent notifications stop before
+calling Gmail while that gap is open. PostgreSQL/source/cursor/receipt failure
+always retains SQLite. The path reads no message content and creates no work or
+action authority.
+
+This is still not a live Gmail recovery fix:
 
 - one production source and version-1 current watermark exist, but no daemon or
   shadow producer imports or advances them;
 - migration 123 is live but all three tables are empty and unwired;
 - the exact Google wrapper is installed but has not called a live mailbox;
-- current inbound push still resets `gmail_history_id` on 404;
+- the candidate removes the inbound-push reset, but deployment, active cursor
+  alignment, and a natural 404 observation are not established by local code;
 - NC-008/009 durable disposition evidence is deployed and naturally exercised;
   historical IDs without a receipt, exact retained
   ordinary inbound row, or durable routed marker still account as unknown;
@@ -516,11 +537,18 @@ The next production-facing milestones must remain separately tracked and must:
    against the live mailbox and prove a stable terminal head, exact
    accepted/rejected/unknown accounting, privacy/token handling, and no source/
    work/email mutation. This does not satisfy gap-recovery accounting by itself;
-6. only after those gates, separately promote natural-404 handling to
-   `gap_detected`, recover any missing eligible candidates through the ordinary
-   durable inbound path, and record `gap_reconciled` before advancing;
-7. add watermark-age/operator attention and rollback/demotion evidence;
-8. design and prove the label-correction source independently.
+6. **under NC-20260818-003:** install the exact default-freeze candidate, stop
+   the daemon after a natural zero-work drain, back up both SQLite and
+   PostgreSQL, close pre-existing SQLite-ahead drift only from chronological
+   history plus exact accepted/rejected receipts, arm active mode, and prove
+   normal-delta mirroring and non-interference without manufacturing a 404;
+7. observe one natural 404 recording `gap_detected` with both cursors frozen;
+   do not force expiry or skip ahead merely to close the proof gate;
+8. only after that gap exists, separately recover any missing eligible
+   candidates through the ordinary durable inbound path and record
+   `gap_reconciled` before advancing;
+9. add watermark-age/operator attention and rollback/demotion evidence;
+10. design and prove the label-correction source independently.
 
 A forced expiry, synthetic production email, customer/internal message, task,
 or action is not authorized by this dark milestone.

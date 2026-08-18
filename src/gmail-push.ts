@@ -23,9 +23,10 @@ export interface WatchResult {
 }
 
 /**
- * Thrown when history.list returns 404 — the startHistoryId is too old
- * (Gmail retains history for ~7 days). The caller must re-bootstrap from
- * a fresh watch().historyId and accept the data loss window.
+ * Thrown when history.list returns 404 — the startHistoryId is outside
+ * Gmail's retained history window. The caller must retain the prior cursor
+ * and enter the durable full-sync gap workflow; skipping to a fresh cursor is
+ * not an accepted recovery path.
  */
 export class HistoryExpiredError extends Error {
   constructor() {

@@ -20,6 +20,8 @@ import {
   GMAIL_PUSH_ENABLED,
   GMAIL_PUSH_OWN_WATCH,
   GMAIL_PUSH_SAFETY_POLL_INTERVAL,
+  COMPANY_GMAIL_RUNTIME_WATERMARK_MODE,
+  type CompanyGmailRuntimeWatermarkMode,
 } from '../config.js';
 import {
   getGmailInboundDispositionReceipt,
@@ -63,10 +65,16 @@ import {
 } from '../gmail-push.js';
 import {
   GmailInboundDispositionError,
+  gmailInboundReceiptToCandidateAccounting,
   hashGmailInboundSourceEvidence,
   type GmailInboundDisposition,
   type GmailInboundDispositionReason,
 } from '../gmail-inbound-disposition.js';
+import {
+  companyGmailRuntimeWatermark,
+  runtimeCandidate,
+  type CompanyGmailRuntimeWatermark,
+} from '../company-gmail-runtime-watermark.js';
 import { logger } from '../logger.js';
 import {
   Channel,
@@ -106,6 +114,8 @@ export class GmailChannel implements Channel {
   private lastPollCompletedAt = Date.now();
   private processedIds = new Set<string>();
   private pushMode = false;
+  private runtimeWatermark: CompanyGmailRuntimeWatermark;
+  private runtimeWatermarkMode: CompanyGmailRuntimeWatermarkMode;
   // Serialize push processing so overlapping notifications don't double-fetch.
   private pushQueue: Promise<void> = Promise.resolve();
 
@@ -129,12 +139,18 @@ export class GmailChannel implements Channel {
       threadId?: string;
       body: string;
     }) => Promise<void>;
+    runtimeWatermark?: CompanyGmailRuntimeWatermark;
+    runtimeWatermarkMode?: CompanyGmailRuntimeWatermarkMode;
   }) {
     this.onMessage = opts.onMessage;
     this.onChatMetadata = opts.onChatMetadata;
     this.registerGroup = opts.registerGroup;
     this.registeredGroups = opts.registeredGroups;
     this.onInboundReply = opts.onInboundReply;
+    this.runtimeWatermark =
+      opts.runtimeWatermark ?? companyGmailRuntimeWatermark;
+    this.runtimeWatermarkMode =
+      opts.runtimeWatermarkMode ?? COMPANY_GMAIL_RUNTIME_WATERMARK_MODE;
     this.jid = `gmail:${GMAIL_MONITORED_EMAIL}`;
   }
 
@@ -943,14 +959,20 @@ export class GmailChannel implements Channel {
    * inbound message (excluding SENT/DRAFT, filtered in fetchAndProcess) is
    * delivered to the mailman agent — Gru sorts what's relevant. No label
    * filtering in NanoClaw; we trust the agent to triage.
-   * On HistoryExpiredError (historyId >7 days stale), resets to the notif's
-   * historyId and accepts the data loss window.
+   * On HistoryExpiredError, retain the exact prior SQLite cursor. In active
+   * Company OS mode, durably freeze the matching generic watermark as a gap.
    */
   private async processPush(notifHistoryId: string): Promise<void> {
     if (!this.gmail) return;
 
     const start = getStoredHistoryId();
     if (!start) {
+      if (this.runtimeWatermarkMode === 'active') {
+        logger.error(
+          'Gmail push held: active Company OS watermark has no SQLite baseline',
+        );
+        return;
+      }
       // No baseline — first push ever. Seed from the notification and wait
       // for the next one; we can't backfill without a previous anchor.
       setStoredHistoryId(notifHistoryId);
@@ -961,16 +983,60 @@ export class GmailChannel implements Channel {
       return;
     }
 
+    if (this.runtimeWatermarkMode === 'active') {
+      try {
+        const preparation = await this.runtimeWatermark.prepare(start);
+        if (preparation.decision === 'catch_up_sqlite') {
+          setStoredHistoryId(preparation.cursor);
+          logger.info(
+            { stateVersion: preparation.stateVersion },
+            'Gmail push caught SQLite up to a durable Company OS advance',
+          );
+          return;
+        }
+        if (preparation.decision === 'hold_gap') {
+          logger.warn(
+            { stateVersion: preparation.stateVersion },
+            'Gmail push held on the durable Company OS history gap',
+          );
+          return;
+        }
+      } catch (err) {
+        logger.error(
+          { err },
+          'Gmail push held: Company OS cursor preflight failed',
+        );
+        return;
+      }
+    }
+
     let result;
     try {
       result = await processHistoryDelta(this.gmail, start);
     } catch (err) {
       if (err instanceof HistoryExpiredError) {
-        logger.warn(
-          { start, notifHistoryId },
-          'Gmail history expired, resetting baseline (data loss window)',
-        );
-        setStoredHistoryId(notifHistoryId);
+        if (this.runtimeWatermarkMode === 'active') {
+          try {
+            const recorded = await this.runtimeWatermark.recordGap({
+              previousCursor: start,
+              notificationHistoryId: notifHistoryId,
+              detectedAt: new Date().toISOString(),
+            });
+            logger.warn(
+              { stateVersion: recorded.state.version },
+              'Gmail history expired; SQLite and Company OS cursors frozen',
+            );
+          } catch (gapError) {
+            logger.error(
+              { err: gapError },
+              'Gmail history expired; SQLite cursor retained but Company OS gap recording failed',
+            );
+          }
+        } else {
+          logger.warn(
+            'Gmail history expired; SQLite cursor retained in freeze-only mode',
+          );
+        }
         return;
       }
       throw err;
@@ -1012,6 +1078,34 @@ export class GmailChannel implements Channel {
       compareHistoryIds(notifHistoryId, result.lastHistoryId) > 0
         ? notifHistoryId
         : result.lastHistoryId;
+    if (
+      this.runtimeWatermarkMode === 'active' &&
+      compareHistoryIds(advanced, start) > 0
+    ) {
+      try {
+        const candidates = result.messageIds.map((messageId) =>
+          runtimeCandidate(
+            messageId,
+            gmailInboundReceiptToCandidateAccounting(
+              messageId,
+              getGmailInboundDispositionReceipt(messageId),
+            ),
+          ),
+        );
+        await this.runtimeWatermark.recordAdvance({
+          previousCursor: start,
+          nextCursor: advanced,
+          observedThrough: new Date().toISOString(),
+          candidates,
+        });
+      } catch (err) {
+        logger.error(
+          { err },
+          'Gmail push retained SQLite cursor because Company OS advance failed',
+        );
+        return;
+      }
+    }
     setStoredHistoryId(advanced);
 
     logger.info(

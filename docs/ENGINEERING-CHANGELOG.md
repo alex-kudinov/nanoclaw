@@ -8,6 +8,52 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260818-003 — Freeze natural inbound Gmail history gaps
+
+- Date: 2026-08-18
+- Owner/client: Codex
+- State: ready_for_review; production install, cursor alignment,
+  activation, and natural-404 evidence pending
+- Commit/PR: claim `a85def4a` on
+  `codex/nc-20260818-003-gmail-gap-freeze`; implementation commit pending; no
+  PR
+- Change class: C2 — host-owned cursor/watermark behavior plus one separately
+  confirmed, receipt-backed Gmail metadata read and internal PostgreSQL advance
+- Live prerequisite: a content-free query-only preflight found the current
+  SQLite Gmail cursor stable but ahead of the exact version-1/current Company
+  OS source watermark. The daemon remains PID 47982 on verified `dc3e5f0d`;
+  logs contain zero prior history-expired resets. No preflight write or Gmail
+  content read occurred.
+- Implementation: `COMPANY_GMAIL_RUNTIME_WATERMARK_MODE` defaults to
+  `freeze_only`, which retains the exact SQLite cursor on 404. After an exact
+  separately confirmed alignment, `active` preflights source/state/SQLite,
+  records a content-free generic normal advance before SQLite moves, permits
+  SQLite catch-up only across the exact last committed advance, records one
+  natural `history_expired` gap, and stops before calling Gmail while the gap
+  remains open. Missing receipts, cursor/source/state drift, page overflow,
+  PostgreSQL failure, and unaccounted candidates all retain SQLite.
+- Alignment boundary: `company-gmail:align-runtime` accepts cursor SHA-256
+  fingerprints rather than raw cursor arguments, opens SQLite read-only and
+  query-only, calls only chronological `users.history.list` for
+  `messageAdded`, filters at the fixed SQLite target, caps at 20 pages, and
+  requires immutable accepted/rejected receipts for every in-range candidate.
+  Apply rechecks both authorities and SQLite stability inside the PostgreSQL
+  transaction; reports contain only counts, fingerprints, and fixed
+  `actionAuthority: none`.
+- Verification: exact Node 22.23.2 typecheck/build and 118 focused Company
+  OS/Gmail tests pass; email-critical is 712/712; the independent runner build
+  and 43/43 tests, formatting, schema sanitizer, documentation continuity, and
+  capability parity pass. A real disposable PostgreSQL 16 cluster applied
+  migration 122, committed one receipt-backed alignment, allowed only the
+  exact SQLite crash catch-up, recorded one gap with the prior cursor fixed,
+  and rejected ordinary advancement while open. The stopped temporary cluster
+  was removed. The unrestricted suite is 2,743/2,744 with four skips; its sole
+  failure is the unchanged CNPC wrapper-literal assertion.
+- Boundary: no production database/cursor/config/release/daemon state, Gmail
+  message or body, mailbox content, gap, recovery, task/work/action authority,
+  external message, push, or merge has changed. Full-snapshot recovery,
+  `gap_reconciled`, natural-404 proof, and label-poll expiry remain later gates.
+
 ### NC-20260818-002 — Prove a gap-independent live Gmail mailbox shadow
 
 - Date: 2026-08-18

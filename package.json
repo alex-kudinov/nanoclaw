@@ -29,6 +29,7 @@
     "company-gmail:coverage": "node dist/gmail-historical-coverage-cli.js",
     "company-gmail:bootstrap": "node dist/company-gmail-source-bootstrap-cli.js",
     "company-gmail:audit": "node dist/company-gmail-mailbox-audit-cli.js",
+    "company-gmail:align-runtime": "node dist/company-gmail-runtime-alignment-cli.js",
     "test:watch": "vitest",
     "release:build": "node scripts/build-release.mjs",
     "release:verify": "node scripts/verify-release.mjs",

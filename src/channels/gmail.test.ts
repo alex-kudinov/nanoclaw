@@ -24,6 +24,7 @@ vi.mock('../config.js', () => ({
   GMAIL_PUSH_OWN_WATCH: false,
   GMAIL_PUBSUB_TOPIC: '',
   GMAIL_PUSH_SAFETY_POLL_INTERVAL: 600000,
+  COMPANY_GMAIL_RUNTIME_WATERMARK_MODE: 'freeze_only',
 }));
 
 // Mock hard-filters
@@ -712,6 +713,22 @@ describe('GmailChannel', () => {
   });
 
   describe('history cursor accounting', () => {
+    function runtimeWatermark() {
+      return {
+        prepare: vi.fn().mockResolvedValue({
+          decision: 'proceed',
+          cursor: '100',
+          stateVersion: 1,
+        }),
+        recordAdvance: vi.fn().mockResolvedValue({
+          state: { version: 2, status: 'current' },
+        }),
+        recordGap: vi.fn().mockResolvedValue({
+          state: { version: 2, status: 'gap' },
+        }),
+      };
+    }
+
     function historyWith(messageIds: string[]) {
       return {
         data: {
@@ -835,6 +852,148 @@ describe('GmailChannel', () => {
 
       expect(mockGmail.users.messages.get).not.toHaveBeenCalled();
       expect(mockRecordDisposition).not.toHaveBeenCalled();
+      expect(mockSetRouterState).not.toHaveBeenCalledWith(
+        'gmail_history_id',
+        expect.anything(),
+      );
+    });
+
+    it('retains the exact SQLite cursor on history expiry in freeze-only mode', async () => {
+      mockGmail.users.history.list.mockRejectedValueOnce({ code: 404 });
+      const channel = new GmailChannel({
+        ...createTestOpts(),
+        runtimeWatermarkMode: 'freeze_only',
+      });
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await (channel as any).processPush('200');
+
+      expect(mockSetRouterState).not.toHaveBeenCalledWith(
+        'gmail_history_id',
+        expect.anything(),
+      );
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Gmail history expired; SQLite cursor retained in freeze-only mode',
+      );
+    });
+
+    it('records a natural 404 gap before holding both cursors', async () => {
+      mockGmail.users.history.list.mockRejectedValueOnce({ code: 404 });
+      const bridge = runtimeWatermark();
+      const channel = new GmailChannel({
+        ...createTestOpts(),
+        runtimeWatermarkMode: 'active',
+        runtimeWatermark: bridge as any,
+      });
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await (channel as any).processPush('200');
+
+      expect(bridge.prepare).toHaveBeenCalledWith('100');
+      expect(bridge.recordGap).toHaveBeenCalledWith(
+        expect.objectContaining({
+          previousCursor: '100',
+          notificationHistoryId: '200',
+        }),
+      );
+      expect(mockSetRouterState).not.toHaveBeenCalledWith(
+        'gmail_history_id',
+        expect.anything(),
+      );
+    });
+
+    it('does not call Gmail again while the durable gap is open', async () => {
+      const bridge = runtimeWatermark();
+      bridge.prepare.mockResolvedValueOnce({
+        decision: 'hold_gap',
+        cursor: '100',
+        stateVersion: 2,
+        gapEventId: '51',
+      });
+      const channel = new GmailChannel({
+        ...createTestOpts(),
+        runtimeWatermarkMode: 'active',
+        runtimeWatermark: bridge as any,
+      });
+      await channel.connect();
+      mockGmail.users.history.list.mockClear();
+
+      await (channel as any).processPush('220');
+
+      expect(mockGmail.users.history.list).not.toHaveBeenCalled();
+      expect(bridge.recordGap).not.toHaveBeenCalled();
+    });
+
+    it('catches SQLite up after a committed Company OS advance without rereading Gmail', async () => {
+      const bridge = runtimeWatermark();
+      bridge.prepare.mockResolvedValueOnce({
+        decision: 'catch_up_sqlite',
+        cursor: '200',
+        stateVersion: 2,
+        eventId: '52',
+      });
+      const channel = new GmailChannel({
+        ...createTestOpts(),
+        runtimeWatermarkMode: 'active',
+        runtimeWatermark: bridge as any,
+      });
+      await channel.connect();
+      mockSetRouterState.mockClear();
+      mockGmail.users.history.list.mockClear();
+
+      await (channel as any).processPush('200');
+
+      expect(mockSetRouterState).toHaveBeenCalledWith(
+        'gmail_history_id',
+        '200',
+      );
+      expect(mockGmail.users.history.list).not.toHaveBeenCalled();
+    });
+
+    it('records a zero-candidate Company OS advance before moving SQLite', async () => {
+      mockGmail.users.history.list.mockResolvedValueOnce({
+        data: { history: [], historyId: '200' },
+      });
+      const bridge = runtimeWatermark();
+      const channel = new GmailChannel({
+        ...createTestOpts(),
+        runtimeWatermarkMode: 'active',
+        runtimeWatermark: bridge as any,
+      });
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await (channel as any).processPush('200');
+
+      expect(bridge.recordAdvance).toHaveBeenCalledWith({
+        previousCursor: '100',
+        nextCursor: '200',
+        observedThrough: expect.any(String),
+        candidates: [],
+      });
+      expect(bridge.recordAdvance.mock.invocationCallOrder[0]).toBeLessThan(
+        mockSetRouterState.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('retains SQLite when the Company OS advance fails', async () => {
+      mockGmail.users.history.list.mockResolvedValueOnce({
+        data: { history: [], historyId: '200' },
+      });
+      const bridge = runtimeWatermark();
+      bridge.recordAdvance.mockRejectedValueOnce(new Error('postgres down'));
+      const channel = new GmailChannel({
+        ...createTestOpts(),
+        runtimeWatermarkMode: 'active',
+        runtimeWatermark: bridge as any,
+      });
+      await channel.connect();
+      mockSetRouterState.mockClear();
+
+      await (channel as any).processPush('200');
+
       expect(mockSetRouterState).not.toHaveBeenCalledWith(
         'gmail_history_id',
         expect.anything(),
