@@ -1,9 +1,10 @@
 /**
  * Read-only Company OS reconciliation and exception brief.
  *
- * The approved-email action ledger and host-job SQLite tables remain execution
- * authority. This module reads the privacy-minimized PostgreSQL projection
- * only; it has no transition, approval, retry, job, send, or channel dependency.
+ * The approved-email action ledger, host-job SQLite tables, and detector source
+ * files retain their own authority. This module reads the privacy-minimized
+ * PostgreSQL projection only; it has no transition, correction, approval,
+ * retry, job, send, or channel dependency.
  */
 
 import type { QueryResult, QueryResultRow } from 'pg';
@@ -61,8 +62,13 @@ export type CompanyWorkExceptionSeverity = 'critical' | 'attention' | 'watch';
 
 type CompanyWorkMilestoneEvent =
   | (typeof SALES_MILESTONE_EVENTS)[number]
-  | 'execution_started';
-export type CompanyWorkReportWorkflow = 'sales_email' | 'host_job_run';
+  | 'execution_started'
+  | 'blocked'
+  | 'reopened';
+export type CompanyWorkReportWorkflow =
+  | 'sales_email'
+  | 'host_job_run'
+  | 'program_facts_drift';
 export type CompanyWorkReportWorkflowFilter = CompanyWorkReportWorkflow | 'all';
 type CompanyWorkReceiptFact =
   | 'operator_approval'
@@ -300,6 +306,15 @@ function expectedJobMilestones(
   return ['accepted'];
 }
 
+function expectedConditionMilestones(
+  stage: CompanyWorkStage,
+  disposition: CompanyWorkDisposition,
+): CompanyWorkMilestoneEvent[] {
+  if (stage === 'outcome_validated') return ['accepted', 'outcome_validated'];
+  if (disposition === 'blocked') return ['accepted', 'blocked'];
+  return ['accepted'];
+}
+
 function classifyRow(
   row: CompanyWorkReportRow,
   nowMs: number,
@@ -321,7 +336,9 @@ function classifyRow(
   const eventCounts = countValues(events);
   const receiptCounts = countValues(receipts);
   const workflow: CompanyWorkReportWorkflow | null =
-    row.workflow_type === 'sales_email' || row.workflow_type === 'host_job_run'
+    row.workflow_type === 'sales_email' ||
+    row.workflow_type === 'host_job_run' ||
+    row.workflow_type === 'program_facts_drift'
       ? row.workflow_type
       : null;
 
@@ -379,6 +396,38 @@ function classifyRow(
       addReason(reasons, 'contradictory_state', 'job_disposition_invalid');
     }
   }
+  if (workflow === 'program_facts_drift') {
+    if (row.completion_definition !== 'detector_clean_receipt') {
+      addReason(
+        reasons,
+        'contradictory_state',
+        'program_facts_completion_definition_mismatch',
+      );
+    }
+    if (row.party_id !== null || row.pipeline_entry_id !== null) {
+      addReason(reasons, 'contradictory_state', 'condition_identity_not_null');
+    }
+    if (
+      stage &&
+      !(['accepted', 'outcome_validated'] as const).includes(
+        stage as 'accepted' | 'outcome_validated',
+      )
+    ) {
+      addReason(reasons, 'contradictory_state', 'condition_stage_invalid');
+    }
+    if (
+      disposition &&
+      !(['open', 'blocked', 'completed'] as const).includes(
+        disposition as 'open' | 'blocked' | 'completed',
+      )
+    ) {
+      addReason(
+        reasons,
+        'contradictory_state',
+        'condition_disposition_invalid',
+      );
+    }
+  }
   if (
     stage &&
     disposition &&
@@ -422,7 +471,9 @@ function classifyRow(
     const milestones =
       workflow === 'sales_email'
         ? expectedSalesMilestones(stage)
-        : expectedJobMilestones(stage);
+        : workflow === 'host_job_run'
+          ? expectedJobMilestones(stage)
+          : expectedConditionMilestones(stage, disposition ?? 'open');
     for (const eventType of milestones) {
       if (!eventCounts.has(eventType)) {
         addReason(reasons, 'event_chain_gap', `missing_event:${eventType}`);
@@ -498,6 +549,49 @@ function classifyRow(
       }
     }
   }
+  if (workflow === 'program_facts_drift') {
+    const conditionEvents = new Set([
+      'accepted',
+      'blocked',
+      'outcome_validated',
+      'reopened',
+    ]);
+    for (const eventType of events) {
+      if (!conditionEvents.has(eventType)) {
+        addReason(
+          reasons,
+          'contradictory_state',
+          `unexpected_condition_event:${eventType}`,
+        );
+      }
+    }
+    if (
+      disposition === 'completed' &&
+      !receiptCounts.has('outcome_validation')
+    ) {
+      addReason(reasons, 'missing_receipt', 'outcome_validation');
+    }
+    const acceptedCount = eventCounts.get('accepted') ?? 0;
+    const blockedCount = eventCounts.get('blocked') ?? 0;
+    const outcomeCount = eventCounts.get('outcome_validated') ?? 0;
+    const reopenedCount = eventCounts.get('reopened') ?? 0;
+    const expectedOutcomeCount =
+      blockedCount - (disposition === 'blocked' ? 1 : 0);
+    const expectedReopenedCount = Math.max(0, blockedCount - 1);
+    if (
+      acceptedCount !== 1 ||
+      blockedCount < 1 ||
+      outcomeCount !== expectedOutcomeCount ||
+      reopenedCount !== expectedReopenedCount ||
+      (receiptCounts.get('outcome_validation') ?? 0) !== outcomeCount
+    ) {
+      addReason(
+        reasons,
+        'event_chain_gap',
+        'condition_lifecycle_counts_invalid',
+      );
+    }
+  }
   for (const eventType of [
     ...SALES_MILESTONE_EVENTS,
     'execution_started',
@@ -505,7 +599,10 @@ function classifyRow(
     'failed',
     'cancelled',
   ]) {
-    if ((eventCounts.get(eventType) ?? 0) > 1) {
+    if (
+      workflow !== 'program_facts_drift' &&
+      (eventCounts.get(eventType) ?? 0) > 1
+    ) {
       addReason(reasons, 'duplicate_fact', `event:${eventType}`);
     }
   }
@@ -516,7 +613,10 @@ function classifyRow(
     'outcome_validation',
     'cancellation',
   ]) {
-    if ((receiptCounts.get(receiptType) ?? 0) > 1) {
+    if (
+      workflow !== 'program_facts_drift' &&
+      (receiptCounts.get(receiptType) ?? 0) > 1
+    ) {
       addReason(reasons, 'duplicate_fact', `receipt:${receiptType}`);
     }
   }
@@ -540,6 +640,13 @@ function classifyRow(
     disposition === 'open'
   ) {
     addReason(reasons, 'outcome_missing', 'thread_closure_not_validated');
+  }
+  if (
+    workflow === 'program_facts_drift' &&
+    stage === 'accepted' &&
+    disposition === 'open'
+  ) {
+    addReason(reasons, 'outcome_missing', 'fact_authority_not_routed');
   }
 
   const terminal = disposition === 'completed' || disposition === 'cancelled';
@@ -642,6 +749,9 @@ export function buildCompanyWorkExceptionReport(
           .length,
         host_job_run: rows.filter((row) => row.workflow_type === 'host_job_run')
           .length,
+        program_facts_drift: rows.filter(
+          (row) => row.workflow_type === 'program_facts_drift',
+        ).length,
       },
       byKind,
     },
@@ -655,7 +765,11 @@ export async function readCompanyWorkExceptionReportWithClient(
 ): Promise<CompanyWorkExceptionReport> {
   const limit = boundedInteger(options.limit, DEFAULT_LIMIT, 1, MAX_LIMIT);
   const workflow = options.workflow ?? 'all';
-  if (!['all', 'sales_email', 'host_job_run'].includes(workflow)) {
+  if (
+    !['all', 'sales_email', 'host_job_run', 'program_facts_drift'].includes(
+      workflow,
+    )
+  ) {
     throw new Error('invalid_workflow_filter');
   }
   const result = await client.query<CompanyWorkReportRow>(READ_REPORT_SQL, [

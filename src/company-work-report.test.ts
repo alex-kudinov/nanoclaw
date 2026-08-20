@@ -282,7 +282,105 @@ describe('company work exception reconciliation', () => {
     expect(result.exceptions).toEqual([]);
     expect(result.summary).toMatchObject({
       completed: 1,
-      byWorkflow: { sales_email: 0, host_job_run: 1 },
+      byWorkflow: {
+        sales_email: 0,
+        host_job_run: 1,
+        program_facts_drift: 0,
+      },
+    });
+  });
+
+  it('routes open program-facts drift and accepts only receipt-backed clean closure', () => {
+    const blocked = report([
+      row({
+        workflow_type: 'program_facts_drift',
+        source_system: 'program_facts_detector',
+        source_key: 'program-facts-v1',
+        party_id: null,
+        pipeline_entry_id: null,
+        completion_definition: 'detector_clean_receipt',
+        stage: 'accepted',
+        disposition: 'blocked',
+        version: 1,
+        block_code: 'fact_authority:owner_review_required',
+        event_count: 2,
+        event_version_count: 2,
+        max_event_version: 1,
+        event_types: ['accepted', 'blocked'],
+        receipt_types: [],
+        latest_to_stage: 'accepted',
+        latest_to_disposition: 'blocked',
+      }),
+    ]);
+    expect(blocked.exceptions[0]).toMatchObject({
+      workflowType: 'program_facts_drift',
+      severity: 'attention',
+      reasons: [
+        {
+          kind: 'blocked',
+          code: 'fact_authority:owner_review_required',
+        },
+      ],
+    });
+
+    const closed = report([
+      row({
+        workflow_type: 'program_facts_drift',
+        source_system: 'program_facts_detector',
+        source_key: 'program-facts-v1',
+        party_id: null,
+        pipeline_entry_id: null,
+        completion_definition: 'detector_clean_receipt',
+        version: 5,
+        event_count: 6,
+        event_version_count: 6,
+        max_event_version: 5,
+        event_types: [
+          'accepted',
+          'blocked',
+          'outcome_validated',
+          'reopened',
+          'blocked',
+          'outcome_validated',
+        ],
+        receipt_types: ['outcome_validation', 'outcome_validation'],
+      }),
+    ]);
+    expect(closed.exceptions).toEqual([]);
+    expect(closed.summary).toMatchObject({
+      completed: 1,
+      byWorkflow: {
+        sales_email: 0,
+        host_job_run: 0,
+        program_facts_drift: 1,
+      },
+    });
+
+    const missingRecurrence = report([
+      row({
+        workflow_type: 'program_facts_drift',
+        source_system: 'program_facts_detector',
+        source_key: 'program-facts-v1',
+        party_id: null,
+        pipeline_entry_id: null,
+        completion_definition: 'detector_clean_receipt',
+        version: 4,
+        event_count: 5,
+        event_version_count: 5,
+        max_event_version: 4,
+        event_types: [
+          'accepted',
+          'blocked',
+          'outcome_validated',
+          'blocked',
+          'outcome_validated',
+        ],
+        receipt_types: ['outcome_validation', 'outcome_validation'],
+      }),
+    ]);
+    expect(missingRecurrence.exceptions[0]?.reasons).toContainEqual({
+      kind: 'event_chain_gap',
+      code: 'condition_lifecycle_counts_invalid',
     });
   });
 

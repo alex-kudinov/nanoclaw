@@ -40,7 +40,11 @@ function report(
       critical: 1,
       attention: 0,
       watch: 0,
-      byWorkflow: { sales_email: 1, host_job_run: 0 },
+      byWorkflow: {
+        sales_email: 1,
+        host_job_run: 0,
+        program_facts_drift: 0,
+      },
       byKind,
     },
     exceptions: [

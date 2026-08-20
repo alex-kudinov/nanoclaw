@@ -53,6 +53,7 @@ export const COMPANY_WORK_EVENT_TYPES = [
   'blocked',
   'failed',
   'resumed',
+  'reopened',
   'cancelled',
 ] as const;
 
@@ -69,6 +70,11 @@ export type CompanyJobWorkEventType =
   | 'outcome_validated'
   | 'failed';
 
+export type CompanyConditionWorkEventType =
+  | 'blocked'
+  | 'outcome_validated'
+  | 'reopened';
+
 export const COMPANY_WORK_RECEIPT_TYPES = [
   'operator_approval',
   'action_claim',
@@ -82,14 +88,15 @@ export type CompanyWorkReceiptType =
 
 export interface CompanyWorkItem {
   id: string;
-  workflowType: 'sales_email' | 'host_job_run';
+  workflowType: 'sales_email' | 'host_job_run' | 'program_facts_drift';
   sourceSystem: string;
   sourceKey: string;
   partyId: string | null;
   pipelineEntryId: string | null;
   completionDefinition:
     | 'gmail_ack_and_thread_close'
-    | 'host_job_terminal_receipt';
+    | 'host_job_terminal_receipt'
+    | 'detector_clean_receipt';
   stage: CompanyWorkStage;
   disposition: CompanyWorkDisposition;
   version: number;
@@ -163,6 +170,32 @@ export interface TransitionCompanyJobWorkItemInput {
   receipt?: CompanyWorkReceiptInput | null;
 }
 
+export interface EnsureCompanyConditionWorkItemInput {
+  sourceSystem: string;
+  sourceKey: string;
+  sourceEventKey: string;
+  idempotencyKey: string;
+  actor: string;
+  evidenceSha256: string;
+  occurredAt: string;
+  deadlineAt: string;
+}
+
+export interface TransitionCompanyConditionWorkItemInput {
+  workItemId: string;
+  expectedVersion: number;
+  eventType: CompanyConditionWorkEventType;
+  actor: string;
+  sourceSystem: string;
+  sourceEventKey: string;
+  idempotencyKey: string;
+  occurredAt: string;
+  evidenceSha256: string;
+  deadlineAt?: string | null;
+  exceptionCode?: string | null;
+  receipt?: CompanyWorkReceiptInput | null;
+}
+
 export interface CompanyWorkMutationResult {
   item: CompanyWorkItem;
   applied: boolean;
@@ -195,14 +228,15 @@ export interface CompanyWorkLedgerClient {
 
 interface WorkItemRow extends QueryResultRow {
   id: string;
-  workflow_type: 'sales_email' | 'host_job_run';
+  workflow_type: 'sales_email' | 'host_job_run' | 'program_facts_drift';
   source_system: string;
   source_key: string;
   party_id: string | null;
   pipeline_entry_id: string | null;
   completion_definition:
     | 'gmail_ack_and_thread_close'
-    | 'host_job_terminal_receipt';
+    | 'host_job_terminal_receipt'
+    | 'detector_clean_receipt';
   stage: CompanyWorkStage;
   disposition: CompanyWorkDisposition;
   version: number;
@@ -377,6 +411,26 @@ export function fingerprintCompanyJobWorkTransition(
     input.sourceEventKey,
     input.occurredAt,
     input.evidenceSha256,
+    input.exceptionCode ?? null,
+    ...receiptFingerprintParts(input.receipt),
+  ]);
+}
+
+/** @internal Exported for deterministic business-condition replay tests. */
+export function fingerprintCompanyConditionWorkTransition(
+  input: TransitionCompanyConditionWorkItemInput,
+): string {
+  return fingerprint([
+    'condition-transition-v1',
+    input.workItemId,
+    input.expectedVersion,
+    input.eventType,
+    input.actor,
+    input.sourceSystem,
+    input.sourceEventKey,
+    input.occurredAt,
+    input.evidenceSha256,
+    input.deadlineAt ?? null,
     input.exceptionCode ?? null,
     ...receiptFingerprintParts(input.receipt),
   ]);
@@ -722,6 +776,94 @@ export function planCompanyJobWorkTransition(
   };
 }
 
+/**
+ * Pure program-facts condition policy. Drift is immediately routed as a
+ * blocked owner decision because the detector cannot decide which compared
+ * source is authoritative. Only an exact clean-detector receipt can close the
+ * item. A later recurrence explicitly reopens the completed item before it is
+ * blocked again.
+ */
+export function planCompanyConditionWorkTransition(
+  current: Pick<CompanyWorkItem, 'stage' | 'disposition'>,
+  eventType: CompanyConditionWorkEventType,
+  options: {
+    evidenceSha256?: string | null;
+    exceptionCode?: string | null;
+    receipt?: CompanyWorkReceiptInput | null;
+  } = {},
+): PlannedTransition {
+  if (!options.evidenceSha256) {
+    throw new CompanyWorkLedgerError(
+      'invalid_transition',
+      `${eventType} requires exact SHA-256 detector evidence`,
+    );
+  }
+
+  if (eventType === 'reopened') {
+    if (
+      current.stage !== 'outcome_validated' ||
+      current.disposition !== 'completed' ||
+      options.receipt ||
+      options.exceptionCode
+    ) {
+      throw new CompanyWorkLedgerError(
+        'invalid_transition',
+        `invalid ${current.stage}/${current.disposition} -> reopened transition`,
+      );
+    }
+    return {
+      stage: 'accepted',
+      disposition: 'open',
+      blockCode: null,
+      failureCode: null,
+      requiredReceipt: null,
+    };
+  }
+
+  if (eventType === 'blocked') {
+    if (
+      current.stage !== 'accepted' ||
+      current.disposition !== 'open' ||
+      !options.exceptionCode ||
+      options.receipt
+    ) {
+      throw new CompanyWorkLedgerError(
+        'invalid_transition',
+        `invalid ${current.stage}/${current.disposition} -> blocked transition`,
+      );
+    }
+    return {
+      stage: 'accepted',
+      disposition: 'blocked',
+      blockCode: options.exceptionCode,
+      failureCode: null,
+      requiredReceipt: null,
+    };
+  }
+
+  if (
+    current.stage !== 'accepted' ||
+    current.disposition !== 'blocked' ||
+    options.exceptionCode ||
+    !options.receipt ||
+    options.receipt.type !== 'outcome_validation' ||
+    !options.receipt.externalActionId ||
+    options.receipt.evidenceSha256 !== options.evidenceSha256
+  ) {
+    throw new CompanyWorkLedgerError(
+      'invalid_transition',
+      `invalid ${current.stage}/${current.disposition} -> outcome_validated transition`,
+    );
+  }
+  return {
+    stage: 'outcome_validated',
+    disposition: 'completed',
+    blockCode: null,
+    failureCode: null,
+    requiredReceipt: 'outcome_validation',
+  };
+}
+
 function validateCreate(input: CreateCompanyWorkItemInput): void {
   assertOpaqueId(input.sourceSystem, 'sourceSystem');
   assertOpaqueId(input.sourceKey, 'sourceKey');
@@ -746,6 +888,22 @@ function validateJobCreate(input: CreateCompanyJobWorkItemInput): void {
   assertTimestamp(input.deadlineAt, 'deadlineAt');
   if (Date.parse(input.deadlineAt) <= Date.parse(input.occurredAt)) {
     invalid('deadlineAt must be after occurredAt for a host job run');
+  }
+}
+
+function validateConditionCreate(
+  input: EnsureCompanyConditionWorkItemInput,
+): void {
+  assertOpaqueId(input.sourceSystem, 'sourceSystem');
+  assertOpaqueId(input.sourceKey, 'sourceKey');
+  assertOpaqueId(input.sourceEventKey, 'sourceEventKey');
+  assertOpaqueId(input.idempotencyKey, 'idempotencyKey');
+  assertOpaqueId(input.actor, 'actor');
+  assertSha256(input.evidenceSha256, 'evidenceSha256');
+  assertTimestamp(input.occurredAt, 'occurredAt');
+  assertTimestamp(input.deadlineAt, 'deadlineAt');
+  if (Date.parse(input.deadlineAt) <= Date.parse(input.occurredAt)) {
+    invalid('deadlineAt must be after occurredAt for a business condition');
   }
 }
 
@@ -780,6 +938,23 @@ function validateTransition(
     assertOpaqueId(input.exceptionCode, 'exceptionCode');
   }
   if (input.receipt) validateReceipt(input.receipt);
+}
+
+function validateConditionTransition(
+  input: TransitionCompanyConditionWorkItemInput,
+): void {
+  validateTransition(input);
+  if (input.deadlineAt) assertTimestamp(input.deadlineAt, 'deadlineAt');
+  if (input.eventType === 'reopened') {
+    if (
+      !input.deadlineAt ||
+      Date.parse(input.deadlineAt) <= Date.parse(input.occurredAt)
+    ) {
+      invalid('reopened business condition requires a future deadlineAt');
+    }
+  } else if (input.deadlineAt !== undefined) {
+    invalid('deadlineAt is accepted only when reopening a business condition');
+  }
 }
 
 async function findDuplicateEvent(
@@ -856,6 +1031,22 @@ function createJobFingerprint(input: CreateCompanyJobWorkItemInput): string {
   return fingerprint([
     'host-job-create-v1',
     'host_job_run',
+    input.sourceSystem,
+    input.sourceKey,
+    input.sourceEventKey,
+    input.actor,
+    input.evidenceSha256,
+    input.occurredAt,
+    input.deadlineAt,
+  ]);
+}
+
+function createConditionFingerprint(
+  input: EnsureCompanyConditionWorkItemInput,
+): string {
+  return fingerprint([
+    'condition-create-v1',
+    'program_facts_drift',
     input.sourceSystem,
     input.sourceKey,
     input.sourceEventKey,
@@ -1133,6 +1324,120 @@ export async function createCompanyJobWorkItemWithClient(
   return { item, applied: true, duplicate: false };
 }
 
+/**
+ * Ensure the one stable program-facts condition item exists. Later detector
+ * runs deliberately reuse the source identity; their exact evidence lives in
+ * trigger occurrences and append-only observations rather than duplicate
+ * accepted events.
+ */
+export async function ensureCompanyConditionWorkItemWithClient(
+  client: CompanyWorkLedgerClient,
+  input: EnsureCompanyConditionWorkItemInput,
+): Promise<CompanyWorkMutationResult> {
+  validateConditionCreate(input);
+  const eventFingerprint = createConditionFingerprint(input);
+
+  const duplicateByEvent = await client.query<ExistingEventRow>(
+    `SELECT work_item_id::text, event_fingerprint
+       FROM business_v2.company_work_events
+      WHERE idempotency_key = $1
+         OR (source_system = $2 AND source_event_key = $3)
+      ORDER BY id ASC`,
+    [input.idempotencyKey, input.sourceSystem, input.sourceEventKey],
+  );
+  if (duplicateByEvent.rows.length > 1) {
+    throw new CompanyWorkLedgerError(
+      'conflict',
+      'condition create identities resolve differently',
+    );
+  }
+  if (duplicateByEvent.rows[0]) {
+    if (duplicateByEvent.rows[0].event_fingerprint !== eventFingerprint) {
+      throw new CompanyWorkLedgerError(
+        'conflict',
+        'condition create identity was reused with different facts',
+      );
+    }
+    const item = await loadWorkItem(
+      client,
+      duplicateByEvent.rows[0].work_item_id,
+      false,
+    );
+    if (item.workflowType !== 'program_facts_drift') {
+      throw new CompanyWorkLedgerError(
+        'conflict',
+        'condition create identity resolved to another workflow',
+      );
+    }
+    return { item, applied: false, duplicate: true };
+  }
+
+  const inserted = await client.query<WorkItemRow>(
+    `INSERT INTO business_v2.company_work_items
+       (workflow_type, source_system, source_key, party_id,
+        pipeline_entry_id, completion_definition, deadline_at,
+        last_transition_at, last_transition_by)
+     VALUES ('program_facts_drift', $1, $2, NULL, NULL,
+             'detector_clean_receipt', $3, $4, $5)
+     ON CONFLICT (workflow_type, source_system, source_key) DO NOTHING
+     RETURNING ${ITEM_COLUMNS}`,
+    [
+      input.sourceSystem,
+      input.sourceKey,
+      input.deadlineAt,
+      input.occurredAt,
+      input.actor,
+    ],
+  );
+
+  if (!inserted.rows[0]) {
+    const existing = await client.query<WorkItemRow>(
+      `SELECT ${ITEM_COLUMNS}
+         FROM business_v2.company_work_items
+        WHERE workflow_type = 'program_facts_drift'
+          AND source_system = $1 AND source_key = $2
+        FOR UPDATE`,
+      [input.sourceSystem, input.sourceKey],
+    );
+    const item = existing.rows[0] ? toItem(existing.rows[0]) : null;
+    if (
+      !item ||
+      item.workflowType !== 'program_facts_drift' ||
+      item.partyId !== null ||
+      item.pipelineEntryId !== null ||
+      item.completionDefinition !== 'detector_clean_receipt'
+    ) {
+      throw new CompanyWorkLedgerError(
+        'conflict',
+        'condition source identity was reused with different immutable facts',
+      );
+    }
+    return { item, applied: false, duplicate: true };
+  }
+
+  const item = toItem(inserted.rows[0]);
+  await client.query(
+    `INSERT INTO business_v2.company_work_events
+       (work_item_id, work_item_version, event_type, from_stage, to_stage,
+        from_disposition, to_disposition, actor, source_system,
+        source_event_key, idempotency_key, event_fingerprint,
+        evidence_sha256, occurred_at)
+     VALUES ($1, 0, 'accepted', NULL, 'accepted', NULL, 'open', $2, $3, $4,
+             $5, $6, $7, $8)`,
+    [
+      item.id,
+      input.actor,
+      input.sourceSystem,
+      input.sourceEventKey,
+      input.idempotencyKey,
+      eventFingerprint,
+      input.evidenceSha256,
+      input.occurredAt,
+    ],
+  );
+  return { item, applied: true, duplicate: false };
+}
+
 async function insertOrValidateReceipt(
   client: CompanyWorkLedgerClient,
   workItemId: string,
@@ -1370,6 +1675,102 @@ export async function transitionCompanyJobWorkItemWithClient(
   return { item, applied: true, duplicate: false };
 }
 
+/** @internal The caller must supply a client inside an open transaction. */
+export async function transitionCompanyConditionWorkItemWithClient(
+  client: CompanyWorkLedgerClient,
+  input: TransitionCompanyConditionWorkItemInput,
+): Promise<CompanyWorkMutationResult> {
+  validateConditionTransition(input);
+  const eventFingerprint = fingerprintCompanyConditionWorkTransition(input);
+  const duplicate = await findDuplicateEvent(client, input, eventFingerprint);
+  if (duplicate) return duplicate;
+
+  const current = await loadWorkItem(client, input.workItemId, true);
+  if (current.workflowType !== 'program_facts_drift') {
+    throw new CompanyWorkLedgerError(
+      'invalid_transition',
+      'condition transition cannot mutate another workflow type',
+    );
+  }
+  if (current.version !== input.expectedVersion) {
+    throw new CompanyWorkLedgerError(
+      'stale_version',
+      `work item ${input.workItemId} is version ${current.version}, not ${input.expectedVersion}`,
+    );
+  }
+  const planned = planCompanyConditionWorkTransition(current, input.eventType, {
+    evidenceSha256: input.evidenceSha256,
+    exceptionCode: input.exceptionCode,
+    receipt: input.receipt,
+  });
+  if (input.receipt) validateReceipt(input.receipt);
+  const receiptId = input.receipt
+    ? await insertOrValidateReceipt(client, current.id, input.receipt)
+    : null;
+  const nextDeadline =
+    input.eventType === 'reopened'
+      ? (input.deadlineAt as string)
+      : current.deadlineAt;
+
+  const updated = await client.query<WorkItemRow>(
+    `UPDATE business_v2.company_work_items
+        SET stage = $2, disposition = $3, version = version + 1,
+            block_code = $4, failure_code = $5, deadline_at = $6,
+            updated_at = now(), last_transition_at = $7,
+            last_transition_by = $8
+      WHERE id = $1 AND version = $9
+      RETURNING ${ITEM_COLUMNS}`,
+    [
+      current.id,
+      planned.stage,
+      planned.disposition,
+      planned.blockCode,
+      planned.failureCode,
+      nextDeadline,
+      input.occurredAt,
+      input.actor,
+      input.expectedVersion,
+    ],
+  );
+  if (!updated.rows[0]) {
+    throw new CompanyWorkLedgerError(
+      'stale_version',
+      `work item ${current.id} changed during condition transition`,
+    );
+  }
+  const item = toItem(updated.rows[0]);
+
+  await client.query(
+    `INSERT INTO business_v2.company_work_events
+       (work_item_id, work_item_version, event_type, from_stage, to_stage,
+        from_disposition, to_disposition, actor, source_system,
+        source_event_key, idempotency_key, event_fingerprint,
+        evidence_sha256, exception_code, receipt_id, occurred_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+             $14, $15, $16)`,
+    [
+      current.id,
+      item.version,
+      input.eventType,
+      current.stage,
+      item.stage,
+      current.disposition,
+      item.disposition,
+      input.actor,
+      input.sourceSystem,
+      input.sourceEventKey,
+      input.idempotencyKey,
+      eventFingerprint,
+      input.evidenceSha256,
+      input.exceptionCode ?? null,
+      receiptId,
+      input.occurredAt,
+    ],
+  );
+
+  return { item, applied: true, duplicate: false };
+}
+
 export async function createCompanyWorkItem(
   input: CreateCompanyWorkItemInput,
 ): Promise<CompanyWorkMutationResult> {
@@ -1386,6 +1787,14 @@ export async function createCompanyJobWorkItem(
   );
 }
 
+export async function ensureCompanyConditionWorkItem(
+  input: EnsureCompanyConditionWorkItemInput,
+): Promise<CompanyWorkMutationResult> {
+  return withAgentContext('company-condition-work-ledger:host', (client) =>
+    ensureCompanyConditionWorkItemWithClient(client, input),
+  );
+}
+
 export async function transitionCompanyWorkItem(
   input: TransitionCompanyWorkItemInput,
 ): Promise<CompanyWorkMutationResult> {
@@ -1399,6 +1808,14 @@ export async function transitionCompanyJobWorkItem(
 ): Promise<CompanyWorkMutationResult> {
   return withAgentContext('company-job-work-ledger:host', (client) =>
     transitionCompanyJobWorkItemWithClient(client, input),
+  );
+}
+
+export async function transitionCompanyConditionWorkItem(
+  input: TransitionCompanyConditionWorkItemInput,
+): Promise<CompanyWorkMutationResult> {
+  return withAgentContext('company-condition-work-ledger:host', (client) =>
+    transitionCompanyConditionWorkItemWithClient(client, input),
   );
 }
 
@@ -1438,6 +1855,40 @@ export async function getCompanyJobWorkItemBySource(
     );
     return result.rows[0] ? toItem(result.rows[0]) : null;
   });
+}
+
+/** @internal Load and optionally lock the stable business-condition item. */
+export async function getCompanyConditionWorkItemBySourceWithClient(
+  client: CompanyWorkLedgerClient,
+  sourceSystem: string,
+  sourceKey: string,
+  forUpdate = false,
+): Promise<CompanyWorkItem | null> {
+  assertOpaqueId(sourceSystem, 'sourceSystem');
+  assertOpaqueId(sourceKey, 'sourceKey');
+  const result = await client.query<WorkItemRow>(
+    `SELECT ${ITEM_COLUMNS}
+       FROM business_v2.company_work_items
+      WHERE workflow_type = 'program_facts_drift'
+        AND source_system = $1 AND source_key = $2${
+          forUpdate ? ' FOR UPDATE' : ''
+        }`,
+    [sourceSystem, sourceKey],
+  );
+  return result.rows[0] ? toItem(result.rows[0]) : null;
+}
+
+export async function getCompanyConditionWorkItemBySource(
+  sourceSystem: string,
+  sourceKey: string,
+): Promise<CompanyWorkItem | null> {
+  return withAgentContext('company-condition-work-ledger:host', (client) =>
+    getCompanyConditionWorkItemBySourceWithClient(
+      client,
+      sourceSystem,
+      sourceKey,
+    ),
+  );
 }
 
 /**

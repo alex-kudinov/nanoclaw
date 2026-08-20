@@ -125,6 +125,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_123_company_gmail_reconciliation_shadow.sql',
     'data/business/migrations/nanoclaw-v2/124_company_gmail_mailbox_audit.sql',
     'data/business/migrations/nanoclaw-v2/rollback_124_company_gmail_mailbox_audit.sql',
+    'data/business/migrations/nanoclaw-v2/125_company_program_facts_work.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_125_company_program_facts_work.sql',
     'scripts/verify-release.mjs',
     'scripts/activate-release.mjs',
     'scripts/run-action-safety-drill.mjs',

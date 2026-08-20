@@ -142,6 +142,8 @@ export async function runJob(
   const env = buildEnv(job.project_root);
   env.NANOCLAW_MINION = job.project;
   env.NANOCLAW_JOB = job.name;
+  env.NANOCLAW_JOB_RUN_ID = runId;
+  env.NANOCLAW_JOB_STARTED_AT = startedAt;
   env.NANOCLAW_ACTION = path.basename(job.script, path.extname(job.script));
   env.NANOCLAW_JOB_TIMEOUT_MS = String(job.timeout_ms);
 

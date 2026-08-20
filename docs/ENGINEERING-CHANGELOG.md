@@ -8,6 +8,67 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260820-002 — Route program-facts drift into durable Company Work
+
+- Date: 2026-08-20
+- Owner/client: Codex
+- State: ready_for_review; local/default-off only
+- Commit/PR: pending on `codex/nc-20260820-002-program-facts-work`; no PR
+- Change class: C2 — additive host-owned schema and default-off scheduled-job
+  behavior, with no production migration, activation, or external write
+- Root cause: the deterministic program-facts job posted its finding directly
+  to Sales Slack and stopped. The normalized trigger store, Company Work
+  ledger, report, and recurring Chief exception loop therefore had no source
+  record to discover, deduplicate, route, or source-resolve.
+- Detector evidence: the source job now binds detector version, canonical
+  order-independent finding fingerprint, source-file SHA-256s, checked count,
+  and payload digest. The legacy result API remains compatible.
+- Atomic pickup: active mode uses one PostgreSQL transaction to record the exact
+  scheduled job's `business_condition` occurrence, ensure one stable
+  `program_facts_drift` item, append one minimized observation, and route drift
+  to `accepted/blocked` with
+  `fact_authority:owner_review_required`. It never parses Slack.
+- Lifecycle: exact run replay converges; unchanged later findings remain durable
+  without repeating the Sales alert; changed findings alert again; a clean
+  detector rerun with a matching outcome receipt is the only closure; a later
+  recurrence explicitly reopens and re-blocks the same source item. The report
+  validates the recurrence/event/receipt counts rather than accepting repeated
+  lifecycle facts blindly.
+- Schema: migration 125 widens only the typed workflow/completion/event values
+  and creates append-only `company_program_fact_observations`. It stores opaque
+  occurrence/work IDs, version, timestamps, counts, and SHA-256 evidence—no
+  raw finding, fact, knowledge, product, customer, prompt, or action payload.
+  Ownership is `nanoclaw_admin` with zero non-admin grants.
+- Runtime boundary: `PROGRAM_FACTS_COMPANY_WORK_MODE=off` is tracked. Off mode
+  preserves the legacy notify-only behavior; invalid values refuse; active mode
+  applies durable state before posting. The host job runner now passes its exact
+  durable run UUID and start time to every child. The installed job definition
+  is unchanged and still uses the legacy source wrapper.
+- Resolution boundary: the existing complete Company Work report and recurring
+  Chief loop can pick up the new named block on their next tick if this slice is
+  promoted. Chief acknowledgment remains attention-only. The detector and
+  healer cannot choose fact authority or edit facts, Sales knowledge, products,
+  website content, email, or another source system.
+- Focused verification: exact Node 22.23.2 runs 58/58 detector, job-mode,
+  trigger/work adapter, state-policy, migration, report, and exception-loop
+  tests; typecheck, production build, formatting, documentation continuity,
+  schema sanitizer, and capability parity pass.
+- Database proof: a real disposable PostgreSQL 16 cluster applied migrations
+  118 -> 119 -> 121 -> 125 and executably proved one stable item across open,
+  exact replay, changed finding, clean close, and recurrence (four occurrences,
+  four observations, one reopen). Append-only mutation failed, non-admin grants
+  were zero, populated rollback refused without data loss, and empty rollback
+  restored the prior constraints and removed only the empty additive table.
+- Regression evidence: the email-critical gate passes 715/715 plus the
+  independent runner build and 43/43 tests. The unrestricted root suite is
+  2,768/2,769 passing with five skips; its sole failure is the unchanged CNPC
+  source-wrapper literal assertion in `cnpc-prompt-contract.test.ts`.
+- Production boundary: no production database, job definition, environment,
+  daemon, Slack message, fact/knowledge file, action, release, push, or merge was
+  changed. Backup, migration 125 apply, compiled-job cutover, active-mode
+  canary, natural Chief pickup, owner correction, and clean-rerun closure are a
+  separately authorized deployment milestone.
+
 ### NC-20260818-003 — Freeze natural inbound Gmail history gaps
 
 - Date: 2026-08-18

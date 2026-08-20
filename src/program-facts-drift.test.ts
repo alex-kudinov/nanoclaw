@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 
-import { detectDrift, type ProgramSpec } from './program-facts-drift.js';
+import {
+  buildProgramFactsDetectorEvidence,
+  detectDrift,
+  type ProgramSpec,
+} from './program-facts-drift.js';
 
 const spec: ProgramSpec = {
   name: 'MCS Practicum',
@@ -81,5 +85,64 @@ describe('detectDrift', () => {
   it('skips price checks (no false product_missing) when products is empty', () => {
     const r = detectDrift(facts, goodKb, {});
     expect(r.findings).toEqual([]);
+  });
+});
+
+describe('program-facts durable detector evidence', () => {
+  it('is stable across finding order but changes with any source version', () => {
+    const findings = [
+      {
+        program: 'b',
+        kind: 'kb_missing_fact' as const,
+        detail: 'missing b',
+      },
+      {
+        program: 'a',
+        kind: 'kb_stale_value' as const,
+        detail: 'stale a',
+      },
+    ];
+    const sources = {
+      facts: 'facts-v1',
+      salesKb: 'kb-v1',
+      products: '{"version":1}',
+    };
+    const first = buildProgramFactsDetectorEvidence(
+      { checked: 2, findings },
+      sources,
+    );
+    const reordered = buildProgramFactsDetectorEvidence(
+      { checked: 2, findings: [...findings].reverse() },
+      sources,
+    );
+    const changed = buildProgramFactsDetectorEvidence(
+      { checked: 2, findings },
+      { ...sources, salesKb: 'kb-v2' },
+    );
+
+    expect(reordered).toEqual(first);
+    expect(changed.findingFingerprint).toBe(first.findingFingerprint);
+    expect(changed.salesKbSha256).not.toBe(first.salesKbSha256);
+    expect(changed.payloadSha256).not.toBe(first.payloadSha256);
+    for (const digest of [
+      first.factsSha256,
+      first.salesKbSha256,
+      first.productsSha256,
+      first.findingFingerprint,
+      first.payloadSha256,
+    ]) {
+      expect(digest).toMatch(/^[0-9a-f]{64}$/);
+    }
+  });
+
+  it('records an unavailable products source without inventing a source hash', () => {
+    const evidence = buildProgramFactsDetectorEvidence(
+      { checked: 1, findings: [] },
+      { facts: 'facts', salesKb: 'kb', products: null },
+    );
+    expect(evidence).toMatchObject({
+      productsAvailable: false,
+      productsSha256: null,
+    });
   });
 });

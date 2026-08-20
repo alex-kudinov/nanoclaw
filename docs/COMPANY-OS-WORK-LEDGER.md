@@ -1,4 +1,4 @@
-# Company OS work ledger — Mailman/Sales pilot
+# Company OS work ledger — proven pilots and condition-work candidate
 
 Status: host-only schema, non-authoritative shadow observer, and read-only
 exception report deployed and live-verified; exact release `0d2c8ec` deploys
@@ -14,6 +14,17 @@ Second-pilot note: `NC-20260816-016/017` add, deploy, and live-verify migration
 119 plus the separately invoked host-job projector and multi-workflow report.
 Five job runs are projected without changing this pilot's email state machine
 or authority. See `docs/COMPANY-OS-JOB-LEDGER.md`.
+
+Condition-work candidate: `NC-20260820-002` adds a local, default-off first
+`business_condition` adapter for the deterministic program-facts detector.
+Migration 125 and the runtime mode are not applied or activated. If separately
+promoted, one exact detector run will atomically record its normalized trigger,
+ensure one stable `program_facts_drift` work item, append one content-minimized
+observation, and route drift immediately to the existing Chief exception loop
+as `fact_authority:owner_review_required`. Repeated unchanged drift remains
+durable without repeated Sales noise. Only an exact clean detector rerun may
+close the item; a later recurrence reopens it. The adapter never changes facts,
+knowledge, products, website content, email, or another source of authority.
 
 ## 1. Outcome and boundary
 
@@ -126,10 +137,14 @@ verified stage.
 | `failed` | any non-terminal stage | same stage, `failed` | named failure code |
 | `resumed` | `blocked` or `failed` | same stage, stage-derived active disposition | a new exact host event |
 | `cancelled` | any non-terminal stage | same stage, `cancelled` | `cancellation` |
+| `reopened` | `outcome_validated/completed` condition work only | `accepted/open` | exact later condition occurrence |
 
-There are no skip transitions. Terminal items cannot change. A duplicate exact
-event is a no-op; reuse of an idempotency or receipt identity with different
-facts is a conflict.
+There are no skip transitions. Terminal email and host-job items cannot
+change. The narrowly typed `program_facts_drift` recurrence edge is the only
+terminal reopen in migration 125: it retains the same stable source work item,
+resets its bounded deadline, and must route through `blocked` owner review
+again. A duplicate exact event is a no-op; reuse of an idempotency or receipt
+identity with different facts is a conflict.
 
 ## 5. Concurrency, retry, and restart semantics
 
@@ -176,6 +191,15 @@ altering Mailman/Sales facts. The multi-workflow report is live in exact release
 `999f2a4`; one five-run job projection and its duplicate-only replay are the
 only authorized production job history. Release presence alone does not
 authorize another projection.
+
+Migration 125 is local and unapplied under `NC-20260820-002`. It adds only the
+`program_facts_drift` workflow/completion/event values and an admin-only,
+append-only `company_program_fact_observations` table. That table stores opaque
+occurrence/work IDs, detector version, counts, timestamps, and SHA-256 source
+and finding evidence; it has no finding text, program fact, knowledge text,
+product payload, customer content, or action field. Populated rollback refuses
+instead of deleting evidence. Repository presence does not authorize applying
+the migration or activating the adapter.
 
 Migration 118 was applied in production only under `NC-20260816-001`, after an
 exact custom-format backup and explicit one-file apply. Live validation found
