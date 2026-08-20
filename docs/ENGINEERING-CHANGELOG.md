@@ -8,6 +8,46 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260820-004 — Attach bounded contact-form entry context at ingress
+
+- Date: 2026-08-20
+- Owner/client: Codex
+- State: validating; local gates pass, while production deployment and
+  natural-submission proof remain pending
+- Commit/PR: pending on isolated branch
+  `codex/nc-20260820-004-contact-context`; paired Tandem website source is in
+  an isolated worktree at `cbe7e64ea`; no PR
+- Change class: C2 — additive, privacy-reduced source context across the
+  existing WordPress, n8n, Inbox, and Sales path; no new tracking, database
+  schema, mailbox/search, approval, or send authority
+- Root cause: WordPress already captured and persisted the contact page's
+  referrer, but omitted it from both immediate webhook delivery and retry.
+  The live n8n workflow then allowlisted no page context, the Inbox packet and
+  handoff had no context field, and Sales' generated knowledge still suggested
+  a later email-keyed Chaos lookup. Vague page-relative questions therefore
+  required an avoidable clarification or manual reconstruction.
+- Website contract: both immediate delivery and durable retry use one payload
+  builder. It reduces an internal Tandem referrer to a path, strips query and
+  fragment, reduces an external referrer to `external:<hostname>`, suppresses
+  the known `/contact-us/` self-referrer, and emits no raw referrer.
+- Ingress and agent contract: the tracked n8n mapper validates the bounded
+  `entry_page`; the contact webhook attaches it to the Inbox packet; Inbox
+  preserves only a non-empty host value. Sales may use it only to resolve an
+  explicit page-relative reference when the official page is unambiguous. It
+  may not infer relationship, intent, facts, price, cohort, recommendation,
+  route, CTA, approval, or send authority and may not augment it with Chaos.
+- Failure/privacy boundary: missing, stale, malformed, generic, or ambiguous
+  context becomes empty and the contact continues through the existing path.
+  No raw query, fragment, journey history, IP, fingerprint, synthetic contact,
+  customer email, or autonomous action is introduced.
+- Verification: all 21 Tandem plugin PHP harnesses pass, including the new
+  seven-case context suite and existing 13-case referrer suite; PHP syntax and
+  diff checks pass. NanoClaw's focused contracts pass 47/47 on pinned Node
+  22.23.2, along with format, typecheck, production build, and documentation
+  continuity. The unrestricted suite is 2,791/2,792 passing with five skips;
+  its sole failure is the unchanged CNPC source-wrapper literal assertion in
+  `cnpc-prompt-contract.test.ts`.
+
 ### NC-20260820-003 — Deliver source-bound Company OS work to Chief
 
 - Date: 2026-08-20

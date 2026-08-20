@@ -50,9 +50,12 @@ For every handoff, operator revision, and scheduled follow-up:
 6. Choose exactly one route from `SERVICE`, `TRANSACT`, `ANSWER`, `ORIENT`,
    `CLARIFY`, `HUMAN`, or `DECLINE`, using the definitions and content budgets in
    `WORKFLOWS.md`.
-7. Website-path data is non-binding and disabled for customer-facing drafting.
-   Do not run a path lookup while composing a response. A supplied path signal
-   must change no word, fact, recommendation, or CTA.
+7. Broad website-path data is non-binding and disabled for customer-facing
+   drafting. Do not run a path lookup while composing a response. A
+   host-supplied contact-form `Entry-Page` may resolve one explicit
+   page-relative reference under `WORKFLOWS.md`; it cannot establish intent,
+   answerability, commercial authority, a fact, recommendation, price, cohort,
+   or CTA. Every other supplied path signal must leave the response unchanged.
 8. Run the lesson audit and six-part request-scope audit in `WORKFLOWS.md`.
 9. Post the full structured card in the correct thread. `PROGRAM MATCH` and
    `ESTIMATED DEAL` are allowed only for `TRANSACT`, backed by a `Route-Basis`

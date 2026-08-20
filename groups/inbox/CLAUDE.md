@@ -125,7 +125,7 @@ For spam/rejected:
 
 Post the handoff message using `mcp__nanoclaw__send_message`. The system automatically routes messages containing `[HANDOFF:]` to the correct agent.
 
-Pass through ALL original fields verbatim — do not summarize or compress. Sales Closer needs the full message to craft a response. **Always pass through the Thread-ID** if one was included in the handoff from mailman — this ensures the email response threads under the lead's original inquiry.
+Pass through ALL original fields verbatim — do not summarize or compress. Sales Closer needs the full message to craft a response. **Always pass through the Thread-ID** if one was included in the handoff from mailman — this ensures the email response threads under the lead's original inquiry. For a contact form, preserve the host-supplied `Entry-Page` exactly when it is non-empty. It is bounded submission context, not proof of relationship, intent, or a program fact; never look up or invent a replacement when it is absent.
 
 **Forwarded-email exception:** when the host marks
 `[FORWARDED-INQUIRY: send-new-email]`, `Source-Thread-ID` belongs to the internal
@@ -143,6 +143,7 @@ Thread-ID: {Gmail thread ID if present in the incoming handoff — omit this lin
 Source-Thread-ID: {internal forwarding thread only for Source: forwarded-email — otherwise omit}
 Known-To-Us: {KNOWN_TO_US line from Step 1.5 — omit this line if no prior context}
 Message: {FULL original message — copy it word for word}
+Entry-Page: {host-supplied contact-form entry page — include only when non-empty; otherwise omit}
 Source: {source from the incoming handoff, e.g. "email" or "contact-form"}
 ```
 

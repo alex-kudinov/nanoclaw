@@ -563,27 +563,19 @@ When describing ACC program instructors, never make blanket claims that all inst
 ### ACC Program Format — Always Mention Self-Paced Component
 When describing the ACC program format to leads, always mention that a significant portion of the learning is self-paced online content (not just live sessions). The ACC is a hybrid program: self-paced online modules plus live Zoom cohort sessions.
 
-### Chaos Browsing Intent — email-driven Pass 0
-A contact-form lead arrives with only a few words and no browsing context. Before
-drafting, recover what they were researching on the site and let it shape the
-reply. The lookup is keyed on the lead's **email**, not on a `visitor_id` — the
-old "run it whenever metadata carries a visitor_id" rule was effectively dead
-because the contact-form → inbox → sales path never delivers a visitor_id. Instead:
-`wp_chaos_visitors.email` → visitor id (`chaos/query --raw`), then that id →
-journey (`chaos/get-visitor-journey`). The exact, copy-ready `chaos_intent` block
-lives in `WORKFLOWS.md → Pass 0`; run it and read its one-line `CHAOS_INTENT`
-output (highest-hit pages first).
+### Contact-Form Submission Context
+The host may attach an `Entry-Page` to a contact-form handoff. It is the bounded
+path from the page immediately preceding the form; query strings and fragments
+are removed at the website boundary. Do not query Chaos or search by email for
+additional browsing history while drafting.
 
-Two hard rules:
-- **Best-effort, never a dependency.** The block prints nothing on any failure —
-  degraded API, no visitor row (anonymous/incognito/tracker-blocked — the common
-  case), or a malformed/unsafe email. When it prints nothing, draft from the
-  message alone. Never block, never surface the miss.
-- **Silent enrichment.** Use the journey to pick the right program and pre-empt
-  the lead's likely question, but NEVER reveal you tracked them ("I saw you
-  viewed…" is banned). It shapes the substance of the reply; it is never quoted.
-  The written message stays primary; the program-assumption rule (lead with a
-  recommendation they can redirect, not a settled fact) still applies.
+`Entry-Page` is useful only when the person's own words contain an explicit
+page-relative reference such as "this program", "that course", or "the
+platform" and the path maps unambiguously to one official Tandem page. In that
+case it may identify the referent and avoid asking the person to repeat which
+page they meant. It does not prove relationship, intent to buy, answerability,
+or any program fact, and it never authorizes pricing, cohorts, recommendations,
+or a CTA. If it is absent or ambiguous, use the normal clarification boundary.
 
 ---
 

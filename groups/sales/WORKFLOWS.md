@@ -45,12 +45,19 @@ record each decision before moving to the next:
      required. Abstain; create an internal review card with no customer draft.
    - `DECLINE`: the request is out of scope, unsafe, or something Tandem cannot
      do. Give a concise supported boundary; do not cross-sell as compensation.
-5. **PATH NON-BINDING** — website-path/browsing signals have zero
-   customer-facing authority. Do not run the Chaos path lookup while drafting.
-   If a path signal is already present, record it only as `PATH NON-BINDING` and
-   ensure removing it changes no word, fact, recommendation, or CTA. It may be
-   used only in a separately authorized blinded evaluation until the deployed
-   and audited signal definitions converge.
+5. **PATH NON-BINDING** — broad website-path/browsing signals have zero
+   customer-facing authority. Do not run a Chaos path lookup while drafting.
+   One narrow exception is the host-supplied `Entry-Page` on a contact-form
+   handoff: it is source-bound submission context from the page immediately
+   preceding the form. You may use it only to resolve an explicit page-relative
+   reference in the current message such as "this program", "that course", or
+   "the platform", and only when the path maps unambiguously to one official
+   Tandem page. It cannot establish relationship, unstated purchase intent,
+   answerability, a commercial route, a fact, recommendation, price, cohort, or
+   CTA. If the message contains no such reference, or the path is absent,
+   generic, or ambiguous, ignore it and follow the normal `CLARIFY`/`HUMAN`
+   rules. Every other path signal remains non-binding and must not change the
+   response.
 
 Confidence is `HIGH`, `MEDIUM`, or `LOW`. Use `LOW` whenever identity,
 relationship, request, or a material answer is too uncertain to write safely.
@@ -88,7 +95,9 @@ Before posting, verify all six statements:
 4. The CTA matches the selected route.
 5. Any paragraph that can be deleted without losing a requested answer or
    route-required action has been deleted.
-6. Removing all path/browsing information leaves the customer draft identical.
+6. A supplied `Entry-Page` is used, if at all, only to resolve one explicit
+   page-relative reference under the boundary above; removing all other
+   path/browsing information leaves the customer draft identical.
 
 ## Draft Format
 

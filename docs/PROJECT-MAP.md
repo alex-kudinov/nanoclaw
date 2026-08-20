@@ -831,8 +831,12 @@ container runtime; contract tests include it to prevent contradictory guidance.
 
 Sales must decide in this order: relationship evidence predating the inbound,
 current-message asks, answerability, one response route with its content budget,
-then path non-authority. Website browsing-path data is disabled and non-binding
-for customer-facing drafts. Commercial content requires `TRANSACT` and a
+then path non-authority. Broad website browsing-path data is disabled and
+non-binding for customer-facing drafts. A source-bound contact-form
+`Entry-Page` may resolve one explicit page-relative reference when it maps
+unambiguously to an official Tandem page, but it supplies no relationship,
+intent, answerability, fact, recommendation, or commercial authority and Sales
+must not run a Chaos lookup. Commercial content requires `TRANSACT` and a
 verbatim current-message Route-Basis of no more than 15 words. `LOW` confidence
 or `HUMAN` yields a draftless escalation, not an approvable Sales card.
 

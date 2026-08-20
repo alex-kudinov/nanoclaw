@@ -14,6 +14,7 @@ const contract = `${role}\n${mainContext}\n${workflows}\n${guidelines}`;
 const normalizeWhitespace = (text: string): string =>
   text.replace(/\s+/g, ' ').trim();
 const normalizedContract = normalizeWhitespace(contract);
+const normalizedContractLower = normalizedContract.toLowerCase();
 const normalizedGuidelines = normalizeWhitespace(guidelines);
 type EvalCase = {
   id: string;
@@ -94,10 +95,16 @@ describe('Sales request-first prompt contract', () => {
     );
   });
 
-  it('keeps website-path data out of customer-facing drafting', () => {
+  it('keeps browsing-path data non-binding and narrowly bounds source context', () => {
     expect(contract).toContain('website-path/browsing signals have zero');
+    expect(normalizedContractLower).toContain(
+      'do not run a chaos path lookup while drafting',
+    );
     expect(normalizedContract).toContain(
-      'do not let a supplied path signal change the response',
+      'You may use it only to resolve an explicit page-relative reference',
+    );
+    expect(normalizedContract).toContain(
+      'It cannot establish relationship, unstated purchase intent, answerability, a commercial route, a fact, recommendation, price, cohort, or CTA.',
     );
     expect(workflows).not.toContain('chaos_intent()');
     expect(contract).not.toContain(
