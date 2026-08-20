@@ -77,6 +77,17 @@ message, create work, or grant action authority. The migration-123 recovery
 tables remain empty and unwired; follow the active work/changelog before any
 404 or recovery promotion.
 
+Migration 125 is live under `NC-20260820-002` in exact release `8344524c`.
+It adds the admin-only, append-only program-facts observation target and the
+typed condition-work lifecycle. Live structure has 14 constraints, one enabled
+append-only trigger, and zero non-admin table or sequence grants. One stable
+production work item has two drift observations, zero reopens, and one open
+owner-review exception/Chief brief after a direct exact-release canary and a
+real Campanero scheduler replay. No agent receives access or fact-correction
+authority. The owner must reconcile the source facts before an exact clean
+scheduled receipt may complete the item and source-resolve the case; follow the
+current active-work/changelog evidence.
+
 ## Connection
 
 ```bash

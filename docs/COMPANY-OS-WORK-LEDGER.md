@@ -1,12 +1,13 @@
-# Company OS work ledger — proven pilots and condition-work candidate
+# Company OS work ledger — proven pilots and live condition work
 
-Status: host-only schema, non-authoritative shadow observer, and read-only
-exception report deployed and live-verified; exact release `0d2c8ec` deploys
-the NC-018 host operator loop dark with migration 120 applied, zero operators,
-and zero attention rows; workflow authority and promotion remain separate
+Status: host-only schema, non-authoritative observers, read-only report, and
+operator loop are deployed and live-verified. Exact release `8344524c`
+preserves the earlier email/job pilots and one owner-confirmed operator, and
+activates the program-facts condition pilot with migration 125. Workflow and
+source-correction authority remain separate.
 Tasks: foundation `NC-20260815-010`; activation `NC-20260816-001`; read-only
 brief `NC-20260816-014`; report deployment/proof `NC-20260816-015`; operator
-loop `NC-20260816-018`
+loop `NC-20260816-018`; condition pilot `NC-20260820-002`
 Decision: the shared ledger is host-owned PostgreSQL business state, while the
 existing SQLite approved-email tables remain the action-execution authority
 
@@ -15,16 +16,20 @@ Second-pilot note: `NC-20260816-016/017` add, deploy, and live-verify migration
 Five job runs are projected without changing this pilot's email state machine
 or authority. See `docs/COMPANY-OS-JOB-LEDGER.md`.
 
-Condition-work candidate: `NC-20260820-002` adds a local, default-off first
-`business_condition` adapter for the deterministic program-facts detector.
-Migration 125 and the runtime mode are not applied or activated. If separately
-promoted, one exact detector run will atomically record its normalized trigger,
+Condition-work pilot: `NC-20260820-002` deploys the first
+`business_condition` adapter for the deterministic program-facts detector in
+exact release `8344524c`, with migration 125 and active mode live. One exact
+detector run atomically records its normalized trigger,
 ensure one stable `program_facts_drift` work item, append one content-minimized
 observation, and route drift immediately to the existing Chief exception loop
 as `fact_authority:owner_review_required`. Repeated unchanged drift remains
 durable without repeated Sales noise. Only an exact clean detector rerun may
 close the item; a later recurrence reopens it. The adapter never changes facts,
 knowledge, products, website content, email, or another source of authority.
+Production item 21 has two drift observations, one owner-review case, and one
+Chief brief; the second observation came through the real Campanero scheduler
+without a duplicate Sales alert. Owner correction and an exact clean scheduled
+receipt remain pending.
 
 ## 1. Outcome and boundary
 
@@ -192,14 +197,17 @@ altering Mailman/Sales facts. The multi-workflow report is live in exact release
 only authorized production job history. Release presence alone does not
 authorize another projection.
 
-Migration 125 is local and unapplied under `NC-20260820-002`. It adds only the
+Migration 125 is live under `NC-20260820-002`. It adds only the
 `program_facts_drift` workflow/completion/event values and an admin-only,
 append-only `company_program_fact_observations` table. That table stores opaque
 occurrence/work IDs, detector version, counts, timestamps, and SHA-256 source
 and finding evidence; it has no finding text, program fact, knowledge text,
-product payload, customer content, or action field. Populated rollback refuses
-instead of deleting evidence. Repository presence does not authorize applying
-the migration or activating the adapter.
+product payload, customer content, or action field. Live structural
+verification found 14 constraints, one enabled append-only trigger,
+`nanoclaw_admin` ownership, and zero non-admin table or sequence grants. One
+stable production item now has two observations and zero reopens. Populated
+rollback refuses instead of deleting evidence. Schema and active-mode presence
+do not authorize source correction or any fact edit.
 
 Migration 118 was applied in production only under `NC-20260816-001`, after an
 exact custom-format backup and explicit one-file apply. Live validation found

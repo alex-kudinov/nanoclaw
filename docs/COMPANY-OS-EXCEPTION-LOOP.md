@@ -1,28 +1,29 @@
 # Company OS operator exception loop
 
-Status: exact release `a2e6d35` and migration 120 are live under
-`NC-20260816-018`. The loop is active for the sole owner-confirmed operator,
-and its first bounded run durably posted one naturally sourced Chief brief for
-three exact reasons on one exception item. The sole operator's exact check
-reaction acknowledged all three current occurrences, and the threaded receipt
-is durably posted. Later natural source-derived resolution remains separately
-evidence-gated in active work and the engineering changelog.
+Status: exact release `8344524c` preserves the live migration-120 loop under
+`NC-20260816-018` for the sole owner-confirmed operator and adds the live
+program-facts source under `NC-20260820-002`. Its first bounded run and named
+acknowledgment remain verified; the program-facts canary additionally opened
+one exact owner-review case and posted Chief brief 10. Later natural
+source-derived resolution remains separately evidence-gated in active work and
+the engineering changelog.
 
 ## Purpose and authority
 
-This is the smallest operator-attention loop for the two proven Company Work
+This is the smallest operator-attention loop for the three proven Company Work
 pilots. It reads the complete privacy-minimized report, records exact reason
 cases, posts a deduplicated bounded brief to the registered Chief Slack
 channel, and lets a configured operator acknowledge the exact posted brief.
 
-`NC-20260820-002` adds a third workflow candidate locally, not in production.
-If migration 125 and the default-off adapter are separately promoted, the
-program-facts detector will create the blocked Company Work source record
-directly. The already-recurring loop will then pick up its named reason from
-the complete report on the next tick, without parsing or polling the detector's
-Sales-channel warning. A clean detector receipt removes the source reason; the
-loop may then source-resolve the corresponding case under its existing rules.
-Slack acknowledgment still performs no source correction or work transition.
+`NC-20260820-002` deploys the third workflow in exact release `8344524c` with
+migration 125 and active mode. Its exact-release canary created blocked item 21
+directly; the already-recurring loop picked up the named reason from the
+complete report, opened its case, and posted Chief brief 10 without parsing or
+polling the detector's Sales-channel warning. A subsequent real Campanero
+scheduler run appended observation 2 without duplicate Sales alerting. A clean
+detector receipt removes the source reason; the loop may then source-resolve
+the corresponding case under its existing rules. Slack acknowledgment still
+performs no source correction or work transition.
 
 It is not a workflow engine. Acknowledgment means only "this named operator saw
 this exact brief." It cannot resolve, approve, reject, retry, dispatch, send,

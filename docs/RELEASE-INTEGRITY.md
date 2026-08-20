@@ -41,6 +41,23 @@ and independently verifiable; it does not apply the migration. Database backup,
 daemon drain, one-file application, structural validation, and rollback policy
 remain separate recorded operations.
 
+NC-20260820-002 crossed the equivalent program-facts release boundary with
+exact implementation `8344524cf4a439b84eb792cdf7b4a16b65178a6a`, source tree
+`fac86f42aebcaf2e765ec16024fc679e9fa8aca1`, 788 compiled files, artifact
+SHA-256 `e257edaab70dfe7fc05b4f5b9a21068aa39ffd8351e385620e0610021a4729b3`,
+and archive SHA-256
+`5c40601869f7f13df3b0394965214d0a3aa711b1d90a1f4ab98bbdc7f1873f9e`.
+The archive verified locally and on the Mini. After a zero-work drain and a
+mode-0600 affected-schema backup, exact migration 125 applied and verified
+admin-only. Activation retained rollback to `64f1421e`, converged to healthy
+PID 38712 on Node 22.23.2, enabled active mode, and cut only the existing
+program-facts job to the compiled entrypoint without changing its schedule.
+One exact-release canary and one real Campanero scheduler run proved stable
+item/observation deduplication plus Chief pickup. This release does not
+authorize any fact/source edit; owner correction and exact clean closure are
+separate gates. Exact backup, rollback, configuration, run, and final-state
+receipts are in `docs/ENGINEERING-CHANGELOG.md`.
+
 NC-017 crossed those boundaries under exact release `999f2a4`: fresh local and
 production extraction verified the same archive, a narrow custom-format backup
 preceded explicit migration 119 application, and recovery-safe activation

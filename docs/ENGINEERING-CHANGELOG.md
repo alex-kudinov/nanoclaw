@@ -12,13 +12,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: ready_for_deploy; local/default-off release verified, production
-  untouched
+- State: deployed_unverified; detector and Chief pickup are live-verified,
+  while owner source correction and exact clean closure remain pending
 - Commit/PR: implementation
   `8344524cf4a439b84eb792cdf7b4a16b65178a6a` on
   `codex/nc-20260820-002-program-facts-work`; no PR
-- Change class: C2 — additive host-owned schema and default-off scheduled-job
-  behavior, with no production migration, activation, or external write
+- Change class: C2 — additive host-owned schema and scheduled-job behavior,
+  with separately authorized production migration, activation, and bounded
+  detector/Chief proof
 - Root cause: the deterministic program-facts job posted its finding directly
   to Sales Slack and stopped. The normalized trigger store, Company Work
   ledger, report, and recurring Chief exception loop therefore had no source
@@ -74,11 +75,70 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `5c40601869f7f13df3b0394965214d0a3aa711b1d90a1f4ab98bbdc7f1873f9e`.
   Fresh-directory `verify-release --runtime` independently passed under the
   pinned Node 22.23.2.
-- Production boundary: no production database, job definition, environment,
+- Pre-deployment boundary: no production database, job definition, environment,
   daemon, Slack message, fact/knowledge file, action, release, push, or merge was
   changed. Backup, migration 125 apply, compiled-job cutover, active-mode
   canary, natural Chief pickup, owner correction, and clean-rerun closure are a
   separately authorized deployment milestone.
+
+#### Addendum 2026-08-20T16:03:47Z — production activation and detector-to-Chief proof
+
+- Preflight and drain: the authenticated Mini was `mini-claw.local` at current
+  Tailscale peer `100.115.115.206`; the saved SSH alias still pointed at stale
+  `.204` and was bypassed without modifying user configuration. Production
+  naturally drained from two active Sales/Procurement containers to zero.
+  SQLite `quick_check` was `ok`; active email states, waiting tasks, running
+  jobs, scheduler work, and outgoing Slack queue were all zero before mutation.
+- Backup: an initial full-database `pg_dump` failed closed on the existing
+  RLS-protected legacy `public.procurement_opportunities` table. Its incomplete
+  archive and exact directory were immediately removed; no RLS was weakened.
+  The established complete affected-schema backup then succeeded at
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260820-002-20260820T155533Z`.
+  Its mode-0600 custom-format `business_v2.dump` is 9,721,974 bytes, has
+  SHA-256 `50e1903768db96fb82f9b2d502c249d4df2373cfa1aea5e26043a5330adf522a`,
+  and passes `pg_restore --list`; owner-only environment and job-definition
+  snapshots have SHA-256s
+  `a9c09900cb66450106ace7f52488460cdc5358a88189ac23fc0efc39f42160e6`
+  and `b3fc5040565df2ff2f2bcdc962320a7ff27a69df9b56176b19de365da6ab164c`.
+- Schema: exact migration-125 SHA-256
+  `74b46ba274c2637a7409b49dc4c9da9a02f64be57011fa3b5456f55d62fd8ee9`
+  applied transactionally from the verified release. Live structure has the
+  expected observation columns, 14 constraints, one enabled append-only
+  trigger, `nanoclaw_admin` ownership, and zero non-admin table or sequence
+  grants. It was empty before activation.
+- Release and configuration: archive SHA-256
+  `5c40601869f7f13df3b0394965214d0a3aa711b1d90a1f4ab98bbdc7f1873f9e`
+  verified again on the Mini, and the activator moved from `64f1421e` to exact
+  release `8344524cf4a439b84eb792cdf7b4a16b65178a6a`, retaining rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-64f1421e4650-2026-08-20T15-57-27-096Z`.
+  Healthy PID 38712 reports matching release/code root, Node 22.23.2, connected
+  Gmail/Slack, and empty queues. The production mode is `active`; the existing
+  `program-facts-drift` job now uses `dist/program-facts-drift-job.js` while
+  retaining `0 8 * * *`, `America/Chicago`, and its timeout. Post-cutover
+  environment/jobs SHA-256s are
+  `ab578eb530db8545cfab3998b54ab5931dd2d6ba8cac060dfb427bafafe0352c`
+  and `526e253bee05a1edeafdf648dc934dcb7921882da3fb27f78f44949d7235e324`.
+- Live detector proof: direct exact-release canary
+  `nc002-canary-20260820T155614Z` checked three programs, found two drift
+  issues, created stable Company Work item 21 at version 1 in
+  `accepted/blocked`, appended observation 1, and posted one backend-enabled
+  Sales alert. The restarted recurring exception loop scanned 21 items, opened
+  the exact owner-review case, and posted Chief brief 10 at Slack timestamp
+  `1787241455.313609` with no source-work mutation.
+- Real scheduler proof: one exact Campanero `jobs_mutate` IPC request produced
+  job-run `4d63f2dd-d0f6-4eeb-836d-a4f76418282a`, triggered by `campanero`,
+  exit 0 in 224 ms. It added observation 2 to the same item without reopening
+  or posting a duplicate Sales alert. Read-only Slack evidence found exactly
+  one matching Sales alert and one matching Chief brief in the bounded window.
+- Final state: PostgreSQL has 21 work items, 131 work events, 59 work receipts,
+  3 trigger occurrences, 7 exception cases, 6 briefs, and one program-facts
+  item with two drift observations and zero reopens. SQLite `quick_check=ok`;
+  active email states, waiting tasks, running jobs, and queued Slack messages
+  are zero; the daemon has no new error lines. The open case is intentional:
+  the owner must decide fact authority and correct the conflicting sources,
+  after which an exact clean scheduled rerun must complete item 21 and
+  source-resolve its case. No fact/knowledge/product/site/email source was
+  edited, and no branch push or merge occurred.
 
 ### NC-20260818-003 — Freeze natural inbound Gmail history gaps
 
