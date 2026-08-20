@@ -71,7 +71,8 @@ append-only events, and external receipts.
 SQLite remains authoritative for the exact approved email action:
 
 - `pending_sends` owns immutable To/CC/subject/body authority, execution claim,
-  state, and Gmail receipt;
+  state, Gmail receipt, and—under the local NC-20260820-003 candidate—the exact
+  content-free Gmail message ID that originated the Sales work root;
 - `email_send_events` owns the action's append-only execution stages;
 - the Company OS ledger may reference an action ID and a hash/receipt, but may
   never reconstruct approved bytes or execute Gmail itself.
@@ -104,45 +105,45 @@ verified stage.
 
 ### Stages
 
-| Stage | Required host fact |
-| --- | --- |
-| `accepted` | one deduplicated inbound/source fact was accepted |
-| `sales_dispatched` | the host dispatched the exact work item to Sales |
-| `awaiting_approval` | the host accepted an exact review card and persisted its action binding |
-| `approved` | an exact operator-approval receipt is bound to that card/action version |
-| `mailman_dispatched` | the host dispatched the approved action to the exact Mailman work session |
-| `action_claimed` | the existing SQLite action authority granted the one-time execution claim |
-| `external_acknowledged` | an exact Gmail `SENT` receipt is recorded for that action |
-| `outcome_validated` | the defined closure evidence, including the originating work-thread result, is reconciled |
+| Stage                   | Required host fact                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `accepted`              | one deduplicated inbound/source fact was accepted                                         |
+| `sales_dispatched`      | the host dispatched the exact work item to Sales                                          |
+| `awaiting_approval`     | the host accepted an exact review card and persisted its action binding                   |
+| `approved`              | an exact operator-approval receipt is bound to that card/action version                   |
+| `mailman_dispatched`    | the host dispatched the approved action to the exact Mailman work session                 |
+| `action_claimed`        | the existing SQLite action authority granted the one-time execution claim                 |
+| `external_acknowledged` | an exact Gmail `SENT` receipt is recorded for that action                                 |
+| `outcome_validated`     | the defined closure evidence, including the originating work-thread result, is reconciled |
 
 ### Dispositions
 
-| Disposition | Meaning |
-| --- | --- |
-| `open` | eligible for the next host transition |
-| `waiting` | waiting for an operator decision at `awaiting_approval` |
-| `blocked` | a named guard/dependency stopped progress; stage is preserved |
-| `failed` | an attempted host operation failed; stage is preserved |
-| `completed` | only legal with `outcome_validated` |
-| `cancelled` | terminal operator/host cancellation with an exact receipt |
+| Disposition | Meaning                                                       |
+| ----------- | ------------------------------------------------------------- |
+| `open`      | eligible for the next host transition                         |
+| `waiting`   | waiting for an operator decision at `awaiting_approval`       |
+| `blocked`   | a named guard/dependency stopped progress; stage is preserved |
+| `failed`    | an attempted host operation failed; stage is preserved        |
+| `completed` | only legal with `outcome_validated`                           |
+| `cancelled` | terminal operator/host cancellation with an exact receipt     |
 
 ### Events
 
-| Event | From | To | Receipt requirement |
-| --- | --- | --- | --- |
-| `accepted` | creation | `accepted/open` | source-event fingerprint |
-| `sales_dispatched` | `accepted/open` | `sales_dispatched/open` | none |
-| `approval_requested` | `sales_dispatched/open` | `awaiting_approval/waiting` | exact approval-card evidence hash |
-| `approved` | `awaiting_approval/waiting` | `approved/open` | `operator_approval` |
-| `mailman_dispatched` | `approved/open` | `mailman_dispatched/open` | none |
-| `action_claimed` | `mailman_dispatched/open` | `action_claimed/open` | `action_claim` |
-| `external_acknowledged` | `action_claimed/open` | `external_acknowledged/open` | `external_delivery` |
-| `outcome_validated` | `external_acknowledged/open` | `outcome_validated/completed` | `outcome_validation` |
-| `blocked` | any non-terminal stage | same stage, `blocked` | named block code |
-| `failed` | any non-terminal stage | same stage, `failed` | named failure code |
-| `resumed` | `blocked` or `failed` | same stage, stage-derived active disposition | a new exact host event |
-| `cancelled` | any non-terminal stage | same stage, `cancelled` | `cancellation` |
-| `reopened` | `outcome_validated/completed` condition work only | `accepted/open` | exact later condition occurrence |
+| Event                   | From                                              | To                                           | Receipt requirement               |
+| ----------------------- | ------------------------------------------------- | -------------------------------------------- | --------------------------------- |
+| `accepted`              | creation                                          | `accepted/open`                              | source-event fingerprint          |
+| `sales_dispatched`      | `accepted/open`                                   | `sales_dispatched/open`                      | none                              |
+| `approval_requested`    | `sales_dispatched/open`                           | `awaiting_approval/waiting`                  | exact approval-card evidence hash |
+| `approved`              | `awaiting_approval/waiting`                       | `approved/open`                              | `operator_approval`               |
+| `mailman_dispatched`    | `approved/open`                                   | `mailman_dispatched/open`                    | none                              |
+| `action_claimed`        | `mailman_dispatched/open`                         | `action_claimed/open`                        | `action_claim`                    |
+| `external_acknowledged` | `action_claimed/open`                             | `external_acknowledged/open`                 | `external_delivery`               |
+| `outcome_validated`     | `external_acknowledged/open`                      | `outcome_validated/completed`                | `outcome_validation`              |
+| `blocked`               | any non-terminal stage                            | same stage, `blocked`                        | named block code                  |
+| `failed`                | any non-terminal stage                            | same stage, `failed`                         | named failure code                |
+| `resumed`               | `blocked` or `failed`                             | same stage, stage-derived active disposition | a new exact host event            |
+| `cancelled`             | any non-terminal stage                            | same stage, `cancelled`                      | `cancellation`                    |
+| `reopened`              | `outcome_validated/completed` condition work only | `accepted/open`                              | exact later condition occurrence  |
 
 There are no skip transitions. Terminal email and host-job items cannot
 change. The narrowly typed `program_facts_drift` recurrence edge is the only
@@ -221,15 +222,15 @@ task's migration.
 `src/company-work-shadow.ts` may emit ledger transitions only from these host
 facts:
 
-| Ledger fact | Existing authority/source |
-| --- | --- |
+| Ledger fact                 | Existing authority/source                                                   |
+| --------------------------- | --------------------------------------------------------------------------- |
 | accepted / Sales dispatched | Gmail classification/router durable host event and queue work-unit identity |
-| approval requested | host-accepted review card plus immutable pending-send action binding |
-| approved | exact Slack operator-decision event bound to action/card/thread |
-| Mailman dispatched | exact-session host handoff acknowledgment |
-| action claimed | `pending_sends` one-time execution claim / `email_send_events` |
-| external acknowledged | exact Gmail receipt already stored by the action authority |
-| outcome validated | Gmail receipt plus original Slack-thread closure/reconciliation evidence |
+| approval requested          | host-accepted review card plus immutable pending-send action binding        |
+| approved                    | exact Slack operator-decision event bound to action/card/thread             |
+| Mailman dispatched          | exact-session host handoff acknowledgment                                   |
+| action claimed              | `pending_sends` one-time execution claim / `email_send_events`              |
+| external acknowledged       | exact Gmail receipt already stored by the action authority                  |
+| outcome validated           | Gmail receipt plus original Slack-thread closure/reconciliation evidence    |
 
 Projection starts shadow-only: ledger failure must alert but must not block or
 duplicate the existing email path. Cutover to any dependency on the ledger
@@ -347,6 +348,16 @@ operator-attention cases and optionally post an exact Chief-channel brief. Its
 acknowledgment is an attention receipt, not an exception-resolution action, and
 it cannot promote a ledger fact into workflow authority. See
 `docs/COMPANY-OS-EXCEPTION-LOOP.md`.
+
+NC-20260820-003 locally adds a host dispatch layer after that read: for each
+visible exception it posts a bounded, cross-group work packet beneath the
+brief. A `sales_email` packet follows the report's opaque action source key to
+the authoritative SQLite action and exact Mailman-authored Sales root, then
+copies that source into the Chief thread. The PostgreSQL ledger still receives
+no customer prose or Gmail query. The packet can issue/recover only one exact
+Chief `gmail_read` grant while that work retains an active exception case and
+cannot mutate, approve, retry, send, or resolve the work. Deployment and
+natural proof are separate.
 
 ## 10. Operator exception loop
 

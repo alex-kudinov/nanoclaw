@@ -8,6 +8,63 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260820-003 — Deliver source-bound Company OS work to Chief
+
+- Date: 2026-08-20
+- Owner/client: Codex
+- State: ready_for_review; implemented and locally verified, not deployed or
+  live-verified
+- Commit/PR: isolated branch `codex/nc-20260820-003-source-bound-work`; no PR
+  or deployment
+- Change class: C2 — additive host routing, local SQLite identity, Chief
+  behavior, and exception-loop delivery; no broadened mailbox, send, approval,
+  or workflow authority
+- Root cause: the recurring Company Work loop posted an untagged bot brief.
+  Slack's host router correctly filtered that as bot noise, so Chief did not
+  wake to own the exceptions. When an operator later asked Chief to act, the
+  privacy-minimized ledger contained only an opaque Sales action key; no host
+  path reattached the original Mailman handoff. Chief therefore lacked the
+  source email and attempted a correctly denied `gmail_search`.
+- Ingress identity: matched direct Mailman-to-Sales handoffs now preserve both
+  inbound Thread-ID and Message-ID. Approval capture records that exact Gmail
+  Message-ID on the authoritative SQLite email action; startup adds only the
+  nullable `pending_sends.source_gmail_message_id` column and its index.
+  Binding is fill-once and rejects conflicting identity.
+- Source hydration: the host resolves only `sales_email` Company Work items
+  whose PostgreSQL `source_key` names an exact SQLite email action. It follows
+  that action to the exact Sales Slack root, accepts only consecutive
+  Mailman-authored inbound fragments, validates Thread-ID/Message-ID, caps the
+  attached source, and fails closed on missing or conflicting lineage. Legacy
+  actions may be backfilled only from that trusted root. Customer text is
+  labeled untrusted evidence in the packet.
+- Actionable delivery: after the bounded Chief brief, the loop posts one
+  tracked `[HANDOFF: company-os→chief]` packet per visible exception with
+  `from_group=company-os`, exact work identity, reasons, and source status.
+  The brief is durably bound only after every packet receives a tracked Slack
+  receipt; partial delivery is marked uncertain and cannot be acknowledged.
+- Gmail containment: a complete packet needs no Gmail call. A truncated packet
+  permits at most one exact `gmail_read(messageId)`. After restart that read is
+  authorized only when SQLite maps the same message to a Sales action and
+  PostgreSQL maps that action to a `sales_email` Company Work item with a
+  still-active exception case. Chief still cannot search, discover threads,
+  reply, or send through this path. Denial receipts now name the requesting
+  group and accurately state that no other agent received the result.
+- Agent contract: Chief must immediately triage Company OS work packets, use
+  attached source when complete, perform one exact read only when explicitly
+  truncated, and report a named source-context failure instead of searching or
+  guessing. Triage is not resolution and does not bypass operator approval.
+- Verification: exact Node 22.23.2 typecheck, production build, source
+  formatting, and 303/303 focused tests pass. The email-critical gate passes
+  719/719 plus the independent runner build and 43/43 tests. The unrestricted
+  suite is 2,781/2,782 passing with five skips; its sole failure is the
+  unchanged CNPC source-wrapper literal assertion in
+  `cnpc-prompt-contract.test.ts`. Documentation continuity passes after these
+  records are reconciled.
+- Deployment boundary: no production database, daemon, Slack message, Gmail
+  call, customer email, work item, approval, release, push, merge, or external
+  system changed in this milestone. Deployment, restart, natural packet proof,
+  and outcome validation remain separately authorized.
+
 ### NC-20260820-002 — Route program-facts drift into durable Company Work
 
 - Date: 2026-08-20

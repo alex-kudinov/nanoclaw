@@ -1082,6 +1082,30 @@ describe('SlackChannel', () => {
       });
     });
 
+    it('persists a tracked Company OS post as a cross-group dispatch', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      await expect(
+        channel.postTracked(
+          'slack:C0123456789',
+          '[COMPANY OS WORK PACKET: work #4]',
+          '1704067100.000001',
+          'company-os',
+        ),
+      ).resolves.toBe('1704067200.000100');
+      expect(opts.onMessage).toHaveBeenCalledWith(
+        'slack:C0123456789',
+        expect.objectContaining({
+          content: '[COMPANY OS WORK PACKET: work #4]',
+          from_group: 'company-os',
+          thread_ts: '1704067100.000001',
+          is_bot_message: true,
+        }),
+      );
+    });
+
     it('strips slack: prefix from JID', async () => {
       const opts = createTestOpts();
       const channel = new SlackChannel(opts);

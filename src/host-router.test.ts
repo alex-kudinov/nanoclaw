@@ -150,6 +150,7 @@ describe('host-router', () => {
     // The INBOUND message's thread (params.threadId='thr-1') wins over the DB's
     // most-recent-outbound thread (match.thread_id='18f1a2b3c4d5e6f7').
     expect(text).toContain('Thread-ID: thr-1');
+    expect(text).toContain('Message-ID: msg-1');
   });
 
   it('sends a matched forwarded lead directly to sales as a new-email work item', async () => {

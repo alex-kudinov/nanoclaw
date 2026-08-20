@@ -258,6 +258,7 @@ function createSchema(database: Database.Database): void {
       chat_jid TEXT NOT NULL,
       thread_ts TEXT,
       gmail_thread_id TEXT,
+      source_gmail_message_id TEXT,
       recipient TEXT,
       approved_cc TEXT,
       lead_ref TEXT,
@@ -507,6 +508,20 @@ function createSchema(database: Database.Database): void {
   database.exec(
     `CREATE INDEX IF NOT EXISTS idx_pending_sends_gmail_thread
        ON pending_sends (gmail_thread_id, approved_at)`,
+  );
+  // Exact inbound Gmail resource that originated an approved Sales work item.
+  // This is identity only (no sender, subject, body, or query) and lets the
+  // host authorize Chief to read one attached message after a daemon restart.
+  try {
+    database.exec(
+      `ALTER TABLE pending_sends ADD COLUMN source_gmail_message_id TEXT`,
+    );
+  } catch {
+    /* column already exists */
+  }
+  database.exec(
+    `CREATE INDEX IF NOT EXISTS idx_pending_sends_source_gmail_message
+       ON pending_sends (source_gmail_message_id, approved_at)`,
   );
   // Durable delivery-stage evidence. These columns distinguish "Sales never
   // handed off" from "the handoff routed but Mailman never started", so the
@@ -1638,6 +1653,7 @@ export interface EmailSendActionRow {
   chatJid: string;
   threadTs?: string;
   gmailThreadId?: string;
+  sourceGmailMessageId?: string;
   recipient?: string;
   approvedCc?: string;
   leadRef?: string;
@@ -1665,6 +1681,7 @@ type EmailSendDbRow = {
   chat_jid: string;
   thread_ts: string | null;
   gmail_thread_id: string | null;
+  source_gmail_message_id: string | null;
   recipient: string | null;
   approved_cc: string | null;
   lead_ref: string | null;
@@ -1686,7 +1703,7 @@ type EmailSendDbRow = {
 };
 
 const EMAIL_ACTION_SELECT = `action_id, draft_ts, group_folder, chat_jid,
-  thread_ts, gmail_thread_id, recipient, approved_cc, lead_ref, approved_subject,
+  thread_ts, gmail_thread_id, source_gmail_message_id, recipient, approved_cc, lead_ref, approved_subject,
   approved_content_sha256, approved_at, state, handoff_observed_at,
   handoff_message_id, mailman_started_at, handoff_alerted_at,
   execution_started_at, gmail_message_id, gmail_result_thread_id,
@@ -1700,6 +1717,7 @@ function mapEmailSendAction(row: EmailSendDbRow): EmailSendActionRow {
     chatJid: row.chat_jid,
     threadTs: row.thread_ts ?? undefined,
     gmailThreadId: row.gmail_thread_id ?? undefined,
+    sourceGmailMessageId: row.source_gmail_message_id ?? undefined,
     recipient: row.recipient ?? undefined,
     approvedCc: row.approved_cc ?? undefined,
     leadRef: row.lead_ref ?? undefined,
@@ -1748,6 +1766,7 @@ export function recordPendingSend(row: {
   chatJid: string;
   threadTs?: string;
   gmailThreadId?: string;
+  sourceGmailMessageId?: string;
   recipient?: string;
   approvedCc?: string;
   leadRef?: string;
@@ -1760,12 +1779,13 @@ export function recordPendingSend(row: {
       .prepare(
         `INSERT INTO pending_sends
            (draft_ts, action_id, group_folder, chat_jid, thread_ts,
-            gmail_thread_id, recipient, approved_cc, lead_ref, approved_subject,
+            gmail_thread_id, source_gmail_message_id, recipient, approved_cc, lead_ref, approved_subject,
             approved_content_sha256, approved_at, state, last_event_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)
          ON CONFLICT(draft_ts) DO UPDATE SET
            action_id = COALESCE(pending_sends.action_id, excluded.action_id),
            gmail_thread_id = COALESCE(pending_sends.gmail_thread_id, excluded.gmail_thread_id),
+           source_gmail_message_id = COALESCE(pending_sends.source_gmail_message_id, excluded.source_gmail_message_id),
            recipient = COALESCE(pending_sends.recipient, excluded.recipient),
            approved_cc = COALESCE(pending_sends.approved_cc, excluded.approved_cc),
            approved_subject = COALESCE(pending_sends.approved_subject, excluded.approved_subject),
@@ -1778,6 +1798,7 @@ export function recordPendingSend(row: {
         row.chatJid,
         row.threadTs ?? null,
         row.gmailThreadId ?? null,
+        row.sourceGmailMessageId ?? null,
         row.recipient ?? null,
         row.approvedCc ?? null,
         row.leadRef ?? null,
@@ -1868,6 +1889,52 @@ export function getPendingSendByActionId(
     )
     .get(actionId) as EmailSendDbRow | undefined;
   return row ? mapEmailSendAction(row) : undefined;
+}
+
+/**
+ * Persist an exact source Gmail identity recovered from the trusted host-routed
+ * Sales root. Existing, different identity fails closed instead of being
+ * overwritten. This changes no approval or delivery state.
+ */
+export function bindEmailActionSourceMessage(
+  actionId: string,
+  sourceGmailMessageId: string,
+): boolean {
+  const normalizedAction = actionId.trim();
+  const normalizedMessage = sourceGmailMessageId.trim();
+  if (!normalizedAction || !normalizedMessage) return false;
+  const existing = getPendingSendByActionId(normalizedAction);
+  if (!existing) return false;
+  if (existing.sourceGmailMessageId) {
+    return existing.sourceGmailMessageId === normalizedMessage;
+  }
+  const result = db
+    .prepare(
+      `UPDATE pending_sends
+          SET source_gmail_message_id = ?
+        WHERE action_id = ? AND source_gmail_message_id IS NULL`,
+    )
+    .run(normalizedMessage, normalizedAction);
+  return result.changes === 1;
+}
+
+/** Exact approved-action identities bound to one source Gmail message. */
+export function listEmailActionIdsBySourceMessage(
+  sourceGmailMessageId: string,
+): string[] {
+  const normalized = sourceGmailMessageId.trim();
+  if (!normalized) return [];
+  const rows = db
+    .prepare(
+      `SELECT action_id
+         FROM pending_sends
+        WHERE source_gmail_message_id = ?
+          AND action_id IS NOT NULL
+          AND group_folder = 'sales'
+        ORDER BY approved_at, rowid`,
+    )
+    .all(normalized) as Array<{ action_id: string }>;
+  return rows.map((row) => row.action_id);
 }
 
 export function findPendingSendAction(opts: {

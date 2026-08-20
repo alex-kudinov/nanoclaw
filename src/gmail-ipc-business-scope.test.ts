@@ -38,6 +38,60 @@ describe('durable Gmail business scope', () => {
     expect(query).toHaveBeenCalledTimes(2);
   });
 
+  it('restores only Chief reads bound to an exact Company Work source message', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [{ allowed: true }] });
+    const sourceActions = vi.fn().mockReturnValue(['action-1']);
+
+    await expect(
+      resolveDurableGmailResource(
+        'chief',
+        { type: 'gmail_read', messageId: 'message-1' },
+        query,
+        sourceActions,
+      ),
+    ).resolves.toBe(true);
+    expect(sourceActions).toHaveBeenCalledWith('message-1');
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("workflow_type = 'sales_email'"),
+      [['action-1']],
+    );
+    expect(query.mock.calls[0]?.[0]).toContain("c.state <> 'resolved'");
+  });
+
+  it('does not turn Chief source binding into search, thread, or arbitrary read access', async () => {
+    const query = vi.fn();
+    const sourceActions = vi
+      .fn()
+      .mockReturnValueOnce([])
+      .mockReturnValue(['action-1']);
+
+    await expect(
+      resolveDurableGmailResource(
+        'chief',
+        { type: 'gmail_read', messageId: 'unbound-message' },
+        query,
+        sourceActions,
+      ),
+    ).resolves.toBe(false);
+    await expect(
+      resolveDurableGmailResource(
+        'chief',
+        { type: 'gmail_search', query: 'from:anyone@example.com' },
+        query,
+        sourceActions,
+      ),
+    ).resolves.toBe(false);
+    await expect(
+      resolveDurableGmailResource(
+        'chief',
+        { type: 'gmail_get_thread', threadId: 'thread-1' },
+        query,
+        sourceActions,
+      ),
+    ).resolves.toBe(false);
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it('cannot authorize other groups, operations, or broad searches', async () => {
     const query = vi.fn();
 

@@ -142,6 +142,7 @@ import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
 import {
   extractApprovedGmailThreadId,
+  extractApprovedGmailMessageId,
   observeMailmanStart,
   observeApprovalCard,
   sweepPendingSends,
@@ -1881,7 +1882,14 @@ async function main(): Promise<void> {
           (channel): channel is SlackChannel => channel instanceof SlackChannel,
         );
         if (!slack) return undefined;
-        return slack.postTracked(jid, text);
+        return slack.postTracked(jid, text, undefined, 'company-os');
+      },
+      postWorkPacket: async (jid, threadTs, text) => {
+        const slack = channels.find(
+          (channel): channel is SlackChannel => channel instanceof SlackChannel,
+        );
+        if (!slack) return undefined;
+        return slack.postTracked(jid, text, threadTs, 'company-os');
       },
       postThread: async (jid, threadTs, text) => {
         const slack = channels.find(
@@ -2382,6 +2390,9 @@ async function main(): Promise<void> {
           const approvedGmailThreadId =
             extractApprovedGmailThreadId(card.content) ??
             extractApprovedGmailThreadId(threadRoot?.content);
+          const approvedGmailMessageId =
+            extractApprovedGmailMessageId(card.content) ??
+            extractApprovedGmailMessageId(threadRoot?.content);
           const approvalThreadTs = card.thread_ts ?? card.id;
           const observation = await observeApprovalCard(
             {
@@ -2391,6 +2402,7 @@ async function main(): Promise<void> {
               threadTs: approvalThreadTs,
               cardText: card.content,
               approvedGmailThreadId,
+              approvedGmailMessageId,
               authorizedDiscountTerms:
                 card.from_group === 'sales'
                   ? resolveHumanAuthorizedDiscountTerms(

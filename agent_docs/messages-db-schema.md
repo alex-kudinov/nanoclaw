@@ -205,6 +205,7 @@ are `own_outbound`, `spam_or_trash`, `empty_message`, `hard_filter`, and
   chat_jid                  TEXT         NOT NULL
   thread_ts                 TEXT
   gmail_thread_id           TEXT
+  source_gmail_message_id   TEXT
   recipient                 TEXT
   approved_cc               TEXT
   lead_ref                  TEXT
@@ -228,6 +229,7 @@ are `own_outbound`, `spam_or_trash`, `empty_message`, `hard_filter`, and
 Indexes:
 idx_pending_sends_action (action_id) UNIQUE
 idx_pending_sends_gmail_thread (gmail_thread_id,approved_at)
+idx_pending_sends_source_gmail_message (source_gmail_message_id,approved_at)
 idx_pending_sends_group (group_folder,approved_at)
 idx_pending_sends_handoff (handoff_observed_at,mailman_started_at,handoff_alerted_at)
 idx_pending_sends_state (state,approved_at)

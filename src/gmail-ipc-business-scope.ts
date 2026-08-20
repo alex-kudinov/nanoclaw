@@ -8,6 +8,7 @@
  */
 
 import { query } from './business-db.js';
+import { listEmailActionIdsBySourceMessage } from './db.js';
 import {
   extractScopedGmailSearchAddresses,
   type GmailIpcRequest,
@@ -15,15 +16,43 @@ import {
 import { logger } from './logger.js';
 
 type QueryFn = typeof query;
+type SourceActionLookup = typeof listEmailActionIdsBySourceMessage;
 
 export async function resolveDurableGmailResource(
   groupFolder: string,
   request: GmailIpcRequest,
   queryFn: QueryFn = query,
+  sourceActionLookup: SourceActionLookup = listEmailActionIdsBySourceMessage,
 ): Promise<boolean> {
-  if (groupFolder !== 'sales') return false;
-
   try {
+    if (
+      groupFolder === 'chief' &&
+      request.type === 'gmail_read' &&
+      request.messageId?.trim()
+    ) {
+      const actionIds = sourceActionLookup(request.messageId.trim());
+      if (actionIds.length === 0) return false;
+      const result = await queryFn<{ allowed: boolean }>(
+        `SELECT EXISTS (
+           SELECT 1
+             FROM business_v2.company_work_items w
+            WHERE w.workflow_type = 'sales_email'
+              AND w.source_system = 'sqlite_email_action'
+              AND w.source_key = ANY($1::text[])
+              AND EXISTS (
+                SELECT 1
+                  FROM business_v2.company_work_exception_cases c
+                 WHERE c.work_item_id = w.id
+                   AND c.state <> 'resolved'
+              )
+         ) AS allowed`,
+        [actionIds],
+      );
+      return result.rows[0]?.allowed === true;
+    }
+
+    if (groupFolder !== 'sales') return false;
+
     if (request.type === 'gmail_get_thread' && request.threadId?.trim()) {
       const result = await queryFn<{ allowed: boolean }>(
         `SELECT EXISTS (

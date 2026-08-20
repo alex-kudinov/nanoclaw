@@ -42,6 +42,12 @@ for content-free normalized trigger occurrences across time, Gmail, webhook,
 topic, and business-condition sources. It grants no task, skill, capability,
 approval, or action authority. See
 `docs/COMPANY-OS-TRIGGER-CONTRACT.md`.
+`NC-20260820-003` locally extends SQLite `pending_sends` with one content-free
+`source_gmail_message_id`. PostgreSQL Company Work remains content-free; its
+existing opaque action source key is resolved host-side to the exact SQLite
+action and Slack Sales root when a Chief work packet is posted. The field adds
+no search, send, reply, approval, or ledger-transition authority. Deployment
+and live proof remain pending.
 `NC-20260817-002` applied migration 121 and deployed exact release `baed66d`
 with the default-off producer for one exact scheduled-task claim boundary. It
 hashes only bounded schedule facts and writes through the host-admin store after

@@ -41,6 +41,7 @@ vi.mock('./db.js', () => ({
   failEmailAction: (...args: unknown[]) => testState.fail(...args),
   findPendingSendAction: (...args: unknown[]) => testState.findAction(...args),
   getMessageById: (...args: unknown[]) => testState.getMessage(...args),
+  listEmailActionIdsBySourceMessage: vi.fn(() => []),
   getPendingSendByActionId: (...args: unknown[]) =>
     testState.getAction(...args),
   getHumanMessagesInThread: vi.fn(() => []),
@@ -428,5 +429,31 @@ describe('Gmail IPC watcher authorization', () => {
     } finally {
       delete process.env.EXTERNAL_WRITE_SAFE_MODE;
     }
+
+    const chiefSearch = writeRequest('chief', 'chief-search.json', {
+      type: 'gmail_search',
+      groupFolder: 'chief',
+      query: 'from:rachel@example.com',
+      source_container: 'nanoclaw-chief-context',
+    });
+    await vi.advanceTimersByTimeAsync(1100);
+    expect(fs.existsSync(chiefSearch)).toBe(false);
+    expect(deps.sendMessage).toHaveBeenCalledWith(
+      'slack:CHIEF',
+      expect.stringContaining(
+        'gmail_search from chief was denied by the host boundary',
+      ),
+      expect.objectContaining({ fromGroup: 'chief' }),
+    );
+    const boundaryText = vi
+      .mocked(deps.sendMessage)
+      .mock.calls.map((call) => call[1])
+      .find(
+        (value) =>
+          typeof value === 'string' &&
+          value.includes('[GMAIL REQUEST HELD] gmail_search from chief'),
+      );
+    expect(boundaryText).toContain('not delivered to any other agent session');
+    expect(boundaryText).not.toContain('another Mailman session');
   });
 });

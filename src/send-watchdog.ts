@@ -57,6 +57,7 @@ export interface PendingSend {
   chatJid: string;
   threadTs?: string;
   gmailThreadId?: string;
+  sourceGmailMessageId?: string;
   recipient?: string;
   approvedCc?: string;
   leadRef?: string;
@@ -149,6 +150,25 @@ export function extractApprovedGmailThreadId(
   return undefined;
 }
 
+/** Extract only the host-routed source message identity from card/root headers. */
+export function extractApprovedGmailMessageId(
+  text: string | undefined,
+): string | undefined {
+  if (!text) return undefined;
+  for (const line of text.split(/\r?\n/)) {
+    if (
+      /^\s*(?:Body|Message|Original-Message|DRAFT RESPONSE|THEIR REQUEST)\s*:/i.test(
+        line,
+      )
+    ) {
+      break;
+    }
+    const messageId = /^\s*Message-ID\s*:\s*(\S+)\s*$/i.exec(line)?.[1];
+    if (messageId) return messageId;
+  }
+  return undefined;
+}
+
 /** True when this text is an approvable send card the watchdog should track. */
 export function isTrackableCard(text: string): boolean {
   return isApprovalCard(text);
@@ -166,6 +186,7 @@ export function recordApproval(
     threadTs?: string;
     cardText: string;
     approvedGmailThreadId?: string;
+    approvedGmailMessageId?: string;
     authorizedDiscountTerms?: readonly string[];
     now: Date;
   },
@@ -197,6 +218,9 @@ export function recordApproval(
       approved.gmailThreadId ??
       opts.approvedGmailThreadId ??
       extractApprovedGmailThreadId(opts.cardText),
+    sourceGmailMessageId:
+      opts.approvedGmailMessageId ??
+      extractApprovedGmailMessageId(opts.cardText),
     recipient: parseApprovalCardRecipient(opts.cardText),
     approvedCc: approved.cc,
     leadRef: opts.cardText.match(LEAD_RE)?.[1],

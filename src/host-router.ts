@@ -107,7 +107,10 @@ function fmtLeadSales(p: RouteParams, match: PipelineMatch): string {
       // the wrong subject "Re: Mentor Coach Training" instead of her CSS
       // question thread.)
       const tid = p.threadId ?? match.thread_id;
-      return tid ? [`Thread-ID: ${tid}`] : [];
+      return [
+        ...(tid ? [`Thread-ID: ${tid}`] : []),
+        ...(p.messageId ? [`Message-ID: ${p.messageId}`] : []),
+      ];
     })(),
     `From: ${p.senderEmail}`,
     `Subject: ${p.subject}`,

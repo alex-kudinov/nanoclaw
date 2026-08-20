@@ -6,7 +6,9 @@ program-facts source under `NC-20260820-002`. Its first bounded run and named
 acknowledgment remain verified; the program-facts canary additionally opened
 one exact owner-review case and posted Chief brief 10. Later natural
 source-derived resolution remains separately evidence-gated in active work and
-the engineering changelog.
+the engineering changelog. `NC-20260820-003` locally adds source-bound Chief
+work packets and a narrow exact-message recovery path; that change is not yet
+deployed or live-verified.
 
 ## Purpose and authority
 
@@ -14,6 +16,10 @@ This is the smallest operator-attention loop for the three proven Company Work
 pilots. It reads the complete privacy-minimized report, records exact reason
 cases, posts a deduplicated bounded brief to the registered Chief Slack
 channel, and lets a configured operator acknowledge the exact posted brief.
+The local `NC-20260820-003` candidate additionally emits one host-owned work
+packet per visible exception. Those packets wake Chief as actionable work and,
+for Sales-email items, attach the exact Mailman handoff instead of asking Chief
+to discover the source through Gmail search.
 
 `NC-20260820-002` deploys the third workflow in exact release `8344524c` with
 migration 125 and active mode. Its exact-release canary created blocked item 21
@@ -30,6 +36,7 @@ this exact brief." It cannot resolve, approve, reject, retry, dispatch, send,
 pause, resume, cancel, or advance email or job work. SQLite remains authority
 for approved-email actions and host jobs. A case resolves only when a later
 complete, non-truncated source report no longer contains that exact reason.
+Chief triage is not resolution and grants no new workflow or send authority.
 
 ## Host-owned records
 
@@ -47,6 +54,12 @@ timestamps, Slack UID/message identity, and SHA-256 evidence only. They have no
 customer name/address, email subject/body, approval text, job output/error,
 prompt, arbitrary payload, or action authority. No agent role receives access.
 
+`NC-20260820-003` adds no PostgreSQL table and does not copy customer prose into
+these exception records. The Company Work item's opaque `source_key` joins a
+`sales_email` item to its authoritative SQLite email action. SQLite stores the
+exact inbound Gmail Message-ID on `pending_sends`; the host resolves and copies
+only a bounded source excerpt into the transient Slack work packet.
+
 ## Reconciliation and delivery
 
 The host loop runs only when all configuration is valid. Each tick:
@@ -58,7 +71,11 @@ The host loop runs only when all configuration is valid. Each tick:
    host transaction;
 5. claims a Chicago-calendar-day fingerprint before attempting Slack;
 6. posts at most one new brief for that exact case/version/occurrence set;
-7. binds the returned Slack timestamp or marks ambiguous delivery uncertain.
+7. resolves and posts one source-bound Chief work packet beneath the brief for
+   every visible exception, with durable `from_group=company-os` routing;
+8. binds the brief timestamp only after every visible packet has a tracked
+   Slack receipt; otherwise it marks delivery uncertain and refuses
+   acknowledgment.
 
 A claimed fingerprint is never automatically retried. When Slack returns a
 timestamp but PostgreSQL cannot bind it, the host posts a best-effort warning
@@ -69,6 +86,22 @@ exception acknowledgment authority.
 Brief text is bounded to ten visible work items and contains only work ID,
 workflow, stage/disposition, age, severity, and named reason codes. It explicitly
 states that acknowledgment performs no workflow action.
+
+For `sales_email` items, source resolution is identity-bound: PostgreSQL must
+point to one SQLite action, that action must point to one Sales Slack root, and
+the root must contain a trusted Mailman inbound handoff. The host reconstructs
+only consecutive Mailman fragments, validates exact Thread-ID/Message-ID
+headers, and fails closed on conflicts. Legacy actions may be backfilled once
+from that trusted root. A complete attachment requires no Gmail call; a
+truncated attachment permits one exact `gmail_read(messageId)`; a missing
+binding produces a named code and never permits search or guessing. Attached
+customer prose is explicitly labeled untrusted evidence, not host instruction.
+
+The Chief restart fallback is equally narrow: `gmail_read` succeeds only when
+SQLite maps that exact Message-ID to a Sales action and PostgreSQL maps that
+same action to a `sales_email` Company Work item with a still-active exception
+case. It does not authorize `gmail_search`, thread discovery, replies, sends,
+or any unrelated message.
 
 ## Exact operator acknowledgment
 
@@ -149,6 +182,9 @@ but preserves cases, briefs, acknowledgments, and events.
 The migration rollback drops tables only while all three are empty. Once any
 history exists, leave the additive tables dormant. Never delete evidence to
 force rollback and never mutate source work to demonstrate resolution.
+Rolling back `NC-20260820-003` restores the prior release behavior and leaves
+the additive SQLite source-message column dormant; no customer or work state
+must be deleted.
 
 ## Acceptance evidence
 
@@ -160,5 +196,10 @@ authority fingerprints. Live proof distinguishes:
 
 - brief delivered and durably bound;
 - named operator reaction acknowledged with threaded receipt;
-- no container wake, workflow event/receipt, email, job, or queue side effect;
+- each visible exception packet delivered with tracked cross-group provenance
+  and wakes Chief as actionable work;
+- an email-backed packet carries its exact bounded source without search, with
+  one exact restart-safe read available only when the attachment is truncated;
+- no work transition, resolution, approval, email, job, or queue side effect
+  occurs merely because Chief received or triaged the packet;
 - later natural source resolution, which remains distinct from acknowledgment.

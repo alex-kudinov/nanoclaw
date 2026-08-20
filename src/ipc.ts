@@ -1398,7 +1398,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     );
                   } else {
                     await postBoundaryFailure(
-                      `🚫 [GMAIL REQUEST HELD] ${data.type} was denied by the host boundary. Its result was not delivered to another Mailman session.`,
+                      `🚫 [GMAIL REQUEST HELD] ${data.type} from ${sourceGroup} was denied by the host boundary. Its result was not delivered to any other agent session.`,
                     );
                   }
                   continue;

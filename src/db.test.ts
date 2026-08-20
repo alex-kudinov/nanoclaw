@@ -28,6 +28,8 @@ import {
   confirmEmailAction,
   findPendingSendAction,
   getPendingSendByActionId,
+  bindEmailActionSourceMessage,
+  listEmailActionIdsBySourceMessage,
   getLatestBotMessageInThread,
   listEmailSendEvents,
   listOverdueSends,
@@ -206,6 +208,35 @@ describe('pending send approvals', () => {
       'executing',
       'confirmed',
     ]);
+  });
+
+  it('persists an exact inbound source identity without changing action state', () => {
+    recordPendingSend({
+      actionId,
+      draftTs: 'source-bound-action',
+      groupFolder: 'sales',
+      chatJid: 'slack:sales',
+      threadTs: 'approval-thread',
+      gmailThreadId: 'gmail-thread',
+      sourceGmailMessageId: 'source-message',
+      recipient: 'lead@example.com',
+      approvedSubject: 'Subject',
+      approvedContentSha256: approvedHash,
+      approvedAt: '2026-08-02T01:00:00.000Z',
+    });
+
+    expect(getPendingSendByActionId(actionId)).toMatchObject({
+      state: 'approved',
+      sourceGmailMessageId: 'source-message',
+    });
+    expect(listEmailActionIdsBySourceMessage('source-message')).toEqual([
+      actionId,
+    ]);
+    expect(bindEmailActionSourceMessage(actionId, 'source-message')).toBe(true);
+    expect(bindEmailActionSourceMessage(actionId, 'different-message')).toBe(
+      false,
+    );
+    expect(getPendingSendByActionId(actionId)?.state).toBe('approved');
   });
 
   it('replays a confirmed action as its receipt without another execution claim', () => {

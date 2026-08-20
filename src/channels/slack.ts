@@ -1321,6 +1321,7 @@ export class SlackChannel implements Channel {
     jid: string,
     text: string,
     threadTs?: string,
+    fromGroup?: string,
   ): Promise<string | undefined> {
     assertExternalWriteAllowed({
       system: 'slack',
@@ -1340,7 +1341,7 @@ export class SlackChannel implements Channel {
     try {
       const result = await this.app.client.chat.postMessage(postOpts);
       if (result.ts) {
-        this.storeOutbound(jid, result.ts, text, undefined, threadTs);
+        this.storeOutbound(jid, result.ts, text, fromGroup, threadTs);
         return result.ts;
       }
     } catch (err) {

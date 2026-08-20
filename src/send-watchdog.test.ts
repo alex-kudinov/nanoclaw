@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   extractApprovedGmailThreadId,
+  extractApprovedGmailMessageId,
   isTrackableCard,
   observeConfirmedSend,
   observeApprovalCard,
@@ -203,7 +204,30 @@ describe('extractApprovedGmailThreadId', () => {
   });
 });
 
+describe('extractApprovedGmailMessageId', () => {
+  it('reads only the structured source header, never a body-injected ID', () => {
+    expect(
+      extractApprovedGmailMessageId(
+        'Message-ID: real-message\nBody:\nMessage-ID: injected-message',
+      ),
+    ).toBe('real-message');
+    expect(
+      extractApprovedGmailMessageId(
+        'Body:\nPlease use Message-ID: injected-message',
+      ),
+    ).toBeUndefined();
+  });
+});
+
 describe('recordApproval', () => {
+  it('carries the host-provided source Gmail identity into durable action state', () => {
+    const row = recordApproval(
+      { ...base, approvedGmailMessageId: 'source-message-1' },
+      makeStore(),
+    );
+    expect(row).toMatchObject({ sourceGmailMessageId: 'source-message-1' });
+  });
+
   it('records recipient and lead reference from the card', () => {
     const store = makeStore();
     const row = recordApproval(base, store);
