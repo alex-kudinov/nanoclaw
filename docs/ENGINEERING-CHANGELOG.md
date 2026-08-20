@@ -8,6 +8,52 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260820-005 — Add truthful Sales service-indicator baseline
+
+- Date: 2026-08-20
+- Owner/client: Codex
+- State: ready_for_review; implementation and local verification are complete,
+  while immutable release, deployment, and the bounded production read remain
+  pending
+- Commit/PR: isolated branch
+  `codex/nc-20260820-005-service-indicators` from `3e843235`; implementation
+  commit pending at this review boundary; no PR
+- Change class: C2 — standalone aggregate-only PostgreSQL read; no schema,
+  daemon path, workflow, customer message, approval, or action change
+- Root cause: the durable Company Work ledger and exception report expose
+  individual Sales email state, but no consistent aggregate baseline for
+  accepted/completed work or completion latency. The system also has no
+  canonical receipt proving a customer-visible defect or reversal; treating
+  an internal blocked/failed/source-gap state as that outcome would invent
+  evidence.
+- Implementation: one static, bounded aggregate `SELECT` cohorts exact
+  `sales_email` accepted events, requires one matching later
+  `outcome_validated` event and terminal state for completion, and returns
+  accepted/completed/incomplete counts, completion rate, and p50/p95/maximum
+  accepted-to-completed latency. Duplicate or contradictory cohort evidence
+  makes the whole result `ledger_quality_failed`.
+- Evidence gap: customer-visible defect/reversal rate is explicitly
+  unavailable with `no_canonical_customer_visible_defect_receipt`. No
+  objective, SLO, threshold, alert, or proxy is guessed from internal
+  exceptions.
+- Privacy/authority: JSON and text output contain only aggregate counts,
+  rates, latency, window timestamps, and closed reason codes. The command is
+  not imported by the daemon, projector, exception loop, or email path and has
+  no identifier/content selection, Gmail/Slack source read, database write,
+  schedule, post, send, approval, or resolution capability.
+- Verification: pinned Node 22.23.2 focused tests pass 7/7; typecheck,
+  production build, source formatting, diff check, and documentation
+  continuity pass. Email-critical tests pass 719/719 plus the independent
+  runner build and 43/43 tests. The unrestricted suite is 2,798/2,799 passing
+  with five skips; its sole failure is the unchanged CNPC source-wrapper
+  literal assertion in `cnpc-prompt-contract.test.ts`.
+- Deployment/external state: no deployment, restart, database/schema write,
+  message, email, approval, schedule, push, or merge has occurred under
+  NC-005 at this review boundary.
+- Rollback: before deployment, revert the implementation commit. After
+  deployment, activate the retained prior immutable release; no data rollback
+  or migration is required.
+
 ### NC-20260820-004 — Attach bounded contact-form entry context at ingress
 
 - Date: 2026-08-20

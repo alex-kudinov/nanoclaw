@@ -363,7 +363,43 @@ schema, prompt, service, channels, queues, and protected aggregates are
 verified. The unchanged daily fingerprint deduplicated on startup, so the next
 natural packet and Chief pickup remain separate outcome proof.
 
-## 10. Operator exception loop
+## 10. Read-only Sales service indicators
+
+`NC-20260820-005` adds `src/company-work-indicators.ts` and the compiled
+`company-work-indicators-cli` as a second standalone, read-only view over the
+privacy-minimized ledger. It is not imported by the daemon, shadow projector,
+exception loop, or email path. Its one static aggregate `SELECT` returns no
+work-item, source, Party, pipeline, Gmail, Slack, or customer-content identity.
+
+After a local or immutable release build, run:
+
+```bash
+npm run company-work:indicators
+npm run company-work:indicators -- --json --window-days 30
+```
+
+The cohort contains `sales_email` items whose exact `accepted` event occurred
+within the bounded half-open window. Completion requires exactly one later
+`outcome_validated` event plus the matching terminal item state. Latency is the
+elapsed time between those two exact events; the report returns completed
+sample count, p50, p95, and maximum latency. Duplicate or contradictory
+accepted/outcome evidence makes the whole report unavailable rather than
+silently changing the denominator.
+
+The third planned indicator, customer-visible defect/reversal rate, is emitted
+as explicitly unavailable with reason
+`no_canonical_customer_visible_defect_receipt`. Internal blocked, failed,
+stale, dead-letter, or `source_gap:*` evidence can explain incomplete work, but
+does not prove a customer saw a defect or that a prior action was reversed.
+No objective or alert threshold is guessed from the initial baseline. Query
+failure returns only `ledger_query_failed`; malformed aggregate evidence
+returns only `ledger_quality_failed`.
+
+Repository presence is not deployment or baseline evidence. Use the exact
+active-work and engineering-changelog entry to determine whether the compiled
+command is installed and whether a production read preserved protected state.
+
+## 11. Operator exception loop
 
 Migration 120 and `src/company-work-exception-loop.ts` keep operator-attention
 state separate from the work-item/event/receipt state machine. Only a complete,
@@ -380,7 +416,7 @@ the original config/restart canary and NC-20260820-003 records the later
 source-bound dispatch deployment. Production state is authoritative only when
 the active-work/changelog evidence says those gates passed.
 
-## 11. Rollback
+## 12. Rollback
 
 Before migration: revert the branch; there is no data or service recovery.
 
