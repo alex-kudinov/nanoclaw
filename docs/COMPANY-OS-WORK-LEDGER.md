@@ -399,6 +399,20 @@ Repository presence is not deployment or baseline evidence. Use the exact
 active-work and engineering-changelog entry to determine whether the compiled
 command is installed and whether a production read preserved protected state.
 
+Exact release `a02abaca` deploys the command and live-proves the first bounded
+30-day baseline: 15 accepted, 13 completed, two incomplete, and 86.67%
+completion. Across the 13 exact accepted-to-outcome samples, p50 is
+29m01.725s, p95 is 6h16m18.994s, and maximum is 9h25m12.618s. The same result
+was produced once from the staged verified bundle and once after activation.
+Both commands had identical before/after Company Work and exception
+fingerprints. The ordinary startup exception loop re-observed current cases
+before the active read and is separately attributable; it did not change the
+work-item, event, or receipt ledger.
+
+The live defect/reversal field remains unavailable. This is an explicit
+evidence gap, not a zero-defect claim. No SLO or objective is set from the first
+small baseline.
+
 ## 11. Operator exception loop
 
 Migration 120 and `src/company-work-exception-loop.ts` keep operator-attention

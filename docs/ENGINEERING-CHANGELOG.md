@@ -12,9 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: ready_for_deploy; implementation and local verification are complete,
-  while immutable release, deployment, and the bounded production read remain
-  pending
+- State: complete; exact release, service health, bounded production read, and
+  non-mutation proof are live-verified
 - Commit/PR: isolated branch
   `codex/nc-20260820-005-service-indicators`; implementation commit
   `b71bfae2fd48cbd5a7e64419b1d20b0311a0a34a`; no PR
@@ -53,6 +52,52 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Rollback: before deployment, revert the implementation commit. After
   deployment, activate the retained prior immutable release; no data rollback
   or migration is required.
+
+#### Addendum 2026-08-20T19:44Z — immutable release and live baseline
+
+- Release identity: exact commit
+  `a02abacaf4690f696cc6135fc46ca758588e6515` binds source tree
+  `99ac2ebd5a7c144c1bad00613d0e961f35b2ec98`, 800 compiled files,
+  artifact SHA-256
+  `1fe90d001ac0d5850fd7d5db00ea5bc76a5fc3d5511cc4f50107c785405a0228`,
+  and archive SHA-256
+  `d0a77be6a4390697713ac2b1ac8f354825bf70e3d8dad2b0f565c7274e0b8ce7`.
+  Fresh local extraction and Mini bundle/runtime verification passed on Node
+  22.23.2.
+- Staged proof: before activation, the compiled candidate ran one exact
+  30-day production read from the operational working directory. It returned
+  15 accepted, 13 completed, two incomplete, 86.67% completion, p50
+  29m01.725s, p95 6h16m18.994s, and maximum 9h25m12.618s. Company Work and
+  exception counts, version sum, and maximum timestamps were identical before
+  and after.
+- Drain/backup: activation required zero containers, active/waiting groups,
+  outgoing Slack work, and active email actions plus SQLite `quick_check=ok`.
+  The mode-0600 WAL-safe backup at
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260820-005-20260820T194200Z`
+  has SQLite SHA-256
+  `90041df997f60d2eb95129c2665be267667fd9b273e7bba3edd2f1742740b9bc`.
+  The activator retained rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-eb5fbaa171e6-2026-08-20T19-42-11-271Z`.
+- Activation/health: dry-run and apply changed exactly code root, expected
+  release commit, and executable. PID 10617 reports exact commit/tree/artifact
+  and code-root match under Node 22.23.2. Gmail and Slack are connected; one
+  listener, zero containers/groups/waiters/outgoing Slack/active email actions,
+  and no WARN/ERROR/FATAL headline after the release-integrity marker are
+  verified.
+- Active proof: the same exact 30-day command from the active release
+  reproduced the staged baseline. Its immediate before/after fingerprint is
+  unchanged at 21 work items, version sum 110, 131 events, 59 receipts, seven
+  exception cases, six briefs, and 40 exception events with identical maximum
+  timestamps. SQLite remains 87 actions (81 confirmed, six blocked), 430
+  events, zero active actions, and `quick_check=ok`.
+- Attribution/boundary: the ordinary startup exception loop re-observed seven
+  current cases and advanced their `last_seen_at` before the active command;
+  work-item/event/receipt state did not change, and the command's own
+  before/after fingerprint is identical. No customer content/identifier,
+  Gmail or Slack source read, message, email, approval, schema, workflow,
+  schedule, threshold/SLO, or action authority was created. The unavailable
+  customer-visible defect/reversal field is an evidence gap, not a zero-defect
+  claim.
 
 ### NC-20260820-004 — Attach bounded contact-form entry context at ingress
 
