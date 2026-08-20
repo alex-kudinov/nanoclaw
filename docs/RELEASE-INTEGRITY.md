@@ -58,6 +58,24 @@ authorize any fact/source edit; owner correction and exact clean closure are
 separate gates. Exact backup, rollback, configuration, run, and final-state
 receipts are in `docs/ENGINEERING-CHANGELOG.md`.
 
+NC-20260820-003 crossed the next additive release boundary under exact
+candidate `bab154cbdadf76962373272d6a4960cb926d3794`, source tree
+`e31362d8c8b858f420144d3d6777dde079b51c94`, 792 compiled files, artifact
+SHA-256 `3fdd305c62ba449bb526b792f0d052251c35fcfceb1dc256f5e0f95597347e75`,
+and archive SHA-256
+`c340087fe532a0df711a2fa344e9c13a080ae6b77f4cf5bc79c3f19deeb8aa5`.
+Local and Mini runtime verification passed under Node 22.23.2. After a natural
+Procurement run drained, a mode-0600 WAL-safe SQLite/plist backup passed
+`quick_check`; dry-run showed exactly the three permitted plist paths and
+activation retained rollback to `8344524c`. Healthy PID 73082 now reports the
+exact commit/tree/artifact/code root, connected Gmail/Slack, one listener, and
+empty queues. The additive source-message column/index exist exactly once and
+protected SQLite/PostgreSQL aggregates are unchanged. The already-posted daily
+brief deduplicated on startup, so no packet was manufactured; natural work
+packet, Chief pickup, and exact email-source hydration remain outcome gates.
+Exact backup, prompt-merge, rollback, and aggregate receipts are in
+`docs/ENGINEERING-CHANGELOG.md`.
+
 NC-017 crossed those boundaries under exact release `999f2a4`: fresh local and
 production extraction verified the same archive, a narrow custom-format backup
 preceded explicit migration 119 application, and recovery-safe activation

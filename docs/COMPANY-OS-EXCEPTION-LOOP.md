@@ -1,14 +1,14 @@
 # Company OS operator exception loop
 
-Status: exact release `8344524c` preserves the live migration-120 loop under
-`NC-20260816-018` for the sole owner-confirmed operator and adds the live
-program-facts source under `NC-20260820-002`. Its first bounded run and named
-acknowledgment remain verified; the program-facts canary additionally opened
-one exact owner-review case and posted Chief brief 10. Later natural
-source-derived resolution remains separately evidence-gated in active work and
-the engineering changelog. `NC-20260820-003` locally adds source-bound Chief
-work packets and a narrow exact-message recovery path; that change is not yet
-deployed or live-verified.
+Status: exact release `bab154cb` preserves the live migration-120 loop under
+`NC-20260816-018` for the sole owner-confirmed operator, the live program-facts
+source under `NC-20260820-002`, and NC-20260820-003's source-bound Chief work
+packets plus narrow exact-message recovery path. Runtime, additive SQLite
+schema, operational prompt, channels, queues, and protected aggregates are
+verified. Startup correctly deduplicated the already-posted daily brief 10, so
+the next natural packet, Chief pickup, exact email hydration, and later
+source-derived resolution remain separately evidence-gated in active work and
+the engineering changelog.
 
 ## Purpose and authority
 
@@ -16,7 +16,7 @@ This is the smallest operator-attention loop for the three proven Company Work
 pilots. It reads the complete privacy-minimized report, records exact reason
 cases, posts a deduplicated bounded brief to the registered Chief Slack
 channel, and lets a configured operator acknowledge the exact posted brief.
-The local `NC-20260820-003` candidate additionally emits one host-owned work
+Deployed `NC-20260820-003` additionally emits one host-owned work
 packet per visible exception. Those packets wake Chief as actionable work and,
 for Sales-email items, attach the exact Mailman handoff instead of asking Chief
 to discover the source through Gmail search.
@@ -203,3 +203,11 @@ authority fingerprints. Live proof distinguishes:
 - no work transition, resolution, approval, email, job, or queue side effect
   occurs merely because Chief received or triaged the packet;
 - later natural source resolution, which remains distinct from acknowledgment.
+
+NC-20260820-003 deployment verified exact release `bab154cb`, PID 73082, one
+listener, connected Gmail/Slack, empty queues, the additive SQLite source-ID
+column/index, and unchanged email/Company Work aggregates. The startup loop
+scanned 21 items and 7 active cases, found the same 3 visible exceptions, and
+returned `duplicate_brief` for brief 10's existing fingerprint. It therefore
+posted zero packets. This is correct deduplication and deployment proof, not a
+substitute for the next natural work-packet/Chief-pickup observation.

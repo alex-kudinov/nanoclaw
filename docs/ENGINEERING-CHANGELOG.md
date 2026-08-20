@@ -12,9 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: ready_for_deploy; implemented, committed, and locally verified, not
-  yet deployed or live-verified
+- State: deployed_unverified; exact runtime, schema, channels, queues, prompt
+  installation, and protected aggregates are verified, while a natural new
+  work packet and Chief pickup remain pending
 - Commit/PR: implementation `8543c1b8a6a0863e7e62eace06fc5f530fca7b4d`
+  and deployment candidate `bab154cbdadf76962373272d6a4960cb926d3794`
   on isolated branch `codex/nc-20260820-003-source-bound-work`; no PR
 - Change class: C2 — additive host routing, local SQLite identity, Chief
   behavior, and exception-loop delivery; no broadened mailbox, send, approval,
@@ -60,13 +62,64 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   unchanged CNPC source-wrapper literal assertion in
   `cnpc-prompt-contract.test.ts`. Documentation continuity passes after these
   records are reconciled.
-- Deployment boundary: no production database, daemon, Slack message, Gmail
-  call, customer email, work item, approval, release, push, merge, or external
-  system changed through the implementation milestone. The owner authorized
-  production deployment at 2026-08-20T17:49Z. Release build, WAL-safe SQLite
-  backup, activation/restart, health/schema verification, and natural
-  no-manufacture packet observation are in scope; customer email, manufactured
-  work, push, and merge remain excluded.
+- Deployment authorization: the owner authorized production deployment at
+  2026-08-20T17:49Z. Customer email, manufactured work, push, and merge remained
+  excluded.
+
+#### Addendum 2026-08-20T18:21Z — immutable production activation
+
+- Drain and backup: production began on exact release `8344524c`, PID 38712,
+  Node 22.23.2, one listener, connected Gmail/Slack, zero active email actions,
+  and empty outgoing/runtime queues. A natural Procurement container started
+  before activation and was allowed to finish; the apply gate did not pass
+  until containers, active groups, queue work, outgoing Slack, child processes,
+  and active email actions all returned zero. A fresh WAL-safe SQLite/plist
+  backup at
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260820-003-20260820T181520Z`
+  has mode-0600 SQLite SHA-256
+  `c0c529fe3958bc030aa1fa60b081500e7d73c1926714924fc25294a60024d3b5`,
+  size 118,702,080 bytes, and `quick_check=ok`; the predeploy plist SHA-256 is
+  `2c097f122e13a4209efb4072e438efceb7047ed3c4162e69571a16dba7ba5105`.
+- Release: candidate `bab154cbdadf76962373272d6a4960cb926d3794`
+  binds source tree `e31362d8c8b858f420144d3d6777dde079b51c94`, 792
+  compiled files, artifact SHA-256
+  `3fdd305c62ba449bb526b792f0d052251c35fcfceb1dc256f5e0f95597347e75`,
+  and archive SHA-256
+  `c340087fe532a0df711a2fa344e9c13a080ae6b77f4cf5bc79c3f19deeb8aa5`.
+  Fresh local and Mini extraction/runtime verification passed under exact Node
+  22.23.2. Dry-run reported only `NANOCLAW_CODE_ROOT`,
+  `NANOCLAW_EXPECTED_RELEASE_COMMIT`, and `ProgramArguments[1]` changing.
+- Activation: the recovery-safe helper moved `8344524c` to `bab154cb` and
+  retained rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-8344524cf4a4-2026-08-20T18-15-35-331Z`.
+  Launchd and the sole TCP listener converge on PID 73082. Health reports the
+  exact commit/tree/artifact/code root, Node 22.23.2, connected Gmail/Slack,
+  zero active containers/groups/queue items, and zero outgoing Slack work.
+  No WARN, ERROR, or FATAL headline occurs after the new release-integrity
+  startup marker.
+- Operational inputs: the Chief prompt was merged rather than overwritten so
+  its pre-existing exact grader-file text rule remained intact. Installed
+  SHA-256 is
+  `5ca4a71725ccf4ba635f16bbd5a8f4812b87631ed96eb85e88503eba9423abf0`;
+  the exact prior file is backed up with SHA-256
+  `b0465f6f0a7edd83e7b094cd753cafee37b33ddf314846be54c4c63443e5f677`.
+  The mounted business guide and structure-only SQLite schema were backed up
+  and installed from the reviewed candidate at SHA-256s
+  `28de24a32c4133ba9314317a7cf3fbd17090cd7d197614e1a0405d12c40e1e5b`
+  and `31246c4ecfc27a378095fe22b42c2561a0409f227a2d36cfdce55982c69faf12`.
+- State invariants: live SQLite has `quick_check=ok`, exactly one
+  `source_gmail_message_id` column and one
+  `idx_pending_sends_source_gmail_message` index, 80 confirmed/6 blocked
+  actions, and zero active actions. PostgreSQL remains 3 acknowledged + 4 open
+  exception cases, 6 posted briefs with maximum ID 10, and 5 `host_job_run` +
+  1 `program_facts_drift` + 15 `sales_email` work items.
+- Natural-proof boundary: the startup loop ran successfully and returned
+  `duplicate_brief` for today's already-posted unchanged fingerprint (21 items
+  scanned, 3 visible exceptions, 7 active cases). It posted zero work packets,
+  which is correct deduplication but not business-path proof. Await the next
+  natural new/change-fingerprint brief; do not alter work state or send an email
+  to manufacture it. This deployment sent no customer email and performed no
+  PostgreSQL write, approval, push, or merge.
 
 ### NC-20260820-002 — Route program-facts drift into durable Company Work
 

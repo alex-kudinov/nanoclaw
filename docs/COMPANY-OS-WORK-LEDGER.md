@@ -1,13 +1,15 @@
 # Company OS work ledger — proven pilots and live condition work
 
 Status: host-only schema, non-authoritative observers, read-only report, and
-operator loop are deployed and live-verified. Exact release `8344524c`
-preserves the earlier email/job pilots and one owner-confirmed operator, and
-activates the program-facts condition pilot with migration 125. Workflow and
-source-correction authority remain separate.
+operator loop are deployed and live-verified. Exact release `bab154cb`
+preserves the earlier email/job/program-facts pilots and one owner-confirmed
+operator, and deploys source-bound Chief work packets. Workflow and
+source-correction authority remain separate; natural packet pickup remains an
+outcome gate.
 Tasks: foundation `NC-20260815-010`; activation `NC-20260816-001`; read-only
 brief `NC-20260816-014`; report deployment/proof `NC-20260816-015`; operator
-loop `NC-20260816-018`; condition pilot `NC-20260820-002`
+loop `NC-20260816-018`; condition pilot `NC-20260820-002`; source-bound
+dispatch `NC-20260820-003`
 Decision: the shared ledger is host-owned PostgreSQL business state, while the
 existing SQLite approved-email tables remain the action-execution authority
 
@@ -71,7 +73,7 @@ append-only events, and external receipts.
 SQLite remains authoritative for the exact approved email action:
 
 - `pending_sends` owns immutable To/CC/subject/body authority, execution claim,
-  state, Gmail receipt, and—under the local NC-20260820-003 candidate—the exact
+  state, Gmail receipt, and—under deployed NC-20260820-003—the exact
   content-free Gmail message ID that originated the Sales work root;
 - `email_send_events` owns the action's append-only execution stages;
 - the Company OS ledger may reference an action ID and a hash/receipt, but may
@@ -349,15 +351,17 @@ acknowledgment is an attention receipt, not an exception-resolution action, and
 it cannot promote a ledger fact into workflow authority. See
 `docs/COMPANY-OS-EXCEPTION-LOOP.md`.
 
-NC-20260820-003 locally adds a host dispatch layer after that read: for each
+NC-20260820-003 deploys a host dispatch layer after that read: for each
 visible exception it posts a bounded, cross-group work packet beneath the
 brief. A `sales_email` packet follows the report's opaque action source key to
 the authoritative SQLite action and exact Mailman-authored Sales root, then
 copies that source into the Chief thread. The PostgreSQL ledger still receives
 no customer prose or Gmail query. The packet can issue/recover only one exact
 Chief `gmail_read` grant while that work retains an active exception case and
-cannot mutate, approve, retry, send, or resolve the work. Deployment and
-natural proof are separate.
+cannot mutate, approve, retry, send, or resolve the work. Exact release,
+schema, prompt, service, channels, queues, and protected aggregates are
+verified. The unchanged daily fingerprint deduplicated on startup, so the next
+natural packet and Chief pickup remain separate outcome proof.
 
 ## 10. Operator exception loop
 
@@ -370,11 +374,11 @@ bound brief can acknowledge its current case occurrences. No case operation
 mutates `company_work_items`, `company_work_events`, or
 `company_work_receipts`.
 
-Repository presence and deployment do not arm it. Migration 120 and the exact
-release are live, but the loop remains disabled and requires a non-empty
-owner-approved named-operator list plus an explicit config/restart canary.
-Production state is authoritative only when the NC-018 active-work/changelog
-record says those gates passed.
+Repository presence alone does not arm it. Migration 120, the owner-approved
+named-operator configuration, and the exact release are live; NC-018 records
+the original config/restart canary and NC-20260820-003 records the later
+source-bound dispatch deployment. Production state is authoritative only when
+the active-work/changelog evidence says those gates passed.
 
 ## 11. Rollback
 
