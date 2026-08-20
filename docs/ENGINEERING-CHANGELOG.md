@@ -12,10 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: ready_for_review; implemented and locally verified, not deployed or
-  live-verified
-- Commit/PR: isolated branch `codex/nc-20260820-003-source-bound-work`; no PR
-  or deployment
+- State: ready_for_deploy; implemented, committed, and locally verified, not
+  yet deployed or live-verified
+- Commit/PR: implementation `8543c1b8a6a0863e7e62eace06fc5f530fca7b4d`
+  on isolated branch `codex/nc-20260820-003-source-bound-work`; no PR
 - Change class: C2 — additive host routing, local SQLite identity, Chief
   behavior, and exception-loop delivery; no broadened mailbox, send, approval,
   or workflow authority
@@ -62,8 +62,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   records are reconciled.
 - Deployment boundary: no production database, daemon, Slack message, Gmail
   call, customer email, work item, approval, release, push, merge, or external
-  system changed in this milestone. Deployment, restart, natural packet proof,
-  and outcome validation remain separately authorized.
+  system changed through the implementation milestone. The owner authorized
+  production deployment at 2026-08-20T17:49Z. Release build, WAL-safe SQLite
+  backup, activation/restart, health/schema verification, and natural
+  no-manufacture packet observation are in scope; customer email, manufactured
+  work, push, and merge remain excluded.
 
 ### NC-20260820-002 — Route program-facts drift into durable Company Work
 
