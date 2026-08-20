@@ -404,16 +404,17 @@ dead-letter, or `source_gap:*` evidence remains ineligible. No objective or
 alert threshold is guessed. Query failure returns only `ledger_query_failed`;
 malformed ledger or receipt evidence returns only `ledger_quality_failed`.
 
-Migration 126 is dark persistence: no daemon producer, agent grant, write CLI,
-automatic classifier, Gmail/Slack reader, remediation path, or message/action
-authority is added. Schema presence cannot create a clean or adverse receipt.
-Deployment and natural assessment coverage must be proven separately.
+Migration 126 is live dark persistence under exact release `09bc2408`: no
+daemon producer, agent grant, write CLI, automatic classifier, Gmail/Slack
+reader, remediation path, or message/action authority exists. The live table
+is empty/admin-only; schema presence cannot create a clean or adverse receipt.
+Natural assessment coverage remains a separate producer/review task.
 
 Repository presence is not deployment or baseline evidence. Use the exact
 active-work and engineering-changelog entry to determine whether the compiled
 command is installed and whether a production read preserved protected state.
 
-Exact release `a02abaca` deploys the command and live-proves the first bounded
+Exact release `09bc2408` preserves the first bounded
 30-day baseline: 15 accepted, 13 completed, two incomplete, and 86.67%
 completion. Across the 13 exact accepted-to-outcome samples, p50 is
 29m01.725s, p95 is 6h16m18.994s, and maximum is 9h25m12.618s. The same result
@@ -423,11 +424,14 @@ fingerprints. The ordinary startup exception loop re-observed current cases
 before the active read and is separately attributable; it did not change the
 work-item, event, or receipt ledger.
 
-On exact release `a02abaca`, the live defect/reversal field remains unavailable
-under contract version 1. This is an explicit evidence gap, not a zero-defect
-claim. NC-20260820-006's contract-version-2 code and migration are not live
-merely because they exist on an isolated branch. No SLO or objective is set
-from the first small baseline.
+Exact release `09bc2408` and live migration 126 now run contract version 2. The
+staged and active 30-day reads both find 13 exact customer-visible outcomes,
+zero current assessments, and 13 missing receipts, so the defect/reversal rate
+remains unavailable with `outcome_quality_receipt_coverage_incomplete`. The
+existing accepted/completed and latency baseline is unchanged, as are the
+immediate before/after Company Work fingerprints. This is explicit missing
+coverage, not a zero-defect claim. No SLO or objective is set from the small
+baseline, and no assessment was manufactured for deployment proof.
 
 ## 11. Operator exception loop
 

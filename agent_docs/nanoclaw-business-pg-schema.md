@@ -21,14 +21,15 @@ Migration 122's source/watermark tables are live and empty under NC-004.
 Migration 123's Gmail reconciliation shadow tables are live, empty, and admin-
 only under NC-013; no source or shadow producer is activated.
 
-Structure-only outcome-quality overlay: migration 126 defines the admin-only,
+Structure-only outcome-quality overlay: migration 126 is live under exact
+release `09bc2408` and defines the admin-only,
 append-only `company_work_outcome_quality_receipts` contract. Each assessment
 binds one exact `sales_email` `external_acknowledged` event and stores only a
 bounded classification, opaque SHA-256 evidence/source/assessor keys, and
 timestamps. Append-only revisions may supersede but never rewrite a prior
-assessment. Repository presence does not prove that migration 126 is live or
-that any outcome has been assessed; use NC-20260820-006's active-work and
-changelog evidence.
+assessment. The live table has zero rows and zero non-admin grants; no producer
+exists. Repository presence alone does not prove an assessment; use
+NC-20260820-006's active-work and changelog evidence.
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -93,7 +94,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_work_outcome_quality_receipts (migration 126 candidate)
+## business_v2.company_work_outcome_quality_receipts (migration 126 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_outcome_quality_receipts_id_seq'::regclass)

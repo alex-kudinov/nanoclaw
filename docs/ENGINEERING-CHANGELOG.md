@@ -12,9 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: ready_for_deploy; implementation is committed and disposable
-  PostgreSQL evidence passes, while release, migration, deployment, and
-  natural assessment coverage have not occurred
+- State: complete for the dark receipt/indicator contract; exact release,
+  migration, service health, empty-schema state, coverage gap, and non-mutation
+  proof are live-verified; a producer and natural assessment coverage remain a
+  separately gated task
 - Commit/PR: isolated branch `codex/nc-20260820-006-outcome-quality` from
   `2320e189`; local-only task claim `bb037d0d`; implementation
   `c461e11e5181f868d44dbdd842c481dd75774d72`; no PR
@@ -55,13 +56,61 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   2,806/2,807 passing with five skips; its sole failure is the unchanged,
   pre-existing CNPC source-wrapper literal assertion, and neither implicated
   CNPC file differs from the task base.
-- Deployment/external state: no production migration, release build,
-  activation, restart, assessment receipt, customer incident, Gmail/Slack
-  read/write, message, push, or merge has occurred under NC-006.
+- Deployment/external state at the pre-release review boundary: no production
+  migration, release build, activation, restart, assessment receipt, customer
+  incident, Gmail/Slack read/write, message, push, or merge had occurred under
+  NC-006.
 - Rollback: before migration, revert the implementation commit. After an empty
   migration, use the guarded rollback. After any receipt exists, leave the
   additive table dormant or use a separately reviewed archival migration; do
   not delete assessment history.
+
+#### Addendum 2026-08-20T20:17Z — migration 126 and exact release live
+
+- Release identity: exact commit
+  `09bc2408165449edc32a2cb29868b2bc5b628666` binds source tree
+  `82a6b1f490d0e0cbc32535b396e7926a9e760016`, 800 compiled files,
+  artifact SHA-256
+  `59781d6126200739fb6f6ef1080b90aef5e7de656b104cc2008d92dbf8c5c593`,
+  and archive SHA-256
+  `598de975e561b3374a66fb79d2cfab37849661f42823fe41efff7040fd3b550a`.
+  Local release gates and Mini bundle/runtime verification pass on Node
+  22.23.2.
+- Drain/backup: zero containers, active/waiting groups, outgoing Slack work,
+  and active email actions plus SQLite `quick_check=ok` preceded mutation. The
+  private backup at
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260820-006-20260820T201436Z`
+  contains a WAL-safe SQLite copy (SHA-256 `5ee58c34…`), installed plist
+  (`53b1db41…`), and full custom-format PostgreSQL dump (`0a484a7e…`); SQLite
+  quick-check and `pg_restore --list` pass.
+- Migration: exact SHA-256
+  `d3cd74c37a73b6a5645efc8a79b49c554e545d8ec9be34f6c15a5450449c8962`
+  applied transactionally before activation. Live structure has zero rows, 17
+  constraints, six indexes, two enabled triggers, admin table/sequence/
+  function ownership, zero non-admin table/sequence grants, and zero forbidden
+  content columns. Existing protected counts remain 21 work items/version sum
+  110, 131 events, 59 receipts, seven cases, six briefs, and 40 case events.
+- Staged and active proof: both exact 30-day reads return 15 accepted, 13
+  completed, two incomplete, 86.67% completion, and unchanged p50/p95/max
+  latency of 29m01.725s/6h16m18.994s/9h25m12.618s. They find 13 exact
+  customer-visible outcomes, zero assessed, and 13 missing, and withhold the
+  adverse numerator/denominator/rate with
+  `outcome_quality_receipt_coverage_incomplete`. Immediate before/after
+  PostgreSQL fingerprints are identical.
+- Activation/health: dry-run and apply changed only code root, expected commit,
+  and executable. The retained rollback plist is
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-a02abacaf469-2026-08-20T20-16-05-621Z`.
+  After one transient first PID observation, health, launchd, and the sole
+  listener converged on PID 82117 with exact release identity, connected
+  Gmail/Slack, empty queues, zero active email actions, SQLite 87 actions/430
+  events and `quick_check=ok`, and no current-process stderr or post-marker
+  WARN/ERROR/FATAL headline.
+- Attribution/boundary: startup's ordinary exception loop re-observed current
+  cases and returned `duplicate_brief`; it created no brief/message and did not
+  mutate the Company Work ledger. NC-006 created no assessment receipt,
+  customer incident, Gmail/Slack source read, external message, remediation,
+  threshold/SLO, approval, or action authority. Zero receipts means missing
+  coverage, never zero defects.
 
 ### NC-20260820-005 — Add truthful Sales service-indicator baseline
 
