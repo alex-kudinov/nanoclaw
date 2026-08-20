@@ -12,8 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: ready_for_review; local/default-off only
-- Commit/PR: pending on `codex/nc-20260820-002-program-facts-work`; no PR
+- State: ready_for_deploy; local/default-off release verified, production
+  untouched
+- Commit/PR: implementation
+  `8344524cf4a439b84eb792cdf7b4a16b65178a6a` on
+  `codex/nc-20260820-002-program-facts-work`; no PR
 - Change class: C2 — additive host-owned schema and default-off scheduled-job
   behavior, with no production migration, activation, or external write
 - Root cause: the deterministic program-facts job posted its finding directly
@@ -63,6 +66,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   independent runner build and 43/43 tests. The unrestricted root suite is
   2,768/2,769 passing with five skips; its sole failure is the unchanged CNPC
   source-wrapper literal assertion in `cnpc-prompt-contract.test.ts`.
+- Release evidence: the exact implementation commit produced source tree
+  `fac86f42aebcaf2e765ec16024fc679e9fa8aca1`, a 788-file compiled artifact
+  with SHA-256
+  `e257edaab70dfe7fc05b4f5b9a21068aa39ffd8351e385620e0610021a4729b3`,
+  and archive SHA-256
+  `5c40601869f7f13df3b0394965214d0a3aa711b1d90a1f4ab98bbdc7f1873f9e`.
+  Fresh-directory `verify-release --runtime` independently passed under the
+  pinned Node 22.23.2.
 - Production boundary: no production database, job definition, environment,
   daemon, Slack message, fact/knowledge file, action, release, push, or merge was
   changed. Backup, migration 125 apply, compiled-job cutover, active-mode
