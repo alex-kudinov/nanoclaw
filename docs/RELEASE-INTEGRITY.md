@@ -76,6 +76,24 @@ packet, Chief pickup, and exact email-source hydration remain outcome gates.
 Exact backup, prompt-merge, rollback, and aggregate receipts are in
 `docs/ENGINEERING-CHANGELOG.md`.
 
+NC-20260820-004 deploys the next prompt-only host release under exact commit
+`eb5fbaa171e66996dd1dda300dc4f11717e768af`, source tree
+`15517a28157181b1b60bd556bec362a2cbef2ada`, 792 compiled files, artifact
+SHA-256 `3fdd305c62ba449bb526b792f0d052251c35fcfceb1dc256f5e0f95597347e75`,
+and archive SHA-256
+`d7255a51b99726fa9f3ca085c7878aa8b221e948860b6f2282dabd033922a938`.
+The unchanged compiled artifact is expected: this slice changes tracked group
+instructions, packaged Sales knowledge, and separately installed webhook
+definitions, not TypeScript runtime code. After one real Sales run naturally
+drained, a WAL-safe backup passed `quick_check`; operational group files were
+updated only from a verified prior-release match, and the machine-local webhook
+merge retained its CNPC definition and secret. Activation changed only the
+three release-pointer paths and retained rollback to `bab154cb`. Healthy PID
+2211 reports the exact release on Node 22.23.2 with connected Gmail/Slack, one
+listener, exact prompt/config hashes, and empty queues. The website and n8n
+ingress are separately live-verified; one natural contact remains the outcome
+gate. Exact receipts are in `docs/ENGINEERING-CHANGELOG.md`.
+
 NC-017 crossed those boundaries under exact release `999f2a4`: fresh local and
 production extraction verified the same archive, a narrow custom-format backup
 preceded explicit migration 119 application, and recovery-safe activation

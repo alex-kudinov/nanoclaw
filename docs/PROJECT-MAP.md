@@ -840,6 +840,12 @@ must not run a Chaos lookup. Commercial content requires `TRANSACT` and a
 verbatim current-message Route-Basis of no more than 15 words. `LOW` confidence
 or `HUMAN` yields a draftless escalation, not an approvable Sales card.
 
+`NC-20260820-004` deploys that bounded ingress path across exact Tandem website
+commit `bdf8fd9b3`, active n8n workflow `1`, and immutable NanoClaw release
+`eb5fbaa1`. Website, workflow structure/code, prompt hashes, release health,
+channels, listener, and empty queues are live-verified. A genuine contact
+submission remains the outcome gate; no synthetic lead was created for proof.
+
 The host autonomy ledger recognizes canonical standalone Sales headings using
 an anchored, emphasis-tolerant, case-insensitive grammar. The historical
 `REVISED DRAFT FOLLOW-UP:` label remains recognition-only. The structural eval

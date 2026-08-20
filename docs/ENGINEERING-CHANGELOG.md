@@ -12,11 +12,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: validating; local gates pass, while production deployment and
-  natural-submission proof remain pending
-- Commit/PR: pending on isolated branch
-  `codex/nc-20260820-004-contact-context`; paired Tandem website source is in
-  an isolated worktree at `cbe7e64ea`; no PR
+- State: deployed_unverified; exact website, n8n, NanoClaw release, prompts,
+  channels, and queues are live-verified, while a natural contact submission
+  remains pending
+- Commit/PR: NanoClaw implementation
+  `eb5fbaa171e66996dd1dda300dc4f11717e768af` on isolated branch
+  `codex/nc-20260820-004-contact-context`; Tandem website production commit
+  `bdf8fd9b39de8070f28cd1139055c8a657ef492a`; no PR
 - Change class: C2 — additive, privacy-reduced source context across the
   existing WordPress, n8n, Inbox, and Sales path; no new tracking, database
   schema, mailbox/search, approval, or send authority
@@ -40,13 +42,63 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   context becomes empty and the contact continues through the existing path.
   No raw query, fragment, journey history, IP, fingerprint, synthetic contact,
   customer email, or autonomous action is introduced.
-- Verification: all 21 Tandem plugin PHP harnesses pass, including the new
+- Verification: all 26 Tandem plugin PHP harnesses on the rebased production
+  candidate pass, including the new
   seven-case context suite and existing 13-case referrer suite; PHP syntax and
   diff checks pass. NanoClaw's focused contracts pass 47/47 on pinned Node
   22.23.2, along with format, typecheck, production build, and documentation
   continuity. The unrestricted suite is 2,791/2,792 passing with five skips;
   its sole failure is the unchanged CNPC source-wrapper literal assertion in
   `cnpc-prompt-contract.test.ts`.
+
+#### Addendum 2026-08-20T19:19Z — three-system production rollout
+
+- Website: Tandem website commit `bdf8fd9b3` was rebased onto current
+  `origin/main`, all 26 plugin harnesses and PHP syntax passed, and the commit
+  was pushed to `main`. The production webhook deployed that exact commit,
+  purged LiteSpeed and Cloudflare successfully, left the plugin active, and
+  installed a byte-identical contact handler.
+- n8n: active workflow `1`, `Contact Form → Gru Inbox`, was exported before
+  mutation to a mode-0600 backup with SHA-256
+  `05e823cfc8121a3502f6b00f1d5db9381eba8895e366def34337d578cab276eb`.
+  Import changed only the `Sanitize & Extract` Code node, then the workflow was
+  explicitly republished and n8n restarted. Final export proves `active=true`,
+  exact equality with the tracked sanitizer, and no other workflow structural
+  change. The container is running and startup activated workflow `1`.
+- NanoClaw release: exact commit `eb5fbaa171e66996dd1dda300dc4f11717e768af`
+  binds source tree `15517a28157181b1b60bd556bec362a2cbef2ada`, 792
+  compiled files, artifact SHA-256
+  `3fdd305c62ba449bb526b792f0d052251c35fcfceb1dc256f5e0f95597347e75`,
+  and archive SHA-256
+  `d7255a51b99726fa9f3ca085c7878aa8b221e948860b6f2282dabd033922a938`.
+  Fresh local and Mini extraction/runtime verification passed on Node 22.23.2.
+- Drain and rollback: one real Sales container was allowed to finish rather
+  than being killed. Activation waited for zero containers, active groups,
+  waiting groups, Slack outgoing work, and active email actions. The WAL-safe
+  backup at
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260820-004-20260820T190413Z`
+  passed `quick_check`; its SQLite SHA-256 is
+  `e727ac48eb72456cd0cd9d986260e60a78508ce23e60734c94e75d601fe76849`.
+  It also preserves the plist, four operational prompt files, and exact prior
+  webhook definitions. Activation retained rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-bab154cbdadf-2026-08-20T19-17-04-069Z`.
+- Operational inputs: Inbox and all three Sales instruction files were
+  installed only after their live hashes matched the prior immutable release.
+  The machine-local webhook definition retained its CNPC entry and secret and
+  changed only the contact prompt. Final hashes match the reviewed release or
+  bounded merged definition, and the loaded contact prompt contains
+  `Entry-Page: {{payload.entry_page}}`.
+- Live proof: PID 2211 reports the exact commit/tree/artifact/code root under
+  Node 22.23.2 with release verification and code-root match. Gmail and Slack
+  are connected; one listener, zero containers/groups/waiters, zero Slack
+  outgoing work, zero active email actions, and SQLite `quick_check=ok` are
+  verified. No WARN, ERROR, or FATAL headline follows the release-integrity
+  marker. The webhook server started with the installed definitions.
+- Outcome boundary: no synthetic contact or customer email was created. The
+  next genuine contact submission must prove a bounded `Entry-Page` reaches
+  Inbox and Sales, or fails open when missing, without a Chaos search or
+  unnecessary clarification. Until then the business outcome remains
+  `deployed_unverified`.
 
 ### NC-20260820-003 — Deliver source-bound Company OS work to Chief
 
