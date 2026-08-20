@@ -25,6 +25,10 @@ function aggregate(
     p50_latency_ms: 60_000,
     p95_latency_ms: 180_000,
     max_latency_ms: 240_000,
+    customer_visible_items: 13,
+    quality_assessed_items: 0,
+    quality_adverse_items: 0,
+    quality_invalid_items: 0,
     ...overrides,
   };
 }
@@ -37,7 +41,7 @@ describe('company work service indicators', () => {
     });
 
     expect(report).toMatchObject({
-      contractVersion: 1,
+      contractVersion: 2,
       status: 'ok',
       generatedAt: NOW.toISOString(),
       workflow: 'sales_email',
@@ -66,7 +70,10 @@ describe('company work service indicators', () => {
       numerator: null,
       denominator: null,
       rate: null,
-      reason: 'no_canonical_customer_visible_defect_receipt',
+      assessed: 0,
+      required: 13,
+      missing: 13,
+      reason: 'outcome_quality_receipt_coverage_incomplete',
     });
   });
 
@@ -79,6 +86,7 @@ describe('company work service indicators', () => {
         p50_latency_ms: null,
         p95_latency_ms: null,
         max_latency_ms: null,
+        customer_visible_items: 0,
       }),
       { now: NOW },
     );
@@ -95,6 +103,57 @@ describe('company work service indicators', () => {
       p95: null,
       max: null,
     });
+    expect(report.customerVisibleDefectReversal).toEqual({
+      status: 'unavailable',
+      numerator: null,
+      denominator: null,
+      rate: null,
+      assessed: 0,
+      required: 0,
+      missing: 0,
+      reason: 'no_customer_visible_outcomes_in_window',
+    });
+  });
+
+  it('publishes the adverse rate only with complete receipt coverage', () => {
+    const report = buildCompanyWorkIndicatorReport(
+      aggregate({
+        quality_assessed_items: 13,
+        quality_adverse_items: 2,
+      }),
+      { now: NOW },
+    );
+
+    expect(report.customerVisibleDefectReversal).toEqual({
+      status: 'available',
+      evidence: 'current_quality_receipt_per_external_acknowledgement',
+      numerator: 2,
+      denominator: 13,
+      rate: 0.1538,
+      assessed: 13,
+      missing: 0,
+    });
+  });
+
+  it('withholds even a known adverse numerator while coverage is partial', () => {
+    const report = buildCompanyWorkIndicatorReport(
+      aggregate({
+        quality_assessed_items: 5,
+        quality_adverse_items: 2,
+      }),
+      { now: NOW },
+    );
+
+    expect(report.customerVisibleDefectReversal).toEqual({
+      status: 'unavailable',
+      numerator: null,
+      denominator: null,
+      rate: null,
+      assessed: 5,
+      required: 13,
+      missing: 8,
+      reason: 'outcome_quality_receipt_coverage_incomplete',
+    });
   });
 
   it('fails closed when ledger aggregates are malformed', async () => {
@@ -108,7 +167,7 @@ describe('company work service indicators', () => {
     );
 
     expect(result).toEqual({
-      contractVersion: 1,
+      contractVersion: 2,
       status: 'unavailable',
       generatedAt: NOW.toISOString(),
       workflow: 'sales_email',
@@ -117,6 +176,26 @@ describe('company work service indicators', () => {
         endAt: NOW.toISOString(),
         days: 30,
       },
+      errorCode: 'ledger_quality_failed',
+    });
+  });
+
+  it('fails closed on contradictory quality-receipt aggregates', async () => {
+    const result = await safeReadCompanyWorkIndicatorReport(
+      { now: NOW },
+      async (options) =>
+        buildCompanyWorkIndicatorReport(
+          aggregate({
+            quality_assessed_items: 13,
+            quality_adverse_items: 14,
+          }),
+          options,
+        ),
+    );
+
+    expect(result).toMatchObject({
+      contractVersion: 2,
+      status: 'unavailable',
       errorCode: 'ledger_quality_failed',
     });
   });
@@ -134,6 +213,9 @@ describe('company work service indicators', () => {
     expect(sql).toContain("i.workflow_type = 'sales_email'");
     expect(sql).toContain("e.event_type = 'accepted'");
     expect(sql).toContain("e.event_type = 'outcome_validated'");
+    expect(sql).toContain("e.event_type = 'external_acknowledged'");
+    expect(sql).toContain('business_v2.company_work_outcome_quality_receipts');
+    expect(sql).toContain('successor.supersedes_receipt_id = q.id');
     expect(sql).not.toMatch(/\b(?:INSERT|UPDATE|DELETE|TRUNCATE|CALL)\b/i);
     expect(values).toEqual([
       '2026-08-13T20:00:00.000Z',
@@ -178,7 +260,7 @@ describe('company work service indicator CLI', () => {
     const output = formatCompanyWorkIndicatorResult(result, true);
 
     expect(output).toContain('"accepted": 15');
-    expect(output).toContain('no_canonical_customer_visible_defect_receipt');
+    expect(output).toContain('outcome_quality_receipt_coverage_incomplete');
     expect(output).not.toMatch(
       /workItemId|sourceKey|partyId|pipelineEntryId|messageId/i,
     );

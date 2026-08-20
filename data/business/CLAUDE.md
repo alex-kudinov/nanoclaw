@@ -88,6 +88,17 @@ authority. The owner must reconcile the source facts before an exact clean
 scheduled receipt may complete the item and source-resolve the case; follow the
 current active-work/changelog evidence.
 
+Migration 126 is the dark, admin-only outcome-quality receipt candidate under
+`NC-20260820-006`. It binds an immutable assessment chain to one exact
+`sales_email` `external_acknowledged` event and stores no customer identity or
+content. A later assessment may supersede a prior one without rewriting it,
+but only one current chain head is legal. No daemon producer, agent grant,
+message path, automatic classification, remediation, or write CLI is part of
+the migration. The service indicator may publish a rate only with one current
+assessment for every exact customer-visible outcome in its cohort. Repository
+presence is not migration or receipt evidence; consult active-work/changelog
+state before relying on the table.
+
 ## Connection
 
 ```bash

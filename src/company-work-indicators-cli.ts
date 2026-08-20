@@ -53,12 +53,17 @@ function formatOk(
     latency.sampleSize === 0
       ? 'unavailable (no completed samples)'
       : `p50=${latency.p50}ms p95=${latency.p95}ms max=${latency.max}ms n=${latency.sampleSize}`;
+  const quality = result.customerVisibleDefectReversal;
+  const qualityText =
+    quality.status === 'available'
+      ? `${(quality.rate * 100).toFixed(2)}% adverse=${quality.numerator} assessed=${quality.denominator}`
+      : `unavailable (${quality.reason}) assessed=${quality.assessed} required=${quality.required} missing=${quality.missing}`;
   return (
     [
       `Company work service indicators — ${result.generatedAt}`,
       `workflow=sales_email window=${result.window.days}d accepted=${completion.accepted} completed=${completion.completed} incomplete=${completion.incomplete} completion_rate=${rate}`,
       `completion_latency=${latencyText}`,
-      `customer_visible_defect_reversal=unavailable (${result.customerVisibleDefectReversal.reason})`,
+      `customer_visible_defect_reversal=${qualityText}`,
     ].join('\n') + '\n'
   );
 }

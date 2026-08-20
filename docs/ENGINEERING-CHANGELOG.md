@@ -8,6 +8,61 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260820-006 — Add coverage-aware outcome-quality receipts
+
+- Date: 2026-08-20
+- Owner/client: Codex
+- State: ready_for_review; implementation and disposable PostgreSQL evidence
+  pass, while commit, release, migration, deployment, and natural assessment
+  coverage have not occurred
+- Commit/PR: isolated branch `codex/nc-20260820-006-outcome-quality` from
+  `2320e189`; local-only task claim `bb037d0d`; implementation not yet
+  committed; no PR
+- Change class: C2 — additive admin-only PostgreSQL schema plus a standalone
+  aggregate-only read; no daemon, agent, message, approval, or action path
+- Root cause: an incident-only receipt would make an empty numerator look like
+  zero defects even when no completed customer-visible outcomes were assessed.
+  The service indicator needs explicit quality-review coverage and append-only
+  corrections before it can publish a rate.
+- Implementation: migration 126 adds
+  `company_work_outcome_quality_receipts`. Every assessment binds one exact
+  `sales_email` `external_acknowledged` event/version and stores only one
+  bounded clean/defect/reversal classification, opaque source/evidence/
+  assessor SHA-256 keys, assessor kind, and timestamps. A later receipt may
+  supersede its immediate predecessor; uniqueness plus a validation trigger
+  prevent parallel chains, skipped revisions, non-delivery binding, or time
+  travel, and the existing append-only trigger prevents update/delete.
+- Indicator contract: contract version 2 counts exact external acknowledgments
+  in the accepted-window cohort and selects the one current assessment-chain
+  head. It exposes the adverse numerator/denominator/rate only with full
+  coverage. Partial coverage returns only aggregate assessed/required/missing
+  counts and `outcome_quality_receipt_coverage_incomplete`; malformed evidence
+  fails the entire read closed. Internal failure/exception state remains
+  ineligible.
+- Privacy/authority: the table and function are owned by `nanoclaw_admin` with
+  no non-admin grant. No raw customer identity, address, subject, message,
+  prompt, or source key is stored. No producer, write CLI, classifier,
+  scheduler, daemon import, Gmail/Slack read, message, remediation, threshold,
+  SLO, approval, or action authority is added.
+- Verification so far: pinned Node 22.23.2 focused tests pass 15/15; typecheck,
+  build, diff check, and documentation continuity pass. Disposable PostgreSQL
+  16 proves exact migration apply, initial assessment, superseding correction,
+  branch/wrong-event/update rejection, one current head, and an available 1/1
+  adverse aggregate through the real TypeScript query. A separate empty
+  rehearsal proves the guarded rollback removes table/function; assessment
+  history would block rollback. Email-critical tests pass 719/719 plus the
+  independent runner build and 43/43 tests. The unrestricted suite is
+  2,806/2,807 passing with five skips; its sole failure is the unchanged,
+  pre-existing CNPC source-wrapper literal assertion, and neither implicated
+  CNPC file differs from the task base.
+- Deployment/external state: no production migration, release build,
+  activation, restart, assessment receipt, customer incident, Gmail/Slack
+  read/write, message, push, or merge has occurred under NC-006.
+- Rollback: before migration, revert the implementation commit. After an empty
+  migration, use the guarded rollback. After any receipt exists, leave the
+  additive table dormant or use a separately reviewed archival migration; do
+  not delete assessment history.
+
 ### NC-20260820-005 — Add truthful Sales service-indicator baseline
 
 - Date: 2026-08-20

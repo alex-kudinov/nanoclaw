@@ -386,14 +386,28 @@ sample count, p50, p95, and maximum latency. Duplicate or contradictory
 accepted/outcome evidence makes the whole report unavailable rather than
 silently changing the denominator.
 
-The third planned indicator, customer-visible defect/reversal rate, is emitted
-as explicitly unavailable with reason
-`no_canonical_customer_visible_defect_receipt`. Internal blocked, failed,
-stale, dead-letter, or `source_gap:*` evidence can explain incomplete work, but
-does not prove a customer saw a defect or that a prior action was reversed.
-No objective or alert threshold is guessed from the initial baseline. Query
-failure returns only `ledger_query_failed`; malformed aggregate evidence
-returns only `ledger_quality_failed`.
+NC-20260820-006 defines the missing third-indicator evidence contract in
+migration 126. A customer-visible outcome is one exact `sales_email`
+`external_acknowledged` event, not an internal completion, blocked state, or
+queued tool result. Its quality assessment is one current append-only receipt
+classified as `clean`, `customer_visible_defect`,
+`customer_visible_reversal`, or `customer_visible_defect_and_reversal` and
+bound to that exact delivery event/version plus hashed source evidence. A
+later assessment may supersede but never update/delete the prior receipt.
+
+The aggregate publishes a defect/reversal rate only when every exact customer-
+visible outcome in the accepted-window cohort has exactly one current receipt.
+Until then it reports `outcome_quality_receipt_coverage_incomplete` with only
+aggregate assessed/required/missing counts; an empty cohort reports
+`no_customer_visible_outcomes_in_window`. Internal blocked, failed, stale,
+dead-letter, or `source_gap:*` evidence remains ineligible. No objective or
+alert threshold is guessed. Query failure returns only `ledger_query_failed`;
+malformed ledger or receipt evidence returns only `ledger_quality_failed`.
+
+Migration 126 is dark persistence: no daemon producer, agent grant, write CLI,
+automatic classifier, Gmail/Slack reader, remediation path, or message/action
+authority is added. Schema presence cannot create a clean or adverse receipt.
+Deployment and natural assessment coverage must be proven separately.
 
 Repository presence is not deployment or baseline evidence. Use the exact
 active-work and engineering-changelog entry to determine whether the compiled
@@ -409,9 +423,11 @@ fingerprints. The ordinary startup exception loop re-observed current cases
 before the active read and is separately attributable; it did not change the
 work-item, event, or receipt ledger.
 
-The live defect/reversal field remains unavailable. This is an explicit
-evidence gap, not a zero-defect claim. No SLO or objective is set from the first
-small baseline.
+On exact release `a02abaca`, the live defect/reversal field remains unavailable
+under contract version 1. This is an explicit evidence gap, not a zero-defect
+claim. NC-20260820-006's contract-version-2 code and migration are not live
+merely because they exist on an isolated branch. No SLO or objective is set
+from the first small baseline.
 
 ## 11. Operator exception loop
 
