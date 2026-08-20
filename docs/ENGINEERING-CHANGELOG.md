@@ -12,12 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: ready_for_review; implementation and local verification are complete,
+- State: ready_for_deploy; implementation and local verification are complete,
   while immutable release, deployment, and the bounded production read remain
   pending
 - Commit/PR: isolated branch
-  `codex/nc-20260820-005-service-indicators` from `3e843235`; implementation
-  commit pending at this review boundary; no PR
+  `codex/nc-20260820-005-service-indicators`; implementation commit
+  `b71bfae2fd48cbd5a7e64419b1d20b0311a0a34a`; no PR
 - Change class: C2 — standalone aggregate-only PostgreSQL read; no schema,
   daemon path, workflow, customer message, approval, or action change
 - Root cause: the durable Company Work ledger and exception report expose
