@@ -12,12 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: ready_for_review; implementation and disposable PostgreSQL evidence
-  pass, while commit, release, migration, deployment, and natural assessment
-  coverage have not occurred
+- State: ready_for_deploy; implementation is committed and disposable
+  PostgreSQL evidence passes, while release, migration, deployment, and
+  natural assessment coverage have not occurred
 - Commit/PR: isolated branch `codex/nc-20260820-006-outcome-quality` from
-  `2320e189`; local-only task claim `bb037d0d`; implementation not yet
-  committed; no PR
+  `2320e189`; local-only task claim `bb037d0d`; implementation
+  `c461e11e5181f868d44dbdd842c481dd75774d72`; no PR
 - Change class: C2 — additive admin-only PostgreSQL schema plus a standalone
   aggregate-only read; no daemon, agent, message, approval, or action path
 - Root cause: an incident-only receipt would make an empty numerator look like
