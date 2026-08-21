@@ -1,0 +1,77 @@
+{
+  "id": "heartbeat-journey",
+  "name": "Heartbeat Journey → Tandem (shadow)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "heartbeat-journey-__INGRESS_TOKEN__",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "trigger-heartbeat-journey",
+      "name": "Heartbeat Journey Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "heartbeat-journey"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Heartbeat sends minimal event-specific bodies and does not consistently\n// include the configured action name. Classify only documented shapes and\n// reject everything else before it reaches Tandem.\n\nconst raw = $input.first().json;\nconst body = raw.body || raw;\nconst data = body.data && typeof body.data === 'object' ? body.data : body;\nconst explicit = String(body?.action?.name || body?.event || '').toUpperCase();\nconst uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\nconst email = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n\nlet event = explicit;\nif (!event) {\n  if (data.courseID && data.userID) event = 'COURSE_COMPLETED';\n  else if (data.groupID && data.userID) event = 'GROUP_JOIN';\n  else if (data.invitationLinkID && data.email && Array.isArray(data.groupIDs)) event = 'ABANDONED_CART';\n  else if (data.id && data.email) event = 'USER_JOIN';\n}\n\nconst valid = {\n  COURSE_COMPLETED: uuid.test(String(data.courseID || '')) && uuid.test(String(data.userID || '')),\n  GROUP_JOIN: uuid.test(String(data.groupID || '')) && uuid.test(String(data.userID || '')),\n  USER_JOIN: uuid.test(String(data.id || '')) && email.test(String(data.email || '')),\n  ABANDONED_CART:\n    email.test(String(data.email || '')) &&\n    typeof data.invitationLinkID === 'string' &&\n    data.invitationLinkID.length > 0 &&\n    Array.isArray(data.groupIDs) &&\n    data.groupIDs.length > 0 &&\n    data.groupIDs.every((id) => uuid.test(String(id))),\n};\n\nif (!Object.prototype.hasOwnProperty.call(valid, event) || !valid[event]) {\n  throw new Error(`Rejected undocumented Heartbeat payload shape (${event || 'unknown'})`);\n}\n\nreturn [{ json: { event, data, received_at: new Date().toISOString() } }];"
+      },
+      "id": "validate-heartbeat-journey",
+      "name": "Validate and classify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://tandemcoach.co/wp-json/tandem/v1/journey/heartbeat-event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Tandem-Key",
+              "value": "={{ $env.TANDEM_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {"timeout": 15000}
+      },
+      "id": "post-tandem-journey",
+      "name": "POST authenticated journey event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [780, 300],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Heartbeat Journey Webhook": {
+      "main": [[{"node": "Validate and classify", "type": "main", "index": 0}]]
+    },
+    "Validate and classify": {
+      "main": [[{"node": "POST authenticated journey event", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "shared-error-handler",
+    "saveDataSuccessExecution": "none",
+    "saveExecutionProgress": false
+  },
+  "staticData": null
+}
