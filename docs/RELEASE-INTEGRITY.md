@@ -368,6 +368,14 @@ the command. It does not change the workstation's global Node. `npm run
 runtime:doctor` reports the non-secret runtime, native ABI, package engine,
 container tag, and workflow alignment.
 
+Apple Container's persistent builder must itself have working DNS. On this
+host, start or restart only an idle builder with `--dns 192.168.1.1` before an
+image pull/build. Supplying `container build --dns 192.168.1.1` does not repair
+an already-running builder whose own resolver is missing; the pull can still
+fail at registry resolution. Do not restart a builder while containers are
+active. Record the prior image under a rollback tag, the new OCI digest, and a
+runtime `node --version` smoke before deleting that rollback tag.
+
 ## Build
 
 From a clean reviewed commit:

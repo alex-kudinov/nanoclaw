@@ -566,7 +566,7 @@ dependencies, not active runtime channels in this snapshot.
 | Pipeline         | `src/pipeline-status.ts`, `src/email-interaction-log.ts`                                                                                                                 | interaction and reply-state evidence                                                                                                                                                                                                       |
 | Plutio           | `src/plutio-cli.ts`, `src/plutio-proposals.ts`, `src/plutio-outbox-reaper.ts`, `src/booking-plutio-host.ts`                                                              | proposal/outbox integration and the dark Booking lifecycle host adapter                                                                                                                                                                    |
 | Proposal replies | `src/proposal-reply*.ts`                                                                                                                                                 | accept/decline detection and actions                                                                                                                                                                                                       |
-| Follow-up        | `src/proposal-followup*.ts`, `src/followup-drop*.ts`, `src/followup-policy.ts`, `src/followup-case-store.ts`, `src/followup-shadow*.ts`, `src/plutio-{proposals,invoices}.ts`, migrations 113, 130, and 131 | legacy approval-gated proposal/Sales mechanisms plus NC-20260821-002's live-dark exact-case foundation and NC-20260821-005's local default-dry-run three-lane source/report candidate. The broken task stays paused; migrations 130-131 stay live/empty/admin-only. The candidate fails closed on missing source, duplicate entry, unbound thread, missing owner, and unreconciled payment; no presentation, pipeline/Plutio/payment mutation, draft, scheduler, or send is activated. |
+| Follow-up        | `src/proposal-followup*.ts`, `src/followup-drop*.ts`, `src/followup-policy.ts`, `src/followup-case-store.ts`, `src/followup-shadow*.ts`, `src/plutio-{proposals,invoices}.ts`, migrations 113, 130, and 131 | legacy approval-gated proposal/Sales mechanisms plus NC-20260821-002's live-dark exact-case foundation and NC-20260821-005's deployed default-dry-run three-lane source/report command. The broken task stays paused; migrations 130-131 stay live/empty/admin-only. One full Mini scan observed 189 cases with zero ready, 165 blocked, 12 waiting, 12 terminal, and no source errors after replacing N+1 Plutio recipient reads with one bounded batch. Missing exact thread identity, assigned owner, and payment reconciliation block rather than guess; no projection, presentation, pipeline/Plutio/payment mutation, draft, scheduler, or send is activated. |
 | Trafft           | `src/trafft-custom-fields.ts`, `src/trafft-sweeper.ts`, `src/booking-host-write.ts`                                                                                      | booking ingestion and recovery                                                                                                                                                                                                             |
 | Stripe           | `src/stripe-payment-host.ts`, `src/contador-name-reaper.ts`, `tools/contador/process-payment.cjs`                                                                        | dual-account payment/refund ingestion, canonical transaction identity, and name recovery                                                                                                                                                   |
 | Hive/Firebase    | `src/hive-bridge.ts`, `src/hive-sync-reaper.ts`                                                                                                                          | engagement synchronization; `NC-20260816-008` guards mutation entry and holds denied retries without consuming attempts                                                                                                                    |
@@ -713,12 +713,13 @@ The modern namespace is `business_v2`, including concepts such as:
   append-only changed-evidence events. Under NC-20260821-002 they remain unwired;
   schema/repository presence grants no source, scheduler, presentation,
   draft, approval, Plutio/payment mutation, or send authority;
-- local `NC-20260821-005` source-shadow/report code reads those cases plus
+- deployed `NC-20260821-005` source-shadow/report code reads those cases plus
   exact Sales entry, proposal, invoice, legacy proposal, and approved-email
-  evidence. It is default-dry-run and absent from daemon/scheduler/IPC. A Mini
-  aggregate audit proves 585 thread IDs but zero entry bindings, no assigned
-  relationship records, and no transaction reconciliation authority; these
-  remain explicit blocks rather than inferred permission;
+  evidence. It is default-dry-run and absent from daemon/scheduler/IPC. A full
+  Mini scan observed 189 cases with zero ready, 165 blocked, 12 waiting, and 12
+  terminal after a batched-recipient repair; exact entry bindings, assigned
+  relationship ownership, and transaction reconciliation remain explicit
+  blocks rather than inferred permission;
 - durable webhook inbox state.
 - live migration-118 Company OS work-item, append-only event, and exact-receipt
   structures. `NC-20260816-001` deploys a default-off host observer of exact
@@ -1680,7 +1681,11 @@ and production health agree. CI also runs on pushes to `main`. A workstation
 shell may still start on Node 26 for unrelated projects; NanoClaw npm scripts
 use `scripts/with-pinned-node.sh` to execute under the exact installed pin, and
 dependency installation must use that same launcher. The global Node is not a
-project authority and is not modified by the repository.
+project authority and is not modified by the repository. Exact release
+`e01c9228` is live under Node 22.23.2. The previous minion image is retained as
+a Node-22.22.0 rollback tag, and its replacement built from the verified
+release with exact `node:22.23.2-slim`; retain rollback until a natural minion
+launch independently reports the exact runtime.
 
 ## 18. History and evolution
 

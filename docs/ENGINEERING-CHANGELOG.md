@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: ready_for_deploy; implementation and local release gates are complete,
-  but the Mini read-only source snapshot and any reviewed projection remain open
+- State: complete for the read-only source-shadow milestone; exact release is
+  deployed and live-verified, while projection and all action surfaces remain
+  deliberately excluded
 - Commit/PR: isolated branch `codex/nc-20260821-005-followup-shadow` based on
-  implementation commit `403513b2`; no PR yet
+  implementation commits `403513b2` and `e01c9228`; no PR yet
 - Change class: C3 operational policy surface, C2 dark internal projection;
   no customer, Slack, pipeline, Plutio, payment, scheduler, or email action
 - Outcome: one default-dry-run host command now reads exact Sales pipeline
@@ -32,16 +33,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `pendingAt`; proposal conversion markers close stale `pending` rows. Expired
   proposal presentations affect cooldown but are not sent attempts. Invoice
   arithmetic is not treated as transaction reconciliation.
-- Current source finding: an aggregate-only Mini read found 659 email
-  interactions, 585 with a thread ID, and zero with a pipeline-entry binding.
-  The exact new Sales shadow SELECT succeeds read-only and yields 164 candidate
-  entry rows across 143 parties: 42 active rows have multiple active entries,
-  158 carry a party-global thread, and zero have an exact entry-bound thread.
-  It also found zero active party relationships; roles currently describe
-  buyer state, not an assigned commercial owner. The shadow therefore names
-  `thread_identity_unverified`, `proposal_owner_unresolved`,
-  `relationship_owner_unresolved`, and `payment_reconciliation_required`
-  rather than guessing.
+- Live source finding: the corrected full Mini dry-run completed with snapshot
+  fingerprint
+  `4ed1974bcbc68bf3d8c92bee279e576acd07d1e95dd1982ac298eba798f9b3bf`,
+  zero source errors, and 189 observations: 164 Sales, five proposals, and 20
+  invoices. It classified zero ready, 165 blocked, 12 waiting, and 12 terminal.
+  The named blocks are 111 unverified Sales thread identities, 42 Sales
+  source-identity conflicts, four unresolved proposal owners, and eight
+  payment-reconciliation requirements. The 12 waiting invoices carry USD
+  88,176.60 outstanding; that aggregate is evidence for review, not collection
+  authority.
+- Deployed repair: the first full run failed closed after all 189 observations
+  because per-record Plutio recipient reads exhausted the bounded child-process
+  window. One live bounded `$in` query proved the source could return the
+  identities in a single batch. Commit `e01c9228` implements that batch,
+  preserves source-completeness per lane, and prevents one identity-read
+  failure from contaminating later cases. The corrected run exited zero.
 - Apply boundary: `--apply` requires the exact reviewed dry-run snapshot
   fingerprint plus `COMPANY-FOLLOWUP-SHADOW-APPLY`, refuses any source-read
   error or changed snapshot, and projects only through the existing admin-only
@@ -53,18 +60,23 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   failure is the unchanged pre-existing CNPC wrapper-literal assertion. The
   731-test email-critical gate and all 43 independent runner tests pass under
   the exact runtime contract.
-- External read evidence: the local toolbox Plutio operation refused because
-  its selected environment file has a shell syntax error at line 65. NanoClaw
-  correctly documents that the Studio cannot reach production PostgreSQL; an
-  attempted local connection was refused. The Mini SSH route and aggregate
-  database adapter read succeeded. The full one-shot source read remains the
-  next validation boundary.
-- Deployment/migration: not deployed; no schema migration is added. Migrations
-  130-131 remain live and empty/admin-only, the legacy Sales task remains
-  paused, and the legacy proposal loop is unchanged.
-- Rollback/recovery: revert the implementation commit when created. Until an
-  explicitly confirmed projection, rollback is source-only; no operational
-  data has changed.
+- Deployment/migration: verified release
+  `e01c92289eef381d443e5bd7358e26e6b734bd08` is live under exact Node 22.23.2
+  with one listener, connected Gmail/Slack, and empty active queues. Source-tree
+  digest is `df835fa29d0b6f0414e024a27bd18239f96bc6eb`; artifact digest is
+  `57a8e641fd3cdb26a054d4c1550930bcc5030c4f96fd22475b5d5e3a2fdd95d0`.
+  No schema migration is added. Migrations 130-131 remain live and
+  empty/admin-only, `task-followup-daily` remains paused, and the legacy
+  proposal loop is unchanged.
+- No-action proof: the report was written only to an owner-mode temporary file
+  and removed after aggregate capture. No projection, case row, Slack card,
+  draft, approval, pipeline/Plutio/payment mutation, schedule, task run, or
+  customer email occurred. `pending_sends` remained 91 and
+  `email_send_events` remained 450 across the dry-run/redeploy boundary.
+- Rollback/recovery: restore the retained exact plist
+  `com.nanoclaw.plist.rollback-f0c2815e3833-2026-08-21T22-11-38-029Z` to
+  return to the prior release. Shadow rollback remains source-only because no
+  projection or operational data write occurred.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
   `docs/SALES-FOLLOWUP-OPERATING-MODEL.md`, and the Company OS roadmap record
   the shadow boundary and the newly proven source gaps.
@@ -73,9 +85,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: ready_for_review; local repository contract is implemented and
-  verified, with no production restart, image activation, push, or global Node
-  change
+- State: deployed_unverified for the minion-image activation; repository, CI,
+  release, host-daemon, and image-build contracts are complete, while one
+  natural minion-launch version observation remains open
 - Commit/PR: implementation commit
   `68af34bf52653b19a724a1ec7d8615b6b7463d3a` on isolated branch
   `codex/nc-20260821-004-runtime-contract`; no PR
@@ -106,9 +118,20 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   production were untouched. The interrupted replay separately exposed
   pre-existing add-gmail dependency and add-slack typecheck drift; neither was
   folded into this task.
-- Rollback/deployment: revert this commit to restore the prior authoring/CI
-  declarations. No daemon, database, schedule, channel, image, or customer
-  state changed, so production rollback is not applicable.
+- Deployment: exact release `e01c9228` is live and health-reported Node 22.23.2.
+  The prior minion image reported 22.22.0 and is retained as
+  `nanoclaw-agent:rollback-20260821-e01c9228-node22.22.0`. A replacement
+  `nanoclaw-agent:latest` built successfully from the verified release with OCI
+  manifest-list digest
+  `sha256:8de63770c3b3c750e39a09f36f3c28a13f5044e61fb913678b8eec20a01d88f3`.
+  The first two pulls failed because the persistent Apple Container builder
+  lacked DNS even when the build command supplied it; restarting only the idle
+  builder with `--dns 192.168.1.1` repaired resolution. A post-build shell lost
+  access to the Apple CLI before a separate runtime smoke, so retain the
+  rollback image until a natural minion reports exact 22.23.2.
+- Rollback: restore the retained image tag for minion launches and the retained
+  prior release plist for the host daemon. No database, schedule, channel,
+  customer, or global Node state changed as part of runtime standardization.
 - Documentation: `AGENTS.md`, `CLAUDE.md`, `docs/RELEASE-INTEGRITY.md`,
   `docs/PROJECT-MAP.md`, and `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` now name
   exact Node 22.23.2 as the sole NanoClaw runtime contract.
