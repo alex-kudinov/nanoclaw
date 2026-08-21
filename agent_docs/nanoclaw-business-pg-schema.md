@@ -105,7 +105,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_followup_events (migration 130 live, empty; migration 131 candidate)
+## business_v2.company_followup_events (migrations 130-131 live, empty)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_followup_events_id_seq'::regclass)

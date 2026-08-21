@@ -101,8 +101,8 @@ before applying anything.
   changed-evidence event projection for Sales conversations, proposal
   signatures, and receivables under exact release `a939af5a`. It is unwired and grants no agent, source,
   scheduler, draft, approval, Plutio, payment, or send authority;
-- migration 131 is NC-20260821-002's local, unapplied content-free operator-
-  decision extension. It permits one `declined` receipt with a SHA-256 operator
+- migration 131 is NC-20260821-002's live content-free operator-decision
+  extension under exact release `6b9b5f27`. It permits one `declined` receipt with a SHA-256 operator
   fingerprint on the existing append-only event ledger; it does not read Slack,
   mutate pipeline/source state, create a draft, or send;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered

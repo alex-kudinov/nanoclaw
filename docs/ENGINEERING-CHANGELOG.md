@@ -12,11 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: in_progress after a 2026-08-21T15:57Z operator correction; the prior
-  dark deployment remains live and safe while rejection semantics are being
-  corrected locally with no source or action wiring
+- State: complete for the process/dark-foundation correction; the replacement
+  remains intentionally unwired and the broken task remains paused
 - Commit/PR: isolated branch `codex/nc-20260821-002-followup-process`; exact
-  release `a939af5a500f0484a8f2c805d72e4b2a49f9655e`; no PR
+  release `6b9b5f272d602b7e0f20fd5959c7be6fe5835a1c`; no PR
 - Change class: C3 — one reversible scheduler pause plus an unwired, no-send
   Company OS policy/schema foundation
 - Trigger: the operator reported that the daily Sales follow-up no longer
@@ -65,9 +64,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   there is no source adapter, scheduler, daemon call, agent grant, report,
   presentation, draft, approval, Plutio mutation, or send path.
 - Resumed correction: policy version `2026-08-21.2` adds the explicit
-  `operator_declined_followup` terminal decision. Candidate migration 131 adds
+  `operator_declined_followup` terminal decision. Live migration 131 adds
   only `operator_decision=declined` plus a SHA-256 operator fingerprint to the
-  existing append-only event ledger. It is unapplied and unwired: no Slack
+  existing append-only event ledger. It remains unwired: no Slack
   decision consumer, case/pipeline mutation, presentation, draft, or send path
   exists. Focused policy/migration/Sales-contract tests pass 38/38 under Node
   22.23.2; the full suite passes 2,906/2,917 with only the pre-existing CNPC
@@ -95,6 +94,15 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   dry run and apply changed only code root, expected commit, and executable,
   retaining rollback plist
   `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-f6089cce30ca-2026-08-21T15-30-03-484Z`.
+- Correction release: immutable commit
+  `6b9b5f272d602b7e0f20fd5959c7be6fe5835a1c` binds source tree
+  `beca00883cd08ca90e0892277fe576865c3e9968`, artifact SHA-256
+  `d674adba26588cfb32ec494f040776999d24cb5d5318a4ce5b08e4a0fd1f8466`,
+  and archive SHA-256
+  `b7d044b799fd6f537c0e9d7600a35575c7249b3eab7accd3904059b7cfe5e87d`.
+  Local, archive, and Mini verification pass under Node 22.23.2; the activation
+  changed only the three allowlisted launchd paths and retained an exact
+  rollback plist.
 - Drain/backup: two real Sales conversations were allowed to finish naturally;
   the final gate proved zero containers, waiting groups, outgoing Slack work,
   and active email actions. Owner-only backup
@@ -112,6 +120,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   is applied. Both new tables are empty, owned by `nanoclaw_admin`, have zero
   non-admin table/sequence grants and zero forbidden content columns, and the
   events table has its enabled append-only trigger.
+- Correction backup/schema: owner-only backup
+  `NC-20260821-002-20260821T162203Z` passed SQLite `quick_check` and
+  `pg_restore --list`. Migration 131 SHA-256
+  `40015e6b4a166ef47ab906fa52bc3b82857b98b7d57c2368f91b31c43782ca58`
+  is live with the expected columns, constraints, and append-only trigger; it
+  has zero rows and zero non-admin grants. The three operational Sales prompt
+  files matched the prior active release before their reviewed sync and match
+  the correction release afterward.
 - Live non-interference: PID 82111 serves the exact verified release with
   matching code root, Node 22.23.2, connected Gmail/Slack, one listener, and
   empty runtime/outgoing queues. `task-followup-daily` remains paused. The
@@ -121,19 +137,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   items/version sum 117, 139 events, 63 receipts, seven cases, seven briefs,
   47 exception events, and zero dispatches/events. Startup returned
   `duplicate_brief` and started no packet attempt.
-- Boundary/next gate: this completes the process and dark-foundation milestone,
+- Boundary: this completes the process and dark-foundation milestone,
   not the customer-follow-up replacement. No source candidate was projected,
   no backlog was imported, and no presentation, draft, approval, pipeline,
-  Plutio/payment, or customer action was created. The next separately tracked
-  gate is a read-only source shadow plus operator-reviewed backlog disposition;
-  the legacy Sales task stays paused.
+  Plutio/payment, or customer action was created. A strategic Company OS
+  checkpoint now precedes any source shadow or activation work; the legacy
+  Sales task stays paused.
+- Correction live proof: PID 13872 serves exact release `6b9b5f27` with matching
+  code root, source tree, artifact, Node 22.23.2, one port-8088 listener, and
+  connected Gmail/Slack. `task-followup-daily` remains paused. SQLite
+  `quick_check` passes with 85 confirmed and six blocked historical actions and
+  zero active actions. The proposal ledger remains 12 sent, seven expired, and
+  two cancelled; both follow-up tables remain empty. Protected Company Work
+  core aggregates remain exactly 23 items/version sum 124, 147 events, and 67
+  receipts. No follow-up presentation, decision, pipeline transition, draft,
+  Plutio/payment action, or customer send occurred.
 
 ### NC-20260821-001 — Bind Company Work packet pickup and bounded attempts
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: deployed_unverified; exact release and migration are live, while the
-  first natural packet pickup/attempt remains the outcome gate
+- State: complete; exact release and migration are live and a natural packet
+  cycle proved three durable pickup/attempt/receipt trails
 - Commit/PR: isolated branch
   `codex/nc-20260821-001-exception-attempt-receipts`; no PR
 - Change class: C3 — internal Chief work dispatch/receipt behavior plus an
@@ -188,11 +213,17 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   139 work events, 63 work receipts, seven cases, seven briefs, and 47
   exception events. SQLite remains healthy at 90 pending-send rows and 445
   email-send events. The error log was not modified by this deployment.
-- Outcome boundary: deployment mechanics and dark schema are live-verified.
-  `deployed_unverified` remains accurate until the next genuine new or changed
-  fingerprint produces one exact posted -> picked-up -> attempted/failed trail
-  and the operator-visible non-resolution receipt. Do not manufacture source
-  work for that proof.
+- Former outcome boundary: deployment mechanics and dark schema were initially
+  live-verified while the first genuine changed fingerprint remained pending.
+  No source work was manufactured for proof.
+- Natural outcome addendum: the later activation of exact release `6b9b5f27`
+  encountered genuine changed source work and posted three packets. Production
+  records show three `posted`, three `picked_up`, three `attempt_succeeded`,
+  three posted receipts, and zero failed attempts. Company Work core aggregates
+  remained 23 items/version sum 124, 147 events, and 67 receipts, and no
+  customer email or source mutation occurred. This closes the packet pickup and
+  bounded-attempt gate; it does not claim the underlying source issues are
+  resolved.
 - Roadmap follow-on: keep the reported broken daily Sales follow-up task off.
   Redesign policy and ownership first across active leads, unsigned Plutio
   proposals, and unpaid invoices, then implement one durable eligibility and

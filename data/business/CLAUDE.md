@@ -141,8 +141,8 @@ customer-action authority from schema or release presence; follow
 `docs/SALES-FOLLOWUP-OPERATING-MODEL.md` and current active-work/changelog
 evidence.
 
-Migration 131 is the local, unapplied correction for explicit follow-up
-rejection. It extends the existing append-only event vocabulary with one
+Migration 131 is the live correction for explicit follow-up rejection under
+exact release `6b9b5f27`. It extends the existing append-only event vocabulary with one
 content-free `declined` operator decision and a SHA-256 operator fingerprint.
 It does not consume Slack, change a case or pipeline entry, read a source,
 schedule work, or send. The replacement adapter must bind the exact case

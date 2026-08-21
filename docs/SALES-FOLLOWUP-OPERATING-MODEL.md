@@ -1,6 +1,6 @@
 # Sales, proposal, and receivables follow-up operating model
 
-Status: process authority and live dark foundation; rejection correction in validation; no source/action wiring
+Status: process authority and live dark foundation; rejection correction deployed; no source/action wiring
 Task: `NC-20260821-002`
 Date: 2026-08-21
 
@@ -310,11 +310,12 @@ admin-only, and the pure policy/store remain absent from daemon, scheduler,
 IPC, agent, report, presentation, draft, approval, Plutio/payment, and send
 composition. Step 4 is the next gate; none of the current backlog is imported.
 
-Correction checkpoint (2026-08-21): policy version `2026-08-21.2` and
-migration 131 are local, unwired candidates. Explicit Sales rejection evaluates
+Correction checkpoint (2026-08-21): exact release `6b9b5f27` deploys policy
+version `2026-08-21.2` and live, empty, admin-only migration 131. Explicit Sales rejection evaluates
 to terminal `cancelled`, and the schema can retain only a content-free
 `declined` receipt. Neither can consume a Slack decision or change a live
-pipeline entry; deployment and activation are separate evidence gates.
+pipeline entry; source/presentation/decision-adapter activation remains a
+separate evidence gate.
 
 No step in this document authorizes a customer email, proposal/invoice change,
 payment action, bulk backfill, or scheduler activation.
