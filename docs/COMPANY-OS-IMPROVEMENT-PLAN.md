@@ -1366,6 +1366,13 @@ exception attempts into detector-verified source closure. Additional generic
 agents, a general dashboard, broad autonomous sending, and execution-depth
 machinery remain deferred.
 
+Inbox-to-resolution checkpoint: `NC-20260821-003` deploys exact release
+`3de6707d` with bounded visible-recipient context across direct and classified
+Gmail routes, explicit-intent-only CC proposals, immutable approval headers,
+and latest-message participant revalidation. Runtime, prompt, and no-action
+evidence are verified; a natural multi-recipient case remains the business
+outcome gate, so this is `deployed_unverified`, not completed outcome proof.
+
 | Slice                               | Outcome                                                                                                                                | Entry gate                                                                                 | Exit gate                                                                                                                        |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | R0 — rebaseline                     | one current strategic roadmap and conservative evidence inventory (`NC-20260815-007`)                                                  | documentation-only authority                                                               | continuity/diff checks pass; owner can choose the next bounded task from tracked files                                           |

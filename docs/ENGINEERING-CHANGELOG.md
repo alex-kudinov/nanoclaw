@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: validating; implementation is verified while deployment and
-  natural-path outcome evidence remain pending
+- State: deployed_unverified; exact runtime and non-interference are verified,
+  while natural multi-recipient outcome evidence remains pending
 - Commit/PR: isolated branch `codex/nc-20260821-003-recipient-context`; no PR
 - Change class: C3 — inbound context plus approval-bound outbound recipient
   authorization; no autonomous send
@@ -47,6 +47,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   classifier-route, approval, Gmail-thread, execution-guard, and four-group
   prompt contracts pass. Full release/build/deployment evidence follows at the
   release boundary.
+- Release: immutable commit `3de6707dff0e6309ad141e087428c0803dedd145`
+  binds source tree `4d9d45aa6a742a7eaece56c622c9cc651c1278ae`, 824
+  compiled artifacts, artifact SHA-256
+  `53fcce93729af24a13eb952d676c64bf1c9f3f5e2ce2d57b1b1023dea3686f75`,
+  and archive SHA-256
+  `84a6734f0d5512a8d761adccc3ea8216295e7fdb4a01fb84ec8055709f71f57a`.
+  The release-critical gate passes 731/731 including the independent runner's
+  43/43 tests. The unrestricted suite passes 2,919 with ten skips and only the
+  unchanged pre-existing CNPC wrapper-literal assertion failing.
+- Backup/activation: owner-only backup
+  `NC-20260821-003-20260821T203457Z` contains a WAL-safe SQLite copy (SHA-256
+  `c91b723a0272af412a90f29957ee05ac3d4a33aa3826d49e7cc309d5ab2118e9`),
+  exact plist (SHA-256
+  `4afc65ff2f967bd246d16e707f20c804f443f005442a86e28c829b8ccd26283d`),
+  and all seven affected operational prompts. Activation changed only code
+  root, expected release commit, and executable; rollback plist
+  `com.nanoclaw.plist.rollback-6b9b5f272d60-2026-08-21T20-36-13-788Z` is
+  retained.
+- Prompt reconciliation: six operational files matched the prior release and
+  now byte-match the new release. Chief's prompt had one independent grader
+  customization, so deployment preserved it and inserted only the reviewed
+  recipient-context rule; the merged operational SHA-256 is
+  `6cd3abf3db27f88d3ee79fd42bfc279d84845fdb9a74a00b83b9544e27f733ff`.
+- Live proof: one listener, PID 6524, runs exact release `3de6707d` under Node
+  22.23.2 with verified code-root/source/artifact identity; Gmail and Slack are
+  connected; queues and containers are empty. Pre/post SQLite evidence is
+  identical at six blocked and 85 confirmed actions plus 450 events; the
+  broken daily Sales follow-up remains paused. No customer email, approval,
+  action mutation, or synthetic multi-recipient canary occurred. A natural
+  inbound message with multiple visible recipients must still prove context,
+  card behavior, approved execution, and exact Gmail receipt before outcome
+  validation.
 
 ### NC-20260821-002 — Redesign Sales, proposal, and receivables follow-up
 
