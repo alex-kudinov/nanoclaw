@@ -8,6 +8,66 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260820-007 — Add an exact review-gated outcome assessment producer
+
+- Date: 2026-08-20
+- Owner/client: Codex
+- State: validating; implementation and disposable database proof pass, while
+  release-grade validation, commit, deployment, and live default-off proof
+  remain
+- Commit/PR: isolated branch
+  `codex/nc-20260820-007-outcome-assessment` from `e5e1a595`; task claim
+  `265062f7`; implementation uncommitted; no PR
+- Change class: C2 — one explicit admin-only PostgreSQL receipt insert behind a
+  standalone CLI; no external communication/action, agent, daemon, scheduler,
+  or customer-content path
+- Root cause: migration 126 can represent reviewed quality evidence but has no
+  bounded way to create a receipt. Direct SQL would lack a stable preview,
+  stale-state protection, exact-release proof, and duplicate-response recovery.
+- Implementation: `company-work:assess-outcome` accepts one exact work item and
+  delivery-event version, one explicit bounded assessment, canonical evidence/
+  assessment timestamps, and already-hashed source/evidence/operator keys. Its
+  default dry-run verifies the exact Sales external-acknowledgement event,
+  validates the complete append-only chain, derives the next revision and
+  predecessor, enforces a 15-minute window, and emits a content-free plan
+  fingerprint. Apply re-plans inside one transaction and requires that
+  fingerprint plus exact hostname, full immutable release commit, and the
+  task-specific confirmation before insert.
+- Idempotency/correction: the fingerprint binds target, assessment, hashes,
+  timestamps, revision, and predecessor while excluding only insert-versus-
+  identical-duplicate execution state and its resulting row ID. A retry after
+  a lost response is therefore duplicate-only; any intervening correction
+  changes the plan. Corrections append/supersede, and the schema still rejects
+  update/delete, branch, skipped revision, wrong event, and source reuse.
+- Privacy/authority: source system and assessor kind are fixed to
+  `operator_review`/`operator`; no raw source key, evidence, operator identity,
+  customer address/identity/content, or model output is accepted. There is no
+  list, bulk, default-clean, backfill, Gmail/Slack/SQLite read, daemon import,
+  agent grant, classifier, message, remediation, or external action authority.
+- Verification so far: pinned Node 22.23.2 producer/boundary tests pass 15/15,
+  indicator tests pass 10/10, and typecheck/build/format/documentation
+  continuity pass. Email-critical tests pass 719/719 plus the independent
+  runner build and 43/43 tests. The unrestricted root suite is 2,821/2,822
+  passing with five skips; the sole failure is the unchanged pre-existing CNPC
+  source-wrapper literal assertion, and all implicated CNPC files match the task
+  base. Disposable PostgreSQL 16.15 with exact migrations
+  118-126 proves initial apply, identical replay without insert, operator
+  revision, intervening-revision stale-plan rejection, fresh revision 4,
+  append-only update rejection, one chain head, and the real indicator becoming
+  available only after full disposable coverage. The first rehearsal found the
+  insert-versus-duplicate fingerprint bug; the corrected contract and a new
+  regression test now pass. The disposable server is stopped.
+- Deployment/external state: no release build, production activation/restart,
+  production receipt, Gmail/Slack/content read, message, push, or merge has
+  occurred. Live release remains `09bc2408` with zero quality receipts and 0/13
+  coverage.
+- Rollback: before deployment, revert the implementation commit. After
+  deployment, activate the retained prior immutable release; no schema/data
+  rollback is needed. Any future real receipt remains append-only history and
+  is never deleted as code rollback.
+- Documentation: active work, Company Work ledger, Company OS plan, project
+  map, business data guide, and structure-only schema guide updated.
+
 ### NC-20260820-006 — Add coverage-aware outcome-quality receipts
 
 - Date: 2026-08-20

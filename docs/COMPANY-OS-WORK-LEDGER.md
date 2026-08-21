@@ -404,11 +404,48 @@ dead-letter, or `source_gap:*` evidence remains ineligible. No objective or
 alert threshold is guessed. Query failure returns only `ledger_query_failed`;
 malformed ledger or receipt evidence returns only `ledger_quality_failed`.
 
-Migration 126 is live dark persistence under exact release `09bc2408`: no
-daemon producer, agent grant, write CLI, automatic classifier, Gmail/Slack
-reader, remediation path, or message/action authority exists. The live table
-is empty/admin-only; schema presence cannot create a clean or adverse receipt.
-Natural assessment coverage remains a separate producer/review task.
+Migration 126 is live dark persistence under exact release `09bc2408`: the
+migration itself adds no producer, agent grant, automatic classifier,
+Gmail/Slack reader, remediation path, or message/action authority. The live
+table is empty/admin-only; schema presence cannot create a clean or adverse
+receipt.
+
+NC-20260820-007 adds the separately bounded producer as a standalone host CLI,
+not a daemon path. Its default mode is a read-only preview over one exact
+work-item ID and delivery-event version. The caller must supply one explicit
+assessment, canonical evidence/assessment timestamps, and already-hashed
+source/evidence/operator keys; raw evidence, customer identity, and content are
+not inputs. The preview derives the current chain head, next revision, a
+15-minute expiry, and a SHA-256 fingerprint. Apply re-derives the same plan in
+one transaction and requires the exact fingerprint, hostname, immutable release
+commit, and `NC-20260820-007-OUTCOME-QUALITY-ASSESSMENT` confirmation. It is
+single-receipt only: there is no list, bulk, default-clean, or backfill mode.
+
+The fingerprint binds the target, assessment, hashes, timestamps, revision,
+and predecessor. It deliberately excludes only whether the same exact receipt
+is not yet inserted or already present plus that existing row ID, so retry
+after a lost response is duplicate-only while an intervening revision fails
+`plan_changed`. Every correction still appends and supersedes; no update or
+delete path exists.
+
+```bash
+npm run company-work:assess-outcome -- \
+  --work-item-id <exact-internal-id> \
+  --delivery-event-version <exact-version> \
+  --assessment <clean-or-bounded-adverse-classification> \
+  --source-key-sha256 <lowercase-sha256> \
+  --evidence-sha256 <lowercase-sha256> \
+  --assessor-key-sha256 <lowercase-sha256> \
+  --evidence-occurred-at <canonical-utc-timestamp> \
+  --assessed-at <canonical-utc-timestamp>
+```
+
+Omitting `--apply` is always dry-run. Apply is valid only from the exact
+verified installed release and adds `--expected-plan-sha256`,
+`--confirm-host`, `--expected-release`, and the exact confirmation above.
+Installing the command does not authorize a receipt: the operator-reviewed
+evidence and explicit apply gate remain separate, and production coverage must
+not be manufactured for rollout proof.
 
 Repository presence is not deployment or baseline evidence. Use the exact
 active-work and engineering-changelog entry to determine whether the compiled

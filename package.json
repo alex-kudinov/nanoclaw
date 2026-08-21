@@ -26,6 +26,7 @@
     "email:transport-canary": "node dist/email-transport-canary.js",
     "company-work:exceptions": "node dist/company-work-report-cli.js",
     "company-work:indicators": "node dist/company-work-indicators-cli.js",
+    "company-work:assess-outcome": "node dist/company-work-outcome-quality-assessment-cli.js",
     "company-job-work:project": "node dist/company-job-work-shadow-cli.js",
     "company-program-facts:run": "node dist/program-facts-drift-job.js",
     "company-gmail:coverage": "node dist/gmail-historical-coverage-cli.js",

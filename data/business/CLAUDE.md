@@ -93,11 +93,16 @@ Migration 126 is live and empty under exact release `09bc2408` through
 `sales_email` `external_acknowledged` event and stores no customer identity or
 content. A later assessment may supersede a prior one without rewriting it,
 but only one current chain head is legal. No daemon producer, agent grant,
-message path, automatic classification, remediation, or write CLI is part of
-the migration. The service indicator may publish a rate only with one current
+message path, automatic classification, or remediation is part of the
+migration. NC-20260820-007's separately gated host CLI is default-dry-run,
+single-receipt only, and requires an explicit operator-reviewed classification,
+opaque hashes, canonical timestamps, an unchanged 15-minute plan fingerprint,
+and exact host/release/task confirmation before apply. It does not read Gmail,
+Slack, SQLite, customer identity, or content and is not imported by a daemon or
+agent. The service indicator may publish a rate only with one current
 assessment for every exact customer-visible outcome in its cohort. Repository
-presence is not receipt evidence; the live table has zero rows and no producer.
-Consult active-work/changelog state before relying on an assessment.
+or command presence is not receipt evidence; consult active-work/changelog
+state before relying on an assessment.
 
 ## Connection
 
