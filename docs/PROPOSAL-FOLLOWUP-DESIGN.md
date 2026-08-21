@@ -1,5 +1,11 @@
 # Proposal Follow-Up
 
+Status: legacy live mechanism; not the target process. `NC-20260821-002`
+documents the replacement authority in `SALES-FOLLOWUP-OPERATING-MODEL.md`.
+The current loop remains approval-gated but is default-on, four of five current
+open proposals are stuck behind expired sequence rows, and its fixed-sender,
+four-touch cadence must not be copied into the replacement.
+
 Daily, approval-gated email nudges for open (unsigned) Plutio proposals, so a
 sent proposal that goes quiet gets a bounded, courteous follow-up sequence
 instead of falling through the cracks.

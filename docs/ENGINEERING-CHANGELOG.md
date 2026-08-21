@@ -8,6 +8,66 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260821-002 — Redesign Sales, proposal, and receivables follow-up
+
+- Date: 2026-08-21
+- Owner/client: Codex
+- State: in_progress; broken Sales task contained and the first dark policy/
+  persistence slice implemented locally, not migrated, deployed, or activated
+- Commit/PR: isolated branch `codex/nc-20260821-002-followup-process`; no PR
+- Change class: C3 — one reversible scheduler pause plus an unwired, no-send
+  Company OS policy/schema foundation
+- Trigger: the operator reported that the daily Sales follow-up no longer
+  completed and, when it did run, recycled the same leads. They requested a
+  process-first redesign spanning leads, unsigned Plutio proposals, and unpaid
+  invoices.
+- Live finding: `task-followup-daily` was active at 09:00 CT weekdays, not off.
+  Its ten 2026-08-12 through 2026-08-21 runs all failed the completion contract.
+  Recent runs repeatedly selected the oldest five, queued Gmail thread reads,
+  and ended without a complete artifact set. The deterministic view currently
+  returns 128 rows for 108 parties: 120/100 at attempt count zero, five/five at
+  one, and three/three at two. Counts and thread identity are party-global while
+  rows are per pipeline entry; pending drafts are not excluded and the view
+  does not prove our outbound is the latest conversation event.
+- Containment: after WAL-safe backup
+  `NC-20260821-002-20260821T144453Z` (SHA-256
+  `9c7b498c4a8d7f9ae2a7a612250bcb30748f0fd646d87a0e58f604d077d1f262`),
+  a guarded one-row update changed only `task-followup-daily` from active to
+  paused. SQLite `quick_check` passed before and after. No run, draft, or send
+  was triggered.
+- Adjacent-system finding: the host proposal loop is default-on. Plutio has five
+  genuine pending proposals totaling $38,300 with no conversion markers. Four
+  are permanently stuck behind an expired sequence row; the fifth has two sent
+  touches. Today's pass scanned five, drafted zero, and skipped five. The
+  proposal ledger holds 12 sent, seven expired, and two cancelled rows.
+- Receivables finding: Plutio has eight overdue invoices totaling $23,793.50
+  outstanding and twelve future-due pending invoices totaling $64,383.10.
+  NanoClaw has no customer receivables follow-up workflow; future-due invoices
+  are not collection work.
+- Process authority: `docs/SALES-FOLLOWUP-OPERATING-MODEL.md` defines one stable
+  case per exact conversation/proposal/invoice, Sales vs Contador ownership,
+  lane-specific business-day cadence, ball-in-court and current-source checks,
+  approval-time revalidation, attempt receipts, stop rules, and unchanged-case
+  presentation suppression. It caps Sales at two customer follow-ups,
+  proposals at three plus internal close review, and receivables at two only
+  after Contador's explicit collection review.
+- Dark implementation: `src/followup-policy.ts` is a pure, content-free
+  deterministic evaluator and canonical decision fingerprint. Candidate
+  migration 130 plus `src/followup-case-store.ts` add an admin-only current
+  case projection and append-only changed-evidence events. They are unwired:
+  there is no source adapter, scheduler, daemon call, agent grant, report,
+  presentation, draft, approval, Plutio mutation, or send path.
+- Focused verification: 24 policy tests pass under Node 22.23.2. Disposable
+  PostgreSQL 16 runs four store/lifecycle tests covering initial projection,
+  exact replay, unchanged-next-day no-op, versioned evidence change, stale and
+  conflicting evidence refusal, append-only enforcement, and zero non-admin
+  grants. Populated rollback refuses; empty rollback succeeds.
+- Release gates: typecheck, build, formatting, documentation continuity, and
+  diff checks pass. The email-critical suite passes 722/722 and the independent
+  agent runner passes 43/43 under pinned Node 22.23.2. The unrestricted root
+  suite passes 2,895/2,896 with ten skips; its sole CNPC wrapper-literal
+  assertion and both implicated files are unchanged from this task's base.
+
 ### NC-20260821-001 — Bind Company Work packet pickup and bounded attempts
 
 - Date: 2026-08-21

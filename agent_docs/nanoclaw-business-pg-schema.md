@@ -41,6 +41,12 @@ defines admin-only, content-free packet and bounded-turn receipts. The schema
 is live in exact release `f6089cce`, but the empty tables do not prove a
 completed Chief attempt; use active-work and changelog evidence for that gate.
 
+Structure-only follow-up candidate: migration 130 under `NC-20260821-002`
+defines admin-only, content-free current cases and append-only changed-evidence
+events for exact Sales conversations, proposal signatures, and receivables.
+It is not applied or runtime-wired; repository presence does not prove live
+schema, source coverage, presentation, drafting, approval, or customer action.
+
 Covers the public._ and business_v2._ schemas. business*v2 tables are
 headed with their schema prefix; access them via business_v2.v*_ views and
 business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
@@ -65,6 +71,58 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
   last_transition_at            timestamp with time zone NOT NULL DEFAULT=now()
   last_transition_by            text                 NOT NULL DEFAULT='company-work-ledger:host'::text
+```
+
+## business_v2.company_followup_cases (migration 130 candidate)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_followup_cases_id_seq'::regclass)
+  lane                          text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_key                    text                 NOT NULL
+  party_id                      bigint
+  pipeline_entry_id             bigint
+  owner_group                   text                 NOT NULL
+  policy_version                text                 NOT NULL
+  source_fingerprint            text                 NOT NULL
+  decision_fingerprint          text                 NOT NULL
+  disposition                   text                 NOT NULL
+  reason_code                   text                 NOT NULL
+  next_action                   text                 NOT NULL
+  sequence_no                   smallint
+  next_eligible_business_date   date
+  confirmed_attempt_count       smallint             NOT NULL DEFAULT=0
+  block_code                    text
+  terminal_code                 text
+  version                       integer              NOT NULL DEFAULT=0
+  last_observed_at              timestamp with time zone NOT NULL
+  last_changed_at               timestamp with time zone NOT NULL
+  last_presented_fingerprint    text
+  last_presented_at             timestamp with time zone
+  presentation_count            integer              NOT NULL DEFAULT=0
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_followup_events (migration 130 candidate)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_followup_events_id_seq'::regclass)
+  case_id                       bigint               NOT NULL
+  case_version                  integer              NOT NULL
+  event_type                    text                 NOT NULL
+  from_disposition              text
+  to_disposition                text                 NOT NULL
+  reason_code                   text                 NOT NULL
+  actor                         text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_event_key              text                 NOT NULL
+  idempotency_key               text                 NOT NULL
+  source_fingerprint            text                 NOT NULL
+  decision_fingerprint          text                 NOT NULL
+  event_fingerprint             text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.company_work_receipts (migration 118 live)

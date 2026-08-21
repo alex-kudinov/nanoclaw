@@ -1210,17 +1210,20 @@ For each agent, move from “can perform tasks” to a closed operational loop:
 | Chief           | exceptions and decisions route to accountable owners and close            |
 | Healer          | incident evidence, containment, approval, remediation, verification close |
 
-The next Sales closure milestone is process design before scheduler repair.
-Keep the current daily follow-up task off. Define one durable work queue across
-active leads, unsigned proposals, and unpaid invoices, while preserving their
-different owners and authority boundaries. Each candidate needs a canonical
-party/opportunity/document identity, current owner, reason it is eligible now,
-last inbound/outbound/action evidence, next eligible time, approved channel and
-message class, attempt history, stop/suppression conditions, escalation path,
-and a terminal outcome. A completed attempt must advance the next-action state;
-an unchanged daily scan must not present the same party as new work. Separate
-sales conversation, proposal signature follow-up, and receivables collection
-policy before deciding who may draft, approve, send, or escalate each class.
+`NC-20260821-002` begins the next Sales closure milestone with containment and
+process authority, not scheduler repair. The live `task-followup-daily` row is
+paused after ten consecutive failed completion-contract runs; it must not be
+resumed as the replacement. `docs/SALES-FOLLOWUP-OPERATING-MODEL.md` defines
+one durable work queue across exact Sales conversations, unsigned proposals,
+and overdue receivables while preserving Sales/Contador/relationship-owner
+authority. Each case carries canonical identity, current owner, eligibility
+reason, last inbound/outbound/action evidence, next eligible business date,
+message class, confirmed attempt history, stop/suppression, escalation, and a
+terminal outcome. An unchanged daily scan remains the same case and cannot
+create a new top-level item. The pure policy and candidate migration 130/store
+implement the first default-off, no-send foundation; migration, source shadow,
+backlog disposition, presentation, drafts, sends, and scheduler activation
+remain separate gates.
 
 ### P2.13 Build management briefs from the ledger
 
