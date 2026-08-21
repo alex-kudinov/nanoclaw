@@ -29,6 +29,7 @@ function sales(
     confirmedAttempts: 0,
     lastConfirmedAttemptAt: null,
     hasOpenProposal: false,
+    operatorDecision: 'none',
     ...overrides,
   };
 }
@@ -147,6 +148,34 @@ describe('Sales conversation policy', () => {
     expect(evaluateFollowup(sales({ pendingAction: true }))).toMatchObject({
       disposition: 'waiting',
       reason: 'action_or_approval_pending',
+    });
+  });
+
+  it('makes an explicit operator rejection terminal instead of drafting it again', () => {
+    expect(
+      evaluateFollowup(
+        sales({ operatorDecision: 'declined', pendingAction: false }),
+      ),
+    ).toMatchObject({
+      disposition: 'cancelled',
+      reason: 'operator_declined_followup',
+      nextAction: 'none',
+      sequence: null,
+      nextEligibleBusinessDate: null,
+    });
+  });
+
+  it('blocks an unknown operator decision instead of treating it as consent or silence', () => {
+    expect(
+      evaluateFollowup(
+        sales({
+          operatorDecision:
+            'retry' as SalesConversationCase['operatorDecision'],
+        }),
+      ),
+    ).toMatchObject({
+      disposition: 'blocked',
+      reason: 'unknown_operator_decision',
     });
   });
 

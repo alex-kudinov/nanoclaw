@@ -8,7 +8,7 @@
 
 import { createHash } from 'crypto';
 
-export const FOLLOWUP_POLICY_VERSION = '2026-08-21.1';
+export const FOLLOWUP_POLICY_VERSION = '2026-08-21.2';
 export const FOLLOWUP_TIME_ZONE = 'America/Chicago';
 
 export type FollowupLane =
@@ -50,6 +50,8 @@ export interface SalesConversationCase extends CommonCase {
   confirmedAttempts: number;
   lastConfirmedAttemptAt: string | null;
   hasOpenProposal: boolean;
+  /** Explicit decision on this exact follow-up case; silence is not decline. */
+  operatorDecision: 'none' | 'declined';
 }
 
 export interface ProposalSignatureCase extends CommonCase {
@@ -252,6 +254,12 @@ function evaluateSales(input: SalesConversationCase): FollowupDecision {
   }
   if (input.hasOpenProposal) {
     return decision(input, 'completed', 'superseded_by_open_proposal');
+  }
+  if (!['none', 'declined'].includes(input.operatorDecision)) {
+    return decision(input, 'blocked', 'unknown_operator_decision');
+  }
+  if (input.operatorDecision === 'declined') {
+    return decision(input, 'cancelled', 'operator_declined_followup');
   }
   const safetyGate = actionSafetyGate(input);
   if (safetyGate) return safetyGate;

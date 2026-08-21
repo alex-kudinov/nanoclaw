@@ -370,6 +370,16 @@ Two rules follow from that, and they apply well beyond this workflow:
 
 Reverse a drop with `SELECT business_v2.fn_resume_followups({party_id}, 'reason');` — this clears the suppression but leaves the entry in `nurture`; move it to `qualifying` separately if it should be worked again.
 
+The preceding paragraph describes the contained legacy mechanism: it records
+party suppression and parks open entries in `nurture`. The replacement process
+under `NC-20260821-002` is stricter. A named operator's explicit rejection of
+an exact Sales follow-up card is a terminal decision on that case and must move
+the bound pipeline entry to canonical stage `lost`, with a database read-back,
+before the host says it is dead or closed. Silence or an expired approval is
+not a rejection, but it must not regenerate the identical card the next
+weekday. Until that replacement decision adapter is activated, do not claim
+that rejection changed the pipeline merely because a card was declined.
+
 ### Follow-Up Draft Format
 
 Post each follow-up as a separate top-level message (one thread per lead):

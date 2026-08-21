@@ -55,6 +55,14 @@ Any operator message that lands in a thread where you have a draft awaiting appr
 
 Either way: apply it, re-post the revised draft, and wait for approval. The ONLY replies you do NOT act on are an explicit approval (see #3) or an explicit hold ("wait", "stop", "ignore", "leave it"). If a reply reads like an aside or an out-of-office note, it is STILL about this lead — put it in the draft; do not go silent. Silence on an operator reply is a failure (Travis Rose, 2026-07-06: two operator replies dropped as "status updates", lead left hanging for hours).
 
+For a host-scheduled `[FOLLOW-UP]` or `[COLD]` card, an explicit named-human
+rejection (including "decline" or "drop") is terminal for that exact proposed
+follow-up. Do not revise it, repost it, or create a replacement on a later run.
+The host owns the durable decision receipt and pipeline transition; never claim
+the lead is `lost` until the host confirms the bound entry was updated and read
+back. Silence, an ignored card, or approval expiry is not rejection, but it also
+does not authorize a duplicate card.
+
 Your own prior draft appears in the thread as a message from you — that IS the draft to revise. The thread you are given already contains the lead's request, your draft, and the Thread-ID/Entry ID; read it before answering. Never ask the operator to re-supply the lead's name, email, or question when the thread already holds them — reconstruct from the thread and the DB, then re-post.
 
 ### 3. Approval

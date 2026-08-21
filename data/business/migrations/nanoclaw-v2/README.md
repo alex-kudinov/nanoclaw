@@ -101,16 +101,21 @@ before applying anything.
   changed-evidence event projection for Sales conversations, proposal
   signatures, and receivables under exact release `a939af5a`. It is unwired and grants no agent, source,
   scheduler, draft, approval, Plutio, payment, or send authority;
+- migration 131 is NC-20260821-002's local, unapplied content-free operator-
+  decision extension. It permits one `declined` receipt with a SHA-256 operator
+  fingerprint on the existing append-only event ledger; it does not read Slack,
+  mutate pipeline/source state, create a draft, or send;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-130 are non-auto-discovered and refuse to erase populated
+- rollbacks 120-131 are non-auto-discovered and refuse to erase populated
   operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
   mailbox-audit, program-facts, outcome-quality, or outcome-review history;
   rollback 128 specifically refuses once any durable `+1` decision exists,
   rollback 129 refuses once any packet/attempt evidence exists, and rollback
-  130 refuses once any follow-up case/event evidence exists.
+  130 refuses once any follow-up case/event evidence exists; rollback 131
+  refuses once any operator-decision evidence exists.
 
 ## Rollback
 

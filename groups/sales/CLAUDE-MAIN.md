@@ -20,6 +20,11 @@ host-owned Mailman handoff. A draft, queued tool result, or approval card is not
 proof that email was sent. Follow the complete approval and receipt contract in
 `CLAUDE.md` and `WORKFLOWS.md`.
 
+An explicit named-human rejection of a host-scheduled follow-up is terminal for
+that exact proposal: do not revise, repost, or regenerate it. Silence or expiry
+is not rejection, but still cannot create a duplicate card. The host owns the
+durable decision receipt and the verified pipeline transition to `lost`.
+
 ## Knowledge
 
 Read `/workspace/extra/knowledge/KNOWLEDGE.md` and the verified

@@ -105,7 +105,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_followup_events (migration 130 live, empty)
+## business_v2.company_followup_events (migration 130 live, empty; migration 131 candidate)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_followup_events_id_seq'::regclass)
@@ -124,6 +124,8 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   event_fingerprint             text                 NOT NULL
   occurred_at                   timestamp with time zone NOT NULL
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+  operator_decision             text
+  operator_fingerprint          text
 ```
 
 ## business_v2.company_work_receipts (migration 118 live)

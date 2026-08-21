@@ -1220,10 +1220,14 @@ authority. Each case carries canonical identity, current owner, eligibility
 reason, last inbound/outbound/action evidence, next eligible business date,
 message class, confirmed attempt history, stop/suppression, escalation, and a
 terminal outcome. An unchanged daily scan remains the same case and cannot
-create a new top-level item. Exact release `a939af5a` and live, empty,
-admin-only migration 130 deploy the first default-off, no-send foundation;
-source shadow, backlog disposition, presentation, drafts, sends, and scheduler
-activation remain separate gates.
+create a new top-level item. An explicit named-human rejection is terminal:
+the exact Sales case is cancelled and its bound pipeline entry must become
+canonical `lost` with read-back proof; silence or expiry creates no duplicate
+daily card. Exact release `a939af5a` and live, empty, admin-only migration 130
+deploy the first default-off, no-send foundation. The local policy-v2/
+migration-131 correction adds content-free rejection semantics but remains
+unwired and undeployed. Source shadow, backlog disposition, presentation,
+drafts, sends, and scheduler activation remain separate gates.
 
 ### P2.13 Build management briefs from the ledger
 

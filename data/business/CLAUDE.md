@@ -141,6 +141,14 @@ customer-action authority from schema or release presence; follow
 `docs/SALES-FOLLOWUP-OPERATING-MODEL.md` and current active-work/changelog
 evidence.
 
+Migration 131 is the local, unapplied correction for explicit follow-up
+rejection. It extends the existing append-only event vocabulary with one
+content-free `declined` operator decision and a SHA-256 operator fingerprint.
+It does not consume Slack, change a case or pipeline entry, read a source,
+schedule work, or send. The replacement adapter must bind the exact case
+version/presentation, cancel the Sales case, transition the associated entry to
+canonical `lost`, and read back both durable results before reporting closure.
+
 ## Connection
 
 ```bash

@@ -137,6 +137,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_129_company_work_exception_dispatch_receipts.sql',
     'data/business/migrations/nanoclaw-v2/130_company_followup_cases.sql',
     'data/business/migrations/nanoclaw-v2/rollback_130_company_followup_cases.sql',
+    'data/business/migrations/nanoclaw-v2/131_company_followup_operator_decisions.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_131_company_followup_operator_decisions.sql',
     'scripts/verify-release.mjs',
     'scripts/activate-release.mjs',
     'scripts/run-action-safety-drill.mjs',

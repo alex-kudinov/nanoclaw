@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: complete for the dark deployment milestone; the broken task is paused
-  and the replacement policy/schema foundation is live but has no source or
-  action wiring
+- State: in_progress after a 2026-08-21T15:57Z operator correction; the prior
+  dark deployment remains live and safe while rejection semantics are being
+  corrected locally with no source or action wiring
 - Commit/PR: isolated branch `codex/nc-20260821-002-followup-process`; exact
   release `a939af5a500f0484a8f2c805d72e4b2a49f9655e`; no PR
 - Change class: C3 — one reversible scheduler pause plus an unwired, no-send
@@ -23,6 +23,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   completed and, when it did run, recycled the same leads. They requested a
   process-first redesign spanning leads, unsigned Plutio proposals, and unpaid
   invoices.
+- Operator correction (2026-08-21T15:57Z): the harmful repetition was the same
+  proposed email returning for approval after rejection, not repeated customer
+  sends. Canonical pipeline terminal is `lost`, not `dead`; explicit rejection
+  must durably cancel the exact case and require read-back-verified `lost`,
+  while silence or expiry must not regenerate an identical daily card.
 - Live finding: `task-followup-daily` was active at 09:00 CT weekdays, not off.
   Its ten 2026-08-12 through 2026-08-21 runs all failed the completion contract.
   Recent runs repeatedly selected the oldest five, queued Gmail thread reads,
@@ -59,6 +64,16 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   case projection and append-only changed-evidence events. They are unwired:
   there is no source adapter, scheduler, daemon call, agent grant, report,
   presentation, draft, approval, Plutio mutation, or send path.
+- Resumed correction: policy version `2026-08-21.2` adds the explicit
+  `operator_declined_followup` terminal decision. Candidate migration 131 adds
+  only `operator_decision=declined` plus a SHA-256 operator fingerprint to the
+  existing append-only event ledger. It is unapplied and unwired: no Slack
+  decision consumer, case/pipeline mutation, presentation, draft, or send path
+  exists. Focused policy/migration/Sales-contract tests pass 38/38 under Node
+  22.23.2; the full suite passes 2,906/2,917 with only the pre-existing CNPC
+  wrapper assertion failing and 10 integration tests skipped. Disposable
+  PostgreSQL 16 proves apply, empty rollback, valid declined receipt, and
+  populated rollback refusal.
 - Focused verification: 24 policy tests pass under Node 22.23.2. Disposable
   PostgreSQL 16 runs four store/lifecycle tests covering initial projection,
   exact replay, unchanged-next-day no-op, versioned evidence change, stale and

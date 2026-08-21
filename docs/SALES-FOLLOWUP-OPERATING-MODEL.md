@@ -1,6 +1,6 @@
 # Sales, proposal, and receivables follow-up operating model
 
-Status: process authority and live dark foundation; no source/action wiring
+Status: process authority and live dark foundation; rejection correction in validation; no source/action wiring
 Task: `NC-20260821-002`
 Date: 2026-08-21
 
@@ -27,7 +27,10 @@ On 2026-08-21 the scheduled `task-followup-daily` row was still active at
 09:00 CT on weekdays, despite being understood as off. Ten consecutive runs
 from 2026-08-12 through 2026-08-21 failed their completion contract. Recent
 runs repeatedly selected the oldest five leads, queued asynchronous Gmail
-reads, and ended without a complete visible artifact set.
+reads, and ended without a complete visible artifact set. Because an approval
+rejection produced neither a confirmed send nor a durable terminal decision,
+the same proposed email could return as ostensibly new approval work on the
+next weekday. The observed harm was repeated presentation, not repeated send.
 
 The live Sales view contained 128 rows for 108 distinct parties:
 
@@ -78,6 +81,7 @@ Required content-free fields:
 - current disposition and named reason;
 - next eligible business date;
 - pending approval/action binding, if any;
+- exact presentation identity and named-human decision receipt, if any;
 - block, suppression, escalation, and terminal reason;
 - optimistic version and append-only event/receipt identities.
 
@@ -111,6 +115,12 @@ Operator surfaces distinguish:
 
 An unchanged fingerprint must never create another top-level Slack item.
 
+Silence, an ignored card, and approval expiry are not rejection. They keep the
+same case non-actionable and may appear in aggregate approval health, but they
+do not mint a new daily card or regenerate identical bytes. A later retry must
+be an explicit operator decision bound to that exact presentation and a new
+case version.
+
 ## 4. Lane A: Sales conversation
 
 ### Owner
@@ -130,6 +140,7 @@ A customer draft is eligible only when all are true:
 6. there is no current open proposal for this case/party;
 7. no DND, unsubscribe, operator suppression, or other stop rule applies;
 8. the lane-specific confirmed-attempt cap has not been exceeded.
+9. no named operator has declined this exact follow-up case.
 
 Missing thread identity is a block, never permission to search broadly or send
 a detached message. A newer inbound reply is response work, not follow-up.
@@ -145,6 +156,27 @@ remain an explicit future calendar dependency.
 
 Close review recommends `nurture`, `lost`, snooze, or a human-owned next step.
 It does not mutate the pipeline without a typed, read-back-verified action.
+
+### Approval rejection
+
+`lost` is the canonical terminal pipeline stage; there is no separate `dead`
+stage. A named operator's explicit rejection of the exact Sales follow-up card
+means all of the following, atomically or not at all:
+
+1. append a content-free decision receipt bound to the exact case version and
+   Slack presentation;
+2. cancel the exact follow-up case with reason
+   `operator_declined_followup`;
+3. transition the associated pipeline entry to `lost` and read it back;
+4. retain durable no-follow-up suppression so a duplicate/alias cannot re-arm
+   the same case;
+5. post one receipt describing only what durable state actually changed.
+
+If current source evidence, case version, Party identity, or duplicate-entry
+reconciliation does not agree, the rejection is blocked and visibly reported;
+the host must not guess. Reopening later requires an explicit operator action.
+This transition is a replacement activation requirement, not authority for the
+currently unwired dark foundation to mutate the live pipeline.
 
 ## 5. Lane B: proposal signature
 
@@ -228,10 +260,11 @@ Every customer attempt follows the existing action boundary:
 3. create one draft whose lane, recipient, source identity, sequence, and bytes
    are immutable;
 4. bind it to the exact Slack message and named-human decision;
-5. revalidate source status and fingerprint at approval time;
-6. hand the exact approved bytes to Mailman;
-7. require Gmail message/thread receipt before counting the attempt;
-8. append the confirmed attempt and compute the next eligible date.
+5. on explicit rejection, record the decision and terminal transition above;
+6. on approval, revalidate source status and fingerprint at approval time;
+7. hand the exact approved bytes to Mailman;
+8. require Gmail message/thread receipt before counting the attempt;
+9. append the confirmed attempt and compute the next eligible date.
 
 Queued tools, model completion, Slack posting, or approval alone do not count
 as a customer attempt. An uncertain Gmail boundary blocks retry until
@@ -245,6 +278,7 @@ All lanes stop or change state immediately on a newer authoritative event:
 - proposal approved, declined, cancelled, superseded, invoiced, or converted;
 - invoice paid, cancelled, credited, disputed, or put on an approved plan;
 - DND/unsubscribe/operator suppression;
+- exact named-operator rejection of a Sales follow-up presentation;
 - owner reassignment, source identity conflict, or case merge;
 - exact send/delivery failure or uncertainty.
 
@@ -258,7 +292,8 @@ becomes ready, a retry date arrives, or escalation materially changes.
 2. Add and test a pure, deterministic lane policy and privacy-minimized case
    fingerprint. No source read or write.
 3. Add an admin-only durable case/event schema, default-off projector, and
-   read-only aggregate report. Do not produce drafts.
+   content-free named-operator rejection receipt, plus a read-only aggregate
+   report. Do not produce drafts.
 4. Shadow current sources and reconcile identities, duplicates, ball-in-court,
    conversion markers, expired proposal rows, and invoice payment state.
 5. Run an operator-reviewed backlog disposition. Do not bulk-create drafts from
@@ -274,6 +309,12 @@ release `a939af5a` and live migration 130. The case/event tables are empty and
 admin-only, and the pure policy/store remain absent from daemon, scheduler,
 IPC, agent, report, presentation, draft, approval, Plutio/payment, and send
 composition. Step 4 is the next gate; none of the current backlog is imported.
+
+Correction checkpoint (2026-08-21): policy version `2026-08-21.2` and
+migration 131 are local, unwired candidates. Explicit Sales rejection evaluates
+to terminal `cancelled`, and the schema can retain only a content-free
+`declined` receipt. Neither can consume a Slack decision or change a live
+pipeline entry; deployment and activation are separate evidence gates.
 
 No step in this document authorizes a customer email, proposal/invoice change,
 payment action, bulk backfill, or scheduler activation.

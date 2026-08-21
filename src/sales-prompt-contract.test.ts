@@ -131,6 +131,21 @@ describe('Sales request-first prompt contract', () => {
     );
   });
 
+  it('treats explicit follow-up rejection as terminal without equating silence to rejection', () => {
+    expect(normalizedContract).toContain(
+      'an explicit named-human rejection (including "decline" or "drop") is terminal',
+    );
+    expect(normalizedContract).toContain(
+      'Silence, an ignored card, or approval expiry is not rejection',
+    );
+    expect(normalizeWhitespace(mainContext)).toContain(
+      'do not revise, repost, or regenerate it',
+    );
+    expect(normalizeWhitespace(mainContext)).toContain(
+      'The host owns the durable decision receipt and the verified pipeline transition to `lost`',
+    );
+  });
+
   it('keeps an adversarial route and content-budget evaluation matrix', () => {
     expect(evalCases.length).toBeGreaterThanOrEqual(9);
     expect(new Set(evalCases.map((testCase) => testCase.id)).size).toBe(
