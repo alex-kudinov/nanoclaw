@@ -61,11 +61,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   PostgreSQL 16 runs four store/lifecycle tests covering initial projection,
   exact replay, unchanged-next-day no-op, versioned evidence change, stale and
   conflicting evidence refusal, append-only enforcement, and zero non-admin
-  grants. Populated rollback refuses; empty rollback succeeds.
+  grants. Four static migration/release-authority tests pass. Populated
+  rollback refuses; empty rollback succeeds.
 - Release gates: typecheck, build, formatting, documentation continuity, and
   diff checks pass. The email-critical suite passes 722/722 and the independent
   agent runner passes 43/43 under pinned Node 22.23.2. The unrestricted root
-  suite passes 2,895/2,896 with ten skips; its sole CNPC wrapper-literal
+  suite passes 2,899/2,900 with ten skips; its sole CNPC wrapper-literal
   assertion and both implicated files are unchanged from this task's base.
 
 ### NC-20260821-001 — Bind Company Work packet pickup and bounded attempts
