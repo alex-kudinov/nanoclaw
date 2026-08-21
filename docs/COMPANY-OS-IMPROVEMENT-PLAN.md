@@ -1220,10 +1220,10 @@ authority. Each case carries canonical identity, current owner, eligibility
 reason, last inbound/outbound/action evidence, next eligible business date,
 message class, confirmed attempt history, stop/suppression, escalation, and a
 terminal outcome. An unchanged daily scan remains the same case and cannot
-create a new top-level item. The pure policy and candidate migration 130/store
-implement the first default-off, no-send foundation; migration, source shadow,
-backlog disposition, presentation, drafts, sends, and scheduler activation
-remain separate gates.
+create a new top-level item. Exact release `a939af5a` and live, empty,
+admin-only migration 130 deploy the first default-off, no-send foundation;
+source shadow, backlog disposition, presentation, drafts, sends, and scheduler
+activation remain separate gates.
 
 ### P2.13 Build management briefs from the ledger
 

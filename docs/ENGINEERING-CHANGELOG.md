@@ -12,9 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: in_progress; broken Sales task contained and the first dark policy/
-  persistence slice implemented locally, not migrated, deployed, or activated
-- Commit/PR: isolated branch `codex/nc-20260821-002-followup-process`; no PR
+- State: complete for the dark deployment milestone; the broken task is paused
+  and the replacement policy/schema foundation is live but has no source or
+  action wiring
+- Commit/PR: isolated branch `codex/nc-20260821-002-followup-process`; exact
+  release `a939af5a500f0484a8f2c805d72e4b2a49f9655e`; no PR
 - Change class: C3 — one reversible scheduler pause plus an unwired, no-send
   Company OS policy/schema foundation
 - Trigger: the operator reported that the daily Sales follow-up no longer
@@ -52,8 +54,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   proposals at three plus internal close review, and receivables at two only
   after Contador's explicit collection review.
 - Dark implementation: `src/followup-policy.ts` is a pure, content-free
-  deterministic evaluator and canonical decision fingerprint. Candidate
-  migration 130 plus `src/followup-case-store.ts` add an admin-only current
+  deterministic evaluator and canonical decision fingerprint. Live migration
+  130 plus `src/followup-case-store.ts` add an admin-only current
   case projection and append-only changed-evidence events. They are unwired:
   there is no source adapter, scheduler, daemon call, agent grant, report,
   presentation, draft, approval, Plutio mutation, or send path.
@@ -68,6 +70,48 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   agent runner passes 43/43 under pinned Node 22.23.2. The unrestricted root
   suite passes 2,899/2,900 with ten skips; its sole CNPC wrapper-literal
   assertion and both implicated files are unchanged from this task's base.
+- Release: immutable commit `a939af5a500f0484a8f2c805d72e4b2a49f9655e`
+  binds source tree `706e59ec82530ecf91cc82d8cf44fa87eb73b098`, 824
+  compiled artifacts, artifact SHA-256
+  `8b2846f11b49bceec40ee5345a9752728b24933179aff71ddec068ba26c36852`,
+  and archive SHA-256
+  `dd2de00f539fb1d53722aabf1fd6480ef129ac8641e89fcf4f6613bfe43ba912`.
+  Local and Mini runtime verification pass under Node 22.23.2. The activation
+  dry run and apply changed only code root, expected commit, and executable,
+  retaining rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-f6089cce30ca-2026-08-21T15-30-03-484Z`.
+- Drain/backup: two real Sales conversations were allowed to finish naturally;
+  the final gate proved zero containers, waiting groups, outgoing Slack work,
+  and active email actions. Owner-only backup
+  `NC-20260821-002-20260821T152918Z` contains WAL-safe SQLite, exact plist, and
+  complete custom-format `business_v2` artifacts. SQLite `quick_check` and
+  `pg_restore --list` pass. Their SHA-256s are respectively
+  `37410c8eababff97eeb1dcc8b0a177b82b8e2ee35e2600727ccf4e308698296d`,
+  `256f69c20c553d0635a8b3ff6f57d81cab5cb80bba9d6e9f7de3404665a80e85`,
+  and `b2ca8cebdc48dddb587002a800818f2bf39e55cfd3218e43e4ccda3a8320fad1`.
+  An initial `pg_dump -X` invocation failed before writing the PostgreSQL
+  artifact; the corrected invocation completed while the daemon remained
+  stopped and before migration.
+- Live schema: exact migration SHA-256
+  `5444f10a765f25c43c22a0c6ea10fe1035d45c784acfb51f66e4330bfe2e1964`
+  is applied. Both new tables are empty, owned by `nanoclaw_admin`, have zero
+  non-admin table/sequence grants and zero forbidden content columns, and the
+  events table has its enabled append-only trigger.
+- Live non-interference: PID 82111 serves the exact verified release with
+  matching code root, Node 22.23.2, connected Gmail/Slack, one listener, and
+  empty runtime/outgoing queues. `task-followup-daily` remains paused. The
+  proposal ledger is unchanged at 21 rows (12 sent, seven expired, two
+  cancelled); SQLite is unchanged at 90 send actions (84 confirmed, six
+  blocked) and 445 events. Protected PostgreSQL aggregates remain 22 work
+  items/version sum 117, 139 events, 63 receipts, seven cases, seven briefs,
+  47 exception events, and zero dispatches/events. Startup returned
+  `duplicate_brief` and started no packet attempt.
+- Boundary/next gate: this completes the process and dark-foundation milestone,
+  not the customer-follow-up replacement. No source candidate was projected,
+  no backlog was imported, and no presentation, draft, approval, pipeline,
+  Plutio/payment, or customer action was created. The next separately tracked
+  gate is a read-only source shadow plus operator-reviewed backlog disposition;
+  the legacy Sales task stays paused.
 
 ### NC-20260821-001 — Bind Company Work packet pickup and bounded attempts
 

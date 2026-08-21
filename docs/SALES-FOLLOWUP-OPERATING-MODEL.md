@@ -1,6 +1,6 @@
 # Sales, proposal, and receivables follow-up operating model
 
-Status: process authority and dark implementation contract
+Status: process authority and live dark foundation; no source/action wiring
 Task: `NC-20260821-002`
 Date: 2026-08-21
 
@@ -268,6 +268,12 @@ becomes ready, a retry date arrives, or escalation materially changes.
    unchanged-case no-op, source-close proof, and rollback evidence.
 7. Retire the legacy Sales task and proposal loop only after the replacement
    proves parity. Their old tables remain historical evidence.
+
+Deployment checkpoint (2026-08-21): steps 1-3 are complete through exact
+release `a939af5a` and live migration 130. The case/event tables are empty and
+admin-only, and the pure policy/store remain absent from daemon, scheduler,
+IPC, agent, report, presentation, draft, approval, Plutio/payment, and send
+composition. Step 4 is the next gate; none of the current backlog is imported.
 
 No step in this document authorizes a customer email, proposal/invoice change,
 payment action, bulk backfill, or scheduler activation.

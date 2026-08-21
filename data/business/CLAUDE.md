@@ -130,6 +130,17 @@ message content is neither inspected nor exposed to the review service, logged,
 or persisted. This adds no channel search, model inference, default clean,
 Gmail access, customer action, remediation, work mutation, or agent grant.
 
+Migration 130 is NC-20260821-002's live-dark Company OS follow-up projection.
+It stores one privacy-minimized current case per exact Sales conversation,
+Plutio proposal, or Plutio invoice plus append-only changed-evidence events.
+Both tables are empty, admin-owned, and expose no agent grants. The pure policy
+and host store are not imported by the daemon, scheduler, IPC, agent, or any
+presentation/draft/send path. Source systems and existing action ledgers remain
+authoritative. Do not populate the tables, import the legacy backlog, or infer
+customer-action authority from schema or release presence; follow
+`docs/SALES-FOLLOWUP-OPERATING-MODEL.md` and current active-work/changelog
+evidence.
+
 ## Connection
 
 ```bash

@@ -41,11 +41,12 @@ defines admin-only, content-free packet and bounded-turn receipts. The schema
 is live in exact release `f6089cce`, but the empty tables do not prove a
 completed Chief attempt; use active-work and changelog evidence for that gate.
 
-Structure-only follow-up candidate: migration 130 under `NC-20260821-002`
+Live dark follow-up structure: migration 130 under `NC-20260821-002`
 defines admin-only, content-free current cases and append-only changed-evidence
 events for exact Sales conversations, proposal signatures, and receivables.
-It is not applied or runtime-wired; repository presence does not prove live
-schema, source coverage, presentation, drafting, approval, or customer action.
+It is live and empty in exact release `a939af5a`, with zero non-admin grants;
+it remains runtime-unwired. Schema presence does not prove source coverage,
+presentation, drafting, approval, or customer action.
 
 Covers the public._ and business_v2._ schemas. business*v2 tables are
 headed with their schema prefix; access them via business_v2.v*_ views and
@@ -73,7 +74,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_transition_by            text                 NOT NULL DEFAULT='company-work-ledger:host'::text
 ```
 
-## business_v2.company_followup_cases (migration 130 candidate)
+## business_v2.company_followup_cases (migration 130 live, empty)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_followup_cases_id_seq'::regclass)
@@ -104,7 +105,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_followup_events (migration 130 candidate)
+## business_v2.company_followup_events (migration 130 live, empty)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_followup_events_id_seq'::regclass)

@@ -97,9 +97,9 @@ before applying anything.
   dispatch lifecycle. It binds an exact Slack packet to one brief/work version,
   records router pickup and bounded Chief-turn outcome, suppresses a completed
   unchanged fingerprint, and grants no agent access or source/work authority;
-- migration 130 is NC-20260821-002's dark, content-free follow-up case and
+- migration 130 is NC-20260821-002's live, empty, content-free follow-up case and
   changed-evidence event projection for Sales conversations, proposal
-  signatures, and receivables. It is unwired and grants no agent, source,
+  signatures, and receivables under exact release `a939af5a`. It is unwired and grants no agent, source,
   scheduler, draft, approval, Plutio, payment, or send authority;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
