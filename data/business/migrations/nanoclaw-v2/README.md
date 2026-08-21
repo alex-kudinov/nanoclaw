@@ -93,7 +93,7 @@ before applying anything.
 - migration 128 is NC-20260820-009's narrow outcome-review reaction vocabulary
   extension: Slack `+1` is an explicit configured-operator `clean` decision on
   the exact bound packet, not an inference from silence or another message;
-- migration 129 is NC-20260821-001's content-free Company Work exception
+- migration 129 is NC-20260821-001's live content-free Company Work exception
   dispatch lifecycle. It binds an exact Slack packet to one brief/work version,
   records router pickup and bounded Chief-turn outcome, suppresses a completed
   unchanged fingerprint, and grants no agent access or source/work authority;

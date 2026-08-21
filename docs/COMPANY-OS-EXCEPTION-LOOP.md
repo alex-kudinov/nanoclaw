@@ -6,8 +6,10 @@ packets and woke Chief without Gmail search, but exposed that the packet turn
 had no durable public completion binding and the summary created a redundant
 Chief run. `NC-20260821-001` adds migration 129 and host wiring for exact packet
 delivery, router pickup, bounded turn outcome, replay suppression, and a
-threaded non-resolution receipt. Repository presence is not deployment proof;
-active work and the engineering changelog remain the production authority.
+threaded non-resolution receipt. Exact release `f6089cce` and migration 129 are
+live with an empty dispatch ledger because startup found today's existing brief
+already claimed. Active work and the engineering changelog remain the authority
+for the still-pending natural packet attempt.
 
 ## Purpose and authority
 

@@ -12,7 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: ready_for_deploy; implementation and release gates complete
+- State: deployed_unverified; exact release and migration are live, while the
+  first natural packet pickup/attempt remains the outcome gate
 - Commit/PR: isolated branch
   `codex/nc-20260821-001-exception-attempt-receipts`; no PR
 - Change class: C3 — internal Chief work dispatch/receipt behavior plus an
@@ -44,8 +45,34 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   checks pass. The email-critical gate passes 722/722 and the independent
   runner passes 43/43. The unrestricted root suite passes 2,871/2,872 with six
   skips; the sole failing CNPC wrapper-literal assertion and both implicated
-  files are unchanged from the task base. Production deployment remains
-  pending.
+  files are unchanged from the task base.
+- Release: immutable commit
+  `f6089cce30ca484cd0f2aa4706722e9904cad408` is active from its verified
+  release directory under Node 22.23.2. Source tree
+  `61b0ad3e64cd76432adee94baae69cc213465e63` and artifact SHA-256
+  `85838393f931f4968ea93ef892c01a2009b984414fa0377e00d373fce94bd899`
+  match the release manifest. The activation helper changed only the code
+  root, expected commit, and program path, and retained the exact prior plist
+  at its reported rollback path.
+- Live migration and backup: after a zero-work drain and service stop, the
+  owner-only `NC-20260821-001-20260821T142957Z` backup passed SQLite
+  `quick_check` and `pg_restore --list`. Migration 129 is live: both tables are
+  owned by `nanoclaw_admin`, have zero non-admin table grants, and the event
+  table has its append-only trigger.
+- Live verification: launchd, the sole port-8088 listener, and `/health` agree
+  on PID 78264 and exact commit `f6089cce`; release integrity, code-root match,
+  Node pin, Gmail, and Slack all pass with zero active/waiting/outgoing work.
+  Startup returned `duplicate_brief` for today's already-claimed brief, so it
+  posted no synthetic work packet and the new dispatch/event tables remain
+  empty. Protected PostgreSQL aggregates remain 22 work items/version sum 117,
+  139 work events, 63 work receipts, seven cases, seven briefs, and 47
+  exception events. SQLite remains healthy at 90 pending-send rows and 445
+  email-send events. The error log was not modified by this deployment.
+- Outcome boundary: deployment mechanics and dark schema are live-verified.
+  `deployed_unverified` remains accurate until the next genuine new or changed
+  fingerprint produces one exact posted -> picked-up -> attempted/failed trail
+  and the operator-visible non-resolution receipt. Do not manufacture source
+  work for that proof.
 - Roadmap follow-on: keep the reported broken daily Sales follow-up task off.
   Redesign policy and ownership first across active leads, unsigned Plutio
   proposals, and unpaid invoices, then implement one durable eligibility and

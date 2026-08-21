@@ -36,10 +36,10 @@ not a daemon or agent capability. Repository/command presence alone does not
 prove an assessment; use the current NC-20260820-006/007 active-work and
 changelog evidence.
 
-Structure-only exception-dispatch candidate: migration 129 under
-`NC-20260821-001` defines admin-only, content-free packet and bounded-turn
-receipts. Repository presence is not live schema or a completed Chief attempt;
-use active-work and changelog deployment evidence before treating it as live.
+Live exception-dispatch structure: migration 129 under `NC-20260821-001`
+defines admin-only, content-free packet and bounded-turn receipts. The schema
+is live in exact release `f6089cce`, but the empty tables do not prove a
+completed Chief attempt; use active-work and changelog evidence for that gate.
 
 Covers the public._ and business_v2._ schemas. business*v2 tables are
 headed with their schema prefix; access them via business_v2.v*_ views and
@@ -178,7 +178,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_work_exception_dispatches (migration 129 candidate)
+## business_v2.company_work_exception_dispatches (migration 129 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_dispatches_id_seq'::regclass)
@@ -200,7 +200,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.company_work_exception_dispatch_events (migration 129 candidate)
+## business_v2.company_work_exception_dispatch_events (migration 129 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_dispatch_events_id_seq'::regclass)
