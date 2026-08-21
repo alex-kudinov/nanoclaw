@@ -103,11 +103,17 @@ function dependencies(
         clientId: 'person-1',
       },
     ],
-    resolveRecipient: async () => ({
-      email: 'transient@example.com',
-      firstName: '',
-      lastName: '',
-    }),
+    resolveRecipients: async (clientIds) =>
+      new Map(
+        clientIds.map((clientId) => [
+          clientId,
+          {
+            email: 'transient@example.com',
+            firstName: '',
+            lastName: '',
+          },
+        ]),
+      ),
     readActions: () => ({
       sales: new Map(),
       proposals: new Map(),
@@ -169,6 +175,33 @@ describe('follow-up shadow source reconciliation', () => {
       sourceEvidenceComplete: false,
       hasOpenProposal: false,
     });
+  });
+
+  it('fails only recipient-dependent lanes when the bounded people read fails', async () => {
+    const output = await readFollowupShadowSources(
+      '2026-08-21T16:00:00.000Z',
+      dependencies({
+        resolveRecipients: async () => {
+          throw new Error('bounded people read unavailable');
+        },
+      }),
+    );
+    expect(output.sourceErrors).toEqual([
+      { source: 'plutio_proposals', code: 'recipient_read_failed' },
+      { source: 'plutio_invoices', code: 'recipient_read_failed' },
+    ]);
+    const sales = output.observations.find(
+      (item) => item.case.lane === 'sales_conversation',
+    );
+    const proposal = output.observations.find(
+      (item) => item.case.lane === 'proposal_signature',
+    );
+    const invoice = output.observations.find(
+      (item) => item.case.lane === 'receivable',
+    );
+    expect(sales?.case.sourceEvidenceComplete).toBe(true);
+    expect(proposal?.case.sourceEvidenceComplete).toBe(false);
+    expect(invoice?.case.sourceEvidenceComplete).toBe(false);
   });
 });
 

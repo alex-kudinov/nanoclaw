@@ -4,6 +4,7 @@ import {
   parseProposals,
   parseProposalSnapshots,
   parseRecipient,
+  parseRecipients,
   resolveProposalUrl,
   resolveProposalEditUrl,
 } from './plutio-proposals.js';
@@ -160,5 +161,24 @@ describe('parseRecipient', () => {
 
   it('returns null on malformed JSON', () => {
     expect(parseRecipient('{')).toBeNull();
+  });
+});
+
+describe('parseRecipients', () => {
+  it('indexes a bounded people batch by exact Plutio ID and skips unusable rows', () => {
+    const recipients = parseRecipients(
+      `OK [
+        {"_id":"p2","name":{"first":"Two"},"contactEmails":[{"address":"two@example.com"}]},
+        {"_id":"p1","name":{"first":"One"},"contactEmails":[{"address":"one@example.com"}]},
+        {"_id":"no-email","name":{"first":"Missing"}},
+        {"name":{"first":"No ID"},"contactEmails":[{"address":"none@example.com"}]}
+      ]`,
+    );
+    expect([...recipients.keys()]).toEqual(['p2', 'p1']);
+    expect(recipients.get('p1')?.email).toBe('one@example.com');
+  });
+
+  it('returns an empty map for malformed source output', () => {
+    expect(parseRecipients('not json').size).toBe(0);
   });
 });

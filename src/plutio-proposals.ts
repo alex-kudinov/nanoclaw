@@ -35,6 +35,8 @@ export interface Recipient {
   lastName: string;
 }
 
+export type RecipientMap = Map<string, Recipient>;
+
 /** Client-facing proposal link (logged-out viewable + signable). */
 export function resolveProposalUrl(plutioId: string): string {
   return `${PROPOSAL_PUBLIC_URL_BASE}/${plutioId}`;
@@ -162,6 +164,24 @@ export function parseRecipient(raw: string): Recipient | null {
   };
 }
 
+/** Parse a bounded people batch and retain only exact Plutio person IDs. */
+export function parseRecipients(raw: string): RecipientMap {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stripToJson(raw));
+  } catch {
+    return new Map();
+  }
+  const recipients: RecipientMap = new Map();
+  for (const item of asArray(parsed)) {
+    const person = item as Record<string, unknown>;
+    const id = idFrom(person._id);
+    const recipient = parseRecipient(JSON.stringify(person));
+    if (id && recipient) recipients.set(id, recipient);
+  }
+  return recipients;
+}
+
 export async function listOpenProposals(): Promise<OpenProposal[]> {
   const raw = await callPlutioTool('list-proposals.sh', [
     '--filter',
@@ -214,4 +234,28 @@ export async function resolveRecipient(
     JSON.stringify({ _id: clientId }),
   ]);
   return parseRecipient(raw);
+}
+
+/**
+ * Resolve the whole shadow snapshot in one Plutio read. Besides avoiding an
+ * N+1 source scan, this stays below Plutio's short-window request boundary.
+ */
+export async function resolveRecipients(
+  clientIds: string[],
+): Promise<RecipientMap> {
+  const uniqueIds = [...new Set(clientIds.filter(Boolean))].sort();
+  if (uniqueIds.length === 0) return new Map();
+  if (uniqueIds.length > 400) {
+    throw new Error('Plutio recipient batch exceeds the bounded shadow limit');
+  }
+  const raw = await callPlutioTool('list-people.sh', [
+    '--filter',
+    JSON.stringify({ _id: { $in: uniqueIds } }),
+    '--limit',
+    String(uniqueIds.length),
+  ]);
+  if (!stripToJson(raw)) {
+    throw new Error('Plutio recipient source returned no JSON');
+  }
+  return parseRecipients(raw);
 }

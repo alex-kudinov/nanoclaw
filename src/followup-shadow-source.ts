@@ -31,9 +31,10 @@ import {
 import {
   listProposalSnapshots,
   resolveProposalUrl,
-  resolveRecipient,
+  resolveRecipients,
   type ProposalSnapshot,
   type Recipient,
+  type RecipientMap,
 } from './plutio-proposals.js';
 
 export interface FollowupShadowQueryPort {
@@ -99,7 +100,7 @@ export interface FollowupShadowSourceDependencies {
   query: FollowupShadowQueryPort;
   listProposals: () => Promise<ProposalSnapshot[]>;
   listInvoices: () => Promise<InvoiceSnapshot[]>;
-  resolveRecipient: (clientId: string) => Promise<Recipient | null>;
+  resolveRecipients: (clientIds: string[]) => Promise<RecipientMap>;
   readActions: () => ActionEvidence;
 }
 
@@ -380,17 +381,16 @@ async function mapProposal(
   observedAt: string,
   action: { pending: boolean; uncertain: boolean } | undefined,
   businessSourceComplete: boolean,
+  recipient: Recipient | null,
+  recipientSourceComplete: boolean,
 ): Promise<{ case: ProposalSignatureCase; partyId: string | null }> {
-  const recipient = proposal.clientId
-    ? await deps.resolveRecipient(proposal.clientId)
-    : null;
   const party = await resolvePartyFacts(deps, proposal.clientId, recipient);
   const ledger = await proposalLedger(deps, proposal);
   const input: ProposalSignatureCase = {
     lane: 'proposal_signature',
     sourceKey: `plutio-proposal:${proposal.id}`,
     observedAt,
-    sourceEvidenceComplete: businessSourceComplete,
+    sourceEvidenceComplete: businessSourceComplete && recipientSourceComplete,
     sourceIdentityConflict: party.identityConflict,
     pendingAction: ledger.pending_action || (action?.pending ?? false),
     uncertainDelivery:
@@ -418,16 +418,15 @@ async function mapInvoice(
   invoice: InvoiceSnapshot,
   observedAt: string,
   businessSourceComplete: boolean,
+  recipient: Recipient | null,
+  recipientSourceComplete: boolean,
 ): Promise<ReceivableCase> {
-  const recipient = invoice.clientId
-    ? await deps.resolveRecipient(invoice.clientId)
-    : null;
   const party = await resolvePartyFacts(deps, invoice.clientId, recipient);
   return {
     lane: 'receivable',
     sourceKey: `plutio-invoice:${invoice.id}`,
     observedAt,
-    sourceEvidenceComplete: businessSourceComplete,
+    sourceEvidenceComplete: businessSourceComplete && recipientSourceComplete,
     sourceIdentityConflict: party.identityConflict,
     pendingAction: false,
     uncertainDelivery: false,
@@ -474,7 +473,7 @@ export const followupShadowSourceDependencies: FollowupShadowSourceDependencies 
     query,
     listProposals: listProposalSnapshots,
     listInvoices: listInvoiceSnapshots,
-    resolveRecipient,
+    resolveRecipients,
     readActions: readFollowupActionEvidence,
   };
 
@@ -514,7 +513,6 @@ export async function readFollowupShadowSources(
     ]);
   const businessComplete =
     salesRead.status === 'fulfilled' && existingRead.status === 'fulfilled';
-  let businessEvidenceComplete = businessComplete;
   const proposalComplete = proposalsRead.status === 'fulfilled';
   const invoiceComplete = invoicesRead.status === 'fulfilled';
   if (!businessComplete) {
@@ -525,6 +523,43 @@ export async function readFollowupShadowSources(
   }
   if (!invoiceComplete) {
     pushError({ source: 'plutio_invoices', code: 'read_failed' });
+  }
+
+  const proposalClientIds =
+    proposalsRead.status === 'fulfilled'
+      ? proposalsRead.value
+          .map((proposal) => proposal.clientId)
+          .filter((id): id is string => Boolean(id))
+      : [];
+  const invoiceClientIds =
+    invoicesRead.status === 'fulfilled'
+      ? invoicesRead.value
+          .map((invoice) => invoice.clientId)
+          .filter((id): id is string => Boolean(id))
+      : [];
+  let recipients: RecipientMap = new Map();
+  let recipientSourceComplete = true;
+  if (proposalClientIds.length > 0 || invoiceClientIds.length > 0) {
+    try {
+      recipients = await deps.resolveRecipients([
+        ...proposalClientIds,
+        ...invoiceClientIds,
+      ]);
+    } catch {
+      recipientSourceComplete = false;
+      if (proposalClientIds.length > 0) {
+        pushError({
+          source: 'plutio_proposals',
+          code: 'recipient_read_failed',
+        });
+      }
+      if (invoiceClientIds.length > 0) {
+        pushError({
+          source: 'plutio_invoices',
+          code: 'recipient_read_failed',
+        });
+      }
+    }
   }
 
   const proposalCases: Array<{
@@ -539,12 +574,15 @@ export async function readFollowupShadowSources(
           proposal,
           observedAt,
           actions.proposals.get(proposal.id),
-          businessEvidenceComplete && actionsComplete,
+          businessComplete && actionsComplete,
+          proposal.clientId
+            ? (recipients.get(proposal.clientId) ?? null)
+            : null,
+          recipientSourceComplete,
         );
         proposalCases.push(mapped);
       } catch {
-        businessEvidenceComplete = false;
-        pushError({ source: 'business_v2', code: 'read_failed' });
+        pushError({ source: 'business_v2', code: 'identity_read_failed' });
         proposalCases.push({
           partyId: null,
           case: {
@@ -596,7 +634,7 @@ export async function readFollowupShadowSources(
             row,
             observedAt,
             actions.sales.get(row.pipeline_entry_id),
-            businessEvidenceComplete && proposalComplete && actionsComplete,
+            businessComplete && proposalComplete && actionsComplete,
             openProposalParties,
           ),
         ),
@@ -616,13 +654,16 @@ export async function readFollowupShadowSources(
               deps,
               invoice,
               observedAt,
-              businessEvidenceComplete && actionsComplete,
+              businessComplete && actionsComplete,
+              invoice.clientId
+                ? (recipients.get(invoice.clientId) ?? null)
+                : null,
+              recipientSourceComplete,
             ),
           ),
         );
       } catch {
-        businessEvidenceComplete = false;
-        pushError({ source: 'business_v2', code: 'read_failed' });
+        pushError({ source: 'business_v2', code: 'identity_read_failed' });
         observations.push(
           makeFollowupShadowObservation('plutio', {
             lane: 'receivable',
