@@ -49,6 +49,7 @@ const MAX_CANDIDATE_LIMIT = 100;
 const MAX_EVIDENCE_CHARS = 12_000;
 const MAX_PACKET_CHARS = 3_900;
 const SLACK_UID_PATTERN = /^[UW][A-Z0-9]{6,31}$/;
+const OPEN_PACKET_LOCK_KEY = 'company-work-outcome-review:open-packet';
 
 export const COMPANY_WORK_OUTCOME_REVIEW_ENV_KEYS = [
   'COMPANY_WORK_OUTCOME_REVIEW_ENABLED',
@@ -669,6 +670,10 @@ export class PostgresCompanyWorkOutcomeReviewStore implements CompanyWorkOutcome
             SELECT 1 FROM business_v2.company_work_outcome_review_packets p
              WHERE p.work_item_id = i.id
           )
+          AND NOT EXISTS (
+            SELECT 1 FROM business_v2.company_work_outcome_review_packets p
+             WHERE p.status <> 'decided'
+          )
         ORDER BY o.occurred_at, i.id
         LIMIT $2::integer`,
       [sinceIso, limit],
@@ -681,6 +686,21 @@ export class PostgresCompanyWorkOutcomeReviewStore implements CompanyWorkOutcome
     claimedAt: string,
   ): Promise<CompanyWorkOutcomeReviewPacketClaim | null> {
     return this.db.withAgentContext(async (client) => {
+      // One human decision at a time. The candidate query avoids unnecessary
+      // evidence assembly while a packet is open; this transaction lock and
+      // repeat check are the concurrency boundary across daemon restarts or
+      // overlapping host processes.
+      await client.query(
+        'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+        [OPEN_PACKET_LOCK_KEY],
+      );
+      const open = await client.query(
+        `SELECT 1
+           FROM business_v2.company_work_outcome_review_packets
+          WHERE status <> 'decided'
+          LIMIT 1`,
+      );
+      if (open.rows.length > 0) return null;
       const inserted = await client.query<PacketRow>(
         `INSERT INTO business_v2.company_work_outcome_review_packets
            (work_item_id, delivery_event_version, packet_fingerprint,

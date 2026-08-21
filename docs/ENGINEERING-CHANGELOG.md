@@ -38,6 +38,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   humans still see/react to the exact Slack message while the established own-
   group echo gate suppresses agent pickup. Exception briefs/work packets retain
   their actionable `company-os` provenance.
+- Restart/concurrency correction: candidate selection returns nothing while any
+  packet is not `decided`; claim repeats the global open-packet check under a
+  transaction-scoped advisory lock. This prevents the corrective restart or
+  overlapping host processes from advancing to packet two before the operator
+  decides packet one.
 - Acceptance: copied-data candidate/evidence rehearsal; exact live release and
   empty-ledger preflight; zero-work drain and owner-only backups; one config-only
   restart; one posted packet with claimed/posted events; zero decision/quality

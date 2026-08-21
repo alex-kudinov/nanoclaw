@@ -157,6 +157,10 @@ outside the current client conversation.
   stored as Chief's own host echoes so they remain human-visible and
   reaction-bound without entering the generic agent dispatch path. Exception
   briefs/work packets retain their existing cross-group wake behavior.
+- Restart safety: an undecided `pending`, `posted`, or `delivery_uncertain`
+  packet globally suppresses further candidates. Claims repeat that check
+  under a transaction-scoped advisory lock, so a corrective restart or
+  overlapping host process cannot create a second outstanding human review.
 - Exclusions: no Gmail API/search/read, raw identity persistence, historical
   bulk/backfill, typed approval, model classification, default clean, customer
   email, remediation, work-item mutation, unrelated config, push, or merge.

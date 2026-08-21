@@ -1,10 +1,12 @@
 import { readFileSync } from 'node:fs';
 
+import type { PoolClient } from 'pg';
 import { describe, expect, it, vi } from 'vitest';
 
 import { hashApprovedEmailContent } from './email-action.js';
 import {
   CompanyWorkOutcomeReviewService,
+  PostgresCompanyWorkOutcomeReviewStore,
   assembleCompanyWorkOutcomeReviewEvidence,
   renderCompanyWorkOutcomeReviewPacket,
   resolveCompanyWorkOutcomeReviewConfig,
@@ -13,6 +15,7 @@ import {
   type CompanyWorkOutcomeReviewDeps,
   type CompanyWorkOutcomeReviewPacketBinding,
   type CompanyWorkOutcomeReviewStore,
+  type CompanyWorkOutcomeReviewStoreDb,
   type CompanyWorkOutcomeReviewTarget,
 } from './company-work-outcome-review.js';
 
@@ -381,5 +384,40 @@ describe('Company Work outcome packet delivery and decisions', () => {
       '1800000000.000001',
       expect.stringContaining('could not be durably recorded'),
     );
+  });
+});
+
+describe('Company Work one-outstanding-packet store gate', () => {
+  it('does not list another candidate while any packet awaits a decision', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const reviewStore = new PostgresCompanyWorkOutcomeReviewStore({
+      query,
+      withAgentContext: vi.fn(),
+    } as unknown as CompanyWorkOutcomeReviewStoreDb);
+
+    await expect(
+      reviewStore.listCandidates('2026-08-19T00:00:00.000Z', 25),
+    ).resolves.toEqual([]);
+    expect(query).toHaveBeenCalledOnce();
+    expect(query.mock.calls[0][0]).toContain("WHERE p.status <> 'decided'");
+  });
+
+  it('serializes claims and refuses a second open packet', async () => {
+    const client = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ open: 1 }] }),
+    };
+    const reviewStore = new PostgresCompanyWorkOutcomeReviewStore({
+      query: vi.fn(),
+      withAgentContext: async <T>(fn: (client: PoolClient) => Promise<T>) =>
+        fn(client as never),
+    } as unknown as CompanyWorkOutcomeReviewStoreDb);
+
+    await expect(reviewStore.claimPacket(evidence(), NOW)).resolves.toBeNull();
+    expect(client.query).toHaveBeenCalledTimes(2);
+    expect(client.query.mock.calls[0][0]).toContain('pg_advisory_xact_lock');
+    expect(client.query.mock.calls[1][0]).toContain("status <> 'decided'");
   });
 });
