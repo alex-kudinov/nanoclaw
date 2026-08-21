@@ -18,7 +18,10 @@ vi.mock('../logger.js', () => ({
 vi.mock('../config.js', () => ({
   DATA_DIR: '/tmp/nanoclaw-test',
   GMAIL_LABEL: 'TestLabel',
+  GMAIL_BCC: 'info@tandemcoach.co',
   GMAIL_MONITORED_EMAIL: 'test@example.com',
+  GMAIL_REPLY_TO: 'info@tandemcoach.co',
+  GMAIL_SEND_AS: 'Tandem <info@tandemcoach.co>',
   GMAIL_POLL_INTERVAL: 1000, // 1s for fast tests
   GMAIL_PUSH_ENABLED: false,
   GMAIL_PUSH_OWN_WATCH: false,
@@ -119,12 +122,15 @@ vi.mock('../gmail-auth.js', () => ({
 
 // Mock gmail-parser
 vi.mock('../gmail-parser.js', () => ({
+  deriveReplyAllCandidates: vi.fn().mockReturnValue([]),
   formatEmailForAgent: vi.fn().mockReturnValue('formatted email'),
   parseEmailBody: vi.fn().mockReturnValue('body'),
   parseEmailHeaders: vi.fn().mockReturnValue({
     from: 'sender@example.com',
     fromName: 'Sender',
     replyTo: '',
+    to: 'test@example.com',
+    cc: '',
     subject: 'Test',
   }),
   resolveForwardedIdentity: vi.fn().mockReturnValue(null),
@@ -153,6 +159,7 @@ import {
 } from '../classify-ipc-handlers.js';
 import { storeMessageDirect } from '../db.js';
 import {
+  deriveReplyAllCandidates,
   parseEmailBody,
   parseEmailHeaders,
   resolveForwardedIdentity,
@@ -169,6 +176,9 @@ const mockRouteClassifiedEmail = routeClassifiedEmail as ReturnType<
 const mockMatchRule = matchRule as ReturnType<typeof vi.fn>;
 const mockStoreMessageDirect = storeMessageDirect as ReturnType<typeof vi.fn>;
 const mockParseEmailHeaders = parseEmailHeaders as ReturnType<typeof vi.fn>;
+const mockDeriveReplyAllCandidates = deriveReplyAllCandidates as ReturnType<
+  typeof vi.fn
+>;
 const mockParseEmailBody = parseEmailBody as ReturnType<typeof vi.fn>;
 const mockResolveForwardedIdentity = resolveForwardedIdentity as ReturnType<
   typeof vi.fn
@@ -219,10 +229,13 @@ describe('GmailChannel', () => {
       from: 'sender@example.com',
       fromName: 'Sender',
       replyTo: '',
+      to: 'test@example.com',
+      cc: '',
       subject: 'Test',
     });
     mockParseEmailBody.mockReturnValue('body');
     mockResolveForwardedIdentity.mockReturnValue(null);
+    mockDeriveReplyAllCandidates.mockReturnValue([]);
     vi.useFakeTimers();
   });
 
@@ -253,6 +266,15 @@ describe('GmailChannel', () => {
 
   describe('pre-classified actionable routing', () => {
     it('persists the exact inbound before direct routing without waking mailman', async () => {
+      mockParseEmailHeaders.mockReturnValueOnce({
+        from: 'sender@example.com',
+        fromName: 'Sender',
+        replyTo: '',
+        to: 'Tandem <test@example.com>',
+        cc: 'Pat <pat@example.com>',
+        subject: 'Test',
+      });
+      mockDeriveReplyAllCandidates.mockReturnValueOnce(['pat@example.com']);
       mockGmail.users.messages.get.mockResolvedValueOnce({
         data: {
           id: 'msg-actionable',
@@ -300,6 +322,13 @@ describe('GmailChannel', () => {
       expect(mockMarkClassificationRouted).toHaveBeenCalledWith(
         'msg-actionable',
         'rules-runner-v1',
+      );
+      expect(mockRouteClassifiedEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          visibleTo: 'Tandem <test@example.com>',
+          visibleCc: 'Pat <pat@example.com>',
+          replyAllCandidates: ['pat@example.com'],
+        }),
       );
       expect(mockRecordDisposition).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -358,6 +387,7 @@ describe('GmailChannel', () => {
         fromName: 'Cherie Silas',
         replyTo: '',
         to: 'info@tandemcoach.co',
+        cc: '',
         subject: 'Fwd: Level 1 registration',
         date: 'Mon, 3 Aug 2026',
         messageId: '<source@example.com>',

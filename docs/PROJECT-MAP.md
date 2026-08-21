@@ -1274,8 +1274,10 @@ verifies the stored hash and recipient headers, and replaces model-supplied
 recipient, CC, subject, body, thread, Action-ID, Party hint, email type, and
 rendering flags before the one-time claim. Model-added CC and raw-HTML flags are
 discarded; an approved CC is restored only from the action-bound card. A CC
-that is not on the customer Party may pass only when it exactly matches both
-the card and one configured host mailbox identity. Exact `[FOLLOW-UP #N]` cards now enter
+that is not on the customer Party may pass on a reply only when it exactly
+matches the card and is still visible on Gmail's latest external message at
+execution time; configured internal mailbox identities remain separately
+allowed. Exact `[FOLLOW-UP #N]` cards now enter
 this same path and require `Email`, `Thread-ID`, fenced `Subject`, and fenced
 body fields. Host-generated proposal follow-ups use their PostgreSQL draft row
 as approval authority and the same one-time action/receipt ledger, preventing a
@@ -1408,10 +1410,18 @@ human's affirmative term in one Sales thread authorizes only the matching
 canonical value there; a question is inert and a later explicit negative
 instruction removes the term. That durable evidence is consumed by the IPC
 preflight, Slack defense in depth, approved-send watcher, and final Gmail guard.
-For replies, an exact Gmail-derived participant that matches the approved card
-may bridge a stale CRM alias only when the approved thread resolves to the
-Party; unapproved and standalone recipient paths retain the original
-party-email allowlist.
+For replies, the Gmail channel and classification continuation preserve bounded
+host-derived `Visible-To`, `Visible-Cc`, and `Reply-All-Candidates` context from
+the exact current message through direct/classified routing to Inbox, Sales, or
+Chief. Candidates exclude the primary recipient, duplicates, configured
+send-as/reply-to/BCC mailboxes, and are capped at ten. BCC is never exposed.
+Forwarded inquiries suppress the visible-recipient context because their
+envelope is the internal forward rather than the external conversation. The
+minion may propose a CC only from that list and only on explicit latest-sender
+or exact-thread operator intent; the exact operator-visible `Cc:` line is
+immutable after approval. Gmail is re-read at execution and must still show
+each out-of-Party approved address on the latest external message. Unapproved,
+invented, stale, standalone, and more-than-ten recipient paths remain blocked.
 
 ## 12. Integrations
 

@@ -19,6 +19,9 @@ logging. Mailman parses the handoff and invokes one typed Gmail tool.
    flags supplied by the handoff. Never omit or alter a field to work around a
    host refusal. Pass an exact `Cc` through the Gmail tool when present; never
    add one. Do not set `html`; the host owns Markdown-to-HTML conversion.
+   An approval card may name at most ten visible CC recipients. For a threaded
+   reply, an address outside the Party may pass only when the exact approved
+   address is visible on Gmail's latest external message. Never supply BCC.
 4. Call exactly one Gmail send tool. A tool response saying “queued” is not a
    delivery receipt. The host posts the final Gmail-confirmed result into the
    originating approval thread.
@@ -77,7 +80,8 @@ Party hint, email type, and rendering mode once it resolves one exact action. It
 customer-facing values from the stored approval card, verifies that card against
 the durable subject/body hash and stored To/CC headers, discards unapproved CC/HTML flags,
 and only then applies recipient/Party, Gmail-resource, content-policy, and
-one-time execution checks. A repeated confirmed action returns its existing
+latest-visible-thread-participant checks. It then applies the one-time execution
+check. A repeated confirmed action returns its existing
 receipt without another Gmail send. A process interruption after execution
 begins leaves the action uncertain and blocks automatic retry until Gmail
 receipt reconciliation.

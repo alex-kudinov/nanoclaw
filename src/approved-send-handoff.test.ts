@@ -173,6 +173,19 @@ describe('buildApprovedHandoff', () => {
     },
   );
 
+  it('rejects more than ten visible CC recipients', () => {
+    const cc = Array.from(
+      { length: 11 },
+      (_, index) => `person${index + 1}@external.co`,
+    ).join(', ');
+    const candidate = CARD.replace(
+      'Email: jmproductionselite@gmail.com',
+      `Email: jmproductionselite@gmail.com\nCc: ${cc}`,
+    );
+    expect(parseApprovalCardRecipientHeaders(candidate)).toBeUndefined();
+    expect(buildApprovedHandoff(candidate)).toBeNull();
+  });
+
   it('tracks an exact follow-up card and marks the canonical handoff', () => {
     const followup = CARD.replace(
       '[SALES REVIEW] Lead #871 — Jordan follow-up (certificate contents, resolved)',

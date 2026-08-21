@@ -58,6 +58,10 @@ Rules:
 - Always include Thread-ID if available (from the escalation or email headers),
   except for the forwarded-inquiry rule below
 - Preserve Message-ID when the escalation includes it
+- Preserve the host-supplied `Visible-To`, `Visible-Cc`,
+  `Reply-All-Candidates`, and `Recipient-Context` lines exactly when present.
+  They are visible-envelope context, not automatic reply-all permission; BCC
+  is never available. Omit them for a forwarded inquiry.
 - If the host handoff says its Body is missing or truncated, call
   `mcp__nanoclaw__gmail_read` exactly once with that host-assigned Message-ID,
   wait for the result, and then route the full inquiry. Never substitute a

@@ -93,6 +93,9 @@ Gmail API message
     ↓
 Skip SENT / DRAFT / SPAM / TRASH
     ↓
+Parse the exact message's visible To/Cc headers; derive a bounded reply-all
+candidate list excluding the primary sender and configured Tandem mailboxes
+    ↓
 Hard filter check (hard-filters.json) → drop if matched
     ↓
 Rules runner (mature classification_rules DB entries, 60s cache) → if match:
@@ -124,6 +127,15 @@ Agents emit IPC files. Host dispatches by type:
   Action-ID, rendering mode, Party hint, and email type from the exact stored
   approval card before claim; Chief fallbacks carry Mailman's required
   `[APPROVED-REPLY]` marker;
+- inbound visible `To`/`Cc` and a maximum-ten normalized
+  `Reply-All-Candidates` list are host-derived context for direct and
+  classified routes. BCC is never exposed. Forwarded inquiries suppress this
+  context because their visible envelope belongs to Tandem's internal forward;
+- Sales or Chief may place candidates on an approval card only when the latest
+  external sender explicitly requests copy/reply-all/continued participation,
+  or Alex/Cherie explicitly directs it in that exact Slack work thread. At
+  execution the host re-reads Gmail's latest external message and rejects an
+  approved out-of-Party CC that is no longer an exact visible participant;
 - scheduled Sales follow-up cards use the same exact-card action path, while
   host-generated proposal follow-ups claim and confirm the same ledger directly
   from their PostgreSQL draft row;
@@ -147,6 +159,9 @@ Agents emit IPC files. Host dispatches by type:
 - **Label trigger:** `MrGru` — only messages with this label are polled
 - **Thread reply detection:** `pollThreadReplies()` scans MrGru-labeled threads for unlabeled replies (Gmail labels are per-message, not per-thread). Only runs in legacy poll mode, NOT in push mode.
 - **Outbound labeling:** `applyLabel()` in `gmail-api.ts` adds MrGru label to every sent message so replies route back
+- **Visible-recipient context:** exact bounded `Visible-To`, `Visible-Cc`, and
+  `Reply-All-Candidates` fields travel with the host handoff. They are evidence,
+  not reply-all authority; BCC and internal-forward envelopes are excluded.
 - **Dedup:** `processedIds` Set (capped at 5000, oldest 1000 pruned)
 - **Push architecture:** `gmail-push.ts` processes history deltas (`messagesAdded` events). On `HistoryExpiredError` (>7 days stale), resets baseline and accepts data loss window.
 

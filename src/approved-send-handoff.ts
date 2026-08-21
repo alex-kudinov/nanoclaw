@@ -30,6 +30,7 @@ const CARD_MARKER =
 const PRIMARY_RECIPIENT_LINE = /^\s*(?:Email|To)\s*:\s*(.+?)\s*$/i;
 const CC_LINE = /^\s*Cc\s*:\s*(.+?)\s*$/i;
 const BCC_LINE = /^\s*Bcc\s*:/i;
+const MAX_APPROVED_CC_RECIPIENTS = 10;
 const BARE_EMAIL =
   /^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+$/i;
 const LEAD_LINE = /\[(?:SALES REVIEW|FOLLOW-UP\s+#\d+)\]\s*Lead\s*#\s*(\d+)/i;
@@ -100,7 +101,8 @@ export function parseApprovalCardRecipientHeaders(
   const primary = normalizeAddressList(primaryValues[0]);
   if (!primary || primary.length !== 1) return undefined;
   const cc = ccValues.length === 1 ? normalizeAddressList(ccValues[0]) : [];
-  if (!cc || cc.includes(primary[0])) return undefined;
+  if (!cc || cc.length > MAX_APPROVED_CC_RECIPIENTS || cc.includes(primary[0]))
+    return undefined;
   return {
     recipient: primary[0],
     ...(cc.length > 0 ? { cc: cc.join(', ') } : {}),

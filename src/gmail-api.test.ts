@@ -497,6 +497,10 @@ describe('replyToThread external-party addressing', () => {
       msg([
         { name: 'From', value: 'Carl Customer <carl@acme.com>' },
         { name: 'To', value: 'info@tandemcoach.co' },
+        {
+          name: 'Cc',
+          value: 'Richard Colleague <richard.colleague@acme.com>',
+        },
         { name: 'Subject', value: 'Question about ACC' },
         { name: 'Message-ID', value: '<x>' },
       ]),
@@ -512,6 +516,7 @@ describe('replyToThread external-party addressing', () => {
     expect(prepareSend).toHaveBeenCalledWith({
       to: 'Carl Customer <carl@acme.com>',
       cc: undefined,
+      visibleReplyAllCandidates: ['richard.colleague@acme.com'],
     });
     expect(decodeRaw(send.mock.calls[0][0].requestBody.raw)).toContain(
       'Validated answer',
@@ -540,6 +545,7 @@ describe('replyToThread external-party addressing', () => {
     expect(prepareSend).toHaveBeenCalledWith({
       to: 'Carl Customer <carl@acme.com>',
       cc: 'colleague@external.com',
+      visibleReplyAllCandidates: [],
     });
     expect(toLine(send)).toContain('test@tandemcoach.co');
     expect(ccLine(send)).toBeUndefined();

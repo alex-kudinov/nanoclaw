@@ -112,6 +112,25 @@ describe('Sales request-first prompt contract', () => {
     );
   });
 
+  it('uses visible recipients as bounded context rather than automatic reply-all authority', () => {
+    expect(workflows).toContain('## Visible recipients and bounded reply-all');
+    expect(workflows).toContain('`Reply-All-Candidates` list');
+    expect(workflows).toContain(
+      'If no explicit intent exists, omit `Cc:` even when',
+    );
+    expect(workflows).toContain(
+      'must be a bare address from the host-supplied',
+    );
+    expect(normalizedContract).toContain(
+      'BCC is intentionally unavailable and must never be requested, inferred, or placed on a card.',
+    );
+    expect(normalizedContractLower).toContain('never exceed ten cc recipients');
+    expect(role).toContain('carry it across EVERY round');
+    expect(role).toContain(
+      '`Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context`',
+    );
+  });
+
   it('requires an ask-to-content audit and canonical Sales headings', () => {
     expect(workflows).toContain('Every explicit ask is answered, clarified');
     expect(workflows).toContain('ADDED BEYOND ASK:');

@@ -10,6 +10,7 @@ import {
   type TrafftCustomField,
 } from './trafft-custom-fields.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
+import { extractHeaderAddresses } from './gmail-parser.js';
 import { logger } from './logger.js';
 import { ingestEmailProcurementObservation } from './procurement-intake.js';
 
@@ -26,6 +27,11 @@ export type RouteParams = {
   /** Trusted outer envelope when an internal teammate forwarded the inquiry. */
   forwardedByEmail?: string;
   forwardedByName?: string;
+  /** Gmail-visible current-message recipient headers; never includes BCC. */
+  visibleTo?: string;
+  visibleCc?: string;
+  /** Host-normalized subset eligible for an explicitly requested reply-all. */
+  replyAllCandidates?: string[];
 };
 
 export type RouteResult = {
@@ -45,6 +51,7 @@ const HANDOFF_SNIPPET_CHARS = 300;
 // enough original structure to triage while staying in one logical Slack row;
 // the exact Gmail ID is the authoritative recovery path for longer bodies.
 const CHIEF_BODY_CHARS = 2_500;
+const VISIBLE_HEADER_CHARS = 1_000;
 
 function leadEmail(p: RouteParams): string {
   return p.replyToEmail || p.senderEmail;
@@ -72,6 +79,31 @@ function sourceThreadLines(p: RouteParams): string[] {
       ];
 }
 
+function recipientContextLines(p: RouteParams): string[] {
+  if (isForwardedInquiry(p)) return [];
+  const oneLine = (value: string) =>
+    value
+      .replace(/[\r\n]+/g, ' ')
+      .trim()
+      .slice(0, VISIBLE_HEADER_CHARS);
+  const candidates = extractHeaderAddresses(
+    (p.replyAllCandidates ?? []).join(', '),
+  ).slice(0, 10);
+  const lines = [
+    ...(p.visibleTo ? [`Visible-To: ${oneLine(p.visibleTo)}`] : []),
+    ...(p.visibleCc ? [`Visible-Cc: ${oneLine(p.visibleCc)}`] : []),
+    ...(candidates.length > 0
+      ? [`Reply-All-Candidates: ${candidates.join(', ')}`]
+      : []),
+  ];
+  if (lines.length > 0) {
+    lines.push(
+      'Recipient-Context: host-derived visible Gmail headers; BCC is never exposed and reply-all is not automatically authorized.',
+    );
+  }
+  return lines;
+}
+
 function snippet(body: string, max = HANDOFF_SNIPPET_CHARS): string {
   const flat = body.replace(/\s+/g, ' ').trim();
   return flat.length > max ? `${flat.slice(0, max)}…` : flat;
@@ -92,6 +124,7 @@ function fmtLeadSales(p: RouteParams, match: PipelineMatch): string {
     `Lead: ${match.display_name} (${match.stage})`,
     `Program: ${match.program_slug}`,
     `Lead Email: ${leadEmail(p)}`,
+    ...recipientContextLines(p),
     ...(() => {
       if (isForwardedInquiry(p)) return sourceThreadLines(p);
       // Reply on the thread the CUSTOMER actually wrote on — the inbound
@@ -124,6 +157,7 @@ function fmtInbox(p: RouteParams): string {
     isForwardedInquiry(p) ? '[SOURCE: forwarded-email]' : '[SOURCE: email]',
     `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
+    ...recipientContextLines(p),
     `Subject: ${p.subject}`,
     ...sourceThreadLines(p),
     `Body:\n${p.body}`,
@@ -139,6 +173,7 @@ function fmtClientResponse(p: RouteParams): string {
     `[CONTEXT: ${p.label} \u2014 already-paid client, draft customer-success response, not a sales pitch]`,
     `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
+    ...recipientContextLines(p),
     `Subject: ${p.subject}`,
     ...sourceThreadLines(p),
     `Body:\n${p.body}`,
@@ -158,6 +193,7 @@ function fmtChiefEscalation(p: RouteParams, reason: string): string {
     `[ESCALATION] ${p.label}`,
     `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
+    ...recipientContextLines(p),
     `Subject: ${p.subject}`,
     ...sourceThreadLines(p),
     `Body-Complete: ${p.body.length <= CHIEF_BODY_CHARS ? 'yes' : 'no'}`,

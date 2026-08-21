@@ -107,6 +107,30 @@ describe('host-router', () => {
     expect(payload.text).toContain('[SOURCE: email]');
   });
 
+  it('attaches bounded host-derived visible-recipient context to an email work item', async () => {
+    await routeClassifiedEmail(
+      makeParams({
+        label: 'lead/inquiry',
+        visibleTo: 'Tandem <info@tandemcoach.co>, Ops <ops@example.com>',
+        visibleCc:
+          'Richard <richard@example.com>\r\nX-Injected: hidden@evil.co',
+        replyAllCandidates: ['ops@example.com', 'richard@example.com'],
+      }),
+    );
+    const text: string = mockWrite.mock.calls[0][1].text;
+    expect(text).toContain(
+      'Visible-To: Tandem <info@tandemcoach.co>, Ops <ops@example.com>',
+    );
+    expect(text).toContain(
+      'Visible-Cc: Richard <richard@example.com> X-Injected: hidden@evil.co',
+    );
+    expect(text).toContain(
+      'Reply-All-Candidates: ops@example.com, richard@example.com',
+    );
+    expect(text).toContain('BCC is never exposed');
+    expect(text).not.toMatch(/^Bcc:/m);
+  });
+
   it('routes an internal forward under the external lead and never exposes its source thread as a reply thread', async () => {
     await routeClassifiedEmail(
       makeParams({
@@ -127,6 +151,7 @@ describe('host-router', () => {
     );
     expect(text).toContain('Source-Thread-ID: internal-forward-thread');
     expect(text).not.toMatch(/^Thread-ID:/m);
+    expect(text).not.toContain('Reply-All-Candidates:');
   });
 
   // ══════════════════════════════════════════════════════════════════

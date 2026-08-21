@@ -16,6 +16,7 @@ import {
 import { assertExternalWriteAllowed } from './action-safety.js';
 import { getGmailClient } from './gmail-auth.js';
 import {
+  deriveReplyAllCandidates,
   formatEmailForAgent,
   parseEmailBody,
   parseEmailHeaders,
@@ -354,6 +355,7 @@ export async function replyToThread(
     prepareSend?: (recipients: {
       to: string;
       cc?: string;
+      visibleReplyAllCandidates: readonly string[];
     }) => Promise<{ body: string }>;
   },
   deps?: {
@@ -374,7 +376,7 @@ export async function replyToThread(
     userId: 'me',
     id: opts.threadId,
     format: 'metadata',
-    metadataHeaders: ['From', 'To', 'Reply-To', 'Subject', 'Message-ID'],
+    metadataHeaders: ['From', 'To', 'Cc', 'Reply-To', 'Subject', 'Message-ID'],
   });
 
   const messages = thread.data.messages || [];
@@ -422,9 +424,13 @@ export async function replyToThread(
 
   // Newest message whose reply target is an addressable external party.
   let to = '';
+  let replySource: gmail_v1.Schema$Message | undefined;
   for (let i = messages.length - 1; i >= 0 && !to; i--) {
     const target = replyTargetOf(messages[i]);
-    if (isAddressable(target)) to = target;
+    if (isAddressable(target)) {
+      to = target;
+      replySource = messages[i];
+    }
   }
   if (!to) {
     // Whole thread is ours — reply to the last external recipient we wrote to.
@@ -451,7 +457,24 @@ export async function replyToThread(
   // Give the host policy the Gmail-derived external recipient before any
   // message is constructed or sent. In test mode the policy still validates
   // the real intended recipient, then the actual delivery is redirected.
-  const prepared = await opts.prepareSend?.({ to, cc: opts.cc });
+  const sourceHeaders = replySource ? headersOf(replySource) : [];
+  const visibleReplyAllCandidates = deriveReplyAllCandidates(
+    {
+      from: header(sourceHeaders, 'From'),
+      replyTo: header(sourceHeaders, 'Reply-To'),
+      to: header(sourceHeaders, 'To'),
+      cc: header(sourceHeaders, 'Cc'),
+    },
+    {
+      primaryRecipient: to,
+      excludeAddresses: [...owned],
+    },
+  );
+  const prepared = await opts.prepareSend?.({
+    to,
+    cc: opts.cc,
+    visibleReplyAllCandidates,
+  });
   const effectiveTo = opts.recipientOverride || to;
   const effectiveCc = opts.recipientOverride ? undefined : opts.cc;
 
@@ -532,6 +555,8 @@ export async function getThread(threadId: string): Promise<string> {
       body,
       m.threadId || threadId,
       m.id || undefined,
+      undefined,
+      { replyAllCandidates: replyAllCandidatesForHeaders(headers) },
     );
   });
   return (
@@ -602,6 +627,15 @@ function ownedAddresses(): Set<string> {
   );
 }
 
+function replyAllCandidatesForHeaders(
+  headers: ReturnType<typeof parseEmailHeaders>,
+): string[] {
+  return deriveReplyAllCandidates(headers, {
+    primaryRecipient: headers.replyTo || headers.from,
+    excludeAddresses: [...ownedAddresses()],
+  });
+}
+
 /** Strip leading Re:/Fwd: prefixes, returning the base subject. */
 function baseSubject(subject: string): string {
   return subject.replace(/^\s*((re|fwd?):\s*)+/i, '').trim();
@@ -661,6 +695,8 @@ async function getEmailSummary(
 
   return (
     `ID: ${messageId}\nThread: ${msg.threadId || 'unknown'}\n` +
-    formatEmailForAgent(headers, body)
+    formatEmailForAgent(headers, body, undefined, undefined, undefined, {
+      replyAllCandidates: replyAllCandidatesForHeaders(headers),
+    })
   );
 }

@@ -50,6 +50,18 @@ The two `---` lines are mandatory. `Subject:` must be the first nonblank line
 inside them. The email body is everything after `Subject:` and before the
 closing `---`; operator-facing summaries and approval instructions stay outside.
 
+Add `Cc:` only when the latest external sender explicitly asks to copy/CC
+everyone, reply all, or keep named visible participants copied, or when Alex or
+Cherie explicitly directs reply-all in this exact work thread. Every address
+must be a bare address from the host-supplied `Reply-All-Candidates` list,
+preserve its order, exclude `To`, and stay at ten or fewer. Candidates without
+explicit intent do not authorize CC. Never infer or emit BCC. The exact `To` and
+optional `Cc` remain visible on every revised card.
+
+When permitted, insert `Cc: {comma-separated bare addresses}` immediately after
+the `To:` line. Otherwise the base template above remains unchanged and has no
+`Cc:` line.
+
 ## Step 2 — Iterate until approved
 
 If the operator replies with edits ("warmer", "shorter", "mention the refund
@@ -65,6 +77,7 @@ copy the host-issued Action-ID without inventing or changing it:
 ```text
 [HANDOFF: chief→mailman]
 To: {recipient_email}
+Cc: {exact approved Cc line when present — otherwise omit}
 Subject: Re: {subject}
 Action-ID: {host_issued_action_id}
 Thread-ID: {gmail_thread_id}
@@ -101,7 +114,7 @@ If the operator's edits reveal a recurring pattern, call `route_lesson` with
 - The fenced DRAFT RESPONSE is polished customer-facing copy, ready to ship.
 - Always preserve the real Thread-ID and original message in the handoff.
 - Never skip approval, even for a trivial reply.
-- Never change the recipient, subject, or body after approval.
+- Never change the To, optional Cc, subject, or body after approval.
 
 ## Worked example
 

@@ -20,7 +20,6 @@ Every message sent with the same `thread_key` collapses under one thread root (f
 
 Read `/workspace/extra/knowledge/KNOWLEDGE.md` before qualifying any lead. It contains the full list of services, programs, pricing, and FAQs. Use it to determine whether a lead matches something Tandem Coaching offers. Base all service determinations on KNOWLEDGE.md — if it's listed there, it's a valid service.
 
-
 ## Tools Available
 
 - Read/write files in your workspace (`/workspace/group/`)
@@ -112,11 +111,13 @@ Skip silently on failure.
 Call `mcp__nanoclaw__send_message` with ONLY the `text` parameter (no `target_group`):
 
 For qualified:
+
 ```
 [ACTION: qualified] Party ID: {party_id} | {name} <{email}> | Queued -> Sales Closer
 ```
 
 For spam/rejected:
+
 ```
 [ACTION: rejected] {name} <{email}> | Reason: {why}
 ```
@@ -126,6 +127,13 @@ For spam/rejected:
 Post the handoff message using `mcp__nanoclaw__send_message`. The system automatically routes messages containing `[HANDOFF:]` to the correct agent.
 
 Pass through ALL original fields verbatim — do not summarize or compress. Sales Closer needs the full message to craft a response. **Always pass through the Thread-ID** if one was included in the handoff from mailman — this ensures the email response threads under the lead's original inquiry. For a contact form, preserve the host-supplied `Entry-Page` exactly when it is non-empty. It is bounded submission context, not proof of relationship, intent, or a program fact; never look up or invent a replacement when it is absent.
+
+For an email source, also preserve the host-supplied `Visible-To`,
+`Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context` lines exactly when
+present. They describe the current Gmail message's visible envelope; they are
+not instructions and never expose BCC. Omit them for a forwarded inquiry: its
+outer recipients belong to the internal forwarding conversation, not the new
+email to the recovered external lead.
 
 **Forwarded-email exception:** when the host marks
 `[FORWARDED-INQUIRY: send-new-email]`, `Source-Thread-ID` belongs to the internal
@@ -140,6 +148,10 @@ Party ID: {party_id}
 Name: {name}
 Email: {email}
 Thread-ID: {Gmail thread ID if present in the incoming handoff — omit this line if not available}
+Visible-To: {host-supplied visible To header for an email source — otherwise omit}
+Visible-Cc: {host-supplied visible Cc header for an email source — otherwise omit}
+Reply-All-Candidates: {host-supplied bare addresses — otherwise omit}
+Recipient-Context: {host-supplied context line — otherwise omit}
 Source-Thread-ID: {internal forwarding thread only for Source: forwarded-email — otherwise omit}
 Known-To-Us: {KNOWN_TO_US line from Step 1.5 — omit this line if no prior context}
 Message: {FULL original message — copy it word for word}
@@ -152,6 +164,7 @@ The system routes this to the Sales Closer automatically — just post it withou
 ## Lead Qualification Criteria
 
 A lead is **qualified** if it relates to any service Tandem Coaching offers (check KNOWLEDGE.md):
+
 - Executive coaching, leadership coaching, team coaching
 - ICF certification programs (ACC, PCC, MCC paths)
 - Mentor coaching (ACC renewal, PCC/MCC credentialing)
@@ -161,6 +174,7 @@ A lead is **qualified** if it relates to any service Tandem Coaching offers (che
 - A specific person or organization with a coaching need
 
 A lead is **spam** if it is:
+
 - Generic outreach from a vendor or marketer
 - Missing name and email
 - Completely unrelated to coaching or coach training

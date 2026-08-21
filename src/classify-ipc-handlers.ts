@@ -16,6 +16,7 @@ import {
   replaceClassLabelsOnThread,
 } from './gmail-labels.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
+import { extractHeaderAddresses } from './gmail-parser.js';
 import { recordClassification } from './hive-bridge.js';
 import { routeClassifiedEmail } from './host-router.js';
 import {
@@ -209,6 +210,9 @@ async function routeAfterClassify(
   let replyToEmail: string | undefined;
   let forwardedByEmail: string | undefined;
   let forwardedByName: string | undefined;
+  let visibleTo: string | undefined;
+  let visibleCc: string | undefined;
+  let replyAllCandidates: string[] = [];
   let resolvedSenderEmail = data.sender_email || '';
   try {
     let msg = getMessageById(data.gmail_message_id);
@@ -232,6 +236,15 @@ async function routeAfterClassify(
         blankLineIdx >= 0 ? msg.content.slice(0, blankLineIdx) : msg.content;
       const replyToHeader = headerRegion.match(/^Reply-To:\s*(.+)$/im)?.[1];
       replyToEmail = extractSenderEmail(replyToHeader || '') || undefined;
+      visibleTo = headerRegion.match(/^Visible-To:\s*([^\r\n]+)$/im)?.[1];
+      visibleCc = headerRegion.match(/^Visible-Cc:\s*([^\r\n]+)$/im)?.[1];
+      const replyAllHeader = headerRegion.match(
+        /^Reply-All-Candidates:\s*([^\r\n]+)$/im,
+      )?.[1];
+      replyAllCandidates = extractHeaderAddresses(replyAllHeader || '').slice(
+        0,
+        10,
+      );
       if (/^Forwarded-Inquiry:\s*yes\s*$/im.test(headerRegion)) {
         const forwardedFromHeader =
           headerRegion.match(/^From:\s*([^\r\n]+)$/im)?.[1];
@@ -277,6 +290,9 @@ async function routeAfterClassify(
       messageId: data.gmail_message_id,
       forwardedByEmail,
       forwardedByName,
+      visibleTo,
+      visibleCc,
+      replyAllCandidates,
     });
     if (result.routed) {
       logger.info(

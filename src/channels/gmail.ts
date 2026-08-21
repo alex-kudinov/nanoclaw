@@ -14,12 +14,15 @@ import { gmail_v1 } from 'googleapis';
 import {
   DATA_DIR,
   GMAIL_LABEL,
+  GMAIL_BCC,
   GMAIL_MONITORED_EMAIL,
   GMAIL_POLL_INTERVAL,
   GMAIL_PUBSUB_TOPIC,
   GMAIL_PUSH_ENABLED,
   GMAIL_PUSH_OWN_WATCH,
   GMAIL_PUSH_SAFETY_POLL_INTERVAL,
+  GMAIL_REPLY_TO,
+  GMAIL_SEND_AS,
   COMPANY_GMAIL_RUNTIME_WATERMARK_MODE,
   type CompanyGmailRuntimeWatermarkMode,
 } from '../config.js';
@@ -48,6 +51,7 @@ import {
 import { matchHardFilter, incrementDropCount } from '../hard-filters.js';
 import { routeClassifiedEmail } from '../host-router.js';
 import {
+  deriveReplyAllCandidates,
   formatEmailForAgent,
   parseEmailBody,
   parseEmailHeaders,
@@ -649,12 +653,24 @@ export class GmailChannel implements Channel {
     const effectiveSenderHeader = forwardedIdentity
       ? `${effectiveSenderName} <${effectiveSenderEmail}>`
       : headers.from;
+    const replyAllCandidates = forwardedIdentity
+      ? []
+      : deriveReplyAllCandidates(headers, {
+          primaryRecipient: headers.replyTo || headers.from,
+          excludeAddresses: [
+            GMAIL_MONITORED_EMAIL,
+            GMAIL_REPLY_TO,
+            GMAIL_SEND_AS,
+            GMAIL_BCC,
+          ],
+        });
     const content = formatEmailForAgent(
       headers,
       body,
       threadId,
       msg.id,
       forwardedIdentity,
+      { replyAllCandidates },
     );
 
     // Pre-LLM classification: if a rule matches, apply the classification
@@ -835,6 +851,9 @@ export class GmailChannel implements Channel {
             forwardedByName: forwardedIdentity
               ? headers.fromName || undefined
               : undefined,
+            visibleTo: forwardedIdentity ? undefined : headers.to,
+            visibleCc: forwardedIdentity ? undefined : headers.cc,
+            replyAllCandidates,
           });
           if (routeResult.routed) {
             await markClassificationRouted(msg.id, 'rules-runner-v1');

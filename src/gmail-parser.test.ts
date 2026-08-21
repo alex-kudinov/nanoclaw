@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { gmail_v1 } from 'googleapis';
 
 import {
+  deriveReplyAllCandidates,
+  extractHeaderAddresses,
   parseEmailBody,
   parseEmailHeaders,
   formatEmailForAgent,
@@ -227,6 +229,7 @@ describe('parseEmailHeaders', () => {
     { name: 'From', value: '"John Smith" <john@example.com>' },
     { name: 'Reply-To', value: 'john.reply@example.com' },
     { name: 'To', value: 'info@tandemcoach.co' },
+    { name: 'Cc', value: 'Richard <richard@example.com>' },
     { name: 'Subject', value: 'Coaching Inquiry' },
     { name: 'Date', value: 'Mon, 1 Jan 2026 10:00:00 -0500' },
     { name: 'Message-ID', value: '<abc123@mail.example.com>' },
@@ -239,6 +242,7 @@ describe('parseEmailHeaders', () => {
     expect(parsed.fromName).toBe('John Smith');
     expect(parsed.replyTo).toBe('john.reply@example.com');
     expect(parsed.to).toBe('info@tandemcoach.co');
+    expect(parsed.cc).toBe('Richard <richard@example.com>');
     expect(parsed.subject).toBe('Coaching Inquiry');
     expect(parsed.messageId).toBe('<abc123@mail.example.com>');
     expect(parsed.inReplyTo).toBe('<def456@mail.example.com>');
@@ -270,6 +274,7 @@ describe('formatEmailForAgent', () => {
     fromName: 'John',
     replyTo: '',
     to: 'info@tandemcoach.co',
+    cc: '',
     subject: 'Inquiry',
     date: 'Mon, 1 Jan 2026',
     messageId: '<abc>',
@@ -296,6 +301,32 @@ describe('formatEmailForAgent', () => {
     expect(result).toContain('Reply-To: Customer <customer@example.com>');
   });
 
+  it('includes bounded visible recipient context and bare reply-all candidates', () => {
+    const result = formatEmailForAgent(
+      {
+        ...headers,
+        to: 'Tandem <info@tandemcoach.co>, Ops <ops@example.com>',
+        cc: '"Doe, Richard" <richard@example.com>',
+      },
+      'Please keep everyone copied.',
+      'thread-1',
+      'message-1',
+      undefined,
+      {
+        replyAllCandidates: ['ops@example.com', 'richard@example.com'],
+      },
+    );
+    expect(result).toContain(
+      'Visible-To: Tandem <info@tandemcoach.co>, Ops <ops@example.com>',
+    );
+    expect(result).toContain(
+      'Visible-Cc: "Doe, Richard" <richard@example.com>',
+    );
+    expect(result).toContain(
+      'Reply-All-Candidates: ops@example.com, richard@example.com',
+    );
+  });
+
   it('omits Thread-ID when threadId is not provided', () => {
     const result = formatEmailForAgent(headers, 'Hello');
     expect(result).not.toContain('Thread-ID');
@@ -309,6 +340,7 @@ describe('formatEmailForAgent', () => {
         from: 'Cherie Silas <cherie@tandemcoach.co>',
         fromName: 'Cherie Silas',
         subject: 'Fwd: Level 1 registration',
+        cc: 'observer@example.com',
       },
       'Forwarded body',
       'source-thread',
@@ -321,6 +353,49 @@ describe('formatEmailForAgent', () => {
       'Forwarded-By: Cherie Silas <cherie@tandemcoach.co>',
     );
     expect(result).toContain('Thread-ID: source-thread');
+    expect(result).not.toContain('Reply-All-Candidates:');
+    expect(result).not.toContain('Visible-To:');
+    expect(result).not.toContain('Visible-Cc:');
+  });
+});
+
+describe('visible reply-all candidates', () => {
+  it('extracts quoted display names, normalizes, and deduplicates addresses', () => {
+    expect(
+      extractHeaderAddresses(
+        '"Doe, Richard" <Richard@Example.com>, ops@example.com, RICHARD@example.com',
+      ),
+    ).toEqual(['richard@example.com', 'ops@example.com']);
+  });
+
+  it('excludes the primary reply target and host-owned mailboxes', () => {
+    expect(
+      deriveReplyAllCandidates(
+        {
+          from: 'Richard <richard@example.com>',
+          replyTo: '',
+          to: 'Tandem <info@tandemcoach.co>, Pat <pat@example.com>',
+          cc: 'Richard <richard@example.com>, Alex <alex@tandemcoach.co>',
+        },
+        {
+          excludeAddresses: ['info@tandemcoach.co'],
+        },
+      ),
+    ).toEqual(['pat@example.com', 'alex@tandemcoach.co']);
+  });
+
+  it('caps the candidate set and can fail closed at zero', () => {
+    const headers = {
+      from: 'sender@example.com',
+      replyTo: '',
+      to: 'one@example.com, two@example.com',
+      cc: 'three@example.com',
+    };
+    expect(deriveReplyAllCandidates(headers, { maxCandidates: 2 })).toEqual([
+      'one@example.com',
+      'two@example.com',
+    ]);
+    expect(deriveReplyAllCandidates(headers, { maxCandidates: 0 })).toEqual([]);
   });
 });
 
@@ -337,6 +412,7 @@ describe('resolveForwardedIdentity', () => {
     fromName: 'Cherie Silas',
     replyTo: '',
     to: 'info@tandemcoach.co',
+    cc: '',
     subject: 'Fwd: Level 1 registration',
     date: 'Mon, 3 Aug 2026',
     messageId: '<forward@example.com>',

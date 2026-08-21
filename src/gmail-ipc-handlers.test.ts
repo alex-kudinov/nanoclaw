@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mutable config value — tests can change this per-test
 let testRecipient = '';
+let visibleReplyAllCandidates: string[] = [];
 const businessState = vi.hoisted(() => ({
   partyByEmailId: 42 as number | null,
   partyByThreadId: 42 as number | null,
@@ -74,11 +75,13 @@ vi.mock('./gmail-api.js', () => ({
       prepareSend?: (recipients: {
         to: string;
         cc?: string;
+        visibleReplyAllCandidates: readonly string[];
       }) => Promise<{ body: string }>;
     }) => {
       await opts.prepareSend?.({
         to: 'sender@external.com',
         cc: opts.cc,
+        visibleReplyAllCandidates,
       });
       return {
         messageId: 'reply-msg-456',
@@ -145,6 +148,7 @@ function makePayload(
 beforeEach(() => {
   vi.clearAllMocks();
   testRecipient = '';
+  visibleReplyAllCandidates = [];
   businessState.partyByEmailId = 42;
   businessState.partyByThreadId = 42;
   businessState.emails = new Set([
@@ -736,6 +740,46 @@ describe('recipient guard (tina@example.com incident)', () => {
     expect(postToChief.mock.calls[0][0]).toMatch(/EMAIL BLOCKED.*CC rejected/);
   });
 
+  it('allows an exact approved CC that Gmail shows on the latest external message', async () => {
+    businessState.emails = new Set(['sender@external.com']);
+    visibleReplyAllCandidates = ['richard-colleague@external.com'];
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'sender@external.com',
+        cc: 'richard-colleague@external.com',
+        approvedCc: 'richard-colleague@external.com',
+      }),
+    );
+
+    expect(replyToThread).toHaveBeenCalledTimes(1);
+    expect(logOutboundEmailInteraction).toHaveBeenCalled();
+  });
+
+  it('blocks an approved CC that is neither party-related nor visible on the latest message', async () => {
+    businessState.emails = new Set(['sender@external.com']);
+    visibleReplyAllCandidates = ['actual-colleague@external.com'];
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'sender@external.com',
+        cc: 'invented-colleague@external.com',
+        approvedCc: 'invented-colleague@external.com',
+      }),
+      postToChief,
+    );
+
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+    expect(postToChief.mock.calls[0][0]).toMatch(/EMAIL BLOCKED.*CC rejected/);
+  });
+
   it('allows a configured internal CC only when the exact action-bound card approved it', async () => {
     await handleGmailSend(
       makePayload({
@@ -876,6 +920,7 @@ describe('recipient guard (tina@example.com incident)', () => {
       prepare?.({
         to: 'sender@external.com',
         cc: 'colleague@external.com',
+        visibleReplyAllCandidates: [],
       }),
     ).resolves.toEqual(expect.objectContaining({ body: expect.any(String) }));
   });

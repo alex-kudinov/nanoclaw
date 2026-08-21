@@ -8,6 +8,46 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260821-003 — Preserve inbound visible recipients and bound reply-all
+
+- Date: 2026-08-21
+- Owner/client: Codex
+- State: validating; implementation is verified while deployment and
+  natural-path outcome evidence remain pending
+- Commit/PR: isolated branch `codex/nc-20260821-003-recipient-context`; no PR
+- Change class: C3 — inbound context plus approval-bound outbound recipient
+  authorization; no autonomous send
+- Trigger: a live customer thread asked Tandem to copy other visible
+  participants, but Chief received neither the original recipient envelope nor
+  a safe reply-all option and fell back to a denied Gmail search. The operator
+  also required the Company OS roadmap to keep driving more/better automation
+  and smarter minions rather than accumulate platform work.
+- Architecture: `gmail-parser` now extracts bounded visible To/Cc headers and a
+  normalized maximum-ten candidate list. Direct and classifier-continuation
+  routes preserve that host-derived context to Inbox, Sales, and Chief. Owned
+  mailboxes, the primary recipient, duplicates, and forwarded-inquiry internal
+  envelopes are excluded; BCC is never available to a minion.
+- Decision boundary: Sales or Chief may include an exact `Cc:` only when the
+  latest external sender explicitly asks to copy/reply-all/keep named visible
+  participants, or Alex/Cherie explicitly directs reply-all in that exact Slack
+  work thread. Every address must come from the current host candidate list,
+  remain operator-visible on every revision, and stay immutable after approval.
+- Execution boundary: Mailman passes only the exact approved CC. Before Gmail,
+  the host reloads the exact thread and permits an approved out-of-Party CC only
+  while it remains visible on the latest external message. Invented, stale,
+  standalone, hidden-copy, duplicate, primary-recipient, and more-than-ten paths
+  fail closed before send.
+- Roadmap reset: the Company OS plan now names three outcome lanes — inbox to
+  resolution, revenue follow-up, and management by exception — plus a dual
+  delivery gate requiring business-outcome, automation, and minion-intelligence
+  gains. The autonomy ladder is observe, recommend, approval-execute, bounded
+  low-risk autonomy, then evidence-led adaptation. Generic horizontal substrate
+  and R5 execution depth are deferred unless a lane proves them necessary.
+- Verification: Node 22.23.2 typecheck and the focused parser, direct-route,
+  classifier-route, approval, Gmail-thread, execution-guard, and four-group
+  prompt contracts pass. Full release/build/deployment evidence follows at the
+  release boundary.
+
 ### NC-20260821-002 — Redesign Sales, proposal, and receivables follow-up
 
 - Date: 2026-08-21

@@ -279,7 +279,10 @@ function hasApprovedConfiguredMailboxCc(data: GmailIpcPayload): boolean {
 function verifyAdditionalRecipients(
   value: string | undefined,
   context: VerifiedPartyContext,
-  opts: { approvedCc?: string } = {},
+  opts: {
+    approvedCc?: string;
+    approvedThreadParticipants?: ReadonlySet<string>;
+  } = {},
 ): RecipientVerification {
   const recipients = splitRecipients(value).map(normalizeRecipient);
   const approved = splitRecipients(opts.approvedCc).map(normalizeRecipient);
@@ -295,14 +298,27 @@ function verifyAdditionalRecipients(
   }
   const configuredInternal = configuredMailboxRecipients();
   const approvedInternal = new Set(approved);
+  const approvedThreadParticipants = new Set(
+    [...(opts.approvedThreadParticipants ?? [])].map(normalizeRecipient),
+  );
   for (const recipient of recipients) {
     const check = checkRecipient(recipient, context.emails);
+    const participantShapeCheck = checkRecipient(
+      recipient,
+      new Set([recipient]),
+    );
     if (
       !check.ok &&
       !(
         opts.approvedCc !== undefined &&
         approvedInternal.has(recipient) &&
         configuredInternal.has(recipient)
+      ) &&
+      !(
+        opts.approvedCc !== undefined &&
+        approvedInternal.has(recipient) &&
+        approvedThreadParticipants.has(recipient) &&
+        participantShapeCheck.ok
       )
     ) {
       return {
@@ -432,7 +448,7 @@ export async function handleGmailReply(
       html: data.html,
       cc: data.cc,
       recipientOverride: GMAIL_TEST_RECIPIENT || undefined,
-      prepareSend: async ({ to, cc }) => {
+      prepareSend: async ({ to, cc, visibleReplyAllCandidates }) => {
         if (
           data.approvedRecipient &&
           normalizeRecipient(to) !== normalizeRecipient(data.approvedRecipient)
@@ -462,6 +478,10 @@ export async function handleGmailReply(
         }
         const ccCheck = verifyAdditionalRecipients(cc, verification.context, {
           approvedCc: data.actionId ? data.approvedCc : undefined,
+          approvedThreadParticipants:
+            data.actionId && data.approvedCc
+              ? new Set(visibleReplyAllCandidates)
+              : undefined,
         });
         if (!ccCheck.ok) {
           throw new RecipientPolicyError(

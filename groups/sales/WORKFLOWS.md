@@ -6,7 +6,7 @@ Every new response and feedback revision uses this precedence. Complete and
 record each decision before moving to the next:
 
 1. **RELATIONSHIP** — `paid_client | organization_buyer | prior_contact |
-   stranger | unknown`. Relationship is evidence-gated and fail-closed. A record
+stranger | unknown`. Relationship is evidence-gated and fail-closed. A record
    establishes prior relationship only when its own evidence predates the
    current inbound: a completed payment/enrollment or active engagement; an
    interaction whose `occurred_at` is strictly earlier than this message's
@@ -72,12 +72,15 @@ Voice & Tone, Email Response Guidelines, and any program-specific rules that the
 route actually activates.
 
 ### Pass 2: Audit Against Lessons
+
 Re-read `LEARNED.md` — the accumulated human corrections (each was approved by a human and OVERRIDES KNOWLEDGE.md on conflict). This is the authoritative lesson source; do NOT rely on KNOWLEDGE.md for lessons. For each lesson:
+
 1. Determine if it applies to this lead's situation (program type, lead profile, tone concern).
 2. If it applies, check whether your draft complies or violates it.
 3. If it violates, revise the draft to fix the violation.
 
 After the audit, include a `[LESSONS APPLIED]` section in your internal reasoning (inside `<internal>` tags) listing:
+
 - Each applicable lesson (one-line summary)
 - Whether your draft complied or was revised
 - If no lesson in LEARNED.md applies, write: "No applicable lessons found."
@@ -99,6 +102,32 @@ Before posting, verify all six statements:
    page-relative reference under the boundary above; removing all other
    path/browsing information leaves the customer draft identical.
 
+## Visible recipients and bounded reply-all
+
+For an email-originated current message, the host may attach `Visible-To`,
+`Visible-Cc`, and a normalized `Reply-All-Candidates` list. These are Gmail
+header evidence, not sender or model authority. BCC is intentionally
+unavailable and must never be requested, inferred, or placed on a card.
+
+Add one `Cc:` line to a review card only when either:
+
+1. the latest external sender explicitly asks to copy/CC everyone, reply all,
+   or keep the named visible participants copied; or
+2. Alex or Cherie explicitly directs that reply-all in this exact Slack work
+   thread.
+
+Every address on `Cc:` must be a bare address from the host-supplied
+`Reply-All-Candidates` list. Preserve its order, exclude the primary `Email:`
+recipient, never infer an address from body text or an old thread, and never
+exceed ten CC recipients. If no explicit intent exists, omit `Cc:` even when
+candidates are present. A forwarded inquiry has no reply-all candidates because
+its visible recipients belong to the internal forwarding envelope.
+
+The card's exact `Email:` and optional `Cc:` are operator-visible and immutable
+after approval. Copy both unchanged into Mailman. If Gmail's latest visible
+participants no longer support an approved CC at execution time, the host
+blocks before send; do not remove or replace recipients to work around it.
+
 ## Draft Format
 
 Post this to `#gru-sales` using `mcp__nanoclaw__send_message`:
@@ -107,6 +136,7 @@ Post this to `#gru-sales` using `mcp__nanoclaw__send_message`:
 [SALES REVIEW] Lead #{id}
 Category: {exactly one of: pricing | enrollment | program-content | scheduling | account-access | payment-issue | other — the inquiry's primary subject. Powers the autonomy ladder; never omit.}
 Email: {lead email — MANDATORY, on its own line. The host threads this card under the lead's inbound message using this address. Omit it and the card lands as a stray top-level post.}
+Cc: {optional comma-separated bare addresses from Reply-All-Candidates; include only under the bounded reply-all rule above, otherwise omit the entire line}
 Route: {exactly one of: SERVICE | TRANSACT | ANSWER | ORIENT | CLARIFY | HUMAN | DECLINE}
 Confidence: {HIGH | MEDIUM | LOW}
 
@@ -189,6 +219,7 @@ human instruction not to use the term revokes it.
 ## Handling Feedback
 
 When you receive feedback (not "Approved") — the message will have a `thread_ts`:
+
 1. Find your most recent draft in the `<messages>` block above (it's the message from you that starts with `[SALES REVIEW]`)
 2. Apply the requested changes
 3. Run the Request-First Draft Review — apply feedback first, then rerun the decision procedure, lesson audit, and request-scope audit
@@ -197,11 +228,11 @@ When you receive feedback (not "Approved") — the message will have a `thread_t
 
 ## Handling Approval
 
-When you receive "Approved" (the message will have a `thread_ts` — use it for your reply):
-0. **This turn is exclusively for this one approved lead.** Do not process a
-   second approval, lead, lookup result, or unrelated message in the same turn.
-   Reconstruct this card from the current thread, execute its one handoff, and
-   stop.
+When you receive "Approved" (the message will have a `thread_ts` — use it for your reply): 0. **This turn is exclusively for this one approved lead.** Do not process a
+second approval, lead, lookup result, or unrelated message in the same turn.
+Reconstruct this card from the current thread, execute its one handoff, and
+stop.
+
 1. Find your most recent draft in the `<messages>` block above
 2. Advance pipeline stage in DB:
    ```bash
@@ -214,9 +245,11 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
    After success, emit no final text. On tool failure, post
    `[BLOCKED] Mailman handoff failed for Lead #{id} — email not sent.` in the
    approval thread and stop.
+
    ```
    [HANDOFF: sales→mailman]
    To: {lead email address from the [SALES REVIEW] header}
+   Cc: {exact approved Cc line when present — otherwise omit}
    Subject: {email subject from the draft}
    Action-ID: {host-issued ID from the [EMAIL ACTION] line in this approval thread}
    Entry ID: {pipeline_entry_id}
@@ -249,8 +282,9 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
    - **First response to inquiry:** Use a descriptive custom subject (e.g., "PCC Certification Path - Tandem Coaching"). This is what the lead sees.
    - **Reply to lead's response** (`Reply: true`): Subject derived from thread by `gmail_reply` — your Subject value is a fallback only.
 
-   **IMPORTANT:** Extract the `To:` email, `Subject:`, and `Original-Message:` from your most recent `[SALES REVIEW]` post in the `<messages>` block — do NOT guess or recall from memory.
+   **IMPORTANT:** Extract the `To:` email, optional exact `Cc:`, `Subject:`, and `Original-Message:` from your most recent `[SALES REVIEW]` post in the `<messages>` block — do NOT guess or recall from memory.
    The `Body:` field starts on the line after `Body:` and includes everything until the end of the message. Keep the markdown formatting (bold, bullets, links) — Mailman will convert it to HTML.
+
 4. **Extract lesson (only if there was feedback before approval):** If the draft went through at least one feedback-and-revision cycle before approval, capture what you learned. Write a JSON file to `/workspace/ipc/messages/` with:
    ```json
    {
@@ -263,7 +297,7 @@ When you receive "Approved" (the message will have a `thread_ts` — use it for 
 
 ## Reporting What's Pending / Not-Yet-Sent
 
-When anyone asks what is **pending, outstanding, awaiting approval, still open, or not yet sent** — or when you would otherwise carry forward a running "still pending" list — you MUST answer from the database, never from memory, never from your own prior Slack messages, and never from any `pending-*.md` file. Those sources are stale by construction: an approval that arrived in a *thread* was handled by a different run and never updated your conversational memory, so a memory-derived list re-reports work that was already sent. This is exactly what produced the 2026-07-20 false "5 drafts awaiting approval" (3 of which were already emailed).
+When anyone asks what is **pending, outstanding, awaiting approval, still open, or not yet sent** — or when you would otherwise carry forward a running "still pending" list — you MUST answer from the database, never from memory, never from your own prior Slack messages, and never from any `pending-*.md` file. Those sources are stale by construction: an approval that arrived in a _thread_ was handled by a different run and never updated your conversational memory, so a memory-derived list re-reports work that was already sent. This is exactly what produced the 2026-07-20 false "5 drafts awaiting approval" (3 of which were already emailed).
 
 The single source of truth is one query:
 
@@ -291,6 +325,7 @@ psql -c "SELECT * FROM business_v2.v_sales_followup_queue;" --csv
 The view already enforces every rule: it returns only leads we have actually emailed, that have gone quiet 3+ days, are under the follow-up cap, are not pre-cutover, and — critically — **do not have an open Plutio proposal**. Proposal recipients are nudged by the separate proposal follow-up loop; never email-follow-up someone with a live proposal. If the view returns no rows, post `No leads pending follow-up today.` and stop.
 
 Each row gives you:
+
 - `party_id`, `pipeline_entry_id`, `display_name`, `primary_email`, `program_name`, `stage`
 - `follow_up_count` — **0 → draft FU#1, 1 → draft FU#2, 2 → mark cold (no draft)**
 - `thread_id` — the Gmail conversation to thread the follow-up into
@@ -345,13 +380,14 @@ Again, explicitly reference the conversation and the exact unresolved ask or dec
 ### Cold (`follow_up_count = 2`)
 
 Do NOT draft another email — FU#1 and FU#2 already went out. Instead:
+
 1. Post: `[COLD] Lead #{pipeline_entry_id} — {display_name} — no response after {follow_up_count} follow-ups. Last contact {last_interaction_at}.`
 2. Update DB: `psql -c "SELECT business_v2.fn_advance_pipeline_stage({pipeline_entry_id}, 'lost', 'cold — no response after follow-ups');"`
 3. **Read it back before you post that it happened:** `psql -c "SELECT stage FROM business_v2.pipeline_entries WHERE id = {pipeline_entry_id};"` must return `lost`. If it does not, say the lead is still queued — do not post `[COLD] … marked lost` on the strength of having run the command.
 
 ### Dropping a lead from follow-ups (operator "drop / skip / stop following up")
 
-**The host now does this, not you.** A 👎 on a `[FOLLOW-UP …] Lead #N` card *and* a typed instruction in this channel ("drop renee carr", "#283 drop", "stop following up #354") are both handled host-side: it calls `fn_drop_followups`, then posts a confirmation naming the exact entries the database parked. You do not need to act, and you must not post a competing claim.
+**The host now does this, not you.** A 👎 on a `[FOLLOW-UP …] Lead #N` card _and_ a typed instruction in this channel ("drop renee carr", "#283 drop", "stop following up #354") are both handled host-side: it calls `fn_drop_followups`, then posts a confirmation naming the exact entries the database parked. You do not need to act, and you must not post a competing claim.
 
 If you are ever asked to do it yourself, use this — and only this:
 
@@ -388,6 +424,7 @@ Post each follow-up as a separate top-level message (one thread per lead):
 [FOLLOW-UP #{follow_up_count + 1}] Lead #{pipeline_entry_id}
 Category: followup
 Email: {primary_email}
+Cc: {optional exact bounded reply-all list preserved from the current message/card; otherwise omit}
 Thread-ID: {thread_id}
 Route: {SERVICE | TRANSACT | ANSWER | ORIENT | CLARIFY | DECLINE; HUMAN produces no draft}
 Confidence: {HIGH | MEDIUM | LOW}
@@ -421,7 +458,7 @@ Subject: Re: {original subject}
 Waiting for approval. Reply "Approved" to send, or reply with changes.
 ```
 
-The `Email:`, `Thread-ID:`, fenced `Subject:`, and fenced body are mandatory.
+The `Email:`, optional exact `Cc:`, `Thread-ID:`, fenced `Subject:`, and fenced body are the immutable approval record; all except `Cc:` are mandatory.
 They are the immutable host approval record. A legacy follow-up card without
 those exact fields is rejected visibly and must be reposted before it can be
 sent.
@@ -437,11 +474,13 @@ Use `Re: {original subject}` for follow-ups. When a Thread-ID is available, Mail
 ### Follow-Up Approval Flow
 
 When human replies "Approved" to a follow-up draft:
+
 1. Do NOT update DB status. There is no `follow-up-sent` stage transition — `follow_up_count` is derived from `business_v2.interactions` (count of outbound emails per party), and the host auto-logs the outbound interaction when mailman sends. Pipeline stage stays where it is until a reply or `cold` triggers it.
 2. Hand off to mailman with:
    ```
    [HANDOFF: sales→mailman]
    To: {lead email}
+   Cc: {exact approved Cc line when present — otherwise omit}
    Subject: Re: {original subject}
    Action-ID: {host-issued ID from the [EMAIL ACTION] line in this approval thread}
    Entry ID: {pipeline_entry_id}
@@ -463,22 +502,28 @@ When human replies "Approved" to a follow-up draft:
 If your incoming handoff (from inbox, chief, mailman→sales reply, or anywhere) does NOT include an `Entry ID:` line, resolve one yourself before handing off to mailman. Run these in order, stopping as soon as one returns a value:
 
 1. **Resolve party from email.** The handoff almost always has the lead's email. Get the canonical party_id:
+
    ```bash
    PARTY_ID=$(psql -tAc "SELECT business_v2.best_party_by_email('${LEAD_EMAIL}'::citext);")
    ```
+
    If `PARTY_ID` is empty, the contact is brand-new with no party record yet — escalate to chief with `[ESCALATION] No party for ${LEAD_EMAIL} — sales cannot create entry without party. Inbox or contador needs to onboard.` Stop here; do not invent IDs.
 
 2. **Find an existing open entry.** Some entries fall outside the host matcher's 60-day window or sit in stages the matcher excludes. Check the table directly — the PK column is `id` (not `entry_id`):
+
    ```bash
    ENTRY_ID=$(psql -tAc "SELECT id FROM business_v2.pipeline_entries WHERE party_id = ${PARTY_ID} AND stage NOT IN ('won','lost') ORDER BY created_at DESC LIMIT 1;")
    ```
+
    If non-empty, use this `ENTRY_ID` in the handoff and skip step 3.
 
 3. **Create a new entry.** Only if steps 1 and 2 returned a party but no entry. `pipeline_entries` has a `program_id` FK (not a `program_slug` column) and a unique `(party_id, program_id)` constraint for any entry not in `won`/`lost`. First resolve the program id from your matched slug:
+
    ```bash
    PROGRAM_ID=$(psql -tAc "SELECT id FROM business_v2.programs WHERE slug = '${PROGRAM_SLUG}';")
    ENTRY_ID=$(psql -tAc "INSERT INTO business_v2.pipeline_entries (party_id, program_id, stage, last_updated_by) VALUES (${PARTY_ID}, ${PROGRAM_ID}, 'qualifying', 'sales') RETURNING id;")
    ```
+
    `PROGRAM_SLUG` is the slug from the program-matching table (e.g. `mentor-coaching-foundations`, `acc`, `pcc`). If you can't pin a specific program from the inquiry, use `coaching-inquiry` as a generic placeholder; sales/inbox can re-classify later.
 
 4. **Use the resolved `ENTRY_ID`** as the `entry_id` argument to `fn_advance_pipeline_stage(p_entry_id bigint, p_new_stage text, p_reason text)` (Processing Protocol step 6) AND in the `Entry ID:` field of the `[HANDOFF: sales→mailman]` message.
@@ -488,6 +533,7 @@ If any step fails (psql error, schema drift), do NOT silently proceed. Post `[BL
 ### Handling Replies (from mailman)
 
 When you receive `[HANDOFF: mailman→sales] [SOURCE: email-reply]`, the lead has responded. This is a new conversation, not a follow-up:
+
 1. Read the lead context and new reply from the handoff
 2. **Save the `Thread-ID`** from the handoff — you MUST include it in your handoff to mailman so the reply threads correctly in Gmail
 3. Draft a reply addressing their new message
@@ -497,6 +543,7 @@ When you receive `[HANDOFF: mailman→sales] [SOURCE: email-reply]`, the lead ha
 ### Email Open Events
 
 When you receive `[EMAIL-OPENED]`:
+
 1. Note the engagement signal — the lead opened your email.
 2. Do NOT auto-send a follow-up. Opens are informational only.
 3. When composing follow-ups, use open data to inform tone:

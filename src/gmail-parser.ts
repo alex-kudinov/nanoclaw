@@ -5,6 +5,10 @@
 import { gmail_v1 } from 'googleapis';
 
 const MAX_BODY_LENGTH = 10_000;
+const MAX_HEADER_LENGTH = 1_000;
+const MAX_REPLY_ALL_CANDIDATES = 10;
+const EMAIL_ADDRESS_PATTERN =
+  /[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+/gi;
 const OWN_DOMAIN_SUFFIXES = [
   'tandemcoach.co',
   'tandemcoaching.academy',
@@ -14,6 +18,70 @@ const OWN_DOMAIN_SUFFIXES = [
 export interface ForwardedIdentity {
   email: string;
   name: string;
+}
+
+export interface ReplyAllCandidateOptions {
+  /** Reply target selected from Reply-To/From; never duplicate it in CC. */
+  primaryRecipient?: string;
+  /** Host-configured send-as, reply-to, monitored, and BCC mailboxes. */
+  excludeAddresses?: Iterable<string>;
+  maxCandidates?: number;
+}
+
+/**
+ * Extract a bounded, normalized address list from a Gmail address header.
+ * This deliberately returns bare addresses only: approval cards reject display
+ * names and the host must never ask a model to reproduce RFC address syntax.
+ */
+export function extractHeaderAddresses(value: string): string[] {
+  const matches = value.match(EMAIL_ADDRESS_PATTERN) ?? [];
+  const seen = new Set<string>();
+  const addresses: string[] = [];
+  for (const match of matches) {
+    const normalized = match.toLowerCase();
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    addresses.push(normalized);
+  }
+  return addresses;
+}
+
+/**
+ * Produce only the visible addresses that a conventional reply-all could copy.
+ * BCC cannot appear here because Gmail does not expose it on received mail.
+ */
+export function deriveReplyAllCandidates(
+  headers: Pick<ParsedHeaders, 'from' | 'replyTo' | 'to' | 'cc'>,
+  opts: ReplyAllCandidateOptions = {},
+): string[] {
+  const excluded = new Set<string>();
+  for (const value of opts.excludeAddresses ?? []) {
+    for (const email of extractHeaderAddresses(value)) excluded.add(email);
+  }
+  const primary =
+    extractHeaderAddresses(
+      opts.primaryRecipient || headers.replyTo || headers.from,
+    )[0] ?? '';
+  if (primary) excluded.add(primary);
+
+  const maxCandidates = Math.max(
+    0,
+    Math.min(opts.maxCandidates ?? MAX_REPLY_ALL_CANDIDATES, 50),
+  );
+  if (maxCandidates === 0) return [];
+
+  const result: string[] = [];
+  for (const email of [
+    ...extractHeaderAddresses(headers.to),
+    ...extractHeaderAddresses(headers.cc),
+  ]) {
+    if (excluded.has(email) || result.includes(email)) continue;
+    result.push(email);
+    if (result.length >= maxCandidates) {
+      break;
+    }
+  }
+  return result;
 }
 
 function bareAddress(value: string): string | null {
@@ -264,6 +332,7 @@ export interface ParsedHeaders {
   fromName: string;
   replyTo: string;
   to: string;
+  cc: string;
   subject: string;
   date: string;
   messageId: string;
@@ -288,6 +357,7 @@ export function parseEmailHeaders(
     fromName,
     replyTo: get('Reply-To'),
     to: get('To'),
+    cc: get('Cc'),
     subject: get('Subject'),
     date: get('Date'),
     messageId: get('Message-ID'),
@@ -302,8 +372,13 @@ export function formatEmailForAgent(
   threadId?: string,
   messageId?: string,
   forwardedIdentity?: ForwardedIdentity | null,
+  recipientContext: { replyAllCandidates?: readonly string[] } = {},
 ): string {
-  const oneLine = (value: string) => value.replace(/[\r\n]+/g, ' ').trim();
+  const oneLine = (value: string) =>
+    value
+      .replace(/[\r\n]+/g, ' ')
+      .trim()
+      .slice(0, MAX_HEADER_LENGTH);
   const envelopeEmail = bareAddress(headers.from) || headers.from;
   const ordinaryFrom = /<[^>]+>/.test(headers.from)
     ? oneLine(headers.from)
@@ -320,6 +395,17 @@ export function formatEmailForAgent(
       : headers.replyTo
         ? [`Reply-To: ${oneLine(headers.replyTo)}`]
         : []),
+    ...(!forwardedIdentity && headers.to
+      ? [`Visible-To: ${oneLine(headers.to)}`]
+      : []),
+    ...(!forwardedIdentity && headers.cc
+      ? [`Visible-Cc: ${oneLine(headers.cc)}`]
+      : []),
+    ...(!forwardedIdentity && recipientContext.replyAllCandidates?.length
+      ? [
+          `Reply-All-Candidates: ${recipientContext.replyAllCandidates.join(', ')}`,
+        ]
+      : []),
     `Subject: ${oneLine(headers.subject)}`,
     `Date: ${oneLine(headers.date)}`,
   ];

@@ -246,6 +246,56 @@ describe('handleClassifyLabelWrite', () => {
     );
   });
 
+  it('preserves host-stored visible recipients through the LLM classification route', async () => {
+    _initTestDatabase();
+    storeChatMetadata(
+      'gmail:test@example.com',
+      '2026-08-03T13:42:00.000Z',
+      'Gmail',
+      'gmail',
+      false,
+    );
+    storeMessageDirect({
+      id: 'recipient-context-msg',
+      chat_jid: 'gmail:test@example.com',
+      sender: 'richard@example.com',
+      sender_name: 'Richard',
+      content:
+        'From: Richard <richard@example.com>\nVisible-To: Tandem <info@tandemcoach.co>\nVisible-Cc: Pat <pat@example.com>\nReply-All-Candidates: pat@example.com\nSubject: Keep Pat copied\n\nPlease keep everyone copied.',
+      timestamp: '2026-08-03T13:42:00.000Z',
+      is_from_me: false,
+      is_bot_message: false,
+    });
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ hive_share_target: null, auto_archive: false }],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] });
+
+    await handleClassifyLabelWrite(
+      basePayload({
+        gmail_message_id: 'recipient-context-msg',
+        sender_email: 'richard@example.com',
+        subject: 'Keep Pat copied',
+        label: 'MrGru/client/active',
+      }),
+    );
+
+    const mailmanDir = path.join(tmpDir, 'ipc', 'mailman', 'messages');
+    const payload = JSON.parse(
+      fs.readFileSync(
+        path.join(mailmanDir, fs.readdirSync(mailmanDir)[0]),
+        'utf8',
+      ),
+    );
+    expect(payload.text).toContain('Visible-To: Tandem <info@tandemcoach.co>');
+    expect(payload.text).toContain('Visible-Cc: Pat <pat@example.com>');
+    expect(payload.text).toContain('Reply-All-Candidates: pat@example.com');
+  });
+
   it('ignores a Reply-To line quoted in the message body', async () => {
     _initTestDatabase();
     storeChatMetadata(
