@@ -8,6 +8,34 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260820-009 — Activate one exact outcome-review packet
+
+- Date: 2026-08-20
+- Owner/client: Codex
+- State: in_progress; task claimed before configuration or external delivery
+- Commit/PR: isolated branch
+  `codex/nc-20260820-009-outcome-review-activation` from dark-deployment handoff
+  `a656915b`; no PR
+- Change class: C3 — exactly one private internal Slack review packet plus C2
+  production configuration; no customer communication or business action
+- Trigger/authority: the operator explicitly said to proceed after NC-008's
+  dark-deployment milestone and the described one-packet activation boundary.
+- Intended change: reuse exactly one already-authorized Company Work operator
+  UID without disclosing it, enable the installed default-off service with its
+  24-hour interval/30-day window/candidate limit 25, and allow one immediate
+  run to post at most one complete packet to Chief.
+- Acceptance: copied-data candidate/evidence rehearsal; exact live release and
+  empty-ledger preflight; zero-work drain and owner-only backups; one config-only
+  restart; one posted packet with claimed/posted events; zero decision/quality
+  receipt/second packet; protected-state, health, and log proof.
+- Safety boundary: no Gmail API/search/read, raw identity storage, backfill,
+  model/agent classification, inferred/default clean, typed approval, customer
+  email, remediation, work mutation, unrelated configuration, push, or merge.
+  The operator's exact bound reaction is a later human decision.
+- Rollback: disable the service and restore the owner-only pre-activation env/
+  plist backup. A posted packet and lifecycle remain append-only evidence; never
+  delete them to roll back configuration.
+
 ### NC-20260820-008 — Add exact operator-review packets for outcome quality
 
 - Date: 2026-08-20
