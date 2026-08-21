@@ -12,10 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: validating; implementation and focused local proof are complete, but
-  the Mini read-only source snapshot and any reviewed projection remain open
+- State: ready_for_deploy; implementation and local release gates are complete,
+  but the Mini read-only source snapshot and any reviewed projection remain open
 - Commit/PR: isolated branch `codex/nc-20260821-005-followup-shadow` based on
-  `0c18893c`; no implementation commit or PR yet
+  implementation commit `403513b2`; no PR yet
 - Change class: C3 operational policy surface, C2 dark internal projection;
   no customer, Slack, pipeline, Plutio, payment, scheduler, or email action
 - Outcome: one default-dry-run host command now reads exact Sales pipeline
@@ -50,7 +50,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   source, parser, report, CLI, Plutio-boundary, and store tests pass; four live
   PostgreSQL integration cases remain intentionally skipped in the local gate.
   The complete unrestricted suite is 2,935 pass, ten skipped, and the sole
-  failure is the unchanged pre-existing CNPC wrapper-literal assertion.
+  failure is the unchanged pre-existing CNPC wrapper-literal assertion. The
+  731-test email-critical gate and all 43 independent runner tests pass under
+  the exact runtime contract.
 - External read evidence: the local toolbox Plutio operation refused because
   its selected environment file has a shell syntax error at line 65. NanoClaw
   correctly documents that the Studio cannot reach production PostgreSQL; an
