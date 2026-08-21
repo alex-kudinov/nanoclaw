@@ -39,7 +39,7 @@ describe('Company Work outcome-quality assessment source boundary', () => {
       scripts?: Record<string, string>;
     };
     expect(packageJson.scripts?.['company-work:assess-outcome']).toBe(
-      'node dist/company-work-outcome-quality-assessment-cli.js',
+      './scripts/with-pinned-node.sh node dist/company-work-outcome-quality-assessment-cli.js',
     );
     expect(packageJson.scripts?.start).not.toContain(producerModule);
   });

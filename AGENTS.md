@@ -64,7 +64,7 @@ change when authorized.
 For ordinary TypeScript changes, run the narrow tests first, then:
 
 ```bash
-nvm use
+./scripts/with-pinned-node.sh node --version
 npm run typecheck
 npm test
 ```
@@ -72,9 +72,8 @@ npm test
 For container-runner changes, also verify its independent package:
 
 ```bash
-cd container/agent-runner
-npm run build
-npm test
+./scripts/with-pinned-node.sh npm --prefix container/agent-runner run build
+./scripts/with-pinned-node.sh npm --prefix container/agent-runner test
 ```
 
 Container, channel, database, webhook, scheduler, and outbound-action changes

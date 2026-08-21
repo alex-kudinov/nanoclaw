@@ -353,23 +353,30 @@ enabled. They still require the exact `.nvmrc` runtime.
 
 ## Exact runtime
 
-The repository pins Node `22.23.2` in `.nvmrc` and `package.json`. Native
-dependencies must be installed or rebuilt under that exact runtime.
+The repository pins Node `22.23.2` in `.nvmrc`, both package engine contracts,
+every GitHub `setup-node` step, and the agent image. Native dependencies must
+be installed or rebuilt under that exact runtime. Both npm projects are
+engine-strict.
 
 The service must use the absolute executable returned by the pinned runtime,
 not whichever `node` happens to appear first in an interactive shell. The
 tracked macOS service definitions use the Homebrew `node@22` executable, and
-the setup program records `process.execPath`.
+the setup program records `process.execPath`. For local and automation work,
+`scripts/with-pinned-node.sh` keeps an already-correct runtime or finds the
+exact installed Node 22.23.2 binary and prepends its directory before executing
+the command. It does not change the workstation's global Node. `npm run
+runtime:doctor` reports the non-secret runtime, native ABI, package engine,
+container tag, and workflow alignment.
 
 ## Build
 
 From a clean reviewed commit:
 
 ```bash
-nvm use
-node --version
-npm ci
-npm ci --include=dev --prefix container/agent-runner
+./scripts/with-pinned-node.sh node --version
+./scripts/with-pinned-node.sh npm ci
+./scripts/with-pinned-node.sh npm ci --include=dev --prefix container/agent-runner
+npm run runtime:doctor
 npm run typecheck
 npm run test:email-replay
 npm run test:email-critical

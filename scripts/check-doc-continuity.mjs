@@ -256,7 +256,56 @@ const ci = read('.github/workflows/ci.yml');
 if (!ci.includes('node-version-file: .nvmrc')) {
   failures.push('CI must read the pinned Node version from .nvmrc');
 }
+if (!/^\s*push:\s*$[\s\S]*?^\s*branches:\s*\[main\]\s*$/m.test(ci)) {
+  failures.push('CI must validate pushes to protected main');
+}
 const packageJson = read('package.json');
+const packageData = JSON.parse(packageJson);
+if (packageData.engines?.node !== nvmrc) {
+  failures.push('package.json engines.node must exactly match .nvmrc');
+}
+const runnerPackageData = JSON.parse(
+  read('container/agent-runner/package.json'),
+);
+if (runnerPackageData.engines?.node !== nvmrc) {
+  failures.push('agent-runner engines.node must exactly match .nvmrc');
+}
+for (const [name, command] of Object.entries(packageData.scripts ?? {})) {
+  if (
+    /(?:^|\s)(?:node|tsx|tsc|vitest|prettier|husky)(?:\s|$)/.test(command) &&
+    !command.includes('with-pinned-node.sh')
+  ) {
+    failures.push(`package script ${name} bypasses the pinned Node launcher`);
+  }
+}
+if (!/^engine-strict=true$/m.test(read('.npmrc'))) {
+  failures.push('.npmrc must reject dependency installation under an unpinned Node');
+}
+if (!/^engine-strict=true$/m.test(read('container/agent-runner/.npmrc'))) {
+  failures.push('agent-runner .npmrc must reject unpinned dependency installation');
+}
+const workflowFiles = fs
+  .readdirSync(path.join(root, '.github', 'workflows'))
+  .filter((file) => /\.ya?ml$/.test(file));
+for (const file of workflowFiles) {
+  const workflow = read(path.join('.github', 'workflows', file));
+  if (workflow.includes('actions/setup-node@')) {
+    const setupCount = (workflow.match(/actions\/setup-node@/g) ?? []).length;
+    const pinCount = (workflow.match(/node-version-file:\s*\.nvmrc/g) ?? [])
+      .length;
+    if (setupCount !== pinCount || /node-version:\s*[^\n]+/.test(workflow)) {
+      failures.push(`${file} must use .nvmrc for every setup-node step`);
+    }
+  }
+}
+for (const file of [
+  'container/Dockerfile',
+  '.claude/skills/convert-to-apple-container/modify/container/Dockerfile',
+]) {
+  if (!read(file).includes(`FROM node:${nvmrc}-slim`)) {
+    failures.push(`${file} must pin the exact .nvmrc Node image`);
+  }
+}
 if (!packageJson.includes('sanitize-schema-doc.mjs --self-test')) {
   failures.push('docs:continuity-check does not run the schema sanitizer self-test');
 }

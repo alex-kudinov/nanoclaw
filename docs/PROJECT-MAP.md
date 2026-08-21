@@ -1665,6 +1665,17 @@ interpreting results. A sandboxed full run still reports `listen EPERM` for
 local listeners; that is an execution-policy restriction, not a product
 failure.
 
+### Runtime-contract update on 2026-08-21
+
+`NC-20260821-004` makes exact Node 22.23.2 the one NanoClaw execution contract.
+Both package engines and engine-strict install policy, every GitHub
+`setup-node` step, the exact agent-image tag, release build and startup checks,
+and production health agree. CI also runs on pushes to `main`. A workstation
+shell may still start on Node 26 for unrelated projects; NanoClaw npm scripts
+use `scripts/with-pinned-node.sh` to execute under the exact installed pin, and
+dependency installation must use that same launcher. The global Node is not a
+project authority and is not modified by the repository.
+
 ## 18. History and evolution
 
 ### Upstream/core lineage

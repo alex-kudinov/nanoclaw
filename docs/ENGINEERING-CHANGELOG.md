@@ -8,6 +8,48 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260821-004 — Enforce one exact Node runtime contract
+
+- Date: 2026-08-21
+- Owner/client: Codex
+- State: ready_for_review; local repository contract is implemented and
+  verified, with no production restart, image activation, push, or global Node
+  change
+- Commit/PR: isolated branch `codex/nc-20260821-004-runtime-contract`; no PR
+- Change class: C2 — developer/CI/container/release runtime contract; no
+  business-system or customer action
+- Trigger: the operator challenged the recurring Node 22/26/version churn.
+  Production already ran exact 22.23.2, but this authoring shell starts on
+  26.7.0, three workflow steps still selected Node 20, version bump inherited
+  the runner default, and the agent image floated on a Node 22 major tag.
+- Contract: `.nvmrc`, both package engines, engine-strict installs, all five
+  GitHub setup steps, CI push/PR triggers, the exact `node:22.23.2-slim` agent
+  image and skill template, release inputs, production startup refusal, and
+  health now agree. `scripts/with-pinned-node.sh` hands an ambient shell to the
+  exact installed pin without changing the workstation's global Node.
+- Operator evidence: `npm run runtime:doctor`, launched by ambient Node 26.7.0,
+  reports Node 22.23.2, native ABI 127, matching package engine, five aligned
+  workflow steps, and the exact image. The official image registry lists the
+  exact slim tag; the direct local Docker registry lookup timed out before a
+  manifest response.
+- Verification: exact typecheck, build, formatting, documentation continuity,
+  capability generation check, 29 focused runtime/release tests, and the
+  independent runner build plus 43/43 tests pass. The complete root suite is
+  2,919 pass, ten skipped, and only the unchanged pre-existing CNPC wrapper
+  literal assertion fails.
+- Validation hazard: the repository all-skill validator resets its current
+  worktree between replays and erased this patch while it was uncommitted in
+  the isolated worktree. The patch was recovered; operational source and
+  production were untouched. The interrupted replay separately exposed
+  pre-existing add-gmail dependency and add-slack typecheck drift; neither was
+  folded into this task.
+- Rollback/deployment: revert this commit to restore the prior authoring/CI
+  declarations. No daemon, database, schedule, channel, image, or customer
+  state changed, so production rollback is not applicable.
+- Documentation: `AGENTS.md`, `CLAUDE.md`, `docs/RELEASE-INTEGRITY.md`,
+  `docs/PROJECT-MAP.md`, and `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` now name
+  exact Node 22.23.2 as the sole NanoClaw runtime contract.
+
 ### NC-20260821-003 — Preserve inbound visible recipients and bound reply-all
 
 - Date: 2026-08-21

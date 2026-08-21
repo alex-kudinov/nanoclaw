@@ -109,12 +109,18 @@ Two databases. Read the schema reference BEFORE writing any query — always loo
 Run commands directly — execute them yourself rather than instructing the user.
 
 ```bash
-nvm use                 # must resolve to the exact version in .nvmrc
-npm run dev          # Run with hot reload
-npm run build        # Compile TypeScript
-npm run release:build # Clean-commit, provenance-bearing production artifact
+./scripts/with-pinned-node.sh npm ci # installs under the exact .nvmrc runtime
+npm run runtime:doctor              # proves runtime/ABI/CI/image alignment
+npm run dev                         # Run with hot reload; auto-hands off to the pin
+npm run build                       # Compile TypeScript; auto-hands off to the pin
+npm run release:build               # Clean-commit production artifact; exact pin required
 ./container/build.sh # Rebuild agent container
 ```
+
+Do not change the machine's global Node for NanoClaw. The repository pin is
+`22.23.2`; npm scripts use `scripts/with-pinned-node.sh` so a shell that starts
+on Node 26 cannot accidentally run project code or native modules under it.
+Dependency installation is engine-strict and must use the same launcher.
 
 Production releases follow `docs/RELEASE-INTEGRITY.md`. Do not deploy by
 building or hand-editing `dist/` in the production checkout. Production startup
