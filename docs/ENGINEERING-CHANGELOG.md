@@ -73,6 +73,56 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   was the sole unexpected side effect and is the reason this task remains in
   progress pending corrected-release deployment and reaction proof.
 
+#### Addendum 2026-08-21T03:39Z — corrected operator-only release live
+
+- Release identity: exact commit
+  `dbe5016cfdd7106c76064969a9cfcd50c3c479f2` binds source tree
+  `ce82587382362ea0371e34cf05372a9cc8c0954e`, 816 compiled files,
+  artifact SHA-256
+  `8a44161940992a1b573ec4a033c1d2273115f0a2b8ba04ca86b3d0d164c88e2e`,
+  and archive SHA-256
+  `6431f3fecb232c5a9b0379c25443a28151cc25e81873c72538d7612f92c27392`.
+  Local release gates and independent Mini verification pass on Node 22.23.2.
+- Correction: only outcome-review packet and reaction-ack writes now use
+  Chief's own host-echo provenance. Exception briefs and work packets retain
+  their existing cross-group provenance and agent pickup. Candidate selection
+  globally suppresses work while any packet is undecided; claim repeats that
+  check under a transaction-scoped advisory lock. Focused outcome/database/
+  wiring tests pass 86/86; email-critical passes 721/721 and the independent
+  runner passes 43/43. The final full suite is 2,851 pass, one known CNPC
+  wrapper-contract failure, and six skipped; both implicated CNPC files are
+  byte-identical to base.
+- Drain/backup/rollback: correction backup
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260820-009-correction-20260821T033227Z`
+  is owner-only; SQLite quick-check and `pg_restore --list` pass. The retained
+  rollback plist is
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-963317a9af9f-2026-08-21T03-32-44-574Z`.
+- Activation/health: launchd, the sole port-8088 listener, and health agree on
+  PID 24079, exact verified release `dbe5016c`, matching release code root, and
+  Node 22.23.2. Gmail and Slack are connected; queues and active containers are
+  empty. Outcome review is active for one operator, ran once, and returned
+  `no_candidates` because packet #1 remains open. Post-release logs contain 40
+  INFO headlines, zero WARN/ERROR/FATAL headlines, and zero container spawns.
+- Durable proof: PostgreSQL has exactly one posted/open packet, one claimed and
+  one posted event, zero decisions, zero assessment bindings, zero decision
+  receipts, and zero quality receipts. No review, quality, work, receipt,
+  exception-brief, or exception-event row was appended after corrected
+  activation; the eligible candidate query returns zero. Protected counts stay
+  21 work items/version sum 110, 131 work events, 59 receipts, seven exception
+  cases, six briefs, and 40 exception events.
+- SQLite proof: live `pending_sends` and `email_send_events` have zero rows in
+  either direction under `EXCEPT` comparison with the correction backup. They
+  remain 88 actions/435 events with zero active action, `quick_check=ok`, and
+  the same 68,272 messages/max rowid 68,871 as the backup; no message arrived
+  after corrected activation. The original packet remains truthful immutable
+  history with its initial `company-os` provenance. Future packet/ack posts use
+  Chief-owned provenance and cannot enter generic cross-group dispatch.
+- Human gate: packet #1 remains undecided. Only the configured operator's exact
+  bound ✅/🐛/↩️/🚨 reaction may record one quality receipt. No reaction has
+  been supplied or inferred, and no Gmail read/search, email, customer action,
+  remediation, workflow mutation, second packet, or post-correction agent run
+  occurred.
+
 ### NC-20260820-008 — Add exact operator-review packets for outcome quality
 
 - Date: 2026-08-20
