@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   CompanyWorkExceptionLoopService,
+  companyWorkExceptionDispatchFingerprint,
   companyWorkExceptionCaseKey,
   expandCompanyWorkExceptionCases,
+  extractCompanyWorkPacketIdentities,
+  renderCompanyWorkAttemptReceipt,
   renderCompanyWorkDispatchPacket,
   renderCompanyWorkExceptionBrief,
   resolveCompanyWorkExceptionLoopConfig,
@@ -146,6 +149,15 @@ function store(): CompanyWorkExceptionStore {
       duplicate: false,
     }),
     markAcknowledgmentReceipt: vi.fn().mockResolvedValue(undefined),
+    bindDispatchPacket: vi.fn().mockResolvedValue(undefined),
+    hasCompletedDispatch: vi.fn().mockResolvedValue(false),
+    beginDispatchAttempts: vi.fn().mockResolvedValue({
+      matchedPackets: 1,
+      attempts: [{ dispatchId: '31', workItemId: '4', attemptNumber: 1 }],
+      alreadyAttempted: 0,
+    }),
+    finishDispatchAttempts: vi.fn().mockResolvedValue(undefined),
+    markDispatchAttemptReceipt: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -310,6 +322,50 @@ describe('Company Work exception case identity and rendering', () => {
     expect(text).toContain('Do not claim resolution');
     expect(text.length).toBeLessThan(4000);
   });
+
+  it('recognizes only exact host-provenance work packets', () => {
+    const packet = {
+      id: '1800000000.000003',
+      chat_jid: 'slack:C_CHIEF',
+      sender: 'bot',
+      sender_name: 'Mr Gru',
+      content:
+        '[HANDOFF: company-os→chief]\n[COMPANY OS WORK PACKET: work #4]\nWorkflow: sales_email',
+      timestamp: '2026-08-17T02:00:00.000Z',
+      from_group: 'company-os',
+      thread_ts: '1800000000.000001',
+    };
+    expect(extractCompanyWorkPacketIdentities([packet])).toEqual([
+      { workItemId: '4', packetMessageTs: '1800000000.000003' },
+    ]);
+    expect(
+      extractCompanyWorkPacketIdentities([
+        { ...packet, from_group: undefined },
+      ]),
+    ).toEqual([]);
+    expect(() =>
+      extractCompanyWorkPacketIdentities([
+        {
+          ...packet,
+          content: '[COMPANY OS WORK PACKET: work #4]',
+        },
+      ]),
+    ).toThrow('malformed_company_work_packet');
+  });
+
+  it('renders a bounded attempt receipt without claiming source resolution', () => {
+    const text = renderCompanyWorkAttemptReceipt(
+      [
+        { dispatchId: '1', workItemId: '12', attemptNumber: 1 },
+        { dispatchId: '2', workItemId: '3', attemptNumber: 1 },
+      ],
+      'succeeded',
+    );
+    expect(text).toContain('work #3, #12');
+    expect(text).toContain('attempt receipt, not resolution');
+    expect(text).toContain('did not approve, retry, send, edit facts');
+    expect(text).toContain('complete source receipt');
+  });
 });
 
 describe('Company Work exception loop execution', () => {
@@ -396,7 +452,36 @@ describe('Company Work exception loop execution', () => {
       '1800000000.000001',
       expect.stringContaining('[COMPANY OS WORK PACKET: work #4]'),
     );
+    expect(d.store.bindDispatchPacket).toHaveBeenCalledWith({
+      briefId: '7',
+      workItemId: '4',
+      workItemVersion: 3,
+      dispatchFingerprint: companyWorkExceptionDispatchFingerprint(
+        report().exceptions[0],
+      ),
+      channelJid: 'slack:C_CHIEF',
+      briefMessageTs: '1800000000.000001',
+      packetMessageTs: '1800000000.000003',
+      postedAt: '2026-08-17T02:00:00.000Z',
+    });
     expect(result.workPacketsPosted).toBe(1);
+    expect(result.workPacketsSuppressed).toBe(0);
+  });
+
+  it('does not wake Chief again for an unchanged successfully attempted packet', async () => {
+    const d = deps();
+    vi.mocked(d.store.hasCompletedDispatch).mockResolvedValueOnce(true);
+    await expect(
+      runCompanyWorkExceptionLoop(d, config()),
+    ).resolves.toMatchObject({
+      outcome: 'posted',
+      workPacketsPosted: 0,
+      workPacketsSuppressed: 1,
+    });
+    expect(d.resolveSourceContext).not.toHaveBeenCalled();
+    expect(d.postWorkPacket).not.toHaveBeenCalled();
+    expect(d.store.bindDispatchPacket).not.toHaveBeenCalled();
+    expect(d.store.markBriefPosted).toHaveBeenCalled();
   });
 
   it('fails the brief closed when its automatic work packet is not delivered', async () => {
@@ -418,6 +503,31 @@ describe('Company Work exception loop execution', () => {
       'slack:C_CHIEF',
       '1800000000.000001',
       expect.stringContaining('source context was not fully delivered'),
+    );
+  });
+
+  it('fails the brief closed when a delivered packet is not durably bound', async () => {
+    const d = deps();
+    vi.mocked(d.store.bindDispatchPacket).mockRejectedValueOnce(
+      new Error('database unavailable'),
+    );
+    await expect(
+      runCompanyWorkExceptionLoop(d, config()),
+    ).resolves.toMatchObject({
+      outcome: 'delivery_uncertain',
+      errorCode: 'work_packet_binding_failed',
+      workPacketsPosted: 0,
+    });
+    expect(d.store.markBriefUncertain).toHaveBeenCalledWith(
+      '7',
+      'slack:C_CHIEF',
+      'work_packet_binding_failed',
+    );
+    expect(d.store.markBriefPosted).not.toHaveBeenCalled();
+    expect(d.postThread).toHaveBeenCalledWith(
+      'slack:C_CHIEF',
+      '1800000000.000001',
+      expect.stringContaining('not durably bound'),
     );
   });
 
@@ -502,6 +612,127 @@ describe('Company Work exception loop execution', () => {
     });
     expect(d.store.claimBrief).not.toHaveBeenCalled();
     expect(d.postBrief).not.toHaveBeenCalled();
+  });
+});
+
+describe('Company Work packet attempt receipts', () => {
+  const packetMessage = {
+    id: '1800000000.000003',
+    chat_jid: 'slack:C_CHIEF',
+    sender: 'bot',
+    sender_name: 'Mr Gru',
+    content:
+      '[HANDOFF: company-os→chief]\n[COMPANY OS WORK PACKET: work #4]\nWorkflow: sales_email',
+    timestamp: '2026-08-17T02:00:00.003Z',
+    from_group: 'company-os',
+    thread_ts: '1800000000.000001',
+  };
+
+  it('binds exact router pickup and successful turn to one threaded receipt', async () => {
+    const d = deps();
+    const service = new CompanyWorkExceptionLoopService(d, config());
+    const attempt = await service.beginPacketAttempt(
+      'slack:C_CHIEF',
+      '1800000000.000001',
+      [packetMessage],
+      new Date('2026-08-17T02:00:01.000Z'),
+    );
+    expect(attempt).toEqual({
+      channelJid: 'slack:C_CHIEF',
+      threadTs: '1800000000.000001',
+      matchedPackets: 1,
+      alreadyAttempted: 0,
+      attempts: [{ dispatchId: '31', workItemId: '4', attemptNumber: 1 }],
+    });
+    expect(d.store.beginDispatchAttempts).toHaveBeenCalledWith(
+      'slack:C_CHIEF',
+      '1800000000.000001',
+      [{ workItemId: '4', packetMessageTs: '1800000000.000003' }],
+      '2026-08-17T02:00:01.000Z',
+    );
+
+    await service.finishPacketAttempt(
+      attempt!,
+      'succeeded',
+      new Date('2026-08-17T02:00:02.000Z'),
+    );
+    expect(d.store.finishDispatchAttempts).toHaveBeenCalledWith(
+      attempt!.attempts,
+      'succeeded',
+      '2026-08-17T02:00:02.000Z',
+      undefined,
+    );
+    expect(d.postThread).toHaveBeenCalledWith(
+      'slack:C_CHIEF',
+      '1800000000.000001',
+      expect.stringContaining('attempt receipt, not resolution'),
+    );
+    expect(d.store.markDispatchAttemptReceipt).toHaveBeenCalledWith(
+      attempt!.attempts,
+      'posted',
+      '1800000000.000002',
+    );
+    expect(service.getStatus()).toMatchObject({
+      packetAttemptsStarted: 1,
+      packetAttemptsSucceeded: 1,
+      packetAttemptsFailed: 0,
+      lastPacketAttemptErrorCode: null,
+    });
+  });
+
+  it('records a failed turn without claiming workflow failure or resolution', async () => {
+    const d = deps();
+    vi.mocked(d.postThread).mockResolvedValueOnce(undefined);
+    const service = new CompanyWorkExceptionLoopService(d, config());
+    const attempt = await service.beginPacketAttempt(
+      'slack:C_CHIEF',
+      '1800000000.000001',
+      [packetMessage],
+    );
+    await service.finishPacketAttempt(attempt!, 'failed');
+    expect(d.store.finishDispatchAttempts).toHaveBeenCalledWith(
+      attempt!.attempts,
+      'failed',
+      expect.any(String),
+      'chief_agent_turn_failed',
+    );
+    expect(d.store.markDispatchAttemptReceipt).toHaveBeenCalledWith(
+      attempt!.attempts,
+      'uncertain',
+      undefined,
+    );
+    expect(service.getStatus()).toMatchObject({
+      packetAttemptsFailed: 1,
+      lastPacketAttemptErrorCode: 'chief_agent_turn_failed',
+    });
+  });
+
+  it('does not observe unrelated, spoofed, or already-attempted messages', async () => {
+    const d = deps();
+    const service = new CompanyWorkExceptionLoopService(d, config());
+    await expect(
+      service.beginPacketAttempt('slack:C_CHIEF', '1800000000.000001', [
+        { ...packetMessage, from_group: 'chief' },
+      ]),
+    ).resolves.toBeNull();
+    expect(d.store.beginDispatchAttempts).not.toHaveBeenCalled();
+
+    vi.mocked(d.store.beginDispatchAttempts).mockResolvedValueOnce({
+      matchedPackets: 1,
+      attempts: [],
+      alreadyAttempted: 1,
+    });
+    await expect(
+      service.beginPacketAttempt('slack:C_CHIEF', '1800000000.000001', [
+        packetMessage,
+      ]),
+    ).resolves.toEqual({
+      channelJid: 'slack:C_CHIEF',
+      threadTs: '1800000000.000001',
+      matchedPackets: 1,
+      alreadyAttempted: 1,
+      attempts: [],
+    });
   });
 });
 

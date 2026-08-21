@@ -36,9 +36,14 @@ not a daemon or agent capability. Repository/command presence alone does not
 prove an assessment; use the current NC-20260820-006/007 active-work and
 changelog evidence.
 
-Covers the public.* and business_v2.* schemas. business_v2 tables are
-headed with their schema prefix; access them via business_v2.v_* views and
-business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
+Structure-only exception-dispatch candidate: migration 129 under
+`NC-20260821-001` defines admin-only, content-free packet and bounded-turn
+receipts. Repository presence is not live schema or a completed Chief attempt;
+use active-work and changelog deployment evidence before treating it as live.
+
+Covers the public._ and business_v2._ schemas. business*v2 tables are
+headed with their schema prefix; access them via business_v2.v*_ views and
+business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
 
 ## business_v2.company_work_items (migrations 118-119 live)
 
@@ -167,6 +172,41 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   event_type                    text                 NOT NULL
   brief_id                      bigint
   actor_uid                     text
+  event_key                     text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_work_exception_dispatches (migration 129 candidate)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_dispatches_id_seq'::regclass)
+  brief_id                      bigint               NOT NULL
+  work_item_id                  bigint               NOT NULL
+  work_item_version             integer              NOT NULL
+  dispatch_fingerprint          text                 NOT NULL
+  slack_channel_jid             text                 NOT NULL
+  brief_message_ts              text                 NOT NULL
+  packet_message_ts             text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='posted'::text
+  posted_at                     timestamp with time zone NOT NULL
+  attempt_count                 integer              NOT NULL DEFAULT=0
+  last_picked_up_at             timestamp with time zone
+  last_attempt_finished_at      timestamp with time zone
+  failure_code                  text
+  attempt_receipt_status        text                 NOT NULL DEFAULT='none'::text
+  attempt_receipt_ts            text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.company_work_exception_dispatch_events (migration 129 candidate)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_exception_dispatch_events_id_seq'::regclass)
+  dispatch_id                   bigint               NOT NULL
+  attempt_number                integer              NOT NULL
+  event_type                    text                 NOT NULL
   event_key                     text                 NOT NULL
   evidence_sha256               text                 NOT NULL
   occurred_at                   timestamp with time zone NOT NULL

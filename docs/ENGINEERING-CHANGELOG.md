@@ -8,6 +8,49 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260821-001 — Bind Company Work packet pickup and bounded attempts
+
+- Date: 2026-08-21
+- Owner/client: Codex
+- State: ready_for_deploy; implementation and release gates complete
+- Commit/PR: isolated branch
+  `codex/nc-20260821-001-exception-attempt-receipts`; no PR
+- Change class: C3 — internal Chief work dispatch/receipt behavior plus an
+  additive admin-only schema; no customer message or source/work mutation
+- Trigger/authority: after the operator asked the Company OS roadmap to keep
+  moving, live inspection of the first natural exception packets showed the
+  backend did wake Chief but left no durable packet-level attempt result.
+- Finding: daily brief 19 posted three exact packets. One summary-level Chief
+  run emitted an unbound "logged quietly" root message, while the packet-thread
+  run recorded its conclusion privately and emitted no operator-visible packet
+  result. Notification and agent startup therefore did not prove operational
+  closure.
+- Implementation: migration 129 binds brief/work-version/fingerprint to exact
+  Slack packet delivery and append-only posted/picked-up/attempt outcome events.
+  Chief routing claims exact packets before execution, records the first
+  bounded turn success/failure, posts one threaded receipt that explicitly is
+  not resolution, skips exact completed replays, scopes mixed/new batches to
+  newly eligible work, and suppresses later dispatch of an unchanged completed
+  fingerprint. The summary now uses Chief own-echo provenance and no longer
+  starts a redundant root run.
+- Safety boundary: tables contain no customer or agent output text and grant no
+  agent access. A successful turn does not resolve source work, approve, retry,
+  send, edit facts, or create business authority. Failed/unbound lifecycle
+  writes fail closed before or during agent dispatch.
+- Verification: pinned Node 22.23.2 focused tests pass 37/37. Disposable
+  PostgreSQL 16 proves the full posted-to-receipted lifecycle, append-only event
+  enforcement, zero Chief SELECT, populated rollback refusal, and empty
+  rollback. Typecheck, build, formatting, documentation continuity, and diff
+  checks pass. The email-critical gate passes 722/722 and the independent
+  runner passes 43/43. The unrestricted root suite passes 2,871/2,872 with six
+  skips; the sole failing CNPC wrapper-literal assertion and both implicated
+  files are unchanged from the task base. Production deployment remains
+  pending.
+- Roadmap follow-on: keep the reported broken daily Sales follow-up task off.
+  Redesign policy and ownership first across active leads, unsigned Plutio
+  proposals, and unpaid invoices, then implement one durable eligibility and
+  next-action queue that cannot resurface unchanged work as new every day.
+
 ### NC-20260820-009 — Activate one exact outcome-review packet
 
 - Date: 2026-08-20

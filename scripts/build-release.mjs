@@ -133,6 +133,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_127_company_work_outcome_review_packets.sql',
     'data/business/migrations/nanoclaw-v2/128_company_work_outcome_review_plus_one.sql',
     'data/business/migrations/nanoclaw-v2/rollback_128_company_work_outcome_review_plus_one.sql',
+    'data/business/migrations/nanoclaw-v2/129_company_work_exception_dispatch_receipts.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_129_company_work_exception_dispatch_receipts.sql',
     'scripts/verify-release.mjs',
     'scripts/activate-release.mjs',
     'scripts/run-action-safety-drill.mjs',

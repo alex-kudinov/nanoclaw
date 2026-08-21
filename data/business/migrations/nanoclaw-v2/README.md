@@ -17,24 +17,24 @@ Ships the `business_v2` PostgreSQL schema as a **dormant** replacement for the a
 
 ## File → Task → Execution Order
 
-| File | Task | Description |
-|------|------|-------------|
-| `01_extensions.sql` | T1 | Verify citext, create schema |
-| `02_lookups.sql` | T2 | 14 lookup tables with seeds |
-| `03_parties.sql` | T3 | parties + party_emails |
-| `04_roles.sql` | T4 | party_roles, party_contact_roles, party_relationships |
-| `05_engagements.sql` | T5 | engagements + engagement_participants |
-| `06_programs.sql` | T6 | programs, program_variants, variant_enrollments + deferred FK |
-| `07_pipeline.sql` | T7 | pipeline_entries + pipeline_stage_history |
-| `08_interactions.sql` | T8 | interactions + attachments |
-| `09_documents.sql` | T9 | documents + document_line_items |
-| `10_outbox.sql` | T10 | plutio_outbox + plutio_refs |
-| `11_helpers.sql` | T11 | 14 functions (8 callable + 6 trigger) |
-| `12_triggers.sql` | T12 | 19 trigger installations |
-| `13_views.sql` | T13 | 6 agent-facing views |
-| `14_grants.sql` | T14 | Role grants + permission boundary |
-| `90_smoke_tests.sql` | T15 | 20 smoke tests (transactional, no data persists) |
-| `validate.sql` | T16 | AC-1 through AC-20 assertions |
+| File                  | Task | Description                                                   |
+| --------------------- | ---- | ------------------------------------------------------------- |
+| `01_extensions.sql`   | T1   | Verify citext, create schema                                  |
+| `02_lookups.sql`      | T2   | 14 lookup tables with seeds                                   |
+| `03_parties.sql`      | T3   | parties + party_emails                                        |
+| `04_roles.sql`        | T4   | party_roles, party_contact_roles, party_relationships         |
+| `05_engagements.sql`  | T5   | engagements + engagement_participants                         |
+| `06_programs.sql`     | T6   | programs, program_variants, variant_enrollments + deferred FK |
+| `07_pipeline.sql`     | T7   | pipeline_entries + pipeline_stage_history                     |
+| `08_interactions.sql` | T8   | interactions + attachments                                    |
+| `09_documents.sql`    | T9   | documents + document_line_items                               |
+| `10_outbox.sql`       | T10  | plutio_outbox + plutio_refs                                   |
+| `11_helpers.sql`      | T11  | 14 functions (8 callable + 6 trigger)                         |
+| `12_triggers.sql`     | T12  | 19 trigger installations                                      |
+| `13_views.sql`        | T13  | 6 agent-facing views                                          |
+| `14_grants.sql`       | T14  | Role grants + permission boundary                             |
+| `90_smoke_tests.sql`  | T15  | 20 smoke tests (transactional, no data persists)              |
+| `validate.sql`        | T16  | AC-1 through AC-20 assertions                                 |
 
 `run_migration.sh` executes two- and three-digit ordered files matching
 `[0-9][0-9]*_*.sql` in version-sort order. It includes `90_smoke_tests.sql` and
@@ -93,14 +93,19 @@ before applying anything.
 - migration 128 is NC-20260820-009's narrow outcome-review reaction vocabulary
   extension: Slack `+1` is an explicit configured-operator `clean` decision on
   the exact bound packet, not an inference from silence or another message;
+- migration 129 is NC-20260821-001's content-free Company Work exception
+  dispatch lifecycle. It binds an exact Slack packet to one brief/work version,
+  records router pickup and bounded Chief-turn outcome, suppresses a completed
+  unchanged fingerprint, and grants no agent access or source/work authority;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-128 are non-auto-discovered and refuse to erase populated
+- rollbacks 120-129 are non-auto-discovered and refuse to erase populated
   operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
   mailbox-audit, program-facts, outcome-quality, or outcome-review history;
-  rollback 128 specifically refuses once any durable `+1` decision exists.
+  rollback 128 specifically refuses once any durable `+1` decision exists,
+  while rollback 129 refuses once any packet/attempt evidence exists.
 
 ## Rollback
 

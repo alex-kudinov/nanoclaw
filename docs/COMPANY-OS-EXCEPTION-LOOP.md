@@ -1,14 +1,13 @@
 # Company OS operator exception loop
 
-Status: exact release `bab154cb` preserves the live migration-120 loop under
-`NC-20260816-018` for the sole owner-confirmed operator, the live program-facts
-source under `NC-20260820-002`, and NC-20260820-003's source-bound Chief work
-packets plus narrow exact-message recovery path. Runtime, additive SQLite
-schema, operational prompt, channels, queues, and protected aggregates are
-verified. Startup correctly deduplicated the already-posted daily brief 10, so
-the next natural packet, Chief pickup, exact email hydration, and later
-source-derived resolution remain separately evidence-gated in active work and
-the engineering changelog.
+Status: exact release `288105cb` preserves the live migration-120 loop and
+NC-20260820-003's source-bound packets. The next natural brief delivered three
+packets and woke Chief without Gmail search, but exposed that the packet turn
+had no durable public completion binding and the summary created a redundant
+Chief run. `NC-20260821-001` adds migration 129 and host wiring for exact packet
+delivery, router pickup, bounded turn outcome, replay suppression, and a
+threaded non-resolution receipt. Repository presence is not deployment proof;
+active work and the engineering changelog remain the production authority.
 
 ## Purpose and authority
 
@@ -49,12 +48,20 @@ Migration 120 adds three admin-only tables, separate from work state:
 - `company_work_exception_events`: append-only opened, reopened, briefed,
   acknowledged, and source-resolved facts.
 
+Migration 129 adds two more admin-only, content-free records:
+
+- `company_work_exception_dispatches`: one exact brief/work-version/Slack
+  packet binding plus its latest pickup, bounded-turn outcome, and receipt;
+- `company_work_exception_dispatch_events`: append-only posted, picked-up,
+  attempt-succeeded, and attempt-failed facts.
+
 The tables contain opaque internal IDs, named reason codes, severity,
 timestamps, Slack UID/message identity, and SHA-256 evidence only. They have no
 customer name/address, email subject/body, approval text, job output/error,
 prompt, arbitrary payload, or action authority. No agent role receives access.
 
-`NC-20260820-003` adds no PostgreSQL table and does not copy customer prose into
+Neither table stores customer or agent prose, and no agent role can read or
+write either table. `NC-20260820-003` does not copy customer prose into
 these exception records. The Company Work item's opaque `source_key` joins a
 `sales_email` item to its authoritative SQLite email action. SQLite stores the
 exact inbound Gmail Message-ID on `pending_sends`; the host resolves and copies
@@ -71,11 +78,16 @@ The host loop runs only when all configuration is valid. Each tick:
    host transaction;
 5. claims a Chicago-calendar-day fingerprint before attempting Slack;
 6. posts at most one new brief for that exact case/version/occurrence set;
-7. resolves and posts one source-bound Chief work packet beneath the brief for
-   every visible exception, with durable `from_group=company-os` routing;
-8. binds the brief timestamp only after every visible packet has a tracked
-   Slack receipt; otherwise it marks delivery uncertain and refuses
-   acknowledgment.
+7. skips a packet only when an earlier successful Chief turn has the same exact
+   work-version/reason fingerprint;
+8. resolves and posts one source-bound Chief work packet beneath the brief for
+   every other visible exception, with durable `from_group=company-os` routing;
+9. binds each packet timestamp to its brief/work fingerprint, then binds the
+   brief only after every posted packet has a tracked receipt; otherwise it
+   marks delivery uncertain and refuses acknowledgment;
+10. on Chief routing, claims exact bound packets before the agent runs, scopes
+    mixed/replayed threads to newly eligible work IDs, records the first turn
+    outcome, and posts one threaded attempt receipt.
 
 A claimed fingerprint is never automatically retried. When Slack returns a
 timestamp but PostgreSQL cannot bind it, the host posts a best-effort warning
@@ -83,7 +95,10 @@ and refuses acknowledgment of that unbound message for the process lifetime.
 After restart it still cannot match a `posted` brief in PostgreSQL, so it has no
 exception acknowledgment authority.
 
-Brief text is bounded to ten visible work items and contains only work ID,
+The summary brief is tagged as Chief's own host echo and does not wake Chief;
+only exact packets are cross-group actionable messages. Replayed packets with
+a completed attempt are cursor-consumed without another agent run. Brief text
+is bounded to ten visible work items and contains only work ID,
 workflow, stage/disposition, age, severity, and named reason codes. It explicitly
 states that acknowledgment performs no workflow action.
 
@@ -186,6 +201,9 @@ Rolling back `NC-20260820-003` restores the prior release behavior and leaves
 the additive SQLite source-message column dormant; no customer or work state
 must be deleted.
 
+Migration 129's rollback similarly refuses once either dispatch table contains
+history. Roll runtime back first and leave populated receipt tables dormant.
+
 ## Acceptance evidence
 
 Before activation require exact Node typecheck/build/tests, the email-critical
@@ -197,7 +215,11 @@ authority fingerprints. Live proof distinguishes:
 - brief delivered and durably bound;
 - named operator reaction acknowledged with threaded receipt;
 - each visible exception packet delivered with tracked cross-group provenance
-  and wakes Chief as actionable work;
+  and wakes Chief as actionable work, while the summary does not;
+- exact packet delivery, router pickup, and bounded-turn success/failure are
+  durably linked and echoed by one threaded non-resolution receipt;
+- replay of a completed packet and a later unchanged fingerprint do not repeat
+  Chief work;
 - an email-backed packet carries its exact bounded source without search, with
   one exact restart-safe read available only when the attachment is truncated;
 - no work transition, resolution, approval, email, job, or queue side effect

@@ -27,6 +27,7 @@ import {
 } from './company-work-source-context.js';
 import { readEnvFile } from './env.js';
 import { logger } from './logger.js';
+import type { NewMessage } from './types.js';
 
 const ACTOR = 'company-work-exception-loop:host';
 const DEFAULT_INTERVAL_MS = 24 * 60 * 60_000;
@@ -41,6 +42,8 @@ const MAX_RENDERED_ITEMS = 10;
 const CHIEF_FOLDER = 'chief';
 const SLACK_UID_PATTERN = /^[UW][A-Z0-9]{6,31}$/;
 const REASON_CODE_PATTERN = /^[a-z0-9][a-z0-9._:-]{0,159}$/;
+const WORK_PACKET_PATTERN =
+  /^\[HANDOFF: company-os→chief\]\n\[COMPANY OS WORK PACKET: work #([1-9][0-9]*)\](?:\n|$)/;
 
 export const COMPANY_WORK_EXCEPTION_LOOP_ENV_KEYS = [
   'COMPANY_WORK_EXCEPTION_BRIEF_ENABLED',
@@ -121,6 +124,42 @@ export interface CompanyWorkExceptionAcknowledgeResult {
   duplicate: boolean;
 }
 
+export interface CompanyWorkExceptionDispatchBinding {
+  briefId: string;
+  workItemId: string;
+  workItemVersion: number;
+  dispatchFingerprint: string;
+  channelJid: string;
+  briefMessageTs: string;
+  packetMessageTs: string;
+  postedAt: string;
+}
+
+export interface CompanyWorkExceptionPacketIdentity {
+  workItemId: string;
+  packetMessageTs: string;
+}
+
+export interface CompanyWorkExceptionAttemptRef {
+  dispatchId: string;
+  workItemId: string;
+  attemptNumber: number;
+}
+
+export interface CompanyWorkExceptionAttemptStart {
+  matchedPackets: number;
+  attempts: CompanyWorkExceptionAttemptRef[];
+  alreadyAttempted: number;
+}
+
+export interface CompanyWorkExceptionPacketAttempt {
+  channelJid: string;
+  threadTs: string;
+  matchedPackets: number;
+  alreadyAttempted: number;
+  attempts: CompanyWorkExceptionAttemptRef[];
+}
+
 export interface CompanyWorkExceptionStore {
   reconcileCases(
     observed: ObservedCompanyWorkExceptionCase[],
@@ -153,6 +192,30 @@ export interface CompanyWorkExceptionStore {
   ): Promise<CompanyWorkExceptionAcknowledgeResult>;
   markAcknowledgmentReceipt(
     briefId: string,
+    status: 'posted' | 'uncertain',
+    receiptTs?: string,
+  ): Promise<void>;
+  bindDispatchPacket(
+    binding: CompanyWorkExceptionDispatchBinding,
+  ): Promise<void>;
+  hasCompletedDispatch(
+    workItemId: string,
+    dispatchFingerprint: string,
+  ): Promise<boolean>;
+  beginDispatchAttempts(
+    channelJid: string,
+    threadTs: string,
+    packets: CompanyWorkExceptionPacketIdentity[],
+    pickedUpAt: string,
+  ): Promise<CompanyWorkExceptionAttemptStart>;
+  finishDispatchAttempts(
+    attempts: CompanyWorkExceptionAttemptRef[],
+    outcome: 'succeeded' | 'failed',
+    finishedAt: string,
+    failureCode?: string,
+  ): Promise<void>;
+  markDispatchAttemptReceipt(
+    attempts: CompanyWorkExceptionAttemptRef[],
     status: 'posted' | 'uncertain',
     receiptTs?: string,
   ): Promise<void>;
@@ -201,6 +264,7 @@ export interface CompanyWorkExceptionLoopRunResult {
   briefId: string | null;
   messageTs: string | null;
   workPacketsPosted: number;
+  workPacketsSuppressed: number;
   errorCode: string | null;
 }
 
@@ -218,6 +282,11 @@ export interface CompanyWorkExceptionLoopStatus {
   consecutiveFailures: number;
   lastErrorCode: string | null;
   lastResult: CompanyWorkExceptionLoopRunResult | null;
+  packetAttemptsStarted: number;
+  packetAttemptsSucceeded: number;
+  packetAttemptsFailed: number;
+  lastPacketAttemptAt: string | null;
+  lastPacketAttemptErrorCode: string | null;
 }
 
 export interface SlackApprovalProvenance {
@@ -250,6 +319,19 @@ interface BriefRow extends QueryResultRow {
   slack_message_ts: string;
   acknowledged_at: string | null;
   ack_receipt_status: CompanyWorkExceptionBriefBinding['acknowledgmentReceiptStatus'];
+}
+
+interface DispatchRow extends QueryResultRow {
+  id: string;
+  brief_id: string;
+  work_item_id: string;
+  work_item_version: number;
+  dispatch_fingerprint: string;
+  slack_channel_jid: string;
+  brief_message_ts: string;
+  packet_message_ts: string;
+  status: 'posted' | 'picked_up' | 'attempted' | 'failed';
+  attempt_count: number;
 }
 
 function hashParts(parts: unknown[]): string {
@@ -461,6 +543,34 @@ async function appendCaseEvent(
       input.eventType,
       input.briefId ?? null,
       input.actorUid ?? null,
+      input.eventKey,
+      input.evidenceSha256,
+      input.occurredAt,
+    ],
+  );
+}
+
+async function appendDispatchEvent(
+  client: PoolClient,
+  input: {
+    dispatchId: string;
+    attemptNumber: number;
+    eventType: 'posted' | 'picked_up' | 'attempt_succeeded' | 'attempt_failed';
+    eventKey: string;
+    evidenceSha256: string;
+    occurredAt: string;
+  },
+): Promise<void> {
+  await client.query(
+    `INSERT INTO business_v2.company_work_exception_dispatch_events
+       (dispatch_id, attempt_number, event_type, event_key,
+        evidence_sha256, occurred_at)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (event_key) DO NOTHING`,
+    [
+      input.dispatchId,
+      input.attemptNumber,
+      input.eventType,
       input.eventKey,
       input.evidenceSha256,
       input.occurredAt,
@@ -838,6 +948,264 @@ export class PostgresCompanyWorkExceptionStore implements CompanyWorkExceptionSt
     );
     if (result.rowCount !== 1) throw new Error('ack_receipt_binding_failed');
   }
+
+  async bindDispatchPacket(
+    binding: CompanyWorkExceptionDispatchBinding,
+  ): Promise<void> {
+    await withAgentContext(ACTOR, async (client) => {
+      const inserted = await client.query<DispatchRow>(
+        `INSERT INTO business_v2.company_work_exception_dispatches
+           (brief_id, work_item_id, work_item_version, dispatch_fingerprint,
+            slack_channel_jid, brief_message_ts, packet_message_ts, posted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (brief_id, work_item_id) DO NOTHING
+         RETURNING id::text, brief_id::text, work_item_id::text,
+                   work_item_version, dispatch_fingerprint,
+                   slack_channel_jid, brief_message_ts, packet_message_ts,
+                   status, attempt_count`,
+        [
+          binding.briefId,
+          binding.workItemId,
+          binding.workItemVersion,
+          binding.dispatchFingerprint,
+          binding.channelJid,
+          binding.briefMessageTs,
+          binding.packetMessageTs,
+          binding.postedAt,
+        ],
+      );
+      let row = inserted.rows[0];
+      if (!row) {
+        const existing = await client.query<DispatchRow>(
+          `SELECT id::text, brief_id::text, work_item_id::text,
+                  work_item_version, dispatch_fingerprint,
+                  slack_channel_jid, brief_message_ts, packet_message_ts,
+                  status, attempt_count
+             FROM business_v2.company_work_exception_dispatches
+            WHERE brief_id = $1 AND work_item_id = $2
+            FOR UPDATE`,
+          [binding.briefId, binding.workItemId],
+        );
+        row = existing.rows[0];
+      }
+      if (
+        !row ||
+        row.brief_id !== binding.briefId ||
+        row.work_item_id !== binding.workItemId ||
+        Number(row.work_item_version) !== binding.workItemVersion ||
+        row.dispatch_fingerprint !== binding.dispatchFingerprint ||
+        row.slack_channel_jid !== binding.channelJid ||
+        row.brief_message_ts !== binding.briefMessageTs ||
+        row.packet_message_ts !== binding.packetMessageTs
+      ) {
+        throw new Error('dispatch_packet_binding_conflict');
+      }
+      await appendDispatchEvent(client, {
+        dispatchId: row.id,
+        attemptNumber: 0,
+        eventType: 'posted',
+        eventKey: `dispatch:${row.id}:posted`,
+        evidenceSha256: hashParts([
+          'dispatch-posted',
+          binding.briefId,
+          binding.workItemId,
+          binding.workItemVersion,
+          binding.dispatchFingerprint,
+          binding.channelJid,
+          binding.briefMessageTs,
+          binding.packetMessageTs,
+        ]),
+        occurredAt: binding.postedAt,
+      });
+    });
+  }
+
+  async hasCompletedDispatch(
+    workItemId: string,
+    dispatchFingerprint: string,
+  ): Promise<boolean> {
+    const result = await withAgentContext(ACTOR, (client) =>
+      client.query(
+        `SELECT 1
+           FROM business_v2.company_work_exception_dispatches
+          WHERE work_item_id = $1 AND dispatch_fingerprint = $2 AND
+                status = 'attempted'
+          LIMIT 1`,
+        [workItemId, dispatchFingerprint],
+      ),
+    );
+    return result.rowCount === 1;
+  }
+
+  async beginDispatchAttempts(
+    channelJid: string,
+    threadTs: string,
+    packets: CompanyWorkExceptionPacketIdentity[],
+    pickedUpAt: string,
+  ): Promise<CompanyWorkExceptionAttemptStart> {
+    const ordered = [...packets].sort((left, right) =>
+      left.packetMessageTs.localeCompare(right.packetMessageTs),
+    );
+    if (
+      ordered.length === 0 ||
+      new Set(ordered.map((packet) => packet.packetMessageTs)).size !==
+        ordered.length ||
+      new Set(ordered.map((packet) => packet.workItemId)).size !==
+        ordered.length
+    ) {
+      throw new Error('invalid_dispatch_attempt_batch');
+    }
+    return withAgentContext(ACTOR, async (client) => {
+      const attempts: CompanyWorkExceptionAttemptRef[] = [];
+      let alreadyAttempted = 0;
+      for (const packet of ordered) {
+        const result = await client.query<DispatchRow>(
+          `SELECT d.id::text, d.brief_id::text, d.work_item_id::text,
+                  d.work_item_version, d.dispatch_fingerprint,
+                  d.slack_channel_jid,
+                  d.brief_message_ts, d.packet_message_ts, d.status,
+                  d.attempt_count
+             FROM business_v2.company_work_exception_dispatches d
+             JOIN business_v2.company_work_exception_briefs b
+               ON b.id = d.brief_id
+            WHERE d.slack_channel_jid = $1 AND d.brief_message_ts = $2 AND
+                  d.packet_message_ts = $3 AND d.work_item_id = $4 AND
+                  b.status = 'posted' AND b.slack_channel_jid = $1 AND
+                  b.slack_message_ts = $2
+            FOR UPDATE OF d`,
+          [channelJid, threadTs, packet.packetMessageTs, packet.workItemId],
+        );
+        const row = result.rows[0];
+        if (!row) throw new Error('dispatch_packet_not_bound');
+        if (row.status === 'attempted') {
+          alreadyAttempted++;
+          continue;
+        }
+        const attemptNumber = Number(row.attempt_count) + 1;
+        const updated = await client.query(
+          `UPDATE business_v2.company_work_exception_dispatches
+              SET status = 'picked_up', attempt_count = $2,
+                  last_picked_up_at = $3, last_attempt_finished_at = NULL,
+                  failure_code = NULL, attempt_receipt_status = 'none',
+                  attempt_receipt_ts = NULL
+            WHERE id = $1 AND attempt_count = $4`,
+          [row.id, attemptNumber, pickedUpAt, Number(row.attempt_count)],
+        );
+        if (updated.rowCount !== 1) {
+          throw new Error('dispatch_pickup_version_conflict');
+        }
+        await appendDispatchEvent(client, {
+          dispatchId: row.id,
+          attemptNumber,
+          eventType: 'picked_up',
+          eventKey: `dispatch:${row.id}:attempt:${attemptNumber}:picked_up`,
+          evidenceSha256: hashParts([
+            'dispatch-picked-up',
+            row.id,
+            attemptNumber,
+            channelJid,
+            threadTs,
+            packet.packetMessageTs,
+            packet.workItemId,
+          ]),
+          occurredAt: pickedUpAt,
+        });
+        attempts.push({
+          dispatchId: row.id,
+          workItemId: row.work_item_id,
+          attemptNumber,
+        });
+      }
+      return {
+        matchedPackets: ordered.length,
+        attempts,
+        alreadyAttempted,
+      };
+    });
+  }
+
+  async finishDispatchAttempts(
+    attempts: CompanyWorkExceptionAttemptRef[],
+    outcome: 'succeeded' | 'failed',
+    finishedAt: string,
+    failureCode?: string,
+  ): Promise<void> {
+    if (
+      attempts.length === 0 ||
+      (outcome === 'failed') !== Boolean(failureCode) ||
+      (failureCode !== undefined && !REASON_CODE_PATTERN.test(failureCode))
+    ) {
+      throw new Error('invalid_dispatch_attempt_outcome');
+    }
+    await withAgentContext(ACTOR, async (client) => {
+      for (const attempt of attempts) {
+        const status = outcome === 'succeeded' ? 'attempted' : 'failed';
+        const result = await client.query(
+          `UPDATE business_v2.company_work_exception_dispatches
+              SET status = $3, last_attempt_finished_at = $4,
+                  failure_code = $5, attempt_receipt_status = 'pending',
+                  attempt_receipt_ts = NULL
+            WHERE id = $1 AND attempt_count = $2 AND status = 'picked_up'`,
+          [
+            attempt.dispatchId,
+            attempt.attemptNumber,
+            status,
+            finishedAt,
+            failureCode ?? null,
+          ],
+        );
+        if (result.rowCount !== 1) {
+          throw new Error('dispatch_attempt_finish_conflict');
+        }
+        const eventType =
+          outcome === 'succeeded' ? 'attempt_succeeded' : 'attempt_failed';
+        await appendDispatchEvent(client, {
+          dispatchId: attempt.dispatchId,
+          attemptNumber: attempt.attemptNumber,
+          eventType,
+          eventKey: `dispatch:${attempt.dispatchId}:attempt:${attempt.attemptNumber}:${eventType}`,
+          evidenceSha256: hashParts([
+            eventType,
+            attempt.dispatchId,
+            attempt.workItemId,
+            attempt.attemptNumber,
+            failureCode ?? null,
+          ]),
+          occurredAt: finishedAt,
+        });
+      }
+    });
+  }
+
+  async markDispatchAttemptReceipt(
+    attempts: CompanyWorkExceptionAttemptRef[],
+    status: 'posted' | 'uncertain',
+    receiptTs?: string,
+  ): Promise<void> {
+    if ((status === 'posted') !== Boolean(receiptTs)) {
+      throw new Error('dispatch_attempt_receipt_identity_mismatch');
+    }
+    await withAgentContext(ACTOR, async (client) => {
+      for (const attempt of attempts) {
+        const result = await client.query(
+          `UPDATE business_v2.company_work_exception_dispatches
+              SET attempt_receipt_status = $3, attempt_receipt_ts = $4
+            WHERE id = $1 AND attempt_count = $2 AND
+                  status IN ('attempted', 'failed') AND
+                  attempt_receipt_status = 'pending'`,
+          [
+            attempt.dispatchId,
+            attempt.attemptNumber,
+            status,
+            receiptTs ?? null,
+          ],
+        );
+        if (result.rowCount !== 1) {
+          throw new Error('dispatch_attempt_receipt_binding_failed');
+        }
+      }
+    });
+  }
 }
 
 function chicagoWindowKey(now: Date): string {
@@ -934,6 +1302,70 @@ export function renderCompanyWorkDispatchPacket(
   return lines.join('\n');
 }
 
+export function companyWorkExceptionDispatchFingerprint(
+  item: CompanyWorkExceptionItem,
+): string {
+  return hashParts([
+    'company-work-exception-dispatch:v1',
+    item.workItemId,
+    item.workflowType,
+    item.stage,
+    item.disposition,
+    item.version,
+    item.reasons
+      .map((reason) => [reason.kind, reason.code])
+      .sort((left, right) =>
+        `${left[0]}:${left[1]}`.localeCompare(`${right[0]}:${right[1]}`),
+      ),
+  ]);
+}
+
+export function extractCompanyWorkPacketIdentities(
+  messages: NewMessage[],
+): CompanyWorkExceptionPacketIdentity[] {
+  const packets: CompanyWorkExceptionPacketIdentity[] = [];
+  for (const message of messages) {
+    if (message.from_group !== 'company-os') continue;
+    const mentionsPacket = message.content.includes('[COMPANY OS WORK PACKET:');
+    const match = WORK_PACKET_PATTERN.exec(message.content);
+    if (!match) {
+      if (mentionsPacket) throw new Error('malformed_company_work_packet');
+      continue;
+    }
+    if (!/^[0-9]{10,}\.[0-9]{6}$/.test(message.id)) {
+      throw new Error('invalid_company_work_packet_ts');
+    }
+    packets.push({ workItemId: match[1], packetMessageTs: message.id });
+  }
+  if (
+    new Set(packets.map((packet) => packet.workItemId)).size !==
+      packets.length ||
+    new Set(packets.map((packet) => packet.packetMessageTs)).size !==
+      packets.length
+  ) {
+    throw new Error('duplicate_company_work_packet');
+  }
+  return packets;
+}
+
+export function renderCompanyWorkAttemptReceipt(
+  attempts: CompanyWorkExceptionAttemptRef[],
+  outcome: 'succeeded' | 'failed',
+): string {
+  const workIds = [...new Set(attempts.map((attempt) => attempt.workItemId))]
+    .sort((left, right) => Number(left) - Number(right))
+    .map((id) => `#${id}`)
+    .join(', ');
+  const result =
+    outcome === 'succeeded'
+      ? 'Chief pickup and one bounded investigation turn completed'
+      : 'Chief pickup was recorded, but the bounded investigation turn failed';
+  return (
+    `[COMPANY OS] ${result} for work ${workIds}. ` +
+    'This is an attempt receipt, not resolution: it did not approve, retry, send, edit facts, or change source work. Closure still requires a later complete source receipt.'
+  );
+}
+
 function baseRunResult(
   outcome: CompanyWorkExceptionLoopRunResult['outcome'],
   report?: CompanyWorkExceptionReport,
@@ -949,6 +1381,7 @@ function baseRunResult(
     briefId: null,
     messageTs: null,
     workPacketsPosted: 0,
+    workPacketsSuppressed: 0,
     errorCode: null,
   };
 }
@@ -1046,7 +1479,42 @@ export async function runCompanyWorkExceptionLoop(
     };
   }
   let workPacketsPosted = 0;
+  let workPacketsSuppressed = 0;
   for (const item of reportResult.exceptions.slice(0, MAX_RENDERED_ITEMS)) {
+    const dispatchFingerprint = companyWorkExceptionDispatchFingerprint(item);
+    let alreadyCompleted: boolean;
+    try {
+      alreadyCompleted = await deps.store.hasCompletedDispatch(
+        item.workItemId,
+        dispatchFingerprint,
+      );
+    } catch {
+      await deps.store.markBriefUncertain(
+        claim.id,
+        targetJid,
+        'work_packet_eligibility_failed',
+      );
+      await deps
+        .postThread(
+          targetJid,
+          messageTs,
+          '[COMPANY OS] Work-packet eligibility could not be verified. Do not acknowledge or act from this brief; no workflow state changed.',
+        )
+        .catch(() => undefined);
+      return {
+        ...baseRunResult('delivery_uncertain', reportResult),
+        ...shared,
+        briefId: claim.id,
+        messageTs,
+        workPacketsPosted,
+        workPacketsSuppressed,
+        errorCode: 'work_packet_eligibility_failed',
+      };
+    }
+    if (alreadyCompleted) {
+      workPacketsSuppressed++;
+      continue;
+    }
     let context: CompanyWorkSourceContext;
     try {
       context = await deps.resolveSourceContext(item);
@@ -1086,7 +1554,42 @@ export async function runCompanyWorkExceptionLoop(
         briefId: claim.id,
         messageTs,
         workPacketsPosted,
+        workPacketsSuppressed,
         errorCode: 'work_packet_delivery_uncertain',
+      };
+    }
+    try {
+      await deps.store.bindDispatchPacket({
+        briefId: claim.id,
+        workItemId: item.workItemId,
+        workItemVersion: item.version,
+        dispatchFingerprint,
+        channelJid: targetJid,
+        briefMessageTs: messageTs,
+        packetMessageTs: packetTs,
+        postedAt: now.toISOString(),
+      });
+    } catch {
+      await deps.store.markBriefUncertain(
+        claim.id,
+        targetJid,
+        'work_packet_binding_failed',
+      );
+      await deps
+        .postThread(
+          targetJid,
+          messageTs,
+          '[COMPANY OS] A delivered work packet was not durably bound. Do not acknowledge or act from this brief; no workflow state changed.',
+        )
+        .catch(() => undefined);
+      return {
+        ...baseRunResult('delivery_uncertain', reportResult),
+        ...shared,
+        briefId: claim.id,
+        messageTs,
+        workPacketsPosted,
+        workPacketsSuppressed,
+        errorCode: 'work_packet_binding_failed',
       };
     }
     workPacketsPosted++;
@@ -1113,6 +1616,7 @@ export async function runCompanyWorkExceptionLoop(
       messageTs,
       errorCode: 'brief_post_binding_failed',
       workPacketsPosted,
+      workPacketsSuppressed,
     };
   }
   return {
@@ -1121,6 +1625,7 @@ export async function runCompanyWorkExceptionLoop(
     briefId: claim.id,
     messageTs,
     workPacketsPosted,
+    workPacketsSuppressed,
   };
 }
 
@@ -1154,6 +1659,11 @@ export class CompanyWorkExceptionLoopService {
       consecutiveFailures: 0,
       lastErrorCode: config.configurationError,
       lastResult: null,
+      packetAttemptsStarted: 0,
+      packetAttemptsSucceeded: 0,
+      packetAttemptsFailed: 0,
+      lastPacketAttemptAt: null,
+      lastPacketAttemptErrorCode: null,
     };
   }
 
@@ -1234,6 +1744,83 @@ export class CompanyWorkExceptionLoopService {
     if (this.timer) clearInterval(this.timer);
     this.startupTimer = null;
     this.timer = null;
+  }
+
+  async beginPacketAttempt(
+    channelJid: string,
+    threadTs: string,
+    messages: NewMessage[],
+    now = new Date(),
+  ): Promise<CompanyWorkExceptionPacketAttempt | null> {
+    if (!this.config.active) return null;
+    const packets = extractCompanyWorkPacketIdentities(messages);
+    if (packets.length === 0) return null;
+    const started = await this.deps.store.beginDispatchAttempts(
+      channelJid,
+      threadTs,
+      packets,
+      now.toISOString(),
+    );
+    if (started.matchedPackets !== packets.length) {
+      throw new Error('dispatch_packet_match_count_mismatch');
+    }
+    if (started.attempts.length > 0) {
+      this.status.packetAttemptsStarted += started.attempts.length;
+      this.status.lastPacketAttemptAt = now.toISOString();
+      this.status.lastPacketAttemptErrorCode = null;
+    }
+    return {
+      channelJid,
+      threadTs,
+      matchedPackets: started.matchedPackets,
+      alreadyAttempted: started.alreadyAttempted,
+      attempts: started.attempts,
+    };
+  }
+
+  async finishPacketAttempt(
+    attempt: CompanyWorkExceptionPacketAttempt,
+    outcome: 'succeeded' | 'failed',
+    now = new Date(),
+  ): Promise<void> {
+    const failureCode =
+      outcome === 'failed' ? 'chief_agent_turn_failed' : undefined;
+    await this.deps.store.finishDispatchAttempts(
+      attempt.attempts,
+      outcome,
+      now.toISOString(),
+      failureCode,
+    );
+    if (outcome === 'succeeded') {
+      this.status.packetAttemptsSucceeded += attempt.attempts.length;
+      this.status.lastPacketAttemptErrorCode = null;
+    } else {
+      this.status.packetAttemptsFailed += attempt.attempts.length;
+      this.status.lastPacketAttemptErrorCode = failureCode!;
+    }
+    this.status.lastPacketAttemptAt = now.toISOString();
+    let receiptTs: string | undefined;
+    try {
+      receiptTs = await this.deps.postThread(
+        attempt.channelJid,
+        attempt.threadTs,
+        renderCompanyWorkAttemptReceipt(attempt.attempts, outcome),
+      );
+    } catch {
+      receiptTs = undefined;
+    }
+    await this.deps.store
+      .markDispatchAttemptReceipt(
+        attempt.attempts,
+        receiptTs ? 'posted' : 'uncertain',
+        receiptTs,
+      )
+      .catch((error) => {
+        logger.error(
+          { errorName: error instanceof Error ? error.name : 'unknown' },
+          'company-work-exception-loop: attempt receipt binding failed',
+        );
+      });
   }
 
   async handleApproval(

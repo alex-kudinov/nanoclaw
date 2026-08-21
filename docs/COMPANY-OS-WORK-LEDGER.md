@@ -530,6 +530,17 @@ the original config/restart canary and NC-20260820-003 records the later
 source-bound dispatch deployment. Production state is authoritative only when
 the active-work/changelog evidence says those gates passed.
 
+`NC-20260821-001` adds migration 129 and a host-owned dispatch lifecycle around
+those packets. The host binds the exact packet timestamp before Chief pickup,
+records router pickup before agent execution, records the first bounded turn as
+attempted or failed, and posts a threaded non-resolution receipt. A successful
+attempt suppresses later dispatch of the same work-version/reason fingerprint;
+the daily operator brief may still show the unresolved source case. Replayed
+packet messages are consumed without another Chief run, and a mixed/new batch
+explicitly scopes Chief to newly eligible work IDs. The records contain no
+customer or agent prose and grant no agent access, source resolution, or action
+authority. Repository presence is not deployment evidence.
+
 ## 12. Rollback
 
 Before migration: revert the branch; there is no data or service recovery.
@@ -545,3 +556,7 @@ action authority and Gmail receipt remain independent evidence.
 After the exception loop records any case/brief/event, disarm its configuration
 and leave migration-120 history dormant. Its guarded rollback refuses to
 destroy recorded attention or delivery evidence.
+
+After migration 129 records any dispatch/event, roll back runtime first and
+leave the additive receipt tables dormant. Its guarded rollback refuses to
+erase packet or attempt evidence.

@@ -244,6 +244,7 @@ import { CompanyWorkShadowService } from './company-work-shadow.js';
 import {
   CompanyWorkExceptionLoopService,
   makeCompanyWorkExceptionLoopDeps,
+  type CompanyWorkExceptionPacketAttempt,
 } from './company-work-exception-loop.js';
 import {
   CompanyWorkOutcomeReviewService,
@@ -258,6 +259,8 @@ export { escapeXml, formatMessages } from './router.js';
 let lastTimestamp = '';
 let sessions: Record<string, string> = {};
 let registeredGroups: Record<string, RegisteredGroup> = {};
+let companyWorkExceptionLoopForMessages: CompanyWorkExceptionLoopService | null =
+  null;
 
 // When a threaded reply spawns a fresh container, seed its <messages> with up to
 // this many of the thread's most recent posts (root + replies) so the agent sees
@@ -785,7 +788,56 @@ async function processGroupMessages(
   } else {
     messagesToFormat = excludeOwnGroupMessages(missedMessages, group.folder);
   }
+  let companyWorkPacketAttempt: CompanyWorkExceptionPacketAttempt | null = null;
+  if (
+    group.folder === 'chief' &&
+    threadTs &&
+    companyWorkExceptionLoopForMessages
+  ) {
+    try {
+      companyWorkPacketAttempt =
+        await companyWorkExceptionLoopForMessages.beginPacketAttempt(
+          chatJid,
+          threadTs,
+          missedMessages,
+        );
+    } catch (err) {
+      logger.error(
+        { err, group: group.folder, threadTs },
+        'Company Work packet pickup failed closed before agent dispatch',
+      );
+      return false;
+    }
+  }
+  if (
+    companyWorkPacketAttempt &&
+    companyWorkPacketAttempt.attempts.length === 0 &&
+    companyWorkPacketAttempt.matchedPackets === missedMessages.length
+  ) {
+    lastAgentTimestamp[compositeKey] =
+      missedMessages[missedMessages.length - 1].timestamp;
+    saveState();
+    logger.info(
+      {
+        group: group.folder,
+        threadTs,
+        packetCount: companyWorkPacketAttempt.matchedPackets,
+        alreadyAttempted: companyWorkPacketAttempt.alreadyAttempted,
+      },
+      'Company Work packet replay skipped after durable completed attempt',
+    );
+    return true;
+  }
   let prompt = formatMessages(messagesToFormat);
+  if (companyWorkPacketAttempt?.attempts.length) {
+    const eligibleWorkIds = companyWorkPacketAttempt.attempts
+      .map((attempt) => `#${attempt.workItemId}`)
+      .join(', ');
+    prompt +=
+      `\n\n[HOST COMPANY WORK ATTEMPT SCOPE]\n` +
+      `Investigate only these newly eligible work packets in this turn: ${eligibleWorkIds}. ` +
+      'Other packets visible in the thread are context only and must not be re-attempted.';
+  }
   let graderRunId: string | undefined;
   if (group.folder === GRADER_GROUP_FOLDER && threadTs) {
     graderRunId = crypto.randomUUID();
@@ -852,6 +904,7 @@ async function processGroupMessages(
 
   let hadError = false;
   let outputSentToUser = false;
+  let companyWorkPacketAttemptFinished = false;
   let graderAgentResultObserved = false;
   let graderFinalTextObserved = false;
   const graderRunStartedAt =
@@ -937,6 +990,26 @@ async function processGroupMessages(
       if (result.status === 'error') {
         hadError = true;
       }
+      if (
+        companyWorkPacketAttempt &&
+        !companyWorkPacketAttemptFinished &&
+        (result.result !== null || result.status === 'error')
+      ) {
+        try {
+          await companyWorkExceptionLoopForMessages?.finishPacketAttempt(
+            companyWorkPacketAttempt,
+            result.status === 'error' ? 'failed' : 'succeeded',
+          );
+          companyWorkPacketAttemptFinished = true;
+        } catch (err) {
+          hadError = true;
+          companyWorkPacketAttemptFinished = true;
+          logger.error(
+            { err, group: group.folder, threadTs },
+            'Company Work packet attempt could not be durably finished',
+          );
+        }
+      }
     },
     threadTs,
     group.folder === 'mailman'
@@ -953,6 +1026,21 @@ async function processGroupMessages(
       : undefined,
     graderRunId,
   );
+
+  if (companyWorkPacketAttempt && !companyWorkPacketAttemptFinished) {
+    try {
+      await companyWorkExceptionLoopForMessages?.finishPacketAttempt(
+        companyWorkPacketAttempt,
+        output === 'error' || hadError ? 'failed' : 'succeeded',
+      );
+    } catch (err) {
+      hadError = true;
+      logger.error(
+        { err, group: group.folder, threadTs },
+        'Company Work packet attempt could not be durably finished',
+      );
+    }
+  }
 
   if (group.folder === GRADER_GROUP_FOLDER && threadTs) {
     const missingOutputReason: GraderMissingOutputReason =
@@ -1887,7 +1975,9 @@ async function main(): Promise<void> {
           (channel): channel is SlackChannel => channel instanceof SlackChannel,
         );
         if (!slack) return undefined;
-        return slack.postTracked(jid, text, undefined, 'company-os');
+        // The compact brief is for the named operator. Only its source-bound
+        // work packets are cross-group dispatches that should wake Chief.
+        return slack.postTracked(jid, text, undefined, 'chief');
       },
       postWorkPacket: async (jid, threadTs, text) => {
         const slack = channels.find(
@@ -1905,6 +1995,7 @@ async function main(): Promise<void> {
       },
     }),
   );
+  companyWorkExceptionLoopForMessages = companyWorkExceptionLoop;
   const companyWorkOutcomeReview = new CompanyWorkOutcomeReviewService(
     resolveCompanyWorkOutcomeReviewConfig(),
     createCompanyWorkOutcomeReviewDeps(
@@ -2171,6 +2262,7 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'Shutdown signal received');
     companyWorkShadow.stop();
     companyWorkExceptionLoop.stop();
+    companyWorkExceptionLoopForMessages = null;
     companyWorkOutcomeReview.stop();
     await queue.shutdown(10000);
     // Message containers stay running (detached) for the next daemon to adopt.
