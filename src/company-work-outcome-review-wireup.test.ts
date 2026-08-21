@@ -19,6 +19,12 @@ describe('Company Work outcome-review daemon wiring', () => {
     );
     expect(index).toContain('companyWorkOutcomeReview.start()');
     expect(index).toContain('companyWorkOutcomeReview.stop()');
+    expect(index).toContain(
+      "return slack?.postTracked(jid, text, undefined, 'chief');",
+    );
+    expect(index).toContain(
+      "return slack?.postTracked(jid, text, threadTs, 'chief');",
+    );
     expect(envExample).toContain('COMPANY_WORK_OUTCOME_REVIEW_ENABLED=0');
     expect(envExample).toContain('COMPANY_WORK_OUTCOME_REVIEW_OPERATOR_UIDS=');
   });

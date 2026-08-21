@@ -1918,13 +1918,18 @@ async function main(): Promise<void> {
         const slack = channels.find(
           (channel): channel is SlackChannel => channel instanceof SlackChannel,
         );
-        return slack?.postTracked(jid, text, undefined, 'company-os');
+        // This is an operator-only classification packet, not a Company OS
+        // handoff to the Chief agent. Tag it as the target group's own host
+        // echo so the generic cross-group wake gate advances past it without
+        // spawning a container. Human reactions still bind to the exact ts.
+        return slack?.postTracked(jid, text, undefined, 'chief');
       },
       async (jid, threadTs, text) => {
         const slack = channels.find(
           (channel): channel is SlackChannel => channel instanceof SlackChannel,
         );
-        return slack?.postTracked(jid, text, threadTs, 'company-os');
+        // Reaction acknowledgments belong to the same operator-only surface.
+        return slack?.postTracked(jid, text, threadTs, 'chief');
       },
     ),
   );

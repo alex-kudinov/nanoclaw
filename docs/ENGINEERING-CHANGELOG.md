@@ -30,6 +30,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   requires exact host/release confirmation for apply, atomically backs up and
   writes the environment, and restores the exact prior bytes. The release
   inventory explicitly includes the helper.
+- Live correction: the first exact packet exposed that `from_group=company-os`
+  is intentionally a cross-group handoff provenance and therefore woke Chief's
+  generic dispatcher. Chief declined classification but emitted one extra
+  message and updated one internal `open_items` memory entry. Outcome-review
+  packet and reaction-ack posts are now tagged as Chief's own host echoes, so
+  humans still see/react to the exact Slack message while the established own-
+  group echo gate suppresses agent pickup. Exception briefs/work packets retain
+  their actionable `company-os` provenance.
 - Acceptance: copied-data candidate/evidence rehearsal; exact live release and
   empty-ledger preflight; zero-work drain and owner-only backups; one config-only
   restart; one posted packet with claimed/posted events; zero decision/quality
@@ -50,6 +58,15 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   release `6f40b1da`. Copied-live SQLite plus read-only production PostgreSQL
   found 13 candidates, reconstructed 13, and rendered all within one Slack
   message (maximum 2,937 characters), with zero claims, posts, or Gmail calls.
+- First activation evidence: owner-only backup
+  `NC-20260820-009-20260821T031530Z` passed SQLite quick-check and
+  `pg_restore --list`; exact release `963317a9` posted one 2,482-character
+  packet with one claimed and one posted event. Outcome review reported one
+  successful run/no error; review decision fields and quality receipts stayed
+  empty, and SQLite email state remained exactly 88 actions/435 events/zero
+  active with an unchanged SHA-256 fingerprint. The generic Chief pickup above
+  was the sole unexpected side effect and is the reason this task remains in
+  progress pending corrected-release deployment and reaction proof.
 
 ### NC-20260820-008 — Add exact operator-review packets for outcome quality
 
