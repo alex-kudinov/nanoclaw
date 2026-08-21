@@ -119,6 +119,27 @@ describe('Company Work exact source context', () => {
     );
   });
 
+  it('supports a read-only full-evidence lookup without repairing SQLite', () => {
+    storeAction();
+    storeSource();
+
+    expect(
+      resolveCompanyWorkSourceContext(item(), {
+        bindMissingSourceMessage: false,
+        maxSourceChars: 12_000,
+      }),
+    ).toMatchObject({
+      status: 'attached',
+      code: 'exact_source_attached',
+      gmailMessageId: 'gmail-message-1',
+      bodyComplete: true,
+      sourceText: expect.stringContaining('First half\nSecond half'),
+    });
+    expect(
+      getPendingSendByActionId('action-1')?.sourceGmailMessageId,
+    ).toBeUndefined();
+  });
+
   it('fails closed when the durable action and routed root disagree', () => {
     storeAction('gmail-message-a');
     storeSource('gmail-message-b');

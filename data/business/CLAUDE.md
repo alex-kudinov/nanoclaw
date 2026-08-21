@@ -105,6 +105,18 @@ cohort. Release or command presence is not receipt evidence; the live table
 remains empty, and active-work/changelog state remains authoritative before
 relying on an assessment.
 
+Migration 127 is the default-off NC-20260820-008 outcome-review packet ledger.
+It stores only exact work/event bindings, hashes, bounded state, hashed operator
+identity, and Slack delivery/decision receipts; request and response prose stay
+transient in the existing private Slack/SQLite surfaces. The host reviewer may
+assemble one bounded packet only after exact SQLite action/draft, routed source,
+Gmail delivery, and outcome receipts agree. Only a configured Slack UID's exact
+packet reaction can invoke migration 126's append-only assessment producer.
+There is no agent grant, Gmail API/search/read, default-clean inference, bulk
+mode, customer message, remediation, or work mutation. Repository/schema/code
+presence is dark capacity, not authorization to post a packet or classify an
+outcome; follow NC-20260820-008's active-work/changelog state for live status.
+
 ## Connection
 
 ```bash

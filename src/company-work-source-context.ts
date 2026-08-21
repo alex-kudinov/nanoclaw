@@ -18,7 +18,21 @@ import { isInboundSalesHandoff } from './lead-thread-key.js';
 import type { CompanyWorkExceptionItem } from './company-work-report.js';
 
 const MAX_SOURCE_CHARS = 2_600;
+const MAX_REVIEW_SOURCE_CHARS = 12_000;
 const MAX_SOURCE_THREAD_MESSAGES = 100;
+
+export interface CompanyWorkSourceReference {
+  workflowType: CompanyWorkExceptionItem['workflowType'];
+  sourceSystem: CompanyWorkExceptionItem['sourceSystem'];
+  sourceKey: string;
+}
+
+export interface CompanyWorkSourceContextOptions {
+  /** Preserve the legacy exception-loop repair unless a read-only caller opts out. */
+  bindMissingSourceMessage?: boolean;
+  /** Larger bounded copies are reserved for exact human outcome review. */
+  maxSourceChars?: number;
+}
 
 export interface CompanyWorkSourceContext {
   status: 'attached' | 'unavailable' | 'not_applicable';
@@ -70,8 +84,17 @@ function exactMailmanSourceText(
 }
 
 export function resolveCompanyWorkSourceContext(
-  item: CompanyWorkExceptionItem,
+  item: CompanyWorkSourceReference,
+  options: CompanyWorkSourceContextOptions = {},
 ): CompanyWorkSourceContext {
+  const bindMissingSourceMessage = options.bindMissingSourceMessage ?? true;
+  const maxSourceChars = Math.max(
+    1,
+    Math.min(
+      options.maxSourceChars ?? MAX_SOURCE_CHARS,
+      MAX_REVIEW_SOURCE_CHARS,
+    ),
+  );
   if (item.workflowType !== 'sales_email') {
     return {
       status: 'not_applicable',
@@ -153,6 +176,7 @@ export function resolveCompanyWorkSourceContext(
   if (
     headerMessageId &&
     !action.sourceGmailMessageId &&
+    bindMissingSourceMessage &&
     !bindEmailActionSourceMessage(item.sourceKey, headerMessageId)
   ) {
     return {
@@ -163,7 +187,7 @@ export function resolveCompanyWorkSourceContext(
   }
 
   const gmailThreadId = action.gmailThreadId ?? headerThreadId;
-  const bodyComplete = fullSource.length <= MAX_SOURCE_CHARS;
+  const bodyComplete = fullSource.length <= maxSourceChars;
   return {
     status: 'attached',
     code: gmailMessageId
@@ -173,7 +197,7 @@ export function resolveCompanyWorkSourceContext(
     ...(gmailThreadId ? { gmailThreadId } : {}),
     sourceText: bodyComplete
       ? fullSource
-      : `${fullSource.slice(0, MAX_SOURCE_CHARS)}\n[truncated]`,
+      : `${fullSource.slice(0, maxSourceChars)}\n[truncated]`,
     bodyComplete,
   };
 }

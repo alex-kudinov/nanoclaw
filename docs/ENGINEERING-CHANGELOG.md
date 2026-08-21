@@ -12,7 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: in_progress; task claimed and exact evidence/authority boundary mapped
+- State: in_progress; implementation and focused/disposable-database validation
+  pass; full release and dark production deployment remain
 - Commit/PR: isolated branch `codex/nc-20260820-008-outcome-review` from
   deployed-lineage documentation handoff `ee71ffe6`; no PR
 - Change class: C3 — default-off internal Slack review packet plus C2
@@ -23,18 +24,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   approved response, verify delivery/outcome receipts, and assemble hashes and
   timestamps by hand. That is error-prone friction rather than a usable review
   loop.
-- Intended implementation: migration 127 provides a content-free, admin-only
-  packet delivery/decision ledger. A default-off host service will assemble one
-  exact packet from existing PostgreSQL work facts and SQLite action/message
-  authority without Gmail access. Only a configured operator's exact reaction
-  on a durably bound packet may invoke NC-007's plan/apply producer; UID and
-  evidence are stored only as hashes.
+- Implementation: migration 127 provides a content-free, admin-only packet
+  delivery/decision ledger with immutable posted/decision bindings and an
+  append-only lifecycle. The default-off host service selects at most one
+  eligible outcome per run and requires exact agreement across the PostgreSQL
+  work events/receipts, SQLite action/approval card, routed Mailman source,
+  Gmail confirmation event, and exact outcome receipt. Source hydration is
+  explicitly read-only. Identity headers are removed, email literals are
+  redacted, and a packet that cannot fit one complete Slack message is refused
+  instead of truncated. Only a configured UID's exact bound reaction may reuse
+  NC-007's plan/apply producer; operator identity and evidence are hashed.
+- Reaction boundary: host reaction listeners run before generic check-mark
+  approval. The exact packet must be durably found before a reaction is
+  claimed; after that binding, storage/assessment errors remain claimed and
+  fail closed rather than waking Chief as an agent approval. ✅/🐛/↩️/🚨 map
+  only to the four bounded quality values. Decision receipt posting is tracked
+  separately from the assessment receipt.
 - Safety boundary: no model/agent classification, typed approval, default
   clean, absence-as-evidence, Gmail search/read, list/bulk post, historical
   backfill, customer message, remediation, work mutation, or external action.
   Schema/code deployment is not packet-post or assessment authority.
-- Verification/deployment so far: not started. Production remains exact release
-  `265622bd` with zero review packets and zero quality receipts.
+- Verification/deployment so far: pinned Node 22.23.2 typecheck and 133 focused
+  tests pass; the 721-test email-critical suite and independent 43-test runner
+  suite pass. The full root suite is 2,841 pass / one known CNPC contract
+  failure / six skipped; both failing CNPC inputs have byte-identical blobs to
+  base `ee71ffe6` and are outside this change. Formatting, build, diff check,
+  capability matrix, and documentation continuity pass. Disposable PostgreSQL
+  16 applies migrations 1-14/118/126/127 and
+  proves one candidate, claim, exact replay no-op, Slack binding, quality FK,
+  decision, decision receipt, four lifecycle events, immutable decision state,
+  and populated rollback refusal. Full root/release checks and production dark
+  deployment remain. Production is still exact release `265622bd` with zero
+  review packets and zero quality receipts.
 - Rollback: before production data, revert source and use the guarded empty-only
   migration rollback. After any packet/decision exists, retain history and
   deactivate the service; never delete review or assessment evidence to roll

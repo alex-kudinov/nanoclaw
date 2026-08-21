@@ -257,6 +257,60 @@ describe('SlackChannel', () => {
   // --- Message handling ---
 
   describe('message handling', () => {
+    it('lets an exact host packet claim a non-approval reaction with provenance', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      const listener = vi.fn(async () => true);
+      channel.registerReactionListener(listener);
+
+      await triggerAllEvents('reaction_added', {
+        reaction: 'bug',
+        user: 'U_OPERATOR_7',
+        item_user: 'U_BOT_123',
+        event_ts: '1800000000.000002',
+        item: {
+          type: 'message',
+          channel: 'C0123456789',
+          ts: '1800000000.000001',
+        },
+      });
+
+      expect(listener).toHaveBeenCalledWith('1800000000.000001', {
+        jid: 'slack:C0123456789',
+        reactorUid: 'U_OPERATOR_7',
+        reaction: 'bug',
+        occurredAt: '2027-01-15T08:00:00.000Z',
+      });
+      expect(opts.onMessage).not.toHaveBeenCalled();
+    });
+
+    it('lets an exact host packet claim a check before generic approval', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      const reaction = vi.fn(async () => true);
+      const approval = vi.fn(async () => true);
+      channel.registerReactionListener(reaction);
+      channel.registerApprovalListener(approval);
+
+      await triggerAllEvents('reaction_added', {
+        reaction: 'white_check_mark',
+        user: 'U_OPERATOR_7',
+        item_user: 'U_BOT_123',
+        event_ts: '1800000000.000002',
+        item: {
+          type: 'message',
+          channel: 'C0123456789',
+          ts: '1800000000.000001',
+        },
+      });
+
+      expect(reaction).toHaveBeenCalledOnce();
+      expect(approval).not.toHaveBeenCalled();
+      expect(opts.onMessage).not.toHaveBeenCalled();
+    });
+
     it('passes exact Slack UID and reaction provenance to approval listeners', async () => {
       const opts = createTestOpts();
       const channel = new SlackChannel(opts);

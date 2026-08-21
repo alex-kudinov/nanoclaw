@@ -198,6 +198,14 @@ export interface SlackApprovalProvenance {
   threadTs?: string;
 }
 
+/** Exact host-owned reaction provenance, before any agent approval routing. */
+export interface SlackReactionProvenance {
+  jid: string;
+  reactorUid: string;
+  reaction: string;
+  occurredAt: string;
+}
+
 export class SlackChannel implements Channel {
   name = 'slack';
 
@@ -243,6 +251,12 @@ export class SlackChannel implements Channel {
       reactor: string,
       provenance: SlackApprovalProvenance,
     ) => Promise<boolean>
+  > = [];
+
+  // Host-owned packet reactions run before generic check-mark approval. A
+  // listener must prove the exact persisted Slack binding before claiming one.
+  private reactionListeners: Array<
+    (ts: string, provenance: SlackReactionProvenance) => Promise<boolean>
   > = [];
 
   // Host-side rejection listeners. A 👎 on a Mr Gru message is offered to each;
@@ -447,21 +461,44 @@ export class SlackChannel implements Channel {
       });
     });
 
-    // Check-mark reaction (✅/☑️/✔️) on a Mr Gru message = approval, in ANY
+    // Host-owned packet reactions are offered first. Check-mark reactions on
+    // every other Mr Gru message remain approvals in any registered channel.
     // registered channel. Injected into the normal message pipeline so every
     // minion (and the healer) reads it identically — no per-minion changes.
     // Anyone in-channel may approve; only reactions on the bot's OWN messages
     // count, so a ✅ on a human message does nothing.
     this.app.event('reaction_added', async ({ event }) => {
       this.lastActivityAt = Date.now();
-      if (!isCheckReaction(event.reaction)) return;
       if (event.item?.type !== 'message') return;
       if (event.user === this.botUserId) return; // ignore the bot's own reactions
       if (event.item_user !== this.botUserId) return; // only on Mr Gru's messages
+      if (!event.user) return;
 
       const channelId = event.item.channel;
       const jid = `slack:${channelId}`;
       if (!this.opts.registeredGroups()[jid]) return;
+
+      const eventTs =
+        (event as { event_ts?: string }).event_ts || event.item.ts;
+      const occurredAt = new Date(parseFloat(eventTs) * 1000).toISOString();
+      for (const listener of this.reactionListeners) {
+        try {
+          if (
+            await listener(event.item.ts, {
+              jid,
+              reactorUid: event.user,
+              reaction: event.reaction,
+              occurredAt,
+            })
+          ) {
+            return;
+          }
+        } catch (err) {
+          logger.warn({ err }, 'Slack: reaction listener threw');
+        }
+      }
+
+      if (!isCheckReaction(event.reaction)) return;
 
       const reactor =
         (await this.resolveUserName(event.user)) || event.user || 'someone';
@@ -485,9 +522,6 @@ export class SlackChannel implements Channel {
           logger.warn({ err }, 'Slack: approval listener threw');
         }
       }
-
-      const eventTs =
-        (event as { event_ts?: string }).event_ts || event.item.ts;
 
       // Prefer the STORED message body for the approval quote. fetchMessageText
       // uses conversations.history, which does not return threaded replies —
@@ -1287,6 +1321,13 @@ export class SlackChannel implements Channel {
     ) => Promise<boolean>,
   ): void {
     this.approvalListeners.push(fn);
+  }
+
+  /** Register a host-side exact reaction listener. Return true to claim it. */
+  registerReactionListener(
+    fn: (ts: string, provenance: SlackReactionProvenance) => Promise<boolean>,
+  ): void {
+    this.reactionListeners.push(fn);
   }
 
   /**

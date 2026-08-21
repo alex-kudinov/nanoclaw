@@ -245,6 +245,11 @@ import {
   CompanyWorkExceptionLoopService,
   makeCompanyWorkExceptionLoopDeps,
 } from './company-work-exception-loop.js';
+import {
+  CompanyWorkOutcomeReviewService,
+  createCompanyWorkOutcomeReviewDeps,
+  resolveCompanyWorkOutcomeReviewConfig,
+} from './company-work-outcome-review.js';
 import { getActionSafetyStatus } from './action-safety.js';
 
 // Re-export for backwards compatibility during refactor
@@ -1900,6 +1905,29 @@ async function main(): Promise<void> {
       },
     }),
   );
+  const companyWorkOutcomeReview = new CompanyWorkOutcomeReviewService(
+    resolveCompanyWorkOutcomeReviewConfig(),
+    createCompanyWorkOutcomeReviewDeps(
+      (folder) => {
+        const matches = Object.entries(registeredGroups).filter(
+          ([jid, group]) => jid.startsWith('slack:') && group.folder === folder,
+        );
+        return matches.length === 1 ? matches[0][0] : null;
+      },
+      async (jid, text) => {
+        const slack = channels.find(
+          (channel): channel is SlackChannel => channel instanceof SlackChannel,
+        );
+        return slack?.postTracked(jid, text, undefined, 'company-os');
+      },
+      async (jid, threadTs, text) => {
+        const slack = channels.find(
+          (channel): channel is SlackChannel => channel instanceof SlackChannel,
+        );
+        return slack?.postTracked(jid, text, threadTs, 'company-os');
+      },
+    ),
+  );
 
   // Start webhook server — listens on all interfaces (including Tailscale)
   // for inbound trigger events from Tailscale-connected machines.
@@ -1964,6 +1992,7 @@ async function main(): Promise<void> {
         circuitBreaker: circuitBreakerStatus,
         companyWorkShadow: companyWorkShadow.getStatus(),
         companyWorkExceptionLoop: companyWorkExceptionLoop.getStatus(),
+        companyWorkOutcomeReview: companyWorkOutcomeReview.getStatus(),
         companyTimeTriggerObserver: companyTimeTriggerObserver.getStatus(),
         actionSafety: getActionSafetyStatus(),
         capabilityManifests: getCapabilityManifestStatus(),
@@ -2130,6 +2159,7 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'Shutdown signal received');
     companyWorkShadow.stop();
     companyWorkExceptionLoop.stop();
+    companyWorkOutcomeReview.stop();
     await queue.shutdown(10000);
     // Message containers stay running (detached) for the next daemon to adopt.
     cleanupOrphans(queue.getAdoptableContainerNames());
@@ -2276,8 +2306,12 @@ async function main(): Promise<void> {
     slackForCompanyWork?.registerApprovalListener((ts, reactor, provenance) =>
       companyWorkExceptionLoop.handleApproval(ts, reactor, provenance),
     );
+    slackForCompanyWork?.registerReactionListener((ts, provenance) =>
+      companyWorkOutcomeReview.handleReaction(ts, provenance),
+    );
   }
   companyWorkExceptionLoop.start();
+  companyWorkOutcomeReview.start();
 
   // Daemon liveness beacon — upserts business_v2.daemon_heartbeat every 30s so
   // the self-healing healer (separate process) can detect a crashed daemon.

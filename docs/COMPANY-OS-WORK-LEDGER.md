@@ -471,6 +471,33 @@ immediate before/after Company Work fingerprints. This is explicit missing
 coverage, not a zero-defect claim. No SLO or objective is set from the small
 baseline, and no assessment was manufactured for deployment proof.
 
+NC-20260820-008 removes the manual evidence-forensics step without weakening
+NC-007's human decision boundary. Migration 127 adds an admin-only,
+content-free packet ledger; a default-off host service selects at most one
+eligible completed Sales-email outcome per run. Before claiming a packet it
+must prove the exact Company Work delivery/outcome events and receipts against
+the immutable SQLite action ID, exact Mailman-routed Slack request, exact Sales
+approval card, approved subject/body hash, Gmail confirmation event, and exact
+Slack outcome receipt. It never calls a Gmail API or mailbox search and never
+repairs SQLite while reviewing.
+
+The private Chief packet is limited to one Slack message and is refused rather
+than truncated if the identity-minimized request plus exact approved response
+does not fit. PostgreSQL stores no prose or customer identity. Only configured
+Slack UIDs reacting on the exact durably bound bot message are recognized:
+✅ `clean`, 🐛 `customer_visible_defect`, ↩️
+`customer_visible_reversal`, and 🚨
+`customer_visible_defect_and_reversal`. The UID is hashed, NC-007 dry-run/apply
+is reused, and crash replay is duplicate-only by the same evidence/source key.
+The reaction path is offered before generic check-mark approval, so a clean
+quality label cannot wake Chief as an agent approval. Unconfigured operators,
+typed messages, no reaction, and model output never become a classification.
+
+The service remains default-off through dark deployment. Schema/code presence
+does not authorize the first private packet or reaction; those are a separate
+activation and natural outcome gate. A reaction records quality evidence only:
+it cannot send, retry, remediate, change work state, or take a customer action.
+
 ## 11. Operator exception loop
 
 Migration 120 and `src/company-work-exception-loop.ts` keep operator-attention

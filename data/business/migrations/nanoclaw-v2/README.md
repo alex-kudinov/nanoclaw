@@ -78,13 +78,25 @@ before applying anything.
   terminal attempt, replay stability, permissions, and guarded rollback. Live
   schema presence is not source registration, source bootstrap, a Gmail call,
   shadow evidence, cursor wiring, message recovery, or action authority;
+- migration 124 is the separate, gap-independent, host-admin-only mailbox audit
+  evidence target applied by `NC-20260818-002`; it cannot advance a watermark
+  or recover a message;
+- migration 125 is the admin-only program-facts observation and condition-work
+  extension applied by `NC-20260820-002`; fact correction remains owner work;
+- migration 126 is the append-only Sales outcome-quality assessment chain
+  applied dark by `NC-20260820-006`; NC-007 adds a separately gated one-receipt
+  producer, but live schema/command presence is not assessment evidence;
+- migration 127 is NC-20260820-008's admin-only outcome-review packet delivery
+  and decision ledger. The runtime producer is default-off and the migration
+  alone does not post Slack, classify an outcome, read Gmail, or grant any
+  agent/action authority;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-123 are non-auto-discovered and refuse to erase populated
-  operator-attention, trigger-occurrence, source/watermark, or Gmail-shadow
-  history.
+- rollbacks 120-127 are non-auto-discovered and refuse to erase populated
+  operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
+  mailbox-audit, program-facts, outcome-quality, or outcome-review history.
 
 ## Rollback
 
