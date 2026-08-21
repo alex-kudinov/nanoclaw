@@ -15,7 +15,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - State: ready_for_review; local repository contract is implemented and
   verified, with no production restart, image activation, push, or global Node
   change
-- Commit/PR: isolated branch `codex/nc-20260821-004-runtime-contract`; no PR
+- Commit/PR: implementation commit
+  `68af34bf52653b19a724a1ec7d8615b6b7463d3a` on isolated branch
+  `codex/nc-20260821-004-runtime-contract`; no PR
 - Change class: C2 — developer/CI/container/release runtime contract; no
   business-system or customer action
 - Trigger: the operator challenged the recurring Node 22/26/version churn.
