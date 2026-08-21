@@ -8,6 +8,41 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260820-008 — Add exact operator-review packets for outcome quality
+
+- Date: 2026-08-20
+- Owner/client: Codex
+- State: in_progress; task claimed and exact evidence/authority boundary mapped
+- Commit/PR: isolated branch `codex/nc-20260820-008-outcome-review` from
+  deployed-lineage documentation handoff `ee71ffe6`; no PR
+- Change class: C3 — default-off internal Slack review packet plus C2
+  append-only packet/assessment records; no customer communication or business
+  workflow action
+- Root cause: NC-007 safely creates one explicit assessment but still makes an
+  operator locate the exact work/event/action, reconstruct the request and
+  approved response, verify delivery/outcome receipts, and assemble hashes and
+  timestamps by hand. That is error-prone friction rather than a usable review
+  loop.
+- Intended implementation: migration 127 provides a content-free, admin-only
+  packet delivery/decision ledger. A default-off host service will assemble one
+  exact packet from existing PostgreSQL work facts and SQLite action/message
+  authority without Gmail access. Only a configured operator's exact reaction
+  on a durably bound packet may invoke NC-007's plan/apply producer; UID and
+  evidence are stored only as hashes.
+- Safety boundary: no model/agent classification, typed approval, default
+  clean, absence-as-evidence, Gmail search/read, list/bulk post, historical
+  backfill, customer message, remediation, work mutation, or external action.
+  Schema/code deployment is not packet-post or assessment authority.
+- Verification/deployment so far: not started. Production remains exact release
+  `265622bd` with zero review packets and zero quality receipts.
+- Rollback: before production data, revert source and use the guarded empty-only
+  migration rollback. After any packet/decision exists, retain history and
+  deactivate the service; never delete review or assessment evidence to roll
+  back code.
+- Documentation: active work and changelog claimed before runtime/schema edits;
+  project map, Company Work ledger, Company OS plan, data guide, schema guide,
+  configuration, and release evidence remain required.
+
 ### NC-20260820-007 — Add an exact review-gated outcome assessment producer
 
 - Date: 2026-08-20
