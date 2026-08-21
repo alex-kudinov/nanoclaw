@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import {
   parseProposals,
+  parseProposalSnapshots,
   parseRecipient,
   resolveProposalUrl,
   resolveProposalEditUrl,
@@ -75,6 +76,51 @@ describe('parseProposals', () => {
 
   it('returns [] on an ERR status line with no JSON', () => {
     expect(parseProposals('ERR upstream 500')).toEqual([]);
+  });
+});
+
+describe('parseProposalSnapshots', () => {
+  it('retains conversion markers and never substitutes createdAt for pendingAt', () => {
+    const [snapshot] = parseProposalSnapshots(
+      JSON.stringify([
+        {
+          _id: 'proposal-1',
+          status: 'pending',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          approvedAt: '2026-02-01T00:00:00.000Z',
+          autoInvoice: { _id: 'invoice-1' },
+          project: 'project-1',
+          client: { _id: 'person-1' },
+        },
+      ]),
+    );
+    expect(snapshot).toEqual({
+      id: 'proposal-1',
+      status: 'pending',
+      pendingAt: null,
+      approvedAt: '2026-02-01T00:00:00.000Z',
+      autoInvoiceId: 'invoice-1',
+      projectId: 'project-1',
+      clientId: 'person-1',
+    });
+  });
+
+  it('normalizes a real pending timestamp and rejects missing identities', () => {
+    expect(
+      parseProposalSnapshots(
+        `OK [{"_id":"p1","status":"PENDING","pendingAt":"2026-08-01T12:00:00Z"},{"status":"pending"}]`,
+      ),
+    ).toEqual([
+      {
+        id: 'p1',
+        status: 'pending',
+        pendingAt: '2026-08-01T12:00:00.000Z',
+        approvedAt: null,
+        autoInvoiceId: null,
+        projectId: null,
+        clientId: null,
+      },
+    ]);
   });
 });
 

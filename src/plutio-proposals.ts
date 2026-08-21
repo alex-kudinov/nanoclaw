@@ -18,6 +18,17 @@ export interface OpenProposal {
   clientId: string | null; // proposal.client._id
 }
 
+/** Content-minimized source truth used by the Company OS follow-up shadow. */
+export interface ProposalSnapshot {
+  id: string;
+  status: string;
+  pendingAt: string | null;
+  approvedAt: string | null;
+  autoInvoiceId: string | null;
+  projectId: string | null;
+  clientId: string | null;
+}
+
 export interface Recipient {
   email: string;
   firstName: string;
@@ -59,6 +70,46 @@ function toOpenProposal(p: Record<string, unknown>): OpenProposal | null {
   };
 }
 
+function idFrom(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) return value;
+  if (
+    value &&
+    typeof value === 'object' &&
+    typeof (value as { _id?: unknown })._id === 'string'
+  ) {
+    return (value as { _id: string })._id;
+  }
+  return null;
+}
+
+function timestampFrom(value: unknown): string | null {
+  if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) {
+    return null;
+  }
+  return new Date(value).toISOString();
+}
+
+function toProposalSnapshot(
+  proposal: Record<string, unknown>,
+): ProposalSnapshot | null {
+  const id = idFrom(proposal._id);
+  if (!id) return null;
+  return {
+    id,
+    status:
+      typeof proposal.status === 'string'
+        ? proposal.status.trim().toLowerCase()
+        : 'unknown',
+    // Deliberately do not fall back to createdAt. Cadence begins only when the
+    // proposal actually entered pending state.
+    pendingAt: timestampFrom(proposal.pendingAt),
+    approvedAt: timestampFrom(proposal.approvedAt),
+    autoInvoiceId: idFrom(proposal.autoInvoiceId ?? proposal.autoInvoice),
+    projectId: idFrom(proposal.projectId ?? proposal.project),
+    clientId: idFrom(proposal.client),
+  };
+}
+
 /** Parse list-proposals output into open proposals (exported for tests). */
 export function parseProposals(raw: string): OpenProposal[] {
   let parsed: unknown;
@@ -70,6 +121,19 @@ export function parseProposals(raw: string): OpenProposal[] {
   return asArray(parsed)
     .map((p) => toOpenProposal(p as Record<string, unknown>))
     .filter((p): p is OpenProposal => p !== null);
+}
+
+/** Parse current Plutio proposal state without inventing a pending date. */
+export function parseProposalSnapshots(raw: string): ProposalSnapshot[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stripToJson(raw));
+  } catch {
+    return [];
+  }
+  return asArray(parsed)
+    .map((proposal) => toProposalSnapshot(proposal as Record<string, unknown>))
+    .filter((proposal): proposal is ProposalSnapshot => proposal !== null);
 }
 
 /** Parse list-people output into a single recipient (exported for tests). */
@@ -106,6 +170,20 @@ export async function listOpenProposals(): Promise<OpenProposal[]> {
     '200',
   ]);
   return parseProposals(raw);
+}
+
+/** Current pending rows for shadow reconciliation, including conversion flags. */
+export async function listProposalSnapshots(): Promise<ProposalSnapshot[]> {
+  const raw = await callPlutioTool('list-proposals.sh', [
+    '--filter',
+    '{"status":"pending"}',
+    '--limit',
+    '200',
+  ]);
+  if (!stripToJson(raw)) {
+    throw new Error('Plutio proposal source returned no JSON');
+  }
+  return parseProposalSnapshots(raw);
 }
 
 /**

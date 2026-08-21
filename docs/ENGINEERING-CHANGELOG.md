@@ -8,6 +8,65 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260821-005 — Reconcile the revenue follow-up shadow
+
+- Date: 2026-08-21
+- Owner/client: Codex
+- State: validating; implementation and focused local proof are complete, but
+  the Mini read-only source snapshot and any reviewed projection remain open
+- Commit/PR: isolated branch `codex/nc-20260821-005-followup-shadow` based on
+  `0c18893c`; no implementation commit or PR yet
+- Change class: C3 operational policy surface, C2 dark internal projection;
+  no customer, Slack, pipeline, Plutio, payment, scheduler, or email action
+- Outcome: one default-dry-run host command now reads exact Sales pipeline
+  entries, current pending proposals, current pending/overdue invoices, the
+  legacy proposal ledger, the approved-email ledger, and existing follow-up
+  cases. It emits only opaque identities, deterministic decisions, hashes, and
+  aggregate receivable value. New/materially changed work is separated from
+  aggregate unchanged health, so an unchanged daily read cannot mint another
+  operator card.
+- Fail-closed reconciliation: required source failure blocks affected Sales
+  cases instead of assuming there is no open proposal. Multiple active entries
+  block exact identity. Party-global Gmail threads block unless their metadata
+  names the exact pipeline entry. Plutio `createdAt` never substitutes for
+  `pendingAt`; proposal conversion markers close stale `pending` rows. Expired
+  proposal presentations affect cooldown but are not sent attempts. Invoice
+  arithmetic is not treated as transaction reconciliation.
+- Current source finding: an aggregate-only Mini read found 659 email
+  interactions, 585 with a thread ID, and zero with a pipeline-entry binding.
+  The exact new Sales shadow SELECT succeeds read-only and yields 164 candidate
+  entry rows across 143 parties: 42 active rows have multiple active entries,
+  158 carry a party-global thread, and zero have an exact entry-bound thread.
+  It also found zero active party relationships; roles currently describe
+  buyer state, not an assigned commercial owner. The shadow therefore names
+  `thread_identity_unverified`, `proposal_owner_unresolved`,
+  `relationship_owner_unresolved`, and `payment_reconciliation_required`
+  rather than guessing.
+- Apply boundary: `--apply` requires the exact reviewed dry-run snapshot
+  fingerprint plus `COMPANY-FOLLOWUP-SHADOW-APPLY`, refuses any source-read
+  error or changed snapshot, and projects only through the existing admin-only
+  transactional store. No apply has been run.
+- Verification: exact Node 22.23.2 typecheck passes. Sixty-three focused policy,
+  source, parser, report, CLI, Plutio-boundary, and store tests pass; four live
+  PostgreSQL integration cases remain intentionally skipped in the local gate.
+  The complete unrestricted suite is 2,935 pass, ten skipped, and the sole
+  failure is the unchanged pre-existing CNPC wrapper-literal assertion.
+- External read evidence: the local toolbox Plutio operation refused because
+  its selected environment file has a shell syntax error at line 65. NanoClaw
+  correctly documents that the Studio cannot reach production PostgreSQL; an
+  attempted local connection was refused. The Mini SSH route and aggregate
+  database adapter read succeeded. The full one-shot source read remains the
+  next validation boundary.
+- Deployment/migration: not deployed; no schema migration is added. Migrations
+  130-131 remain live and empty/admin-only, the legacy Sales task remains
+  paused, and the legacy proposal loop is unchanged.
+- Rollback/recovery: revert the implementation commit when created. Until an
+  explicitly confirmed projection, rollback is source-only; no operational
+  data has changed.
+- Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
+  `docs/SALES-FOLLOWUP-OPERATING-MODEL.md`, and the Company OS roadmap record
+  the shadow boundary and the newly proven source gaps.
+
 ### NC-20260821-004 — Enforce one exact Node runtime contract
 
 - Date: 2026-08-21

@@ -29,6 +29,7 @@
     "company-work:indicators": "./scripts/with-pinned-node.sh node dist/company-work-indicators-cli.js",
     "company-work:assess-outcome": "./scripts/with-pinned-node.sh node dist/company-work-outcome-quality-assessment-cli.js",
     "company-job-work:project": "./scripts/with-pinned-node.sh node dist/company-job-work-shadow-cli.js",
+    "company-followup:shadow": "./scripts/with-pinned-node.sh node dist/followup-shadow-cli.js",
     "company-program-facts:run": "./scripts/with-pinned-node.sh node dist/program-facts-drift-job.js",
     "company-gmail:coverage": "./scripts/with-pinned-node.sh node dist/gmail-historical-coverage-cli.js",
     "company-gmail:bootstrap": "./scripts/with-pinned-node.sh node dist/company-gmail-source-bootstrap-cli.js",

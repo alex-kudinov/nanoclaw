@@ -25,6 +25,8 @@ const PLUTIO_TOOL_DIR = path.join(TOOLBOX_DIR, 'shared/plutio/tools/plutio');
 const READ_ONLY_SCRIPTS = new Set([
   'list-notes.sh',
   'list-proposals.sh',
+  'list-invoices.sh',
+  'list-transactions.sh',
   'list-people.sh',
 ]);
 

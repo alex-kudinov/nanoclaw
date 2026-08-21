@@ -1280,8 +1280,14 @@ canonical `lost` with read-back proof; silence or expiry creates no duplicate
 daily card. Exact release `a939af5a` and live, empty, admin-only migration 130
 deployed the first default-off, no-send foundation. Exact release `6b9b5f27`
 and live migration 131 add content-free rejection semantics while remaining
-unwired. Source shadow, backlog disposition, presentation,
-drafts, sends, and scheduler activation remain separate gates.
+unwired. `NC-20260821-005` locally implements the next default-dry-run
+source/report candidate: exact source failures, duplicate entries,
+party-global threads, missing assigned owners, and unreconciled invoice
+payments become named blocks; new/materially changed work is separated from
+aggregate unchanged health. The Mini aggregate audit proves 585 thread IDs but
+zero entry bindings and no active party relationships. Full source read,
+reviewed projection, backlog disposition, presentation, drafts, sends, and
+scheduler activation remain separate gates.
 
 ### P2.13 Build management briefs from the ledger
 

@@ -17,6 +17,8 @@ function sales(
     lane: 'sales_conversation',
     sourceKey: 'pipeline:42:thread:abc',
     observedAt: '2026-08-19T16:00:00.000Z',
+    sourceEvidenceComplete: true,
+    sourceIdentityConflict: false,
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
@@ -24,6 +26,7 @@ function sales(
     pipelineEntryId: '42',
     pipelineStage: 'qualifying',
     threadId: 'thread-abc',
+    threadBindingVerified: true,
     lastOutboundAt: '2026-08-14T16:00:00.000Z',
     lastInboundAt: '2026-08-13T16:00:00.000Z',
     confirmedAttempts: 0,
@@ -41,6 +44,8 @@ function proposal(
     lane: 'proposal_signature',
     sourceKey: 'plutio-proposal:abc',
     observedAt: '2026-08-11T16:00:00.000Z',
+    sourceEvidenceComplete: true,
+    sourceIdentityConflict: false,
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
@@ -65,6 +70,8 @@ function receivable(overrides: Partial<ReceivableCase> = {}): ReceivableCase {
     lane: 'receivable',
     sourceKey: 'plutio-invoice:def',
     observedAt: '2026-08-20T16:00:00.000Z',
+    sourceEvidenceComplete: true,
+    sourceIdentityConflict: false,
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
@@ -72,6 +79,7 @@ function receivable(overrides: Partial<ReceivableCase> = {}): ReceivableCase {
     invoiceStatus: 'overdue',
     dueAt: '2026-08-14T16:00:00.000Z',
     outstandingAmount: 500,
+    currency: 'USD',
     paymentReconciled: true,
     collectionApproved: false,
     specialHandling: false,
@@ -91,6 +99,21 @@ describe('business-date cadence', () => {
 });
 
 describe('Sales conversation policy', () => {
+  it('fails closed when source evidence is incomplete or identity is ambiguous', () => {
+    expect(
+      evaluateFollowup(sales({ sourceEvidenceComplete: false })),
+    ).toMatchObject({
+      disposition: 'blocked',
+      reason: 'source_evidence_unavailable',
+    });
+    expect(
+      evaluateFollowup(sales({ sourceIdentityConflict: true })),
+    ).toMatchObject({
+      disposition: 'blocked',
+      reason: 'source_identity_conflict',
+    });
+  });
+
   it('makes the first follow-up ready after three business days', () => {
     expect(evaluateFollowup(sales())).toMatchObject({
       disposition: 'ready',
@@ -141,6 +164,15 @@ describe('Sales conversation policy', () => {
     expect(evaluateFollowup(sales({ threadId: null }))).toMatchObject({
       disposition: 'blocked',
       reason: 'missing_exact_thread',
+    });
+  });
+
+  it('blocks a party-global thread that is not bound to the exact entry', () => {
+    expect(
+      evaluateFollowup(sales({ threadBindingVerified: false })),
+    ).toMatchObject({
+      disposition: 'blocked',
+      reason: 'thread_identity_unverified',
     });
   });
 

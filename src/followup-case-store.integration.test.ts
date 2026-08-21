@@ -24,6 +24,8 @@ function proposal(
     lane: 'proposal_signature',
     sourceKey: 'plutio-proposal:integration-1',
     observedAt: '2026-08-11T16:00:00.000Z',
+    sourceEvidenceComplete: true,
+    sourceIdentityConflict: false,
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,

@@ -8,7 +8,7 @@
 
 import { createHash } from 'crypto';
 
-export const FOLLOWUP_POLICY_VERSION = '2026-08-21.2';
+export const FOLLOWUP_POLICY_VERSION = '2026-08-21.3';
 export const FOLLOWUP_TIME_ZONE = 'America/Chicago';
 
 export type FollowupLane =
@@ -34,6 +34,10 @@ interface CommonCase {
   lane: FollowupLane;
   sourceKey: string;
   observedAt: string;
+  /** Every required source reader completed for this observation. */
+  sourceEvidenceComplete: boolean;
+  /** Source identities cannot be bound to exactly one durable case. */
+  sourceIdentityConflict: boolean;
   pendingAction: boolean;
   uncertainDelivery: boolean;
   suppressed: boolean;
@@ -45,6 +49,7 @@ export interface SalesConversationCase extends CommonCase {
   pipelineEntryId: string;
   pipelineStage: string;
   threadId: string | null;
+  threadBindingVerified: boolean;
   lastOutboundAt: string | null;
   lastInboundAt: string | null;
   confirmedAttempts: number;
@@ -75,7 +80,8 @@ export interface ReceivableCase extends CommonCase {
   partyId: string | null;
   invoiceStatus: string;
   dueAt: string | null;
-  outstandingAmount: number;
+  outstandingAmount: number | null;
+  currency: string | null;
   paymentReconciled: boolean;
   collectionApproved: boolean;
   specialHandling: boolean;
@@ -187,6 +193,12 @@ function identityGate(input: FollowupCase): FollowupDecision | null {
   ) {
     return decision(input, 'blocked', 'invalid_source_key');
   }
+  if (!input.sourceEvidenceComplete) {
+    return decision(input, 'blocked', 'source_evidence_unavailable');
+  }
+  if (input.sourceIdentityConflict) {
+    return decision(input, 'blocked', 'source_identity_conflict');
+  }
   return null;
 }
 
@@ -265,6 +277,9 @@ function evaluateSales(input: SalesConversationCase): FollowupDecision {
   if (safetyGate) return safetyGate;
   if (input.pendingAction) {
     return decision(input, 'waiting', 'action_or_approval_pending');
+  }
+  if (!input.threadBindingVerified) {
+    return decision(input, 'blocked', 'thread_identity_unverified');
   }
   if (!input.threadId) {
     return decision(input, 'blocked', 'missing_exact_thread');
@@ -444,8 +459,14 @@ function evaluateReceivable(input: ReceivableCase): FollowupDecision {
   ) {
     return decision(input, 'blocked', 'unknown_invoice_status');
   }
-  if (!Number.isFinite(input.outstandingAmount)) {
+  if (
+    typeof input.outstandingAmount !== 'number' ||
+    !Number.isFinite(input.outstandingAmount)
+  ) {
     return decision(input, 'blocked', 'invoice_balance_invalid');
+  }
+  if (!input.currency || !/^[A-Z]{3}$/.test(input.currency)) {
+    return decision(input, 'blocked', 'invoice_currency_invalid');
   }
   if (input.outstandingAmount <= 0) {
     return decision(input, 'completed', 'invoice_zero_balance');

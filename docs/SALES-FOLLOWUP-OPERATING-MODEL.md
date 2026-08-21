@@ -317,5 +317,26 @@ to terminal `cancelled`, and the schema can retain only a content-free
 pipeline entry; source/presentation/decision-adapter activation remains a
 separate evidence gate.
 
+Source-shadow checkpoint (`NC-20260821-005`, local validation): policy version
+`2026-08-21.3` and a default-dry-run one-shot host command now reconcile the
+three lanes into content-free observations and an operator report. The report
+shows only new/materially changed cases in detail and aggregates unchanged
+waiting/blocked health. Apply requires the exact reviewed snapshot fingerprint,
+an exact confirmation phrase, a clean source read, and the existing admin-only
+transactional store. It remains absent from daemon, scheduler, IPC, Slack,
+agent, draft, approval, and send composition.
+
+The first aggregate-only Mini source audit proves that existing email history
+is still party-scoped: 659 email interactions, 585 thread IDs, and zero durable
+pipeline-entry bindings. The exact candidate SELECT yields 164 entry rows for
+143 parties; 42 active rows are identity-ambiguous, 158 have a party-global
+thread, and zero have an exact entry-bound thread. The current relationship
+table is empty and the role table does not encode an assigned relationship
+owner. Invoice arithmetic has
+not yet been reconciled to transaction receipts. The shadow therefore blocks
+these as named repair work; it does not infer an exact thread, owner, or paid
+state. A full Mini one-shot read, reviewed disposition, and any confirmed
+projection remain steps 4-5, not completed deployment evidence.
+
 No step in this document authorizes a customer email, proposal/invoice change,
 payment action, bulk backfill, or scheduler activation.
