@@ -279,6 +279,21 @@ started fresh listener PID 10482. One natural push recorded exactly two new
 equal at version 5/current. Gmail/Slack health and protected work/email-action
 fingerprints pass; the production error log remains unchanged since August 15.
 
+NC-20260820-007 crosses a code-only, default-off host release boundary under
+exact commit `265622bd7cc4632f517dd1e5beb0c22f6ba688e4`, source tree
+`7981389ea49a06ba8c8a60e8db162871baa96bf6`, 808 compiled files, artifact
+SHA-256 `ae858926595894ff062f68cdcd9d5aea3be2724e1c1ba4fedd26d6d70a4457e6`,
+and archive SHA-256
+`19612afd867013a9ad5fb8e05eb8700b4d7c8c321a406f57eb7162a0ded0aef4`.
+Local and Mini verification pass under Node 22.23.2. A zero-work drain and
+owner-only WAL-safe SQLite/plist backup preceded the exact three-pointer
+activation, which retained rollback to `09bc2408` and converged health,
+launchd, and the sole listener on PID 63259. The installed assessment command
+is not imported by the daemon and refuses missing or incomplete apply gates.
+Protected work/exception evidence is unchanged apart from the ordinary
+exception projection's `last_seen_at` refresh; the quality-receipt table stays
+empty. Deployment does not authorize or prove a real assessment.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

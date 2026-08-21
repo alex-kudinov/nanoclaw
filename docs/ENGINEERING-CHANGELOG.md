@@ -12,13 +12,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: ready_for_deploy; implementation, disposable database proof, and
-  release-grade validation pass, while immutable release construction,
-  deployment, and live default-off proof remain
+- State: complete; implementation, disposable database proof, immutable release,
+  deployment, live default-off refusal, and protected-state proof pass; no real
+  assessment receipt was created
 - Commit/PR: isolated branch
   `codex/nc-20260820-007-outcome-assessment` from `e5e1a595`; task claim
   `265062f7`; implementation
-  `343ae19382add6ff70a08950c6bf721182dcaaec`; no PR
+  `343ae19382add6ff70a08950c6bf721182dcaaec`; release
+  `265622bd7cc4632f517dd1e5beb0c22f6ba688e4`; no PR
 - Change class: C2 — one explicit admin-only PostgreSQL receipt insert behind a
   standalone CLI; no external communication/action, agent, daemon, scheduler,
   or customer-content path
@@ -58,16 +59,57 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   available only after full disposable coverage. The first rehearsal found the
   insert-versus-duplicate fingerprint bug; the corrected contract and a new
   regression test now pass. The disposable server is stopped.
-- Deployment/external state: no release build, production activation/restart,
-  production receipt, Gmail/Slack/content read, message, push, or merge has
-  occurred. Live release remains `09bc2408` with zero quality receipts and 0/13
-  coverage.
+- Deployment/external state: exact release `265622bd` is active with zero
+  quality receipts and 0/13 coverage. No Gmail/Slack/content read, assessment,
+  message, push, or merge occurred.
 - Rollback: before deployment, revert the implementation commit. After
   deployment, activate the retained prior immutable release; no schema/data
   rollback is needed. Any future real receipt remains append-only history and
   is never deleted as code rollback.
 - Documentation: active work, Company Work ledger, Company OS plan, project
   map, business data guide, and structure-only schema guide updated.
+
+#### Addendum 2026-08-21T00:14Z — exact default-off producer live
+
+- Release identity: exact commit
+  `265622bd7cc4632f517dd1e5beb0c22f6ba688e4` binds source tree
+  `7981389ea49a06ba8c8a60e8db162871baa96bf6`, 808 compiled files,
+  artifact SHA-256
+  `ae858926595894ff062f68cdcd9d5aea3be2724e1c1ba4fedd26d6d70a4457e6`,
+  and archive SHA-256
+  `19612afd867013a9ad5fb8e05eb8700b4d7c8c321a406f57eb7162a0ded0aef4`.
+  The archive independently verifies locally and on the Mini under Node
+  22.23.2.
+- Drain/backup: preflight proved one healthy listener, zero containers/runtime
+  work/outgoing Slack/active email actions, SQLite `quick_check=ok`, and zero
+  quality receipts. The owner-only backup at
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260820-007-20260821T001109Z`
+  contains a WAL-safe SQLite copy (SHA-256 `2094a3aa…`) and installed plist
+  (`11b69d90…`), both mode 0600; SQLite and plist integrity checks pass. No
+  PostgreSQL backup or migration was needed because this activation changes no
+  schema and the producer was not applied.
+- Activation: dry-run named only code root, expected commit, and executable.
+  Apply retained rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-09bc24081654-2026-08-21T00-11-31-245Z`.
+  After the normal brief handoff, health, launchd, and the sole listener agree
+  on PID 63259, the exact release identity/code root, and Node 22.23.2. Gmail
+  and Slack are connected; runtime/waiting/outgoing queues and active email
+  actions are empty; SQLite remains 88 actions/435 events with
+  `quick_check=ok`; current-PID stdout/stderr have zero error headlines.
+- Non-mutation/refusal proof: work items remain 21/version sum 110, work events
+  131, receipts 59, exception briefs/events 6/40, and quality receipts zero,
+  with identical pre/post fingerprints. The startup loop returned
+  `duplicate_brief` and changed only the seven-row case projection's expected
+  `last_seen_at`; it opened, reopened, resolved, posted, and appended zero
+  cases/briefs/events. The active 30-day indicator remains 15 accepted, 13
+  completed, two incomplete, and 0 assessed / 13 required. An empty producer
+  invocation refuses `--work-item-id is required`; `--apply` without its plan
+  gate refuses `--expected-plan-sha256 is required with --apply`. Neither can
+  reach a business query or write.
+- Authority boundary: deployment installs a host-admin tool; it does not
+  authorize a customer-outcome classification. No real item was previewed, no
+  receipt was inserted, and no Gmail/Slack/customer content, message,
+  remediation, bulk/default-clean/backfill, or external action path ran.
 
 ### NC-20260820-006 — Add coverage-aware outcome-quality receipts
 

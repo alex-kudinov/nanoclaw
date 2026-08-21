@@ -88,21 +88,22 @@ authority. The owner must reconcile the source facts before an exact clean
 scheduled receipt may complete the item and source-resolve the case; follow the
 current active-work/changelog evidence.
 
-Migration 126 is live and empty under exact release `09bc2408` through
-`NC-20260820-006`. It binds an immutable assessment chain to one exact
+Migration 126 is live and empty under exact release `265622bd` through
+`NC-20260820-006/007`. It binds an immutable assessment chain to one exact
 `sales_email` `external_acknowledged` event and stores no customer identity or
 content. A later assessment may supersede a prior one without rewriting it,
 but only one current chain head is legal. No daemon producer, agent grant,
 message path, automatic classification, or remediation is part of the
-migration. NC-20260820-007's separately gated host CLI is default-dry-run,
-single-receipt only, and requires an explicit operator-reviewed classification,
-opaque hashes, canonical timestamps, an unchanged 15-minute plan fingerprint,
-and exact host/release/task confirmation before apply. It does not read Gmail,
-Slack, SQLite, customer identity, or content and is not imported by a daemon or
-agent. The service indicator may publish a rate only with one current
-assessment for every exact customer-visible outcome in its cohort. Repository
-or command presence is not receipt evidence; consult active-work/changelog
-state before relying on an assessment.
+migration. NC-20260820-007's deployed, separately gated host CLI is
+default-dry-run, single-receipt only, and requires an explicit operator-reviewed
+classification, opaque hashes, canonical timestamps, an unchanged 15-minute
+plan fingerprint, and exact host/release/task confirmation before apply. It
+does not read Gmail, Slack, SQLite, customer identity, or content and is not
+imported by a daemon or agent. The service indicator may publish a rate only
+with one current assessment for every exact customer-visible outcome in its
+cohort. Release or command presence is not receipt evidence; the live table
+remains empty, and active-work/changelog state remains authoritative before
+relying on an assessment.
 
 ## Connection
 

@@ -404,13 +404,13 @@ dead-letter, or `source_gap:*` evidence remains ineligible. No objective or
 alert threshold is guessed. Query failure returns only `ledger_query_failed`;
 malformed ledger or receipt evidence returns only `ledger_quality_failed`.
 
-Migration 126 is live dark persistence under exact release `09bc2408`: the
+Migration 126 is live dark persistence under exact release `265622bd`: the
 migration itself adds no producer, agent grant, automatic classifier,
 Gmail/Slack reader, remediation path, or message/action authority. The live
 table is empty/admin-only; schema presence cannot create a clean or adverse
 receipt.
 
-NC-20260820-007 adds the separately bounded producer as a standalone host CLI,
+NC-20260820-007 deploys the separately bounded producer as a standalone host CLI,
 not a daemon path. Its default mode is a read-only preview over one exact
 work-item ID and delivery-event version. The caller must supply one explicit
 assessment, canonical evidence/assessment timestamps, and already-hashed
@@ -447,11 +447,12 @@ Installing the command does not authorize a receipt: the operator-reviewed
 evidence and explicit apply gate remain separate, and production coverage must
 not be manufactured for rollout proof.
 
-Repository presence is not deployment or baseline evidence. Use the exact
-active-work and engineering-changelog entry to determine whether the compiled
-command is installed and whether a production read preserved protected state.
+Exact release `265622bd` installs the command on the Mini in default-off form.
+Deployment is not baseline or receipt evidence: no real item was previewed and
+the live table remains empty. Use the exact active-work and engineering-
+changelog entry for the release, refusal, and protected-state receipts.
 
-Exact release `09bc2408` preserves the first bounded
+Exact release `265622bd` preserves the first bounded
 30-day baseline: 15 accepted, 13 completed, two incomplete, and 86.67%
 completion. Across the 13 exact accepted-to-outcome samples, p50 is
 29m01.725s, p95 is 6h16m18.994s, and maximum is 9h25m12.618s. The same result
@@ -461,7 +462,7 @@ fingerprints. The ordinary startup exception loop re-observed current cases
 before the active read and is separately attributable; it did not change the
 work-item, event, or receipt ledger.
 
-Exact release `09bc2408` and live migration 126 now run contract version 2. The
+Exact release `265622bd` and live migration 126 now run contract version 2. The
 staged and active 30-day reads both find 13 exact customer-visible outcomes,
 zero current assessments, and 13 missing receipts, so the defect/reversal rate
 remains unavailable with `outcome_quality_receipt_coverage_incomplete`. The

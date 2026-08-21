@@ -22,19 +22,19 @@ Migration 123's Gmail reconciliation shadow tables are live, empty, and admin-
 only under NC-013; no source or shadow producer is activated.
 
 Structure-only outcome-quality overlay: migration 126 is live under exact
-release `09bc2408` and defines the admin-only,
+release `265622bd` and defines the admin-only,
 append-only `company_work_outcome_quality_receipts` contract. Each assessment
 binds one exact `sales_email` `external_acknowledged` event and stores only a
 bounded classification, opaque SHA-256 evidence/source/assessor keys, and
 timestamps. Append-only revisions may supersede but never rewrite a prior
 assessment. The live table has zero rows and zero non-admin grants. Migration
-126 itself has no producer; NC-20260820-007 adds a separately gated standalone
-host candidate that is dry-run by default, accepts no customer identity or
-content, and can insert only one exact operator-reviewed receipt after an
-unchanged short-lived plan plus exact host/release confirmation. It is not a
-daemon or agent capability. Repository/command presence alone does not prove
-an assessment; use the current NC-20260820-006/007 active-work and changelog
-evidence.
+126 itself has no producer; NC-20260820-007 deploys a separately gated
+standalone host command that is dry-run by default, accepts no customer
+identity or content, and can insert only one exact operator-reviewed receipt
+after an unchanged short-lived plan plus exact host/release confirmation. It is
+not a daemon or agent capability. Repository/command presence alone does not
+prove an assessment; use the current NC-20260820-006/007 active-work and
+changelog evidence.
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
