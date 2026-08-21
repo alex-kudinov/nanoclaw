@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: in_progress; implementation and focused/disposable-database validation
-  pass; full release and dark production deployment remain
+- State: complete for the dark deployment milestone; implementation, immutable
+  release, migration, live disabled-mode proof, and protected-state parity pass
 - Commit/PR: isolated branch `codex/nc-20260820-008-outcome-review` from
   deployed-lineage documentation handoff `ee71ffe6`; no PR
 - Change class: C3 — default-off internal Slack review packet plus C2
@@ -44,7 +44,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   clean, absence-as-evidence, Gmail search/read, list/bulk post, historical
   backfill, customer message, remediation, work mutation, or external action.
   Schema/code deployment is not packet-post or assessment authority.
-- Verification/deployment so far: pinned Node 22.23.2 typecheck and 133 focused
+- Verification/deployment: pinned Node 22.23.2 typecheck and 133 focused
   tests pass; the 721-test email-critical suite and independent 43-test runner
   suite pass. The full root suite is 2,841 pass / one known CNPC contract
   failure / six skipped; both failing CNPC inputs have byte-identical blobs to
@@ -53,16 +53,65 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   16 applies migrations 1-14/118/126/127 and
   proves one candidate, claim, exact replay no-op, Slack binding, quality FK,
   decision, decision receipt, four lifecycle events, immutable decision state,
-  and populated rollback refusal. Full root/release checks and production dark
-  deployment remain. Production is still exact release `265622bd` with zero
-  review packets and zero quality receipts.
+  and populated rollback refusal. Immutable release `6f40b1da` passed the same
+  721-test email-critical and 43-test runner gates, independently verified on
+  the Mini, and is live with migration 127. Outcome review is disabled with
+  zero runs, packets, events, or quality receipts.
 - Rollback: before production data, revert source and use the guarded empty-only
   migration rollback. After any packet/decision exists, retain history and
   deactivate the service; never delete review or assessment evidence to roll
   back code.
 - Documentation: active work and changelog claimed before runtime/schema edits;
   project map, Company Work ledger, Company OS plan, data guide, schema guide,
-  configuration, and release evidence remain required.
+  configuration, and release evidence updated.
+
+#### Addendum 2026-08-21T01:32Z — exact outcome review dark deployment live
+
+- Release identity: exact commit
+  `6f40b1da7742a28a583c5e43d3109b2ed8c52358` binds source tree
+  `08d9a4b04bec9fc4bab375c72f6056b76452d296`, 812 compiled files,
+  artifact SHA-256
+  `883cd019d8f0a2a261f879a382909651d2d312ae861f26004140f9a1b5571031`,
+  and archive SHA-256
+  `6c578902b40693f25a22f95e171a1b1e98a78f9babe232f5226df48dbcccf04a`.
+  Local release gates and independent Mini bundle/runtime verification pass on
+  Node 22.23.2.
+- Drain/backup: a first final guard refused before any mutation when a new real
+  Slack task arrived after the initial drain. Both observed tasks were allowed
+  to finish. The successful guard then proved zero containers, active/waiting
+  groups, outgoing Slack work, and active email actions before launchd was
+  stopped. Owner-only backup directory
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260820-008-20260821T011714Z`
+  contains final-drained WAL-safe SQLite and full custom-format PostgreSQL
+  backups with SHA-256 `de166207…` and `6464534d…`; both are mode 0600 and
+  pass SQLite quick-check / `pg_restore --list`.
+- Migration: exact SHA-256
+  `a8f821ae3d6287bbc982ca20284be363a10ddadcea717ed6e4287775dabfc4b2`
+  applied transactionally. Live review tables have 28 constraints, nine
+  indexes, two enabled user triggers, admin table/sequence/function ownership,
+  zero non-admin table grants, zero forbidden content columns, and zero packet
+  or lifecycle-event rows. Quality receipts remain zero.
+- Activation/health: the retained rollback plist is
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-265622bd7cc4-2026-08-21T01-26-05-316Z`.
+  Health, launchd, and the sole port-8088 listener agree on PID 69300, exact
+  verified release `6f40b1da`, and Node 22.23.2. Gmail and Slack are connected;
+  queues are empty. Outcome review reports `mode=disabled`, zero operators,
+  zero runs, no attempt/result/error, and `running=false`. Current-PID JSON logs
+  contain 37 lines with zero WARN/ERROR/FATAL records.
+- Non-mutation proof: protected PostgreSQL counts/fingerprints remain exactly 21
+  work items/version sum 110, 131 work events, 59 receipts, seven exception
+  cases, six briefs, 40 exception events, and zero quality receipts. SQLite is
+  healthy at 88 email actions / 435 events with zero active actions; five normal
+  Slack message rows arrived around the drain/deployment window. The ordinary
+  startup exception loop returned `duplicate_brief`, opened/reopened/resolved/
+  posted nothing, and only refreshed the active case projection's expected
+  `last_seen_at` field. The active 30-day indicator remains 15 accepted, 13
+  completed, two incomplete, and 0 assessed / 13 required.
+- Authority boundary: dark deployment did not post a review packet, read or
+  search Gmail, create an assessment, classify an outcome, send a customer
+  message, remediate work, or grant an agent/action path. Configuring one named
+  operator and posting the first single packet remain a separate C3 activation
+  gate.
 
 ### NC-20260820-007 — Add an exact review-gated outcome assessment producer
 
