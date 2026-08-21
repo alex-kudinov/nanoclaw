@@ -12,12 +12,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: validating; implementation and disposable database proof pass, while
-  release-grade validation, commit, deployment, and live default-off proof
-  remain
+- State: ready_for_deploy; implementation, disposable database proof, and
+  release-grade validation pass, while immutable release construction,
+  deployment, and live default-off proof remain
 - Commit/PR: isolated branch
   `codex/nc-20260820-007-outcome-assessment` from `e5e1a595`; task claim
-  `265062f7`; implementation uncommitted; no PR
+  `265062f7`; implementation
+  `343ae19382add6ff70a08950c6bf721182dcaaec`; no PR
 - Change class: C2 — one explicit admin-only PostgreSQL receipt insert behind a
   standalone CLI; no external communication/action, agent, daemon, scheduler,
   or customer-content path
