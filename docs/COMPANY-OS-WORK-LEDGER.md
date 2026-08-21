@@ -506,10 +506,12 @@ timestamp in that snapshot, so the durable assessment uses the host observation
 time rather than inventing one. This is not channel search, absence-as-clean
 evidence, or model inference.
 
-The service remains default-off through dark deployment. Schema/code presence
-does not authorize the first private packet or reaction; those are a separate
-activation and natural outcome gate. A reaction records quality evidence only:
-it cannot send, retry, remediate, change work state, or take a customer action.
+NC-20260820-009 activates the service for one existing configured operator.
+Exact release `288105cb` reconciled packet #1's already-present 👍 into one
+append-only `clean` quality receipt and one thread acknowledgment. There is
+still exactly one packet, and the service returned `decision_reconciled`
+without selecting packet two. A reaction records quality evidence only: it
+cannot send, retry, remediate, change work state, or take a customer action.
 
 ## 11. Operator exception loop
 

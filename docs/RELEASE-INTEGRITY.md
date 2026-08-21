@@ -294,6 +294,23 @@ Protected work/exception evidence is unchanged apart from the ordinary
 exception projection's `last_seen_at` refresh; the quality-receipt table stays
 empty. Deployment does not authorize or prove a real assessment.
 
+NC-20260820-009's final interaction repair is live under exact release
+`288105cb32fdacab3640326264499d9df15babb0`, source tree
+`2447bd7e58c5f2464ce991b59edbe4cbb0714751`, 816 compiled files,
+artifact SHA-256
+`04fa483ef39176d89c1345cd2fc6643c29b9a074d0f170b81ce45c96223bfc8e`,
+and archive SHA-256
+`83228365a6f8a4269082bdf5ccb3a7eacfadcb5d26223795babe207321ca9c2b`.
+After natural work drained, an owner-only WAL-safe SQLite plus affected-schema
+backup passed `quick_check` and `pg_restore --list`; exact migration 128 widened
+only the closed reaction constraint. Recovery-safe activation retained rollback
+to `dbe5016c` and converged on healthy PID 78177 under Node 22.23.2. Startup
+reconciled the sole configured operator's already-present exact-packet 👍 as
+one explicit `clean` receipt, posted one bound thread acknowledgment, and did
+not create packet two, call Gmail, send email, or mutate Company Work. Exact
+backup, rollback, reaction, receipt, Slack, SQLite, and log evidence is recorded
+in `docs/ENGINEERING-CHANGELOG.md`.
+
 The builder refuses to run when:
 
 - the current Node version differs from the exact `.nvmrc` value;

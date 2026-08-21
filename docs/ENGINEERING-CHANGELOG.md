@@ -12,7 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-20
 - Owner/client: Codex
-- State: in_progress; task claimed before configuration or external delivery
+- State: complete; packet activation, two live corrections, exact operator
+  decision, durable quality receipt, and non-interference proof pass
 - Commit/PR: isolated branch
   `codex/nc-20260820-009-outcome-review-activation` from dark-deployment handoff
   `a656915b`; no PR
@@ -154,8 +155,63 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   passes 43/43. Typecheck, build, format, and diff checks pass. The full suite
   is 2,858 pass, one unchanged known CNPC wrapper-contract failure, and six
   skipped; both implicated CNPC files remain byte-identical to the deployed
-  base. Production migration, release, restart reconciliation, receipt/ack
-  proof, and protected-side-effect proof remain pending.
+  base. The following addendum records the completed production migration,
+  release, restart reconciliation, receipt/ack, and protected-side-effect
+  proof.
+
+#### Addendum 2026-08-21T12:13Z — exact thumbs-up decision live
+
+- Release identity: exact commit
+  `288105cb32fdacab3640326264499d9df15babb0` binds source tree
+  `2447bd7e58c5f2464ce991b59edbe4cbb0714751`, 816 compiled files,
+  artifact SHA-256
+  `04fa483ef39176d89c1345cd2fc6643c29b9a074d0f170b81ce45c96223bfc8e`,
+  and archive SHA-256
+  `83228365a6f8a4269082bdf5ccb3a7eacfadcb5d26223795babe207321ca9c2b`.
+  The archive independently verifies locally and on the Mini under Node
+  22.23.2; activation dry-run named exactly the three release-pointer paths.
+- Drain/backup: two real Chief/Sales runs were allowed to finish naturally.
+  The final gate proved zero containers, active/waiting groups, outgoing Slack
+  work, and active email actions before launchd stopped. The owner-only backup
+  at
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260820-009-plus-one-20260821T120902Z`
+  contains mode-0600 WAL-safe SQLite, `business_v2`, plist, and environment
+  copies; SQLite `quick_check` and `pg_restore --list` pass. The initial full-
+  database dump failed closed on the known RLS-protected legacy Procurement
+  table; its incomplete archive was removed immediately, no RLS changed, and
+  the established complete affected-schema dump succeeded. SQLite and
+  `business_v2` backup SHA-256s are respectively
+  `121c55c0a7a5d4dd87068b4d8c24c186d24124f0ae0e1f534cb66abb3fa2bd9c`
+  and
+  `7ba6eec3e50b9aa4d0f4227028b4a5277591a8365b09710acbd96680f82fd201`.
+- Migration/activation: exact migration-128 SHA-256
+  `919b8aa59050fffc4e46ddcfbc94d5104a1f241c2a6f9b80db3aef9a7567c5d0`
+  applied transactionally while stopped. The live constraint contains exactly
+  `+1` plus the six prior reactions and had zero `+1` decision rows before
+  startup. Recovery-safe activation retained rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-dbe5016cfdd7-2026-08-21T12-10-41-481Z`.
+  Launchd, the sole listener, and fresh health converge on PID 78177, exact
+  verified release `288105cb`, matching code root, Node 22.23.2, and connected
+  Gmail/Slack.
+- Decision proof: exact packet #1 still has one Slack `+1` reaction from the
+  sole configured operator. Startup returned `decision_reconciled` with no
+  error, recorded packet assessment/reaction `clean`/`+1`, actor binding,
+  quality receipt #1, and posted receipt timestamp `1787314249.843879`. The
+  packet has exactly one each of claimed, posted, decision-recorded, and
+  decision-receipt-posted events. Slack exposes exactly the root plus one bot
+  thread acknowledgment, and SQLite binds that same acknowledgment to the
+  original thread with `from_group=chief`. There is still exactly one packet.
+- Non-interference: Company Work remains 22 items/version sum 117, 139 events,
+  and 63 receipts, with zero event or receipt appended after activation.
+  SQLite `pending_sends` and `email_send_events` compare empty in both `EXCEPT`
+  directions against the stopped backup: 90 actions (84 confirmed, six
+  blocked), 445 events, and `quick_check=ok`. Current-process logs have 36 INFO
+  headlines and zero WARN/ERROR/FATAL or stderr records. Two Chief container
+  spawns are attributable to the separately established startup exception
+  brief/work-packet loop; their health snippets are not the outcome packet or
+  its acknowledgment. The review reconciliation spawned no agent, called no
+  Gmail API/search/read, sent no email/customer message, posted no second
+  packet, and changed no work/action/remediation state.
 
 ### NC-20260820-008 — Add exact operator-review packets for outcome quality
 
