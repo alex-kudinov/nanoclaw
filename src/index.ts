@@ -1931,6 +1931,13 @@ async function main(): Promise<void> {
         // Reaction acknowledgments belong to the same operator-only surface.
         return slack?.postTracked(jid, text, threadTs, 'chief');
       },
+      async (jid, messageTs) => {
+        const slack = channels.find(
+          (channel): channel is SlackChannel => channel instanceof SlackChannel,
+        );
+        if (!slack) throw new Error('outcome_review_slack_unavailable');
+        return slack.listMessageReactions(jid, messageTs);
+      },
     ),
   );
 

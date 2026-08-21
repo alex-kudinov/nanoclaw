@@ -90,13 +90,17 @@ before applying anything.
   and decision ledger. The runtime producer is default-off and the migration
   alone does not post Slack, classify an outcome, read Gmail, or grant any
   agent/action authority;
+- migration 128 is NC-20260820-009's narrow outcome-review reaction vocabulary
+  extension: Slack `+1` is an explicit configured-operator `clean` decision on
+  the exact bound packet, not an inference from silence or another message;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-127 are non-auto-discovered and refuse to erase populated
+- rollbacks 120-128 are non-auto-discovered and refuse to erase populated
   operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
-  mailbox-audit, program-facts, outcome-quality, or outcome-review history.
+  mailbox-audit, program-facts, outcome-quality, or outcome-review history;
+  rollback 128 specifically refuses once any durable `+1` decision exists.
 
 ## Rollback
 

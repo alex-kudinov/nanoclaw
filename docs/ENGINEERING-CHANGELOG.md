@@ -123,6 +123,40 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   remediation, workflow mutation, second packet, or post-correction agent run
   occurred.
 
+#### Addendum 2026-08-21T11:38Z — thumbs-up reconciliation repair
+
+- Live finding: after receiving the exact packet permalink, the configured
+  operator reacted 👍 on packet #1. Slack reports that emoji as `+1`, but the
+  deployed closed vocabulary recognizes only check-mark variants for `clean`.
+  Packet #1 therefore correctly remained posted/undecided with two lifecycle
+  events and zero quality receipts. Because `+1` was not claimed by the exact
+  packet listener, it also fell through the existing generic approval path and
+  woke Chief; this is the second operator-friction defect in the activation and
+  must be corrected rather than asking for a third click.
+- Candidate correction: migration 128 widens only the bounded
+  `decision_reaction` constraint to include Slack `+1`; rollback refuses once
+  any durable `+1` decision exists. The map treats `+1` as an explicit `clean`
+  reaction, never as absence/default evidence. Packet instructions expose both
+  ✅ and 👍 for clean.
+- Reconciliation boundary: on startup/daily run, the host projects only
+  reaction names and reactor UIDs from the one exact open packet. Slack's API
+  returns a message envelope, but the channel helper discards its content
+  without inspecting, logging, persisting, or exposing it to the review
+  service. The service proceeds only when exactly one supported reaction
+  belongs to a configured operator, records the host observation time because
+  Slack exposes no click timestamp, and returns without posting packet two.
+  Zero or multiple matches fail closed. No channel search, model/agent
+  interpretation, Gmail access, customer action, remediation, or work mutation
+  is introduced.
+- Verification so far: pinned Node 22.23.2 focused outcome-review, migration,
+  Slack-channel, wire-up, and SQLite tests pass 208/208; email-critical passes
+  722/722, the email incident replay passes 13/13, and the independent runner
+  passes 43/43. Typecheck, build, format, and diff checks pass. The full suite
+  is 2,858 pass, one unchanged known CNPC wrapper-contract failure, and six
+  skipped; both implicated CNPC files remain byte-identical to the deployed
+  base. Production migration, release, restart reconciliation, receipt/ack
+  proof, and protected-side-effect proof remain pending.
+
 ### NC-20260820-008 — Add exact operator-review packets for outcome quality
 
 - Date: 2026-08-20

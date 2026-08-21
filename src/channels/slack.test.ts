@@ -62,6 +62,13 @@ vi.mock('@slack/bolt', () => ({
         postMessage: vi.fn().mockResolvedValue({ ts: '1704067200.000100' }),
         delete: vi.fn().mockResolvedValue({ ok: true }),
       },
+      reactions: {
+        get: vi.fn().mockResolvedValue({
+          message: {
+            reactions: [{ name: '+1', users: ['U_OPERATOR_7'] }],
+          },
+        }),
+      },
       filesUploadV2: vi.fn().mockResolvedValue({
         files: [{ files: [{ id: 'F_UPLOAD_1' }] }],
       }),
@@ -257,6 +264,20 @@ describe('SlackChannel', () => {
   // --- Message handling ---
 
   describe('message handling', () => {
+    it('reads bounded reaction metadata from one exact message', async () => {
+      const channel = new SlackChannel(createTestOpts());
+      await channel.connect();
+
+      await expect(
+        channel.listMessageReactions('slack:C0123456789', '1800000000.000001'),
+      ).resolves.toEqual([{ name: '+1', reactorUids: ['U_OPERATOR_7'] }]);
+      expect(currentApp().client.reactions.get).toHaveBeenCalledWith({
+        channel: 'C0123456789',
+        timestamp: '1800000000.000001',
+        full: true,
+      });
+    });
+
     it('lets an exact host packet claim a non-approval reaction with provenance', async () => {
       const opts = createTestOpts();
       const channel = new SlackChannel(opts);

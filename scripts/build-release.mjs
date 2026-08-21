@@ -131,6 +131,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_126_company_work_outcome_quality.sql',
     'data/business/migrations/nanoclaw-v2/127_company_work_outcome_review_packets.sql',
     'data/business/migrations/nanoclaw-v2/rollback_127_company_work_outcome_review_packets.sql',
+    'data/business/migrations/nanoclaw-v2/128_company_work_outcome_review_plus_one.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_128_company_work_outcome_review_plus_one.sql',
     'scripts/verify-release.mjs',
     'scripts/activate-release.mjs',
     'scripts/run-action-safety-drill.mjs',

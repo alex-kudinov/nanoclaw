@@ -485,13 +485,26 @@ The private Chief packet is limited to one Slack message and is refused rather
 than truncated if the identity-minimized request plus exact approved response
 does not fit. PostgreSQL stores no prose or customer identity. Only configured
 Slack UIDs reacting on the exact durably bound bot message are recognized:
-✅ `clean`, 🐛 `customer_visible_defect`, ↩️
+✅ or 👍 `clean`, 🐛 `customer_visible_defect`, ↩️
 `customer_visible_reversal`, and 🚨
 `customer_visible_defect_and_reversal`. The UID is hashed, NC-007 dry-run/apply
 is reused, and crash replay is duplicate-only by the same evidence/source key.
 The reaction path is offered before generic check-mark approval, so a clean
 quality label cannot wake Chief as an agent approval. Unconfigured operators,
 typed messages, no reaction, and model output never become a classification.
+
+Migration 128 closes Slack's reaction-name/UI mismatch: the standard 👍 arrives
+as `+1` and is a supported explicit `clean` decision. The service also reads
+only projected reaction metadata for the one exact open packet on startup/daily
+run, so a supported configured-operator reaction that arrived while the listener
+was down or before the vocabulary correction can be reconciled. Slack's exact-
+message API returns a message envelope, but the channel helper discards its
+content and exposes only reaction names and UIDs; content is not inspected,
+logged, or persisted by this path. Exactly one match is required; zero or
+multiple supported reactions fail closed. Slack does not provide the click
+timestamp in that snapshot, so the durable assessment uses the host observation
+time rather than inventing one. This is not channel search, absence-as-clean
+evidence, or model inference.
 
 The service remains default-off through dark deployment. Schema/code presence
 does not authorize the first private packet or reaction; those are a separate

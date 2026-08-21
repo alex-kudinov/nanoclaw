@@ -117,6 +117,19 @@ mode, customer message, remediation, or work mutation. Repository/schema/code
 presence is dark capacity, not authorization to post a packet or classify an
 outcome; follow NC-20260820-008's active-work/changelog state for live status.
 
+Migration 128 is NC-20260820-009's narrow Slack-reaction vocabulary extension.
+Slack names 👍 as `+1`; that exact reaction by a configured operator on the
+exact bound packet is an explicit `clean` decision, equivalent to the existing
+check-mark variants. On startup/daily run, the host may read reaction metadata
+for the one exact open packet and reconcile only one supported configured-
+operator reaction. Zero or multiple supported reactions produce no decision.
+The observation time is recorded because Slack's message reaction snapshot
+does not expose the original click time. Slack's exact-message API returns a
+message envelope, but the channel helper projects only reaction names and UIDs;
+message content is neither inspected nor exposed to the review service, logged,
+or persisted. This adds no channel search, model inference, default clean,
+Gmail access, customer action, remediation, work mutation, or agent grant.
+
 ## Connection
 
 ```bash

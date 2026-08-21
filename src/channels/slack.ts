@@ -1330,6 +1330,31 @@ export class SlackChannel implements Channel {
     this.reactionListeners.push(fn);
   }
 
+  /** Read only the bounded reaction names/UIDs on one exact Slack message. */
+  async listMessageReactions(
+    jid: string,
+    messageTs: string,
+  ): Promise<Array<{ name: string; reactorUids: string[] }>> {
+    if (!this.connected)
+      throw new Error('Slack is disconnected; reactions are unavailable');
+    const result = await this.app.client.reactions.get({
+      channel: jid.replace(/^slack:/, ''),
+      timestamp: messageTs,
+      full: true,
+    });
+    const reactions = (
+      result.message as {
+        reactions?: Array<{ name?: string; users?: string[] }>;
+      }
+    )?.reactions;
+    return (reactions ?? [])
+      .filter((reaction) => Boolean(reaction.name))
+      .map((reaction) => ({
+        name: reaction.name ?? '',
+        reactorUids: reaction.users ?? [],
+      }));
+  }
+
   /**
    * Register a host-side rejection (👎) listener. Invoked for every 👎 on a Mr
    * Gru message; return true to claim it.

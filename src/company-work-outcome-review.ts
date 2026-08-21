@@ -60,6 +60,7 @@ export const COMPANY_WORK_OUTCOME_REVIEW_ENV_KEYS = [
 ] as const;
 
 export const COMPANY_WORK_OUTCOME_REVIEW_REACTIONS = {
+  '+1': 'clean',
   white_check_mark: 'clean',
   heavy_check_mark: 'clean',
   ballot_box_with_check: 'clean',
@@ -154,6 +155,7 @@ export interface CompanyWorkOutcomeReviewStore {
     channelJid: string,
     messageTs: string,
   ): Promise<CompanyWorkOutcomeReviewPacketBinding | null>;
+  findOpenPacket(): Promise<CompanyWorkOutcomeReviewPacketBinding | null>;
   recordDecision(input: {
     packetId: string;
     assessment: CompanyWorkOutcomeAssessment;
@@ -203,6 +205,10 @@ export interface CompanyWorkOutcomeReviewDeps {
     threadTs: string,
     text: string,
   ): Promise<string | undefined>;
+  listMessageReactions(
+    jid: string,
+    messageTs: string,
+  ): Promise<Array<{ name: string; reactorUids: string[] }>>;
   assess(input: {
     workItemId: string;
     deliveryEventVersion: number;
@@ -223,6 +229,7 @@ export interface CompanyWorkOutcomeReviewRunResult {
     | 'no_candidates'
     | 'no_reviewable_evidence'
     | 'duplicate_packet'
+    | 'decision_reconciled'
     | 'posted'
     | 'delivery_uncertain';
   scanned: number;
@@ -555,7 +562,7 @@ export function renderCompanyWorkOutcomeReviewPacket(
     `Subject: ${evidence.approvedSubject}`,
     evidence.approvedBody,
     '',
-    'React exactly once: ✅ clean · 🐛 customer-visible defect · ↩️ customer-visible reversal · 🚨 both defect and reversal.',
+    'React exactly once: ✅ or 👍 clean · 🐛 customer-visible defect · ↩️ customer-visible reversal · 🚨 both defect and reversal.',
     'No reaction means no decision. A reaction records only the quality receipt; it does not send email, remediate, retry, or change the workflow.',
   ].join('\n');
 }
@@ -592,6 +599,33 @@ function packetClaim(row: PacketRow): CompanyWorkOutcomeReviewPacketClaim {
     sourceKeySha256: row.source_key_sha256,
     evidenceSha256: row.evidence_sha256,
     evidenceOccurredAt: canonicalTimestamp(row.evidence_occurred_at),
+  };
+}
+
+function packetBinding(
+  row: PacketRow | undefined,
+): CompanyWorkOutcomeReviewPacketBinding | null {
+  if (
+    !row ||
+    !row.slack_channel_jid ||
+    !row.slack_message_ts ||
+    (row.status !== 'posted' && row.status !== 'decided')
+  )
+    return null;
+  return {
+    ...packetClaim(row),
+    status: row.status,
+    channelJid: row.slack_channel_jid,
+    messageTs: row.slack_message_ts,
+    decisionAssessment:
+      row.decision_assessment as CompanyWorkOutcomeAssessment | null,
+    decisionActorSha256: row.decision_actor_sha256,
+    decisionReaction:
+      row.decision_reaction as CompanyWorkOutcomeReviewReaction | null,
+    decidedAt: row.decided_at ? canonicalTimestamp(row.decided_at) : null,
+    assessmentReceiptId: row.assessment_receipt_id,
+    decisionReceiptStatus:
+      row.decision_receipt_status as CompanyWorkOutcomeReviewPacketBinding['decisionReceiptStatus'],
   };
 }
 
@@ -795,29 +829,19 @@ export class PostgresCompanyWorkOutcomeReviewStore implements CompanyWorkOutcome
           AND slack_message_ts = $2`,
       [channelJid, messageTs],
     );
-    const row = result.rows[0];
-    if (
-      !row ||
-      !row.slack_channel_jid ||
-      !row.slack_message_ts ||
-      (row.status !== 'posted' && row.status !== 'decided')
-    )
-      return null;
-    return {
-      ...packetClaim(row),
-      status: row.status,
-      channelJid: row.slack_channel_jid,
-      messageTs: row.slack_message_ts,
-      decisionAssessment:
-        row.decision_assessment as CompanyWorkOutcomeAssessment | null,
-      decisionActorSha256: row.decision_actor_sha256,
-      decisionReaction:
-        row.decision_reaction as CompanyWorkOutcomeReviewReaction | null,
-      decidedAt: row.decided_at ? canonicalTimestamp(row.decided_at) : null,
-      assessmentReceiptId: row.assessment_receipt_id,
-      decisionReceiptStatus:
-        row.decision_receipt_status as CompanyWorkOutcomeReviewPacketBinding['decisionReceiptStatus'],
-    };
+    return packetBinding(result.rows[0]);
+  }
+
+  async findOpenPacket(): Promise<CompanyWorkOutcomeReviewPacketBinding | null> {
+    const result = await this.db.query<PacketRow>(
+      `SELECT * FROM business_v2.company_work_outcome_review_packets
+        WHERE status = 'posted'
+        ORDER BY id
+        LIMIT 2`,
+    );
+    if (result.rows.length > 1)
+      throw new Error('multiple_open_outcome_review_packets');
+    return packetBinding(result.rows[0]);
   }
 
   async recordDecision(input: {
@@ -1095,6 +1119,54 @@ export class CompanyWorkOutcomeReviewService {
     this.interval = null;
   }
 
+  private async reconcileOpenPacketReaction(): Promise<CompanyWorkOutcomeReviewRunResult | null> {
+    const packet = await this.deps.store.findOpenPacket();
+    if (!packet) return null;
+    const reactions = await this.deps.listMessageReactions(
+      packet.channelJid,
+      packet.messageTs,
+    );
+    const matches = new Map<
+      string,
+      { reactorUid: string; reaction: CompanyWorkOutcomeReviewReaction }
+    >();
+    for (const reaction of reactions) {
+      if (!Object.hasOwn(COMPANY_WORK_OUTCOME_REVIEW_REACTIONS, reaction.name))
+        continue;
+      for (const reactorUid of reaction.reactorUids) {
+        if (!this.config.operatorUids.includes(reactorUid)) continue;
+        const typedReaction = reaction.name as CompanyWorkOutcomeReviewReaction;
+        matches.set(`${reactorUid}:${typedReaction}`, {
+          reactorUid,
+          reaction: typedReaction,
+        });
+      }
+    }
+    if (matches.size === 0) return null;
+    if (matches.size !== 1)
+      throw new Error('ambiguous_operator_outcome_review_reactions');
+    const [match] = matches.values();
+    const handled = await this.handleReaction(packet.messageTs, {
+      jid: packet.channelJid,
+      reactorUid: match.reactorUid,
+      reaction: match.reaction,
+      // Slack's exact-message reaction snapshot has no reaction timestamp.
+      // Record the host observation time as the assessment time instead of
+      // inventing when the operator clicked it.
+      occurredAt: this.deps.now(),
+    });
+    const decided = await this.deps.store.findPacket(
+      packet.channelJid,
+      packet.messageTs,
+    );
+    if (!handled || decided?.status !== 'decided')
+      throw new Error('outcome_review_reconciliation_not_decided');
+    return runResult('decision_reconciled', {
+      packetId: packet.id,
+      messageTs: packet.messageTs,
+    });
+  }
+
   async runOnce(): Promise<CompanyWorkOutcomeReviewRunResult> {
     if (this.running)
       return runResult('unavailable', { errorCode: 'run_in_progress' });
@@ -1103,7 +1175,9 @@ export class CompanyWorkOutcomeReviewService {
     this.status.lastAttemptAt = this.deps.now();
     this.status.totalRuns++;
     try {
-      const result = await runCompanyWorkOutcomeReview(this.config, this.deps);
+      const result =
+        (await this.reconcileOpenPacketReaction()) ??
+        (await runCompanyWorkOutcomeReview(this.config, this.deps));
       this.status.lastResult = result;
       this.status.lastErrorCode = result.errorCode;
       if (
@@ -1255,6 +1329,7 @@ export function createCompanyWorkOutcomeReviewDeps(
   resolveTargetJid: CompanyWorkOutcomeReviewDeps['resolveTargetJid'],
   postPacket: CompanyWorkOutcomeReviewDeps['postPacket'],
   postThread: CompanyWorkOutcomeReviewDeps['postThread'],
+  listMessageReactions: CompanyWorkOutcomeReviewDeps['listMessageReactions'],
 ): CompanyWorkOutcomeReviewDeps {
   return {
     store: new PostgresCompanyWorkOutcomeReviewStore(),
@@ -1263,6 +1338,7 @@ export function createCompanyWorkOutcomeReviewDeps(
       assembleCompanyWorkOutcomeReviewEvidence(target),
     postPacket,
     postThread,
+    listMessageReactions,
     assess: assessCompanyWorkOutcome,
     now: () => new Date().toISOString(),
   };

@@ -160,6 +160,7 @@ function store(
     markPacketPosted: vi.fn().mockResolvedValue(undefined),
     markPacketDeliveryUncertain: vi.fn().mockResolvedValue(undefined),
     findPacket: vi.fn().mockResolvedValue(binding()),
+    findOpenPacket: vi.fn().mockResolvedValue(null),
     recordDecision: vi.fn().mockResolvedValue(undefined),
     markDecisionReceipt: vi.fn().mockResolvedValue(undefined),
     ...overrides,
@@ -175,6 +176,7 @@ function deps(
     assembleEvidence: vi.fn().mockReturnValue(evidence()),
     postPacket: vi.fn().mockResolvedValue('1800000000.000001'),
     postThread: vi.fn().mockResolvedValue('1800000000.000002'),
+    listMessageReactions: vi.fn().mockResolvedValue([]),
     assess: vi.fn().mockResolvedValue({ receiptId: '80', duplicate: false }),
     now: () => NOW,
     ...overrides,
@@ -330,6 +332,84 @@ describe('Company Work outcome packet delivery and decisions', () => {
       NOW,
       '1800000000.000002',
     );
+  });
+
+  it('treats Slack +1 as an explicit clean reaction', async () => {
+    const dependencies = deps();
+    const service = new CompanyWorkOutcomeReviewService(config(), dependencies);
+    await expect(
+      service.handleReaction('1800000000.000001', {
+        jid: 'slack:C_CHIEF',
+        reactorUid: 'U1234567',
+        reaction: '+1',
+        occurredAt: NOW,
+      }),
+    ).resolves.toBe(true);
+    expect(dependencies.assess).toHaveBeenCalledWith(
+      expect.objectContaining({ assessment: 'clean', assessedAt: NOW }),
+    );
+    expect(dependencies.store.recordDecision).toHaveBeenCalledWith(
+      expect.objectContaining({ assessment: 'clean', reaction: '+1' }),
+    );
+  });
+
+  it('reconciles one supported configured-operator reaction on the exact open packet', async () => {
+    const decided = binding({
+      status: 'decided',
+      decisionAssessment: 'clean',
+      decisionActorSha256: 'a'.repeat(64),
+      decisionReaction: '+1',
+      decidedAt: NOW,
+      assessmentReceiptId: '80',
+      decisionReceiptStatus: 'posted',
+    });
+    const reviewStore = store({
+      findOpenPacket: vi.fn().mockResolvedValue(binding()),
+      findPacket: vi
+        .fn()
+        .mockResolvedValueOnce(binding())
+        .mockResolvedValueOnce(decided),
+    });
+    const dependencies = deps({
+      store: reviewStore,
+      listMessageReactions: vi
+        .fn()
+        .mockResolvedValue([{ name: '+1', reactorUids: ['U1234567'] }]),
+    });
+    const service = new CompanyWorkOutcomeReviewService(config(), dependencies);
+
+    await expect(service.runOnce()).resolves.toMatchObject({
+      outcome: 'decision_reconciled',
+      packetId: '9',
+      messageTs: '1800000000.000001',
+    });
+    expect(dependencies.assess).toHaveBeenCalledWith(
+      expect.objectContaining({ assessment: 'clean', assessedAt: NOW }),
+    );
+    expect(reviewStore.recordDecision).toHaveBeenCalledWith(
+      expect.objectContaining({ assessment: 'clean', reaction: '+1' }),
+    );
+    expect(reviewStore.listCandidates).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when the configured operator leaves multiple supported reactions', async () => {
+    const reviewStore = store({
+      findOpenPacket: vi.fn().mockResolvedValue(binding()),
+    });
+    const dependencies = deps({
+      store: reviewStore,
+      listMessageReactions: vi.fn().mockResolvedValue([
+        { name: '+1', reactorUids: ['U1234567'] },
+        { name: 'bug', reactorUids: ['U1234567'] },
+      ]),
+    });
+    const service = new CompanyWorkOutcomeReviewService(config(), dependencies);
+
+    await expect(service.runOnce()).rejects.toThrow(
+      'ambiguous_operator_outcome_review_reactions',
+    );
+    expect(dependencies.assess).not.toHaveBeenCalled();
+    expect(reviewStore.listCandidates).not.toHaveBeenCalled();
   });
 
   it('claims but refuses an unauthorized reaction without assessing', async () => {
