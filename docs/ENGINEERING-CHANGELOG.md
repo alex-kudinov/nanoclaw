@@ -24,6 +24,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   UID without disclosing it, enable the installed default-off service with its
   24-hour interval/30-day window/candidate limit 25, and allow one immediate
   run to post at most one complete packet to Chief.
+- Implementation: a release-bundled configuration transaction is dry-run by
+  default, permits only the existing Company Work operator source or an
+  owner-only single-UID file, exposes only counts, validates the runtime bounds,
+  requires exact host/release confirmation for apply, atomically backs up and
+  writes the environment, and restores the exact prior bytes. The release
+  inventory explicitly includes the helper.
 - Acceptance: copied-data candidate/evidence rehearsal; exact live release and
   empty-ledger preflight; zero-work drain and owner-only backups; one config-only
   restart; one posted packet with claimed/posted events; zero decision/quality
@@ -35,6 +41,15 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Rollback: disable the service and restore the owner-only pre-activation env/
   plist backup. A posted packet and lifecycle remain append-only evidence; never
   delete them to roll back configuration.
+- Verification so far: pinned Node 22 helper/outcome focused tests pass 40 with
+  one explicit integration skip; email-critical passes 721/721, the independent
+  runner passes 43/43, and typecheck/build/diff checks pass. The full suite is
+  2,849 pass, one known CNPC wrapper-contract failure, and six skipped; both
+  implicated CNPC files are byte-identical to base. Production has exactly one
+  valid reusable Company Work operator and remains disabled/empty on exact
+  release `6f40b1da`. Copied-live SQLite plus read-only production PostgreSQL
+  found 13 candidates, reconstructed 13, and rendered all within one Slack
+  message (maximum 2,937 characters), with zero claims, posts, or Gmail calls.
 
 ### NC-20260820-008 — Add exact operator-review packets for outcome quality
 

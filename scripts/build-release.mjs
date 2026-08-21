@@ -138,6 +138,7 @@ try {
     'scripts/set-capability-groups.mjs',
     'scripts/set-booking-capability-boundary.mjs',
     'scripts/set-company-work-exception-loop.mjs',
+    'scripts/set-company-work-outcome-review.mjs',
     'scripts/set-company-time-trigger.mjs',
     'scripts/verify-booking-secret-projection.mjs',
     'scripts/verify-booking-plutio-host-boundary.mjs',
