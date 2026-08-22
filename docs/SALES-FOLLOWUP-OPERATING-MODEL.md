@@ -342,7 +342,7 @@ bindings, assigned commercial ownership, and payment receipts is the next
 process gate. Any reviewed projection, operator presentation, decision
 consumer, draft, send, or schedule remains separately authorized.
 
-Evidence-repair checkpoint (`NC-20260821-006`, candidate only): the approved
+Evidence-repair checkpoint (`NC-20260821-006`, deployed and live-verified): the approved
 Sales action already retains an exact `Lead #<pipeline-entry>` reference. The
 host now derives that identity from the durable approved action, overwrites any
 container claim, and includes `pipeline_entry_id` in the confirmed outbound
@@ -354,10 +354,11 @@ for only the exact invoice document IDs under review. Reconciliation succeeds
 only when invoice total, amount paid, outstanding balance, paid inbound
 transaction sum, and currency agree. A completed exact read containing no
 transactions is positive evidence only for an invoice whose amount paid is
-zero; source failure or contradiction blocks the case. A read-only Mini run of
-the candidate produced zero source errors and classified all eight overdue
-invoices as `collection_review_due`. This is Contador internal review work,
-not permission to draft or send a collection email; the 12 future-due invoices
+zero; source failure or contradiction blocks the case. Exact release
+`8c4e3c2b` is live under Node 22.23.2. Its read-only Mini run produced zero
+source errors across 191 observations and classified all eight overdue invoices
+as `collection_review_due`. This is Contador internal review work, not
+permission to draft or send a collection email; the 12 future-due invoices
 remain waiting.
 
 Owner discovery did not justify a fallback. Current pending proposal and
@@ -369,9 +370,37 @@ not be promoted to owner. The four unsuppressed proposals therefore remain
 blocked pending a separately reviewed owner-assignment contract and explicit
 assignments.
 
-This candidate is not deployed. It adds no projection, case row, Slack card,
-collection review receipt, draft, approval, assignment, customer action,
-schedule, or legacy-task restart.
+The deployed release adds no projection, case row, Slack card, collection
+review receipt, draft, approval, assignment, customer action, schedule, or
+legacy-task restart. Its natural exact Sales receipt remains an outcome-proof
+gate rather than a reason to hold the next read-only milestone.
+
+Internal-review packet checkpoint (`NC-20260821-007`, local candidate): a pure
+builder and `company-followup:review` command turn only exact policy-ready
+`plutio-invoice:<id>` cases into one content-minimized Contador packet. It
+binds the full clean source snapshot plus each invoice's source/decision
+fingerprints, sorts by due date and invoice identity, defaults to ten items,
+caps at 25, and fails closed on any source error, observation-clock mismatch,
+fingerprint drift, malformed invoice identity, or duplicate source identity.
+The command has no apply or post mode.
+
+The proposed internal disposition vocabulary is deliberately non-executing:
+
+| Choice                    | Meaning at this gate                                                |
+| ------------------------- | ------------------------------------------------------------------- |
+| `collectible`             | eligible for a later separately authorized collection workflow     |
+| `payment_plan`            | hold automation and reconcile the documented arrangement           |
+| `dispute_hold`            | hold automation while the dispute is resolved                       |
+| `credit_or_cancel_review` | route to manual accounting review; do not mutate Plutio             |
+| `snooze`                  | defer until a later explicit business date                          |
+| `relationship_review`     | escalate to the accountable relationship owner before customer work |
+
+These strings are packet guidance, not accepted decisions or state changes.
+No case projection, Slack presentation/reaction, Contador run, customer draft,
+or collection action is implemented. A local cross-source canary refused to
+emit a packet when Business v2, SQLite-action, and identity reads were
+unavailable even though Plutio returned records; the complete eight-item packet
+still requires a clean Mini read after an authorized release.
 
 No step in this document authorizes a customer email, proposal/invoice change,
 payment action, bulk backfill, or scheduler activation.

@@ -8,6 +8,42 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260821-007 — Bound the internal receivables review packet
+
+- Date: 2026-08-21
+- Owner/client: Codex
+- State: ready_for_review local candidate; not deployed
+- Commit/PR: isolated branch
+  `codex/nc-20260821-007-followup-review`; implementation commit pending
+- Change class: C3 operator-review contract with no projection, presentation,
+  decision, agent, accounting, customer, scheduler, or send action
+- Outcome: a pure builder selects only exact Plutio receivables that policy
+  `2026-08-21.3` already marks ready for internal Contador review. It orders by
+  due date and invoice identity, defaults to ten items, caps at 25, and emits
+  only opaque invoice/party identity, business dates, balance/currency, policy
+  routing, and SHA-256 evidence bindings.
+- Fail-closed behavior: any source error, observation-clock mismatch,
+  source-fingerprint drift, malformed Plutio invoice identity, duplicate source
+  identity, or invalid cap refuses the entire packet. The fixed review
+  vocabulary is guidance only; the command has no apply/post flag and no code
+  consumes a choice.
+- Verification: focused tests pass 7/7; pinned Node 22.23.2 typecheck, build,
+  documentation continuity, and diff checks pass. The broad suite passes 2,965
+  tests with ten skips; its sole failure is the unchanged baseline CNPC
+  wrapper-literal assertion already present at base `c0d1f0dd`. A local
+  cross-source canary correctly emitted no packet when Business v2,
+  SQLite-action, and identity reads failed even though Plutio returned records.
+- Deployment/migration: none. No schema, PostgreSQL/SQLite row, Slack message,
+  Contador run, Plutio/payment state, draft, customer email, or scheduler state
+  changed.
+- Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
+  `docs/SALES-FOLLOWUP-OPERATING-MODEL.md`, the Company OS roadmap, and this
+  entry.
+- Follow-up: commit/push and build the exact release artifact. A clean Mini
+  packet run requires an authorized release. Durable projection,
+  one bounded private review presentation, exact decision receipts, and every
+  customer-action path remain separately reviewed gates.
+
 ### NC-20260821-006 — Bind follow-up thread and payment evidence
 
 - Date: 2026-08-21

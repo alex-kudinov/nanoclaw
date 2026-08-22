@@ -1295,8 +1295,9 @@ commercial ownership, and payment receipts are now the evidence-backed repair
 priority; reviewed projection, presentation, drafts, sends, and scheduler
 activation remain separate gates.
 
-`NC-20260821-006` implements the next candidate evidence repair without
-activating work. Future operator-approved Sales sends carry their exact
+`NC-20260821-006` deploys and live-verifies the next evidence repair without
+activating work. Exact release `8c4e3c2b` runs under Node 22.23.2. Future
+operator-approved Sales sends carry their exact
 pipeline entry into the Gmail-confirmed interaction receipt, and receivables
 use exact invoice-scoped Plutio paid-transaction reads rather than balance
 inference. A host dry run moves eight overdue invoices only to internal
@@ -1306,8 +1307,20 @@ creator, not an assignee; zero of 1,163 live pipeline entries has populated
 legacy owner metadata; only two of five pending proposals have exactly one
 active pipeline entry. The next owner-assignment milestone must create an
 explicit source and assignments, not a global fallback. Candidate deployment,
-projection, operator presentation, collection decisions, drafts, sends, and
-scheduling remain separate gates.
+operator presentation, collection decisions, drafts, sends, and
+scheduling remain separate gates. The natural exact Sales receipt remains
+outcome-unverified.
+
+`NC-20260821-007` is the local candidate for the next operator-review gate. A
+pure, default-dry-run command selects only exact `receivable` cases that the
+policy already marks `collection_review_due`, binds the full clean snapshot
+and exact invoice evidence into a stable packet fingerprint, orders/caps the
+work, and exposes an explicit non-executing Contador disposition vocabulary.
+It refuses partial source reads, stale observation clocks, changed fingerprints,
+malformed invoice identities, and duplicates. It cannot project a case, post a
+Slack message, accept a decision, run Contador, draft, send, alter Plutio, or
+schedule itself. A local partial-source canary refused without output; clean
+Mini packet proof and every durable/action surface remain separate gates.
 
 ### P2.13 Build management briefs from the ledger
 
