@@ -1311,8 +1311,8 @@ collection decisions, drafts, sends, and
 scheduling remain separate gates. The natural exact Sales receipt remains
 outcome-unverified.
 
-`NC-20260821-007` exact candidate `db174c1b` implements the next
-operator-review gate. A pure, default-dry-run command selects only exact
+`NC-20260821-007` deploys and live-verifies exact release `db174c1b` for the
+next operator-review gate. A pure, default-dry-run command selects only exact
 `receivable` cases that the policy already marks `collection_review_due`,
 binds the full clean snapshot
 and exact invoice evidence into a stable packet fingerprint, orders/caps the
@@ -1320,8 +1320,11 @@ work, and exposes an explicit non-executing Contador disposition vocabulary.
 It refuses partial source reads, stale observation clocks, changed fingerprints,
 malformed invoice identities, and duplicates. It cannot project a case, post a
 Slack message, accept a decision, run Contador, draft, send, alter Plutio, or
-schedule itself. A local partial-source canary refused without output; clean
-Mini packet proof and every durable/action surface remain separate gates.
+schedule itself. The clean Mini read observed 192 cases with zero source errors;
+two identical runs selected all eight exact internal reviews without
+truncation. Two invoices lack a canonical Party ID and remain internal-only.
+Every durable presentation, decision, and action surface remains a separate
+gate.
 
 ### P2.13 Build management briefs from the ledger
 

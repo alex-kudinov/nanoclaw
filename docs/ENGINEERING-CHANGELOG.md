@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: ready_for_deploy exact candidate; not deployed
+- State: complete for the deployed, live-verified read-only packet milestone
 - Commit/PR: isolated branch
   `codex/nc-20260821-007-followup-review`; implementation commit
   `db174c1b2186ad1ded20b97771362a36308d08fb`
@@ -40,17 +40,37 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `14cc8ca4567f8dae11d675117da120c4f5450792fb2e3dfa459ebeae1d2859e8`,
   and archive SHA-256
   `89a7eef9d79b42a26e9c5cbabc4d114915c1d7789d6d2a370d8d94d1c8badea7`.
-- Deployment/migration: none. No schema, PostgreSQL/SQLite row, Slack message,
-  Contador run, Plutio/payment state, draft, customer email, or scheduler state
-  changed.
+- Deployment/migration: no migration. The Mini independently verified and
+  activated exact release `db174c1b` after a zero-work drain. Activation changed
+  only the three release-pointer plist paths and retained rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-8c4e3c2b8d78-2026-08-22T04-45-29-930Z`.
+  Healthy PID 5017 runs the exact release under Node 22.23.2 with one listener,
+  connected Gmail/Slack, empty queues/containers, and zero Slack outgoing
+  queue. No migration, follow-up-case projection, Slack message, Contador run,
+  Plutio/payment state, draft, customer email, or scheduler state changed.
+- Backup/recovery: owner-only backup
+  `NC-20260821-007-20260822T044500Z` contains a WAL-safe SQLite copy (SHA-256
+  `a9a91f3d15c812bc8fb8a211ef9fe6ec83534ade17447ccfcddda636bc265186`)
+  and installed plist (SHA-256
+  `62e2b86910501b2e330091a2b178a0aebcbf687833df870531ad3b053305e7ed`),
+  both mode 0600; the database passed `quick_check`.
+- Live read-only proof: a zero-error shadow observed 192 cases: 167 Sales, five
+  proposals, and 20 invoices; eight are ready, 158 blocked, 14 waiting, and 12
+  terminal. Two packet runs selected the same eight exact invoices without
+  truncation and repeated source fingerprint
+  `dd5d3522a0f653319bfa19039467328d15798b0317fe1da4ced0926df7051659`
+  plus packet fingerprint
+  `790d2c33ff37ac3cbcd6a582ad0bd47ff58e9df13084b728fa57abf6dd0d6b92`.
+  Two items have no canonical Party ID and cannot advance to customer work.
+  Pending-send counts stayed six `blocked` and 89 `confirmed`; the broken daily
+  Sales task stayed paused.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
   `docs/SALES-FOLLOWUP-OPERATING-MODEL.md`, the Company OS roadmap, and this
   entry.
-- Follow-up: push the continuity closeout. Deploy exact candidate `db174c1b`
-  only with explicit authorization, then run a clean Mini packet proof. Durable
-  projection,
-  one bounded private review presentation, exact decision receipts, and every
-  customer-action path remain separately reviewed gates.
+- Follow-up: resolve the two missing canonical Party IDs from source evidence,
+  then separately review one bounded private presentation and exact decision
+  receipt. Durable projection and every customer-action path remain separate
+  gates.
 
 ### NC-20260821-006 — Bind follow-up thread and payment evidence
 

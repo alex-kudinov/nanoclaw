@@ -375,7 +375,7 @@ review receipt, draft, approval, assignment, customer action, schedule, or
 legacy-task restart. Its natural exact Sales receipt remains an outcome-proof
 gate rather than a reason to hold the next read-only milestone.
 
-Internal-review packet checkpoint (`NC-20260821-007`, exact candidate
+Internal-review packet checkpoint (`NC-20260821-007`, deployed exact release
 `db174c1b`): a pure builder and `company-followup:review` command turn only
 exact policy-ready `plutio-invoice:<id>` cases into one content-minimized
 Contador packet. It
@@ -398,10 +398,11 @@ The proposed internal disposition vocabulary is deliberately non-executing:
 
 These strings are packet guidance, not accepted decisions or state changes.
 No case projection, Slack presentation/reaction, Contador run, customer draft,
-or collection action is implemented. A local cross-source canary refused to
-emit a packet when Business v2, SQLite-action, and identity reads were
-unavailable even though Plutio returned records; the complete eight-item packet
-still requires a clean Mini read after an authorized release.
+or collection action is implemented. Exact release `db174c1b` is live on the
+Mini. A clean 192-observation source read produced the same source and packet
+fingerprints twice, selecting all eight internal reviews without truncation.
+Two exact invoices lack a canonical Party ID; they remain valid invoice-level
+internal reviews but cannot advance to customer work until identity resolves.
 
 No step in this document authorizes a customer email, proposal/invoice change,
 payment action, bulk backfill, or scheduler activation.

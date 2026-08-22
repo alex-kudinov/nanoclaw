@@ -35,6 +35,22 @@ Older releases without packaged knowledge retain the configured operational
 mount so rollback remains viable. `FILES.sha256` therefore attests the group
 prompt and the procedures to which it delegates as one release identity.
 
+NC-20260821-007 crossed the read-only receivables-review boundary under exact
+release `db174c1b2186ad1ded20b97771362a36308d08fb`, source tree
+`43f78ae30cff041b99ce03c4e124145fe27f9ac7`, 852 compiled files, artifact
+SHA-256 `14cc8ca4567f8dae11d675117da120c4f5450792fb2e3dfa459ebeae1d2859e8`,
+and archive SHA-256
+`89a7eef9d79b42a26e9c5cbabc4d114915c1d7789d6d2a370d8d94d1c8badea7`.
+Fresh local and Mini verification passed under Node 22.23.2. A zero-work drain
+and mode-0600 WAL-safe SQLite/plist backup preceded the exact three-pointer
+activation retaining rollback to `8c4e3c2b`. Healthy PID 5017 reports the exact
+release/code root, one listener, connected Gmail/Slack, and empty queues. Two
+identical read-only packet runs selected eight exact internal Contador reviews
+from a clean 192-observation snapshot. No case projection, Slack message,
+decision, agent run, draft, source mutation, schedule change, or customer
+action ran; the legacy daily Sales task remains paused. Exact backup, rollback,
+and live-read receipts are in `docs/ENGINEERING-CHANGELOG.md`.
+
 NC-20260821-006 crossed the dark follow-up-evidence release boundary under
 exact release `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`, source tree
 `5511342c361e8841ecef9cb41530424521b176b4`, 844 compiled files, artifact
