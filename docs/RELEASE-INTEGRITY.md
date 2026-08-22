@@ -35,6 +35,23 @@ Older releases without packaged knowledge retain the configured operational
 mount so rollback remains viable. `FILES.sha256` therefore attests the group
 prompt and the procedures to which it delegates as one release identity.
 
+NC-20260821-006 crossed the dark follow-up-evidence release boundary under
+exact release `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`, source tree
+`5511342c361e8841ecef9cb41530424521b176b4`, 844 compiled files, artifact
+SHA-256 `f3da264f381008e7a58094e8acb9391237d6ab6cb6fafecaa95113093583fb73`,
+and archive SHA-256
+`06b89c37e9360028fdcf1cf3db68a2a8c2e8eea91c98bfc43c8fbd87c42c3e20`.
+Fresh local and Mini extraction verified the same bytes under Node 22.23.2. A
+zero-work drain and mode-0600 WAL-safe SQLite/plist backup preceded an exact
+three-pointer activation retaining rollback to `e01c9228`. Healthy PID 53945
+reports the exact release/code root, one listener, connected Gmail/Slack, and
+empty queues/containers. The release-owned read-only follow-up dry run returned
+zero source errors across 191 observations and eight internal Contador reviews;
+no projection, Slack card, draft, approval, source mutation, schedule change,
+or customer action ran. The legacy daily Sales task remains paused. Exact
+backup, rollback, test-baseline, and live-read receipts are in
+`docs/ENGINEERING-CHANGELOG.md`.
+
 Beginning with NC-017, the archive also binds migration 119 and its guarded
 rollback as exact regular files. This makes the reviewed bytes transportable
 and independently verifiable; it does not apply the migration. Database backup,

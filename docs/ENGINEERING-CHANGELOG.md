@@ -12,12 +12,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: ready_for_deploy; implementation, host dry-run, focused gates,
-  and deployment authorization complete; release commit pending
+- State: deployed_unverified; the exact release and payment-source dry run are
+  live-verified; a natural pipeline-bound Sales send receipt remains pending
 - Commit/PR: isolated branch
   `codex/nc-20260821-006-followup-evidence`; implementation commit
-  `1dbc15dff2b57c0ca35a0d1e09c1fa93480e96ff`
-- Change class: C3 operational evidence path; authorized dark release, with no customer,
+  `1dbc15dff2b57c0ca35a0d1e09c1fa93480e96ff`; deployed release
+  `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`
+- Change class: C3 operational evidence path; dark release, with no customer,
   Slack, pipeline, Plutio, payment, projection, scheduler, or email action
 - Outcome: the host derives an exact pipeline entry from the durable approved
   Sales action, overwrites any container claim, and logs that identity with the
@@ -25,9 +26,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   reads aggregate only paid inbound amount/currency/count evidence and reconcile
   it against invoice total, amount paid, outstanding amount, and currency.
 - Fail-closed behavior: missing receipt ID/currency, malformed, contradictory,
-  cross-invoice, duplicate-page, mixed-currency, or over-cap transaction evidence
-  throws and marks the invoice source
-  incomplete. No paid transaction is positive evidence only after the exact
+  cross-invoice, duplicate-page, mixed-currency, or over-cap transaction
+  evidence throws and marks the invoice source incomplete. No paid transaction
+  is positive evidence only after the exact
   bounded read completes and the invoice itself reports zero paid. Historical
   Sales interactions are not backfilled or guessed.
 - Live read-only evidence: the Plutio account returned 172 paid inbound
@@ -47,25 +48,39 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Verification: exact Node 22.23.2 typecheck and build pass. The final focused
   gate passes 94 tests across the affected approval, Gmail receipt, interaction,
   invoice, transaction, source-reconciliation, and shadow-report paths. The
-  unrestricted suite passes 2,956 with ten skips and the sole failure is the
+  unrestricted suite passes 2,958 with ten skips and the sole failure is the
   unchanged pre-existing CNPC wrapper-literal assertion. The first sandboxed
   suite additionally failed listener/child-process tests from execution-policy
   restrictions; the unrestricted rerun cleared all but that baseline failure.
-- Deployment/migration: explicitly authorized but not yet deployed; no schema migration. The candidate build
-  ran only from a host temporary directory under exact Node 22.23.2. Production
-  remains exact release `e01c9228`; the broken daily task remains paused and the
-  legacy proposal loop is unchanged.
-- Rollback/recovery: before deployment, discard/revert the candidate source.
-  After a future deployment, restore the currently retained `e01c9228` release;
-  no data rollback is required because this change writes no follow-up cases or
-  external-system state.
+- Deployment/migration: no schema migration. Immutable release `8c4e3c2b` binds
+  source tree `5511342c361e8841ecef9cb41530424521b176b4`, 844 compiled files,
+  artifact SHA-256 `f3da264f381008e7a58094e8acb9391237d6ab6cb6fafecaa95113093583fb73`,
+  and archive SHA-256
+  `06b89c37e9360028fdcf1cf3db68a2a8c2e8eea91c98bfc43c8fbd87c42c3e20`.
+  Fresh local and Mini extraction both verified under Node 22.23.2. The drained
+  activation changed only the three release-pointer plist paths. PID 53945 now
+  reports the exact release/code root, one listener, connected Gmail/Slack,
+  empty queues/containers, and zero active sends. The broken daily task remains
+  paused. The activated release's dry run completed with zero source errors and
+  the same 191 observations, eight internal-review-ready receivables, 159
+  blocked, 12 waiting, and 12 terminal; no projection apply ran.
+- Rollback/recovery: owner-only backup
+  `NC-20260821-006-20260822T023900Z` contains a WAL-safe SQLite copy (SHA-256
+  `ac0c67a80db0fa167c05c1020098da6bda0753cdda61b7d50d1b4c75de3a635a`)
+  and installed plist (SHA-256
+  `958b35a486d3bbd72c36368eb0d16bd6bb09e908e500253cb75d5edfc09e5b81`),
+  both mode 0600 and integrity-checked. Activation retained rollback plist
+  `com.nanoclaw.plist.rollback-e01c92289eef-2026-08-22T02-39-15-750Z`.
+  Restoring it returns the host to `e01c9228`; no data rollback is required
+  because this release wrote no follow-up cases or external-system state.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
   `docs/SALES-FOLLOWUP-OPERATING-MODEL.md`, `docs/DATA-MODEL.md`, the Company OS
-  roadmap, and this entry.
-- Follow-up: commit/push and activate the authorized immutable release. Create an
-  explicit owner-assignment source and assignments before proposal/customer
-  activation; projection, internal review workflow, drafting, sending, and
-  scheduling remain later gates.
+  roadmap, `docs/RELEASE-INTEGRITY.md`, and this entry.
+- Follow-up: observe the next natural approved Sales send for an exact
+  pipeline-bound Gmail interaction receipt. Create an explicit owner-assignment
+  source and assignments before proposal/customer activation; projection,
+  internal review workflow, drafting, sending, and scheduling remain later
+  gates.
 
 ### NC-20260821-005 — Reconcile the revenue follow-up shadow
 
