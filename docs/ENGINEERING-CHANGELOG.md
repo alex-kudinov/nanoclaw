@@ -15,8 +15,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - State: ready_for_deploy; implementation, host dry-run, focused gates,
   and deployment authorization complete; release commit pending
 - Commit/PR: isolated branch
-  `codex/nc-20260821-006-followup-evidence` based on `b292b407`; implementation
-  commit pending
+  `codex/nc-20260821-006-followup-evidence`; implementation commit
+  `1dbc15dff2b57c0ca35a0d1e09c1fa93480e96ff`
 - Change class: C3 operational evidence path; authorized dark release, with no customer,
   Slack, pipeline, Plutio, payment, projection, scheduler, or email action
 - Outcome: the host derives an exact pipeline entry from the durable approved
