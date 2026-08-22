@@ -39,7 +39,8 @@ export interface FollowupShadowSourceError {
     | 'business_v2'
     | 'sqlite_actions'
     | 'plutio_proposals'
-    | 'plutio_invoices';
+    | 'plutio_invoices'
+    | 'plutio_transactions';
   code: string;
 }
 

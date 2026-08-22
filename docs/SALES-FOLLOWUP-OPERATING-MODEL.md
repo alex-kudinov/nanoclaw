@@ -1,6 +1,6 @@
 # Sales, proposal, and receivables follow-up operating model
 
-Status: process authority and live dark foundation; rejection correction deployed; no source/action wiring
+Status: process authority and live dark foundation; payment/source repair awaiting deployment; no action wiring
 Task: `NC-20260821-002`
 Date: 2026-08-21
 
@@ -341,6 +341,37 @@ records without fixing the underlying evidence. Repairing exact thread
 bindings, assigned commercial ownership, and payment receipts is the next
 process gate. Any reviewed projection, operator presentation, decision
 consumer, draft, send, or schedule remains separately authorized.
+
+Evidence-repair checkpoint (`NC-20260821-006`, candidate only): the approved
+Sales action already retains an exact `Lead #<pipeline-entry>` reference. The
+host now derives that identity from the durable approved action, overwrites any
+container claim, and includes `pipeline_entry_id` in the confirmed outbound
+interaction receipt. This repairs future conversation lineage; it does not
+backfill or guess among the 111 historical party-global threads.
+
+The invoice adapter now performs a bounded, paginated Plutio transaction read
+for only the exact invoice document IDs under review. Reconciliation succeeds
+only when invoice total, amount paid, outstanding balance, paid inbound
+transaction sum, and currency agree. A completed exact read containing no
+transactions is positive evidence only for an invoice whose amount paid is
+zero; source failure or contradiction blocks the case. A read-only Mini run of
+the candidate produced zero source errors and classified all eight overdue
+invoices as `collection_review_due`. This is Contador internal review work,
+not permission to draft or send a collection email; the 12 future-due invoices
+remain waiting.
+
+Owner discovery did not justify a fallback. Current pending proposal and
+person payloads have `createdBy` but no assigned relationship owner; none of
+1,163 live pipeline entries has a populated legacy `metadata.assigned_to`
+value, and only two of five pending proposals resolve to exactly one active
+pipeline entry. `createdBy`, a global sender, or a duplicate active entry must
+not be promoted to owner. The four unsuppressed proposals therefore remain
+blocked pending a separately reviewed owner-assignment contract and explicit
+assignments.
+
+This candidate is not deployed. It adds no projection, case row, Slack card,
+collection review receipt, draft, approval, assignment, customer action,
+schedule, or legacy-task restart.
 
 No step in this document authorizes a customer email, proposal/invoice change,
 payment action, bulk backfill, or scheduler activation.

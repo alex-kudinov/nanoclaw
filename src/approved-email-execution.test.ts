@@ -30,6 +30,7 @@ function action(
     chatJid: 'slack:SALES',
     threadTs: 'approval-thread',
     gmailThreadId: 'gmail-thread',
+    leadRef: 'Lead #1003',
     recipient: 'lead@example.co',
     approvedSubject: subject,
     approvedContentSha256: hashApprovedEmailContent(subject, body),
@@ -51,6 +52,7 @@ function request(overrides: Partial<GmailIpcPayload> = {}): GmailIpcPayload {
     cc: 'unapproved@example.co',
     html: true,
     leadId: 1003,
+    pipelineEntryId: 9999,
     emailType: 'follow-up',
     threadId: 'wrong-thread',
     ...overrides,
@@ -78,6 +80,7 @@ describe('buildHostApprovedEmailExecution', () => {
         threadId: 'gmail-thread',
         approvedRecipient: 'lead@example.co',
         markdown: true,
+        pipelineEntryId: 1003,
       }),
     );
     expect(result.payload).not.toHaveProperty('cc');
@@ -94,10 +97,24 @@ describe('buildHostApprovedEmailExecution', () => {
         'cc',
         'html',
         'lead_id',
+        'pipeline_entry_id',
         'email_type',
         'markdown',
       ]),
     );
+  });
+
+  it('removes untrusted pipeline identity when the durable action has no exact lead binding', () => {
+    const result = buildHostApprovedEmailExecution(
+      action({ leadRef: undefined }),
+      card,
+      request({ pipelineEntryId: 9999 }),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.payload).not.toHaveProperty('pipelineEntryId');
+    expect(result.correctedFields).toContain('pipeline_entry_id');
   });
 
   it('derives follow-up classification from the approved card, not the model', () => {

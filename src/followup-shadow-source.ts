@@ -25,6 +25,7 @@ import type {
   SalesConversationCase,
 } from './followup-policy.js';
 import {
+  isInvoicePaymentReconciled,
   listInvoiceSnapshots,
   type InvoiceSnapshot,
 } from './plutio-invoices.js';
@@ -36,6 +37,10 @@ import {
   type Recipient,
   type RecipientMap,
 } from './plutio-proposals.js';
+import {
+  listInvoicePaymentEvidence,
+  type InvoicePaymentEvidence,
+} from './plutio-transactions.js';
 
 export interface FollowupShadowQueryPort {
   <T extends QueryResultRow = QueryResultRow>(
@@ -100,6 +105,9 @@ export interface FollowupShadowSourceDependencies {
   query: FollowupShadowQueryPort;
   listProposals: () => Promise<ProposalSnapshot[]>;
   listInvoices: () => Promise<InvoiceSnapshot[]>;
+  listInvoicePayments: (
+    invoiceIds: string[],
+  ) => Promise<Map<string, InvoicePaymentEvidence>>;
   resolveRecipients: (clientIds: string[]) => Promise<RecipientMap>;
   readActions: () => ActionEvidence;
 }
@@ -416,6 +424,7 @@ async function mapProposal(
 async function mapInvoice(
   deps: FollowupShadowSourceDependencies,
   invoice: InvoiceSnapshot,
+  payment: InvoicePaymentEvidence | undefined,
   observedAt: string,
   businessSourceComplete: boolean,
   recipient: Recipient | null,
@@ -436,8 +445,7 @@ async function mapInvoice(
     dueAt: invoice.dueAt,
     outstandingAmount: invoice.outstandingAmount,
     currency: invoice.currency,
-    // Plutio invoice arithmetic is not a transaction reconciliation receipt.
-    paymentReconciled: false,
+    paymentReconciled: isInvoicePaymentReconciled(invoice, payment),
     collectionApproved: false,
     specialHandling: false,
     recipientResolved: Boolean(recipient && party.partyId),
@@ -473,6 +481,7 @@ export const followupShadowSourceDependencies: FollowupShadowSourceDependencies 
     query,
     listProposals: listProposalSnapshots,
     listInvoices: listInvoiceSnapshots,
+    listInvoicePayments: listInvoicePaymentEvidence,
     resolveRecipients,
     readActions: readFollowupActionEvidence,
   };
@@ -523,6 +532,19 @@ export async function readFollowupShadowSources(
   }
   if (!invoiceComplete) {
     pushError({ source: 'plutio_invoices', code: 'read_failed' });
+  }
+
+  let invoicePayments = new Map<string, InvoicePaymentEvidence>();
+  let invoicePaymentsComplete = invoiceComplete;
+  if (invoicesRead.status === 'fulfilled' && invoicesRead.value.length > 0) {
+    try {
+      invoicePayments = await deps.listInvoicePayments(
+        invoicesRead.value.map((invoice) => invoice.id),
+      );
+    } catch {
+      invoicePaymentsComplete = false;
+      pushError({ source: 'plutio_transactions', code: 'read_failed' });
+    }
   }
 
   const proposalClientIds =
@@ -653,8 +675,9 @@ export async function readFollowupShadowSources(
             await mapInvoice(
               deps,
               invoice,
+              invoicePayments.get(invoice.id),
               observedAt,
-              businessComplete && actionsComplete,
+              businessComplete && actionsComplete && invoicePaymentsComplete,
               invoice.clientId
                 ? (recipients.get(invoice.clientId) ?? null)
                 : null,

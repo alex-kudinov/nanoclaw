@@ -7,6 +7,7 @@
  */
 
 import { callPlutioTool, stripToJson } from './plutio-cli.js';
+import type { InvoicePaymentEvidence } from './plutio-transactions.js';
 
 export interface InvoiceSnapshot {
   id: string;
@@ -115,6 +116,42 @@ export function parseInvoiceSnapshots(raw: string): InvoiceSnapshot[] {
   return asArray(parsed)
     .map((invoice) => toInvoiceSnapshot(invoice as Record<string, unknown>))
     .filter((invoice): invoice is InvoiceSnapshot => invoice !== null);
+}
+
+const MONEY_TOLERANCE = 0.005;
+
+/**
+ * Require the invoice arithmetic and exact paid-transaction sum to agree.
+ * A completed exact filtered read with zero receipts reconciles a zero
+ * amountPaid; missing/mixed-currency evidence never becomes permission.
+ */
+export function isInvoicePaymentReconciled(
+  invoice: InvoiceSnapshot,
+  payment: InvoicePaymentEvidence | undefined,
+): boolean {
+  const { totalAmount, paidAmount, outstandingAmount, currency } = invoice;
+  if (
+    !payment ||
+    totalAmount === null ||
+    paidAmount === null ||
+    outstandingAmount === null ||
+    !currency ||
+    totalAmount < 0 ||
+    paidAmount < 0 ||
+    outstandingAmount < 0
+  ) {
+    return false;
+  }
+  if (
+    !payment.currencyEvidenceComplete ||
+    payment.currencies.some((item) => item !== currency)
+  ) {
+    return false;
+  }
+  return (
+    Math.abs(totalAmount - paidAmount - outstandingAmount) < MONEY_TOLERANCE &&
+    Math.abs(payment.paidAmount - paidAmount) < MONEY_TOLERANCE
+  );
 }
 
 async function listInvoiceStatus(status: string): Promise<InvoiceSnapshot[]> {

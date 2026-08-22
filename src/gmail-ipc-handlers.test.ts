@@ -463,11 +463,16 @@ describe('outbound email interaction logging', () => {
       subject: 'Re: ACC Program Details',
       body: '<p>Checking back in.</p>',
       leadId: 42,
+      pipelineEntryId: 1003,
       emailType: 'follow-up',
     });
 
     expect(logOutboundEmailInteraction).toHaveBeenCalledWith(
-      expect.objectContaining({ partyId: 42, emailType: 'follow-up' }),
+      expect.objectContaining({
+        partyId: 42,
+        pipelineEntryId: 1003,
+        emailType: 'follow-up',
+      }),
     );
   });
 

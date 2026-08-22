@@ -8,6 +8,65 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260821-006 — Bind follow-up thread and payment evidence
+
+- Date: 2026-08-21
+- Owner/client: Codex
+- State: ready_for_deploy; implementation, host dry-run, focused gates,
+  and deployment authorization complete; release commit pending
+- Commit/PR: isolated branch
+  `codex/nc-20260821-006-followup-evidence` based on `b292b407`; implementation
+  commit pending
+- Change class: C3 operational evidence path; authorized dark release, with no customer,
+  Slack, pipeline, Plutio, payment, projection, scheduler, or email action
+- Outcome: the host derives an exact pipeline entry from the durable approved
+  Sales action, overwrites any container claim, and logs that identity with the
+  Gmail-confirmed outbound interaction. New invoice-scoped Plutio transaction
+  reads aggregate only paid inbound amount/currency/count evidence and reconcile
+  it against invoice total, amount paid, outstanding amount, and currency.
+- Fail-closed behavior: missing receipt ID/currency, malformed, contradictory,
+  cross-invoice, duplicate-page, mixed-currency, or over-cap transaction evidence
+  throws and marks the invoice source
+  incomplete. No paid transaction is positive evidence only after the exact
+  bounded read completes and the invoice itself reports zero paid. Historical
+  Sales interactions are not backfilled or guessed.
+- Live read-only evidence: the Plutio account returned 172 paid inbound
+  transactions, all with exact invoice IDs, and the exact invoice-ID filter was
+  verified without exposing transaction/customer content. The candidate Mini
+  dry run completed with zero source errors across 191 current observations:
+  166 Sales, five proposals, and 20 invoices; eight overdue invoices are now
+  ready only for internal Contador collection review, 12 future-due invoices
+  remain waiting, 159 cases are blocked, and 12 are terminal. No apply ran.
+- Owner finding: Plutio proposal/person payloads provide `createdBy` but no
+  assigned relationship owner. A sanitized PostgreSQL audit found zero owner
+  values across 1,163 pipeline entries; all five pending proposals resolve to a
+  Party, only two resolve to exactly one active pipeline entry, and none has an
+  owner. The candidate keeps four unsuppressed proposals blocked rather than
+  inventing an owner. `docs/DATA-MODEL.md` described an `assigned_to` column
+  that running migration 07 never implemented; the drift is now explicit.
+- Verification: exact Node 22.23.2 typecheck and build pass. The final focused
+  gate passes 94 tests across the affected approval, Gmail receipt, interaction,
+  invoice, transaction, source-reconciliation, and shadow-report paths. The
+  unrestricted suite passes 2,956 with ten skips and the sole failure is the
+  unchanged pre-existing CNPC wrapper-literal assertion. The first sandboxed
+  suite additionally failed listener/child-process tests from execution-policy
+  restrictions; the unrestricted rerun cleared all but that baseline failure.
+- Deployment/migration: explicitly authorized but not yet deployed; no schema migration. The candidate build
+  ran only from a host temporary directory under exact Node 22.23.2. Production
+  remains exact release `e01c9228`; the broken daily task remains paused and the
+  legacy proposal loop is unchanged.
+- Rollback/recovery: before deployment, discard/revert the candidate source.
+  After a future deployment, restore the currently retained `e01c9228` release;
+  no data rollback is required because this change writes no follow-up cases or
+  external-system state.
+- Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
+  `docs/SALES-FOLLOWUP-OPERATING-MODEL.md`, `docs/DATA-MODEL.md`, the Company OS
+  roadmap, and this entry.
+- Follow-up: commit/push and activate the authorized immutable release. Create an
+  explicit owner-assignment source and assignments before proposal/customer
+  activation; projection, internal review workflow, drafting, sending, and
+  scheduling remain later gates.
+
 ### NC-20260821-005 — Reconcile the revenue follow-up shadow
 
 - Date: 2026-08-21

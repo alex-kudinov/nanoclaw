@@ -68,6 +68,8 @@ export interface GmailIpcPayload {
   leadId?: number;
   // Host-stamped from durable approval state; container input is overwritten.
   actionId?: string;
+  /** Host-stamped exact Sales pipeline entry; container input is overwritten. */
+  pipelineEntryId?: number;
   approvedRecipient?: string;
   /** Host-stamped visible CC list from the exact approved card. */
   approvedCc?: string;
@@ -561,6 +563,7 @@ export async function handleGmailReply(
     subject: result.subject || data.subject || '',
     threadId: result.threadId,
     messageId: result.messageId,
+    ...(data.pipelineEntryId ? { pipelineEntryId: data.pipelineEntryId } : {}),
   });
 
   logger.info(
@@ -831,6 +834,7 @@ export async function handleGmailSend(
     subject: data.subject,
     threadId: result.threadId,
     messageId: result.messageId,
+    ...(data.pipelineEntryId ? { pipelineEntryId: data.pipelineEntryId } : {}),
   });
 
   logger.info(

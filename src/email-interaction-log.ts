@@ -18,6 +18,8 @@ export interface OutboundEmailLog {
   subject: string;
   threadId: string;
   messageId: string;
+  /** Exact host-approved Sales pipeline entry, when this action has one. */
+  pipelineEntryId?: number;
 }
 
 /**
@@ -35,6 +37,10 @@ export async function logOutboundEmailInteraction(
     message_id: row.messageId,
     email_type: row.emailType,
     follow_up: row.emailType === 'follow-up',
+    ...(Number.isSafeInteger(row.pipelineEntryId) &&
+    (row.pipelineEntryId ?? 0) > 0
+      ? { pipeline_entry_id: row.pipelineEntryId }
+      : {}),
   };
 
   try {
@@ -50,6 +56,7 @@ export async function logOutboundEmailInteraction(
         emailType: row.emailType,
         threadId: row.threadId,
         messageId: row.messageId,
+        pipelineEntryId: row.pipelineEntryId,
       },
       'outbound email interaction logged',
     );

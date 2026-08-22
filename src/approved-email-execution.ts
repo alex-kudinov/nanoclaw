@@ -16,6 +16,13 @@ function changed(a: unknown, b: unknown): boolean {
   return (a ?? undefined) !== (b ?? undefined);
 }
 
+function pipelineEntryIdFromLeadRef(value: string | undefined): number | null {
+  const exact = /^Lead\s*#\s*([1-9][0-9]*)$/i.exec(value ?? '');
+  if (!exact) return null;
+  const parsed = Number(exact[1]);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
 /**
  * Rehydrate every customer-facing field from the exact card the operator
  * approved. Mailman's Gmail call is execution intent, not content authority.
@@ -112,6 +119,9 @@ export function buildHostApprovedEmailExecution(
           : 'initial',
     markdown: true,
   };
+  const pipelineEntryId = pipelineEntryIdFromLeadRef(action.leadRef);
+  if (pipelineEntryId) payload.pipelineEntryId = pipelineEntryId;
+  else delete payload.pipelineEntryId;
   if (approved.cc) payload.cc = approved.cc;
   else {
     delete payload.cc;
@@ -143,6 +153,8 @@ export function buildHostApprovedEmailExecution(
     changed(request.approvedCc, payload.approvedCc) && 'approved_cc',
     changed(request.html, payload.html) && 'html',
     changed(request.leadId, payload.leadId) && 'lead_id',
+    changed(request.pipelineEntryId, payload.pipelineEntryId) &&
+      'pipeline_entry_id',
     changed(request.emailType, payload.emailType) && 'email_type',
     changed(request.markdown, payload.markdown) && 'markdown',
   ].filter((field): field is string => Boolean(field));

@@ -103,6 +103,19 @@ function dependencies(
         clientId: 'person-1',
       },
     ],
+    listInvoicePayments: async (invoiceIds) =>
+      new Map(
+        invoiceIds.map((invoiceId) => [
+          invoiceId,
+          {
+            invoiceId,
+            paidAmount: 0,
+            currencies: [],
+            currencyEvidenceComplete: true,
+            paidTransactionCount: 0,
+          },
+        ]),
+      ),
     resolveRecipients: async (clientIds) =>
       new Map(
         clientIds.map((clientId) => [
@@ -123,7 +136,7 @@ function dependencies(
 }
 
 describe('follow-up shadow source reconciliation', () => {
-  it('blocks duplicate Sales identity and preserves truthful owner/payment gaps', async () => {
+  it('blocks duplicate Sales identity and preserves truthful owner gaps', async () => {
     const output = await readFollowupShadowSources(
       '2026-08-21T16:00:00.000Z',
       dependencies(),
@@ -150,11 +163,33 @@ describe('follow-up shadow source reconciliation', () => {
       expect.objectContaining({
         lane: 'receivable',
         partyId: '10',
-        paymentReconciled: false,
+        paymentReconciled: true,
         ownerResolved: false,
       }),
     );
     expect(JSON.stringify(output)).not.toContain('transient@example.com');
+  });
+
+  it('fails invoice evidence closed when the transaction read fails', async () => {
+    const output = await readFollowupShadowSources(
+      '2026-08-21T16:00:00.000Z',
+      dependencies({
+        listInvoicePayments: async () => {
+          throw new Error('transactions unavailable');
+        },
+      }),
+    );
+    expect(output.sourceErrors).toContainEqual({
+      source: 'plutio_transactions',
+      code: 'read_failed',
+    });
+    const invoice = output.observations.find(
+      (item) => item.case.lane === 'receivable',
+    );
+    expect(invoice?.case).toMatchObject({
+      sourceEvidenceComplete: false,
+      paymentReconciled: false,
+    });
   });
 
   it('makes proposal-source failure block Sales instead of assuming no open proposal', async () => {

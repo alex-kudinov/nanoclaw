@@ -840,6 +840,14 @@ The pre-sale funnel. A party can be in the funnel for multiple programs at the s
 | `created_at`        | `timestamptz NOT NULL DEFAULT now()`                        |                                                                                                                                                                                                                                                                               |
 | `updated_at`        | `timestamptz NOT NULL DEFAULT now()`                        |                                                                                                                                                                                                                                                                               |
 
+Implementation note (2026-08-21, `NC-20260821-006`): this table describes the
+intended owner contract, but running migration `07_pipeline.sql` does not yet
+contain `assigned_to`. The legacy backfill retained its source value only in
+`metadata.assigned_to`, and a sanitized live audit found that field populated
+on zero of 1,163 entries. Code must not query the documented column, infer an
+owner from Plutio `createdBy`, or treat a global sender as the relationship
+owner until a tracked migration and explicit assignments reconcile this drift.
+
 Indexes + constraints:
 
 - `CREATE INDEX ON pipeline_entries (stage, entered_stage_at);` — watchdog queries like "find all leads stuck in `replied` for >5 days."

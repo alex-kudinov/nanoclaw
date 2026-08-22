@@ -1295,6 +1295,20 @@ commercial ownership, and payment receipts are now the evidence-backed repair
 priority; reviewed projection, presentation, drafts, sends, and scheduler
 activation remain separate gates.
 
+`NC-20260821-006` implements the next candidate evidence repair without
+activating work. Future operator-approved Sales sends carry their exact
+pipeline entry into the Gmail-confirmed interaction receipt, and receivables
+use exact invoice-scoped Plutio paid-transaction reads rather than balance
+inference. A host dry run moves eight overdue invoices only to internal
+Contador review and leaves 12 future-due invoices waiting. The same discovery
+proved ownership cannot be safely inferred: current Plutio records expose a
+creator, not an assignee; zero of 1,163 live pipeline entries has populated
+legacy owner metadata; only two of five pending proposals have exactly one
+active pipeline entry. The next owner-assignment milestone must create an
+explicit source and assignments, not a global fallback. Candidate deployment,
+projection, operator presentation, collection decisions, drafts, sends, and
+scheduling remain separate gates.
+
 ### P2.13 Build management briefs from the ledger
 
 Generate:
