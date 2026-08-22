@@ -1306,14 +1306,15 @@ proved ownership cannot be safely inferred: current Plutio records expose a
 creator, not an assignee; zero of 1,163 live pipeline entries has populated
 legacy owner metadata; only two of five pending proposals have exactly one
 active pipeline entry. The next owner-assignment milestone must create an
-explicit source and assignments, not a global fallback. Candidate deployment,
-operator presentation, collection decisions, drafts, sends, and
+explicit source and assignments, not a global fallback. Operator presentation,
+collection decisions, drafts, sends, and
 scheduling remain separate gates. The natural exact Sales receipt remains
 outcome-unverified.
 
-`NC-20260821-007` is the local candidate for the next operator-review gate. A
-pure, default-dry-run command selects only exact `receivable` cases that the
-policy already marks `collection_review_due`, binds the full clean snapshot
+`NC-20260821-007` exact candidate `db174c1b` implements the next
+operator-review gate. A pure, default-dry-run command selects only exact
+`receivable` cases that the policy already marks `collection_review_due`,
+binds the full clean snapshot
 and exact invoice evidence into a stable packet fingerprint, orders/caps the
 work, and exposes an explicit non-executing Contador disposition vocabulary.
 It refuses partial source reads, stale observation clocks, changed fingerprints,

@@ -375,9 +375,10 @@ review receipt, draft, approval, assignment, customer action, schedule, or
 legacy-task restart. Its natural exact Sales receipt remains an outcome-proof
 gate rather than a reason to hold the next read-only milestone.
 
-Internal-review packet checkpoint (`NC-20260821-007`, local candidate): a pure
-builder and `company-followup:review` command turn only exact policy-ready
-`plutio-invoice:<id>` cases into one content-minimized Contador packet. It
+Internal-review packet checkpoint (`NC-20260821-007`, exact candidate
+`db174c1b`): a pure builder and `company-followup:review` command turn only
+exact policy-ready `plutio-invoice:<id>` cases into one content-minimized
+Contador packet. It
 binds the full clean source snapshot plus each invoice's source/decision
 fingerprints, sorts by due date and invoice identity, defaults to ten items,
 caps at 25, and fails closed on any source error, observation-clock mismatch,

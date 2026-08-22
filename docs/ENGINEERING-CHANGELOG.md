@@ -12,9 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-21
 - Owner/client: Codex
-- State: ready_for_review local candidate; not deployed
+- State: ready_for_deploy exact candidate; not deployed
 - Commit/PR: isolated branch
-  `codex/nc-20260821-007-followup-review`; implementation commit pending
+  `codex/nc-20260821-007-followup-review`; implementation commit
+  `db174c1b2186ad1ded20b97771362a36308d08fb`
 - Change class: C3 operator-review contract with no projection, presentation,
   decision, agent, accounting, customer, scheduler, or send action
 - Outcome: a pure builder selects only exact Plutio receivables that policy
@@ -33,14 +34,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   wrapper-literal assertion already present at base `c0d1f0dd`. A local
   cross-source canary correctly emitted no packet when Business v2,
   SQLite-action, and identity reads failed even though Plutio returned records.
+- Release proof: the pinned packager passed 732 email-critical tests plus the
+  independent agent-runner build and 43 tests. It verified 852 compiled files
+  for source tree `43f78ae30cff041b99ce03c4e124145fe27f9ac7`, artifact SHA-256
+  `14cc8ca4567f8dae11d675117da120c4f5450792fb2e3dfa459ebeae1d2859e8`,
+  and archive SHA-256
+  `89a7eef9d79b42a26e9c5cbabc4d114915c1d7789d6d2a370d8d94d1c8badea7`.
 - Deployment/migration: none. No schema, PostgreSQL/SQLite row, Slack message,
   Contador run, Plutio/payment state, draft, customer email, or scheduler state
   changed.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
   `docs/SALES-FOLLOWUP-OPERATING-MODEL.md`, the Company OS roadmap, and this
   entry.
-- Follow-up: commit/push and build the exact release artifact. A clean Mini
-  packet run requires an authorized release. Durable projection,
+- Follow-up: push the continuity closeout. Deploy exact candidate `db174c1b`
+  only with explicit authorization, then run a clean Mini packet proof. Durable
+  projection,
   one bounded private review presentation, exact decision receipts, and every
   customer-action path remain separately reviewed gates.
 
