@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-23T15:02Z
 - Owner/client: Codex
-- State: in_progress; local implementation complete, commit/release pending
+- State: complete; deployed and one natural source live-verified
 - Change class: C3-capable production source/write path constrained to one
   internal Company Work projection; no message or remediation authority
 - Authorization: accepted decision
@@ -45,6 +45,34 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `runs=6489`, timed out, and automatically restored the prior plist. No
   projection/configuration occurred. The helper now accepts one or more clean
   post-load runs while still requiring idle state and exit zero.
+- Corrected release: commit `d39bc0733e2d6840f69a43361c654b7734973170`,
+  source tree `2bb0413c17b62caa7b32c1903db24441504a7306`, unchanged
+  880-file artifact SHA-256
+  `e0a27abc075cd6924cebb9f153af86e1291958aa08e420043adb8e02df12459a`,
+  archive SHA-256
+  `6b4f082e3322964308c5450ca04af2a511d52572d82adebbf192a332f2ed769c`.
+- Deployment: main activator retained rollback to `0ddb8794`; corrected
+  fast-healer activator retained
+  `com.nanoclaw.healer.fast.plist.rollback-index-2026-08-23T15-17-25-731Z`.
+  Its first disabled target cycle exited zero. Value-redacted config dry-run/
+  apply then created backup
+  `.env.rollback-company-healer-work-2026-08-23T15-17-48-670Z` and enabled one
+  exact natural source with `MAX_ITEMS=1`.
+- Natural proof: source `healer:16963ebd92091e9f` was selected from the live
+  catalog by opaque identity/status only; no diagnosis or solution text was
+  read. Cycle one created one `accepted/blocked` item, one minimized
+  observation, and two versioned events. Cycle two returned exact replay with
+  counts unchanged. The bounded report shows one attention item with blocked/
+  stale reasons and no contradictory state, event gap, missing receipt, or
+  source gap.
+- Non-interference: non-healer items/events remain exactly 25/164 with hashes
+  `f33bc212ff651de5ca4008492d4333ff` and
+  `5dcba1f05ba82584b6ed4e3f314b6e20`; receipts remain 76. Main release health,
+  Gmail/Slack, outgoing/active/waiting queues, and fast-healer exit are healthy;
+  main/fast error logs remain 273/24 lines. No second source, manufactured
+  incident, Slack post/presentation, remediation/action, schedule, or
+  credential change occurred.
+- Evidence: `docs/programs/company-os/evidence/NC-20260823-002-bounded-healer-projection.md`.
 
 ### NC-20260823-001 — Deploy dark healer-resolution schema and host release
 

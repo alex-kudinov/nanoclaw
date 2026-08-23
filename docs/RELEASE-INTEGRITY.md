@@ -92,6 +92,14 @@ exact source. Both default to dry-run and require exact-host confirmation for
 mutation. The main daemon activator remains separate. A fast-healer release
 must be deployed with projection off before the one-source config is applied.
 
+Corrected exact release `d39bc0733e2d6840f69a43361c654b7734973170`
+crossed both boundaries after the first activator attempt exposed launchd's
+run-counter reset and automatically rolled back. The corrected helper verified
+one disabled post-load cycle, then one exact natural source was configured and
+projected once; exact replay was no-op. Main and fast-healer releases, channels,
+queues, error logs, and non-healer Company Work fingerprints remained healthy
+and unchanged.
+
 NC-20260820-002 crossed the equivalent program-facts release boundary with
 exact implementation `8344524cf4a439b84eb792cdf7b4a16b65178a6a`, source tree
 `fac86f42aebcaf2e765ec16024fc679e9fa8aca1`, 788 compiled files, artifact
