@@ -14,7 +14,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Owner/client: Codex
 - State: ready_for_deploy exact live-base candidate; not yet deployed
 - Commit/PR: isolated branch `codex/program-facts-live-release-20260823`,
-  based on exact live release `db174c1b`; implementation commit `a70d6c5d`
+  based on exact live release `db174c1b`; implementation commits `a70d6c5d`
+  and `ca05f6df`
 - Change class: C3 knowledge/release closure with no customer communication,
   certificate issuance, price/product, learner-state, schedule, migration, or
   credential change
@@ -36,7 +37,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   from immutable `NANOCLAW_CODE_ROOT`. This prevents a dirty operational facts
   or knowledge copy from passing or failing a release-owned detector run.
 - Verification: catalog sync/check reports all 13 knowledge files current;
-  focused TypeScript tests pass 25/25 and Python sync tests pass 2/2. Pinned
+  focused release-path TypeScript tests pass 29/29 and Python sync tests pass
+  2/2. Pinned
   Node 22.23.2 typecheck, documentation continuity, email replay 13/13,
   email-critical 732/732, and independent runner build/tests 43/43 pass. The
   broad suite passes 2,969 tests with ten skips; its sole failure is the
@@ -46,6 +48,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   hash marker; the new source-controlled sync check passes independently.
 - Deployment/rollback: pending immutable build and activation. No migration or
   data rollback applies; runtime rollback is the retained prior release plist.
+  Candidate `a9235381` was transferred and verified on the Mini but deliberately
+  not activated after preflight exposed its cwd-owned tracked-input resolution;
+  `ca05f6df` corrects that boundary before the final build.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
   `knowledge/README.md`, generated knowledge files, and this entry.
 
