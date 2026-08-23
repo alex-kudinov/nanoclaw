@@ -33,6 +33,7 @@
     "company-followup:review": "./scripts/with-pinned-node.sh node dist/followup-review-cli.js",
     "company-program-facts:run": "./scripts/with-pinned-node.sh node dist/program-facts-drift-job.js",
     "healer:resolution-catalog": "./scripts/with-pinned-node.sh node dist/healer/resolution-catalog-cli.js",
+    "healer:company-work-plan": "./scripts/with-pinned-node.sh node dist/healer/company-work-projection-cli.js",
     "company-gmail:coverage": "./scripts/with-pinned-node.sh node dist/gmail-historical-coverage-cli.js",
     "company-gmail:bootstrap": "./scripts/with-pinned-node.sh node dist/company-gmail-source-bootstrap-cli.js",
     "company-gmail:audit": "./scripts/with-pinned-node.sh node dist/company-gmail-mailbox-audit-cli.js",

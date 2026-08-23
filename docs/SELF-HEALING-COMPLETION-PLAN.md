@@ -141,6 +141,19 @@ incidents each reach exactly one visible terminal or pending-decision state;
 restarts and repeated observations neither lose the proposed solution nor
 duplicate the catalog item. Company Work projection remains the next milestone.
 
+`NC-20260822-016` adds the deterministic projection plan, still without a write
+path. The current ledger cannot truthfully reuse `sales_email`, `host_job_run`,
+or `program_facts_drift`: those workflow and completion constraints encode
+different identity and receipt semantics. The dry-run plan therefore names the
+required future `healer_resolution` / `healer_resolution_receipt` contract and
+plans stable ensure, update, reopen, verified-close, named-no-action close,
+verification hold, or no-op operations from catalog plus existing projection
+snapshots. Exact replay is no-op; changed evidence updates the same source key;
+recurrence reopens a terminal item. The CLI has no apply flag and is not wired
+to any ledger writer. Migration, observation persistence, owner assignment,
+decision receipts, report support, and activation remain the next reviewed
+milestone.
+
 ### Gate C — Replace raw shell with a typed action registry
 
 Do not enable the current command path. Replace `proposed_fix.command` execution

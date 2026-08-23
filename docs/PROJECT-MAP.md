@@ -632,6 +632,15 @@ trust metadata; output omits raw context, executable content, Slack/thread
 identity, and investigation paths. The catalog is local source only until a
 separate review adds a privacy-minimized Company Work projection.
 
+`NC-20260822-016` locally adds the next pure projection contract. It refuses to
+mislabel healer decisions as an existing workflow and declares the required
+future `healer_resolution` workflow, `healer_resolution_receipt` completion,
+and content-minimized observation table. Given catalog items and an existing
+projection snapshot, it deterministically plans ensure/update/reopen/close/hold
+or no-op behavior. The standalone command is dry-run-only, has no ledger writer,
+and remains absent from daemon, scheduler, collector, approval, remediation,
+and implementation composition.
+
 ### Container package
 
 `container/agent-runner` is an independent Node/TypeScript package:

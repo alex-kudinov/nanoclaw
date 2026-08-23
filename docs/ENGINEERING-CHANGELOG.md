@@ -8,6 +8,40 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260822-016 — Plan truthful healer-to-Company-Work projection
+
+- Date: 2026-08-23
+- Owner/client: Codex
+- State: ready_for_review local dry-run candidate; not deployed
+- Commit/PR: `codex/self-healing-visible-resolution-20260823` after read-only
+  checkpoint `6703de6e`; implementation commit pending
+- Change class: C2 reversible internal source; no database or runtime mutation
+- Finding: current Company Work workflow and completion constraints cannot
+  represent individual healer-resolution decisions. Reusing Sales, host-job,
+  or program-facts semantics would make identity, report, and closure receipts
+  false. The existing core item also has no general owner field.
+- Outcome: a pure projection contract declares the future
+  `healer_resolution` / `healer_resolution_receipt` schema and plans stable
+  ensure, update, reopen, verified close, named-no-action close, verification
+  hold, and no-op operations. It binds only catalog identity, resolution
+  fingerprint, normalized decision block code, explicit unassigned owner, and
+  closure condition.
+- Safety: exact replay is no-op; changed evidence updates the same source; a
+  terminal item reopens on recurrence; monitoring never closes decision work
+  without verified evidence. The CLI has no apply flag and no ledger writer is
+  imported or wired.
+- Verification: focused projection/CLI tests pass 9/9; complete healer suite
+  passes 24 files / 218 tests; pinned Node 22.23.2 typecheck and production
+  build pass; documentation continuity and diff checks pass. Broad suite passes
+  2,993 tests with ten skips; its sole failure is the unchanged base CNPC
+  wrapper-literal assertion.
+- Deployment/migration: none. Migration, observation persistence, owner source,
+  decision receipts, report support, default-off adapter, PostgreSQL rehearsal,
+  deployment, and activation remain separate.
+- Documentation: self-healing completion authority, project map, active work,
+  `docs/programs/company-os/evidence/NC-20260822-016-healer-company-work-plan.md`,
+  and this entry.
+
 ### NC-20260822-015 — Expose hidden healer resolutions as a read-only catalog
 
 - Date: 2026-08-23
