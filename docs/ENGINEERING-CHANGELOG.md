@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-23T14:10Z
 - Owner/client: Codex
-- State: in_progress; production mutation not started
+- State: complete; deployed and live-verified dark, adapter disabled
 - Change class: C3 production schema/service release; adapter remains disabled
 - Authorization: accepted owner decision
   `decision:self-healing-resolution-dark-deploy` authorizes commit/push,
@@ -26,6 +26,48 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   service rollback receipts, exact migration/permissions/trigger readback,
   activator dry-run/apply output, `/health`, listener/channel/queue/log checks,
   and protected Company Work aggregate comparison.
+- Commits/push: implementation `e7ddaf9e`; deployment authority/continuity and
+  exact release commit `97026492b85e1fe86ea9387d2bb3c9dc74019546`; branch
+  pushed to `origin/codex/self-healing-visible-resolution-20260823`.
+- Artifact: source tree
+  `f8e9ddb4f4d4338f7eb7f537a00876aeb20b01ad`; 876-file compiled artifact
+  SHA-256 `fe170e94ceca79cd3b67f9a8bd5bd1fd6a32811000c554d475710aa073d09fc3`;
+  archive SHA-256
+  `c840ee53a8157534c2337e8fe5c592e28f35d3d4ccfc0f4951848ac6556c44d0`.
+  Fresh local and Mini extraction/runtime verification passed under Node
+  22.23.2.
+- Preflight: prior exact release `1f474f90` was healthy with one listener,
+  Gmail/Slack connected, zero active containers/waiting groups/active approved
+  sends, empty outgoing Slack queue, SQLite `quick_check=ok`, adapter disabled
+  or absent, migration 132 absent, and zero healer work.
+- Backup/migration: mode-0600 backup
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260823-001-20260823T141637Z`
+  retains a valid custom-format `business_v2` dump SHA-256
+  `f28c21f8b5381331b56b1b01e5a25057728fdf110238c2329ccb53f521051acc`
+  plus prior plist SHA-256
+  `1c2b8494df435c9bcfc4e76828f046b5236eabdffb1c7e05729cfdaa970a5743`.
+  Exact migration 132 then produced one empty admin-owned observation table,
+  one enabled append-only trigger, zero non-admin grants, and zero healer items.
+- Activation: dry-run named exactly `NANOCLAW_CODE_ROOT`,
+  `NANOCLAW_EXPECTED_RELEASE_COMMIT`, and `ProgramArguments.1`. One applied
+  transaction retained rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-1f474f908484-2026-08-23T14-17-15-477Z`
+  and converged to PID 83080 on exact release `97026492…`.
+- Independent live proof: release mode/manifest/code-root/Node identity all
+  match; one TCP listener; Gmail and Slack connected; zero active containers,
+  active queue, waiting groups, outgoing Slack queue, or active approved sends;
+  SQLite `quick_check=ok`; Company Work exception loop has zero consecutive
+  failures; error-log line count remained 273. The release-owned
+  `healer_resolution` report returns zero rows/exceptions. Migration 132 remains
+  empty/admin-only/append-only with zero non-admin grants.
+- Non-interference: protected Company Work stayed exactly 25 items / 164 events
+  / 76 receipts with hashes `f33bc212ff651de5ca4008492d4333ff`,
+  `5dcba1f05ba82584b6ed4e3f314b6e20`, and
+  `b81eb8e144fa274d5f7421e16ac0d4e2` before migration, after migration, and
+  after activation.
+- External effects: additive migration 132 and exact host release only. No
+  healer incident projection, owner-work presentation, Slack post,
+  remediation/action, schedule, credential, or adapter activation occurred.
 
 ### NC-20260822-017 — Add dark healer-resolution Company Work schema
 
@@ -69,6 +111,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - 2026-08-23T14:12Z addendum: owner-authorized deployment continues under
   `NC-20260823-001`; local state advances to `ready_for_deploy` at commit
   `e7ddaf9e`. No production mutation had started at this boundary.
+- 2026-08-23T14:18Z addendum: migration 132 and exact release `97026492b85e`
+  are live and independently verified dark under `NC-20260823-001`. NC-017 is
+  complete at its stated boundary; live projection and activation remain
+  separately unauthorized.
 - Deployment: none; no production/provider read or write, projection, message,
   action, configuration, restart, or external state change.
 

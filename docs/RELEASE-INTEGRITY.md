@@ -70,6 +70,19 @@ Company Work aggregates before and after activation. Bundling or applying the
 migration does not authorize live incident projection, owner-work
 presentation, remediation, or another healer action.
 
+`NC-20260823-001` crossed that exact dark boundary under release
+`97026492b85e1fe86ea9387d2bb3c9dc74019546`, source tree
+`f8e9ddb4f4d4338f7eb7f537a00876aeb20b01ad`, 876-file artifact SHA-256
+`fe170e94ceca79cd3b67f9a8bd5bd1fd6a32811000c554d475710aa073d09fc3`,
+and archive SHA-256
+`c840ee53a8157534c2337e8fe5c592e28f35d3d4ccfc0f4951848ac6556c44d0`.
+After a zero-work drain and affected-state backup, migration 132 applied empty
+and admin-only; activation retained rollback to exact release `1f474f90`.
+Independent live proof shows the intended release/code root/Node, one listener,
+connected Gmail/Slack, empty queues, disabled adapter, empty healer report,
+unchanged protected Company Work fingerprints, and no new error lines. This
+dark deployment does not authorize live projection or remediation.
+
 NC-20260820-002 crossed the equivalent program-facts release boundary with
 exact implementation `8344524cf4a439b84eb792cdf7b4a16b65178a6a`, source tree
 `fac86f42aebcaf2e765ec16024fc679e9fa8aca1`, 788 compiled files, artifact
