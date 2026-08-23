@@ -8,6 +8,31 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260823-003 — Present one healer exception to Chief
+
+- Date: 2026-08-23T15:24Z
+- Owner/client: Codex
+- State: complete; one packet/pickup/attempt live-verified
+- Change class: C3 internal Slack presentation and Chief pickup/attempt
+- Authorization: accepted decision
+  `decision:self-healing-owner-presentation-canary` permits one bounded daemon
+  restart and one existing-loop packet/attempt for the sole healer work item.
+- Boundary: no second source, repeated manual trigger, remediation, source
+  correction, customer communication, schedule, credential, or unrelated write.
+- Result: one bounded restart kept exact release `d39bc073…` healthy and the
+  startup exception tick posted one healer work packet while suppressing two
+  unchanged packets. One Chief container picked it up and completed one bounded
+  attempt.
+- Durable receipt: exactly one healer dispatch is
+  `attempted/1/posted`; append-only events are exactly
+  `posted,picked_up,attempt_succeeded`. The work remains
+  `accepted/blocked/1` with one minimized observation—attempt is not source
+  correction or remediation.
+- Non-interference: zero failed attempts, zero waiting/outgoing queue, no second
+  healer item, no new daemon error lines, and no source/customer/schedule/
+  credential mutation.
+- Evidence: `docs/programs/company-os/evidence/NC-20260823-003-healer-owner-presentation.md`.
+
 ### NC-20260823-002 — Prove one bounded natural healer projection
 
 - Date: 2026-08-23T15:02Z
@@ -73,6 +98,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   incident, Slack post/presentation, remediation/action, schedule, or
   credential change occurred.
 - Evidence: `docs/programs/company-os/evidence/NC-20260823-002-bounded-healer-projection.md`.
+- Review gate: required Claude Sonnet/high review session
+  `a62c1404-2720-4fb8-92de-350271ff2dea` was rejected before any source read at
+  the weekly usage limit (reset Aug 25 09:00 CT). No Claude verdict exists, so
+  coding state remains `deployed_unverified` pending the same bounded review.
 
 ### NC-20260823-001 — Deploy dark healer-resolution schema and host release
 
