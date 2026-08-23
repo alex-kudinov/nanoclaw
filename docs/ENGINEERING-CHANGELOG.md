@@ -8,6 +8,48 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260822-015 — Expose hidden healer resolutions as a read-only catalog
+
+- Date: 2026-08-23
+- Owner/client: Codex
+- State: ready_for_review local candidate; not committed or deployed
+- Commit/PR: isolated branch
+  `codex/self-healing-visible-resolution-20260823`, based on exact live release
+  `1f474f90848452969e1e49db8c976f3f3b3d74e3`; implementation commit pending
+- Change class: C2 reversible internal source; highest affected operational
+  class remains C5 because the adjacent healer action boundary is unchanged and
+  explicitly out of scope
+- Root cause: incident diagnoses and proposed fixes are persisted, but the
+  existing digest exposes mostly source/severity and the solution otherwise
+  lives in a Slack thread or JSONB row. `needs_human` lacks a canonical owner,
+  decision, blocker, and closure condition; non-human `wont_fix` rows disappear
+  from the digest; and stored intermediate/unrouted states can become invisible.
+- Outcome: a pure catalog emits one current item per stable incident
+  fingerprint and distinguishes active monitoring, `verified_fixed`, named
+  rejection, and explicit pending-decision reasons for approval, low-trust or
+  manual fixes, recurrence, external/no-fix disposition, unverified terminal,
+  unrouted diagnosis, stale lifecycle, and unknown state. Repeated rows and
+  resolved-then-reopened history converge deterministically on the current open
+  item.
+- Privacy/safety: the source query omits raw context, commands, diffs,
+  investigation-log paths, and Slack/thread identity. Diagnosis and proposed
+  resolution are redacted and capped; evidence becomes count plus SHA-256. The
+  standalone CLI has no write/apply/post flag and is absent from daemon,
+  scheduler, Slack, Company Work, and action composition.
+- Verification: focused catalog/CLI tests pass 12/12; complete healer suite
+  passes 22 files / 209 tests; pinned Node 22.23.2 typecheck and production
+  build compilation pass; documentation continuity and diff checks pass. The
+  broad suite passes 2,984 tests with ten skips; its sole failure is the
+  unchanged base CNPC wrapper-literal assertion.
+- Deployment/migration: none; no runtime or database state was read or changed.
+- Documentation: `docs/SELF-HEALING-COMPLETION-PLAN.md`,
+  `docs/PROJECT-MAP.md`, `docs/ACTIVE-WORK.md`,
+  `docs/programs/company-os/evidence/NC-20260822-015-healer-resolution-catalog.md`,
+  and this entry.
+- Follow-up: after review, a separate milestone may project only the minimized
+  catalog into Company Work with ownership and exact decision receipts. Do not
+  make Slack or `.program/state.json` the runtime incident queue.
+
 ### NC-20260822-013 — Bind Practitioner facts into every NanoClaw knowledge consumer
 
 - Date: 2026-08-23

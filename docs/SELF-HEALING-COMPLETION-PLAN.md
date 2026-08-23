@@ -46,6 +46,10 @@ Self-healing is complete only when:
 6. kill switches, stale-claim recovery, rollback, and recovery drills are
    live-verified;
 7. deployment, live behavior, and outcome validation are recorded separately.
+8. every incident ends in either a verified recovery receipt or one durable,
+   deduplicated, owner-visible pending-decision item; a proposed solution may
+   never exist only in logs, Slack, a model transcript, or hidden incident
+   state.
 
 ## 3. Phased completion sequence
 
@@ -100,6 +104,42 @@ Build a dedicated diagnosis worker/job:
 
 Exit gate: collection stays within its interval under a seeded slow
 investigation; no incident is orphaned after worker kill/restart.
+
+### Gate B2 — Visible resolution and pending-decision catalog
+
+Make the resolution contract explicit before enabling more remediation:
+
+- each diagnosis records one stable incident/finding fingerprint and its
+  proposed resolution, evidence class, confidence, and required authority;
+- a safe typed action may close the incident only after its verification query
+  proves recovery;
+- anything that cannot self-heal creates or updates one canonical Company Work
+  pending-decision item with owner, decision required, proposed solution,
+  evidence references, current blocker, and exact closure condition;
+- unchanged observations deduplicate; changed evidence updates or reopens the
+  same item rather than creating another hidden thread or reminder;
+- Slack, digests, and future dashboards are projections of that catalog, not
+  independent queues or the only place the solution can be found;
+- the program portfolio tracks building and improving this capability, while
+  runtime incident decisions remain in Company Work rather than being written
+  directly into `.program/state.json` by a minion.
+
+`NC-20260822-015` implements the first read-only source slice. The standalone
+`healer:resolution-catalog` command reads only minimized fields from existing
+`business_v2.incidents` rows, selects one current incarnation per incident
+fingerprint, and classifies verified recovery, named rejection, active
+monitoring, and pending decisions. It makes `needs_human`, approval, recurring,
+unverified terminal, automatically assigned `wont_fix`, unrouted diagnosis,
+unknown-state, and stale-lifecycle cases explicit. Visible summaries are
+redacted and bounded; evidence is represented only by count and SHA-256. Raw
+context, commands, diffs, Slack/thread identities, and investigation-log paths
+are not read or emitted. This source is not wired to the daemon, scheduler,
+Slack, Company Work, or any action boundary and introduces no schema.
+
+Exit gate: seeded fixable, approval-required, rejected, stale, and recurring
+incidents each reach exactly one visible terminal or pending-decision state;
+restarts and repeated observations neither lose the proposed solution nor
+duplicate the catalog item. Company Work projection remains the next milestone.
 
 ### Gate C — Replace raw shell with a typed action registry
 
@@ -186,6 +226,9 @@ PR in isolation and leaves the operational checkout byte-for-byte unchanged.
 6. What queue-age and missed-run thresholds page the operator?
 7. Who owns daemon-down response when `HEALER_RESTART_ENABLED=0` is chosen for
    maintenance or rollback?
+8. Which owner view is the primary projection of the Company Work
+   pending-decision catalog, and what response-time threshold escalates an
+   undecided item without creating another queue?
 
 ## 5. Explicit non-authorization
 
