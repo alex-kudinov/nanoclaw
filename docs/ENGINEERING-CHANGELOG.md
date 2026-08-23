@@ -12,10 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-23
 - Owner/client: Codex
-- State: ready_for_deploy exact live-base candidate; not yet deployed
+- State: deployed_unverified `acd0206f`; corrected replacement ready_for_deploy
 - Commit/PR: isolated branch `codex/program-facts-live-release-20260823`,
   based on exact live release `db174c1b`; implementation commits `a70d6c5d`
-  and `ca05f6df`
+  and `ca05f6df`; release-inventory correction `553cc94c`
 - Change class: C3 knowledge/release closure with no customer communication,
   certificate issuance, price/product, learner-state, schedule, migration, or
   credential change
