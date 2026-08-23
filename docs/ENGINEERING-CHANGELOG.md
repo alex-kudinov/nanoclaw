@@ -8,6 +8,50 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260823-004 — Resolve the first healer item and bound expansion
+
+- Date: 2026-08-23T21:25Z
+- Owner/client: Codex
+- State: complete; source and Company Work closure live-verified
+- Change class: C3 exact production incident/Company Work correction; no code,
+  migration, schedule, credential, customer, or second-source change
+- Authorization: accepted decisions
+  `decision:self-healing-first-resolution-remediation` and the exact
+  operator-diagnostic suppression addendum.
+- Diagnosis: incident `563834` / `healer:16963ebd92091e9f` came from a one-off
+  Node `[eval1]` SELECT using nonexistent singular `work_type`; it was not a
+  NanoClaw runtime query or missing migration. Current source has no singular
+  reference, current contracts use `workflow_type`/`work_types`, and the event
+  occurred once with no recurrence.
+- Remediation: rejected the generic Knex/Prisma command, wrote a guarded
+  content-minimized correction with `operator_verified_recovery` and
+  `command_ran=false`, disarmed the stale proposal, and posted one correction
+  receipt to its existing internal thread. No remediation command ran.
+- Live closure: the existing six-minute verifier recorded
+  `resolved/verified_fixed`; the one-source adapter transitioned the same work
+  item to `outcome_validated/completed` version 2. Durable state is three
+  observations, events `accepted,blocked,outcome_validated`, and one bound
+  `healer_verified_recovery` receipt. The next cycle returned one duplicate,
+  zero transitions/observations, and no error.
+- Verification correction: Codex's first receipt SELECT used nonexistent
+  `to_version`, emitting one operator `[eval1]` JSONL error but no database
+  write. Read-only parsing proved pending bytes `30043084..30059871` contained
+  exactly fingerprint `d93dec4d0d90a53c` and no other error. The source log was
+  preserved; a guarded cursor compare-and-swap plus unique suppression receipt
+  prevented a fabricated second incident/Slack alert. Error-line counts remain
+  273 main / 24 fast.
+- Expansion analysis: 146 current catalog items contain 136 pending decisions,
+  104 older than seven days, 64 generic daemon sources, and 27 legacy
+  `wont_fix` rows without named receipts. Only five pass the initial recent,
+  non-daemon, high/medium-confidence root-cause admission filter.
+- Recommendation: retain `MAX_ITEMS=1` and rotate sequentially after terminal
+  receipt/replay. First fix `healer:d0ca940a103136d3` (46-occurrence expected
+  timeout cleanup logged as error), then verify the one-occurrence Chief sync
+  race, then separately decide whether to enable the CaleProcure feature flag.
+  No expansion was activated.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260823-004-first-healer-resolution.md`.
+
 ### NC-20260823-003 — Present one healer exception to Chief
 
 - Date: 2026-08-23T15:24Z
