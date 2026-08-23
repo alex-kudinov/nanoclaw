@@ -12,7 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-23
 - Owner/client: Codex
-- State: deployed_unverified `acd0206f`; corrected replacement ready_for_deploy
+- State: complete; exact release, packaged inputs, deterministic closure, and
+  real scheduler path are live-verified
 - Commit/PR: isolated branch `codex/program-facts-live-release-20260823`,
   based on exact live release `db174c1b`; implementation commits `a70d6c5d`
   and `ca05f6df`; release-inventory correction `553cc94c`
@@ -37,7 +38,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   from immutable `NANOCLAW_CODE_ROOT`. This prevents a dirty operational facts
   or knowledge copy from passing or failing a release-owned detector run.
 - Verification: catalog sync/check reports all 13 knowledge files current;
-  focused release-path TypeScript tests pass 29/29 and Python sync tests pass
+  focused release-path TypeScript tests pass 34/34 and Python sync tests pass
   2/2. Pinned
   Node 22.23.2 typecheck, documentation continuity, email replay 13/13,
   email-critical 732/732, and independent runner build/tests 43/43 pass. The
@@ -46,9 +47,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `db174c1b`. `tools/validate-knowledge.sh` itself still exits before reporting
   because the ignored local `llms-full.txt` snapshot lacks its expected stored
   hash marker; the new source-controlled sync check passes independently.
-- Deployment/rollback: pending immutable build and activation. No migration or
-  data rollback applies; runtime rollback is the retained prior release plist.
-  Candidate `a9235381` was transferred and verified on the Mini but deliberately
+- Deployment/rollback: no migration or data rollback applies. Candidate
+  `a9235381` was transferred and verified on the Mini but deliberately
   not activated after preflight exposed its cwd-owned tracked-input resolution;
   `ca05f6df` corrects that boundary before the final build.
 - First activation/readback: exact release `acd0206f` activated with rollback
@@ -56,8 +56,36 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   detector canary refused because the historical release inventory omitted
   tracked `facts/`. No detector/Company Work run or alert occurred. The
   release builder now packages and attests `facts/` plus the sync/check command,
-  with a source-contract regression test; `acd0206f` will be replaced before
-  closure is attempted.
+  with a source-contract regression test; `acd0206f` was replaced before
+  closure was attempted.
+- Final release: exact commit
+  `1f474f90848452969e1e49db8c976f3f3b3d74e3`, source tree
+  `9797e3f879baae76a0d47e0a9a015ea7e361a659`, 852 compiled files, artifact
+  SHA-256 `e3f0263b42b014a63d6ecc7070c533e4098d194d99ee84a7bdd258014af9b918`,
+  and archive SHA-256
+  `682e1483953607b7bea2682d9249ecf88ffbefc52b09eb328d583118d9596c8d`
+  independently verified locally and on the Mini under Node 22.23.2. Packaged
+  sync/readback reports all 13 knowledge files current, and the staged and live
+  release-owned detector both returned three checked and zero findings with
+  facts digest `e1679e21...` and payload digest `50c67e28...`.
+- Activation/rollback: after the real Chief startup run drained naturally,
+  recovery-safe activation changed only the three expected launchd paths and
+  retained rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-acd0206f63b1-2026-08-23T02-04-59-394Z`.
+  Because `acd0206f` lacks packaged facts, preferred operational rollback is
+  the separately retained exact `db174c1b` plist/release; no database rollback
+  is required. Health reports exact `1f474f90`, matching code root, Node
+  22.23.2, connected Gmail/Slack, and zero active/waiting/Slack queue work.
+- Live closure: an exact compiled active-mode run at 2026-08-23T02:07:30Z
+  checked three programs with zero drift and closed Company Work item 21. The
+  bounded report then showed one completed program-facts item, zero exceptions,
+  and no healthy-open item. The normal authenticated manual-trigger endpoint
+  returned 401 because its pre-existing global-secret path is process-only, so
+  no webhook job run was created. A guarded one-row `next_run` advance made the
+  enabled job due once; the real host scheduler ran exact release code at
+  2026-08-23T02:09:01Z, exited 0 in 195 ms with `clean_no_work`, and restored
+  `next_run` to 2026-08-23T13:00:00Z (08:00 CT). The trigger-endpoint defect is
+  a separate security-scoped follow-up; ordinary cron execution is proven.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
   `knowledge/README.md`, generated knowledge files, and this entry.
 
