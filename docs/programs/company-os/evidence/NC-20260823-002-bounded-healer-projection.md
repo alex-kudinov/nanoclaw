@@ -36,3 +36,37 @@ State: complete; deployed and one natural source live-verified
 - Environment backup:
   `.env.rollback-company-healer-work-2026-08-23T15-17-48-670Z`.
 - Expansion beyond this one source requires a new accepted owner decision.
+
+## Review correction and final deployment
+
+- Updated Claude token rotation completed the required independent bounded
+  Sonnet/high review. The initial review found one high-severity edge case: a
+  stale rejection actor could survive a later non-no-action classification and
+  violate the ledger invariant for the sole configured source.
+- Release `883f375f5ceb8ab9c357ce16499cc2ddf9f7511f` gates the actor hash on
+  `decided_no_action` and adds a regression for a rejected incident re-entering
+  transient monitoring. Focused tests pass 31/31, the healer suite passes
+  241/241 with two skips, typecheck and continuity pass, and the full suite is
+  3,020 passed / 12 skipped / the unchanged unrelated CNPC wrapper-literal
+  failure.
+- The targeted Claude correction review returned `NO MATERIAL FINDINGS`.
+- The 880-file immutable archive has source tree
+  `dc44be31bbbe412c0f00f2ae8780aba99ae86ac1`, artifact SHA-256
+  `98592441bd9ae04174604433d3221c3f93391afaf421b2a5b30248262090c100`,
+  and archive SHA-256
+  `e4c64391d16169f3342f38811adabf17526ea3e3848be3a2deb66d55ab4e1a80`.
+  It verified locally and after fresh extraction on `mini-claw.local` under
+  Node 22.23.2.
+- Fast-healer activation retained rollback
+  `com.nanoclaw.healer.fast.plist.rollback-index-2026-08-23T20-06-41-634Z`.
+  Its first and latest natural cycles each selected one source and returned one
+  duplicate with zero transitions, observations, or errors.
+- Main activation waited for a natural zero-container drain and retained
+  rollback
+  `com.nanoclaw.plist.rollback-d39bc0733e2d-2026-08-23T20-17-04-146Z`.
+  PID 20493 serves the exact verified release with matching code root, connected
+  Gmail/Slack, and empty active/waiting/outgoing queues.
+- Live readback remains exactly one `accepted/blocked/1` healer item, one
+  observation, two events, and one `attempted/1/posted` Chief dispatch with
+  `posted,picked_up,attempt_succeeded`. No item, event, or healer observation
+  was recorded after the main activation boundary.

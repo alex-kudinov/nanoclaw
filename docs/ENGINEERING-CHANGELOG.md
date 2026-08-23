@@ -62,7 +62,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   receipt.
 - Verification: focused controls 58/58; healer/report 284/284; pinned Node
   22.23.2 typecheck/build, formatting, continuity, script syntax, and diff
-  checks pass. Full suite is 3,019 passed / 12 skipped / one unchanged CNPC
+  checks pass. After the review correction, the focused catalog/adapter/ledger/
+  projection set passes 31/31, the healer suite passes 241/241 with two skips,
+  and the full suite is 3,020 passed / 12 skipped / one unchanged CNPC
   wrapper-literal failure.
 - Dark activation attempt 1: main daemon activation to exact `0ddb8794` passed.
   The fast-healer target verified and one disabled cycle exited zero, but the
@@ -98,10 +100,40 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   incident, Slack post/presentation, remediation/action, schedule, or
   credential change occurred.
 - Evidence: `docs/programs/company-os/evidence/NC-20260823-002-bounded-healer-projection.md`.
-- Review gate: required Claude Sonnet/high review session
-  `a62c1404-2720-4fb8-92de-350271ff2dea` was rejected before any source read at
-  the weekly usage limit (reset Aug 25 09:00 CT). No Claude verdict exists, so
-  coding state remains `deployed_unverified` pending the same bounded review.
+- Review closure: the updated token-rotation runner selected the fallback
+  account and completed bounded Claude Sonnet/high session
+  `517ad838-cac3-41b6-bee0-20de63c971b6`. It found one high material defect:
+  raw stale `decision_actor` metadata on an incident that re-entered monitoring
+  could violate the ledger's actor/disposition invariant and wedge the one
+  configured source. Codex independently verified the finding, gated the hash
+  on `decided_no_action`, added the required recurrence regression, and reran
+  focused/full verification. Targeted Sonnet/high correction review session
+  `5f305047-a927-48ed-80e8-2dc3508fdc1f` returned
+  `NO MATERIAL FINDINGS`. Review artifacts are
+  `docs/reports/NC-20260823-003-CLAUDE-BOUNDED-REVIEW-RESPONSE.md` and the paired
+  correction request/response.
+- Final release: commit `883f375f5ceb8ab9c357ce16499cc2ddf9f7511f`,
+  source tree `dc44be31bbbe412c0f00f2ae8780aba99ae86ac1`, 880-file artifact SHA-256
+  `98592441bd9ae04174604433d3221c3f93391afaf421b2a5b30248262090c100`,
+  archive SHA-256
+  `e4c64391d16169f3342f38811adabf17526ea3e3848be3a2deb66d55ab4e1a80`.
+  The archive verified locally and from a fresh Mini extraction on Node 22.23.2.
+- Final deployment: fast-healer activation changed only its three release
+  pointers, retained
+  `com.nanoclaw.healer.fast.plist.rollback-index-2026-08-23T20-06-41-634Z`,
+  and verified a clean cycle. Main activation waited for a natural zero-work
+  drain, changed only its three release pointers, and retained
+  `com.nanoclaw.plist.rollback-d39bc0733e2d-2026-08-23T20-17-04-146Z`.
+  PID 20493, the port-8088 listener, launchd, `/health`, release root, and Node
+  identity all converge on `883f375f…`; Gmail/Slack are connected and active,
+  waiting, and outbound queues are empty. Error-log counts remain 273 main / 24
+  fast.
+- Final live proof: the latest natural fast cycle selected exactly one source
+  and returned one duplicate with zero transitions, observations, or errors.
+  The database remains exactly 1 healer item / 1 observation / 2 events, with
+  the original `accepted/blocked/1` state and `attempted/1/posted` Chief
+  dispatch plus `posted,picked_up,attempt_succeeded`. No Company Work item,
+  event, or healer observation was recorded after the main activation boundary.
 
 ### NC-20260823-001 — Deploy dark healer-resolution schema and host release
 

@@ -100,6 +100,18 @@ projected once; exact replay was no-op. Main and fast-healer releases, channels,
 queues, error logs, and non-healer Company Work fingerprints remained healthy
 and unchanged.
 
+Post-review corrective release
+`883f375f5ceb8ab9c357ce16499cc2ddf9f7511f` discards stale rejection-actor
+metadata whenever the current catalog disposition is not `decided_no_action`.
+Claude Sonnet/high found the invariant defect in the first bounded review and
+returned `NO MATERIAL FINDINGS` after the minimal fix and regression. The
+880-file archive verified locally and on the Mini under Node 22.23.2. The
+fast-healer switched independently and produced a duplicate-only exact replay;
+main activation waited for zero active/waiting/outgoing work, changed only the
+three release pointers, and retained rollback to `d39bc073…`. Live health,
+listener/launchd PID, release root, channels, and queues converge; the healer
+ledger remains 1 item / 1 observation / 2 events with no post-activation write.
+
 NC-20260820-002 crossed the equivalent program-facts release boundary with
 exact implementation `8344524cf4a439b84eb792cdf7b4a16b65178a6a`, source tree
 `fac86f42aebcaf2e765ec16024fc679e9fa8aca1`, 788 compiled files, artifact
