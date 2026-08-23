@@ -35,4 +35,23 @@ describe('healer Company Work plan CLI', () => {
     );
     expect(source).not.toMatch(/--apply|transitionCompany|ensureCompany/);
   });
+
+  it('wires only the safe bounded cycle into the fast collector', () => {
+    const collector = fs.readFileSync('src/healer/collector.ts', 'utf8');
+    expect(collector).toContain('runHealerCompanyWorkCycle');
+    expect(collector).not.toContain('runHealerCompanyWorkAdapter');
+    for (const file of [
+      'src/index.ts',
+      'src/task-scheduler.ts',
+      'src/healer/approval.ts',
+      'src/healer/remediate.ts',
+      'src/healer/remediation.ts',
+      'src/healer/implement.ts',
+      'src/healer/slack.ts',
+    ]) {
+      expect(fs.readFileSync(file, 'utf8'), file).not.toContain(
+        'runHealerCompanyWorkCycle',
+      );
+    }
+  });
 });

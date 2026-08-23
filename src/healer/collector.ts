@@ -40,6 +40,7 @@ import {
   isGmailDeliveryStale,
 } from './gmail-liveness.js';
 import { healerRestartEnabled } from './action-policy.js';
+import { runHealerCompanyWorkCycle } from './company-work-adapter.js';
 import {
   isRestartNoise,
   isStale,
@@ -359,6 +360,16 @@ export async function runFast(): Promise<void> {
   const { acted, closed } = await runRemediate();
   const approved = await runApprovals();
   const implemented = await runImplement(); // Phase 3: 🔧 → dev-pipeline → draft PR
+  // Company Work projection is independently default-off and fail-closed to
+  // one exact natural source. Its content-free status cannot fail collection,
+  // diagnosis, deterministic restart, or existing remediation controls.
+  const companyWork = await runHealerCompanyWorkCycle();
+  if (companyWork.mode === 'failed') {
+    logger.warn(
+      { errorCode: companyWork.errorCode },
+      'healer: Company Work projection held',
+    );
+  }
   logger.info(
     {
       jsonl,
@@ -372,6 +383,13 @@ export async function runFast(): Promise<void> {
       closed,
       approved,
       implemented,
+      companyWorkMode: companyWork.mode,
+      companyWorkSourceCount: companyWork.sourceCount,
+      companyWorkAttempted: companyWork.attempted,
+      companyWorkTransitioned: companyWork.transitioned,
+      companyWorkObservations: companyWork.observations,
+      companyWorkDuplicates: companyWork.duplicates,
+      companyWorkErrorCode: companyWork.errorCode,
     },
     'healer: fast run complete',
   );

@@ -21,7 +21,9 @@ vi.mock('./company-work-ledger.js', () => ({
 import {
   applyHealerCompanyWorkCatalogWithClient,
   resolveHealerCompanyWorkAdapterConfig,
+  runHealerCompanyWorkCycle,
   runHealerCompanyWorkAdapter,
+  selectHealerResolutionCatalog,
 } from './company-work-adapter.js';
 import {
   buildHealerResolutionCatalog,
@@ -88,22 +90,132 @@ beforeEach(() => {
 
 describe('healer Company Work host adapter', () => {
   it('defaults off and does not open a database transaction', async () => {
-    expect(resolveHealerCompanyWorkAdapterConfig({})).toEqual({
+    const disabled = resolveHealerCompanyWorkAdapterConfig({});
+    expect(disabled).toEqual({
       enabled: false,
+      active: false,
+      valid: true,
+      sourceKeys: [],
+      maxItems: 1,
+      configurationError: null,
     });
     expect(
       resolveHealerCompanyWorkAdapterConfig({
         COMPANY_HEALER_WORK_ENABLED: '1',
       }),
-    ).toEqual({ enabled: true });
+    ).toMatchObject({
+      enabled: true,
+      active: false,
+      valid: false,
+      configurationError: 'exactly_one_source_required',
+    });
 
     const result = await runHealerCompanyWorkAdapter(
       buildHealerResolutionCatalog([row()], NOW),
-      { enabled: false },
+      disabled,
     );
     expect(result).toMatchObject({ status: 'disabled', items: [] });
     expect(result.plan).toMatchObject({ dryRun: true, applyAvailable: false });
     expect(business.withAgentContext).not.toHaveBeenCalled();
+  });
+
+  it('requires one valid exact source and a hard maximum of one', () => {
+    const active = resolveHealerCompanyWorkAdapterConfig({
+      COMPANY_HEALER_WORK_ENABLED: '1',
+      COMPANY_HEALER_WORK_SOURCE_KEYS: 'healer:abcdef1234567890',
+      COMPANY_HEALER_WORK_MAX_ITEMS: '1',
+    });
+    expect(active).toMatchObject({
+      enabled: true,
+      active: true,
+      valid: true,
+      sourceKeys: ['healer:abcdef1234567890'],
+      maxItems: 1,
+      configurationError: null,
+    });
+    expect(
+      resolveHealerCompanyWorkAdapterConfig({
+        COMPANY_HEALER_WORK_ENABLED: '1',
+        COMPANY_HEALER_WORK_SOURCE_KEYS:
+          'healer:abcdef1234567890,healer:bbbbbbbbbbbbbbbb',
+        COMPANY_HEALER_WORK_MAX_ITEMS: '2',
+      }),
+    ).toMatchObject({
+      active: false,
+      valid: false,
+      configurationError: 'exactly_one_source_required',
+    });
+  });
+
+  it('selects only the configured source and refuses a missing source', () => {
+    const catalog = buildHealerResolutionCatalog(
+      [row(), row({ id: '2', fingerprint: 'bbbbbbbbbbbbbbbb' })],
+      NOW,
+    );
+    const config = resolveHealerCompanyWorkAdapterConfig({
+      COMPANY_HEALER_WORK_ENABLED: '1',
+      COMPANY_HEALER_WORK_SOURCE_KEYS: 'healer:bbbbbbbbbbbbbbbb',
+      COMPANY_HEALER_WORK_MAX_ITEMS: '1',
+    });
+    expect(selectHealerResolutionCatalog(catalog, config)).toMatchObject({
+      currentIncidents: 1,
+      items: [{ key: 'healer:bbbbbbbbbbbbbbbb' }],
+    });
+    expect(() =>
+      selectHealerResolutionCatalog(catalog, {
+        ...config,
+        sourceKeys: ['healer:cccccccccccccccc'],
+      }),
+    ).toThrow('configured_source_missing');
+  });
+
+  it('keeps the fast-cycle boundary content-free, isolated, and replay-aware', async () => {
+    const config = resolveHealerCompanyWorkAdapterConfig({
+      COMPANY_HEALER_WORK_ENABLED: '1',
+      COMPANY_HEALER_WORK_SOURCE_KEYS: 'healer:abcdef1234567890',
+      COMPANY_HEALER_WORK_MAX_ITEMS: '1',
+    });
+    const catalog = buildHealerResolutionCatalog([row()], NOW);
+    const active = await runHealerCompanyWorkCycle({
+      config,
+      readCatalog: vi.fn().mockResolvedValue(catalog),
+      runAdapter: vi.fn().mockResolvedValue({
+        status: 'applied',
+        plan: {} as never,
+        items: [
+          {
+            sourceKey: 'healer:abcdef1234567890',
+            operation: 'ensure_blocked',
+            workItemId: '42',
+            transitionApplied: true,
+            observationApplied: true,
+          },
+        ],
+      }),
+    });
+    expect(active).toEqual({
+      mode: 'active',
+      sourceCount: 1,
+      attempted: 1,
+      transitioned: 1,
+      observations: 1,
+      duplicates: 0,
+      errorCode: null,
+    });
+    await expect(
+      runHealerCompanyWorkCycle({
+        config,
+        readCatalog: vi.fn().mockRejectedValue(new Error('secret detail')),
+      }),
+    ).resolves.toEqual({
+      mode: 'failed',
+      sourceCount: 1,
+      attempted: 0,
+      transitioned: 0,
+      observations: 0,
+      duplicates: 0,
+      errorCode: 'projection_failed',
+    });
   });
 
   it('opens and blocks one new pending decision, then records minimized evidence', async () => {

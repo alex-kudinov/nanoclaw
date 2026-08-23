@@ -652,6 +652,16 @@ adapter is absent from daemon, scheduler, Slack, collector, approval,
 remediation, and implementation wiring; local schema/code presence neither
 projects production incidents nor enables a healer action.
 
+`NC-20260823-002` wires only a safe wrapper into the five-minute fast-healer
+cycle. The wrapper reads no catalog while disabled and, when enabled, requires
+one syntactically valid exact `healer:<fingerprint>` source plus a hard maximum
+of one. Missing, duplicate, malformed, or multi-source configuration fails
+closed and emits content-free status without failing collection, diagnosis,
+restart, or existing remediation controls. Release-bound environment and
+fast-healer plist helpers default to dry-run, require exact-host confirmation,
+back up atomically, and retain rollback. This grants no Slack presentation or
+remediation authority.
+
 ### Container package
 
 `container/agent-runner` is an independent Node/TypeScript package:

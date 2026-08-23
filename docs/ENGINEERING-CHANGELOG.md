@@ -8,6 +8,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260823-002 — Prove one bounded natural healer projection
+
+- Date: 2026-08-23T15:02Z
+- Owner/client: Codex
+- State: in_progress; local implementation complete, commit/release pending
+- Change class: C3-capable production source/write path constrained to one
+  internal Company Work projection; no message or remediation authority
+- Authorization: accepted decision
+  `decision:self-healing-bounded-natural-projection`; program item
+  `work:self-healing-bounded-natural-projection` claimed at revision 38.
+- Finding: the live read-only catalog contains 146 current incidents—137
+  pending decisions and nine verified recoveries. The current boolean adapter
+  gate would apply the whole catalog, so enabling it is unsafe.
+- Planned result: exact-source allowlist, maximum-one cap, default-off host-cycle
+  wiring, content-free health, dark release, then one natural projection plus
+  exact replay/report/non-interference receipts.
+- Boundary: no second source, manufactured incident, Slack post/presentation,
+  remediation/action, schedule, credential, or unrelated external mutation.
+- Implementation: disabled mode performs no catalog read. Active mode requires
+  exactly one valid `healer:<fingerprint>` and `MAX_ITEMS=1`; missing or invalid
+  source fails before a transaction. The fast cycle logs only aggregate status
+  and cannot be failed by projection. Direct healer execution verifies an
+  immutable release when a release identity is configured.
+- Operations: release-bound helpers provide value-redacted `.env` dry-run/
+  apply/restore and a separately locked fast-healer plist activation with exact
+  Node/bundle verification, backup, atomic reload, rollback, and one clean-cycle
+  receipt.
+- Verification: focused controls 58/58; healer/report 284/284; pinned Node
+  22.23.2 typecheck/build, formatting, continuity, script syntax, and diff
+  checks pass. Full suite is 3,019 passed / 12 skipped / one unchanged CNPC
+  wrapper-literal failure.
+
 ### NC-20260823-001 — Deploy dark healer-resolution schema and host release
 
 - Date: 2026-08-23T14:10Z

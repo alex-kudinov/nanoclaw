@@ -52,7 +52,7 @@ Covers the public._ and business_v2._ schemas. business*v2 tables are
 headed with their schema prefix; access them via business_v2.v*_ views and
 business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
 
-## business_v2.company_work_items (migrations 118-125 live; 132 local/unapplied)
+## business_v2.company_work_items (migrations 118-125 and 132 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_items_id_seq'::regclass)
@@ -74,7 +74,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_transition_by            text                 NOT NULL DEFAULT='company-work-ledger:host'::text
 ```
 
-## business_v2.company_healer_resolution_observations (migration 132 local/unapplied)
+## business_v2.company_healer_resolution_observations (migration 132 live, empty)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_healer_resolution_observations_id_seq'::regclass)

@@ -169,6 +169,15 @@ lifecycle plus append-only history, zero non-admin grants, populated rollback
 refusal, and clean empty rollback. Production migration, configuration,
 projection, presentation, and activation remain separately gated.
 
+`NC-20260823-002` is the bounded natural-path promotion gate. The live catalog
+contains 137 pending decisions, so all-at-once activation is prohibited. The
+fast cycle may invoke the adapter only through a default-off wrapper requiring
+one exact natural source key and a hard maximum of one. Configuration or
+projection failure is content-free and isolated from collection, diagnosis,
+restart, approval, remediation, and implementation. One natural projection,
+exact replay, report readback, and protected-state comparison must pass before
+any second source or owner-facing presentation is considered.
+
 ### Gate C — Replace raw shell with a typed action registry
 
 Do not enable the current command path. Replace `proposed_fix.command` execution

@@ -149,7 +149,8 @@ schedule work, or send. The replacement adapter must bind the exact case
 version/presentation, cancel the Sales case, transition the associated entry to
 canonical `lost`, and read back both durable results before reporting closure.
 
-Migration 132 is the local, unapplied NC-20260822-017 healer-resolution
+Migration 132 is live under exact release `97026492b85e` through
+NC-20260823-001's healer-resolution
 Company Work extension. It adds the distinct `healer_resolution` workflow,
 `healer_resolution_receipt` completion, and append-only minimized observations.
 The host-only adapter defaults off and is not daemon/scheduler/Slack/action
@@ -157,8 +158,15 @@ wired. A terminal no-action observation requires a hashed named-decision actor;
 anonymous rejection remains pending. Disposable PostgreSQL proves exact replay,
 changed-evidence update, verified closure, recurrence reopening, named
 no-action closure, append-only enforcement, zero non-admin grants, populated
-rollback refusal, and clean empty rollback. Repository presence does not
-authorize applying migration 132 or projecting live healer incidents.
+rollback refusal, and clean empty rollback. The production table is empty,
+admin-only, append-only, and has zero non-admin grants. Schema presence does
+not authorize projecting live healer incidents.
+
+`NC-20260823-002` adds the separately gated bounded producer. It defaults off
+and requires exactly one configured natural source plus `MAX_ITEMS=1`; invalid
+or missing source identity fails before a transaction. Fast-healer collection
+and existing action controls continue independently. One-source configuration
+does not grant a second projection, Slack presentation, or remediation.
 
 ## Connection
 

@@ -83,6 +83,15 @@ connected Gmail/Slack, empty queues, disabled adapter, empty healer report,
 unchanged protected Company Work fingerprints, and no new error lines. This
 dark deployment does not authorize live projection or remediation.
 
+`NC-20260823-002` adds two release-bound operations for the separately managed
+fast-healer service: `activate-healer-release.mjs` moves its executable and
+release identity to one immutable bundle with an exclusive lock, plist backup,
+bounded launchd reload, and one clean-cycle proof; `set-company-healer-work.mjs`
+performs a value-redacted, backup-producing environment transaction for one
+exact source. Both default to dry-run and require exact-host confirmation for
+mutation. The main daemon activator remains separate. A fast-healer release
+must be deployed with projection off before the one-source config is applied.
+
 NC-20260820-002 crossed the equivalent program-facts release boundary with
 exact implementation `8344524cf4a439b84eb792cdf7b4a16b65178a6a`, source tree
 `fac86f42aebcaf2e765ec16024fc679e9fa8aca1`, 788 compiled files, artifact

@@ -12,6 +12,7 @@ import { pathToFileURL } from 'url';
 
 import { resetBusinessPool } from '../business-db.js';
 import { logger } from '../logger.js';
+import { verifyRuntimeRelease } from '../release-integrity.js';
 import { runFast } from './collector.js';
 import { runDigest } from './digest.js';
 
@@ -33,6 +34,13 @@ export async function dispatch(mode: string | undefined): Promise<number> {
 async function main(): Promise<void> {
   let code = 1;
   try {
+    const release = verifyRuntimeRelease({
+      requireManifest: Boolean(process.env.NANOCLAW_EXPECTED_RELEASE_COMMIT),
+    });
+    logger.info(
+      { commit: release.commit, verified: release.verified },
+      'healer: release verified',
+    );
     code = await dispatch(process.argv[2]);
   } catch (err) {
     logger.error({ err }, 'healer: fatal');

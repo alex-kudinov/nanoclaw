@@ -56,5 +56,6 @@ describe('migration 132 healer resolution Company Work', () => {
     expect(releaseBuilder).toContain(
       "'data/business/migrations/nanoclaw-v2/rollback_132_company_healer_resolution_work.sql'",
     );
+    expect(releaseBuilder).toContain("'scripts/set-company-healer-work.mjs'");
   });
 });

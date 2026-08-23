@@ -154,6 +154,8 @@ try {
     'scripts/set-company-work-exception-loop.mjs',
     'scripts/set-company-work-outcome-review.mjs',
     'scripts/set-company-time-trigger.mjs',
+    'scripts/set-company-healer-work.mjs',
+    'scripts/activate-healer-release.mjs',
     'scripts/verify-booking-secret-projection.mjs',
     'scripts/verify-booking-plutio-host-boundary.mjs',
     'scripts/run-booking-plutio-marker-canary.mjs',
