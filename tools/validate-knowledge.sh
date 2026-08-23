@@ -19,6 +19,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 KNOWLEDGE="$PROJECT_ROOT/knowledge/shared/KNOWLEDGE.md"
 LLMS_FULL="$PROJECT_ROOT/knowledge/shared/llms-full.txt"
 TANDEMWEB_LLMS="${HOME}/dev/tandemweb/llms-full.txt"
+PROGRAM_FACT_SYNC="$PROJECT_ROOT/tools/sync-program-facts.py"
 
 UPDATE_HASH=false
 COPY_FIRST=false
@@ -140,6 +141,16 @@ if $UPDATE_HASH; then
     fi
     echo ""
     echo "Updated hash to ${CURRENT_HASH:0:16}... (validated $TODAY)"
+
+    # Deterministic program facts outrank the LLM-generated website summary.
+    # Re-inject the pinned block before copies propagate to minions.
+    if [[ -f "$PROGRAM_FACT_SYNC" ]]; then
+        python3 "$PROGRAM_FACT_SYNC" inject >/dev/null && \
+        python3 "$PROGRAM_FACT_SYNC" check >/dev/null || {
+            echo "ERROR: canonical program facts are missing or stale; run tools/sync-program-facts.py sync" >&2
+            exit 1
+        }
+    fi
 
     # Copy to all agents (dynamic — discovers from directory listing)
     for agent_dir in "$PROJECT_ROOT"/knowledge/agents/*/; do

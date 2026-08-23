@@ -45,12 +45,13 @@ and validation uses `.nvmrc`.
 
 Two databases. Read the schema reference BEFORE writing any query — always look up column names from the schema file. Never guess which database a table lives in.
 
-| Database | Type | Schema Reference | Owns (examples) |
-|----------|------|-----------------|-----------------|
-| `store/messages.db` | SQLite | `agent_docs/messages-db-schema.md` | `messages`, `chats`, `registered_groups`, `router_state`, `jobs`, `scheduled_tasks`, `sessions` |
+| Database            | Type     | Schema Reference                            | Owns (examples)                                                                                                     |
+| ------------------- | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `store/messages.db` | SQLite   | `agent_docs/messages-db-schema.md`          | `messages`, `chats`, `registered_groups`, `router_state`, `jobs`, `scheduled_tasks`, `sessions`                     |
 | `nanoclaw_business` | Postgres | `agent_docs/nanoclaw-business-pg-schema.md` | `email_classifications`, `taxonomy`, `booking_events`, all business CRM tables, all `business_v2.*` views/functions |
 
 **Rules:**
+
 - Read the relevant schema file before writing any query. If a table is not in `messages-db-schema.md`, it is in Postgres — check `nanoclaw-business-pg-schema.md`.
 - `data/business/migrations/nanoclaw-v2/` is the tracked ordered PostgreSQL
   migration history for `business_v2`; `data/business/CLAUDE.md` is its tracked
@@ -63,46 +64,47 @@ Two databases. Read the schema reference BEFORE writing any query — always loo
   Tracked schema references are structure-only; never add live sample rows.
 - Agents in containers: schema files are at `/workspace/extra/agent_docs/`.
 
-
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/index.ts` | Orchestrator: state, message loop, agent invocation |
-| `src/channels/registry.ts` | Channel registry (self-registration at startup) |
-| `src/ipc.ts` | IPC watcher and task processing |
-| `src/router.ts` | Message formatting and outbound routing |
-| `src/config.ts` | Trigger pattern, paths, intervals |
-| `src/container-runner.ts` | Spawns agent containers with mounts |
-| `src/task-scheduler.ts` | Runs scheduled tasks |
-| `src/db.ts` | SQLite operations (router_state, registered_groups, messages, jobs) |
-| `src/business-db.ts` | Postgres wrapper for `nanoclaw_business` (role-based, pg.Pool) |
-| `src/classify-ipc-handlers.ts` | Inline handler for `classify_*` IPC namespace |
-| `src/gmail-labels.ts` | Gmail label CRUD (ensureLabel, replaceClassLabelsOnThread) |
-| `src/hive-bridge.ts` | Firebase Admin SDK wrapper for Hive Firestore; `HiveConversationNotFoundError` |
-| `src/classify-backfill.ts` | Lesson-driven backfill (sender/subject rules → email_classifications) |
-| `src/hive-sync-reaper.ts` | 15-min cron retry worker for failed Hive writes |
-| `src/gmail-label-poll.ts` | 5-min cron to detect Gmail-UI label drags → classify_correction_detected |
-| `src/digest-generator.ts` + `src/digest-delivery.ts` | Daily per-recipient email digest |
-| `src/contador-name-reaper.ts` | 30-min cron: repairs "Unknown" student names (Heartbeat sets Stripe `customer.name` after the payment webhook fires) via `backfill-names.cjs` |
-| `tools/contador/process-payment.cjs` | Deterministic Stripe→Sheets(roster+payment log)→Postgres payment pipeline; `fetchCustomerWithName()` retries the customer-name race |
-| `tools/contador/backfill-names.cjs` | Idempotent name reconciler (3 phases): `payments` table (A), Student Roster (B), Payment Log/transaction sheet (C). Re-resolves Stripe `customer.name` for Unknown rows; `--apply`, dry-run default |
-| `data/business/classification-schema.sql` | Taxonomy + email_classifications DDL + 25-label seed |
-| `setup/gmail/CUTOVER-info-forwarding.md` | Operational runbook for retiring info@ forwarding |
-| `scripts/apply-gmail-filter.ts` | Export/apply/dry-run Gmail filter + auto-forwarding rollback |
-| `groups/{name}/CLAUDE.md` | Per-group memory (isolated) |
-| `container/skills/agent-browser.md` | Browser automation tool (available to all agents via Bash) |
+| File                                                 | Purpose                                                                                                                                                                                             |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/index.ts`                                       | Orchestrator: state, message loop, agent invocation                                                                                                                                                 |
+| `src/channels/registry.ts`                           | Channel registry (self-registration at startup)                                                                                                                                                     |
+| `src/ipc.ts`                                         | IPC watcher and task processing                                                                                                                                                                     |
+| `src/router.ts`                                      | Message formatting and outbound routing                                                                                                                                                             |
+| `src/config.ts`                                      | Trigger pattern, paths, intervals                                                                                                                                                                   |
+| `src/container-runner.ts`                            | Spawns agent containers with mounts                                                                                                                                                                 |
+| `src/task-scheduler.ts`                              | Runs scheduled tasks                                                                                                                                                                                |
+| `src/db.ts`                                          | SQLite operations (router_state, registered_groups, messages, jobs)                                                                                                                                 |
+| `src/business-db.ts`                                 | Postgres wrapper for `nanoclaw_business` (role-based, pg.Pool)                                                                                                                                      |
+| `src/classify-ipc-handlers.ts`                       | Inline handler for `classify_*` IPC namespace                                                                                                                                                       |
+| `src/gmail-labels.ts`                                | Gmail label CRUD (ensureLabel, replaceClassLabelsOnThread)                                                                                                                                          |
+| `facts/catalogs/` + `tools/sync-program-facts.py`    | Pinned domain-owned fact exports and deterministic injection into every minion knowledge file                                                                                                       |
+| `src/program-facts-drift.ts`                         | Price/product checks plus exact catalog-pack drift detection; current facts are not duplicated as prose strings                                                                                     |
+| `src/hive-bridge.ts`                                 | Firebase Admin SDK wrapper for Hive Firestore; `HiveConversationNotFoundError`                                                                                                                      |
+| `src/classify-backfill.ts`                           | Lesson-driven backfill (sender/subject rules → email_classifications)                                                                                                                               |
+| `src/hive-sync-reaper.ts`                            | 15-min cron retry worker for failed Hive writes                                                                                                                                                     |
+| `src/gmail-label-poll.ts`                            | 5-min cron to detect Gmail-UI label drags → classify_correction_detected                                                                                                                            |
+| `src/digest-generator.ts` + `src/digest-delivery.ts` | Daily per-recipient email digest                                                                                                                                                                    |
+| `src/contador-name-reaper.ts`                        | 30-min cron: repairs "Unknown" student names (Heartbeat sets Stripe `customer.name` after the payment webhook fires) via `backfill-names.cjs`                                                       |
+| `tools/contador/process-payment.cjs`                 | Deterministic Stripe→Sheets(roster+payment log)→Postgres payment pipeline; `fetchCustomerWithName()` retries the customer-name race                                                                 |
+| `tools/contador/backfill-names.cjs`                  | Idempotent name reconciler (3 phases): `payments` table (A), Student Roster (B), Payment Log/transaction sheet (C). Re-resolves Stripe `customer.name` for Unknown rows; `--apply`, dry-run default |
+| `data/business/classification-schema.sql`            | Taxonomy + email_classifications DDL + 25-label seed                                                                                                                                                |
+| `setup/gmail/CUTOVER-info-forwarding.md`             | Operational runbook for retiring info@ forwarding                                                                                                                                                   |
+| `scripts/apply-gmail-filter.ts`                      | Export/apply/dry-run Gmail filter + auto-forwarding rollback                                                                                                                                        |
+| `groups/{name}/CLAUDE.md`                            | Per-group memory (isolated)                                                                                                                                                                         |
+| `container/skills/agent-browser.md`                  | Browser automation tool (available to all agents via Bash)                                                                                                                                          |
 
 ## Skills
 
-| Skill | When to Use |
-|-------|-------------|
-| `/setup` | First-time installation, authentication, service configuration |
-| `/customize` | Adding channels, integrations, changing behavior |
-| `/debug` | Container issues, logs, troubleshooting |
-| `/update-nanoclaw` | Bring upstream NanoClaw updates into a customized install |
-| `/qodo-pr-resolver` | Fetch and fix Qodo PR review issues interactively or in batch |
-| `/get-qodo-rules` | Load org- and repo-level coding rules from Qodo before code tasks |
+| Skill               | When to Use                                                       |
+| ------------------- | ----------------------------------------------------------------- |
+| `/setup`            | First-time installation, authentication, service configuration    |
+| `/customize`        | Adding channels, integrations, changing behavior                  |
+| `/debug`            | Container issues, logs, troubleshooting                           |
+| `/update-nanoclaw`  | Bring upstream NanoClaw updates into a customized install         |
+| `/qodo-pr-resolver` | Fetch and fix Qodo PR review issues interactively or in batch     |
+| `/get-qodo-rules`   | Load org- and repo-level coding rules from Qodo before code tasks |
 
 ## Development
 
@@ -115,6 +117,7 @@ npm run build        # Compile TypeScript
 ```
 
 Service management:
+
 ```bash
 # macOS (launchd)
 launchctl load ~/Library/LaunchAgents/com.nanoclaw.plist
@@ -154,26 +157,26 @@ External callers (tandemweb scripts, PHP recommender) use the HTTP bridge instea
 
 ### Related Projects
 
-| Project | Path | Purpose |
-|---------|------|---------|
-| **claude-proxy** | `~/dev/claude-proxy` | Design docs, handoffs, and plan for the token lifecycle system |
-| **toolbox** (`shared/claude/`) | `~/dev/toolbox/shared/claude/` | All lifecycle scripts, Toolbox tools, launchd/systemd units |
-| **toolbox** (`shared/email/`) | `~/dev/toolbox/shared/email/` | Email alerting (used by `alert.sh`) |
+| Project                        | Path                           | Purpose                                                        |
+| ------------------------------ | ------------------------------ | -------------------------------------------------------------- |
+| **claude-proxy**               | `~/dev/claude-proxy`           | Design docs, handoffs, and plan for the token lifecycle system |
+| **toolbox** (`shared/claude/`) | `~/dev/toolbox/shared/claude/` | All lifecycle scripts, Toolbox tools, launchd/systemd units    |
+| **toolbox** (`shared/email/`)  | `~/dev/toolbox/shared/email/`  | Email alerting (used by `alert.sh`)                            |
 
 ### Key Files for Troubleshooting Auth
 
-| File | Purpose |
-|------|---------|
-| `~/dev/toolbox/shared/claude/RUNBOOK.md` | Full ops runbook — recovery, fallback, adding machines |
-| `~/dev/toolbox/shared/claude/lib/lifecycle.sh` | Master lifecycle script (refresh → sync → health) |
-| `~/dev/toolbox/shared/claude/lib/extract-token.sh` | Token extraction from `~/.claude/.credentials.json` |
-| `~/dev/toolbox/shared/claude/lib/alert.sh` | Multi-channel alerting (Slack, Pushover, email) |
-| `~/.claude/.credentials.json` | Token store — `claudeAiOauth.accessToken` and `expiresAt` |
-| `~/.claude/proxy/health.json` | Current health status (ok/warning/critical) |
-| `~/.claude/proxy/lifecycle.log` | Lifecycle cycle history |
-| `~/.claude/proxy/sync.log` | Token sync events (hash fragments, timestamps) |
-| `~/Library/LaunchAgents/com.claude-proxy.token-lifecycle.plist` | macOS scheduler (10-min interval) |
-| `~/dev/.env.shared` | Alert credentials (Pushover, Slack webhook, email) |
+| File                                                            | Purpose                                                   |
+| --------------------------------------------------------------- | --------------------------------------------------------- |
+| `~/dev/toolbox/shared/claude/RUNBOOK.md`                        | Full ops runbook — recovery, fallback, adding machines    |
+| `~/dev/toolbox/shared/claude/lib/lifecycle.sh`                  | Master lifecycle script (refresh → sync → health)         |
+| `~/dev/toolbox/shared/claude/lib/extract-token.sh`              | Token extraction from `~/.claude/.credentials.json`       |
+| `~/dev/toolbox/shared/claude/lib/alert.sh`                      | Multi-channel alerting (Slack, Pushover, email)           |
+| `~/.claude/.credentials.json`                                   | Token store — `claudeAiOauth.accessToken` and `expiresAt` |
+| `~/.claude/proxy/health.json`                                   | Current health status (ok/warning/critical)               |
+| `~/.claude/proxy/lifecycle.log`                                 | Lifecycle cycle history                                   |
+| `~/.claude/proxy/sync.log`                                      | Token sync events (hash fragments, timestamps)            |
+| `~/Library/LaunchAgents/com.claude-proxy.token-lifecycle.plist` | macOS scheduler (10-min interval)                         |
+| `~/dev/.env.shared`                                             | Alert credentials (Pushover, Slack webhook, email)        |
 
 ## Troubleshooting
 

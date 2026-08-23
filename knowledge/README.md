@@ -11,6 +11,13 @@ at `/workspace/knowledge`.
 complete, always current. Lessons from human feedback are automatically merged
 into KNOWLEDGE.md — agents never read LEARNED.md directly.
 
+Program/accreditation facts are a stricter exception to the prose-generation
+pipeline. `tools/sync-program-facts.py` pins domain-owned catalog exports under
+`facts/catalogs/` and injects an exact revision/hash-bearing block into every
+agent `KNOWLEDGE.md`. That block outranks website prose, LLM regeneration,
+lessons, presentations, and historical messages and must be re-injected after
+any merge/regeneration.
+
 ### Pipeline
 
 ```
@@ -47,14 +54,14 @@ from future merges. Flagged lessons are not deleted — human review.
 
 ## Source files (shared/)
 
-| File | Content | Updated by |
-|------|---------|-----------|
-| `KNOWLEDGE.md` | Tandem facts + lessons merged in | `merge-lessons.sh` / `generate-knowledge.sh` |
-| `SCHEDULE.md` | Upcoming cohort dates (auto-generated) | `calendar_ctas.py` → Scheduler Minion |
-| `LEARNED.md` | Shared lessons (placeholder) | Gru approval flow |
-| `LEARNED-{agent}.md` | Per-agent lesson copies | `route_lesson` IPC handler (best-effort sync) |
-| `llms-full.txt` | Full tandemcoach.co site text (~766 KB) | Weekly via tandemweb pipeline |
-| `merge.log` | Merge pipeline activity log | `merge-lessons.sh` / `generate-knowledge.sh` |
+| File                 | Content                                 | Updated by                                    |
+| -------------------- | --------------------------------------- | --------------------------------------------- |
+| `KNOWLEDGE.md`       | Tandem facts + lessons merged in        | `merge-lessons.sh` / `generate-knowledge.sh`  |
+| `SCHEDULE.md`        | Upcoming cohort dates (auto-generated)  | `calendar_ctas.py` → Scheduler Minion         |
+| `LEARNED.md`         | Shared lessons (placeholder)            | Gru approval flow                             |
+| `LEARNED-{agent}.md` | Per-agent lesson copies                 | `route_lesson` IPC handler (best-effort sync) |
+| `llms-full.txt`      | Full tandemcoach.co site text (~766 KB) | Weekly via tandemweb pipeline                 |
+| `merge.log`          | Merge pipeline activity log             | `merge-lessons.sh` / `generate-knowledge.sh`  |
 
 **Per-agent lesson source of truth:** `knowledge/agents/*/LEARNED.md` (written by IPC handlers).
 The `shared/LEARNED-*.md` files are best-effort copies.
@@ -64,22 +71,22 @@ The `shared/LEARNED-*.md` files are best-effort copies.
 Each folder is mounted at `/workspace/knowledge` inside that agent's container.
 Agent list is dynamic — `validate-knowledge.sh --update` discovers agents via directory glob.
 
-| Agent | Gets | Reason |
-|-------|-----|--------|
-| `inbox` | KNOWLEDGE, SCHEDULE, LEARNED, llms-full.txt | Full context to classify and qualify |
-| `sales` | KNOWLEDGE, SCHEDULE, LEARNED | Program/pricing/scheduling + self-lessons |
-| `mailman` | KNOWLEDGE, LEARNED | Email processing + delivery lessons |
-| `chief` | KNOWLEDGE (+ all-knowledge mount) | Oversight + knowledge coordination |
-| `certifier` | KNOWLEDGE | Certificate issuance |
-| `contador` | KNOWLEDGE | Payment processing |
-| `archivarista` | KNOWLEDGE | Document management |
+| Agent          | Gets                                        | Reason                                    |
+| -------------- | ------------------------------------------- | ----------------------------------------- |
+| `inbox`        | KNOWLEDGE, SCHEDULE, LEARNED, llms-full.txt | Full context to classify and qualify      |
+| `sales`        | KNOWLEDGE, SCHEDULE, LEARNED                | Program/pricing/scheduling + self-lessons |
+| `mailman`      | KNOWLEDGE, LEARNED                          | Email processing + delivery lessons       |
+| `chief`        | KNOWLEDGE (+ all-knowledge mount)           | Oversight + knowledge coordination        |
+| `certifier`    | KNOWLEDGE                                   | Certificate issuance                      |
+| `contador`     | KNOWLEDGE                                   | Payment processing                        |
+| `archivarista` | KNOWLEDGE                                   | Document management                       |
 
 ## Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `tools/collect-lessons.sh` | Collect + dedup lessons from all agents to stdout |
-| `tools/merge-lessons.sh` | Merge lessons into KNOWLEDGE.md (claude --print) |
+| Script                        | Purpose                                              |
+| ----------------------------- | ---------------------------------------------------- |
+| `tools/collect-lessons.sh`    | Collect + dedup lessons from all agents to stdout    |
+| `tools/merge-lessons.sh`      | Merge lessons into KNOWLEDGE.md (claude --print)     |
 | `tools/generate-knowledge.sh` | Regenerate KNOWLEDGE.md from llms-full.txt + lessons |
 | `tools/validate-knowledge.sh` | Validate prices/URLs, propagate copies, --regenerate |
 
@@ -108,7 +115,11 @@ cp knowledge/shared/llms-full.txt knowledge/agents/inbox/llms-full.txt
 3. Document it in the table above
 4. Add `additionalMounts` to the group's DB record:
    ```json
-   { "hostPath": "~/dev/NanoClaw/knowledge/agents/{name}", "containerPath": "knowledge", "readonly": true }
+   {
+     "hostPath": "~/dev/NanoClaw/knowledge/agents/{name}",
+     "containerPath": "knowledge",
+     "readonly": true
+   }
    ```
 5. Restart NanoClaw
 

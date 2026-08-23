@@ -23,7 +23,10 @@ export type DriftKind =
   | 'product_missing'
   | 'product_inactive'
   | 'kb_missing_fact'
-  | 'kb_stale_value';
+  | 'kb_stale_value'
+  | 'catalog_missing'
+  | 'catalog_invalid'
+  | 'kb_catalog_missing';
 
 export interface DriftFinding {
   program: string;
@@ -54,6 +57,18 @@ interface ProductEntry {
   active?: boolean;
 }
 
+interface CatalogSnapshot {
+  catalog_id?: string;
+  catalog_revision?: number;
+  catalog_sha256?: string;
+  pathway_totals?: {
+    approved_programs?: number;
+    total_hours?: number;
+    core_competency?: number;
+    resource_development?: number;
+  };
+}
+
 export function resolveFactsPath(): string {
   return (
     process.env.PROGRAM_FACTS_PATH ??
@@ -78,6 +93,30 @@ export function resolveProductsPath(): string {
       'data',
       'checkout',
       'products.json',
+    )
+  );
+}
+
+export function resolvePractitionerCatalogPath(): string {
+  return (
+    process.env.PRACTITIONER_FACTS_PATH ??
+    path.join(
+      process.cwd(),
+      'facts',
+      'catalogs',
+      'practitioner-series.web.json',
+    )
+  );
+}
+
+export function resolvePractitionerPackPath(): string {
+  return (
+    process.env.PRACTITIONER_FACTS_PACK_PATH ??
+    path.join(
+      process.cwd(),
+      'facts',
+      'catalogs',
+      'practitioner-series.minion.md',
     )
   );
 }
@@ -168,6 +207,50 @@ export function detectDrift(
   return { checked: Object.keys(programs).length, findings };
 }
 
+export function detectCatalogPackDrift(
+  snapshot: CatalogSnapshot,
+  pack: string,
+  kb: string,
+): DriftFinding[] {
+  const findings: DriftFinding[] = [];
+  const digest = snapshot.catalog_sha256;
+  const revision = snapshot.catalog_revision;
+  const totals = snapshot.pathway_totals;
+  if (
+    snapshot.catalog_id !== 'practitioner-series' ||
+    !digest?.match(/^[a-f0-9]{64}$/) ||
+    !Number.isInteger(revision) ||
+    totals?.approved_programs !== 6 ||
+    totals.total_hours !== 150 ||
+    totals.core_competency !== 77 ||
+    totals.resource_development !== 73
+  ) {
+    findings.push({
+      program: 'practitioner-series',
+      kind: 'catalog_invalid',
+      detail:
+        'pinned Practitioner catalog identity, revision, hash, or totals are invalid',
+    });
+    return findings;
+  }
+  const marker = `program-facts: practitioner-series revision=${revision} sha256=${digest}`;
+  if (!pack.includes(marker)) {
+    findings.push({
+      program: 'practitioner-series',
+      kind: 'catalog_invalid',
+      detail: 'pinned minion pack does not match the catalog revision/hash',
+    });
+  }
+  if (!kb.includes(pack.trim())) {
+    findings.push({
+      program: 'practitioner-series',
+      kind: 'kb_catalog_missing',
+      detail: 'sales KB is missing the exact canonical Practitioner fact pack',
+    });
+  }
+  return findings;
+}
+
 export async function runProgramFactsDrift(): Promise<DriftResult> {
   const facts = parseYaml(
     fs.readFileSync(resolveFactsPath(), 'utf-8'),
@@ -188,6 +271,21 @@ export async function runProgramFactsDrift(): Promise<DriftResult> {
       program: '(all)',
       kind: 'product_missing',
       detail: productsError,
+    });
+  }
+  try {
+    const snapshot = JSON.parse(
+      fs.readFileSync(resolvePractitionerCatalogPath(), 'utf-8'),
+    ) as CatalogSnapshot;
+    const pack = fs.readFileSync(resolvePractitionerPackPath(), 'utf-8');
+    result.findings.push(...detectCatalogPackDrift(snapshot, pack, kb));
+    result.checked += 1;
+  } catch {
+    result.findings.push({
+      program: 'practitioner-series',
+      kind: 'catalog_missing',
+      detail:
+        'pinned Practitioner catalog/pack is unreadable; run tools/sync-program-facts.py sync',
     });
   }
   return result;

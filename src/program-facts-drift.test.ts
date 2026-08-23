@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 
-import { detectDrift, type ProgramSpec } from './program-facts-drift.js';
+import {
+  detectCatalogPackDrift,
+  detectDrift,
+  type ProgramSpec,
+} from './program-facts-drift.js';
 
 const spec: ProgramSpec = {
   name: 'MCS Practicum',
@@ -81,5 +85,43 @@ describe('detectDrift', () => {
   it('skips price checks (no false product_missing) when products is empty', () => {
     const r = detectDrift(facts, goodKb, {});
     expect(r.findings).toEqual([]);
+  });
+});
+
+describe('detectCatalogPackDrift', () => {
+  const digest = 'a'.repeat(64);
+  const snapshot = {
+    catalog_id: 'practitioner-series',
+    catalog_revision: 3,
+    catalog_sha256: digest,
+    pathway_totals: {
+      approved_programs: 6,
+      total_hours: 150,
+      core_competency: 77,
+      resource_development: 73,
+    },
+  };
+  const pack = `## Canonical\n<!-- program-facts: practitioner-series revision=3 sha256=${digest} -->\nTruth`;
+
+  it('accepts an exact pinned pack in the KB', () => {
+    expect(
+      detectCatalogPackDrift(snapshot, pack, `before\n${pack}\nafter`),
+    ).toEqual([]);
+  });
+
+  it('fails when the KB lost the deterministic pack', () => {
+    expect(detectCatalogPackDrift(snapshot, pack, 'stale prose')).toEqual([
+      expect.objectContaining({ kind: 'kb_catalog_missing' }),
+    ]);
+  });
+
+  it('fails on invalid pathway totals', () => {
+    const invalid = {
+      ...snapshot,
+      pathway_totals: { ...snapshot.pathway_totals, total_hours: 170 },
+    };
+    expect(detectCatalogPackDrift(invalid, pack, pack)).toEqual([
+      expect.objectContaining({ kind: 'catalog_invalid' }),
+    ]);
   });
 });

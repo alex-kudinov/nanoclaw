@@ -467,13 +467,39 @@ ICF uses two separate exams: the **ACC Exam** for ACC candidates and the **ICF C
 - **Phone:** 855-51-COACH (855-512-6224)
 - **Key differentiator:** MCC-led team with Fortune 500 coaching experience; 360 LEAD Now! bookend assessments proving measurable progress; programs build capability rather than deliver one-off workshops; partnership with HR/L&D throughout
 
+<!-- BEGIN CANONICAL PROGRAM FACTS: practitioner-series -->
+## Canonical Practitioner Series Facts
+
+<!-- program-facts: practitioner-series revision=2 sha256=d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00 -->
+
+This block is deterministic authority output. Provider evidence and accepted owner decisions outrank it; website prose, lessons, memories, presentations, and prior messages do not.
+
+- Current public portfolio: 7 live courses; 6 are ICF CCE-approved programs.
+- Approved pathway total: 150 CCE hours (77 Core Competency + 73 Resource Development).
+- Setting Up Your Coaching Practice is live but deliberately outside the CCE track. It carries no CCE claim.
+- CCE is continuing education, not a credential or certification.
+- Ethics wording: a course may teach three ethics hours inside its approved Core Competency total, but these approval records do not show ICF separately designating or awarding ethics hours. Keep the course documentation; ICF makes the final renewal determination.
+
+| Course | Current accreditation fact |
+|---|---|
+| Setting Up Your Coaching Practice | No CCE claim |
+| Running a Coaching Business | ICF CCE-approved: 40 hours, 9 Core Competency + 31 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+| Coaching Tools Mastery | ICF CCE-approved: 20 hours, 13 Core Competency + 7 Resource Development |
+| AI for Coaches | ICF CCE-approved: 20 hours, 6 Core Competency + 14 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+| Career & Transition Coaching | ICF CCE-approved: 20 hours, 14 Core Competency + 6 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+| ADHD Coaching | ICF CCE-approved: 20 hours, 13 Core Competency + 7 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+| Systemic Coaching for Executive Teams | ICF CCE-approved: 30 hours, 22 Core Competency + 8 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+
+Current approved splits supersede submitted targets and older page, course, slide, narration, brochure, minion, and email text.
+<!-- END CANONICAL PROGRAM FACTS: practitioner-series -->
+
 ## Practitioner Series (self-paced CCE specialization courses)
 A pathway of **7 self-paced specialization courses** authored end-to-end by two Master Certified Coaches (Cherie Silas, MCC and Alex Kudinov, MCC) for **already-credentialed** ICF coaches (ACC/PCC/MCC/ACTC) who want to deepen a niche skill and earn **Continuing Coach Education (CCE) hours toward credential renewal** — without an expensive live cohort. This is **not a certification** and awards no new credential; hours count toward renewal of an existing ICF credential.
 
 - **Courses:** 7 (all live now)
 - **Total hours:** 150 CCE hours across the six CCE-bearing courses — **all 150 ICF CCE-accredited** as of 13 Aug 2026. Nothing in the series is pending review.
 - **Format:** Fully self-paced, asynchronous, **lifetime access** (single-course and bundle purchases)
-- **Certificate:** Certificate of completion issued automatically. For the **3 approved** courses the certificate carries the **ICF CCE-Approved Program badge** and shows the accredited hour count now. For courses still in review the CC/RD split displays once accreditation lands, and the certificate is reissued with the badge.
+- **Certificate:** Certificate of completion issued automatically. For all **6 approved** CCE courses, the certificate carries the **ICF CCE-Approved Program badge** and the approved hour count. Setting Up Your Coaching Practice carries no CCE claim.
 - **Prerequisites:** Assumes coaching foundations. Pre-credential learners are welcome but should start with the **free Coaching Foundations module on the ACC (Level 1) program page** first.
 - **Renewal context (sales hook):** ICF credentials require **40 CCE every 3 years — ≥24 Core Competency (CC) + 16 Resource Development (RD)**. The series is built to fill that requirement affordably.
 - **URL:** /practitioner-series/ (course list at /practitioner-series/#courses)
@@ -489,9 +515,9 @@ A pathway of **7 self-paced specialization courses** authored end-to-end by two 
 | # | Course | Author | Hours | Price | ICF CCE status | CC/RD split | Focus |
 |---|--------|--------|-------|-------|----------------|-------------|-------|
 | 1 | Setting Up Your Coaching Practice | Alex Kudinov, MCC | ~30 h (171 lessons) | $79 | **No CCE claim** — not marketed with CCE hours | — | Legal, tax, insurance, financial & operational layer of a practice |
-| 2 | Running a Coaching Business | Alex Kudinov, MCC | 40 h | $449 | **✅ APPROVED** | 9 CC + 31 RD (incl. 3 mandatory ethics hours) | Pre-revenue → running practice; discovery-as-coaching; three-party contracting; ethics |
+| 2 | Running a Coaching Business | Alex Kudinov, MCC | 40 h | $449 | **✅ APPROVED** | 9 CC + 31 RD (3 ethics-instruction hours documented inside Core; not separately ICF-designated) | Pre-revenue → running practice; discovery-as-coaching; three-party contracting; ethics |
 | 3 | Coaching Tools Mastery | Cherie Silas, MCC | 20 h | $199 | **✅ APPROVED** | 13 CC + 7 RD | Right Tool, Right Mind; choosing/sequencing tools; 498-tool library, 105 tool-chains |
-| 4 | AI for Coaches | Alex Kudinov, MCC | 20 h | $149 | **✅ APPROVED** | 6 CC + 14 RD (incl. 3 mandatory ethics hours) | Where AI belongs in practice; ethics, augmentation, disclosure, presence |
+| 4 | AI for Coaches | Alex Kudinov, MCC | 20 h | $149 | **✅ APPROVED** | 6 CC + 14 RD (3 ethics-instruction hours documented inside Core; not separately ICF-designated) | Where AI belongs in practice; ethics, augmentation, disclosure, presence |
 | 5 | Career & Transition Coaching | Alex Kudinov, MCC | 20 h | $349 | ✅ ICF CCE-approved (13 Aug 2026) | 14 CC + 6 RD | Five transitions: layoffs, pivots, stuck mid-career, returns after caregiving, late-career encore |
 | 6 | ADHD Coaching | Cherie Silas, MCC | 20 h | $399 | ✅ ICF CCE-approved (13 Aug 2026) | 13 CC + 7 RD | ADHD-informed coaching across life, executive & entrepreneur lenses |
 | 7 | Systemic Coaching for Executive Teams | Cherie Silas, MCC | 30 h | $499 | ✅ ICF CCE-approved (13 Aug 2026) | 22 CC + 8 RD | Coach the system, not personalities; read structural collision; ACTC-adjacent |

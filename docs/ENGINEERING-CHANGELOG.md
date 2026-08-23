@@ -8,6 +8,34 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260822-013 — Pin source-owned program facts into every minion
+
+- Date: 2026-08-23T01:16Z
+- Owner/client: Codex
+- State: ready_for_review; isolated NanoClaw source complete, not deployed
+- Commit/PR: pending on `codex/program-facts-release-20260823` from `51185a5`
+- Change class: C2 internal source and generated knowledge
+- Root cause: NanoClaw generated program facts from website prose and also kept
+  a second hand-maintained Practitioner string list, so either could silently
+  reintroduce superseded approvals after frontend repair.
+- Outcome: pins catalog revision 2/hash `d84b3b06...` under `facts/catalogs/`;
+  injects the exact generated block into all 13 tracked minion knowledge files;
+  re-injects before post-regeneration propagation; removes duplicated
+  Practitioner strings from `facts/programs.yaml`; and makes the drift monitor
+  require exact catalog/pack identity and totals.
+- Verification: sync 2/2, drift 10/10, typecheck, and documentation continuity
+  pass. Full suite: 126/128 files and 1,640/1,641 tests pass; untouched
+  `chaos-reconciler.test.ts` fails during import because its logger mock lacks
+  `debug`, and untouched webhook listener tests intermittently report
+  `EADDRINUSE`. No task file touches either path.
+- Deployment/external state: none from this isolated NanoClaw change.
+- Rollback: revert this commit; website/course/provider facts remain owned by
+  the Practitioner catalog and its released consumer receipts.
+- Documentation: `knowledge/README.md`, `CLAUDE.md`, `docs/PROJECT-MAP.md`,
+  active work, changelog, and the cross-program evidence file.
+- Follow-up: exact NanoClaw release, drift-job readback, and a natural minion
+  fact read; do not merge unrelated operational dirt.
+
 ### NC-20260815-006 — Refuse to run a release from inside the release, and say which knowledge tree agents read
 
 - Date: 2026-08-15T20:35Z
@@ -129,7 +157,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `tools/contador/process-payment.test.ts`, three `payments` rows, three `Sales`
   rows, and three untracked Syncthing conflict files.
 - **Fix 1 — a purchase is now one row.** Checkout raises
-  `checkout.session.completed` (cs_…) and `payment_intent.succeeded` (pi_…);
+  `checkout.session.completed` (cs*…) and `payment_intent.succeeded` (pi*…);
   keyed on their own ids they read as two payments, which produced $4,986 of
   double-counted revenue. Both halves know the payment-intent id — the session
   carries it as `payment_intent` — so that is now the identity a payment is
@@ -140,7 +168,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   single shell command with the values inline, so the SHELL expanded them before
   psql ever saw them: `($999/mo ×4)` became `(99/mo ×4)`, `($500/mo)` became
   `(00/mo)`, `$9` and `$5` being read as positional parameters. The same
-  interpolation would have *executed* a product name containing backticks or
+  interpolation would have _executed_ a product name containing backticks or
   `$(…)`. Values now pass as psql variables referenced by `:'name'`, and
   `execFileSync` removes the shell. Two details worth recording: psql does
   **not** interpolate variables for `-c` (it returns a syntax error), so the
@@ -161,7 +189,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Data repaired: `payments` ids 239, 259, 293 replayed through the fixed
   pipeline, restoring `($999/mo ×4)` and `($500/mo)`. Ids 267 and 284 match the
   same pattern but were **deliberately left alone** — `MCS Advanced
-  Accreditation Mentor Coaching — Installment (/mo)` genuinely carries no price
+Accreditation Mentor Coaching — Installment (/mo)` genuinely carries no price
   in its Stripe name, confirmed against the Payment Log, which is written before
   the shell step and was therefore never affected. Three stale `Sales` rows were
   removed: the PaymentIntent halves for Wahida Saeedi, Thamer M Alessa and Dora
@@ -178,7 +206,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   failing to load only for Codex's absent migrations 114/115. The upsert was
   rehearsed against a temp table inside a rolled-back transaction for all three
   arrival orders — checkout-then-intent, intent-then-checkout, and adoption of a
-  legacy cs_-keyed row — each yielding one row with the product preserved.
+  legacy cs\_-keyed row — each yielding one row with the product preserved.
   psql's `:'var'` quoting was separately proved to store `$999`, `O'Brien`,
   `$(whoami)` and backticks as literal text. Then exercised live against real
   payments: a checkout event and its payment-intent twin both resolved to the
@@ -311,11 +339,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `ACC Exam Prep` still resolves to both targets for exam routing, and
   `5x Sessions` still falls to `Sales`.
 - **Deploy topology correction, discovered during this task.** `~/dev` is
-  *not* paused for Syncthing as the operating notes claimed. The changed script
+  _not_ paused for Syncthing as the operating notes claimed. The changed script
   was already byte-identical on the Mini **before** the `scp`, and a marker file
   written on the Studio appeared on the Mini in ~15 seconds. Consequences: a
   `tools/**/*.cjs` edit on the Studio is in production within seconds, with no
-  build and no scp; and a rollback copy taken on the Mini *after* editing
+  build and no scp; and a rollback copy taken on the Mini _after_ editing
   locally captures the already-changed file. The genuine rollback for this
   change is `git show HEAD:tools/contador/process-payment.cjs`, saved on the
   Mini at `/tmp/process-payment.cjs.rollback`
@@ -371,7 +399,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   unsold-so-far mentor-coaching permutations (`Earn PCC`, `Earn MCC`) and both
   Coaching Supervision Mastery permutations (`Inaugural`, `Regular`); created
   `CSS Roster` (`Email | Name | Coaching Supervision Mastery | Refunded |
-  Joined`); recovered Laura Smith's email from the `Sales` row that recorded the
+Joined`); recovered Laura Smith's email from the `Sales` row that recorded the
   same payment intact and merged her onto `Mentor Coaching Roster`; deleted the
   `ICF Mentor Coaching` tab; replayed the three now-mapped `Sales` rows onto
   their roster tabs and removed them from the catch-all.
@@ -390,8 +418,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   second reported `ACC Renewal=8/4/2026 already set` rather than rewriting it.
 - Follow-up at 2026-08-15T18:20Z, after the owner stated the governing rule:
   **mentor coaching and mentor coach training (MCS) are distinct products for
-  distinct people.** `Mentor Coaching Roster` holds coaches *buying* mentor
-  coaching toward their own credential; the MCS roster holds coaches *training*
+  distinct people.** `Mentor Coaching Roster` holds coaches _buying_ mentor
+  coaching toward their own credential; the MCS roster holds coaches _training_
   to become mentor coaches. A product name containing "Mentor Coaching" is
   therefore not evidence of which roster it belongs to.
   - That resolves the tab question left open above.
@@ -416,7 +444,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
     `(00/mo)`. The Sheets writes happen before that line and are unaffected, so
     the Payment Log is correct and the database is not.
   - Still unmapped and left on `Sales`: `Individual Supervision - Single
-    Session`, and the eight Plutio invoice descriptions, which are sales-closed
+Session`, and the eight Plutio invoice descriptions, which are sales-closed
     deals and belong on the catch-all by design.
 - Second follow-up at 2026-08-15T18:45Z, after the owner's rule for the ACC
   case: a mentoring purchase belongs on a credential-program roster only if the
@@ -426,9 +454,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
     `Individual Mentoring` dates with **no** `Full Program`/`M1`–`M4` anywhere on
     the row, and their product is `ACC Renewal` — by definition a coach who
     already holds the credential. Not Level 1 students.
-  - Meanwhile the *real* Level 1 and Level 2 program mentoring products
+  - Meanwhile the _real_ Level 1 and Level 2 program mentoring products
     (`Level 1: Group Mentoring`, `Level 1: Individual Mentor Coaching and
-    Coaching Assessments`, `ICF Level 1: Group Mentoring`, and both Level 2
+Coaching Assessments`, `ICF Level 1: Group Mentoring`, and both Level 2
     equivalents) were **unmapped entirely** and fell to `Sales`. Edward Utz —
     who holds M1 through M4 — had his 8/3/2026 Group Mentoring sitting on the
     catch-all.
@@ -468,22 +496,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
     (`txn_3Tgk0QRnZI4gH1uA0W8xRcIY`), not two. So this is duplicated recording,
     not duplicated money — $4,986 of phantom revenue across the four.
   - This also explains every remaining oddity on `Sales`: the two `Individual
-    Mentor Coaching` rows and the two `Unknown` rows are the PaymentIntent
+Mentor Coaching` rows and the two `Unknown` rows are the PaymentIntent
     halves of purchases already recorded. They were left in place rather than
     deleted, because removing them would hide the double-count while the Payment
     Log and `payments` still carry it.
   - Owner confirmed each of the four at 2026-08-15T18:55Z: Thamer M Alessa and
     Wahida Saeedi are ACC mentor coaching, Dora Vanourek is PCC mentor coaching,
-    and Denise Cole is a supervision *session* — explicitly **not** Coaching
+    and Denise Cole is a supervision _session_ — explicitly **not** Coaching
     Supervision Mastery. Read back against the live sheet: the first three are
     already on `Mentor Coaching Roster` under `ACC Renewal` / `ACC Renewal` /
     `PCC Credential`, and `CSS Roster` holds only Chisato Nomoto and Jordan
     Mercedes. No correction was required.
 - Third supervision category identified, and ruled out of this spreadsheet
   entirely. Denise Cole's purchase is `Individual Supervision - Single Session`
-  — *receiving* supervision. It is distinct from both categories already
+  — _receiving_ supervision. It is distinct from both categories already
   modelled: program-embedded supervision (`ACC`/`PCC`/`ACTC Group Supervision`,
-  correctly filed on the credential rosters) and supervisor *training*
+  correctly filed on the credential rosters) and supervisor _training_
   (Coaching Supervision Mastery → `CSS Roster`).
   - Owner's rule at 2026-08-15T19:05Z: supervision sessions are delivered
     services, like coaching sessions — buying one does not make anyone a
@@ -498,26 +526,26 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   - Eight standalone supervision-service products exist in Stripe and all are
     **deliberately** unmapped — this is the correct end state, not a gap to
     close later: `Individual Supervision - Single Session`, `Group Supervision -
-    Single Session`, `Public Group Supervision`, `Public Group Coaching
-    Supervision`, `Group Supervision Subscription`, `Bronze Supervision
-    Subscription`, `Gold Supervision Subscription`, `5x Sessions`.
+Single Session`, `Public Group Supervision`, `Public Group Coaching
+Supervision`, `Group Supervision Subscription`, `Bronze Supervision
+Subscription`, `Gold Supervision Subscription`, `5x Sessions`.
   - The removal does not stay done on its own. `process-payment.cjs` writes
     every unmapped product to the `Sales` catch-all, so the next supervision
     sale re-adds a row. Making it durable needs a not-an-enrolment list in that
     file so such products reach the Payment Log but never the roster
     spreadsheet — the same file, build, and Mini deploy as the `endsWith('
-    Roster')` blocker below, so both belong to one follow-up task.
+Roster')` blocker below, so both belong to one follow-up task.
   - Latent hazard noted, not changed: the Product Map carries a bare
     `Group Supervision` → `PCC Roster` / `Group Supervision` row. No Stripe
     product has that exact name today, but `process-payment.cjs` falls back to
-    the PaymentIntent *description* for the product name, so a manually created
+    the PaymentIntent _description_ for the product name, so a manually created
     supervision payment described "Group Supervision" would be filed on the PCC
     credential roster as though the buyer were a Level 2 student — the same
     error class as the `ACC Renewal Mentoring` inversion fixed above.
 - Fourth pass at 2026-08-15T19:25Z, on the owner's instruction to read the paid
   Plutio invoices behind the `Sales` rows and match them to products. A Plutio
   payment reaches Stripe with a per-deal description (`Invoice #tca-371-pl
-  from …`), so it can never match a Product Map row and always lands on the
+from …`), so it can never match a Product Map row and always lands on the
   catch-all. The product is on the invoice — and so is the student, who is
   **frequently not the payer**. The parenthetical in each `Sales` product string
   is the Plutio invoice `_id`, which is what makes these resolvable at all.
@@ -584,7 +612,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   classifies a matched tab as a program roster with
   `m.tab.endsWith(' Roster')`. Dropping the suffix makes `programTabs` empty,
   which disables `resolveExamRouting` entirely: every exam-prep buyer would then
-  be written to *both* the program roster and `Prep Exam` instead of one of
+  be written to _both_ the program roster and `Prep Exam` instead of one of
   them, silently and with no error. Twelve `Prep Exam` map rows are paired with
   a program roster, so this is not hypothetical. The fix is one line — classify
   as `m.tab !== 'Prep Exam'`, which is what the check means — but it is an edit
@@ -655,7 +683,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   - n8n `/healthz` returned `ok` and the CLI listed the exact workflow ID/name;
   - public no-secret preflight returned `401 unauthorized`;
   - public authenticated sanitized preflight returned `202`, `capture_only:
-    true`, and the exact three submitted field names;
+true`, and the exact three submitted field names;
   - no NanoClaw, Slack, email, Plutio, coach-capacity, or client side effect was
     possible because the live workflow contains no downstream node.
 - Gravity Forms mapping and normalized-ingress update at 2026-08-11T02:10Z:
@@ -2250,7 +2278,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Root cause: `src/ipc.ts` called `observeOutbound` on the outbound group
   message, i.e. on the `[HANDOFF: sales→mailman]` line, and
   `src/send-watchdog.ts` deleted the `pending_sends` row there. That handoff is
-  emitted *before* mailman composes the mail, so every downstream refusal —
+  emitted _before_ mailman composes the mail, so every downstream refusal —
   recipient guard, content guard, Gmail error, `[ALREADY-HANDLED]` — happened
   after the expectation had already been discharged. NC-20260728-003 chose the
   handoff deliberately ("the agent got that far"); this narrows it to the only
@@ -2260,7 +2288,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
     logs it as progress only and no longer clears. New `observeConfirmedSend`
     clears on a confirmed send, unwrapping a `Name <addr>` form and matching
     case-insensitively. `alertText` reworded: it no longer claims "no handoff has
-    been seen" (a handoff usually *has* been seen) and now points the operator at
+    been seen" (a handoff usually _has_ been seen) and now points the operator at
     the `🚫 [EMAIL BLOCKED]` line in `#gru-chief` that names the violation.
   - `src/db.ts` — new `clearPendingSendsByRecipient`. The recipient is the join
     key because the send executes as `mailman` while the expectation belongs to
@@ -2401,6 +2429,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Rollback/recovery: revert the five knowledge files as one provenance unit.
   Reverting restores a guardrail that now blocks a real, purchasable program.
 - Documentation: active-work row and detail subsection plus this entry.
+
 #### Addendum 2026-07-29T23:59Z — attendance rules, corrected accreditation floor, MCS price reconciliation, deployed
 
 - State: `ready_for_review` → `deployed_unverified`.
@@ -2776,7 +2805,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   by injecting a `[HANDOFF: sales→mailman]` whose body was sliced verbatim from
   the approved card, not regenerated. Confirmed by `gmail_reply processed` and
   `[EMAIL SENT] to=… subject=Re: Questions about the AAMC Program and MCQ-PCC
-  Qualification`, i.e. correctly threaded on her original subject.
+Qualification`, i.e. correctly threaded on her original subject.
 - Verification:
   - 2026-07-28T11:45Z — `npx tsc --noEmit` clean; 15 watchdog tests pass,
     covering grace period, recipient mismatch, alert-once, and post-failure
@@ -3149,7 +3178,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `.github/workflows/ci.yml`
 - Verification: Claude adversarial protocol review completed; accepted
   corrections are incorporated. 2026-07-23T16:21Z — `node --check
-  scripts/check-doc-continuity.mjs`, `npm run docs:continuity-check`,
+scripts/check-doc-continuity.mjs`, `npm run docs:continuity-check`,
   `npm run typecheck`, and `git diff --check` passed.
 - Deployment/migration: not applicable; no application or external state change
 - Rollback/recovery: revert only these documentation changes

@@ -449,6 +449,23 @@ against `LEARNED.md`. A bulk “merge lessons” job was disabled after a lossy
 rewrite path was identified. Knowledge regeneration must preserve provenance,
 facts, and manually reconciled contradictions.
 
+### Domain program-fact authority checkpoint (`NC-20260822-013`)
+
+Website text and generated `llms-*` files are not authority for program facts.
+The first released domain catalog lives in the separate
+`practitioner-series/program-facts/catalog.json` governance source. Provider
+receipts and accepted owner decisions outrank that catalog; the catalog
+outranks course manifests, WordPress pages, minion knowledge, certificates,
+presentations, brochures, SEO artifacts, and historical messages.
+
+NanoClaw pins deterministic web/minion exports under `facts/catalogs/` and
+injects the exact revision/hash-bearing minion block into every tracked agent
+knowledge file through `tools/sync-program-facts.py`. Knowledge regeneration
+and lesson merging re-inject the pinned block before propagation.
+`program-facts-drift.ts` verifies exact catalog-pack identity and totals; the
+older Practitioner string list in `facts/programs.yaml` is removed so a second
+hand-curated authority cannot silently diverge.
+
 ## 10. Agent/group map
 
 The local SQLite snapshot contains 19 registered folders. That snapshot was
@@ -951,30 +968,30 @@ while keeping secrets and volatile runtime state excluded.
 
 ## 21. Documentation index
 
-| Document                              | Use                                                          | Caution                                            |
-| ------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------- |
-| `CLAUDE.md`                           | current repository operations and conventions                | verify implementation-specific claims              |
-| `AGENTS.md`                           | Codex entry point                                            | intentionally delegates to Claude sources          |
-| `docs/PROJECT-MAP.md`                 | reconciled cross-client map                                  | dated snapshot, not live status                    |
-| `docs/CHANGE-PROTOCOL.md`             | required Claude/Codex change, evidence, and handoff contract | update when the shared workflow changes            |
-| `docs/ACTIVE-WORK.md`                 | current task ownership, overlap, state, and next action      | must remain concise and current                    |
-| `docs/ENGINEERING-CHANGELOG.md`       | append-only implementation/verification/deployment history   | evidence only; do not overstate boundaries crossed |
-| `docs/COMPANY-OS-IMPROVEMENT-PLAN.md` | validated, phased improvement roadmap                        | proposed work; not implemented state               |
+| Document                               | Use                                                           | Caution                                                            |
+| -------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `CLAUDE.md`                            | current repository operations and conventions                 | verify implementation-specific claims                              |
+| `AGENTS.md`                            | Codex entry point                                             | intentionally delegates to Claude sources                          |
+| `docs/PROJECT-MAP.md`                  | reconciled cross-client map                                   | dated snapshot, not live status                                    |
+| `docs/CHANGE-PROTOCOL.md`              | required Claude/Codex change, evidence, and handoff contract  | update when the shared workflow changes                            |
+| `docs/ACTIVE-WORK.md`                  | current task ownership, overlap, state, and next action       | must remain concise and current                                    |
+| `docs/ENGINEERING-CHANGELOG.md`        | append-only implementation/verification/deployment history    | evidence only; do not overstate boundaries crossed                 |
+| `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`  | validated, phased improvement roadmap                         | proposed work; not implemented state                               |
 | `docs/SELF-HEALING-COMPLETION-PLAN.md` | reconciled healer current state and gated completion sequence | action-boundary source is local until separately reviewed/deployed |
-| `docs/REQUIREMENTS.md`                | original product principles                                  | intent, not feature inventory                      |
-| `docs/ARCHITECTURE.md`                | broad bespoke architecture                                   | some SDK terminology is stale                      |
-| `docs/SPEC.md`                        | core behavior specification                                  | reconcile with fork extensions                     |
-| `docs/DATA-MODEL.md`                  | business model                                               | inspect live PostgreSQL schema                     |
-| `docs/SECURITY.md`                    | threat/security model                                        | verify host guards and current mounts              |
-| `docs/CONTAINER-ARCHITECTURE.md`      | container lifecycle target/recent design                     | history includes rejected phases                   |
-| `docs/APPLE-CONTAINER-NETWORKING.md`  | Apple networking operations                                  | environment-specific                               |
-| `docs/MINION-FRAMEWORK.md`            | agent framework                                              | concrete group prompts are role authority          |
-| `docs/WEBHOOK-RELIABILITY.md`         | durable webhook design                                       | verify tables and current reaper wiring            |
-| `docs/PROPOSAL-FOLLOWUP-DESIGN.md`    | proposal cadence and approval                                | verify current store/actions                       |
-| `docs/SELF-HEALING-*.md`              | healer phases/target behavior                                | enabled state is environment-dependent             |
-| `docs/gmail-pubsub-setup.md`          | Gmail push setup                                             | cloud/VPS state must be rechecked                  |
-| `MANIFEST.md`                         | ownership and recent-shift overview                          | currently modified; some statuses stale            |
-| `HANDOFF.md`, `handoffs/*`            | dated work context                                           | chronological evidence only                        |
+| `docs/REQUIREMENTS.md`                 | original product principles                                   | intent, not feature inventory                                      |
+| `docs/ARCHITECTURE.md`                 | broad bespoke architecture                                    | some SDK terminology is stale                                      |
+| `docs/SPEC.md`                         | core behavior specification                                   | reconcile with fork extensions                                     |
+| `docs/DATA-MODEL.md`                   | business model                                                | inspect live PostgreSQL schema                                     |
+| `docs/SECURITY.md`                     | threat/security model                                         | verify host guards and current mounts                              |
+| `docs/CONTAINER-ARCHITECTURE.md`       | container lifecycle target/recent design                      | history includes rejected phases                                   |
+| `docs/APPLE-CONTAINER-NETWORKING.md`   | Apple networking operations                                   | environment-specific                                               |
+| `docs/MINION-FRAMEWORK.md`             | agent framework                                               | concrete group prompts are role authority                          |
+| `docs/WEBHOOK-RELIABILITY.md`          | durable webhook design                                        | verify tables and current reaper wiring                            |
+| `docs/PROPOSAL-FOLLOWUP-DESIGN.md`     | proposal cadence and approval                                 | verify current store/actions                                       |
+| `docs/SELF-HEALING-*.md`               | healer phases/target behavior                                 | enabled state is environment-dependent                             |
+| `docs/gmail-pubsub-setup.md`           | Gmail push setup                                              | cloud/VPS state must be rechecked                                  |
+| `MANIFEST.md`                          | ownership and recent-shift overview                           | currently modified; some statuses stale                            |
+| `HANDOFF.md`, `handoffs/*`             | dated work context                                            | chronological evidence only                                        |
 
 Historical/alternate architecture files (`nanoclaw-architecture-final.md`,
 `nanorepo-architecture.md`, `business-agents-architecture.md`, plans, SDK deep
