@@ -162,6 +162,13 @@ outside the current client conversation.
   284/284; pinned Node 22.23.2 typecheck/build, formatting, documentation
   continuity, script syntax, and diff checks pass. Broad suite passes 3,019 of
   3,020 with 12 skips; the only failure is the unchanged CNPC wrapper assertion.
+- First dark fast-healer activation: the target release verified and one cycle
+  exited zero, but launchd reset `runs` from the predecessor's 6,489 to one on
+  unload/load. The helper incorrectly required the new counter to exceed the
+  old counter, timed out, and automatically restored the prior plist. The main
+  daemon remained healthy on `0ddb8794`; no projection/configuration occurred.
+  The correction now requires at least one clean post-load run and retains the
+  state/exit checks.
 
 ### NC-20260823-001
 

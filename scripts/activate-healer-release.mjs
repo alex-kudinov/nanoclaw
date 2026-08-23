@@ -179,9 +179,9 @@ try {
   do {
     await new Promise((resolve) => setTimeout(resolve, 250));
     after = launchState();
-    if (after.runs > before.runs && after.state === 'not running') break;
+    if (after.runs >= 1 && after.state === 'not running') break;
   } while (Date.now() < deadline);
-  if (!after || after.runs <= before.runs || after.state !== 'not running' || after.lastExit !== 0) {
+  if (!after || after.runs < 1 || after.state !== 'not running' || after.lastExit !== 0) {
     throw new Error('target fast-healer cycle did not finish cleanly');
   }
   result.rollbackPath = rollback;

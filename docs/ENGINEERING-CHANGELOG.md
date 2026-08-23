@@ -39,6 +39,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   22.23.2 typecheck/build, formatting, continuity, script syntax, and diff
   checks pass. Full suite is 3,019 passed / 12 skipped / one unchanged CNPC
   wrapper-literal failure.
+- Dark activation attempt 1: main daemon activation to exact `0ddb8794` passed.
+  The fast-healer target verified and one disabled cycle exited zero, but the
+  new helper compared launchd's reset post-load `runs=1` with predecessor
+  `runs=6489`, timed out, and automatically restored the prior plist. No
+  projection/configuration occurred. The helper now accepts one or more clean
+  post-load runs while still requiring idle state and exit zero.
 
 ### NC-20260823-001 — Deploy dark healer-resolution schema and host release
 

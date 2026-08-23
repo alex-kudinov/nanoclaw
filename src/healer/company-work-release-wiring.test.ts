@@ -23,7 +23,7 @@ describe('bounded healer Company Work release wiring', () => {
     expect(source).toContain("installed.ProgramArguments[2] !== 'fast'");
     expect(source).toContain("values.get('--confirm-host') !== os.hostname()");
     expect(source).toContain('fs.copyFileSync(plist, rollback');
-    expect(source).toContain('after.runs > before.runs');
+    expect(source).toContain('after.runs >= 1');
     expect(source).toContain('after.lastExit !== 0');
   });
 });
