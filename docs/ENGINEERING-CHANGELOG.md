@@ -8,6 +8,58 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260823-005 — Sequential healer expansion pilot
+
+- Date: 2026-08-23T22:33Z
+- Owner/client: Codex
+- State: blocked on exact source-three schedule decision; sources one and two
+  complete and live-verified
+- Authorization: accepted
+  `decision:self-healing-sequential-expansion-pilot`; concurrency remained
+  `MAX_ITEMS=1` and sources rotated only after terminal replay.
+- Source-one implementation: `killOnTimeout` now logs expected post-output
+  cleanup at info while preserving error logging and error result for a true
+  no-output hard timeout. Stop commands, durations, and lifecycle state are
+  unchanged. Tests cover both branches.
+- Independent review: Claude Sonnet 5/high session
+  `ca3bcffa-9278-45a1-8ea7-631f197d2068` returned
+  `NO MATERIAL FINDINGS` in one bounded round. Usage was 5 model calls, 10
+  input, 84,751 cache-create, 247,866 cache-read, 14,681 output tokens,
+  maximum context 93,317, cost $0.8031108.
+- Verification: focused 86/86, typecheck, documentation continuity,
+  agent-runner build and 43/43 tests pass. Full suite is 3,021 passed / 12
+  skipped / the unchanged unrelated CNPC wrapper-literal failure.
+- Release: exact commit `d4f4289126797b07dd3731ff6bffe755ef2277bd`,
+  source tree `a9e2928a4cf126efd9a6c68a466a59b78a992393`, 880-file artifact
+  SHA-256 `fe8ceefce60e2ca507f3676dba7dbe37db320765f2364e1c23500b197387d79f`,
+  archive SHA-256
+  `e6f3a189b01809a58301e30bb4f8e3ee125d14fe94a1d4498a0814f50e21b7c8`.
+  Local and fresh Mini runtime verification pass under Node 22.23.2.
+- Deployment: fast/main activations changed only three release pointers and
+  retained rollback plists
+  `com.nanoclaw.healer.fast.plist.rollback-index-2026-08-23T22-12-00-255Z`
+  and `com.nanoclaw.plist.rollback-883f375f5ceb-2026-08-23T22-12-01-938Z`.
+  PID/listener/health/code-root converge; Gmail/Slack are connected, queues are
+  empty, and main/fast error logs remain 273/24.
+- Source one result: config backup
+  `.env.rollback-company-healer-work-2026-08-23T22-12-38-647Z`; reviewed
+  release bound as remediation; internal correction receipt posted; source
+  `resolved/verified_fixed`; work completed version 2 with 3 observations / 3
+  events / 1 receipt; replay duplicate-only.
+- Source two result: config backup
+  `.env.rollback-company-healer-work-2026-08-23T22-23-53-241Z`; tracked/live
+  `ipc-turn-policy.ts` SHA-256
+  `027c092b22169eb3382038a503120118aadde28584bbd565af9f3ac9b5a2d974`;
+  runner build/tests green; no recurrence; identical terminal receipt/replay.
+- Source-three finding: `procurement-caleprocure-collector` is enabled daily at
+  08:00 CT while collector/ingest/review flags are all off, so it fails by
+  design. Historical deterministic-collector three-shadow evidence remains
+  incomplete. Proposed decision `decision:caleprocure-safe-disabled-state`
+  keeps gates off and disables only the contradictory job. No schedule or gate
+  changed pending owner acceptance.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260823-005-sequential-healer-pilot.md`.
+
 ### NC-20260823-004 — Resolve the first healer item and bound expansion
 
 - Date: 2026-08-23T21:25Z

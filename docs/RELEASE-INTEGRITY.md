@@ -112,6 +112,17 @@ three release pointers, and retained rollback to `d39bc073…`. Live health,
 listener/launchd PID, release root, channels, and queues converge; the healer
 ledger remains 1 item / 1 observation / 2 events with no post-activation write.
 
+Sequential-pilot release `d4f4289126797b07dd3731ff6bffe755ef2277bd`
+changes only container-timeout severity classification: a hard timeout after a
+valid output marker is informational cleanup, while a no-output hard timeout
+remains an error and failure. Claude Sonnet/high returned
+`NO MATERIAL FINDINGS`; host and independent runner gates pass. The 880-file
+archive verified locally and on the Mini under Node 22.23.2. Fast/main
+activations changed only their three release pointers and retained rollback to
+`883f375f…`. Exact health, listener, release root, channels, queues, and error
+logs pass. Two sequential `MAX_ITEMS=1` source rotations then produced terminal
+recovery receipts plus duplicate-only replay without increasing concurrency.
+
 NC-20260820-002 crossed the equivalent program-facts release boundary with
 exact implementation `8344524cf4a439b84eb792cdf7b4a16b65178a6a`, source tree
 `fac86f42aebcaf2e765ec16024fc679e9fa8aca1`, 788 compiled files, artifact

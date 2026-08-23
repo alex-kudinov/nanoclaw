@@ -536,6 +536,10 @@ The host uses sidecar and output files to detach container lifetime from a
 single daemon process. Eligible running containers can be adopted after daemon
 restart. Status output distinguishes active work, warm idle work, and adopted
 work. Shutdown, recovery, and LRU eviction code must be reviewed together.
+Exact release `d4f428912679…` aligns the hard-timeout boundary with the existing
+close-handler result: cleanup after streamed output logs at info and succeeds;
+a true no-output hard timeout still logs at error and fails. Stop/kill behavior
+and timeout duration are unchanged.
 
 ### Credential lifecycle
 
