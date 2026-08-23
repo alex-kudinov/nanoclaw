@@ -488,6 +488,7 @@ describe('exited-container IPC cleanup', () => {
 
 describe('container-runner timeout behavior', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.useFakeTimers();
     fakeProc = createFakeProcess();
   });
@@ -518,6 +519,15 @@ describe('container-runner timeout behavior', () => {
     // Fire the hard timeout (IDLE_TIMEOUT + 30s = 1830000ms)
     await vi.advanceTimersByTimeAsync(1830000);
 
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({ group: testGroup.name }),
+      'Container timeout after output, stopping gracefully',
+    );
+    expect(logger.error).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining('Container timeout'),
+    );
+
     // Emit close event (as if container was stopped by the timeout)
     fakeProc.emit('close', 137);
 
@@ -530,6 +540,33 @@ describe('container-runner timeout behavior', () => {
     expect(onOutput).toHaveBeenCalledWith(
       expect.objectContaining({ result: 'Here is my response' }),
     );
+  });
+
+  it('hard timeout with no output logs an error and resolves as failure', async () => {
+    const noOutputGroup: RegisteredGroup = {
+      ...testGroup,
+      containerConfig: { timeout: 1_000, spawnTimeout: 2_000 },
+    };
+    const resultPromise = runContainerAgent(
+      noOutputGroup,
+      { ...testInput, isScheduledTask: true },
+      () => {},
+      vi.fn(async () => {}),
+    );
+
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ group: noOutputGroup.name }),
+      'Container timeout with no output, stopping gracefully',
+    );
+
+    fakeProc.emit('close', 137);
+    await vi.advanceTimersByTimeAsync(10);
+
+    const result = await resultPromise;
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('timed out');
   });
 
   it('heartbeats do not extend the absolute runtime deadline', async () => {

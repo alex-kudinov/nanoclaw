@@ -1253,10 +1253,17 @@ export async function runContainerAgent(
 
     const killOnTimeout = () => {
       timedOut = true;
-      logger.error(
-        { group: group.name, containerName },
-        'Container timeout, stopping gracefully',
-      );
+      if (hadStreamingOutput) {
+        logger.info(
+          { group: group.name, containerName },
+          'Container timeout after output, stopping gracefully',
+        );
+      } else {
+        logger.error(
+          { group: group.name, containerName },
+          'Container timeout with no output, stopping gracefully',
+        );
+      }
       exec(stopContainer(containerName), { timeout: 15000 }, (err) => {
         if (err) {
           logger.warn(
