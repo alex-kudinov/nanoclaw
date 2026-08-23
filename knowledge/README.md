@@ -26,6 +26,9 @@ into KNOWLEDGE.md — agents never read LEARNED.md directly.
   llms-full.txt ──→ generate- ───→│  KNOWLEDGE.md        │──→ agents read this
   (weekly)          knowledge.sh   │  (shared, complete)  │
                                    └─────────────────────┘
+
+  practitioner-series/program-facts/exports
+                 ──→ sync-program-facts.py ──→ pinned catalog + exact block in every KNOWLEDGE.md
 ```
 
 ### Two merge triggers
@@ -82,12 +85,20 @@ Agent list is dynamic — `validate-knowledge.sh --update` discovers agents via 
 | `tools/merge-lessons.sh` | Merge lessons into KNOWLEDGE.md (claude --print) |
 | `tools/generate-knowledge.sh` | Regenerate KNOWLEDGE.md from llms-full.txt + lessons |
 | `tools/validate-knowledge.sh` | Validate prices/URLs, propagate copies, --regenerate |
+| `tools/sync-program-facts.py` | Pin the accepted Practitioner catalog export and inject/check its exact generated block in every tracked minion KB |
 
 ## Keeping copies fresh
 
 Copies are propagated automatically by `validate-knowledge.sh --update` (called by
 merge-lessons.sh and generate-knowledge.sh). Manual copy is no longer needed for
 KNOWLEDGE.md.
+
+`validate-knowledge.sh` also fails when the pinned Practitioner catalog, its
+generated minion pack, and any tracked `KNOWLEDGE.md` disagree. Its update and
+regeneration paths reapply that block after generic propagation, so a weekly
+site-text refresh cannot silently restore superseded course facts. Refresh the
+pin only with `python3 tools/sync-program-facts.py sync` after the accepted
+source catalog changes; do not hand-edit the generated block.
 
 For SCHEDULE.md and llms-full.txt, manual copy or Scheduler Minion (when built):
 

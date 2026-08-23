@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildProgramFactsDetectorEvidence,
   detectDrift,
+  detectPractitionerCatalogDrift,
   type ProgramSpec,
 } from './program-facts-drift.js';
 
@@ -85,6 +86,75 @@ describe('detectDrift', () => {
   it('skips price checks (no false product_missing) when products is empty', () => {
     const r = detectDrift(facts, goodKb, {});
     expect(r.findings).toEqual([]);
+  });
+});
+
+describe('detectPractitionerCatalogDrift', () => {
+  const digest = 'd'.repeat(64);
+  const catalog = JSON.stringify({
+    catalog_revision: 2,
+    catalog_sha256: digest,
+    programs: [
+      {
+        superseded_claims: [
+          { claim: '20 hours: 15 Core Competency + 5 Resource Development' },
+        ],
+      },
+    ],
+  });
+  const pack = `## Canonical Practitioner Series Facts
+
+<!-- program-facts: practitioner-series revision=2 sha256=${digest} -->
+
+Current truth.`;
+  const kb = `# Sales
+
+<!-- BEGIN CANONICAL PROGRAM FACTS: practitioner-series -->
+${pack}
+<!-- END CANONICAL PROGRAM FACTS: practitioner-series -->`;
+
+  it('accepts an exact catalog, pack, and Sales KB block', () => {
+    expect(detectPractitionerCatalogDrift(catalog, pack, kb)).toEqual({
+      checked: 1,
+      findings: [],
+    });
+  });
+
+  it('fails closed when the pinned files are unavailable', () => {
+    expect(detectPractitionerCatalogDrift(null, pack, kb).findings).toEqual([
+      expect.objectContaining({ kind: 'catalog_missing' }),
+    ]);
+  });
+
+  it('flags a catalog/pack revision or hash mismatch', () => {
+    const stalePack = pack.replace('revision=2', 'revision=1');
+    expect(
+      detectPractitionerCatalogDrift(catalog, stalePack, kb).findings,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'catalog_pack_mismatch',
+        }),
+      ]),
+    );
+  });
+
+  it('flags a Sales KB that lacks the exact generated pack', () => {
+    expect(
+      detectPractitionerCatalogDrift(catalog, pack, '# Sales').findings,
+    ).toEqual([expect.objectContaining({ kind: 'catalog_kb_mismatch' })]);
+  });
+
+  it('flags catalog-superseded copy even when the exact current block exists', () => {
+    const staleKb = `${kb}\n20 hours: 15 Core Competency + 5 Resource Development`;
+    expect(
+      detectPractitionerCatalogDrift(catalog, pack, staleKb).findings,
+    ).toEqual([
+      expect.objectContaining({
+        kind: 'catalog_kb_mismatch',
+        detail: expect.stringContaining('1 catalog-superseded'),
+      }),
+    ]);
   });
 });
 

@@ -146,6 +146,9 @@ if $UPDATE_HASH; then
         [[ -d "$agent_dir" ]] && cp "$KNOWLEDGE" "$agent_dir/KNOWLEDGE.md"
     done
     echo "Copied to all agent folders"
+
+    # Reapply source-controlled domain facts after any generic KB propagation.
+    python3 "$PROJECT_ROOT/tools/sync-program-facts.py" inject
 fi
 
 # ── Regenerate if requested and hash changed ──
@@ -175,6 +178,17 @@ if $REGENERATE; then
         echo ""
         echo "Hash matches — skipping regeneration"
     fi
+fi
+
+# ── Canonical cross-repository program facts ──
+
+echo ""
+echo "--- Canonical program-facts check ---"
+if python3 "$PROJECT_ROOT/tools/sync-program-facts.py" check; then
+    echo "  Practitioner catalog and every tracked minion KB agree"
+else
+    echo "  Practitioner catalog drift found — run tools/sync-program-facts.py sync"
+    ERRORS=$((ERRORS + 1))
 fi
 
 # ── Summary ──

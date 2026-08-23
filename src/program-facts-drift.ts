@@ -24,7 +24,10 @@ export type DriftKind =
   | 'product_missing'
   | 'product_inactive'
   | 'kb_missing_fact'
-  | 'kb_stale_value';
+  | 'kb_stale_value'
+  | 'catalog_missing'
+  | 'catalog_pack_mismatch'
+  | 'catalog_kb_mismatch';
 
 export interface DriftFinding {
   program: string;
@@ -96,6 +99,30 @@ export function resolveProductsPath(): string {
       'data',
       'checkout',
       'products.json',
+    )
+  );
+}
+
+export function resolvePractitionerCatalogPath(): string {
+  return (
+    process.env.PRACTITIONER_FACTS_CATALOG_PATH ??
+    path.join(
+      process.cwd(),
+      'facts',
+      'catalogs',
+      'practitioner-series.web.json',
+    )
+  );
+}
+
+export function resolvePractitionerPackPath(): string {
+  return (
+    process.env.PRACTITIONER_FACTS_PACK_PATH ??
+    path.join(
+      process.cwd(),
+      'facts',
+      'catalogs',
+      'practitioner-series.minion.md',
     )
   );
 }
@@ -186,6 +213,95 @@ export function detectDrift(
   return { checked: Object.keys(programs).length, findings };
 }
 
+const PRACTITIONER_BLOCK_BEGIN =
+  '<!-- BEGIN CANONICAL PROGRAM FACTS: practitioner-series -->';
+const PRACTITIONER_BLOCK_END =
+  '<!-- END CANONICAL PROGRAM FACTS: practitioner-series -->';
+const PRACTITIONER_PACK_MARKER =
+  /program-facts: practitioner-series revision=(\d+) sha256=([a-f0-9]{64})/;
+
+/** Pure guard for the pinned Practitioner catalog, generated pack, and Sales KB. */
+export function detectPractitionerCatalogDrift(
+  catalogText: string | null,
+  packText: string | null,
+  salesKb: string,
+): DriftResult {
+  const findings: DriftFinding[] = [];
+  const program = 'practitioner-series';
+  if (catalogText === null || packText === null) {
+    findings.push({
+      program,
+      kind: 'catalog_missing',
+      detail: 'pinned Practitioner catalog or minion pack is unreadable',
+    });
+    return { checked: 1, findings };
+  }
+
+  let catalog: {
+    catalog_revision?: unknown;
+    catalog_sha256?: unknown;
+    programs?: Array<{
+      superseded_claims?: Array<{ claim?: unknown }>;
+    }>;
+  };
+  try {
+    catalog = JSON.parse(catalogText) as typeof catalog;
+  } catch {
+    findings.push({
+      program,
+      kind: 'catalog_pack_mismatch',
+      detail: 'pinned Practitioner catalog is not valid JSON',
+    });
+    return { checked: 1, findings };
+  }
+
+  const marker = packText.match(PRACTITIONER_PACK_MARKER);
+  const revision = catalog.catalog_revision;
+  const digest = catalog.catalog_sha256;
+  if (
+    typeof revision !== 'number' ||
+    !Number.isInteger(revision) ||
+    typeof digest !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(digest) ||
+    marker === null ||
+    Number(marker[1]) !== revision ||
+    marker[2] !== digest
+  ) {
+    findings.push({
+      program,
+      kind: 'catalog_pack_mismatch',
+      detail:
+        'pinned Practitioner catalog and minion pack revision/hash do not agree',
+    });
+  }
+
+  const expectedBlock = `${PRACTITIONER_BLOCK_BEGIN}\n${packText.trim()}\n${PRACTITIONER_BLOCK_END}`;
+  if (!salesKb.includes(expectedBlock)) {
+    findings.push({
+      program,
+      kind: 'catalog_kb_mismatch',
+      detail:
+        'Sales KB does not contain the exact pinned Practitioner minion pack',
+    });
+  }
+  const supersededClaims = (catalog.programs ?? []).flatMap((entry) =>
+    (entry.superseded_claims ?? [])
+      .map(({ claim }) => claim)
+      .filter((claim): claim is string => typeof claim === 'string'),
+  );
+  const staleClaimCount = supersededClaims.filter((claim) =>
+    salesKb.includes(claim),
+  ).length;
+  if (staleClaimCount > 0) {
+    findings.push({
+      program,
+      kind: 'catalog_kb_mismatch',
+      detail: `Sales KB contains ${staleClaimCount} catalog-superseded Practitioner claim(s)`,
+    });
+  }
+  return { checked: 1, findings };
+}
+
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -249,7 +365,30 @@ export async function runProgramFactsDriftWithEvidence(): Promise<ProgramFactsDr
     productsError = `products.json unreadable at ${resolveProductsPath()} — price checks skipped`;
   }
 
+  let practitionerCatalogText: string | null = null;
+  let practitionerPackText: string | null = null;
+  try {
+    practitionerCatalogText = fs.readFileSync(
+      resolvePractitionerCatalogPath(),
+      'utf-8',
+    );
+    practitionerPackText = fs.readFileSync(
+      resolvePractitionerPackPath(),
+      'utf-8',
+    );
+  } catch {
+    practitionerCatalogText = null;
+    practitionerPackText = null;
+  }
+
   const result = detectDrift(facts, kb, products);
+  const practitionerResult = detectPractitionerCatalogDrift(
+    practitionerCatalogText,
+    practitionerPackText,
+    kb,
+  );
+  result.checked += practitionerResult.checked;
+  result.findings.push(...practitionerResult.findings);
   if (productsError) {
     result.findings.push({
       program: '(all)',
@@ -260,7 +399,13 @@ export async function runProgramFactsDriftWithEvidence(): Promise<ProgramFactsDr
   return {
     result,
     evidence: buildProgramFactsDetectorEvidence(result, {
-      facts: factsText,
+      facts: [
+        factsText,
+        '-- practitioner catalog --',
+        practitionerCatalogText ?? '(unavailable)',
+        '-- practitioner minion pack --',
+        practitionerPackText ?? '(unavailable)',
+      ].join('\n'),
       salesKb: kb,
       products: productsText,
     }),

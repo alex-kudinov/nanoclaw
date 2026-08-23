@@ -1,0 +1,298 @@
+{
+  "catalog_id": "practitioner-series",
+  "catalog_revision": 2,
+  "catalog_sha256": "d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00",
+  "effective_at": "2026-08-23T00:56:33Z",
+  "pathway_totals": {
+    "approved_programs": 6,
+    "total_hours": 150,
+    "core_competency": 77,
+    "resource_development": 73
+  },
+  "programs": [
+    {
+      "id": "prac-foundation",
+      "title": "Setting Up Your Coaching Practice",
+      "repository": "alex-kudinov/prac-foundation",
+      "public_page": "/practitioner-series/setting-up-a-coaching-practice/",
+      "lifecycle": "live",
+      "accreditation": {
+        "type": "none",
+        "status": "not_applicable",
+        "approval_date": null,
+        "valid_from": null,
+        "valid_through": null,
+        "hours": null,
+        "ethics": null,
+        "evidence": [
+          {
+            "kind": "accepted_portfolio_decision",
+            "repository": "alex-kudinov/tandemweb",
+            "git_commit": "4049e94e7052b4a25f5495c97d7714148355db1e",
+            "note": "The live public portfolio distinguishes this practice-building foundation from the six CCE-approved programs."
+          }
+        ]
+      },
+      "superseded_claims": [
+        {
+          "claim": "The course is an ICF CCE program or one of seven CCE-approved courses.",
+          "disposition": "forbidden_current_claim"
+        }
+      ]
+    },
+    {
+      "id": "prac-business",
+      "title": "Running a Coaching Business",
+      "repository": "alex-kudinov/prac-business",
+      "public_page": "/practitioner-series/running-a-coaching-business/",
+      "lifecycle": "live",
+      "accreditation": {
+        "type": "icf_cce",
+        "status": "approved",
+        "approval_date": "2026-07-25",
+        "valid_from": null,
+        "valid_through": null,
+        "hours": {
+          "total": 40,
+          "core_competency": 9,
+          "resource_development": 31
+        },
+        "ethics": {
+          "instructional_hours": 3,
+          "inside_category": "core_competency",
+          "icf_designated": false,
+          "basis": "provider curriculum documentation"
+        },
+        "evidence": [
+          {
+            "kind": "accepted_internal_approval_record",
+            "repository": "alex-kudinov/practitioner-series",
+            "git_commit": "d9ccb06",
+            "note": "Provider approval letter is not present in the current tracked course repository and remains an evidence-gap follow-up."
+          }
+        ]
+      },
+      "superseded_claims": [
+        {
+          "claim": "40 hours: 14 Core Competency + 26 Resource Development",
+          "disposition": "submitted_not_approved"
+        }
+      ]
+    },
+    {
+      "id": "prac-tools",
+      "title": "Coaching Tools Mastery",
+      "repository": "alex-kudinov/prac-tools",
+      "public_page": "/practitioner-series/coaching-tools-mastery/",
+      "lifecycle": "live",
+      "accreditation": {
+        "type": "icf_cce",
+        "status": "approved",
+        "approval_date": "2026-07-25",
+        "valid_from": null,
+        "valid_through": null,
+        "hours": {
+          "total": 20,
+          "core_competency": 13,
+          "resource_development": 7
+        },
+        "ethics": {
+          "instructional_hours": 0,
+          "inside_category": null,
+          "icf_designated": false,
+          "basis": "provider curriculum documentation"
+        },
+        "evidence": [
+          {
+            "kind": "accepted_internal_approval_record",
+            "repository": "alex-kudinov/practitioner-series",
+            "git_commit": "d9ccb06",
+            "note": "Provider approval letter is not present in the current tracked course repository and remains an evidence-gap follow-up."
+          }
+        ]
+      },
+      "superseded_claims": [
+        {
+          "claim": "20 hours: 14 Core Competency + 6 Resource Development",
+          "disposition": "submitted_not_approved"
+        },
+        {
+          "claim": "20 hours: 14 Core Competency + 7 Resource Development",
+          "disposition": "line_item_working_total_not_approved"
+        }
+      ]
+    },
+    {
+      "id": "prac-ai",
+      "title": "AI for Coaches",
+      "repository": "alex-kudinov/prac-ai",
+      "public_page": "/practitioner-series/ai-for-coaches/",
+      "lifecycle": "live",
+      "accreditation": {
+        "type": "icf_cce",
+        "status": "approved",
+        "approval_date": "2026-07-25",
+        "valid_from": null,
+        "valid_through": null,
+        "hours": {
+          "total": 20,
+          "core_competency": 6,
+          "resource_development": 14
+        },
+        "ethics": {
+          "instructional_hours": 3,
+          "inside_category": "core_competency",
+          "icf_designated": false,
+          "basis": "provider curriculum documentation"
+        },
+        "evidence": [
+          {
+            "kind": "accepted_internal_approval_record",
+            "repository": "alex-kudinov/practitioner-series",
+            "git_commit": "d9ccb06",
+            "note": "Provider approval letter is not present in the current tracked course repository and remains an evidence-gap follow-up."
+          }
+        ]
+      },
+      "superseded_claims": []
+    },
+    {
+      "id": "prac-career",
+      "title": "Career & Transition Coaching",
+      "repository": "alex-kudinov/prac-career",
+      "public_page": "/practitioner-series/career-transition/",
+      "lifecycle": "live",
+      "accreditation": {
+        "type": "icf_cce",
+        "status": "approved",
+        "approval_date": "2026-08-13",
+        "valid_from": "2026-06-01",
+        "valid_through": "2027-06-30",
+        "hours": {
+          "total": 20,
+          "core_competency": 14,
+          "resource_development": 6
+        },
+        "ethics": {
+          "instructional_hours": 3,
+          "inside_category": "core_competency",
+          "icf_designated": false,
+          "basis": "provider curriculum plus reviewer instruction"
+        },
+        "evidence": [
+          {
+            "kind": "provider_approval_letter",
+            "repository": "alex-kudinov/prac-career",
+            "path": "cce-submission/approval/icf-cce-approval-2026-08-13.pdf",
+            "sha256": "9a703007a53098d09889e5e9f90673d1a099e36a301629fa748a94f003a99942"
+          }
+        ]
+      },
+      "superseded_claims": []
+    },
+    {
+      "id": "prac-adhd",
+      "title": "ADHD Coaching",
+      "repository": "alex-kudinov/prac-adhd",
+      "public_page": "/practitioner-series/adhd-coach-training/",
+      "lifecycle": "live",
+      "accreditation": {
+        "type": "icf_cce",
+        "status": "approved",
+        "approval_date": "2026-08-13",
+        "valid_from": "2026-06-01",
+        "valid_through": "2027-06-30",
+        "hours": {
+          "total": 20,
+          "core_competency": 13,
+          "resource_development": 7
+        },
+        "ethics": {
+          "instructional_hours": 3,
+          "inside_category": "core_competency",
+          "icf_designated": false,
+          "basis": "provider curriculum plus reviewer instruction"
+        },
+        "evidence": [
+          {
+            "kind": "provider_approval_letter",
+            "repository": "alex-kudinov/prac-adhd",
+            "path": "cce-submission/approval/icf-cce-approval-2026-08-13.pdf",
+            "sha256": "541f3e288bc8c32f3db28cb5d179bc146d579b7a6830c8b7dc71d99fd00fa95e"
+          }
+        ]
+      },
+      "superseded_claims": [
+        {
+          "claim": "20 hours: 15 Core Competency + 5 Resource Development",
+          "disposition": "submitted_not_approved"
+        },
+        {
+          "claim": "20 hours: 14 Core Competency + 6 Resource Development",
+          "disposition": "early_target_not_approved"
+        }
+      ]
+    },
+    {
+      "id": "prac-systemic",
+      "title": "Systemic Coaching for Executive Teams",
+      "repository": "alex-kudinov/prac-systemic",
+      "public_page": "/practitioner-series/systemic-coaching/",
+      "lifecycle": "live",
+      "accreditation": {
+        "type": "icf_cce",
+        "status": "approved",
+        "approval_date": "2026-08-13",
+        "valid_from": "2026-06-01",
+        "valid_through": "2027-06-30",
+        "hours": {
+          "total": 30,
+          "core_competency": 22,
+          "resource_development": 8
+        },
+        "ethics": {
+          "instructional_hours": 3,
+          "inside_category": "core_competency",
+          "icf_designated": false,
+          "basis": "provider curriculum plus reviewer instruction"
+        },
+        "evidence": [
+          {
+            "kind": "provider_approval_letter",
+            "repository": "alex-kudinov/prac-systemic",
+            "path": "cce-submission/approval/icf-cce-approval-2026-08-13.pdf",
+            "sha256": "dfb2eebf3338783d334dd4c30e1714b26b28df542a7bde66ae12865ad5978ba4"
+          }
+        ]
+      },
+      "superseded_claims": [
+        {
+          "claim": "20 hours: 16 Core Competency + 4 Resource Development",
+          "disposition": "early_target_not_approved"
+        },
+        {
+          "claim": "30 hours: 25 Core Competency + 5 Resource Development",
+          "disposition": "submitted_not_approved"
+        }
+      ]
+    },
+    {
+      "id": "prac-somatic",
+      "title": "Somatic Coaching",
+      "repository": "alex-kudinov/prac-somatic",
+      "public_page": null,
+      "lifecycle": "planned",
+      "accreditation": {
+        "type": "none",
+        "status": "not_submitted",
+        "approval_date": null,
+        "valid_from": null,
+        "valid_through": null,
+        "hours": null,
+        "ethics": null,
+        "evidence": []
+      },
+      "superseded_claims": []
+    }
+  ]
+}

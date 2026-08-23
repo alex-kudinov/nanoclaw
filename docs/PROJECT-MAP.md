@@ -289,6 +289,23 @@ No detector or healer component receives authority to edit facts, knowledge,
 products, website content, email, or another source system. Owner correction
 and an exact clean scheduled rerun remain the source-resolution gate.
 
+`NC-20260822-013` adds the accepted Practitioner Series domain authority to
+that same detector without changing detector version 1 or the durable Company
+Work evidence schema. The canonical decision and catalog live in
+`alex-kudinov/practitioner-series/program-facts`; NanoClaw stores only its
+revision/hash-pinned web export and generated minion pack under
+`facts/catalogs/`. `tools/sync-program-facts.py` is the only supported refresh
+path and injects the exact pack into every tracked minion `KNOWLEDGE.md`.
+`tools/validate-knowledge.sh` reapplies and checks the pack after ordinary KB
+regeneration. The detector fails closed on a missing snapshot, catalog/pack
+revision or hash disagreement, or a non-exact Sales KB block, and binds the
+catalog plus pack into its existing `factsSha256`. Authority order is provider
+evidence, then an accepted owner decision, then the canonical catalog, then
+course mirrors, then derived website, course, brochure, presentation, video,
+certificate, minion, and messaging surfaces. Stripe checkout remains authority
+for price and active sale state; Heartbeat remains authority for learner state;
+Sertifier remains authority for issued certificate/template state.
+
 `NC-20260817-002` deployed the first bounded source adapter in exact release
 `baed66d` and applied migration 121. After the
 existing SQLite scheduler successfully claims a task's exact pre-claim

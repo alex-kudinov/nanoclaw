@@ -8,6 +8,43 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260822-013 — Bind Practitioner facts into every NanoClaw knowledge consumer
+
+- Date: 2026-08-23
+- Owner/client: Codex
+- State: validating exact live-base candidate; not yet deployed
+- Commit/PR: isolated branch `codex/program-facts-live-release-20260823`,
+  based on exact live release `db174c1b`; candidate commit pending
+- Change class: C3 knowledge/release closure with no customer communication,
+  certificate issuance, price/product, learner-state, schedule, migration, or
+  credential change
+- Source decision: canonical catalog revision 2/hash
+  `d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00`
+  in `alex-kudinov/practitioner-series` owns Practitioner identity and
+  accreditation after provider evidence and accepted owner decisions. Stripe,
+  Heartbeat, and Sertifier retain their narrower runtime authority.
+- Implementation: a source-controlled sync command pins the catalog web export
+  and generated minion pack and injects its exact marker-bound block into all
+  13 tracked knowledge files. Generic KB update/regeneration reapplies it;
+  validation refuses missing/stale blocks and catalog-superseded claims.
+  The existing version-1 program-facts detector adds fail-closed catalog,
+  pack, exact-Sales-block, and superseded-claim findings while binding both
+  snapshot files into the existing `factsSha256`; its durable Company Work
+  evidence schema and closure policy are unchanged.
+- Verification: catalog sync/check reports all 13 knowledge files current;
+  focused TypeScript tests pass 25/25 and Python sync tests pass 2/2. Pinned
+  Node 22.23.2 typecheck, documentation continuity, email replay 13/13,
+  email-critical 732/732, and independent runner build/tests 43/43 pass. The
+  broad suite passes 2,969 tests with ten skips; its sole failure is the
+  unchanged baseline CNPC wrapper-literal assertion present at base
+  `db174c1b`. `tools/validate-knowledge.sh` itself still exits before reporting
+  because the ignored local `llms-full.txt` snapshot lacks its expected stored
+  hash marker; the new source-controlled sync check passes independently.
+- Deployment/rollback: pending immutable build and activation. No migration or
+  data rollback applies; runtime rollback is the retained prior release plist.
+- Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
+  `knowledge/README.md`, generated knowledge files, and this entry.
+
 ### NC-20260821-007 — Bound the internal receivables review packet
 
 - Date: 2026-08-21
