@@ -132,6 +132,21 @@ outside the current client conversation.
 
 ## Task details
 
+### NC-20260823-003
+
+- Authorization: accepted decision
+  `decision:self-healing-owner-presentation-canary` permitted one bounded daemon
+  restart and one existing exception-loop packet/pickup/attempt.
+- Result: startup tick posted one healer packet, suppressed two unchanged
+  packets, and created one dispatch with events
+  `posted,picked_up,attempt_succeeded` and state `attempted/1/posted`.
+- Truth boundary: the healer work remains `accepted/blocked/1`; the Chief
+  attempt is not source resolution or remediation.
+- Non-interference: no second source, duplicate packet, failed attempt,
+  customer communication, schedule, credential, or new daemon error.
+- Next action: none for presentation/pickup. The named owner decision and any
+  remediation remain separately authorized.
+
 ### NC-20260823-002
 
 - Trigger: after the dark deployment completed, the owner said to deploy and
