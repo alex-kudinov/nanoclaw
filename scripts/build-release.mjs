@@ -101,6 +101,7 @@ try {
       'package-lock.json',
       'capabilities',
       'container',
+      'facts',
       'groups',
       'knowledge',
       'launchd',
@@ -156,6 +157,7 @@ try {
     'scripts/run-booking-plutio-marker-canary.mjs',
     'scripts/register-caleprocure-collector.mjs',
     'scripts/start-procurement-browser.sh',
+    'tools/sync-program-facts.py',
   );
   for (const relative of [...new Set(tracked)].sort()) {
     const source = path.join(root, relative);

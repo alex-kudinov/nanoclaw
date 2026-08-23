@@ -51,6 +51,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Candidate `a9235381` was transferred and verified on the Mini but deliberately
   not activated after preflight exposed its cwd-owned tracked-input resolution;
   `ca05f6df` corrects that boundary before the final build.
+- First activation/readback: exact release `acd0206f` activated with rollback
+  to `db174c1b` and healthy channel/listener identity, but the read-only
+  detector canary refused because the historical release inventory omitted
+  tracked `facts/`. No detector/Company Work run or alert occurred. The
+  release builder now packages and attests `facts/` plus the sync/check command,
+  with a source-contract regression test; `acd0206f` will be replaced before
+  closure is attempted.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`,
   `knowledge/README.md`, generated knowledge files, and this entry.
 
