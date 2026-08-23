@@ -75,17 +75,24 @@ interface ProductEntry {
   active?: boolean;
 }
 
+function resolveTrackedPath(...segments: string[]): string {
+  const releaseRoot = process.env.NANOCLAW_CODE_ROOT;
+  const root =
+    releaseRoot && path.isAbsolute(releaseRoot) ? releaseRoot : process.cwd();
+  return path.join(root, ...segments);
+}
+
 export function resolveFactsPath(): string {
   return (
     process.env.PROGRAM_FACTS_PATH ??
-    path.join(process.cwd(), 'facts', 'programs.yaml')
+    resolveTrackedPath('facts', 'programs.yaml')
   );
 }
 
 export function resolveKbPath(): string {
   return (
     process.env.SALES_KB_PATH ??
-    path.join(process.cwd(), 'knowledge', 'agents', 'sales', 'KNOWLEDGE.md')
+    resolveTrackedPath('knowledge', 'agents', 'sales', 'KNOWLEDGE.md')
   );
 }
 
@@ -106,24 +113,14 @@ export function resolveProductsPath(): string {
 export function resolvePractitionerCatalogPath(): string {
   return (
     process.env.PRACTITIONER_FACTS_CATALOG_PATH ??
-    path.join(
-      process.cwd(),
-      'facts',
-      'catalogs',
-      'practitioner-series.web.json',
-    )
+    resolveTrackedPath('facts', 'catalogs', 'practitioner-series.web.json')
   );
 }
 
 export function resolvePractitionerPackPath(): string {
   return (
     process.env.PRACTITIONER_FACTS_PACK_PATH ??
-    path.join(
-      process.cwd(),
-      'facts',
-      'catalogs',
-      'practitioner-series.minion.md',
-    )
+    resolveTrackedPath('facts', 'catalogs', 'practitioner-series.minion.md')
   );
 }
 

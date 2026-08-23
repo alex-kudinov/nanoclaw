@@ -305,6 +305,10 @@ course mirrors, then derived website, course, brochure, presentation, video,
 certificate, minion, and messaging surfaces. Stripe checkout remains authority
 for price and active sale state; Heartbeat remains authority for learner state;
 Sertifier remains authority for issued certificate/template state.
+Tracked facts, the Sales KB, and both catalog snapshots resolve from the
+immutable `NANOCLAW_CODE_ROOT` during production jobs, even though the job
+retains the operational checkout as its working directory for `.env`, data,
+and logs. Explicit test and diagnostic path overrides remain available.
 
 `NC-20260817-002` deployed the first bounded source adapter in exact release
 `baed66d` and applied migration 121. After the

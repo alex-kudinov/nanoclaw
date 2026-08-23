@@ -1,11 +1,22 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 
 import {
   buildProgramFactsDetectorEvidence,
   detectDrift,
   detectPractitionerCatalogDrift,
+  resolveFactsPath,
+  resolveKbPath,
+  resolvePractitionerCatalogPath,
+  resolvePractitionerPackPath,
   type ProgramSpec,
 } from './program-facts-drift.js';
+
+const originalCodeRoot = process.env.NANOCLAW_CODE_ROOT;
+
+afterEach(() => {
+  if (originalCodeRoot === undefined) delete process.env.NANOCLAW_CODE_ROOT;
+  else process.env.NANOCLAW_CODE_ROOT = originalCodeRoot;
+});
 
 const spec: ProgramSpec = {
   name: 'MCS Practicum',
@@ -86,6 +97,24 @@ describe('detectDrift', () => {
   it('skips price checks (no false product_missing) when products is empty', () => {
     const r = detectDrift(facts, goodKb, {});
     expect(r.findings).toEqual([]);
+  });
+});
+
+describe('release-owned detector inputs', () => {
+  it('resolves tracked facts and knowledge from the immutable release root', () => {
+    process.env.NANOCLAW_CODE_ROOT = '/tmp/nanoclaw-release';
+    expect(resolveFactsPath()).toBe(
+      '/tmp/nanoclaw-release/facts/programs.yaml',
+    );
+    expect(resolveKbPath()).toBe(
+      '/tmp/nanoclaw-release/knowledge/agents/sales/KNOWLEDGE.md',
+    );
+    expect(resolvePractitionerCatalogPath()).toBe(
+      '/tmp/nanoclaw-release/facts/catalogs/practitioner-series.web.json',
+    );
+    expect(resolvePractitionerPackPath()).toBe(
+      '/tmp/nanoclaw-release/facts/catalogs/practitioner-series.minion.md',
+    );
   });
 });
 

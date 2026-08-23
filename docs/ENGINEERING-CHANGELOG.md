@@ -31,6 +31,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   pack, exact-Sales-block, and superseded-claim findings while binding both
   snapshot files into the existing `factsSha256`; its durable Company Work
   evidence schema and closure policy are unchanged.
+- Release-input boundary: production jobs retain the operational checkout as
+  cwd for `.env`, data, and logs, so all tracked detector inputs now resolve
+  from immutable `NANOCLAW_CODE_ROOT`. This prevents a dirty operational facts
+  or knowledge copy from passing or failing a release-owned detector run.
 - Verification: catalog sync/check reports all 13 knowledge files current;
   focused TypeScript tests pass 25/25 and Python sync tests pass 2/2. Pinned
   Node 22.23.2 typecheck, documentation continuity, email replay 13/13,
