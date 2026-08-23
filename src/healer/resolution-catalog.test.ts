@@ -30,6 +30,7 @@ function row(
     cause_or_symptom: 'root_cause',
     evidence: ['config.ts:12 differs from the installed value'],
     applied_action_kind: null,
+    decision_actor: null,
     outcome: 'escalated',
     ...overrides,
   };
@@ -85,6 +86,7 @@ describe('healer resolution catalog', () => {
           fingerprint: 'bbbbbbbbbbbbbbbb',
           status: 'wont_fix',
           applied_action_kind: 'proposal_rejected',
+          decision_actor: 'operator-1',
         }),
       ],
       GENERATED_AT,
@@ -99,6 +101,25 @@ describe('healer resolution catalog', () => {
       'verified_fixed',
       'decided_no_action',
     ]);
+  });
+
+  it('keeps an anonymous rejection pending instead of inventing a decision receipt', () => {
+    const catalog = buildHealerResolutionCatalog(
+      [
+        row({
+          status: 'wont_fix',
+          applied_action_kind: 'proposal_rejected',
+          decision_actor: null,
+        }),
+      ],
+      GENERATED_AT,
+    );
+
+    expect(catalog.items[0]).toMatchObject({
+      disposition: 'pending_decision',
+      decisionCode: 'confirm_external_or_no_fix_disposition',
+      decisionActorSha256: null,
+    });
   });
 
   it('deduplicates replay by fingerprint and prefers the current open incarnation', () => {

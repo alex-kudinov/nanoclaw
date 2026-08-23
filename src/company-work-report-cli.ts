@@ -27,12 +27,13 @@ function workflowFilter(
     raw === 'all' ||
     raw === 'sales_email' ||
     raw === 'host_job_run' ||
-    raw === 'program_facts_drift'
+    raw === 'program_facts_drift' ||
+    raw === 'healer_resolution'
   ) {
     return raw;
   }
   throw new Error(
-    '--workflow requires all, sales_email, host_job_run, or program_facts_drift',
+    '--workflow requires all, sales_email, host_job_run, program_facts_drift, or healer_resolution',
   );
 }
 
@@ -61,7 +62,7 @@ export function parseCompanyWorkReportArgs(args: string[]): CliOptions {
 function formatOkReport(report: CompanyWorkExceptionReport): string {
   const lines = [
     `Company work exceptions — ${report.generatedAt}`,
-    `scanned=${report.scanned}/${report.totalAvailable} sales=${report.summary.byWorkflow.sales_email} jobs=${report.summary.byWorkflow.host_job_run} program_facts=${report.summary.byWorkflow.program_facts_drift} completed=${report.summary.completed} healthy_open=${report.summary.healthyOpen} exceptions=${report.summary.exceptionItems} critical=${report.summary.critical} attention=${report.summary.attention} watch=${report.summary.watch}`,
+    `scanned=${report.scanned}/${report.totalAvailable} sales=${report.summary.byWorkflow.sales_email} jobs=${report.summary.byWorkflow.host_job_run} program_facts=${report.summary.byWorkflow.program_facts_drift} healer=${report.summary.byWorkflow.healer_resolution} completed=${report.summary.completed} healthy_open=${report.summary.healthyOpen} exceptions=${report.summary.exceptionItems} critical=${report.summary.critical} attention=${report.summary.attention} watch=${report.summary.watch}`,
   ];
   if (report.truncated) {
     lines.push(

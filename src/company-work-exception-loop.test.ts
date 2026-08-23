@@ -48,6 +48,7 @@ function report(
         sales_email: 1,
         host_job_run: 0,
         program_facts_drift: 0,
+        healer_resolution: 0,
       },
       byKind,
     },

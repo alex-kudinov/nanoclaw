@@ -641,6 +641,17 @@ or no-op behavior. The standalone command is dry-run-only, has no ledger writer,
 and remains absent from daemon, scheduler, collector, approval, remediation,
 and implementation composition.
 
+`NC-20260822-017` adds the dark host writer behind that contract. Migration
+132 extends Company Work with the distinct `healer_resolution` workflow,
+`healer_resolution_receipt` completion, and append-only minimized observations.
+The default-off adapter maintains one stable item per incident fingerprint,
+deduplicates exact replay, appends changed evidence, closes only on verified
+recovery or a hashed named no-action decision, and reopens recurrence. The
+shared report validates healer lifecycle/receipt/observation consistency. The
+adapter is absent from daemon, scheduler, Slack, collector, approval,
+remediation, and implementation wiring; local schema/code presence neither
+projects production incidents nor enables a healer action.
+
 ### Container package
 
 `container/agent-runner` is an independent Node/TypeScript package:

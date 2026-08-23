@@ -139,7 +139,7 @@ Slack, Company Work, or any action boundary and introduces no schema.
 Exit gate: seeded fixable, approval-required, rejected, stale, and recurring
 incidents each reach exactly one visible terminal or pending-decision state;
 restarts and repeated observations neither lose the proposed solution nor
-duplicate the catalog item. Company Work projection remains the next milestone.
+duplicate the catalog item.
 
 `NC-20260822-016` adds the deterministic projection plan, still without a write
 path. The current ledger cannot truthfully reuse `sales_email`, `host_job_run`,
@@ -153,6 +153,21 @@ recurrence reopens a terminal item. The CLI has no apply flag and is not wired
 to any ledger writer. Migration, observation persistence, owner assignment,
 decision receipts, report support, and activation remain the next reviewed
 milestone.
+
+`NC-20260822-017` implements that reviewed dark milestone locally. Migration
+132 adds the distinct workflow/completion constraints and an append-only table
+that stores only opaque observation identity, catalog version,
+resolution/evidence hashes, disposition, decision code, explicit owner key,
+hashed named-decision actor, and timestamps. A healer-specific host writer
+supports blocked evidence updates, receipt-backed verified or named-no-action
+closure, recurrence reopening, and exact replay. Anonymous rejection remains a
+pending decision. The Company Work report validates lifecycle counts, terminal
+receipts, and observation/decision identity. The adapter defaults off and is
+not imported by the daemon, scheduler, Slack, collector, approval,
+remediation, or implementation paths. Disposable PostgreSQL proves the full
+lifecycle plus append-only history, zero non-admin grants, populated rollback
+refusal, and clean empty rollback. Production migration, configuration,
+projection, presentation, and activation remain separately gated.
 
 ### Gate C — Replace raw shell with a typed action registry
 

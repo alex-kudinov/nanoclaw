@@ -52,7 +52,7 @@ Covers the public._ and business_v2._ schemas. business*v2 tables are
 headed with their schema prefix; access them via business_v2.v*_ views and
 business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
 
-## business_v2.company_work_items (migrations 118-119 live)
+## business_v2.company_work_items (migrations 118-125 live; 132 local/unapplied)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_work_items_id_seq'::regclass)
@@ -72,6 +72,23 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
   last_transition_at            timestamp with time zone NOT NULL DEFAULT=now()
   last_transition_by            text                 NOT NULL DEFAULT='company-work-ledger:host'::text
+```
+
+## business_v2.company_healer_resolution_observations (migration 132 local/unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.company_healer_resolution_observations_id_seq'::regclass)
+  observation_key               text                 NOT NULL
+  work_item_id                  bigint               NOT NULL
+  catalog_version               smallint             NOT NULL
+  resolution_fingerprint        text                 NOT NULL
+  disposition                   text                 NOT NULL
+  decision_code                 text
+  decision_owner                text
+  decision_actor_sha256         text
+  evidence_sha256               text                 NOT NULL
+  observed_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.company_followup_cases (migration 130 live, empty)

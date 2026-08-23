@@ -105,17 +105,23 @@ before applying anything.
   extension under exact release `6b9b5f27`. It permits one `declined` receipt with a SHA-256 operator
   fingerprint on the existing append-only event ledger; it does not read Slack,
   mutate pipeline/source state, create a draft, or send;
+- migration 132 is NC-20260822-017's local, unapplied healer-resolution
+  Company Work extension. Its default-off host writer and report support are
+  runtime-unwired; schema/source presence does not authorize a production
+  migration, live incident projection, Slack presentation, healer action, or
+  deployment;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-131 are non-auto-discovered and refuse to erase populated
+- rollbacks 120-132 are non-auto-discovered and refuse to erase populated
   operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
   mailbox-audit, program-facts, outcome-quality, or outcome-review history;
   rollback 128 specifically refuses once any durable `+1` decision exists,
   rollback 129 refuses once any packet/attempt evidence exists, and rollback
   130 refuses once any follow-up case/event evidence exists; rollback 131
-  refuses once any operator-decision evidence exists.
+  refuses once any operator-decision evidence exists; rollback 132 refuses once
+  any healer-resolution item or observation exists.
 
 ## Rollback
 

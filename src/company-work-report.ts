@@ -68,7 +68,8 @@ type CompanyWorkMilestoneEvent =
 export type CompanyWorkReportWorkflow =
   | 'sales_email'
   | 'host_job_run'
-  | 'program_facts_drift';
+  | 'program_facts_drift'
+  | 'healer_resolution';
 export type CompanyWorkReportWorkflowFilter = CompanyWorkReportWorkflow | 'all';
 type CompanyWorkReceiptFact =
   | 'operator_approval'
@@ -110,6 +111,11 @@ export interface CompanyWorkReportRow extends QueryResultRow {
   latest_to_stage: string | null;
   latest_to_disposition: string | null;
   latest_occurred_at: string | null;
+  healer_observation_count: number;
+  latest_healer_disposition: string | null;
+  latest_healer_decision_code: string | null;
+  latest_healer_decision_owner: string | null;
+  latest_healer_decision_actor_sha256: string | null;
   total_available: number;
 }
 
@@ -211,11 +217,25 @@ SELECT i.id::text, i.workflow_type, i.source_system, i.source_key,
        COALESCE(e.event_types, ARRAY[]::text[]) AS event_types,
        COALESCE(r.receipt_types, ARRAY[]::text[]) AS receipt_types,
        l.latest_to_stage, l.latest_to_disposition, l.latest_occurred_at,
+       COALESCE(h.observation_count, 0) AS healer_observation_count,
+       h.disposition AS latest_healer_disposition,
+       h.decision_code AS latest_healer_decision_code,
+       h.decision_owner AS latest_healer_decision_owner,
+       h.decision_actor_sha256 AS latest_healer_decision_actor_sha256,
        count(*) OVER ()::integer AS total_available
   FROM business_v2.company_work_items i
   LEFT JOIN event_facts e ON e.work_item_id = i.id
   LEFT JOIN receipt_facts r ON r.work_item_id = i.id
   LEFT JOIN latest_event l ON l.work_item_id = i.id
+  LEFT JOIN LATERAL (
+    SELECT count(*) OVER ()::integer AS observation_count,
+           disposition, decision_code, decision_owner,
+           decision_actor_sha256
+      FROM business_v2.company_healer_resolution_observations
+     WHERE work_item_id = i.id
+     ORDER BY observed_at DESC, id DESC
+     LIMIT 1
+  ) h ON true
  WHERE ($2::text IS NULL OR i.workflow_type = $2)
  ORDER BY CASE
             WHEN i.disposition IN ('blocked', 'failed', 'waiting') THEN 0
@@ -315,6 +335,15 @@ function expectedConditionMilestones(
   return ['accepted'];
 }
 
+function expectedHealerMilestones(
+  stage: CompanyWorkStage,
+  disposition: CompanyWorkDisposition,
+): CompanyWorkMilestoneEvent[] {
+  if (stage === 'outcome_validated') return ['accepted', 'outcome_validated'];
+  if (disposition === 'blocked') return ['accepted', 'blocked'];
+  return ['accepted'];
+}
+
 function classifyRow(
   row: CompanyWorkReportRow,
   nowMs: number,
@@ -338,7 +367,8 @@ function classifyRow(
   const workflow: CompanyWorkReportWorkflow | null =
     row.workflow_type === 'sales_email' ||
     row.workflow_type === 'host_job_run' ||
-    row.workflow_type === 'program_facts_drift'
+    row.workflow_type === 'program_facts_drift' ||
+    row.workflow_type === 'healer_resolution'
       ? row.workflow_type
       : null;
 
@@ -428,6 +458,34 @@ function classifyRow(
       );
     }
   }
+  if (workflow === 'healer_resolution') {
+    if (row.completion_definition !== 'healer_resolution_receipt') {
+      addReason(
+        reasons,
+        'contradictory_state',
+        'healer_completion_definition_mismatch',
+      );
+    }
+    if (row.party_id !== null || row.pipeline_entry_id !== null) {
+      addReason(reasons, 'contradictory_state', 'healer_identity_not_null');
+    }
+    if (
+      stage &&
+      !(['accepted', 'outcome_validated'] as const).includes(
+        stage as 'accepted' | 'outcome_validated',
+      )
+    ) {
+      addReason(reasons, 'contradictory_state', 'healer_stage_invalid');
+    }
+    if (
+      disposition &&
+      !(['open', 'blocked', 'completed'] as const).includes(
+        disposition as 'open' | 'blocked' | 'completed',
+      )
+    ) {
+      addReason(reasons, 'contradictory_state', 'healer_disposition_invalid');
+    }
+  }
   if (
     stage &&
     disposition &&
@@ -473,7 +531,9 @@ function classifyRow(
         ? expectedSalesMilestones(stage)
         : workflow === 'host_job_run'
           ? expectedJobMilestones(stage)
-          : expectedConditionMilestones(stage, disposition ?? 'open');
+          : workflow === 'program_facts_drift'
+            ? expectedConditionMilestones(stage, disposition ?? 'open')
+            : expectedHealerMilestones(stage, disposition ?? 'open');
     for (const eventType of milestones) {
       if (!eventCounts.has(eventType)) {
         addReason(reasons, 'event_chain_gap', `missing_event:${eventType}`);
@@ -592,6 +652,74 @@ function classifyRow(
       );
     }
   }
+  if (workflow === 'healer_resolution') {
+    const healerEvents = new Set([
+      'accepted',
+      'blocked',
+      'outcome_validated',
+      'reopened',
+    ]);
+    for (const eventType of events) {
+      if (!healerEvents.has(eventType)) {
+        addReason(
+          reasons,
+          'contradictory_state',
+          `unexpected_healer_event:${eventType}`,
+        );
+      }
+    }
+    const acceptedCount = eventCounts.get('accepted') ?? 0;
+    const blockedCount = eventCounts.get('blocked') ?? 0;
+    const outcomeCount = eventCounts.get('outcome_validated') ?? 0;
+    const reopenedCount = eventCounts.get('reopened') ?? 0;
+    const receiptCount = receiptCounts.get('outcome_validation') ?? 0;
+    if (
+      acceptedCount !== 1 ||
+      blockedCount < outcomeCount + (disposition === 'blocked' ? 1 : 0) ||
+      outcomeCount !== reopenedCount + (disposition === 'completed' ? 1 : 0) ||
+      receiptCount !== outcomeCount
+    ) {
+      addReason(reasons, 'event_chain_gap', 'healer_lifecycle_counts_invalid');
+    }
+    if (row.healer_observation_count < 1) {
+      addReason(reasons, 'source_gap', 'healer_observation_missing');
+    }
+    if (
+      disposition === 'completed' &&
+      !['verified_fixed', 'decided_no_action'].includes(
+        row.latest_healer_disposition ?? '',
+      )
+    ) {
+      addReason(
+        reasons,
+        'contradictory_state',
+        'healer_terminal_observation_mismatch',
+      );
+    }
+    if (
+      disposition === 'blocked' &&
+      row.latest_healer_disposition !== 'pending_decision' &&
+      row.latest_healer_disposition !== 'monitoring'
+    ) {
+      addReason(
+        reasons,
+        'contradictory_state',
+        'healer_pending_observation_mismatch',
+      );
+    }
+    if (
+      row.latest_healer_disposition === 'pending_decision' &&
+      (!row.latest_healer_decision_code || !row.latest_healer_decision_owner)
+    ) {
+      addReason(reasons, 'source_gap', 'healer_decision_identity_missing');
+    }
+    if (
+      row.latest_healer_disposition === 'decided_no_action' &&
+      !row.latest_healer_decision_actor_sha256
+    ) {
+      addReason(reasons, 'source_gap', 'healer_decision_actor_missing');
+    }
+  }
   for (const eventType of [
     ...SALES_MILESTONE_EVENTS,
     'execution_started',
@@ -601,6 +729,7 @@ function classifyRow(
   ]) {
     if (
       workflow !== 'program_facts_drift' &&
+      workflow !== 'healer_resolution' &&
       (eventCounts.get(eventType) ?? 0) > 1
     ) {
       addReason(reasons, 'duplicate_fact', `event:${eventType}`);
@@ -615,6 +744,7 @@ function classifyRow(
   ]) {
     if (
       workflow !== 'program_facts_drift' &&
+      workflow !== 'healer_resolution' &&
       (receiptCounts.get(receiptType) ?? 0) > 1
     ) {
       addReason(reasons, 'duplicate_fact', `receipt:${receiptType}`);
@@ -647,6 +777,13 @@ function classifyRow(
     disposition === 'open'
   ) {
     addReason(reasons, 'outcome_missing', 'fact_authority_not_routed');
+  }
+  if (
+    workflow === 'healer_resolution' &&
+    stage === 'accepted' &&
+    disposition === 'open'
+  ) {
+    addReason(reasons, 'outcome_missing', 'healer_resolution_not_routed');
   }
 
   const terminal = disposition === 'completed' || disposition === 'cancelled';
@@ -752,6 +889,9 @@ export function buildCompanyWorkExceptionReport(
         program_facts_drift: rows.filter(
           (row) => row.workflow_type === 'program_facts_drift',
         ).length,
+        healer_resolution: rows.filter(
+          (row) => row.workflow_type === 'healer_resolution',
+        ).length,
       },
       byKind,
     },
@@ -766,9 +906,13 @@ export async function readCompanyWorkExceptionReportWithClient(
   const limit = boundedInteger(options.limit, DEFAULT_LIMIT, 1, MAX_LIMIT);
   const workflow = options.workflow ?? 'all';
   if (
-    !['all', 'sales_email', 'host_job_run', 'program_facts_drift'].includes(
-      workflow,
-    )
+    ![
+      'all',
+      'sales_email',
+      'host_job_run',
+      'program_facts_drift',
+      'healer_resolution',
+    ].includes(workflow)
   ) {
     throw new Error('invalid_workflow_filter');
   }

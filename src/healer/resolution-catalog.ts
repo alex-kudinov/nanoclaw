@@ -51,6 +51,7 @@ export interface HealerResolutionSourceRow extends QueryResultRow {
   cause_or_symptom: string | null;
   evidence: unknown;
   applied_action_kind: string | null;
+  decision_actor: string | null;
   outcome: string | null;
 }
 
@@ -67,6 +68,7 @@ export interface HealerResolutionCatalogItem {
   decisionRequired: boolean;
   decisionCode: HealerDecisionCode | null;
   decisionOwner: 'unassigned' | null;
+  decisionActorSha256: string | null;
   decisionPrompt: string | null;
   closureCondition: string;
   proposedResolution: string | null;
@@ -208,7 +210,8 @@ function classify(
   }
   if (
     row.status === 'wont_fix' &&
-    row.applied_action_kind === 'proposal_rejected'
+    row.applied_action_kind === 'proposal_rejected' &&
+    row.decision_actor
   ) {
     return {
       disposition: 'decided_no_action',
@@ -330,6 +333,9 @@ function itemFrom(
   const proposedResolution = boundedText(row.proposed_summary);
   const evidence = normalizedEvidence(row.evidence);
   const evidenceSha256 = sha256(JSON.stringify(evidence));
+  const decisionActorSha256 = row.decision_actor
+    ? sha256(row.decision_actor)
+    : null;
   const resolutionFingerprint = sha256(
     JSON.stringify([
       HEALER_RESOLUTION_CATALOG_VERSION,
@@ -342,6 +348,7 @@ function itemFrom(
       proposedResolution,
       evidenceSha256,
       row.applied_action_kind,
+      decisionActorSha256,
       classification.disposition,
       classification.decisionCode,
     ]),
@@ -360,6 +367,7 @@ function itemFrom(
     decisionCode: classification.decisionCode,
     decisionOwner:
       classification.disposition === 'pending_decision' ? 'unassigned' : null,
+    decisionActorSha256,
     decisionPrompt: classification.decisionPrompt,
     closureCondition: classification.closureCondition,
     proposedResolution,
@@ -464,7 +472,8 @@ export async function readHealerResolutionCatalog(
             proposed_fix->>'kind' AS proposed_kind,
             proposed_fix->>'summary' AS proposed_summary,
             confidence, cause_or_symptom, evidence,
-            applied_action->>'kind' AS applied_action_kind, outcome
+            applied_action->>'kind' AS applied_action_kind,
+            applied_action->>'rejected_by' AS decision_actor, outcome
        FROM ranked
       WHERE row_rank = 1
       ORDER BY CASE severity WHEN 'critical' THEN 0 WHEN 'error' THEN 1

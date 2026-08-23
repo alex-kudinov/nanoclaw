@@ -58,6 +58,11 @@ function row(
     latest_to_stage: 'outcome_validated',
     latest_to_disposition: 'completed',
     latest_occurred_at: '2026-08-16T21:00:00.000Z',
+    healer_observation_count: 0,
+    latest_healer_disposition: null,
+    latest_healer_decision_code: null,
+    latest_healer_decision_owner: null,
+    latest_healer_decision_actor_sha256: null,
     total_available: 1,
     ...overrides,
   };
@@ -286,6 +291,7 @@ describe('company work exception reconciliation', () => {
         sales_email: 0,
         host_job_run: 1,
         program_facts_drift: 0,
+        healer_resolution: 0,
       },
     });
   });
@@ -353,6 +359,7 @@ describe('company work exception reconciliation', () => {
         sales_email: 0,
         host_job_run: 0,
         program_facts_drift: 1,
+        healer_resolution: 0,
       },
     });
 
@@ -381,6 +388,94 @@ describe('company work exception reconciliation', () => {
     expect(missingRecurrence.exceptions[0]?.reasons).toContainEqual({
       kind: 'event_chain_gap',
       code: 'condition_lifecycle_counts_invalid',
+    });
+  });
+
+  it('reports healer pending decisions and accepts only receipt-backed terminal evidence', () => {
+    const blocked = report([
+      row({
+        workflow_type: 'healer_resolution',
+        source_system: 'healer_resolution_catalog',
+        source_key: 'healer:abcdef1234567890',
+        party_id: null,
+        pipeline_entry_id: null,
+        completion_definition: 'healer_resolution_receipt',
+        stage: 'accepted',
+        disposition: 'blocked',
+        version: 2,
+        block_code: 'healer:review-low-trust-or-manual-fix',
+        event_count: 3,
+        event_version_count: 3,
+        max_event_version: 2,
+        event_types: ['accepted', 'blocked', 'blocked'],
+        receipt_types: [],
+        latest_to_stage: 'accepted',
+        latest_to_disposition: 'blocked',
+        healer_observation_count: 2,
+        latest_healer_disposition: 'pending_decision',
+        latest_healer_decision_code: 'review_low_trust_or_manual_fix',
+        latest_healer_decision_owner: 'unassigned',
+      }),
+    ]);
+    expect(blocked.exceptions[0]).toMatchObject({
+      workflowType: 'healer_resolution',
+      severity: 'attention',
+      reasons: [
+        {
+          kind: 'blocked',
+          code: 'healer:review-low-trust-or-manual-fix',
+        },
+      ],
+    });
+
+    const closed = report([
+      row({
+        workflow_type: 'healer_resolution',
+        source_system: 'healer_resolution_catalog',
+        source_key: 'healer:abcdef1234567890',
+        party_id: null,
+        pipeline_entry_id: null,
+        completion_definition: 'healer_resolution_receipt',
+        version: 2,
+        event_count: 3,
+        event_version_count: 3,
+        max_event_version: 2,
+        event_types: ['accepted', 'blocked', 'outcome_validated'],
+        receipt_types: ['outcome_validation'],
+        healer_observation_count: 2,
+        latest_healer_disposition: 'verified_fixed',
+      }),
+    ]);
+    expect(closed.exceptions).toEqual([]);
+    expect(closed.summary.byWorkflow).toEqual({
+      sales_email: 0,
+      host_job_run: 0,
+      program_facts_drift: 0,
+      healer_resolution: 1,
+    });
+
+    const anonymousDecision = report([
+      row({
+        workflow_type: 'healer_resolution',
+        source_system: 'healer_resolution_catalog',
+        source_key: 'healer:abcdef1234567890',
+        party_id: null,
+        pipeline_entry_id: null,
+        completion_definition: 'healer_resolution_receipt',
+        version: 2,
+        event_count: 3,
+        event_version_count: 3,
+        max_event_version: 2,
+        event_types: ['accepted', 'blocked', 'outcome_validated'],
+        receipt_types: ['outcome_validation'],
+        healer_observation_count: 2,
+        latest_healer_disposition: 'decided_no_action',
+        latest_healer_decision_actor_sha256: null,
+      }),
+    ]);
+    expect(anonymousDecision.exceptions[0].reasons).toContainEqual({
+      kind: 'source_gap',
+      code: 'healer_decision_actor_missing',
     });
   });
 
@@ -504,6 +599,9 @@ describe('company work exception CLI', () => {
     expect(() => parseCompanyWorkReportArgs(['--apply'])).toThrow(
       'unknown argument: --apply',
     );
+    expect(
+      parseCompanyWorkReportArgs(['--workflow', 'healer_resolution']),
+    ).toEqual({ json: false, workflow: 'healer_resolution' });
   });
 
   it('renders opaque exception identity without customer content', () => {

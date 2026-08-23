@@ -88,7 +88,11 @@ export type CompanyWorkReceiptType =
 
 export interface CompanyWorkItem {
   id: string;
-  workflowType: 'sales_email' | 'host_job_run' | 'program_facts_drift';
+  workflowType:
+    | 'sales_email'
+    | 'host_job_run'
+    | 'program_facts_drift'
+    | 'healer_resolution';
   sourceSystem: string;
   sourceKey: string;
   partyId: string | null;
@@ -96,7 +100,8 @@ export interface CompanyWorkItem {
   completionDefinition:
     | 'gmail_ack_and_thread_close'
     | 'host_job_terminal_receipt'
-    | 'detector_clean_receipt';
+    | 'detector_clean_receipt'
+    | 'healer_resolution_receipt';
   stage: CompanyWorkStage;
   disposition: CompanyWorkDisposition;
   version: number;
@@ -228,7 +233,11 @@ export interface CompanyWorkLedgerClient {
 
 interface WorkItemRow extends QueryResultRow {
   id: string;
-  workflow_type: 'sales_email' | 'host_job_run' | 'program_facts_drift';
+  workflow_type:
+    | 'sales_email'
+    | 'host_job_run'
+    | 'program_facts_drift'
+    | 'healer_resolution';
   source_system: string;
   source_key: string;
   party_id: string | null;
@@ -236,7 +245,8 @@ interface WorkItemRow extends QueryResultRow {
   completion_definition:
     | 'gmail_ack_and_thread_close'
     | 'host_job_terminal_receipt'
-    | 'detector_clean_receipt';
+    | 'detector_clean_receipt'
+    | 'healer_resolution_receipt';
   stage: CompanyWorkStage;
   disposition: CompanyWorkDisposition;
   version: number;

@@ -33,6 +33,7 @@ function row(
     cause_or_symptom: 'root_cause',
     evidence: ['config source mismatch'],
     applied_action_kind: null,
+    decision_actor: null,
     outcome: 'escalated',
     ...overrides,
   };
@@ -104,6 +105,7 @@ describe('healer Company Work dry-run plan', () => {
         row({
           status: 'wont_fix',
           applied_action_kind: 'proposal_rejected',
+          decision_actor: 'operator-1',
         }),
       ],
       NOW,

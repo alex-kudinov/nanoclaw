@@ -141,6 +141,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_130_company_followup_cases.sql',
     'data/business/migrations/nanoclaw-v2/131_company_followup_operator_decisions.sql',
     'data/business/migrations/nanoclaw-v2/rollback_131_company_followup_operator_decisions.sql',
+    'data/business/migrations/nanoclaw-v2/132_company_healer_resolution_work.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_132_company_healer_resolution_work.sql',
     'scripts/verify-release.mjs',
     'scripts/runtime-doctor.mjs',
     'scripts/with-pinned-node.sh',

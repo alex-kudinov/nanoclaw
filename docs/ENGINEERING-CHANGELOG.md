@@ -8,6 +8,47 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260822-017 — Add dark healer-resolution Company Work schema
+
+- Date: 2026-08-23
+- Owner/client: Codex
+- State: ready_for_review local schema/adapter milestone; not deployed
+- Commit/PR: `codex/self-healing-visible-resolution-20260823` after dry-run
+  checkpoint `502bf5a5`; implementation commit pending
+- Change class: C3-capable schema source kept dark; no live mutation
+- Outcome: ordered migration/rollback 132 add the truthful
+  `healer_resolution` workflow, `healer_resolution_receipt` completion, and an
+  append-only minimized observation table. Stored fields are opaque identity,
+  catalog version, resolution/evidence hashes, disposition, decision code,
+  explicit owner key, hashed named-decision actor, and timestamps only.
+- Recovery: rollback refuses when any healer work item or observation exists;
+  it never deletes or truncates history. Empty rollback restores the exact
+  migration-125 workflow/completion constraint set.
+- Release boundary: migration and rollback paths are included in immutable
+  release construction.
+- Adapter/report: a healer-specific host writer defaults off, is absent from
+  daemon/scheduler/Slack/action wiring, updates changed blocked evidence,
+  refuses anonymous no-action closure, emits exact verified or hashed named-
+  decision receipts, and reopens recurrence. The shared Company Work report
+  validates healer event/receipt/observation consistency and exposes a bounded
+  `healer_resolution` filter.
+- Verification: pinned Node 22.23.2; healer 26 files / 230 tests; focused
+  ledger/report set 86/86; typecheck, production build, formatting, and diff
+  checks pass. Disposable PostgreSQL proves open, exact replay, changed-
+  evidence update, verified close, recurrence reopen, named no-action close,
+  append-only refusal, zero non-admin grants, populated rollback refusal, and
+  empty rollback success. The broad suite passes 3,009 tests with 12 skips;
+  its only failure is the unchanged base CNPC wrapper-literal assertion.
+- Review finding: the database rehearsal caught and repaired an invalid
+  PostgreSQL `{0,499}` regex bound plus observation/event idempotency mistakes
+  that the static migration tests did not expose.
+- Evidence: `docs/programs/company-os/evidence/NC-20260822-017-healer-company-work-adapter.md`.
+- Remaining: review/commit only. Migration 132 application, runtime import,
+  configuration activation, live projection, presentation, and deployment are
+  separately gated.
+- Deployment: none; no production/provider read or write, projection, message,
+  action, configuration, restart, or external state change.
+
 ### NC-20260822-016 — Plan truthful healer-to-Company-Work projection
 
 - Date: 2026-08-23

@@ -9,6 +9,7 @@
 import type {
   HealerResolutionCatalog,
   HealerResolutionCatalogItem,
+  HealerResolutionDisposition,
 } from './resolution-catalog.js';
 
 export const HEALER_COMPANY_WORK_CONTRACT_VERSION = 1 as const;
@@ -49,10 +50,13 @@ export interface HealerCompanyWorkPlanItem {
   completionDefinition: typeof HEALER_COMPANY_WORK_SCHEMA.completionDefinition;
   operation: HealerCompanyWorkOperation;
   expectedVersion: number | null;
+  resolutionFingerprint: string;
   evidenceSha256: string;
+  resolutionDisposition: HealerResolutionDisposition;
   blockCode: string | null;
   decisionCode: string | null;
   decisionOwner: 'unassigned' | null;
+  decisionActorSha256: string | null;
   closureCondition: string;
   observedAt: string;
 }
@@ -137,10 +141,13 @@ function planItem(
     completionDefinition: HEALER_COMPANY_WORK_SCHEMA.completionDefinition,
     operation: operationFor(item, existing),
     expectedVersion: existing?.version ?? null,
-    evidenceSha256: item.resolutionFingerprint,
+    resolutionFingerprint: item.resolutionFingerprint,
+    evidenceSha256: item.evidenceSha256,
+    resolutionDisposition: item.disposition,
     blockCode: item.decisionRequired ? blockCode(item) : null,
     decisionCode: item.decisionCode,
     decisionOwner: item.decisionOwner,
+    decisionActorSha256: item.decisionActorSha256,
     closureCondition: item.closureCondition,
     observedAt: item.updatedAt,
   };
@@ -198,7 +205,7 @@ export function formatHealerCompanyWorkPlan(
     ({ operation }) => operation !== 'no_op',
   )) {
     lines.push(
-      `[${item.operation}] source=${item.sourceKey} evidence=${item.evidenceSha256.slice(0, 16)} decision=${item.decisionCode ?? '-'} owner=${item.decisionOwner ?? '-'} block=${item.blockCode ?? '-'}`,
+      `[${item.operation}] source=${item.sourceKey} resolution=${item.resolutionFingerprint.slice(0, 16)} evidence=${item.evidenceSha256.slice(0, 16)} decision=${item.decisionCode ?? '-'} owner=${item.decisionOwner ?? '-'} block=${item.blockCode ?? '-'}`,
     );
   }
   return `${lines.join('\n')}\n`;
