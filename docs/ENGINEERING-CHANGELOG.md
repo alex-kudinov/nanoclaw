@@ -8,13 +8,32 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260823-001 — Deploy dark healer-resolution schema and host release
+
+- Date: 2026-08-23T14:10Z
+- Owner/client: Codex
+- State: in_progress; production mutation not started
+- Change class: C3 production schema/service release; adapter remains disabled
+- Authorization: accepted owner decision
+  `decision:self-healing-resolution-dark-deploy` authorizes commit/push,
+  immutable release construction, affected-state backup, additive migration
+  132, exact host activation, and structural/non-interference verification.
+- Boundary: keep `COMPANY_HEALER_WORK_ENABLED=0`. Do not project live healer
+  incidents, post Slack, present owner work, execute remediation/actions,
+  change schedules, rotate credentials, or enable another capability.
+- Planned evidence: reviewed commits, archive/tree/artifact digests, fresh
+  extraction verification, production preflight/drain, affected PostgreSQL and
+  service rollback receipts, exact migration/permissions/trigger readback,
+  activator dry-run/apply output, `/health`, listener/channel/queue/log checks,
+  and protected Company Work aggregate comparison.
+
 ### NC-20260822-017 — Add dark healer-resolution Company Work schema
 
 - Date: 2026-08-23
 - Owner/client: Codex
-- State: ready_for_review local schema/adapter milestone; not deployed
-- Commit/PR: `codex/self-healing-visible-resolution-20260823` after dry-run
-  checkpoint `502bf5a5`; implementation commit pending
+- State: ready_for_deploy committed schema/adapter milestone; not deployed
+- Commit/PR: committed `e7ddaf9e` on
+  `codex/self-healing-visible-resolution-20260823`; not yet pushed or deployed
 - Change class: C3-capable schema source kept dark; no live mutation
 - Outcome: ordered migration/rollback 132 add the truthful
   `healer_resolution` workflow, `healer_resolution_receipt` completion, and an
@@ -43,9 +62,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   PostgreSQL `{0,499}` regex bound plus observation/event idempotency mistakes
   that the static migration tests did not expose.
 - Evidence: `docs/programs/company-os/evidence/NC-20260822-017-healer-company-work-adapter.md`.
-- Remaining: review/commit only. Migration 132 application, runtime import,
-  configuration activation, live projection, presentation, and deployment are
-  separately gated.
+- Remaining: owner-authorized dark migration/service deployment continues under
+  `NC-20260823-001`. Adapter activation, live projection, presentation, and
+  remediation remain separately gated.
+
+- 2026-08-23T14:12Z addendum: owner-authorized deployment continues under
+  `NC-20260823-001`; local state advances to `ready_for_deploy` at commit
+  `e7ddaf9e`. No production mutation had started at this boundary.
 - Deployment: none; no production/provider read or write, projection, message,
   action, configuration, restart, or external state change.
 

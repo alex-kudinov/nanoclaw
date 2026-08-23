@@ -59,6 +59,17 @@ and independently verifiable; it does not apply the migration. Database backup,
 daemon drain, one-file application, structural validation, and rollback policy
 remain separate recorded operations.
 
+Beginning with `NC-20260822-017`, the archive also binds migration 132 and its
+history-preserving rollback. The corresponding host adapter defaults off and
+is not daemon/scheduler/Slack/action wired. A release that contains these bytes
+must apply migration 132 before activating the new Company Work report because
+that report reads the new observation table. Deployment must retain
+`COMPANY_HEALER_WORK_ENABLED=0`, verify the table/constraint/trigger/permission
+shape, prove no healer-resolution rows were created, and compare protected
+Company Work aggregates before and after activation. Bundling or applying the
+migration does not authorize live incident projection, owner-work
+presentation, remediation, or another healer action.
+
 NC-20260820-002 crossed the equivalent program-facts release boundary with
 exact implementation `8344524cf4a439b84eb792cdf7b4a16b65178a6a`, source tree
 `fac86f42aebcaf2e765ec16024fc679e9fa8aca1`, 788 compiled files, artifact
