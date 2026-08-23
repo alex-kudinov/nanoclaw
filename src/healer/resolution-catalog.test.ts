@@ -122,6 +122,25 @@ describe('healer resolution catalog', () => {
     });
   });
 
+  it('drops a stale decision actor after a rejected incident re-enters monitoring', () => {
+    const catalog = buildHealerResolutionCatalog(
+      [
+        row({
+          status: 'diagnosed',
+          remediation_class: 'transient',
+          applied_action_kind: 'proposal_rejected',
+          decision_actor: 'operator-1',
+        }),
+      ],
+      GENERATED_AT,
+    );
+
+    expect(catalog.items[0]).toMatchObject({
+      disposition: 'monitoring',
+      decisionActorSha256: null,
+    });
+  });
+
   it('deduplicates replay by fingerprint and prefers the current open incarnation', () => {
     const resolved = row({
       id: '9',

@@ -333,9 +333,10 @@ function itemFrom(
   const proposedResolution = boundedText(row.proposed_summary);
   const evidence = normalizedEvidence(row.evidence);
   const evidenceSha256 = sha256(JSON.stringify(evidence));
-  const decisionActorSha256 = row.decision_actor
-    ? sha256(row.decision_actor)
-    : null;
+  const decisionActorSha256 =
+    classification.disposition === 'decided_no_action' && row.decision_actor
+      ? sha256(row.decision_actor)
+      : null;
   const resolutionFingerprint = sha256(
     JSON.stringify([
       HEALER_RESOLUTION_CATALOG_VERSION,
