@@ -48,10 +48,10 @@ It is live and empty in exact release `a939af5a`, with zero non-admin grants;
 it remains runtime-unwired. Schema presence does not prove source coverage,
 presentation, drafting, approval, or customer action.
 
-Local Contador fulfillment overlay: migration 133 under `NC-20260823-006`
+Live Contador fulfillment overlay: migration 133 under `NC-20260823-006`
 defines admin-only current payment/refund cases, append-only opaque provider
-aliases, and append-only content-minimized stage receipts. It is not applied in
-production until the separately reviewed deployment boundary. The tables omit
+aliases, and append-only content-minimized stage receipts. Exact release
+`b131071c74fc` applied it empty and admin-only. The tables omit
 names, email, product text, amount/card data, raw webhooks, and accounting
 content. Schema presence alone does not process or replay a Stripe event.
 
@@ -98,7 +98,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.contador_payment_fulfillment_cases (migration 133 local, unapplied)
+## business_v2.contador_payment_fulfillment_cases (migration 133 live, empty)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.contador_payment_fulfillment_cases_id_seq'::regclass)
@@ -123,7 +123,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.contador_payment_fulfillment_aliases (migration 133 local, unapplied)
+## business_v2.contador_payment_fulfillment_aliases (migration 133 live, empty)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.contador_payment_fulfillment_aliases_id_seq'::regclass)
@@ -134,7 +134,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.contador_payment_fulfillment_receipts (migration 133 local, unapplied)
+## business_v2.contador_payment_fulfillment_receipts (migration 133 live, empty)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.contador_payment_fulfillment_receipts_id_seq'::regclass)

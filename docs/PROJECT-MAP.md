@@ -626,8 +626,10 @@ The ledger is operational rather than financial. It stores no names, email,
 product text, amount/card data, raw webhook content, or accounting facts and
 grants no agent access. It does not replay the historical Stripe backlog,
 change product/student resolution, or move any Bizmgr/QuickBooks authority.
-Local source and disposable schema proof are not production migration or live
-event evidence.
+Exact release `b131071c74fc…` and migration 133 are live with three empty,
+admin-only tables, healthy service/channels, and unchanged 261-payment/249-
+webhook aggregates. This is deployment proof, not natural event outcome; the
+first typed payment/refund remains pending and no history was replayed.
 
 ### Reliability and autonomy
 

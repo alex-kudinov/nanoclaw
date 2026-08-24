@@ -88,6 +88,22 @@ history. Bundling, applying, or activating migration 133 grants no historical
 repair, customer communication, accounting, QuickBooks, product-mapping, or
 payer/student authority.
 
+`NC-20260823-006` crossed that boundary under corrected exact release
+`b131071c74fcaa5395e40b31e45f7f1a886db481`, source tree
+`2ac5a754f01070376d287b937a0ff7e3c457458d`, 892-file artifact SHA-256
+`d1f7adf3504b02c1d3a563b4aa587c539fe590a30a99b920fbcb213d2721f373`,
+and archive SHA-256
+`6c66db75900b5a31c18d8ddc74fdf6c44c6a2c64525799a3db3a7d45c4e4b764`.
+The first candidate archive was rejected before migration because its builder
+omitted 133; the replacement binds both files and verifies locally/on-Mini.
+After a natural zero-work drain and custom PostgreSQL plus WAL-safe SQLite/plist
+backups, migration 133 applied empty/admin-only. Fast/main activations changed
+only three pointers and retained rollback to `195dd3b3…`. Exact listener,
+release/code root, channels, queues, schema/triggers/owners/grants, unchanged
+261-payment/249-Stripe-inbox aggregates, and 273/24 error baselines pass. No
+Stripe event was manufactured or replayed; natural case/receipt proof remains
+pending.
+
 `NC-20260823-001` crossed that exact dark boundary under release
 `97026492b85e1fe86ea9387d2bb3c9dc74019546`, source tree
 `f8e9ddb4f4d4338f7eb7f537a00876aeb20b01ad`, 876-file artifact SHA-256

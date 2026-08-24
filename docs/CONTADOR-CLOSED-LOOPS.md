@@ -1,8 +1,8 @@
 # Contador closed-loop design
 
 Status: current-state diagnosis plus accepted target; invoice-routing foundation
-is live in the current lineage and payment-fulfillment cases are implemented
-locally under `NC-20260823-006`, not migrated or deployed
+is live in the current lineage and payment-fulfillment cases are deployed under
+`NC-20260823-006`; natural payment/refund outcome pending
 Boundary: `docs/CONTADOR-BIZMGR-BOUNDARY.md`
 Accounting authority: `/Users/xbohdpukc/dev/bizmgr/agent_docs/RULEBOOK.md`
 
@@ -219,8 +219,9 @@ Checkout Session and charge IDs are aliases of that same case.
 - refunds remain `needs_review` even after Payment Log readback because the
   separate refund/roster fulfillment slice is not implemented here.
 
-This source is local until migration 133 and its exact release cross the
-reviewed deployment boundary. It does not replay historical events.
+Exact release `b131071c74fc…` and migration 133 are live with empty tables and
+unchanged payment/webhook aggregates. No historical event was replayed; the
+first natural typed payment/refund remains the outcome gate.
 
 Minimum fields:
 
@@ -294,7 +295,7 @@ overwrite an operator-confirmed student.
 3. **Bizmgr payable queue and worklist.** Extend the least-privilege read
    contract, keep the queue visible independently of QuickBooks, and keep
    QuickBooks entry/payment human-controlled.
-4. **Payment-fulfillment case and stage receipts — implemented locally under
+4. **Payment-fulfillment case and stage receipts — deployed under
    `NC-20260823-006`.** The host admits before writes, requires exact stage
    readback for completion, binds webhook acknowledgement to the case, and
    converts unresolved identity/product/write/refund outcomes to durable state.

@@ -3,9 +3,9 @@
 Date: 2026-08-24T03:35:00Z
 Program: `program:company-os`
 Work item: `work:contador-fulfillment-case-ledger`
-Evidence class: local source, schema-only production-shape rehearsal, tests,
-and read-only live aggregates; review, migration, deployment, and natural event
-outcome pending
+Evidence class: reviewed source, schema rehearsal, immutable release,
+production migration/service/non-interference proof; natural event outcome
+pending
 
 ## Authorized outcome
 
@@ -115,8 +115,30 @@ business data.
 
 ## State boundary
 
-The work is isolated on
-`codex/contador-fulfillment-cases-20260823`. Production remains on exact release
-`195dd3b3664a63651db16256b247ee7cda5a4a97`; migration 133 is not applied and
-no live Stripe, Sheets, roster, payment, customer, Slack, accounting, or
-schedule mutation was performed for implementation proof.
+Exact replacement release `b131071c74fcaa5395e40b31e45f7f1a886db481`
+is live. Its source tree is `2ac5a754f01070376d287b937a0ff7e3c457458d`,
+892-file artifact SHA-256 is
+`d1f7adf3504b02c1d3a563b4aa587c539fe590a30a99b920fbcb213d2721f373`,
+and archive SHA-256 is
+`6c66db75900b5a31c18d8ddc74fdf6c44c6a2c64525799a3db3a7d45c4e4b764`.
+Local and Mini verification agree under Node 22.23.2 and both migration 133
+files are manifest-bound.
+
+The mode-0600 deployment backup directory is
+`~/.local/share/nanoclaw-deploy-backups/NC-20260823-006-20260824T0403Z`.
+It contains custom-format PostgreSQL, WAL-safe SQLite, and main/fast plists.
+Their SHA-256 values are `5aa8c34c…`, `7e5f1e55…`, `aa613c45…`, and
+`f3e57f38…`. Fast/main activation retained exact rollback plists and changed
+only three release pointers.
+
+Live PID/listener 87358 reports the exact release/tree/artifact/code root,
+Node 22.23.2, connected Gmail/Slack, and empty containers/queues. Migration 133
+has three empty admin-owned tables, two enabled append-only triggers, and zero
+non-admin grants. Protected aggregates remain 261 public payments and 249
+Stripe inbox rows (248 handled, one historical dead-letter, zero active).
+Main/fast error-line counts remain 273/24.
+
+No historical or manufactured Stripe event was processed. No live Stripe,
+Sheets, roster, payment, customer, Slack, accounting, QuickBooks, or schedule
+mutation was performed for deployment proof. The first natural typed payment or
+refund remains the outcome gate.

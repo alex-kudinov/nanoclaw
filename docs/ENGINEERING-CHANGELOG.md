@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-24T03:35Z
 - Owner/client: Codex
-- State: validating; local implementation complete, independent review and
-  release pending
+- State: deployed_unverified; migration and host boundary live-verified,
+  natural payment/refund outcome pending
 - Authorization: accepted
   `decision:contador-fulfillment-case-ledger-authority` for the C4
   implementation and normal reviewed release. Historical replay/repair,
@@ -61,6 +61,35 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   no schema or service state changed. `build-release.mjs` now packages both 133
   files and the migration contract test asserts their exact paths; deploy only
   the replacement commit/artifact.
+- Release: exact replacement commit
+  `b131071c74fcaa5395e40b31e45f7f1a886db481`, source tree
+  `2ac5a754f01070376d287b937a0ff7e3c457458d`, 892-file artifact
+  SHA-256
+  `d1f7adf3504b02c1d3a563b4aa587c539fe590a30a99b920fbcb213d2721f373`,
+  archive SHA-256
+  `6c66db75900b5a31c18d8ddc74fdf6c44c6a2c64525799a3db3a7d45c4e4b764`.
+  Fresh local/Mini verification proves Node 22.23.2 and both exact migration
+  files in the archive.
+- Backup/migration: protected backup directory
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260823-006-20260824T0403Z`
+  contains custom-format PostgreSQL, WAL-safe SQLite, and both launchd plists.
+  SHA-256 values are respectively `5aa8c34c…`, `7e5f1e55…`, `aa613c45…`,
+  and `f3e57f38…`. Migration 133 applied after a natural zero-work drain; all
+  three tables/sequences are owned by `nanoclaw_admin`, aliases/receipts have
+  enabled append-only triggers, non-admin grants and rows are zero.
+- Deployment: fast/main activations changed only three release pointers and
+  retained rollback plists
+  `com.nanoclaw.healer.fast.plist.rollback-index-2026-08-24T04-28-04-019Z`
+  and
+  `com.nanoclaw.plist.rollback-195dd3b3664a-2026-08-24T04-28-05-067Z`.
+  PID/listener converged to 87358; exact release/tree/artifact/code root,
+  Gmail/Slack, and empty containers/queues pass. Main/fast error baselines
+  remain 273/24. Protected payment/Stripe-inbox aggregates remain 261/249 with
+  248 handled, one historical dead-letter, and zero active rows.
+- Outcome boundary: no historical or manufactured Stripe event was processed.
+  The new case/alias/receipt tables remain empty; the first natural typed
+  payment/refund and its downstream complete/held readback remain the outcome
+  gate.
 - Evidence:
   `docs/programs/company-os/evidence/NC-20260823-006-contador-payment-fulfillment-cases.md`.
 
