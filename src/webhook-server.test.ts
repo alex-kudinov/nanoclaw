@@ -1115,8 +1115,7 @@ describe('WebhookServer — form-submitted observed suppression', () => {
     const formPosts = (
       d.sendMessage as ReturnType<typeof vi.fn>
     ).mock.calls.filter(
-      (c) =>
-        typeof c[1] === 'string' && c[1].startsWith('Form submitted:'),
+      (c) => typeof c[1] === 'string' && c[1].startsWith('Form submitted:'),
     );
     expect(formPosts).toHaveLength(0);
     expect(d.runAgent).not.toHaveBeenCalled();
@@ -1148,8 +1147,7 @@ describe('WebhookServer — form-submitted observed suppression', () => {
     const formPosts = (
       d.sendMessage as ReturnType<typeof vi.fn>
     ).mock.calls.filter(
-      (c) =>
-        typeof c[1] === 'string' && c[1].startsWith('Form submitted:'),
+      (c) => typeof c[1] === 'string' && c[1].startsWith('Form submitted:'),
     );
     expect(formPosts).toHaveLength(1);
     expect(formPosts[0][1]).toBe(
