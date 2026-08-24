@@ -320,7 +320,9 @@ products are separate asynchronous Foundations journeys, not localized live
 Standard Path cohorts or evidence of translated ICF recognition.
 `tools/sync-program-facts.py` injects both canonical packs into every tracked
 minion KB, and the detector fails on a missing catalog/pack, hash/revision or
-language-set mismatch, or non-exact Sales block.
+language-set mismatch, or non-exact Sales block. Exact release
+`a055ea05705d…` is live: all 13 release-owned KBs and the compiled detector
+read back clean while concurrent lifecycle/checkout shadows remain unchanged.
 
 `NC-20260817-002` deployed the first bounded source adapter in exact release
 `baed66d` and applied migration 121. After the

@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-24T20:34Z
 - Owner/client: Codex
-- State: ready_for_deploy; implementation and independent review complete
+- State: complete; exact release and live Sales knowledge readback verified
 - Authorization: accepted owner instruction and
   `decision:mcs-localization-knowledge-repair`; no customer reply, provider or
   course mutation, translation, enrollment, payment, entitlement, price,
@@ -56,6 +56,29 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   path strings, and a missing historical llms-full hash.
 - Full root suite: 3,210 passed / 19 skipped / the unchanged CNPC
   source-wrapper literal failure.
+- Release: exact implementation `a055ea05705d600bcf7244f38ba81c01808d0d01`,
+  source tree `72493af1e53b1ed73d1286859c1e1f7638edb19a`, 944-file
+  artifact SHA-256
+  `c5f59040ebaca594aeae6daba0e5cef4d3503e8f25bfb7ef6d4c883cdd98b15e`,
+  and archive SHA-256
+  `af3ecdf88e7cf3bc688e69bfbc4fc998217f0bd1ec493bacf757c3e22bed7bd6`.
+  Release preflight passed 742/742 root tests and 43/43 runner tests; exact
+  archive verification passed locally and remotely under Node 22.23.2.
+- Deployment: after a natural zero-work drain, remote pack/check/readback and
+  dry-run passed; applied activation changed only the three main-daemon release
+  pointers and retained rollback to `7a36d79c…`. PID/listener converged to
+  94097 with exact identity/code root, Gmail/Slack connected, empty queues,
+  and the unchanged 273-line error baseline.
+- Live knowledge proof: all 13 release-owned KBs contain the exact canonical
+  block; the Sales copy names all four languages and the French page plus both
+  safety boundaries. The compiled detector returned one checked catalog and
+  zero findings. Concurrent student-lifecycle and checkout-recovery shadows
+  remained enabled with action consumers/customer sends false.
+- Side-effect boundary: no prospect reply, Slack/email send, provider/course/
+  enrollment/payment/translation/entitlement/price/customer-record mutation,
+  or manufactured event occurred.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260824-003-mcs-localization-knowledge-repair.md`.
 
 ### NC-20260824-007 — Community lifecycle shadow provider capture
 
