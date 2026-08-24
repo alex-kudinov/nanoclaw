@@ -107,6 +107,11 @@ business data.
 - `node --check` passes for both deterministic CommonJS processors.
 - Disposable apply, lease constraint, append-only behavior, empty rollback,
   and populated rollback guard: passed.
+- Release preflight caught that the first `d46d52dc…` artifact did not contain
+  migration 133 because `build-release.mjs` still ended its explicit migration
+  allowlist at 132. Production migration/application did not begin. The builder
+  now includes the exact migration and rollback, and a focused packaging
+  regression passes; only a replacement commit/artifact may deploy.
 
 ## State boundary
 

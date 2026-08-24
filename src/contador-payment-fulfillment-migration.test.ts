@@ -15,6 +15,10 @@ const rollback = fs.readFileSync(
   ),
   'utf8',
 );
+const builder = fs.readFileSync(
+  path.resolve('scripts/build-release.mjs'),
+  'utf8',
+);
 
 describe('migration 133 Contador payment fulfillment cases', () => {
   it('creates one canonical case identity plus append-only aliases and receipts', () => {
@@ -58,5 +62,14 @@ describe('migration 133 Contador payment fulfillment cases', () => {
       'business_v2.contador_payment_fulfillment_receipts',
     );
     expect(rollback).not.toMatch(/TRUNCATE|DELETE\s+FROM/i);
+  });
+
+  it('packages the exact migration and rollback in every immutable release', () => {
+    expect(builder).toContain(
+      "'data/business/migrations/nanoclaw-v2/133_contador_payment_fulfillment_cases.sql'",
+    );
+    expect(builder).toContain(
+      "'data/business/migrations/nanoclaw-v2/rollback_133_contador_payment_fulfillment_cases.sql'",
+    );
   });
 });

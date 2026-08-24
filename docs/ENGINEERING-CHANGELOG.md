@@ -55,6 +55,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Schema-only production-shape rehearsal proves three tables, zero non-admin
   grants, append-only receipts, empty rollback, and populated rollback refusal.
   No production schema/event/provider/business mutation occurred.
+- Release preflight: the first `d46d52dc…` archive verified its own manifest
+  but omitted migration 133 because the builder's explicit migration allowlist
+  stopped at 132. The production `psql` step failed before opening the file, so
+  no schema or service state changed. `build-release.mjs` now packages both 133
+  files and the migration contract test asserts their exact paths; deploy only
+  the replacement commit/artifact.
 - Evidence:
   `docs/programs/company-os/evidence/NC-20260823-006-contador-payment-fulfillment-cases.md`.
 
