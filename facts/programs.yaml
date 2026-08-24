@@ -35,10 +35,12 @@ programs:
   foundations:
     name: Mentor Coaching Foundations
     source_url: https://tandemcoach.co/mcs/mentor-coaching-foundations/
+    availability_catalog: facts/catalogs/mcs-foundations-locales.json
     price_usd: 299
     products_ids:
       - mcq-program-a-foundations
     kb_present:
       - "$299"
       - "10 CCE hours"
+      - "English, French, Japanese, and Spanish"
     kb_absent: []
