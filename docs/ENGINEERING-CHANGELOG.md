@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-23T20:18Z
 - Owner/client: Codex
-- State: validating; reviewed release candidate, deployment and natural outcome
-  pending
+- State: deployed_unverified; release and host boundary live-verified, natural
+  provider outcome pending
 - Authorization: accepted
   `decision:gmail-attachment-processing-authority`; no manufactured customer
   email, broad mailbox scan, customer reply, accounting action, schedule,
@@ -45,6 +45,39 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   pass; independent agent-runner build and 43/43 tests pass. Full root suite is
   3,050 passed / 12 skipped / the unchanged unrelated CNPC wrapper-literal
   failure.
+- Release: exact commit `195dd3b3664a63651db16256b247ee7cda5a4a97`,
+  source tree `14f2d87bcf918c8a1f3a1eddfa9d705a5bb71559`, 884-file
+  artifact SHA-256
+  `b4b8b0ac989502a7e8f83cd9ecc7a03ec15976489c1e4d15e4ddd785a146745f`,
+  archive SHA-256
+  `b27463e7e68aad8938c36e1622544852192acab68ba9ecdd8145c33f83cfbf65`.
+  Fresh local and Mini extraction verified the same release under Node
+  22.23.2.
+- Runner/dependencies: the prior `nanoclaw-agent:latest` is retained as
+  `nanoclaw-agent:rollback-NC-20260822-011-195dd3b3`; the rebuilt image is
+  `sha256:ed06f269df3adbf2a87e04053ed384190cd3d39e8d351037bf2be0a0753f572c`
+  on Node 22.23.2. Eighteen per-group runner snapshots match source hash
+  `52cc140dfdbd163f7b37db703b9d9f27`; their mode-0600 backup SHA-256 is
+  `1098d8f4ef747e9c78d1e0b5427cb3690d945c8455b1cef95894cb6b2c197cd7`.
+  The host has Tesseract 5.5.3, Poppler 26.03.0, and markitdown 0.0.2.
+- Deployment: zero active containers, waiting groups, outgoing messages, or
+  executable pending-send states preceded backup and activation. The WAL-safe
+  SQLite backup passed `quick_check` with SHA-256
+  `11bd390d8a001febf66ce490732d40be87b96fec1a6f752b96b7b53314f9a0ea`;
+  the plist backup SHA-256 is
+  `8ad75cccb312b9bc5274aaab0dfc90eb6da3d16eb7d8d74421fbc9452b52c38d`.
+  Fast/main activations changed exactly three release pointers and retained
+  rollback plists
+  `com.nanoclaw.healer.fast.plist.rollback-index-2026-08-24T01-09-11-008Z`
+  and
+  `com.nanoclaw.plist.rollback-d4f428912679-2026-08-24T01-09-12-816Z`.
+- Live verification: PID 82252 is the sole `:8088` listener; health reports the
+  exact commit/tree/artifact/code root, Node 22.23.2, connected Gmail/Slack,
+  and empty containers/queues. The attachment table and message index are
+  structurally present, `quick_check` is clean, receipt count remains zero,
+  and main/fast error-line baselines remain 273/24. No Gmail attachment was
+  downloaded or processed for deployment proof; the next natural supported and
+  held receipts remain the outcome gate.
 - Evidence:
   `docs/programs/company-os/evidence/NC-20260822-011-gmail-attachment-processing.md`.
 

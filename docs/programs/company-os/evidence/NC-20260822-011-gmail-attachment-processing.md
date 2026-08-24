@@ -3,8 +3,8 @@
 Date: 2026-08-23T00:04:09Z
 Program: `program:company-os`
 Work item: `work:gmail-attachment-processing`
-Evidence class: reviewed release-candidate source, tests, schema, prompts, and
-documentation; deployment and natural outcome pending
+Evidence class: reviewed source, tests, schema, prompts, immutable release, and
+live host proof; natural provider outcome pending
 
 ## Outcome
 
@@ -75,10 +75,34 @@ authorized group.
 
 ## State boundary
 
-The implementation is isolated on the clean release branch
-`codex/gmail-attachment-release-20260823` and remains undeployed.
-No live Gmail attachment was downloaded, no customer/vendor content was stored,
-no runtime database was migrated, and no provider, business, message, schedule,
-or deployment state changed. Production and natural workflow behavior remain
-unverified until an exact release is deployed and exercised by natural
-attachments.
+Exact release `195dd3b3664a63651db16256b247ee7cda5a4a97` is live. Its
+source tree is `14f2d87bcf918c8a1f3a1eddfa9d705a5bb71559`, 884-file artifact
+SHA-256 is
+`b4b8b0ac989502a7e8f83cd9ecc7a03ec15976489c1e4d15e4ddd785a146745f`,
+and archive SHA-256 is
+`b27463e7e68aad8938c36e1622544852192acab68ba9ecdd8145c33f83cfbf65`.
+Local and Mini verification agree under Node 22.23.2.
+
+Production retained the old container image as
+`nanoclaw-agent:rollback-NC-20260822-011-195dd3b3`, built image digest
+`sha256:ed06f269df3adbf2a87e04053ed384190cd3d39e8d351037bf2be0a0753f572c`,
+and synchronized 18 runner snapshots to source hash
+`52cc140dfdbd163f7b37db703b9d9f27`. Tesseract 5.5.3, Poppler 26.03.0,
+and markitdown 0.0.2 are available on the host.
+
+The mode-0600 deployment backup is
+`~/.local/share/nanoclaw-deploy-backups/NC-20260822-011-20260824T0109Z`.
+Its SQLite copy passed `quick_check` with SHA-256
+`11bd390d8a001febf66ce490732d40be87b96fec1a6f752b96b7b53314f9a0ea`;
+the plist SHA-256 is
+`8ad75cccb312b9bc5274aaab0dfc90eb6da3d16eb7d8d74421fbc9452b52c38d`.
+Fast/main activation retained exact rollback plists and changed only their
+three release pointers.
+
+Live PID 82252 is the sole listener. Health binds the exact release/code root,
+Node 22.23.2, connected Gmail/Slack, and empty containers/queues. The receipt
+table and index exist, database `quick_check` is clean, receipt count is zero,
+and main/fast error-line counts remain 273/24. No live Gmail attachment was
+downloaded, no customer/vendor content was stored, and no provider, business,
+message, accounting, or schedule action was manufactured for proof. The next
+natural supported and held attachment receipts remain the outcome gate.

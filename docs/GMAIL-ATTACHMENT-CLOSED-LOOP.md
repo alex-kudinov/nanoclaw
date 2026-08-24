@@ -1,7 +1,7 @@
 # Gmail attachment closed-loop design
 
-Status: complete host-processing foundation reviewed under
-`NC-20260822-010/011`; release and natural canary pending
+Status: complete host-processing foundation deployed under
+`NC-20260822-010/011`; natural provider canary pending
 
 ## Problem
 
@@ -190,37 +190,36 @@ An email workflow cannot close while a required attachment is merely
 
 ## Implementation and release state
 
-1. **Metadata visibility — reviewed release candidate.** MIME manifest on
+1. **Metadata visibility — deployed.** MIME manifest on
    initial Gmail, thread, and `gmail_read` surfaces.
 2. **Exact host download, verification, hashing, quarantine, and cleanup —
-   reviewed release candidate.** Gmail attachment IDs never cross the host
+   deployed.** Gmail attachment IDs never cross the host
    boundary.
-3. **Shared document extraction — reviewed release candidate.** Slack and Gmail use
-   the shared markitdown/ODF/iWork functions. The current workstation has
-   `pdftotext`/Poppler/Tesseract but not the default markitdown venv; Office
-   extraction therefore requires that dependency in the reviewed release
-   environment and otherwise ends in an explicit held receipt.
-4. **OCR — reviewed release candidate.** Images use Tesseract; scanned PDFs use
+3. **Shared document extraction — deployed.** Slack and Gmail use the shared
+   markitdown/ODF/iWork functions. Production has markitdown 0.0.2 and Poppler
+   26.03.0; a missing converter still ends in an explicit held receipt.
+4. **OCR — deployed.** Images use Tesseract 5.5.3; scanned PDFs use
    bounded pdftoppm plus Tesseract. Missing binaries or no readable text becomes
    an explicit held receipt.
-5. **Durable generic workflow receipt — reviewed release candidate.** SQLite records
+5. **Durable generic workflow receipt — deployed.** SQLite records
    content-minimized state and retry evidence. Case-specific foreign-key links
    remain integration work because the vendor-intake and other case ledgers do
    not yet exist.
-6. **Retention/quarantine policy — reviewed release candidate.** Raw retention is
-   Gmail-source-only; temporary files are deleted; unsafe bytes are never
+6. **Retention/quarantine policy — deployed.** Raw retention is Gmail-source-only;
+   temporary files are deleted; unsafe bytes are never
    delivered. Malware scanning and operator raw-file export are not present and
    are not required for this no-copy policy.
-7. **Natural canaries — pending deployment.** Observe one text PDF, scanned
+7. **Natural canaries — pending.** Observe one text PDF, scanned
    invoice, image, spreadsheet, unsupported/encrypted file, and attachment-only
    email without manufacturing customer work.
 
 Claude Sonnet 5/high independently found three material boundary defects. The
 reviewed corrections reject malformed ODF content, terminalize ZIP-inspection
 exceptions, and enforce the message byte cap from decoded bytes even when Gmail
-omits reported sizes. A focused re-review returned no material findings. Build,
-deployment, live provider processing, and natural workflow outcomes remain
-separate facts.
+omits reported sizes. A focused re-review returned no material findings. Exact
+release `195dd3b3664…` is live with an empty receipt ledger and all required
+host converters present. No provider attachment was manufactured, fetched, or
+processed for deployment proof; natural workflow outcomes remain separate.
 
 ## Definition of done
 

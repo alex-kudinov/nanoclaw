@@ -123,6 +123,21 @@ activations changed only their three release pointers and retained rollback to
 logs pass. Two sequential `MAX_ITEMS=1` source rotations then produced terminal
 recovery receipts plus duplicate-only replay without increasing concurrency.
 
+Gmail-attachment release `195dd3b3664a63651db16256b247ee7cda5a4a97`
+adds the host-private exact-message attachment processor, minimized SQLite
+receipts, shared extraction/OCR, and held-state group guidance. Claude
+Sonnet/high found three material boundary defects; all were corrected and the
+focused re-review returned no material findings. The 884-file archive verified
+locally and on the Mini under Node 22.23.2. With zero active work, a WAL-safe
+database/plist backup passed `quick_check`; the runner image was rebuilt with
+rollback retained, all 18 snapshots were refreshed, and Tesseract joined the
+existing Poppler/markitdown runtime. Fast/main activation changed only three
+release pointers and retained exact rollback plists. One listener, release
+identity/code root, channels, queues, empty attachment receipt ledger, converter
+availability, and unchanged 273/24 error baselines pass. No provider attachment
+was manufactured or fetched; natural ready/held receipts remain the outcome
+gate.
+
 NC-20260820-002 crossed the equivalent program-facts release boundary with
 exact implementation `8344524cf4a439b84eb792cdf7b4a16b65178a6a`, source tree
 `fac86f42aebcaf2e765ec16024fc679e9fa8aca1`, 788 compiled files, artifact
