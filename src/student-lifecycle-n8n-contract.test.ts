@@ -113,8 +113,7 @@ describe('inactive Community lifecycle n8n export', () => {
         }),
       },
       {
-        HEARTBEAT_COMMUNITY_ID:
-          '33333333-3333-4333-8333-333333333333',
+        HEARTBEAT_COMMUNITY_ID: '33333333-3333-4333-8333-333333333333',
         STUDENT_LIFECYCLE_RELAY_SECRET: secret,
         STUDENT_LIFECYCLE_HOST_URL:
           'https://disabled.invalid/private-lifecycle-path',
