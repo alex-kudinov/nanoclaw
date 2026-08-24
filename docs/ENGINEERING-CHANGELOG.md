@@ -12,8 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-24T18:11:00Z
 - Owner/client: Codex
-- State: in_progress; source/provider implementation authorized, no new
-  provider or runtime mutation yet
+- State: ready_for_deploy; reviewed source committed/pushed, no new provider or
+  runtime mutation yet
+- Commit/PR: exact implementation
+  `ecac90cd6dcae8720949455b8a63d1bf7cdd146e` pushed on
+  `codex/student-lifecycle-community-shadow-20260824`
 - Scope: stages 2-4 only—refresh main Community/n8n topology; implement narrow
   provider tooling, exact manifest, and live reconciliation; import relay
   disabled; configure an opaque path plus distinct secrets; activate only
