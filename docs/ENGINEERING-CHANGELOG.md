@@ -12,12 +12,19 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-24T21:30:00Z
 - Owner/client: Codex implementer/orchestrator; Claude Code Sonnet/high reviewer
-- State: ready_for_deploy on isolated exact-live branch; not yet committed,
-  pushed, release-built, deployed, or live-canaried
-- Branch/base: `codex/grader-multilingual-variants-20260824` from exact current
-  live `7a36d79ca78773dbca7ddb8beddb18abe07a753c`.
+- State: ready_for_deploy on isolated exact-live branch; combined-live-lineage
+  source is verified but not yet committed, pushed, release-built, deployed, or
+  live-canaried
+- Branch/base: `codex/grader-multilingual-variants-20260824`; grader source
+  `1576762a`, then merge `20e6dad8` preserving exact current live
+  `a055ea05705d600bcf7244f38ba81c01808d0d01` and its multilingual facts/KB
+  release.
 - Source commit: `1576762a` (implementation/review/verification evidence before
   this continuity addendum).
+- Rebase safety: the first clean artifact at `5af503cc` was rejected before
+  transfer or deployment when read-only health showed production had advanced
+  from `7a36d79c` to `a055ea05`. The current branch explicitly merges that live
+  commit; combined verification and a replacement artifact are required.
 - Change class: C3 because the released host may stage customer-facing grader
   feedback in Slack; localized provider writeback and certificates remain off.
 - Outcome: one default operator routine covers English, French, Japanese, and
@@ -47,10 +54,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Review: Claude R2 found one P1 Japanese honorific false positive and two P2
   calibration/source-integrity issues. All were fixed; bounded correction R3
   returned `ACCEPT` with no remaining material finding.
-- Verification at review boundary: isolated focused 8 files / 215 tests;
-  typecheck, build, formatting, documentation continuity, capability matrix,
-  and diff checks pass. Full root is 3,221 pass / 19 skip with only the unchanged
-  CNPC wrapper-contract failure; its two surfaces are unchanged from exact base.
+- Verification at review boundary: pre-merge isolated focused 8 files / 215
+  tests; combined-live-lineage focused 10 files / 243 tests; typecheck, build,
+  formatting, documentation continuity, capability matrix, and diff checks
+  pass. Full root is 3,230 pass / 19 skip with only the unchanged CNPC wrapper-
+  contract failure; its two surfaces are unchanged from exact base.
   Standalone validator callables, pack build/freshness, source comparison, and
   personal skill/manifest/ledger validation pass. The standalone validator retains only the
   pre-existing unrelated `acc-bars-standard.json` schema-dispatch error and PCC
