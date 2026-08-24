@@ -6,6 +6,10 @@ import path from 'path';
 
 import {
   ASSISTANT_NAME,
+  CHECKOUT_RECOVERY_ENABLED,
+  CHECKOUT_RECOVERY_IDENTITY_SECRET,
+  CHECKOUT_RECOVERY_RELAY_SECRET,
+  CHECKOUT_RECOVERY_WEBHOOK_PATH,
   DATA_DIR,
   GMAIL_PUSH_WEBHOOK_SECRET,
   GMAIL_TEST_RECIPIENT,
@@ -180,6 +184,12 @@ import { grantHostGmailResources } from './gmail-ipc-policy.js';
 import { prepareCnpcIntake } from './cnpc-intake.js';
 import { recordCnpcMatchResult } from './cnpc-match-result.js';
 import { recordPreparedCommunityLifecycle } from './student-lifecycle-store.js';
+import {
+  formatCheckoutRecoveryProjection,
+  markCheckoutRecoveryProjectionNotified,
+  recordPreparedCheckoutRecovery,
+  sweepCheckoutRecoveryShadow,
+} from './checkout-recovery-store.js';
 import {
   listOpenProposals,
   resolveRecipient,
@@ -2110,6 +2120,14 @@ async function main(): Promise<void> {
           actionConsumers: false,
           circle: false,
         },
+        checkoutRecovery: {
+          enabled: CHECKOUT_RECOVERY_ENABLED,
+          mode: 'shadow',
+          customerSends: false,
+          tandemCaptureTimeoutMinutes: 45,
+          tandemPaymentFailureDelayMinutes: 5,
+          heartbeatMode: 'stripe_events_only',
+        },
       };
     },
     runAgent: runContainerAgent,
@@ -2200,6 +2218,14 @@ async function main(): Promise<void> {
       identitySecret: STUDENT_LIFECYCLE_IDENTITY_SECRET,
       record: recordPreparedCommunityLifecycle,
     },
+    checkoutRecovery: {
+      enabled: CHECKOUT_RECOVERY_ENABLED,
+      path: CHECKOUT_RECOVERY_WEBHOOK_PATH,
+      relaySecret: CHECKOUT_RECOVERY_RELAY_SECRET,
+      identitySecret: CHECKOUT_RECOVERY_IDENTITY_SECRET,
+      record: recordPreparedCheckoutRecovery,
+      markProjectionNotified: markCheckoutRecoveryProjectionNotified,
+    },
     gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
     handleGmailPush: async (emailAddress: string, historyId: string) => {
       // Late-bound lookup: channels array is populated after webhook server
@@ -2223,6 +2249,47 @@ async function main(): Promise<void> {
     },
   });
   await webhookServer.start();
+
+  const runCheckoutRecoveryShadowTick = async (): Promise<void> => {
+    if (!CHECKOUT_RECOVERY_ENABLED) return;
+    try {
+      const items = await sweepCheckoutRecoveryShadow({ limit: 25 });
+      if (items.length === 0) return;
+      const inbox = Object.entries(registeredGroups).find(
+        ([, registered]) => registered.folder === 'inbox',
+      );
+      if (!inbox) {
+        logger.warn(
+          { count: items.length },
+          'Checkout recovery shadow cases ready but Inbox is unavailable',
+        );
+        return;
+      }
+      for (const item of items) {
+        const channel = findChannel(channels, inbox[0]);
+        if (!channel) break;
+        await channel.sendMessage(
+          inbox[0],
+          formatOutbound(formatCheckoutRecoveryProjection(item)),
+          { fromGroup: 'inbox' },
+        );
+        await markCheckoutRecoveryProjectionNotified({
+          caseId: item.caseId,
+          expectedVersion: item.version,
+        });
+      }
+    } catch (err) {
+      logger.error({ err }, 'Checkout recovery shadow tick failed');
+    }
+  };
+  if (CHECKOUT_RECOVERY_ENABLED) {
+    void runCheckoutRecoveryShadowTick();
+    const checkoutRecoveryTimer = setInterval(
+      () => void runCheckoutRecoveryShadowTick(),
+      5 * 60_000,
+    );
+    checkoutRecoveryTimer.unref();
+  }
 
   // Clean up orphaned job runs from a previous crash
   const staleRuns = markStaleRunsAsFailed(60);

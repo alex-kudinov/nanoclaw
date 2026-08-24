@@ -1,0 +1,392 @@
+diff --git a/shared/stripe/lib/stripe-api.sh b/shared/stripe/lib/stripe-api.sh
+index 9f6d54a..e4d342a 100755
+--- a/shared/stripe/lib/stripe-api.sh
++++ b/shared/stripe/lib/stripe-api.sh
+@@ -17,19 +17,36 @@ stripe_load_env() {
+     env_file="${TOOLBOX_PROJECT_ROOT}/.env"
+   fi
+   if [[ -n "$env_file" ]]; then
+-    set -a; # shellcheck disable=SC1090
+-    source "$env_file"; set +a
++    local line key value
++    while IFS= read -r line || [[ -n "$line" ]]; do
++      [[ -z "$line" || "$line" == \#* || "$line" != *=* ]] && continue
++      key="${line%%=*}"
++      value="${line#*=}"
++      case "$key" in
++        STRIPE_KEY_PRIMARY|STRIPE_KEY_ALT|STRIPE_RESTRICTED_KEY|STRIPE_SECRET_KEY_ALT|TOOLBOX_STRIPE_API_KEY|STRIPE_ACCOUNT)
++          if [[ "$value" == \"*\" && "$value" == *\" ]]; then
++            value="${value:1:${#value}-2}"
++          elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
++            value="${value:1:${#value}-2}"
++          fi
++          printf -v "$key" '%s' "$value"
++          export "$key"
++          ;;
++      esac
++    done < "$env_file"
+   fi
+ }
+
+ # stripe_key_for <account> — resolve the API key for primary|alt. Never printed.
+-# Falls back to the legacy single-key TOOLBOX_STRIPE_API_KEY for primary so this lib
+-# also works in projects (nanoclaw, tandemweb) that predate the two-account scheme.
++# Falls back to the established NanoClaw names without copying credentials:
++# STRIPE_RESTRICTED_KEY is the Heartbeat account and STRIPE_SECRET_KEY_ALT is
++# the Tandem account. The legacy single-key TOOLBOX_STRIPE_API_KEY remains the
++# final primary fallback.
+ stripe_key_for() {
+   local acct="${1:-${STRIPE_ACCOUNT:-primary}}"
+   case "$acct" in
+-    primary|1) printf '%s' "${STRIPE_KEY_PRIMARY:-${TOOLBOX_STRIPE_API_KEY:-}}" ;;
+-    alt|2)     printf '%s' "${STRIPE_KEY_ALT:-}" ;;
++    primary|1) printf '%s' "${STRIPE_KEY_PRIMARY:-${STRIPE_RESTRICTED_KEY:-${TOOLBOX_STRIPE_API_KEY:-}}}" ;;
++    alt|2)     printf '%s' "${STRIPE_KEY_ALT:-${STRIPE_SECRET_KEY_ALT:-}}" ;;
+     *) fail INVALID_ARG "account must be primary|alt (got: '$acct')"; return 1 ;;
+   esac
+ }
+diff --git a/shared/stripe/registry.json b/shared/stripe/registry.json
+index f42abed..3cdd766 100644
+--- a/shared/stripe/registry.json
++++ b/shared/stripe/registry.json
+@@ -347,6 +347,44 @@
+             "tool run stripe/search-customers -- --name Castille --account all --limit 50"
+           ]
+         },
++        "list-checkout-sessions": {
++          "description": "List Stripe Checkout Sessions across one or both accounts with status/time filters and content-minimized recovery evidence. Never returns customer email or recovery URLs.",
++          "script": "tools/stripe/list-checkout-sessions.sh",
++          "args": [
++            {"name":"account","type":"string","required":false,"description":"primary | alt | all (default primary)"},
++            {"name":"status","type":"string","required":false,"description":"open | complete | expired | all (default expired)"},
++            {"name":"created-gte","type":"integer","required":false,"description":"Inclusive Unix timestamp"},
++            {"name":"created-lte","type":"integer","required":false,"description":"Inclusive Unix timestamp"},
++            {"name":"max-results","type":"integer","required":false,"description":"Cap across accounts, 1-500 (default 100)"}
++          ],
++          "timeout": 60,
++          "examples": [
++            "tool run stripe/list-checkout-sessions -- --account all --status expired --created-gte 1785000000 --max-results 200"
++          ]
++        },
++        "list-event-destinations": {
++          "description": "List exact Stripe event destination ids, status, description, and enabled event types across one or both accounts. Omits endpoint URLs and secrets.",
++          "script": "tools/stripe/list-event-destinations.sh",
++          "args": [
++            {"name":"account","type":"string","required":false,"description":"primary | alt | all (default primary)"}
++          ],
++          "timeout": 30,
++          "examples": ["tool run stripe/list-event-destinations -- --account all"]
++        },
++        "ensure-checkout-recovery-events": {
++          "description": "Dry-run or confirm an additive-only update to one exact Stripe event destination. Preserves every existing event, adds only payment_intent.payment_failed and checkout.session.expired, and verifies readback.",
++          "script": "tools/stripe/ensure-checkout-recovery-events.sh",
++          "args": [
++            {"name":"id","type":"string","required":true,"description":"Exact Stripe event destination id (we_...)"},
++            {"name":"account","type":"string","required":false,"description":"primary | alt (default primary)"},
++            {"name":"confirm","type":"string","required":false,"description":"yes applies the additive update; omitted/no is dry-run"}
++          ],
++          "timeout": 30,
++          "examples": [
++            "tool run stripe/ensure-checkout-recovery-events -- --id we_ABC --account primary",
++            "tool run stripe/ensure-checkout-recovery-events -- --id we_ABC --account primary --confirm yes"
++          ]
++        },
+         "whoami": {
+           "description": "Identify the Stripe account behind a key (id, business name, email, currency). Validates the key. Read-only.",
+           "script": "tools/stripe/whoami.sh",
+diff --git a/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/lib/stripe-event-destination-write.sh b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/lib/stripe-event-destination-write.sh
+new file mode 100755
+index 00000000..c1cf5188
+--- /dev/null
++++ b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/lib/stripe-event-destination-write.sh
+@@ -0,0 +1,22 @@
++#!/usr/bin/env bash
++# Narrow Stripe write helper for one exact event-destination event-set update.
++
++stripe_event_destination_update() {
++  local acct="$1" endpoint_id="$2"; shift 2
++  [[ "$endpoint_id" =~ ^we_[A-Za-z0-9_]+$ ]] || {
++    fail INVALID_ARG "invalid Stripe event destination id"; return 1;
++  }
++  local key response http_code body
++  key="$(stripe_key_for "$acct")" || return 1
++  [[ -n "$key" ]] || { fail MISSING_CONFIG "No Stripe key for account '$acct'"; return 1; }
++  response="$(curl -sS -w $'\n%{http_code}' -X POST \
++    "${STRIPE_API_BASE}/webhook_endpoints/${endpoint_id}" \
++    -H "Authorization: Bearer ${key}" "$@")" || {
++      fail API_ERROR "Failed to connect to Stripe event destination"; return 1;
++    }
++  http_code="$(tail -1 <<<"$response")"
++  body="$(sed '$d' <<<"$response")"
++  if [[ "$http_code" == "200" ]]; then printf '%s' "$body"; return 0; fi
++  fail API_ERROR "Stripe event destination update failed (HTTP ${http_code})"
++  return 1
++}
+diff --git a/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tests/checkout-recovery.test.sh b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tests/checkout-recovery.test.sh
+new file mode 100755
+index 00000000..32f84368
+--- /dev/null
++++ b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tests/checkout-recovery.test.sh
+@@ -0,0 +1,32 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++REGISTRY="$ROOT/registry.json"
++LIST="$ROOT/tools/stripe/list-checkout-sessions.sh"
++ENSURE="$ROOT/tools/stripe/ensure-checkout-recovery-events.sh"
++DESTINATIONS="$ROOT/tools/stripe/list-event-destinations.sh"
++LIB="$ROOT/lib/stripe-api.sh"
++
++jq -e '.categories.stripe.tools["list-checkout-sessions"]' "$REGISTRY" >/dev/null
++jq -e '.categories.stripe.tools["ensure-checkout-recovery-events"]' "$REGISTRY" >/dev/null
++jq -e '.categories.stripe.tools["list-event-destinations"]' "$REGISTRY" >/dev/null
++"$LIST" --help | grep -q 'Never returns customer email, recovery URLs'
++"$ENSURE" --help | grep -q 'additive-only'
++"$DESTINATIONS" --help | grep -q 'Endpoint URLs and secrets are deliberately omitted'
++! grep -q 'url:' "$DESTINATIONS"
++
++grep -q "payment_intent.payment_failed" "$ENSURE"
++grep -q "checkout.session.expired" "$ENSURE"
++grep -q 'original + $required | unique | sort' "$ENSURE"
++grep -q 'readback' "$ENSURE"
++! grep -Eq 'DELETE|/expire|enabled_events\[\].*charge.refunded' "$ENSURE"
++
++grep -q 'customer_email_present' "$LIST"
++grep -q 'recovery_url_present' "$LIST"
++! grep -q "customer_email:" "$LIST"
++! grep -q "recovery_url:" "$LIST"
++grep -q 'STRIPE_SECRET_KEY_ALT' "$LIB"
++! grep -q 'source "$env_file"' "$LIB"
++
++echo "PASS stripe checkout recovery toolbox contracts"
+diff --git a/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tools/stripe/ensure-checkout-recovery-events.sh b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tools/stripe/ensure-checkout-recovery-events.sh
+new file mode 100755
+index 00000000..22c8188e
+--- /dev/null
++++ b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tools/stripe/ensure-checkout-recovery-events.sh
+@@ -0,0 +1,69 @@
++#!/usr/bin/env bash
++# ensure-checkout-recovery-events -- additive-only Stripe event reconciliation.
++set -euo pipefail
++
++show_help() {
++  cat <<'USAGE'
++Usage: ensure-checkout-recovery-events --id we_... [--account primary|alt]
++  [--confirm yes]
++
++Reads one exact Stripe event destination and prepares an additive-only change
++that preserves every existing enabled event and adds only:
++  payment_intent.payment_failed
++  checkout.session.expired
++
++Without --confirm yes this is a dry run. Confirmed updates are read back and
++fail unless all original and required events remain enabled.
++USAGE
++}
++
++ID="" ACCOUNT="${STRIPE_ACCOUNT:-primary}" CONFIRM="no"
++while [[ $# -gt 0 ]]; do
++  case "$1" in
++    --help|-h) show_help; exit 0 ;;
++    --id) ID="$2"; shift 2 ;;
++    --account) ACCOUNT="$2"; shift 2 ;;
++    --confirm) CONFIRM="$2"; shift 2 ;;
++    *) echo "unknown arg: $1" >&2; exit 1 ;;
++  esac
++done
++
++SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
++source "${TOOLBOX_LIB:?TOOLBOX_LIB not set}/response.sh"
++source "${SCRIPT_DIR}/lib/stripe-api.sh"
++source "${SCRIPT_DIR}/lib/stripe-event-destination-write.sh"
++stripe_load_env
++
++[[ "$ID" =~ ^we_[A-Za-z0-9_]+$ ]] || { fail INVALID_ARG "--id must be a Stripe we_ event destination"; exit 1; }
++case "$ACCOUNT" in primary|alt) : ;; *) fail INVALID_ARG "--account must be primary|alt"; exit 1 ;; esac
++case "$CONFIRM" in yes|no) : ;; *) fail INVALID_ARG "--confirm must be yes|no"; exit 1 ;; esac
++
++if ! current="$(stripe_api "$ACCOUNT" GET "/webhook_endpoints/${ID}" 2>/dev/null)"; then
++  fail API_ERROR "Unable to read the exact Stripe event destination on account '$ACCOUNT'"
++  exit 1
++fi
++status="$(jq -r '.status // empty' <<<"$current")"
++[[ "$status" == "enabled" ]] || { fail CONFLICT "Stripe event destination is not enabled"; exit 1; }
++original="$(jq -c '[.enabled_events[]] | unique | sort' <<<"$current")"
++required='["checkout.session.expired","payment_intent.payment_failed"]'
++desired="$(jq -nc --argjson original "$original" --argjson required "$required" '$original + $required | unique | sort')"
++
++if [[ "$original" == "$desired" ]]; then
++  ok_json "$(jq -nc --arg id "$ID" --arg account "$ACCOUNT" --argjson events "$original" '{ok:true,changed:false,id:$id,account:$account,enabled_events:$events,verified:true}')"
++  exit 0
++fi
++if [[ "$CONFIRM" != "yes" ]]; then
++  ok_json "$(jq -nc --arg id "$ID" --arg account "$ACCOUNT" --argjson before "$original" --argjson after "$desired" '{ok:true,dry_run:true,changed:true,id:$id,account:$account,before:$before,after:$after}')"
++  exit 0
++fi
++
++args=()
++while IFS= read -r event; do args+=(--data-urlencode "enabled_events[]=${event}"); done < <(jq -r '.[]' <<<"$desired")
++stripe_event_destination_update "$ACCOUNT" "$ID" "${args[@]}" >/dev/null || exit 1
++if ! readback="$(stripe_api "$ACCOUNT" GET "/webhook_endpoints/${ID}" 2>/dev/null)"; then
++  fail API_ERROR "Stripe update returned but readback failed"
++  exit 1
++fi
++actual="$(jq -c '[.enabled_events[]] | unique | sort' <<<"$readback")"
++[[ "$actual" == "$desired" ]] || { fail CONFLICT "Stripe readback did not match additive event set"; exit 1; }
++ok_json "$(jq -nc --arg id "$ID" --arg account "$ACCOUNT" --argjson before "$original" --argjson after "$actual" '{ok:true,changed:true,id:$id,account:$account,before:$before,enabled_events:$after,verified:true}')"
+diff --git a/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tools/stripe/list-checkout-sessions.sh b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tools/stripe/list-checkout-sessions.sh
+new file mode 100755
+index 00000000..816162ed
+--- /dev/null
++++ b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tools/stripe/list-checkout-sessions.sh
+@@ -0,0 +1,97 @@
++#!/usr/bin/env bash
++# list-checkout-sessions -- content-minimized Checkout Session reconciliation.
++set -euo pipefail
++
++show_help() {
++  cat <<'USAGE'
++Usage: list-checkout-sessions [--account primary|alt|all]
++  [--status open|complete|expired|all] [--created-gte UNIX]
++  [--created-lte UNIX] [--max-results N]
++
++Lists Stripe Checkout Sessions without returning customer email, recovery URLs,
++or raw metadata. Results include exact provider ids, account, status, amount,
++product/price ids, recovery flags, and consent state for reconciliation.
++
++Args:
++  --account      primary | alt | all (default primary)
++  --status       open | complete | expired | all (default expired)
++  --created-gte  Inclusive Unix timestamp
++  --created-lte  Inclusive Unix timestamp
++  --max-results  Cap across accounts, 1-500 (default 100)
++USAGE
++}
++
++ACCOUNT="${STRIPE_ACCOUNT:-primary}"
++STATUS="expired"
++CREATED_GTE=""
++CREATED_LTE=""
++MAX_RESULTS=100
++while [[ $# -gt 0 ]]; do
++  case "$1" in
++    --help|-h) show_help; exit 0 ;;
++    --account) ACCOUNT="$2"; shift 2 ;;
++    --status) STATUS="$2"; shift 2 ;;
++    --created-gte) CREATED_GTE="$2"; shift 2 ;;
++    --created-lte) CREATED_LTE="$2"; shift 2 ;;
++    --max-results) MAX_RESULTS="$2"; shift 2 ;;
++    *) echo "unknown arg: $1" >&2; exit 1 ;;
++  esac
++done
++
++SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
++source "${TOOLBOX_LIB:?TOOLBOX_LIB not set}/response.sh"
++source "${SCRIPT_DIR}/lib/stripe-api.sh"
++stripe_load_env
++
++case "$ACCOUNT" in primary|alt|all) : ;; *) fail INVALID_ARG "--account must be primary|alt|all"; exit 1 ;; esac
++case "$STATUS" in open|complete|expired|all) : ;; *) fail INVALID_ARG "--status must be open|complete|expired|all"; exit 1 ;; esac
++[[ "$MAX_RESULTS" =~ ^[0-9]+$ ]] && (( MAX_RESULTS >= 1 && MAX_RESULTS <= 500 )) || {
++  fail INVALID_ARG "--max-results must be 1-500"; exit 1;
++}
++for value in "$CREATED_GTE" "$CREATED_LTE"; do
++  [[ -z "$value" || "$value" =~ ^[0-9]{9,12}$ ]] || {
++    fail INVALID_ARG "created bounds must be Unix timestamps"; exit 1;
++  }
++done
++if [[ -n "$CREATED_GTE" && -n "$CREATED_LTE" ]] && (( CREATED_GTE > CREATED_LTE )); then
++  fail INVALID_ARG "--created-gte must not exceed --created-lte"; exit 1
++fi
++
++accounts=("$ACCOUNT")
++[[ "$ACCOUNT" == "all" ]] && accounts=(primary alt)
++combined='[]'
++truncated=false
++for acct in "${accounts[@]}"; do
++  key="$(stripe_key_for "$acct" 2>/dev/null || true)"
++  if [[ -z "$key" ]]; then
++    [[ "$ACCOUNT" == "all" ]] && continue
++    fail MISSING_CONFIG "No Stripe key for account '$acct'"; exit 1
++  fi
++  remaining=$((MAX_RESULTS - $(jq 'length' <<<"$combined")))
++  (( remaining > 0 )) || { truncated=true; break; }
++  page_limit=$remaining
++  (( page_limit > 100 )) && page_limit=100
++  args=(-d "limit=${page_limit}" -d "expand[]=data.line_items")
++  [[ "$STATUS" != "all" ]] && args+=(-d "status=${STATUS}")
++  [[ -n "$CREATED_GTE" ]] && args+=(-d "created[gte]=${CREATED_GTE}")
++  [[ -n "$CREATED_LTE" ]] && args+=(-d "created[lte]=${CREATED_LTE}")
++  response="$(stripe_api "$acct" GET "/checkout/sessions" "${args[@]}")" || exit 1
++  rows="$(jq -c --arg acct "$acct" '[.data[] | {
++    id, account:$acct, status, payment_status, mode, amount_total, currency,
++    created, expires_at, payment_intent_id:.payment_intent,
++    subscription_id:.subscription, recovered_from,
++    recovery_enabled:(.after_expiration.recovery.enabled // false),
++    recovery_url_present:((.after_expiration.recovery.url // "") != ""),
++    recovery_expires_at:(.after_expiration.recovery.expires_at // null),
++    promotions_consent:(.consent.promotions // "unknown"),
++    customer_email_present:(((.customer_details.email // .customer_email // "") != "")),
++    product_ids:([.line_items.data[]?.price.product] | map(select(. != null)) | unique | sort),
++    price_ids:([.line_items.data[]?.price.id] | map(select(. != null)) | unique | sort)
++  }]' <<<"$response")" || { fail PARSE_ERROR "Could not parse Stripe Checkout Sessions"; exit 1; }
++  combined="$(jq -nc --argjson a "$combined" --argjson b "$rows" '$a + $b')"
++  has_more="$(jq -r '.has_more // false' <<<"$response")"
++  [[ "$has_more" == "true" ]] && truncated=true
++done
++
++result="$(jq -nc --argjson rows "$combined" --argjson truncated "$truncated" '{ok:true,count:($rows|length),truncated:$truncated,sessions:$rows}')"
++ok_json "$result"
+diff --git a/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tools/stripe/list-event-destinations.sh b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tools/stripe/list-event-destinations.sh
+new file mode 100755
+index 00000000..1646f9ed
+--- /dev/null
++++ b/private/tmp/toolbox-checkout-recovery.dIcjuH/shared/stripe/tools/stripe/list-event-destinations.sh
+@@ -0,0 +1,46 @@
++#!/usr/bin/env bash
++# list-event-destinations -- content-minimized Stripe webhook endpoint inventory.
++set -euo pipefail
++
++show_help() {
++  cat <<'USAGE'
++Usage: list-event-destinations [--account primary|alt|all]
++
++Lists exact endpoint ids, account, status, descriptions, and enabled event
++types. Endpoint URLs and secrets are deliberately omitted.
++USAGE
++}
++
++ACCOUNT="${STRIPE_ACCOUNT:-primary}"
++while [[ $# -gt 0 ]]; do
++  case "$1" in
++    --help|-h) show_help; exit 0 ;;
++    --account) ACCOUNT="$2"; shift 2 ;;
++    *) echo "unknown arg: $1" >&2; exit 1 ;;
++  esac
++done
++SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
++source "${TOOLBOX_LIB:?TOOLBOX_LIB not set}/response.sh"
++source "${SCRIPT_DIR}/lib/stripe-api.sh"
++stripe_load_env
++case "$ACCOUNT" in primary|alt|all) : ;; *) fail INVALID_ARG "--account must be primary|alt|all"; exit 1 ;; esac
++accounts=("$ACCOUNT")
++[[ "$ACCOUNT" == "all" ]] && accounts=(primary alt)
++combined='[]'
++for acct in "${accounts[@]}"; do
++  key="$(stripe_key_for "$acct" 2>/dev/null || true)"
++  if [[ -z "$key" ]]; then
++    [[ "$ACCOUNT" == "all" ]] && continue
++    fail MISSING_CONFIG "No Stripe key for account '$acct'"; exit 1
++  fi
++  if ! response="$(stripe_api "$acct" GET "/webhook_endpoints" -d 'limit=100' 2>/dev/null)"; then
++    fail API_ERROR "Unable to list Stripe event destinations on account '$acct'"; exit 1
++  fi
++  rows="$(jq -c --arg acct "$acct" '[.data[] | {
++    id, account:$acct, status, description:(.description // ""),
++    enabled_events:([.enabled_events[]] | unique | sort),
++    created, api_version
++  }]' <<<"$response")"
++  combined="$(jq -nc --argjson a "$combined" --argjson b "$rows" '$a + $b')"
++done
++ok_json "$(jq -nc --argjson rows "$combined" '{ok:true,count:($rows|length),event_destinations:$rows}')"

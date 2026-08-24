@@ -1359,7 +1359,167 @@ describe('WebhookServer — Community student lifecycle dark relay', () => {
   });
 });
 
+describe('WebhookServer — checkout recovery website shadow relay', () => {
+  const secret = 'checkout-recovery-relay-test-secret-at-least-32-chars';
+  const path = '/hook/checkout-recovery-test-only';
+  const token = 'C'.repeat(32);
+
+  function body() {
+    return JSON.stringify({
+      schema_version: 1,
+      source_event_key: `tw:v1:${token}:captured`,
+      event_type: 'checkout.captured',
+      observed_at: new Date().toISOString(),
+      checkout_token: token,
+      email: 'buyer@example.com',
+      program_slug: 'acc',
+      product_slug: 'acc-full',
+      amount_cents: 399900,
+      currency: 'usd',
+      consent_state: 'denied',
+      consent_policy_version: 'checkout-reminder-v1',
+    });
+  }
+
+  function signedHeaders(rawBody: string) {
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = crypto
+      .createHmac('sha256', secret)
+      .update(`${timestamp}.${rawBody}`)
+      .digest('hex');
+    return {
+      'content-type': 'application/json',
+      'x-webhook-timestamp': timestamp,
+      'x-webhook-signature': `sha256=${signature}`,
+    };
+  }
+
+  async function start(enabled = true) {
+    const record = vi.fn(async () => ({
+      caseId: 701,
+      eventId: 702,
+      version: 1,
+      state: 'captured' as const,
+      duplicate: false,
+      resultCode: 'captured',
+      shouldNotify: false,
+      projection: {
+        caseId: 701,
+        version: 1,
+        stripeAccount: 'tandem' as const,
+        state: 'captured' as const,
+        programSlug: 'acc',
+        productSlug: 'acc-full',
+        amountCents: 399900,
+        currency: 'usd',
+        consentState: 'denied' as const,
+        eligibilityState: 'ineligible' as const,
+        ageMinutes: 0,
+        customerMessageSent: false as const,
+      },
+    }));
+    const deps = makeDeps({
+      getRegisteredGroups: vi.fn(() => ({})),
+      archiveWebhook: vi.fn(async () => ({ id: 601, isDuplicate: false })),
+      markWebhookDispatched: vi.fn(async () => {}),
+      markWebhookFailed: vi.fn(async () => {}),
+      markWebhookHandled: vi.fn(async () => {}),
+      checkoutRecovery: {
+        enabled,
+        path,
+        relaySecret: secret,
+        identitySecret: 'checkout-recovery-identity-test-secret-123456',
+        record,
+        markProjectionNotified: vi.fn(async () => true),
+      },
+    });
+    const instance = new WebhookServer(deps);
+    await instance.start();
+    deps.port = instance.getPort();
+    return { instance, deps, record };
+  }
+
+  it('archives a redacted prepared event and performs no send or agent run', async () => {
+    const { instance, deps, record } = await start();
+    try {
+      const rawBody = body();
+      const response = await makeRequest(deps.port, {
+        path,
+        headers: signedHeaders(rawBody),
+        body: rawBody,
+      });
+      expect(response.status).toBe(202);
+      await vi.waitFor(() => expect(record).toHaveBeenCalledOnce());
+      expect(deps.archiveWebhook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: 'checkout-recovery-website',
+          event_id: expect.stringMatching(/^checkout-recovery:[0-9a-f]{64}$/),
+          raw_body: expect.not.objectContaining({
+            email: 'buyer@example.com',
+            aliases: expect.anything(),
+            source_event_key: expect.anything(),
+            source_case_key: expect.anything(),
+          }),
+        }),
+      );
+      const archived = (deps.archiveWebhook as ReturnType<typeof vi.fn>).mock
+        .calls[0][0];
+      expect(JSON.stringify(archived)).not.toContain(token);
+      expect(record).toHaveBeenCalledWith(
+        expect.objectContaining({ transientEmail: 'buyer@example.com' }),
+      );
+      expect(deps.runAgent).not.toHaveBeenCalled();
+      expect(deps.sendMessage).not.toHaveBeenCalled();
+    } finally {
+      await instance.stop();
+    }
+  });
+
+  it('rejects invalid signatures and oversize payload before archive', async () => {
+    const { instance, deps } = await start();
+    try {
+      const rawBody = body();
+      const bad = await makeRequest(deps.port, {
+        path,
+        headers: {
+          ...signedHeaders(rawBody),
+          'x-webhook-signature': `sha256=${'0'.repeat(64)}`,
+        },
+        body: rawBody,
+      });
+      expect(bad.status).toBe(401);
+      const large = 'x'.repeat(32 * 1024 + 1);
+      const oversize = await makeRequest(deps.port, {
+        path,
+        headers: signedHeaders(large),
+        body: large,
+      });
+      expect(oversize.status).toBe(413);
+      expect(deps.archiveWebhook).not.toHaveBeenCalled();
+    } finally {
+      await instance.stop();
+    }
+  });
+
+  it('does not expose the dedicated route while disabled', async () => {
+    const { instance, deps } = await start(false);
+    try {
+      const rawBody = body();
+      const response = await makeRequest(deps.port, {
+        path,
+        headers: signedHeaders(rawBody),
+        body: rawBody,
+      });
+      expect(response.status).toBe(404);
+    } finally {
+      await instance.stop();
+    }
+  });
+});
+
 describe('WebhookServer — Stripe fulfillment acknowledgement', () => {
+  beforeEach(() => vi.clearAllMocks());
+
   const stripeWebhook: WebhookDefinition = {
     id: 'stripe-payment',
     name: 'Stripe Payment',
@@ -1424,7 +1584,109 @@ describe('WebhookServer — Stripe fulfillment acknowledgement', () => {
         id: '42',
         state: 'needs_product',
         version: 0,
+        checkout_recovery_case_id: null,
       },
+    });
+  });
+
+  it('routes failed payments to the shadow case without invoking Contador', async () => {
+    const markWebhookHandled = vi.fn(async () => {});
+    const markProjectionNotified = vi.fn(async () => true);
+    const record = vi.fn(async () => ({
+      caseId: 77,
+      eventId: 78,
+      version: 1,
+      state: 'payment_failed' as const,
+      duplicate: false,
+      resultCode: 'payment_failed',
+      shouldNotify: true,
+      projection: {
+        caseId: 77,
+        version: 1,
+        stripeAccount: 'heartbeat' as const,
+        state: 'payment_failed' as const,
+        programSlug: null,
+        productSlug: null,
+        amountCents: 99900,
+        currency: 'usd',
+        consentState: 'unknown' as const,
+        eligibilityState: 'unknown' as const,
+        ageMinutes: 0,
+        customerMessageSent: false as const,
+      },
+    }));
+    const deps = makeDeps({
+      getRegisteredGroups: () => ({
+        'slack:CONTADOR': {
+          name: 'Contador',
+          folder: 'contador',
+          trigger: '@Gru',
+          added_at: '2026-01-01T00:00:00Z',
+        },
+        'slack:INBOX': {
+          name: 'Inbox',
+          folder: 'inbox',
+          trigger: '@Gru',
+          added_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+      archiveWebhook: vi.fn(async () => ({ id: 602, isDuplicate: false })),
+      markWebhookHandled,
+      checkoutRecovery: {
+        enabled: true,
+        path: '/hook/checkout-recovery-test-only',
+        relaySecret: 'checkout-recovery-relay-test-secret-12345',
+        identitySecret: 'checkout-recovery-identity-test-secret-1234',
+        record,
+        markProjectionNotified,
+      },
+    });
+    const server = new WebhookServer(deps);
+    await server.start();
+    deps.port = server.getPort();
+    (server as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      stripeWebhook,
+    ];
+    try {
+      const response = await makeRequest(deps.port, {
+        path: '/hook/stripe-payment',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+        body: JSON.stringify({
+          stripe_id: 'pi_failure1234567890',
+          payment_intent_id: 'pi_failure1234567890',
+          event_type: 'payment_intent.payment_failed',
+          event_id: 'evt_failure1234567890',
+          event_created: 1787594400,
+          account: 'heartbeat',
+          amount_cents: 99900,
+          currency: 'usd',
+        }),
+      });
+      expect(response.status).toBe(202);
+      await vi.waitFor(() => expect(record).toHaveBeenCalledOnce());
+    } finally {
+      await server.stop().catch(() => {});
+    }
+    expect(mockHandleStripePayment).not.toHaveBeenCalled();
+    expect(markWebhookHandled).toHaveBeenCalledWith(
+      602,
+      expect.objectContaining({
+        handled_by: 'checkout-recovery:stripe-host-handler',
+        related_entity: expect.objectContaining({
+          kind: 'checkout_recovery_case',
+          id: 77,
+          customer_message_sent: false,
+        }),
+      }),
+    );
+    expect(deps.sendMessage).toHaveBeenCalledWith(
+      'slack:INBOX',
+      expect.stringContaining('no customer message sent'),
+      { fromGroup: 'inbox' },
+    );
+    expect(markProjectionNotified).toHaveBeenCalledWith({
+      caseId: 77,
+      expectedVersion: 1,
     });
   });
 });

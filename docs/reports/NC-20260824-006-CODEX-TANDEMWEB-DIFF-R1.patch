@@ -1,0 +1,616 @@
+diff --git a/data/marketing/encharge-automations.json b/data/marketing/encharge-automations.json
+index b7a8accf6..ef3c029a9 100644
+--- a/data/marketing/encharge-automations.json
++++ b/data/marketing/encharge-automations.json
+@@ -8,6 +8,7 @@
+     "classification_rule": "P0 fulfillment and required student operations use Transactional Emails; optional student success, resources, commercial nurture, and editorial mail use the declared marketing category and category-level unsubscribe.",
+     "status_values": {
+       "flow_active": "An Encharge flow consumes this event and is verified live with send count > 0 and last_verified_at within 30 days",
++      "partial_active": "One or more live flows consume a bounded subset, but at least one producer, program, or product remains intentionally unconsumed or unverified",
+       "flow_planned": "Flow is being designed or built; not yet live. Must include planned_ship_date.",
+       "analytics_only": "Deliberate: we fire this event for funnel analytics only. No nurture is intended.",
+       "dead": "Event is no longer fired but kept here for historical context. Includes deprecated_date.",
+@@ -728,15 +729,21 @@
+         "price_cents",
+         "currency"
+       ],
+-      "status": "analytics_only",
+-      "flow_name": null,
+-      "flow_description": "Deliberate analytics-only launch state: preserve truthful Practitioner checkout intent for funnel measurement without sending commercial email from an unconfirmed intent. Change to flow_active only after a no-trial-within-24-48h consumer is built and verified.",
++      "status": "partial_active",
++      "flow_name": "Complete ACC/PCC/ACTC/ACC-PCC Registration",
++      "flow_urls": [
++        "https://app.encharge.io/flows/366146",
++        "https://app.encharge.io/flows/366150",
++        "https://app.encharge.io/flows/366152",
++        "https://app.encharge.io/flows/366153"
++      ],
++      "flow_description": "Four active legacy program-prefixed consumers cover on-site ACC, PCC, ACTC, and ACC/PCC starts with purchase suppression. The canonical off-site Practitioner checkout-started producer remains analytics-only and MCS/Mentor/Supervision use narrower explicit-abandon consumers, so this event family is only partially active.",
+       "expected_emails": [],
+       "planned_ship_date": null,
+-      "last_verified_at": null,
++      "last_verified_at": "2026-08-24",
+       "migrated_in_encharge": false,
+-      "implementation_audit": "Practitioner intent capture was repaired on 2026-08-09: only source=practitioner-series-checkout-intent plus an allowlisted Heartbeat invitation is accepted; event properties include program/product/price/currency/offer_type/checkout_system/is_offsite/occurred_at, and tags include prac-checkout-intent plus an offer-code tag. Client-supplied tags and product metadata are never authoritative.",
+-      "notes": "PRIMARY user concern - 'we send for ACC and maybe PCC, not all'. Audit will reveal which programs have flows. Analytics-only is an explicit launch-gate decision for the off-site Practitioner producer, not a claim that nurture is complete; it still needs a no-trial-within-24-48h consumer before commercial sends begin. Preserve the separate pre-existing on-site Stripe design for later flow work: email 1 at 30m is a soft re-prompt with secure-payment reassurance and a reminder of program value; email 2 at 2d handles price, schedule, and fit objections with a consultation CTA. The shared canonical event remains appropriate because checkout_system and is_offsite distinguish the producers."
++      "implementation_audit": "Live UI audit 2026-08-24: flows 366146/366150/366152/366153 are active and have historical entries/sends with purchase checks. Practitioner intent capture remains analytics-only. The shared event family therefore requires per-producer coverage rather than one global active flag.",
++      "notes": "Partial coverage is intentional and explicit. Do not route the off-site Practitioner producer or other uncovered programs into the legacy flows without separate consent, suppression, category, copy, and natural-canary proof."
+     },
+     "checkout-payment-attempted": {
+       "category": "checkout",
+@@ -767,8 +774,10 @@
+       "category": "checkout",
+       "canonical_name": "checkout-payment-failed",
+       "legacy_aliases": [],
+-      "fired_from": [],
+-      "trigger_description": "Stripe webhook payment_intent.payment_failed (currently silently swallowed at class-stripe-checkout.php:737)",
++      "fired_from": [
++        "wordpress/tandem-snippets/includes/class-stripe-checkout.php (payment_intent.payment_failed webhook)"
++      ],
++      "trigger_description": "The authenticated on-site Stripe webhook emits checkout-payment-failed with exact product, amount, PaymentIntent, and bounded failure context.",
+       "required_properties": [
+         "program",
+         "product_slug",
+@@ -781,7 +790,7 @@
+       ],
+       "status": "flow_planned",
+       "flow_name": null,
+-      "flow_description": "Card-decline recovery: 'we tried to charge but the card was declined'. Soft tone, link back to retry, surface common decline causes (CVV, address mismatch, insufficient funds).",
++      "flow_description": "No live Encharge consumer. The 2026-08-24 shadow control records and surfaces failure cases internally without sending customer email.",
+       "expected_emails": [
+         {
+           "order": 1,
+@@ -792,7 +801,7 @@
+       "planned_ship_date": null,
+       "last_verified_at": null,
+       "migrated_in_encharge": false,
+-      "notes": "Gap H1. Code change required: extend handle_webhook to handle payment_intent.payment_failed."
++      "notes": "Live UI audit 2026-08-24 found zero consumers among all 106 flows. Keep flow_planned; shadow case capture is not a send or an active Encharge flow."
+     },
+     "checkout-abandoned": {
+       "category": "checkout",
+@@ -814,13 +823,14 @@
+       "optional_properties": [
+         "fields_filled"
+       ],
+-      "status": "flow_planned",
+-      "flow_name": "Supervision / Mentor Coaching - Checkout Recovery",
++      "status": "partial_active",
++      "flow_name": "MCS / Supervision / Mentor Coaching - Checkout Recovery",
+       "flow_urls": [
+         "https://app.encharge.io/flows/399379",
+-        "https://app.encharge.io/flows/399380"
++        "https://app.encharge.io/flows/399380",
++        "https://app.encharge.io/flows/391846"
+       ],
+-      "flow_description": "Active Supervision and standalone Mentor Coaching consumers filter checkout-abandoned by program, wait four hours, require that the matching purchase event has not occurred, then send the scheduling/fit follow-up. Status remains flow_planned until a real entrant proves the send path.",
++      "flow_description": "Active MCS, Supervision, and standalone Mentor Coaching consumers cover bounded product/program subsets and suppress matching purchases. Other products and tab/page exits without the client abandon beacon remain uncovered, so coverage is partial.",
+       "expected_emails": [
+         {
+           "order": 1,
+@@ -829,9 +839,9 @@
+         }
+       ],
+       "planned_ship_date": null,
+-      "last_verified_at": "2026-08-16",
++      "last_verified_at": "2026-08-24",
+       "migrated_in_encharge": true,
+-      "notes": "2026-08-16: flows 399379 and 399380 activated. Each persisted after reload with 3 links, 0 setup warnings, and the Check Condition Yes branch explicitly saved. Both had zero entrants at launch, so the first natural abandonment remains the durable send canary. The pre-existing MCS Checkout Abandon flow 391846 remains separate."
++      "notes": "Live UI audit 2026-08-24: MCS flow 391846 had historical entrants/sends; Supervision 399379 and Mentor 399380 remained at zero entrants after their 2026-08-16 activation. A future natural entrant is still required for those two send paths. The durable shadow timeout introduced separately does not activate or expand these flows."
+     },
+     "purchase-completed": {
+       "category": "purchase",
+diff --git a/wordpress/tandem-snippets/assets/js/checkout.js b/wordpress/tandem-snippets/assets/js/checkout.js
+index 24aee6d63..8165ffd42 100644
+--- a/wordpress/tandem-snippets/assets/js/checkout.js
++++ b/wordpress/tandem-snippets/assets/js/checkout.js
+@@ -207,11 +207,13 @@
+     var fn = document.getElementById('tcFirstName');
+     var ln = document.getElementById('tcLastName');
+     var em = document.getElementById('tcEmail');
++    var recovery = document.getElementById('tcRecoveryReminderConsent');
+     return {
+       first_name: !!(fn && fn.value.trim()),
+       last_name:  !!(ln && ln.value.trim()),
+       email:      !!(em && em.value.trim()),
+-      country:    !!(countryInput && countryInput.value)
++      country:    !!(countryInput && countryInput.value),
++      recovery_reminder: !!(recovery && recovery.checked)
+     };
+   }
+
+@@ -443,6 +445,8 @@
+       var el = document.getElementById(id);
+       if (el) el.value = '';
+     });
++    var recoveryConsent = document.getElementById('tcRecoveryReminderConsent');
++    if (recoveryConsent) recoveryConsent.checked = false;
+     if (countryInput) countryInput.value = '';
+     if (countryField) countryField.hidden = true;
+     if (regionalNote) {
+@@ -624,6 +628,27 @@
+
+   var tcEmailInput = document.getElementById('tcEmail');
+   if (tcEmailInput) {
++    var recoveryCopy = {
++      en: 'Email me one reminder if I do not finish checkout. This is optional and separate from course or newsletter messages.',
++      es: 'Envíame un recordatorio si no termino el pago. Es opcional y está separado de los mensajes del curso o del boletín.',
++      ja: '決済を完了しなかった場合に、リマインダーを1通受け取る（任意）。コースやニュースレターの配信設定とは別です。',
++      fr: 'Envoyez-moi un rappel si je ne termine pas le paiement. Cette option est facultative et distincte des messages de cours ou de la newsletter.'
++    };
++    var emailField = tcEmailInput.closest('.tc-checkout-field');
++    if (emailField && !document.getElementById('tcRecoveryReminderConsent')) {
++      var recoveryLabel = document.createElement('label');
++      recoveryLabel.className = 'tc-checkout-consent tc-recovery-consent';
++      var recoveryInput = document.createElement('input');
++      recoveryInput.type = 'checkbox';
++      recoveryInput.id = 'tcRecoveryReminderConsent';
++      recoveryInput.name = 'recovery_reminder_consent';
++      recoveryInput.value = '1';
++      var recoveryText = document.createElement('span');
++      recoveryText.textContent = recoveryCopy[checkoutLocale] || recoveryCopy.en;
++      recoveryLabel.appendChild(recoveryInput);
++      recoveryLabel.appendChild(recoveryText);
++      emailField.parentNode.insertBefore(recoveryLabel, emailField.nextSibling);
++    }
+     tcEmailInput.addEventListener('blur', function() {
+       var email = this.value.trim();
+       var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+@@ -726,7 +751,11 @@
+         last_name:  lastName,
+         email:      email,
+         country:    country,
+-        pricing_preference: standardPriceToggle && standardPriceToggle.checked ? 'standard' : 'regional'
++        pricing_preference: standardPriceToggle && standardPriceToggle.checked ? 'standard' : 'regional',
++        recovery_reminder_consent: !!(
++          document.getElementById('tcRecoveryReminderConsent') &&
++          document.getElementById('tcRecoveryReminderConsent').checked
++        )
+       })
+     }, 10000)
+     .then(function(r) {
+diff --git a/wordpress/tandem-snippets/includes/class-stripe-checkout.php b/wordpress/tandem-snippets/includes/class-stripe-checkout.php
+index a1100c33e..092ad578c 100644
+--- a/wordpress/tandem-snippets/includes/class-stripe-checkout.php
++++ b/wordpress/tandem-snippets/includes/class-stripe-checkout.php
+@@ -17,6 +17,8 @@
+  *   TANDEM_STRIPE_WEBHOOK_SECRET  - Stripe webhook signing secret (whsec_...)
+  *   TANDEM_HEARTBEAT_KEY          - Heartbeat API bearer token (already defined)
+  *   TANDEM_ENCHARGE_KEY           - Encharge write key (already defined)
++ *   TANDEM_CHECKOUT_RECOVERY_URL  - n8n shadow relay URL (optional)
++ *   TANDEM_CHECKOUT_RECOVERY_INGRESS_SECRET - relay ingress secret (optional)
+  *
+  * @since 1.7.0
+  */
+@@ -29,6 +31,7 @@ class Tandem_Stripe_Checkout {
+     private const ENCHARGE_INGEST = 'https://ingest.encharge.io/v1';
+     private const ROLE_USER       = 'a9692c27-8df1-47cf-9979-038eba1cec53';
+     private const STRIPE_API_BASE = 'https://api.stripe.com/v1/';
++    private const RECOVERY_CONSENT_POLICY = 'checkout-reminder-v1';
+
+     /** @var string Path to the tandem-snippets repo root (for data file access). */
+     private $snippets_dir;
+@@ -48,6 +51,12 @@ class Tandem_Stripe_Checkout {
+     /** @var string Encharge ingest API write key. */
+     private $encharge_key;
+
++    /** @var string Optional shadow-only checkout lifecycle relay URL. */
++    private $checkout_recovery_url;
++
++    /** @var string HMAC secret shared only with the n8n ingress. */
++    private $checkout_recovery_ingress_secret;
++
+     /** @var array|null Cached product catalog (loaded once per request). */
+     private static $products_cache = null;
+
+@@ -62,12 +71,19 @@ class Tandem_Stripe_Checkout {
+         $this->webhook_secret     = defined('TANDEM_STRIPE_WEBHOOK_SECRET') ? TANDEM_STRIPE_WEBHOOK_SECRET : '';
+         $this->heartbeat_key      = defined('TANDEM_HEARTBEAT_KEY') ? TANDEM_HEARTBEAT_KEY : '';
+         $this->encharge_key       = defined('TANDEM_ENCHARGE_KEY') ? TANDEM_ENCHARGE_KEY : '';
++        $this->checkout_recovery_url = defined('TANDEM_CHECKOUT_RECOVERY_URL')
++            ? TANDEM_CHECKOUT_RECOVERY_URL
++            : '';
++        $this->checkout_recovery_ingress_secret = defined('TANDEM_CHECKOUT_RECOVERY_INGRESS_SECRET')
++            ? TANDEM_CHECKOUT_RECOVERY_INGRESS_SECRET
++            : '';
+
+         if (empty($this->stripe_secret) || empty($this->stripe_publishable)) {
+             $this->log('Stripe constants not configured - checkout endpoints will return 503');
+         }
+
+         add_action('rest_api_init', [$this, 'register_routes']);
++        add_action('tandem_checkout_recovery_retry', [$this, 'drain_checkout_recovery_shadow_queue']);
+     }
+
+     /**
+@@ -409,6 +425,7 @@ class Tandem_Stripe_Checkout {
+         // capture → intent flow so the Stripe metadata write in handle_intent
+         // can resolve a gclid via wp_chaos_sessions. Best-effort; empty is fine.
+         $chaos_st   = sanitize_text_field($body['chaos_session_token'] ?? '');
++        $recovery_consent = ($body['recovery_reminder_consent'] ?? false) === true;
+
+         // Validate product.
+         $products = $this->load_products();
+@@ -471,6 +488,8 @@ class Tandem_Stripe_Checkout {
+             'regional_price_eligible' => $pricing['regional_price_eligible'],
+             'pricing_policy'      => $pricing['pricing_policy'],
+             'pricing_preference'  => $pricing['pricing_preference'],
++            'recovery_consent'    => $recovery_consent,
++            'recovery_consent_policy' => self::RECOVERY_CONSENT_POLICY,
+         ];
+
+         $stored = set_transient('tc_checkout_' . $token, $session, 30 * MINUTE_IN_SECONDS);
+@@ -503,6 +522,14 @@ class Tandem_Stripe_Checkout {
+             ]
+         );
+
++        $this->fire_checkout_recovery_shadow(
++            'checkout.captured',
++            $token,
++            $session,
++            $product,
++            'tw:v1:' . $token . ':captured'
++        );
++
+         $this->log('Lead captured', ['email' => $email, 'product' => $slug]);
+
+         // Server-side Google Ads checkout-lead conversion (non-purchase signal).
+@@ -950,6 +977,15 @@ class Tandem_Stripe_Checkout {
+                 );
+             }
+
++            $this->fire_checkout_recovery_shadow(
++                'payment.succeeded',
++                $token,
++                $session,
++                $product,
++                'tw:v1:' . $token . ':payment_succeeded:free',
++                ['amount_cents' => 0]
++            );
++
+             return new WP_REST_Response([
+                 'success' => true,
+                 'data'    => [
+@@ -1033,6 +1069,18 @@ class Tandem_Stripe_Checkout {
+         $session['payment_intent_id']  = $payment_intent_id;
+         set_transient('tc_checkout_' . $token, $session, 30 * MINUTE_IN_SECONDS);
+
++        $this->fire_checkout_recovery_shadow(
++            'payment.created',
++            $token,
++            $session,
++            $product,
++            'tw:v1:' . $token . ':payment_created:' . $payment_intent_id,
++            [
++                'payment_intent_id' => $payment_intent_id,
++                'amount_cents'      => $price,
++            ]
++        );
++
+         // Write chaos session token + gclid into PI metadata so the async
+         // payment_intent.succeeded webhook can attribute to the ad click
+         // without re-doing the chaos lookup. Best-effort — failure here must
+@@ -1143,6 +1191,18 @@ class Tandem_Stripe_Checkout {
+         $session['plan']              = 'installments';
+         set_transient('tc_checkout_' . $token, $session, 30 * MINUTE_IN_SECONDS);
+
++        $this->fire_checkout_recovery_shadow(
++            'payment.created',
++            $token,
++            $session,
++            $product,
++            'tw:v1:' . $token . ':payment_created:' . $pi_id,
++            [
++                'payment_intent_id' => $pi_id,
++                'amount_cents'      => $amount,
++            ]
++        );
++
+         $this->log('Subscription intent created', ['sub' => $sub_id, 'pi' => $pi_id, 'token' => $token]);
+
+         // Disclosure schedule: payment 1 today, then every interval.
+@@ -1368,6 +1428,14 @@ class Tandem_Stripe_Checkout {
+             ]
+         );
+
++        $this->fire_checkout_recovery_shadow(
++            'checkout.client_abandoned',
++            $token,
++            $session,
++            $product,
++            'tw:v1:' . $token . ':client_abandoned'
++        );
++
+         $this->log('Checkout abandoned event fired', [
+             'email'   => $session['email'],
+             'product' => $slug,
+@@ -1579,6 +1647,25 @@ class Tandem_Stripe_Checkout {
+             }
+         }
+
++        $shadow_token = $token ?: substr(hash('sha256', $pi_id), 0, 32);
++        $shadow_session = isset($session) && is_array($session) ? $session : [
++            'email' => $email,
++            'product' => $slug,
++            'recovery_consent' => false,
++            'recovery_consent_policy' => self::RECOVERY_CONSENT_POLICY,
++        ];
++        $this->fire_checkout_recovery_shadow(
++            'payment.succeeded',
++            $shadow_token,
++            $shadow_session,
++            $product,
++            'tw:v1:' . $shadow_token . ':payment_succeeded:' . sanitize_key((string) ($event['id'] ?? $pi_id)),
++            [
++                'payment_intent_id' => $pi_id,
++                'amount_cents'      => (int) ($pi['amount_received'] ?? ($pi['amount'] ?? 0)),
++            ]
++        );
++
+         $this->log('Enrollment complete', ['email' => $email, 'product' => $slug, 'pi' => $pi_id]);
+
+         return new WP_REST_Response(['success' => true], 200);
+@@ -1634,6 +1721,29 @@ class Tandem_Stripe_Checkout {
+             ]
+         );
+
++        $token = sanitize_text_field($metadata['token'] ?? '');
++        $shadow_token = $token ?: substr(hash('sha256', $pi_id), 0, 32);
++        $shadow_session = $token ? get_transient('tc_checkout_' . $token) : false;
++        if (!is_array($shadow_session)) {
++            $shadow_session = [
++                'email' => $email,
++                'product' => $slug,
++                'recovery_consent' => false,
++                'recovery_consent_policy' => self::RECOVERY_CONSENT_POLICY,
++            ];
++        }
++        $this->fire_checkout_recovery_shadow(
++            'payment.failed',
++            $shadow_token,
++            $shadow_session,
++            $product,
++            'tw:v1:' . $shadow_token . ':payment_failed:' . sanitize_key((string) ($event['id'] ?? $pi_id)),
++            [
++                'payment_intent_id' => $pi_id,
++                'amount_cents'      => (int) ($pi['amount'] ?? $product['price_cents']),
++            ]
++        );
++
+         $this->log('Payment failed event fired', [
+             'email'   => $email,
+             'product' => $slug,
+@@ -1955,6 +2065,183 @@ class Tandem_Stripe_Checkout {
+         ];
+     }
+
++    // =========================================================================
++    // Checkout recovery shadow helper
++    // =========================================================================
++
++    /**
++     * Send one bounded, signed lifecycle fact to the shadow-only n8n relay.
++     * Fail open: checkout, enrollment, and Stripe webhook acknowledgement never
++     * depend on this observer. The ingress secret remains server-side.
++     */
++    private function fire_checkout_recovery_shadow(
++        string $event_type,
++        string $token,
++        array $session,
++        array $product,
++        string $source_event_key,
++        array $overrides = []
++    ): void {
++        $allowed = [
++            'checkout.captured',
++            'payment.created',
++            'checkout.client_abandoned',
++            'payment.failed',
++            'payment.succeeded',
++        ];
++        if (!in_array($event_type, $allowed, true)) {
++            $this->log('Checkout recovery shadow skipped: unsupported event');
++            return;
++        }
++        if (
++            empty($this->checkout_recovery_url) ||
++            empty($this->checkout_recovery_ingress_secret) ||
++            strlen($this->checkout_recovery_ingress_secret) < 32
++        ) {
++            return;
++        }
++        if (
++            !preg_match('/^[A-Za-z0-9]{32}$/', $token) ||
++            !preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,499}$/', $source_event_key)
++        ) {
++            $this->log('Checkout recovery shadow skipped: invalid identity');
++            return;
++        }
++        $email = sanitize_email((string) ($session['email'] ?? ''));
++        if (!is_email($email)) {
++            $this->log('Checkout recovery shadow skipped: invalid email');
++            return;
++        }
++        $payload = [
++            'schema_version'         => 1,
++            'source_event_key'       => $source_event_key,
++            'event_type'             => $event_type,
++            'observed_at'            => gmdate('c'),
++            'checkout_token'         => $token,
++            'email'                  => $email,
++            'program_slug'           => sanitize_key((string) ($product['program'] ?? '')),
++            'product_slug'           => sanitize_key((string) ($session['product'] ?? '')),
++            'amount_cents'           => max(0, (int) ($overrides['amount_cents'] ?? ($session['price_cents'] ?? $product['price_cents'] ?? 0))),
++            'currency'               => strtolower(sanitize_key((string) ($product['currency'] ?? 'usd'))),
++            'consent_state'          => !empty($session['recovery_consent']) ? 'granted' : 'denied',
++            'consent_policy_version' => sanitize_key((string) ($session['recovery_consent_policy'] ?? self::RECOVERY_CONSENT_POLICY)),
++        ];
++        foreach (['payment_intent_id', 'checkout_session_id'] as $field) {
++            if (!empty($overrides[$field])) {
++                $payload[$field] = sanitize_text_field((string) $overrides[$field]);
++            }
++        }
++        $body = wp_json_encode($payload);
++        if (!is_string($body) || strlen($body) > 32768) {
++            $this->log('Checkout recovery shadow skipped: invalid payload');
++            return;
++        }
++        if ($this->send_checkout_recovery_shadow_body($body)) {
++            $this->log('Checkout recovery shadow accepted: ' . $event_type);
++            return;
++        }
++        $this->queue_checkout_recovery_shadow_body($source_event_key, $body);
++        $this->log('Checkout recovery shadow queued: ' . $event_type);
++    }
++
++    /** Send one already-normalized body with a fresh short-lived HMAC. */
++    private function send_checkout_recovery_shadow_body(string $body): bool {
++        if (
++            empty($this->checkout_recovery_url) ||
++            empty($this->checkout_recovery_ingress_secret)
++        ) {
++            return false;
++        }
++        $timestamp = (string) time();
++        $signature = hash_hmac(
++            'sha256',
++            $timestamp . '.' . $body,
++            $this->checkout_recovery_ingress_secret
++        );
++        $response = wp_remote_post($this->checkout_recovery_url, [
++            'headers' => [
++                'Content-Type'         => 'application/json',
++                'X-Checkout-Timestamp' => $timestamp,
++                'X-Checkout-Signature' => 'sha256=' . $signature,
++            ],
++            'body'        => $body,
++            'timeout'     => 4,
++            'redirection' => 0,
++        ]);
++        if (is_wp_error($response)) {
++            return false;
++        }
++        $code = wp_remote_retrieve_response_code($response);
++        return $code >= 200 && $code < 300;
++    }
++
++    /** Persist failed shadow delivery for bounded WordPress-cron retry. */
++    private function queue_checkout_recovery_shadow_body(string $event_key, string $body): void {
++        $queue = get_option('tandem_checkout_recovery_shadow_queue', []);
++        if (!is_array($queue)) {
++            $queue = [];
++        }
++        $queue[$event_key] = [
++            'body'         => $body,
++            'attempts'     => (int) ($queue[$event_key]['attempts'] ?? 0),
++            'next_attempt' => time() + 300,
++            'exhausted'    => false,
++        ];
++        update_option('tandem_checkout_recovery_shadow_queue', $queue, false);
++        if (!wp_next_scheduled('tandem_checkout_recovery_retry')) {
++            wp_schedule_single_event(time() + 300, 'tandem_checkout_recovery_retry');
++        }
++    }
++
++    /**
++     * Drain at most 25 queued shadow facts. Exhausted rows remain visible in
++     * the option for operator inspection; they are never silently deleted.
++     */
++    public function drain_checkout_recovery_shadow_queue(): void {
++        $queue = get_option('tandem_checkout_recovery_shadow_queue', []);
++        if (!is_array($queue) || empty($queue)) {
++            return;
++        }
++        $now = time();
++        $processed = 0;
++        foreach ($queue as $event_key => &$item) {
++            if (
++                $processed >= 25 ||
++                !is_array($item) ||
++                !empty($item['exhausted']) ||
++                (int) ($item['next_attempt'] ?? 0) > $now
++            ) {
++                continue;
++            }
++            $processed++;
++            $body = (string) ($item['body'] ?? '');
++            if ($body !== '' && $this->send_checkout_recovery_shadow_body($body)) {
++                unset($queue[$event_key]);
++                continue;
++            }
++            $attempts = (int) ($item['attempts'] ?? 0) + 1;
++            $item['attempts'] = $attempts;
++            if ($attempts >= 10) {
++                $item['exhausted'] = true;
++                $this->log('Checkout recovery shadow retry exhausted: ' . sanitize_text_field((string) $event_key));
++            } else {
++                $delay = min(6 * HOUR_IN_SECONDS, 300 * (2 ** min($attempts, 6)));
++                $item['next_attempt'] = $now + $delay;
++            }
++        }
++        unset($item);
++        update_option('tandem_checkout_recovery_shadow_queue', $queue, false);
++        $remaining = array_filter($queue, static function ($item): bool {
++            return is_array($item) && empty($item['exhausted']);
++        });
++        if (!empty($remaining) && !wp_next_scheduled('tandem_checkout_recovery_retry')) {
++            $next = min(array_map(static function ($item): int {
++                return (int) ($item['next_attempt'] ?? (time() + 300));
++            }, $remaining));
++            wp_schedule_single_event(max(time() + 60, $next), 'tandem_checkout_recovery_retry');
++        }
++    }
++
+     // =========================================================================
+     // Encharge helper
+     // =========================================================================
+diff --git a/private/tmp/tandem-checkout-recovery.DQ1Z2F/wordpress/tandem-snippets/tests/test-checkout-recovery-shadow.php b/private/tmp/tandem-checkout-recovery.DQ1Z2F/wordpress/tandem-snippets/tests/test-checkout-recovery-shadow.php
+new file mode 100644
+index 00000000..d2c4ed7c
+--- /dev/null
++++ b/private/tmp/tandem-checkout-recovery.DQ1Z2F/wordpress/tandem-snippets/tests/test-checkout-recovery-shadow.php
+@@ -0,0 +1,44 @@
++<?php
++/** Static contract checks for the shadow-only checkout recovery producer. */
++
++$root = dirname(__DIR__);
++$php  = file_get_contents($root . '/includes/class-stripe-checkout.php');
++$js   = file_get_contents($root . '/assets/js/checkout.js');
++
++$failures = [];
++function check_recovery($condition, $message) {
++    global $failures;
++    if (!$condition) {
++        $failures[] = $message;
++    }
++}
++
++check_recovery(strpos($php, 'TANDEM_CHECKOUT_RECOVERY_URL') !== false, 'missing configured recovery URL');
++check_recovery(strpos($php, 'TANDEM_CHECKOUT_RECOVERY_INGRESS_SECRET') !== false, 'missing server-only ingress secret');
++check_recovery(strpos($php, "private const RECOVERY_CONSENT_POLICY = 'checkout-reminder-v1'") !== false, 'missing versioned consent policy');
++check_recovery(strpos($php, 'X-Checkout-Timestamp') !== false, 'missing timestamp signature header');
++check_recovery(strpos($php, 'X-Checkout-Signature') !== false, 'missing HMAC signature header');
++check_recovery(strpos($php, "'checkout.captured'") !== false, 'missing captured event');
++check_recovery(strpos($php, "'payment.created'") !== false, 'missing payment-created event');
++check_recovery(strpos($php, "'checkout.client_abandoned'") !== false, 'missing client-abandon context');
++check_recovery(strpos($php, "'payment.failed'") !== false, 'missing payment-failed event');
++check_recovery(strpos($php, "'payment.succeeded'") !== false, 'missing payment-succeeded event');
++check_recovery(strpos($php, 'customer_message_sent') === false, 'website producer must not claim or send recovery messages');
++check_recovery(strpos($php, 'after_expiration') === false, 'website producer must not accept provider recovery URLs');
++check_recovery(strpos($php, 'tandem_checkout_recovery_shadow_queue') !== false, 'failed delivery must enter durable retry queue');
++check_recovery(strpos($php, 'attempts >= 10') !== false, 'retry must be bounded');
++check_recovery(strpos($php, "'exhausted'    => false") !== false, 'retry exhaustion must remain owner-inspectable');
++
++check_recovery(strpos($js, 'tcRecoveryReminderConsent') !== false, 'missing unchecked reminder choice');
++check_recovery(strpos($js, 'recovery_reminder_consent') !== false, 'missing consent payload');
++check_recovery(strpos($js, 'if (recoveryConsent) recoveryConsent.checked = false;') !== false, 'reminder choice must reset unchecked');
++foreach (['en:', 'es:', 'ja:', 'fr:'] as $locale) {
++    check_recovery(strpos($js, $locale) !== false, 'missing reminder copy for ' . $locale);
++}
++
++if ($failures) {
++    fwrite(STDERR, "FAIL checkout recovery shadow contract\n - " . implode("\n - ", $failures) . "\n");
++    exit(1);
++}
++
++echo "PASS checkout recovery shadow contract\n";

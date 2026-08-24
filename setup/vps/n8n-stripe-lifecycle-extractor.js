@@ -11,7 +11,9 @@ const eventId = typeof raw.id === 'string' ? raw.id : '';
 const eventCreated = Number.isFinite(raw.created) ? raw.created : null;
 const ALLOWED_EVENTS = [
   'payment_intent.succeeded',
+  'payment_intent.payment_failed',
   'checkout.session.completed',
+  'checkout.session.expired',
   'charge.refunded',
 ];
 if (!ALLOWED_EVENTS.includes(eventType)) return [];
@@ -52,21 +54,74 @@ if (eventType === 'charge.refunded') {
 const stripeId = typeof inner.id === 'string' ? inner.id : '';
 if (!stripeId.match(/^(pi|cs)_[A-Za-z0-9_]{10,80}$/)) return [];
 const paymentIntent =
-  eventType === 'payment_intent.succeeded'
+  eventType === 'payment_intent.succeeded' ||
+  eventType === 'payment_intent.payment_failed'
     ? stripeId
     : typeof inner.payment_intent === 'string'
       ? inner.payment_intent
       : '';
+const metadata =
+  inner.metadata && typeof inner.metadata === 'object' ? inner.metadata : {};
+const customerDetails =
+  inner.customer_details && typeof inner.customer_details === 'object'
+    ? inner.customer_details
+    : {};
+const emailCandidates = [
+  customerDetails.email,
+  inner.customer_email,
+  inner.receipt_email,
+  metadata.email,
+];
+const email = emailCandidates.find(
+  (value) => typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+);
+const consentState =
+  inner.consent && inner.consent.promotions === 'opt_in'
+    ? 'granted'
+    : inner.consent && inner.consent.promotions === 'opt_out'
+      ? 'denied'
+      : 'unknown';
+const amountCents = Number.isSafeInteger(inner.amount_total)
+  ? inner.amount_total
+  : Number.isSafeInteger(inner.amount)
+    ? inner.amount
+    : null;
+const recoveredFrom =
+  typeof inner.recovered_from === 'string' &&
+  /^cs_[A-Za-z0-9_]{10,200}$/.test(inner.recovered_from)
+    ? inner.recovered_from
+    : null;
+const latestCharge =
+  typeof inner.latest_charge === 'string' &&
+  /^ch_[A-Za-z0-9_]{10,200}$/.test(inner.latest_charge)
+    ? inner.latest_charge
+    : null;
 
 return [
   {
     json: {
       stripe_id: stripeId,
       payment_intent_id: paymentIntent || null,
+      checkout_session_id: stripeId.startsWith('cs_') ? stripeId : null,
+      charge_id: latestCharge,
       event_type: eventType,
       event_id: eventId,
       event_created: eventCreated,
       account: ACCOUNT,
+      email: email || null,
+      program_slug:
+        typeof metadata.program === 'string' ? metadata.program : null,
+      product_slug:
+        typeof metadata.product === 'string'
+          ? metadata.product
+          : typeof metadata.product_slug === 'string'
+            ? metadata.product_slug
+            : null,
+      amount_cents: amountCents,
+      currency:
+        typeof inner.currency === 'string' ? inner.currency.toLowerCase() : null,
+      consent_state: consentState,
+      recovered_from: recoveredFrom,
     },
   },
 ];

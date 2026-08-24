@@ -1,0 +1,2246 @@
+diff --git a/.env.example b/.env.example
+index 520fc562..632a30a8 100644
+--- a/.env.example
++++ b/.env.example
+@@ -38,6 +38,17 @@ STUDENT_LIFECYCLE_RELAY_SECRET=
+ # rotation so durable identity fingerprints do not change.
+ STUDENT_LIFECYCLE_IDENTITY_SECRET=
+
++# Shadow-only checkout recovery relay. Website events use this private opaque
++# host path after n8n verifies a separate WordPress ingress secret. Stripe
++# failure/expiry facts reuse the authenticated fixed-account Stripe ingress.
++# Enabling grants no customer-send, Encharge, CRM, booking, or agent authority.
++CHECKOUT_RECOVERY_ENABLED=false
++CHECKOUT_RECOVERY_WEBHOOK_PATH=
++CHECKOUT_RECOVERY_RELAY_SECRET=
++# Host-only HMAC key for stable email digests; never configure in WordPress/n8n
++# and never reuse the relay or WordPress ingress secret.
++CHECKOUT_RECOVERY_IDENTITY_SECRET=
++
+ # Separate host-only Plutio credential namespace for the CNPC workspace.
+ # Do not reuse the Tandem Plutio credentials and never mount these into a minion.
+ CNPC_PLUTIO_API_CLIENTID=
+diff --git a/package.json b/package.json
+index 27250432..27345d1c 100644
+--- a/package.json
++++ b/package.json
+@@ -34,6 +34,7 @@
+     "company-program-facts:run": "./scripts/with-pinned-node.sh node dist/program-facts-drift-job.js",
+     "healer:resolution-catalog": "./scripts/with-pinned-node.sh node dist/healer/resolution-catalog-cli.js",
+     "healer:company-work-plan": "./scripts/with-pinned-node.sh node dist/healer/company-work-projection-cli.js",
++    "checkout-recovery:report": "./scripts/with-pinned-node.sh node dist/checkout-recovery-report-cli.js",
+     "company-gmail:coverage": "./scripts/with-pinned-node.sh node dist/gmail-historical-coverage-cli.js",
+     "company-gmail:bootstrap": "./scripts/with-pinned-node.sh node dist/company-gmail-source-bootstrap-cli.js",
+     "company-gmail:audit": "./scripts/with-pinned-node.sh node dist/company-gmail-mailbox-audit-cli.js",
+diff --git a/scripts/build-release.mjs b/scripts/build-release.mjs
+index fc253b37..33364c89 100644
+--- a/scripts/build-release.mjs
++++ b/scripts/build-release.mjs
+@@ -147,6 +147,8 @@ try {
+     'data/business/migrations/nanoclaw-v2/rollback_133_contador_payment_fulfillment_cases.sql',
+     'data/business/migrations/nanoclaw-v2/134_student_lifecycle_community_dark.sql',
+     'data/business/migrations/nanoclaw-v2/rollback_134_student_lifecycle_community_dark.sql',
++    'data/business/migrations/nanoclaw-v2/135_checkout_recovery_shadow.sql',
++    'data/business/migrations/nanoclaw-v2/rollback_135_checkout_recovery_shadow.sql',
+     'scripts/verify-release.mjs',
+     'scripts/runtime-doctor.mjs',
+     'scripts/with-pinned-node.sh',
+diff --git a/setup/vps/n8n-stripe-lifecycle-extractor.js b/setup/vps/n8n-stripe-lifecycle-extractor.js
+index 8461a4a6..3933a10c 100644
+--- a/setup/vps/n8n-stripe-lifecycle-extractor.js
++++ b/setup/vps/n8n-stripe-lifecycle-extractor.js
+@@ -11,7 +11,9 @@ const eventId = typeof raw.id === 'string' ? raw.id : '';
+ const eventCreated = Number.isFinite(raw.created) ? raw.created : null;
+ const ALLOWED_EVENTS = [
+   'payment_intent.succeeded',
++  'payment_intent.payment_failed',
+   'checkout.session.completed',
++  'checkout.session.expired',
+   'charge.refunded',
+ ];
+ if (!ALLOWED_EVENTS.includes(eventType)) return [];
+@@ -52,21 +54,74 @@ if (eventType === 'charge.refunded') {
+ const stripeId = typeof inner.id === 'string' ? inner.id : '';
+ if (!stripeId.match(/^(pi|cs)_[A-Za-z0-9_]{10,80}$/)) return [];
+ const paymentIntent =
+-  eventType === 'payment_intent.succeeded'
++  eventType === 'payment_intent.succeeded' ||
++  eventType === 'payment_intent.payment_failed'
+     ? stripeId
+     : typeof inner.payment_intent === 'string'
+       ? inner.payment_intent
+       : '';
++const metadata =
++  inner.metadata && typeof inner.metadata === 'object' ? inner.metadata : {};
++const customerDetails =
++  inner.customer_details && typeof inner.customer_details === 'object'
++    ? inner.customer_details
++    : {};
++const emailCandidates = [
++  customerDetails.email,
++  inner.customer_email,
++  inner.receipt_email,
++  metadata.email,
++];
++const email = emailCandidates.find(
++  (value) => typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
++);
++const consentState =
++  inner.consent && inner.consent.promotions === 'opt_in'
++    ? 'granted'
++    : inner.consent && inner.consent.promotions === 'opt_out'
++      ? 'denied'
++      : 'unknown';
++const amountCents = Number.isSafeInteger(inner.amount_total)
++  ? inner.amount_total
++  : Number.isSafeInteger(inner.amount)
++    ? inner.amount
++    : null;
++const recoveredFrom =
++  typeof inner.recovered_from === 'string' &&
++  /^cs_[A-Za-z0-9_]{10,200}$/.test(inner.recovered_from)
++    ? inner.recovered_from
++    : null;
++const latestCharge =
++  typeof inner.latest_charge === 'string' &&
++  /^ch_[A-Za-z0-9_]{10,200}$/.test(inner.latest_charge)
++    ? inner.latest_charge
++    : null;
+
+ return [
+   {
+     json: {
+       stripe_id: stripeId,
+       payment_intent_id: paymentIntent || null,
++      checkout_session_id: stripeId.startsWith('cs_') ? stripeId : null,
++      charge_id: latestCharge,
+       event_type: eventType,
+       event_id: eventId,
+       event_created: eventCreated,
+       account: ACCOUNT,
++      email: email || null,
++      program_slug:
++        typeof metadata.program === 'string' ? metadata.program : null,
++      product_slug:
++        typeof metadata.product === 'string'
++          ? metadata.product
++          : typeof metadata.product_slug === 'string'
++            ? metadata.product_slug
++            : null,
++      amount_cents: amountCents,
++      currency:
++        typeof inner.currency === 'string' ? inner.currency.toLowerCase() : null,
++      consent_state: consentState,
++      recovered_from: recoveredFrom,
+     },
+   },
+ ];
+diff --git a/src/config.ts b/src/config.ts
+index f758bfaf..94824b52 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -200,6 +200,58 @@ if (STUDENT_LIFECYCLE_ENABLED) {
+   }
+ }
+
++const checkoutRecoveryEnv = readEnvFile([
++  'CHECKOUT_RECOVERY_ENABLED',
++  'CHECKOUT_RECOVERY_WEBHOOK_PATH',
++  'CHECKOUT_RECOVERY_RELAY_SECRET',
++  'CHECKOUT_RECOVERY_IDENTITY_SECRET',
++]);
++const checkoutRecoveryEnabledRaw =
++  process.env.CHECKOUT_RECOVERY_ENABLED ||
++  checkoutRecoveryEnv.CHECKOUT_RECOVERY_ENABLED ||
++  'false';
++if (!['false', 'true', '0', '1'].includes(checkoutRecoveryEnabledRaw)) {
++  throw new Error('CHECKOUT_RECOVERY_ENABLED must be true, false, 1, or 0');
++}
++export const CHECKOUT_RECOVERY_ENABLED = ['true', '1'].includes(
++  checkoutRecoveryEnabledRaw,
++);
++export const CHECKOUT_RECOVERY_WEBHOOK_PATH =
++  process.env.CHECKOUT_RECOVERY_WEBHOOK_PATH ||
++  checkoutRecoveryEnv.CHECKOUT_RECOVERY_WEBHOOK_PATH ||
++  '';
++export const CHECKOUT_RECOVERY_RELAY_SECRET =
++  process.env.CHECKOUT_RECOVERY_RELAY_SECRET ||
++  checkoutRecoveryEnv.CHECKOUT_RECOVERY_RELAY_SECRET ||
++  '';
++export const CHECKOUT_RECOVERY_IDENTITY_SECRET =
++  process.env.CHECKOUT_RECOVERY_IDENTITY_SECRET ||
++  checkoutRecoveryEnv.CHECKOUT_RECOVERY_IDENTITY_SECRET ||
++  '';
++
++if (CHECKOUT_RECOVERY_ENABLED) {
++  if (
++    !/^\/hook\/[A-Za-z0-9._-]{16,200}$/.test(CHECKOUT_RECOVERY_WEBHOOK_PATH)
++  ) {
++    throw new Error(
++      'enabled checkout recovery requires an opaque webhook path',
++    );
++  }
++  if (CHECKOUT_RECOVERY_RELAY_SECRET.length < 32) {
++    throw new Error(
++      'enabled checkout recovery requires a relay secret of at least 32 characters',
++    );
++  }
++  if (
++    CHECKOUT_RECOVERY_IDENTITY_SECRET.length < 32 ||
++    CHECKOUT_RECOVERY_IDENTITY_SECRET === CHECKOUT_RECOVERY_RELAY_SECRET
++  ) {
++    throw new Error(
++      'enabled checkout recovery requires a distinct identity secret of at least 32 characters',
++    );
++  }
++}
++
+ // Things bridge — HTTP service on the Mac Studio (the only machine with Things
+ // 3). A 📌 reaction on a Mr Gru decision-brief item POSTs the parsed item here
+ // to create a real Things to-do. See ~/.claude/hooks/things_bridge.py.
+diff --git a/src/index.ts b/src/index.ts
+index 1299a08b..e2fb8266 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -6,6 +6,10 @@ import path from 'path';
+
+ import {
+   ASSISTANT_NAME,
++  CHECKOUT_RECOVERY_ENABLED,
++  CHECKOUT_RECOVERY_IDENTITY_SECRET,
++  CHECKOUT_RECOVERY_RELAY_SECRET,
++  CHECKOUT_RECOVERY_WEBHOOK_PATH,
+   DATA_DIR,
+   GMAIL_PUSH_WEBHOOK_SECRET,
+   GMAIL_TEST_RECIPIENT,
+@@ -180,6 +184,12 @@ import { grantHostGmailResources } from './gmail-ipc-policy.js';
+ import { prepareCnpcIntake } from './cnpc-intake.js';
+ import { recordCnpcMatchResult } from './cnpc-match-result.js';
+ import { recordPreparedCommunityLifecycle } from './student-lifecycle-store.js';
++import {
++  formatCheckoutRecoveryProjection,
++  markCheckoutRecoveryProjectionNotified,
++  recordPreparedCheckoutRecovery,
++  sweepCheckoutRecoveryShadow,
++} from './checkout-recovery-store.js';
+ import {
+   listOpenProposals,
+   resolveRecipient,
+@@ -2110,6 +2120,13 @@ async function main(): Promise<void> {
+           actionConsumers: false,
+           circle: false,
+         },
++        checkoutRecovery: {
++          enabled: CHECKOUT_RECOVERY_ENABLED,
++          mode: 'shadow',
++          customerSends: false,
++          tandemTimeoutMinutes: 45,
++          heartbeatMode: 'stripe_events_only',
++        },
+       };
+     },
+     runAgent: runContainerAgent,
+@@ -2200,6 +2217,14 @@ async function main(): Promise<void> {
+       identitySecret: STUDENT_LIFECYCLE_IDENTITY_SECRET,
+       record: recordPreparedCommunityLifecycle,
+     },
++    checkoutRecovery: {
++      enabled: CHECKOUT_RECOVERY_ENABLED,
++      path: CHECKOUT_RECOVERY_WEBHOOK_PATH,
++      relaySecret: CHECKOUT_RECOVERY_RELAY_SECRET,
++      identitySecret: CHECKOUT_RECOVERY_IDENTITY_SECRET,
++      record: recordPreparedCheckoutRecovery,
++      markProjectionNotified: markCheckoutRecoveryProjectionNotified,
++    },
+     gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
+     handleGmailPush: async (emailAddress: string, historyId: string) => {
+       // Late-bound lookup: channels array is populated after webhook server
+@@ -2224,6 +2249,47 @@ async function main(): Promise<void> {
+   });
+   await webhookServer.start();
+
++  const runCheckoutRecoveryShadowTick = async (): Promise<void> => {
++    if (!CHECKOUT_RECOVERY_ENABLED) return;
++    try {
++      const items = await sweepCheckoutRecoveryShadow({ limit: 25 });
++      if (items.length === 0) return;
++      const inbox = Object.entries(registeredGroups).find(
++        ([, registered]) => registered.folder === 'inbox',
++      );
++      if (!inbox) {
++        logger.warn(
++          { count: items.length },
++          'Checkout recovery shadow cases ready but Inbox is unavailable',
++        );
++        return;
++      }
++      for (const item of items) {
++        const channel = findChannel(channels, inbox[0]);
++        if (!channel) break;
++        await channel.sendMessage(
++          inbox[0],
++          formatOutbound(formatCheckoutRecoveryProjection(item)),
++          { fromGroup: 'inbox' },
++        );
++        await markCheckoutRecoveryProjectionNotified({
++          caseId: item.caseId,
++          expectedVersion: item.version,
++        });
++      }
++    } catch (err) {
++      logger.error({ err }, 'Checkout recovery shadow tick failed');
++    }
++  };
++  if (CHECKOUT_RECOVERY_ENABLED) {
++    void runCheckoutRecoveryShadowTick();
++    const checkoutRecoveryTimer = setInterval(
++      () => void runCheckoutRecoveryShadowTick(),
++      5 * 60_000,
++    );
++    checkoutRecoveryTimer.unref();
++  }
++
+   // Clean up orphaned job runs from a previous crash
+   const staleRuns = markStaleRunsAsFailed(60);
+   for (const stale of staleRuns) {
+diff --git a/src/webhook-server.ts b/src/webhook-server.ts
+index eba7b448..a0be2d4b 100644
+--- a/src/webhook-server.ts
++++ b/src/webhook-server.ts
+@@ -66,6 +66,17 @@ import {
+   type PreparedCommunityLifecycleEnvelope,
+ } from './student-lifecycle.js';
+ import type { LifecycleProcessResult } from './student-lifecycle-store.js';
++import {
++  CHECKOUT_RECOVERY_MAX_BODY_BYTES,
++  CheckoutRecoveryPayloadError,
++  CheckoutRecoverySignatureError,
++  prepareStripeCheckoutRecoveryEnvelope,
++  prepareWebsiteCheckoutRecoveryEnvelope,
++  verifyCheckoutRecoverySignature,
++  type CheckoutRecoveryAccount,
++  type PreparedCheckoutRecoveryEvent,
++} from './checkout-recovery.js';
++import type { CheckoutRecoveryProcessResult } from './checkout-recovery-store.js';
+
+ // Minimal compatible slice of the runContainerAgent signature
+ type RunAgentFn = (
+@@ -109,6 +120,14 @@ export interface HealthPayload {
+     actionConsumers: false;
+     circle: false;
+   };
++  checkoutRecovery?: {
++    enabled: boolean;
++    mode: 'shadow';
++    customerSends: false;
++    tandemTimeoutMinutes: 45;
++    heartbeatMode: 'stripe_events_only';
++    health?: import('./checkout-recovery-store.js').CheckoutRecoveryHealth;
++  };
+ }
+
+ export interface WebhookServerDeps {
+@@ -175,6 +194,22 @@ export interface WebhookServerDeps {
+       transientEmail?: string | null;
+     }) => Promise<LifecycleProcessResult>;
+   };
++  checkoutRecovery?: {
++    enabled: boolean;
++    path: string;
++    relaySecret: string;
++    identitySecret: string;
++    record: (input: {
++      event: PreparedCheckoutRecoveryEvent;
++      webhookInboxId: number | null;
++      transientEmail?: string | null;
++    }) => Promise<CheckoutRecoveryProcessResult>;
++    markProjectionNotified: (input: {
++      caseId: number;
++      expectedVersion: number;
++      occurredAt?: string;
++    }) => Promise<boolean>;
++  };
+   // Per-group serialization. Webhook agent runs go through the GroupQueue
+   // (like the message loop and scheduled tasks) so concurrent webhooks to one
+   // group reuse a warm container instead of spawning rival ones that contend
+@@ -881,6 +916,166 @@ export class WebhookServer {
+       return;
+     }
+
++    // Tandem website checkout recovery relay. This dedicated, default-off
++    // path is host-only and shadow-only: it records a durable case/event and
++    // never starts a container, calls Encharge, or sends a customer message.
++    const checkoutRecovery = this.deps.checkoutRecovery;
++    if (
++      req.method === 'POST' &&
++      checkoutRecovery?.enabled === true &&
++      checkoutRecovery.path !== '' &&
++      requestPath === checkoutRecovery.path
++    ) {
++      if (
++        !this.deps.archiveWebhook ||
++        !this.deps.markWebhookDispatched ||
++        !this.deps.markWebhookFailed ||
++        !this.deps.markWebhookHandled ||
++        !checkoutRecovery.record
++      ) {
++        res.writeHead(503, { 'Content-Type': 'application/json' });
++        res.end(
++          JSON.stringify({ error: 'checkout recovery handler not configured' }),
++        );
++        return;
++      }
++      const contentType = String(req.headers['content-type'] || '')
++        .split(';')[0]
++        .trim()
++        .toLowerCase();
++      if (contentType !== 'application/json') {
++        res.writeHead(415, { 'Content-Type': 'application/json' });
++        res.end(JSON.stringify({ error: 'application/json required' }));
++        return;
++      }
++      let rawBody: Buffer;
++      try {
++        rawBody = await readBodyBounded(req, CHECKOUT_RECOVERY_MAX_BODY_BYTES);
++      } catch (err) {
++        if (err instanceof RequestBodyTooLargeError) {
++          res.writeHead(413, {
++            'Content-Type': 'application/json',
++            Connection: 'close',
++          });
++          res.end(JSON.stringify({ error: 'payload too large' }), () =>
++            req.destroy(),
++          );
++          return;
++        }
++        res.writeHead(400, { 'Content-Type': 'application/json' });
++        res.end(JSON.stringify({ error: 'failed to read body' }));
++        return;
++      }
++      try {
++        verifyCheckoutRecoverySignature({
++          rawBody,
++          timestampHeader: req.headers['x-webhook-timestamp'],
++          signatureHeader: req.headers['x-webhook-signature'],
++          secret: checkoutRecovery.relaySecret,
++        });
++      } catch (err) {
++        const status =
++          err instanceof CheckoutRecoverySignatureError ? err.statusCode : 401;
++        res.writeHead(status, { 'Content-Type': 'application/json' });
++        res.end(JSON.stringify({ error: 'invalid checkout recovery relay' }));
++        return;
++      }
++      let parsed: ReturnType<typeof prepareWebsiteCheckoutRecoveryEnvelope>;
++      try {
++        parsed = prepareWebsiteCheckoutRecoveryEnvelope(
++          JSON.parse(rawBody.toString('utf8')) as unknown,
++          checkoutRecovery.identitySecret,
++        );
++      } catch (err) {
++        const status =
++          err instanceof CheckoutRecoveryPayloadError ? err.statusCode : 400;
++        res.writeHead(status, { 'Content-Type': 'application/json' });
++        res.end(JSON.stringify({ error: 'invalid checkout recovery payload' }));
++        return;
++      }
++      let inboxId: number;
++      try {
++        const archived = await this.deps.archiveWebhook({
++          source: 'checkout-recovery-website',
++          event_id: parsed.prepared.source_event_key,
++          event_type: parsed.prepared.event_type,
++          raw_headers: req.headers,
++          raw_body: parsed.prepared,
++          delivery_path: 'n8n',
++        });
++        inboxId = archived.id;
++        if (archived.isDuplicate) {
++          res.writeHead(200, { 'Content-Type': 'application/json' });
++          res.end(
++            JSON.stringify({ webhook_inbox_id: inboxId, duplicate: true }),
++          );
++          return;
++        }
++      } catch (err) {
++        logger.error({ err }, 'checkout recovery archive failed');
++        res.writeHead(500, { 'Content-Type': 'application/json' });
++        res.end(JSON.stringify({ error: 'archive failed' }));
++        return;
++      }
++      await this.deps
++        .markWebhookDispatched(inboxId)
++        .catch((err) =>
++          logger.error(
++            { inboxId, err },
++            'checkout recovery mark dispatched failed',
++          ),
++        );
++      res.writeHead(202, { 'Content-Type': 'application/json' });
++      res.end(JSON.stringify({ webhook_inbox_id: inboxId, shadow_only: true }));
++      checkoutRecovery
++        .record({
++          event: parsed.prepared,
++          webhookInboxId: inboxId,
++          transientEmail: parsed.transient_email,
++        })
++        .then(async (result) => {
++          await this.deps.markWebhookHandled!(inboxId, {
++            handled_by: 'checkout-recovery:host-handler',
++            related_entity: {
++              kind: 'checkout_recovery_case',
++              id: result.caseId,
++              state: result.state,
++              customer_message_sent: false,
++            },
++          });
++          if (!result.shouldNotify) return;
++          const inbox = Object.entries(this.deps.getRegisteredGroups()).find(
++            ([, registered]) => registered.folder === 'inbox',
++          );
++          if (inbox) {
++            const p = result.projection;
++            await this.deps.sendMessage(
++              inbox[0],
++              `[checkout shadow] ${p.stripeAccount} - ${p.productSlug ?? p.programSlug ?? 'unknown product'} - ${p.state}; consent ${p.consentState}/${p.eligibilityState}; case ${p.caseId}; no customer message sent`,
++              { fromGroup: 'inbox' },
++            );
++            await checkoutRecovery.markProjectionNotified({
++              caseId: p.caseId,
++              expectedVersion: p.version,
++            });
++          }
++        })
++        .catch(async (err) => {
++          const reason = err instanceof Error ? err.message : String(err);
++          logger.error(
++            { inboxId, err },
++            'checkout recovery host processing failed',
++          );
++          await this.deps.markWebhookFailed!(inboxId, reason).catch((markErr) =>
++            logger.error(
++              { inboxId, err: markErr },
++              'checkout recovery mark failed failed',
++            ),
++          );
++        });
++      return;
++    }
++
+     // POST /hook/:id — trigger webhook
+     const match = req.method === 'POST' && req.url?.match(/^\/hook\/([^/?]+)/);
+     if (!match) {
+@@ -1260,15 +1455,104 @@ export class WebhookServer {
+       }
+     }
+
+-    // Stripe payment — runs the deterministic process-payment.cjs pipeline on
+-    // the host (Stripe fetch + Sheets + DB), NO agent container, NO LLM.
++    // Stripe payment and shadow recovery facts share the authenticated n8n
++    // perimeter. Payment/refund fulfillment remains Contador-owned; failures
++    // and expiries are recovery-only and never enter the payment processor.
+     if (hookId === 'stripe-payment') {
+       try {
++        const stripePayload = payload as Record<string, unknown>;
++        const rawEventType =
++          typeof stripePayload.event_type === 'string'
++            ? stripePayload.event_type
++            : '';
++        const rawAccount =
++          stripePayload.account === 'heartbeat' ||
++          stripePayload.account === 'tandem'
++            ? (stripePayload.account as CheckoutRecoveryAccount)
++            : null;
++        const recoveryEventTypes = new Set([
++          'payment_intent.payment_failed',
++          'payment_intent.succeeded',
++          'checkout.session.completed',
++          'checkout.session.expired',
++        ]);
++        let recoveryResult: CheckoutRecoveryProcessResult | null = null;
++        let preparedRecovery: ReturnType<
++          typeof prepareStripeCheckoutRecoveryEnvelope
++        > | null = null;
++        if (
++          checkoutRecovery?.enabled === true &&
++          rawAccount !== null &&
++          recoveryEventTypes.has(rawEventType)
++        ) {
++          preparedRecovery = prepareStripeCheckoutRecoveryEnvelope(
++            payload,
++            rawAccount,
++            checkoutRecovery.identitySecret,
++          );
++        }
++
++        if (
++          preparedRecovery &&
++          (rawEventType === 'payment_intent.payment_failed' ||
++            rawEventType === 'checkout.session.expired')
++        ) {
++          recoveryResult = await checkoutRecovery!.record({
++            event: preparedRecovery.prepared,
++            webhookInboxId: inboxId,
++            transientEmail: preparedRecovery.transient_email,
++          });
++          if (inboxId !== null && this.deps.markWebhookHandled) {
++            await this.deps.markWebhookHandled(inboxId, {
++              handled_by: 'checkout-recovery:stripe-host-handler',
++              related_entity: {
++                kind: 'checkout_recovery_case',
++                id: recoveryResult.caseId,
++                state: recoveryResult.state,
++                customer_message_sent: false,
++              },
++            });
++          }
++          if (recoveryResult.shouldNotify) {
++            const inbox = Object.entries(this.deps.getRegisteredGroups()).find(
++              ([, registered]) => registered.folder === 'inbox',
++            );
++            if (inbox) {
++              const p = recoveryResult.projection;
++              await this.deps.sendMessage(
++                inbox[0],
++                `[checkout shadow] ${p.stripeAccount} - ${p.productSlug ?? p.programSlug ?? 'unknown product'} - ${p.state}; consent ${p.consentState}/${p.eligibilityState}; case ${p.caseId}; no customer message sent`,
++                { fromGroup: 'inbox' },
++              );
++              await checkoutRecovery!.markProjectionNotified({
++                caseId: p.caseId,
++                expectedVersion: p.version,
++              });
++            }
++          }
++          logger.info(
++            {
++              hookId,
++              inboxId,
++              checkoutRecoveryCaseId: recoveryResult.caseId,
++              state: recoveryResult.state,
++            },
++            'Stripe recovery fact recorded (no agent spawn, no customer send)',
++          );
++          return;
++        }
++
+         const r = await handleStripePayment(payload);
++        if (preparedRecovery) {
++          recoveryResult = await checkoutRecovery!.record({
++            event: preparedRecovery.prepared,
++            webhookInboxId: inboxId,
++            transientEmail: preparedRecovery.transient_email,
++          });
++        }
+         // process-payment.cjs has already durably recorded the payment
+-        // (Stripe → Sheets → Postgres). Mark the inbox row handled BEFORE the
+-        // Slack post so a dead socket can't strand a processed payment as
+-        // 'dispatched' and trigger a needless reaper re-run.
++        // (Stripe → Sheets → Postgres). The recovery close is recorded before
++        // the inbox row is terminal so replay repairs either side safely.
+         if (inboxId !== null && this.deps.markWebhookHandled) {
+           await this.deps
+             .markWebhookHandled(inboxId, {
+@@ -1278,6 +1562,7 @@ export class WebhookServer {
+                 id: r.fulfillmentCaseId,
+                 state: r.fulfillmentState,
+                 version: r.fulfillmentVersion,
++                checkout_recovery_case_id: recoveryResult?.caseId ?? null,
+               },
+             })
+             .catch((err) =>
+diff --git a/src/checkout-recovery.ts b/src/checkout-recovery.ts
+new file mode 100644
+index 00000000..cea6e37c
+--- /dev/null
++++ b/src/checkout-recovery.ts
+@@ -0,0 +1,477 @@
++import crypto from 'crypto';
++
++export const CHECKOUT_RECOVERY_SCHEMA_VERSION = 1 as const;
++export const CHECKOUT_RECOVERY_MAX_BODY_BYTES = 32 * 1024;
++export const CHECKOUT_RECOVERY_MAX_SKEW_SECONDS = 300;
++
++export type CheckoutRecoveryAccount = 'tandem' | 'heartbeat';
++export type CheckoutRecoverySource = 'tandemweb' | 'stripe' | 'host_timeout';
++export type CheckoutRecoveryState =
++  | 'captured'
++  | 'payment_created'
++  | 'payment_failed'
++  | 'client_abandoned'
++  | 'shadow_ready'
++  | 'purchased'
++  | 'recovered'
++  | 'suppressed'
++  | 'expired'
++  | 'held'
++  | 'closed';
++export type CheckoutRecoveryConsent = 'unknown' | 'denied' | 'granted';
++export type CheckoutRecoveryEligibility = 'unknown' | 'ineligible' | 'eligible';
++export type CheckoutRecoveryAliasKind =
++  | 'checkout_token'
++  | 'payment_intent'
++  | 'checkout_session'
++  | 'charge'
++  | 'event'
++  | 'recovered_from';
++
++export interface CheckoutRecoveryAlias {
++  kind: CheckoutRecoveryAliasKind;
++  id: string;
++}
++
++export type CheckoutRecoveryEventType =
++  | 'checkout.captured'
++  | 'payment.created'
++  | 'checkout.client_abandoned'
++  | 'payment.failed'
++  | 'payment.succeeded'
++  | 'checkout.session_completed'
++  | 'checkout.session_expired'
++  | 'checkout.shadow_timeout';
++
++export interface PreparedCheckoutRecoveryEvent {
++  schema_version: 1;
++  source_system: CheckoutRecoverySource;
++  stripe_account: CheckoutRecoveryAccount;
++  source_event_key: string;
++  source_case_key: string;
++  event_type: CheckoutRecoveryEventType;
++  observed_at: string;
++  payload_sha256: string;
++  email_sha256: string | null;
++  program_slug: string | null;
++  product_slug: string | null;
++  amount_cents: number | null;
++  currency: string | null;
++  consent_state: CheckoutRecoveryConsent;
++  consent_policy_version: string | null;
++  aliases: CheckoutRecoveryAlias[];
++  recovered_from: string | null;
++}
++
++export interface PreparedCheckoutRecoveryResult {
++  prepared: PreparedCheckoutRecoveryEvent;
++  transient_email: string | null;
++}
++
++export class CheckoutRecoveryPayloadError extends Error {
++  readonly statusCode: number;
++
++  constructor(message: string, statusCode = 422) {
++    super(message);
++    this.name = 'CheckoutRecoveryPayloadError';
++    this.statusCode = statusCode;
++  }
++}
++
++export class CheckoutRecoverySignatureError extends Error {
++  readonly statusCode: number;
++
++  constructor(message: string, statusCode = 401) {
++    super(message);
++    this.name = 'CheckoutRecoverySignatureError';
++    this.statusCode = statusCode;
++  }
++}
++
++const SOURCE_KEY_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,499}$/;
++const SLUG_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,299}$/;
++const TOKEN_RE = /^[A-Za-z0-9]{32}$/;
++const PI_RE = /^pi_[A-Za-z0-9_]+$/;
++const CS_RE = /^cs_[A-Za-z0-9_]+$/;
++const CH_RE = /^ch_[A-Za-z0-9_]+$/;
++const EVT_RE = /^evt_[A-Za-z0-9_]+$/;
++
++function object(value: unknown, field: string): Record<string, unknown> {
++  if (!value || typeof value !== 'object' || Array.isArray(value)) {
++    throw new CheckoutRecoveryPayloadError(`${field} must be an object`);
++  }
++  return value as Record<string, unknown>;
++}
++
++function text(
++  value: unknown,
++  field: string,
++  maxLength: number,
++  required = false,
++): string | null {
++  if (value === null || value === undefined || value === '') {
++    if (required)
++      throw new CheckoutRecoveryPayloadError(`${field} is required`);
++    return null;
++  }
++  if (typeof value !== 'string' || !value.trim()) {
++    throw new CheckoutRecoveryPayloadError(`${field} must be text`);
++  }
++  const parsed = value.trim();
++  if (parsed.length > maxLength) {
++    throw new CheckoutRecoveryPayloadError(`${field} exceeds ${maxLength}`);
++  }
++  return parsed;
++}
++
++function sourceKey(value: unknown, field: string): string {
++  const parsed = text(value, field, 500, true)!;
++  if (!SOURCE_KEY_RE.test(parsed)) {
++    throw new CheckoutRecoveryPayloadError(`${field} is invalid`);
++  }
++  return parsed;
++}
++
++function slug(value: unknown, field: string): string | null {
++  const parsed = text(value, field, 300);
++  if (parsed !== null && !SLUG_RE.test(parsed)) {
++    throw new CheckoutRecoveryPayloadError(`${field} is invalid`);
++  }
++  return parsed;
++}
++
++function iso(value: unknown, field: string): string {
++  const parsed = text(value, field, 80, true)!;
++  const ms = Date.parse(parsed);
++  if (!Number.isFinite(ms)) {
++    throw new CheckoutRecoveryPayloadError(`${field} must be ISO-8601`);
++  }
++  return new Date(ms).toISOString();
++}
++
++function normalizedEmail(value: unknown): string | null {
++  const parsed = text(value, 'email', 320)?.toLowerCase() ?? null;
++  if (parsed !== null && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parsed)) {
++    throw new CheckoutRecoveryPayloadError('email is invalid');
++  }
++  return parsed;
++}
++
++function emailDigest(email: string | null, secret: string): string | null {
++  if (email === null) return null;
++  if (secret.length < 32) {
++    throw new CheckoutRecoveryPayloadError(
++      'checkout recovery identity secret unavailable',
++      503,
++    );
++  }
++  return crypto
++    .createHmac('sha256', secret)
++    .update(`checkout-recovery-email-v1\0${email}`, 'utf8')
++    .digest('hex');
++}
++
++function sha(value: unknown): string {
++  return crypto
++    .createHash('sha256')
++    .update(JSON.stringify(value), 'utf8')
++    .digest('hex');
++}
++
++function amount(value: unknown): number | null {
++  if (value === null || value === undefined || value === '') return null;
++  if (!Number.isSafeInteger(value) || Number(value) < 0) {
++    throw new CheckoutRecoveryPayloadError('amount_cents is invalid');
++  }
++  return Number(value);
++}
++
++function currency(value: unknown): string | null {
++  const parsed = text(value, 'currency', 3)?.toLowerCase() ?? null;
++  if (parsed !== null && !/^[a-z]{3}$/.test(parsed)) {
++    throw new CheckoutRecoveryPayloadError('currency is invalid');
++  }
++  return parsed;
++}
++
++function consent(value: unknown): CheckoutRecoveryConsent {
++  if (value === true || value === 'granted') return 'granted';
++  if (value === false || value === 'denied') return 'denied';
++  if (
++    value === null ||
++    value === undefined ||
++    value === '' ||
++    value === 'unknown'
++  ) {
++    return 'unknown';
++  }
++  throw new CheckoutRecoveryPayloadError('consent_state is invalid');
++}
++
++function alias(
++  kind: CheckoutRecoveryAliasKind,
++  id: string,
++): CheckoutRecoveryAlias {
++  const patterns: Record<CheckoutRecoveryAliasKind, RegExp> = {
++    checkout_token: TOKEN_RE,
++    payment_intent: PI_RE,
++    checkout_session: CS_RE,
++    charge: CH_RE,
++    event: EVT_RE,
++    recovered_from: CS_RE,
++  };
++  if (!patterns[kind].test(id)) {
++    throw new CheckoutRecoveryPayloadError(`invalid ${kind} alias`);
++  }
++  return { kind, id };
++}
++
++function uniqueAliases(
++  aliases: CheckoutRecoveryAlias[],
++): CheckoutRecoveryAlias[] {
++  return [
++    ...new Map(
++      aliases.map((entry) => [`${entry.kind}:${entry.id}`, entry]),
++    ).values(),
++  ];
++}
++
++const WEBSITE_EVENTS = new Set<CheckoutRecoveryEventType>([
++  'checkout.captured',
++  'payment.created',
++  'checkout.client_abandoned',
++  'payment.failed',
++  'payment.succeeded',
++]);
++
++export function prepareWebsiteCheckoutRecoveryEnvelope(
++  payload: unknown,
++  identitySecret: string,
++): PreparedCheckoutRecoveryResult {
++  const p = object(payload, 'payload');
++  if (p.schema_version !== 1) {
++    throw new CheckoutRecoveryPayloadError('schema_version must be 1');
++  }
++  const eventType = text(
++    p.event_type,
++    'event_type',
++    100,
++    true,
++  )! as CheckoutRecoveryEventType;
++  if (!WEBSITE_EVENTS.has(eventType)) {
++    throw new CheckoutRecoveryPayloadError('unsupported website event_type');
++  }
++  const checkoutToken = text(p.checkout_token, 'checkout_token', 32, true)!;
++  if (!TOKEN_RE.test(checkoutToken)) {
++    throw new CheckoutRecoveryPayloadError('checkout_token is invalid');
++  }
++  const eventKey = sourceKey(p.source_event_key, 'source_event_key');
++  const observedAt = iso(p.observed_at, 'observed_at');
++  const email = normalizedEmail(p.email);
++  const pi = text(p.payment_intent_id, 'payment_intent_id', 200);
++  const cs = text(p.checkout_session_id, 'checkout_session_id', 200);
++  const aliases: CheckoutRecoveryAlias[] = [
++    alias('checkout_token', checkoutToken),
++  ];
++  if (pi) aliases.push(alias('payment_intent', pi));
++  if (cs) aliases.push(alias('checkout_session', cs));
++  const policy = slug(p.consent_policy_version, 'consent_policy_version');
++  const normalized = {
++    schema_version: 1 as const,
++    source_system: 'tandemweb' as const,
++    stripe_account: 'tandem' as const,
++    source_event_key: eventKey,
++    source_case_key: `tandemweb:${checkoutToken}`,
++    event_type: eventType,
++    observed_at: observedAt,
++    email_sha256: emailDigest(email, identitySecret),
++    program_slug: slug(p.program_slug, 'program_slug')?.toLowerCase() ?? null,
++    product_slug: slug(p.product_slug, 'product_slug'),
++    amount_cents: amount(p.amount_cents),
++    currency: currency(p.currency),
++    consent_state: consent(p.consent_state),
++    consent_policy_version: policy?.toLowerCase() ?? null,
++    aliases: uniqueAliases(aliases),
++    recovered_from: null,
++  };
++  return {
++    prepared: { ...normalized, payload_sha256: sha(normalized) },
++    transient_email: email,
++  };
++}
++
++const STRIPE_EVENT_MAP: Record<string, CheckoutRecoveryEventType> = {
++  'payment_intent.payment_failed': 'payment.failed',
++  'payment_intent.succeeded': 'payment.succeeded',
++  'checkout.session.completed': 'checkout.session_completed',
++  'checkout.session.expired': 'checkout.session_expired',
++};
++
++export function prepareStripeCheckoutRecoveryEnvelope(
++  payload: unknown,
++  fixedAccount: CheckoutRecoveryAccount,
++  identitySecret: string,
++): PreparedCheckoutRecoveryResult {
++  const p = object(payload, 'payload');
++  if (p.account !== fixedAccount) {
++    throw new CheckoutRecoveryPayloadError(
++      'Stripe account/perimeter mismatch',
++      403,
++    );
++  }
++  const rawType = text(p.event_type, 'event_type', 100, true)!;
++  const eventType = STRIPE_EVENT_MAP[rawType];
++  if (!eventType) {
++    throw new CheckoutRecoveryPayloadError('unsupported Stripe event_type');
++  }
++  const eventId = text(p.event_id, 'event_id', 200, true)!;
++  alias('event', eventId);
++  const observedAt =
++    p.event_created === null || p.event_created === undefined
++      ? iso(p.observed_at, 'observed_at')
++      : new Date(Number(p.event_created) * 1000).toISOString();
++  if (!Number.isFinite(Date.parse(observedAt))) {
++    throw new CheckoutRecoveryPayloadError('event_created is invalid');
++  }
++  const stripeId = text(p.stripe_id, 'stripe_id', 200, true)!;
++  const pi = text(p.payment_intent_id, 'payment_intent_id', 200);
++  const cs = text(p.checkout_session_id, 'checkout_session_id', 200);
++  const charge = text(p.charge_id, 'charge_id', 200);
++  const recoveredFrom = text(p.recovered_from, 'recovered_from', 200);
++  const aliases: CheckoutRecoveryAlias[] = [alias('event', eventId)];
++  if (PI_RE.test(stripeId)) aliases.push(alias('payment_intent', stripeId));
++  else if (CS_RE.test(stripeId))
++    aliases.push(alias('checkout_session', stripeId));
++  else throw new CheckoutRecoveryPayloadError('stripe_id is invalid');
++  if (pi) aliases.push(alias('payment_intent', pi));
++  if (cs) aliases.push(alias('checkout_session', cs));
++  if (charge) aliases.push(alias('charge', charge));
++  if (recoveredFrom) aliases.push(alias('recovered_from', recoveredFrom));
++  const email = normalizedEmail(p.email);
++  const canonical = pi ?? cs ?? stripeId;
++  const normalized = {
++    schema_version: 1 as const,
++    source_system: 'stripe' as const,
++    stripe_account: fixedAccount,
++    source_event_key: `stripe:${fixedAccount}:${eventId}`,
++    source_case_key: `stripe:${fixedAccount}:${canonical}`,
++    event_type: eventType,
++    observed_at: observedAt,
++    email_sha256: emailDigest(email, identitySecret),
++    program_slug: slug(p.program_slug, 'program_slug')?.toLowerCase() ?? null,
++    product_slug: slug(p.product_slug, 'product_slug'),
++    amount_cents: amount(p.amount_cents),
++    currency: currency(p.currency),
++    consent_state: consent(p.consent_state),
++    consent_policy_version: null,
++    aliases: uniqueAliases(aliases),
++    recovered_from: recoveredFrom,
++  };
++  return {
++    prepared: { ...normalized, payload_sha256: sha(normalized) },
++    transient_email: email,
++  };
++}
++
++export function verifyCheckoutRecoverySignature(input: {
++  rawBody: Buffer;
++  timestampHeader: string | string[] | undefined;
++  signatureHeader: string | string[] | undefined;
++  secret: string;
++  nowMs?: number;
++}): void {
++  if (input.secret.length < 32) {
++    throw new CheckoutRecoverySignatureError('relay secret unavailable', 503);
++  }
++  const timestamp = Array.isArray(input.timestampHeader)
++    ? input.timestampHeader[0]
++    : input.timestampHeader;
++  const signature = Array.isArray(input.signatureHeader)
++    ? input.signatureHeader[0]
++    : input.signatureHeader;
++  if (!timestamp || !/^\d{10}$/.test(timestamp) || !signature) {
++    throw new CheckoutRecoverySignatureError('signature headers missing');
++  }
++  const nowSeconds = Math.floor((input.nowMs ?? Date.now()) / 1000);
++  if (
++    Math.abs(nowSeconds - Number(timestamp)) >
++    CHECKOUT_RECOVERY_MAX_SKEW_SECONDS
++  ) {
++    throw new CheckoutRecoverySignatureError(
++      'signature timestamp outside tolerance',
++    );
++  }
++  const supplied = signature.replace(/^sha256=/, '');
++  if (!/^[0-9a-f]{64}$/.test(supplied)) {
++    throw new CheckoutRecoverySignatureError('signature is invalid');
++  }
++  const expected = crypto
++    .createHmac('sha256', input.secret)
++    .update(`${timestamp}.`)
++    .update(input.rawBody)
++    .digest('hex');
++  if (
++    !crypto.timingSafeEqual(
++      Buffer.from(expected, 'hex'),
++      Buffer.from(supplied, 'hex'),
++    )
++  ) {
++    throw new CheckoutRecoverySignatureError('signature mismatch');
++  }
++}
++
++export function nextCheckoutRecoveryState(
++  current: CheckoutRecoveryState | null,
++  event: PreparedCheckoutRecoveryEvent,
++): { state: CheckoutRecoveryState; resultCode: string } {
++  if (
++    current === 'purchased' ||
++    current === 'recovered' ||
++    current === 'closed'
++  ) {
++    return { state: current, resultCode: 'terminal_precedence' };
++  }
++  if (
++    event.event_type === 'payment.succeeded' ||
++    event.event_type === 'checkout.session_completed'
++  ) {
++    return event.recovered_from
++      ? { state: 'recovered', resultCode: 'provider_recovered_purchase' }
++      : { state: 'purchased', resultCode: 'exact_purchase' };
++  }
++  switch (event.event_type) {
++    case 'checkout.captured':
++      return {
++        state: current ?? 'captured',
++        resultCode: current ? 'late_capture' : 'captured',
++      };
++    case 'payment.created':
++      return current === 'payment_failed'
++        ? { state: current, resultCode: 'late_payment_created' }
++        : { state: 'payment_created', resultCode: 'payment_created' };
++    case 'checkout.client_abandoned':
++      return current === 'payment_failed'
++        ? { state: current, resultCode: 'abandon_after_failure' }
++        : { state: 'client_abandoned', resultCode: 'client_abandoned' };
++    case 'payment.failed':
++      return { state: 'payment_failed', resultCode: 'payment_failed' };
++    case 'checkout.session_expired':
++      return { state: 'expired', resultCode: 'provider_expired' };
++    case 'checkout.shadow_timeout':
++      return current === 'suppressed' || current === 'held'
++        ? { state: current, resultCode: 'timeout_not_ready' }
++        : { state: 'shadow_ready', resultCode: 'shadow_timeout_ready' };
++    default:
++      return { state: current ?? 'held', resultCode: 'unsupported_transition' };
++  }
++}
++
++export function checkoutEligibility(
++  consentState: CheckoutRecoveryConsent,
++  suppressionCode: string | null,
++): CheckoutRecoveryEligibility {
++  if (suppressionCode !== null || consentState === 'denied')
++    return 'ineligible';
++  if (consentState === 'granted') return 'eligible';
++  return 'unknown';
++}
+diff --git a/src/checkout-recovery-store.ts b/src/checkout-recovery-store.ts
+new file mode 100644
+index 00000000..88fc0049
+--- /dev/null
++++ b/src/checkout-recovery-store.ts
+@@ -0,0 +1,652 @@
++import crypto from 'crypto';
++import type { PoolClient, QueryResultRow } from 'pg';
++
++import { withAgentContext } from './business-db.js';
++import {
++  checkoutEligibility,
++  nextCheckoutRecoveryState,
++  type CheckoutRecoveryAccount,
++  type CheckoutRecoveryAlias,
++  type CheckoutRecoveryConsent,
++  type CheckoutRecoveryEligibility,
++  type CheckoutRecoveryState,
++  type PreparedCheckoutRecoveryEvent,
++} from './checkout-recovery.js';
++
++const ACTOR = 'checkout-recovery:host';
++
++interface CaseRow extends QueryResultRow {
++  id: string;
++  source_system: 'tandemweb' | 'stripe';
++  source_case_key: string;
++  stripe_account: CheckoutRecoveryAccount;
++  state: CheckoutRecoveryState;
++  version: number;
++  program_slug: string | null;
++  product_slug: string | null;
++  amount_cents: string | null;
++  currency: string | null;
++  contact_email: string | null;
++  email_sha256: string | null;
++  consent_state: CheckoutRecoveryConsent;
++  consent_policy_version: string | null;
++  eligibility_state: CheckoutRecoveryEligibility;
++  suppression_code: string | null;
++  started_at: string;
++  last_observed_at: string;
++  shadow_due_at: string | null;
++  shadow_notified_at: string | null;
++}
++
++export interface CheckoutRecoveryProjection {
++  caseId: number;
++  version: number;
++  stripeAccount: CheckoutRecoveryAccount;
++  state: CheckoutRecoveryState;
++  programSlug: string | null;
++  productSlug: string | null;
++  amountCents: number | null;
++  currency: string | null;
++  consentState: CheckoutRecoveryConsent;
++  eligibilityState: CheckoutRecoveryEligibility;
++  ageMinutes: number;
++  customerMessageSent: false;
++}
++
++export interface CheckoutRecoveryProcessResult {
++  caseId: number;
++  eventId: number;
++  version: number;
++  state: CheckoutRecoveryState;
++  duplicate: boolean;
++  resultCode: string;
++  shouldNotify: boolean;
++  projection: CheckoutRecoveryProjection;
++}
++
++export interface CheckoutRecoveryHealth {
++  totalCases: number;
++  openCases: number;
++  shadowReadyCases: number;
++  unnotifiedCases: number;
++  heartbeatCases: number;
++  tandemCases: number;
++  lastObservedAt: string | null;
++}
++
++function sha(value: unknown): string {
++  return crypto
++    .createHash('sha256')
++    .update(JSON.stringify(value), 'utf8')
++    .digest('hex');
++}
++
++function projection(
++  row: CaseRow,
++  nowMs = Date.now(),
++): CheckoutRecoveryProjection {
++  return {
++    caseId: Number(row.id),
++    version: Number(row.version),
++    stripeAccount: row.stripe_account,
++    state: row.state,
++    programSlug: row.program_slug,
++    productSlug: row.product_slug,
++    amountCents: row.amount_cents === null ? null : Number(row.amount_cents),
++    currency: row.currency,
++    consentState: row.consent_state,
++    eligibilityState: row.eligibility_state,
++    ageMinutes: Math.max(
++      0,
++      Math.floor((nowMs - Date.parse(row.started_at)) / 60_000),
++    ),
++    customerMessageSent: false,
++  };
++}
++
++const CASE_COLUMNS = `
++  id::text, source_system, source_case_key, stripe_account, state, version,
++  program_slug, product_slug, amount_cents::text, currency,
++  contact_email::text, email_sha256, consent_state, consent_policy_version,
++  eligibility_state, suppression_code, started_at::text,
++  last_observed_at::text, shadow_due_at::text, shadow_notified_at::text
++`;
++
++async function findCaseIdsByAliases(
++  client: PoolClient,
++  account: CheckoutRecoveryAccount,
++  aliases: CheckoutRecoveryAlias[],
++): Promise<number[]> {
++  const ids = new Set<number>();
++  for (const entry of aliases) {
++    const found = await client.query<{ case_id: string }>(
++      `SELECT case_id::text
++         FROM business_v2.checkout_recovery_aliases
++        WHERE stripe_account = $1 AND alias_kind = $2 AND alias_id = $3`,
++      [account, entry.kind, entry.id],
++    );
++    if (found.rows[0]) ids.add(Number(found.rows[0].case_id));
++  }
++  return [...ids];
++}
++
++async function bindAliases(
++  client: PoolClient,
++  caseId: number,
++  account: CheckoutRecoveryAccount,
++  aliases: CheckoutRecoveryAlias[],
++): Promise<void> {
++  for (const entry of aliases) {
++    const found = await client.query<{ case_id: string }>(
++      `SELECT case_id::text
++         FROM business_v2.checkout_recovery_aliases
++        WHERE stripe_account = $1 AND alias_kind = $2 AND alias_id = $3`,
++      [account, entry.kind, entry.id],
++    );
++    if (found.rows[0] && Number(found.rows[0].case_id) !== caseId) {
++      throw new Error('checkout_recovery_alias_collision');
++    }
++    if (!found.rows[0]) {
++      await client.query(
++        `INSERT INTO business_v2.checkout_recovery_aliases
++           (case_id, stripe_account, alias_kind, alias_id)
++         VALUES ($1, $2, $3, $4)`,
++        [caseId, account, entry.kind, entry.id],
++      );
++    }
++  }
++}
++
++function shadowDueAt(
++  event: PreparedCheckoutRecoveryEvent,
++  nextState: CheckoutRecoveryState,
++): string | null {
++  if (event.stripe_account !== 'tandem') return null;
++  const observed = Date.parse(event.observed_at);
++  if (event.event_type === 'payment.failed') {
++    return new Date(observed + 5 * 60_000).toISOString();
++  }
++  if (['captured', 'payment_created', 'client_abandoned'].includes(nextState)) {
++    return new Date(observed + 45 * 60_000).toISOString();
++  }
++  return null;
++}
++
++function transitionShouldNotify(
++  previous: CheckoutRecoveryState | null,
++  next: CheckoutRecoveryState,
++): boolean {
++  return (
++    previous !== next &&
++    ['payment_failed', 'expired', 'held', 'recovered'].includes(next)
++  );
++}
++
++async function insertReceipt(
++  client: PoolClient,
++  input: {
++    caseId: number;
++    caseVersion: number;
++    type:
++      | 'admission'
++      | 'alias_binding'
++      | 'state_transition'
++      | 'shadow_projection'
++      | 'suppression'
++      | 'closure';
++    outcome: 'verified' | 'no_op' | 'held' | 'ineligible' | 'not_applicable';
++    resultCode: string;
++    evidenceSha256: string;
++    sourceEventKey: string;
++    occurredAt: string;
++  },
++): Promise<void> {
++  await client.query(
++    `INSERT INTO business_v2.checkout_recovery_receipts
++       (case_id, case_version, receipt_type, outcome, result_code,
++        evidence_sha256, source_event_key, occurred_at)
++     VALUES ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz)
++     ON CONFLICT DO NOTHING`,
++    [
++      input.caseId,
++      input.caseVersion,
++      input.type,
++      input.outcome,
++      input.resultCode,
++      input.evidenceSha256,
++      input.sourceEventKey,
++      input.occurredAt,
++    ],
++  );
++}
++
++export async function recordPreparedCheckoutRecovery(input: {
++  event: PreparedCheckoutRecoveryEvent;
++  webhookInboxId: number | null;
++  transientEmail?: string | null;
++}): Promise<CheckoutRecoveryProcessResult> {
++  return withAgentContext(ACTOR, (client) =>
++    recordPreparedCheckoutRecoveryWithClient(client, input),
++  );
++}
++
++export async function recordPreparedCheckoutRecoveryWithClient(
++  client: PoolClient,
++  input: {
++    event: PreparedCheckoutRecoveryEvent;
++    webhookInboxId: number | null;
++    transientEmail?: string | null;
++  },
++): Promise<CheckoutRecoveryProcessResult> {
++  const duplicate = await client.query<{
++    event_id: string;
++    case_id: string;
++  }>(
++    `SELECT id::text AS event_id, case_id::text
++         FROM business_v2.checkout_recovery_events
++        WHERE source_event_key = $1`,
++    [input.event.source_event_key],
++  );
++  if (duplicate.rows[0]) {
++    const row = await client.query<CaseRow>(
++      `SELECT ${CASE_COLUMNS}
++           FROM business_v2.checkout_recovery_cases WHERE id = $1`,
++      [duplicate.rows[0].case_id],
++    );
++    const item = row.rows[0];
++    return {
++      caseId: Number(item.id),
++      eventId: Number(duplicate.rows[0].event_id),
++      version: Number(item.version),
++      state: item.state,
++      duplicate: true,
++      resultCode: 'duplicate_event',
++      shouldNotify: false,
++      projection: projection(item),
++    };
++  }
++
++  const aliasCaseIds = await findCaseIdsByAliases(
++    client,
++    input.event.stripe_account,
++    input.event.aliases,
++  );
++  if (aliasCaseIds.length > 1) {
++    throw new Error('checkout_recovery_aliases_span_multiple_cases');
++  }
++
++  let caseId = aliasCaseIds[0] ?? null;
++  if (caseId === null) {
++    const created = await client.query<{ id: string }>(
++      `INSERT INTO business_v2.checkout_recovery_cases
++           (source_system, source_case_key, stripe_account, state,
++            program_slug, product_slug, amount_cents, currency,
++            contact_email, email_sha256, consent_state,
++            consent_policy_version, eligibility_state, last_event_type,
++            last_source_event_key, last_evidence_sha256, started_at,
++            last_observed_at, shadow_due_at)
++         VALUES ($1, $2, $3, 'captured', $4, $5, $6, $7, $8::citext, $9,
++                 $10, $11, $12, $13, $14, $15, $16::timestamptz,
++                 $16::timestamptz, NULL)
++         ON CONFLICT (source_system, source_case_key) DO NOTHING
++         RETURNING id::text`,
++      [
++        input.event.source_system === 'host_timeout'
++          ? 'tandemweb'
++          : input.event.source_system,
++        input.event.source_case_key,
++        input.event.stripe_account,
++        input.event.program_slug,
++        input.event.product_slug,
++        input.event.amount_cents,
++        input.event.currency,
++        input.transientEmail ?? null,
++        input.event.email_sha256,
++        input.event.consent_state,
++        input.event.consent_policy_version,
++        checkoutEligibility(input.event.consent_state, null),
++        input.event.event_type,
++        input.event.source_event_key,
++        input.event.payload_sha256,
++        input.event.observed_at,
++      ],
++    );
++    if (created.rows[0]) caseId = Number(created.rows[0].id);
++    else {
++      const existing = await client.query<{ id: string }>(
++        `SELECT id::text FROM business_v2.checkout_recovery_cases
++            WHERE source_system = $1 AND source_case_key = $2`,
++        [
++          input.event.source_system === 'host_timeout'
++            ? 'tandemweb'
++            : input.event.source_system,
++          input.event.source_case_key,
++        ],
++      );
++      if (!existing.rows[0])
++        throw new Error('checkout_recovery_case_create_failed');
++      caseId = Number(existing.rows[0].id);
++    }
++  }
++
++  await bindAliases(
++    client,
++    caseId,
++    input.event.stripe_account,
++    input.event.aliases,
++  );
++  const locked = await client.query<CaseRow>(
++    `SELECT ${CASE_COLUMNS}
++         FROM business_v2.checkout_recovery_cases
++        WHERE id = $1 FOR UPDATE`,
++    [caseId],
++  );
++  const current = locked.rows[0];
++  if (!current) throw new Error('checkout_recovery_case_missing');
++
++  let forcedHold: string | null = null;
++  if (
++    current.email_sha256 &&
++    input.event.email_sha256 &&
++    current.email_sha256 !== input.event.email_sha256
++  ) {
++    forcedHold = 'identity_conflict';
++  } else if (
++    current.product_slug &&
++    input.event.product_slug &&
++    current.product_slug !== input.event.product_slug
++  ) {
++    forcedHold = 'product_conflict';
++  }
++  const transition = forcedHold
++    ? { state: 'held' as const, resultCode: forcedHold }
++    : nextCheckoutRecoveryState(current.state, input.event);
++  const nextVersion = Number(current.version) + 1;
++  const consentState =
++    input.event.consent_state === 'unknown'
++      ? current.consent_state
++      : input.event.consent_state;
++  const eligibility = checkoutEligibility(consentState, forcedHold);
++  const dueAt = shadowDueAt(input.event, transition.state);
++  const terminal =
++    transition.state === 'purchased' || transition.state === 'recovered';
++
++  const updated = await client.query<CaseRow>(
++    `UPDATE business_v2.checkout_recovery_cases
++          SET state = $2,
++              version = $3,
++              program_slug = COALESCE(program_slug, $4),
++              product_slug = COALESCE(product_slug, $5),
++              amount_cents = COALESCE(amount_cents, $6),
++              currency = COALESCE(currency, $7),
++              contact_email = COALESCE(contact_email, $8::citext),
++              email_sha256 = COALESCE(email_sha256, $9),
++              consent_state = $10,
++              consent_policy_version = COALESCE(consent_policy_version, $11),
++              eligibility_state = $12,
++              suppression_code = COALESCE($13, suppression_code),
++              last_event_type = $14,
++              last_source_event_key = $15,
++              last_evidence_sha256 = $16,
++              last_observed_at = GREATEST(last_observed_at, $17::timestamptz),
++              shadow_due_at = CASE WHEN $18 THEN NULL ELSE COALESCE($19::timestamptz, shadow_due_at) END,
++              purchased_at = CASE WHEN $18 THEN COALESCE(purchased_at, $17::timestamptz) ELSE purchased_at END,
++              closed_at = CASE WHEN $18 THEN COALESCE(closed_at, $17::timestamptz) ELSE closed_at END,
++              updated_at = now()
++        WHERE id = $1
++        RETURNING ${CASE_COLUMNS}`,
++    [
++      caseId,
++      transition.state,
++      nextVersion,
++      input.event.program_slug,
++      input.event.product_slug,
++      input.event.amount_cents,
++      input.event.currency,
++      input.transientEmail ?? null,
++      input.event.email_sha256,
++      consentState,
++      input.event.consent_policy_version,
++      eligibility,
++      forcedHold,
++      input.event.event_type,
++      input.event.source_event_key,
++      input.event.payload_sha256,
++      input.event.observed_at,
++      terminal,
++      dueAt,
++    ],
++  );
++  const item = updated.rows[0];
++  const eventRow = await client.query<{ id: string }>(
++    `INSERT INTO business_v2.checkout_recovery_events
++         (case_id, schema_version, source_system, stripe_account,
++          source_event_key, event_type, observed_at, webhook_inbox_id,
++          payload_sha256, previous_state, next_state, result_code, facts)
++       VALUES ($1, 1, $2, $3, $4, $5, $6::timestamptz, $7, $8, $9, $10, $11,
++               $12::jsonb)
++       RETURNING id::text`,
++    [
++      caseId,
++      input.event.source_system,
++      input.event.stripe_account,
++      input.event.source_event_key,
++      input.event.event_type,
++      input.event.observed_at,
++      input.webhookInboxId,
++      input.event.payload_sha256,
++      current.state,
++      transition.state,
++      transition.resultCode,
++      JSON.stringify({
++        alias_kinds: input.event.aliases.map((entry) => entry.kind).sort(),
++        has_email: input.event.email_sha256 !== null,
++        consent_state: consentState,
++        recovered_from_present: input.event.recovered_from !== null,
++      }),
++    ],
++  );
++  await insertReceipt(client, {
++    caseId,
++    caseVersion: nextVersion,
++    type: current.version === 0 ? 'admission' : 'state_transition',
++    outcome: forcedHold
++      ? 'held'
++      : transition.resultCode === 'terminal_precedence'
++        ? 'no_op'
++        : 'verified',
++    resultCode: transition.resultCode,
++    evidenceSha256: input.event.payload_sha256,
++    sourceEventKey: input.event.source_event_key,
++    occurredAt: input.event.observed_at,
++  });
++  return {
++    caseId,
++    eventId: Number(eventRow.rows[0].id),
++    version: nextVersion,
++    state: transition.state,
++    duplicate: false,
++    resultCode: transition.resultCode,
++    shouldNotify: transitionShouldNotify(current.state, transition.state),
++    projection: projection(item),
++  };
++}
++
++export async function sweepCheckoutRecoveryShadow(
++  input: {
++    limit?: number;
++    now?: Date;
++  } = {},
++): Promise<CheckoutRecoveryProjection[]> {
++  return withAgentContext(ACTOR, (client) =>
++    sweepCheckoutRecoveryShadowWithClient(client, input),
++  );
++}
++
++export async function sweepCheckoutRecoveryShadowWithClient(
++  client: PoolClient,
++  input: { limit?: number; now?: Date } = {},
++): Promise<CheckoutRecoveryProjection[]> {
++  const limit = Math.max(1, Math.min(input.limit ?? 25, 100));
++  const now = input.now ?? new Date();
++  const due = await client.query<CaseRow>(
++    `SELECT ${CASE_COLUMNS}
++         FROM business_v2.checkout_recovery_cases
++        WHERE stripe_account = 'tandem'
++          AND shadow_due_at IS NOT NULL
++          AND shadow_due_at <= $1::timestamptz
++          AND state NOT IN ('purchased', 'recovered', 'suppressed', 'held', 'closed')
++        ORDER BY shadow_due_at, id
++        FOR UPDATE SKIP LOCKED
++        LIMIT $2`,
++    [now.toISOString(), limit],
++  );
++  const output: CheckoutRecoveryProjection[] = [];
++  for (const current of due.rows) {
++    const nextVersion = Number(current.version) + 1;
++    const sourceEventKey = `checkout:timeout:${current.id}:v${nextVersion}`;
++    const evidenceSha256 = sha({
++      case_id: current.id,
++      previous_version: current.version,
++      due_at: current.shadow_due_at,
++      evaluated_at: now.toISOString(),
++    });
++    const eligibility = checkoutEligibility(
++      current.consent_state,
++      current.suppression_code,
++    );
++    const updated = await client.query<CaseRow>(
++      `UPDATE business_v2.checkout_recovery_cases
++            SET state = 'shadow_ready', version = $2,
++                eligibility_state = $3, shadow_due_at = NULL,
++                shadow_ready_at = $4::timestamptz,
++                owner_review_deadline = $4::timestamptz + interval '48 hours',
++                last_event_type = 'checkout.shadow_timeout',
++                last_source_event_key = $5,
++                last_evidence_sha256 = $6,
++                last_observed_at = GREATEST(last_observed_at, $4::timestamptz),
++                updated_at = now()
++          WHERE id = $1
++          RETURNING ${CASE_COLUMNS}`,
++      [
++        current.id,
++        nextVersion,
++        eligibility,
++        now.toISOString(),
++        sourceEventKey,
++        evidenceSha256,
++      ],
++    );
++    const event = await client.query<{ id: string }>(
++      `INSERT INTO business_v2.checkout_recovery_events
++           (case_id, schema_version, source_system, stripe_account,
++            source_event_key, event_type, observed_at, payload_sha256,
++            previous_state, next_state, result_code, facts)
++         VALUES ($1, 1, 'host_timeout', 'tandem', $2,
++                 'checkout.shadow_timeout', $3::timestamptz, $4, $5,
++                 'shadow_ready', 'shadow_timeout_ready', $6::jsonb)
++         RETURNING id::text`,
++      [
++        current.id,
++        sourceEventKey,
++        now.toISOString(),
++        evidenceSha256,
++        current.state,
++        JSON.stringify({
++          timeout_minutes: 45,
++          consent_state: current.consent_state,
++          eligibility_state: eligibility,
++        }),
++      ],
++    );
++    void event;
++    await insertReceipt(client, {
++      caseId: Number(current.id),
++      caseVersion: nextVersion,
++      type: 'shadow_projection',
++      outcome: eligibility === 'eligible' ? 'verified' : 'ineligible',
++      resultCode: `shadow_${eligibility}`,
++      evidenceSha256,
++      sourceEventKey,
++      occurredAt: now.toISOString(),
++    });
++    output.push(projection(updated.rows[0], now.getTime()));
++  }
++  return output;
++}
++
++export async function markCheckoutRecoveryProjectionNotified(input: {
++  caseId: number;
++  expectedVersion: number;
++  occurredAt?: string;
++}): Promise<boolean> {
++  return withAgentContext(ACTOR, async (client) => {
++    const occurredAt = input.occurredAt ?? new Date().toISOString();
++    const updated = await client.query(
++      `UPDATE business_v2.checkout_recovery_cases
++          SET shadow_notified_at = $3::timestamptz, updated_at = now()
++        WHERE id = $1 AND version = $2 AND shadow_notified_at IS NULL`,
++      [input.caseId, input.expectedVersion, occurredAt],
++    );
++    if (updated.rowCount !== 1) return false;
++    await insertReceipt(client, {
++      caseId: input.caseId,
++      caseVersion: input.expectedVersion,
++      type: 'shadow_projection',
++      outcome: 'verified',
++      resultCode: 'internal_projection_posted',
++      evidenceSha256: sha({
++        case_id: input.caseId,
++        version: input.expectedVersion,
++        occurred_at: occurredAt,
++      }),
++      sourceEventKey: `checkout:projection:${input.caseId}:v${input.expectedVersion}`,
++      occurredAt,
++    });
++    return true;
++  });
++}
++
++export async function checkoutRecoveryHealth(): Promise<CheckoutRecoveryHealth> {
++  return withAgentContext(ACTOR, async (client) => {
++    const result = await client.query<{
++      total_cases: string;
++      open_cases: string;
++      shadow_ready_cases: string;
++      unnotified_cases: string;
++      heartbeat_cases: string;
++      tandem_cases: string;
++      last_observed_at: string | null;
++    }>(
++      `SELECT count(*)::text AS total_cases,
++              count(*) FILTER (WHERE state NOT IN ('purchased','recovered','closed'))::text AS open_cases,
++              count(*) FILTER (WHERE state = 'shadow_ready')::text AS shadow_ready_cases,
++              count(*) FILTER (WHERE state IN ('shadow_ready','payment_failed','expired','held') AND shadow_notified_at IS NULL)::text AS unnotified_cases,
++              count(*) FILTER (WHERE stripe_account = 'heartbeat')::text AS heartbeat_cases,
++              count(*) FILTER (WHERE stripe_account = 'tandem')::text AS tandem_cases,
++              max(last_observed_at)::text AS last_observed_at
++         FROM business_v2.checkout_recovery_cases`,
++    );
++    const row = result.rows[0];
++    return {
++      totalCases: Number(row.total_cases),
++      openCases: Number(row.open_cases),
++      shadowReadyCases: Number(row.shadow_ready_cases),
++      unnotifiedCases: Number(row.unnotified_cases),
++      heartbeatCases: Number(row.heartbeat_cases),
++      tandemCases: Number(row.tandem_cases),
++      lastObservedAt: row.last_observed_at,
++    };
++  });
++}
++
++export function formatCheckoutRecoveryProjection(
++  item: CheckoutRecoveryProjection,
++): string {
++  const product = item.productSlug ?? item.programSlug ?? 'unknown product';
++  const value =
++    item.amountCents === null || item.currency === null
++      ? 'amount unknown'
++      : `${item.currency.toUpperCase()} ${(item.amountCents / 100).toFixed(2)}`;
++  return `[checkout shadow] ${item.stripeAccount} — ${product} — ${item.state}; ${value}; consent ${item.consentState}/${item.eligibilityState}; case ${item.caseId}; no customer message sent`;
++}
+diff --git a/src/checkout-recovery-report-cli.ts b/src/checkout-recovery-report-cli.ts
+new file mode 100644
+index 00000000..1fc60313
+--- /dev/null
++++ b/src/checkout-recovery-report-cli.ts
+@@ -0,0 +1,70 @@
++#!/usr/bin/env node
++
++import { withAgentContext } from './business-db.js';
++import { checkoutRecoveryHealth } from './checkout-recovery-store.js';
++
++interface AggregateRow {
++  stripe_account: 'tandem' | 'heartbeat';
++  state: string;
++  consent_state: string;
++  eligibility_state: string;
++  cases: string;
++  amount_cents: string;
++  oldest_started_at: string | null;
++  newest_observed_at: string | null;
++}
++
++async function main(): Promise<void> {
++  const health = await checkoutRecoveryHealth();
++  const rows = await withAgentContext(
++    'checkout-recovery-report:host',
++    async (client) =>
++      (
++        await client.query<AggregateRow>(
++          `SELECT stripe_account, state, consent_state, eligibility_state,
++                  count(*)::text AS cases,
++                  COALESCE(sum(amount_cents), 0)::text AS amount_cents,
++                  min(started_at)::text AS oldest_started_at,
++                  max(last_observed_at)::text AS newest_observed_at
++             FROM business_v2.checkout_recovery_cases
++            GROUP BY stripe_account, state, consent_state, eligibility_state
++            ORDER BY stripe_account, state, consent_state, eligibility_state`,
++        )
++      ).rows,
++  );
++  process.stdout.write(
++    `${JSON.stringify(
++      {
++        ok: true,
++        mode: 'shadow',
++        customer_sends: false,
++        timeout_coverage: {
++          tandem: '45_minutes_after_server_capture',
++          heartbeat: 'stripe_events_only',
++        },
++        health,
++        aggregates: rows.map((row) => ({
++          stripe_account: row.stripe_account,
++          state: row.state,
++          consent_state: row.consent_state,
++          eligibility_state: row.eligibility_state,
++          cases: Number(row.cases),
++          amount_cents: Number(row.amount_cents),
++          oldest_started_at: row.oldest_started_at,
++          newest_observed_at: row.newest_observed_at,
++        })),
++      },
++      null,
++      2,
++    )}\n`,
++  );
++}
++
++main().catch((err) => {
++  process.stderr.write(
++    `checkout-recovery-report failed: ${
++      err instanceof Error ? err.message : String(err)
++    }\n`,
++  );
++  process.exitCode = 1;
++});
+diff --git a/setup/n8n/checkout-recovery-website-shadow-workflow.json b/setup/n8n/checkout-recovery-website-shadow-workflow.json
+new file mode 100644
+index 00000000..2aa65c1c
+--- /dev/null
++++ b/setup/n8n/checkout-recovery-website-shadow-workflow.json
+@@ -0,0 +1,73 @@
++{
++  "id": "checkout-recovery-website-shadow-template",
++  "name": "Checkout Recovery Website - Shadow Relay Template",
++  "active": false,
++  "nodes": [
++    {
++      "parameters": {
++        "httpMethod": "POST",
++        "path": "checkout-recovery-website-disabled-template",
++        "responseMode": "onReceived",
++        "options": {}
++      },
++      "id": "trigger-checkout-recovery-website",
++      "name": "Tandem Website Checkout Lifecycle",
++      "type": "n8n-nodes-base.webhook",
++      "typeVersion": 2,
++      "position": [240, 300],
++      "webhookId": "checkout-recovery-website-disabled-template"
++    },
++    {
++      "parameters": {
++        "jsCode": "// Inactive shadow relay. Verify the WordPress ingress signature,\n// normalize a bounded allowlist, then sign the exact host body with a distinct\n// relay secret. No execution payload should be retained.\nconst crypto = require('crypto');\nconst wrapped = $input.first().json || {};\nconst headers = wrapped.headers && typeof wrapped.headers === 'object' ? wrapped.headers : {};\nconst source = wrapped.body && typeof wrapped.body === 'object' && !Array.isArray(wrapped.body) ? wrapped.body : null;\nif (!source) throw new Error('invalid_checkout_body');\nconst ingressSecret = String($env.CHECKOUT_RECOVERY_INGRESS_SECRET || '');\nconst relaySecret = String($env.CHECKOUT_RECOVERY_RELAY_SECRET || '');\nconst hostUrl = String($env.CHECKOUT_RECOVERY_HOST_URL || '');\nif (ingressSecret.length < 32) throw new Error('ingress_secret_unconfigured');\nif (relaySecret.length < 32 || relaySecret === ingressSecret) throw new Error('relay_secret_unconfigured');\nif (!/^https?:\\/\\//.test(hostUrl)) throw new Error('host_url_unconfigured');\nconst incomingTimestamp = String(headers['x-checkout-timestamp'] || headers['X-Checkout-Timestamp'] || '');\nconst incomingSignature = String(headers['x-checkout-signature'] || headers['X-Checkout-Signature'] || '').replace(/^sha256=/, '');\nif (!/^\\d{10}$/.test(incomingTimestamp) || !/^[0-9a-f]{64}$/.test(incomingSignature)) throw new Error('ingress_signature_missing');\nif (Math.abs(Math.floor(Date.now() / 1000) - Number(incomingTimestamp)) > 300) throw new Error('ingress_signature_stale');\nconst sourceText = JSON.stringify(source);\nconst expected = crypto.createHmac('sha256', ingressSecret).update(incomingTimestamp + '.' + sourceText, 'utf8').digest('hex');\nif (!crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(incomingSignature, 'hex'))) throw new Error('ingress_signature_invalid');\nconst allowedEvents = new Set(['checkout.captured','payment.created','checkout.client_abandoned','payment.failed','payment.succeeded']);\nif (source.schema_version !== 1 || !allowedEvents.has(source.event_type)) throw new Error('unsupported_checkout_event');\nconst fields = ['schema_version','source_event_key','event_type','observed_at','checkout_token','email','program_slug','product_slug','amount_cents','currency','consent_state','consent_policy_version','payment_intent_id','checkout_session_id'];\nconst normalized = {};\nfor (const field of fields) if (source[field] !== undefined) normalized[field] = source[field];\nconst bodyText = JSON.stringify(normalized);\nif (Buffer.byteLength(bodyText, 'utf8') > 32768) throw new Error('payload_too_large');\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst signature = 'sha256=' + crypto.createHmac('sha256', relaySecret).update(timestamp + '.' + bodyText, 'utf8').digest('hex');\nreturn [{ json: { host_url: hostUrl, timestamp, signature, body_text: bodyText } }];"
++      },
++      "id": "verify-normalize-sign-checkout-recovery",
++      "name": "Verify Normalize and Sign Checkout Recovery",
++      "type": "n8n-nodes-base.code",
++      "typeVersion": 2,
++      "position": [500, 300]
++    },
++    {
++      "parameters": {
++        "method": "POST",
++        "url": "={{ $json.host_url }}",
++        "sendHeaders": true,
++        "headerParameters": {
++          "parameters": [
++            { "name": "Content-Type", "value": "application/json" },
++            { "name": "X-Webhook-Timestamp", "value": "={{ $json.timestamp }}" },
++            { "name": "X-Webhook-Signature", "value": "={{ $json.signature }}" }
++          ]
++        },
++        "sendBody": true,
++        "contentType": "raw",
++        "rawContentType": "application/json",
++        "body": "={{ $json.body_text }}",
++        "options": { "timeout": 10000 }
++      },
++      "id": "post-checkout-recovery-to-nanoclaw",
++      "name": "POST Checkout Recovery to NanoClaw",
++      "type": "n8n-nodes-base.httpRequest",
++      "typeVersion": 4.2,
++      "position": [760, 300],
++      "retryOnFail": true,
++      "maxTries": 5,
++      "waitBetweenTries": 5000
++    }
++  ],
++  "connections": {
++    "Tandem Website Checkout Lifecycle": {
++      "main": [[{ "node": "Verify Normalize and Sign Checkout Recovery", "type": "main", "index": 0 }]]
++    },
++    "Verify Normalize and Sign Checkout Recovery": {
++      "main": [[{ "node": "POST Checkout Recovery to NanoClaw", "type": "main", "index": 0 }]]
++    }
++  },
++  "settings": {
++    "executionOrder": "v1",
++    "saveDataErrorExecution": "none",
++    "saveDataSuccessExecution": "none",
++    "saveExecutionProgress": false,
++    "executionTimeout": 60
++  }
++}
+diff --git a/data/business/migrations/nanoclaw-v2/135_checkout_recovery_shadow.sql b/data/business/migrations/nanoclaw-v2/135_checkout_recovery_shadow.sql
+new file mode 100644
+index 00000000..17f95dbb
+--- /dev/null
++++ b/data/business/migrations/nanoclaw-v2/135_checkout_recovery_shadow.sql
+@@ -0,0 +1,254 @@
++-- 135_checkout_recovery_shadow.sql
++--
++-- Host-owned, privacy-minimized checkout recovery truth layer. Shadow only:
++-- no outbox, send authority, CRM write, or agent grants.
++
++BEGIN;
++
++SET search_path TO business_v2, public, pg_catalog;
++
++CREATE TABLE business_v2.checkout_recovery_cases (
++  id                         bigserial PRIMARY KEY,
++  case_uuid                  uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
++  source_system              text NOT NULL CHECK (
++                               source_system IN ('tandemweb', 'stripe')
++                             ),
++  source_case_key            text NOT NULL CHECK (
++                               char_length(source_case_key) BETWEEN 1 AND 500 AND
++                               source_case_key ~ '^[A-Za-z0-9][A-Za-z0-9._:-]*$'
++                             ),
++  stripe_account             text NOT NULL CHECK (
++                               stripe_account IN ('tandem', 'heartbeat')
++                             ),
++  state                      text NOT NULL CHECK (
++                               state IN (
++                                 'captured', 'payment_created', 'payment_failed',
++                                 'client_abandoned', 'shadow_ready', 'purchased',
++                                 'recovered', 'suppressed', 'expired', 'held',
++                                 'closed'
++                               )
++                             ),
++  version                    integer NOT NULL DEFAULT 0 CHECK (version >= 0),
++  program_slug               text CHECK (
++                               program_slug IS NULL OR
++                               (char_length(program_slug) BETWEEN 1 AND 200 AND
++                                program_slug ~ '^[a-z0-9][a-z0-9._:-]*$')
++                             ),
++  product_slug               text CHECK (
++                               product_slug IS NULL OR
++                               (char_length(product_slug) BETWEEN 1 AND 300 AND
++                                product_slug ~ '^[A-Za-z0-9][A-Za-z0-9._:-]*$')
++                             ),
++  amount_cents               bigint CHECK (amount_cents IS NULL OR amount_cents >= 0),
++  currency                   text CHECK (
++                               currency IS NULL OR currency ~ '^[a-z]{3}$'
++                             ),
++  contact_email              citext,
++  email_sha256               text CHECK (
++                               email_sha256 IS NULL OR email_sha256 ~ '^[0-9a-f]{64}$'
++                             ),
++  consent_state              text NOT NULL DEFAULT 'unknown' CHECK (
++                               consent_state IN ('unknown', 'denied', 'granted')
++                             ),
++  consent_policy_version     text CHECK (
++                               consent_policy_version IS NULL OR
++                               (char_length(consent_policy_version) BETWEEN 1 AND 100 AND
++                                consent_policy_version ~ '^[a-z0-9][a-z0-9._:-]*$')
++                             ),
++  eligibility_state          text NOT NULL DEFAULT 'unknown' CHECK (
++                               eligibility_state IN ('unknown', 'ineligible', 'eligible')
++                             ),
++  suppression_code           text CHECK (
++                               suppression_code IS NULL OR
++                               suppression_code ~ '^[a-z][a-z0-9_]{0,99}$'
++                             ),
++  last_event_type            text NOT NULL CHECK (
++                               last_event_type ~ '^[a-z][a-z0-9_.]{0,99}$'
++                             ),
++  last_source_event_key      text NOT NULL CHECK (
++                               char_length(last_source_event_key) BETWEEN 1 AND 500
++                             ),
++  last_evidence_sha256       text NOT NULL CHECK (
++                               last_evidence_sha256 ~ '^[0-9a-f]{64}$'
++                             ),
++  started_at                 timestamptz NOT NULL,
++  last_observed_at           timestamptz NOT NULL,
++  shadow_due_at              timestamptz,
++  shadow_ready_at            timestamptz,
++  purchased_at               timestamptz,
++  closed_at                  timestamptz,
++  owner_review_deadline      timestamptz,
++  shadow_notified_at         timestamptz,
++  created_at                 timestamptz NOT NULL DEFAULT now(),
++  updated_at                 timestamptz NOT NULL DEFAULT now(),
++  UNIQUE (source_system, source_case_key),
++  CONSTRAINT checkout_recovery_case_time_chk CHECK (
++    started_at <= last_observed_at AND
++    (shadow_due_at IS NULL OR started_at <= shadow_due_at) AND
++    (shadow_ready_at IS NULL OR started_at <= shadow_ready_at) AND
++    (purchased_at IS NULL OR started_at <= purchased_at) AND
++    (closed_at IS NULL OR started_at <= closed_at)
++  ),
++  CONSTRAINT checkout_recovery_case_email_chk CHECK (
++    (contact_email IS NULL) = (email_sha256 IS NULL)
++  ),
++  CONSTRAINT checkout_recovery_case_terminal_chk CHECK (
++    (state IN ('purchased', 'recovered')) = (purchased_at IS NOT NULL)
++  )
++);
++
++CREATE INDEX checkout_recovery_cases_shadow_idx
++  ON business_v2.checkout_recovery_cases
++    (stripe_account, state, shadow_due_at, id)
++  WHERE state NOT IN ('purchased', 'recovered', 'closed');
++
++CREATE INDEX checkout_recovery_cases_email_idx
++  ON business_v2.checkout_recovery_cases
++    (stripe_account, email_sha256, product_slug, started_at DESC)
++  WHERE email_sha256 IS NOT NULL;
++
++CREATE TABLE business_v2.checkout_recovery_aliases (
++  id                         bigserial PRIMARY KEY,
++  case_id                    bigint NOT NULL REFERENCES
++                               business_v2.checkout_recovery_cases(id),
++  stripe_account             text NOT NULL CHECK (
++                               stripe_account IN ('tandem', 'heartbeat')
++                             ),
++  alias_kind                 text NOT NULL CHECK (
++                               alias_kind IN (
++                                 'checkout_token', 'payment_intent',
++                                 'checkout_session', 'charge', 'event',
++                                 'recovered_from'
++                               )
++                             ),
++  alias_id                   text NOT NULL CHECK (
++                               char_length(alias_id) BETWEEN 1 AND 500 AND
++                               alias_id ~ '^[A-Za-z0-9][A-Za-z0-9._:-]*$'
++                             ),
++  created_at                 timestamptz NOT NULL DEFAULT now(),
++  UNIQUE (stripe_account, alias_kind, alias_id)
++);
++
++CREATE INDEX checkout_recovery_aliases_case_idx
++  ON business_v2.checkout_recovery_aliases(case_id, id);
++
++CREATE TABLE business_v2.checkout_recovery_events (
++  id                         bigserial PRIMARY KEY,
++  event_uuid                 uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
++  case_id                    bigint NOT NULL REFERENCES
++                               business_v2.checkout_recovery_cases(id),
++  schema_version             integer NOT NULL CHECK (schema_version = 1),
++  source_system              text NOT NULL CHECK (
++                               source_system IN ('tandemweb', 'stripe', 'host_timeout')
++                             ),
++  stripe_account             text NOT NULL CHECK (
++                               stripe_account IN ('tandem', 'heartbeat')
++                             ),
++  source_event_key           text NOT NULL UNIQUE CHECK (
++                               char_length(source_event_key) BETWEEN 1 AND 500 AND
++                               source_event_key ~ '^[A-Za-z0-9][A-Za-z0-9._:-]*$'
++                             ),
++  event_type                 text NOT NULL CHECK (
++                               event_type ~ '^[a-z][a-z0-9_.]{0,99}$'
++                             ),
++  observed_at                timestamptz NOT NULL,
++  received_at                timestamptz NOT NULL DEFAULT now(),
++  webhook_inbox_id           bigint UNIQUE REFERENCES
++                               business_v2.webhook_inbox(id),
++  payload_sha256             text NOT NULL CHECK (
++                               payload_sha256 ~ '^[0-9a-f]{64}$'
++                             ),
++  previous_state             text,
++  next_state                 text NOT NULL,
++  result_code                text NOT NULL CHECK (
++                               result_code ~ '^[a-z][a-z0-9_]{0,99}$'
++                             ),
++  facts                      jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (
++                               jsonb_typeof(facts) = 'object' AND
++                               octet_length(facts::text) <= 4096
++                             ),
++  created_at                 timestamptz NOT NULL DEFAULT now()
++);
++
++CREATE INDEX checkout_recovery_events_case_idx
++  ON business_v2.checkout_recovery_events(case_id, observed_at, id);
++
++CREATE TABLE business_v2.checkout_recovery_receipts (
++  id                         bigserial PRIMARY KEY,
++  receipt_uuid               uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
++  case_id                    bigint NOT NULL REFERENCES
++                               business_v2.checkout_recovery_cases(id),
++  case_version               integer NOT NULL CHECK (case_version >= 0),
++  receipt_type               text NOT NULL CHECK (
++                               receipt_type IN (
++                                 'admission', 'alias_binding', 'state_transition',
++                                 'shadow_projection', 'suppression', 'closure'
++                               )
++                             ),
++  outcome                    text NOT NULL CHECK (
++                               outcome IN (
++                                 'verified', 'no_op', 'held', 'ineligible',
++                                 'not_applicable'
++                               )
++                             ),
++  result_code                text NOT NULL CHECK (
++                               result_code ~ '^[a-z][a-z0-9_]{0,99}$'
++                             ),
++  evidence_sha256            text NOT NULL CHECK (
++                               evidence_sha256 ~ '^[0-9a-f]{64}$'
++                             ),
++  source_event_key           text NOT NULL CHECK (
++                               char_length(source_event_key) BETWEEN 1 AND 500
++                             ),
++  occurred_at                timestamptz NOT NULL,
++  created_at                 timestamptz NOT NULL DEFAULT now(),
++  UNIQUE (case_id, case_version, receipt_type, source_event_key)
++);
++
++CREATE OR REPLACE FUNCTION business_v2.fn_checkout_recovery_event_immutable()
++RETURNS trigger LANGUAGE plpgsql AS $$
++BEGIN
++  IF OLD.case_id IS DISTINCT FROM NEW.case_id OR
++     OLD.source_event_key IS DISTINCT FROM NEW.source_event_key OR
++     OLD.event_type IS DISTINCT FROM NEW.event_type OR
++     OLD.payload_sha256 IS DISTINCT FROM NEW.payload_sha256 OR
++     OLD.observed_at IS DISTINCT FROM NEW.observed_at THEN
++    RAISE EXCEPTION 'checkout recovery event core fields are immutable';
++  END IF;
++  RETURN NEW;
++END;
++$$;
++
++CREATE TRIGGER checkout_recovery_events_core_immutable
++BEFORE UPDATE ON business_v2.checkout_recovery_events
++FOR EACH ROW EXECUTE FUNCTION business_v2.fn_checkout_recovery_event_immutable();
++
++CREATE OR REPLACE FUNCTION business_v2.fn_checkout_recovery_append_only()
++RETURNS trigger LANGUAGE plpgsql AS $$
++BEGIN
++  RAISE EXCEPTION 'checkout recovery history is append-only';
++END;
++$$;
++
++CREATE TRIGGER checkout_recovery_events_no_delete
++BEFORE DELETE ON business_v2.checkout_recovery_events
++FOR EACH ROW EXECUTE FUNCTION business_v2.fn_checkout_recovery_append_only();
++
++CREATE TRIGGER checkout_recovery_receipts_append_only
++BEFORE UPDATE OR DELETE ON business_v2.checkout_recovery_receipts
++FOR EACH ROW EXECUTE FUNCTION business_v2.fn_checkout_recovery_append_only();
++
++REVOKE ALL ON TABLE
++  business_v2.checkout_recovery_cases,
++  business_v2.checkout_recovery_aliases,
++  business_v2.checkout_recovery_events,
++  business_v2.checkout_recovery_receipts
++FROM PUBLIC;
++REVOKE ALL ON SEQUENCE
++  business_v2.checkout_recovery_cases_id_seq,
++  business_v2.checkout_recovery_aliases_id_seq,
++  business_v2.checkout_recovery_events_id_seq,
++  business_v2.checkout_recovery_receipts_id_seq
++FROM PUBLIC;
++
++COMMIT;
+diff --git a/data/business/migrations/nanoclaw-v2/rollback_135_checkout_recovery_shadow.sql b/data/business/migrations/nanoclaw-v2/rollback_135_checkout_recovery_shadow.sql
+new file mode 100644
+index 00000000..020d5f95
+--- /dev/null
++++ b/data/business/migrations/nanoclaw-v2/rollback_135_checkout_recovery_shadow.sql
+@@ -0,0 +1,34 @@
++BEGIN;
++
++SET search_path TO business_v2, public, pg_catalog;
++
++DO $$
++BEGIN
++  IF EXISTS (
++       SELECT 1 FROM business_v2.checkout_recovery_cases LIMIT 1
++     ) OR EXISTS (
++       SELECT 1 FROM business_v2.checkout_recovery_aliases LIMIT 1
++     ) OR EXISTS (
++       SELECT 1 FROM business_v2.checkout_recovery_events LIMIT 1
++     ) OR EXISTS (
++       SELECT 1 FROM business_v2.checkout_recovery_receipts LIMIT 1
++     ) THEN
++    RAISE EXCEPTION
++      'rollback 135 refused: checkout recovery history exists; disable admission and use a separately reviewed archival migration';
++  END IF;
++END $$;
++
++DROP TRIGGER IF EXISTS checkout_recovery_receipts_append_only
++  ON business_v2.checkout_recovery_receipts;
++DROP TRIGGER IF EXISTS checkout_recovery_events_no_delete
++  ON business_v2.checkout_recovery_events;
++DROP TRIGGER IF EXISTS checkout_recovery_events_core_immutable
++  ON business_v2.checkout_recovery_events;
++DROP FUNCTION IF EXISTS business_v2.fn_checkout_recovery_append_only();
++DROP FUNCTION IF EXISTS business_v2.fn_checkout_recovery_event_immutable();
++DROP TABLE IF EXISTS business_v2.checkout_recovery_receipts;
++DROP TABLE IF EXISTS business_v2.checkout_recovery_events;
++DROP TABLE IF EXISTS business_v2.checkout_recovery_aliases;
++DROP TABLE IF EXISTS business_v2.checkout_recovery_cases;
++
++COMMIT;

@@ -117,19 +117,27 @@ before applying anything.
   process or replay a Stripe event, write Sheets/public payments, post Slack,
   repair history, or grant accounting authority. Exact release
   `b131071c74fc` applied it admin-only after backup and a zero-work drain;
-- migration 134 is NC-20260824-004's local, unapplied Community-only student
+- migration 134 is NC-20260824-004/005's live Community-only student
   lifecycle dark foundation. It creates admin-only catalog, identity-link,
   event, multi-axis enrollment, state-history, reconciliation-run, and
   exception relations plus aggregate views. It has no catalog seeds, Circle
   value, provider registration, schedule, action outbox, recipient/message,
   group/minion grant, or runtime activation. Disposable PostgreSQL proves
   apply, zero non-admin grants, empty rollback, reapply, store projection, and
-  populated-history rollback refusal; production remains unchanged;
+  populated-history rollback refusal. Exact release `7364accd53ae` applied it
+  with the runtime disabled and all seven relations empty;
+- migration 135 is NC-20260824-006's local checkout-recovery shadow control.
+  It creates separate admin-only cases, exact provider/source aliases,
+  append-only normalized events, and append-only receipts for the Tandem
+  website and both fixed Stripe accounts. It contains no send outbox, message,
+  CRM/booking/student/accounting write, or agent grant. Tandem website cases
+  alone receive a 45-minute host timeout; Heartbeat cases are provider-event
+  driven. Production migration and runtime activation remain release-gated;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-134 are non-auto-discovered and refuse to erase populated
+- rollbacks 120-135 are non-auto-discovered and refuse to erase populated
   operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
   mailbox-audit, program-facts, outcome-quality, or outcome-review history;
   rollback 128 specifically refuses once any durable `+1` decision exists,
@@ -139,7 +147,8 @@ before applying anything.
   any healer-resolution item or observation exists; rollback 133 refuses once
   any Contador fulfillment case, alias, or receipt exists; rollback 134 refuses
   once any lifecycle catalog, identity, event, enrollment, reconciliation,
-  history, or exception evidence exists.
+  history, or exception evidence exists; rollback 135 refuses once any checkout
+  recovery case, alias, event, or receipt exists.
 
 ## Rollback
 

@@ -8,6 +8,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-006 — Durable abandoned-checkout shadow control
+
+- Date: 2026-08-24T19:45:00Z
+- Owner/client: Codex
+- State: ready_for_deploy; implementation converged, provider deployment pending
+- Commit/PR: `codex/checkout-recovery-shadow-20260824` from `a06b0549b6aa`; companion Tandemweb/toolbox branches remain isolated
+- Change class: C3 host/provider/internal Slack shadow; no customer communication
+- Affected systems: NanoClaw host/PostgreSQL/webhook/reaper/report/release; Tandemweb checkout producer/consent; n8n Stripe and website relay templates; shared Stripe toolbox
+- Outcome so far: migration 135 adds separate admin-only recovery cases/aliases/events/receipts; strict HMAC website intake and fixed-account Stripe failure/expiry/completion handling converge out of order with purchase precedence; Tandem cases receive a 45-minute timeout, Heartbeat cases remain provider-event-only; one content-minimized Inbox projection and aggregate report explicitly state no customer message was sent.
+- Review: Claude Sonnet/high plan review found two material omissions. Implementation review R1 then found terminal-precedence, archive-minimization, registry-evidence, and timeout-documentation issues. Codex fixed the three verified defects and clarified the false-positive registry claim; fresh correction R2 returned `NO MATERIAL FINDINGS`.
+- Verification so far: checkout parser/signature/state/migration/n8n/config/webhook focused surface passes; disposable PostgreSQL store 3/3 passes after a clean migration chain; replay fails closed without changing the case fingerprint; populated rollback refuses; empty rollback succeeds; zero non-admin grants. The full NanoClaw suite passes 3,187 with 17 skips and only the unchanged CNPC wrapper-contract baseline failure; typecheck, build, format, capability, and diff checks pass. Tandemweb PHP lint, JS parse, regional/installment, JSON, and static shadow contracts pass; toolbox shell/registry/static contracts pass.
+- Deployment/migration: none yet. No production schema/config, n8n, Stripe event destination, WordPress runtime, toolbox installation, Slack projection, customer message, Encharge flow/category, CRM, booking, roster/access, accounting, or payment state changed.
+- Rollback/recovery: isolated branches/worktrees only. Revert task commits; migration rollback is empty-only. Provider/runtime rollback will disable website and event ingress before any release rollback.
+- Documentation: `docs/CHECKOUT-RECOVERY-CONTROL.md`, project map, migration README, structure-only schema, active work, and this entry.
+- Follow-ups: commit/push the converged implementation, then perform the separately recorded production release and shadow provider activation with no customer send.
+
 ### NC-20260824-005 — Deploy Community student-lifecycle dark foundation
 
 - Date: 2026-08-24T17:45:00Z

@@ -66,6 +66,18 @@ import {
   type PreparedCommunityLifecycleEnvelope,
 } from './student-lifecycle.js';
 import type { LifecycleProcessResult } from './student-lifecycle-store.js';
+import {
+  CHECKOUT_RECOVERY_MAX_BODY_BYTES,
+  CheckoutRecoveryPayloadError,
+  CheckoutRecoverySignatureError,
+  checkoutRecoveryArchiveEnvelope,
+  prepareStripeCheckoutRecoveryEnvelope,
+  prepareWebsiteCheckoutRecoveryEnvelope,
+  verifyCheckoutRecoverySignature,
+  type CheckoutRecoveryAccount,
+  type PreparedCheckoutRecoveryEvent,
+} from './checkout-recovery.js';
+import type { CheckoutRecoveryProcessResult } from './checkout-recovery-store.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -108,6 +120,15 @@ export interface HealthPayload {
     workspace: 'community';
     actionConsumers: false;
     circle: false;
+  };
+  checkoutRecovery?: {
+    enabled: boolean;
+    mode: 'shadow';
+    customerSends: false;
+    tandemCaptureTimeoutMinutes: 45;
+    tandemPaymentFailureDelayMinutes: 5;
+    heartbeatMode: 'stripe_events_only';
+    health?: import('./checkout-recovery-store.js').CheckoutRecoveryHealth;
   };
 }
 
@@ -174,6 +195,22 @@ export interface WebhookServerDeps {
       webhookInboxId: number;
       transientEmail?: string | null;
     }) => Promise<LifecycleProcessResult>;
+  };
+  checkoutRecovery?: {
+    enabled: boolean;
+    path: string;
+    relaySecret: string;
+    identitySecret: string;
+    record: (input: {
+      event: PreparedCheckoutRecoveryEvent;
+      webhookInboxId: number | null;
+      transientEmail?: string | null;
+    }) => Promise<CheckoutRecoveryProcessResult>;
+    markProjectionNotified: (input: {
+      caseId: number;
+      expectedVersion: number;
+      occurredAt?: string;
+    }) => Promise<boolean>;
   };
   // Per-group serialization. Webhook agent runs go through the GroupQueue
   // (like the message loop and scheduled tasks) so concurrent webhooks to one
@@ -881,6 +918,167 @@ export class WebhookServer {
       return;
     }
 
+    // Tandem website checkout recovery relay. This dedicated, default-off
+    // path is host-only and shadow-only: it records a durable case/event and
+    // never starts a container, calls Encharge, or sends a customer message.
+    const checkoutRecovery = this.deps.checkoutRecovery;
+    if (
+      req.method === 'POST' &&
+      checkoutRecovery?.enabled === true &&
+      checkoutRecovery.path !== '' &&
+      requestPath === checkoutRecovery.path
+    ) {
+      if (
+        !this.deps.archiveWebhook ||
+        !this.deps.markWebhookDispatched ||
+        !this.deps.markWebhookFailed ||
+        !this.deps.markWebhookHandled ||
+        !checkoutRecovery.record
+      ) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({ error: 'checkout recovery handler not configured' }),
+        );
+        return;
+      }
+      const contentType = String(req.headers['content-type'] || '')
+        .split(';')[0]
+        .trim()
+        .toLowerCase();
+      if (contentType !== 'application/json') {
+        res.writeHead(415, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'application/json required' }));
+        return;
+      }
+      let rawBody: Buffer;
+      try {
+        rawBody = await readBodyBounded(req, CHECKOUT_RECOVERY_MAX_BODY_BYTES);
+      } catch (err) {
+        if (err instanceof RequestBodyTooLargeError) {
+          res.writeHead(413, {
+            'Content-Type': 'application/json',
+            Connection: 'close',
+          });
+          res.end(JSON.stringify({ error: 'payload too large' }), () =>
+            req.destroy(),
+          );
+          return;
+        }
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'failed to read body' }));
+        return;
+      }
+      try {
+        verifyCheckoutRecoverySignature({
+          rawBody,
+          timestampHeader: req.headers['x-webhook-timestamp'],
+          signatureHeader: req.headers['x-webhook-signature'],
+          secret: checkoutRecovery.relaySecret,
+        });
+      } catch (err) {
+        const status =
+          err instanceof CheckoutRecoverySignatureError ? err.statusCode : 401;
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid checkout recovery relay' }));
+        return;
+      }
+      let parsed: ReturnType<typeof prepareWebsiteCheckoutRecoveryEnvelope>;
+      try {
+        parsed = prepareWebsiteCheckoutRecoveryEnvelope(
+          JSON.parse(rawBody.toString('utf8')) as unknown,
+          checkoutRecovery.identitySecret,
+        );
+      } catch (err) {
+        const status =
+          err instanceof CheckoutRecoveryPayloadError ? err.statusCode : 400;
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid checkout recovery payload' }));
+        return;
+      }
+      let inboxId: number;
+      try {
+        const archive = checkoutRecoveryArchiveEnvelope(parsed.prepared);
+        const archived = await this.deps.archiveWebhook({
+          source: 'checkout-recovery-website',
+          event_id: archive.eventId,
+          event_type: parsed.prepared.event_type,
+          raw_headers: req.headers,
+          raw_body: archive.body,
+          delivery_path: 'n8n',
+        });
+        inboxId = archived.id;
+        if (archived.isDuplicate) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({ webhook_inbox_id: inboxId, duplicate: true }),
+          );
+          return;
+        }
+      } catch (err) {
+        logger.error({ err }, 'checkout recovery archive failed');
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'archive failed' }));
+        return;
+      }
+      await this.deps
+        .markWebhookDispatched(inboxId)
+        .catch((err) =>
+          logger.error(
+            { inboxId, err },
+            'checkout recovery mark dispatched failed',
+          ),
+        );
+      res.writeHead(202, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ webhook_inbox_id: inboxId, shadow_only: true }));
+      checkoutRecovery
+        .record({
+          event: parsed.prepared,
+          webhookInboxId: inboxId,
+          transientEmail: parsed.transient_email,
+        })
+        .then(async (result) => {
+          await this.deps.markWebhookHandled!(inboxId, {
+            handled_by: 'checkout-recovery:host-handler',
+            related_entity: {
+              kind: 'checkout_recovery_case',
+              id: result.caseId,
+              state: result.state,
+              customer_message_sent: false,
+            },
+          });
+          if (!result.shouldNotify) return;
+          const inbox = Object.entries(this.deps.getRegisteredGroups()).find(
+            ([, registered]) => registered.folder === 'inbox',
+          );
+          if (inbox) {
+            const p = result.projection;
+            await this.deps.sendMessage(
+              inbox[0],
+              `[checkout shadow] ${p.stripeAccount} - ${p.productSlug ?? p.programSlug ?? 'unknown product'} - ${p.state}; consent ${p.consentState}/${p.eligibilityState}; case ${p.caseId}; no customer message sent`,
+              { fromGroup: 'inbox' },
+            );
+            await checkoutRecovery.markProjectionNotified({
+              caseId: p.caseId,
+              expectedVersion: p.version,
+            });
+          }
+        })
+        .catch(async (err) => {
+          const reason = err instanceof Error ? err.message : String(err);
+          logger.error(
+            { inboxId, err },
+            'checkout recovery host processing failed',
+          );
+          await this.deps.markWebhookFailed!(inboxId, reason).catch((markErr) =>
+            logger.error(
+              { inboxId, err: markErr },
+              'checkout recovery mark failed failed',
+            ),
+          );
+        });
+      return;
+    }
+
     // POST /hook/:id — trigger webhook
     const match = req.method === 'POST' && req.url?.match(/^\/hook\/([^/?]+)/);
     if (!match) {
@@ -1260,15 +1458,104 @@ export class WebhookServer {
       }
     }
 
-    // Stripe payment — runs the deterministic process-payment.cjs pipeline on
-    // the host (Stripe fetch + Sheets + DB), NO agent container, NO LLM.
+    // Stripe payment and shadow recovery facts share the authenticated n8n
+    // perimeter. Payment/refund fulfillment remains Contador-owned; failures
+    // and expiries are recovery-only and never enter the payment processor.
     if (hookId === 'stripe-payment') {
       try {
+        const stripePayload = payload as Record<string, unknown>;
+        const rawEventType =
+          typeof stripePayload.event_type === 'string'
+            ? stripePayload.event_type
+            : '';
+        const rawAccount =
+          stripePayload.account === 'heartbeat' ||
+          stripePayload.account === 'tandem'
+            ? (stripePayload.account as CheckoutRecoveryAccount)
+            : null;
+        const recoveryEventTypes = new Set([
+          'payment_intent.payment_failed',
+          'payment_intent.succeeded',
+          'checkout.session.completed',
+          'checkout.session.expired',
+        ]);
+        let recoveryResult: CheckoutRecoveryProcessResult | null = null;
+        let preparedRecovery: ReturnType<
+          typeof prepareStripeCheckoutRecoveryEnvelope
+        > | null = null;
+        if (
+          checkoutRecovery?.enabled === true &&
+          rawAccount !== null &&
+          recoveryEventTypes.has(rawEventType)
+        ) {
+          preparedRecovery = prepareStripeCheckoutRecoveryEnvelope(
+            payload,
+            rawAccount,
+            checkoutRecovery.identitySecret,
+          );
+        }
+
+        if (
+          preparedRecovery &&
+          (rawEventType === 'payment_intent.payment_failed' ||
+            rawEventType === 'checkout.session.expired')
+        ) {
+          recoveryResult = await checkoutRecovery!.record({
+            event: preparedRecovery.prepared,
+            webhookInboxId: inboxId,
+            transientEmail: preparedRecovery.transient_email,
+          });
+          if (inboxId !== null && this.deps.markWebhookHandled) {
+            await this.deps.markWebhookHandled(inboxId, {
+              handled_by: 'checkout-recovery:stripe-host-handler',
+              related_entity: {
+                kind: 'checkout_recovery_case',
+                id: recoveryResult.caseId,
+                state: recoveryResult.state,
+                customer_message_sent: false,
+              },
+            });
+          }
+          if (recoveryResult.shouldNotify) {
+            const inbox = Object.entries(this.deps.getRegisteredGroups()).find(
+              ([, registered]) => registered.folder === 'inbox',
+            );
+            if (inbox) {
+              const p = recoveryResult.projection;
+              await this.deps.sendMessage(
+                inbox[0],
+                `[checkout shadow] ${p.stripeAccount} - ${p.productSlug ?? p.programSlug ?? 'unknown product'} - ${p.state}; consent ${p.consentState}/${p.eligibilityState}; case ${p.caseId}; no customer message sent`,
+                { fromGroup: 'inbox' },
+              );
+              await checkoutRecovery!.markProjectionNotified({
+                caseId: p.caseId,
+                expectedVersion: p.version,
+              });
+            }
+          }
+          logger.info(
+            {
+              hookId,
+              inboxId,
+              checkoutRecoveryCaseId: recoveryResult.caseId,
+              state: recoveryResult.state,
+            },
+            'Stripe recovery fact recorded (no agent spawn, no customer send)',
+          );
+          return;
+        }
+
         const r = await handleStripePayment(payload);
+        if (preparedRecovery) {
+          recoveryResult = await checkoutRecovery!.record({
+            event: preparedRecovery.prepared,
+            webhookInboxId: inboxId,
+            transientEmail: preparedRecovery.transient_email,
+          });
+        }
         // process-payment.cjs has already durably recorded the payment
-        // (Stripe → Sheets → Postgres). Mark the inbox row handled BEFORE the
-        // Slack post so a dead socket can't strand a processed payment as
-        // 'dispatched' and trigger a needless reaper re-run.
+        // (Stripe → Sheets → Postgres). The recovery close is recorded before
+        // the inbox row is terminal so replay repairs either side safely.
         if (inboxId !== null && this.deps.markWebhookHandled) {
           await this.deps
             .markWebhookHandled(inboxId, {
@@ -1278,6 +1565,7 @@ export class WebhookServer {
                 id: r.fulfillmentCaseId,
                 state: r.fulfillmentState,
                 version: r.fulfillmentVersion,
+                checkout_recovery_case_id: recoveryResult?.caseId ?? null,
               },
             })
             .catch((err) =>

@@ -200,6 +200,58 @@ if (STUDENT_LIFECYCLE_ENABLED) {
   }
 }
 
+const checkoutRecoveryEnv = readEnvFile([
+  'CHECKOUT_RECOVERY_ENABLED',
+  'CHECKOUT_RECOVERY_WEBHOOK_PATH',
+  'CHECKOUT_RECOVERY_RELAY_SECRET',
+  'CHECKOUT_RECOVERY_IDENTITY_SECRET',
+]);
+const checkoutRecoveryEnabledRaw =
+  process.env.CHECKOUT_RECOVERY_ENABLED ||
+  checkoutRecoveryEnv.CHECKOUT_RECOVERY_ENABLED ||
+  'false';
+if (!['false', 'true', '0', '1'].includes(checkoutRecoveryEnabledRaw)) {
+  throw new Error('CHECKOUT_RECOVERY_ENABLED must be true, false, 1, or 0');
+}
+export const CHECKOUT_RECOVERY_ENABLED = ['true', '1'].includes(
+  checkoutRecoveryEnabledRaw,
+);
+export const CHECKOUT_RECOVERY_WEBHOOK_PATH =
+  process.env.CHECKOUT_RECOVERY_WEBHOOK_PATH ||
+  checkoutRecoveryEnv.CHECKOUT_RECOVERY_WEBHOOK_PATH ||
+  '';
+export const CHECKOUT_RECOVERY_RELAY_SECRET =
+  process.env.CHECKOUT_RECOVERY_RELAY_SECRET ||
+  checkoutRecoveryEnv.CHECKOUT_RECOVERY_RELAY_SECRET ||
+  '';
+export const CHECKOUT_RECOVERY_IDENTITY_SECRET =
+  process.env.CHECKOUT_RECOVERY_IDENTITY_SECRET ||
+  checkoutRecoveryEnv.CHECKOUT_RECOVERY_IDENTITY_SECRET ||
+  '';
+
+if (CHECKOUT_RECOVERY_ENABLED) {
+  if (
+    !/^\/hook\/[A-Za-z0-9._-]{16,200}$/.test(CHECKOUT_RECOVERY_WEBHOOK_PATH)
+  ) {
+    throw new Error(
+      'enabled checkout recovery requires an opaque webhook path',
+    );
+  }
+  if (CHECKOUT_RECOVERY_RELAY_SECRET.length < 32) {
+    throw new Error(
+      'enabled checkout recovery requires a relay secret of at least 32 characters',
+    );
+  }
+  if (
+    CHECKOUT_RECOVERY_IDENTITY_SECRET.length < 32 ||
+    CHECKOUT_RECOVERY_IDENTITY_SECRET === CHECKOUT_RECOVERY_RELAY_SECRET
+  ) {
+    throw new Error(
+      'enabled checkout recovery requires a distinct identity secret of at least 32 characters',
+    );
+  }
+}
+
 // Things bridge — HTTP service on the Mac Studio (the only machine with Things
 // 3). A 📌 reaction on a Mr Gru decision-brief item POSTs the parsed item here
 // to create a real Things to-do. See ~/.claude/hooks/things_bridge.py.
