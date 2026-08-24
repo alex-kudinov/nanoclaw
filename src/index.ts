@@ -8,7 +8,11 @@ import {
   ASSISTANT_NAME,
   CHECKOUT_RECOVERY_ENABLED,
   CHECKOUT_RECOVERY_IDENTITY_SECRET,
+  CHECKOUT_RECOVERY_PILOT_EMAIL_SHA256,
+  CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES,
   CHECKOUT_RECOVERY_RELAY_SECRET,
+  CHECKOUT_RECOVERY_SEND_ACTIVATED_AT,
+  CHECKOUT_RECOVERY_SEND_MODE,
   CHECKOUT_RECOVERY_WEBHOOK_PATH,
   DATA_DIR,
   GMAIL_PUSH_WEBHOOK_SECRET,
@@ -28,6 +32,7 @@ import {
   PROPOSAL_FOLLOWUP_MAX_PER_RUN,
   RECOVERY_LOOKBACK_MS,
   RECOVERY_RESERVED_SLOTS,
+  ENCHARGE_WRITE_KEY,
   SLACK_ONLY,
   STUDENT_LIFECYCLE_ENABLED,
   STUDENT_LIFECYCLE_IDENTITY_SECRET,
@@ -197,6 +202,13 @@ import {
   recordPreparedCheckoutRecovery,
   sweepCheckoutRecoveryShadow,
 } from './checkout-recovery-store.js';
+import {
+  claimDueCheckoutRecoverySendIntents,
+  dispatchCheckoutRecoveryToEncharge,
+  markCheckoutRecoveryProviderAccepted,
+  markCheckoutRecoveryProviderFailed,
+  type CheckoutRecoverySendConfig,
+} from './checkout-recovery-sender.js';
 import {
   listOpenProposals,
   resolveRecipient,
@@ -2142,7 +2154,10 @@ async function main(): Promise<void> {
         checkoutRecovery: {
           enabled: CHECKOUT_RECOVERY_ENABLED,
           mode: 'shadow',
-          customerSends: false,
+          customerSends: CHECKOUT_RECOVERY_SEND_MODE !== 'off',
+          sendMode: CHECKOUT_RECOVERY_SEND_MODE,
+          prospectiveCutoff:
+            CHECKOUT_RECOVERY_SEND_ACTIVATED_AT?.toISOString() ?? null,
           tandemCaptureTimeoutMinutes: 45,
           tandemPaymentFailureDelayMinutes: 5,
           heartbeatMode: 'stripe_events_only',
@@ -2274,10 +2289,20 @@ async function main(): Promise<void> {
     }, STUDENT_LIFECYCLE_HEALTH_REFRESH_MS);
   }
 
+  const checkoutRecoverySendConfig: CheckoutRecoverySendConfig = {
+    mode: CHECKOUT_RECOVERY_SEND_MODE,
+    activatedAt: CHECKOUT_RECOVERY_SEND_ACTIVATED_AT,
+    pilotEmailSha256: CHECKOUT_RECOVERY_PILOT_EMAIL_SHA256,
+    pilotTouch2DelayMinutes: CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES,
+    enchargeWriteKey: ENCHARGE_WRITE_KEY,
+  };
   const runCheckoutRecoveryShadowTick = async (): Promise<void> => {
     if (!CHECKOUT_RECOVERY_ENABLED) return;
     try {
-      const items = await sweepCheckoutRecoveryShadow({ limit: 25 });
+      const items = await sweepCheckoutRecoveryShadow({
+        limit: 25,
+        sendConfig: checkoutRecoverySendConfig,
+      });
       if (items.length === 0) return;
       const inbox = Object.entries(registeredGroups).find(
         ([, registered]) => registered.folder === 'inbox',
@@ -2313,6 +2338,49 @@ async function main(): Promise<void> {
       5 * 60_000,
     );
     checkoutRecoveryTimer.unref();
+  }
+  const runCheckoutRecoverySendTick = async (): Promise<void> => {
+    if (CHECKOUT_RECOVERY_SEND_MODE === 'off') return;
+    try {
+      const intents = await claimDueCheckoutRecoverySendIntents(
+        checkoutRecoverySendConfig,
+        { limit: 10 },
+      );
+      for (const intent of intents) {
+        try {
+          await dispatchCheckoutRecoveryToEncharge(
+            intent,
+            checkoutRecoverySendConfig,
+          );
+          await markCheckoutRecoveryProviderAccepted(intent);
+        } catch (err) {
+          const raw =
+            err instanceof Error ? err.message : 'encharge_dispatch_failed';
+          const code = /^[a-z][a-z0-9_]{0,99}$/.test(raw)
+            ? raw
+            : 'encharge_dispatch_failed';
+          await markCheckoutRecoveryProviderFailed(intent, code);
+          logger.error(
+            {
+              checkoutRecoveryCaseId: intent.caseId,
+              touch: intent.touch,
+              code,
+            },
+            'Checkout recovery provider handoff failed',
+          );
+        }
+      }
+    } catch (err) {
+      logger.error({ err }, 'Checkout recovery send tick failed');
+    }
+  };
+  if (CHECKOUT_RECOVERY_SEND_MODE !== 'off') {
+    void runCheckoutRecoverySendTick();
+    const checkoutRecoverySendTimer = setInterval(
+      () => void runCheckoutRecoverySendTick(),
+      60_000,
+    );
+    checkoutRecoverySendTimer.unref();
   }
 
   // Clean up orphaned job runs from a previous crash

@@ -88,6 +88,22 @@ history. Bundling, applying, or activating migration 133 grants no historical
 repair, customer communication, accounting, QuickBooks, product-mapping, or
 payer/student authority.
 
+Beginning with `NC-20260824-009`, the archive binds migration 136 and its
+history-preserving rollback. Migration 135 must already be live. Take a
+custom-format `business_v2` backup plus the normal SQLite/plist backups,
+require the existing checkout case/event/receipt fingerprint to remain stable,
+apply only 136, and verify the three added case columns, two admin-owned tables,
+append-only send-receipt trigger, exact indexes/constraints, and zero non-admin
+grants. Existing cases must show null routing context and zero send intents.
+
+Deploy the release with `CHECKOUT_RECOVERY_SEND_MODE=off` first. Provider
+templates/flow, pilot activation, allowlisted received-email proof, legacy
+trigger retirement, and prospective production cutoff are separate ordered
+gates. Rollback disables delivery before changing the release pointer. The SQL
+rollback may run only while send tables and added routing columns remain empty;
+after any intent/receipt/context exists it must refuse rather than erase
+customer-contact history.
+
 `NC-20260823-006` crossed that boundary under corrected exact release
 `b131071c74fcaa5395e40b31e45f7f1a886db481`, source tree
 `2ac5a754f01070376d287b937a0ff7e3c457458d`, 892-file artifact SHA-256

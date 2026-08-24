@@ -2,6 +2,8 @@
 
 import { resetBusinessPool, withAgentContext } from './business-db.js';
 import { checkoutRecoveryHealth } from './checkout-recovery-store.js';
+import { checkoutRecoverySendHealth } from './checkout-recovery-sender.js';
+import { CHECKOUT_RECOVERY_SEND_MODE } from './config.js';
 
 interface AggregateRow {
   stripe_account: 'tandem' | 'heartbeat';
@@ -17,6 +19,7 @@ interface AggregateRow {
 async function main(): Promise<void> {
   try {
     const health = await checkoutRecoveryHealth();
+    const sendHealth = await checkoutRecoverySendHealth();
     const rows = await withAgentContext(
       'checkout-recovery-report:host',
       async (client) =>
@@ -38,7 +41,8 @@ async function main(): Promise<void> {
         {
           ok: true,
           mode: 'shadow',
-          customer_sends: false,
+          customer_sends: CHECKOUT_RECOVERY_SEND_MODE !== 'off',
+          send_mode: CHECKOUT_RECOVERY_SEND_MODE,
           timeout_coverage: {
             tandem: {
               captured_or_payment_created: '45_minutes_after_server_capture',
@@ -47,6 +51,7 @@ async function main(): Promise<void> {
             heartbeat: 'stripe_events_only',
           },
           health,
+          send_health: sendHealth,
           aggregates: rows.map((row) => ({
             stripe_account: row.stripe_account,
             state: row.state,

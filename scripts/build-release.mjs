@@ -149,6 +149,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_134_student_lifecycle_community_dark.sql',
     'data/business/migrations/nanoclaw-v2/135_checkout_recovery_shadow.sql',
     'data/business/migrations/nanoclaw-v2/rollback_135_checkout_recovery_shadow.sql',
+    'data/business/migrations/nanoclaw-v2/136_checkout_recovery_two_reminders.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_136_checkout_recovery_two_reminders.sql',
     'scripts/verify-release.mjs',
     'scripts/runtime-doctor.mjs',
     'scripts/with-pinned-node.sh',

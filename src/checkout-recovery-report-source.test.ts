@@ -26,7 +26,10 @@ describe('checkout recovery truthful timing/report contract', () => {
   });
 
   it('reports aggregates only and states no customer sends', () => {
-    expect(report).toContain('customer_sends: false');
+    expect(report).toContain(
+      "customer_sends: CHECKOUT_RECOVERY_SEND_MODE !== 'off'",
+    );
+    expect(report).toContain('send_health: sendHealth');
     expect(report).not.toContain('contact_email');
     expect(report).not.toContain('source_case_key');
     expect(report).not.toContain('alias_id');

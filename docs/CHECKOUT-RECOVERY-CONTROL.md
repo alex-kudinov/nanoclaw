@@ -1,8 +1,8 @@
-# Checkout recovery shadow control
+# Checkout recovery control
 
-Status: implementation in review under `NC-20260824-006`
-Authority: Growth decision `decision:abandoned-checkout-recovery-implementation-2026-08-24`
-Mode: host-owned production shadow; customer sends disabled
+Status: implementation in review under `NC-20260824-009`
+Authority: Growth decision `decision:abandoned-checkout-two-reminder-activation-2026-08-24`
+Mode: host-owned shadow plus separately gated prospective delivery
 
 ## Plain-English contract
 
@@ -18,10 +18,10 @@ or Sales follow-up cases.
 
 ## Account coverage
 
-| Stripe account | Start evidence | Abandonment decision | Completion evidence |
-| --- | --- | --- | --- |
-| `tandem` | signed Tandemweb server capture and PaymentIntent creation | host timeout 45 minutes after capture/payment creation; explicit payment failure uses a five-minute fast path; client abandon is context only | exact PaymentIntent/Checkout completion alias |
-| `heartbeat` | none from Tandemweb | provider event only: PaymentIntent failure or Checkout Session expiry | exact Checkout/PaymentIntent completion alias |
+| Stripe account | Start evidence                                             | Abandonment decision                                                                                                                          | Completion evidence                           |
+| -------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `tandem`       | signed Tandemweb server capture and PaymentIntent creation | host timeout 45 minutes after capture/payment creation; explicit payment failure uses a five-minute fast path; client abandon is context only | exact PaymentIntent/Checkout completion alias |
+| `heartbeat`    | none from Tandemweb                                        | provider event only: PaymentIntent failure or Checkout Session expiry                                                                         | exact Checkout/PaymentIntent completion alias |
 
 Reports must keep those guarantees separate. “Both accounts represented” does
 not mean Heartbeat attempts receive a 45-minute signal.
@@ -89,10 +89,35 @@ reports, and Slack projections contain no email, name, checkout token, raw
 payload, recovery URL, provider endpoint, or secret.
 
 Tandemweb presents an unchecked reminder choice in English, Spanish, Japanese,
-and French with policy version `checkout-reminder-v1`. Consent is granted,
-denied, or unknown. Shadow readiness is not send eligibility. No customer-send
-outbox, handler, Encharge consumer, CRM write, or message body exists in
-migration 135.
+and French. Policy `checkout-reminder-v2` explicitly authorizes up to two
+checkout reminders and remains separate from course/newsletter messages.
+Consent is granted, denied, or unknown. Missing transient/Stripe metadata is
+`unknown`, never an invented denial.
+
+Migration 135 itself still has no customer-send authority. Migration 136 adds
+prospective per-touch intent state and append-only provider-handoff receipts;
+runtime mode, activation cutoff, pilot allowlist, provider templates/flow, and
+cutover are independent gates.
+
+## Prospective two-reminder delivery
+
+NanoClaw schedules touch one only when a post-cutoff, policy-v2, consented
+Tandemweb case becomes `shadow_ready`. Touch two is due 24 hours after capture
+and never less than 20 hours after a late first touch, and cannot be leased
+until touch one's provider event has been accepted. Each handoff locks and
+rechecks the case and suppresses on exact current-case purchase or any sibling
+case for the same account/email digest/product purchased after this attempt
+started.
+
+Locale, product name, and a query/fragment-free Tandem page URL are captured by
+WordPress and persisted through Stripe metadata. The Encharge event contains
+only those routing fields, amount/currency, touch, locale, and opaque case/
+intent UUIDs. It contains no checkout token, Stripe ID, or raw payload.
+
+Encharge owns rendering, category preference/unsubscribe enforcement, reply
+tracking, and the touch-two no-reply check. Provider event acceptance is a
+handoff receipt, not delivery proof. Flow/send-step and received-email evidence
+are required for canary claims.
 
 ## Durable state
 
@@ -121,9 +146,20 @@ event-only coverage. It contains no person-level fields.
 
 NanoClaw host-only values are `CHECKOUT_RECOVERY_ENABLED` (default false), an
 opaque `CHECKOUT_RECOVERY_WEBHOOK_PATH`, `CHECKOUT_RECOVERY_RELAY_SECRET`, and a
-distinct `CHECKOUT_RECOVERY_IDENTITY_SECRET`. WordPress/n8n use separately
+distinct `CHECKOUT_RECOVERY_IDENTITY_SECRET`. Delivery additionally requires
+`CHECKOUT_RECOVERY_SEND_MODE=pilot|production`, an exact
+`CHECKOUT_RECOVERY_SEND_ACTIVATED_AT`, the Encharge write key, and a pilot
+email digest plus a 1-60 minute pilot touch-two delay in pilot mode. The
+short delay exists only to verify both received messages against one
+allowlisted internal address; production ignores it and enforces the normal
+24-hour/20-hour rule. WordPress/n8n use separately
 managed ingress/relay references. No live path or secret belongs in Git,
 workflow exports, logs, or reports.
+
+An expired provider-dispatch lease is ambiguous: Encharge may have accepted
+the event before the host stopped. The intent therefore moves to `held` with
+an append-only receipt and is never automatically replayed. A verified
+provider failure can still follow the bounded retry schedule.
 
 ## Deployment and rollback
 
@@ -139,7 +175,8 @@ are empty; otherwise use a separately reviewed archival migration.
 
 ## Explicit non-authority
 
-This control cannot send recovery email, activate an Encharge flow, contact a
-historical abandoner, create a Stripe transaction, change Heartbeat behavior,
-book a call, alter CRM, grant course access, update rosters, refund, account,
-or spend money.
+This control cannot contact a historical/pre-cutoff abandoner, create a Stripe
+transaction, change Heartbeat behavior, book a call, alter CRM, grant course
+access, update rosters, refund, account, or spend money. Production customer
+handoff exists only when the accepted two-reminder decision, migration 136,
+provider assets, exact cutoff, and runtime mode all agree.

@@ -70,7 +70,10 @@ describe('inactive website checkout recovery relay', () => {
       amount_cents: 399900,
       currency: 'usd',
       consent_state: 'denied',
-      consent_policy_version: 'checkout-reminder-v1',
+      consent_policy_version: 'checkout-reminder-v2',
+      locale: 'en',
+      return_url: 'https://tandemcoach.co/acc/?ignored=yes#pay',
+      product_name: 'ACC Level 1 Full Program',
       ignored: 'not-forwarded',
     };
     const ingressSignature = crypto
@@ -113,6 +116,9 @@ describe('inactive website checkout recovery relay', () => {
     ).toMatchObject({
       stripe_account: 'tandem',
       product_slug: 'acc-full',
+      checkout_locale: 'en',
+      return_url: 'https://tandemcoach.co/acc/',
+      product_name: 'ACC Level 1 Full Program',
     });
   });
 

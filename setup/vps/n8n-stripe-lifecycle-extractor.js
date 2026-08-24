@@ -79,12 +79,18 @@ const emailCandidates = [
 const email = emailCandidates.find(
   (value) => typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
 );
+const metadataConsent =
+  metadata.recovery_consent === 'granted' ||
+  metadata.recovery_consent === 'denied'
+    ? metadata.recovery_consent
+    : null;
 const consentState =
-  inner.consent && inner.consent.promotions === 'opt_in'
+  metadataConsent ||
+  (inner.consent && inner.consent.promotions === 'opt_in'
     ? 'granted'
     : inner.consent && inner.consent.promotions === 'opt_out'
       ? 'denied'
-      : 'unknown';
+      : 'unknown');
 const amountCents = Number.isSafeInteger(inner.amount_total)
   ? inner.amount_total
   : Number.isSafeInteger(inner.amount)
@@ -125,6 +131,20 @@ return [
       currency:
         typeof inner.currency === 'string' ? inner.currency.toLowerCase() : null,
       consent_state: consentState,
+      consent_policy_version:
+        typeof metadata.recovery_consent_policy === 'string'
+          ? metadata.recovery_consent_policy
+          : null,
+      locale:
+        typeof metadata.checkout_locale === 'string'
+          ? metadata.checkout_locale
+          : null,
+      return_url:
+        typeof metadata.checkout_return_url === 'string'
+          ? metadata.checkout_return_url
+          : null,
+      product_name:
+        typeof inner.description === 'string' ? inner.description : null,
       recovered_from: recoveredFrom,
     },
   },

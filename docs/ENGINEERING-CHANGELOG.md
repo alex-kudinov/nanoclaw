@@ -8,6 +8,31 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-009 — Prospective two-reminder checkout recovery
+
+- Date: 2026-08-24T22:20:00Z
+- Owner/client: Codex implementer + Claude Sonnet/high reviewer
+- State: ready_for_deploy; reviewed source only, customer delivery disabled
+- Authority: accepted Growth decision
+  `decision:abandoned-checkout-two-reminder-activation-2026-08-24`
+- Plan review: Claude R1 returned `CHANGES REQUIRED` and found late-webhook
+  consent erasure, stale sibling-case touch-two risk, missing independent touch
+  scheduling, and missing locale propagation. The corrected R2 plan fixes all
+  four before provider activation.
+- Local implementation: migration/rollback 136; policy-v2 locale/return/product
+  context; per-touch intents and append-only receipts; prospective cutoff/pilot
+  allowlist; exact current/sibling purchase suppression; Encharge event
+  handoff; eight localized touch templates; guarded flow administration.
+- Implementation review: Claude R2 found ambiguous lease-expiry replay and a
+  missing touch-one prerequisite for touch two. Expired leases now fail closed
+  to receipted `held`, and touch two waits for touch-one provider acceptance or
+  suppresses after a terminal non-acceptance. Disposable PostgreSQL proves both
+  paths; bounded Sonnet/high correction R3 returned `NO MATERIAL FINDINGS`.
+- Boundary: no production migration/config/restart, Encharge template/flow,
+  legacy trigger, customer event/email, historical replay, payment,
+  accounting, CRM, booking, roster/access, or required-student-message state
+  has changed.
+
 ### NC-20260824-008 — Multilingual Foundation grader variants
 
 - Date: 2026-08-24T21:30:00Z

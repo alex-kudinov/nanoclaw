@@ -20,6 +20,7 @@ export type CheckoutRecoveryState =
   | 'closed';
 export type CheckoutRecoveryConsent = 'unknown' | 'denied' | 'granted';
 export type CheckoutRecoveryEligibility = 'unknown' | 'ineligible' | 'eligible';
+export type CheckoutRecoveryLocale = 'en' | 'es' | 'ja' | 'fr';
 export type CheckoutRecoveryAliasKind =
   | 'checkout_token'
   | 'payment_intent'
@@ -59,6 +60,9 @@ export interface PreparedCheckoutRecoveryEvent {
   currency: string | null;
   consent_state: CheckoutRecoveryConsent;
   consent_policy_version: string | null;
+  checkout_locale: CheckoutRecoveryLocale | null;
+  return_url: string | null;
+  product_name: string | null;
   aliases: CheckoutRecoveryAlias[];
   recovered_from: string | null;
 }
@@ -86,6 +90,8 @@ export interface CheckoutRecoveryArchiveEnvelope {
     currency: string | null;
     consent_state: CheckoutRecoveryConsent;
     consent_policy_version: string | null;
+    checkout_locale: CheckoutRecoveryLocale | null;
+    product_name: string | null;
     alias_kinds: CheckoutRecoveryAliasKind[];
     recovered_from_present: boolean;
   };
@@ -232,6 +238,8 @@ export function checkoutRecoveryArchiveEnvelope(
       currency: event.currency,
       consent_state: event.consent_state,
       consent_policy_version: event.consent_policy_version,
+      checkout_locale: event.checkout_locale,
+      product_name: event.product_name,
       alias_kinds: [
         ...new Set(event.aliases.map((entry) => entry.kind)),
       ].sort(),
@@ -254,6 +262,37 @@ function currency(value: unknown): string | null {
     throw new CheckoutRecoveryPayloadError('currency is invalid');
   }
   return parsed;
+}
+
+function checkoutLocale(value: unknown): CheckoutRecoveryLocale | null {
+  const parsed = text(value, 'locale', 5)?.toLowerCase() ?? null;
+  if (parsed !== null && !['en', 'es', 'ja', 'fr'].includes(parsed)) {
+    throw new CheckoutRecoveryPayloadError('locale is invalid');
+  }
+  return parsed as CheckoutRecoveryLocale | null;
+}
+
+function safeReturnUrl(value: unknown): string | null {
+  const parsed = text(value, 'return_url', 1000);
+  if (parsed === null) return null;
+  let url: URL;
+  try {
+    url = new URL(parsed);
+  } catch {
+    throw new CheckoutRecoveryPayloadError('return_url is invalid');
+  }
+  if (
+    url.protocol !== 'https:' ||
+    !['tandemcoach.co', 'www.tandemcoach.co'].includes(url.hostname) ||
+    url.username !== '' ||
+    url.password !== '' ||
+    url.port !== ''
+  ) {
+    throw new CheckoutRecoveryPayloadError('return_url is not allowed');
+  }
+  url.search = '';
+  url.hash = '';
+  return url.toString();
 }
 
 function consent(value: unknown): CheckoutRecoveryConsent {
@@ -353,6 +392,9 @@ export function prepareWebsiteCheckoutRecoveryEnvelope(
     currency: currency(p.currency),
     consent_state: consent(p.consent_state),
     consent_policy_version: policy?.toLowerCase() ?? null,
+    checkout_locale: checkoutLocale(p.locale),
+    return_url: safeReturnUrl(p.return_url),
+    product_name: text(p.product_name, 'product_name', 300),
     aliases: uniqueAliases(aliases),
     recovered_from: null,
   };
@@ -425,7 +467,12 @@ export function prepareStripeCheckoutRecoveryEnvelope(
     amount_cents: amount(p.amount_cents),
     currency: currency(p.currency),
     consent_state: consent(p.consent_state),
-    consent_policy_version: null,
+    consent_policy_version:
+      slug(p.consent_policy_version, 'consent_policy_version')?.toLowerCase() ??
+      null,
+    checkout_locale: checkoutLocale(p.locale),
+    return_url: safeReturnUrl(p.return_url),
+    product_name: text(p.product_name, 'product_name', 300),
     aliases: uniqueAliases(aliases),
     recovered_from: recoveredFrom,
   };

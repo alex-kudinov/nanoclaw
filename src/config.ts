@@ -205,6 +205,11 @@ const checkoutRecoveryEnv = readEnvFile([
   'CHECKOUT_RECOVERY_WEBHOOK_PATH',
   'CHECKOUT_RECOVERY_RELAY_SECRET',
   'CHECKOUT_RECOVERY_IDENTITY_SECRET',
+  'CHECKOUT_RECOVERY_SEND_MODE',
+  'CHECKOUT_RECOVERY_SEND_ACTIVATED_AT',
+  'CHECKOUT_RECOVERY_PILOT_EMAIL_SHA256',
+  'CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES',
+  'ENCHARGE_WRITE_KEY',
 ]);
 const checkoutRecoveryEnabledRaw =
   process.env.CHECKOUT_RECOVERY_ENABLED ||
@@ -228,6 +233,43 @@ export const CHECKOUT_RECOVERY_IDENTITY_SECRET =
   process.env.CHECKOUT_RECOVERY_IDENTITY_SECRET ||
   checkoutRecoveryEnv.CHECKOUT_RECOVERY_IDENTITY_SECRET ||
   '';
+const checkoutRecoverySendModeRaw =
+  process.env.CHECKOUT_RECOVERY_SEND_MODE ||
+  checkoutRecoveryEnv.CHECKOUT_RECOVERY_SEND_MODE ||
+  'off';
+if (!['off', 'pilot', 'production'].includes(checkoutRecoverySendModeRaw)) {
+  throw new Error(
+    'CHECKOUT_RECOVERY_SEND_MODE must be off, pilot, or production',
+  );
+}
+export const CHECKOUT_RECOVERY_SEND_MODE = checkoutRecoverySendModeRaw as
+  | 'off'
+  | 'pilot'
+  | 'production';
+const checkoutRecoveryActivatedAtRaw =
+  process.env.CHECKOUT_RECOVERY_SEND_ACTIVATED_AT ||
+  checkoutRecoveryEnv.CHECKOUT_RECOVERY_SEND_ACTIVATED_AT ||
+  '';
+export const CHECKOUT_RECOVERY_SEND_ACTIVATED_AT =
+  checkoutRecoveryActivatedAtRaw === ''
+    ? null
+    : new Date(checkoutRecoveryActivatedAtRaw);
+export const CHECKOUT_RECOVERY_PILOT_EMAIL_SHA256 =
+  process.env.CHECKOUT_RECOVERY_PILOT_EMAIL_SHA256 ||
+  checkoutRecoveryEnv.CHECKOUT_RECOVERY_PILOT_EMAIL_SHA256 ||
+  null;
+const checkoutRecoveryPilotTouch2DelayRaw =
+  process.env.CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES ||
+  checkoutRecoveryEnv.CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES ||
+  '';
+export const CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES =
+  checkoutRecoveryPilotTouch2DelayRaw === ''
+    ? null
+    : Number(checkoutRecoveryPilotTouch2DelayRaw);
+export const ENCHARGE_WRITE_KEY =
+  process.env.ENCHARGE_WRITE_KEY ||
+  checkoutRecoveryEnv.ENCHARGE_WRITE_KEY ||
+  '';
 
 if (CHECKOUT_RECOVERY_ENABLED) {
   if (
@@ -248,6 +290,39 @@ if (CHECKOUT_RECOVERY_ENABLED) {
   ) {
     throw new Error(
       'enabled checkout recovery requires a distinct identity secret of at least 32 characters',
+    );
+  }
+}
+if (CHECKOUT_RECOVERY_SEND_MODE !== 'off') {
+  if (!CHECKOUT_RECOVERY_ENABLED) {
+    throw new Error(
+      'checkout recovery sends require checkout recovery enabled',
+    );
+  }
+  if (
+    CHECKOUT_RECOVERY_SEND_ACTIVATED_AT === null ||
+    !Number.isFinite(CHECKOUT_RECOVERY_SEND_ACTIVATED_AT.getTime())
+  ) {
+    throw new Error('checkout recovery sends require an ISO activation cutoff');
+  }
+  if (ENCHARGE_WRITE_KEY.length < 20) {
+    throw new Error('checkout recovery sends require an Encharge write key');
+  }
+  if (
+    CHECKOUT_RECOVERY_SEND_MODE === 'pilot' &&
+    !/^[0-9a-f]{64}$/.test(CHECKOUT_RECOVERY_PILOT_EMAIL_SHA256 || '')
+  ) {
+    throw new Error('pilot checkout recovery sends require an email digest');
+  }
+  if (
+    CHECKOUT_RECOVERY_SEND_MODE === 'pilot' &&
+    (!Number.isInteger(CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES) ||
+      CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES === null ||
+      CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES < 1 ||
+      CHECKOUT_RECOVERY_PILOT_TOUCH2_DELAY_MINUTES > 60)
+  ) {
+    throw new Error(
+      'pilot checkout recovery sends require a touch-two delay from 1 to 60 minutes',
     );
   }
 }

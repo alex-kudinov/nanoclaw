@@ -124,7 +124,9 @@ export interface HealthPayload {
   checkoutRecovery?: {
     enabled: boolean;
     mode: 'shadow';
-    customerSends: false;
+    customerSends: boolean;
+    sendMode?: 'off' | 'pilot' | 'production';
+    prospectiveCutoff?: string | null;
     tandemCaptureTimeoutMinutes: 45;
     tandemPaymentFailureDelayMinutes: 5;
     heartbeatMode: 'stripe_events_only';

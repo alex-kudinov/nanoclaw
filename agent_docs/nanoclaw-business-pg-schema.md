@@ -280,6 +280,9 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   shadow_notified_at            timestamp with time zone
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  checkout_locale               text
+  return_url                    text
+  product_name                  text
 ```
 
 ## business_v2.checkout_recovery_events
@@ -316,6 +319,45 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   result_code                   text                 NOT NULL
   evidence_sha256               text                 NOT NULL
   source_event_key              text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.checkout_recovery_send_intents
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.checkout_recovery_send_intents_id_seq'::regclass)
+  intent_uuid                   uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  case_id                       bigint               NOT NULL
+  touch                         smallint             NOT NULL
+  due_at                        timestamp with time zone NOT NULL
+  status                        text                 NOT NULL DEFAULT='pending'::text
+  attempt_count                 integer              NOT NULL DEFAULT=0
+  next_attempt_at               timestamp with time zone NOT NULL
+  lease_token                   uuid
+  lease_expires_at              timestamp with time zone
+  accepted_at                   timestamp with time zone
+  suppressed_at                 timestamp with time zone
+  held_at                       timestamp with time zone
+  last_error_code               text
+  payload_sha256                text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.checkout_recovery_send_receipts
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.checkout_recovery_send_receipts_id_seq'::regclass)
+  receipt_uuid                  uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  intent_id                     bigint               NOT NULL
+  case_id                       bigint               NOT NULL
+  touch                         smallint             NOT NULL
+  attempt_number                integer              NOT NULL
+  receipt_type                  text                 NOT NULL
+  outcome                       text                 NOT NULL
+  result_code                   text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
   occurred_at                   timestamp with time zone NOT NULL
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```

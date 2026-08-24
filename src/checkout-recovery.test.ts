@@ -28,7 +28,10 @@ function website(overrides: Record<string, unknown> = {}) {
     amount_cents: 399900,
     currency: 'USD',
     consent_state: false,
-    consent_policy_version: 'checkout-reminder-v1',
+    consent_policy_version: 'checkout-reminder-v2',
+    locale: 'en',
+    return_url: 'https://tandemcoach.co/acc/?source=checkout#pay',
+    product_name: 'ACC Level 1 Full Program',
     ...overrides,
   };
 }
@@ -46,6 +49,10 @@ describe('checkout recovery contract', () => {
       event_type: 'checkout.captured',
       source_case_key: `tandemweb:${TOKEN}`,
       consent_state: 'denied',
+      consent_policy_version: 'checkout-reminder-v2',
+      checkout_locale: 'en',
+      return_url: 'https://tandemcoach.co/acc/',
+      product_name: 'ACC Level 1 Full Program',
       currency: 'usd',
     });
     expect(result.prepared.email_sha256).toMatch(/^[0-9a-f]{64}$/);
@@ -80,6 +87,12 @@ describe('checkout recovery contract', () => {
         IDENTITY_SECRET,
       ),
     ).toThrow(/checkout_token/);
+    expect(() =>
+      prepareWebsiteCheckoutRecoveryEnvelope(
+        website({ return_url: 'https://evil.example/acc/' }),
+        IDENTITY_SECRET,
+      ),
+    ).toThrow(/not allowed/);
   });
 
   it('derives the fixed Stripe account and rejects account mismatch', () => {

@@ -9,14 +9,20 @@ import {
   type CheckoutRecoveryAlias,
   type CheckoutRecoveryConsent,
   type CheckoutRecoveryEligibility,
+  type CheckoutRecoveryLocale,
   type CheckoutRecoveryState,
   type PreparedCheckoutRecoveryEvent,
 } from './checkout-recovery.js';
+import {
+  scheduleCheckoutRecoveryTouchesWithClient,
+  type CheckoutRecoverySendConfig,
+} from './checkout-recovery-sender.js';
 
 const ACTOR = 'checkout-recovery:host';
 
 interface CaseRow extends QueryResultRow {
   id: string;
+  case_uuid: string;
   source_system: 'tandemweb' | 'stripe';
   source_case_key: string;
   stripe_account: CheckoutRecoveryAccount;
@@ -30,12 +36,16 @@ interface CaseRow extends QueryResultRow {
   email_sha256: string | null;
   consent_state: CheckoutRecoveryConsent;
   consent_policy_version: string | null;
+  checkout_locale: CheckoutRecoveryLocale | null;
+  return_url: string | null;
+  product_name: string | null;
   eligibility_state: CheckoutRecoveryEligibility;
   suppression_code: string | null;
   started_at: string;
   last_observed_at: string;
   shadow_due_at: string | null;
   shadow_notified_at: string | null;
+  created_at: string;
 }
 
 export interface CheckoutRecoveryProjection {
@@ -105,11 +115,13 @@ function projection(
 }
 
 const CASE_COLUMNS = `
-  id::text, source_system, source_case_key, stripe_account, state, version,
+  id::text, case_uuid::text, source_system, source_case_key, stripe_account, state, version,
   program_slug, product_slug, amount_cents::text, currency,
   contact_email::text, email_sha256, consent_state, consent_policy_version,
+  checkout_locale, return_url, product_name,
   eligibility_state, suppression_code, started_at::text,
-  last_observed_at::text, shadow_due_at::text, shadow_notified_at::text
+  last_observed_at::text, shadow_due_at::text, shadow_notified_at::text,
+  created_at::text
 `;
 
 async function findCaseIdsByAliases(
@@ -282,12 +294,13 @@ export async function recordPreparedCheckoutRecoveryWithClient(
            (source_system, source_case_key, stripe_account, state,
             program_slug, product_slug, amount_cents, currency,
             contact_email, email_sha256, consent_state,
-            consent_policy_version, eligibility_state, last_event_type,
+            consent_policy_version, checkout_locale, return_url, product_name,
+            eligibility_state, last_event_type,
             last_source_event_key, last_evidence_sha256, started_at,
             last_observed_at, shadow_due_at)
          VALUES ($1, $2, $3, 'captured', $4, $5, $6, $7, $8::citext, $9,
-                 $10, $11, $12, $13, $14, $15, $16::timestamptz,
-                 $16::timestamptz, NULL)
+                 $10, $11, $12, $13, $14, $15, $16, $17, $18,
+                 $19::timestamptz, $19::timestamptz, NULL)
          ON CONFLICT (source_system, source_case_key) DO NOTHING
          RETURNING id::text`,
       [
@@ -304,6 +317,9 @@ export async function recordPreparedCheckoutRecoveryWithClient(
         input.event.email_sha256,
         input.event.consent_state,
         input.event.consent_policy_version,
+        input.event.checkout_locale,
+        input.event.return_url,
+        input.event.product_name,
         checkoutEligibility(input.event.consent_state, null),
         input.event.event_type,
         input.event.source_event_key,
@@ -390,15 +406,18 @@ export async function recordPreparedCheckoutRecoveryWithClient(
               email_sha256 = COALESCE(email_sha256, $9),
               consent_state = $10,
               consent_policy_version = COALESCE(consent_policy_version, $11),
-              eligibility_state = $12,
-              suppression_code = COALESCE($13, suppression_code),
-              last_event_type = $14,
-              last_source_event_key = $15,
-              last_evidence_sha256 = $16,
-              last_observed_at = GREATEST(last_observed_at, $17::timestamptz),
-              shadow_due_at = CASE WHEN $18 THEN NULL ELSE COALESCE($19::timestamptz, shadow_due_at) END,
-              purchased_at = CASE WHEN $18 THEN COALESCE(purchased_at, $17::timestamptz) ELSE purchased_at END,
-              closed_at = CASE WHEN $18 THEN COALESCE(closed_at, $17::timestamptz) ELSE closed_at END,
+              checkout_locale = COALESCE(checkout_locale, $12),
+              return_url = COALESCE(return_url, $13),
+              product_name = COALESCE(product_name, $14),
+              eligibility_state = $15,
+              suppression_code = COALESCE($16, suppression_code),
+              last_event_type = $17,
+              last_source_event_key = $18,
+              last_evidence_sha256 = $19,
+              last_observed_at = GREATEST(last_observed_at, $20::timestamptz),
+              shadow_due_at = CASE WHEN $21 THEN NULL ELSE COALESCE($22::timestamptz, shadow_due_at) END,
+              purchased_at = CASE WHEN $21 THEN COALESCE(purchased_at, $20::timestamptz) ELSE purchased_at END,
+              closed_at = CASE WHEN $21 THEN COALESCE(closed_at, $20::timestamptz) ELSE closed_at END,
               updated_at = now()
         WHERE id = $1
         RETURNING ${CASE_COLUMNS}`,
@@ -414,6 +433,9 @@ export async function recordPreparedCheckoutRecoveryWithClient(
       input.event.email_sha256,
       consentState,
       input.event.consent_policy_version,
+      input.event.checkout_locale,
+      input.event.return_url,
+      input.event.product_name,
       eligibility,
       forcedHold,
       input.event.event_type,
@@ -483,6 +505,7 @@ export async function sweepCheckoutRecoveryShadow(
   input: {
     limit?: number;
     now?: Date;
+    sendConfig?: CheckoutRecoverySendConfig;
   } = {},
 ): Promise<CheckoutRecoveryProjection[]> {
   return withAgentContext(ACTOR, (client) =>
@@ -492,7 +515,11 @@ export async function sweepCheckoutRecoveryShadow(
 
 export async function sweepCheckoutRecoveryShadowWithClient(
   client: PoolClient,
-  input: { limit?: number; now?: Date } = {},
+  input: {
+    limit?: number;
+    now?: Date;
+    sendConfig?: CheckoutRecoverySendConfig;
+  } = {},
 ): Promise<CheckoutRecoveryProjection[]> {
   const limit = Math.max(1, Math.min(input.limit ?? 25, 100));
   const now = input.now ?? new Date();
@@ -577,6 +604,28 @@ export async function sweepCheckoutRecoveryShadowWithClient(
       sourceEventKey,
       occurredAt: now.toISOString(),
     });
+    if (input.sendConfig && eligibility === 'eligible') {
+      const scheduledCase = updated.rows[0];
+      await scheduleCheckoutRecoveryTouchesWithClient(
+        client,
+        {
+          id: Number(scheduledCase.id),
+          createdAt: scheduledCase.created_at,
+          startedAt: scheduledCase.started_at,
+          stripeAccount: scheduledCase.stripe_account,
+          consentState: scheduledCase.consent_state,
+          consentPolicyVersion: scheduledCase.consent_policy_version,
+          checkoutLocale: scheduledCase.checkout_locale,
+          returnUrl: scheduledCase.return_url,
+          productName: scheduledCase.product_name,
+          productSlug: scheduledCase.product_slug,
+          emailSha256: scheduledCase.email_sha256,
+          contactEmail: scheduledCase.contact_email,
+        },
+        input.sendConfig,
+        now,
+      );
+    }
     output.push(projection(updated.rows[0], now.getTime()));
   }
   return output;
