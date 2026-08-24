@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-24T19:35:00Z
 - Owner/client: Codex
-- State: ready_for_deploy after one load-bearing live correction; no provider/runtime
-  mutation yet
+- State: deployed_unverified; exact shadow boundary is live, while the 14-day,
+  progress, natural-event, and parity outcome gate remains open
 - Branch: `codex/student-lifecycle-community-shadow-live-20260824`, based on
   exact live checkout-recovery release `ab3124a0312d459e287857d81a95246a6a591759`.
 - Scope: Community stages 2-4 only: protected provider baseline, exact
@@ -41,9 +41,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   typecheck/build/format/continuity/capabilities/diff pass; full root 3,206 pass
   / 19 skip with only the unchanged CNPC wrapper-contract failure; runner
   43/43; toolbox 14/14 + 9/9 + 65/65.
-- External effects: backups and read-only inventories only. No lifecycle
-  workflow import, provider registration, secret/runtime configuration,
-  catalog/event/action/message/certificate, legacy receiver, or Circle change.
+- Excluded effects: no lifecycle action/message/certificate, legacy receiver,
+  Heartbeat user/group/course, Encharge, minion, or Circle change.
 - Inactive-import correction: n8n 2.9.4 rejected the reviewed 37-character
   workflow ID because its live column is `varchar(36)`. The target remained
   absent. Source now uses 34-character `student-lifecycle-community-shadow`,
@@ -52,6 +51,26 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   passes 10 focused source tests, 10/10 toolbox contract tests, typecheck/build,
   and bounded Sonnet/high correction R3 with `NO MATERIAL FINDINGS` in four
   calls / 47,028 maximum context tokens and no warning.
+- Release/deployment: exact pushed `cf05bca358c917f61b2fb01d53824c81f6445527`,
+  source tree `07e1dbfc9d7c1f8fcac7e1ab4cd5e846503006d2`, 944-file artifact
+  `eddd34eba9d8e8e368d7c3cffc143314a464efec7c221d12773349744d300af8`,
+  archive `8d294ce2459b167f4ce63e65ed4caf2c364ead47a22e8e52bee260072cfebb9c`.
+  Fresh Mini verification and a natural zero-work drain preceded a three-pointer
+  switch retaining rollback to exact `ab3124a0`.
+- Live provider state: n8n 26 workflows / 25 active with one active
+  no-retention lifecycle relay and zero retained target executions; Heartbeat
+  22 registrations with exact legacy 18 unchanged and four new same-host,
+  same-hash, empty-filter core actions. Catalog/registry/membership receipts are
+  completed; membership is 143. Progress remains held on `AUTH_ERROR` with no
+  watermark write.
+- Transport/live health: two identical reserved-UUID direct n8n fixtures yield
+  one handled/quarantined event, one durable `needs_identity` exception, zero
+  enrollment/state-history rows, and duplicate suppression. Exact release,
+  one listener, connected Gmail/Slack, empty queues, unchanged 273 error lines,
+  healthy aggregate lifecycle store, checkout recovery shadow preserved,
+  `actionConsumers=false`, `customerSends=false`, and `circle=false`.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260824-007-student-lifecycle-community-shadow-deploy.md`.
 
 ### NC-20260824-006 — Durable abandoned-checkout shadow control
 
