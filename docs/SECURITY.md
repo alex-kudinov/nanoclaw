@@ -426,6 +426,32 @@ separately authorized drain/recycle and canary. Raw SMTP retirement,
 standalone-script/remaining-integration coverage, and immediate interruption of
 already-running writes remain open.
 
+### Contador fulfillment receipt boundary (`NC-20260823-006`)
+
+The host resolves an exact perimeter-labelled Stripe event read-only, then runs
+the existing external-write safety check before any database, Payment Log,
+roster, or `public.payments` write. A denial leaves the already-archived webhook
+retryable and creates no fulfillment case. When allowed, the host admits the
+case before invoking the processor, so a later processor failure leaves a
+durable owned exception without weakening the global/system brake.
+
+Migration 133 stores only opaque Stripe provider IDs, case/version/attempt
+state, bounded result codes, SHA-256 evidence, owner, deadlines, and timestamps.
+It deliberately excludes names, email addresses, product descriptions,
+amount/card data, raw webhook JSON, Slack content, and accounting facts. Its
+alias and receipt tables are append-only and all three tables are admin-only.
+The host rejects alias reuse across cases, stale case versions, processor/host
+identity mismatch, incomplete stage sets, and any `complete` result lacking
+verified Payment Log, PostgreSQL payment, and mapped-roster readback. Refunds
+cannot complete until a separately authorized refund-fulfillment slice exists.
+A persisted five-minute UUID lease prevents overlapping direct/reaper or
+Checkout/PaymentIntent deliveries from running concurrent children; an expired
+lease creates a new version and invalidates the old token before takeover.
+
+`webhook_inbox.handled` is not fulfillment authority by itself. It becomes
+credible for this source only when `related_entity` binds the exact durable
+case/version after a complete or explicit exception transaction.
+
 Never print, commit, transmit for review, or summarize secret values. Token
 selection for external model review must occur inside the invoking shell and
 only sanitized source/diff content may leave the machine.

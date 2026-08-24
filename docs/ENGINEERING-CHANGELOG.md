@@ -8,6 +8,56 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260823-006 — Durable Contador payment-fulfillment cases
+
+- Date: 2026-08-24T03:35Z
+- Owner/client: Codex
+- State: validating; local implementation complete, independent review and
+  release pending
+- Authorization: accepted
+  `decision:contador-fulfillment-case-ledger-authority` for the C4
+  implementation and normal reviewed release. Historical replay/repair,
+  manufactured Stripe events, customer communication, accounting/QuickBooks/
+  payable work, product-ID mapping, payer/student redesign, schedules, and
+  credentials remain excluded.
+- Gap: `webhook_inbox` previously became handled after a successful child exit
+  even when Payment Log, roster, or PostgreSQL stages were only error strings
+  in the summary. Slack was presentation, not ownership or closure.
+- Implementation: migration 133 creates one admin-only current case per Stripe
+  account/payment-intent pair plus append-only opaque aliases and minimized
+  stage receipts. Host admission precedes external writes; exact Payment Log,
+  `public.payments`, and mapped-roster readback is required for completion.
+  Missing identity/product, write failures, and refunds become durable owned
+  exceptions. Complete replay skips external writes and webhook handling binds
+  the exact case/version.
+- Independent review: initial Claude Sonnet 5/high session
+  `de963310-c9aa-44ff-ac83-0833508359d5` found one material concurrency defect:
+  the admission transaction lock ended before the processor, permitting a
+  second delivery to run another child and invalidate the first version. Codex
+  fixed it with a five-minute persisted lease, retryable `inFlight` refusal,
+  expired-lease version takeover, and exact lease-token finalization. Narrow
+  correction session `ab45e390-129a-421c-a571-ad74c4bca24f` returned
+  `NO MATERIAL FINDINGS`.
+- Review usage: interrupted first round 19 calls / 38 input / 121,382
+  cache-create / 1,657,061 cache-read / 16,978 output / max context 129,948,
+  with a bounded-context warning; correction round 6 calls / 12 input / 97,052
+  cache-create / 270,604 cache-read / 24,702 output / max context 97,054,
+  with no warning.
+- Privacy/authority: no names, email, product text, amount/card data, raw
+  webhook, Slack content, or accounting facts enter the ledger. Bizmgr remains
+  accounting owner and QuickBooks stays manual.
+- Live read-only baseline: 249 Stripe inbox rows (248 handled, one dead-letter)
+  and 261 public payment rows; target tables absent. A separate existing
+  `payments.cohort` source/migration drift is explicitly out of scope.
+- Verification: focused 115/115; typecheck, build, both CommonJS syntax
+  checks, and independent agent-runner build/43 tests pass. Full root suite is
+  3,081 passed / 12 skipped / the unchanged CNPC wrapper-literal failure.
+  Schema-only production-shape rehearsal proves three tables, zero non-admin
+  grants, append-only receipts, empty rollback, and populated rollback refusal.
+  No production schema/event/provider/business mutation occurred.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260823-006-contador-payment-fulfillment-cases.md`.
+
 ### NC-20260822-011 — Host-owned Gmail attachment processing
 
 - Date: 2026-08-23T20:18Z

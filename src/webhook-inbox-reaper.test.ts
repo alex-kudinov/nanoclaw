@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockQuery = vi.fn();
 const mockWithAgentContext = vi.fn();
+const mockHandleStripePayment = vi.hoisted(() => vi.fn());
 vi.mock('./business-db.js', () => ({
   query: (...args: any[]) => mockQuery(...args),
   withAgentContext: (...args: any[]) => mockWithAgentContext(...args),
@@ -10,6 +11,9 @@ vi.mock('./business-db.js', () => ({
 vi.mock('./config.js', () => ({ DATA_DIR: '/tmp/nc-reaper-test' }));
 vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+}));
+vi.mock('./stripe-payment-host.js', () => ({
+  handleStripePayment: mockHandleStripePayment,
 }));
 
 import fs from 'fs';
@@ -68,6 +72,15 @@ function makeDeps(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockHandleStripePayment.mockResolvedValue({
+    stripeId: 'pi_reaper',
+    summary: 'verified',
+    lifecycleEnqueued: false,
+    fulfillmentCaseId: '42',
+    fulfillmentState: 'needs_product',
+    fulfillmentVersion: 1,
+    duplicateComplete: false,
+  });
 });
 
 describe('runReaper', () => {
@@ -117,6 +130,61 @@ describe('runReaper', () => {
       c[0].includes("status = 'handled'"),
     );
     expect(handledCall).toBeDefined();
+  });
+
+  it('binds a Stripe replay to its durable fulfillment case before handling', async () => {
+    const claimed = [
+      {
+        id: 117,
+        source: 'stripe-payment',
+        event_type: 'payment_intent.succeeded',
+        raw_body: {
+          stripe_id: 'pi_reaper',
+          event_type: 'payment_intent.succeeded',
+          account: 'heartbeat',
+        },
+        attempts: 1,
+      },
+    ];
+    mockWithAgentContext.mockImplementation(async (_role: string, fn: any) => {
+      const client = {
+        query: vi
+          .fn()
+          .mockResolvedValueOnce({ rows: claimed })
+          .mockResolvedValue({ rows: [] }),
+      };
+      return fn(client);
+    });
+    mockQuery.mockResolvedValue({ rows: [] });
+    const deps = makeDeps();
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(
+      JSON.stringify([
+        {
+          ...testWebhook,
+          id: 'stripe-payment',
+          group: 'contador',
+        },
+      ]),
+    );
+
+    const result = await runReaper(deps);
+
+    expect(result.succeeded).toBe(1);
+    expect(mockHandleStripePayment).toHaveBeenCalledWith(claimed[0].raw_body);
+    const handled = mockQuery.mock.calls.find((call) =>
+      call[0].includes("status = 'handled'"),
+    );
+    expect(handled?.[1]).toEqual([
+      117,
+      'stripe:reaper',
+      null,
+      JSON.stringify({
+        kind: 'contador_payment_fulfillment_case',
+        id: '42',
+        state: 'needs_product',
+        version: 1,
+      }),
+    ]);
   });
 
   it('marks failed and retries when attempt count below MAX', async () => {

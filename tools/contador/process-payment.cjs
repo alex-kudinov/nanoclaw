@@ -417,6 +417,8 @@ async function fetchPaymentData() {
   let refundedCents = 0;
   let lineItems = [];
   let stripeCreatedAt = 0;
+  let chargeId = '';
+  let invoiceId = '';
 
   if (ID_TYPE === 'checkout') {
     const session = await stripeGet(
@@ -445,8 +447,10 @@ async function fetchPaymentData() {
         // also fetch, so both halves read the identical metadata.product —
         // no drift/preservation logic is needed for the slug itself.
         canonicalProductSlug = validateCanonicalProductSlug(pi.metadata?.product);
+        invoiceId = typeof pi.invoice === 'string' ? pi.invoice : pi.invoice?.id || '';
         if (pi.latest_charge) {
-          const charge = await stripeGet(`/v1/charges/${pi.latest_charge}?expand[]=balance_transaction`);
+          chargeId = typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge.id || '';
+          const charge = await stripeGet(`/v1/charges/${chargeId}?expand[]=balance_transaction`);
           feeCents = charge.balance_transaction?.fee || 0;
           refundedCents = charge.amount_refunded || 0;
           if (customerName === 'Unknown' && charge.billing_details?.name) {
@@ -464,9 +468,10 @@ async function fetchPaymentData() {
     // ("Subscription creation"); the real product is on the invoice line item.
     // Follow pi.invoice → invoice line → product so the Product Map lookup and
     // roster update work for payment-plan students (e.g. MCS).
-    if (pi.invoice) {
+    invoiceId = typeof pi.invoice === 'string' ? pi.invoice : pi.invoice?.id || '';
+    if (invoiceId) {
       try {
-        const inv = await stripeGet(`/v1/invoices/${pi.invoice}`);
+        const inv = await stripeGet(`/v1/invoices/${invoiceId}`);
         const line = (inv.lines && inv.lines.data && inv.lines.data[0]) || {};
         const prodId =
           (line.pricing && line.pricing.price_details && line.pricing.price_details.product) ||
@@ -489,7 +494,8 @@ async function fetchPaymentData() {
 
     let charge = null;
     if (pi.latest_charge) {
-      charge = await stripeGet(`/v1/charges/${pi.latest_charge}?expand[]=balance_transaction`);
+      chargeId = typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge.id || '';
+      charge = await stripeGet(`/v1/charges/${chargeId}?expand[]=balance_transaction`);
       feeCents = charge.balance_transaction?.fee || 0;
       refundedCents = charge.amount_refunded || 0;
     }
@@ -515,7 +521,7 @@ async function fetchPaymentData() {
     productName, productId, customerEmail, customerName,
     amountCents, currency, paymentStatus, eventType,
     feeCents, refundedCents, lineItems, stripeCreatedAt,
-    canonicalTransactionId, canonicalProductSlug,
+    canonicalTransactionId, canonicalProductSlug, chargeId, invoiceId,
   };
 }
 
@@ -558,6 +564,83 @@ async function resolveExamRouting(allMatches, programTabs, email) {
   return prepExamMatches;
 }
 
+/**
+ * Convert content-free stage readback into the durable case outcome. A script
+ * exit is intentionally absent from this decision: only exact source readback
+ * or an explicit owned exception is terminal.
+ */
+function derivePaymentFulfillmentOutcome({
+  paymentLogVerified,
+  postgresVerified,
+  rosterMode,
+}) {
+  const receipts = [
+    {
+      stage: 'stripe_source',
+      outcome: 'verified',
+      resultCode: 'stripe_source_resolved',
+    },
+    {
+      stage: 'payment_log',
+      outcome: paymentLogVerified ? 'verified' : 'failed',
+      resultCode: paymentLogVerified
+        ? 'payment_log_readback_verified'
+        : 'payment_log_readback_failed',
+    },
+    {
+      stage: 'postgres_payment',
+      outcome: postgresVerified ? 'verified' : 'failed',
+      resultCode: postgresVerified
+        ? 'postgres_payment_readback_verified'
+        : 'postgres_payment_readback_failed',
+    },
+  ];
+  let state;
+  let errorCode = null;
+  if (!paymentLogVerified) {
+    state = 'write_failed';
+    errorCode = 'payment_log_readback_failed';
+  } else if (!postgresVerified) {
+    state = 'write_failed';
+    errorCode = 'postgres_payment_readback_failed';
+  } else if (rosterMode === 'missing_student') {
+    state = 'needs_student';
+    errorCode = 'student_identity_missing';
+  } else if (rosterMode === 'unmapped_product') {
+    state = 'needs_product';
+    errorCode = 'product_mapping_missing';
+  } else if (rosterMode === 'mapped_verified') {
+    state = 'complete';
+  } else {
+    state = 'write_failed';
+    errorCode = 'student_roster_readback_failed';
+  }
+  receipts.push({
+    stage: 'student_roster',
+    outcome:
+      rosterMode === 'mapped_verified'
+        ? 'verified'
+        : ['missing_student', 'unmapped_product'].includes(rosterMode)
+          ? 'exception'
+          : 'failed',
+    resultCode:
+      rosterMode === 'mapped_verified'
+        ? 'student_roster_readback_verified'
+        : rosterMode === 'missing_student'
+          ? 'student_identity_missing'
+          : rosterMode === 'unmapped_product'
+            ? 'product_mapping_missing'
+            : 'student_roster_readback_failed',
+  });
+  return { state, errorCode, receipts };
+}
+
+function emitFulfillmentResult(result) {
+  console.log(
+    `__CONTADOR_FULFILLMENT__${Buffer.from(JSON.stringify(result)).toString('base64url')}`,
+  );
+}
+
 async function main() {
   // 1. Fetch payment data from Stripe (tries each key until one works)
   const fetchResult = await fetchPaymentWithKeyFallback();
@@ -566,6 +649,7 @@ async function main() {
     amountCents, currency, paymentStatus, eventType,
     feeCents, refundedCents, lineItems, stripeCreatedAt,
     canonicalTransactionId, stripeAccount, canonicalProductSlug,
+    chargeId, invoiceId,
   } = fetchResult;
   const accountingStripeId = canonicalTransactionId || STRIPE_ID;
 
@@ -586,6 +670,9 @@ async function main() {
     db: 'skipped',
   };
   let rosterMatches = [];
+  let paymentLogVerified = false;
+  let postgresVerified = false;
+  let rosterMode = 'write_failed';
 
   // 2. Google Sheets operations (separate sheets for payments vs roster)
   const hasSaCreds = fs.existsSync(SA_PATH);
@@ -593,6 +680,7 @@ async function main() {
   // 2a. Payment Log (private sheet) — upsert by Stripe ID (column I)
   if (SHEETS_PAYMENTS_ID && hasSaCreds) {
     try {
+      let paymentLogRow = null;
       const logRow = [
         transactionDate,
         recordedDate,
@@ -615,6 +703,7 @@ async function main() {
       );
       if (existingRow >= 0) {
         const sheetRow = existingRow + 1;
+        paymentLogRow = sheetRow;
         // Read the row back before overwriting it: the payment-intent half of
         // a Checkout purchase would otherwise replace the real product name
         // (column E) with its own generic description.
@@ -640,6 +729,7 @@ async function main() {
           const rowMatch = (appendResult.updates?.updatedRange || '').match(/:.*?(\d+)$/);
           if (rowMatch) {
             const newRow = parseInt(rowMatch[1], 10);
+            paymentLogRow = newRow;
             // Seed the operator-editable Defer Month (col N) = sale month (first
             // of month) and the Payout formula (col O) = Defer + 6. The operator
             // overrides Defer for future cohorts; Payout + the ladder recount.
@@ -665,6 +755,20 @@ async function main() {
             }
           }
         } catch { /* non-fatal — filter update is nice-to-have */ }
+      }
+      if (paymentLogRow !== null) {
+        const readback = await sheetsGet(
+          SHEETS_PAYMENTS_ID,
+          `Payment Log!J${paymentLogRow}:K${paymentLogRow}`,
+        );
+        const [readbackId, readbackStatus] = readback.values?.[0] || [];
+        paymentLogVerified =
+          readbackId === accountingStripeId && readbackStatus === paymentStatus;
+        results.sheets_log = paymentLogVerified
+          ? `${results.sheets_log} (readback verified)`
+          : 'ERROR: payment log readback mismatch';
+      } else {
+        results.sheets_log = 'ERROR: payment log row identity unavailable';
       }
     } catch (e) {
       results.sheets_log = `ERROR: ${e.message.slice(0, 100)}`;
@@ -700,6 +804,7 @@ async function main() {
 
       if (rosterMatches.length > 0 && customerEmail) {
         const rosterResults = [];
+        let verifiedTargets = 0;
         for (const { tab, column } of rosterMatches) {
           try {
             const headers = await sheetsGet(SHEETS_ROSTER_ID, `${tab}!1:1`);
@@ -716,6 +821,7 @@ async function main() {
                   r[0].toLowerCase() === customerEmail.toLowerCase(),
               );
 
+              let writtenRow;
               if (rowIndex < 0) {
                 const newRow = new Array(headerRow.length).fill('');
                 newRow[0] = customerEmail;
@@ -725,9 +831,18 @@ async function main() {
                   const refundColIndex = headerRow.findIndex((h) => h === 'Refunded');
                   if (refundColIndex >= 0) newRow[refundColIndex] = transactionDate;
                 }
-                await sheetsAppend(SHEETS_ROSTER_ID, `${tab}!A:A`, [newRow]);
+                const appendResult = await sheetsAppend(
+                  SHEETS_ROSTER_ID,
+                  `${tab}!A:A`,
+                  [newRow],
+                );
+                const rowMatch = (appendResult.updates?.updatedRange || '').match(
+                  /:.*?(\d+)$/,
+                );
+                writtenRow = rowMatch ? parseInt(rowMatch[1], 10) : null;
               } else {
                 const sheetRow = rowIndex + 1;
+                writtenRow = sheetRow;
                 const colLetter = colIndexToLetter(colIndex);
                 await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!${colLetter}${sheetRow}`, [
                   [transactionDate],
@@ -757,7 +872,28 @@ async function main() {
                   }
                 }
               }
-              rosterResults.push(`${tab}: ${refundedCents > 0 ? 'OK (refunded)' : 'OK'}`);
+              if (writtenRow) {
+                const colLetter = colIndexToLetter(colIndex);
+                const readback = await sheetsGet(
+                  SHEETS_ROSTER_ID,
+                  `${tab}!A${writtenRow}:${colLetter}${writtenRow}`,
+                );
+                const row = readback.values?.[0] || [];
+                const emailMatches =
+                  String(row[0] || '').toLowerCase() ===
+                  customerEmail.toLowerCase();
+                const targetPresent = Boolean(String(row[colIndex] || '').trim());
+                if (emailMatches && targetPresent) {
+                  verifiedTargets++;
+                  rosterResults.push(
+                    `${tab}: ${refundedCents > 0 ? 'OK (refunded)' : 'OK'} (readback verified)`,
+                  );
+                } else {
+                  rosterResults.push(`${tab}: ERROR: readback mismatch`);
+                }
+              } else {
+                rosterResults.push(`${tab}: ERROR: row identity unavailable`);
+              }
             } else {
               rosterResults.push(`${tab}: column "${column}" not found`);
             }
@@ -766,6 +902,10 @@ async function main() {
           }
         }
         results.sheets_roster = rosterResults.join('; ');
+        rosterMode =
+          verifiedTargets === rosterMatches.length
+            ? 'mapped_verified'
+            : 'write_failed';
       } else if (rosterMatches.length === 0) {
         // Unrecognized product — no exact Product Map row. This is the case for
         // sales-closed deals paid via a Plutio/Stripe invoice (description is
@@ -803,11 +943,16 @@ async function main() {
           } catch (e) {
             results.sheets_roster = `Sales tab ERROR: ${e.message.slice(0, 100)}`;
           }
+          rosterMode = results.sheets_roster.startsWith('Sales tab: OK')
+            ? 'unmapped_product'
+            : 'write_failed';
         } else {
           results.sheets_roster = 'unrecognized product, no email — skipped';
+          rosterMode = 'missing_student';
         }
       } else {
         results.sheets_roster = 'no customer email — skipped';
+        rosterMode = 'missing_student';
       }
     } catch (e) {
       results.sheets_roster = `ERROR: ${e.message.slice(0, 100)}`;
@@ -865,14 +1010,29 @@ async function main() {
           WHEN EXCLUDED.event_type = 'checkout.session.completed'
           THEN EXCLUDED.event_type ELSE payments.event_type END;
       DELETE FROM payments WHERE stripe_session_id = :'legacy' AND :'legacy' <> :'sid';
-      COMMIT;`;
+      COMMIT;
+      SELECT stripe_session_id
+        FROM payments
+       WHERE stripe_session_id = :'sid';`;
     // Fed on stdin via -f -, not -c: psql performs :'var' interpolation only
     // when reading a script, never for -c strings (where :'sid' would reach
     // the server verbatim and fail with a syntax error).
-    execFileSync('psql', [...args, '-v', 'ON_ERROR_STOP=1', '-f', '-'], {
-      input: sql, stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    results.db = 'OK';
+    const dbReadback = execFileSync(
+      'psql',
+      [...args, '-v', 'ON_ERROR_STOP=1', '-qAt', '-f', '-'],
+      {
+        input: sql,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        encoding: 'utf8',
+      },
+    );
+    postgresVerified = dbReadback
+      .split('\n')
+      .map((line) => line.trim())
+      .includes(accountingStripeId);
+    results.db = postgresVerified
+      ? 'OK (readback verified)'
+      : 'ERROR: Postgres payment readback missing';
   } catch (e) {
     results.db = `ERROR: ${e.stderr?.toString().trim() || e.message}`;
   }
@@ -898,8 +1058,32 @@ async function main() {
 
   console.log(lines.join('\n'));
 
+  const fulfillment = derivePaymentFulfillmentOutcome({
+    paymentLogVerified,
+    postgresVerified,
+    rosterMode,
+  });
+  const aliases = [
+    { kind: 'payment_intent', id: accountingStripeId },
+    ...(STRIPE_ID.startsWith('cs_')
+      ? [{ kind: 'checkout_session', id: STRIPE_ID }]
+      : []),
+    ...(chargeId ? [{ kind: 'charge', id: chargeId }] : []),
+    ...(invoiceId ? [{ kind: 'invoice', id: invoiceId }] : []),
+  ];
+  emitFulfillmentResult({
+    version: 1,
+    stripeAccount,
+    paymentIntentId: accountingStripeId,
+    sourceObjectId: STRIPE_ID,
+    eventType,
+    occurredAt: new Date(txnDateObj).toISOString(),
+    aliases,
+    ...fulfillment,
+  });
+
   const lifecycleEligible =
-    results.db === 'OK' &&
+    fulfillment.state === 'complete' &&
     /^pi_[A-Za-z0-9_]+$/.test(canonicalTransactionId || '') &&
     (ID_TYPE === 'checkout' ? paymentStatus === 'paid' : paymentStatus === 'succeeded');
   const lifecycle = {
@@ -923,7 +1107,10 @@ async function main() {
 // test its pure slug/product-preservation logic would fire the whole
 // Stripe → Sheets → Postgres pipeline as a side effect of the import.
 module.exports = {
-  validateCanonicalProductSlug, preferredProductName, buildPsqlVarArgs,
+  validateCanonicalProductSlug,
+  preferredProductName,
+  buildPsqlVarArgs,
+  derivePaymentFulfillmentOutcome,
 };
 
 if (require.main === module) {

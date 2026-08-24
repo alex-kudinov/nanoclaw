@@ -168,6 +168,16 @@ or missing source identity fails before a transaction. Fast-healer collection
 and existing action controls continue independently. One-source configuration
 does not grant a second projection, Slack presentation, or remediation.
 
+Migration 133 is the local, unapplied `NC-20260823-006` Contador operational
+payment/refund fulfillment ledger. It stores one current case per exact Stripe
+account/payment-intent pair plus append-only opaque aliases and minimized stage
+receipts. Only `nanoclaw_admin` receives access. Names, email, product text,
+amount/card data, raw webhook content, Slack content, and accounting facts are
+forbidden. Exact Payment Log, `public.payments`, and mapped-roster readback is
+required for `complete`; refunds remain `needs_review`. Schema/release presence
+does not authorize replaying historical Stripe events or any Bizmgr/QuickBooks
+action. The guarded rollback refuses once any case, alias, or receipt exists.
+
 ## Connection
 
 ```bash

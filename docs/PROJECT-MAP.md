@@ -596,13 +596,38 @@ dependencies, not active runtime channels in this snapshot.
 | Proposal replies | `src/proposal-reply*.ts`                                                                                                                                                 | accept/decline detection and actions                                                                                                                                                                                                       |
 | Follow-up        | `src/proposal-followup*.ts`, `src/followup-drop*.ts`, `src/followup-policy.ts`, `src/followup-case-store.ts`, `src/followup-shadow*.ts`, `src/followup-review*.ts`, `src/plutio-{proposals,invoices,transactions}.ts`, migrations 113, 130, and 131 | legacy approval-gated proposal/Sales mechanisms plus the deployed live-dark exact-case/source shadow. Deployed NC-20260821-006 binds future approved Sales receipts to exact pipeline entries and reconciles exact invoice arithmetic against bounded paid-inbound Plutio transactions; a clean Mini dry run produced eight internal reviews and no action. NC-20260821-007 locally adds a content-minimized, bounded, fingerprinted, non-posting Contador packet that refuses partial/drifted sources. Historical threads remain unbackfilled; proposal ownership remains blocked because neither Plutio nor 1,163 live pipeline entries contains an assigned-owner source. The broken task stays paused; migrations 130-131 stay live/empty/admin-only; no case projection, presentation, decision consumer, draft, scheduler, or send is activated. |
 | Trafft           | `src/trafft-custom-fields.ts`, `src/trafft-sweeper.ts`, `src/booking-host-write.ts`                                                                                      | booking ingestion and recovery                                                                                                                                                                                                             |
-| Stripe           | `src/stripe-payment-host.ts`, `src/contador-name-reaper.ts`, `tools/contador/process-payment.cjs`                                                                        | dual-account payment/refund ingestion, canonical transaction identity, and name recovery                                                                                                                                                   |
+| Stripe           | `src/stripe-payment-host.ts`, `src/stripe-payment-source.ts`, `src/contador-payment-fulfillment-store.ts`, `src/contador-name-reaper.ts`, `tools/contador/process-payment.cjs`, migration 133                                                                        | dual-account payment/refund ingestion, canonical transaction identity, durable operational complete/exception cases, exact stage readback, and name recovery; refunds remain review-held and Bizmgr retains accounting                                                                                                                                                   |
 | Hive/Firebase    | `src/hive-bridge.ts`, `src/hive-sync-reaper.ts`                                                                                                                          | engagement synchronization; `NC-20260816-008` guards mutation entry and holds denied retries without consuming attempts                                                                                                                    |
 | Chaos            | `src/chaos-activity.ts`, `src/chaos-booking.ts`, `src/chaos-reconciler.ts`, `src/chaos-lifecycle-outbox.ts`, `src/chaos-lifecycle-reconcile.ts`                          | activity/booking reconciliation plus durable aggregate-verified commerce lifecycle delivery                                                                                                                                                |
 | CNPC             | `src/cnpc-intake.ts`, `src/cnpc-match-result.ts`, migration 116                                                                                                          | host-owned intake, policy, bounded coach pool, and validated match result                                                                                                                                                                  |
 | Knowledge drift  | `src/program-facts-drift.ts`, `src/program-facts-drift-job.ts`, `src/program-facts-company-work.ts`, `src/lesson-conflict.ts`, `src/learn-ipc-handler.ts`, migration 125 | deterministic factual controls plus the live detector-to-Company-Work adapter; exact release `8344524c`, migration 125, active mode, and compiled scheduler path are live, while owner correction and clean source-resolution remain gated |
 | Brief/digests    | `src/brief-promote.ts`, `src/digest-generator.ts`, `src/digest-delivery.ts`                                                                                              | operational briefing; Things promotion denies before HTTP fetch under the common brake                                                                                                                                                     |
 | SEO              | `src/seo-stats.ts`                                                                                                                                                       | SEO job support                                                                                                                                                                                                                            |
+
+### Contador payment-fulfillment checkpoint (`NC-20260823-006`)
+
+The live webhook archive already deduplicates Stripe provider events, but the
+host previously treated a successful child-process exit as fulfillment even
+when its summary reported a Payment Log, roster, or PostgreSQL stage failure.
+`NC-20260823-006` adds an earlier host-owned admission and a later exact-readback
+gate around the existing deterministic processor.
+
+Migration 133 defines one admin-only current case per Stripe account and
+canonical Payment Intent, append-only provider aliases, and append-only stage
+receipts. The processor's private sentinel is stripped from Slack output and
+may carry only identity plus bounded stage/state codes. Completion requires
+verified Stripe-source, Payment Log, `public.payments`, and mapped-roster
+receipts. Missing student/product identity, write failures, and refund
+fulfillment become durable owned exceptions; a complete replay skips the
+external writes. `webhook_inbox.related_entity` binds the exact case/version
+before the archive row is handled.
+
+The ledger is operational rather than financial. It stores no names, email,
+product text, amount/card data, raw webhook content, or accounting facts and
+grants no agent access. It does not replay the historical Stripe backlog,
+change product/student resolution, or move any Bizmgr/QuickBooks authority.
+Local source and disposable schema proof are not production migration or live
+event evidence.
 
 ### Reliability and autonomy
 

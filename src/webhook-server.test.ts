@@ -5,8 +5,13 @@ import { WebhookServer, WebhookServerDeps } from './webhook-server.js';
 import { recordFailure, recordSuccess } from './circuit-breaker.js';
 import { WebhookDefinition } from './types.js';
 
+const mockHandleStripePayment = vi.hoisted(() => vi.fn());
+
 vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+vi.mock('./stripe-payment-host.js', () => ({
+  handleStripePayment: mockHandleStripePayment,
 }));
 
 vi.mock('fs', async () => {
@@ -1084,5 +1089,75 @@ describe('WebhookServer — form-submitted observed suppression', () => {
       502,
       expect.objectContaining({ handled_by: 'form-submitted:host-handler' }),
     );
+  });
+});
+
+describe('WebhookServer — Stripe fulfillment acknowledgement', () => {
+  const stripeWebhook: WebhookDefinition = {
+    id: 'stripe-payment',
+    name: 'Stripe Payment',
+    group: 'contador',
+    chat_jid: 'slack:CONTADOR',
+    prompt_template: '{{payload}}',
+    secret: 'hook-secret',
+    context_mode: 'isolated',
+    created_at: '2026-01-01T00:00:00Z',
+  };
+
+  it('marks the inbox handled only with its durable fulfillment-case binding', async () => {
+    mockHandleStripePayment.mockResolvedValueOnce({
+      stripeId: 'pi_webhook',
+      summary: '[PAYMENT RECEIVED]\nProduct mapping needs review',
+      lifecycleEnqueued: false,
+      fulfillmentCaseId: '42',
+      fulfillmentState: 'needs_product',
+      fulfillmentVersion: 0,
+      duplicateComplete: false,
+    });
+    const markWebhookHandled = vi.fn(async () => {});
+    const deps = makeDeps({
+      getRegisteredGroups: () => ({
+        'slack:CONTADOR': {
+          name: 'Contador',
+          folder: 'contador',
+          trigger: '@Gru',
+          added_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+      archiveWebhook: vi.fn(async () => ({ id: 601, isDuplicate: false })),
+      markWebhookHandled,
+    });
+    const server = new WebhookServer(deps);
+    await server.start();
+    deps.port = server.getPort();
+    (server as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      stripeWebhook,
+    ];
+    try {
+      const response = await makeRequest(deps.port, {
+        path: '/hook/stripe-payment',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+        body: JSON.stringify({
+          stripe_id: 'pi_webhook',
+          event_type: 'payment_intent.succeeded',
+          account: 'heartbeat',
+        }),
+      });
+      expect(response.status).toBe(202);
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    } finally {
+      await server.stop().catch(() => {});
+    }
+
+    expect(deps.runAgent).not.toHaveBeenCalled();
+    expect(markWebhookHandled).toHaveBeenCalledWith(601, {
+      handled_by: 'stripe:host-handler',
+      related_entity: {
+        kind: 'contador_payment_fulfillment_case',
+        id: '42',
+        state: 'needs_product',
+        version: 0,
+      },
+    });
   });
 });

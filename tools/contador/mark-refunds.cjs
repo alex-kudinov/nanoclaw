@@ -384,9 +384,13 @@ async function main() {
   const refundIndex = await buildRefundIndex();
   const exactRefund = REFUND_ID
     ? [...refundIndex.values()].find((info) => info.refundId === REFUND_ID) || null
-    : null;
-  if (REFUND_ID && !exactRefund) {
-    throw new Error(`exact succeeded refund ${REFUND_ID} did not resolve for ${ACCOUNT_ARG || 'either account'}`);
+    : SINGLE_ID
+      ? refundIndex.get(SINGLE_ID) || null
+      : null;
+  if (SINGLE_ID && !exactRefund) {
+    throw new Error(
+      `exact succeeded refund ${REFUND_ID || SINGLE_ID} did not resolve for ${ACCOUNT_ARG || 'either account'}`,
+    );
   }
 
   const resp = await sheetsGet('Payment Log!A:M');
@@ -476,6 +480,71 @@ async function main() {
   }
   console.log(`\nAPPLIED — marked ${marked} refunded, backfilled ${backfilled} Refund ID/Amount(s).`);
   if (exactRefund) {
+    const exactRowIndex = rows.findIndex((row, index) => {
+      if (index === 0) return false;
+      return exactRefund.ids.includes((row[ID_COL_INDEX] || '').trim());
+    });
+    let paymentLogVerified = false;
+    if (exactRowIndex > 0) {
+      const rowNumber = exactRowIndex + 1;
+      const readback = await sheetsGet(`Payment Log!J${rowNumber}:M${rowNumber}`);
+      const [readbackId, status, refundId, refundAmount] =
+        readback.values?.[0] || [];
+      paymentLogVerified =
+        exactRefund.ids.includes(String(readbackId || '').trim()) &&
+        String(status || '').trim().toLowerCase() === 'refunded' &&
+        String(refundId || '').trim() === exactRefund.refundId &&
+        Number.parseFloat(String(refundAmount || '')) ===
+          exactRefund.amount / 100;
+    }
+    const fulfillment = {
+      version: 1,
+      stripeAccount: exactRefund.account,
+      paymentIntentId: exactRefund.canonicalTransactionId,
+      sourceObjectId: SINGLE_ID,
+      aliases: [
+        ...exactRefund.ids.map((id) => ({
+          kind: id.startsWith('pi_')
+            ? 'payment_intent'
+            : id.startsWith('cs_')
+              ? 'checkout_session'
+              : 'charge',
+          id,
+        })),
+        { kind: 'refund', id: exactRefund.refundId },
+      ],
+      state: paymentLogVerified ? 'needs_review' : 'write_failed',
+      errorCode: paymentLogVerified
+        ? 'refund_fulfillment_review_required'
+        : 'payment_log_readback_failed',
+      receipts: [
+        {
+          stage: 'stripe_source',
+          outcome: 'verified',
+          resultCode: 'stripe_refund_resolved',
+        },
+        {
+          stage: 'payment_log',
+          outcome: paymentLogVerified ? 'verified' : 'failed',
+          resultCode: paymentLogVerified
+            ? 'payment_log_refund_readback_verified'
+            : 'payment_log_readback_failed',
+        },
+        {
+          stage: 'postgres_payment',
+          outcome: 'not_applicable',
+          resultCode: 'refund_postgres_receipt_not_implemented',
+        },
+        {
+          stage: 'refund_fulfillment',
+          outcome: 'exception',
+          resultCode: 'refund_fulfillment_review_required',
+        },
+      ],
+    };
+    console.log(
+      `__CONTADOR_FULFILLMENT__${Buffer.from(JSON.stringify(fulfillment)).toString('base64url')}`,
+    );
     const lifecycle = {
       eligible: Boolean(exactRefund.canonicalTransactionId),
       event_name: 'purchase_refunded',

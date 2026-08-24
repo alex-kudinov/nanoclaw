@@ -197,8 +197,16 @@ async function dispatchRow(row: InboxRow, deps: ReaperDeps): Promise<void> {
   // Stripe payments are mechanical too — re-run process-payment.cjs directly.
   // Idempotent (Sheets upsert + Postgres ON CONFLICT), zero LLM.
   if (row.source === 'stripe-payment') {
-    await handleStripePayment(row.raw_body);
-    await markHandled(row.id, { handled_by: 'stripe:reaper' });
+    const result = await handleStripePayment(row.raw_body);
+    await markHandled(row.id, {
+      handled_by: 'stripe:reaper',
+      related_entity: {
+        kind: 'contador_payment_fulfillment_case',
+        id: result.fulfillmentCaseId,
+        state: result.fulfillmentState,
+        version: result.fulfillmentVersion,
+      },
+    });
     return;
   }
   const groups = deps.getRegisteredGroups();

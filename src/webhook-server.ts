@@ -1037,7 +1037,15 @@ export class WebhookServer {
         // 'dispatched' and trigger a needless reaper re-run.
         if (inboxId !== null && this.deps.markWebhookHandled) {
           await this.deps
-            .markWebhookHandled(inboxId, { handled_by: 'stripe:host-handler' })
+            .markWebhookHandled(inboxId, {
+              handled_by: 'stripe:host-handler',
+              related_entity: {
+                kind: 'contador_payment_fulfillment_case',
+                id: r.fulfillmentCaseId,
+                state: r.fulfillmentState,
+                version: r.fulfillmentVersion,
+              },
+            })
             .catch((err) =>
               logger.error(
                 { hookId, inboxId, err },
@@ -1046,7 +1054,13 @@ export class WebhookServer {
             );
         }
         logger.info(
-          { hookId, inboxId, stripeId: r.stripeId },
+          {
+            hookId,
+            inboxId,
+            stripeId: r.stripeId,
+            fulfillmentCaseId: r.fulfillmentCaseId,
+            fulfillmentState: r.fulfillmentState,
+          },
           'Stripe payment recorded (no agent spawn)',
         );
         await this.deps

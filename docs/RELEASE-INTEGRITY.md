@@ -70,6 +70,24 @@ Company Work aggregates before and after activation. Bundling or applying the
 migration does not authorize live incident projection, owner-work
 presentation, remediation, or another healer action.
 
+Beginning with `NC-20260823-006`, the archive also binds migration 133 and its
+history-preserving rollback. The new Stripe host handler requires these tables
+at admission, before Payment Log/PostgreSQL/roster writes, so migration 133 must
+be applied and structurally/admin-only verified before activating the host
+release. Take a custom-format PostgreSQL backup, require empty target tables,
+record Stripe webhook-inbox/payment aggregates immediately before migration,
+apply only migration 133, and verify constraints, aliases/receipt append-only
+triggers, sequence/table ownership, zero non-admin grants, and zero rows. Then
+activate through the normal three-pointer boundary and prove the aggregates did
+not change during release. Do not manufacture or replay a Stripe event.
+
+Rollback to the prior host release may leave the additive empty tables in
+place. The SQL rollback may run only while all three remain empty; after any
+case, alias, or receipt exists it must refuse rather than erase fulfillment
+history. Bundling, applying, or activating migration 133 grants no historical
+repair, customer communication, accounting, QuickBooks, product-mapping, or
+payer/student authority.
+
 `NC-20260823-001` crossed that exact dark boundary under release
 `97026492b85e1fe86ea9387d2bb3c9dc74019546`, source tree
 `f8e9ddb4f4d4338f7eb7f537a00876aeb20b01ad`, 876-file artifact SHA-256

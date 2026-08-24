@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { validateCanonicalProductSlug, preferredProductName, buildPsqlVarArgs } =
-  require('./process-payment.cjs');
+const {
+  validateCanonicalProductSlug,
+  preferredProductName,
+  buildPsqlVarArgs,
+  derivePaymentFulfillmentOutcome,
+} = require('./process-payment.cjs');
 
 // Tandem's checkout writes the canonical website product slug into the
 // underlying PaymentIntent's metadata.product key. Only a validated shape may
@@ -44,10 +48,14 @@ describe('validateCanonicalProductSlug', () => {
   // The class of arbitrary text this gate must never wave through: literal
   // Stripe product-name junk, HTML, and shell/SQL metacharacters.
   it('rejects arbitrary caller-controlled text', () => {
-    expect(validateCanonicalProductSlug('<script>alert(1)</script>')).toBeNull();
+    expect(
+      validateCanonicalProductSlug('<script>alert(1)</script>'),
+    ).toBeNull();
     expect(validateCanonicalProductSlug('Invoice #tca-371-pl')).toBeNull();
     expect(validateCanonicalProductSlug('$(whoami)')).toBeNull();
-    expect(validateCanonicalProductSlug("'; DROP TABLE payments; --")).toBeNull();
+    expect(
+      validateCanonicalProductSlug("'; DROP TABLE payments; --"),
+    ).toBeNull();
     expect(validateCanonicalProductSlug('coaching ($999/mo x4)')).toBeNull();
   });
 
@@ -67,7 +75,9 @@ describe('preferredProductName (event arrival order + product preservation)', ()
 
   it('checkout-then-intent: the intent half must not overwrite the real product', () => {
     expect(preferredProductName('Unknown', REAL, PI)).toBe(REAL);
-    expect(preferredProductName('Individual Mentor Coaching', REAL, PI)).toBe(REAL);
+    expect(preferredProductName('Individual Mentor Coaching', REAL, PI)).toBe(
+      REAL,
+    );
   });
 
   it('intent-then-checkout: the checkout half may correct whatever is there', () => {
@@ -122,4 +132,59 @@ describe('buildPsqlVarArgs (literal $/quotes/command-like product names)', () =>
     expect(buildPsqlVarArgs({ prodid: null })).toEqual(['-v', 'prodid=']);
     expect(buildPsqlVarArgs({ prodid: undefined })).toEqual(['-v', 'prodid=']);
   });
+});
+
+describe('derivePaymentFulfillmentOutcome', () => {
+  it('requires exact Payment Log, Postgres, and roster readback for completion', () => {
+    expect(
+      derivePaymentFulfillmentOutcome({
+        paymentLogVerified: true,
+        postgresVerified: true,
+        rosterMode: 'mapped_verified',
+      }),
+    ).toMatchObject({ state: 'complete', errorCode: null });
+  });
+
+  it('turns an unmapped product into an owned exception', () => {
+    expect(
+      derivePaymentFulfillmentOutcome({
+        paymentLogVerified: true,
+        postgresVerified: true,
+        rosterMode: 'unmapped_product',
+      }),
+    ).toMatchObject({
+      state: 'needs_product',
+      errorCode: 'product_mapping_missing',
+    });
+  });
+
+  it('keeps missing student identity explicit', () => {
+    expect(
+      derivePaymentFulfillmentOutcome({
+        paymentLogVerified: true,
+        postgresVerified: true,
+        rosterMode: 'missing_student',
+      }),
+    ).toMatchObject({
+      state: 'needs_student',
+      errorCode: 'student_identity_missing',
+    });
+  });
+
+  it.each([
+    [false, true, 'mapped_verified', 'payment_log_readback_failed'],
+    [true, false, 'mapped_verified', 'postgres_payment_readback_failed'],
+    [true, true, 'write_failed', 'student_roster_readback_failed'],
+  ])(
+    'turns missing stage readback into write_failed',
+    (paymentLogVerified, postgresVerified, rosterMode, errorCode) => {
+      expect(
+        derivePaymentFulfillmentOutcome({
+          paymentLogVerified,
+          postgresVerified,
+          rosterMode,
+        }),
+      ).toMatchObject({ state: 'write_failed', errorCode });
+    },
+  );
 });

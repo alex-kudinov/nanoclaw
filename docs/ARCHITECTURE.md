@@ -311,6 +311,31 @@ Inactive/minimal: `gru-community`, `gru-solera`, `feature-requests`
 
 Note: Slack channel `#gru-bookkeeper` (`C0AK1FD66MT`) is the front door for the **contador** minion — channel name reflects the role (bookkeeping), but the agent's folder, code, and registered group name is `contador` / `El Contador`. The empty `groups/gru-bookkeeper/` directory is just a log sink for that channel.
 
+### Stripe payment/refund fulfillment boundary (`NC-20260823-006`)
+
+The `stripe-payment` webhook remains a deterministic host path with no agent
+container or LLM. Before any Sheets/PostgreSQL/roster mutation, the host
+resolves a Checkout Session to its canonical Payment Intent and commits one
+privacy-minimized `business_v2.contador_payment_fulfillment_cases` row keyed by
+Stripe account plus Payment Intent. Append-only aliases bind provider event,
+Checkout, charge, invoice, and refund IDs to that case.
+
+The release-owned processor returns private stage results only after exact
+Payment Log, `public.payments`, and mapped-roster readback. The host then commits
+append-only stage receipts and transitions the case to `complete` or a durable
+`needs_student`, `needs_product`, `write_failed`, or `needs_review` exception.
+Only after that transaction may `webhook_inbox` become `handled`, with its
+`related_entity` bound to the exact case/version. A verified complete replay
+does not rerun external writes. A persisted five-minute lease spans the
+120-second processor: overlapping delivery remains retryable without a second
+child, and only an expired lease may create the next case version. Refunds
+cannot complete in this slice; they
+remain `needs_review` until refund/student-fulfillment evidence exists.
+
+This is operational fulfillment, not accounting. Case state omits names,
+email, product text, amounts, cards, raw webhook content, and accounting facts;
+Bizmgr and manual QuickBooks procedures retain their existing authority.
+
 ---
 
 ## Container Isolation

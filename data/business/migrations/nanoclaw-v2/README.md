@@ -110,18 +110,25 @@ before applying anything.
   runtime-unwired; schema/source presence does not authorize a production
   migration, live incident projection, Slack presentation, healer action, or
   deployment;
+- migration 133 is NC-20260823-006's local, unapplied host-owned Contador
+  payment/refund fulfillment ledger. It creates one current case per Stripe
+  account/payment-intent pair plus append-only opaque aliases and minimized
+  stage receipts. It grants only `nanoclaw_admin`; source presence does not
+  process or replay a Stripe event, write Sheets/public payments, post Slack,
+  repair history, or grant accounting authority;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-132 are non-auto-discovered and refuse to erase populated
+- rollbacks 120-133 are non-auto-discovered and refuse to erase populated
   operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
   mailbox-audit, program-facts, outcome-quality, or outcome-review history;
   rollback 128 specifically refuses once any durable `+1` decision exists,
   rollback 129 refuses once any packet/attempt evidence exists, and rollback
   130 refuses once any follow-up case/event evidence exists; rollback 131
   refuses once any operator-decision evidence exists; rollback 132 refuses once
-  any healer-resolution item or observation exists.
+  any healer-resolution item or observation exists; rollback 133 refuses once
+  any Contador fulfillment case, alias, or receipt exists.
 
 ## Rollback
 

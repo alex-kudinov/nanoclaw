@@ -48,6 +48,13 @@ It is live and empty in exact release `a939af5a`, with zero non-admin grants;
 it remains runtime-unwired. Schema presence does not prove source coverage,
 presentation, drafting, approval, or customer action.
 
+Local Contador fulfillment overlay: migration 133 under `NC-20260823-006`
+defines admin-only current payment/refund cases, append-only opaque provider
+aliases, and append-only content-minimized stage receipts. It is not applied in
+production until the separately reviewed deployment boundary. The tables omit
+names, email, product text, amount/card data, raw webhooks, and accounting
+content. Schema presence alone does not process or replay a Stripe event.
+
 Covers the public._ and business_v2._ schemas. business*v2 tables are
 headed with their schema prefix; access them via business_v2.v*_ views and
 business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
@@ -88,6 +95,59 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   decision_actor_sha256         text
   evidence_sha256               text                 NOT NULL
   observed_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.contador_payment_fulfillment_cases (migration 133 local, unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.contador_payment_fulfillment_cases_id_seq'::regclass)
+  stripe_account                text                 NOT NULL
+  payment_intent_id             text                 NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  attempt_count                 integer              NOT NULL DEFAULT=1
+  lease_token                   text
+  lease_expires_at              timestamp with time zone
+  owner_group                   text                 NOT NULL DEFAULT='contador'::text
+  last_event_type               text                 NOT NULL
+  last_source_object_id         text                 NOT NULL
+  last_source_event_id          text                 NOT NULL
+  last_error_code               text
+  last_evidence_sha256          text                 NOT NULL
+  review_deadline               timestamp with time zone
+  first_observed_at             timestamp with time zone NOT NULL
+  last_observed_at              timestamp with time zone NOT NULL
+  resolved_at                   timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.contador_payment_fulfillment_aliases (migration 133 local, unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.contador_payment_fulfillment_aliases_id_seq'::regclass)
+  case_id                       bigint               NOT NULL
+  stripe_account                text                 NOT NULL
+  alias_kind                    text                 NOT NULL
+  alias_id                      text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.contador_payment_fulfillment_receipts (migration 133 local, unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.contador_payment_fulfillment_receipts_id_seq'::regclass)
+  receipt_key                   text                 NOT NULL
+  case_id                       bigint               NOT NULL
+  case_version                  integer              NOT NULL
+  stage                         text                 NOT NULL
+  outcome                       text                 NOT NULL
+  result_code                   text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  source_event_id               text                 NOT NULL
+  actor                         text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
