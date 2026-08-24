@@ -609,7 +609,8 @@ contract: the first line names the business event and subject; implementation
 tags, CRM disposition, provider IDs, and diagnostics follow only as supporting
 detail. NC-20260824-001 applies this to Contador payment receipts, Chaos
 website activity, and verified form submissions without changing their
-underlying processing or routing.
+underlying processing or routing. Exact release `778545b353b2…` is live and
+health-verified; a natural Slack preview remains unobserved.
 
 ### Contador payment-fulfillment checkpoint (`NC-20260823-006`)
 

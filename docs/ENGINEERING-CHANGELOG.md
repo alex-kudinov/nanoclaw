@@ -12,7 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-24T13:20Z
 - Owner/client: Codex
-- State: ready_for_deploy; independently reviewed and not yet deployed
+- State: deployed_unverified; exact release and host boundary live-verified,
+  natural Slack preview pending
 - Authorization: accepted owner instruction and
   `decision:human-first-slack-notifications` authorize this presentation-only
   implementation and normal reviewed release.
@@ -41,8 +42,24 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   typecheck, build, CommonJS syntax, diff check, and documentation continuity
   pass. Full root suite is 3,088 passed / 12 skipped / the unchanged CNPC
   wrapper-literal failure.
+- Release: exact implementation `778545b353b22d63329d906505546a45ffb6a04a`,
+  source tree `69a06a892a2bc018f269308d6b6597d412f64a0f`, 892-file
+  artifact SHA-256
+  `b578bc5b41179b64aa5d9c3ec3b7ef456ecb8b66ed5a7b19eab46f097bd1188f`,
+  and archive SHA-256
+  `71698f19fd581c83ac1dd293bc3848106cd3571e796e91069d5bb31ad8a958be`.
+  Release preflight passed 742/742 root tests and 43/43 runner tests; the exact
+  archive verified locally and on the Mini under Node 22.23.2.
+- Deployment: after a zero-work health check, dry-run named only the three
+  main-daemon release pointers. Applied activation retained rollback to
+  `b131071c…`. PID/listener converged to 53731; exact release/tree/artifact/code
+  root, Gmail/Slack, empty containers/queues, Slack outgoing depth zero,
+  release-owned notification strings, and unchanged 273-line error baseline
+  pass.
+- Outcome boundary: no payment, website event, or Slack post was manufactured.
+  The next natural affected notification remains the live mobile-preview gate.
 - Evidence:
-  `docs/reports/NC-20260824-001-CLAUDE-REVIEW-RESPONSE-R1B.md`.
+  `docs/programs/company-os/evidence/NC-20260824-001-human-first-slack-notifications.md`.
 
 ### NC-20260823-006 — Durable Contador payment-fulfillment cases
 
