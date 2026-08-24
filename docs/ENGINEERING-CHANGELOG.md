@@ -8,13 +8,43 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-005 — Deploy Community student-lifecycle dark foundation
+
+- Date: 2026-08-24T17:45:00Z
+- Owner/client: Codex
+- State: complete dark deployment; provider ingestion and natural lifecycle
+  outcomes unvalidated
+- Release: exact reviewed source
+  `7364accd53aed9e1808dc0882592312a0e1ac5ae`, source tree
+  `6601c60fda4294bf379ca31720c894e3d4158cdd`, 904-file artifact
+  `4639355f…`, archive `162f05e2…`, Node 22.23.2.
+- Backup/migration: mode-0700 PostgreSQL/SQLite/plist backup directory
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260824-005-20260824T1712Z`;
+  migration 134 applied from the verified release. Seven tables remain empty,
+  all 16 relations/sequences are admin-owned, non-admin grants are zero, and
+  three triggers are enabled.
+- Activation: a natural zero-work drain preceded migration/restart. Dry-run and
+  applied activation changed only the two release environment pointers plus
+  executable path and retained rollback plist
+  `com.nanoclaw.plist.rollback-778545b353b2-2026-08-24T17-15-41-620Z`.
+- Live verification: PID 24053, exact release/tree/artifact/code root, one
+  listener, Gmail/Slack connected, zero waiting groups and Slack outbound
+  backlog, unchanged 273-line error baseline. Existing natural work ran on the
+  release without queue buildup or new errors.
+- Dark boundary: `studentLifecycle.enabled=false`, `actionConsumers=false`,
+  `circle=false`, zero lifecycle environment keys and rows. No n8n import/
+  activation, Heartbeat or legacy receiver change, Circle access, credential,
+  lifecycle action/message/certificate, manufactured event, or minion change.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260824-005-student-lifecycle-community-dark-deploy.md`.
+
 ### NC-20260824-004 — Community student-lifecycle dark foundation
 
 - Date: 2026-08-24T16:10:00Z
 - Owner/client: Codex
-- State: ready_for_deploy; local implementation, full verification, and Claude
-  convergence complete; no migration/deployment yet
-- Commit/PR: uncommitted isolated branch
+- State: complete; local implementation, full verification, Claude convergence,
+  commit, and push complete
+- Commit/PR: `9155ad9d` plus formatting-only `7364accd`, pushed on
   `codex/student-lifecycle-dark-foundation-20260824` from verified-live
   `778545b3`
 - Change class: C2 local source/schema design; highest future operational class
@@ -44,17 +74,15 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Corrections now use content/window-derived keys and a distinct host-only
   identity secret. Sonnet/high correction R2 returned `NO MATERIAL FINDINGS`;
   focused and full gates retain the same result.
-- Deployment/migration: none. Migration 134 is local/unapplied; n8n export is
-  inactive/unimported; host feature defaults off with no live path or secret.
-- Rollback/recovery: discard the isolated branch. No live rollback is needed
-  because no external or production state changed.
+- Deployment/migration: separately recorded as `NC-20260824-005`. The n8n
+  export remains inactive/unimported and provider/Circle boundaries remain off.
+- Rollback/recovery: source commits are pushed; production rollback belongs to
+  the separately recorded dark deployment.
 - Documentation: implementation plan/design/review artifacts, project map,
   webhook reliability, security, structure-only schema, active work, and this
   entry.
-- Follow-ups: commit/push the locally reviewed source, checkpoint, then execute
-  only the separately authorized dark migration/release.
-  Production release belongs to `work:student-lifecycle-control-plane-build`;
-  Circle belongs to `work:student-lifecycle-circle-rollout` only after
+- Follow-ups: provider activation remains under the broader separately gated
+  control-plane release; Circle remains under its own candidate only after
   Community readiness and a new owner authorization.
 
 ### NC-20260824-001 — Human-first internal Slack notifications
