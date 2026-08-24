@@ -2,6 +2,10 @@
 // "Extract Tandem". Replace __ACCOUNT__ with the fixed account label that is
 // bound to that node's Stripe Trigger credential. Never accept account from the
 // Stripe payload or another caller-controlled field.
+// Each corresponding Stripe Trigger node must also declare exactly the five
+// ALLOWED_EVENTS below. Updating only Stripe's current event destination is not
+// durable because n8n recreates that destination from the trigger definition
+// when the workflow is republished or restarted.
 const ACCOUNT = '__ACCOUNT__';
 if (!['heartbeat', 'tandem'].includes(ACCOUNT)) return [];
 

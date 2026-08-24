@@ -30,5 +30,6 @@ describe('checkout recovery truthful timing/report contract', () => {
     expect(report).not.toContain('contact_email');
     expect(report).not.toContain('source_case_key');
     expect(report).not.toContain('alias_id');
+    expect(report).toContain('await resetBusinessPool()');
   });
 });

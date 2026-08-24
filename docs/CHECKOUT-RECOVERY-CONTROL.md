@@ -43,12 +43,24 @@ The WordPress producer keeps a bounded retry queue. Successful relay receipt or
 exhausted retry remains distinguishable. Checkout and Stripe webhook success
 never depend on the shadow observer.
 
+The n8n website webhook responds only after its final NanoClaw POST succeeds.
+It must not use an immediate/on-receipt response mode: WordPress removes a retry
+only after a 2xx response, so an early acknowledgment would turn a downstream
+relay failure into silent event loss.
+
 ### Stripe
 
 The existing fixed-account n8n code owns the `heartbeat` or `tandem` account
 label; a Stripe payload cannot choose it. The current payment/refund allowlist
 is preserved. Shadow recovery additionally accepts PaymentIntent failure and
 Checkout Session expiry; existing success/completion events close recovery.
+
+The two n8n Stripe Trigger nodes must declare the same five-event set as the
+extractor: charge refund, Checkout completion, Checkout expiry, PaymentIntent
+failure, and PaymentIntent success. Treat the trigger definitions as the
+durable provider contract. A direct edit to a current Stripe event destination
+is only temporary because n8n recreates the destination from those definitions
+after workflow republication or restart.
 
 Failure/expiry never enters `process-payment.cjs`. Success still finishes the
 Contador path and then binds/closes the recovery case before the webhook inbox
