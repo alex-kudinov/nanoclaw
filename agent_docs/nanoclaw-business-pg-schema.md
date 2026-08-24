@@ -159,7 +159,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.student_lifecycle_catalog_entries (migration 134 local/unapplied)
+## business_v2.student_lifecycle_catalog_entries (migration 134 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_catalog_entries_id_seq'::regclass)
@@ -184,7 +184,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.student_lifecycle_identity_links (migration 134 local/unapplied)
+## business_v2.student_lifecycle_identity_links (migration 134 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_identity_links_id_seq'::regclass)
@@ -200,7 +200,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.student_lifecycle_events (migration 134 local/unapplied)
+## business_v2.student_lifecycle_events (migration 134 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_events_id_seq'::regclass)
@@ -242,7 +242,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.student_lifecycle_enrollments (migration 134 local/unapplied)
+## business_v2.student_lifecycle_enrollments (migration 134 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_enrollments_id_seq'::regclass)
@@ -276,7 +276,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.student_lifecycle_reconciliation_runs (migration 134 local/unapplied)
+## business_v2.student_lifecycle_reconciliation_runs (migration 134 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_reconciliation_runs_id_seq'::regclass)
@@ -302,7 +302,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.student_lifecycle_state_history (migration 134 local/unapplied)
+## business_v2.student_lifecycle_state_history (migration 134 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_state_history_id_seq'::regclass)
@@ -320,7 +320,7 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
-## business_v2.student_lifecycle_exceptions (migration 134 local/unapplied)
+## business_v2.student_lifecycle_exceptions (migration 134 live)
 
 ```
   id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_exceptions_id_seq'::regclass)

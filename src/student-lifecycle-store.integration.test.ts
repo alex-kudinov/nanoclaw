@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import path from 'node:path';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
 
@@ -6,6 +7,8 @@ import {
   PostgresStudentLifecycleRepository,
   processPreparedCommunityLifecycle,
 } from './student-lifecycle-store.js';
+import { runStudentLifecycleCatalog } from './student-lifecycle-shadow-catalog.js';
+import { loadStudentLifecycleShadowManifest } from './student-lifecycle-shadow-manifest.js';
 import { prepareCommunityLifecycleEnvelope } from './student-lifecycle.js';
 
 const TEST_DATABASE_URL = process.env.STUDENT_LIFECYCLE_TEST_DATABASE_URL;
@@ -18,6 +21,7 @@ const USER = '22222222-2222-4222-8222-222222222222';
 const GROUP = '33333333-3333-4333-8333-333333333333';
 const COURSE = '44444444-4444-4444-8444-444444444444';
 const SECRET = 'integration-test-student-lifecycle-secret';
+let partyId = 0;
 
 function prepare(action: 'USER_JOIN' | 'GROUP_JOIN' | 'COURSE_COMPLETED') {
   const data = {
@@ -46,7 +50,11 @@ function prepare(action: 'USER_JOIN' | 'GROUP_JOIN' | 'COURSE_COMPLETED') {
 async function inbox(): Promise<number> {
   if (!pool) throw new Error('disposable pool unavailable');
   const result = await pool.query<{ id: string }>(
-    'INSERT INTO business_v2.webhook_inbox DEFAULT VALUES RETURNING id::text',
+    `INSERT INTO business_v2.webhook_inbox
+       (source, event_id, event_type, raw_body)
+     VALUES ('student-lifecycle', $1, 'integration-fixture', '{}'::jsonb)
+     RETURNING id::text`,
+    [randomUUID()],
   );
   return Number(result.rows[0].id);
 }
@@ -95,13 +103,17 @@ describe.skipIf(!TEST_DATABASE_URL)(
           business_v2.parties
         RESTART IDENTITY CASCADE
       `);
-      await pool.query(
-        `INSERT INTO business_v2.parties (primary_email)
-         VALUES ('test@example.com')`,
+      const party = await pool.query<{ id: string }>(
+        `INSERT INTO business_v2.parties
+           (party_type, display_name, primary_email, last_updated_by)
+         VALUES ('person', 'Test Student', 'test@example.com', 'integration-test')
+         RETURNING id::text`,
       );
+      partyId = Number(party.rows[0].id);
       await pool.query(
         `INSERT INTO business_v2.party_emails (party_id, email)
-         VALUES (1, 'test@example.com')`,
+         VALUES ($1, 'test@example.com')`,
+        [partyId],
       );
       await pool.query(
         `INSERT INTO business_v2.student_lifecycle_catalog_entries
@@ -129,7 +141,7 @@ describe.skipIf(!TEST_DATABASE_URL)(
         joined.transient_email,
       );
       expect(joinResult.processingStatus).toBe('applied');
-      expect(joinResult.partyId).toBe(1);
+      expect(joinResult.partyId).toBe(partyId);
 
       const group = prepare('GROUP_JOIN');
       const groupResult = await processEvent(group.prepared, await inbox());
@@ -202,6 +214,125 @@ describe.skipIf(!TEST_DATABASE_URL)(
       expect(lifecycle.rows[0].identity_fingerprint).toMatch(/^[0-9a-f]{64}$/);
       expect(lifecycle.rows[0].facts).not.toContain('test@example.com');
       expect(lifecycle.rows[0].processing_status).toBe('quarantined');
+    });
+
+    it('applies the exact shadow catalog once and receipts replay', async () => {
+      if (!pool) throw new Error('disposable pool unavailable');
+      const manifest = loadStudentLifecycleShadowManifest(
+        path.join(
+          process.cwd(),
+          'facts/catalogs/student-lifecycle-community-shadow-v1.json',
+        ),
+      );
+      const run = async () => {
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          const report = await runStudentLifecycleCatalog({
+            client,
+            manifest,
+            mode: 'apply',
+            observedAt: '2026-08-24T18:30:00.000Z',
+          });
+          await client.query('COMMIT');
+          return report;
+        } catch (error) {
+          await client.query('ROLLBACK');
+          throw error;
+        } finally {
+          client.release();
+        }
+      };
+      const first = await run();
+      expect(first).toMatchObject({ inserted: 1, receiptDuplicate: false });
+      const replay = await run();
+      expect(replay).toMatchObject({ inserted: 0, receiptDuplicate: false });
+      const exactReplay = await run();
+      expect(exactReplay).toMatchObject({
+        inserted: 0,
+        receiptDuplicate: true,
+      });
+      const stored = await pool.query(
+        `SELECT entry_key, mapping_scope, lifecycle_enabled
+           FROM business_v2.student_lifecycle_catalog_entries
+          WHERE entry_key = $1`,
+        [manifest.catalog_entries[0].entry_key],
+      );
+      expect(stored.rows).toEqual([
+        {
+          entry_key: manifest.catalog_entries[0].entry_key,
+          mapping_scope: 'exact_cohort',
+          lifecycle_enabled: true,
+        },
+      ]);
+    });
+
+    it('refuses conflicting event and reconciliation idempotency keys', async () => {
+      if (!pool) throw new Error('disposable pool unavailable');
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const repository = new PostgresStudentLifecycleRepository(client);
+        const event = prepare('GROUP_JOIN').prepared;
+        const first = await repository.insertEvent({
+          event,
+          webhookInboxId: await inbox(),
+          partyId,
+          catalog: null,
+          mappingStatus: 'not_applicable',
+          processingStatus: 'normalized',
+        });
+        expect(first.duplicate).toBe(false);
+        await expect(
+          repository.insertEvent({
+            event: { ...event, payload_sha256: 'f'.repeat(64) },
+            webhookInboxId: await inbox(),
+            partyId,
+            catalog: null,
+            mappingStatus: 'not_applicable',
+            processingStatus: 'normalized',
+          }),
+        ).rejects.toThrow('student_lifecycle_source_event_conflict');
+
+        const reconciliation = {
+          runKey: 'integration:registry:conflict',
+          runType: 'registry' as const,
+          scopeKey: 'integration:registry',
+          catalogRevision: 1,
+          sourceSnapshotSha256: 'a'.repeat(64),
+          watermarkBefore: null,
+          watermarkAfter: 'a'.repeat(64),
+          scopesExpected: 1,
+          scopesObserved: 1,
+          factsNew: 1,
+          factsUnchanged: 0,
+          factsConflicting: 0,
+          factsQuarantined: 0,
+          status: 'completed' as const,
+          errorCode: null,
+          startedAt: '2026-08-24T18:30:00.000Z',
+          completedAt: '2026-08-24T18:30:00.000Z',
+        };
+        expect(
+          await repository.recordReconciliationRun(reconciliation),
+        ).toMatchObject({
+          duplicate: false,
+        });
+        expect(
+          await repository.recordReconciliationRun(reconciliation),
+        ).toMatchObject({
+          duplicate: true,
+        });
+        await expect(
+          repository.recordReconciliationRun({
+            ...reconciliation,
+            sourceSnapshotSha256: 'b'.repeat(64),
+          }),
+        ).rejects.toThrow('student_lifecycle_reconciliation_run_conflict');
+      } finally {
+        await client.query('ROLLBACK').catch(() => undefined);
+        client.release();
+      }
     });
   },
 );

@@ -8,6 +8,46 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-006 — Community lifecycle shadow provider capture
+
+- Date: 2026-08-24T18:11:00Z
+- Owner/client: Codex
+- State: in_progress; source/provider implementation authorized, no new
+  provider or runtime mutation yet
+- Scope: stages 2-4 only—refresh main Community/n8n topology; implement narrow
+  provider tooling, exact manifest, and live reconciliation; import relay
+  disabled; configure an opaque path plus distinct secrets; activate only
+  `USER_JOIN`, `USER_UPDATE`, `GROUP_JOIN`, and `COURSE_COMPLETED`; prove
+  sanitized transport/idempotency/quarantine/replay/no-action state.
+- Excluded: Circle access/change, the other seven action registrations, legacy
+  receiver cutover/deletion, lifecycle actions/messages/certificates,
+  Encharge, Heartbeat user/group/course mutations, manufactured student events,
+  minion authority, and destructive rollback.
+- Current state: implementation branch starts at pushed lifecycle documentation
+  `a06b0549` and exact live code `7364accd`; no provider/configuration/runtime
+  change has occurred under this task.
+- Implementation: exact four-action manifest and MCF exact-cohort catalog;
+  protected 18-registration baseline; fail-closed catalog/provider/reconciliation
+  CLIs; aggregate health; inactive relay renderer; same-key conflict detection;
+  shared guarded Heartbeat/n8n inventory, configuration, import, activation,
+  execution-drain, backup, readback, and rollback tooling.
+- Review: broad Sonnet/high session `822e926d-6da6-46fb-9fdd-5df05061e5af`
+  was stopped without a verdict at 17 calls / 126,864 max context and recorded
+  the bounded-review warning. Fresh eight-file R1B session
+  `a8469e2f-7aab-474d-984e-af1cd2b4cc3a` completed in four calls / 71,686 max
+  context with no warning and returned `NO MATERIAL FINDINGS`.
+- Verification: lifecycle 83/83; disposable production-shape PostgreSQL 4/4;
+  full root 3,180 pass / 16 skip / unchanged CNPC wrapper failure; toolbox
+  Heartbeat 14/14, n8n 9/9, core 65/65; strict registries, typecheck, build,
+  format, documentation continuity, capability, diff, safe live inventories,
+  exact baseline comparison, membership snapshot, and renderer/import dry-run.
+- Live read-only findings: 18 legacy registrations remain exact; n8n 2.9.4 has
+  24 workflows / 23 active; the privacy-minimized MCF membership snapshot
+  represents 143 members. The cohort-progress endpoint returns HTTP 401 and
+  therefore records no progress receipt or watermark.
+- Companion toolbox commit: local exact `02426614f1faf54808c01e48bc4d1f05d3c03514`;
+  toolbox has no configured Git remote, so push is not available.
+
 ### NC-20260824-005 — Deploy Community student-lifecycle dark foundation
 
 - Date: 2026-08-24T17:45:00Z

@@ -217,8 +217,8 @@ n8n hardening catches F2/F4/F5 (provider→n8n, n8n→NC HTTP). Sweepers cover F
 
 ### 3.8 Community student-lifecycle dark foundation (`NC-20260824-004`)
 
-Local migration 134 and `src/student-lifecycle*.ts` add a default-off,
-Community-only deterministic receiver. The exact configured path is matched
+Live migration 134 and `src/student-lifecycle*.ts` provide a Community-only
+deterministic receiver. The exact configured path is matched
 before generic `/hook/:id`; it requires a timestamped HMAC, a streaming 64 KiB
 limit, schema version 1, and `workspace='community'`. The host minimizes names,
 email, content, callback details, and credentials before archive. Email-bearing
@@ -234,10 +234,14 @@ fixtures-only reconciliation runner records registry/catalog/membership/
 progress completeness and retains its watermark on partial or quarantined
 input; it has no live Heartbeat/toolbox/network/schedule wiring.
 
-The inactive n8n export uses runtime environment references, disables success
-and error execution retention, and has no production capability path or
-credential literal. No schema, workflow, provider registration, Circle,
-runtime, deployment, or external state has been changed by the local source.
+`NC-20260824-006` adds a separately governed four-action shadow manifest,
+protected 18-registration baseline, inactive-first n8n workflow, safe provider
+inventory/ensure/delete tooling, catalog and reconciliation CLIs, and aggregate
+store health. The relay uses runtime references and disables success, error,
+and progress retention. Rollout must preserve every legacy receiver and verify
+exactly four additive `USER_JOIN`, `USER_UPDATE`, `GROUP_JOIN`, and
+`COURSE_COMPLETED` registrations. Circle, cutover, and action/message consumers
+remain excluded. See `docs/STUDENT-LIFECYCLE-SHADOW-RUNBOOK.md`.
 
 ## 4. Phase plan
 
