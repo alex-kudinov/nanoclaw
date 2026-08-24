@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-24T21:30:00Z
 - Owner/client: Codex implementer/orchestrator; Claude Code Sonnet/high reviewer
-- State: ready_for_deploy on isolated exact-live branch; combined-live-lineage
-  source is verified but not yet committed, pushed, release-built, deployed, or
-  live-canaried
+- State: deployed_unverified; deterministic live boundaries are verified, while
+  the first natural localized model-feedback outcome and blind faculty review
+  remain pending
 - Branch/base: `codex/grader-multilingual-variants-20260824`; grader source
   `1576762a`, then merge `20e6dad8` preserving exact current live
   `a055ea05705d600bcf7244f38ba81c01808d0d01` and its multilingual facts/KB
@@ -66,6 +66,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - External/deployment state: no private submission, grading record/ledger,
   provider, Slack, Heartbeat, certificate, runtime, restart, deployment, or
   customer action occurred.
+- Release/deployment: combined commit
+  `44298a9f03d7d3215b48ad2f0ae4bdda9dcea097`, source tree
+  `4ca8d27ae40921cdb90c05b16db1c4299073fac7`, 944-file artifact digest
+  `88d1a4c7f40e939e9b56a377f2bb2ed3b4c462bbd69c0d8c192d1a126e6712ae`,
+  and archive digest
+  `ed8eccf564d6445c83fe6ecb76f42abbf24514ba77b70ca4db6e7cc6884829b1`
+  were independently verified on Studio and Mini. After a natural zero-work
+  drain and zero pending sends, WAL-safe/runtime-authority backups were taken
+  and the guarded three-pointer activator moved live from `a055ea05` to
+  `44298a9f`; rollback plist is
+  `com.nanoclaw.plist.rollback-a055ea05705d-2026-08-24T21-59-00-490Z`.
+- Live verification: release verified, code root matches release, Node
+  `22.23.2`, Gmail and Slack connected, and waiting/outgoing queues empty.
+  Studio/Mini grading aggregate hashes match at
+  `26ee76be4351af6f108d663ff21da49dfd03137aca0d1c04436308df009694a5`;
+  release and operational grader prompt hashes match at
+  `cf8cf3c0b63d5d4953ae003269da6f3764437dc4a4f55af8e1f9bb52ed12dfcd`.
+  The activated runtime loads 32 assignments, including 24 live written
+  mappings split six per locale, accepts compliant samples for all four
+  locales, and rejects the tested non-English locale failures. No synthetic
+  Slack submission was sent because it would create a false student record;
+  the live check created zero Slack posts and zero student records.
 - Rollback: immutable NanoClaw release rollback plus standalone grading commit
   `d514fab` and the prior personal skill revision. Never roll back by rewriting
   student attempt history.
