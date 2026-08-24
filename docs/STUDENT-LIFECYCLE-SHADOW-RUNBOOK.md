@@ -3,10 +3,12 @@
 Status: implementation and rollout authority for `NC-20260824-007`
 Scope: Community stages 2-4 only; no legacy cutover or lifecycle consumers
 
-Live status: exact release `cf05bca358c9` and the four-action provider shadow
-are deployed/live-verified. Catalog, registry, and 143-member membership
-receipts are complete. Progress remains fail-closed on `AUTH_ERROR`, so the
-14-day/two-complete-progress-scan completion gate is still open.
+Live status: lifecycle release `cf05bca358c9` and the four-action provider
+shadow are deployed/live-verified; exact current merge release `7a36d79ca787`
+directly includes those bytes and preserves the boundary. Catalog, registry,
+and 143-member membership receipts are complete. Progress remains fail-closed
+on `AUTH_ERROR`, so the 14-day/two-complete-progress-scan completion gate is
+still open.
 
 ## Immutable inputs
 

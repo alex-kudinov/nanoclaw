@@ -86,6 +86,14 @@ event, or minion authority was enabled.
   baseline, lifecycle enabled for Community with healthy aggregate store,
   `actionConsumers=false`, and `circle=false`. Checkout recovery remains live
   shadow with `customerSends=false`.
+- A subsequent concurrent checkout-recovery merge release
+  `7a36d79ca78773dbca7ddb8beddb18abe07a753c` includes lifecycle release
+  `cf05bca3` as a direct parent and is now the exact active service. Final
+  readback reports source tree `301f2b77e4adb43c4420a606c3a20f6a62dbadd7`,
+  artifact `71b5a0eab620338ebaaebe8f0042a710a8a75e15c073f89d1986c841c1a68b03`,
+  one listener, unchanged lifecycle/checkout boundaries and counts, empty
+  queues, and the same 273-line error baseline. Its latest rollback plist
+  points to exact lifecycle release `cf05bca3`.
 - Catalog apply inserted one exact MCF cohort entry and completed receipt 1.
 - Final provider inventory contains exactly 22 rows. All 18 legacy rows remain
   byte/hash-equivalent. Four new rows share destination

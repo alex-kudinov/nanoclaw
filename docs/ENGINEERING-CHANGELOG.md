@@ -69,6 +69,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   one listener, connected Gmail/Slack, empty queues, unchanged 273 error lines,
   healthy aggregate lifecycle store, checkout recovery shadow preserved,
   `actionConsumers=false`, `customerSends=false`, and `circle=false`.
+- Superseding live identity: concurrent exact merge release
+  `7a36d79ca78773dbca7ddb8beddb18abe07a753c` directly includes lifecycle
+  `cf05bca3` and is now active with source tree `301f2b77…`, artifact
+  `71b5a0ea…`, one listener, the same lifecycle/provider/checkout state, empty
+  queues, and 273 error lines. Latest rollback points to exact `cf05bca3`.
 - Evidence:
   `docs/programs/company-os/evidence/NC-20260824-007-student-lifecycle-community-shadow-deploy.md`.
 
