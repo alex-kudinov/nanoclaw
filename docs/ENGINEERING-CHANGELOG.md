@@ -8,6 +8,55 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-003 — Multilingual Foundations facts in every minion KB
+
+- Date: 2026-08-24T20:34Z
+- Owner/client: Codex
+- State: ready_for_deploy; implementation and independent review complete
+- Authorization: accepted owner instruction and
+  `decision:mcs-localization-knowledge-repair`; no customer reply, provider or
+  course mutation, translation, enrollment, payment, entitlement, price,
+  customer-record, or message action is authorized.
+- Failure: the release-owned Sales KB described only the English Mentor
+  Coaching Foundations product. Sales therefore denied French availability to
+  a French-speaking prospect despite a complete localized product journey.
+- Current evidence: exact versioned course records show Spanish 25/25
+  Published, Japanese 25/25 Published, and French 27/27 Published. The French,
+  Japanese, and Spanish public sales pages returned HTTP 200 on 2026-08-24 and
+  exposed their dedicated checkout product keys. This proves current localized
+  self-paced Foundations availability, not localized Standard Path delivery or
+  official translated ICF MCS recognition.
+- Implementation: a revisioned JSON catalog is byte-hash-bound to a canonical
+  minion pack. `sync-program-facts.py` injects/replaces that exact block in all
+  13 tracked KBs after generic propagation; `validate-knowledge.sh` excludes
+  higher-authority canonical blocks from generic site-text heuristics and no
+  longer exits silently when an older KB lacks `llms-full-hash`. The runtime
+  detector checks catalog ID/revision/hash/exact language set and the exact
+  Sales KB block; its evidence fingerprint now includes both new source files.
+- Safety wording: the pack directly affirms English, French, Japanese, and
+  Spanish, links each localized page, refuses claims that the live Standard
+  Path cohort is localized, and refuses any implication of translated ICF
+  recognition.
+- Independent review: Claude Sonnet 5/high R1 session
+  `25d7fee1-4a9a-43da-8b0a-25d0f739b245` found one medium fail-closed defect
+  plus two low coverage/hash issues: non-array `locales` could throw, Python
+  malformed-shape coverage was incomplete, and TypeScript hashed decoded text
+  rather than the raw catalog bytes. Codex corrected all three. Focused R2
+  session `8336ab3a-8677-452e-ae59-bbbfdd33cb46` returned
+  `NO MATERIAL FINDINGS`.
+- Review usage: R1 was 4 model calls / 74,973 cache-create / 136,905
+  cache-read / 20,526 output / 81,747 max context; R2 was 4 calls / 57,953
+  cache-create / 131,642 cache-read / 7,688 output / 64,727 max context. Both
+  stayed below bounded-review warning thresholds.
+- Verification: Python sync/injection tests 5/5; TypeScript focused
+  program-facts suites 29/29; idempotent injection/check across 13 KBs,
+  typecheck, build, shell syntax, and diff check pass. Generic KB validation
+  reaches the canonical-facts check and accepts both exact packs; its existing
+  unrelated baseline still reports four stale/non-site prices, six taxonomy
+  path strings, and a missing historical llms-full hash.
+- Full root suite: 3,210 passed / 19 skipped / the unchanged CNPC
+  source-wrapper literal failure.
+
 ### NC-20260824-007 — Community lifecycle shadow provider capture
 
 - Date: 2026-08-24T19:35:00Z

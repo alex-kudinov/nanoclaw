@@ -1,11 +1,15 @@
 import { afterEach, describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 
 import {
   buildProgramFactsDetectorEvidence,
   detectDrift,
+  detectMcsLocalesCatalogDrift,
   detectPractitionerCatalogDrift,
   resolveFactsPath,
   resolveKbPath,
+  resolveMcsLocalesCatalogPath,
+  resolveMcsLocalesPackPath,
   resolvePractitionerCatalogPath,
   resolvePractitionerPackPath,
   type ProgramSpec,
@@ -115,6 +119,107 @@ describe('release-owned detector inputs', () => {
     expect(resolvePractitionerPackPath()).toBe(
       '/tmp/nanoclaw-release/facts/catalogs/practitioner-series.minion.md',
     );
+    expect(resolveMcsLocalesCatalogPath()).toBe(
+      '/tmp/nanoclaw-release/facts/catalogs/mcs-foundations-locales.json',
+    );
+    expect(resolveMcsLocalesPackPath()).toBe(
+      '/tmp/nanoclaw-release/facts/catalogs/mcs-foundations-locales.minion.md',
+    );
+  });
+});
+
+describe('detectMcsLocalesCatalogDrift', () => {
+  const catalog = JSON.stringify({
+    catalog_id: 'mcs-foundations-locales',
+    catalog_revision: 1,
+    locales: ['English', 'French', 'Japanese', 'Spanish'].map((language) => ({
+      language,
+    })),
+  });
+  const digest = createHash('sha256').update(catalog).digest('hex');
+  const pack = `## Canonical Mentor Coaching Foundations Language Availability
+
+<!-- program-facts: mcs-foundations-locales revision=1 sha256=${digest} -->
+
+English, French, Japanese, and Spanish.`;
+  const kb = `# Sales
+
+<!-- BEGIN CANONICAL PROGRAM FACTS: mcs-foundations-locales -->
+${pack}
+<!-- END CANONICAL PROGRAM FACTS: mcs-foundations-locales -->`;
+
+  it('accepts an exact catalog, hash-bound pack, and Sales KB block', () => {
+    expect(detectMcsLocalesCatalogDrift(catalog, pack, kb)).toEqual({
+      checked: 1,
+      findings: [],
+    });
+  });
+
+  it('fails closed when the catalog or pack is unavailable', () => {
+    expect(detectMcsLocalesCatalogDrift(null, pack, kb).findings).toEqual([
+      expect.objectContaining({ kind: 'catalog_missing' }),
+    ]);
+  });
+
+  it('flags a stale pack hash or incomplete language set', () => {
+    const stalePack = pack.replace(digest, '0'.repeat(64));
+    expect(
+      detectMcsLocalesCatalogDrift(catalog, stalePack, kb).findings,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'catalog_pack_mismatch' }),
+      ]),
+    );
+    const incompleteCatalog = JSON.stringify({
+      catalog_id: 'mcs-foundations-locales',
+      catalog_revision: 1,
+      locales: [{ language: 'English' }, { language: 'French' }],
+    });
+    expect(
+      detectMcsLocalesCatalogDrift(incompleteCatalog, pack, kb).findings,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'catalog_pack_mismatch' }),
+      ]),
+    );
+  });
+
+  it.each([
+    ['object', { French: true }],
+    ['string', 'English,French,Japanese,Spanish'],
+    ['number', 4],
+    ['array entry', [null, 'French', {}, []]],
+  ])(
+    'returns drift instead of throwing for malformed %s locales',
+    (_name, locales) => {
+      const malformed = JSON.stringify({
+        catalog_id: 'mcs-foundations-locales',
+        catalog_revision: 1,
+        locales,
+      });
+      expect(() =>
+        detectMcsLocalesCatalogDrift(malformed, pack, kb),
+      ).not.toThrow();
+      expect(
+        detectMcsLocalesCatalogDrift(malformed, pack, kb).findings,
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ kind: 'catalog_pack_mismatch' }),
+        ]),
+      );
+    },
+  );
+
+  it('hashes the exact catalog bytes when production supplies a Buffer', () => {
+    expect(
+      detectMcsLocalesCatalogDrift(Buffer.from(catalog, 'utf8'), pack, kb),
+    ).toEqual({ checked: 1, findings: [] });
+  });
+
+  it('flags a Sales KB missing the exact generated block', () => {
+    expect(
+      detectMcsLocalesCatalogDrift(catalog, pack, '# Sales').findings,
+    ).toEqual([expect.objectContaining({ kind: 'catalog_kb_mismatch' })]);
   });
 });
 

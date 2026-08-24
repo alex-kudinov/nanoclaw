@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -22,10 +23,18 @@ LOCAL_WEB = LOCAL_DIR / "practitioner-series.web.json"
 LOCAL_PACK = LOCAL_DIR / "practitioner-series.minion.md"
 BEGIN = "<!-- BEGIN CANONICAL PROGRAM FACTS: practitioner-series -->"
 END = "<!-- END CANONICAL PROGRAM FACTS: practitioner-series -->"
+MCS_CATALOG = LOCAL_DIR / "mcs-foundations-locales.json"
+MCS_PACK = LOCAL_DIR / "mcs-foundations-locales.minion.md"
+MCS_BEGIN = "<!-- BEGIN CANONICAL PROGRAM FACTS: mcs-foundations-locales -->"
+MCS_END = "<!-- END CANONICAL PROGRAM FACTS: mcs-foundations-locales -->"
 
 
 def expected_block(pack: str) -> str:
     return f"{BEGIN}\n{pack.strip()}\n{END}"
+
+
+def expected_mcs_block(pack: str) -> str:
+    return f"{MCS_BEGIN}\n{pack.strip()}\n{MCS_END}"
 
 
 def repair_legacy_practitioner_copy(text: str) -> str:
@@ -51,6 +60,19 @@ def inject(text: str, pack: str) -> str:
         else:
             result = text.rstrip() + "\n\n" + block + "\n"
     return repair_legacy_practitioner_copy(result)
+
+
+def inject_mcs_locales(text: str, pack: str) -> str:
+    block = expected_mcs_block(pack)
+    marker_pattern = re.compile(
+        rf"{re.escape(MCS_BEGIN)}.*?{re.escape(MCS_END)}", re.DOTALL
+    )
+    if marker_pattern.search(text):
+        return marker_pattern.sub(block, text, count=1)
+    heading = re.search(r"^## Other Services\b", text, re.MULTILINE)
+    if heading:
+        return text[: heading.start()] + block + "\n\n" + text[heading.start() :]
+    return text.rstrip() + "\n\n" + block + "\n"
 
 
 def knowledge_paths() -> list[Path]:
@@ -84,13 +106,57 @@ def validate_exports(web_path: Path, pack_path: Path) -> list[str]:
     return errors
 
 
+def validate_mcs_locales(catalog_path: Path, pack_path: Path) -> list[str]:
+    errors: list[str] = []
+    if not catalog_path.exists():
+        return [f"missing MCS locales catalog: {catalog_path}"]
+    if not pack_path.exists():
+        return [f"missing MCS locales minion pack: {pack_path}"]
+    catalog_bytes = catalog_path.read_bytes()
+    try:
+        catalog = json.loads(catalog_bytes)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return ["MCS locales catalog is not valid UTF-8 JSON"]
+    if not isinstance(catalog, dict):
+        return ["MCS locales catalog root must be an object"]
+    if catalog.get("catalog_id") != "mcs-foundations-locales":
+        errors.append("MCS locales catalog has an invalid catalog_id")
+    revision = catalog.get("catalog_revision")
+    if not isinstance(revision, int) or revision < 1:
+        errors.append("MCS locales catalog has an invalid revision")
+    digest = hashlib.sha256(catalog_bytes).hexdigest()
+    pack = pack_path.read_text(encoding="utf-8")
+    marker = re.search(
+        r"program-facts: mcs-foundations-locales revision=(\d+) sha256=([a-f0-9]{64})",
+        pack,
+    )
+    if not marker:
+        errors.append("MCS locales minion pack lacks catalog revision/hash marker")
+    elif int(marker.group(1)) != revision or marker.group(2) != digest:
+        errors.append("MCS locales catalog and minion pack revision/hash do not agree")
+    locales = catalog.get("locales")
+    if not isinstance(locales, list) or any(
+        not isinstance(entry, dict) for entry in locales
+    ):
+        errors.append("MCS locales catalog has an invalid locales collection")
+        languages = []
+    else:
+        languages = [entry.get("language") for entry in locales]
+    if languages != ["English", "French", "Japanese", "Spanish"]:
+        errors.append("MCS locales catalog does not contain the exact verified language set")
+    return errors
+
+
 def inject_local() -> list[str]:
     errors = validate_exports(LOCAL_WEB, LOCAL_PACK)
+    errors.extend(validate_mcs_locales(MCS_CATALOG, MCS_PACK))
     if errors:
         return errors
     pack = LOCAL_PACK.read_text(encoding="utf-8")
+    mcs_pack = MCS_PACK.read_text(encoding="utf-8")
     for target in knowledge_paths():
-        target.write_text(inject(target.read_text(encoding="utf-8"), pack), encoding="utf-8")
+        text = inject(target.read_text(encoding="utf-8"), pack)
+        target.write_text(inject_mcs_locales(text, mcs_pack), encoding="utf-8")
     return []
 
 
@@ -108,6 +174,7 @@ def sync(source: Path) -> list[str]:
 
 def check(source: Path | None = None) -> list[str]:
     errors = validate_exports(LOCAL_WEB, LOCAL_PACK)
+    errors.extend(validate_mcs_locales(MCS_CATALOG, MCS_PACK))
     if errors:
         return errors
     if source and source.exists():
@@ -127,6 +194,8 @@ def check(source: Path | None = None) -> list[str]:
     ]
     pack = LOCAL_PACK.read_text(encoding="utf-8")
     block = expected_block(pack)
+    mcs_pack = MCS_PACK.read_text(encoding="utf-8")
+    mcs_block = expected_mcs_block(mcs_pack)
     for target in knowledge_paths():
         text = target.read_text(encoding="utf-8")
         if block not in text:
@@ -139,6 +208,10 @@ def check(source: Path | None = None) -> list[str]:
         if stale_count:
             errors.append(
                 f"{stale_count} superseded Practitioner claim(s) remain: {target.relative_to(ROOT)}"
+            )
+        if mcs_block not in text:
+            errors.append(
+                f"missing/stale MCS locales block: {target.relative_to(ROOT)}"
             )
     return errors
 
@@ -159,7 +232,7 @@ def main() -> int:
             print(f"ERROR: {error}")
         return 1
     print(
-        f"VALID: Practitioner facts pinned and present in {len(knowledge_paths())} knowledge files"
+        f"VALID: Practitioner and MCS locale facts pinned and present in {len(knowledge_paths())} knowledge files"
     )
     return 0
 

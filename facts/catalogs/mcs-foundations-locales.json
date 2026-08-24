@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "catalog_id": "mcs-foundations-locales",
+  "catalog_revision": 1,
+  "verified_at": "2026-08-24T20:24:00Z",
+  "program": "Mentor Coaching Foundations",
+  "delivery_boundary": "The localized products are separate self-paced Foundations course journeys. Do not imply that the live Mentor Coach Training Standard Path cohort is delivered in these languages.",
+  "recognition_boundary": "Tandem's localized delivery does not mean ICF issued translated MCS recognition or translated official MCS materials.",
+  "availability_statement": "Mentor Coaching Foundations is currently available as separate self-paced course journeys in English, French, Japanese, and Spanish.",
+  "locales": [
+    {
+      "language": "English",
+      "locale": "en-US",
+      "title": "Mentor Coaching Foundations",
+      "status": "live",
+      "sales_url": "https://tandemcoach.co/mcs/mentor-coaching-foundations/",
+      "checkout_product": "mcq-program-a-foundations"
+    },
+    {
+      "language": "French",
+      "locale": "fr-FR",
+      "title": "Fondamentaux du mentor coaching",
+      "status": "live",
+      "sales_url": "https://tandemcoach.co/fr/fondamentaux-mentor-coaching/",
+      "checkout_product": "mcs-foundations-fr",
+      "course_release": "27 published, 0 draft; provider UI verified"
+    },
+    {
+      "language": "Japanese",
+      "locale": "ja-JP",
+      "title": "メンターコーチング基礎講座",
+      "status": "live",
+      "sales_url": "https://tandemcoach.co/ja/mentor-coaching-foundations/",
+      "checkout_product": "mcs-foundations-ja",
+      "course_release": "25 published, 0 draft; complete product journey verified"
+    },
+    {
+      "language": "Spanish",
+      "locale": "es-419",
+      "title": "Fundamentos de Mentor Coaching",
+      "status": "live",
+      "sales_url": "https://tandemcoach.co/es/fundamentos-mentor-coaching/",
+      "checkout_product": "mcs-foundations-es",
+      "course_release": "25 published, 0 draft; provider UI and learner preview verified"
+    }
+  ],
+  "evidence": {
+    "owner_instruction": "Owner MCS localization knowledge-break instruction on 2026-08-24",
+    "course_repository_commit": "7f91ec2ec7769eb1563d66238cb1947f88527bf2",
+    "french_website_receipt_commit": "fc20740844784400560e692129d50287f2e0cbfc",
+    "japanese_website_receipt_commit": "87384daba21969551ad252f9496aab9f6e4933ef",
+    "spanish_website_receipt_commit": "92e16dde3102649189c5400375e118e7ca742205",
+    "public_http_readback": {
+      "checked_at": "2026-08-24T20:24:00Z",
+      "french": 200,
+      "japanese": 200,
+      "spanish": 200
+    }
+  }
+}

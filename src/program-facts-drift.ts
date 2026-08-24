@@ -124,6 +124,20 @@ export function resolvePractitionerPackPath(): string {
   );
 }
 
+export function resolveMcsLocalesCatalogPath(): string {
+  return (
+    process.env.MCS_LOCALES_CATALOG_PATH ??
+    resolveTrackedPath('facts', 'catalogs', 'mcs-foundations-locales.json')
+  );
+}
+
+export function resolveMcsLocalesPackPath(): string {
+  return (
+    process.env.MCS_LOCALES_PACK_PATH ??
+    resolveTrackedPath('facts', 'catalogs', 'mcs-foundations-locales.minion.md')
+  );
+}
+
 function fmt(cents?: number): string {
   if (cents == null) return 'n/a';
   return `$${(cents / 100).toLocaleString('en-US')}`;
@@ -299,6 +313,97 @@ export function detectPractitionerCatalogDrift(
   return { checked: 1, findings };
 }
 
+const MCS_LOCALES_BLOCK_BEGIN =
+  '<!-- BEGIN CANONICAL PROGRAM FACTS: mcs-foundations-locales -->';
+const MCS_LOCALES_BLOCK_END =
+  '<!-- END CANONICAL PROGRAM FACTS: mcs-foundations-locales -->';
+const MCS_LOCALES_PACK_MARKER =
+  /program-facts: mcs-foundations-locales revision=(\d+) sha256=([a-f0-9]{64})/;
+
+/** Exact catalog/pack/KB guard for localized Foundations availability. */
+export function detectMcsLocalesCatalogDrift(
+  catalogSource: string | Buffer | null,
+  packText: string | null,
+  salesKb: string,
+): DriftResult {
+  const program = 'mcs-foundations-locales';
+  if (catalogSource === null || packText === null) {
+    return {
+      checked: 1,
+      findings: [
+        {
+          program,
+          kind: 'catalog_missing',
+          detail: 'pinned MCS locales catalog or minion pack is unreadable',
+        },
+      ],
+    };
+  }
+  let catalog: {
+    catalog_id?: unknown;
+    catalog_revision?: unknown;
+    locales?: unknown;
+  };
+  const catalogText = Buffer.isBuffer(catalogSource)
+    ? catalogSource.toString('utf8')
+    : catalogSource;
+  try {
+    catalog = JSON.parse(catalogText) as typeof catalog;
+  } catch {
+    return {
+      checked: 1,
+      findings: [
+        {
+          program,
+          kind: 'catalog_pack_mismatch',
+          detail: 'pinned MCS locales catalog is not valid JSON',
+        },
+      ],
+    };
+  }
+  const marker = packText.match(MCS_LOCALES_PACK_MARKER);
+  const expectedLanguages = ['English', 'French', 'Japanese', 'Spanish'];
+  const locales = Array.isArray(catalog.locales) ? catalog.locales : [];
+  const localeRecordsValid = locales.every(
+    (entry) =>
+      entry !== null && typeof entry === 'object' && !Array.isArray(entry),
+  );
+  const languages = localeRecordsValid
+    ? locales.map((entry) => (entry as { language?: unknown }).language)
+    : [];
+  const catalogValid =
+    catalog.catalog_id === 'mcs-foundations-locales' &&
+    typeof catalog.catalog_revision === 'number' &&
+    Number.isInteger(catalog.catalog_revision) &&
+    Array.isArray(catalog.locales) &&
+    localeRecordsValid &&
+    JSON.stringify(languages) === JSON.stringify(expectedLanguages);
+  const digest = createHash('sha256').update(catalogSource).digest('hex');
+  const findings: DriftFinding[] = [];
+  if (
+    !catalogValid ||
+    marker === null ||
+    Number(marker[1]) !== catalog.catalog_revision ||
+    marker[2] !== digest
+  ) {
+    findings.push({
+      program,
+      kind: 'catalog_pack_mismatch',
+      detail:
+        'pinned MCS locales catalog and minion pack revision/hash/language set do not agree',
+    });
+  }
+  const expectedBlock = `${MCS_LOCALES_BLOCK_BEGIN}\n${packText.trim()}\n${MCS_LOCALES_BLOCK_END}`;
+  if (!salesKb.includes(expectedBlock)) {
+    findings.push({
+      program,
+      kind: 'catalog_kb_mismatch',
+      detail: 'Sales KB does not contain the exact pinned MCS locales pack',
+    });
+  }
+  return { checked: 1, findings };
+}
+
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -378,6 +483,16 @@ export async function runProgramFactsDriftWithEvidence(): Promise<ProgramFactsDr
     practitionerPackText = null;
   }
 
+  let mcsLocalesCatalogText: Buffer | null = null;
+  let mcsLocalesPackText: string | null = null;
+  try {
+    mcsLocalesCatalogText = fs.readFileSync(resolveMcsLocalesCatalogPath());
+    mcsLocalesPackText = fs.readFileSync(resolveMcsLocalesPackPath(), 'utf-8');
+  } catch {
+    mcsLocalesCatalogText = null;
+    mcsLocalesPackText = null;
+  }
+
   const result = detectDrift(facts, kb, products);
   const practitionerResult = detectPractitionerCatalogDrift(
     practitionerCatalogText,
@@ -386,6 +501,13 @@ export async function runProgramFactsDriftWithEvidence(): Promise<ProgramFactsDr
   );
   result.checked += practitionerResult.checked;
   result.findings.push(...practitionerResult.findings);
+  const mcsLocalesResult = detectMcsLocalesCatalogDrift(
+    mcsLocalesCatalogText,
+    mcsLocalesPackText,
+    kb,
+  );
+  result.checked += mcsLocalesResult.checked;
+  result.findings.push(...mcsLocalesResult.findings);
   if (productsError) {
     result.findings.push({
       program: '(all)',
@@ -402,6 +524,10 @@ export async function runProgramFactsDriftWithEvidence(): Promise<ProgramFactsDr
         practitionerCatalogText ?? '(unavailable)',
         '-- practitioner minion pack --',
         practitionerPackText ?? '(unavailable)',
+        '-- MCS locales catalog --',
+        mcsLocalesCatalogText ?? '(unavailable)',
+        '-- MCS locales minion pack --',
+        mcsLocalesPackText ?? '(unavailable)',
       ].join('\n'),
       salesKb: kb,
       products: productsText,

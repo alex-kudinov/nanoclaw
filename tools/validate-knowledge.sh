@@ -49,8 +49,8 @@ fi
 # ── Staleness check ──
 
 CURRENT_HASH=$(shasum -a 256 "$LLMS_FULL" | cut -d' ' -f1)
-STORED_HASH=$(grep -o 'llms-full-hash: [a-f0-9]*' "$KNOWLEDGE" 2>/dev/null | cut -d' ' -f2)
-VALIDATED_AT=$(grep -o 'validated-at: [0-9-]*' "$KNOWLEDGE" 2>/dev/null | cut -d' ' -f2)
+STORED_HASH=$(grep -o 'llms-full-hash: [a-f0-9]*' "$KNOWLEDGE" 2>/dev/null | cut -d' ' -f2 || true)
+VALIDATED_AT=$(grep -o 'validated-at: [0-9-]*' "$KNOWLEDGE" 2>/dev/null | cut -d' ' -f2 || true)
 
 ERRORS=0
 
@@ -77,6 +77,28 @@ fi
 echo ""
 echo "--- Price check ---"
 
+# Canonical program-fact blocks are validated against their hash-bound catalogs
+# below, not against generic website text. Exclude them from the llms-full
+# price/URL heuristics so a higher-authority fact pack cannot be rejected merely
+# because the current site-text export omitted that localized page.
+VALIDATION_KB=$(mktemp)
+trap 'rm -f "$VALIDATION_KB"' EXIT
+python3 - "$KNOWLEDGE" "$VALIDATION_KB" <<'PYEOF'
+import re
+import sys
+
+source, target = sys.argv[1:]
+text = open(source, encoding="utf-8").read()
+text = re.sub(
+    r"<!-- BEGIN CANONICAL PROGRAM FACTS: ([a-z0-9-]+) -->.*?"
+    r"<!-- END CANONICAL PROGRAM FACTS: \1 -->",
+    "",
+    text,
+    flags=re.DOTALL,
+)
+open(target, "w", encoding="utf-8").write(text)
+PYEOF
+
 PRICE_ERRORS=0
 while IFS= read -r price; do
     [[ -z "$price" ]] && continue
@@ -85,12 +107,12 @@ while IFS= read -r price; do
     if ! grep -qF "$price" "$LLMS_FULL"; then
         # Check if it's a well-known standalone price not from website
         # (e.g., ICF credential fees set by ICF, not Tandem)
-        context=$(grep -n "$escaped" "$KNOWLEDGE" | head -1)
+        context=$(grep -n "$escaped" "$VALIDATION_KB" | head -1)
         echo "  NOT IN SOURCE: $price"
         echo "    Context: $context"
         PRICE_ERRORS=$((PRICE_ERRORS + 1))
     fi
-done < <(grep -oE '\$[0-9,]+' "$KNOWLEDGE" | sed 's/,$//' | sort -u)
+done < <(grep -oE '\$[0-9,]+' "$VALIDATION_KB" | sed 's/,$//' | sort -u)
 
 if [[ $PRICE_ERRORS -eq 0 ]]; then
     echo "  All prices found in llms-full.txt"
@@ -109,12 +131,12 @@ URL_ERRORS=0
 while IFS= read -r url; do
     [[ -z "$url" ]] && continue
     if ! grep -qF "$url" "$LLMS_FULL"; then
-        context=$(grep -n "$url" "$KNOWLEDGE" | head -1)
+        context=$(grep -n "$url" "$VALIDATION_KB" | head -1)
         echo "  NOT IN SOURCE: $url"
         echo "    Context: $context"
         URL_ERRORS=$((URL_ERRORS + 1))
     fi
-done < <(grep -oE '/[a-z][a-z0-9-]+(/[a-z0-9-]+)*/' "$KNOWLEDGE" | grep -v '/in/' | sort -u)
+done < <(grep -oE '/[a-z][a-z0-9-]+(/[a-z0-9-]+)*/' "$VALIDATION_KB" | grep -v '/in/' | sort -u)
 
 if [[ $URL_ERRORS -eq 0 ]]; then
     echo "  All URLs found in llms-full.txt"

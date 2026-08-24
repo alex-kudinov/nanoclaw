@@ -313,6 +313,15 @@ The release builder packages and attests `facts/` plus the deterministic sync
 checker alongside `knowledge/`; a source-contract test prevents either runtime
 input from silently falling out of the immutable bundle.
 
+`NC-20260824-003` extends that same regeneration-safe mechanism with a pinned
+Mentor Coaching Foundations language-availability catalog and exact minion
+pack. Its verified set is English, French, Japanese, and Spanish; the localized
+products are separate asynchronous Foundations journeys, not localized live
+Standard Path cohorts or evidence of translated ICF recognition.
+`tools/sync-program-facts.py` injects both canonical packs into every tracked
+minion KB, and the detector fails on a missing catalog/pack, hash/revision or
+language-set mismatch, or non-exact Sales block.
+
 `NC-20260817-002` deployed the first bounded source adapter in exact release
 `baed66d` and applied migration 121. After the
 existing SQLite scheduler successfully claims a task's exact pre-claim
@@ -602,7 +611,7 @@ dependencies, not active runtime channels in this snapshot.
 | Chaos            | `src/chaos-activity.ts`, `src/chaos-booking.ts`, `src/chaos-reconciler.ts`, `src/chaos-lifecycle-outbox.ts`, `src/chaos-lifecycle-reconcile.ts`                          | activity/booking reconciliation plus durable aggregate-verified commerce lifecycle delivery                                                                                                                                                |
 | CNPC             | `src/cnpc-intake.ts`, `src/cnpc-match-result.ts`, migration 116                                                                                                          | host-owned intake, policy, bounded coach pool, and validated match result                                                                                                                                                                  |
 | Student lifecycle | `src/student-lifecycle*.ts`, `src/webhook-server.ts`, `src/webhook-inbox-reaper.ts`, migration 134, `facts/catalogs/student-lifecycle-community-*.json`, `setup/n8n/student-lifecycle-community-*-workflow.json`, `docs/STUDENT-LIFECYCLE-SHADOW-RUNBOOK.md` | live Community-only dark substrate plus reviewed four-action shadow manifest/tooling: exact legacy-registration baseline, catalog/reconciliation CLIs, aggregate health, disabled-first relay, and rollback; Circle, legacy cutover, and all lifecycle consumers remain excluded |
-| Knowledge drift  | `src/program-facts-drift.ts`, `src/program-facts-drift-job.ts`, `src/program-facts-company-work.ts`, `src/lesson-conflict.ts`, `src/learn-ipc-handler.ts`, migration 125 | deterministic factual controls plus the live detector-to-Company-Work adapter; exact release `8344524c`, migration 125, active mode, and compiled scheduler path are live, while owner correction and clean source-resolution remain gated |
+| Knowledge drift  | `facts/programs.yaml`, `facts/catalogs/*`, `tools/sync-program-facts.py`, `src/program-facts-drift.ts`, `src/program-facts-drift-job.ts`, `src/program-facts-company-work.ts`, `src/lesson-conflict.ts`, `src/learn-ipc-handler.ts`, migration 125 | deterministic factual controls and exact generated KB blocks plus the live detector-to-Company-Work adapter; Practitioner facts and the verified English/French/Japanese/Spanish Foundations availability set are hash-bound and injected into every tracked minion KB, while provider/public evidence remains higher authority |
 | Brief/digests    | `src/brief-promote.ts`, `src/digest-generator.ts`, `src/digest-delivery.ts`                                                                                              | operational briefing; Things promotion denies before HTTP fetch under the common brake                                                                                                                                                     |
 | SEO              | `src/seo-stats.ts`                                                                                                                                                       | SEO job support                                                                                                                                                                                                                            |
 
