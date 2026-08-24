@@ -8,6 +8,51 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-007 — Community lifecycle shadow provider capture
+
+- Date: 2026-08-24T19:35:00Z
+- Owner/client: Codex
+- State: ready_for_deploy after one load-bearing live correction; no provider/runtime
+  mutation yet
+- Branch: `codex/student-lifecycle-community-shadow-live-20260824`, based on
+  exact live checkout-recovery release `ab3124a0312d459e287857d81a95246a6a591759`.
+- Scope: Community stages 2-4 only: protected provider baseline, exact
+  four-action manifest/catalog, disabled-first n8n relay, guarded runtime
+  configuration, catalog/registry/reconciliation receipts, and sanitized
+  transport duplicate/identity-hold proof.
+- Excluded: Circle, seven non-core actions, legacy receiver cutover/deletion,
+  lifecycle actions/messages/certificates, Encharge, Heartbeat user/group/course
+  mutation, manufactured provider student events, and minion authority.
+- Rebase safety: production advanced from lifecycle base `7364accd` to
+  checkout-recovery release `ab3124a0` during preflight. The older verified
+  lifecycle archive was rejected before deployment; this combined lineage
+  preserves the concurrent migration 135/checkout-recovery work.
+- Preflight: the main Community registration inventory still matches all 18
+  protected rows exactly. n8n independently advanced to 25 workflows / 24
+  active while the lifecycle target remains absent; active executions were
+  zero. Protected n8n PostgreSQL/workflow/env/compose and NanoClaw
+  lifecycle-PostgreSQL/SQLite/plist/env backups were verified.
+- Review: prior bounded Claude Sonnet/high R1B returned
+  `NO MATERIAL FINDINGS`. Fresh live-lineage R2 independently confirmed the
+  checkout-recovery composition, idempotency conflicts, provider baseline,
+  catalog lock, and inactive relay with `NO MATERIAL FINDINGS`; 10 calls reached
+  110,334 maximum context tokens, a slight bounded-review threshold warning.
+- Verification: lifecycle 83/83; disposable production-shape PostgreSQL 4/4;
+  typecheck/build/format/continuity/capabilities/diff pass; full root 3,206 pass
+  / 19 skip with only the unchanged CNPC wrapper-contract failure; runner
+  43/43; toolbox 14/14 + 9/9 + 65/65.
+- External effects: backups and read-only inventories only. No lifecycle
+  workflow import, provider registration, secret/runtime configuration,
+  catalog/event/action/message/certificate, legacy receiver, or Circle change.
+- Inactive-import correction: n8n 2.9.4 rejected the reviewed 37-character
+  workflow ID because its live column is `varchar(36)`. The target remained
+  absent. Source now uses 34-character `student-lifecycle-community-shadow`,
+  the static contract asserts the live limit, and toolbox commit `71f35cf`
+  narrows the guarded ID validator with a passing regression. This correction
+  passes 10 focused source tests, 10/10 toolbox contract tests, typecheck/build,
+  and bounded Sonnet/high correction R3 with `NO MATERIAL FINDINGS` in four
+  calls / 47,028 maximum context tokens and no warning.
+
 ### NC-20260824-006 — Durable abandoned-checkout shadow control
 
 - Date: 2026-08-24T19:45:00Z

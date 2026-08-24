@@ -214,6 +214,13 @@ credential literal and retains no success/error execution payload. Source
 presence grants no migration, deployment, provider, action, message,
 certificate, or minion authority.
 
+`NC-20260824-007` limits the shadow provider expansion to four Community
+actions through an inactive-first relay. Tracked manifests contain callback
+hostnames and URL hashes but never callback paths. n8n receives only the relay
+secret; the distinct identity secret remains host-only. An exact 18-row
+registration baseline protects all legacy receivers. Circle, legacy cutover,
+the other seven Heartbeat actions, and every lifecycle consumer remain off.
+
 ## Gmail capability and resource policy
 
 `NC-20260729-004` introduced the deployed baseline below. The Procurement row

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "workspace": "community",
+  "mode": "shadow",
+  "owner": "tandem-coaching-academy-operations",
+  "accountable_owner": "alex-kudinov",
+  "community_id": "e30ba037-e06d-44bb-b18b-d33b119da62f",
+  "catalog_revision": 1,
+  "policy_version": "student-lifecycle-community-shadow-v1",
+  "effective_from": "2026-08-24T18:09:18.000Z",
+  "retention": {
+    "ingress_days": 30,
+    "failed_identity_days": 7,
+    "operational_months_after_close": 24
+  },
+  "heartbeat_actions": [
+    "USER_JOIN",
+    "USER_UPDATE",
+    "GROUP_JOIN",
+    "COURSE_COMPLETED"
+  ],
+  "registrations": [
+    {"action": "USER_JOIN", "filter": {}},
+    {"action": "USER_UPDATE", "filter": {}},
+    {"action": "GROUP_JOIN", "filter": {}},
+    {"action": "COURSE_COMPLETED", "filter": {}}
+  ],
+  "catalog_entries": [
+    {
+      "entry_key": "hb:community:mentor-coaching-foundation:cohort-1:v1",
+      "heartbeat_group_id": "4c54983c-0e7b-4dd0-aebc-0f0cb1c82298",
+      "heartbeat_course_id": "abd312e4-b01a-4718-8918-f79d081753c0",
+      "heartbeat_cohort_id": "f2a36eca-a017-4536-9b83-368f51219895",
+      "language": "en",
+      "mapping_scope": "exact_cohort",
+      "lifecycle_enabled": true,
+      "source_ref": "heartbeat-main-inventory:2026-08-24:mentor-coaching-foundation"
+    }
+  ],
+  "reconciliation": {
+    "cadence": "daily",
+    "six_hour_scopes": [],
+    "required_run_types": ["registry", "catalog", "membership", "progress"]
+  },
+  "legacy_cutover": false,
+  "action_consumers": false,
+  "circle": false,
+  "excluded_actions": [
+    "EVENT_CREATE",
+    "EVENT_RSVP",
+    "THREAD_CREATE",
+    "MENTION",
+    "DIRECT_MESSAGE",
+    "ABANDONED_CART",
+    "DOCUMENT_CREATE"
+  ]
+}

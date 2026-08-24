@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "workspace": "community",
+  "captured_at": "2026-08-24T19:01:08.000Z",
+  "community_id": "e30ba037-e06d-44bb-b18b-d33b119da62f",
+  "registrations": [
+    {"id":"09b117ce-1f76-417d-92c3-07acad75ac07","action":"THREAD_CREATE","filter":{"channelID":"4195ece0-b05c-417a-9501-56b848826835"},"destination_host":"webhooks.tandemcoach.co","url_sha256":"90c42a6323bb5b65c60d2daf067f0f688710e5b0b179644c73d786561fa5442d"},
+    {"id":"0bc19729-d2c5-427f-9f7b-9e35d67ba06d","action":"USER_JOIN","filter":{},"destination_host":"tandemcoach.co","url_sha256":"47d760a244f2a9e8bfe0343d3b538f1d8e1b43285c6b3c4628795c6277742ff3"},
+    {"id":"1b234766-f3eb-4704-8ed6-f102195190c2","action":"THREAD_CREATE","filter":{"channelID":"796dfedf-94d1-4b78-9da9-8903cc36ec8f"},"destination_host":"webhooks.tandemcoach.co","url_sha256":"90c42a6323bb5b65c60d2daf067f0f688710e5b0b179644c73d786561fa5442d"},
+    {"id":"21af00c8-8f4d-4241-a269-a33f726fdf28","action":"THREAD_CREATE","filter":{"channelID":"744e530d-41fe-4359-8d92-45c33ff24997"},"destination_host":"webhooks.tandemcoach.co","url_sha256":"90c42a6323bb5b65c60d2daf067f0f688710e5b0b179644c73d786561fa5442d"},
+    {"id":"36dc5b29-a9a7-4386-bfbf-a431fd805a99","action":"DIRECT_MESSAGE","filter":{"userID":"6abc5b32-9a67-42ca-be22-7100fe8a8d40"},"destination_host":"webhooks.tandemcoach.co","url_sha256":"90c42a6323bb5b65c60d2daf067f0f688710e5b0b179644c73d786561fa5442d"},
+    {"id":"47af5d3e-5e62-45ad-b0a7-9a32078a7ac7","action":"COURSE_COMPLETED","filter":{},"destination_host":"tandemcoach.co","url_sha256":"47d760a244f2a9e8bfe0343d3b538f1d8e1b43285c6b3c4628795c6277742ff3"},
+    {"id":"56f8b802-5965-4d22-a44c-c6004dae5cb4","action":"THREAD_CREATE","filter":{"channelID":"8e67b170-4d8e-43f0-8439-53fdc19e2c6a"},"destination_host":"connect.pabbly.com","url_sha256":"e533e0e87fe2fe0005d4252851b00d6dfe1ba97e0fc1e25d38fbb36ff96a9c74"},
+    {"id":"67595552-b2e3-4e7c-be9e-47a7d9c9fa07","action":"THREAD_CREATE","filter":{"channelID":"f19c861d-fd0b-47d8-a016-a8b33e9759d4"},"destination_host":"connect.pabbly.com","url_sha256":"133c0c36976db96d02e653de3d9e51e3cb15381cdacb5e58e9e88d5021d44aa3"},
+    {"id":"6ea9f5e0-a312-41ee-b218-f86103b08648","action":"USER_JOIN","filter":{},"destination_host":"connect.pabbly.com","url_sha256":"863be29c41d37c156a8d56424a73c7dc1f32035b07c15fe2c2f79d709d74233c"},
+    {"id":"831b2d7a-9549-4e86-a0c9-2cae3b91a977","action":"EVENT_RSVP","filter":{},"destination_host":"connect.pabbly.com","url_sha256":"4419dfa9253241d1168c6209916e24150e7031efa59f06141334074dbcec6d59"},
+    {"id":"a6755165-9cdd-4744-9d65-8061057970a3","action":"THREAD_CREATE","filter":{"channelID":"ca2ece8a-cc6a-401c-9b17-0b861a50311f"},"destination_host":"connect.pabbly.com","url_sha256":"30fdae30cc79baf8b8eb2d3bb81d09b3fcc2b4bf0274fa2700940472941853f0"},
+    {"id":"c3364b99-a642-4233-84b5-5c4dde8a5362","action":"USER_JOIN","filter":{},"destination_host":"tandemcoach.co","url_sha256":"47d760a244f2a9e8bfe0343d3b538f1d8e1b43285c6b3c4628795c6277742ff3"},
+    {"id":"cc6cb704-37f2-4bac-9c25-91d06bcdb92d","action":"THREAD_CREATE","filter":{"channelID":"5d8dc596-7225-4186-84fd-ab98eaeed93d"},"destination_host":"webhooks.tandemcoach.co","url_sha256":"90c42a6323bb5b65c60d2daf067f0f688710e5b0b179644c73d786561fa5442d"},
+    {"id":"d2ea883e-d3ac-44fe-90fd-611f2b7cbe66","action":"DIRECT_MESSAGE","filter":{"userID":"58f83236-255d-4781-a600-ba4f3d6dcf81"},"destination_host":"webhooks.tandemcoach.co","url_sha256":"90c42a6323bb5b65c60d2daf067f0f688710e5b0b179644c73d786561fa5442d"},
+    {"id":"f24e6d16-794f-4cd9-b765-52c45eb86b53","action":"DIRECT_MESSAGE","filter":{"userID":"75ed8536-f9e3-4e4c-9d37-1d2e8a0308f0"},"destination_host":"webhooks.tandemcoach.co","url_sha256":"90c42a6323bb5b65c60d2daf067f0f688710e5b0b179644c73d786561fa5442d"},
+    {"id":"f8eaab5a-84c1-4887-a65b-4de430d6978d","action":"ABANDONED_CART","filter":{"groupIDs":["3f6df8ca-323d-4268-bff5-c3dd85508645"]},"destination_host":"webhooks.tandemcoach.co","url_sha256":"dbd776feb500b0966c5f2a748509c3150dc413160d86ee748ac8332ee70fe959"},
+    {"id":"fd1124f4-ee40-4eae-9b44-a1b331c964d7","action":"DIRECT_MESSAGE","filter":{"userID":"e6b47cde-a9f3-49c5-b182-50787a470993"},"destination_host":"webhooks.tandemcoach.co","url_sha256":"90c42a6323bb5b65c60d2daf067f0f688710e5b0b179644c73d786561fa5442d"},
+    {"id":"fffe8a6e-0f27-46b4-88fb-ac10acbd1622","action":"GROUP_JOIN","filter":{},"destination_host":"tandemcoach.co","url_sha256":"47d760a244f2a9e8bfe0343d3b538f1d8e1b43285c6b3c4628795c6277742ff3"}
+  ]
+}

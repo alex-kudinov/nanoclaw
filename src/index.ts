@@ -183,7 +183,14 @@ import { handleGmailSend } from './gmail-ipc-handlers.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
 import { prepareCnpcIntake } from './cnpc-intake.js';
 import { recordCnpcMatchResult } from './cnpc-match-result.js';
-import { recordPreparedCommunityLifecycle } from './student-lifecycle-store.js';
+import {
+  readStudentLifecycleHealth,
+  recordPreparedCommunityLifecycle,
+} from './student-lifecycle-store.js';
+import {
+  STUDENT_LIFECYCLE_HEALTH_REFRESH_MS,
+  StudentLifecycleHealthMonitor,
+} from './student-lifecycle-health.js';
 import {
   formatCheckoutRecoveryProjection,
   markCheckoutRecoveryProjectionNotified,
@@ -1974,6 +1981,11 @@ async function main(): Promise<void> {
   initDatabase();
   logger.info('Database initialized');
   const companyWorkShadow = new CompanyWorkShadowService();
+  const studentLifecycleHealth = new StudentLifecycleHealthMonitor(
+    STUDENT_LIFECYCLE_ENABLED,
+    readStudentLifecycleHealth,
+  );
+  await studentLifecycleHealth.refresh();
   const companyTimeTriggerObserver = new CompanyTimeTriggerObserver();
   const companyWorkExceptionLoop = new CompanyWorkExceptionLoopService(
     makeCompanyWorkExceptionLoopDeps({
@@ -2119,6 +2131,7 @@ async function main(): Promise<void> {
           workspace: 'community',
           actionConsumers: false,
           circle: false,
+          store: studentLifecycleHealth.getStatus(),
         },
         checkoutRecovery: {
           enabled: CHECKOUT_RECOVERY_ENABLED,
@@ -2249,6 +2262,11 @@ async function main(): Promise<void> {
     },
   });
   await webhookServer.start();
+  if (STUDENT_LIFECYCLE_ENABLED) {
+    setInterval(() => {
+      studentLifecycleHealth.refresh().catch(() => undefined);
+    }, STUDENT_LIFECYCLE_HEALTH_REFRESH_MS);
+  }
 
   const runCheckoutRecoveryShadowTick = async (): Promise<void> => {
     if (!CHECKOUT_RECOVERY_ENABLED) return;

@@ -1,0 +1,15 @@
+{
+  "decision_id": "decision:student-lifecycle-community-shadow-provider-2026-08-24",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-24T18:09:18+00:00",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "program",
+    "work:student-lifecycle-control-plane-build"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Proceed with the next Community-only implementation after the dark foundation was deployed and live-verified. This authorizes stages 2 through 4 only: narrow provider/toolbox support, a disabled n8n import before activation, distinct generated relay and identity secrets stored only in runtime configuration, the new opaque Community route, exact main-workspace Heartbeat registrations for the initial core shadow manifest (USER_JOIN, USER_UPDATE, GROUP_JOIN, and COURSE_COMPLETED), sanitized transport/duplicate/quarantine/replay canaries, daily read-only registration/catalog/membership/progress reconciliation, and natural dark receipt observation. The lifecycle catalog is owned by Tandem Coaching Academy operations with Alex Kudinov accountable; initial mappings must be exact course-only or exact cohort entries from refreshed Community inventory, never inferred commercial mappings. Retention defaults are 30 days for ingress, 7 days for failed-identity transient evidence, and enrollment close plus 24 months for operational state; grading text, feedback bodies, certificate URLs, messages, and payment detail remain excluded. This does not authorize legacy receiver deletion or cutover, ABANDONED_CART, DIRECT_MESSAGE, THREAD_CREATE, MENTION, EVENT_CREATE, EVENT_RSVP, or DOCUMENT_CREATE registrations, Circle access or changes, lifecycle actions/messages/certificates, Encharge changes, user/group/course mutations, manufactured Heartbeat student events, minion authority, or destructive rollback. Existing receivers remain unchanged throughout shadow capture.",
+  "source_task": "Current owner instruction in Codex task 01a0340b-b199-71b2-8d77-f8ad75f537b1: proceed with the implementation after the Community dark foundation deployment; the existing instruction to leave Circle alone remains in force."
+}
