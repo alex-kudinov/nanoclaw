@@ -30,7 +30,8 @@ const workflow = JSON.parse(raw) as {
 
 describe('Community lifecycle four-action shadow workflow', () => {
   it('imports disabled with an opaque-path placeholder and no retained data', () => {
-    expect(workflow.id).toBe('student-lifecycle-community-shadow-v1');
+    expect(workflow.id).toBe('student-lifecycle-community-shadow');
+    expect(workflow.id.length).toBeLessThanOrEqual(36);
     expect(workflow.active).toBe(false);
     expect(raw.match(/__STUDENT_LIFECYCLE_N8N_WEBHOOK_PATH__/g)).toHaveLength(
       2,
