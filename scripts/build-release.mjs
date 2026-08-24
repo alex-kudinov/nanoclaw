@@ -166,7 +166,9 @@ try {
     'scripts/verify-booking-plutio-host-boundary.mjs',
     'scripts/run-booking-plutio-marker-canary.mjs',
     'scripts/register-caleprocure-collector.mjs',
+    'scripts/render-student-lifecycle-shadow-workflow.mjs',
     'scripts/start-procurement-browser.sh',
+    'setup/n8n/student-lifecycle-community-shadow-workflow.json',
     'tools/sync-program-facts.py',
   );
   for (const relative of [...new Set(tracked)].sort()) {

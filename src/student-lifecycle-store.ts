@@ -578,12 +578,23 @@ export class PostgresStudentLifecycleRepository implements StudentLifecycleRepos
     );
     if (result.rows[0])
       return { id: Number(result.rows[0].id), duplicate: false };
-    const existing = await this.client.query<{ id: string }>(
-      `SELECT id::text
+    const existing = await this.client.query<{
+      id: string;
+      source_action: string;
+      payload_sha256: string;
+    }>(
+      `SELECT id::text, source_action, payload_sha256
          FROM business_v2.student_lifecycle_events
         WHERE source_event_key = $1`,
       [event.source_event_key],
     );
+    if (
+      !existing.rows[0] ||
+      existing.rows[0].source_action !== event.action ||
+      existing.rows[0].payload_sha256 !== event.payload_sha256
+    ) {
+      throw new Error('student_lifecycle_source_event_conflict');
+    }
     return { id: Number(existing.rows[0].id), duplicate: true };
   }
 
@@ -821,12 +832,56 @@ export class PostgresStudentLifecycleRepository implements StudentLifecycleRepos
     );
     if (result.rows[0])
       return { id: Number(result.rows[0].id), duplicate: false };
-    const existing = await this.client.query<{ id: string }>(
-      `SELECT id::text
+    const existing = await this.client.query<{
+      id: string;
+      run_type: LifecycleReconciliationRunInput['runType'];
+      scope_key: string;
+      catalog_revision: number | null;
+      source_snapshot_sha256: string;
+      watermark_before: string | null;
+      watermark_after: string | null;
+      scopes_expected: number;
+      scopes_observed: number;
+      facts_new: number;
+      facts_unchanged: number;
+      facts_conflicting: number;
+      facts_quarantined: number;
+      status: LifecycleReconciliationRunInput['status'];
+      error_code: string | null;
+      started_at: Date;
+      completed_at: Date | null;
+    }>(
+      `SELECT id::text, run_type, scope_key, catalog_revision,
+              source_snapshot_sha256, watermark_before, watermark_after,
+              scopes_expected, scopes_observed, facts_new, facts_unchanged,
+              facts_conflicting, facts_quarantined, status, error_code,
+              started_at, completed_at
          FROM business_v2.student_lifecycle_reconciliation_runs
         WHERE run_key = $1`,
       [input.runKey],
     );
+    const row = existing.rows[0];
+    if (
+      !row ||
+      row.run_type !== input.runType ||
+      row.scope_key !== input.scopeKey ||
+      row.catalog_revision !== input.catalogRevision ||
+      row.source_snapshot_sha256 !== input.sourceSnapshotSha256 ||
+      row.watermark_before !== input.watermarkBefore ||
+      row.watermark_after !== input.watermarkAfter ||
+      row.scopes_expected !== input.scopesExpected ||
+      row.scopes_observed !== input.scopesObserved ||
+      row.facts_new !== input.factsNew ||
+      row.facts_unchanged !== input.factsUnchanged ||
+      row.facts_conflicting !== input.factsConflicting ||
+      row.facts_quarantined !== input.factsQuarantined ||
+      row.status !== input.status ||
+      row.error_code !== input.errorCode ||
+      row.started_at.toISOString() !== input.startedAt ||
+      row.completed_at?.toISOString() !== input.completedAt
+    ) {
+      throw new Error('student_lifecycle_reconciliation_run_conflict');
+    }
     return { id: Number(existing.rows[0].id), duplicate: true };
   }
 

@@ -1,0 +1,101 @@
+{
+  "id": "student-lifecycle-community-shadow-v1",
+  "name": "Student Lifecycle Community - Four Action Shadow",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "__STUDENT_LIFECYCLE_N8N_WEBHOOK_PATH__",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "trigger-student-lifecycle-community",
+      "name": "Heartbeat Community Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "__STUDENT_LIFECYCLE_N8N_WEBHOOK_PATH__"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Community-only four-action shadow relay. Runtime values are environment\n// references and are configured outside this export after disabled import.\n// No success/error execution data is retained and no action consumer exists.\nconst crypto = require('crypto');\nconst input = $input.first().json || {};\nconst sourceBody = input.body && typeof input.body === 'object' && !Array.isArray(input.body)\n  ? input.body\n  : input;\nconst sourceAction = sourceBody.action && typeof sourceBody.action === 'object'\n  ? sourceBody.action.name\n  : sourceBody.event;\nconst action = String(sourceAction || '');\nconst allowedFields = {\n  USER_JOIN: ['id', 'email'],\n  USER_UPDATE: ['id'],\n  COURSE_COMPLETED: ['courseID', 'userID'],\n  GROUP_JOIN: ['userID', 'groupID'],\n};\nif (!Object.hasOwn(allowedFields, action)) {\n  throw new Error('unsupported_heartbeat_action');\n}\nconst sourceData = sourceBody.data && typeof sourceBody.data === 'object' && !Array.isArray(sourceBody.data)\n  ? sourceBody.data\n  : sourceBody;\nconst data = {};\nfor (const field of allowedFields[action]) {\n  if (sourceData[field] !== undefined) data[field] = sourceData[field];\n}\nconst communityId = String($env.HEARTBEAT_COMMUNITY_ID || '');\nconst relaySecret = String($env.STUDENT_LIFECYCLE_RELAY_SECRET || '');\nconst hostUrl = String($env.STUDENT_LIFECYCLE_HOST_URL || '');\nif (!/^[0-9a-f-]{36}$/i.test(communityId)) throw new Error('community_id_unconfigured');\nif (relaySecret.length < 32) throw new Error('relay_secret_unconfigured');\nif (!/^https?:\\/\\//.test(hostUrl)) throw new Error('host_url_unconfigured');\nconst envelope = {\n  schema_version: 1,\n  workspace: 'community',\n  community_id: communityId,\n  delivery_id: crypto.randomUUID(),\n  observed_at: new Date().toISOString(),\n  action: { name: action },\n  data,\n};\nconst bodyText = JSON.stringify(envelope);\nif (Buffer.byteLength(bodyText, 'utf8') > 65536) throw new Error('payload_too_large');\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst signature = 'v1=' + crypto.createHmac('sha256', relaySecret)\n  .update(timestamp + '.' + bodyText, 'utf8')\n  .digest('hex');\nreturn [{ json: { host_url: hostUrl, timestamp, signature, body_text: bodyText } }];"
+      },
+      "id": "normalize-sign-community-lifecycle",
+      "name": "Normalize and Sign Community Lifecycle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.host_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Webhook-Timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "X-Webhook-Signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body_text }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "post-community-lifecycle-to-nanoclaw",
+      "name": "POST Community Lifecycle to NanoClaw",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 300],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "connections": {
+    "Heartbeat Community Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize and Sign Community Lifecycle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and Sign Community Lifecycle": {
+      "main": [
+        [
+          {
+            "node": "POST Community Lifecycle to NanoClaw",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "shared-error-handler",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveExecutionProgress": false,
+    "executionTimeout": 60
+  }
+}
