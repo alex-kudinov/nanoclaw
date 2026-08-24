@@ -8,6 +8,55 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-004 — Community student-lifecycle dark foundation
+
+- Date: 2026-08-24T16:10:00Z
+- Owner/client: Codex
+- State: ready_for_deploy; local implementation, full verification, and Claude
+  convergence complete; no migration/deployment yet
+- Commit/PR: uncommitted isolated branch
+  `codex/student-lifecycle-dark-foundation-20260824` from verified-live
+  `778545b3`
+- Change class: C2 local source/schema design; highest future operational class
+  remains externally gated
+- Authority: accepted Community-only decision; Circle and all production,
+  provider, deployment, credential, action, message, certificate, and minion
+  boundaries remain excluded
+- Implementation: ordered migration/rollback 134; seven admin-only lifecycle
+  relations and two aggregate views; pure Community parser/minimizer/HMAC/
+  projection contract; deterministic store and exceptions; fixtures-only
+  reconciliation; dedicated default-off bounded webhook; mechanical reaper;
+  inactive credential-reference n8n template; release packaging and authority
+  documentation.
+- Claude plan review: Sonnet/high R1 found four material gaps. The reconciled
+  plan adds the reconciliation runner, archives before identity lookup, enforces
+  a streaming 64 KiB limit, and proves reaper replay never reaches group/agent
+  dispatch.
+- Verification: focused 129/129; disposable store integration 2/2;
+  migration apply, zero non-admin grants, empty rollback, reapply, and populated
+  rollback refusal pass; typecheck/build/format/continuity/capability/diff pass;
+  full suite 3,161 pass / 14 skip with only the unchanged pre-existing CNPC
+  wrapper-contract failure.
+- Claude implementation review: Sonnet/high R1 confirmed HMAC/body-bound order,
+  privacy minimization, no-agent paths, migration/rollback/privileges, n8n
+  parity, and Community-only fail-closed controls. It found a P1 unstable
+  ABANDONED_CART/MENTION redelivery key and P2 relay/identity secret coupling.
+  Corrections now use content/window-derived keys and a distinct host-only
+  identity secret. Sonnet/high correction R2 returned `NO MATERIAL FINDINGS`;
+  focused and full gates retain the same result.
+- Deployment/migration: none. Migration 134 is local/unapplied; n8n export is
+  inactive/unimported; host feature defaults off with no live path or secret.
+- Rollback/recovery: discard the isolated branch. No live rollback is needed
+  because no external or production state changed.
+- Documentation: implementation plan/design/review artifacts, project map,
+  webhook reliability, security, structure-only schema, active work, and this
+  entry.
+- Follow-ups: commit/push the locally reviewed source, checkpoint, then execute
+  only the separately authorized dark migration/release.
+  Production release belongs to `work:student-lifecycle-control-plane-build`;
+  Circle belongs to `work:student-lifecycle-circle-rollout` only after
+  Community readiness and a new owner authorization.
+
 ### NC-20260824-001 — Human-first internal Slack notifications
 
 - Date: 2026-08-24T13:20Z

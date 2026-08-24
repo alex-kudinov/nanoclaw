@@ -1,0 +1,17 @@
+{
+  "decision_id": "decision:student-lifecycle-community-dark-foundation-2026-08-24",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-24T15:05:00-05:00",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "program",
+    "work:student-lifecycle-community-dark-foundation",
+    "work:student-lifecycle-control-plane-build",
+    "work:student-lifecycle-circle-rollout"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Proceed from the accepted control-plane design with an independently reviewed, Community-only dark implementation. Circle is explicitly excluded until the Community implementation is ready and the owner separately authorizes Circle rollout. This decision authorizes isolated local source, tests, ordered migration design, sanitized fixtures, deterministic host mechanics, and an inactive credential-reference n8n export. It does not authorize production migration or data writes, deployment/restart, n8n activation, Heartbeat registration changes, legacy receiver cutover, Circle access, credentials or rotation, lifecycle actions/messages, certificate actions, or minion authority.",
+  "source_task": "Current owner instruction in Codex task 01a0340b-b199-71b2-8d77-f8ad75f537b1: leave Circle alone, create an implementation plan, reconcile it with Claude, and start implementing the Community control plane."
+}

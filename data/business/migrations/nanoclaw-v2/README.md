@@ -117,11 +117,19 @@ before applying anything.
   process or replay a Stripe event, write Sheets/public payments, post Slack,
   repair history, or grant accounting authority. Exact release
   `b131071c74fc` applied it admin-only after backup and a zero-work drain;
+- migration 134 is NC-20260824-004's local, unapplied Community-only student
+  lifecycle dark foundation. It creates admin-only catalog, identity-link,
+  event, multi-axis enrollment, state-history, reconciliation-run, and
+  exception relations plus aggregate views. It has no catalog seeds, Circle
+  value, provider registration, schedule, action outbox, recipient/message,
+  group/minion grant, or runtime activation. Disposable PostgreSQL proves
+  apply, zero non-admin grants, empty rollback, reapply, store projection, and
+  populated-history rollback refusal; production remains unchanged;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-133 are non-auto-discovered and refuse to erase populated
+- rollbacks 120-134 are non-auto-discovered and refuse to erase populated
   operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
   mailbox-audit, program-facts, outcome-quality, or outcome-review history;
   rollback 128 specifically refuses once any durable `+1` decision exists,
@@ -129,7 +137,9 @@ before applying anything.
   130 refuses once any follow-up case/event evidence exists; rollback 131
   refuses once any operator-decision evidence exists; rollback 132 refuses once
   any healer-resolution item or observation exists; rollback 133 refuses once
-  any Contador fulfillment case, alias, or receipt exists.
+  any Contador fulfillment case, alias, or receipt exists; rollback 134 refuses
+  once any lifecycle catalog, identity, event, enrollment, reconciliation,
+  history, or exception evidence exists.
 
 ## Rollback
 

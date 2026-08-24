@@ -215,6 +215,30 @@ n8n hardening catches F2/F4/F5 (provider→n8n, n8n→NC HTTP). Sweepers cover F
 | Agent execution | Booking lifecycle run has no exact DB interaction (F8) | receiver/reaper completion gate | immediate, then 5-min retry |
 | Agent partial (F9) | agent writes Slack but not DB | webhook-inbox-reaper deadline + sweeper | 5 min - 6h |
 
+### 3.8 Community student-lifecycle dark foundation (`NC-20260824-004`)
+
+Local migration 134 and `src/student-lifecycle*.ts` add a default-off,
+Community-only deterministic receiver. The exact configured path is matched
+before generic `/hook/:id`; it requires a timestamped HMAC, a streaming 64 KiB
+limit, schema version 1, and `workspace='community'`. The host minimizes names,
+email, content, callback details, and credentials before archive. Email-bearing
+events retain only a keyed fingerprint made with a distinct host-only identity
+secret plus transient in-memory email for the first post-archive identity
+attempt. Relay-secret rotation therefore does not change durable fingerprints.
+
+`student-lifecycle` rows replay through an explicit mechanical branch before
+webhook config, group, prompt, or agent lookup. The branch records normalized
+facts, projections, or durable exceptions and marks the inbox handled only
+after that receipt. It cannot run an agent or emit an action/message. The
+fixtures-only reconciliation runner records registry/catalog/membership/
+progress completeness and retains its watermark on partial or quarantined
+input; it has no live Heartbeat/toolbox/network/schedule wiring.
+
+The inactive n8n export uses runtime environment references, disables success
+and error execution retention, and has no production capability path or
+credential literal. No schema, workflow, provider registration, Circle,
+runtime, deployment, or external state has been changed by the local source.
+
 ## 4. Phase plan
 
 | Phase | Scope | Status | Blocks |

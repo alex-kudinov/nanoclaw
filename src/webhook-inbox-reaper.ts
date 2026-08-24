@@ -37,6 +37,11 @@ import {
   recordCnpcMatchResult,
 } from './cnpc-match-result.js';
 import type { BookingPlutioEnqueueResult } from './booking-plutio-host.js';
+import {
+  STUDENT_LIFECYCLE_SOURCE,
+  parsePreparedCommunityLifecycleEnvelope,
+} from './student-lifecycle.js';
+import { recordPreparedCommunityLifecycle } from './student-lifecycle-store.js';
 
 const MAX_ATTEMPTS = 5;
 const BATCH_SIZE = 20;
@@ -179,6 +184,25 @@ async function claimRows(): Promise<InboxRow[]> {
 }
 
 async function dispatchRow(row: InboxRow, deps: ReaperDeps): Promise<void> {
+  // Student lifecycle is a mechanical host path and has no webhooks.json or
+  // group entry. Keep this before every config/group/prompt/agent lookup.
+  if (row.source === STUDENT_LIFECYCLE_SOURCE) {
+    const event = parsePreparedCommunityLifecycleEnvelope(row.raw_body);
+    const result = await recordPreparedCommunityLifecycle({
+      event,
+      webhookInboxId: row.id,
+    });
+    await markHandled(row.id, {
+      handled_by: 'student-lifecycle:reaper',
+      party_id: result.partyId,
+      related_entity: {
+        kind: 'student_lifecycle_event',
+        id: result.eventId,
+        processing_status: result.processingStatus,
+      },
+    });
+    return;
+  }
   const webhooks = loadWebhooks(deps.webhooksFile);
   const webhook = webhooks.find((w) => w.id === row.source);
   if (!webhook) {

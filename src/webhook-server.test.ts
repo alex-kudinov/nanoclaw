@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import http from 'http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -1160,6 +1161,201 @@ describe('WebhookServer — form-submitted observed suppression', () => {
       502,
       expect.objectContaining({ handled_by: 'form-submitted:host-handler' }),
     );
+  });
+});
+
+describe('WebhookServer — Community student lifecycle dark relay', () => {
+  const secret = 'student-lifecycle-test-secret-at-least-32-characters';
+  const path = '/hook/student-lifecycle-test-only';
+
+  function body(workspace = 'community') {
+    return JSON.stringify({
+      schema_version: 1,
+      workspace,
+      community_id: '11111111-1111-4111-8111-111111111111',
+      delivery_id: '22222222-2222-4222-8222-222222222222',
+      observed_at: new Date().toISOString(),
+      action: { name: 'USER_UPDATE' },
+      data: { id: '33333333-3333-4333-8333-333333333333' },
+    });
+  }
+
+  function signedHeaders(rawBody: string) {
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = crypto
+      .createHmac('sha256', secret)
+      .update(timestamp)
+      .update('.')
+      .update(rawBody)
+      .digest('hex');
+    return {
+      'content-type': 'application/json',
+      'x-webhook-timestamp': timestamp,
+      'x-webhook-signature': `v1=${signature}`,
+    };
+  }
+
+  async function start(overrides: Partial<WebhookServerDeps> = {}) {
+    const record = vi.fn(async () => ({
+      eventId: 901,
+      duplicate: false,
+      processingStatus: 'applied' as const,
+      partyId: null,
+      enrollmentIds: [],
+      exceptionReason: null,
+    }));
+    const deps = makeDeps({
+      getRegisteredGroups: vi.fn(() => ({})),
+      archiveWebhook: vi.fn(async () => ({ id: 801, isDuplicate: false })),
+      markWebhookDispatched: vi.fn(async () => {}),
+      markWebhookFailed: vi.fn(async () => {}),
+      markWebhookHandled: vi.fn(async () => {}),
+      studentLifecycle: {
+        enabled: true,
+        path,
+        relaySecret: secret,
+        identitySecret: 'test-only-identity-secret-at-least-32-characters',
+        record,
+      },
+      ...overrides,
+    });
+    const instance = new WebhookServer(deps);
+    await instance.start();
+    deps.port = instance.getPort();
+    return { instance, deps, record };
+  }
+
+  it('archives only the prepared envelope and never dispatches an agent', async () => {
+    const { instance, deps, record } = await start();
+    try {
+      const rawBody = body();
+      const response = await makeRequest(deps.port, {
+        path,
+        headers: signedHeaders(rawBody),
+        body: rawBody,
+      });
+      expect(response.status).toBe(202);
+      await vi.waitFor(() => expect(record).toHaveBeenCalledOnce());
+      expect(deps.archiveWebhook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: 'student-lifecycle',
+          event_id: expect.stringContaining('hb:v1:community'),
+          raw_body: expect.objectContaining({
+            workspace: 'community',
+            action: 'USER_UPDATE',
+          }),
+        }),
+      );
+      expect(deps.runAgent).not.toHaveBeenCalled();
+      expect(deps.enqueueAgentTask).not.toHaveBeenCalled();
+      expect(deps.sendMessage).not.toHaveBeenCalled();
+      expect(deps.getRegisteredGroups).not.toHaveBeenCalled();
+    } finally {
+      await instance.stop();
+    }
+  });
+
+  it('rejects Circle before archive', async () => {
+    const { instance, deps, record } = await start();
+    try {
+      const rawBody = body('circle');
+      const response = await makeRequest(deps.port, {
+        path,
+        headers: signedHeaders(rawBody),
+        body: rawBody,
+      });
+      expect(response.status).toBe(422);
+      expect(deps.archiveWebhook).not.toHaveBeenCalled();
+      expect(record).not.toHaveBeenCalled();
+    } finally {
+      await instance.stop();
+    }
+  });
+
+  it('rejects invalid signatures and non-JSON content types', async () => {
+    const { instance, deps } = await start();
+    try {
+      const rawBody = body();
+      const invalid = await makeRequest(deps.port, {
+        path,
+        headers: {
+          ...signedHeaders(rawBody),
+          'x-webhook-signature': `v1=${'0'.repeat(64)}`,
+        },
+        body: rawBody,
+      });
+      expect(invalid.status).toBe(401);
+      const wrongType = await makeRequest(deps.port, {
+        path,
+        headers: { 'content-type': 'text/plain' },
+        body: rawBody,
+      });
+      expect(wrongType.status).toBe(415);
+      expect(deps.archiveWebhook).not.toHaveBeenCalled();
+    } finally {
+      await instance.stop();
+    }
+  });
+
+  it('rejects an oversize stream before archive or HMAC work', async () => {
+    const { instance, deps } = await start();
+    try {
+      const rawBody = 'x'.repeat(65_537);
+      const response = await makeRequest(deps.port, {
+        path,
+        headers: signedHeaders(rawBody),
+        body: rawBody,
+      });
+      expect(response.status).toBe(413);
+      expect(deps.archiveWebhook).not.toHaveBeenCalled();
+    } finally {
+      await instance.stop();
+    }
+  });
+
+  it('returns a stable duplicate receipt without processing', async () => {
+    const { instance, deps, record } = await start({
+      archiveWebhook: vi.fn(async () => ({ id: 801, isDuplicate: true })),
+    });
+    try {
+      const rawBody = body();
+      const response = await makeRequest(deps.port, {
+        path,
+        headers: signedHeaders(rawBody),
+        body: rawBody,
+      });
+      expect(response.status).toBe(200);
+      expect(JSON.parse(response.body)).toEqual({
+        webhook_inbox_id: 801,
+        duplicate: true,
+      });
+      expect(record).not.toHaveBeenCalled();
+    } finally {
+      await instance.stop();
+    }
+  });
+
+  it('does not expose a route while the lifecycle feature is disabled', async () => {
+    const { instance, deps } = await start({
+      studentLifecycle: {
+        enabled: false,
+        path,
+        relaySecret: secret,
+        identitySecret: 'test-only-identity-secret-at-least-32-characters',
+        record: vi.fn(),
+      },
+    });
+    try {
+      const rawBody = body();
+      const response = await makeRequest(deps.port, {
+        path,
+        headers: signedHeaders(rawBody),
+        body: rawBody,
+      });
+      expect(response.status).toBe(404);
+    } finally {
+      await instance.stop();
+    }
   });
 });
 

@@ -55,6 +55,14 @@ aliases, and append-only content-minimized stage receipts. Exact release
 names, email, product text, amount/card data, raw webhooks, and accounting
 content. Schema presence alone does not process or replay a Stripe event.
 
+Local/unapplied student-lifecycle overlay: migration 134 under
+`NC-20260824-004` defines seven Community-only, admin-only relations plus two
+aggregate/admin views. It has no live catalog seeds, Circle value, provider
+registration, schedule, action outbox, recipient/message field, group/minion
+grant, or production row. Disposable PostgreSQL apply/empty-rollback and
+populated-history rollback refusal are local evidence only. Production schema
+and deployment remain unchanged.
+
 Covers the public._ and business_v2._ schemas. business*v2 tables are
 headed with their schema prefix; access them via business_v2.v*_ views and
 business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
@@ -149,6 +157,192 @@ business*v2.fn*_() helpers (see data/business/CLAUDE.md), not base-table DML.
   actor                         text                 NOT NULL
   occurred_at                   timestamp with time zone NOT NULL
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.student_lifecycle_catalog_entries (migration 134 local/unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_catalog_entries_id_seq'::regclass)
+  entry_key                     text                 NOT NULL
+  catalog_revision              integer              NOT NULL
+  catalog_sha256                text                 NOT NULL
+  workspace                     text                 NOT NULL DEFAULT='community'::text
+  heartbeat_community_id        uuid                 NOT NULL
+  heartbeat_group_id            uuid
+  heartbeat_course_id           uuid
+  heartbeat_cohort_id           uuid
+  offer_id                      text
+  program_slug                  text
+  language                      text                 NOT NULL DEFAULT='en'::text
+  mapping_scope                 text                 NOT NULL
+  lifecycle_enabled             boolean              NOT NULL DEFAULT=false
+  policy_version                text                 NOT NULL
+  source_ref                    text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  effective_from                timestamp with time zone NOT NULL
+  effective_until               timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.student_lifecycle_identity_links (migration 134 local/unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_identity_links_id_seq'::regclass)
+  workspace                     text                 NOT NULL DEFAULT='community'::text
+  heartbeat_community_id        uuid                 NOT NULL
+  heartbeat_user_id             uuid                 NOT NULL
+  party_id                      bigint               NOT NULL
+  binding_status                text                 NOT NULL DEFAULT='confirmed'::text
+  source_event_key              text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  bound_at                      timestamp with time zone NOT NULL
+  revoked_at                    timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.student_lifecycle_events (migration 134 local/unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_events_id_seq'::regclass)
+  event_uuid                    uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  schema_version                integer              NOT NULL
+  workspace                     text                 NOT NULL DEFAULT='community'::text
+  delivery_id                   uuid                 NOT NULL
+  source_system                 text                 NOT NULL DEFAULT='heartbeat'::text
+  source_action                 text                 NOT NULL
+  source_event_key              text                 NOT NULL
+  event_name                    text                 NOT NULL
+  observed_at                   timestamp with time zone NOT NULL
+  received_at                   timestamp with time zone NOT NULL DEFAULT=now()
+  webhook_inbox_id              bigint               NOT NULL
+  reconciliation_run_id         bigint
+  party_id                      bigint
+  catalog_entry_id              bigint
+  heartbeat_community_id        uuid                 NOT NULL
+  heartbeat_user_id             uuid
+  heartbeat_group_id            uuid
+  heartbeat_course_id           uuid
+  heartbeat_cohort_id           uuid
+  heartbeat_lesson_id           uuid
+  heartbeat_invitation_id       uuid
+  heartbeat_event_id            uuid
+  heartbeat_channel_id          uuid
+  heartbeat_thread_id           uuid
+  heartbeat_chat_id             uuid
+  heartbeat_message_id          uuid
+  heartbeat_document_id         uuid
+  identity_fingerprint          text
+  payload_sha256                text                 NOT NULL
+  relay_authenticity            text                 NOT NULL DEFAULT='hmac_verified'::text
+  provider_authenticity         text                 NOT NULL
+  mapping_status                text                 NOT NULL
+  processing_status             text                 NOT NULL
+  facts                         jsonb                NOT NULL DEFAULT='{}'::jsonb
+  supersedes_event_id           bigint
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.student_lifecycle_enrollments (migration 134 local/unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_enrollments_id_seq'::regclass)
+  episode_uuid                  uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  enrollment_key                text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  workspace                     text                 NOT NULL DEFAULT='community'::text
+  party_id                      bigint               NOT NULL
+  heartbeat_community_id        uuid                 NOT NULL
+  heartbeat_user_id             uuid                 NOT NULL
+  heartbeat_group_id            uuid
+  heartbeat_course_id           uuid
+  heartbeat_cohort_id           uuid
+  catalog_entry_id              bigint
+  access_state                  text                 NOT NULL DEFAULT='unknown'::text
+  activation_state              text                 NOT NULL DEFAULT='unknown'::text
+  learning_state                text                 NOT NULL DEFAULT='not_started'::text
+  grading_state                 text                 NOT NULL DEFAULT='unknown'::text
+  feedback_state                text                 NOT NULL DEFAULT='missing'::text
+  certificate_state             text                 NOT NULL DEFAULT='blocked'::text
+  finance_state                 text                 NOT NULL DEFAULT='unknown'::text
+  marketing_consent_state       text                 NOT NULL DEFAULT='unknown'::text
+  contact_suppression_state     text                 NOT NULL DEFAULT='none'::text
+  freshness_state               text                 NOT NULL DEFAULT='unknown'::text
+  missing_fact_codes            ARRAY                NOT NULL DEFAULT='{}'::text[]
+  last_event_id                 bigint
+  last_reconciled_at            timestamp with time zone
+  started_at                    timestamp with time zone NOT NULL
+  ended_at                      timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.student_lifecycle_reconciliation_runs (migration 134 local/unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_reconciliation_runs_id_seq'::regclass)
+  run_uuid                      uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  run_key                       text                 NOT NULL
+  workspace                     text                 NOT NULL DEFAULT='community'::text
+  run_type                      text                 NOT NULL
+  scope_key                     text                 NOT NULL
+  catalog_revision              integer
+  source_snapshot_sha256        text                 NOT NULL
+  watermark_before              text
+  watermark_after               text
+  scopes_expected               integer              NOT NULL
+  scopes_observed               integer              NOT NULL
+  facts_new                     integer              NOT NULL DEFAULT=0
+  facts_unchanged               integer              NOT NULL DEFAULT=0
+  facts_conflicting             integer              NOT NULL DEFAULT=0
+  facts_quarantined             integer              NOT NULL DEFAULT=0
+  status                        text                 NOT NULL
+  error_code                    text
+  started_at                    timestamp with time zone NOT NULL
+  completed_at                  timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.student_lifecycle_state_history (migration 134 local/unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_state_history_id_seq'::regclass)
+  enrollment_id                 bigint               NOT NULL
+  enrollment_version            integer              NOT NULL
+  axis                          text                 NOT NULL
+  previous_value                text                 NOT NULL
+  next_value                    text                 NOT NULL
+  reason_code                   text                 NOT NULL
+  event_id                      bigint
+  reconciliation_run_id         bigint
+  policy_version                text                 NOT NULL
+  catalog_revision              integer
+  effective_at                  timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.student_lifecycle_exceptions (migration 134 local/unapplied)
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_lifecycle_exceptions_id_seq'::regclass)
+  fingerprint                   text                 NOT NULL
+  workspace                     text                 NOT NULL DEFAULT='community'::text
+  event_id                      bigint
+  enrollment_id                 bigint
+  reconciliation_run_id         bigint
+  reason_code                   text                 NOT NULL
+  severity                      text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='open'::text
+  owner_group                   text                 NOT NULL DEFAULT='chief'::text
+  occurrence_count              integer              NOT NULL DEFAULT=1
+  evidence_sha256               text                 NOT NULL
+  first_seen_at                 timestamp with time zone NOT NULL
+  last_seen_at                  timestamp with time zone NOT NULL
+  review_due_at                 timestamp with time zone NOT NULL
+  resolution_code               text
+  resolution_receipt_sha256     text
+  resolved_at                   timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.company_followup_cases (migration 130 live, empty)

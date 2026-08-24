@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockQuery = vi.fn();
 const mockWithAgentContext = vi.fn();
 const mockHandleStripePayment = vi.hoisted(() => vi.fn());
+const mockRecordPreparedCommunityLifecycle = vi.hoisted(() => vi.fn());
 vi.mock('./business-db.js', () => ({
   query: (...args: any[]) => mockQuery(...args),
   withAgentContext: (...args: any[]) => mockWithAgentContext(...args),
@@ -15,6 +16,9 @@ vi.mock('./logger.js', () => ({
 vi.mock('./stripe-payment-host.js', () => ({
   handleStripePayment: mockHandleStripePayment,
 }));
+vi.mock('./student-lifecycle-store.js', () => ({
+  recordPreparedCommunityLifecycle: mockRecordPreparedCommunityLifecycle,
+}));
 
 import fs from 'fs';
 vi.spyOn(fs, 'mkdirSync').mockImplementation(() => '');
@@ -22,6 +26,7 @@ vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
 
 import { runReaper } from './webhook-inbox-reaper.js';
 import canceledFixture from './fixtures/canceled-webhook.json' with { type: 'json' };
+import { prepareCommunityLifecycleEnvelope } from './student-lifecycle.js';
 
 const testWebhook = {
   id: 'course-recap',
@@ -80,6 +85,14 @@ beforeEach(() => {
     fulfillmentState: 'needs_product',
     fulfillmentVersion: 1,
     duplicateComplete: false,
+  });
+  mockRecordPreparedCommunityLifecycle.mockResolvedValue({
+    eventId: 901,
+    duplicate: false,
+    processingStatus: 'applied',
+    partyId: 100,
+    enrollmentIds: [200],
+    exceptionReason: null,
   });
 });
 
@@ -186,6 +199,79 @@ describe('runReaper', () => {
       }),
     ]);
   });
+
+  it.each(['received', 'failed', 'stale dispatched'])(
+    'replays %s student lifecycle rows mechanically with no agent or group lookup',
+    async () => {
+      const prepared = prepareCommunityLifecycleEnvelope(
+        {
+          schema_version: 1,
+          workspace: 'community',
+          community_id: '11111111-1111-4111-8111-111111111111',
+          delivery_id: '22222222-2222-4222-8222-222222222222',
+          observed_at: '2026-08-24T15:00:00Z',
+          action: { name: 'GROUP_JOIN' },
+          data: {
+            userID: '33333333-3333-4333-8333-333333333333',
+            groupID: '44444444-4444-4444-8444-444444444444',
+          },
+        },
+        'test-only-secret',
+      ).prepared;
+      const claimed = [
+        {
+          id: 118,
+          source: 'student-lifecycle',
+          event_type: 'learning_access_observed',
+          raw_body: prepared,
+          attempts: 1,
+        },
+      ];
+      mockWithAgentContext.mockImplementation(
+        async (_role: string, fn: any) => {
+          const client = {
+            query: vi
+              .fn()
+              .mockResolvedValueOnce({ rows: claimed })
+              .mockResolvedValue({ rows: [] }),
+          };
+          return fn(client);
+        },
+      );
+      mockQuery.mockResolvedValue({ rows: [] });
+      const runAgent = vi.fn();
+      const deps = makeDeps(runAgent);
+      const getGroups = vi.fn(() => ({}));
+      deps.getRegisteredGroups = getGroups;
+      const readCountBefore = vi.mocked(fs.readFileSync).mock.calls.length;
+
+      const result = await runReaper(deps);
+
+      expect(result.succeeded).toBe(1);
+      expect(mockRecordPreparedCommunityLifecycle).toHaveBeenCalledWith({
+        event: prepared,
+        webhookInboxId: 118,
+      });
+      expect(runAgent).not.toHaveBeenCalled();
+      expect(getGroups).not.toHaveBeenCalled();
+      expect(vi.mocked(fs.readFileSync).mock.calls.length).toBe(
+        readCountBefore,
+      );
+      const handled = mockQuery.mock.calls.find((call) =>
+        call[0].includes("status = 'handled'"),
+      );
+      expect(handled?.[1]).toEqual([
+        118,
+        'student-lifecycle:reaper',
+        100,
+        JSON.stringify({
+          kind: 'student_lifecycle_event',
+          id: 901,
+          processing_status: 'applied',
+        }),
+      ]);
+    },
+  );
 
   it('marks failed and retries when attempt count below MAX', async () => {
     const claimed = [

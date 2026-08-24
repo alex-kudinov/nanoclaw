@@ -57,6 +57,15 @@ import {
   type CnpcMatchResult,
 } from './cnpc-match-result.js';
 import type { BookingPlutioEnqueueResult } from './booking-plutio-host.js';
+import {
+  STUDENT_LIFECYCLE_MAX_BODY_BYTES,
+  StudentLifecyclePayloadError,
+  StudentLifecycleSignatureError,
+  prepareCommunityLifecycleEnvelope,
+  verifyCommunityLifecycleSignature,
+  type PreparedCommunityLifecycleEnvelope,
+} from './student-lifecycle.js';
+import type { LifecycleProcessResult } from './student-lifecycle-store.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -94,6 +103,12 @@ export interface HealthPayload {
   capabilityManifests?: ReturnType<
     typeof import('./capability-manifest.js').getCapabilityManifestStatus
   >;
+  studentLifecycle?: {
+    enabled: boolean;
+    workspace: 'community';
+    actionConsumers: false;
+    circle: false;
+  };
 }
 
 export interface WebhookServerDeps {
@@ -149,6 +164,17 @@ export interface WebhookServerDeps {
     result: CnpcMatchResult,
     prepared: CnpcPreparedIntake,
   ) => Promise<number>;
+  studentLifecycle?: {
+    enabled: boolean;
+    path: string;
+    relaySecret: string;
+    identitySecret: string;
+    record: (input: {
+      event: PreparedCommunityLifecycleEnvelope;
+      webhookInboxId: number;
+      transientEmail?: string | null;
+    }) => Promise<LifecycleProcessResult>;
+  };
   // Per-group serialization. Webhook agent runs go through the GroupQueue
   // (like the message loop and scheduled tasks) so concurrent webhooks to one
   // group reuse a warm container instead of spawning rival ones that contend
@@ -220,6 +246,56 @@ function readBody(req: http.IncomingMessage): Promise<Buffer> {
     req.on('data', (chunk: Buffer) => chunks.push(chunk));
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
+  });
+}
+
+class RequestBodyTooLargeError extends Error {
+  constructor() {
+    super('request body exceeds configured limit');
+    this.name = 'RequestBodyTooLargeError';
+  }
+}
+
+function readBodyBounded(
+  req: http.IncomingMessage,
+  maxBytes: number,
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let total = 0;
+    let settled = false;
+    const cleanup = () => {
+      req.off('data', onData);
+      req.off('end', onEnd);
+      req.off('error', onError);
+    };
+    const onData = (chunk: Buffer) => {
+      if (settled) return;
+      total += chunk.length;
+      if (total > maxBytes) {
+        settled = true;
+        cleanup();
+        req.pause();
+        reject(new RequestBodyTooLargeError());
+        return;
+      }
+      chunks.push(chunk);
+    };
+    const onEnd = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(Buffer.concat(chunks, total));
+    };
+    const onError = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
   });
 }
 
@@ -646,6 +722,162 @@ export class WebhookServer {
             'Gmail push handler threw',
           ),
         );
+      return;
+    }
+
+    // Community-only student lifecycle relay. This is a dedicated,
+    // default-off mechanical host path: it never resolves a group, renders a
+    // prompt, starts a container, posts a callback, or sends a message.
+    const requestPath = req.url?.split('?')[0] ?? '';
+    const lifecycle = this.deps.studentLifecycle;
+    if (
+      req.method === 'POST' &&
+      lifecycle?.enabled === true &&
+      lifecycle.path !== '' &&
+      requestPath === lifecycle.path
+    ) {
+      if (
+        !this.deps.archiveWebhook ||
+        !this.deps.markWebhookDispatched ||
+        !this.deps.markWebhookFailed ||
+        !this.deps.markWebhookHandled ||
+        !lifecycle.record
+      ) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({ error: 'student lifecycle handler not configured' }),
+        );
+        return;
+      }
+      const contentType = String(req.headers['content-type'] || '')
+        .split(';')[0]
+        .trim()
+        .toLowerCase();
+      if (contentType !== 'application/json') {
+        res.writeHead(415, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'application/json required' }));
+        return;
+      }
+
+      let rawBody: Buffer;
+      try {
+        rawBody = await readBodyBounded(req, STUDENT_LIFECYCLE_MAX_BODY_BYTES);
+      } catch (err) {
+        if (err instanceof RequestBodyTooLargeError) {
+          res.writeHead(413, {
+            'Content-Type': 'application/json',
+            Connection: 'close',
+          });
+          res.end(JSON.stringify({ error: 'payload too large' }), () => {
+            req.destroy();
+          });
+          return;
+        }
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'failed to read body' }));
+        return;
+      }
+
+      try {
+        verifyCommunityLifecycleSignature({
+          rawBody,
+          timestampHeader: req.headers['x-webhook-timestamp'],
+          signatureHeader: req.headers['x-webhook-signature'],
+          secret: lifecycle.relaySecret,
+        });
+      } catch (err) {
+        const status =
+          err instanceof StudentLifecycleSignatureError ? err.statusCode : 401;
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid lifecycle relay' }));
+        return;
+      }
+
+      let parsed: ReturnType<typeof prepareCommunityLifecycleEnvelope>;
+      try {
+        const payload = JSON.parse(rawBody.toString('utf8')) as unknown;
+        parsed = prepareCommunityLifecycleEnvelope(
+          payload,
+          lifecycle.identitySecret,
+        );
+      } catch (err) {
+        const status =
+          err instanceof StudentLifecyclePayloadError ? err.statusCode : 400;
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid lifecycle payload' }));
+        return;
+      }
+
+      let inboxId: number;
+      try {
+        const archived = await this.deps.archiveWebhook({
+          source: 'student-lifecycle',
+          event_id: parsed.prepared.source_event_key,
+          event_type: parsed.prepared.event_name,
+          raw_headers: req.headers,
+          raw_body: parsed.prepared,
+          delivery_path: 'n8n',
+        });
+        inboxId = archived.id;
+        if (archived.isDuplicate) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({ webhook_inbox_id: inboxId, duplicate: true }),
+          );
+          return;
+        }
+      } catch (err) {
+        logger.error({ err }, 'student lifecycle archive failed');
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'archive failed' }));
+        return;
+      }
+
+      await this.deps.markWebhookDispatched(inboxId).catch((err) => {
+        logger.error(
+          { inboxId, err },
+          'student lifecycle mark dispatched failed',
+        );
+      });
+      const requestId = crypto.randomUUID();
+      res.writeHead(202, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          request_id: requestId,
+          webhook_inbox_id: inboxId,
+        }),
+      );
+
+      lifecycle
+        .record({
+          event: parsed.prepared,
+          webhookInboxId: inboxId,
+          transientEmail: parsed.transient_email,
+        })
+        .then((result) =>
+          this.deps.markWebhookHandled!(inboxId, {
+            handled_by: 'student-lifecycle:host-handler',
+            party_id: result.partyId,
+            related_entity: {
+              kind: 'student_lifecycle_event',
+              id: result.eventId,
+              processing_status: result.processingStatus,
+            },
+          }),
+        )
+        .catch(async (err) => {
+          const reason = err instanceof Error ? err.message : String(err);
+          logger.error(
+            { inboxId, err },
+            'student lifecycle host processing failed',
+          );
+          await this.deps.markWebhookFailed!(inboxId, reason).catch((markErr) =>
+            logger.error(
+              { inboxId, err: markErr },
+              'student lifecycle mark failed failed',
+            ),
+          );
+        });
       return;
     }
 

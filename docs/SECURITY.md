@@ -182,6 +182,38 @@ message rows. File contents still leave the host for the
 operator-authorized `#gru-grader` workflow, so deployment and a sanitized live
 canary remain separate C5 review gates.
 
+## Community student-lifecycle ingress boundary
+
+`NC-20260824-004` adds local, default-off Community-only mechanics. Circle is
+not a configured workspace and every non-`community` payload fails before
+archive.
+
+The public provider cannot sign Heartbeat callbacks, so n8n remains the public
+perimeter. The private n8n-to-host hop uses an exact raw-body HMAC plus UTC
+timestamp and five-minute skew window. Its live capability path and secret are
+host/runtime configuration values; neither belongs in source or n8n exports.
+Identity fingerprints use a separate host-only secret that is never configured
+in n8n and must remain stable across relay-secret rotation.
+The host reads at most 64 KiB before signature verification and closes an
+oversize connection with 413.
+
+The host validates and minimizes before `webhook_inbox` archive. Durable rows
+may contain only official opaque Heartbeat identifiers, a keyed email
+fingerprint, payload/evidence hashes, bounded enumerated facts, and timestamps.
+They never contain name, raw email, DM/thread content, callback paths,
+credentials, payment detail, grading/feedback text, or certificate URLs.
+Identity resolution happens after archive and never creates/merges a Party.
+Missing or ambiguous identity/catalog data creates an admin-only durable
+exception rather than an inference.
+
+Initial and replay processing are mechanical. `student-lifecycle` branches
+before webhooks.json, group, prompt, channel, and `runAgent` lookup. Migration
+134 grants only `nanoclaw_admin`, has no action outbox or recipient fields, and
+refuses rollback after any history exists. The inactive n8n template has no
+credential literal and retains no success/error execution payload. Source
+presence grants no migration, deployment, provider, action, message,
+certificate, or minion authority.
+
 ## Gmail capability and resource policy
 
 `NC-20260729-004` introduced the deployed baseline below. The Procurement row

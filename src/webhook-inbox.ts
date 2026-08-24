@@ -35,6 +35,7 @@ const SECRET_HEADER_NAMES = new Set([
   'cookie',
   'stripe-signature',
   'x-zm-signature',
+  'x-webhook-signature',
 ]);
 
 function sanitizeHeaders(

@@ -25,6 +25,10 @@ import {
   RECOVERY_LOOKBACK_MS,
   RECOVERY_RESERVED_SLOTS,
   SLACK_ONLY,
+  STUDENT_LIFECYCLE_ENABLED,
+  STUDENT_LIFECYCLE_IDENTITY_SECRET,
+  STUDENT_LIFECYCLE_RELAY_SECRET,
+  STUDENT_LIFECYCLE_WEBHOOK_PATH,
   TRIGGER_PATTERN,
   WEBHOOK_PORT,
   WEBHOOK_SECRET,
@@ -175,6 +179,7 @@ import { handleGmailSend } from './gmail-ipc-handlers.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
 import { prepareCnpcIntake } from './cnpc-intake.js';
 import { recordCnpcMatchResult } from './cnpc-match-result.js';
+import { recordPreparedCommunityLifecycle } from './student-lifecycle-store.js';
 import {
   listOpenProposals,
   resolveRecipient,
@@ -2099,6 +2104,12 @@ async function main(): Promise<void> {
         companyTimeTriggerObserver: companyTimeTriggerObserver.getStatus(),
         actionSafety: getActionSafetyStatus(),
         capabilityManifests: getCapabilityManifestStatus(),
+        studentLifecycle: {
+          enabled: STUDENT_LIFECYCLE_ENABLED,
+          workspace: 'community',
+          actionConsumers: false,
+          circle: false,
+        },
       };
     },
     runAgent: runContainerAgent,
@@ -2182,6 +2193,13 @@ async function main(): Promise<void> {
     enqueueBookingPlutioActivity,
     handleCnpcIntake: prepareCnpcIntake,
     recordCnpcMatchResult,
+    studentLifecycle: {
+      enabled: STUDENT_LIFECYCLE_ENABLED,
+      path: STUDENT_LIFECYCLE_WEBHOOK_PATH,
+      relaySecret: STUDENT_LIFECYCLE_RELAY_SECRET,
+      identitySecret: STUDENT_LIFECYCLE_IDENTITY_SECRET,
+      record: recordPreparedCommunityLifecycle,
+    },
     gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
     handleGmailPush: async (emailAddress: string, historyId: string) => {
       // Late-bound lookup: channels array is populated after webhook server

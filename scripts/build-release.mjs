@@ -145,6 +145,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_132_company_healer_resolution_work.sql',
     'data/business/migrations/nanoclaw-v2/133_contador_payment_fulfillment_cases.sql',
     'data/business/migrations/nanoclaw-v2/rollback_133_contador_payment_fulfillment_cases.sql',
+    'data/business/migrations/nanoclaw-v2/134_student_lifecycle_community_dark.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_134_student_lifecycle_community_dark.sql',
     'scripts/verify-release.mjs',
     'scripts/runtime-doctor.mjs',
     'scripts/with-pinned-node.sh',

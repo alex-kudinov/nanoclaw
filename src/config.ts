@@ -147,6 +147,59 @@ export const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
 export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
 export const HARD_FILTERS_FILE = path.join(DATA_DIR, 'hard-filters.json');
 
+const studentLifecycleEnv = readEnvFile([
+  'STUDENT_LIFECYCLE_ENABLED',
+  'STUDENT_LIFECYCLE_WEBHOOK_PATH',
+  'STUDENT_LIFECYCLE_RELAY_SECRET',
+  'STUDENT_LIFECYCLE_IDENTITY_SECRET',
+]);
+const studentLifecycleEnabledRaw =
+  process.env.STUDENT_LIFECYCLE_ENABLED ||
+  studentLifecycleEnv.STUDENT_LIFECYCLE_ENABLED ||
+  'false';
+if (!['false', 'true', '0', '1'].includes(studentLifecycleEnabledRaw)) {
+  throw new Error('STUDENT_LIFECYCLE_ENABLED must be true, false, 1, or 0');
+}
+export const STUDENT_LIFECYCLE_ENABLED = ['true', '1'].includes(
+  studentLifecycleEnabledRaw,
+);
+export const STUDENT_LIFECYCLE_WEBHOOK_PATH =
+  process.env.STUDENT_LIFECYCLE_WEBHOOK_PATH ||
+  studentLifecycleEnv.STUDENT_LIFECYCLE_WEBHOOK_PATH ||
+  '';
+export const STUDENT_LIFECYCLE_RELAY_SECRET =
+  process.env.STUDENT_LIFECYCLE_RELAY_SECRET ||
+  studentLifecycleEnv.STUDENT_LIFECYCLE_RELAY_SECRET ||
+  '';
+export const STUDENT_LIFECYCLE_IDENTITY_SECRET =
+  process.env.STUDENT_LIFECYCLE_IDENTITY_SECRET ||
+  studentLifecycleEnv.STUDENT_LIFECYCLE_IDENTITY_SECRET ||
+  '';
+
+if (STUDENT_LIFECYCLE_ENABLED) {
+  if (
+    !/^\/hook\/[A-Za-z0-9._-]{16,200}$/.test(STUDENT_LIFECYCLE_WEBHOOK_PATH) ||
+    STUDENT_LIFECYCLE_WEBHOOK_PATH.toLowerCase().includes('circle')
+  ) {
+    throw new Error(
+      'enabled student lifecycle requires a Community-only opaque webhook path',
+    );
+  }
+  if (STUDENT_LIFECYCLE_RELAY_SECRET.length < 32) {
+    throw new Error(
+      'enabled student lifecycle requires a relay secret of at least 32 characters',
+    );
+  }
+  if (
+    STUDENT_LIFECYCLE_IDENTITY_SECRET.length < 32 ||
+    STUDENT_LIFECYCLE_IDENTITY_SECRET === STUDENT_LIFECYCLE_RELAY_SECRET
+  ) {
+    throw new Error(
+      'enabled student lifecycle requires a distinct identity secret of at least 32 characters',
+    );
+  }
+}
+
 // Things bridge — HTTP service on the Mac Studio (the only machine with Things
 // 3). A 📌 reaction on a Mr Gru decision-brief item POSTs the parsed item here
 // to create a real Things to-do. See ~/.claude/hooks/things_bridge.py.
