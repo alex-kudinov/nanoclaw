@@ -1269,6 +1269,60 @@ This path shipped in release `0a39380`, was live-canaried through the toolbox,
 and remains present in current production release `aa1c821`. Its durable
 receipt and duplicate replay were verified before the later release switch.
 
+### Grader output, live assignment, and multilingual variant checkpoint (`NC-20260809-001`, `NC-20260824-008`)
+
+`src/grader-delivery.ts` is the only host path allowed to publish grader-authored
+text into the grader's own Slack channel. It distinguishes one student staging
+unit (`PASS`/`NO PASS` plus feedback) from operator-only text, serializes the
+derive/check/post decision per thread, posts without the `[grader]` prefix or
+Slack splitting, and rejects rather than queues on uncertainty. Block notices
+contain rule codes only and never echo rejected model bytes. The grader's raw
+final assistant text is suppressed in root, threaded, and adopted-container
+paths. Delivery requires an exact host-minted run UUID bound to the resolved
+grader JID/thread; missing, stale, replayed, restarted, or adopted proof cannot
+stage student copy.
+
+Before each mapped Foundation run, the host resolves the assignment from the
+grading registry and performs one bounded, allowlisted, read-only Heartbeat
+lesson GET. Exact lesson ID and localized title must match, and a returned
+course ID must also match when Heartbeat supplies it. The grader receives only
+the current assignment text and host-bound provenance; the credential and all
+Heartbeat write tools remain host-side.
+
+The local multilingual extension models English, French, Japanese, and Spanish
+Foundation courses as separate completion/record variants over six shared
+logical decision standards. The standalone grading registry carries 24
+allowlisted live written assignments: the six existing English codes plus 18
+variant-specific codes. Every live entry binds its logical code, course
+variant, completion course, locale, feedback language, locale profile, shared
+decision precedent, Heartbeat course ID, lesson ID, and exact localized title.
+Localized snapshots and concise official-terminology/register profiles are
+bundled into variant packs; the current live Heartbeat assignment still wins
+for learner requirements. Localized entries are `precedent_shared`, explicitly
+distinguishing borrowed decision calibration from real locale-specific graded
+submissions.
+
+The host rejects malformed or missing data-driven live authority, carries the
+variant and locale through exact-turn proof, and selects locale output rules
+only from that host context. Existing English output rules remain;
+conservative French, Spanish, and Japanese process/template checks plus obvious
+Japanese/English script mismatch checks were added. Japanese salutations require
+a real honorific boundary so ordinary `たくさん`/`皆さんが` prose is not treated
+as a student name. These deterministic gates do not prove native quality.
+
+The personal Heartbeat grading skill owns the default course-by-course sweep.
+One request covers all four enabled variants, with a separate ledger/cache/
+approval index and idempotency namespace per course. English retains current
+writeback/tracker/certificate behavior. French, Japanese, and Spanish are
+staging-only in the initial manifest: Heartbeat writeback, completion-tracker
+mutation, certificate readiness, issuance, and notification remain disabled
+pending locale calibration and a separately recorded live release gate.
+
+The source-host verifier cross-checks all 18 localized course/lesson/title
+mappings and snapshot bytes against the current course dossiers before release.
+See `docs/GRADER-MULTILINGUAL-VARIANTS.md` for the exact data model, quality
+contract, rollout, and rollback boundaries.
+
 ### Slack raster-vision checkpoint (`NC-20260817-011`)
 
 The Slack adapter previously classified every image as unreadable and did not

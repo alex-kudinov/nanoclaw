@@ -93,6 +93,26 @@ describe('deliverGraderOutput', () => {
     expect(studentPosts[0][1]).toBe(CLEAN_NO_PASS);
   });
 
+  it('applies the host-bound locale policy from the resolved run context', async () => {
+    const { deps, studentPosts, operatorPosts } = makeDeps();
+    const result = await deliverGraderOutput(
+      request({
+        text: 'PASS\n\nYour analysis explains the ethical decision clearly.',
+        submissionContext: {
+          studentName: 'Ada Lovelace',
+          locale: 'ja-JP',
+          feedbackLanguage: 'ja',
+        },
+      }),
+      deps,
+    );
+
+    expect(result.outcome).toBe('blocked');
+    expect(result.violations).toContain('feedback-language-mismatch');
+    expect(studentPosts).toEqual([]);
+    expect(operatorPosts).toHaveLength(1);
+  });
+
   it('delivers an operator message without requiring a prior student copy', async () => {
     const { deps, studentPosts, operatorPosts } = makeDeps();
     const text = `${GRADER_OPERATOR_PREFIX}\nRecord saved. Completion check pending.`;

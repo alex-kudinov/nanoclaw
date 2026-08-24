@@ -351,6 +351,12 @@ async function establishGraderRunContext(
     studentName,
     code: assignment.code,
     title: assignment.title,
+    logicalCode: assignment.logicalCode ?? assignment.code,
+    courseVariant: assignment.courseVariant,
+    completionCourse: assignment.completionCourse,
+    locale: assignment.locale,
+    feedbackLanguage: assignment.feedbackLanguage,
+    localeProfile: assignment.localeProfile,
     registeredAtMs: Date.now(),
   };
   if (!assignment.heartbeat) {

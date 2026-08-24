@@ -118,7 +118,11 @@ export interface GraderDeliveryRequest {
    * container started. Its absence blocks student-facing copy; operator-only
    * output (help, status, holds, block notices) never needs it.
    */
-  submissionContext?: { studentName: string };
+  submissionContext?: {
+    studentName: string;
+    locale?: string;
+    feedbackLanguage?: string;
+  };
 }
 
 export type GraderMissingOutputReason =
@@ -241,6 +245,8 @@ export async function deliverGraderOutput(
       studentCopyAlreadyDelivered: alreadyDelivered,
       studentCopyMaxChars: request.studentCopyMaxChars,
       expectedStudentName: request.submissionContext?.studentName,
+      feedbackLocale: request.submissionContext?.locale,
+      feedbackLanguage: request.submissionContext?.feedbackLanguage,
     });
 
     if (check.kind === 'operator') {

@@ -42,6 +42,65 @@ describe('checkGraderOutput', () => {
     expect(result).toEqual({ ok: true, kind: 'student', violations: [] });
   });
 
+  it('passes direct French, Spanish, and Japanese faculty feedback', () => {
+    const cases = [
+      [
+        'PASS\n\nVotre analyse relie chaque décision au Code de déontologie de l’ICF et explique clairement les mesures proposées.',
+        { feedbackLocale: 'fr-FR', feedbackLanguage: 'fr' },
+      ],
+      [
+        'PASS\n\nTu análisis vincula cada decisión con el Código Ético de la ICF y explica con claridad las medidas propuestas.',
+        { feedbackLocale: 'es-419', feedbackLanguage: 'es' },
+      ],
+      [
+        'PASS\n\n各場面の判断をICF倫理規定に結びつけ、取るべき対応とその理由を具体的に説明しています。',
+        { feedbackLocale: 'ja-JP', feedbackLanguage: 'ja' },
+      ],
+    ] as const;
+    for (const [text, context] of cases) {
+      expect(checkGraderOutput(text, context)).toEqual({
+        ok: true,
+        kind: 'student',
+        violations: [],
+      });
+    }
+  });
+
+  it('blocks obvious Japanese or English feedback-language mismatches', () => {
+    expect(
+      checkGraderOutput(
+        'PASS\n\nYour analysis explains the ethical decision and the proposed response.',
+        { feedbackLocale: 'ja-JP', feedbackLanguage: 'ja' },
+      ).violations,
+    ).toContain('feedback-language-mismatch');
+    expect(
+      checkGraderOutput(
+        'PASS\n\n各場面の判断を倫理規定に結びつけ、対応と理由を具体的に説明しています。',
+        { feedbackLocale: 'en-US', feedbackLanguage: 'en' },
+      ).violations,
+    ).toContain('feedback-language-mismatch');
+  });
+
+  it.each([
+    [
+      'PASS\n\nExcellent travail. Votre analyse est précise.',
+      { feedbackLocale: 'fr-FR', feedbackLanguage: 'fr' },
+      'stock-praise-phrase',
+    ],
+    [
+      'PASS\n\nCabe destacar que tu análisis identifica el acuerdo.',
+      { feedbackLocale: 'es-419', feedbackLanguage: 'es' },
+      'formulaic-feedback-phrase',
+    ],
+    [
+      'PASS\n\n内部ルーブリックに基づく判定です。',
+      { feedbackLocale: 'ja-JP', feedbackLanguage: 'ja' },
+      'operator-vocabulary',
+    ],
+  ] as const)('applies locale-specific closed rules', (text, context, code) => {
+    expect(checkGraderOutput(text, context).violations).toContain(code);
+  });
+
   it('passes an operator message without requiring student copy first', () => {
     const result = checkGraderOutput(
       `${GRADER_OPERATOR_PREFIX}\nRecord saved. Completion check pending.`,

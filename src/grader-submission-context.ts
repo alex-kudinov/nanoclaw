@@ -37,6 +37,12 @@ const GRADING_MOUNT_NAME = 'grading';
 export const REGISTRY_MAX_BYTES = 512 * 1024;
 /** Header lines are labels and names, never prose. */
 const MAX_HEADER_LINE_CHARS = 200;
+const FEEDBACK_LANGUAGE_BY_LOCALE: Record<string, string> = {
+  'en-US': 'en',
+  'fr-FR': 'fr',
+  'ja-JP': 'ja',
+  'es-419': 'es',
+};
 
 export interface HeartbeatAssignmentRef {
   workspace: string;
@@ -49,6 +55,14 @@ export interface RegistryAssignment {
   code: string;
   title: string;
   aliases: string[];
+  logicalCode?: string;
+  courseVariant?: string;
+  completionCourse?: string;
+  locale?: string;
+  feedbackLanguage?: string;
+  localeProfile?: string;
+  sharedPrecedentCode?: string;
+  liveAssignmentRequired: boolean;
   heartbeat?: HeartbeatAssignmentRef;
 }
 
@@ -58,16 +72,6 @@ export type SubmissionContextBlockCode =
   | 'assignment-unresolved'
   | 'assignment-ambiguous'
   | 'heartbeat-mapping-missing';
-
-/** Foundation assignments whose live Heartbeat prompt is mandatory. */
-export const HEARTBEAT_REQUIRED_CODES = new Set([
-  'foundation-m1',
-  'foundation-m2',
-  'foundation-m3',
-  'eval-m4',
-  'eval-m5',
-  'facilitation-m6',
-]);
 
 export type SubmissionContextResult =
   /** Not a submission header (help, status, roster). No grading context needed. */
@@ -149,10 +153,44 @@ export function loadRegistryAssignments(
       // A malformed live mapping must never silently become snapshot-only.
       // That would grade a mapped Foundation submission against stale text.
       if (Object.hasOwn(a, 'heartbeat') && !heartbeat) return undefined;
+      const liveAssignmentRequired = a.live_assignment_required === true;
+      if (heartbeat && !liveAssignmentRequired) return undefined;
+      const variantFields = [
+        'logical_code',
+        'course_variant',
+        'completion_course',
+        'locale',
+        'feedback_language',
+        'locale_profile',
+        'shared_precedent_code',
+      ] as const;
+      if (
+        liveAssignmentRequired &&
+        variantFields.some(
+          (field) =>
+            typeof a[field] !== 'string' || !a[field]?.toString().trim(),
+        )
+      ) {
+        return undefined;
+      }
+      if (
+        liveAssignmentRequired &&
+        FEEDBACK_LANGUAGE_BY_LOCALE[a.locale as string] !== a.feedback_language
+      ) {
+        return undefined;
+      }
       out.push({
         code: a.code,
         title: a.title,
         aliases: a.aliases as string[],
+        logicalCode: a.logical_code as string | undefined,
+        courseVariant: a.course_variant as string | undefined,
+        completionCourse: a.completion_course as string | undefined,
+        locale: a.locale as string | undefined,
+        feedbackLanguage: a.feedback_language as string | undefined,
+        localeProfile: a.locale_profile as string | undefined,
+        sharedPrecedentCode: a.shared_precedent_code as string | undefined,
+        liveAssignmentRequired,
         heartbeat,
       });
     }
@@ -229,10 +267,7 @@ function resolveFrom(
 ): SubmissionContextResult {
   const matches = matchAssignments(assignments, label);
   if (matches.length === 1 && studentName) {
-    if (
-      HEARTBEAT_REQUIRED_CODES.has(matches[0].code) &&
-      !matches[0].heartbeat
-    ) {
+    if (matches[0].liveAssignmentRequired && !matches[0].heartbeat) {
       return { kind: 'blocked', code: 'heartbeat-mapping-missing' };
     }
     return { kind: 'resolved', studentName, assignment: matches[0] };

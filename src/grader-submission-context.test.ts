@@ -22,9 +22,21 @@ const HB = (lessonId: string, canonicalTitle: string) => ({
   canonical_title: canonicalTitle,
 });
 
+const LIVE_FIELDS = {
+  logical_code: 'foundation-m1',
+  course_variant: 'foundation',
+  completion_course: 'foundation',
+  locale: 'en-US',
+  feedback_language: 'en',
+  locale_profile: 'locales/en-US.md',
+  shared_precedent_code: 'foundation-m1',
+  live_assignment_required: true,
+};
+
 const FIXTURE = {
   assignments: [
     {
+      ...LIVE_FIELDS,
       code: 'foundation-m1',
       title: 'Module 1 Part 2: Ethical Scenario Analysis',
       aliases: ['module 1 part 2', 'm1p2'],
@@ -34,7 +46,10 @@ const FIXTURE = {
       ),
     },
     {
+      ...LIVE_FIELDS,
       code: 'eval-m4',
+      logical_code: 'eval-m4',
+      shared_precedent_code: 'eval-m4',
       title: 'Module 4 Part 2: Session Analysis of Recording A',
       aliases: ['module 4 part 2', 'm4p2'],
       heartbeat: HB(
@@ -47,6 +62,7 @@ const FIXTURE = {
       code: 'acc-bars',
       title: 'ACC BARS Module: Rate and Give Feedback',
       aliases: ['acc bars', 'bars'],
+      live_assignment_required: false,
     },
   ],
 };
@@ -184,6 +200,19 @@ describe('loadRegistryAssignments', () => {
       ),
     ).toBeUndefined();
   });
+
+  it('rejects a live locale whose feedback language contradicts it', () => {
+    const mismatched = {
+      assignments: [
+        {
+          ...FIXTURE.assignments[0],
+          locale: 'fr-FR',
+          feedback_language: 'ja',
+        },
+      ],
+    };
+    expect(loadRegistryAssignments(makeRoot(mismatched))).toBeUndefined();
+  });
 });
 
 describe('matchAssignments', () => {
@@ -219,8 +248,18 @@ describe('matchAssignments', () => {
   it('returns every candidate when a label is registered twice', () => {
     const duplicated = {
       assignments: [
-        { code: 'a-one', title: 'A', aliases: ['module 9'] },
-        { code: 'b-two', title: 'B', aliases: ['Module 9'] },
+        {
+          code: 'a-one',
+          title: 'A',
+          aliases: ['module 9'],
+          live_assignment_required: false,
+        },
+        {
+          code: 'b-two',
+          title: 'B',
+          aliases: ['Module 9'],
+          live_assignment_required: false,
+        },
       ],
     };
     const list = loadRegistryAssignments(makeRoot(duplicated))!;
@@ -408,6 +447,9 @@ describe('the tracked grading registry', () => {
     ['Module 4, Part 2', 'eval-m4'],
     ['Module 5', 'eval-m5'],
     ['Module 6', 'facilitation-m6'],
+    ['foundation-fr-m1', 'foundation-fr-m1'],
+    ['foundation-ja-m4', 'foundation-ja-m4'],
+    ['foundation-es-m6', 'foundation-es-m6'],
   ];
 
   it.skipIf(!fs.existsSync(path.join(REAL_ROOT, 'registry.json')))(
@@ -418,6 +460,35 @@ describe('the tracked grading registry', () => {
         const matches = matchAssignments(assignments, label);
         expect(matches.map((a) => a.code)).toEqual([code]);
         expect(matches[0].heartbeat?.lessonId).toMatch(/^[0-9a-f-]{36}$/);
+      }
+    },
+  );
+
+  it.skipIf(!fs.existsSync(path.join(REAL_ROOT, 'registry.json')))(
+    'loads 24 live Foundation mappings with explicit locale authority',
+    () => {
+      const mapped = real()!.filter((assignment) => assignment.heartbeat);
+      expect(mapped).toHaveLength(24);
+      expect(
+        mapped.filter(
+          (assignment) => assignment.courseVariant === 'foundation-fr',
+        ),
+      ).toHaveLength(6);
+      expect(
+        mapped.filter(
+          (assignment) => assignment.courseVariant === 'foundation-ja',
+        ),
+      ).toHaveLength(6);
+      expect(
+        mapped.filter(
+          (assignment) => assignment.courseVariant === 'foundation-es',
+        ),
+      ).toHaveLength(6);
+      for (const assignment of mapped) {
+        expect(assignment.liveAssignmentRequired).toBe(true);
+        expect(assignment.logicalCode).toBeTruthy();
+        expect(assignment.locale).toMatch(/^(?:en-US|fr-FR|ja-JP|es-419)$/);
+        expect(assignment.feedbackLanguage).toMatch(/^(?:en|fr|ja|es)$/);
       }
     },
   );

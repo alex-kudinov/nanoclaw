@@ -943,7 +943,11 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       text: data.text,
                       source: 'ipc',
                       submissionContext: runContext
-                        ? { studentName: runContext.studentName }
+                        ? {
+                            studentName: runContext.studentName,
+                            locale: runContext.locale,
+                            feedbackLanguage: runContext.feedbackLanguage,
+                          }
                         : undefined,
                     });
                     logger.info(

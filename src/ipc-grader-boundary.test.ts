@@ -298,7 +298,9 @@ describe('IPC grader output boundary', () => {
 
     expect(deliverGraderOutput).toHaveBeenCalledWith(
       expect.objectContaining({
-        submissionContext: { studentName: 'Ada Lovelace' },
+        submissionContext: expect.objectContaining({
+          studentName: 'Ada Lovelace',
+        }),
       }),
     );
     _resetGraderRunContexts();

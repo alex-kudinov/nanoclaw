@@ -131,6 +131,13 @@ function validatePayload(
   ) {
     return { ok: false, code: 'heartbeat-lesson-mismatch' };
   }
+  // Heartbeat deployments do not all return course_id on a lesson GET. When it
+  // is present, bind it to the registered variant as an additional defense
+  // against copying a sibling locale's course id onto an otherwise valid lesson.
+  const courseId = readField(payload, 'course_id');
+  if (courseId !== undefined && courseId !== ref.courseId) {
+    return { ok: false, code: 'heartbeat-lesson-mismatch' };
+  }
   const content = readField(payload, 'content');
   if (typeof content !== 'string' || !content.trim()) {
     return { ok: false, code: 'heartbeat-content-empty' };

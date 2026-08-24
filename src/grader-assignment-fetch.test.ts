@@ -68,6 +68,26 @@ describe('fetchLiveAssignment', () => {
     });
   });
 
+  it('rejects a returned course id from a sibling course variant', async () => {
+    const result = await fetchLiveAssignment(
+      REF,
+      deps(async () =>
+        jsonResponse(
+          payload({ course_id: '4aa45a9c-271d-4525-983d-0ea9864f31a6' }),
+        ),
+      ),
+    );
+    expect(result).toEqual({ ok: false, code: 'heartbeat-lesson-mismatch' });
+  });
+
+  it('accepts the registered course id when Heartbeat returns it', async () => {
+    const result = await fetchLiveAssignment(
+      REF,
+      deps(async () => jsonResponse(payload({ course_id: REF.courseId }))),
+    );
+    expect(result.ok).toBe(true);
+  });
+
   it('reads the credential for the registered workspace and sends it as a bearer token', async () => {
     const seen: Array<[string, RequestInit | undefined]> = [];
     const readKeys: string[] = [];

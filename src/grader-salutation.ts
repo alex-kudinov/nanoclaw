@@ -31,6 +31,19 @@ const GREETING_RE = new RegExp(
   `^${GREETING}\\s+${NAME_TOKENS}\\s*(?:[,:!.]|$)`,
   'u',
 );
+const FRENCH_GREETING_RE = new RegExp(
+  `^(?:Bonjour|Cher|Chère)\\s+${NAME_TOKENS}\\s*(?:[,:!.]|$)`,
+  'u',
+);
+const SPANISH_GREETING_RE = new RegExp(
+  `^(?:Hola|Estimado|Estimada)\\s+${NAME_TOKENS}\\s*(?:[,:!.]|$)`,
+  'u',
+);
+// Japanese honorifics are also substrings of ordinary words (for example
+// たくさん and 皆さんが). Treat them as a vocative only when the honorific ends
+// the address and is followed by punctuation, whitespace, or end-of-line.
+const JAPANESE_ADDRESS_RE =
+  /^(.{1,60}?)(?:さん|様)(?=[\s、,，。:]|$)[\s、,，。:]*/u;
 // A line holding nothing but the address: "Ada," on its own line.
 const BARE_VOCATIVE_RE = new RegExp(`^${NAME_TOKENS}\\s*[,:]$`, 'u');
 
@@ -44,6 +57,7 @@ const GENERIC_ADDRESSES = new Set([
   'everyone',
   'team',
   'folks',
+  '皆',
 ]);
 
 /**
@@ -101,9 +115,23 @@ function foldName(value: string): string {
  * a salutation, and scanning further would turn every capitalized word in the
  * feedback into a candidate.
  */
-export function extractSalutationName(body: string): string | undefined {
+export function extractSalutationName(
+  body: string,
+  locale: string = 'en-US',
+): string | undefined {
   const firstLine = body.replace(/\r\n?/g, '\n').split('\n', 1)[0]?.trim();
   if (!firstLine) return undefined;
+  if (locale.startsWith('ja')) {
+    return JAPANESE_ADDRESS_RE.exec(firstLine)?.[1]?.trim();
+  }
+  if (locale.startsWith('fr')) {
+    const greeted = FRENCH_GREETING_RE.exec(firstLine)?.[1];
+    if (greeted) return greeted.trim();
+  }
+  if (locale.startsWith('es')) {
+    const greeted = SPANISH_GREETING_RE.exec(firstLine)?.[1];
+    if (greeted) return greeted.trim();
+  }
   const greeted = GREETING_RE.exec(firstLine)?.[1];
   if (greeted) return greeted.trim();
   const bare = BARE_VOCATIVE_RE.exec(firstLine)?.[1]?.trim();
@@ -144,9 +172,10 @@ export function salutationMatchesStudent(
 export function hasWrongStudentSalutation(
   body: string,
   expectedFullName: string | undefined,
+  locale: string = 'en-US',
 ): boolean {
   if (!expectedFullName) return false;
-  const candidate = extractSalutationName(body);
+  const candidate = extractSalutationName(body, locale);
   if (!candidate) return false;
   return !salutationMatchesStudent(candidate, expectedFullName);
 }

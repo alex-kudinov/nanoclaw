@@ -31,6 +31,12 @@ export interface GraderRunContext {
   studentName: string;
   code: string;
   title: string;
+  logicalCode?: string;
+  courseVariant?: string;
+  completionCourse?: string;
+  locale?: string;
+  feedbackLanguage?: string;
+  localeProfile?: string;
   /**
    * `heartbeat` means the live assignment was fetched and verified for this run.
    * `snapshot-only` means the registry entry carries no Heartbeat mapping, so
@@ -194,6 +200,12 @@ export function formatHostAssignmentContext(context: GraderRunContext): string {
     CONTEXT_PREAMBLE,
     `<student_name>${escapeXml(context.studentName)}</student_name>`,
     `<grading_code>${escapeXml(context.code)}</grading_code>`,
+    `<logical_code>${escapeXml(context.logicalCode ?? context.code)}</logical_code>`,
+    `<course_variant>${escapeXml(context.courseVariant ?? 'unmapped')}</course_variant>`,
+    `<completion_course>${escapeXml(context.completionCourse ?? context.courseVariant ?? 'unmapped')}</completion_course>`,
+    `<locale>${escapeXml(context.locale ?? 'en-US')}</locale>`,
+    `<feedback_language>${escapeXml(context.feedbackLanguage ?? 'en')}</feedback_language>`,
+    `<locale_profile>${escapeXml(context.localeProfile ?? 'calibration/grading-voice.md')}</locale_profile>`,
   ];
   if (context.mode === 'snapshot-only' || !context.live) {
     lines.push(
@@ -212,6 +224,9 @@ export function formatHostAssignmentContext(context: GraderRunContext): string {
     `<content_hash>${escapeXml(live.contentHash)}</content_hash>`,
     'This is the assignment as the student sees it right now. Where it and the',
     'pack snapshot differ on what was ASKED, this text wins.',
+    'Evaluate the submission in its original language. Do not use an English',
+    'translation as the primary evidence. Write the student-facing feedback body',
+    `in ${escapeXml(context.feedbackLanguage ?? 'en')} using locale ${escapeXml(context.locale ?? 'en-US')}.`,
     `<current_assignment>\n${escapeXml(live.content)}\n</current_assignment>`,
     '</host_assignment_context>',
   );

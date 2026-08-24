@@ -46,6 +46,7 @@ export type GraderOutputViolationCode =
   | 'formulaic-feedback-phrase'
   | 'requirement-compliance-phrase'
   | 'salutation-name-mismatch'
+  | 'feedback-language-mismatch'
   | 'student-copy-too-long';
 
 export interface GraderOutputContext {
@@ -62,6 +63,10 @@ export interface GraderOutputContext {
    * salutation rule is skipped without it rather than guessed at.
    */
   expectedStudentName?: string;
+  /** Host-bound locale from the resolved registry entry. */
+  feedbackLocale?: string;
+  /** Host-bound feedback language; never inferred from model output. */
+  feedbackLanguage?: string;
 }
 
 export interface GraderOutputCheck {
@@ -128,6 +133,63 @@ const REQUIREMENT_PRAISE_RES = [
   /\b(?:meets|met|satisfies|satisfied|addresses|addressed)\s+(?:all\s+)?(?:of\s+)?(?:the\s+)?(?:assignment\s+)?requirements\b/i,
   /\b(?:covered|included|completed)\s+(?:all\s+)?(?:of\s+)?(?:the\s+)?required\s+(?:elements|sections|items)\b/i,
 ];
+
+const LOCALE_RULES: Record<
+  string,
+  {
+    operator: RegExp[];
+    stockPraise: RegExp[];
+    formulaic: RegExp[];
+  }
+> = {
+  fr: {
+    operator: [
+      /\b(?:intelligence artificielle|modèle de langage|feedback généré|processus automatisé|barème interne|calibration|verdict)\b/i,
+    ],
+    stockPraise: [
+      /\b(?:excellent travail|très bon travail|bravo pour ce travail)\b/i,
+    ],
+    formulaic: [
+      /\b(?:il convient de noter|pour aller plus loin|ce qui ressort le plus)\b/i,
+    ],
+  },
+  es: {
+    operator: [
+      /\b(?:inteligencia artificial|modelo de lenguaje|retroalimentación generada|proceso automatizado|rúbrica interna|calibración|veredicto)\b/i,
+    ],
+    stockPraise: [/\b(?:excelente trabajo|muy buen trabajo|bien hecho)\b/i],
+    formulaic: [/\b(?:cabe destacar|de cara al futuro|lo que más destaca)\b/i],
+  },
+  ja: {
+    operator: [
+      /(?:人工知能|言語モデル|自動生成されたフィードバック|自動化されたプロセス|内部ルーブリック|採点基準|キャリブレーション|判定)/u,
+    ],
+    stockPraise: [/(?:素晴らしい提出|素晴らしい課題|よくできました)/u],
+    formulaic: [/(?:今後に向けて|特に際立っている|注目すべき点は)/u],
+  },
+};
+
+function languageCode(context: GraderOutputContext): string {
+  return (
+    context.feedbackLanguage ??
+    context.feedbackLocale?.split('-', 1)[0] ??
+    'en'
+  ).toLowerCase();
+}
+
+function hasObviousLanguageMismatch(
+  body: string,
+  context: GraderOutputContext,
+): boolean {
+  const language = languageCode(context);
+  const japanese =
+    body.match(/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/gu)
+      ?.length ?? 0;
+  if (language === 'ja') return japanese === 0;
+  if (language !== 'en' || japanese < 8) return false;
+  const letters = body.match(/\p{L}/gu)?.length ?? 0;
+  return letters > 0 && japanese / letters > 0.35;
+}
 
 function anyMatch(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
@@ -254,8 +316,27 @@ export function checkGraderOutput(
   // on everything after it. Feedback that opens with no salutation is normal
   // and unaffected; only a positively identified different name blocks.
   const body = normalized.slice(firstLine.length).replace(/^\n+/, '');
-  if (hasWrongStudentSalutation(body, context.expectedStudentName)) {
+  if (
+    hasWrongStudentSalutation(
+      body,
+      context.expectedStudentName,
+      context.feedbackLocale,
+    )
+  ) {
     violations.push('salutation-name-mismatch');
+  }
+  const localeRules = LOCALE_RULES[languageCode(context)];
+  if (localeRules && anyMatch(body, localeRules.operator)) {
+    violations.push('operator-vocabulary');
+  }
+  if (localeRules && anyMatch(body, localeRules.stockPraise)) {
+    violations.push('stock-praise-phrase');
+  }
+  if (localeRules && anyMatch(body, localeRules.formulaic)) {
+    violations.push('formulaic-feedback-phrase');
+  }
+  if (hasObviousLanguageMismatch(body, context)) {
+    violations.push('feedback-language-mismatch');
   }
   // The expanded-mode override raises the ceiling but can never clear the
   // absolute one-message cap; over-cap copy blocks rather than splits.

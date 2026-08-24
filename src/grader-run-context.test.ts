@@ -23,6 +23,12 @@ function context(overrides: Partial<GraderRunContext> = {}): GraderRunContext {
     studentName: 'Ada Lovelace',
     code: 'eval-m4',
     title: 'Module 4 Part 2: Session Analysis of Recording A',
+    logicalCode: 'eval-m4',
+    courseVariant: 'foundation-ja',
+    completionCourse: 'foundation-ja',
+    locale: 'ja-JP',
+    feedbackLanguage: 'ja',
+    localeProfile: 'locales/ja-JP.md',
     mode: 'heartbeat',
     live: {
       lessonId: '39fb7b36-4bda-4287-8c26-ef965c47bc44',
@@ -184,6 +190,13 @@ describe('formatHostAssignmentContext', () => {
     expect(block).toContain('<host_assignment_context mode="heartbeat">');
     expect(block).toContain('<student_name>Ada Lovelace</student_name>');
     expect(block).toContain('<grading_code>eval-m4</grading_code>');
+    expect(block).toContain('<logical_code>eval-m4</logical_code>');
+    expect(block).toContain('<course_variant>foundation-ja</course_variant>');
+    expect(block).toContain('<locale>ja-JP</locale>');
+    expect(block).toContain('<feedback_language>ja</feedback_language>');
+    expect(block).toContain(
+      '<locale_profile>locales/ja-JP.md</locale_profile>',
+    );
     expect(block).toContain(
       '<lesson_id>39fb7b36-4bda-4287-8c26-ef965c47bc44</lesson_id>',
     );
@@ -192,6 +205,8 @@ describe('formatHostAssignmentContext', () => {
     );
     expect(block).toContain('<content_hash>93b3f7616e603298</content_hash>');
     expect(block).toContain('Watch Recording A');
+    expect(block).toContain('original language');
+    expect(block).toContain('Write the student-facing feedback body');
     expect(block.endsWith('</host_assignment_context>')).toBe(true);
   });
 

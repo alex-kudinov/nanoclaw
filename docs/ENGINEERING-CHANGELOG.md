@@ -8,6 +8,61 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-008 — Multilingual Foundation grader variants
+
+- Date: 2026-08-24T21:30:00Z
+- Owner/client: Codex implementer/orchestrator; Claude Code Sonnet/high reviewer
+- State: ready_for_deploy on isolated exact-live branch; not yet committed,
+  pushed, release-built, deployed, or live-canaried
+- Branch/base: `codex/grader-multilingual-variants-20260824` from exact current
+  live `7a36d79ca78773dbca7ddb8beddb18abe07a753c`.
+- Change class: C3 because the released host may stage customer-facing grader
+  feedback in Slack; localized provider writeback and certificates remain off.
+- Outcome: one default operator routine covers English, French, Japanese, and
+  Spanish Foundation courses sequentially while preserving one isolated grader
+  root/container per written submission. The standalone grading authority has
+  24 exact live written mappings, four collision-free completion variants, 18
+  localized assignment snapshots/packs, and four locale/register/terminology
+  profiles over six shared logical decision standards.
+- Host enforcement: data-driven live-assignment requirement; exact course/
+  lesson/title validation; host-bound logical code/variant/locale/language in
+  per-turn proof; conservative French/Spanish/Japanese process/template rules;
+  Japanese/English script mismatch; locale-aware wrong-name protection; strict
+  no-byte-leak output boundary unchanged.
+- Operator enforcement: maintained four-variant manifest, separate course
+  ledger/cache/approval index/idempotency, exact variant grader code on Slack
+  roots, schema-version-3 release flags, localized submission-in-hand feedback
+  review, and `not_applicable` certificate sweep for disabled variants.
+- Release flags: English retains existing writeback/tracker/certificate
+  behavior. French, Japanese, and Spanish may stage/review feedback only;
+  Heartbeat writeback, completion-tracker mutation, certificate readiness,
+  issuance, and notification are disabled pending locale calibration and a
+  later recorded release gate.
+- Grading authority: local privacy-preserving commit
+  `85243f136d0d68d28d9b03210fe8ec5301bc58f9`; no remote by design. The source-
+  host verifier confirms all 18 localized course/lesson/title mappings and
+  snapshot bytes against the current course dossiers.
+- Review: Claude R2 found one P1 Japanese honorific false positive and two P2
+  calibration/source-integrity issues. All were fixed; bounded correction R3
+  returned `ACCEPT` with no remaining material finding.
+- Verification at review boundary: isolated focused 8 files / 215 tests;
+  typecheck, build, formatting, documentation continuity, capability matrix,
+  and diff checks pass. Full root is 3,221 pass / 19 skip with only the unchanged
+  CNPC wrapper-contract failure; its two surfaces are unchanged from exact base.
+  Standalone validator callables, pack build/freshness, source comparison, and
+  personal skill/manifest/ledger validation pass. The standalone validator retains only the
+  pre-existing unrelated `acc-bars-standard.json` schema-dispatch error and PCC
+  held warning.
+- External/deployment state: no private submission, grading record/ledger,
+  provider, Slack, Heartbeat, certificate, runtime, restart, deployment, or
+  customer action occurred.
+- Rollback: immutable NanoClaw release rollback plus standalone grading commit
+  `d514fab` and the prior personal skill revision. Never roll back by rewriting
+  student attempt history.
+- Documentation: `groups/grader/CLAUDE.md`, `docs/PROJECT-MAP.md`,
+  `docs/GRADER-MULTILINGUAL-VARIANTS.md`, active work, review artifacts, grading
+  README/schema, and the personal Heartbeat grading skill.
+
 ### NC-20260824-007 — Community lifecycle shadow provider capture
 
 - Date: 2026-08-24T19:35:00Z

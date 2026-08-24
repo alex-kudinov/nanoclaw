@@ -24,24 +24,21 @@ describe('grader feedback prompt contract', () => {
       'vary the wording instead of substituting a new fixed bridge',
     );
     expect(prose).not.toContain('vary the shape');
-    expect(prompt.split('\n')).toHaveLength(201);
+    expect(prompt.split('\n')).toHaveLength(216);
   });
 
-  it('keeps minor refinements out of NO PASS and holds a third rejection', () => {
+  it('accepts the Module 4 observation form as a container while enforcing live requirements', () => {
     expect(prose).toContain(
-      'NO PASS only when an explicit assignment requirement is missing, materially incomplete, wrong, or still open from a prior attempt',
+      'For `eval-m4`, an ACC Session Observation Form is an accepted submission container',
     );
     expect(prose).toContain(
-      'a refinement to already adequate work is a PASS Grow',
+      'Do not require a separate essay merely because the form was used',
     );
     expect(prose).toContain(
-      'newly noticed minor issues are grows, not new fail criteria',
+      'including the word floor and the overall 67% assessment',
     );
     expect(prose).toContain(
-      'third NO PASS for the exact student and assignment',
-    );
-    expect(prose).toContain(
-      'produce no staging unit, persist nothing, and wait for human review',
+      'a completed or signed form alone is not sufficient',
     );
   });
 });
