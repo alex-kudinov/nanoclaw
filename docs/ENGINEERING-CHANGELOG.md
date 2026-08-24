@@ -16,6 +16,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   pushed, release-built, deployed, or live-canaried
 - Branch/base: `codex/grader-multilingual-variants-20260824` from exact current
   live `7a36d79ca78773dbca7ddb8beddb18abe07a753c`.
+- Source commit: `1576762a` (implementation/review/verification evidence before
+  this continuity addendum).
 - Change class: C3 because the released host may stage customer-facing grader
   feedback in Slack; localized provider writeback and certificates remain off.
 - Outcome: one default operator routine covers English, French, Japanese, and
