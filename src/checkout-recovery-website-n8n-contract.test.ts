@@ -37,6 +37,10 @@ describe('inactive website checkout recovery relay', () => {
     expect(raw).toContain('$env.CHECKOUT_RECOVERY_INGRESS_SECRET');
     expect(raw).toContain('$env.CHECKOUT_RECOVERY_RELAY_SECRET');
     expect(raw).toContain('$env.CHECKOUT_RECOVERY_HOST_URL');
+    const trigger = workflow.nodes.find(
+      (node) => node.type === 'n8n-nodes-base.webhook',
+    );
+    expect(trigger?.parameters.responseMode).toBe('lastNode');
     expect(raw).not.toMatch(/https?:\\?\/\\?\/[A-Za-z0-9]/);
     expect(raw).not.toMatch(/["'][0-9a-f]{64}["']/i);
   });
