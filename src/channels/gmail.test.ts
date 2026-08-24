@@ -124,6 +124,11 @@ vi.mock('../gmail-auth.js', () => ({
 vi.mock('../gmail-parser.js', () => ({
   deriveReplyAllCandidates: vi.fn().mockReturnValue([]),
   formatEmailForAgent: vi.fn().mockReturnValue('formatted email'),
+  parseEmailAttachments: vi.fn().mockReturnValue({
+    total: 0,
+    items: [],
+    truncated: false,
+  }),
   parseEmailBody: vi.fn().mockReturnValue('body'),
   parseEmailHeaders: vi.fn().mockReturnValue({
     from: 'sender@example.com',

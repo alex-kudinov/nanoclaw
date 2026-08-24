@@ -5,6 +5,8 @@
 import { gmail_v1 } from 'googleapis';
 
 const MAX_BODY_LENGTH = 10_000;
+const MAX_ATTACHMENT_MANIFEST_ITEMS = 20;
+const MAX_ATTACHMENT_FIELD_LENGTH = 180;
 const MAX_HEADER_LENGTH = 1_000;
 const MAX_REPLY_ALL_CANDIDATES = 10;
 const EMAIL_ADDRESS_PATTERN =
@@ -14,6 +16,19 @@ const OWN_DOMAIN_SUFFIXES = [
   'tandemcoaching.academy',
   'tandem.co',
 ];
+
+export interface EmailAttachmentMeta {
+  filename: string;
+  mimeType: string;
+  sizeBytes: number | null;
+  disposition: 'attachment' | 'inline' | 'unknown';
+}
+
+export interface EmailAttachmentManifest {
+  total: number;
+  items: EmailAttachmentMeta[];
+  truncated: boolean;
+}
 
 export interface ForwardedIdentity {
   email: string;
@@ -248,6 +263,93 @@ function flattenParts(
   return result;
 }
 
+function boundedAttachmentField(value: string, fallback: string): string {
+  const clean = (value || '')
+    .replace(/[\r\n\t\0-\x1f\x7f]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  const selected = clean || fallback;
+  return selected.length > MAX_ATTACHMENT_FIELD_LENGTH
+    ? `${selected.slice(0, MAX_ATTACHMENT_FIELD_LENGTH - 1)}…`
+    : selected;
+}
+
+/** Return a bounded metadata-only manifest without exposing attachment IDs. */
+export function parseEmailAttachments(
+  payload: gmail_v1.Schema$MessagePart,
+): EmailAttachmentManifest {
+  const attachments = flattenParts(payload)
+    .filter((part) => {
+      if (part.parts?.length) return false;
+      if (!part.filename && !part.body?.attachmentId) return false;
+      if (
+        !part.filename &&
+        (part.mimeType === 'text/plain' || part.mimeType === 'text/html')
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .map((part): EmailAttachmentMeta => {
+      const dispositionHeader = (part.headers || []).find(
+        (header) => header.name?.toLowerCase() === 'content-disposition',
+      )?.value;
+      const disposition = /^inline\b/i.test(dispositionHeader || '')
+        ? 'inline'
+        : /^attachment\b/i.test(dispositionHeader || '')
+          ? 'attachment'
+          : 'unknown';
+      const size = part.body?.size;
+      return {
+        filename: boundedAttachmentField(
+          part.filename || '',
+          '(unnamed attachment)',
+        ),
+        mimeType: boundedAttachmentField(
+          part.mimeType || '',
+          'application/octet-stream',
+        ),
+        sizeBytes:
+          typeof size === 'number' && Number.isFinite(size) && size >= 0
+            ? size
+            : null,
+        disposition,
+      };
+    });
+
+  return {
+    total: attachments.length,
+    items: attachments.slice(0, MAX_ATTACHMENT_MANIFEST_ITEMS),
+    truncated: attachments.length > MAX_ATTACHMENT_MANIFEST_ITEMS,
+  };
+}
+
+function formatAttachmentManifest(
+  manifest: EmailAttachmentManifest | undefined,
+  processed = false,
+): string {
+  if (!manifest || manifest.total === 0) return '';
+  const lines = [`Attachments: ${manifest.total}`];
+  for (const item of manifest.items) {
+    const size =
+      item.sizeBytes === null ? 'size unknown' : `${item.sizeBytes} bytes`;
+    lines.push(
+      `- ${item.filename} | ${item.mimeType} | ${size} | ${item.disposition}`,
+    );
+  }
+  if (manifest.truncated) {
+    lines.push(
+      `- [${manifest.total - manifest.items.length} additional attachment(s) omitted from manifest]`,
+    );
+  }
+  lines.push(
+    processed
+      ? '[Attachment content was processed by the host; use the receipts below as the result.]'
+      : '[Attachment content is not included in this view. Use gmail_read with the exact Message-ID to process it; do not claim it was processed yet.]',
+  );
+  return lines.join('\n');
+}
+
 function decodeBase64Url(data: string): string {
   const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
   return Buffer.from(base64, 'base64').toString('utf-8');
@@ -373,6 +475,8 @@ export function formatEmailForAgent(
   messageId?: string,
   forwardedIdentity?: ForwardedIdentity | null,
   recipientContext: { replyAllCandidates?: readonly string[] } = {},
+  attachments?: EmailAttachmentManifest,
+  attachmentsProcessed = false,
 ): string {
   const oneLine = (value: string) =>
     value
@@ -411,5 +515,9 @@ export function formatEmailForAgent(
   ];
   if (threadId) headerLines.push(`Thread-ID: ${threadId}`);
   if (messageId) headerLines.push(`Message-ID: ${messageId}`);
-  return headerLines.join('\n') + '\n\n' + body;
+  const sections = [
+    body,
+    formatAttachmentManifest(attachments, attachmentsProcessed),
+  ].filter((section) => section.length > 0);
+  return headerLines.join('\n') + '\n\n' + sections.join('\n\n');
 }

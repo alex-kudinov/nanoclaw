@@ -93,7 +93,7 @@ vi.mock('./gmail-api.js', () => ({
     },
   ),
   searchEmails: vi.fn().mockResolvedValue('No results found.'),
-  readEmail: vi.fn().mockResolvedValue('Email content here'),
+  readEmailWithAttachments: vi.fn().mockResolvedValue('Email content here'),
   findThreadForReply: vi.fn().mockResolvedValue(null),
 }));
 
@@ -118,7 +118,12 @@ vi.mock('fs', async () => {
 
 import fs from 'fs';
 
-import { sendEmail, findThreadForReply, replyToThread } from './gmail-api.js';
+import {
+  sendEmail,
+  findThreadForReply,
+  readEmailWithAttachments,
+  replyToThread,
+} from './gmail-api.js';
 import { storeMessageDirect } from './db.js';
 import { logOutboundEmailInteraction } from './email-interaction-log.js';
 import {
@@ -981,6 +986,7 @@ describe('gmail_search / gmail_read result delivery', () => {
     expect(payload.type).toBe('message');
     expect(payload.target_container).toBe('nanoclaw-chief-read-1');
     expect(payload.text).toContain('msg-789');
+    expect(readEmailWithAttachments).toHaveBeenCalledWith('msg-789', 'chief');
   });
 
   it('does not write a result for a sibling when the originating container has exited', async () => {

@@ -109,6 +109,12 @@ function snippet(body: string, max = HANDOFF_SNIPPET_CHARS): string {
   return flat.length > max ? `${flat.slice(0, max)}…` : flat;
 }
 
+function attachmentCount(body: string): number {
+  const value = /^Attachments:\s*(\d+)\s*$/im.exec(body)?.[1];
+  const count = value ? Number(value) : 0;
+  return Number.isSafeInteger(count) && count > 0 ? count : 0;
+}
+
 function boundedBody(body: string, max = CHIEF_BODY_CHARS): string {
   return body.length > max ? `${body.slice(0, max)}\n[truncated]` : body;
 }
@@ -212,6 +218,7 @@ function fmtContador(p: RouteParams): string {
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
     ...sourceThreadLines(p),
+    `Attachment-Count: ${attachmentCount(p.body)}`,
     `Snippet: ${snippet(p.body)}`,
   ].join('\n');
 }
@@ -225,6 +232,7 @@ function fmtArchivarista(p: RouteParams): string {
     `From: ${p.senderName} <${p.senderEmail}>`,
     `Subject: ${p.subject}`,
     ...sourceThreadLines(p),
+    `Attachment-Count: ${attachmentCount(p.body)}`,
     `Snippet: ${snippet(p.body)}`,
   ].join('\n');
 }

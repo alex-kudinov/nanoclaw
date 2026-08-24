@@ -10,6 +10,7 @@ import {
   getAllChats,
   getAllRegisteredGroups,
   getDueJobs,
+  getGmailAttachmentReceipts,
   getJob,
   getJobRunLogs,
   listJobRunsForProjection,
@@ -24,6 +25,7 @@ import {
   markStaleRunsAsFailed,
   recordThreadAnchor,
   recordPendingSend,
+  finishGmailAttachmentReceipt,
   claimEmailActionExecution,
   confirmEmailAction,
   findPendingSendAction,
@@ -43,6 +45,7 @@ import {
   touchThreadAnchor,
   setJobEnabled,
   setRegisteredGroup,
+  startGmailAttachmentReceipt,
   storeChatMetadata,
   storeMessage,
   updateJobNextRun,
@@ -618,6 +621,57 @@ describe('pending send approvals', () => {
     expect(getPendingSendByGmailThread('gmail-thread-no-recipient')).toEqual({
       ambiguous: false,
       candidates: [],
+    });
+  });
+});
+
+describe('Gmail attachment receipts', () => {
+  it('keeps content-minimized durable state and increments retries', () => {
+    const start = {
+      receiptId: 'ga_123',
+      mailbox: 'info@example.com',
+      gmailMessageId: 'msg-1',
+      mimePartId: '1',
+      requestedBy: 'contador',
+      filename: 'invoice.pdf',
+      disposition: 'attachment',
+      declaredMimeType: 'application/pdf',
+      reportedSizeBytes: 100,
+      now: '2026-08-22T23:50:00.000Z',
+    };
+    startGmailAttachmentReceipt(start);
+    finishGmailAttachmentReceipt({
+      receiptId: 'ga_123',
+      state: 'ready',
+      sniffedMimeType: 'application/pdf',
+      actualSizeBytes: 100,
+      sha256: 'a'.repeat(64),
+      extractionMethod: 'markitdown-v1',
+      extractedTextSha256: 'b'.repeat(64),
+      extractedTextLength: 42,
+      now: '2026-08-22T23:51:00.000Z',
+    });
+
+    expect(getGmailAttachmentReceipts('msg-1')).toEqual([
+      expect.objectContaining({
+        receiptId: 'ga_123',
+        state: 'ready',
+        attemptCount: 1,
+        rawRetention: 'gmail_source_only',
+        extractedTextLength: 42,
+      }),
+    ]);
+
+    startGmailAttachmentReceipt({
+      ...start,
+      requestedBy: 'chief',
+      now: '2026-08-22T23:52:00.000Z',
+    });
+    expect(getGmailAttachmentReceipts('msg-1')[0]).toMatchObject({
+      requestedBy: 'chief',
+      state: 'downloading',
+      attemptCount: 2,
+      resolvedAt: null,
     });
   });
 });

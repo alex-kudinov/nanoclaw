@@ -92,6 +92,43 @@ sqlite_autoindex_chats_1 (jid) UNIQUE
 Indexes:
 sqlite_autoindex_email_tracking_1 (tracking_id) UNIQUE
 
+## gmail_attachment_receipts
+
+```
+  receipt_id                TEXT         PK
+  mailbox                   TEXT         NOT NULL
+  gmail_message_id          TEXT         NOT NULL
+  mime_part_id              TEXT         NOT NULL
+  requested_by              TEXT         NOT NULL
+  filename                  TEXT         NOT NULL
+  disposition               TEXT         NOT NULL
+  declared_mime_type        TEXT         NOT NULL
+  sniffed_mime_type         TEXT
+  reported_size_bytes       INTEGER
+  actual_size_bytes         INTEGER
+  sha256                    TEXT
+  state                     TEXT         NOT NULL
+  extraction_method         TEXT
+  extraction_version        TEXT         NOT NULL DEFAULT='gmail-attachment-v1'
+  extracted_text_sha256     TEXT
+  extracted_text_length     INTEGER
+  error_code                TEXT
+  raw_retention             TEXT         NOT NULL DEFAULT='gmail_source_only'
+  attempt_count             INTEGER      NOT NULL DEFAULT=1
+  created_at                TEXT         NOT NULL
+  updated_at                TEXT         NOT NULL
+  resolved_at               TEXT
+```
+
+Indexes:
+idx_gmail_attachment_receipts_message (gmail_message_id,state,updated_at)
+sqlite_autoindex_gmail_attachment_receipts_1 (receipt_id) UNIQUE
+sqlite_autoindex_gmail_attachment_receipts_2 (mailbox,gmail_message_id,mime_part_id) UNIQUE
+
+This table is content-minimized. It stores source identity, hashes, result
+codes, lengths, and retry state; raw attachment bytes and extracted text are
+never stored here.
+
 ## job_run_logs
 
 ```

@@ -25,7 +25,7 @@ import {
   replyToThread,
   sendEmail,
   searchEmails,
-  readEmail,
+  readEmailWithAttachments,
   getThread,
   findThreadForReply,
 } from './gmail-api.js';
@@ -909,7 +909,10 @@ export async function handleGmailRead(
     return false;
   }
 
-  const content = await readEmail(data.messageId);
+  const content = await readEmailWithAttachments(
+    data.messageId,
+    data.groupFolder,
+  );
 
   // Deliver the email back as a follow-up message. type:'message' is the only
   // shape the agent-runner's drainIpcInput() surfaces (see handleGmailSearch).

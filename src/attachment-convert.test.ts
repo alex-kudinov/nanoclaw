@@ -8,9 +8,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   classifyAttachment,
+  extractAttachmentText,
   extractIWorkPdf,
   extractOdfText,
   odfXmlToText,
+  validateZipPackage,
 } from './attachment-convert.js';
 
 const execFileP = promisify(execFile);
@@ -51,6 +53,51 @@ describe('classifyAttachment', () => {
 
   it('is case-insensitive on extension', () => {
     expect(classifyAttachment('ODT', '')).toBe('odf');
+  });
+});
+
+describe('extractAttachmentText', () => {
+  it('returns bounded UTF-8 text as ready evidence', async () => {
+    await expect(
+      extractAttachmentText(
+        Buffer.from('Invoice total: $500'),
+        'invoice.txt',
+        'text/plain',
+        'txt-1',
+      ),
+    ).resolves.toEqual({
+      state: 'ready',
+      method: 'utf8',
+      text: 'Invoice total: $500',
+    });
+  });
+
+  it('holds binary content disguised as text', async () => {
+    await expect(
+      extractAttachmentText(
+        Buffer.from([0x41, 0x00, 0x42]),
+        'invoice.txt',
+        'text/plain',
+        'txt-2',
+      ),
+    ).resolves.toMatchObject({
+      state: 'needs_review',
+      errorCode: 'binary_text_content',
+    });
+  });
+
+  it('returns an explicit unsupported state for archives', async () => {
+    await expect(
+      extractAttachmentText(
+        Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+        'bundle.zip',
+        'application/zip',
+        'zip-1',
+      ),
+    ).resolves.toMatchObject({
+      state: 'unsupported',
+      errorCode: 'unsupported_format',
+    });
   });
 });
 
@@ -162,9 +209,46 @@ describe('zip-backed extraction', () => {
     );
   });
 
+  it('accepts a bounded document package before extraction', async () => {
+    const zip = await makeZip('bounded', {
+      'word/document.xml': '<p>Invoice</p>',
+    });
+    await expect(validateZipPackage(zip, 'zip-ok')).resolves.toMatchObject({
+      ok: true,
+      entryCount: 2,
+    });
+  });
+
+  it('rejects invalid zip bytes before a document parser sees them', async () => {
+    await expect(
+      validateZipPackage(Buffer.from('not a zip'), 'zip-bad'),
+    ).resolves.toMatchObject({
+      ok: false,
+      errorCode: 'zip_inspection_failed',
+    });
+  });
+
   it('returns null when the ODF package has no content.xml', async () => {
     const zip = await makeZip('empty', { 'styles.xml': '<x/>' });
     await expect(extractOdfText(zip, 'odf2')).resolves.toBeNull();
+  });
+
+  it('holds an ODF package whose content.xml is not ODF markup', async () => {
+    const zip = await makeZip('encrypted-odf', {
+      'content.xml': Buffer.from([0xde, 0xad, 0xbe, 0xef, 0x00, 0x01]),
+    });
+    await expect(extractOdfText(zip, 'odf-invalid')).resolves.toBeNull();
+    await expect(
+      extractAttachmentText(
+        zip,
+        'encrypted.odt',
+        'application/vnd.oasis.opendocument.text',
+        'odf-invalid',
+      ),
+    ).resolves.toMatchObject({
+      state: 'extraction_failed',
+      errorCode: 'odf_no_text',
+    });
   });
 
   it('returns null rather than throwing on a non-zip buffer', async () => {

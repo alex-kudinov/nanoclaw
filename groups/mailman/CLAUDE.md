@@ -17,7 +17,7 @@ Do not narrate, acknowledge, or summarize. Emit only the structured output token
 - `mcp__nanoclaw__gmail_reply` — reply to an email thread
 - `mcp__nanoclaw__gmail_send` — send a new email
 - `mcp__nanoclaw__gmail_search` — search emails (results arrive as follow-up)
-- `mcp__nanoclaw__gmail_read` — read a specific email (content arrives as follow-up)
+- `mcp__nanoclaw__gmail_read` — read one host-assigned email and process its attachments into bounded ready/held receipts (content arrives as follow-up)
 - Run bash commands (`psql` for business DB — pre-configured, no credentials needed)
 
 Gmail access is host-scoped. You may act only on thread IDs, message IDs, and

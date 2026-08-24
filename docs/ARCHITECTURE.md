@@ -162,6 +162,14 @@ Agents emit IPC files. Host dispatches by type:
 - **Visible-recipient context:** exact bounded `Visible-To`, `Visible-Cc`, and
   `Reply-All-Candidates` fields travel with the host handoff. They are evidence,
   not reply-all authority; BCC and internal-forward envelopes are excluded.
+- **Attachments:** the inbound manifest exposes only bounded sanitized metadata.
+  An exact authorized `gmail_read(messageId)` may ask the host to reload that
+  message and process its MIME leaves. Attachment IDs, bytes, credentials,
+  download URLs, and temporary paths remain host-private. The host enforces
+  count/size/type/magic/archive/encryption/OCR/extraction limits, deletes all
+  temporary bytes, persists content-minimized receipts, and returns only
+  bounded text inside an `untrusted_attachment` wrapper or an explicit held
+  state. See `docs/GMAIL-ATTACHMENT-CLOSED-LOOP.md`.
 - **Dedup:** `processedIds` Set (capped at 5000, oldest 1000 pruned)
 - **Push architecture:** `gmail-push.ts` processes history deltas (`messagesAdded` events). On `HistoryExpiredError` (>7 days stale), resets baseline and accepts data loss window.
 

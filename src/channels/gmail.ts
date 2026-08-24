@@ -53,6 +53,7 @@ import { routeClassifiedEmail } from '../host-router.js';
 import {
   deriveReplyAllCandidates,
   formatEmailForAgent,
+  parseEmailAttachments,
   parseEmailBody,
   parseEmailHeaders,
   resolveForwardedIdentity,
@@ -671,6 +672,7 @@ export class GmailChannel implements Channel {
       msg.id,
       forwardedIdentity,
       { replyAllCandidates },
+      parseEmailAttachments(msg.payload),
     );
 
     // Pre-LLM classification: if a rule matches, apply the classification

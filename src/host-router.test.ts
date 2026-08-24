@@ -461,6 +461,18 @@ describe('host-router', () => {
     const text: string = mockWrite.mock.calls[0][1].text;
     expect(text).toContain('[HANDOFF: mailman\u2192contador]');
     expect(text).toContain('[TYPE: invoice]');
+    expect(text).toContain('Attachment-Count: 0');
+  });
+
+  it('tells Contador when the source message carries attachments', async () => {
+    await routeClassifiedEmail(
+      makeParams({
+        label: 'financial/bill',
+        body: 'Please see attached.\n\nAttachments: 2\n- invoice.pdf',
+      }),
+    );
+    const text: string = mockWrite.mock.calls[0][1].text;
+    expect(text).toContain('Attachment-Count: 2');
   });
 
   it('contador handoff carries Snippet + Thread-ID, not full Body', async () => {

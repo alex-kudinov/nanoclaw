@@ -128,8 +128,9 @@ actionable unit.
 - Run bash commands (`psql` for business DB — pre-configured, no credentials needed)
 - `mcp__nanoclaw__send_message` — send a message to this Slack channel, or to another agent's channel using `target_group` (e.g. `target_group: "mailman"`)
 - `mcp__nanoclaw__gmail_read` — read only the exact Gmail Message-ID assigned
-  by the host to the current work item; results arrive as a follow-up. Do not
-  use Gmail search to recover a host-routed escalation.
+  by the host to the current work item; results and attachment ready/held
+  receipts arrive as a follow-up. Do not use Gmail search to recover a
+  host-routed escalation or close work that requires a held attachment.
 - `mcp__nanoclaw__send_grader_file` — only for an explicitly authorized student submission already under `/workspace/group`; destination is fixed to the grader and the stable idempotency key must be reused on recovery. It does not authorize Heartbeat writes or certificate actions.
 
 ## Shared State

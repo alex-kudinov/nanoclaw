@@ -16,8 +16,14 @@ import {
 import { assertExternalWriteAllowed } from './action-safety.js';
 import { getGmailClient } from './gmail-auth.js';
 import {
+  formatGmailAttachmentProcessingReport,
+  logGmailAttachmentProcessingReport,
+  processGmailMessageAttachments,
+} from './gmail-attachment-processing.js';
+import {
   deriveReplyAllCandidates,
   formatEmailForAgent,
+  parseEmailAttachments,
   parseEmailBody,
   parseEmailHeaders,
 } from './gmail-parser.js';
@@ -557,6 +563,7 @@ export async function getThread(threadId: string): Promise<string> {
       m.id || undefined,
       undefined,
       { replyAllCandidates: replyAllCandidatesForHeaders(headers) },
+      m.payload ? parseEmailAttachments(m.payload) : undefined,
     );
   });
   return (
@@ -677,9 +684,31 @@ export async function readEmail(messageId: string): Promise<string> {
   return getEmailSummary(gmail, messageId);
 }
 
+/** Process attachments for one exact host-authorized message. */
+export async function readEmailWithAttachments(
+  messageId: string,
+  requestedBy: string,
+): Promise<string> {
+  try {
+    const report = await processGmailMessageAttachments(messageId, requestedBy);
+    const summary = await getEmailSummary(getGmailClient(), messageId, true);
+    logGmailAttachmentProcessingReport(report, requestedBy);
+    const formatted = formatGmailAttachmentProcessingReport(report);
+    return formatted ? `${summary}\n\n${formatted}` : summary;
+  } catch (err) {
+    logger.error(
+      { messageId, requestedBy, err },
+      'Gmail attachment processing failed before a complete report',
+    );
+    const summary = await readEmail(messageId);
+    return `${summary}\n\n[Attachment processing failed before complete receipts. Do not close a workflow that requires these attachments; retry or request human review.]`;
+  }
+}
+
 async function getEmailSummary(
   gmail: gmail_v1.Gmail,
   messageId: string,
+  attachmentsProcessed = false,
 ): Promise<string> {
   const res = await gmail.users.messages.get({
     userId: 'me',
@@ -692,11 +721,19 @@ async function getEmailSummary(
 
   const headers = parseEmailHeaders(msg.payload.headers || []);
   const body = parseEmailBody(msg.payload);
+  const attachments = parseEmailAttachments(msg.payload);
 
   return (
     `ID: ${messageId}\nThread: ${msg.threadId || 'unknown'}\n` +
-    formatEmailForAgent(headers, body, undefined, undefined, undefined, {
-      replyAllCandidates: replyAllCandidatesForHeaders(headers),
-    })
+    formatEmailForAgent(
+      headers,
+      body,
+      undefined,
+      undefined,
+      undefined,
+      { replyAllCandidates: replyAllCandidatesForHeaders(headers) },
+      attachments,
+      attachmentsProcessed,
+    )
   );
 }

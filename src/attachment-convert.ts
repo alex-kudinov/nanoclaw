@@ -19,9 +19,9 @@
  */
 
 import { execFile } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
+import { extname, join } from 'node:path';
 import { promisify } from 'node:util';
 
 const execFileP = promisify(execFile);
@@ -31,6 +31,21 @@ const UNZIP_TIMEOUT_MS = 30_000;
 /** Extracted XML/PDF ceiling — a content.xml is markup-heavy (1 MB for a
  *  two-page agreement), so this sits well above the readable-text size. */
 const UNZIP_MAX_OUTPUT = 64 * 1024 * 1024;
+const ZIP_MAX_ENTRIES = 2_000;
+const ZIP_MAX_UNCOMPRESSED_BYTES = 100 * 1024 * 1024;
+const ZIP_LIST_MAX_OUTPUT = 2 * 1024 * 1024;
+const MARKITDOWN_BIN =
+  process.env.NANOCLAW_MARKITDOWN_BIN ||
+  join(homedir(), '.nanoclaw-venvs', 'markitdown', 'bin', 'markitdown');
+const MARKITDOWN_TIMEOUT_MS = 90_000;
+const MARKITDOWN_MAX_OUTPUT = 20 * 1024 * 1024;
+const TESSERACT_BIN = process.env.NANOCLAW_TESSERACT_BIN || 'tesseract';
+const PDFTOPPM_BIN = process.env.NANOCLAW_PDFTOPPM_BIN || 'pdftoppm';
+const PDFTOTEXT_BIN = process.env.NANOCLAW_PDFTOTEXT_BIN || 'pdftotext';
+const OCR_TIMEOUT_MS = 120_000;
+const OCR_MAX_OUTPUT = 5 * 1024 * 1024;
+const OCR_MAX_PDF_PAGES = 10;
+const MAX_EXTRACTED_TEXT_CHARS = 200_000;
 
 export type AttachmentKind =
   | 'text'
@@ -162,7 +177,14 @@ export async function extractOdfText(
 ): Promise<string | null> {
   const content = await readZipEntry(buf, 'content.xml', id);
   if (!content) return null;
-  const text = odfXmlToText(content.toString('utf-8'));
+  const xml = content
+    .toString('utf-8')
+    .replace(/^\uFEFF/, '')
+    .trimStart();
+  if (!/^(?:<\?xml[\s\S]*?\?>\s*)?<office:document-content(?:\s|>)/.test(xml)) {
+    return null;
+  }
+  const text = odfXmlToText(xml);
   return text.length ? text : null;
 }
 
@@ -179,4 +201,327 @@ export async function extractIWorkPdf(
     if (pdf?.subarray(0, 4).toString('latin1') === '%PDF') return pdf;
   }
   return null;
+}
+
+export interface ZipPackageValidation {
+  ok: boolean;
+  entryCount: number;
+  uncompressedBytes: number;
+  errorCode?: string;
+}
+
+/**
+ * Inspect Office/ODF/iWork zip structure before a parser sees it. Generic
+ * archives never reach this function; accepted document packages still need
+ * expansion and traversal ceilings.
+ */
+export async function validateZipPackage(
+  buf: Buffer,
+  id: string,
+): Promise<ZipPackageValidation> {
+  let dir: string | undefined;
+  try {
+    dir = await mkdtemp(join(tmpdir(), 'nanoclaw-zip-list-'));
+    const fp = join(dir, `${id}.zip`);
+    await writeFile(fp, buf);
+    const { stdout } = await execFileP(UNZIP_BIN, ['-l', fp], {
+      timeout: UNZIP_TIMEOUT_MS,
+      maxBuffer: ZIP_LIST_MAX_OUTPUT,
+    });
+    let entryCount = 0;
+    let uncompressedBytes = 0;
+    for (const line of stdout.split(/\r?\n/)) {
+      const match =
+        /^\s*(\d+)\s+\d{2,4}-\d{2}-\d{2,4}\s+\d{2}:\d{2}\s+(.+)$/.exec(line);
+      if (!match) continue;
+      const name = match[2].trim().replace(/\\/g, '/');
+      const segments = name.split('/');
+      if (name.startsWith('/') || segments.includes('..')) {
+        return {
+          ok: false,
+          entryCount,
+          uncompressedBytes,
+          errorCode: 'zip_path_traversal',
+        };
+      }
+      entryCount += 1;
+      uncompressedBytes += Number(match[1]);
+      if (entryCount > ZIP_MAX_ENTRIES) {
+        return {
+          ok: false,
+          entryCount,
+          uncompressedBytes,
+          errorCode: 'zip_entry_limit',
+        };
+      }
+      if (uncompressedBytes > ZIP_MAX_UNCOMPRESSED_BYTES) {
+        return {
+          ok: false,
+          entryCount,
+          uncompressedBytes,
+          errorCode: 'zip_expansion_limit',
+        };
+      }
+    }
+    return entryCount > 0
+      ? { ok: true, entryCount, uncompressedBytes }
+      : {
+          ok: false,
+          entryCount: 0,
+          uncompressedBytes: 0,
+          errorCode: 'zip_empty_or_invalid',
+        };
+  } catch {
+    return {
+      ok: false,
+      entryCount: 0,
+      uncompressedBytes: 0,
+      errorCode: 'zip_inspection_failed',
+    };
+  } finally {
+    if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+/**
+ * Convert a PDF or Office document buffer to markdown through the same bounded
+ * host dependency used by Slack. The caller supplies a hash-like id; filenames
+ * from untrusted messages never become paths.
+ */
+export async function convertViaMarkitdown(
+  buf: Buffer,
+  ext: string,
+  id: string,
+): Promise<string | null> {
+  let dir: string | undefined;
+  try {
+    dir = await mkdtemp(join(tmpdir(), 'nanoclaw-att-'));
+    const fp = join(dir, `${id}.${ext || 'bin'}`);
+    await writeFile(fp, buf);
+    const { stdout } = await execFileP(MARKITDOWN_BIN, [fp], {
+      timeout: MARKITDOWN_TIMEOUT_MS,
+      maxBuffer: MARKITDOWN_MAX_OUTPUT,
+    });
+    return stdout.trim() || null;
+  } catch {
+    return null;
+  } finally {
+    if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+export interface AttachmentExtractionResult {
+  state: 'ready' | 'needs_review' | 'unsupported' | 'extraction_failed';
+  method: string;
+  text?: string;
+  errorCode?: string;
+}
+
+function boundedExtractedText(text: string): string {
+  const normalized = text.replace(/\0/g, '').trim();
+  return normalized.length > MAX_EXTRACTED_TEXT_CHARS
+    ? `${normalized.slice(0, MAX_EXTRACTED_TEXT_CHARS)}\n[extraction truncated]`
+    : normalized;
+}
+
+async function ocrImage(
+  buf: Buffer,
+  ext: string,
+  id: string,
+): Promise<string | null> {
+  let dir: string | undefined;
+  try {
+    dir = await mkdtemp(join(tmpdir(), 'nanoclaw-ocr-'));
+    const fp = join(dir, `${id}.${ext || 'img'}`);
+    await writeFile(fp, buf);
+    const { stdout } = await execFileP(TESSERACT_BIN, [fp, 'stdout'], {
+      timeout: OCR_TIMEOUT_MS,
+      maxBuffer: OCR_MAX_OUTPUT,
+    });
+    return boundedExtractedText(stdout) || null;
+  } catch {
+    return null;
+  } finally {
+    if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+async function ocrPdf(buf: Buffer, id: string): Promise<string | null> {
+  let dir: string | undefined;
+  try {
+    dir = await mkdtemp(join(tmpdir(), 'nanoclaw-pdf-ocr-'));
+    const pdfPath = join(dir, `${id}.pdf`);
+    const pagePrefix = join(dir, 'page');
+    await writeFile(pdfPath, buf);
+    await execFileP(
+      PDFTOPPM_BIN,
+      [
+        '-f',
+        '1',
+        '-l',
+        String(OCR_MAX_PDF_PAGES),
+        '-r',
+        '200',
+        '-png',
+        pdfPath,
+        pagePrefix,
+      ],
+      { timeout: OCR_TIMEOUT_MS, maxBuffer: OCR_MAX_OUTPUT },
+    );
+    const pages = (await readdir(dir))
+      .filter((name) => /^page-\d+\.png$/.test(name))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const chunks: string[] = [];
+    for (const page of pages) {
+      const { stdout } = await execFileP(
+        TESSERACT_BIN,
+        [join(dir, page), 'stdout'],
+        { timeout: OCR_TIMEOUT_MS, maxBuffer: OCR_MAX_OUTPUT },
+      );
+      if (stdout.trim()) chunks.push(stdout.trim());
+    }
+    return boundedExtractedText(chunks.join('\n\n')) || null;
+  } catch {
+    return null;
+  } finally {
+    if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+async function extractPdfText(buf: Buffer, id: string): Promise<string | null> {
+  let dir: string | undefined;
+  try {
+    dir = await mkdtemp(join(tmpdir(), 'nanoclaw-pdf-text-'));
+    const pdfPath = join(dir, `${id}.pdf`);
+    await writeFile(pdfPath, buf);
+    const { stdout } = await execFileP(PDFTOTEXT_BIN, [pdfPath, '-'], {
+      timeout: MARKITDOWN_TIMEOUT_MS,
+      maxBuffer: MARKITDOWN_MAX_OUTPUT,
+    });
+    return boundedExtractedText(stdout) || null;
+  } catch {
+    return null;
+  } finally {
+    if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+/**
+ * Extract bounded text from a verified attachment buffer. Unsupported or
+ * unreadable content returns an explicit state; callers must never equate an
+ * empty result with successful processing.
+ */
+export async function extractAttachmentText(
+  buf: Buffer,
+  filename: string,
+  mimeType: string,
+  id: string,
+): Promise<AttachmentExtractionResult> {
+  const ext = extname(filename).slice(1).toLowerCase();
+  const kind = classifyAttachment(ext, mimeType);
+
+  if (kind === 'text') {
+    if (buf.includes(0)) {
+      return {
+        state: 'needs_review',
+        method: 'utf8',
+        errorCode: 'binary_text_content',
+      };
+    }
+    const text = boundedExtractedText(buf.toString('utf-8'));
+    return text
+      ? { state: 'ready', method: 'utf8', text }
+      : {
+          state: 'needs_review',
+          method: 'utf8',
+          errorCode: 'empty_text',
+        };
+  }
+
+  if (kind === 'odf') {
+    const text = await extractOdfText(buf, id);
+    return text
+      ? {
+          state: 'ready',
+          method: 'odf-content-xml-v1',
+          text: boundedExtractedText(text),
+        }
+      : {
+          state: 'extraction_failed',
+          method: 'odf-content-xml-v1',
+          errorCode: 'odf_no_text',
+        };
+  }
+
+  if (kind === 'iwork') {
+    const preview = await extractIWorkPdf(buf, id);
+    if (!preview) {
+      return {
+        state: 'needs_review',
+        method: 'iwork-preview-v1',
+        errorCode: 'iwork_no_pdf_preview',
+      };
+    }
+    const text = await extractPdfText(preview, id);
+    const ocr = text?.trim() ? null : await ocrPdf(preview, id);
+    const extracted = boundedExtractedText(text || ocr || '');
+    return extracted
+      ? {
+          state: 'ready',
+          method: text ? 'iwork-preview-pdftotext-v1' : 'iwork-preview-ocr-v1',
+          text: extracted,
+        }
+      : {
+          state: 'needs_review',
+          method: 'iwork-preview-v1',
+          errorCode: 'iwork_preview_unreadable',
+        };
+  }
+
+  if (kind === 'image') {
+    const text = await ocrImage(buf, ext, id);
+    return text
+      ? { state: 'ready', method: 'tesseract-v1', text }
+      : {
+          state: 'needs_review',
+          method: 'tesseract-v1',
+          errorCode: 'image_ocr_no_text',
+        };
+  }
+
+  if (kind === 'doc') {
+    if (ext === 'pdf' || mimeType.toLowerCase() === 'application/pdf') {
+      const direct = await extractPdfText(buf, id);
+      if (direct) {
+        return { state: 'ready', method: 'pdftotext-v1', text: direct };
+      }
+      const text = await ocrPdf(buf, id);
+      return text
+        ? { state: 'ready', method: 'pdf-tesseract-v1', text }
+        : {
+            state: 'needs_review',
+            method: 'pdf-tesseract-v1',
+            errorCode: 'pdf_ocr_no_text',
+          };
+    }
+    const converted = await convertViaMarkitdown(buf, ext || 'bin', id);
+    if (converted?.trim()) {
+      return {
+        state: 'ready',
+        method: 'markitdown-v1',
+        text: boundedExtractedText(converted),
+      };
+    }
+    return {
+      state: 'extraction_failed',
+      method: 'markitdown-v1',
+      errorCode: 'document_conversion_failed',
+    };
+  }
+
+  return {
+    state: 'unsupported',
+    method: 'none',
+    errorCode: 'unsupported_format',
+  };
 }

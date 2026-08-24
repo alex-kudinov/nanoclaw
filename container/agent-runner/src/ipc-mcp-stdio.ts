@@ -720,7 +720,7 @@ registerTool(
 
 registerTool(
   'gmail_read',
-  'Read a specific email by message ID. Content is delivered as a follow-up message.',
+  'Read a specific host-assigned email by message ID. The host downloads and verifies its attachments, extracts bounded document/image text when safe, and returns durable ready/held receipts with the follow-up. Attachment bytes, Gmail attachment IDs, and paths are never exposed.',
   {
     message_id: z.string().describe('Gmail message ID to read'),
   },

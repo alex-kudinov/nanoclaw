@@ -356,6 +356,38 @@ function createSchema(database: Database.Database): void {
       last_notified_at TEXT
     );
 
+    -- Content-minimized Gmail attachment processing receipts. Raw bytes and
+    -- extracted customer/vendor text never enter SQLite; Gmail remains the
+    -- source copy and temporary extraction files are deleted by the host.
+    CREATE TABLE IF NOT EXISTS gmail_attachment_receipts (
+      receipt_id TEXT PRIMARY KEY,
+      mailbox TEXT NOT NULL,
+      gmail_message_id TEXT NOT NULL,
+      mime_part_id TEXT NOT NULL,
+      requested_by TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      disposition TEXT NOT NULL,
+      declared_mime_type TEXT NOT NULL,
+      sniffed_mime_type TEXT,
+      reported_size_bytes INTEGER,
+      actual_size_bytes INTEGER,
+      sha256 TEXT,
+      state TEXT NOT NULL,
+      extraction_method TEXT,
+      extraction_version TEXT NOT NULL DEFAULT 'gmail-attachment-v1',
+      extracted_text_sha256 TEXT,
+      extracted_text_length INTEGER,
+      error_code TEXT,
+      raw_retention TEXT NOT NULL DEFAULT 'gmail_source_only',
+      attempt_count INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      resolved_at TEXT,
+      UNIQUE (mailbox, gmail_message_id, mime_part_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_gmail_attachment_receipts_message
+      ON gmail_attachment_receipts (gmail_message_id, state, updated_at);
+
     CREATE TABLE IF NOT EXISTS autonomy_trust (
       group_folder TEXT NOT NULL,
       category TEXT NOT NULL,
@@ -601,6 +633,194 @@ export function initDatabase(): void {
 export function _initTestDatabase(): void {
   db = new Database(':memory:');
   createSchema(db);
+}
+
+export type GmailAttachmentReceiptState =
+  | 'downloading'
+  | 'ready'
+  | 'needs_review'
+  | 'oversized'
+  | 'unsupported'
+  | 'encrypted'
+  | 'quarantined'
+  | 'extraction_failed'
+  | 'download_failed';
+
+export interface GmailAttachmentReceipt {
+  receiptId: string;
+  mailbox: string;
+  gmailMessageId: string;
+  mimePartId: string;
+  requestedBy: string;
+  filename: string;
+  disposition: string;
+  declaredMimeType: string;
+  sniffedMimeType: string | null;
+  reportedSizeBytes: number | null;
+  actualSizeBytes: number | null;
+  sha256: string | null;
+  state: GmailAttachmentReceiptState;
+  extractionMethod: string | null;
+  extractionVersion: string;
+  extractedTextSha256: string | null;
+  extractedTextLength: number | null;
+  errorCode: string | null;
+  rawRetention: string;
+  attemptCount: number;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+}
+
+interface GmailAttachmentReceiptRow {
+  receipt_id: string;
+  mailbox: string;
+  gmail_message_id: string;
+  mime_part_id: string;
+  requested_by: string;
+  filename: string;
+  disposition: string;
+  declared_mime_type: string;
+  sniffed_mime_type: string | null;
+  reported_size_bytes: number | null;
+  actual_size_bytes: number | null;
+  sha256: string | null;
+  state: GmailAttachmentReceiptState;
+  extraction_method: string | null;
+  extraction_version: string;
+  extracted_text_sha256: string | null;
+  extracted_text_length: number | null;
+  error_code: string | null;
+  raw_retention: string;
+  attempt_count: number;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
+}
+
+function mapGmailAttachmentReceipt(
+  row: GmailAttachmentReceiptRow,
+): GmailAttachmentReceipt {
+  return {
+    receiptId: row.receipt_id,
+    mailbox: row.mailbox,
+    gmailMessageId: row.gmail_message_id,
+    mimePartId: row.mime_part_id,
+    requestedBy: row.requested_by,
+    filename: row.filename,
+    disposition: row.disposition,
+    declaredMimeType: row.declared_mime_type,
+    sniffedMimeType: row.sniffed_mime_type,
+    reportedSizeBytes: row.reported_size_bytes,
+    actualSizeBytes: row.actual_size_bytes,
+    sha256: row.sha256,
+    state: row.state,
+    extractionMethod: row.extraction_method,
+    extractionVersion: row.extraction_version,
+    extractedTextSha256: row.extracted_text_sha256,
+    extractedTextLength: row.extracted_text_length,
+    errorCode: row.error_code,
+    rawRetention: row.raw_retention,
+    attemptCount: row.attempt_count,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    resolvedAt: row.resolved_at,
+  };
+}
+
+/** Start or restart one exact attachment attempt before Gmail bytes are read. */
+export function startGmailAttachmentReceipt(input: {
+  receiptId: string;
+  mailbox: string;
+  gmailMessageId: string;
+  mimePartId: string;
+  requestedBy: string;
+  filename: string;
+  disposition: string;
+  declaredMimeType: string;
+  reportedSizeBytes: number | null;
+  now?: string;
+}): void {
+  const now = input.now || new Date().toISOString();
+  db.prepare(
+    `INSERT INTO gmail_attachment_receipts (
+       receipt_id, mailbox, gmail_message_id, mime_part_id, requested_by,
+       filename, disposition, declared_mime_type, reported_size_bytes,
+       state, created_at, updated_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'downloading', ?, ?)
+     ON CONFLICT(mailbox, gmail_message_id, mime_part_id) DO UPDATE SET
+       requested_by = excluded.requested_by,
+       filename = excluded.filename,
+       disposition = excluded.disposition,
+       declared_mime_type = excluded.declared_mime_type,
+       reported_size_bytes = excluded.reported_size_bytes,
+       state = 'downloading',
+       error_code = NULL,
+       resolved_at = NULL,
+       attempt_count = gmail_attachment_receipts.attempt_count + 1,
+       updated_at = excluded.updated_at`,
+  ).run(
+    input.receiptId,
+    input.mailbox,
+    input.gmailMessageId,
+    input.mimePartId,
+    input.requestedBy,
+    input.filename,
+    input.disposition,
+    input.declaredMimeType,
+    input.reportedSizeBytes,
+    now,
+    now,
+  );
+}
+
+/** Finalize one attempt with only hashes, lengths, state, and result codes. */
+export function finishGmailAttachmentReceipt(input: {
+  receiptId: string;
+  state: Exclude<GmailAttachmentReceiptState, 'downloading'>;
+  sniffedMimeType?: string | null;
+  actualSizeBytes?: number | null;
+  sha256?: string | null;
+  extractionMethod?: string | null;
+  extractedTextSha256?: string | null;
+  extractedTextLength?: number | null;
+  errorCode?: string | null;
+  now?: string;
+}): void {
+  const now = input.now || new Date().toISOString();
+  db.prepare(
+    `UPDATE gmail_attachment_receipts SET
+       state = ?, sniffed_mime_type = ?, actual_size_bytes = ?, sha256 = ?,
+       extraction_method = ?, extracted_text_sha256 = ?,
+       extracted_text_length = ?, error_code = ?, updated_at = ?,
+       resolved_at = ?
+     WHERE receipt_id = ?`,
+  ).run(
+    input.state,
+    input.sniffedMimeType ?? null,
+    input.actualSizeBytes ?? null,
+    input.sha256 ?? null,
+    input.extractionMethod ?? null,
+    input.extractedTextSha256 ?? null,
+    input.extractedTextLength ?? null,
+    input.errorCode ?? null,
+    now,
+    now,
+    input.receiptId,
+  );
+}
+
+export function getGmailAttachmentReceipts(
+  gmailMessageId: string,
+): GmailAttachmentReceipt[] {
+  return (
+    db
+      .prepare(
+        `SELECT * FROM gmail_attachment_receipts
+         WHERE gmail_message_id = ? ORDER BY mime_part_id`,
+      )
+      .all(gmailMessageId) as GmailAttachmentReceiptRow[]
+  ).map(mapGmailAttachmentReceipt);
 }
 
 /** @internal - reproduces the receipt reason constraint before NC-003. */

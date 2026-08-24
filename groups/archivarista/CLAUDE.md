@@ -97,9 +97,12 @@ Use Slack mrkdwn formatting. When everything healthy: `:white_check_mark: ALL QU
 When you receive `[HANDOFF: mailman→archivarista]` with `[TYPE: meeting-assets]`:
 
 1. **Extract meeting details** from the email body: Meeting topic, date/time, host name, links to recordings/transcripts/downloads, attendee information
-   - The handoff contains a short snippet plus a host-assigned `Message-ID`. If
-     the snippet is insufficient, call `mcp__nanoclaw__gmail_read` with that
-     exact `Message-ID`. Never pass the Thread-ID or substitute another ID.
+   - The handoff contains a short snippet, `Attachment-Count`, and a
+     host-assigned `Message-ID`. If the count is greater than zero or the
+     snippet is insufficient, call `mcp__nanoclaw__gmail_read` with that exact
+     `Message-ID`. Never pass the Thread-ID or substitute another ID. Gmail
+     reads return durable attachment receipts and bounded extracted text; keep
+     held required files as intake exceptions.
 2. **Check for existing meeting note** — search Tandem vault ONLY (NOT Solera/CNPC):
    ```bash
    curl -sk "$API/search/" -H "$AUTH" -X POST \
@@ -143,7 +146,7 @@ If you mention a file or meeting without a path, your response is incomplete.
 - Read/write files in your workspace (`/workspace/group/`) and mounted vault dirs
 - Run bash commands (grep, find, cat for searching vault data)
 - `mcp__nanoclaw__send_message` — send a message to this Slack channel
-- `mcp__nanoclaw__gmail_read` — read only the exact host-assigned meeting-assets message when its snippet is insufficient
+- `mcp__nanoclaw__gmail_read` — read only the exact host-assigned meeting-assets message when its snippet is insufficient; attachment results include durable ready/held receipts
 
 ## Writing Rules
 

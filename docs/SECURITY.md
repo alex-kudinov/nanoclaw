@@ -118,6 +118,19 @@ cannot replace it through the normal writable IPC mount. Visible image text is
 still prompt-injectable input and confers no action authority. Local staged
 copies expire after 30 days; the Slack attachment remains the source record.
 
+Gmail attachments use a stricter no-copy host boundary. Containers may request
+only an exact message already authorized for that group; they never receive a
+Gmail attachment ID, raw bytes, reusable URL, credential, or model-selected
+path. The host bounds MIME traversal, decoded item/message bytes, archive
+shape/expansion, OCR pages, and extracted output; verifies type/magic and
+SHA-256; refuses executables and generic archives; holds encrypted, malformed,
+unsupported, or failed content; and removes every temporary file after the
+attempt. SQLite receipts contain identities, hashes, lengths, methods, states,
+and result codes but no raw or extracted customer/vendor content. Extracted
+text remains untrusted evidence and cannot authorize an action or satisfy a
+workflow whose required receipt is still held. The exact contract is
+`docs/GMAIL-ATTACHMENT-CLOSED-LOOP.md`.
+
 ### IPC identity
 
 The host derives the caller from the group-owned IPC directory; it does not

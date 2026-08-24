@@ -8,6 +8,46 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260822-011 — Host-owned Gmail attachment processing
+
+- Date: 2026-08-23T20:18Z
+- Owner/client: Codex
+- State: validating; reviewed release candidate, deployment and natural outcome
+  pending
+- Authorization: accepted
+  `decision:gmail-attachment-processing-authority`; no manufactured customer
+  email, broad mailbox scan, customer reply, accounting action, schedule,
+  credential, or unrelated production write is authorized.
+- Implementation: exact authorized `gmail_read` now keeps Gmail attachment IDs
+  and bytes host-private while enforcing MIME depth/count, decoded item/message
+  size, magic/type, archive, encryption, OCR-page, extraction-output, and
+  temporary-retention bounds. SHA-256 and minimized SQLite receipts record
+  terminal ready/held outcomes without raw bytes or extracted content.
+- Extraction: shared text/PDF/Office/ODF/iWork conversion plus bounded image and
+  scanned-PDF OCR. Missing converters and unsupported, encrypted, suspicious,
+  malformed, or oversized content end in explicit held states. Five receiving
+  groups now treat a required held attachment as unfinished work.
+- Independent review: Claude Sonnet 5/high session
+  `c98a5b20-c5a2-4246-b024-778775f54b34` found one high and two medium/low
+  material defects: malformed/encrypted ODF could be marked ready, ZIP
+  inspection rejection could strand a downloading receipt, and absent Gmail
+  reported size could bypass the message limit. Codex reproduced and corrected
+  all three. Focused correction session
+  `5bcb8160-4a61-49e4-b175-ce1364f18383` returned
+  `NO MATERIAL FINDINGS`.
+- Review usage: first round 12 model calls, 24 input, 137,646 cache-create,
+  893,021 cache-read, 36,666 output, maximum context 137,648; correction round
+  8 model calls, 16 input, 59,238 cache-create, 370,922 cache-read, 7,764
+  output, maximum context 67,804. The first audit warns that the bounded review
+  context threshold was exceeded; the correction audit has no warning.
+- Verification: pinned Node 22.23.2; focused attachment boundary 170/170;
+  focused Gmail/API/IPC/channel/Slack regression 284/284; typecheck and build
+  pass; independent agent-runner build and 43/43 tests pass. Full root suite is
+  3,050 passed / 12 skipped / the unchanged unrelated CNPC wrapper-literal
+  failure.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260822-011-gmail-attachment-processing.md`.
+
 ### NC-20260823-005 — Sequential healer expansion pilot
 
 - Date: 2026-08-23T22:33Z

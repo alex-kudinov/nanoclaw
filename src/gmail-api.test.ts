@@ -17,6 +17,20 @@ vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('./gmail-attachment-processing.js', () => ({
+  processGmailMessageAttachments: vi.fn().mockResolvedValue({
+    messageId: 'm1',
+    total: 1,
+    ready: 1,
+    held: 0,
+    results: [],
+  }),
+  formatGmailAttachmentProcessingReport: vi
+    .fn()
+    .mockReturnValue('Attachment processing receipts: 1 ready.'),
+  logGmailAttachmentProcessingReport: vi.fn(),
+}));
+
 import {
   buildRawMessage,
   encodeHeaderValue,
@@ -24,11 +38,13 @@ import {
   findThreadForReply,
   foldHeaderValue,
   getThread,
+  readEmailWithAttachments,
   replyToThread,
   searchEmails,
   sendEmail,
   threadHeaders,
 } from './gmail-api.js';
+import { processGmailMessageAttachments } from './gmail-attachment-processing.js';
 import type { gmail_v1 } from 'googleapis';
 
 /** Minimal Gmail message with a Message-ID header (or none when msgId is null). */
@@ -56,6 +72,39 @@ function decodeRaw(raw: string): string {
   const base64 = raw.replace(/-/g, '+').replace(/_/g, '/');
   return Buffer.from(base64, 'base64').toString('utf-8');
 }
+
+describe('readEmailWithAttachments', () => {
+  it('processes the exact message and returns host receipts with the body', async () => {
+    vi.mocked(getGmailClient).mockReturnValue({
+      users: {
+        messages: {
+          get: vi.fn().mockResolvedValue({
+            data: {
+              id: 'm1',
+              threadId: 't1',
+              payload: {
+                mimeType: 'text/plain',
+                headers: [
+                  { name: 'From', value: 'Vendor <billing@example.com>' },
+                  { name: 'Subject', value: 'Invoice' },
+                ],
+                body: { data: Buffer.from('See attached').toString('base64') },
+              },
+            },
+          }),
+        },
+      },
+    } as never);
+
+    const result = await readEmailWithAttachments('m1', 'contador');
+    expect(processGmailMessageAttachments).toHaveBeenCalledWith(
+      'm1',
+      'contador',
+    );
+    expect(result).toContain('See attached');
+    expect(result).toContain('Attachment processing receipts: 1 ready.');
+  });
+});
 
 describe('threadHeaders (Layer 2 — reliable RFC threading)', () => {
   it('uses the last message as In-Reply-To and the full chain as References', () => {
@@ -635,13 +684,7 @@ describe('extractThreadQuery', () => {
 
 describe('getThread', () => {
   function mockThreadGet(
-    messages:
-      | Array<{
-          payload: { headers: Array<{ name: string; value: string }> };
-          id?: string;
-          threadId?: string;
-        }>
-      | undefined,
+    messages: gmail_v1.Schema$Message[] | undefined,
     reject = false,
   ) {
     const get = reject
@@ -683,6 +726,34 @@ describe('getThread', () => {
     expect(out).toContain('carl@acme.com');
     expect(out).toContain('info@tandemcoach.co');
     expect(out).toContain('Message-ID: m2');
+  });
+
+  it('includes attachment metadata but not Gmail attachment IDs', async () => {
+    mockThreadGet([
+      {
+        id: 'm1',
+        threadId: 't1',
+        payload: {
+          mimeType: 'multipart/mixed',
+          headers: [
+            { name: 'From', value: 'Vendor <billing@example.com>' },
+            { name: 'Subject', value: 'Invoice' },
+          ],
+          parts: [
+            {
+              mimeType: 'application/pdf',
+              filename: 'invoice.pdf',
+              body: { attachmentId: 'gmail-secret-id', size: 9876 },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const out = await getThread('t1');
+    expect(out).toContain('Attachments: 1');
+    expect(out).toContain('invoice.pdf | application/pdf | 9876 bytes');
+    expect(out).not.toContain('gmail-secret-id');
   });
 
   it('returns a not-found string for an empty thread', async () => {

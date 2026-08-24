@@ -1287,6 +1287,25 @@ may call handlers directly: proposal approval currently invokes
 calls the Gmail API directly. Both still require consolidation into the later
 uniform action boundary; neither grants a Sales container `gmail_send`.
 
+### Gmail attachment processing checkpoint (`NC-20260822-011`)
+
+The inbound parser exposes only a capped, sanitized MIME manifest. When an
+already-authorized group calls exact `gmail_read(messageId)`, the host reloads
+that message, privately enumerates/downloads its MIME leaves, and processes
+them without disclosing Gmail attachment IDs, raw bytes, credentials, URLs, or
+temporary paths to the container. The boundary enforces depth/count and
+decoded-byte limits, file type and magic validation, archive/encryption holds,
+SHA-256, bounded extraction/OCR, temporary cleanup, and content-minimized
+SQLite receipts. The group receives only bounded text marked as
+`untrusted_attachment` or an explicit terminal held state.
+
+This is a read/evidence capability only. It grants no broad Gmail search,
+reply/send, accounting, procurement submission, scheduling, or closure
+authority. Required attachments that are not ready keep the owning workflow
+open. `docs/GMAIL-ATTACHMENT-CLOSED-LOOP.md` is the governing contract; generic
+receipts are implemented while workflow-specific case foreign keys and natural
+provider outcomes remain later evidence.
+
 The implementation is committed at `1689527`. Its reviewed compiled host
 artifact and additive SQLite migration were deployed to the Mac Mini on
 2026-07-30; the exact release and rollback evidence are in
