@@ -2,7 +2,7 @@
 
 Date: 2026-08-23
 Program item: `work:self-healing-sequential-expansion-pilot`
-State: waiting on source-three safe-state decision; sources one and two complete
+State: complete; all three sequential sources terminal and replay-verified
 
 ## Release and review
 
@@ -62,8 +62,24 @@ State: waiting on source-three safe-state decision; sources one and two complete
   review gates are all off. The job therefore fails by design.
 - Historical authority says the deterministic collector still awaits the
   three-shadow gate; enabling it would overclaim readiness.
-- Proposed safe state: leave all three gates off and disable only the
-  contradictory daily job through the release-owned registration helper. Then
-  record a named no-action disposition for `healer:458c0d2b7dc15d5b`.
-- No schedule or CaleProcure feature state changed. Proposed decision:
+- Owner accepted the safe state in
   `.program/decisions/decision-caleprocure-safe-disabled-state.json`.
+- Before mutation, registry SHA-256 was
+  `526e253bee05a1edeafdf648dc934dcb7921882da3fb27f78f44949d7235e324`;
+  backup `data/jobs.json.rollback-caleprocure-safe-state-2026-08-23T19-10-21-CT`
+  preserves those bytes. The release-owned helper disabled only the target job;
+  the other-project/job hash remained
+  `e370f5c24cfac0e4acd61fff714bd235cf71f96186f512a7946af446c07fcf86`.
+- Registry and SQLite scheduler now both report the target disabled. Cron,
+  timezone, timeout, and all other jobs are unchanged; collector, ingest, and
+  review flags all remain off.
+- Source-three allowlist rotation backup is
+  `.env.rollback-company-healer-work-2026-08-24T00-12-12-795Z`.
+- Incident `563146` records a named `proposal_rejected` safe-state decision by
+  Alex Kudinov; it is `wont_fix` with no successful-collection claim. Company
+  Work is `outcome_validated/completed` version 2 with two observations, three
+  events, and one bound `healer_named_decision` receipt. Replay was one
+  duplicate with zero transition/observation/error.
+- Final catalog summary is 133 pending decisions, 12 verified fixed, and one
+  decided no-action. All four admitted healer work items are terminal; no
+  parallel source or concurrent-cap increase occurred.

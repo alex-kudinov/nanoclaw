@@ -12,8 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-23T22:33Z
 - Owner/client: Codex
-- State: blocked on exact source-three schedule decision; sources one and two
-  complete and live-verified
+- State: complete; all three sequential sources terminal and live-verified
 - Authorization: accepted
   `decision:self-healing-sequential-expansion-pilot`; concurrency remained
   `MAX_ITEMS=1` and sources rotated only after terminal replay.
@@ -56,7 +55,27 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   design. Historical deterministic-collector three-shadow evidence remains
   incomplete. Proposed decision `decision:caleprocure-safe-disabled-state`
   keeps gates off and disables only the contradictory job. No schedule or gate
-  changed pending owner acceptance.
+  changed before owner acceptance.
+- Source-three accepted outcome: the owner accepted
+  `decision:caleprocure-safe-disabled-state`. Pre-change registry SHA-256
+  `526e253bee05a1edeafdf648dc934dcb7921882da3fb27f78f44949d7235e324`
+  is retained in mode-preserving backup
+  `data/jobs.json.rollback-caleprocure-safe-state-2026-08-23T19-10-21-CT`.
+  The release-owned helper changed only the target job to disabled; the
+  projects-plus-other-jobs hash remained
+  `e370f5c24cfac0e4acd61fff714bd235cf71f96186f512a7946af446c07fcf86`.
+  Registry and SQLite scheduler both read disabled; cron/timezone/timeout are
+  unchanged; collector, ingest, and review flags remain off.
+- Source-three receipt: allowlist backup
+  `.env.rollback-company-healer-work-2026-08-24T00-12-12-795Z`; incident
+  `563146` records named `proposal_rejected` by Alex Kudinov and remains
+  truthfully `wont_fix`, not successful. Company Work is completed version 2
+  with two observations, three events, and one bound
+  `healer_named_decision` receipt. Replay returned one duplicate with no write
+  or error.
+- Final aggregate: catalog is 133 pending / 12 verified fixed / 1 decided
+  no-action. All four admitted healer work items are terminal; main/fast error
+  logs remain 273/24 and service/channel/queue health is unchanged.
 - Evidence:
   `docs/programs/company-os/evidence/NC-20260823-005-sequential-healer-pilot.md`.
 
