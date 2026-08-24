@@ -6,8 +6,72 @@ const {
   validateCanonicalProductSlug,
   preferredProductName,
   buildPsqlVarArgs,
+  formatPaymentSummary,
   derivePaymentFulfillmentOutcome,
 } = require('./process-payment.cjs');
+
+describe('formatPaymentSummary', () => {
+  it('leads with the human payment event and moves diagnostics to the end', () => {
+    const summary = formatPaymentSummary({
+      customerName: 'Lin Chen',
+      customerEmail: 'lin@example.com',
+      productName: 'Mentor Coaching Foundations',
+      amountDollars: '999.00',
+      currency: 'USD',
+      feeDollars: '29.27',
+      netDollars: '969.73',
+      refundedCents: 0,
+      transactionDate: '8/24/2026',
+      recordedDate: '8/24/2026',
+      accountingStripeId: 'pi_123',
+      idType: 'payment_intent',
+      receivedStripeId: 'pi_123',
+      rosterSummary: 'Foundations → B',
+      paymentLogResult: 'OK',
+      studentRosterResult: 'OK',
+      dbResult: 'OK',
+      debug: 'keys=1 | try-0=tandem | ok-0=tandem',
+      lineItemCount: 1,
+    });
+
+    expect(summary.split('\n')[0]).toBe(
+      'Payment received: Lin Chen — Mentor Coaching Foundations — $999.00 USD',
+    );
+    expect(summary).not.toContain('(v3-debug)');
+    expect(summary.split('\n').at(-1)).toBe(
+      'Diagnostics: keys=1 | try-0=tandem | ok-0=tandem',
+    );
+  });
+
+  it('summarizes refunds without showing an empty debug placeholder', () => {
+    const summary = formatPaymentSummary({
+      customerName: 'Lin',
+      customerEmail: 'lin@example.com',
+      productName: 'Course',
+      amountDollars: '100.00',
+      currency: 'USD',
+      feeDollars: '3.00',
+      netDollars: '97.00',
+      refundedCents: 2500,
+      transactionDate: '8/24/2026',
+      recordedDate: '8/24/2026',
+      accountingStripeId: 'pi_123',
+      idType: 'payment_intent',
+      receivedStripeId: 'pi_123',
+      rosterSummary: 'Sales tab (unmapped product)',
+      paymentLogResult: 'OK',
+      studentRosterResult: 'skipped',
+      dbResult: 'OK',
+      debug: 'no-debug',
+      lineItemCount: 1,
+    });
+
+    expect(summary.split('\n')[0]).toBe(
+      'Payment received: Lin — Course — $100.00 USD; $25.00 refunded',
+    );
+    expect(summary).not.toContain('Diagnostics:');
+  });
+});
 
 // Tandem's checkout writes the canonical website product slug into the
 // underlying PaymentIntent's metadata.product key. Only a validated shape may

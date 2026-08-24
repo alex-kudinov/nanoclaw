@@ -8,6 +8,42 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-001 — Human-first internal Slack notifications
+
+- Date: 2026-08-24T13:20Z
+- Owner/client: Codex
+- State: ready_for_deploy; independently reviewed and not yet deployed
+- Authorization: accepted owner instruction and
+  `decision:human-first-slack-notifications` authorize this presentation-only
+  implementation and normal reviewed release.
+- Trigger: Contador payment notifications led with `(v3-debug)` account-key
+  fallback metadata, while Inbox received opaque Chaos/form slugs and CRM
+  dispositions before any explanation of what happened.
+- Implementation: Contador now leads with customer, product, and amount, then
+  keeps processing results, Stripe identity, and optional diagnostics below.
+  Chaos activity maps the already-computed disposition to a human heading and
+  uses the bounded intent summary or conservative form/page wording before the
+  CRM Party line. The adjacent verified-form notification now describes the
+  form action before page/identity detail. Payment/fulfillment mechanics,
+  lead classification, routing, customer communication, provider state,
+  schema, schedules, and credentials are unchanged.
+- Bounded audit: booking, dead-letter, send-failure, and scheduled-task alerts
+  already lead with their outcome and were left unchanged. The verified-form
+  ping was the only adjacent instance of the same slug-first defect included
+  in this release.
+- Independent review: the first Sonnet 5/high review was stopped without a
+  verdict after 13 model calls and a 110,723-token maximum context exceeded the
+  bounded target. A fresh changed-lines-only Sonnet 5/high review session
+  `a5129d53-9db5-492b-8904-89bbe06c71bc` completed in four calls at a 56,227
+  maximum context and returned `NO MATERIAL FINDINGS`; one raw-subtype
+  diagnostic-log correction was noted as non-blocking.
+- Verification: Node 22.23.2 focused notification/host regression 105/105,
+  typecheck, build, CommonJS syntax, diff check, and documentation continuity
+  pass. Full root suite is 3,088 passed / 12 skipped / the unchanged CNPC
+  wrapper-literal failure.
+- Evidence:
+  `docs/reports/NC-20260824-001-CLAUDE-REVIEW-RESPONSE-R1B.md`.
+
 ### NC-20260823-006 — Durable Contador payment-fulfillment cases
 
 - Date: 2026-08-24T03:35Z

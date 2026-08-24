@@ -6,6 +6,7 @@ import { recordFailure, recordSuccess } from './circuit-breaker.js';
 import { WebhookDefinition } from './types.js';
 
 const mockHandleStripePayment = vi.hoisted(() => vi.fn());
+const mockHandleChaosActivity = vi.hoisted(() => vi.fn());
 
 vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
@@ -13,6 +14,10 @@ vi.mock('./logger.js', () => ({
 vi.mock('./stripe-payment-host.js', () => ({
   handleStripePayment: mockHandleStripePayment,
 }));
+vi.mock('./chaos-activity.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./chaos-activity.js')>();
+  return { ...actual, handleChaosActivity: mockHandleChaosActivity };
+});
 
 vi.mock('fs', async () => {
   const actual = await vi.importActual<typeof import('fs')>('fs');
@@ -995,6 +1000,68 @@ describe('WebhookServer — host-side booking write (T03b)', () => {
   });
 });
 
+describe('WebhookServer — Chaos activity notification', () => {
+  it('posts a human action first and CRM metadata second', async () => {
+    mockHandleChaosActivity.mockResolvedValueOnce({
+      disposition: 'new-lead',
+      partyId: 11409,
+      pipelineEntryId: 700,
+      interactionId: 800,
+    });
+    const d = makeDeps({
+      getRegisteredGroups: () => ({
+        'slack:CINBOX': {
+          name: 'Inbox',
+          folder: 'inbox',
+          trigger: '@Gru',
+          added_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+      archiveWebhook: vi.fn(async () => ({ id: 503, isDuplicate: false })),
+      markWebhookHandled: vi.fn(async () => {}),
+    });
+    const s = new WebhookServer(d);
+    await s.start();
+    d.port = s.getPort();
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      {
+        id: 'chaos',
+        name: 'Chaos',
+        group: 'inbox',
+        chat_jid: 'slack:CINBOX',
+        prompt_template: '',
+        secret: 'hook-secret',
+        context_mode: 'isolated',
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ];
+    try {
+      await makeRequest(d.port, {
+        path: '/hook/chaos',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+        body: JSON.stringify({
+          visitor_id: 222838,
+          email: 'lin@example.com',
+          display_name: 'Lin',
+          form_event_type: 'form_contact',
+          form_page: '/mcs/mentor-coaching-foundations/',
+          intent_summary: null,
+        }),
+      });
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    } finally {
+      await s.stop().catch(() => {});
+    }
+
+    expect(d.sendMessage).toHaveBeenCalledWith(
+      'slack:CINBOX',
+      'New website lead: Lin submitted the contact form on the mentor coaching foundations page\n' +
+        'CRM: new lead created • Party 11409',
+      { fromGroup: 'inbox' },
+    );
+  });
+});
+
 describe('WebhookServer — form-submitted observed suppression', () => {
   const formWebhook: WebhookDefinition = {
     id: 'form-submitted',
@@ -1048,7 +1115,8 @@ describe('WebhookServer — form-submitted observed suppression', () => {
     const formPosts = (
       d.sendMessage as ReturnType<typeof vi.fn>
     ).mock.calls.filter(
-      (c) => typeof c[1] === 'string' && c[1].startsWith('[form]'),
+      (c) =>
+        typeof c[1] === 'string' && c[1].startsWith('Form submitted:'),
     );
     expect(formPosts).toHaveLength(0);
     expect(d.runAgent).not.toHaveBeenCalled();
@@ -1080,10 +1148,15 @@ describe('WebhookServer — form-submitted observed suppression', () => {
     const formPosts = (
       d.sendMessage as ReturnType<typeof vi.fn>
     ).mock.calls.filter(
-      (c) => typeof c[1] === 'string' && c[1].startsWith('[form]'),
+      (c) =>
+        typeof c[1] === 'string' && c[1].startsWith('Form submitted:'),
     );
     expect(formPosts).toHaveLength(1);
-    expect(formPosts[0][1]).toContain('verified');
+    expect(formPosts[0][1]).toBe(
+      'Form submitted: Hanne requested the MCQF brochure\n' +
+        'Page: mcs mentor coaching foundations\n' +
+        'Identity: verified (hanne@example.com)',
+    );
     expect(formPosts[0][2]).toMatchObject({ fromGroup: 'main' });
     expect(markWebhookHandled).toHaveBeenCalledWith(
       502,

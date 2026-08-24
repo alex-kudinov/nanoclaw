@@ -16,6 +16,7 @@ import { query, withAgentContext } from './business-db.js';
 import { resolveOrCreateParty } from './identity-join.js';
 import {
   handleChaosActivity,
+  formatChaosActivityNotice,
   parseChaosPayload,
   ChaosPayloadError,
 } from './chaos-activity.js';
@@ -81,6 +82,69 @@ describe('parseChaosPayload', () => {
   it('throws on missing visitor_id', () => {
     expect(() => parseChaosPayload({ email: 'x@y.com' })).toThrow(
       ChaosPayloadError,
+    );
+  });
+});
+
+describe('formatChaosActivityNotice', () => {
+  it('leads with the exact recorded action, not Chaos metadata', () => {
+    expect(
+      formatChaosActivityNotice(
+        { ...basePayload, form_event_type: 'form_lead_magnet' },
+        {
+          disposition: 'new-lead',
+          partyId: 11409,
+          pipelineEntryId: 129,
+          interactionId: 888,
+        },
+      ),
+    ).toBe(
+      'New website lead: Camille downloaded the relationship skills action plan\n' +
+        'CRM: new lead created • Party 11409',
+    );
+  });
+
+  it('translates a form type and page slug when no intent summary exists', () => {
+    expect(
+      formatChaosActivityNotice(
+        {
+          ...basePayload,
+          display_name: 'Lin',
+          form_event_type: 'form_contact',
+          form_page: '/mcs/mentor-coaching-foundations/',
+          intent_summary: null,
+        },
+        {
+          disposition: 'new-lead',
+          partyId: 11409,
+          pipelineEntryId: 129,
+          interactionId: 888,
+        },
+      ).split('\n')[0],
+    ).toBe(
+      'New website lead: Lin submitted the contact form on the mentor coaching foundations page',
+    );
+  });
+
+  it('describes returning newsletter activity without calling it a new lead', () => {
+    expect(
+      formatChaosActivityNotice(
+        {
+          ...basePayload,
+          form_event_type: 'form_newsletter',
+          intent_summary: null,
+          form_page: null,
+        },
+        {
+          disposition: 'returning',
+          partyId: 700,
+          pipelineEntryId: null,
+          interactionId: 889,
+        },
+      ),
+    ).toBe(
+      'Website activity: Camille signed up for the newsletter\n' +
+        'CRM: returning contact recorded • Party 700',
     );
   });
 });

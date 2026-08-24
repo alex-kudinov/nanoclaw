@@ -641,6 +641,31 @@ function emitFulfillmentResult(result) {
   );
 }
 
+function formatPaymentSummary({
+  customerName, customerEmail, productName, amountDollars, currency,
+  feeDollars, netDollars, refundedCents, transactionDate, recordedDate,
+  accountingStripeId, idType, receivedStripeId, rosterSummary,
+  paymentLogResult, studentRosterResult, dbResult, debug, lineItemCount,
+}) {
+  const refundNote = refundedCents > 0
+    ? `; $${(refundedCents / 100).toFixed(2)} refunded`
+    : '';
+  const lines = [
+    `Payment received: ${customerName} — ${productName} — $${amountDollars} ${currency}${refundNote}`,
+    `Customer: ${customerEmail}`,
+    `Date: ${transactionDate} (recorded: ${recordedDate})`,
+    `Fee / net: $${feeDollars} / $${netDollars}`,
+    `Roster: ${rosterSummary}`,
+    `Processing: Payment Log ${paymentLogResult}; Student Roster ${studentRosterResult}; DB ${dbResult}`,
+    `Stripe: ${accountingStripeId} (${idType}${accountingStripeId !== receivedStripeId ? `; received ${receivedStripeId}` : ''})`,
+  ];
+  if (lineItemCount > 1) {
+    lines.push(`Warning: ${lineItemCount} line items — only the first was processed`);
+  }
+  if (debug && debug !== 'no-debug') lines.push(`Diagnostics: ${debug}`);
+  return lines.join('\n');
+}
+
 async function main() {
   // 1. Fetch payment data from Stripe (tries each key until one works)
   const fetchResult = await fetchPaymentWithKeyFallback();
@@ -1038,25 +1063,19 @@ async function main() {
   }
 
   // 4. Output summary
-  const lines = [
-    `[PAYMENT RECEIVED] (v3-debug) ${fetchResult._debug || 'no-debug'}`,
-    `Date: ${transactionDate} (recorded: ${recordedDate})`,
-    `Customer: ${customerName} (${customerEmail})`,
-    `Product: ${productName}`,
-    `Amount: $${amountDollars} ${currency} (fee: $${feeDollars}, net: $${netDollars})${refundedCents > 0 ? ` [REFUNDED $${(refundedCents / 100).toFixed(2)}]` : ''}`,
-    `Stripe ID: ${accountingStripeId} (${ID_TYPE}${accountingStripeId !== STRIPE_ID ? `; received ${STRIPE_ID}` : ''})`,
-    `Roster: ${rosterMatches.length > 0 ? rosterMatches.map(m => `${m.tab} → ${m.column}`).join(', ') : '→ Sales tab (unmapped product)'}`,
-    `Payment Log: ${results.sheets_log}`,
-    `Student Roster: ${results.sheets_roster}`,
-    `DB: ${results.db}`,
-  ];
-
-  // Note multiple line items if present
-  if (lineItems.length > 1) {
-    lines.push(`WARNING: ${lineItems.length} line items — only first processed`);
-  }
-
-  console.log(lines.join('\n'));
+  console.log(formatPaymentSummary({
+    customerName, customerEmail, productName, amountDollars, currency,
+    feeDollars, netDollars, refundedCents, transactionDate, recordedDate,
+    accountingStripeId, idType: ID_TYPE, receivedStripeId: STRIPE_ID,
+    rosterSummary: rosterMatches.length > 0
+      ? rosterMatches.map(m => `${m.tab} → ${m.column}`).join(', ')
+      : 'Sales tab (unmapped product)',
+    paymentLogResult: results.sheets_log,
+    studentRosterResult: results.sheets_roster,
+    dbResult: results.db,
+    debug: fetchResult._debug,
+    lineItemCount: lineItems.length,
+  }));
 
   const fulfillment = derivePaymentFulfillmentOutcome({
     paymentLogVerified,
@@ -1110,6 +1129,7 @@ module.exports = {
   validateCanonicalProductSlug,
   preferredProductName,
   buildPsqlVarArgs,
+  formatPaymentSummary,
   derivePaymentFulfillmentOutcome,
 };
 

@@ -59,8 +59,11 @@ Chaos is **always** activity → host-side script, zero LLM, no container.
 
 ## Decisions (defaults baked in — override if wrong)
 
-1. **Slack visibility** — handler posts one quiet line to #gru-inbox:
-   `[chaos] {name} — {disposition}`. Default: keep it (operator visibility).
+1. **Slack visibility** — handler posts a human-first summary to #gru-inbox.
+   The preview names the action first (for example, `New website lead: Lin
+   submitted the contact form on the mentor coaching foundations page`) and
+   puts CRM disposition/Party ID on the second line. Default: keep it
+   (operator visibility).
 2. **Net-new + form → pipeline_entries lead.** Default: yes.
 3. **Returning visitor → interaction log only**, no new lead, no role change.
    Default: yes.

@@ -1,0 +1,613 @@
+diff --git a/docs/ACTIVE-WORK.md b/docs/ACTIVE-WORK.md
+index 9271a741..1585a3cf 100644
+--- a/docs/ACTIVE-WORK.md
++++ b/docs/ACTIVE-WORK.md
+@@ -11,6 +11,7 @@ outside the current client conversation.
+ 
+ | Task ID           | Outcome                                                                                                                                                                                               | Owner/client                       | Branch @ base                                                                                                   | Status                | Class | Scope                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Next action                                                                                                                                                                                                                                                                                                                                                                | Updated           |
+ | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
++| `NC-20260824-001` | Make internal Slack notification previews explain the business event before diagnostic metadata                                                                                                      | Codex                              | `codex/human-first-slack-notifications-20260824` @ `fbf02a44`                                                | `in_progress`         | C3    | Presentation-only correction for Contador payment receipts, Chaos website activity, and verified form submissions after a bounded audit of nearby deterministic Slack notifications. Human action/outcome must lead; identifiers and diagnostics may follow. No payment processing, lead classification, routing, customer communication, provider event, schema, credential, schedule, or unrelated notification behavior changes.                                             | Run narrow/full verification, obtain independent Claude Sonnet/high review, then release/deploy and verify exact live health without manufacturing a payment or website event.                                                                                                                                                                                             | 2026-08-24T13:15Z |
+ | `NC-20260823-006` | Make every host-admitted Stripe payment or refund finish with verified operational receipts or remain as a durable owned Contador exception                                                                                                                        | Codex                              | `codex/contador-fulfillment-cases-20260823` @ exact live `b131071c74fc`                                      | `deployed_unverified` | C4    | Migration 133 and exact reviewed host release are live: canonical Payment Intent cases, append-only aliases/stage receipts, five-minute concurrency lease, verified complete/exception transitions, exact Payment Log/PostgreSQL/roster readback, and webhook case binding. Backup, rollback, schema, service, channel, queue, and aggregate non-interference proof pass. No historical replay, manufactured Stripe event, customer/accounting/QuickBooks action, schedule/credential, product-ID, or payer-student expansion occurred. | Observe only the next natural typed Stripe payment/refund. Verify exact case/alias/stage receipts and webhook binding; keep refunds and unresolved student/product/write outcomes explicitly held. Do not replay history or manufacture a provider event.                                                                                                                | 2026-08-24T04:29Z |
+ | `NC-20260822-011` | Deploy the complete host-owned Gmail attachment capability so required email evidence is processed or explicitly held without exposing attachment bytes                                                                                                            | Codex                              | `codex/gmail-attachment-release-20260823` @ exact live `195dd3b3664a`                                      | `deployed_unverified` | C5    | Exact reviewed release is live: host-private byte retrieval; count/size/depth/type/magic/ZIP limits; SHA-256; quarantine/encrypted holds; text/PDF/Office/ODF/iWork extraction; bounded OCR; minimized SQLite receipts; temporary cleanup; untrusted-evidence delivery; and held-state closure gates. Image/snapshots/dependencies, WAL-safe backup, rollback, service/channel/schema/queue/non-interference proof pass. No attachment bytes or customer/provider action were manufactured for proof.                          | Observe only natural Gmail attachment work: one supported ready receipt and one explicit held receipt, with downstream refusal to close where required. Do not manufacture an email or scan the mailbox broadly.                                                                                                                                                            | 2026-08-24T01:10Z |
+ | `NC-20260823-005` | Execute the approved three-source sequential healer expansion pilot without raising concurrency or enabling broad remediation                                                                                                                                       | Codex                              | `codex/self-healing-bounded-projection-20260823` @ live `d4f428912679`                                    | `complete`            | C3    | `MAX_ITEMS=1` remained fixed. Sources `d0ca…` and `d3c…` are `resolved/verified_fixed` with completed version-2 work, 3 observations / 3 events / 1 receipt, and duplicate-only replay. For `458c…`, the accepted safe-state kept collector/ingest/review gates off, disabled only the contradictory daily CaleProcure job with backup and dual registry/SQLite readback, and recorded a named no-action receipt: completed version 2 with 2 observations / 3 events / 1 receipt and replay. | None for this pilot. Any fourth source, `MAX_ITEMS` increase, CaleProcure shadow/collection reactivation, or backlog policy requires a new accepted decision.                                                                                                                                                                                                                | 2026-08-23T19:15Z |
+@@ -136,6 +137,25 @@ outside the current client conversation.
+ 
+ ## Task details
+ 
++### NC-20260824-001
++
++- Authorization: accepted owner instruction and
++  `decision:human-first-slack-notifications` authorize a presentation-only
++  correction and the normal reviewed release path.
++- Contribution: internal Slack previews state the actual business event before
++  implementation tags, identifiers, dispositions, or debug output.
++- Scope: Contador payment summaries, Chaos website activity, and the adjacent
++  verified-form notification identified by the bounded audit. Payment
++  processing, lead classification, routing, customer messages, provider
++  events, schema, credentials, and schedules remain unchanged.
++- Implementation: add pure formatters and focused tests, retain operational
++  metadata below the human-readable first line, then independently review and
++  deploy without manufacturing a payment or website event.
++- Verification: focused notification/host regression, TypeScript typecheck,
++  build, full root suite with any unchanged baseline failure identified, docs
++  continuity, Claude Sonnet/high review, immutable release, and exact live
++  health/readback.
++
+ ### NC-20260823-006
+ 
+ - Authorization: accepted decision
+diff --git a/docs/chaos-activity-handler-plan.md b/docs/chaos-activity-handler-plan.md
+index d909ac0d..d86ee845 100644
+--- a/docs/chaos-activity-handler-plan.md
++++ b/docs/chaos-activity-handler-plan.md
+@@ -59,8 +59,11 @@ Chaos is **always** activity → host-side script, zero LLM, no container.
+ 
+ ## Decisions (defaults baked in — override if wrong)
+ 
+-1. **Slack visibility** — handler posts one quiet line to #gru-inbox:
+-   `[chaos] {name} — {disposition}`. Default: keep it (operator visibility).
++1. **Slack visibility** — handler posts a human-first summary to #gru-inbox.
++   The preview names the action first (for example, `New website lead: Lin
++   submitted the contact form on the mentor coaching foundations page`) and
++   puts CRM disposition/Party ID on the second line. Default: keep it
++   (operator visibility).
+ 2. **Net-new + form → pipeline_entries lead.** Default: yes.
+ 3. **Returning visitor → interaction log only**, no new lead, no role change.
+    Default: yes.
+diff --git a/src/chaos-activity.test.ts b/src/chaos-activity.test.ts
+index 108dbbcc..60568a89 100644
+--- a/src/chaos-activity.test.ts
++++ b/src/chaos-activity.test.ts
+@@ -16,6 +16,7 @@ import { query, withAgentContext } from './business-db.js';
+ import { resolveOrCreateParty } from './identity-join.js';
+ import {
+   handleChaosActivity,
++  formatChaosActivityNotice,
+   parseChaosPayload,
+   ChaosPayloadError,
+ } from './chaos-activity.js';
+@@ -85,6 +86,69 @@ describe('parseChaosPayload', () => {
+   });
+ });
+ 
++describe('formatChaosActivityNotice', () => {
++  it('leads with the exact recorded action, not Chaos metadata', () => {
++    expect(
++      formatChaosActivityNotice(
++        { ...basePayload, form_event_type: 'form_lead_magnet' },
++        {
++          disposition: 'new-lead',
++          partyId: 11409,
++          pipelineEntryId: 129,
++          interactionId: 888,
++        },
++      ),
++    ).toBe(
++      'New website lead: Camille downloaded the relationship skills action plan\n' +
++        'CRM: new lead created • Party 11409',
++    );
++  });
++
++  it('translates a form type and page slug when no intent summary exists', () => {
++    expect(
++      formatChaosActivityNotice(
++        {
++          ...basePayload,
++          display_name: 'Lin',
++          form_event_type: 'form_contact',
++          form_page: '/mcs/mentor-coaching-foundations/',
++          intent_summary: null,
++        },
++        {
++          disposition: 'new-lead',
++          partyId: 11409,
++          pipelineEntryId: 129,
++          interactionId: 888,
++        },
++      ).split('\n')[0],
++    ).toBe(
++      'New website lead: Lin submitted the contact form on the mentor coaching foundations page',
++    );
++  });
++
++  it('describes returning newsletter activity without calling it a new lead', () => {
++    expect(
++      formatChaosActivityNotice(
++        {
++          ...basePayload,
++          form_event_type: 'form_newsletter',
++          intent_summary: null,
++          form_page: null,
++        },
++        {
++          disposition: 'returning',
++          partyId: 700,
++          pipelineEntryId: null,
++          interactionId: 889,
++        },
++      ),
++    ).toBe(
++      'Website activity: Camille signed up for the newsletter\n' +
++        'CRM: returning contact recorded • Party 700',
++    );
++  });
++});
++
+ describe('handleChaosActivity', () => {
+   it('net-new + lead form → new-lead with a pipeline entry', async () => {
+     setExistingParty(null);
+diff --git a/src/chaos-activity.ts b/src/chaos-activity.ts
+index 7e034033..30b6bbfd 100644
+--- a/src/chaos-activity.ts
++++ b/src/chaos-activity.ts
+@@ -47,6 +47,74 @@ export interface ChaosActivityResult {
+   interactionId: number;
+ }
+ 
++function previewText(value: string, maxLength = 140): string {
++  const normalized = value
++    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
++    .replace(/\s+/g, ' ')
++    .trim();
++  return normalized.length <= maxLength
++    ? normalized
++    : `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
++}
++
++function humanizePage(page: string | null): string | null {
++  if (!page) return null;
++  let pathname = page;
++  try {
++    pathname = new URL(page, 'https://tandemcoach.co').pathname;
++  } catch {
++    // Keep the bounded path-like input; it is presentation context only.
++  }
++  const segment = pathname.split('/').filter(Boolean).at(-1);
++  if (!segment) return null;
++  let decoded = segment;
++  try {
++    decoded = decodeURIComponent(segment);
++  } catch {
++    // Malformed percent escapes remain visible as inert text.
++  }
++  const words = previewText(decoded.replace(/[-_]+/g, ' '), 80);
++  if (!words) return null;
++  return words.replace(/\b(icf|acc|pcc|mcc|mcs|mcq)\b/gi, (word) =>
++    word.toUpperCase(),
++  );
++}
++
++/** Human-first Slack notice; CRM disposition and identifiers stay secondary. */
++export function formatChaosActivityNotice(
++  payload: unknown,
++  result: ChaosActivityResult,
++): string {
++  const input = parseChaosPayload(payload);
++  const name = previewText(input.displayName, 80);
++  const page = humanizePage(input.formPage);
++  const action = input.intentSummary
++    ? previewText(input.intentSummary, 140)
++    : input.formEventType === 'form_contact'
++      ? 'submitted the contact form'
++      : input.formEventType === 'form_lead_magnet'
++        ? 'requested a lead magnet'
++        : input.formEventType === 'form_newsletter'
++          ? 'signed up for the newsletter'
++          : 'was identified visiting the website';
++  const pageContext =
++    page && !input.intentSummary ? ` on the ${page} page` : '';
++  const heading =
++    result.disposition === 'new-lead'
++      ? 'New website lead'
++      : result.disposition === 'new-party'
++        ? 'New website contact'
++        : 'Website activity';
++  const crmState =
++    result.disposition === 'new-lead'
++      ? 'new lead created'
++      : result.disposition === 'new-party'
++        ? 'new contact recorded'
++        : 'returning contact recorded';
++
++  return `${heading}: ${name} ${action}${pageContext}\nCRM: ${crmState} • Party ${result.partyId}`;
++}
++
+ /** form_event_type values that warrant a pipeline lead for a net-new party. */
+ const LEAD_FORMS = new Set(['form_contact', 'form_lead_magnet']);
+ 
+diff --git a/src/webhook-server.test.ts b/src/webhook-server.test.ts
+index 06f6d75c..9b483e6a 100644
+--- a/src/webhook-server.test.ts
++++ b/src/webhook-server.test.ts
+@@ -6,6 +6,7 @@ import { recordFailure, recordSuccess } from './circuit-breaker.js';
+ import { WebhookDefinition } from './types.js';
+ 
+ const mockHandleStripePayment = vi.hoisted(() => vi.fn());
++const mockHandleChaosActivity = vi.hoisted(() => vi.fn());
+ 
+ vi.mock('./logger.js', () => ({
+   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+@@ -13,6 +14,10 @@ vi.mock('./logger.js', () => ({
+ vi.mock('./stripe-payment-host.js', () => ({
+   handleStripePayment: mockHandleStripePayment,
+ }));
++vi.mock('./chaos-activity.js', async (importOriginal) => {
++  const actual = await importOriginal<typeof import('./chaos-activity.js')>();
++  return { ...actual, handleChaosActivity: mockHandleChaosActivity };
++});
+ 
+ vi.mock('fs', async () => {
+   const actual = await vi.importActual<typeof import('fs')>('fs');
+@@ -995,6 +1000,68 @@ describe('WebhookServer — host-side booking write (T03b)', () => {
+   });
+ });
+ 
++describe('WebhookServer — Chaos activity notification', () => {
++  it('posts a human action first and CRM metadata second', async () => {
++    mockHandleChaosActivity.mockResolvedValueOnce({
++      disposition: 'new-lead',
++      partyId: 11409,
++      pipelineEntryId: 700,
++      interactionId: 800,
++    });
++    const d = makeDeps({
++      getRegisteredGroups: () => ({
++        'slack:CINBOX': {
++          name: 'Inbox',
++          folder: 'inbox',
++          trigger: '@Gru',
++          added_at: '2026-01-01T00:00:00Z',
++        },
++      }),
++      archiveWebhook: vi.fn(async () => ({ id: 503, isDuplicate: false })),
++      markWebhookHandled: vi.fn(async () => {}),
++    });
++    const s = new WebhookServer(d);
++    await s.start();
++    d.port = s.getPort();
++    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
++      {
++        id: 'chaos',
++        name: 'Chaos',
++        group: 'inbox',
++        chat_jid: 'slack:CINBOX',
++        prompt_template: '',
++        secret: 'hook-secret',
++        context_mode: 'isolated',
++        created_at: '2026-01-01T00:00:00Z',
++      },
++    ];
++    try {
++      await makeRequest(d.port, {
++        path: '/hook/chaos',
++        headers: { 'x-webhook-secret': 'hook-secret' },
++        body: JSON.stringify({
++          visitor_id: 222838,
++          email: 'lin@example.com',
++          display_name: 'Lin',
++          form_event_type: 'form_contact',
++          form_page: '/mcs/mentor-coaching-foundations/',
++          intent_summary: null,
++        }),
++      });
++      await new Promise((resolve) => setTimeout(resolve, 40));
++    } finally {
++      await s.stop().catch(() => {});
++    }
++
++    expect(d.sendMessage).toHaveBeenCalledWith(
++      'slack:CINBOX',
++      'New website lead: Lin submitted the contact form on the mentor coaching foundations page\n' +
++        'CRM: new lead created • Party 11409',
++      { fromGroup: 'inbox' },
++    );
++  });
++});
++
+ describe('WebhookServer — form-submitted observed suppression', () => {
+   const formWebhook: WebhookDefinition = {
+     id: 'form-submitted',
+@@ -1048,7 +1115,8 @@ describe('WebhookServer — form-submitted observed suppression', () => {
+     const formPosts = (
+       d.sendMessage as ReturnType<typeof vi.fn>
+     ).mock.calls.filter(
+-      (c) => typeof c[1] === 'string' && c[1].startsWith('[form]'),
++      (c) =>
++        typeof c[1] === 'string' && c[1].startsWith('Form submitted:'),
+     );
+     expect(formPosts).toHaveLength(0);
+     expect(d.runAgent).not.toHaveBeenCalled();
+@@ -1080,10 +1148,15 @@ describe('WebhookServer — form-submitted observed suppression', () => {
+     const formPosts = (
+       d.sendMessage as ReturnType<typeof vi.fn>
+     ).mock.calls.filter(
+-      (c) => typeof c[1] === 'string' && c[1].startsWith('[form]'),
++      (c) =>
++        typeof c[1] === 'string' && c[1].startsWith('Form submitted:'),
+     );
+     expect(formPosts).toHaveLength(1);
+-    expect(formPosts[0][1]).toContain('verified');
++    expect(formPosts[0][1]).toBe(
++      'Form submitted: Hanne requested the MCQF brochure\n' +
++        'Page: mcs mentor coaching foundations\n' +
++        'Identity: verified (hanne@example.com)',
++    );
+     expect(formPosts[0][2]).toMatchObject({ fromGroup: 'main' });
+     expect(markWebhookHandled).toHaveBeenCalledWith(
+       502,
+diff --git a/src/webhook-server.ts b/src/webhook-server.ts
+index 8a9acf47..b3cf95d6 100644
+--- a/src/webhook-server.ts
++++ b/src/webhook-server.ts
+@@ -36,7 +36,10 @@ import {
+   bookingHostWrite,
+   BookedPayloadError,
+ } from './booking-host-write.js';
+-import { handleChaosActivity } from './chaos-activity.js';
++import {
++  formatChaosActivityNotice,
++  handleChaosActivity,
++} from './chaos-activity.js';
+ import { recordChaosBooking } from './chaos-booking.js';
+ import { handleStripePayment } from './stripe-payment-host.js';
+ import { formatBookedNotice } from './host-router.js';
+@@ -193,6 +196,24 @@ function renderPrompt(template: string, payload: unknown): string {
+     });
+ }
+ 
++function humanizeFormSubtype(value: string): string {
++  return value
++    .replace(/^form[_-]/, '')
++    .replace(/[_-]+/g, ' ')
++    .replace(/\b(icf|acc|pcc|mcc|mcs|mcq|mcqf)\b/gi, (word) =>
++      word.toUpperCase(),
++    );
++}
++
++function describeFormSubmission(subtype: string | null): string {
++  if (!subtype) return 'submitted a website form';
++  const label = humanizeFormSubtype(subtype);
++  if (/\bbrochure\b/i.test(label)) return `requested the ${label}`;
++  if (/\bnewsletter\b/i.test(label)) return 'signed up for the newsletter';
++  if (/\bwaitlist\b/i.test(label)) return `joined the ${label}`;
++  return `submitted the ${label} form`;
++}
++
+ function readBody(req: http.IncomingMessage): Promise<Buffer> {
+   return new Promise((resolve, reject) => {
+     const chunks: Buffer[] = [];
+@@ -809,29 +830,9 @@ export class WebhookServer {
+     if (hookId === 'chaos') {
+       try {
+         const r = await handleChaosActivity(payload);
+-        const cp = payload as Record<string, unknown>;
+-        const name =
+-          (typeof cp.display_name === 'string' && cp.display_name.trim()) ||
+-          (typeof cp.email === 'string' ? cp.email : 'unknown');
+-        const formPage =
+-          typeof cp.form_page === 'string' && cp.form_page.trim()
+-            ? cp.form_page.trim()
+-            : null;
+-        const formEvent =
+-          typeof cp.form_event_type === 'string' && cp.form_event_type.trim()
+-            ? cp.form_event_type.trim()
+-            : null;
+-        // Mobile-friendly preview: lead with source, name, action so the first
+-        // ~40 chars are meaningful before the reader opens the notification.
+-        const pageSlug = formPage
+-          ? formPage.replace(/^\/+|\/+$/g, '').replace(/\//g, '-')
+-          : null;
+-        const eventSlug = formEvent ? formEvent.replace(/^form_/, '') : null;
+-        const action = pageSlug || eventSlug;
+-        const actionPart = action ? ` - ${action}` : '';
+         await this.deps.sendMessage(
+           webhook.chat_jid,
+-          `[chaos] ${name}${actionPart} - ${r.disposition} (party ${r.partyId})`,
++          formatChaosActivityNotice(payload, r),
+           { fromGroup: group.folder },
+         );
+         if (inboxId !== null && this.deps.markWebhookHandled) {
+@@ -925,11 +926,7 @@ export class WebhookServer {
+ 
+         const name =
+           displayName || (email ? email.split('@')[0] : null) || 'Anonymous';
+-        const action =
+-          subtype ||
+-          (formPage
+-            ? formPage.replace(/^\/+|\/+$/g, '').replace(/\//g, '-')
+-            : 'unknown-form');
++        const action = describeFormSubmission(subtype);
+ 
+         const IDENTITY_KEYS = new Set([
+           'first_name',
+@@ -970,13 +967,18 @@ export class WebhookServer {
+               );
+           }
+           logger.info(
+-            { hookId, inboxId, identity, subtype: action },
++            { hookId, inboxId, identity, subtype },
+             'Form submission observed-only — suppressed (no Slack post)',
+           );
+           return;
+         }
+ 
+-        const message = `[form] ${name} - ${action}${extrasPart} - ${identity}${emailPart}`;
++        const pagePart = formPage
++          ? `\nPage: ${formPage.replace(/^\/+|\/+$/g, '').replace(/[-_/]+/g, ' ')}`
++          : '';
++        const message =
++          `Form submitted: ${name} ${action}${extrasPart}` +
++          `${pagePart}\nIdentity: ${identity}${emailPart}`;
+ 
+         await this.deps.sendMessage(webhook.chat_jid, message, {
+           fromGroup: group.folder,
+@@ -997,7 +999,7 @@ export class WebhookServer {
+           {
+             hookId,
+             inboxId,
+-            subtype: action,
++            subtype,
+             identity,
+             submission_id: fp.submission_id,
+           },
+diff --git a/tools/contador/process-payment.cjs b/tools/contador/process-payment.cjs
+index 2d039842..7b17bb89 100644
+--- a/tools/contador/process-payment.cjs
++++ b/tools/contador/process-payment.cjs
+@@ -641,6 +641,31 @@ function emitFulfillmentResult(result) {
+   );
+ }
+ 
++function formatPaymentSummary({
++  customerName, customerEmail, productName, amountDollars, currency,
++  feeDollars, netDollars, refundedCents, transactionDate, recordedDate,
++  accountingStripeId, idType, receivedStripeId, rosterSummary,
++  paymentLogResult, studentRosterResult, dbResult, debug, lineItemCount,
++}) {
++  const refundNote = refundedCents > 0
++    ? `; $${(refundedCents / 100).toFixed(2)} refunded`
++    : '';
++  const lines = [
++    `Payment received: ${customerName} — ${productName} — $${amountDollars} ${currency}${refundNote}`,
++    `Customer: ${customerEmail}`,
++    `Date: ${transactionDate} (recorded: ${recordedDate})`,
++    `Fee / net: $${feeDollars} / $${netDollars}`,
++    `Roster: ${rosterSummary}`,
++    `Processing: Payment Log ${paymentLogResult}; Student Roster ${studentRosterResult}; DB ${dbResult}`,
++    `Stripe: ${accountingStripeId} (${idType}${accountingStripeId !== receivedStripeId ? `; received ${receivedStripeId}` : ''})`,
++  ];
++  if (lineItemCount > 1) {
++    lines.push(`Warning: ${lineItemCount} line items — only the first was processed`);
++  }
++  if (debug && debug !== 'no-debug') lines.push(`Diagnostics: ${debug}`);
++  return lines.join('\n');
++}
++
+ async function main() {
+   // 1. Fetch payment data from Stripe (tries each key until one works)
+   const fetchResult = await fetchPaymentWithKeyFallback();
+@@ -1038,25 +1063,19 @@ async function main() {
+   }
+ 
+   // 4. Output summary
+-  const lines = [
+-    `[PAYMENT RECEIVED] (v3-debug) ${fetchResult._debug || 'no-debug'}`,
+-    `Date: ${transactionDate} (recorded: ${recordedDate})`,
+-    `Customer: ${customerName} (${customerEmail})`,
+-    `Product: ${productName}`,
+-    `Amount: $${amountDollars} ${currency} (fee: $${feeDollars}, net: $${netDollars})${refundedCents > 0 ? ` [REFUNDED $${(refundedCents / 100).toFixed(2)}]` : ''}`,
+-    `Stripe ID: ${accountingStripeId} (${ID_TYPE}${accountingStripeId !== STRIPE_ID ? `; received ${STRIPE_ID}` : ''})`,
+-    `Roster: ${rosterMatches.length > 0 ? rosterMatches.map(m => `${m.tab} → ${m.column}`).join(', ') : '→ Sales tab (unmapped product)'}`,
+-    `Payment Log: ${results.sheets_log}`,
+-    `Student Roster: ${results.sheets_roster}`,
+-    `DB: ${results.db}`,
+-  ];
+-
+-  // Note multiple line items if present
+-  if (lineItems.length > 1) {
+-    lines.push(`WARNING: ${lineItems.length} line items — only first processed`);
+-  }
+-
+-  console.log(lines.join('\n'));
++  console.log(formatPaymentSummary({
++    customerName, customerEmail, productName, amountDollars, currency,
++    feeDollars, netDollars, refundedCents, transactionDate, recordedDate,
++    accountingStripeId, idType: ID_TYPE, receivedStripeId: STRIPE_ID,
++    rosterSummary: rosterMatches.length > 0
++      ? rosterMatches.map(m => `${m.tab} → ${m.column}`).join(', ')
++      : 'Sales tab (unmapped product)',
++    paymentLogResult: results.sheets_log,
++    studentRosterResult: results.sheets_roster,
++    dbResult: results.db,
++    debug: fetchResult._debug,
++    lineItemCount: lineItems.length,
++  }));
+ 
+   const fulfillment = derivePaymentFulfillmentOutcome({
+     paymentLogVerified,
+@@ -1110,6 +1129,7 @@ module.exports = {
+   validateCanonicalProductSlug,
+   preferredProductName,
+   buildPsqlVarArgs,
++  formatPaymentSummary,
+   derivePaymentFulfillmentOutcome,
+ };
+ 
+diff --git a/tools/contador/process-payment.test.ts b/tools/contador/process-payment.test.ts
+index 711cff14..7a024f59 100644
+--- a/tools/contador/process-payment.test.ts
++++ b/tools/contador/process-payment.test.ts
+@@ -6,9 +6,73 @@ const {
+   validateCanonicalProductSlug,
+   preferredProductName,
+   buildPsqlVarArgs,
++  formatPaymentSummary,
+   derivePaymentFulfillmentOutcome,
+ } = require('./process-payment.cjs');
+ 
++describe('formatPaymentSummary', () => {
++  it('leads with the human payment event and moves diagnostics to the end', () => {
++    const summary = formatPaymentSummary({
++      customerName: 'Lin Chen',
++      customerEmail: 'lin@example.com',
++      productName: 'Mentor Coaching Foundations',
++      amountDollars: '999.00',
++      currency: 'USD',
++      feeDollars: '29.27',
++      netDollars: '969.73',
++      refundedCents: 0,
++      transactionDate: '8/24/2026',
++      recordedDate: '8/24/2026',
++      accountingStripeId: 'pi_123',
++      idType: 'payment_intent',
++      receivedStripeId: 'pi_123',
++      rosterSummary: 'Foundations → B',
++      paymentLogResult: 'OK',
++      studentRosterResult: 'OK',
++      dbResult: 'OK',
++      debug: 'keys=1 | try-0=tandem | ok-0=tandem',
++      lineItemCount: 1,
++    });
++
++    expect(summary.split('\n')[0]).toBe(
++      'Payment received: Lin Chen — Mentor Coaching Foundations — $999.00 USD',
++    );
++    expect(summary).not.toContain('(v3-debug)');
++    expect(summary.split('\n').at(-1)).toBe(
++      'Diagnostics: keys=1 | try-0=tandem | ok-0=tandem',
++    );
++  });
++
++  it('summarizes refunds without showing an empty debug placeholder', () => {
++    const summary = formatPaymentSummary({
++      customerName: 'Lin',
++      customerEmail: 'lin@example.com',
++      productName: 'Course',
++      amountDollars: '100.00',
++      currency: 'USD',
++      feeDollars: '3.00',
++      netDollars: '97.00',
++      refundedCents: 2500,
++      transactionDate: '8/24/2026',
++      recordedDate: '8/24/2026',
++      accountingStripeId: 'pi_123',
++      idType: 'payment_intent',
++      receivedStripeId: 'pi_123',
++      rosterSummary: 'Sales tab (unmapped product)',
++      paymentLogResult: 'OK',
++      studentRosterResult: 'skipped',
++      dbResult: 'OK',
++      debug: 'no-debug',
++      lineItemCount: 1,
++    });
++
++    expect(summary.split('\n')[0]).toBe(
++      'Payment received: Lin — Course — $100.00 USD; $25.00 refunded',
++    );
++    expect(summary).not.toContain('Diagnostics:');
++  });
++});
++
+ // Tandem's checkout writes the canonical website product slug into the
+ // underlying PaymentIntent's metadata.product key. Only a validated shape may
+ // reach Chaos; anything else must fail closed to null, never pass through.

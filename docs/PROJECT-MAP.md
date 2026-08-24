@@ -604,6 +604,13 @@ dependencies, not active runtime channels in this snapshot.
 | Brief/digests    | `src/brief-promote.ts`, `src/digest-generator.ts`, `src/digest-delivery.ts`                                                                                              | operational briefing; Things promotion denies before HTTP fetch under the common brake                                                                                                                                                     |
 | SEO              | `src/seo-stats.ts`                                                                                                                                                       | SEO job support                                                                                                                                                                                                                            |
 
+Internal deterministic Slack notifications follow a human-first preview
+contract: the first line names the business event and subject; implementation
+tags, CRM disposition, provider IDs, and diagnostics follow only as supporting
+detail. NC-20260824-001 applies this to Contador payment receipts, Chaos
+website activity, and verified form submissions without changing their
+underlying processing or routing.
+
 ### Contador payment-fulfillment checkpoint (`NC-20260823-006`)
 
 The live webhook archive already deduplicates Stripe provider events, but the

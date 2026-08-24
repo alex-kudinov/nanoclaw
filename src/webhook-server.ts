@@ -36,7 +36,10 @@ import {
   bookingHostWrite,
   BookedPayloadError,
 } from './booking-host-write.js';
-import { handleChaosActivity } from './chaos-activity.js';
+import {
+  formatChaosActivityNotice,
+  handleChaosActivity,
+} from './chaos-activity.js';
 import { recordChaosBooking } from './chaos-booking.js';
 import { handleStripePayment } from './stripe-payment-host.js';
 import { formatBookedNotice } from './host-router.js';
@@ -191,6 +194,24 @@ function renderPrompt(template: string, payload: unknown): string {
       }, payload);
       return value !== undefined ? String(value) : '';
     });
+}
+
+function humanizeFormSubtype(value: string): string {
+  return value
+    .replace(/^form[_-]/, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b(icf|acc|pcc|mcc|mcs|mcq|mcqf)\b/gi, (word) =>
+      word.toUpperCase(),
+    );
+}
+
+function describeFormSubmission(subtype: string | null): string {
+  if (!subtype) return 'submitted a website form';
+  const label = humanizeFormSubtype(subtype);
+  if (/\bbrochure\b/i.test(label)) return `requested the ${label}`;
+  if (/\bnewsletter\b/i.test(label)) return 'signed up for the newsletter';
+  if (/\bwaitlist\b/i.test(label)) return `joined the ${label}`;
+  return `submitted the ${label} form`;
 }
 
 function readBody(req: http.IncomingMessage): Promise<Buffer> {
@@ -809,29 +830,9 @@ export class WebhookServer {
     if (hookId === 'chaos') {
       try {
         const r = await handleChaosActivity(payload);
-        const cp = payload as Record<string, unknown>;
-        const name =
-          (typeof cp.display_name === 'string' && cp.display_name.trim()) ||
-          (typeof cp.email === 'string' ? cp.email : 'unknown');
-        const formPage =
-          typeof cp.form_page === 'string' && cp.form_page.trim()
-            ? cp.form_page.trim()
-            : null;
-        const formEvent =
-          typeof cp.form_event_type === 'string' && cp.form_event_type.trim()
-            ? cp.form_event_type.trim()
-            : null;
-        // Mobile-friendly preview: lead with source, name, action so the first
-        // ~40 chars are meaningful before the reader opens the notification.
-        const pageSlug = formPage
-          ? formPage.replace(/^\/+|\/+$/g, '').replace(/\//g, '-')
-          : null;
-        const eventSlug = formEvent ? formEvent.replace(/^form_/, '') : null;
-        const action = pageSlug || eventSlug;
-        const actionPart = action ? ` - ${action}` : '';
         await this.deps.sendMessage(
           webhook.chat_jid,
-          `[chaos] ${name}${actionPart} - ${r.disposition} (party ${r.partyId})`,
+          formatChaosActivityNotice(payload, r),
           { fromGroup: group.folder },
         );
         if (inboxId !== null && this.deps.markWebhookHandled) {
@@ -925,11 +926,7 @@ export class WebhookServer {
 
         const name =
           displayName || (email ? email.split('@')[0] : null) || 'Anonymous';
-        const action =
-          subtype ||
-          (formPage
-            ? formPage.replace(/^\/+|\/+$/g, '').replace(/\//g, '-')
-            : 'unknown-form');
+        const action = describeFormSubmission(subtype);
 
         const IDENTITY_KEYS = new Set([
           'first_name',
@@ -970,13 +967,18 @@ export class WebhookServer {
               );
           }
           logger.info(
-            { hookId, inboxId, identity, subtype: action },
+            { hookId, inboxId, identity, subtype },
             'Form submission observed-only — suppressed (no Slack post)',
           );
           return;
         }
 
-        const message = `[form] ${name} - ${action}${extrasPart} - ${identity}${emailPart}`;
+        const pagePart = formPage
+          ? `\nPage: ${formPage.replace(/^\/+|\/+$/g, '').replace(/[-_/]+/g, ' ')}`
+          : '';
+        const message =
+          `Form submitted: ${name} ${action}${extrasPart}` +
+          `${pagePart}\nIdentity: ${identity}${emailPart}`;
 
         await this.deps.sendMessage(webhook.chat_jid, message, {
           fromGroup: group.folder,
@@ -997,7 +999,7 @@ export class WebhookServer {
           {
             hookId,
             inboxId,
-            subtype: action,
+            subtype,
             identity,
             submission_id: fp.submission_id,
           },

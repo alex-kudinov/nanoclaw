@@ -47,6 +47,74 @@ export interface ChaosActivityResult {
   interactionId: number;
 }
 
+function previewText(value: string, maxLength = 140): string {
+  const normalized = value
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return normalized.length <= maxLength
+    ? normalized
+    : `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+function humanizePage(page: string | null): string | null {
+  if (!page) return null;
+  let pathname = page;
+  try {
+    pathname = new URL(page, 'https://tandemcoach.co').pathname;
+  } catch {
+    // Keep the bounded path-like input; it is presentation context only.
+  }
+  const segment = pathname.split('/').filter(Boolean).at(-1);
+  if (!segment) return null;
+  let decoded = segment;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    // Malformed percent escapes remain visible as inert text.
+  }
+  const words = previewText(decoded.replace(/[-_]+/g, ' '), 80);
+  if (!words) return null;
+  return words.replace(/\b(icf|acc|pcc|mcc|mcs|mcq)\b/gi, (word) =>
+    word.toUpperCase(),
+  );
+}
+
+/** Human-first Slack notice; CRM disposition and identifiers stay secondary. */
+export function formatChaosActivityNotice(
+  payload: unknown,
+  result: ChaosActivityResult,
+): string {
+  const input = parseChaosPayload(payload);
+  const name = previewText(input.displayName, 80);
+  const page = humanizePage(input.formPage);
+  const action = input.intentSummary
+    ? previewText(input.intentSummary, 140)
+    : input.formEventType === 'form_contact'
+      ? 'submitted the contact form'
+      : input.formEventType === 'form_lead_magnet'
+        ? 'requested a lead magnet'
+        : input.formEventType === 'form_newsletter'
+          ? 'signed up for the newsletter'
+          : 'was identified visiting the website';
+  const pageContext =
+    page && !input.intentSummary ? ` on the ${page} page` : '';
+  const heading =
+    result.disposition === 'new-lead'
+      ? 'New website lead'
+      : result.disposition === 'new-party'
+        ? 'New website contact'
+        : 'Website activity';
+  const crmState =
+    result.disposition === 'new-lead'
+      ? 'new lead created'
+      : result.disposition === 'new-party'
+        ? 'new contact recorded'
+        : 'returning contact recorded';
+
+  return `${heading}: ${name} ${action}${pageContext}\nCRM: ${crmState} • Party ${result.partyId}`;
+}
+
 /** form_event_type values that warrant a pipeline lead for a net-new party. */
 const LEAD_FORMS = new Set(['form_contact', 'form_lead_magnet']);
 
