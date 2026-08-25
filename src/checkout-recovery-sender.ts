@@ -415,18 +415,27 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
     ) {
       continue;
     }
-    const recentOtherCaseHandoff = await client.query(
+    await client.query(
+      `SELECT pg_advisory_xact_lock(
+         hashtextextended('checkout-recovery-render:' || $1, 0)
+       )`,
+      [item.email_sha256],
+    );
+    const otherCaseRenderContextInFlight = await client.query(
       `SELECT 1
          FROM business_v2.checkout_recovery_send_intents other_intent
          JOIN business_v2.checkout_recovery_cases other_case
            ON other_case.id = other_intent.case_id
         WHERE other_case.email_sha256 = $1
           AND other_intent.case_id <> $2
-          AND other_intent.accepted_at > $3::timestamptz - interval '10 minutes'
+          AND (
+            other_intent.status = 'leased'
+            OR other_intent.accepted_at > $3::timestamptz - interval '10 minutes'
+          )
         LIMIT 1`,
       [item.email_sha256, intent.case_id, now.toISOString()],
     );
-    if (recentOtherCaseHandoff.rowCount) continue;
+    if (otherCaseRenderContextInFlight.rowCount) continue;
     const leaseToken = crypto.randomUUID();
     const attemptNumber = intent.attempt_count + 1;
     const payload: CheckoutRecoveryClaimedIntent['payload'] = {

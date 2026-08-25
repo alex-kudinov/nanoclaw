@@ -57,6 +57,8 @@ function website(
   token = TOKEN,
   paymentIntent = 'pi_abc1234567890',
   observedAt = '2026-08-24T18:00:00.000Z',
+  productSlug = 'acc-full',
+  productName = 'ACC Level 1 Full Program',
 ) {
   return prepareWebsiteCheckoutRecoveryEnvelope(
     {
@@ -71,14 +73,14 @@ function website(
       payment_intent_id: eventType === 'payment.created' ? paymentIntent : null,
       email: 'buyer@example.com',
       program_slug: 'acc',
-      product_slug: 'acc-full',
+      product_slug: productSlug,
       amount_cents: 399900,
       currency: 'usd',
       consent_state: true,
       consent_policy_version: 'checkout-reminder-v2',
       locale: 'en',
       return_url: 'https://tandemcoach.co/acc/',
-      product_name: 'ACC Level 1 Full Program',
+      product_name: productName,
     },
     SECRET,
   );
@@ -515,6 +517,99 @@ describe.skipIf(!TEST_DATABASE_URL)(
         status: 'suppressed',
         last_error_code: 'sibling_purchase',
       });
+    });
+
+    it('serializes different render contexts for the same email digest', async () => {
+      const first = await record(website('checkout.captured'));
+      await record(website('payment.created'));
+      const secondToken = 'D'.repeat(32);
+      const secondPi = 'pi_secondproduct123456';
+      const second = await record(
+        website(
+          'checkout.captured',
+          secondToken,
+          secondPi,
+          '2026-08-24T18:00:01.000Z',
+          'pcc-full',
+          'PCC Level 2 Full Program',
+        ),
+      );
+      await record(
+        website(
+          'payment.created',
+          secondToken,
+          secondPi,
+          '2026-08-24T18:00:02.000Z',
+          'pcc-full',
+          'PCC Level 2 Full Program',
+        ),
+      );
+      const sendConfig = {
+        mode: 'production' as const,
+        activatedAt: new Date('2026-08-24T17:00:00.000Z'),
+        pilotEmailSha256: null,
+        pilotTouch2DelayMinutes: null,
+        enchargeWriteKey: 'integration-test-write-key',
+      };
+      const setupClient = await pool!.connect();
+      try {
+        await setupClient.query('BEGIN');
+        await sweepCheckoutRecoveryShadowWithClient(setupClient, {
+          now: new Date('2026-08-24T19:00:00.000Z'),
+          sendConfig,
+        });
+        await setupClient.query(
+          `UPDATE business_v2.checkout_recovery_cases
+              SET shadow_notified_at = '2026-08-24T19:00:01.000Z'
+            WHERE id IN ($1, $2)`,
+          [first.caseId, second.caseId],
+        );
+        await setupClient.query('COMMIT');
+      } finally {
+        setupClient.release();
+      }
+
+      const clientA = await pool!.connect();
+      const clientB = await pool!.connect();
+      try {
+        await clientA.query('BEGIN');
+        await clientB.query('BEGIN');
+        const claimedA = await claimDueCheckoutRecoverySendIntentsWithClient(
+          clientA,
+          sendConfig,
+          { limit: 1, now: new Date('2026-08-24T19:00:02.000Z') },
+        );
+        expect(claimedA).toHaveLength(1);
+        let secondSettled = false;
+        const secondClaim = claimDueCheckoutRecoverySendIntentsWithClient(
+          clientB,
+          sendConfig,
+          { limit: 1, now: new Date('2026-08-24T19:00:02.000Z') },
+        ).finally(() => {
+          secondSettled = true;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 75));
+        expect(secondSettled).toBe(false);
+        await clientA.query('COMMIT');
+        const claimedB = await secondClaim;
+        await clientB.query('COMMIT');
+        expect(claimedB).toEqual([]);
+      } finally {
+        await clientA.query('ROLLBACK').catch(() => {});
+        await clientB.query('ROLLBACK').catch(() => {});
+        clientA.release();
+        clientB.release();
+      }
+      const statuses = await pool!.query(
+        `SELECT c.product_slug, i.status
+           FROM business_v2.checkout_recovery_send_intents i
+           JOIN business_v2.checkout_recovery_cases c ON c.id = i.case_id
+          WHERE i.touch = 1 ORDER BY c.product_slug`,
+      );
+      expect(statuses.rows).toEqual([
+        { product_slug: 'acc-full', status: 'leased' },
+        { product_slug: 'pcc-full', status: 'pending' },
+      ]);
     });
 
     it('deduplicates exact event keys and stores no email in event facts', async () => {

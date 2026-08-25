@@ -100,6 +100,8 @@ describe('checkout recovery Encharge handoff', () => {
       "'lease_expired_dispatch_ambiguous'",
       "interval '10 minutes'",
       'claimedEmailDigests',
+      'pg_advisory_xact_lock',
+      "other_intent.status = 'leased'",
     ]) {
       expect(source).toContain(guard);
     }
