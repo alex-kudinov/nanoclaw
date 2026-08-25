@@ -14,18 +14,24 @@
       "name": "Heartbeat Community Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "webhookId": "__STUDENT_LIFECYCLE_N8N_WEBHOOK_PATH__"
     },
     {
       "parameters": {
-        "jsCode": "// Community-only four-action shadow relay. Runtime values are environment\n// references and are configured outside this export after disabled import.\n// No success/error execution data is retained and no action consumer exists.\nconst crypto = require('crypto');\nconst input = $input.first().json || {};\nconst sourceBody = input.body && typeof input.body === 'object' && !Array.isArray(input.body)\n  ? input.body\n  : input;\nconst sourceAction = sourceBody.action && typeof sourceBody.action === 'object'\n  ? sourceBody.action.name\n  : sourceBody.event;\nconst action = String(sourceAction || '');\nconst allowedFields = {\n  USER_JOIN: ['id', 'email'],\n  USER_UPDATE: ['id'],\n  COURSE_COMPLETED: ['courseID', 'userID'],\n  GROUP_JOIN: ['userID', 'groupID'],\n};\nif (!Object.hasOwn(allowedFields, action)) {\n  throw new Error('unsupported_heartbeat_action');\n}\nconst sourceData = sourceBody.data && typeof sourceBody.data === 'object' && !Array.isArray(sourceBody.data)\n  ? sourceBody.data\n  : sourceBody;\nconst data = {};\nfor (const field of allowedFields[action]) {\n  if (sourceData[field] !== undefined) data[field] = sourceData[field];\n}\nconst communityId = String($env.HEARTBEAT_COMMUNITY_ID || '');\nconst relaySecret = String($env.STUDENT_LIFECYCLE_RELAY_SECRET || '');\nconst hostUrl = String($env.STUDENT_LIFECYCLE_HOST_URL || '');\nif (!/^[0-9a-f-]{36}$/i.test(communityId)) throw new Error('community_id_unconfigured');\nif (relaySecret.length < 32) throw new Error('relay_secret_unconfigured');\nif (!/^https?:\\/\\//.test(hostUrl)) throw new Error('host_url_unconfigured');\nconst envelope = {\n  schema_version: 1,\n  workspace: 'community',\n  community_id: communityId,\n  delivery_id: crypto.randomUUID(),\n  observed_at: new Date().toISOString(),\n  action: { name: action },\n  data,\n};\nconst bodyText = JSON.stringify(envelope);\nif (Buffer.byteLength(bodyText, 'utf8') > 65536) throw new Error('payload_too_large');\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst signature = 'v1=' + crypto.createHmac('sha256', relaySecret)\n  .update(timestamp + '.' + bodyText, 'utf8')\n  .digest('hex');\nreturn [{ json: { host_url: hostUrl, timestamp, signature, body_text: bodyText } }];"
+        "jsCode": "// Community-only four-action shadow relay. Runtime values are environment\n// references and are configured outside this export after disabled import.\n// Real Heartbeat webhook bodies omit the registered action name, so the four\n// authorized actions are inferred only from mutually exclusive required fields.\n// No success/error execution data is retained and no action consumer exists.\nconst crypto = require('crypto');\nconst input = $input.first().json || {};\nconst sourceBody = input.body && typeof input.body === 'object' && !Array.isArray(input.body)\n  ? input.body\n  : input;\nconst sourceData = sourceBody.data && typeof sourceBody.data === 'object' && !Array.isArray(sourceBody.data)\n  ? sourceBody.data\n  : sourceBody;\nconst allowedFields = {\n  USER_JOIN: ['id', 'email'],\n  USER_UPDATE: ['id'],\n  COURSE_COMPLETED: ['courseID', 'userID'],\n  GROUP_JOIN: ['userID', 'groupID'],\n};\nconst has = (field) => Object.hasOwn(sourceData, field)\n  && sourceData[field] !== undefined\n  && sourceData[field] !== null;\nconst inferredActions = [\n  ['USER_JOIN', has('id') && has('email') && !has('userID') && !has('groupID') && !has('courseID')],\n  ['USER_UPDATE', has('id') && !has('email') && !has('userID') && !has('groupID') && !has('courseID')],\n  ['COURSE_COMPLETED', has('courseID') && has('userID') && !has('groupID') && !has('id')],\n  ['GROUP_JOIN', has('groupID') && has('userID') && !has('courseID') && !has('id')],\n].filter(([, matched]) => matched).map(([name]) => name);\nconst explicitAction = typeof sourceBody.action === 'string'\n  ? sourceBody.action\n  : sourceBody.action && typeof sourceBody.action === 'object'\n    ? sourceBody.action.name\n    : sourceBody.event;\nlet action;\nif (Object.hasOwn(allowedFields, String(explicitAction || ''))) {\n  action = String(explicitAction);\n  if (inferredActions.length !== 1 || inferredActions[0] !== action) {\n    throw new Error('heartbeat_action_payload_mismatch');\n  }\n} else {\n  if (inferredActions.length !== 1) throw new Error('unsupported_heartbeat_action');\n  action = inferredActions[0];\n}\nconst data = {};\nfor (const field of allowedFields[action]) {\n  if (sourceData[field] !== undefined) data[field] = sourceData[field];\n}\nconst communityId = String($env.HEARTBEAT_COMMUNITY_ID || '');\nconst relaySecret = String($env.STUDENT_LIFECYCLE_RELAY_SECRET || '');\nconst hostUrl = String($env.STUDENT_LIFECYCLE_HOST_URL || '');\nif (!/^[0-9a-f-]{36}$/i.test(communityId)) throw new Error('community_id_unconfigured');\nif (relaySecret.length < 32) throw new Error('relay_secret_unconfigured');\nif (!/^https?:\\/\\//.test(hostUrl)) throw new Error('host_url_unconfigured');\nconst envelope = {\n  schema_version: 1,\n  workspace: 'community',\n  community_id: communityId,\n  delivery_id: crypto.randomUUID(),\n  observed_at: new Date().toISOString(),\n  action: { name: action },\n  data,\n};\nconst bodyText = JSON.stringify(envelope);\nif (Buffer.byteLength(bodyText, 'utf8') > 65536) throw new Error('payload_too_large');\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst signature = 'v1=' + crypto.createHmac('sha256', relaySecret)\n  .update(timestamp + '.' + bodyText, 'utf8')\n  .digest('hex');\nreturn [{ json: { host_url: hostUrl, timestamp, signature, body_text: bodyText } }];"
       },
       "id": "normalize-sign-community-lifecycle",
       "name": "Normalize and Sign Community Lifecycle",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [500, 300]
+      "position": [
+        500,
+        300
+      ]
     },
     {
       "parameters": {
@@ -60,7 +66,10 @@
       "name": "POST Community Lifecycle to NanoClaw",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [760, 300],
+      "position": [
+        760,
+        300
+      ],
       "retryOnFail": true,
       "maxTries": 5,
       "waitBetweenTries": 5000

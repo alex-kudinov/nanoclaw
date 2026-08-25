@@ -8,6 +8,32 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260824-009 — Contain and correct lifecycle relay alert storm
+
+- Date: 2026-08-24T22:18:00-05:00
+- Owner/client: Codex
+- State: ready_for_deploy; production remains safely contained
+- Diagnosis/containment: 16 lifecycle normalization failures generated the
+  `#gru-chief` alerts because real Heartbeat webhook bodies omit the registered
+  action. Exact rollback removed only the four new registrations, restored the
+  protected 18-row baseline, disabled only the lifecycle workflow, and left
+  zero active n8n executions/no further alert increase. NanoClaw error lines
+  remained unchanged; Circle and legacy receivers were untouched.
+- Correction: a release-bound code-node source now infers exactly one of the
+  four mutually exclusive minimal payload shapes and refuses ambiguity or an
+  explicit mismatch. The host no longer requires privacy-discarded
+  `USER_JOIN.name` or `COURSE_COMPLETED.courseName`. Cross-boundary tests execute
+  every relayed payload through the host parser.
+- Verification: focused 103/103; typecheck/build/format/diff; full root 3,213
+  pass / 19 skip with only the unchanged CNPC wrapper failure; runner 43/43.
+- Review: bounded Claude Sonnet/high session
+  `4f63b0e7-a644-453f-ad25-40bbed6742cf` returned
+  `NO MATERIAL FINDINGS` in six model calls / 91,943 maximum context tokens
+  with no usage warning.
+- Deployment: none for the correction yet. Workflow remains inactive and the
+  four provider rows remain absent pending Claude review and disabled-first
+  release/canary proof.
+
 ### NC-20260824-007 — Community lifecycle shadow provider capture
 
 - Date: 2026-08-24T19:35:00Z
