@@ -519,12 +519,14 @@ identity and has no model-writable work ID. The host must already hold and
 consume one exact work/subject/purpose/section grant; the global feature flag
 also defaults off. Context never grants an external action.
 
-NC-003 is committed and pushed. NC-004 adds a production-gated, credential-free
+NC-003 is committed and pushed. Exact live NC-004 adds a credential-free
 Trafft host-ledger shadow. It reads only minimized source-bound interaction
 fields, records exact appointment-reference observations, and emits
 `needs_identity` without a Party projection because current emails are not
 source-verified. It runs only under
 `RELATIONSHIP_CONTEXT_TRAFFT_SHADOW_ENABLED=1`; query capability remains off.
+The first live run is complete over 414 eligible appointments, all null-Party
+and held, with zero projections; an exact replay produced 414 duplicates.
 See `docs/RELATIONSHIP-CONTEXT-PRODUCTION-ROLLOUT.md` for deployment and live
 verification gates.
 

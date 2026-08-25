@@ -2146,6 +2146,10 @@ no current projection. Existing agent-facing views and
 `best_party_by_email()` are not changed, and the new service never uses
 first-row email selection.
 
+Production migration 137 is applied. Current relationship-context state is 39
+legacy compatibility refs, 414 Trafft observations with null Party identity,
+414 open identity exceptions, zero projections, and zero query receipts.
+
 ## Migration philosophy
 
 When the schema is agreed and the migration runs:

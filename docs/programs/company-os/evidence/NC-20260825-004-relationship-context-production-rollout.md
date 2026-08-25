@@ -83,8 +83,54 @@ Measured review usage:
 - independent runner: 45/45; documentation continuity, capability matrix, diff,
   and targeted sensitive-pattern checks pass.
 
-## Pending
+## Immutable release and backup
 
-- immutable commit/push/release build and target verification;
-- production drain/backups/migration/activation/live non-interference proof;
-- terminal program and changelog reconciliation.
+- implementation: `e97c9f8700dab83ab74fe013ea1388d0bc172e27`;
+- source tree: `59756c0220bce8316ec9d613741fee55bf54cdf7`;
+- artifact: 984 files,
+  `d82fddcd7c3e17202962c1cca9b2478f320947628d77245dbf71dc61d3114e0c`;
+- archive:
+  `cb2091bb5a4ecf4971d2afda7bafd0637a60807eeed857d7293c995b9894e6d4`,
+  byte-identical and runtime-verified on the Mini;
+- four consecutive pre-mutation samples: zero active containers, zero active
+  queue entries, zero waiting groups;
+- mode-0700 backup:
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260825-004-20260825T2254Z`;
+- PostgreSQL dump SHA-256:
+  `fc0d01cac13652b5096ec962b776ff9858bfb9ace9a44ffc26c3c10da956e680`;
+- SQLite backup SHA-256:
+  `cec4012f232336850a1fbf5657acfa2800a746216025b9c73b76e91d757dfddf`;
+- installed plist backup SHA-256:
+  `f0d2f32fa01bf0560112668954862f059fdb78d1f3e61a4a95ebda5f7b5b4a86`.
+
+## Production migration and activation
+
+- migration 137 applied once from the verified release: 39 legacy compatibility
+  refs, zero observations/projections/exceptions at the migration boundary,
+  zero non-admin grants, and zero wrong relation owners;
+- installed configuration explicitly sets shadow `1` and query `0`;
+- activation changed only code root, expected commit, and executable pointer;
+- exact live release is `e97c9f87`, Node 22.23.2, verified tree/artifact/code
+  root, one listener, Gmail/Slack connected, and zero waiting groups;
+- rollback plist:
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-8e475e036ad6-2026-08-25T22-52-29-960Z`.
+
+## Live shadow and non-interference
+
+- startup shadow: healthy and complete, 414 eligible ledger rows, 414 new
+  minimized observations, 414 held identities, zero projections;
+- durable readback: all 414 Trafft observations have null Party identity; 414
+  open identity exceptions; one enabled/passed adapter; zero query receipts;
+  zero raw/email/phone/name/custom-field keys;
+- direct replay: 414 duplicates, zero new observations, zero projections;
+- health: query disabled, zero grants, consumer disabled;
+- checkout recovery remains enabled with production send mode and the same
+  cutoff; Community lifecycle remains enabled/healthy with 29 events, 16 open
+  exceptions, action consumers false and Circle false;
+- natural work was allowed after restart; one active container appeared with
+  zero waiting groups and no Relationship Context failure. No customer or
+  provider event was manufactured.
+
+The conditional minion pilot is completed as an evidence-backed refusal: no
+exact Trafft customer-to-Party authority exists, so no grant, query, or
+projection was activated. That boundary is the next separately governed item.

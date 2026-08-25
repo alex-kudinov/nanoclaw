@@ -180,7 +180,7 @@ does not authorize replaying historical Stripe events or any Bizmgr/QuickBooks
 action. The guarded rollback refuses once any case, alias, or receipt exists.
 
 Migration 137 is `NC-20260825-003`'s reviewed Relationship Context dark
-foundation and `NC-20260825-004`'s production migration candidate. It adds
+foundation and was applied in production by `NC-20260825-004`. It adds
 admin-only scoped external refs, identifier claims and
 identity exceptions, disabled adapter manifests, bounded append-safe
 observations, current section projections, content-minimized query receipts,

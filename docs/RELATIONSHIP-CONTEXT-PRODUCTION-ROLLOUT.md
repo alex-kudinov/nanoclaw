@@ -6,6 +6,9 @@ Program item: `work:relationship-context-production-rollout`
 
 Decision: `.program/decisions/decision-relationship-context-production-rollout-2026-08-25.json`
 
+Status: live-verified on exact release `e97c9f87`; shadow enabled, query and
+consumer disabled.
+
 ## Objective
 
 Put the maximum safely supportable Relationship Context slice into production:

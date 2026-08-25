@@ -12,11 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-25T22:27:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; implementation and correction review complete, production
-  mutation pending
-- Commit/PR: isolated
-  `codex/relationship-context-production-rollout-20260825` from reviewed
-  foundation `dadb5cc7`, directly containing live `8e475e03`
+- State: complete; exact immutable release, migration, shadow activation, and
+  live non-interference verified
+- Commit/PR: pushed `codex/relationship-context-production-rollout-20260825`;
+  exact live implementation `e97c9f8700dab83ab74fe013ea1388d0bc172e27`
+  from reviewed foundation `dadb5cc7`, directly containing prior live
+  `8e475e03`
 - Change class: C5 identity/security boundary plus C3 deployment
 - Outcome: migration 137 is portable to production PostgreSQL and a
   credential-free Trafft host-ledger shadow stores minimized exact-reference
@@ -30,16 +31,31 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Verification: focused/typecheck and no-`pgcrypto` disposable PostgreSQL
   proofs pass; full root is 3,280 pass / 25 skip with only the unchanged CNPC
   wrapper failure; runner 45/45, continuity, capability, diff, and targeted
-  sensitive-pattern checks pass. Immutable release/deployment checks pending.
-- Deployment/migration: none yet. Live remains exact `8e475e03`; migration 137
-  is absent.
-- Rollback/recovery: discard local source before deployment. Production will
-  retain prior release/plist and database backups; migration rollback becomes
-  destructive/refused once shadow evidence exists.
+  sensitive-pattern checks pass. Exact release-critical tests pass 742/742.
+- Release: pushed `e97c9f8700dab83ab74fe013ea1388d0bc172e27`, tree
+  `59756c0220bce8316ec9d613741fee55bf54cdf7`, 984-file artifact
+  `d82fddcd7c3e17202962c1cca9b2478f320947628d77245dbf71dc61d3114e0c`,
+  archive `cb2091bb5a4ecf4971d2afda7bafd0637a60807eeed857d7293c995b9894e6d4`.
+- Deployment/migration: four-sample zero-work drain; readable mode-0700
+  PostgreSQL/SQLite/plist backups; migration 137 applied with 39 legacy refs;
+  exact release activated with shadow flag `1`, query flag `0`. Live shadow is
+  healthy/complete: 414 new observations, 414 null Party IDs, 414 open identity
+  holds, zero projections/query receipts, one enabled conformant adapter, and
+  zero prohibited value keys. Direct replay returned 414 duplicates/zero new.
+- Non-interference: exact release/Node/code-root verified, one listener,
+  Gmail/Slack connected, zero waiting groups, checkout recovery still enabled
+  with production sends, Community lifecycle still healthy with consumers/Circle
+  false, and no Relationship Context startup failure.
+- Rollback/recovery: prior release pointer is `8e475e03`; activation retained
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-8e475e036ad6-2026-08-25T22-52-29-960Z`.
+  Backup directory is
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260825-004-20260825T2254Z`.
+  Migration rollback is now correctly refused because evidence exists.
 - Documentation: production rollout, architecture/project/data/security,
   active work, decision, review reports, and program evidence.
-- Follow-ups: finish verification, commit/push/build, then deploy and verify the
-  authorized shadow while keeping query/minion capability disabled.
+- Follow-ups: define exact Trafft customer-to-Party authority before any
+  projection or minion context pilot. Do not use current unverified emails or
+  historical consistency as that authority.
 
 ### NC-20260825-003 — Relationship Context dark foundation
 

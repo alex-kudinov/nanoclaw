@@ -579,7 +579,9 @@ feature flag/grant always denies before repository access. NC-004's separately
 gated Trafft shadow has no credential or provider network path, reads only
 minimized host-ledger fields, and records exact appointment references with
 null Party identity and no projection. `RELATIONSHIP_CONTEXT_ENABLED=0` remains
-the production query boundary; no group is granted or configured.
+the live production query boundary; no group is granted or configured. Live
+readback confirms zero query receipts/grants, zero projections, and zero
+prohibited raw/email/phone/name/custom-field value keys.
 
 ## Build, supply-chain, and runtime controls
 
