@@ -1,0 +1,69 @@
+// Community-only four-action shadow relay. Runtime values are environment
+// references and are configured outside this export after disabled import.
+// Real Heartbeat webhook bodies omit the registered action name, so the four
+// authorized actions are inferred only from mutually exclusive required fields.
+// No success/error execution data is retained and no action consumer exists.
+const crypto = require('crypto');
+const input = $input.first().json || {};
+const sourceBody = input.body && typeof input.body === 'object' && !Array.isArray(input.body)
+  ? input.body
+  : input;
+const sourceData = sourceBody.data && typeof sourceBody.data === 'object' && !Array.isArray(sourceBody.data)
+  ? sourceBody.data
+  : sourceBody;
+const allowedFields = {
+  USER_JOIN: ['id', 'email'],
+  USER_UPDATE: ['id'],
+  COURSE_COMPLETED: ['courseID', 'userID'],
+  GROUP_JOIN: ['userID', 'groupID'],
+};
+const has = (field) => Object.hasOwn(sourceData, field)
+  && sourceData[field] !== undefined
+  && sourceData[field] !== null;
+const inferredActions = [
+  ['USER_JOIN', has('id') && has('email') && !has('userID') && !has('groupID') && !has('courseID')],
+  ['USER_UPDATE', has('id') && !has('email') && !has('userID') && !has('groupID') && !has('courseID')],
+  ['COURSE_COMPLETED', has('courseID') && has('userID') && !has('groupID') && !has('id')],
+  ['GROUP_JOIN', has('groupID') && has('userID') && !has('courseID') && !has('id')],
+].filter(([, matched]) => matched).map(([name]) => name);
+const explicitAction = typeof sourceBody.action === 'string'
+  ? sourceBody.action
+  : sourceBody.action && typeof sourceBody.action === 'object'
+    ? sourceBody.action.name
+    : sourceBody.event;
+let action;
+if (Object.hasOwn(allowedFields, String(explicitAction || ''))) {
+  action = String(explicitAction);
+  if (inferredActions.length !== 1 || inferredActions[0] !== action) {
+    throw new Error('heartbeat_action_payload_mismatch');
+  }
+} else {
+  if (inferredActions.length !== 1) throw new Error('unsupported_heartbeat_action');
+  action = inferredActions[0];
+}
+const data = {};
+for (const field of allowedFields[action]) {
+  if (sourceData[field] !== undefined) data[field] = sourceData[field];
+}
+const communityId = String($env.HEARTBEAT_COMMUNITY_ID || '');
+const relaySecret = String($env.STUDENT_LIFECYCLE_RELAY_SECRET || '');
+const hostUrl = String($env.STUDENT_LIFECYCLE_HOST_URL || '');
+if (!/^[0-9a-f-]{36}$/i.test(communityId)) throw new Error('community_id_unconfigured');
+if (relaySecret.length < 32) throw new Error('relay_secret_unconfigured');
+if (!/^https?:\/\//.test(hostUrl)) throw new Error('host_url_unconfigured');
+const envelope = {
+  schema_version: 1,
+  workspace: 'community',
+  community_id: communityId,
+  delivery_id: crypto.randomUUID(),
+  observed_at: new Date().toISOString(),
+  action: { name: action },
+  data,
+};
+const bodyText = JSON.stringify(envelope);
+if (Buffer.byteLength(bodyText, 'utf8') > 65536) throw new Error('payload_too_large');
+const timestamp = String(Math.floor(Date.now() / 1000));
+const signature = 'v1=' + crypto.createHmac('sha256', relaySecret)
+  .update(timestamp + '.' + bodyText, 'utf8')
+  .digest('hex');
+return [{ json: { host_url: hostUrl, timestamp, signature, body_text: bodyText } }];

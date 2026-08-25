@@ -170,6 +170,7 @@ try {
     'scripts/register-caleprocure-collector.mjs',
     'scripts/render-student-lifecycle-shadow-workflow.mjs',
     'scripts/start-procurement-browser.sh',
+    'setup/n8n/student-lifecycle-community-shadow-code.txt',
     'setup/n8n/student-lifecycle-community-shadow-workflow.json',
     'tools/sync-program-facts.py',
   );

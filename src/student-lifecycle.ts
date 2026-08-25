@@ -357,7 +357,6 @@ export function prepareCommunityLifecycleEnvelope(
     case 'USER_JOIN': {
       refs.user_id = uuid(data.id, 'data.id');
       transientEmail = normalizeEmail(data.email, 'data.email');
-      requiredString(data.name, 'data.name', 300);
       break;
     }
     case 'USER_UPDATE':
@@ -434,7 +433,6 @@ export function prepareCommunityLifecycleEnvelope(
     case 'COURSE_COMPLETED':
       refs.course_id = uuid(data.courseID, 'data.courseID');
       refs.user_id = uuid(data.userID, 'data.userID');
-      requiredString(data.courseName, 'data.courseName', 500);
       break;
     case 'GROUP_JOIN':
       refs.user_id = uuid(data.userID, 'data.userID');

@@ -254,6 +254,29 @@ describe('Community student lifecycle contract', () => {
     expect(JSON.stringify(result.prepared)).not.toContain('user@example.com');
   });
 
+  it('accepts the privacy-minimized USER_JOIN fields emitted by the relay', () => {
+    const result = prepareCommunityLifecycleEnvelope(
+      envelope('USER_JOIN', { id: IDS.user, email: 'USER@example.com' }),
+      SECRET,
+    );
+    expect(result.transient_email).toBe('user@example.com');
+    expect(result.prepared.heartbeat.user_id).toBe(IDS.user);
+    expect(JSON.stringify(result.prepared)).not.toContain('USER@example.com');
+  });
+
+  it('accepts the privacy-minimized COURSE_COMPLETED fields emitted by the relay', () => {
+    const result = prepareCommunityLifecycleEnvelope(
+      envelope('COURSE_COMPLETED', {
+        courseID: IDS.course,
+        userID: IDS.user,
+      }),
+      SECRET,
+    );
+    expect(result.prepared.action).toBe('COURSE_COMPLETED');
+    expect(result.prepared.heartbeat.course_id).toBe(IDS.course);
+    expect(result.prepared.heartbeat.user_id).toBe(IDS.user);
+  });
+
   it('revalidates a minimized prepared envelope for replay', () => {
     const prepared = prepareCommunityLifecycleEnvelope(
       envelope('GROUP_JOIN', FIXTURES.GROUP_JOIN),
