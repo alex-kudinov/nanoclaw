@@ -31,6 +31,10 @@
         <string>{{RELEASE_COMMIT}}</string>
         <key>NANOCLAW_CODE_ROOT</key>
         <string>{{PROJECT_ROOT}}</string>
+        <key>RELATIONSHIP_CONTEXT_ENABLED</key>
+        <string>0</string>
+        <key>RELATIONSHIP_CONTEXT_TRAFFT_SHADOW_ENABLED</key>
+        <string>0</string>
     </dict>
     <key>StandardOutPath</key>
     <string>{{PROJECT_ROOT}}/logs/nanoclaw.log</string>

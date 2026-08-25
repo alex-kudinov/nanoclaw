@@ -1,0 +1,15 @@
+{
+  "decision_id": "decision:relationship-context-production-rollout-2026-08-25",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-25T22:25:24+00:00",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "program",
+    "work:relationship-context-production-rollout"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Get as much of the reviewed Relationship Context foundation up and running as safely possible. This authorizes exact-live reconciliation, implementation and independent review of read-only Trafft shadow ingestion and diagnostics, immutable release build and deployment, additive production migration 137, production context-table writes from bounded shadow ingestion, and live verification. A narrow read-only minion context pilot may be activated only if exact identity and policy gates pass without inference. It does not authorize guessed Party identity, provider writes, customer communications, Plutio field/data writes or backfill, credential changes, payment or contract actions, broad minion grants, destructive rollback, or changes to the active Community lifecycle, checkout-recovery, Circle, or legacy receiver boundaries.",
+  "source_task": "Current owner instruction in Codex: get as much up and running as possible, following the completed Relationship Context dark foundation and explanation of the staged rollout."
+}

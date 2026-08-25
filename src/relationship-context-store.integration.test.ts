@@ -7,6 +7,7 @@ import {
   consumeRelationshipContextGrant,
   issueRelationshipContextGrant,
 } from './relationship-context-policy.js';
+import { ingestTrafftRelationshipContextShadowWithClient } from './relationship-context-trafft-shadow.js';
 import {
   REFERENCE_LMS_FACTS,
   ReferenceLmsAdapter,
@@ -139,6 +140,74 @@ suite('relationship context disposable PostgreSQL store', () => {
       expect(receipt.rows[0].work_item_id).toBe('work:pg:fixture');
       expect(receipt.rows[0].response_sha256).toMatch(/^[0-9a-f]{64}$/);
       expect(receipt.rows[0].delivery_status).toBe('delivered');
+    } finally {
+      client.release();
+    }
+  });
+
+  it('persists replay-safe minimized Trafft shadow context and registration', async () => {
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `INSERT INTO business_v2.interactions
+           (party_id,channel,direction,subject,occurred_at,source_provider,
+            source_id,metadata,last_updated_by)
+         VALUES ($1,'booking','inbound','fixture booking',$2::timestamptz,
+                 'trafft','appt-shadow-pg',$3::jsonb,'integration')`,
+        [
+          partyId,
+          '2026-08-25T20:00:00Z',
+          JSON.stringify({
+            event_type: 'booked',
+            status: 'approved',
+            service: 'Fixture consultation',
+            raw_payload: { customerEmail: 'must-not-persist@example.invalid' },
+          }),
+        ],
+      );
+      const first = await ingestTrafftRelationshipContextShadowWithClient(
+        client,
+        { limit: 100, observedAt: '2026-08-25T20:05:00Z' },
+      );
+      expect(first.observationsNew).toBeGreaterThanOrEqual(1);
+      expect(first.complete).toBe(true);
+      expect(first.heldIdentityFacts).toBe(first.rows.length);
+      const replay = await ingestTrafftRelationshipContextShadowWithClient(
+        client,
+        { limit: 100, observedAt: '2026-08-25T20:06:00Z' },
+      );
+      expect(replay.observationsDuplicate).toBe(replay.rows.length);
+      const stored = await client.query<{
+        value: Record<string, unknown>;
+        current_party_id: string | null;
+      }>(
+        `SELECT o.value,o.current_party_id::text
+           FROM business_v2.party_context_observations o
+          WHERE o.source_system='trafft'
+            AND o.source_record_id='appt-shadow-pg'`,
+      );
+      expect(stored.rows).toHaveLength(1);
+      expect(JSON.stringify(stored.rows[0].value)).not.toContain(
+        'customerEmail',
+      );
+      expect(stored.rows[0].current_party_id).toBeNull();
+      const projectionCount = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count
+           FROM business_v2.party_context_projections
+          WHERE section='appointments'`,
+      );
+      expect(projectionCount.rows[0].count).toBe('0');
+      const registration = await client.query<{
+        enabled: boolean;
+        conformance_status: string;
+      }>(
+        `SELECT enabled,conformance_status
+           FROM business_v2.party_context_adapter_registrations
+          WHERE adapter_key='trafft_host_ledger'`,
+      );
+      expect(registration.rows).toEqual([
+        { enabled: true, conformance_status: 'passed' },
+      ]);
     } finally {
       client.release();
     }

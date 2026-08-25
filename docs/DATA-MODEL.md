@@ -2114,7 +2114,7 @@ Things this document deliberately does NOT propose:
 
 ---
 
-## Relationship Context extension (`NC-20260825-003`, local dark target)
+## Relationship Context extension (`NC-20260825-003/004`)
 
 Migration 137 extends the Party model without making email or any provider the
 new identity authority:
@@ -2139,9 +2139,12 @@ to the survivor while keeping original evidence IDs. Projection conflicts abort
 the merge rather than choosing one. All persisted JSON surfaces are capped at
 8,192 bytes.
 
-This target remains admin-only and locally unapplied. Existing agent-facing
-views and `best_party_by_email()` are not changed by source presence; the new
-host service never uses first-row email selection.
+The schema remains admin-only until explicit later grants. NC-004's first live
+source writes minimized Trafft appointment observations with an exact source
+reference but null Party identity; it creates `needs_identity` exceptions and
+no current projection. Existing agent-facing views and
+`best_party_by_email()` are not changed, and the new service never uses
+first-row email selection.
 
 ## Migration philosophy
 

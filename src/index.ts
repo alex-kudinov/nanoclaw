@@ -150,6 +150,13 @@ import {
 import { runReaper as runWebhookInboxReaper } from './webhook-inbox-reaper.js';
 import { enqueueBookingPlutioActivity } from './booking-plutio-host.js';
 import { runSweep as runTrafftSweep } from './trafft-sweeper.js';
+import {
+  getTrafftRelationshipContextShadowHealth,
+  runTrafftRelationshipContextShadow,
+  TRAFFT_SHADOW_INTERVAL_MS,
+  trafftRelationshipContextShadowEnabled,
+} from './relationship-context-trafft-shadow.js';
+import { relationshipContextPolicyDiagnostic } from './relationship-context-policy.js';
 import { startHeartbeat } from './heartbeat.js';
 import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
@@ -2162,6 +2169,10 @@ async function main(): Promise<void> {
           tandemPaymentFailureDelayMinutes: 5,
           heartbeatMode: 'stripe_events_only',
         },
+        relationshipContext: {
+          query: relationshipContextPolicyDiagnostic(),
+          trafftShadow: getTrafftRelationshipContextShadowHealth(),
+        },
       };
     },
     runAgent: runContainerAgent,
@@ -2283,6 +2294,29 @@ async function main(): Promise<void> {
     },
   });
   await webhookServer.start();
+  let relationshipContextTrafftShadowInFlight = false;
+  const runRelationshipContextTrafftShadowTick = async (): Promise<void> => {
+    if (relationshipContextTrafftShadowInFlight) {
+      logger.warn('relationship context Trafft shadow tick already running');
+      return;
+    }
+    relationshipContextTrafftShadowInFlight = true;
+    try {
+      await runTrafftRelationshipContextShadow();
+    } catch (err) {
+      logger.error({ err }, 'relationship context Trafft shadow tick failed');
+    } finally {
+      relationshipContextTrafftShadowInFlight = false;
+    }
+  };
+  if (trafftRelationshipContextShadowEnabled()) {
+    void runRelationshipContextTrafftShadowTick();
+    const relationshipContextTrafftShadowTimer = setInterval(
+      () => void runRelationshipContextTrafftShadowTick(),
+      TRAFFT_SHADOW_INTERVAL_MS,
+    );
+    relationshipContextTrafftShadowTimer.unref();
+  }
   if (STUDENT_LIFECYCLE_ENABLED) {
     setInterval(() => {
       studentLifecycleHealth.refresh().catch(() => undefined);

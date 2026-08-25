@@ -679,12 +679,12 @@ BEGIN
     p.id, p.source_provider, 'legacy-primary', p.party_type, p.source_id,
     'legacy_party_source', '1.0.0', 1, 'active', NULL,
     p.created_at, p.updated_at,
-    encode(digest(
+    encode(sha256(convert_to(
       jsonb_build_array(
         'legacy-party-source-v1', p.id, p.source_provider, p.source_id
       )::text,
-      'sha256'
-    ), 'hex')
+      'UTF8'
+    )), 'hex')
   FROM business_v2.parties p
   WHERE p.merged_into IS NULL
     AND nullif(trim(p.source_provider), '') IS NOT NULL

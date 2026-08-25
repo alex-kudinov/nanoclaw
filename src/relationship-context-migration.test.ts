@@ -53,6 +53,8 @@ describe('migration 137 relationship context dark foundation', () => {
     expect(migration).toContain(
       'SELECT business_v2.fn_relationship_context_backfill_legacy_refs()',
     );
+    expect(migration).toContain('sha256(convert_to(');
+    expect(migration).not.toContain('digest(');
   });
 
   it('bounds every persisted JSON surface to 8192 bytes', () => {

@@ -132,6 +132,12 @@ export interface HealthPayload {
     heartbeatMode: 'stripe_events_only';
     health?: import('./checkout-recovery-store.js').CheckoutRecoveryHealth;
   };
+  relationshipContext?: {
+    query: ReturnType<
+      typeof import('./relationship-context-policy.js').relationshipContextPolicyDiagnostic
+    >;
+    trafftShadow: import('./relationship-context-trafft-shadow.js').TrafftShadowHealth;
+  };
 }
 
 export interface WebhookServerDeps {

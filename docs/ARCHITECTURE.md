@@ -519,9 +519,14 @@ identity and has no model-writable work ID. The host must already hold and
 consume one exact work/subject/purpose/section grant; the global feature flag
 also defaults off. Context never grants an external action.
 
-This source is local and uncommitted until the NC-003 review/verification gate.
-No migration, provider adapter, minion grant, Plutio write/backfill, deployment,
-or production behavior is active from source presence.
+NC-003 is committed and pushed. NC-004 adds a production-gated, credential-free
+Trafft host-ledger shadow. It reads only minimized source-bound interaction
+fields, records exact appointment-reference observations, and emits
+`needs_identity` without a Party projection because current emails are not
+source-verified. It runs only under
+`RELATIONSHIP_CONTEXT_TRAFFT_SHADOW_ENABLED=1`; query capability remains off.
+See `docs/RELATIONSHIP-CONTEXT-PRODUCTION-ROLLOUT.md` for deployment and live
+verification gates.
 
 ---
 

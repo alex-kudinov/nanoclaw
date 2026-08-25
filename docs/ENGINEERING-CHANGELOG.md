@@ -8,6 +8,39 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260825-004 — Relationship Context production rollout
+
+- Date: 2026-08-25T22:27:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; implementation and correction review complete, production
+  mutation pending
+- Commit/PR: isolated
+  `codex/relationship-context-production-rollout-20260825` from reviewed
+  foundation `dadb5cc7`, directly containing live `8e475e03`
+- Change class: C5 identity/security boundary plus C3 deployment
+- Outcome: migration 137 is portable to production PostgreSQL and a
+  credential-free Trafft host-ledger shadow stores minimized exact-reference
+  appointment observations without inheriting email-selected Party identity,
+  creating projections, or enabling a minion consumer.
+- Review: R1 found one material startup-blocking/timer issue. Fire-and-forget,
+  `.unref()`, and non-overlap corrections were applied; R2 returned
+  `NO MATERIAL FINDINGS`. R1 used nine model calls / 103,231 maximum context
+  tokens (slightly above the 100k target); R2 used nine calls / 61,261 maximum
+  context with no warning.
+- Verification: focused/typecheck and no-`pgcrypto` disposable PostgreSQL
+  proofs pass; full root is 3,280 pass / 25 skip with only the unchanged CNPC
+  wrapper failure; runner 45/45, continuity, capability, diff, and targeted
+  sensitive-pattern checks pass. Immutable release/deployment checks pending.
+- Deployment/migration: none yet. Live remains exact `8e475e03`; migration 137
+  is absent.
+- Rollback/recovery: discard local source before deployment. Production will
+  retain prior release/plist and database backups; migration rollback becomes
+  destructive/refused once shadow evidence exists.
+- Documentation: production rollout, architecture/project/data/security,
+  active work, decision, review reports, and program evidence.
+- Follow-ups: finish verification, commit/push/build, then deploy and verify the
+  authorized shadow while keeping query/minion capability disabled.
+
 ### NC-20260825-003 — Relationship Context dark foundation
 
 - Date: 2026-08-25T18:55:00Z

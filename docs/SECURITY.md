@@ -575,9 +575,11 @@ write. The local dark foundation enforces:
 - Plutio planning has only a pure `dry_run` path and no provider tool/outbox.
 
 The runner may expose the tool definition, but source presence plus an absent
-feature flag/grant always denies before repository access. No group is granted
-or configured in this task. Production migration, adapter/provider access,
-minion activation, and deployment are separate security decisions and canaries.
+feature flag/grant always denies before repository access. NC-004's separately
+gated Trafft shadow has no credential or provider network path, reads only
+minimized host-ledger fields, and records exact appointment references with
+null Party identity and no projection. `RELATIONSHIP_CONTEXT_ENABLED=0` remains
+the production query boundary; no group is granted or configured.
 
 ## Build, supply-chain, and runtime controls
 

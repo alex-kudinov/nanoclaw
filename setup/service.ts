@@ -136,6 +136,10 @@ function setupLaunchd(
         <string></string>
         <key>PROCUREMENT_OPERATOR_UIDS</key>
         <string></string>
+        <key>RELATIONSHIP_CONTEXT_ENABLED</key>
+        <string>0</string>
+        <key>RELATIONSHIP_CONTEXT_TRAFFT_SHADOW_ENABLED</key>
+        <string>0</string>
     </dict>
     <key>StandardOutPath</key>
     <string>${projectRoot}/logs/nanoclaw.log</string>
