@@ -325,6 +325,7 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
     [now.toISOString(), limit],
   );
   const claimed: CheckoutRecoveryClaimedIntent[] = [];
+  const claimedEmailDigests = new Set<string>();
   for (const intent of due.rows) {
     const locked = await client.query<CaseRow>(
       `SELECT id::text, case_uuid::text, stripe_account, state,
@@ -408,6 +409,24 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
       await suppressIntent(client, intent, 'routing_context_missing', now);
       continue;
     }
+    if (
+      item.email_sha256 === null ||
+      claimedEmailDigests.has(item.email_sha256)
+    ) {
+      continue;
+    }
+    const recentOtherCaseHandoff = await client.query(
+      `SELECT 1
+         FROM business_v2.checkout_recovery_send_intents other_intent
+         JOIN business_v2.checkout_recovery_cases other_case
+           ON other_case.id = other_intent.case_id
+        WHERE other_case.email_sha256 = $1
+          AND other_intent.case_id <> $2
+          AND other_intent.accepted_at > $3::timestamptz - interval '10 minutes'
+        LIMIT 1`,
+      [item.email_sha256, intent.case_id, now.toISOString()],
+    );
+    if (recentOtherCaseHandoff.rowCount) continue;
     const leaseToken = crypto.randomUUID();
     const attemptNumber = intent.attempt_count + 1;
     const payload: CheckoutRecoveryClaimedIntent['payload'] = {
@@ -473,6 +492,7 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
       attemptNumber,
       payload,
     });
+    claimedEmailDigests.add(item.email_sha256);
   }
   return claimed;
 }

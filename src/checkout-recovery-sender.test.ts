@@ -98,6 +98,8 @@ describe('checkout recovery Encharge handoff', () => {
       "'sibling_purchase'",
       "'touch_one_not_accepted'",
       "'lease_expired_dispatch_ambiguous'",
+      "interval '10 minutes'",
+      'claimedEmailDigests',
     ]) {
       expect(source).toContain(guard);
     }
