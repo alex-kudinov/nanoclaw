@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-24T22:20:00Z
 - Owner/client: Codex implementer + Claude Sonnet/high reviewer
-- State: ready_for_deploy; reviewed source only, customer delivery disabled
+- State: deployed_unverified; prospective production delivery active
 - Authority: accepted Growth decision
   `decision:abandoned-checkout-two-reminder-activation-2026-08-24`
 - Plan review: Claude R1 returned `CHANGES REQUIRED` and found late-webhook
@@ -33,12 +33,23 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   dynamic product/link fields were blank. Flow `400441` was immediately
   deactivated. The host now mirrors only the public product name and safe
   query-free Tandem return URL into dedicated person fields on the same event,
-  and all eight templates render those reliable fields. Production remains
-  disabled pending a fresh two-touch received-message canary.
-- Boundary: no production migration/config/restart, Encharge template/flow,
-  legacy trigger, customer event/email, historical replay, payment,
-  accounting, CRM, booking, roster/access, or required-student-message state
-  has changed.
+  and all eight templates render those reliable fields. Cross-case mutable
+  context is quarantined under one global transaction-scoped claim lock;
+  Claude R4/R5 findings were fixed and R6 returned `NO MATERIAL FINDINGS`.
+- Deployment: migration 136 and exact release `61b12648839c` are live with
+  verified source/artifact/Node identity, connected Gmail/Slack, one listener,
+  empty queues, and the unchanged 273-line error baseline. Protected backup:
+  `NC-20260824-009-20260824T235259Z`; production env backup:
+  `.env.backup-checkout-production-20260825T012711Z`.
+- Provider/live proof: flow 400441 and templates 479523-479530 are active.
+  The corrected internal two-touch canary arrived exactly once per touch with
+  correct subject/product and HTTP-200 CTA resolution to the canonical ACC
+  page. Duplicate touch-one replay remained one received message. Legacy entry
+  triggers across seven retained flows are uniquely retired; existing entrants
+  can drain.
+- Cutoff/boundary: production cutoff is `2026-08-25T01:27:11Z`; no historical
+  case or Heartbeat account can enroll. No purchase/payment/refund, accounting,
+  CRM, booking, roster/access, or required-student-message state changed.
 
 ### NC-20260824-008 — Multilingual Foundation grader variants
 
