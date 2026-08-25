@@ -12,7 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-24T22:25:00-05:00
 - Owner/client: Codex
-- State: ready_for_deploy; production remains safely contained
+- State: deployed_unverified; incident corrected and shadow restored, original
+  14-day/progress/natural-parity gate remains open
 - Diagnosis/containment: 16 lifecycle normalization failures generated the
   `#gru-chief` alerts because real Heartbeat webhook bodies omit the registered
   action. Exact rollback removed only the four new registrations, restored the
@@ -31,8 +32,25 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `4f63b0e7-a644-453f-ad25-40bbed6742cf` returned
   `NO MATERIAL FINDINGS` in six model calls / 91,943 maximum context tokens
   with no usage warning.
-- Deployment: none for the correction yet. Workflow remains inactive and the
-  four provider rows remain absent pending exact release/canary proof.
+- Release/deployment: exact pushed `8e475e036ad6d34bafe51d8f45c402b9c8bf1c38`,
+  source tree `0d35a1f2e0183c7f4c333f261c92ff5ec0a7e97d`, 948-file artifact
+  `b61d41687e8e78ccf26218b06944b11bb673eebef6898222727faf93c431ed99`,
+  archive `566965b79f2dbb785277d3e0412d723fcf286ecad6a0389b109118c5c15cc5bb`.
+  Protected backups, exact inactive workflow replacement, zero-work host switch,
+  and retained rollback to `61b12648` passed. Checkout production sends and
+  cutoff are preserved.
+- Canary/provider proof: four provider-free minimal payloads yielded one event
+  per action, four identity holds/one non-projecting applied update, and zero
+  enrollment/state/action rows. Shared-error count stayed 16. The four provider
+  rows were restored with new exact IDs; final registry is protected 18 + 4,
+  receipt 4, legacy unchanged, action authority none, Circle false. n8n has zero
+  active/retained target executions and the error count remained 16 across the
+  post-reactivation observation.
+- Live health: exact release/tree/artifact/code root, one listener, Gmail/Slack,
+  empty queues, healthy lifecycle store, unchanged 273 error lines,
+  `actionConsumers=false`, `circle=false`.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260824-010-student-lifecycle-relay-correction.md`.
 
 ### NC-20260824-009 — Prospective two-reminder checkout recovery
 

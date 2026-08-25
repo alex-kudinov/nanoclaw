@@ -3,6 +3,12 @@
 Status: implementation and rollout authority for `NC-20260824-007`
 Scope: Community stages 2-4 only; no legacy cutover or lifecycle consumers
 
+Live correction: `NC-20260824-010` replaced the action-marker assumption with
+fail-closed inference over the four mutually exclusive minimal payload shapes
+and aligned the host with discarded `name`/`courseName` fields. Exact release
+`8e475e036ad6` is live; the protected 18 + 4 registry and no-error shadow are
+restored. The original 14-day/progress/natural-parity gate remains open.
+
 ## Immutable inputs
 
 - Control-plane contract: `docs/STUDENT-LIFECYCLE-CONTROL-PLANE.md`
