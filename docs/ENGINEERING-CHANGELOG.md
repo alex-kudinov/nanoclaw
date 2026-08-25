@@ -12,11 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-25T18:55:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_review; local dark implementation, independent review, and
-  verification complete
-- Commit/PR: uncommitted isolated
-  `codex/relationship-context-dark-foundation-20260825` from exact reviewed/live
-  lineage `683d61208e1c`
+- State: complete; local dark implementation, independent review, immutable
+  packaging proof, and verification complete
+- Commit/PR: pushed `codex/relationship-context-dark-foundation-20260825`;
+  implementation `050fed67aabcf3cc7cbc52dcc74ffa63eb6e62b4` from exact
+  reviewed/live lineage `683d61208e1c`
 - Change class: C2 reversible internal source/schema; affected operational
   identity/security class remains C5 when later activated
 - Outcome: migration/rollback 137 plus provider-neutral adapter/manifest/fact
@@ -58,6 +58,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Disposable PostgreSQL also proves migration apply, legacy backfill replay and
   conflict refusal, JSON refusal, merge lineage, zero non-admin grants,
   populated rollback refusal, and clean empty rollback; both test DBs removed.
+- Packaging proof: exact committed tree
+  `5f1c64f01f3a5e232f998fc8b054dbaf886bc090` produced a 980-file artifact
+  `20ead1203c836ce417a4916e5ede77223d3920436425dc321eebee2c2a88e33d`
+  and archive
+  `e694bb2031f54f1facf3b0a4f3616a46b1162e076472ebe3e339013fdf2eb6e4`.
+  Packaging is verification only; the artifact was not activated or deployed.
 - Deployment/migration: none. No production DB/runtime/config, real provider,
   credential, customer record, Plutio field/data/backfill, Booking behavior,
   minion grant/activation, communication, restart, deployment, or live outcome.
@@ -68,8 +74,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Documentation: control-plane design, implementation plan, project map,
   architecture/data/security guides, business DB guide/migration index,
   structure-only schema reference, active work, and program evidence.
-- Follow-ups: commit and push this exact branch. Production migration, real
-  adapters, Booking migration, Plutio
+- Follow-ups: Production migration, real adapters, Booking migration, Plutio
   fields/backfill, minion activation, deployment, and natural outcomes remain
   separately authorized.
 

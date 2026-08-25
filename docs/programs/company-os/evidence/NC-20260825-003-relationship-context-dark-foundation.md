@@ -112,10 +112,19 @@ Measured implementation-review usage:
   - separate empty rollback succeeded;
   - both disposable databases were dropped.
 
-## Pending in this task
+## Immutable local completion
 
-- commit and push the exact reviewed branch;
-- program/changelog terminal reconciliation with the immutable commit.
+- pushed branch: `codex/relationship-context-dark-foundation-20260825`;
+- implementation commit:
+  `050fed67aabcf3cc7cbc52dcc74ffa63eb6e62b4`;
+- source tree: `5f1c64f01f3a5e232f998fc8b054dbaf886bc090`;
+- release-build proof: 980 files, artifact
+  `20ead1203c836ce417a4916e5ede77223d3920436425dc321eebee2c2a88e33d`,
+  archive
+  `e694bb2031f54f1facf3b0a4f3616a46b1162e076472ebe3e339013fdf2eb6e4`.
+
+The artifact was built to prove the exact committed source packages through
+the established workflow. It was not activated or deployed.
 
 ## Separately gated after this task
 
