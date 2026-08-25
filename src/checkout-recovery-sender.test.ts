@@ -18,7 +18,11 @@ const intent: CheckoutRecoveryClaimedIntent = {
   attemptNumber: 1,
   payload: {
     name: CHECKOUT_RECOVERY_ENCHARGE_EVENT,
-    user: { email: 'pilot@example.com' },
+    user: {
+      email: 'pilot@example.com',
+      checkout_recovery_product_name: 'ACC Level 1 Full Program',
+      checkout_recovery_return_url: 'https://tandemcoach.co/acc/',
+    },
     properties: {
       touch: 1,
       locale: 'en',

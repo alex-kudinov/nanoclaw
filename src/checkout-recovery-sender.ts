@@ -75,7 +75,11 @@ export interface CheckoutRecoveryClaimedIntent {
   attemptNumber: number;
   payload: {
     name: typeof CHECKOUT_RECOVERY_ENCHARGE_EVENT;
-    user: { email: string };
+    user: {
+      email: string;
+      checkout_recovery_product_name: string;
+      checkout_recovery_return_url: string;
+    };
     properties: {
       touch: 1 | 2;
       locale: 'en' | 'es' | 'ja' | 'fr';
@@ -408,7 +412,11 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
     const attemptNumber = intent.attempt_count + 1;
     const payload: CheckoutRecoveryClaimedIntent['payload'] = {
       name: CHECKOUT_RECOVERY_ENCHARGE_EVENT,
-      user: { email: item.contact_email },
+      user: {
+        email: item.contact_email,
+        checkout_recovery_product_name: item.product_name,
+        checkout_recovery_return_url: item.return_url,
+      },
       properties: {
         touch: intent.touch as 1 | 2,
         locale: item.checkout_locale,

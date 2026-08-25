@@ -28,6 +28,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   to receipted `held`, and touch two waits for touch-one provider acceptance or
   suppresses after a terminal non-acceptance. Disposable PostgreSQL proves both
   paths; bounded Sonnet/high correction R3 returned `NO MATERIAL FINDINGS`.
+- Pilot correction: the first received internal canary exposed the account's
+  known Encharge event-property rendering failure: the message arrived but its
+  dynamic product/link fields were blank. Flow `400441` was immediately
+  deactivated. The host now mirrors only the public product name and safe
+  query-free Tandem return URL into dedicated person fields on the same event,
+  and all eight templates render those reliable fields. Production remains
+  disabled pending a fresh two-touch received-message canary.
 - Boundary: no production migration/config/restart, Encharge template/flow,
   legacy trigger, customer event/email, historical replay, payment,
   accounting, CRM, booking, roster/access, or required-student-message state

@@ -161,6 +161,13 @@ the event before the host stopped. The intent therefore moves to `held` with
 an append-only receipt and is never automatically replayed. A verified
 provider failure can still follow the bounded retry schedule.
 
+Encharge event-property merge tags are not a reliable rendering surface in
+this account. The host therefore mirrors only the already-minimized public
+product name and query-free Tandem return URL into dedicated mutable person
+fields on the same ingest event. Templates render those two fields; the event
+properties remain the trigger/routing facts. No payment or checkout token is
+projected into Encharge.
+
 ## Deployment and rollback
 
 Release follows `docs/RELEASE-INTEGRITY.md` without abbreviation: clean exact
