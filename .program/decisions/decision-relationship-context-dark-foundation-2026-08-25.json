@@ -1,0 +1,17 @@
+{
+  "decision_id": "decision:relationship-context-dark-foundation-2026-08-25",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-25T18:08:00Z",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "program",
+    "work:relationship-context-dark-foundation",
+    "work:relationship-context-control-plane-design",
+    "work:relationship-context-adapter-extensibility-design"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Proceed from the accepted Relationship Context design and adapter-extensibility amendment with an independently reviewed local dark foundation. This accepts business_v2.parties.id as the internal join key while native source identities remain authoritative, the design's initial freshness and retention defaults for local schema/tests, the deny-by-default capability matrix, the tracked code-reviewed adapter registry, and Heffl remaining outside this implementation. It authorizes an isolated clean worktree, reversible ordered schema and rollback, deterministic host source, sanitized fixtures, fixture-only reference adapter, conformance harness, ambiguity-safe identity and context mechanics, dry-run-only Plutio projection planning, tests, documentation, review, commit, and push. It does not authorize production database migration or reads/writes, real provider access or adapter activation, credentials, Plutio field creation or population/backfill, Booking production behavior change, minion activation, customer communication, deployment/restart, production configuration, or any external business action.",
+  "source_task": "Current owner instruction in Codex task 01a039f6-3708-72b3-beaf-41288566b6a3: proceed with the plan and implementation."
+}

@@ -770,6 +770,111 @@ registerTool(
   },
 );
 
+const relationshipContextSections = [
+  'identity',
+  'relationship',
+  'appointments',
+  'commercial',
+  'communications',
+  'learning',
+  'attribution',
+  'consent',
+  'open_work',
+  'data_quality',
+] as const;
+
+registerTool(
+  'party_context_get',
+  'Request a host-authorized, purpose-filtered Relationship Context pack. This never grants an action and fails unless the host already bound this exact run, container, subject, purpose, work item, and section set. Results arrive as a follow-up message.',
+  {
+    purpose: z.enum([
+      'answer_appointment_inquiry',
+      'service_existing_relationship',
+      'intake_prior_context',
+      'financial_fulfillment',
+      'grading_prerequisite',
+      'management_exception',
+    ]),
+    party_id: z.number().int().positive().optional(),
+    source_provider: z
+      .string()
+      .regex(/^[a-z][a-z0-9._-]{0,127}$/)
+      .optional(),
+    source_scope: z.string().min(1).max(160).optional(),
+    source_entity_type: z
+      .string()
+      .regex(/^[a-z][a-z0-9._-]{0,127}$/)
+      .optional(),
+    source_external_id: z.string().min(1).max(500).optional(),
+    sections: z
+      .array(z.enum(relationshipContextSections))
+      .min(1)
+      .max(relationshipContextSections.length),
+    max_age_seconds: z
+      .record(
+        z.enum(relationshipContextSections),
+        z.number().int().min(1).max(31_536_000),
+      )
+      .optional(),
+  },
+  async (args) => {
+    const externalValues = [
+      args.source_provider,
+      args.source_scope,
+      args.source_entity_type,
+      args.source_external_id,
+    ];
+    const externalCount = externalValues.filter(
+      (value) => value !== undefined,
+    ).length;
+    if (
+      (args.party_id === undefined && externalCount !== 4) ||
+      (args.party_id !== undefined && externalCount !== 0)
+    ) {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: 'Relationship Context request refused locally: supply exactly one subject form (party_id OR all four scoped external-reference fields).',
+          },
+        ],
+        isError: true,
+      };
+    }
+    const subject =
+      args.party_id !== undefined
+        ? { kind: 'party' as const, partyId: args.party_id }
+        : {
+            kind: 'external_ref' as const,
+            reference: {
+              provider: args.source_provider!,
+              scope: args.source_scope!,
+              entityType: args.source_entity_type!,
+              externalId: args.source_external_id!,
+            },
+          };
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'party_context_get',
+      purpose: args.purpose,
+      subject,
+      sections: args.sections,
+      maxAgeSeconds: args.max_age_seconds,
+      groupFolder,
+      source_container: containerName || undefined,
+      run_id: runId,
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: 'Relationship Context request queued. This is not a context or action receipt; wait for the host follow-up.',
+        },
+      ],
+    };
+  },
+);
+
 registerTool(
   'procurement_queue',
   'List host-normalized CaleProcure and emailed opportunities awaiting Procurement review. This is read-only and never returns raw portal snapshots or email bodies.',

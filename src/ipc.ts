@@ -69,6 +69,11 @@ import {
   ProcurementIpcPayload,
 } from './procurement-ipc-handlers.js';
 import {
+  dispatchRelationshipContextIpc,
+  isRelationshipContextIpcType,
+  type RelationshipContextGetPayload,
+} from './relationship-context-ipc.js';
+import {
   dispatchGraderFileMessage,
   GraderFileMessagePayload,
   isGraderFileMessageType,
@@ -1613,6 +1618,44 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     { err, sourceGroup, type: data.type },
                     'Gmail IPC dispatch failed after authorization',
                   );
+                }
+              } else if (isRelationshipContextIpcType(data.type)) {
+                try {
+                  if (!deps.deliverSourceInput) {
+                    throw new Error(
+                      'relationship context source-input transport is unavailable',
+                    );
+                  }
+                  await dispatchRelationshipContextIpc(
+                    sourceGroup,
+                    data as RelationshipContextGetPayload,
+                    { deliverSourceInput: deps.deliverSourceInput },
+                  );
+                  fs.unlinkSync(filePath);
+                } catch (err) {
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'relationship-context',
+                  );
+                  if (data.source_container && deps.deliverSourceInput) {
+                    deps.deliverSourceInput(
+                      sourceGroup,
+                      data.source_container,
+                      '[RELATIONSHIP CONTEXT DENIED] The host policy or request binding denied this query. Do not retry with another Party, purpose, or section; escalate the missing host grant.',
+                    );
+                  }
+                  logger.warn(
+                    {
+                      sourceGroup,
+                      sourceContainer: data.source_container,
+                      type: data.type,
+                      quarantinedAt,
+                      err,
+                    },
+                    'Relationship Context IPC denied and quarantined',
+                  );
+                  continue;
                 }
               } else if (isProcurementIpcType(data.type)) {
                 if (sourceGroup !== 'procurement') {

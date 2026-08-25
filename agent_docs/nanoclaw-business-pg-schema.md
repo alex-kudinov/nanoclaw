@@ -1956,3 +1956,207 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   party_id                      bigint
   related_entity                jsonb
 ```
+
+## Migration 137 local target — not current production schema
+
+The following structure-only relations are defined by the local, unapplied
+`137_relationship_context_dark.sql`. Source presence is not migration,
+activation, provider access, or minion authority.
+
+### business_v2.party_external_refs
+
+```
+  id                            bigint               NOT NULL
+  party_id                      bigint               NOT NULL
+  provider                      text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_type                   text                 NOT NULL
+  external_id                   text                 NOT NULL
+  adapter_key                   text                 NOT NULL
+  adapter_version               text                 NOT NULL
+  schema_version                integer              NOT NULL
+  status                        text                 NOT NULL DEFAULT='active'
+  verified_at                   timestamp with time zone
+  first_seen_at                 timestamp with time zone NOT NULL
+  last_seen_at                  timestamp with time zone NOT NULL
+  source_receipt_sha256         text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+### business_v2.party_identifier_claims
+
+```
+  id                            bigint               NOT NULL
+  party_id                      bigint               NOT NULL
+  identifier_kind               text                 NOT NULL
+  identifier_fingerprint        text                 NOT NULL
+  restricted_value              text
+  source_ref_id                 bigint
+  verification_method           text                 NOT NULL
+  confidence                    text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='active'
+  valid_from                    timestamp with time zone NOT NULL
+  valid_until                   timestamp with time zone
+  evidence_sha256               text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+### business_v2.party_identity_exceptions
+
+```
+  id                            bigint               NOT NULL
+  fingerprint                   text                 NOT NULL
+  current_party_id              bigint
+  candidate_party_ids           ARRAY                NOT NULL DEFAULT={}
+  reason_code                   text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='open'
+  owner_group                   text                 NOT NULL DEFAULT='chief'
+  evidence_refs                 jsonb                NOT NULL DEFAULT={}
+  occurrence_count              integer              NOT NULL DEFAULT=1
+  first_seen_at                 timestamp with time zone NOT NULL
+  last_seen_at                  timestamp with time zone NOT NULL
+  resolution_code               text
+  resolution_receipt_sha256     text
+  resolved_at                   timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+### business_v2.party_context_adapter_registrations
+
+```
+  id                            bigint               NOT NULL
+  adapter_key                   text                 NOT NULL
+  adapter_version               text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  manifest_version              integer              NOT NULL
+  manifest_sha256               text                 NOT NULL
+  manifest                      jsonb                NOT NULL
+  config_declaration            jsonb                NOT NULL DEFAULT={}
+  enabled                       boolean              NOT NULL DEFAULT=false
+  conformance_status            text                 NOT NULL DEFAULT='pending'
+  conformance_receipt_sha256    text
+  circuit_status                text                 NOT NULL DEFAULT='closed'
+  failure_count                 integer              NOT NULL DEFAULT=0
+  last_error_code               text
+  last_health_at                timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+### business_v2.party_context_observations
+
+```
+  id                            bigint               NOT NULL
+  observation_uuid              uuid                 NOT NULL
+  schema_version                integer              NOT NULL
+  adapter_key                   text                 NOT NULL
+  adapter_version               text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  source_fact_key               text                 NOT NULL
+  fact_type                     text                 NOT NULL
+  fact_schema_version           integer              NOT NULL
+  original_party_id             bigint
+  current_party_id              bigint
+  related_party_ids             ARRAY                NOT NULL DEFAULT={}
+  value                         jsonb                NOT NULL
+  value_sha256                  text                 NOT NULL
+  source_record_type            text                 NOT NULL
+  source_record_id              text                 NOT NULL
+  source_event_id               text
+  effective_at                  timestamp with time zone
+  observed_at                   timestamp with time zone NOT NULL
+  verified_at                   timestamp with time zone
+  fresh_until                   timestamp with time zone
+  confidence                    text                 NOT NULL
+  conflict_state                text                 NOT NULL DEFAULT='none'
+  privacy_class                 text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+### business_v2.party_context_projections
+
+```
+  id                            bigint               NOT NULL
+  party_id                      bigint               NOT NULL
+  section                       text                 NOT NULL
+  projection_key                text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=1
+  value                         jsonb                NOT NULL
+  value_sha256                  text                 NOT NULL
+  source_watermarks             jsonb                NOT NULL DEFAULT={}
+  status                        text                 NOT NULL
+  missing_codes                 jsonb                NOT NULL DEFAULT=[]
+  conflict_codes                jsonb                NOT NULL DEFAULT=[]
+  effective_at                  timestamp with time zone
+  observed_at                   timestamp with time zone NOT NULL
+  fresh_until                   timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+### business_v2.party_context_query_receipts
+
+```
+  id                            bigint               NOT NULL
+  request_uuid                  uuid                 NOT NULL
+  run_id                        uuid                 NOT NULL
+  source_container_sha256       text                 NOT NULL
+  work_item_id                  text                 NOT NULL
+  actor_group                   text                 NOT NULL
+  purpose                       text                 NOT NULL
+  original_party_id             bigint
+  current_party_id              bigint
+  unresolved_subject_sha256     text
+  requested_sections            jsonb                NOT NULL
+  returned_sections             jsonb                NOT NULL
+  projection_versions           jsonb                NOT NULL DEFAULT={}
+  source_watermarks             jsonb                NOT NULL DEFAULT={}
+  policy_decision               text                 NOT NULL
+  result_status                 text                 NOT NULL
+  error_code                    text
+  response_sha256               text                 NOT NULL
+  delivery_status               text                 NOT NULL DEFAULT='pending'
+  delivery_error_code           text
+  delivered_at                  timestamp with time zone
+  started_at                    timestamp with time zone NOT NULL
+  completed_at                  timestamp with time zone NOT NULL
+  duration_ms                   integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+### business_v2.party_context_plutio_projection_receipts
+
+```
+  id                            bigint               NOT NULL
+  plan_uuid                     uuid                 NOT NULL
+  original_party_id             bigint               NOT NULL
+  current_party_id              bigint               NOT NULL
+  plutio_ref_entity_type        text                 NOT NULL DEFAULT='party'
+  plutio_ref_entity_id          bigint
+  projection_version            integer              NOT NULL
+  projection_sha256             text                 NOT NULL
+  proposed_fields               jsonb                NOT NULL DEFAULT={}
+  proposed_field_count          integer              NOT NULL
+  mode                          text                 NOT NULL DEFAULT='dry_run'
+  status                        text                 NOT NULL
+  conflict_codes                jsonb                NOT NULL DEFAULT=[]
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+### business_v2.v_party_context_health
+
+```
+  active_external_ref_count     bigint
+  open_identity_exception_count bigint
+  observation_count             bigint
+  projection_count              bigint
+  enabled_adapter_count         bigint
+  last_observed_at              timestamp with time zone
+  last_query_at                 timestamp with time zone
+```

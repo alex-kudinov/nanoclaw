@@ -2114,6 +2114,35 @@ Things this document deliberately does NOT propose:
 
 ---
 
+## Relationship Context extension (`NC-20260825-003`, local dark target)
+
+Migration 137 extends the Party model without making email or any provider the
+new identity authority:
+
+- `party_external_refs` holds exact provider/account/entity IDs;
+- `party_identifier_claims` preserves shared/temporal identifier candidates;
+- `party_identity_exceptions` holds ambiguity instead of selecting a likely
+  Party;
+- bounded immutable observations feed one current versioned projection per
+  Party/section/key;
+- query receipts store policy/result identity, versions, hashes, and timing but
+  never returned context values;
+- Plutio projection receipts are `dry_run` only and are not an outbox.
+
+The migration copies each valid legacy `parties.source_provider/source_id` pair
+into one `legacy-primary` external reference with deterministic provenance. It
+does not clear the legacy pair. A conflicting owner aborts the migration.
+
+An after-merge trigger moves current refs, claims, exceptions, observations,
+projections, query-receipt current identity, and Plutio dry-run current identity
+to the survivor while keeping original evidence IDs. Projection conflicts abort
+the merge rather than choosing one. All persisted JSON surfaces are capped at
+8,192 bytes.
+
+This target remains admin-only and locally unapplied. Existing agent-facing
+views and `best_party_by_email()` are not changed by source presence; the new
+host service never uses first-row email selection.
+
 ## Migration philosophy
 
 When the schema is agreed and the migration runs:

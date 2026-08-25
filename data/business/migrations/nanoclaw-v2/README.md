@@ -139,11 +139,18 @@ before applying anything.
   cutoff-gated, and contains no historical replay. Applying it does not
   authorize a provider event or customer email; runtime mode, templates, flow,
   canary, and cutover remain separate gates;
+- migration 137 is NC-20260825-003's local provider-neutral Relationship
+  Context dark foundation. It creates admin-only scoped external refs,
+  identifier claims/exceptions, disabled adapter manifests, bounded
+  observations/projections, immutable query receipts, and dry-run-only Plutio
+  projection receipts. It performs an idempotent conflict-refusing legacy Party
+  source-ref backfill, grants no minion/agent/provider authority, and remains
+  unapplied/unconfigured;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-135 are non-auto-discovered and refuse to erase populated
+- rollbacks 120-137 are non-auto-discovered and refuse to erase populated
   operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
   mailbox-audit, program-facts, outcome-quality, or outcome-review history;
   rollback 128 specifically refuses once any durable `+1` decision exists,
@@ -155,7 +162,9 @@ before applying anything.
   once any lifecycle catalog, identity, event, enrollment, reconciliation,
   history, or exception evidence exists; rollback 135 refuses once any checkout
   recovery case, alias, event, or receipt exists; rollback 136 refuses once any
-  routing context, touch intent, or send receipt exists.
+  routing context, touch intent, or send receipt exists; rollback 137 removes
+  only exact migration-created legacy compatibility refs and otherwise refuses
+  once any Relationship Context evidence exists.
 
 ## Rollback
 

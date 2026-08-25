@@ -8,6 +8,71 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260825-003 — Relationship Context dark foundation
+
+- Date: 2026-08-25T18:55:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_review; local dark implementation, independent review, and
+  verification complete
+- Commit/PR: uncommitted isolated
+  `codex/relationship-context-dark-foundation-20260825` from exact reviewed/live
+  lineage `683d61208e1c`
+- Change class: C2 reversible internal source/schema; affected operational
+  identity/security class remains C5 when later activated
+- Outcome: migration/rollback 137 plus provider-neutral adapter/manifest/fact
+  contracts, fixture-only no-network/no-credential LMS adapter, ambiguity-safe
+  identity/store/service, bounded observations/projections/query receipts,
+  default-off exact-grant `party_context_get`, and pure dry-run Plutio planning.
+- Identity/safety: exact scoped refs outrank claims; a unique verified claim may
+  bind a ref; shared/missing claims produce a minimized exception and no
+  projection. No first-row email selection. The model cannot supply work ID;
+  one host grant owns work/run/container/group/purpose/subject/sections/max-age
+  and is consumed once. Context grants no external action.
+- Schema/privacy: eight admin-only tables; all persisted JSON capped at 8,192
+  bytes; observations and query cores immutable; merge lineage preserves
+  original/current identity; query receipts omit context values; Plutio receipt
+  mode is fixed to `dry_run`; no provider outbox/credential/message/payment
+  instrument/agent grant.
+- Extension boundary: adapters register through stable versioned manifests and
+  fact catalog entries. Duplicate source scopes, undeclared facts/references,
+  invalid semantic versions, privacy/identity declarations, and unscoped
+  identity evidence fail closed. Multi-fact input has a separate 256-KiB
+  envelope while each persistable JSON value remains capped at 8 KiB.
+- Plan review: Sonnet/high R1 found four material gaps. All were corrected; R2
+  closed three and left one minor test-name specificity issue, fixed
+  mechanically before source edits.
+- Implementation review: Sonnet/high R1 session
+  `f2873224-5ee5-467b-ad0c-6200e47da618` found four material issues in
+  transport truth, late identity linking, query ambiguity, and rollback/registry
+  proof. All were fixed. R2 session `61b486b0-e60a-4bad-96cb-8a9bbe638ff0`
+  closed the load-bearing issues and rollback ambiguity. Its packet excluded the
+  contract validator, so Codex directly verified version enforcement, added
+  missing privacy/identity/source-ref checks, and removed the accidental 8-KiB
+  whole-batch ceiling. R1 and R2 each used five Sonnet/high model calls; maximum
+  contexts were 134,549 and 119,248, both above the 100k bounded-review target.
+- Verification: relationship-focused 9 files / 30 tests pass; opt-in disposable
+  PostgreSQL store 1/1 passes; runner build and all 45 tests pass; root format,
+  typecheck, build, docs continuity, capability, and diff checks pass. Full root
+  reports 298 files / 3,274 tests passed and 10 files / 24 tests skipped, with
+  only the unchanged unrelated CNPC wrapper contract failure.
+  Disposable PostgreSQL also proves migration apply, legacy backfill replay and
+  conflict refusal, JSON refusal, merge lineage, zero non-admin grants,
+  populated rollback refusal, and clean empty rollback; both test DBs removed.
+- Deployment/migration: none. No production DB/runtime/config, real provider,
+  credential, customer record, Plutio field/data/backfill, Booking behavior,
+  minion grant/activation, communication, restart, deployment, or live outcome.
+- Rollback/recovery: discard the isolated branch or use guarded rollback 137
+  only while no evidence exists (exact migration-created legacy compatibility
+  refs are removable because legacy columns remain). Populated evidence
+  requires a separately reviewed archival migration.
+- Documentation: control-plane design, implementation plan, project map,
+  architecture/data/security guides, business DB guide/migration index,
+  structure-only schema reference, active work, and program evidence.
+- Follow-ups: commit and push this exact branch. Production migration, real
+  adapters, Booking migration, Plutio
+  fields/backfill, minion activation, deployment, and natural outcomes remain
+  separately authorized.
+
 ### NC-20260824-010 — Contain and correct lifecycle relay alert storm
 
 - Date: 2026-08-24T22:25:00-05:00

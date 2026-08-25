@@ -549,6 +549,36 @@ Code implementation additionally requires:
 
 Changing the tracked plist does not change an installed service.
 
+## Relationship Context boundary (`NC-20260825-003`)
+
+Relationship Context is a read capability over identity-linked business facts,
+so a wrong answer can leak another person's context even without an external
+write. The local dark foundation enforces:
+
+- `RELATIONSHIP_CONTEXT_ENABLED=0` by default;
+- no non-admin database grant in migration 137;
+- a tracked adapter manifest/fact catalog and fixture-only reference adapter;
+- no adapter credential value, network call, direct table write, Party merge,
+  projection mutation, provider call, or action authority;
+- exact one-shot grants bound to directory-derived group, host-minted run ID,
+  source container, host-resolved work ID, subject, purpose, sections, max age,
+  and expiry;
+- no model-writable work ID in `party_context_get`;
+- ambiguity becomes a content-minimized exception, never first-row email
+  selection;
+- every persisted JSON value is bounded to 8,192 bytes and every returned pack
+  to 32 KiB;
+- query receipts contain hashes, versions, status, and timing, not context
+  values, email, messages, provider payloads, or credentials; query resolution
+  and source-container delivery are separately recorded through one terminal
+  pending-to-delivered/failed transition;
+- Plutio planning has only a pure `dry_run` path and no provider tool/outbox.
+
+The runner may expose the tool definition, but source presence plus an absent
+feature flag/grant always denies before repository access. No group is granted
+or configured in this task. Production migration, adapter/provider access,
+minion activation, and deployment are separate security decisions and canaries.
+
 ## Build, supply-chain, and runtime controls
 
 - Use the exact Node major selected by `.nvmrc` and rebuild native modules after

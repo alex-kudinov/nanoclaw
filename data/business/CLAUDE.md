@@ -179,6 +179,20 @@ required for `complete`; refunds remain `needs_review`. Schema/release presence
 does not authorize replaying historical Stripe events or any Bizmgr/QuickBooks
 action. The guarded rollback refuses once any case, alias, or receipt exists.
 
+Migration 137 is `NC-20260825-003`'s local, unapplied Relationship Context dark
+foundation. It adds admin-only scoped external refs, identifier claims and
+identity exceptions, disabled adapter manifests, bounded append-safe
+observations, current section projections, content-minimized query receipts,
+and dry-run-only Plutio projection receipts. It copies valid legacy Party
+source pairs into exact compatibility refs but does not clear the legacy
+columns. Conflicting ownership aborts the migration. Every persisted JSON
+surface is capped at 8,192 bytes; no table contains a provider credential,
+message body, payment instrument, executable provider outbox, or minion grant.
+The guarded rollback removes only exact migration-created legacy compatibility
+refs and otherwise refuses once evidence exists. Schema/source presence does
+not authorize a production migration, real adapter/provider access,
+`party_context_get` grants, Plutio field/data changes, deployment, or live use.
+
 ## Connection
 
 ```bash

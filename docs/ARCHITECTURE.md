@@ -494,6 +494,35 @@ Production business database. Schema: `agent_docs/nanoclaw-business-pg-schema.md
 
 **Roles:** `nanoclaw_admin` (DDL, full access), `nanoclaw_inbox` (read parties + write pipeline), `nanoclaw_sales` (read/write pipeline + interactions), `nanoclaw_contador` (payments).
 
+### Relationship Context dark foundation (`NC-20260825-003`)
+
+The local target adds one provider-neutral read control plane above
+`business_v2.parties`:
+
+```text
+tracked adapter manifest + fact catalog
+        -> bounded source refs / identity candidates / normalized facts
+        -> ambiguity-safe Party resolution
+        -> versioned section projections
+        -> exact host grant + party_context_get
+        -> content-minimized query receipt
+```
+
+Migration 137 creates scoped external references, temporal identifier claims,
+identity exceptions, disabled adapter registrations, append-safe observations,
+current projections, immutable query receipts, and dry-run-only Plutio
+projection receipts. It grants only `nanoclaw_admin`. The fixture LMS adapter
+has no credential or network surface and exists only to prove conformance.
+
+`party_context_get` is stamped with directory group plus host run/container
+identity and has no model-writable work ID. The host must already hold and
+consume one exact work/subject/purpose/section grant; the global feature flag
+also defaults off. Context never grants an external action.
+
+This source is local and uncommitted until the NC-003 review/verification gate.
+No migration, provider adapter, minion grant, Plutio write/backfill, deployment,
+or production behavior is active from source presence.
+
 ---
 
 ## Job Scheduling
