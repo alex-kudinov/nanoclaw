@@ -284,6 +284,11 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
   const sendMode = config.mode;
   const limit = Math.max(1, Math.min(input.limit ?? 10, 50));
   const now = input.now ?? new Date();
+  await client.query(
+    `SELECT pg_advisory_xact_lock(
+       hashtextextended('checkout-recovery-claim-global', 0)
+     )`,
+  );
   const expiredLeases = await client.query<IntentRow>(
     `UPDATE business_v2.checkout_recovery_send_intents
           SET status = 'held', held_at = $1::timestamptz,
@@ -415,12 +420,6 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
     ) {
       continue;
     }
-    await client.query(
-      `SELECT pg_advisory_xact_lock(
-         hashtextextended('checkout-recovery-render:' || $1, 0)
-       )`,
-      [item.email_sha256],
-    );
     const otherCaseRenderContextInFlight = await client.query(
       `SELECT 1
          FROM business_v2.checkout_recovery_send_intents other_intent

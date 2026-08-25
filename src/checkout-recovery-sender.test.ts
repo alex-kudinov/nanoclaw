@@ -101,6 +101,7 @@ describe('checkout recovery Encharge handoff', () => {
       "interval '10 minutes'",
       'claimedEmailDigests',
       'pg_advisory_xact_lock',
+      'checkout-recovery-claim-global',
       "other_intent.status = 'leased'",
     ]) {
       expect(source).toContain(guard);
