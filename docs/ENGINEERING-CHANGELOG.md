@@ -8,6 +8,29 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260826-002 — Close natural Sales lineage proof
+
+- Date: 2026-08-26T17:26:12Z
+- Owner/client: Codex
+- State: ready_for_review; content-free read-only evidence complete, commit and
+  program reconciliation pending
+- Commit/PR: `codex/sales-lineage-proof-20260826` from final owner-authority
+  evidence `249e53c7`
+- Change class: C2 internal evidence/program reconciliation
+- Outcome: a natural approved Sales action carries exact pipeline entry
+  `1235` through automatic handoff, Mailman execution, Gmail confirmation,
+  and PostgreSQL interaction logging with matching message/thread identity and
+  no error/manual recovery. Twenty recent confirmed sends show corresponding
+  pipeline-bound rows.
+- Privacy/action boundary: no message content, subject, recipient, or customer
+  identity was read; no draft, approval, send, replay, backfill, projection,
+  schedule, provider, or runtime mutation occurred.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260826-002-sales-lineage-proof.md`.
+- Follow-up: reconcile `work:sales-lineage-proof` done. The now
+  dependency-complete `work:followup-lane-activation` remains a separate
+  not-authorized candidate requiring an exact owner decision.
+
 ### NC-20260826-001 — Tandem OS generic relationship owner
 
 - Date: 2026-08-26T13:44:52Z
