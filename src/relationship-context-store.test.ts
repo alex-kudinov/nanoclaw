@@ -95,6 +95,7 @@ describe('relationship context in-memory repository', () => {
       receiptSha256: 'a'.repeat(64),
     });
     repository.parties.set(1, 2);
+    expect(await repository.resolveExternalRef(reference)).toBe(2);
     await repository.bindExternalRef({
       partyId: 2,
       reference,

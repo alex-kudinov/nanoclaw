@@ -392,6 +392,33 @@
           ]
         }
       }
+    },
+    "encharge-read": {
+      "description": "Least-privilege Encharge person lookup for Relationship Context reconciliation; no contact, consent, campaign, event, or send mutation",
+      "tools": {
+        "bulk-get-people": {
+          "description": "Privately read 1-100 exact Encharge people identifiers into a new mode-0600 result file",
+          "script": "tools/encharge/bulk-get-people.sh",
+          "args": [
+            {
+              "name": "json-file",
+              "type": "string",
+              "required": true,
+              "description": "JSON array containing 1-100 exact email, id, or userId identifiers"
+            },
+            {
+              "name": "output-file",
+              "type": "string",
+              "required": true,
+              "description": "New absolute mode-0600 JSON result path; existing paths are refused"
+            }
+          ],
+          "timeout": 30,
+          "examples": [
+            "tool run encharge-read/bulk-get-people --json-file /private/tmp/encharge-identifiers.json --output-file /private/tmp/encharge-people.json"
+          ]
+        }
+      }
     }
   },
   "include_shared": [

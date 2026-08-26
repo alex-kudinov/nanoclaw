@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -8,6 +9,10 @@ import {
   issueRelationshipContextGrant,
 } from './relationship-context-policy.js';
 import { runRelationshipContextExactReadCanary } from './relationship-context-live-canary.js';
+import {
+  ingestEnchargeSnapshotWithClient,
+  reconcilePlutioReferencesWithClient,
+} from './relationship-context-provider-reconciliation.js';
 import { ingestTrafftRelationshipContextShadowWithClient } from './relationship-context-trafft-shadow.js';
 import {
   REFERENCE_LMS_FACTS,
@@ -229,18 +234,127 @@ suite('relationship context disposable PostgreSQL store', () => {
           ],
         );
       }
+      const missingCustomerParty = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.parties
+           (party_type,display_name,last_updated_by)
+         VALUES ('person','Missing Customer Fixture','integration')
+         RETURNING id::text`,
+      );
+      await client.query(
+        `INSERT INTO business_v2.interactions
+           (party_id,channel,direction,subject,occurred_at,source_provider,
+            source_id,metadata,last_updated_by)
+         VALUES ($1,'booking','inbound','missing customer fixture',now(),
+                 'trafft','appt-missing-customer-pg',$2::jsonb,'integration')`,
+        [
+          missingCustomerParty.rows[0].id,
+          JSON.stringify({ event_type: 'booked', status: 'approved' }),
+        ],
+      );
+      const corroboratedParty = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.parties
+           (party_type,display_name,last_updated_by)
+         VALUES ('person','Plutio Corroborated Fixture','integration')
+         RETURNING id::text`,
+      );
+      await client.query(
+        `INSERT INTO business_v2.plutio_refs
+           (entity_type,entity_id,plutio_entity_type,plutio_id,last_pushed_at)
+         VALUES ('party',$1,'party','plutio-person-pg',now())`,
+        [corroboratedParty.rows[0].id],
+      );
+      await client.query(
+        `INSERT INTO business_v2.interactions
+           (party_id,channel,direction,subject,occurred_at,source_provider,
+            source_id,metadata,last_updated_by)
+         VALUES ($1,'booking','inbound','corroborated fixture booking',now(),
+                 'trafft','appt-corroborated-pg',$2::jsonb,'integration')`,
+        [
+          corroboratedParty.rows[0].id,
+          JSON.stringify({
+            event_type: 'booked',
+            status: 'approved',
+            service: 'Corroborated fixture consultation',
+            raw_payload: { customerId: 'corroborated-customer-pg' },
+          }),
+        ],
+      );
+      const limited = await ingestTrafftRelationshipContextShadowWithClient(
+        client,
+        { limit: 1, observedAt: '2026-08-25T20:05:25Z' },
+      );
+      expect(limited.complete).toBe(false);
+      expect(limited.legacyCustomerReferences).toBe(3);
+      expect(limited.legacyAppointmentReferences).toBe(4);
+      const limitedLegacy = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count
+           FROM business_v2.party_identity_exceptions
+          WHERE status='no_action' AND reason_code='legacy_identity'`,
+      );
+      expect(limitedLegacy.rows[0].count).toBe('4');
       const exact = await ingestTrafftRelationshipContextShadowWithClient(
         client,
         { limit: 100, observedAt: '2026-08-25T20:05:30Z' },
       );
-      expect(exact.exactCustomerReferences).toBe(1);
-      expect(exact.exactAppointmentReferences).toBe(1);
+      expect(exact.exactCustomerReferences).toBe(2);
+      expect(exact.exactAppointmentReferences).toBe(2);
+      expect(exact.exactPlutioReferences).toBe(1);
+      expect(exact.corroboratedCustomerReferences).toBe(1);
+      expect(exact.legacyCustomerReferences).toBe(3);
+      expect(exact.legacyAppointmentReferences).toBe(4);
       expect(exact.exactReferenceConflicts).toBe(0);
       expect(exact.projectionsChanged).toBe(1);
-      expect(exact.heldIdentityFacts).toBe(3);
+      expect(exact.heldIdentityFacts).toBe(4);
+
+      await client.query(
+        `INSERT INTO business_v2.party_emails
+           (party_id,email,is_primary,verified_at)
+         VALUES ($1,'fixture-encharge@example.invalid',true,now())`,
+        [partyId],
+      );
+      const encharge = await ingestEnchargeSnapshotWithClient({
+        client,
+        snapshot: {
+          schemaVersion: 1,
+          generatedAt: '2026-08-25T20:05:45Z',
+          records: [
+            {
+              partyId,
+              emailFingerprint: crypto
+                .createHash('sha256')
+                .update('fixture-encharge@example.invalid')
+                .digest('hex'),
+              enchargePersonId: 'encharge-person-pg',
+              updatedAt: '2026-08-25T20:05:40Z',
+              globalUnsubscribed: false,
+              communicationCategories: { cat_fixture: 'subscribed' },
+            },
+          ],
+        },
+      });
+      expect(encharge).toMatchObject({
+        exactEnchargeReferences: 1,
+        refusedIdentity: 0,
+        observationsNew: 1,
+        projectionsChanged: 1,
+      });
+      const postEncharge =
+        await ingestTrafftRelationshipContextShadowWithClient(client, {
+          limit: 100,
+          observedAt: '2026-08-25T20:06:00Z',
+        });
+      expect(postEncharge).toMatchObject({
+        exactCustomerReferences: 3,
+        exactAppointmentReferences: 3,
+        corroboratedCustomerReferences: 2,
+        legacyCustomerReferences: 2,
+        legacyAppointmentReferences: 3,
+        observationsNew: 1,
+        projectionsChanged: 1,
+      });
       const replay = await ingestTrafftRelationshipContextShadowWithClient(
         client,
-        { limit: 100, observedAt: '2026-08-25T20:06:00Z' },
+        { limit: 100, observedAt: '2026-08-25T20:06:15Z' },
       );
       expect(replay.observationsDuplicate).toBe(replay.rows.length);
       const stored = await client.query<{
@@ -252,18 +366,18 @@ suite('relationship context disposable PostgreSQL store', () => {
           WHERE o.source_system='trafft'
             AND o.source_record_id='appt-shadow-pg'`,
       );
-      expect(stored.rows).toHaveLength(1);
-      expect(JSON.stringify(stored.rows[0].value)).not.toContain(
-        'customerEmail',
-      );
-      expect(stored.rows[0].current_party_id).toBeNull();
+      expect(stored.rows).toHaveLength(2);
+      expect(JSON.stringify(stored.rows)).not.toContain('customerEmail');
+      expect(
+        stored.rows.filter((row) => row.current_party_id != null),
+      ).toHaveLength(1);
       const projectionCount = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count
            FROM business_v2.party_context_projections
           WHERE party_id=$1 AND section='appointments'`,
         [partyId],
       );
-      expect(projectionCount.rows[0].count).toBe('0');
+      expect(projectionCount.rows[0].count).toBe('1');
       const exactState = await client.query<{
         current_party_id: string | null;
         projection_count: string;
@@ -322,6 +436,14 @@ suite('relationship context disposable PostgreSQL store', () => {
       const mergedRepository = new PostgresRelationshipContextRepository(
         client,
       );
+      expect(
+        await mergedRepository.resolveExternalRef({
+          provider: 'trafft',
+          scope: 'primary',
+          entityType: 'appointment',
+          externalId: 'appt-safe-pg',
+        }),
+      ).toBe(Number(mergeWinner.rows[0].id));
       await mergedRepository.bindExternalRef({
         partyId: Number(mergeWinner.rows[0].id),
         reference: {
@@ -362,17 +484,126 @@ suite('relationship context disposable PostgreSQL store', () => {
         ref_count: '0',
         attached_count: '0',
       });
+      const identityClassification = await client.query<{
+        status: string;
+        reason_code: string;
+        count: string;
+      }>(
+        `SELECT status,reason_code,count(*)::text AS count
+           FROM business_v2.party_identity_exceptions
+          WHERE reason_code IN ('exact_reference_bound','legacy_identity')
+          GROUP BY status,reason_code
+          ORDER BY status,reason_code`,
+      );
+      expect(identityClassification.rows).toEqual([
+        { status: 'no_action', reason_code: 'legacy_identity', count: '3' },
+        {
+          status: 'resolved',
+          reason_code: 'exact_reference_bound',
+          count: '1',
+        },
+      ]);
       const registration = await client.query<{
+        adapter_key: string;
         enabled: boolean;
         conformance_status: string;
       }>(
-        `SELECT enabled,conformance_status
+        `SELECT adapter_key,enabled,conformance_status
            FROM business_v2.party_context_adapter_registrations
-          WHERE adapter_key='trafft_host_ledger'`,
+          WHERE adapter_key IN (
+            'trafft_host_ledger','plutio_reference_ledger',
+            'encharge_person_snapshot'
+          )
+          ORDER BY adapter_key`,
       );
       expect(registration.rows).toEqual([
-        { enabled: true, conformance_status: 'passed' },
+        {
+          adapter_key: 'encharge_person_snapshot',
+          enabled: true,
+          conformance_status: 'passed',
+        },
+        {
+          adapter_key: 'plutio_reference_ledger',
+          enabled: true,
+          conformance_status: 'passed',
+        },
+        {
+          adapter_key: 'trafft_host_ledger',
+          enabled: true,
+          conformance_status: 'passed',
+        },
       ]);
+    } finally {
+      client.release();
+    }
+  });
+
+  it('bounds first-run Plutio import and isolates a conflicting ref', async () => {
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `WITH inserted AS (
+           INSERT INTO business_v2.parties
+             (party_type,display_name,last_updated_by)
+           SELECT 'person','Scale Fixture ' || value::text,'integration'
+             FROM generate_series(1,1400) AS value
+           RETURNING id
+         )
+         INSERT INTO business_v2.plutio_refs
+           (entity_type,entity_id,plutio_entity_type,plutio_id,last_pushed_at)
+         SELECT 'party',id,'party','plutio-scale-' || id::text,now()
+           FROM inserted`,
+      );
+      const conflictParties = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.parties
+           (party_type,display_name,last_updated_by)
+         VALUES ('person','Conflict Source','integration'),
+                ('person','Conflict Existing','integration')
+         RETURNING id::text`,
+      );
+      await client.query(
+        `INSERT INTO business_v2.plutio_refs
+           (entity_type,entity_id,plutio_entity_type,plutio_id,last_pushed_at)
+         VALUES ('party',$1,'party','plutio-scale-conflict',now())`,
+        [conflictParties.rows[0].id],
+      );
+      await new PostgresRelationshipContextRepository(client).bindExternalRef({
+        partyId: Number(conflictParties.rows[1].id),
+        reference: {
+          provider: 'plutio',
+          scope: 'primary',
+          entityType: 'person',
+          externalId: 'plutio-scale-conflict',
+        },
+        adapterKey: 'plutio_reference_ledger',
+        adapterVersion: '1.0.0',
+        observedAt: '2026-08-25T21:00:00Z',
+        verifiedAt: '2026-08-25T21:00:00Z',
+        receiptSha256: 'd'.repeat(64),
+      });
+
+      const started = Date.now();
+      const first = await reconcilePlutioReferencesWithClient({
+        client,
+        observedAt: '2026-08-25T21:01:00Z',
+      });
+      expect(Date.now() - started).toBeLessThan(10_000);
+      expect(first.exactPlutioReferences).toBeGreaterThanOrEqual(1_402);
+      expect(first.plutioReferenceConflicts).toBe(1);
+      const replayStarted = Date.now();
+      const replay = await reconcilePlutioReferencesWithClient({
+        client,
+        observedAt: '2026-08-25T21:02:00Z',
+      });
+      expect(Date.now() - replayStarted).toBeLessThan(2_000);
+      expect(replay.exactPlutioReferences).toBe(first.exactPlutioReferences);
+      expect(replay.plutioReferenceConflicts).toBe(1);
+      const exception = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count
+           FROM business_v2.party_identity_exceptions
+          WHERE status='open' AND reason_code='external_ref_conflict'`,
+      );
+      expect(exception.rows[0].count).toBe('1');
     } finally {
       client.release();
     }

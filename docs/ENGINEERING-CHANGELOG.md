@@ -8,6 +8,46 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260826-004 — Best-effort multi-provider identity reconciliation
+
+- Date: 2026-08-26T21:18:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; governed, implemented, independently reviewed, and
+  locally verified; release/deployment pending
+- Commit/PR: `codex/relationship-context-provider-reconciliation-20260826`
+  from `9df5c87d`, directly containing exact live `adc0c5d8`
+- Change class: C5 identity/security boundary plus C3 deployment
+- Objective: import exact Plutio contact refs, connect available Encharge person
+  references/facts through read-only tooling, reconcile historical Trafft
+  identities under explicit non-conflicting evidence tiers, and call every
+  unresolved remainder `legacy`.
+- Safety: no provider/contact/consent/campaign/Plutio mutation, Party merge,
+  customer communication, payment/contract action, broad minion access, or
+  checkout/lifecycle/Circle/legacy-receiver change.
+- Verification/review/release/deployment: pending.
+- Review: Claude Sonnet/high R1 found four material defects: one conflicting
+  ref aborted the whole transaction, missing/inconsistent customer records
+  escaped legacy classification, out-of-window classification could no-op,
+  and external-ref reads did not canonicalize merge lineage. It also found
+  first-run scale and negative-test gaps. Per-row conflict exceptions,
+  appointment-complete classification, ensure-then-terminal updates,
+  canonical reads, fewer/steady-state-skipped binds, and exact regression/
+  1,400-row proofs corrected all findings; R2 returned
+  `NO MATERIAL FINDINGS`.
+- Verification: focused 31/31; disposable PostgreSQL 3/3 including a 1,400-row
+  first run under 10 seconds and replay under 2 seconds; toolbox bulk-get 6/6
+  plus registry 24/24; root format, typecheck, build, continuity/capability;
+  runner build and 45/45. Full root is 3,304 pass / 28 skip with the sole
+  unrelated CNPC wrapper assertion reproduced at prior exact base.
+- Review usage: the load-bearing R1/R2 session used 12 model calls and 293,883
+  maximum context tokens; the oversized bounded packet is recorded as an
+  orchestration defect, not additional confidence.
+- Release/deployment: pending.
+- Toolbox source: private bulk read is committed locally as `8b843de` on
+  `codex/encharge-bulk-read-20260826`; the toolbox repository has no Git remote,
+  so push is unavailable. NanoClaw's operational read-only wrapper and the
+  already completed snapshot do not depend on a remote push.
+
 ### NC-20260826-003 — Trafft exact identity for source-created Parties
 
 - Date: 2026-08-26T19:37:00Z

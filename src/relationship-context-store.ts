@@ -184,10 +184,11 @@ export class InMemoryRelationshipContextRepository implements RelationshipContex
     }
   }
 
-  resolveExternalRef(
+  async resolveExternalRef(
     reference: ExternalReferenceInput,
   ): Promise<number | null> {
-    return Promise.resolve(this.refs.get(refKey(reference)) ?? null);
+    const partyId = this.refs.get(refKey(reference));
+    return partyId == null ? null : this.canonicalParty(partyId);
   }
 
   async bindExternalRef(input: {
@@ -425,7 +426,7 @@ export class PostgresRelationshipContextRepository implements RelationshipContex
     reference: ExternalReferenceInput,
   ): Promise<number | null> {
     const result = await this.client.query<{ party_id: string }>(
-      `SELECT party_id::text
+      `SELECT business_v2.canonical_party_id(party_id)::text AS party_id
          FROM business_v2.party_external_refs
         WHERE provider=$1 AND source_scope=$2 AND entity_type=$3
           AND external_id=$4 AND status='active'`,
@@ -448,7 +449,11 @@ export class PostgresRelationshipContextRepository implements RelationshipContex
     verifiedAt?: string | null;
     receiptSha256: string;
   }): Promise<void> {
-    await this.client.query(
+    const inputCanonical = await this.canonicalParty(input.partyId);
+    if (inputCanonical == null) {
+      throw new Error('relationship_context_party_unknown');
+    }
+    const result = await this.client.query<{ party_id: string }>(
       `INSERT INTO business_v2.party_external_refs
          (party_id, provider, source_scope, entity_type, external_id,
           adapter_key, adapter_version, schema_version, status, verified_at,
@@ -468,9 +473,10 @@ export class PostgresRelationshipContextRepository implements RelationshipContex
              updated_at=now()
          WHERE business_v2.canonical_party_id(
                  business_v2.party_external_refs.party_id
-               )=business_v2.canonical_party_id(EXCLUDED.party_id)`,
+               )=business_v2.canonical_party_id(EXCLUDED.party_id)
+       RETURNING party_id::text`,
       [
-        input.partyId,
+        inputCanonical,
         input.reference.provider,
         input.reference.scope,
         input.reference.entityType,
@@ -482,11 +488,7 @@ export class PostgresRelationshipContextRepository implements RelationshipContex
         input.receiptSha256,
       ],
     );
-    const resolved = await this.resolveExternalRef(input.reference);
-    const resolvedCanonical =
-      resolved == null ? null : await this.canonicalParty(resolved);
-    const inputCanonical = await this.canonicalParty(input.partyId);
-    if (resolvedCanonical == null || resolvedCanonical !== inputCanonical) {
+    if (!result.rows[0] || Number(result.rows[0].party_id) !== inputCanonical) {
       throw new Error('relationship_context_external_ref_conflict');
     }
   }

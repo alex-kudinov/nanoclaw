@@ -548,6 +548,14 @@ zero conflicts; a 422/422 replay made no changes. One host-only minimized read
 delivered receipt 1. Global query and every scheduled/group consumer remain
 off.
 
+NC-20260826-004 adds two ordinary adapters without changing the Party,
+observation, projection, query, or policy cores. The Plutio ledger adapter
+imports stable existing person IDs. A private Encharge snapshot adapter accepts
+only Party/email fingerprint/provider ID plus bounded consent states and
+revalidates uniqueness against the live Party-email graph. Trafft may use those
+verified refs as explicit lower evidence tiers; uncorroborated/conflicting
+history becomes terminal `legacy`, never an inferred Party attachment.
+
 ### Tandem OS relationship-owner authority (`NC-20260826-001`)
 
 Migration 138 adds a separate admin-only organizational-accountability layer:

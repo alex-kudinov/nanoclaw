@@ -130,6 +130,11 @@ describe('relationship context Trafft shadow', () => {
       heldIdentityFacts: 1,
       exactCustomerReferences: 0,
       exactAppointmentReferences: 0,
+      exactPlutioReferences: 10,
+      corroboratedCustomerReferences: 4,
+      legacyCustomerReferences: 2,
+      legacyAppointmentReferences: 3,
+      plutioReferenceConflicts: 0,
       exactReferenceConflicts: 0,
     });
     const health = await runTrafftRelationshipContextShadow({
@@ -142,6 +147,13 @@ describe('relationship context Trafft shadow', () => {
     expect(health.status).toBe('degraded');
     expect(health.complete).toBe(false);
     expect(health.errorCode).toBe('trafft_shadow_limit_reached');
+    expect(health).toMatchObject({
+      exactPlutioReferences: 10,
+      corroboratedCustomerReferences: 4,
+      legacyCustomerReferences: 2,
+      legacyAppointmentReferences: 3,
+      plutioReferenceConflicts: 0,
+    });
   });
 
   it('records transaction failure truthfully and rejects invalid limits', async () => {

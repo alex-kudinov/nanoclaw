@@ -1,0 +1,15 @@
+{
+  "decision_id": "decision:relationship-context-best-effort-identity-reconciliation-2026-08-26",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-26T21:17:17+00:00",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "program",
+    "work:relationship-context-best-effort-identity-reconciliation"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Connect Trafft, Plutio, Encharge, and the Party model using the strongest available deterministic evidence, then classify the unresolved remainder explicitly as legacy. This authorizes read-only provider discovery and batch lookup, durable provider-scoped Party references, bounded reconciliation observations and receipts, historical Trafft binding when a customer ID maps to one canonical Party and is corroborated by an exact unique Plutio contact or another stable provider reference, operational opt-in to existing shared read tooling, independently reviewed implementation, exact release deployment, and aggregate live verification. Evidence tiers must remain explicit; conflicting or multiply mapped identifiers may not be forced. This does not authorize provider record mutation, contact upsert/archive/unsubscribe, email or campaign sends, consent changes, Plutio writes, Party merges, customer communication, payment or contract action, broad minion access, or treating Encharge marketing state as learning, appointment, or relationship authority.",
+  "source_task": "Current owner instruction in Codex: do your best and connect them all; whatever remains will be called legacy, following clarification about Plutio and Encharge."
+}

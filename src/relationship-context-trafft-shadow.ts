@@ -13,7 +13,12 @@ import {
 import { logger } from './logger.js';
 import { RelationshipContextRegistry } from './relationship-context-registry.js';
 import {
+  bindExternalRefOrRecordConflict,
+  reconcilePlutioReferencesWithClient,
+} from './relationship-context-provider-reconciliation.js';
+import {
   PostgresRelationshipContextRepository,
+  identityExceptionFingerprint,
   type RelationshipContextRepository,
 } from './relationship-context-store.js';
 import { ingestRelationshipContextBatch } from './relationship-context.js';
@@ -78,6 +83,11 @@ export interface TrafftShadowHealth {
   heldIdentityFacts: number;
   exactCustomerReferences: number;
   exactAppointmentReferences: number;
+  exactPlutioReferences: number;
+  corroboratedCustomerReferences: number;
+  legacyCustomerReferences: number;
+  legacyAppointmentReferences: number;
+  plutioReferenceConflicts: number;
   exactReferenceConflicts: number;
   errorCode: string | null;
 }
@@ -98,6 +108,11 @@ const baseHealth = (): TrafftShadowHealth => ({
   heldIdentityFacts: 0,
   exactCustomerReferences: 0,
   exactAppointmentReferences: 0,
+  exactPlutioReferences: 0,
+  corroboratedCustomerReferences: 0,
+  legacyCustomerReferences: 0,
+  legacyAppointmentReferences: 0,
+  plutioReferenceConflicts: 0,
   exactReferenceConflicts: 0,
   errorCode: null,
 });
@@ -388,6 +403,8 @@ interface ExactRefCandidate extends QueryResultRow {
   party_id: string;
   first_seen_at: Date;
   last_seen_at: Date;
+  evidence_tier: string;
+  existing_party_id: string | null;
 }
 
 interface ExactAppointmentCandidate extends ExactRefCandidate {
@@ -397,9 +414,11 @@ interface ExactAppointmentCandidate extends ExactRefCandidate {
 async function reconcileSafeTrafftReferences(input: {
   client: PoolClient;
   repository: RelationshipContextRepository;
+  observedAt: string;
 }): Promise<{
   exactCustomerReferences: number;
   exactAppointmentReferences: number;
+  corroboratedCustomerReferences: number;
   exactReferenceConflicts: number;
 }> {
   const customerResult = await input.client.query<ExactRefCandidate>(
@@ -428,6 +447,15 @@ async function reconcileSafeTrafftReferences(input: {
           AND interaction_created_at >= party_created_at
           AND interaction_created_at <= party_created_at + interval '5 minutes'
         GROUP BY party_id
+     ), corroborated_parties AS (
+       SELECT party_id,
+              bool_or(provider='plutio') AS has_plutio,
+              bool_or(provider='encharge') AS has_encharge
+         FROM business_v2.party_external_refs
+        WHERE provider IN ('plutio','encharge')
+          AND source_scope=$2 AND entity_type='person'
+          AND status='active' AND verified_at IS NOT NULL
+        GROUP BY party_id
      ), candidates AS (
        SELECT customer_id,
               min(party_id) AS party_id,
@@ -441,22 +469,48 @@ async function reconcileSafeTrafftReferences(input: {
         GROUP BY customer_id
      )
      SELECT c.customer_id AS external_id,c.party_id::text,
-            c.first_seen_at,c.last_seen_at
+            c.first_seen_at,c.last_seen_at,
+            CASE
+              WHEN c.source_created
+               AND c.party_created_at >= a.cutoff_at
+               AND c.first_seen_at >= c.party_created_at
+               AND c.first_seen_at <= c.party_created_at + interval '5 minutes'
+               AND pic.initial_customer_count=1
+                THEN 'trafft_source_created_party_v1'
+              WHEN cp.has_plutio THEN 'trafft_unique_party_plutio_ref_v1'
+              WHEN cp.has_encharge THEN 'trafft_unique_party_encharge_ref_v1'
+            END AS evidence_tier,
+            business_v2.canonical_party_id(er.party_id)::text
+              AS existing_party_id
        FROM candidates c
-       JOIN party_initial_customer_counts pic ON pic.party_id=c.party_id
+       LEFT JOIN party_initial_customer_counts pic ON pic.party_id=c.party_id
+       LEFT JOIN corroborated_parties cp ON cp.party_id=c.party_id
+       LEFT JOIN business_v2.party_external_refs er
+         ON er.provider='trafft' AND er.source_scope=$2
+        AND er.entity_type='customer' AND er.external_id=c.customer_id
+        AND er.status='active'
        CROSS JOIN adapter_cutoff a
       WHERE a.cutoff_at IS NOT NULL
         AND c.party_count=1
-        AND pic.initial_customer_count=1
-        AND c.source_created
-        AND c.party_created_at >= a.cutoff_at
-        AND c.first_seen_at >= c.party_created_at
-        AND c.first_seen_at <= c.party_created_at + interval '5 minutes'
+        AND (
+          (c.source_created
+           AND c.party_created_at >= a.cutoff_at
+           AND c.first_seen_at >= c.party_created_at
+           AND c.first_seen_at <= c.party_created_at + interval '5 minutes'
+           AND pic.initial_customer_count=1)
+          OR cp.party_id IS NOT NULL
+        )
       ORDER BY c.customer_id`,
-    [TRAFFT_SHADOW_ADAPTER_KEY],
+    [TRAFFT_SHADOW_ADAPTER_KEY, TRAFFT_SHADOW_SCOPE],
   );
+  let customerBindConflicts = 0;
+  let corroboratedBindConflicts = 0;
   for (const candidate of customerResult.rows) {
-    await input.repository.bindExternalRef({
+    if (Number(candidate.existing_party_id) === Number(candidate.party_id)) {
+      continue;
+    }
+    const bound = await bindExternalRefOrRecordConflict({
+      repository: input.repository,
       partyId: Number(candidate.party_id),
       reference: {
         provider: 'trafft',
@@ -467,14 +521,26 @@ async function reconcileSafeTrafftReferences(input: {
       adapterKey: TRAFFT_SHADOW_ADAPTER_KEY,
       adapterVersion: TRAFFT_SHADOW_ADAPTER_VERSION,
       observedAt: candidate.last_seen_at.toISOString(),
-      verifiedAt: candidate.first_seen_at.toISOString(),
+      verifiedAt:
+        candidate.evidence_tier === 'trafft_source_created_party_v1'
+          ? candidate.first_seen_at.toISOString()
+          : input.observedAt,
       receiptSha256: sha256Json({
-        rule: 'trafft_source_created_party_v1',
+        rule: candidate.evidence_tier,
+        decision:
+          'decision:relationship-context-best-effort-identity-reconciliation-2026-08-26',
         customer_id: candidate.external_id,
         party_id: candidate.party_id,
         first_seen_at: candidate.first_seen_at.toISOString(),
       }),
+      evidenceTier: candidate.evidence_tier,
     });
+    if (!bound) {
+      customerBindConflicts += 1;
+      if (candidate.evidence_tier !== 'trafft_source_created_party_v1') {
+        corroboratedBindConflicts += 1;
+      }
+    }
   }
 
   const appointmentResult = await input.client.query<ExactAppointmentCandidate>(
@@ -501,7 +567,10 @@ async function reconcileSafeTrafftReferences(input: {
      SELECT s.appointment_id AS external_id,r.party_id::text,
             s.first_seen_at,s.last_seen_at,
             (s.legacy_party_count=1 AND s.legacy_party_id=r.party_id)
-              AS binding_safe
+              AS binding_safe,
+            'trafft_exact_customer_appointment_v1' AS evidence_tier,
+            business_v2.canonical_party_id(ar.party_id)::text
+              AS existing_party_id
        FROM source_rows s
        JOIN business_v2.party_external_refs r
          ON r.provider='trafft'
@@ -509,12 +578,21 @@ async function reconcileSafeTrafftReferences(input: {
         AND r.entity_type='customer'
         AND r.external_id=s.customer_id
         AND r.status='active'
+       LEFT JOIN business_v2.party_external_refs ar
+         ON ar.provider='trafft' AND ar.source_scope=$1
+        AND ar.entity_type='appointment' AND ar.external_id=s.appointment_id
+        AND ar.status='active'
       ORDER BY s.appointment_id`,
     [TRAFFT_SHADOW_SCOPE],
   );
+  let appointmentBindConflicts = 0;
   for (const candidate of appointmentResult.rows) {
     if (!candidate.binding_safe) continue;
-    await input.repository.bindExternalRef({
+    if (Number(candidate.existing_party_id) === Number(candidate.party_id)) {
+      continue;
+    }
+    const bound = await bindExternalRefOrRecordConflict({
+      repository: input.repository,
       partyId: Number(candidate.party_id),
       reference: {
         provider: 'trafft',
@@ -532,16 +610,173 @@ async function reconcileSafeTrafftReferences(input: {
         party_id: candidate.party_id,
         first_seen_at: candidate.first_seen_at.toISOString(),
       }),
+      evidenceTier: 'trafft_exact_customer_appointment_v1',
     });
+    if (!bound) appointmentBindConflicts += 1;
+  }
+  const exactCounts = await input.client.query<{
+    entity_type: string;
+    count: string;
+  }>(
+    `SELECT entity_type,count(*)::text AS count
+       FROM business_v2.party_external_refs
+      WHERE provider='trafft' AND source_scope=$1 AND status='active'
+        AND entity_type IN ('customer','appointment')
+      GROUP BY entity_type`,
+    [TRAFFT_SHADOW_SCOPE],
+  );
+  const countByType = new Map(
+    exactCounts.rows.map((row) => [row.entity_type, Number(row.count)]),
+  );
+  return {
+    exactCustomerReferences: countByType.get('customer') ?? 0,
+    exactAppointmentReferences: countByType.get('appointment') ?? 0,
+    corroboratedCustomerReferences:
+      customerResult.rows.filter(
+        (candidate) =>
+          candidate.evidence_tier !== 'trafft_source_created_party_v1',
+      ).length - corroboratedBindConflicts,
+    exactReferenceConflicts:
+      customerBindConflicts +
+      appointmentBindConflicts +
+      appointmentResult.rows.filter((candidate) => !candidate.binding_safe)
+        .length,
+  };
+}
+
+interface TrafftIdentityClassificationRow extends QueryResultRow {
+  customer_ids: string[];
+  appointment_id: string;
+  party_ids: string[];
+  exact_party_id: string | null;
+}
+
+async function classifyTrafftIdentityWithClient(input: {
+  client: PoolClient;
+  observedAt: string;
+}): Promise<{
+  legacyCustomerReferences: number;
+  legacyAppointmentReferences: number;
+}> {
+  const result = await input.client.query<TrafftIdentityClassificationRow>(
+    `WITH source_rows AS (
+       SELECT i.source_id AS appointment_id,
+              array_remove(array_agg(DISTINCT coalesce(
+                i.metadata->'raw_payload'->>'customerId',
+                i.metadata->>'trafft_customer_id'
+              )),NULL) AS customer_ids,
+              array_remove(array_agg(DISTINCT
+                business_v2.canonical_party_id(i.party_id)),NULL) AS party_ids
+         FROM business_v2.interactions i
+        WHERE i.source_provider='trafft' AND i.source_id IS NOT NULL
+        GROUP BY i.source_id
+     )
+     SELECT s.customer_ids,s.appointment_id,s.party_ids,
+            r.party_id::text AS exact_party_id
+       FROM source_rows s
+       LEFT JOIN business_v2.party_external_refs r
+         ON r.provider='trafft' AND r.source_scope=$1
+        AND r.entity_type='appointment' AND r.external_id=s.appointment_id
+        AND r.status='active'
+      ORDER BY s.appointment_id`,
+    [TRAFFT_SHADOW_SCOPE],
+  );
+  const legacyCustomers = new Set<string>();
+  let legacyAppointments = 0;
+  for (const row of result.rows) {
+    const reference = {
+      provider: 'trafft',
+      scope: TRAFFT_SHADOW_SCOPE,
+      entityType: 'appointment',
+      externalId: row.appointment_id,
+    };
+    const fingerprint = identityExceptionFingerprint({
+      sourceSystem: 'trafft',
+      sourceScope: TRAFFT_SHADOW_SCOPE,
+      sourceRef: reference,
+      reasonCode: 'needs_identity',
+      partyIds: [],
+    });
+    const partyIds = row.party_ids.map(Number).sort((a, b) => a - b);
+    const exactPartyId =
+      row.exact_party_id == null ? null : Number(row.exact_party_id);
+    const resolved =
+      exactPartyId != null &&
+      row.customer_ids.length === 1 &&
+      partyIds.length === 1 &&
+      partyIds[0] === exactPartyId;
+    const classificationReason = resolved
+      ? 'exact_reference_bound'
+      : row.customer_ids.length === 0
+        ? 'missing_customer_id'
+        : row.customer_ids.length > 1
+          ? 'customer_id_conflict'
+          : partyIds.length !== 1
+            ? 'party_count_conflict'
+            : exactPartyId != null
+              ? 'exact_ref_source_conflict'
+              : 'uncorroborated_unique_historical_party';
+    if (!resolved) {
+      for (const customerId of row.customer_ids) {
+        legacyCustomers.add(customerId);
+      }
+      legacyAppointments += 1;
+      await new PostgresRelationshipContextRepository(
+        input.client,
+      ).ensureIdentityException({
+        fingerprint,
+        partyIds: [],
+        reasonCode: 'needs_identity',
+        evidenceRefs: {
+          source_ref_sha256: sha256Json(reference),
+          candidate_count: 0,
+        },
+        observedAt: input.observedAt,
+      });
+    }
+    const update = await input.client.query(
+      `UPDATE business_v2.party_identity_exceptions
+          SET current_party_id=CASE WHEN $2::boolean THEN $3::bigint ELSE NULL END,
+              candidate_party_ids=$4::bigint[],
+              reason_code=CASE WHEN $2::boolean
+                           THEN 'exact_reference_bound' ELSE 'legacy_identity' END,
+              status=CASE WHEN $2::boolean THEN 'resolved' ELSE 'no_action' END,
+              evidence_refs=evidence_refs || $5::jsonb,
+              resolution_code=CASE WHEN $2::boolean
+                              THEN 'exact_reference_bound'
+                              ELSE 'legacy_unresolved' END,
+              resolution_receipt_sha256=$6,
+              resolved_at=$7::timestamptz,updated_at=now()
+        WHERE fingerprint=$1`,
+      [
+        fingerprint,
+        resolved,
+        exactPartyId,
+        resolved ? [exactPartyId] : partyIds.slice(0, 20),
+        JSON.stringify({
+          classification: resolved ? 'exact' : 'legacy',
+          evidence_tier: classificationReason,
+          customer_id_count: row.customer_ids.length,
+          party_count: partyIds.length,
+          decision:
+            'decision:relationship-context-best-effort-identity-reconciliation-2026-08-26',
+        }),
+        sha256Json({
+          classification: resolved ? 'exact' : 'legacy',
+          appointment_id: row.appointment_id,
+          party_ids: partyIds,
+          observed_at: input.observedAt,
+        }),
+        input.observedAt,
+      ],
+    );
+    if (!resolved && update.rowCount !== 1) {
+      throw new Error('relationship_context_legacy_classification_failed');
+    }
   }
   return {
-    exactCustomerReferences: customerResult.rows.length,
-    exactAppointmentReferences: appointmentResult.rows.filter(
-      (candidate) => candidate.binding_safe,
-    ).length,
-    exactReferenceConflicts: appointmentResult.rows.filter(
-      (candidate) => !candidate.binding_safe,
-    ).length,
+    legacyCustomerReferences: legacyCustomers.size,
+    legacyAppointmentReferences: legacyAppointments,
   };
 }
 
@@ -557,21 +792,42 @@ export async function ingestTrafftRelationshipContextShadowWithClient(
   heldIdentityFacts: number;
   exactCustomerReferences: number;
   exactAppointmentReferences: number;
+  exactPlutioReferences: number;
+  corroboratedCustomerReferences: number;
+  legacyCustomerReferences: number;
+  legacyAppointmentReferences: number;
+  plutioReferenceConflicts: number;
   exactReferenceConflicts: number;
 }> {
   const rows = await readRows(client, input.limit);
   const complete = trafftShadowCollectionComplete(rows.length, input.limit);
   await registerAdapter(client, input.observedAt);
+  const plutioReferences = await reconcilePlutioReferencesWithClient({
+    client,
+    observedAt: input.observedAt,
+  });
   const exactReferences = await reconcileSafeTrafftReferences({
     client,
     repository: new PostgresRelationshipContextRepository(client),
+    observedAt: input.observedAt,
   });
   const ingested = await ingestTrafftShadowRows({
     repository: new PostgresRelationshipContextRepository(client),
     rows,
     complete,
   });
-  return { rows, complete, ...exactReferences, ...ingested };
+  const legacy = await classifyTrafftIdentityWithClient({
+    client,
+    observedAt: input.observedAt,
+  });
+  return {
+    rows,
+    complete,
+    ...plutioReferences,
+    ...exactReferences,
+    ...legacy,
+    ...ingested,
+  };
 }
 
 export async function runTrafftRelationshipContextShadow(
@@ -629,6 +885,11 @@ export async function runTrafftRelationshipContextShadow(
       heldIdentityFacts: result.heldIdentityFacts,
       exactCustomerReferences: result.exactCustomerReferences,
       exactAppointmentReferences: result.exactAppointmentReferences,
+      exactPlutioReferences: result.exactPlutioReferences,
+      corroboratedCustomerReferences: result.corroboratedCustomerReferences,
+      legacyCustomerReferences: result.legacyCustomerReferences,
+      legacyAppointmentReferences: result.legacyAppointmentReferences,
+      plutioReferenceConflicts: result.plutioReferenceConflicts,
       exactReferenceConflicts: result.exactReferenceConflicts,
       errorCode: result.complete ? null : 'trafft_shadow_limit_reached',
     };

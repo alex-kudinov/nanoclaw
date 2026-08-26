@@ -58,7 +58,7 @@ replace it.
 
 | Domain              | Native authority                                                                                                            | Company OS responsibility                                                                    | Explicitly non-authoritative                                                       |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Party identity      | exact provider identity plus verified identifier claims; accepted merge/split decisions                                     | canonical Party graph, scoped source references, conflicts, merge lineage                    | display-name similarity; one convenient email; Plutio alone                        |
+| Party identity      | exact provider identity plus verified identifier claims; accepted merge/split/reconciliation decisions                      | canonical Party graph, scoped source references, conflicts, merge lineage                    | display-name similarity; one convenient email; Plutio presence without a unique ref |
 | relationship        | accepted role/relationship records, completed payment/enrollment, active engagement, or earlier source-bound interaction    | temporal relationship projection and evidence receipt                                        | party existence, a current-inquiry prospect role, pipeline presence, website visit |
 | appointments        | Trafft appointment/customer/service records; webhook-only custom answers for the event that supplied them                   | normalize appointment lifecycle, preserve webhook-only answers, reconcile current status     | Slack notification; Plutio activity note; service-name guess                       |
 | commercial          | Stripe for charge/refund/payment state; Plutio for its invoice/proposal objects; accepted product catalog for product facts | join exact receipts, expose conflicts and accountable open work                              | price/date inference; browsing behavior; an unverified invoice title               |
@@ -814,6 +814,17 @@ customers/4 appointments and created 4 current projections while retaining 418
 current-row holds; replay was 422/422 duplicates with zero conflicts. Canary
 receipt 1 delivered, while global query, group/minion consumers, and every
 downstream action remain off.
+
+NC-20260826-004 applies the owner's accepted best-effort reconciliation rule
+without making email independently authoritative. Every existing unique Plutio
+person ID becomes a scoped Party ref. A private Encharge snapshot may add a ref
+only when the email fingerprint maps to one canonical Party and one Encharge
+person; raw email is discarded before import. A historical Trafft customer may
+then bind only when it has one canonical Party across the ledger and that Party
+has an active verified Plutio or Encharge person ref. Everything else becomes
+terminal `legacy_unresolved`. This accepted reconciliation decision supplies
+the lower-tier cross-system authority; it does not authorize Party merges,
+provider writes, or using Encharge/Plutio facts outside their native domains.
 
 ## 10. Verification plan
 

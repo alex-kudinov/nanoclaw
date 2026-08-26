@@ -2170,6 +2170,16 @@ exact), 4/4 current appointment projections, and one delivered query receipt.
 The remaining 418 current-row holds are not eligible for automatic email-based
 promotion. Replay is stable and different-family conflicts still refuse.
 
+NC-20260826-004 uses the same migration-137 relations. Existing unique
+`plutio_refs` become scoped `party_external_refs(provider='plutio',
+entity_type='person')`; sanitized Encharge matches become equivalent Encharge
+refs plus bounded consent observations/projections. Trafft history may bind
+only when its customer ID has one canonical Party and that Party has an active
+verified Plutio or Encharge person ref. Unbound exception rows become
+`status='no_action'`, `reason_code='legacy_identity'`, and
+`resolution_code='legacy_unresolved'`; bound prior exceptions become resolved.
+Every transition carries a deterministic decision/evidence receipt.
+
 ### Relationship-owner authority (migration 138)
 
 Tandem OS owns two admin-only append-only relations:

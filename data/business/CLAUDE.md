@@ -211,6 +211,15 @@ refs/current projections from 422 natural rows, retained 418 current-row holds,
 and delivered one minimized host canary receipt with zero conflicts. Global
 query remains disabled with zero active grants.
 
+`NC-20260826-004` adds no migration. It imports stable Plutio person IDs from
+the existing unique `plutio_refs` ledger and accepts only private sanitized
+Encharge snapshots whose email fingerprints still map to one canonical Party.
+Historical Trafft binds only when one canonical Party is corroborated by an
+active verified Plutio or Encharge person ref; the uncorroborated remainder is
+durably `legacy_identity` / `legacy_unresolved`. Provider writes, Party merges,
+raw emails/provider payloads, and global/group context activation remain
+forbidden.
+
 Migration 138 is `NC-20260826-001`'s Tandem OS relationship-owner authority.
 It registers the append-only `team:tandem` / `Tandem Team` organizational
 principal with `action_authority='none'` and one exact decision-bound

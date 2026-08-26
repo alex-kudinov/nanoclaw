@@ -599,6 +599,17 @@ appointment refs/current projections, zero conflicts, one delivered host-only
 receipt, zero active grants, and zero prohibited raw/email/phone/name/custom
 value keys. The 418 current-row legacy holds remain unbound.
 
+NC-20260826-004's broader reconciliation remains least-privilege. NanoClaw does
+not include the shared Encharge mutation toolset; it exposes one wrapper that
+can only bulk-read exact identifiers into a new mode-0600 file. The committed
+snapshot schema forbids raw email/name/phone/address/IP/provider payload and
+rechecks its email fingerprint against a single canonical Party before binding.
+Plutio is read from the existing unique host ledger, not through provider
+mutation. Multi-Party, duplicate-provider, changed-email, malformed, missing,
+or conflicting evidence refuses and becomes legacy. Temporary raw files are
+deleted after aggregate readback; no credentials or raw provider records enter
+the release, database, or evidence.
+
 ## Relationship-owner boundary (`NC-20260826-001`)
 
 The explicit generic owner is a routing/accountability principal, not an
