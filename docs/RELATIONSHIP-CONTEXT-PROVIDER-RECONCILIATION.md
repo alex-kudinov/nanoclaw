@@ -92,6 +92,10 @@ appointment records. All provider conflict counters are zero. Encharge and
 Trafft replays are fully duplicate-only with zero projection changes. Raw
 temporary files were deleted after aggregate readback; global query and every
 scheduled/group context consumer remain off.
+Host-only cross-provider canaries prove the joins: an exact Encharge ref
+resolved consent and delivered receipt 2, while an exact Plutio ref resolved
+two Trafft appointment projections and delivered receipt 3. Both packs were
+stale and said so; output contained no identity or context values.
 
 ## Gates and exclusions
 

@@ -181,6 +181,10 @@ outside the current client conversation.
   projections (63 current/1,179 stale). All 424 original held observations
   remain immutable; 358 exact observations were appended. Exceptions are 358
   resolved and 66 terminal legacy.
+- Cross-provider canaries: an exact Encharge person ref resolved one consent
+  projection and delivered receipt 2; an exact Plutio person ref resolved two
+  Trafft appointment projections and delivered receipt 3. Both truthfully
+  reported stale and returned no identity or context values.
 - Replay/cleanup: Encharge 1,242/1,242 and Trafft 424/424 duplicates, zero new
   observations/projection changes. Raw Party-email/provider files, sanitized
   transfer snapshot, and transfer archives were deleted after readback.

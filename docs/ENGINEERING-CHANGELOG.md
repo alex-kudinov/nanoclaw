@@ -64,6 +64,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   appointment projections; 358 resolved exceptions and 66
   `legacy_identity`/`legacy_unresolved`. Freshness remains truthful: appointment
   projections 7 current/351 stale; consent 63 current/1,179 stale.
+- Cross-provider proof: an exact Encharge person ref resolved one consent
+  projection (`stale`) and delivered minimized receipt 2; an exact Plutio
+  person ref resolved two Trafft appointment projections (`stale`) and
+  delivered minimized receipt 3. Neither output contained identity or context
+  values; truthful staleness is the intended freshness behavior.
 - Replay/privacy: Encharge replay 1,242/1,242 duplicates and Trafft replay
   424/424 duplicates, both with zero projection changes/conflicts. Persisted
   values contain zero raw/email/name/phone/address/IP/payload/tag/browser/device

@@ -94,6 +94,10 @@ Program closure only.
 - 358 appointment projections (7 current/351 stale) and 1,242 consent
   projections (63 current/1,179 stale); freshness is not overstated;
 - 358 resolved exceptions and 66 terminal legacy exceptions;
+- exact Encharge ref to consent canary delivered minimized receipt 2 (`stale`,
+  one projection); exact Plutio ref to Trafft appointments canary delivered
+  minimized receipt 3 (`stale`, two projections); neither output exposed
+  identity or context values;
 - Encharge replay 1,242/1,242 and Trafft replay 424/424 duplicates, zero new
   observations/projection changes/conflicts;
 - zero prohibited raw/email/name/phone/address/IP/payload/tag/browser/device
