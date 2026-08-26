@@ -45,7 +45,44 @@ canary is content-minimized and host-only.
 - usage audit: R1 six model calls / 101,879 maximum context tokens; R2 ten
   model calls / 96,705.
 
-## Pending
+## Immutable release and backup
 
-Immutable commit/release, deployment, natural reconciliation, exact canary,
-non-interference, and program closure.
+- implementation/live commit: `adc0c5d8ac1b55f8273f9ff807c3083ad4dc6e57`;
+- source tree: `b2847aad21b696d22ef4d7ea744dd839c7a78044`;
+- 992-file artifact: `a00926c5cdad5e4a33f35c4c2f28b9624ca93bc517defcf51c767b975bafbbd9`;
+- archive: `0de7334fca97eab70e47d1cd9c277a158500e9cc2ab26e6335913075e6c6ed99`,
+  byte-identical and runtime-verified on the Mini;
+- deployment waited for Sales and Mailman to drain to zero active/waiting work
+  and zero in-flight email actions;
+- mode-0700 backup:
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260826-003-20260826T202330Z`;
+- the initial full database dump refused unrelated public Procurement RLS and
+  no activation ran; readable recovery artifacts then captured the affected
+  `business_v2` schema/data, SQLite, and installed plist.
+
+## Live reconciliation and canary
+
+- the exact three-path activator retained rollback
+  `com.nanoclaw.plist.rollback-416384fc7131-2026-08-26T20-25-35-991Z`;
+- exact health: release/tree/artifact/code-root verified, Node 22.23.2, sole
+  listener/launchd PID 28275;
+- startup scanned 422 natural rows: 4 new exact observations/projections, 418
+  duplicates/holds, 2 verified customer refs, 4 verified appointment refs,
+  and zero conflicts;
+- durable readback: 426 Trafft observations total, 422 immutable null-Party
+  held observations, 4 exact observations, 4/4 current appointment
+  projections, and zero prohibited raw/email/phone/name/custom value keys;
+- one host-only exact appointments query resolved `current`, returned two
+  projections internally, and terminally delivered content-minimized receipt
+  1; its output contained no Party identity or context values;
+- direct replay: 422/422 duplicates, zero new observations/projection changes,
+  418 current-row holds, and zero conflicts;
+- scheduled/group query remains disabled, zero active grants; Gmail/Slack,
+  checkout production sends, and Community lifecycle remain healthy, with
+  lifecycle consumers and Circle still off.
+
+## Residual
+
+The 418 legacy/returning current-row holds remain intentionally unresolved.
+They require a separately authoritative provider reference or reviewed owner
+reconciliation; historical or current email consistency is not sufficient.

@@ -803,15 +803,17 @@ Implementation should use an isolated clean worktree based on the intended
 live lineage. The shared primary checkout contains extensive unrelated work and
 does not include the exact live lifecycle source in HEAD.
 
-NC-20260826-003 is the first bounded D2 implementation candidate. It changes
+Exact live NC-20260826-003 is the first bounded D2 implementation. It changes
 future Booking resolution only when an exact Trafft customer ref already
 exists; otherwise the historical fallback remains. It seeds refs solely from
 the unique post-registration Trafft-created cohort, quarantines ambiguity and
 Party disagreement, and appends exact observations without erasing held
 history. Its host-only canary proves a single minimized appointments read, not
-a group/minion rollout or downstream action authority. The candidate is not
-live authority until immutable deployment, natural reconciliation, exact
-readback, and non-interference verification complete.
+a group/minion rollout or downstream action authority. Live startup bound 2
+customers/4 appointments and created 4 current projections while retaining 418
+current-row holds; replay was 422/422 duplicates with zero conflicts. Canary
+receipt 1 delivered, while global query, group/minion consumers, and every
+downstream action remain off.
 
 ## 10. Verification plan
 

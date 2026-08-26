@@ -580,8 +580,8 @@ gated Trafft shadow has no credential or provider network path, reads only
 minimized host-ledger fields, and records exact appointment references with
 null Party identity and no projection.
 
-NC-20260826-003 preserves that fail-closed boundary while adding a narrow
-exact-identity reconciliation candidate. It refuses email as proof: only a
+Exact live NC-20260826-003 preserves that fail-closed boundary while adding a
+narrow exact-identity reconciliation. It refuses email as proof: only a
 unique Trafft-created Party/customer association inside the bounded creation
 window may create a customer ref, and appointment refs additionally require
 canonical Party agreement. Different-family ref conflicts, shared creation
@@ -594,9 +594,10 @@ grant, and outputs only resolution/status/count/receipt/delivery metadata. A
 not-ready result terminally marks the receipt failed before returning failure;
 neither successful nor failed output contains identity or context values.
 `RELATIONSHIP_CONTEXT_ENABLED=0` remains the scheduled/group query boundary;
-no group is granted or configured. Before this candidate deploys, live
-readback remains zero query receipts/grants, zero projections, and zero
-prohibited raw/email/phone/name/custom-field value keys.
+no group is granted or configured. Live readback proves 2 customer refs, 4
+appointment refs/current projections, zero conflicts, one delivered host-only
+receipt, zero active grants, and zero prohibited raw/email/phone/name/custom
+value keys. The 418 current-row legacy holds remain unbound.
 
 ## Relationship-owner boundary (`NC-20260826-001`)
 

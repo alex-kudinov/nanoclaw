@@ -206,6 +206,10 @@ existing ref; different-family conflicts refuse. The separately invoked
 host-only read canary consumes one exact Booking grant, requests only the
 appointments section, and exposes status/count/receipt metadata rather than
 Party identity or context values. It is not a scheduled or minion capability.
+Exact live `adc0c5d8` reconciled 2 verified customer refs and 4 appointment
+refs/current projections from 422 natural rows, retained 418 current-row holds,
+and delivered one minimized host canary receipt with zero conflicts. Global
+query remains disabled with zero active grants.
 
 Migration 138 is `NC-20260826-001`'s Tandem OS relationship-owner authority.
 It registers the append-only `team:tandem` / `Tandem Team` organizational

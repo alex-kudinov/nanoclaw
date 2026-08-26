@@ -54,3 +54,14 @@ appointments. All other rows remain held.
 - immutable exact-live release, drain/backups, deployment, and live readback;
 - no provider/Plutio/customer/credential/payment/contract write, broad minion
   grant, or lifecycle/checkout/Circle/legacy change.
+
+## Live result
+
+Exact release `adc0c5d8` is live-verified. Startup reconciled 422 natural rows
+into 2 verified customer refs, 4 verified appointment refs, and 4 current
+appointment projections, with 418 current-row holds and zero conflicts. A
+direct replay produced 422/422 duplicates and no projection change. One
+host-only appointments canary resolved current and delivered minimized receipt
+1; global query, scheduled/group consumers, provider writes, and external
+actions remain off. The remaining legacy/returning holds require separate
+authoritative identity evidence and cannot be promoted by email.

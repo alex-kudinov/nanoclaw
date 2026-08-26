@@ -530,7 +530,7 @@ and held, with zero projections; an exact replay produced 414 duplicates.
 See `docs/RELATIONSHIP-CONTEXT-PRODUCTION-ROLLOUT.md` for deployment and live
 verification gates.
 
-NC-20260826-003 adds the first exact-identity reconciliation candidate without
+Exact live NC-20260826-003 adds the first exact-identity reconciliation without
 turning email into authority. A Trafft customer reference is eligible only for
 a post-registration Party created by Trafft, with its first interaction inside
 the Party's five-minute creation window, exactly one customer ID in that
@@ -542,6 +542,11 @@ before preserving the existing email fallback. Exact rows append a new
 ambiguous, or mismatched rows stay held. A host-only one-shot canary may consume
 one exact Booking grant and return only status/count/receipt metadata for the
 appointments section. Scheduled/group query capability remains off.
+The live startup over 422 natural rows bound 2 customers/4 appointments,
+created 4 current projections, retained 418 current-row holds, and reported
+zero conflicts; a 422/422 replay made no changes. One host-only minimized read
+delivered receipt 1. Global query and every scheduled/group consumer remain
+off.
 
 ### Tandem OS relationship-owner authority (`NC-20260826-001`)
 

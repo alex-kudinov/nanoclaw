@@ -12,10 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-26T19:37:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; implementation, independent review, and local verification
-  complete; commit/release/deployment pending
-- Commit/PR: isolated `codex/trafft-exact-identity-20260826` from exact live
-  `416384fc`
+- State: complete; independently reviewed exact release deployed and
+  live-verified with natural reconciliation and one minimized read canary
+- Commit/PR: pushed `codex/trafft-exact-identity-20260826`; exact live
+  `adc0c5d8ac1b55f8273f9ff807c3083ad4dc6e57` from prior live `416384fc`
 - Change class: C5 identity/security boundary plus C3 deployment
 - Outcome: strict post-adapter Trafft-created Parties can gain exact customer
   and appointment refs; later interactions resolve exact-first; legacy/shared/
@@ -31,12 +31,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   and 45/45 tests pass; disposable PostgreSQL 2/2 passes. Full root is 3,298
   pass / 27 skip with one unrelated CNPC wrapper assertion failure reproduced
   at exact base `416384fc`.
-- Deployment: none yet; live remains `416384fc` with all 420 rows held.
-- Rollback: discard source before deployment; host pointer rollback afterward;
-  exact refs/receipts remain evidence and are not destructively removed.
-- Documentation: exact identity rule, active work, decision, evidence.
-- Follow-up: commit/push, revalidate live lineage, deploy, reconcile natural
-  safe refs, run one exact content-minimized canary, and verify adjacent health.
+- Release: source tree `b2847aad`; 992-file artifact `a00926c5`; archive
+  `0de7334f`, byte-identical and runtime-verified on the Mini.
+- Drain/backup: deployment waited through active Sales and Mailman work; exact
+  pre-activation state was zero active/waiting work and zero in-flight email
+  actions. A full PostgreSQL dump refused unrelated public Procurement RLS
+  and activation stayed untouched; the successful mode-0700 recovery set is
+  `NC-20260826-003-20260826T202330Z` with readable `business_v2`, SQLite, and
+  installed-plist backups.
+- Deployment/live: the three-pointer activator retained rollback
+  `com.nanoclaw.plist.rollback-416384fc7131-2026-08-26T20-25-35-991Z` and
+  health-verified exact `adc0c5d8`. Startup scanned 422 natural rows, appended
+  4 exact observations/current projections, retained 418 current-row holds,
+  and bound 2 verified customer plus 4 verified appointment refs with zero
+  conflicts. Durable totals are 426 Trafft observations: 422 immutable
+  null-Party held plus 4 exact; 4/4 appointment projections are current.
+- Canary/replay: one host-only appointments read resolved current with two
+  projections and terminal delivered receipt 1; output contained only bounded
+  status/count/receipt metadata. Direct replay was 422/422 duplicates, zero
+  new observations/projection changes, 418 held facts, and zero conflicts.
+  Query policy remains globally off with zero active grants and no scheduled or
+  group consumer.
+- Non-interference: sole listener and launchd agree on PID 28275; exact
+  release/tree/artifact/code root and Node 22.23.2 pass; Gmail/Slack are
+  connected and queues empty. Checkout recovery remains production-send;
+  Community lifecycle is healthy at 40 events/22 open exceptions with action
+  consumers false and Circle false. Persisted Trafft values have zero
+  raw/email/phone/name/custom keys.
+- Rollback: restore the retained exact plist/code pointer. Exact refs,
+  observations, projections, and the query receipt remain append-only evidence;
+  no destructive schema rollback is appropriate.
+- Follow-up: keep the 418 legacy/returning rows held unless a separately
+  authoritative provider reference or reviewed reconciliation can prove them.
 
 ### NC-20260826-001 — Tandem OS generic relationship owner
 

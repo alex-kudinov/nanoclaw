@@ -2163,12 +2163,12 @@ contains only bounded policy/result metadata and reaches one terminal delivery
 state (`delivered` or `failed`); the canary output omits Party identity and
 context values. This does not grant scheduled or group-facing query access.
 
-Production migration 137 is applied. Before NC-20260826-003 deployment, the
-live relationship-context state is 39 legacy compatibility refs, 420 Trafft
-observations with null Party identity, 420 open identity exceptions, zero
-projections, and zero query receipts. The exact-ref candidate requires no new
-migration and must be read back after deployment before its refs, projections,
-or canary receipt are described as live.
+Production migration 137 is applied; NC-20260826-003 required no new migration.
+Exact live `adc0c5d8` contains 2 verified Trafft customer refs, 4 verified
+appointment refs, 426 Trafft observations (422 immutable null-Party held plus 4
+exact), 4/4 current appointment projections, and one delivered query receipt.
+The remaining 418 current-row holds are not eligible for automatic email-based
+promotion. Replay is stable and different-family conflicts still refuse.
 
 ### Relationship-owner authority (migration 138)
 
