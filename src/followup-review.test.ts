@@ -11,6 +11,16 @@ import type {
 } from './followup-policy.js';
 
 const OBSERVED_AT = '2026-08-21T16:00:00.000Z';
+function relationshipOwner(assignmentId: string) {
+  return {
+    principalKey: 'team:tandem',
+    assignmentId,
+    decisionRef:
+      '.program/decisions/decision-relationship-owner-tandem-team-2026-08-26.json',
+    managingSystem: 'tandem_os' as const,
+    actionAuthority: 'none' as const,
+  };
+}
 
 function receivable(
   id: string,
@@ -25,6 +35,7 @@ function receivable(
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
+    relationshipOwner: relationshipOwner('3'),
     partyId: '20',
     invoiceStatus: 'overdue',
     dueAt: '2026-08-10T16:00:00.000Z',
@@ -34,7 +45,6 @@ function receivable(
     collectionApproved: false,
     specialHandling: false,
     recipientResolved: true,
-    ownerResolved: false,
     confirmedAttempts: 0,
     lastConfirmedAttemptAt: null,
     ...overrides,
@@ -51,6 +61,7 @@ function sales(): SalesConversationCase {
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
+    relationshipOwner: relationshipOwner('1'),
     partyId: '10',
     pipelineEntryId: '42',
     pipelineStage: 'qualifying',
@@ -79,7 +90,7 @@ describe('follow-up review packet', () => {
       ],
     });
     expect(packet).toMatchObject({
-      contractVersion: 'company-followup-review-v1',
+      contractVersion: 'company-followup-review-v2',
       eligibleCount: 1,
       selectedCount: 1,
       truncated: false,
@@ -95,6 +106,8 @@ describe('follow-up review packet', () => {
       currency: 'USD',
       reason: 'collection_review_due',
       nextAction: 'internal_review',
+      relationshipOwnerPrincipalKey: 'team:tandem',
+      relationshipOwnerAssignmentId: '3',
       ownerGroup: 'contador',
     });
     expect(packet.packetFingerprint).toMatch(/^[0-9a-f]{64}$/);

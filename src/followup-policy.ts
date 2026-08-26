@@ -8,7 +8,9 @@
 
 import { createHash } from 'crypto';
 
-export const FOLLOWUP_POLICY_VERSION = '2026-08-21.3';
+import type { RelationshipOwnerEvidence } from './relationship-owner.js';
+
+export const FOLLOWUP_POLICY_VERSION = '2026-08-26.1';
 export const FOLLOWUP_TIME_ZONE = 'America/Chicago';
 
 export type FollowupLane =
@@ -41,6 +43,8 @@ interface CommonCase {
   pendingAction: boolean;
   uncertainDelivery: boolean;
   suppressed: boolean;
+  /** Exact Tandem OS assignment evidence; never a sender/creator fallback. */
+  relationshipOwner: RelationshipOwnerEvidence | null;
 }
 
 export interface SalesConversationCase extends CommonCase {
@@ -68,7 +72,6 @@ export interface ProposalSignatureCase extends CommonCase {
   autoInvoiceId: string | null;
   projectId: string | null;
   recipientResolved: boolean;
-  ownerResolved: boolean;
   publicLinkVerified: boolean;
   confirmedAttempts: number;
   lastConfirmedAttemptAt: string | null;
@@ -86,7 +89,6 @@ export interface ReceivableCase extends CommonCase {
   collectionApproved: boolean;
   specialHandling: boolean;
   recipientResolved: boolean;
-  ownerResolved: boolean;
   confirmedAttempts: number;
   lastConfirmedAttemptAt: string | null;
 }
@@ -105,6 +107,9 @@ export interface FollowupDecision {
   sequence: number | null;
   nextEligibleBusinessDate: string | null;
   ownerGroup: 'sales' | 'contador';
+  relationshipOwnerPrincipalKey: string | null;
+  relationshipOwnerAssignmentId: string | null;
+  relationshipOwnerDecisionRef: string | null;
 }
 
 const BUSINESS_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
@@ -115,6 +120,8 @@ const BUSINESS_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
 });
 const OPAQUE_SOURCE_KEY_RE = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,499}$/;
 const POSITIVE_ID_RE = /^[1-9][0-9]*$/;
+const OWNER_PRINCIPAL_KEY_RE = /^[a-z][a-z0-9._:-]{0,127}$/;
+const OWNER_DECISION_REF_RE = /^\.program\/decisions\/[a-z0-9._-]+\.json$/;
 
 function parseTimestamp(value: string | null): Date | null {
   if (!value) return null;
@@ -180,7 +187,29 @@ function decision(
     sequence,
     nextEligibleBusinessDate,
     ownerGroup: ownerGroup(input.lane),
+    relationshipOwnerPrincipalKey:
+      input.relationshipOwner?.principalKey ?? null,
+    relationshipOwnerAssignmentId:
+      input.relationshipOwner?.assignmentId ?? null,
+    relationshipOwnerDecisionRef: input.relationshipOwner?.decisionRef ?? null,
   };
+}
+
+function relationshipOwnerGate(input: FollowupCase): FollowupDecision | null {
+  const owner = input.relationshipOwner;
+  if (!owner) {
+    return decision(input, 'blocked', 'relationship_owner_unresolved');
+  }
+  if (
+    !OWNER_PRINCIPAL_KEY_RE.test(owner.principalKey) ||
+    !POSITIVE_ID_RE.test(owner.assignmentId) ||
+    !OWNER_DECISION_REF_RE.test(owner.decisionRef) ||
+    owner.managingSystem !== 'tandem_os' ||
+    owner.actionAuthority !== 'none'
+  ) {
+    return decision(input, 'blocked', 'relationship_owner_invalid');
+  }
+  return null;
 }
 
 function identityGate(input: FollowupCase): FollowupDecision | null {
@@ -261,9 +290,6 @@ function evaluateSales(input: SalesConversationCase): FollowupDecision {
   if (['won', 'lost', 'nurture'].includes(input.pipelineStage)) {
     return decision(input, 'completed', `pipeline_${input.pipelineStage}`);
   }
-  if (input.pipelineStage === 'paused') {
-    return decision(input, 'waiting', 'pipeline_paused');
-  }
   if (input.hasOpenProposal) {
     return decision(input, 'completed', 'superseded_by_open_proposal');
   }
@@ -275,6 +301,11 @@ function evaluateSales(input: SalesConversationCase): FollowupDecision {
   }
   const safetyGate = actionSafetyGate(input);
   if (safetyGate) return safetyGate;
+  const ownerGate = relationshipOwnerGate(input);
+  if (ownerGate) return ownerGate;
+  if (input.pipelineStage === 'paused') {
+    return decision(input, 'waiting', 'pipeline_paused');
+  }
   if (input.pendingAction) {
     return decision(input, 'waiting', 'action_or_approval_pending');
   }
@@ -360,14 +391,13 @@ function evaluateProposal(input: ProposalSignatureCase): FollowupDecision {
   }
   const safetyGate = actionSafetyGate(input);
   if (safetyGate) return safetyGate;
+  const ownerGate = relationshipOwnerGate(input);
+  if (ownerGate) return ownerGate;
   if (input.proposalStatus !== 'pending') {
     return decision(input, 'waiting', 'proposal_not_issued');
   }
   if (input.pendingAction) {
     return decision(input, 'waiting', 'action_or_approval_pending');
-  }
-  if (!input.ownerResolved) {
-    return decision(input, 'blocked', 'proposal_owner_unresolved');
   }
   if (!input.recipientResolved) {
     return decision(input, 'blocked', 'proposal_recipient_unresolved');
@@ -473,6 +503,8 @@ function evaluateReceivable(input: ReceivableCase): FollowupDecision {
   }
   const safetyGate = actionSafetyGate(input);
   if (safetyGate) return safetyGate;
+  const ownerGate = relationshipOwnerGate(input);
+  if (ownerGate) return ownerGate;
   if (input.pendingAction) {
     return decision(input, 'waiting', 'action_or_approval_pending');
   }
@@ -511,9 +543,6 @@ function evaluateReceivable(input: ReceivableCase): FollowupDecision {
       null,
       reviewDate,
     );
-  }
-  if (!input.ownerResolved) {
-    return decision(input, 'blocked', 'relationship_owner_unresolved');
   }
   if (!input.recipientResolved) {
     return decision(input, 'blocked', 'billing_recipient_unresolved');

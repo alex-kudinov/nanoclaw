@@ -8,6 +8,37 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260826-001 — Tandem OS generic relationship owner
+
+- Date: 2026-08-26T13:44:52Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; implementation, review, and local verification complete,
+  not committed or deployed
+- Commit/PR: `codex/relationship-owner-tandem-team-20260826` from exact
+  pushed/live Relationship Context lineage `460a51c7`
+- Change class: C5 identity/authority boundary, with no external action grant
+- Outcome: accepted owner decision plus migration/rollback 138, an explicit
+  `team:tandem` / `Tandem Team` organizational principal, three exact
+  lane assignments, fail-closed as-of resolution, lane-bound durable case
+  provenance, and updated follow-up policy/shadow/review contracts.
+- Safety: ownership is accountability/routing only. `action_authority='none'`;
+  no sender, approval, follow-up, minion, provider, customer, payment,
+  contract, credential, or communication authority is added.
+- Review: R1 found one material ownerless-waiting policy/schema mismatch; the
+  gate order and database acceptance tests were corrected. Exact-supersession
+  and same-scope concurrency were also hardened. R2 and R3 returned
+  `NO MATERIAL FINDINGS`.
+- Verification: focused 56/56; PostgreSQL integration 6/6; pinned-Node format,
+  typecheck, build, continuity, capability, and diff checks pass. PostgreSQL
+  16.15 apply, exact seed, append-only, lane/provenance, concurrent
+  serialization, zero non-admin grants, populated-refusal, and empty-rollback
+  proofs pass. Full root is 3,291 pass / 27 skip with the same three unrelated
+  failures reproduced at base `460a51c7` (CNPC one; external grading two).
+- Deployment/migration: none; production migration 138 and release remain
+  pending commit/release.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260826-001-relationship-owner-authority.md`.
+
 ### NC-20260825-004 — Relationship Context production rollout
 
 - Date: 2026-08-25T22:27:00Z

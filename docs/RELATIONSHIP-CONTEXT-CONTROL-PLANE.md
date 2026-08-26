@@ -1,9 +1,16 @@
 # Relationship Context Control Plane
 
-Status: accepted design plus local dark implementation candidate; no production migration, provider activation, Plutio write, minion grant, deployment, or live outcome
-Tasks: `NC-20260825-001`, `NC-20260825-002`, `NC-20260825-003`
-Program items: `work:relationship-context-control-plane-design`, `work:relationship-context-adapter-extensibility-design`, `work:relationship-context-dark-foundation`
-Last updated: 2026-08-25
+Status: accepted design; migration 137 and the credential-free null-Party
+Trafft shadow are live, while query/provider-write capabilities remain
+disabled and relationship-owner authority is separately decision-bound
+Tasks: `NC-20260825-001` through `NC-20260825-004`,
+`NC-20260826-001`
+Program items: `work:relationship-context-control-plane-design`,
+`work:relationship-context-adapter-extensibility-design`,
+`work:relationship-context-dark-foundation`,
+`work:relationship-context-production-rollout`,
+`work:relationship-owner-authority`
+Last updated: 2026-08-26
 
 ## 1. Decision summary
 
@@ -134,11 +141,13 @@ assemble that evidence into a single receipted relationship result. Inbox's
 `Known-To-Us` line and the partial contact-card/timeline views are lossy,
 prompt-dependent substitutes.
 
-This design does not resolve the separate blocked program item
-`work:relationship-owner-authority`. A relationship owner/assigned coach or
-accountable contact remains `unknown` unless a tracked assignment source and
-exact assignment exist; the context service must not substitute record creator,
-pipeline duplication, last sender, or a global default.
+The separate `work:relationship-owner-authority` decision now assigns the
+generic organizational principal `team:tandem` (`Tandem Team`) through a
+tracked Tandem OS registry. This is organizational accountability only, not an
+assigned coach, sender, or action grant. The context service must still return
+`unknown` when the exact assignment receipt is missing and must never
+substitute record creator, pipeline duplication, last sender, or another
+convenient field.
 
 ### 3.3 Trafft and appointments
 

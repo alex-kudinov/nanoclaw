@@ -8,6 +8,14 @@ import { makeFollowupShadowObservation } from './followup-shadow.js';
 import type { ReceivableCase } from './followup-policy.js';
 
 const NOW = new Date('2026-08-21T16:00:00.000Z');
+const RELATIONSHIP_OWNER = {
+  principalKey: 'team:tandem',
+  assignmentId: '3',
+  decisionRef:
+    '.program/decisions/decision-relationship-owner-tandem-team-2026-08-26.json',
+  managingSystem: 'tandem_os',
+  actionAuthority: 'none',
+} as const;
 
 describe('follow-up review CLI', () => {
   it('defaults to a bounded read-only packet', () => {
@@ -70,6 +78,7 @@ describe('follow-up review CLI', () => {
       pendingAction: false,
       uncertainDelivery: false,
       suppressed: false,
+      relationshipOwner: RELATIONSHIP_OWNER,
       partyId: '20',
       invoiceStatus: 'overdue',
       dueAt: '2026-08-10T16:00:00.000Z',
@@ -79,7 +88,6 @@ describe('follow-up review CLI', () => {
       collectionApproved: false,
       specialHandling: false,
       recipientResolved: true,
-      ownerResolved: false,
       confirmedAttempts: 0,
       lastConfirmedAttemptAt: null,
     };

@@ -583,6 +583,29 @@ the live production query boundary; no group is granted or configured. Live
 readback confirms zero query receipts/grants, zero projections, and zero
 prohibited raw/email/phone/name/custom-field value keys.
 
+## Relationship-owner boundary (`NC-20260826-001`)
+
+The explicit generic owner is a routing/accountability principal, not an
+authorization principal:
+
+- Tandem OS is the only assignment authority;
+- `team:tandem` / `Tandem Team` is stored with
+  `action_authority='none'`;
+- each governed lane has its own append-only decision-bound assignment;
+- case persistence binds principal, assignment, decision, and lane under one
+  composite foreign key;
+- missing, malformed, duplicated, or unavailable evidence blocks actionable
+  work without falling back to `createdBy`, sender, execution group, pipeline
+  duplication, or recent activity;
+- no table or sequence is granted to a non-admin role;
+- ownership cannot approve copy, choose recipients, send, activate follow-up,
+  grant a capability, or authorize a provider/payment/contract action.
+
+Authoritative terminal source facts may still close a case without owner
+evidence because they require no new action. Every new action remains subject
+to its existing exact-action, named-human, recipient, content, source, and
+receipt controls.
+
 ## Build, supply-chain, and runtime controls
 
 - Use the exact Node major selected by `.nvmrc` and rebuild native modules after

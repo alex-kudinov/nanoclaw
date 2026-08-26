@@ -195,6 +195,17 @@ the exact migration plus credential-free Trafft host-ledger shadow deployment.
 It does not authorize `party_context_get` grants, guessed identity, provider
 writes, or Plutio field/data changes.
 
+Migration 138 is `NC-20260826-001`'s Tandem OS relationship-owner authority.
+It registers the append-only `team:tandem` / `Tandem Team` organizational
+principal with `action_authority='none'` and one exact decision-bound
+assignment for each Sales conversation, proposal-signature, and receivable
+lane. `company_followup_cases` retains the principal, assignment ID, and
+decision receipt under a lane-bound composite foreign key. Missing or malformed
+assignment evidence blocks actionable work; `createdBy`, sender, execution
+group, pipeline duplication, and recent activity remain forbidden fallbacks.
+The schema is admin-only and grants no draft, approval, send, provider-write,
+follow-up-activation, payment, contract, credential, or minion authority.
+
 ## Connection
 
 ```bash

@@ -531,6 +531,9 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   party_id                      bigint
   pipeline_entry_id             bigint
   owner_group                   text                 NOT NULL
+  relationship_owner_principal_key text
+  relationship_owner_assignment_id bigint
+  relationship_owner_decision_ref  text
   policy_version                text                 NOT NULL
   source_fingerprint            text                 NOT NULL
   decision_fingerprint          text                 NOT NULL
@@ -573,6 +576,32 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
   operator_decision             text
   operator_fingerprint          text
+```
+
+## business_v2.relationship_owner_principals
+
+```
+  principal_key                 text                 NOT NULL
+  principal_type                text                 NOT NULL
+  display_name                  text                 NOT NULL
+  managing_system               text                 NOT NULL
+  action_authority              text                 NOT NULL DEFAULT='none'::text
+  decision_ref                  text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.relationship_owner_assignments
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.relationship_owner_assignments_id_seq'::regclass)
+  scope_type                    text                 NOT NULL
+  scope_key                     text                 NOT NULL
+  principal_key                 text                 NOT NULL
+  decision_ref                  text                 NOT NULL
+  effective_from                timestamp with time zone NOT NULL
+  supersedes_assignment_id      bigint
+  assignment_fingerprint        text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.company_gmail_mailbox_audit_candidates

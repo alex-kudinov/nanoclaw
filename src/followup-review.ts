@@ -24,7 +24,7 @@ import {
 } from './followup-shadow.js';
 
 export const FOLLOWUP_REVIEW_CONTRACT_VERSION =
-  'company-followup-review-v1' as const;
+  'company-followup-review-v2' as const;
 export const DEFAULT_FOLLOWUP_REVIEW_LIMIT = 10;
 export const MAX_FOLLOWUP_REVIEW_LIMIT = 25;
 
@@ -52,6 +52,9 @@ export interface FollowupReviewItem {
   reason: 'collection_review_due';
   nextAction: 'internal_review';
   ownerGroup: 'contador';
+  relationshipOwnerPrincipalKey: string;
+  relationshipOwnerAssignmentId: string;
+  relationshipOwnerDecisionRef: string;
 }
 
 export interface FollowupReviewPacket {
@@ -131,6 +134,15 @@ function toReviewItem(
     return null;
   }
   if (
+    !decision.relationshipOwnerPrincipalKey ||
+    !decision.relationshipOwnerAssignmentId ||
+    !decision.relationshipOwnerDecisionRef
+  ) {
+    throw new Error(
+      `followup-review: eligible receivable lacks relationship-owner provenance for ${observation.case.sourceKey}`,
+    );
+  }
+  if (
     observation.sourceSystem !== 'plutio' ||
     !PLUTIO_INVOICE_KEY_RE.test(observation.case.sourceKey)
   ) {
@@ -174,6 +186,9 @@ function toReviewItem(
     reason: 'collection_review_due',
     nextAction: 'internal_review',
     ownerGroup: 'contador',
+    relationshipOwnerPrincipalKey: decision.relationshipOwnerPrincipalKey,
+    relationshipOwnerAssignmentId: decision.relationshipOwnerAssignmentId,
+    relationshipOwnerDecisionRef: decision.relationshipOwnerDecisionRef,
   };
 }
 

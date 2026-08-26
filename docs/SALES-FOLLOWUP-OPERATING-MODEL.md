@@ -182,9 +182,13 @@ currently unwired dark foundation to mutate the live pipeline.
 
 ### Owner
 
-Sales coordinates, but the assigned relationship owner determines sender and
-commercial context. An unmapped owner blocks customer drafting and routes to
-Chief. A fixed global sender is not acceptable authority.
+Sales coordinates, and Tandem OS explicitly assigns the generic organizational
+principal `team:tandem` (`Tandem Team`) as the accountable relationship
+owner. Ownership does not determine a sender or grant action authority. Exact
+sender/content/recipient authority remains bound to the separately approved
+customer action. A missing or malformed tracked assignment blocks customer
+drafting and routes to Chief; `createdBy`, a sender, or execution group is
+never a substitute.
 
 ### Eligibility
 
@@ -218,9 +222,11 @@ advance cadence.
 
 ### Owner
 
-Contador owns invoice/payment truth and the initial collection review. The
-relationship owner owns tone and business exceptions. Mailman executes only an
-exact approved customer email. Sales does not independently chase money.
+Contador owns invoice/payment truth and the initial collection review.
+`team:tandem` is the generic accountable relationship owner for tone and
+business exceptions, without gaining send or approval authority. Mailman
+executes only an exact approved customer email. Sales does not independently
+chase money.
 
 ### Eligibility
 
@@ -361,14 +367,18 @@ as `collection_review_due`. This is Contador internal review work, not
 permission to draft or send a collection email; the 12 future-due invoices
 remain waiting.
 
-Owner discovery did not justify a fallback. Current pending proposal and
+Historical owner discovery did not justify an inferred fallback. Pending proposal and
 person payloads have `createdBy` but no assigned relationship owner; none of
 1,163 live pipeline entries has a populated legacy `metadata.assigned_to`
 value, and only two of five pending proposals resolve to exactly one active
 pipeline entry. `createdBy`, a global sender, or a duplicate active entry must
-not be promoted to owner. The four unsuppressed proposals therefore remain
-blocked pending a separately reviewed owner-assignment contract and explicit
-assignments.
+not be promoted to owner.
+
+Owner-decision checkpoint (`NC-20260826-001`): the owner selected a generic
+organizational model. Tandem OS now owns the registry and explicitly assigns
+`team:tandem` to all three governed lanes. This closes only the owner-evidence
+gap. It does not make a proposal eligible, select a sender, activate a case,
+draft or approve copy, schedule work, write Plutio, or send a message.
 
 The deployed release adds no projection, case row, Slack card, collection
 review receipt, draft, approval, assignment, customer action, schedule, or

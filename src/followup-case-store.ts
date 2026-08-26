@@ -49,6 +49,9 @@ export interface DurableFollowupCase {
   partyId: string | null;
   pipelineEntryId: string | null;
   ownerGroup: 'sales' | 'contador';
+  relationshipOwnerPrincipalKey: string | null;
+  relationshipOwnerAssignmentId: string | null;
+  relationshipOwnerDecisionRef: string | null;
   policyVersion: string;
   sourceFingerprint: string;
   decisionFingerprint: string;
@@ -80,6 +83,9 @@ interface CaseRow extends QueryResultRow {
   party_id: string | null;
   pipeline_entry_id: string | null;
   owner_group: 'sales' | 'contador';
+  relationship_owner_principal_key: string | null;
+  relationship_owner_assignment_id: string | null;
+  relationship_owner_decision_ref: string | null;
   policy_version: string;
   source_fingerprint: string;
   decision_fingerprint: string;
@@ -103,10 +109,12 @@ interface ExistingEventRow extends QueryResultRow {
 
 const CASE_COLUMNS = `
   id::text, lane, source_system, source_key, party_id::text,
-  pipeline_entry_id::text, owner_group, policy_version, source_fingerprint,
-  decision_fingerprint, disposition, reason_code, next_action, sequence_no,
-  next_eligible_business_date::text, confirmed_attempt_count, block_code,
-  terminal_code, version, last_observed_at::text, last_changed_at::text
+  pipeline_entry_id::text, owner_group, relationship_owner_principal_key,
+  relationship_owner_assignment_id::text, relationship_owner_decision_ref,
+  policy_version, source_fingerprint, decision_fingerprint, disposition,
+  reason_code, next_action, sequence_no, next_eligible_business_date::text,
+  confirmed_attempt_count, block_code, terminal_code, version,
+  last_observed_at::text, last_changed_at::text
 `;
 
 function opaque(value: string): boolean {
@@ -163,6 +171,9 @@ function toItem(row: CaseRow): DurableFollowupCase {
     partyId: row.party_id,
     pipelineEntryId: row.pipeline_entry_id,
     ownerGroup: row.owner_group,
+    relationshipOwnerPrincipalKey: row.relationship_owner_principal_key,
+    relationshipOwnerAssignmentId: row.relationship_owner_assignment_id,
+    relationshipOwnerDecisionRef: row.relationship_owner_decision_ref,
     policyVersion: row.policy_version,
     sourceFingerprint: row.source_fingerprint,
     decisionFingerprint: row.decision_fingerprint,
@@ -238,6 +249,9 @@ function projectionValues(
     partyId(input.case),
     pipelineEntryId(input.case),
     output.ownerGroup,
+    output.relationshipOwnerPrincipalKey,
+    output.relationshipOwnerAssignmentId,
+    output.relationshipOwnerDecisionRef,
     output.policyVersion,
     input.sourceFingerprint,
     decisionFingerprint,
@@ -338,14 +352,15 @@ export async function projectFollowupCaseWithClient(
     const inserted = await client.query<CaseRow>(
       `INSERT INTO business_v2.company_followup_cases
          (lane, source_system, source_key, party_id, pipeline_entry_id,
-          owner_group, policy_version, source_fingerprint,
-          decision_fingerprint, disposition, reason_code, next_action,
-          sequence_no, next_eligible_business_date, confirmed_attempt_count,
-          block_code, terminal_code, version, last_observed_at,
-          last_changed_at)
+          owner_group, relationship_owner_principal_key,
+          relationship_owner_assignment_id, relationship_owner_decision_ref,
+          policy_version, source_fingerprint, decision_fingerprint,
+          disposition, reason_code, next_action, sequence_no,
+          next_eligible_business_date, confirmed_attempt_count, block_code,
+          terminal_code, version, last_observed_at, last_changed_at)
        VALUES
          ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
-          0,$18,$18)
+          $18,$19,$20,0,$21,$21)
        RETURNING ${CASE_COLUMNS}`,
       values,
     );
@@ -356,22 +371,25 @@ export async function projectFollowupCaseWithClient(
           SET party_id = $1,
               pipeline_entry_id = $2,
               owner_group = $3,
-              policy_version = $4,
-              source_fingerprint = $5,
-              decision_fingerprint = $6,
-              disposition = $7,
-              reason_code = $8,
-              next_action = $9,
-              sequence_no = $10,
-              next_eligible_business_date = $11,
-              confirmed_attempt_count = $12,
-              block_code = $13,
-              terminal_code = $14,
+              relationship_owner_principal_key = $4,
+              relationship_owner_assignment_id = $5,
+              relationship_owner_decision_ref = $6,
+              policy_version = $7,
+              source_fingerprint = $8,
+              decision_fingerprint = $9,
+              disposition = $10,
+              reason_code = $11,
+              next_action = $12,
+              sequence_no = $13,
+              next_eligible_business_date = $14,
+              confirmed_attempt_count = $15,
+              block_code = $16,
+              terminal_code = $17,
               version = version + 1,
-              last_observed_at = $15,
-              last_changed_at = $15,
+              last_observed_at = $18,
+              last_changed_at = $18,
               updated_at = now()
-        WHERE id = $16 AND version = $17
+        WHERE id = $19 AND version = $20
         RETURNING ${CASE_COLUMNS}`,
       [...values.slice(3), existing.id, existing.version],
     );

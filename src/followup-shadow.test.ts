@@ -11,6 +11,17 @@ import {
   type SalesConversationCase,
 } from './followup-policy.js';
 
+function relationshipOwner(assignmentId: string) {
+  return {
+    principalKey: 'team:tandem',
+    assignmentId,
+    decisionRef:
+      '.program/decisions/decision-relationship-owner-tandem-team-2026-08-26.json',
+    managingSystem: 'tandem_os' as const,
+    actionAuthority: 'none' as const,
+  };
+}
+
 function sales(
   overrides: Partial<SalesConversationCase> = {},
 ): SalesConversationCase {
@@ -23,6 +34,7 @@ function sales(
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
+    relationshipOwner: relationshipOwner('1'),
     partyId: '10',
     pipelineEntryId: '42',
     pipelineStage: 'qualifying',
@@ -48,6 +60,7 @@ function receivable(overrides: Partial<ReceivableCase> = {}): ReceivableCase {
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
+    relationshipOwner: relationshipOwner('3'),
     partyId: '20',
     invoiceStatus: 'overdue',
     dueAt: '2026-08-10T16:00:00.000Z',
@@ -57,7 +70,6 @@ function receivable(overrides: Partial<ReceivableCase> = {}): ReceivableCase {
     collectionApproved: false,
     specialHandling: false,
     recipientResolved: true,
-    ownerResolved: false,
     confirmedAttempts: 0,
     lastConfirmedAttemptAt: null,
     ...overrides,

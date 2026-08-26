@@ -139,18 +139,24 @@ before applying anything.
   cutoff-gated, and contains no historical replay. Applying it does not
   authorize a provider event or customer email; runtime mode, templates, flow,
   canary, and cutover remain separate gates;
-- migration 137 is NC-20260825-003's local provider-neutral Relationship
+- migration 137 is NC-20260825-003/004's live provider-neutral Relationship
   Context dark foundation. It creates admin-only scoped external refs,
   identifier claims/exceptions, disabled adapter manifests, bounded
   observations/projections, immutable query receipts, and dry-run-only Plutio
   projection receipts. It performs an idempotent conflict-refusing legacy Party
-  source-ref backfill, grants no minion/agent/provider authority, and remains
-  unapplied/unconfigured;
+  source-ref backfill and grants no minion/agent/provider authority. NC-004
+  applied it and enabled only the credential-free null-Party Trafft shadow;
+- migration 138 is NC-20260826-001's Tandem OS relationship-owner authority.
+  It records the `team:tandem` organizational principal with no action
+  authority and three exact decision-bound follow-up-lane assignments. It adds
+  lane-bound principal/assignment/decision provenance to follow-up cases,
+  remains admin-only, and does not activate projection, drafting, sending,
+  provider writes, or follow-up;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and
   refuses to narrow the schema while any host-job history exists;
-- rollbacks 120-137 are non-auto-discovered and refuse to erase populated
+- rollbacks 120-138 are non-auto-discovered and refuse to erase populated
   operator-attention, trigger-occurrence, source/watermark, Gmail-shadow,
   mailbox-audit, program-facts, outcome-quality, or outcome-review history;
   rollback 128 specifically refuses once any durable `+1` decision exists,
@@ -164,7 +170,9 @@ before applying anything.
   recovery case, alias, event, or receipt exists; rollback 136 refuses once any
   routing context, touch intent, or send receipt exists; rollback 137 removes
   only exact migration-created legacy compatibility refs and otherwise refuses
-  once any Relationship Context evidence exists.
+  once any Relationship Context evidence exists; rollback 138 refuses once any
+  follow-up case references an assignment or the exact seeded authority
+  registry has changed.
 
 ## Rollback
 

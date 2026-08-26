@@ -1,0 +1,14 @@
+{
+  "decision_id": "decision:relationship-owner-tandem-team-2026-08-26",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-26T13:44:52+00:00",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "work:relationship-owner-authority"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Tandem OS owns relationship-owner authority. The explicit generic organizational principal is Tandem Team, and a tracked policy may assign that principal to every actionable relationship, Sales, or proposal case unless a later explicit assignment supersedes it. This is accountable work ownership only and grants no individual or minion authority to approve, send, mutate providers, activate follow-up, or perform another consequential action. Resolution must use the tracked assignment and its decision provenance; it must never infer ownership from createdBy, a duplicate pipeline entry, a sender, recent activity, or another convenient field.",
+  "source_task": "Current owner instruction in Codex on 2026-08-26: ownership should be generic and reside with Tandem OS or the Tandem team."
+}

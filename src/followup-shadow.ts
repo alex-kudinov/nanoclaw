@@ -57,10 +57,13 @@ export interface FollowupShadowDetail {
   sequence: number | null;
   nextEligibleBusinessDate: string | null;
   ownerGroup: 'sales' | 'contador';
+  relationshipOwnerPrincipalKey: string | null;
+  relationshipOwnerAssignmentId: string | null;
+  relationshipOwnerDecisionRef: string | null;
 }
 
 export interface FollowupShadowReport {
-  contractVersion: 'company-followup-shadow-v1';
+  contractVersion: 'company-followup-shadow-v2';
   observedAt: string;
   snapshotFingerprint: string;
   sourceErrors: FollowupShadowSourceError[];
@@ -184,6 +187,9 @@ function detail(item: EvaluatedObservation): FollowupShadowDetail {
     sequence: item.decision.sequence,
     nextEligibleBusinessDate: item.decision.nextEligibleBusinessDate,
     ownerGroup: item.decision.ownerGroup,
+    relationshipOwnerPrincipalKey: item.decision.relationshipOwnerPrincipalKey,
+    relationshipOwnerAssignmentId: item.decision.relationshipOwnerAssignmentId,
+    relationshipOwnerDecisionRef: item.decision.relationshipOwnerDecisionRef,
   };
 }
 
@@ -240,7 +246,7 @@ export function buildFollowupShadowReport(input: {
     ),
   );
   return {
-    contractVersion: 'company-followup-shadow-v1',
+    contractVersion: 'company-followup-shadow-v2',
     observedAt: new Date(input.observedAt).toISOString(),
     snapshotFingerprint: sha({
       observations: evaluated

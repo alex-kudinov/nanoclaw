@@ -530,6 +530,24 @@ and held, with zero projections; an exact replay produced 414 duplicates.
 See `docs/RELATIONSHIP-CONTEXT-PRODUCTION-ROLLOUT.md` for deployment and live
 verification gates.
 
+### Tandem OS relationship-owner authority (`NC-20260826-001`)
+
+Migration 138 adds a separate admin-only organizational-accountability layer:
+
+```text
+accepted owner decision
+        -> Tandem OS principal (team:tandem, action authority none)
+        -> exact append-only follow-up-lane assignment
+        -> as-of host resolution
+        -> lane-bound case provenance or fail-closed unresolved owner
+```
+
+The owner registry never supplies credentials, sender identity, approval, or
+external-action authority. Policy requires exact assignment evidence before
+actionable Sales/proposal/receivable work, while authoritative terminal source
+facts may still close without it. Case persistence binds the lane, principal,
+assignment ID, and decision reference under one composite foreign key.
+
 ---
 
 ## Job Scheduling

@@ -153,6 +153,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_136_checkout_recovery_two_reminders.sql',
     'data/business/migrations/nanoclaw-v2/137_relationship_context_dark.sql',
     'data/business/migrations/nanoclaw-v2/rollback_137_relationship_context_dark.sql',
+    'data/business/migrations/nanoclaw-v2/138_relationship_owner_authority.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_138_relationship_owner_authority.sql',
     'scripts/verify-release.mjs',
     'scripts/runtime-doctor.mjs',
     'scripts/with-pinned-node.sh',

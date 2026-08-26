@@ -14,6 +14,9 @@ import {
   type FollowupShadowSourceDependencies,
 } from './followup-shadow-source.js';
 
+const OWNER_DECISION =
+  '.program/decisions/decision-relationship-owner-tandem-team-2026-08-26.json';
+
 function result<T extends QueryResultRow>(rows: T[]): QueryResult<T> {
   return {
     command: 'SELECT',
@@ -48,6 +51,34 @@ function fakeQuery(): FollowupShadowQueryPort {
     }
     if (sql.includes('FROM business_v2.company_followup_cases')) {
       return result([] as T[]);
+    }
+    if (sql.includes('business_v2.relationship_owner_assignments')) {
+      return result([
+        {
+          scope_key: 'proposal_signature',
+          assignment_id: '2',
+          principal_key: 'team:tandem',
+          decision_ref: OWNER_DECISION,
+          managing_system: 'tandem_os',
+          action_authority: 'none',
+        },
+        {
+          scope_key: 'receivable',
+          assignment_id: '3',
+          principal_key: 'team:tandem',
+          decision_ref: OWNER_DECISION,
+          managing_system: 'tandem_os',
+          action_authority: 'none',
+        },
+        {
+          scope_key: 'sales_conversation',
+          assignment_id: '1',
+          principal_key: 'team:tandem',
+          decision_ref: OWNER_DECISION,
+          managing_system: 'tandem_os',
+          action_authority: 'none',
+        },
+      ] as unknown as T[]);
     }
     if (sql.includes('FROM business_v2.plutio_refs')) {
       return result([{ party_id: '10', suppressed: false }] as unknown as T[]);
@@ -136,7 +167,7 @@ function dependencies(
 }
 
 describe('follow-up shadow source reconciliation', () => {
-  it('blocks duplicate Sales identity and preserves truthful owner gaps', async () => {
+  it('blocks duplicate Sales identity and carries explicit Tandem OS ownership', async () => {
     const output = await readFollowupShadowSources(
       '2026-08-21T16:00:00.000Z',
       dependencies(),
@@ -155,7 +186,11 @@ describe('follow-up shadow source reconciliation', () => {
       expect.objectContaining({
         lane: 'proposal_signature',
         partyId: '10',
-        ownerResolved: false,
+        relationshipOwner: expect.objectContaining({
+          principalKey: 'team:tandem',
+          decisionRef: OWNER_DECISION,
+          actionAuthority: 'none',
+        }),
         publicLinkVerified: false,
       }),
     );
@@ -164,7 +199,11 @@ describe('follow-up shadow source reconciliation', () => {
         lane: 'receivable',
         partyId: '10',
         paymentReconciled: true,
-        ownerResolved: false,
+        relationshipOwner: expect.objectContaining({
+          principalKey: 'team:tandem',
+          decisionRef: OWNER_DECISION,
+          actionAuthority: 'none',
+        }),
       }),
     );
     expect(JSON.stringify(output)).not.toContain('transient@example.com');
@@ -237,6 +276,35 @@ describe('follow-up shadow source reconciliation', () => {
     expect(sales?.case.sourceEvidenceComplete).toBe(true);
     expect(proposal?.case.sourceEvidenceComplete).toBe(false);
     expect(invoice?.case.sourceEvidenceComplete).toBe(false);
+  });
+
+  it('fails owner resolution closed without inventing a fallback', async () => {
+    const base = fakeQuery();
+    const query: FollowupShadowQueryPort = async <T extends QueryResultRow>(
+      sql: string,
+      params?: unknown[],
+    ): Promise<QueryResult<T>> => {
+      if (sql.includes('business_v2.relationship_owner_assignments')) {
+        throw new Error('owner registry unavailable');
+      }
+      return base<T>(sql, params);
+    };
+    const output = await readFollowupShadowSources(
+      '2026-08-21T16:00:00.000Z',
+      dependencies({ query }),
+    );
+    expect(output.sourceErrors).toContainEqual({
+      source: 'business_v2',
+      code: 'owner_read_failed',
+    });
+    expect(
+      output.observations.every((item) => !item.case.relationshipOwner),
+    ).toBe(true);
+    const proposal = output.observations.find(
+      (item) => item.case.lane === 'proposal_signature',
+    );
+    expect(proposal).toBeDefined();
+    expect(proposal && JSON.stringify(proposal)).not.toContain('createdBy');
   });
 });
 

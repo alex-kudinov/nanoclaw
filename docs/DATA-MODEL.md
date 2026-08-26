@@ -840,13 +840,14 @@ The pre-sale funnel. A party can be in the funnel for multiple programs at the s
 | `created_at`        | `timestamptz NOT NULL DEFAULT now()`                        |                                                                                                                                                                                                                                                                               |
 | `updated_at`        | `timestamptz NOT NULL DEFAULT now()`                        |                                                                                                                                                                                                                                                                               |
 
-Implementation note (2026-08-21, `NC-20260821-006`): this table describes the
-intended owner contract, but running migration `07_pipeline.sql` does not yet
-contain `assigned_to`. The legacy backfill retained its source value only in
-`metadata.assigned_to`, and a sanitized live audit found that field populated
-on zero of 1,163 entries. Code must not query the documented column, infer an
-owner from Plutio `createdBy`, or treat a global sender as the relationship
-owner until a tracked migration and explicit assignments reconcile this drift.
+Implementation note (2026-08-26, `NC-20260826-001`): running migration
+`07_pipeline.sql` still does not contain `assigned_to`, and the zero-value
+legacy `metadata.assigned_to` field remains non-authoritative. Relationship
+ownership is now a separate Tandem OS contract: migration 138 registers the
+generic organizational principal `team:tandem` and explicitly assigns it to
+the three governed follow-up lanes. Code must resolve that tracked assignment
+and decision receipt; it must not query this aspirational column or infer an
+owner from Plutio `createdBy`, a sender, or pipeline duplication.
 
 Indexes + constraints:
 
@@ -2149,6 +2150,24 @@ first-row email selection.
 Production migration 137 is applied. Current relationship-context state is 39
 legacy compatibility refs, 414 Trafft observations with null Party identity,
 414 open identity exceptions, zero projections, and zero query receipts.
+
+### Relationship-owner authority (migration 138)
+
+Tandem OS owns two admin-only append-only relations:
+
+- `relationship_owner_principals`: stable principal key/type/display name,
+  managing system, decision reference, and an invariant
+  `action_authority='none'`;
+- `relationship_owner_assignments`: exact scope type/key, principal,
+  decision, effective time, optional superseded assignment, and assignment
+  fingerprint.
+
+The accepted seed is one `team:tandem` / `Tandem Team` principal plus one
+assignment for each `company_followup_cases.lane`. Follow-up cases retain the
+principal key, assignment ID, and decision reference under a composite foreign
+key that also binds the case lane to the assignment scope. Ownership is
+accountability/routing evidence; it is not a sender, approval, capability, or
+external-action grant.
 
 ## Migration philosophy
 

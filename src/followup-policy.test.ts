@@ -10,6 +10,17 @@ import {
   type SalesConversationCase,
 } from './followup-policy.js';
 
+function relationshipOwner(assignmentId: string) {
+  return {
+    principalKey: 'team:tandem',
+    assignmentId,
+    decisionRef:
+      '.program/decisions/decision-relationship-owner-tandem-team-2026-08-26.json',
+    managingSystem: 'tandem_os' as const,
+    actionAuthority: 'none' as const,
+  };
+}
+
 function sales(
   overrides: Partial<SalesConversationCase> = {},
 ): SalesConversationCase {
@@ -22,6 +33,7 @@ function sales(
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
+    relationshipOwner: relationshipOwner('1'),
     partyId: '10',
     pipelineEntryId: '42',
     pipelineStage: 'qualifying',
@@ -49,6 +61,7 @@ function proposal(
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
+    relationshipOwner: relationshipOwner('2'),
     partyId: '20',
     proposalStatus: 'pending',
     pendingAt: '2026-08-03T16:00:00.000Z',
@@ -56,7 +69,6 @@ function proposal(
     autoInvoiceId: null,
     projectId: null,
     recipientResolved: true,
-    ownerResolved: true,
     publicLinkVerified: true,
     confirmedAttempts: 0,
     lastConfirmedAttemptAt: null,
@@ -75,6 +87,7 @@ function receivable(overrides: Partial<ReceivableCase> = {}): ReceivableCase {
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: false,
+    relationshipOwner: relationshipOwner('3'),
     partyId: '30',
     invoiceStatus: 'overdue',
     dueAt: '2026-08-14T16:00:00.000Z',
@@ -84,7 +97,6 @@ function receivable(overrides: Partial<ReceivableCase> = {}): ReceivableCase {
     collectionApproved: false,
     specialHandling: false,
     recipientResolved: true,
-    ownerResolved: true,
     confirmedAttempts: 0,
     lastConfirmedAttemptAt: null,
     ...overrides,
@@ -111,6 +123,32 @@ describe('Sales conversation policy', () => {
     ).toMatchObject({
       disposition: 'blocked',
       reason: 'source_identity_conflict',
+    });
+  });
+
+  it('requires explicit owner evidence for actionable work but not terminal facts', () => {
+    expect(evaluateFollowup(sales({ relationshipOwner: null }))).toMatchObject({
+      disposition: 'blocked',
+      reason: 'relationship_owner_unresolved',
+    });
+    expect(
+      evaluateFollowup(
+        sales({ relationshipOwner: null, pipelineStage: 'won' }),
+      ),
+    ).toMatchObject({
+      disposition: 'completed',
+      reason: 'pipeline_won',
+    });
+    expect(
+      evaluateFollowup(
+        sales({
+          relationshipOwner: null,
+          pipelineStage: 'paused',
+        }),
+      ),
+    ).toMatchObject({
+      disposition: 'blocked',
+      reason: 'relationship_owner_unresolved',
     });
   });
 
@@ -260,6 +298,28 @@ describe('proposal-signature policy', () => {
     });
   });
 
+  it('does not make ownership a prerequisite for authoritative terminal state', () => {
+    expect(
+      evaluateFollowup(
+        proposal({
+          relationshipOwner: null,
+          approvedAt: '2026-08-11T12:00:00.000Z',
+        }),
+      ),
+    ).toMatchObject({
+      disposition: 'completed',
+      reason: 'proposal_converted',
+    });
+    expect(
+      evaluateFollowup(
+        receivable({ relationshipOwner: null, invoiceStatus: 'paid' }),
+      ),
+    ).toMatchObject({
+      disposition: 'completed',
+      reason: 'invoice_paid',
+    });
+  });
+
   it('lets authoritative conversion win over stale suppression state', () => {
     expect(
       evaluateFollowup(
@@ -269,9 +329,36 @@ describe('proposal-signature policy', () => {
   });
 
   it('requires a relationship owner and verified public link', () => {
-    expect(evaluateFollowup(proposal({ ownerResolved: false }))).toMatchObject({
+    expect(
+      evaluateFollowup(proposal({ relationshipOwner: null })),
+    ).toMatchObject({
       disposition: 'blocked',
-      reason: 'proposal_owner_unresolved',
+      reason: 'relationship_owner_unresolved',
+      relationshipOwnerPrincipalKey: null,
+    });
+    expect(
+      evaluateFollowup(
+        proposal({
+          relationshipOwner: null,
+          proposalStatus: 'draft',
+        }),
+      ),
+    ).toMatchObject({
+      disposition: 'blocked',
+      reason: 'relationship_owner_unresolved',
+    });
+    expect(
+      evaluateFollowup(
+        proposal({
+          relationshipOwner: {
+            ...relationshipOwner('2'),
+            actionAuthority: 'send' as 'none',
+          },
+        }),
+      ),
+    ).toMatchObject({
+      disposition: 'blocked',
+      reason: 'relationship_owner_invalid',
     });
     expect(
       evaluateFollowup(proposal({ publicLinkVerified: false })),
@@ -344,6 +431,31 @@ describe('proposal-signature policy', () => {
 });
 
 describe('receivables policy', () => {
+  it('requires owner evidence before every non-terminal waiting state', () => {
+    expect(
+      evaluateFollowup(
+        receivable({
+          relationshipOwner: null,
+          invoiceStatus: 'draft',
+        }),
+      ),
+    ).toMatchObject({
+      disposition: 'blocked',
+      reason: 'relationship_owner_unresolved',
+    });
+    expect(
+      evaluateFollowup(
+        receivable({
+          relationshipOwner: null,
+          pendingAction: true,
+        }),
+      ),
+    ).toMatchObject({
+      disposition: 'blocked',
+      reason: 'relationship_owner_unresolved',
+    });
+  });
+
   it('does not chase future-due invoices', () => {
     expect(
       evaluateFollowup(

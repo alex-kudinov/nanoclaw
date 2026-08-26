@@ -20,6 +20,7 @@ import {
   type FollowupShadowSourceError,
 } from './followup-shadow.js';
 import type {
+  FollowupLane,
   ProposalSignatureCase,
   ReceivableCase,
   SalesConversationCase,
@@ -41,6 +42,10 @@ import {
   listInvoicePaymentEvidence,
   type InvoicePaymentEvidence,
 } from './plutio-transactions.js';
+import {
+  resolveRelationshipOwners,
+  type RelationshipOwnerEvidence,
+} from './relationship-owner.js';
 
 export interface FollowupShadowQueryPort {
   <T extends QueryResultRow = QueryResultRow>(
@@ -261,6 +266,7 @@ export function readFollowupActionEvidence(
 function mapSales(
   row: SalesSourceRow,
   observedAt: string,
+  relationshipOwner: RelationshipOwnerEvidence | null,
   action: { pending: boolean; uncertain: boolean } | undefined,
   proposalSourceComplete: boolean,
   openProposalParties: Set<string>,
@@ -277,6 +283,7 @@ function mapSales(
     pendingAction: action?.pending ?? false,
     uncertainDelivery: action?.uncertain ?? false,
     suppressed: row.suppressed,
+    relationshipOwner,
     partyId: row.party_id,
     pipelineEntryId: row.pipeline_entry_id,
     pipelineStage: row.stage,
@@ -391,6 +398,7 @@ async function mapProposal(
   businessSourceComplete: boolean,
   recipient: Recipient | null,
   recipientSourceComplete: boolean,
+  relationshipOwner: RelationshipOwnerEvidence | null,
 ): Promise<{ case: ProposalSignatureCase; partyId: string | null }> {
   const party = await resolvePartyFacts(deps, proposal.clientId, recipient);
   const ledger = await proposalLedger(deps, proposal);
@@ -404,6 +412,7 @@ async function mapProposal(
     uncertainDelivery:
       ledger.uncertain_delivery || (action?.uncertain ?? false),
     suppressed: party.suppressed || ledger.suppressed,
+    relationshipOwner,
     partyId: party.partyId,
     proposalStatus: proposal.status,
     pendingAt: proposal.pendingAt,
@@ -411,8 +420,6 @@ async function mapProposal(
     autoInvoiceId: proposal.autoInvoiceId,
     projectId: proposal.projectId,
     recipientResolved: Boolean(recipient && party.partyId),
-    // The current business schema has no assigned relationship-owner field.
-    ownerResolved: false,
     publicLinkVerified: ledger.public_link_verified,
     confirmedAttempts: ledger.confirmed_attempts,
     lastConfirmedAttemptAt: ledger.last_confirmed_attempt_at,
@@ -429,6 +436,7 @@ async function mapInvoice(
   businessSourceComplete: boolean,
   recipient: Recipient | null,
   recipientSourceComplete: boolean,
+  relationshipOwner: RelationshipOwnerEvidence | null,
 ): Promise<ReceivableCase> {
   const party = await resolvePartyFacts(deps, invoice.clientId, recipient);
   return {
@@ -440,6 +448,7 @@ async function mapInvoice(
     pendingAction: false,
     uncertainDelivery: false,
     suppressed: party.suppressed,
+    relationshipOwner,
     partyId: party.partyId,
     invoiceStatus: invoice.status,
     dueAt: invoice.dueAt,
@@ -449,7 +458,6 @@ async function mapInvoice(
     collectionApproved: false,
     specialHandling: false,
     recipientResolved: Boolean(recipient && party.partyId),
-    ownerResolved: false,
     confirmedAttempts: 0,
     lastConfirmedAttemptAt: null,
   };
@@ -513,12 +521,13 @@ export async function readFollowupShadowSources(
     pushError({ source: 'sqlite_actions', code: 'read_failed' });
   }
 
-  const [salesRead, proposalsRead, invoicesRead, existingRead] =
+  const [salesRead, proposalsRead, invoicesRead, existingRead, ownersRead] =
     await Promise.allSettled([
       deps.query<SalesSourceRow>(SALES_SHADOW_SQL),
       deps.listProposals(),
       deps.listInvoices(),
       readExisting(deps),
+      resolveRelationshipOwners(observedAt, deps.query),
     ]);
   const businessComplete =
     salesRead.status === 'fulfilled' && existingRead.status === 'fulfilled';
@@ -532,6 +541,13 @@ export async function readFollowupShadowSources(
   }
   if (!invoiceComplete) {
     pushError({ source: 'plutio_invoices', code: 'read_failed' });
+  }
+  const relationshipOwners =
+    ownersRead.status === 'fulfilled'
+      ? ownersRead.value
+      : new Map<FollowupLane, RelationshipOwnerEvidence>();
+  if (ownersRead.status === 'rejected') {
+    pushError({ source: 'business_v2', code: 'owner_read_failed' });
   }
 
   let invoicePayments = new Map<string, InvoicePaymentEvidence>();
@@ -601,6 +617,7 @@ export async function readFollowupShadowSources(
             ? (recipients.get(proposal.clientId) ?? null)
             : null,
           recipientSourceComplete,
+          relationshipOwners.get('proposal_signature') ?? null,
         );
         proposalCases.push(mapped);
       } catch {
@@ -616,6 +633,8 @@ export async function readFollowupShadowSources(
             pendingAction: false,
             uncertainDelivery: false,
             suppressed: false,
+            relationshipOwner:
+              relationshipOwners.get('proposal_signature') ?? null,
             partyId: null,
             proposalStatus: proposal.status,
             pendingAt: proposal.pendingAt,
@@ -623,7 +642,6 @@ export async function readFollowupShadowSources(
             autoInvoiceId: proposal.autoInvoiceId,
             projectId: proposal.projectId,
             recipientResolved: false,
-            ownerResolved: false,
             publicLinkVerified: false,
             confirmedAttempts: 0,
             lastConfirmedAttemptAt: null,
@@ -655,6 +673,7 @@ export async function readFollowupShadowSources(
           mapSales(
             row,
             observedAt,
+            relationshipOwners.get('sales_conversation') ?? null,
             actions.sales.get(row.pipeline_entry_id),
             businessComplete && proposalComplete && actionsComplete,
             openProposalParties,
@@ -682,6 +701,7 @@ export async function readFollowupShadowSources(
                 ? (recipients.get(invoice.clientId) ?? null)
                 : null,
               recipientSourceComplete,
+              relationshipOwners.get('receivable') ?? null,
             ),
           ),
         );
@@ -697,6 +717,7 @@ export async function readFollowupShadowSources(
             pendingAction: false,
             uncertainDelivery: false,
             suppressed: false,
+            relationshipOwner: relationshipOwners.get('receivable') ?? null,
             partyId: null,
             invoiceStatus: invoice.status,
             dueAt: invoice.dueAt,
@@ -706,7 +727,6 @@ export async function readFollowupShadowSources(
             collectionApproved: false,
             specialHandling: false,
             recipientResolved: false,
-            ownerResolved: false,
             confirmedAttempts: 0,
             lastConfirmedAttemptAt: null,
           }),
