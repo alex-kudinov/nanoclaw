@@ -2148,8 +2148,8 @@ no current projection. Existing agent-facing views and
 first-row email selection.
 
 Production migration 137 is applied. Current relationship-context state is 39
-legacy compatibility refs, 414 Trafft observations with null Party identity,
-414 open identity exceptions, zero projections, and zero query receipts.
+legacy compatibility refs, 417 Trafft observations with null Party identity,
+417 open identity exceptions, zero projections, and zero query receipts.
 
 ### Relationship-owner authority (migration 138)
 
@@ -2168,6 +2168,11 @@ principal key, assignment ID, and decision reference under a composite foreign
 key that also binds the case lane to the assignment scope. Ownership is
 accountability/routing evidence; it is not a sender, approval, capability, or
 external-action grant.
+
+Production migration 138 is applied under exact release `416384fc7131`.
+Live state is one principal, three exact lane assignments, zero non-admin
+grants, and zero follow-up case/event rows. A 205-observation dry run resolved
+only `team:tandem`, returned no source errors, and performed no apply.
 
 ## Migration philosophy
 

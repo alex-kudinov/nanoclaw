@@ -76,12 +76,50 @@ provider, payment, contract, credential, or customer action.
   PostgreSQL concurrency test proves blocking and post-commit revalidation.
 - R3 returned `NO MATERIAL FINDINGS`.
 
+## Immutable release and production verification
+
+- implementation:
+  `416384fc713152bedfa54f51df402a1009bc37c6`;
+- source tree:
+  `8e1f436d2d789ba1fb035cd569d4ce926c797225`;
+- artifact: 988 files,
+  `0617a2ab2b13aa603e7698ccba6ec97ffb46ffdd53ab3a6cc62233bfc74c574a`;
+- archive:
+  `1dbb7637bae0775c330a1b7ef69774ebe76d18ed34428602bd250611063d24a8`,
+  byte-identical and runtime-verified on the Mini;
+- four consecutive pre-mutation samples: zero active containers, zero waiting
+  groups, and zero outgoing Slack queue;
+- mode-0700 backup:
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260826-001-20260826T144521Z`;
+- PostgreSQL dump SHA-256:
+  `b0fcb83fa71c450d32cd35fb204ab2b4dffdf432221ca7543814bec877222ea5`;
+- SQLite backup SHA-256:
+  `abdd566b79d7725489e5ac9b637c8dd09be93c7603535d0f9eab73e52cb5d65b`;
+- installed plist backup SHA-256:
+  `36177f7fb7f1949a40c396c5e83ae47b9db95ab16717891de383189d78f5d758`.
+
+Migration 138 applied once from the verified release. Live readback proves one
+principal, three assignments, three owner constraints, three enabled triggers,
+zero wrong relation owners, zero non-admin table/sequence/function grants, and
+zero follow-up case/event rows.
+
+Activation changed only code root, expected commit, and executable pointer.
+Rollback plist:
+`/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-e97c9f8700da-2026-08-26T14-48-40-757Z`.
+The daemon reports exact release/tree/artifact/code root under Node 22.23.2,
+connected Gmail/Slack, zero waiting/outgoing queues, Relationship Context query
+disabled with zero grants, healthy Trafft shadow, zero projections/queries,
+checkout production sends preserved, Community lifecycle enabled, and Circle
+off.
+
+A release-owned dry run observed 205 exact cases (180 Sales, five proposals,
+20 receivables), returned no source errors, and exposed only
+`team:tandem` as relationship owner. It performed no apply; follow-up
+cases/events remained zero.
+
 ## Boundary still in force
 
-No production migration, runtime activation, case projection, provider read or
-write, customer record/message, Slack post, draft, approval, schedule,
-follow-up activation, Plutio mutation, credential, payment, contract, minion
-grant, or deployment has occurred in this task at this checkpoint.
-
-Exact commit/release, production preflight, deployment, and live
-non-interference proof remain pending.
+No follow-up projection/apply, provider write, customer record/message, Slack
+post, draft, approval, schedule, follow-up activation, Plutio mutation,
+credential, payment, contract, minion grant, or context-query activation
+occurred. Organizational ownership does not authorize any of those steps.

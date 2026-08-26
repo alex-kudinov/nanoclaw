@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-26T13:44:52Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; implementation, review, and local verification complete,
-  not committed or deployed
-- Commit/PR: `codex/relationship-owner-tandem-team-20260826` from exact
-  pushed/live Relationship Context lineage `460a51c7`
+- State: complete; implementation, independent review, exact release,
+  migration, deployment, and live non-interference verified
+- Commit/PR: pushed `codex/relationship-owner-tandem-team-20260826`;
+  exact live implementation
+  `416384fc713152bedfa54f51df402a1009bc37c6`
 - Change class: C5 identity/authority boundary, with no external action grant
 - Outcome: accepted owner decision plus migration/rollback 138, an explicit
   `team:tandem` / `Tandem Team` organizational principal, three exact
@@ -34,8 +35,24 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   serialization, zero non-admin grants, populated-refusal, and empty-rollback
   proofs pass. Full root is 3,291 pass / 27 skip with the same three unrelated
   failures reproduced at base `460a51c7` (CNPC one; external grading two).
-- Deployment/migration: none; production migration 138 and release remain
-  pending commit/release.
+- Release: source tree `8e1f436d2d789ba1fb035cd569d4ce926c797225`;
+  988-file artifact
+  `0617a2ab2b13aa603e7698ccba6ec97ffb46ffdd53ab3a6cc62233bfc74c574a`;
+  archive
+  `1dbb7637bae0775c330a1b7ef69774ebe76d18ed34428602bd250611063d24a8`.
+- Deployment/migration: protected mode-0700 backup
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260826-001-20260826T144521Z`;
+  migration 138 applied from the verified release; activation changed only
+  code root, expected commit, and executable pointer. Rollback plist:
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-e97c9f8700da-2026-08-26T14-48-40-757Z`.
+- Live verification: one `team:tandem` principal, three exact assignments,
+  three owner constraints, three enabled triggers, zero wrong owners/non-admin
+  grants, zero follow-up cases/events. A release-owned dry run observed 205
+  cases across all three lanes, resolved only `team:tandem`, returned no
+  source errors, and wrote nothing. Exact release/Node/code root, Gmail/Slack,
+  waiting/outgoing queues, Trafft shadow, query/grant/projection zeros,
+  checkout production sends, Community lifecycle, and Circle-off boundaries
+  are healthy/preserved.
 - Evidence:
   `docs/programs/company-os/evidence/NC-20260826-001-relationship-owner-authority.md`.
 

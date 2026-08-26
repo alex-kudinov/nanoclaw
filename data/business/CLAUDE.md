@@ -205,6 +205,11 @@ assignment evidence blocks actionable work; `createdBy`, sender, execution
 group, pipeline duplication, and recent activity remain forbidden fallbacks.
 The schema is admin-only and grants no draft, approval, send, provider-write,
 follow-up-activation, payment, contract, credential, or minion authority.
+Exact release `416384fc7131` applied it in production with one principal,
+three assignments, three owner constraints, three enabled triggers, zero
+non-admin grants, and zero follow-up case/event rows. A release-owned dry run
+resolved `team:tandem` across 205 observations with no source errors and
+performed no apply.
 
 ## Connection
 

@@ -149,9 +149,9 @@ before applying anything.
 - migration 138 is NC-20260826-001's Tandem OS relationship-owner authority.
   It records the `team:tandem` organizational principal with no action
   authority and three exact decision-bound follow-up-lane assignments. It adds
-  lane-bound principal/assignment/decision provenance to follow-up cases,
-  remains admin-only, and does not activate projection, drafting, sending,
-  provider writes, or follow-up;
+  lane-bound principal/assignment/decision provenance to follow-up cases, is
+  live under exact release `416384fc7131`, remains admin-only, and does not
+  activate projection, drafting, sending, provider writes, or follow-up;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and

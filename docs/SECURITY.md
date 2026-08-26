@@ -606,6 +606,10 @@ evidence because they require no new action. Every new action remains subject
 to its existing exact-action, named-human, recipient, content, source, and
 receipt controls.
 
+Exact release `416384fc7131` live-verifies this boundary with one principal,
+three assignments, zero non-admin grants, zero case/event writes, and a
+release-owned dry run that resolved only `team:tandem` without source errors.
+
 ## Build, supply-chain, and runtime controls
 
 - Use the exact Node major selected by `.nvmrc` and rebuild native modules after

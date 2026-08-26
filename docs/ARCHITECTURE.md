@@ -547,6 +547,9 @@ external-action authority. Policy requires exact assignment evidence before
 actionable Sales/proposal/receivable work, while authoritative terminal source
 facts may still close without it. Case persistence binds the lane, principal,
 assignment ID, and decision reference under one composite foreign key.
+Migration 138 is live under exact release `416384fc7131`; the release-owned
+dry run resolves `team:tandem` while persistence and all action paths remain
+off.
 
 ---
 

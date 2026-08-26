@@ -7,9 +7,9 @@ Program item: `work:relationship-owner-authority`
 Decision:
 `.program/decisions/decision-relationship-owner-tandem-team-2026-08-26.json`
 
-Status: implementation in progress on the exact live Relationship Context
-lineage; no follow-up, drafting, sending, or provider action is activated by
-this authority.
+Status: live-verified on exact release `416384fc7131`; migration 138 and the
+generic assignments are active, while follow-up persistence, drafting,
+sending, provider writes, and every action authority remain disabled/ungranted.
 
 ## Decision
 
