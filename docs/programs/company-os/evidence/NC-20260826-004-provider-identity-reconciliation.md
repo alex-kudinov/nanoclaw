@@ -104,6 +104,10 @@ Program closure only.
   persisted keys;
 - global query off/zero grants, Gmail/Slack healthy, queues empty, checkout
   sends preserved, Community lifecycle healthy with consumers/Circle off.
+- daemon-scheduled health at `2026-08-26T22:24:07.681Z` independently reports
+  the final 1,364/1,242/159/358 refs, 14/66 legacy, 424/424 duplicates, zero
+  changes/conflicts, and healthy/complete; later natural work runs with no
+  waiting group.
 
 ## Privacy cleanup and residual
 

@@ -79,6 +79,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   send; Community lifecycle remains healthy at 40 events/22 exceptions with
   consumers false and Circle false. No provider/contact/consent/campaign/
   Plutio write, Party merge, communication, payment, or contract action ran.
+- Scheduled-health closure: the daemon's own `2026-08-26T22:24:07.681Z` pass
+  reports healthy/complete, 424/424 duplicates, zero changes/conflicts, 1,364
+  Plutio, 159 customer, 358 appointment, and 14/66 legacy counts. One natural
+  task subsequently became active with no waiting groups; ordinary work is not
+  blocked by reconciliation.
 - Rollback: restore the retained exact plist/code pointer. Provider refs,
   observations, projections, terminal legacy classifications, and receipts are
   additive evidence and are not destructively removed by code rollback.

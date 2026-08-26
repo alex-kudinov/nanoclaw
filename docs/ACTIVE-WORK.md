@@ -191,6 +191,9 @@ outside the current client conversation.
 - Non-interference: sole listener PID 34401, Gmail/Slack healthy, queues empty,
   checkout production sends preserved, Community lifecycle healthy with
   consumers/Circle off, global context query off/zero grants.
+- Scheduled health: the daemon's own 22:24 UTC pass reports the final 1,364/
+  1,242/159/358 refs, 14/66 legacy, 424/424 duplicates, zero changes/conflicts,
+  and healthy status. One later natural task is active with no waiting group.
 
 ### NC-20260826-003
 
