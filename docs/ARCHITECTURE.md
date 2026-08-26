@@ -555,6 +555,10 @@ only Party/email fingerprint/provider ID plus bounded consent states and
 revalidates uniqueness against the live Party-email graph. Trafft may use those
 verified refs as explicit lower evidence tiers; uncorroborated/conflicting
 history becomes terminal `legacy`, never an inferred Party attachment.
+Exact live `1a381e48` proves this composition without a core redesign: 1,364
+Plutio and 1,242 Encharge person refs feed 159 Trafft customers/358 appointment
+records, while the complete 14-customer/66-appointment remainder is terminal
+legacy. Provider conflicts are zero and both replays are stable.
 
 ### Tandem OS relationship-owner authority (`NC-20260826-001`)
 

@@ -219,6 +219,9 @@ active verified Plutio or Encharge person ref; the uncorroborated remainder is
 durably `legacy_identity` / `legacy_unresolved`. Provider writes, Party merges,
 raw emails/provider payloads, and global/group context activation remain
 forbidden.
+Exact live `1a381e48` has 1,364 Plutio person refs, 1,242 Encharge person refs,
+159 Trafft customer refs, 358 appointment refs, and 66 terminal legacy
+appointment exceptions with zero provider conflicts. Query remains disabled.
 
 Migration 138 is `NC-20260826-001`'s Tandem OS relationship-owner authority.
 It registers the append-only `team:tandem` / `Tandem Team` organizational

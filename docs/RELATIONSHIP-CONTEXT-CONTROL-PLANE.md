@@ -825,6 +825,10 @@ has an active verified Plutio or Encharge person ref. Everything else becomes
 terminal `legacy_unresolved`. This accepted reconciliation decision supplies
 the lower-tier cross-system authority; it does not authorize Party merges,
 provider writes, or using Encharge/Plutio facts outside their native domains.
+Exact live `1a381e48` applies that rule to the complete current set: 1,364
+Plutio and 1,242 Encharge person refs support 159 Trafft customers/358
+appointment records; 14 customers/66 appointment records are terminal legacy,
+with zero conflicts and duplicate-only replay.
 
 ## 10. Verification plan
 

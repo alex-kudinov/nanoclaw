@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-26T21:18:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; governed, implemented, independently reviewed, and
-  locally verified; release/deployment pending
-- Commit/PR: `codex/relationship-context-provider-reconciliation-20260826`
-  from `9df5c87d`, directly containing exact live `adc0c5d8`
+- State: complete; governed, independently reviewed, deployed, reconciled,
+  replayed, privacy-cleaned, and live-verified
+- Commit/PR: pushed `codex/relationship-context-provider-reconciliation-20260826`;
+  exact live `1a381e48f746ee2fadee8aa45bdf610ce2bea53c` from prior live
+  `adc0c5d8`
 - Change class: C5 identity/security boundary plus C3 deployment
 - Objective: import exact Plutio contact refs, connect available Encharge person
   references/facts through read-only tooling, reconcile historical Trafft
@@ -42,7 +43,40 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Review usage: the load-bearing R1/R2 session used 12 model calls and 293,883
   maximum context tokens; the oversized bounded packet is recorded as an
   orchestration defect, not additional confidence.
-- Release/deployment: pending.
+- Release: source tree `efd83fe5`, 996-file artifact `d53636b1`, archive
+  `f44c1cb2`, byte-identical/runtime-verified on the Mini under Node 22.23.2.
+- Drain/backup: deployment waited for the active Sales task to drain to zero
+  active/waiting work and zero in-flight email actions. Readable mode-0700
+  backup `NC-20260826-004-20260826T220847Z` contains affected `business_v2`,
+  SQLite, and installed plist snapshots.
+- Deployment: the exact three-path activator retained rollback
+  `com.nanoclaw.plist.rollback-adc0c5d8ac1b-2026-08-26T22-09-06-176Z` and
+  health-verified `1a381e48`; sole launchd/listener PID is 34401.
+- Live reconciliation: startup imported 1,364 verified Plutio person refs and
+  connected 146 Trafft customers/324 appointments. The mode-0600, email-free
+  1,242-record Encharge snapshot (`ffdd32db…`) imported 1,242 verified person
+  refs/consent observations with zero refused/conflicting rows. The second
+  Trafft pass reached 159/173 customers and 358/424 appointment records exact;
+  14 customers and 66 appointment records are terminal legacy. Plutio,
+  Encharge, and Trafft conflicts are all zero.
+- Durable readback: 1,242 Encharge observations/consent projections; 782
+  Trafft observations (424 immutable null-Party held plus 358 exact); 358
+  appointment projections; 358 resolved exceptions and 66
+  `legacy_identity`/`legacy_unresolved`. Freshness remains truthful: appointment
+  projections 7 current/351 stale; consent 63 current/1,179 stale.
+- Replay/privacy: Encharge replay 1,242/1,242 duplicates and Trafft replay
+  424/424 duplicates, both with zero projection changes/conflicts. Persisted
+  values contain zero raw/email/name/phone/address/IP/payload/tag/browser/device
+  keys. All temporary raw Party-email/provider files, sanitized transfer
+  snapshot, and transfer archives were deleted after aggregate readback.
+- Non-interference: global context query remains off with zero grants/consumer;
+  Gmail/Slack healthy and queues empty; checkout recovery remains production-
+  send; Community lifecycle remains healthy at 40 events/22 exceptions with
+  consumers false and Circle false. No provider/contact/consent/campaign/
+  Plutio write, Party merge, communication, payment, or contract action ran.
+- Rollback: restore the retained exact plist/code pointer. Provider refs,
+  observations, projections, terminal legacy classifications, and receipts are
+  additive evidence and are not destructively removed by code rollback.
 - Toolbox source: private bulk read is committed locally as `8b843de` on
   `codex/encharge-bulk-read-20260826`; the toolbox repository has no Git remote,
   so push is unavailable. NanoClaw's operational read-only wrapper and the

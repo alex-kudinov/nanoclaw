@@ -2179,6 +2179,11 @@ verified Plutio or Encharge person ref. Unbound exception rows become
 `status='no_action'`, `reason_code='legacy_identity'`, and
 `resolution_code='legacy_unresolved'`; bound prior exceptions become resolved.
 Every transition carries a deterministic decision/evidence receipt.
+Exact live `1a381e48` contains 1,364 Plutio, 1,242 Encharge, 159 Trafft
+customer, and 358 Trafft appointment refs; 1,242 Encharge and 782 Trafft
+observations; 1,242 consent and 358 appointment projections; 358 resolved and
+66 terminal legacy exceptions. The 424 original held Trafft observations stay
+immutable.
 
 ### Relationship-owner authority (migration 138)
 

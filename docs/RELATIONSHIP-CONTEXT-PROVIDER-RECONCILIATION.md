@@ -83,6 +83,16 @@ the evidence report.
 
 These are aggregate preflight expectations, not live completion claims.
 
+## Live result
+
+Exact release `1a381e48` is live-verified. It imported 1,364 Plutio and 1,242
+Encharge person refs, then connected 159 Trafft customers and 358 appointment
+records. The complete residual is explicitly legacy: 14 customers and 66
+appointment records. All provider conflict counters are zero. Encharge and
+Trafft replays are fully duplicate-only with zero projection changes. Raw
+temporary files were deleted after aggregate readback; global query and every
+scheduled/group context consumer remain off.
+
 ## Gates and exclusions
 
 - fixture, ambiguity, duplicate-provider-ID, conflict, merge, replay,

@@ -65,6 +65,46 @@ evidence tiers. Anything that remains unresolved or conflicting is named
 
 ## Pending
 
-Commit/push, exact release, deployment, private snapshot import, aggregate
-connected/legacy readback, replay, temporary-file cleanup, non-interference,
-and program closure.
+Program closure only.
+
+## Immutable release and backup
+
+- implementation/live commit: `1a381e48f746ee2fadee8aa45bdf610ce2bea53c`;
+- source tree `efd83fe50841df7adcde661cc89957395d787b78`;
+- 996-file artifact
+  `d53636b12131970c610d965cda5ba791136f964a99f60927ff82dd7f510e2d19`;
+- archive
+  `f44c1cb2051bd483308b3a2c2df73d2b647bcd12ed9398d3d9017df52458e03d`;
+- zero-work/zero-email-action drain and readable mode-0700 backup
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260826-004-20260826T220847Z`;
+- retained rollback
+  `com.nanoclaw.plist.rollback-adc0c5d8ac1b-2026-08-26T22-09-06-176Z`.
+
+## Live outcome
+
+- exact verified release/tree/artifact/code root, Node 22.23.2, sole
+  launchd/listener PID 34401;
+- 1,364 verified Plutio person refs;
+- 1,242 verified Encharge person refs plus 1,242 minimized consent
+  observations/projections; zero refused identities or conflicts;
+- 159 verified Trafft customer refs and 358 verified appointment refs;
+- 14 customer identities and 66 appointment records are durably
+  `legacy_identity` / `legacy_unresolved`;
+- 782 Trafft observations: 424 immutable null-Party held plus 358 exact;
+- 358 appointment projections (7 current/351 stale) and 1,242 consent
+  projections (63 current/1,179 stale); freshness is not overstated;
+- 358 resolved exceptions and 66 terminal legacy exceptions;
+- Encharge replay 1,242/1,242 and Trafft replay 424/424 duplicates, zero new
+  observations/projection changes/conflicts;
+- zero prohibited raw/email/name/phone/address/IP/payload/tag/browser/device
+  persisted keys;
+- global query off/zero grants, Gmail/Slack healthy, queues empty, checkout
+  sends preserved, Community lifecycle healthy with consumers/Circle off.
+
+## Privacy cleanup and residual
+
+Every temporary file containing Party emails or raw Encharge people, the
+sanitized transfer snapshot, and transfer archives was deleted after durable
+aggregate readback. Only minimized provider refs/facts, hashes, receipts, and
+aggregate evidence remain. Future stable provider evidence may reclassify the
+14/66 legacy remainder; email alone cannot.

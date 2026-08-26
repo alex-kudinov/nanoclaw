@@ -609,6 +609,10 @@ mutation. Multi-Party, duplicate-provider, changed-email, malformed, missing,
 or conflicting evidence refuses and becomes legacy. Temporary raw files are
 deleted after aggregate readback; no credentials or raw provider records enter
 the release, database, or evidence.
+Live readback under `1a381e48` reports zero provider conflicts and zero
+prohibited raw/email/name/phone/address/IP/payload/tag/browser/device value
+keys. Encharge and Trafft replays are duplicate-only, every private temporary
+file was deleted, and query/minion access remains off.
 
 ## Relationship-owner boundary (`NC-20260826-001`)
 
