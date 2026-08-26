@@ -2115,7 +2115,7 @@ Things this document deliberately does NOT propose:
 
 ---
 
-## Relationship Context extension (`NC-20260825-003/004`)
+## Relationship Context extension (`NC-20260825-003/004`, `NC-20260826-003`)
 
 Migration 137 extends the Party model without making email or any provider the
 new identity authority:
@@ -2147,9 +2147,28 @@ no current projection. Existing agent-facing views and
 `best_party_by_email()` are not changed, and the new service never uses
 first-row email selection.
 
-Production migration 137 is applied. Current relationship-context state is 39
-legacy compatibility refs, 414 Trafft observations with null Party identity,
-414 open identity exceptions, zero projections, and zero query receipts.
+NC-20260826-003 adds a deliberately narrow exact-ref reconciliation path over
+the existing schema. It may bind `trafft/customer` only when a Trafft-created
+Party and the customer's first ledger event prove a unique creation-time
+association; `trafft/appointment` then binds only when its ledger Party agrees
+with that customer ref. References preserve their first verification time and
+re-canonicalize to the surviving Party after a merge, while refusing a
+different canonical family. Reconciled facts append a new immutable
+`identity_state=exact_reference` observation rather than rewriting the earlier
+held observation, and only the exact observation may feed a current
+appointments projection. Legacy email-selected identities remain held.
+
+The same slice adds a host-only one-shot exact read canary. Its query receipt
+contains only bounded policy/result metadata and reaches one terminal delivery
+state (`delivered` or `failed`); the canary output omits Party identity and
+context values. This does not grant scheduled or group-facing query access.
+
+Production migration 137 is applied. Before NC-20260826-003 deployment, the
+live relationship-context state is 39 legacy compatibility refs, 420 Trafft
+observations with null Party identity, 420 open identity exceptions, zero
+projections, and zero query receipts. The exact-ref candidate requires no new
+migration and must be read back after deployment before its refs, projections,
+or canary receipt are described as live.
 
 ### Relationship-owner authority (migration 138)
 

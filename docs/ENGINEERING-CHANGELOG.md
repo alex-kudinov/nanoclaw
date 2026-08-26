@@ -8,6 +8,36 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260826-003 — Trafft exact identity for source-created Parties
+
+- Date: 2026-08-26T19:37:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; implementation, independent review, and local verification
+  complete; commit/release/deployment pending
+- Commit/PR: isolated `codex/trafft-exact-identity-20260826` from exact live
+  `416384fc`
+- Change class: C5 identity/security boundary plus C3 deployment
+- Outcome: strict post-adapter Trafft-created Parties can gain exact customer
+  and appointment refs; later interactions resolve exact-first; legacy/shared/
+  mismatched identities remain held. Exact refs produce current projections and
+  a one-shot minimized host query receipt.
+- Review: Claude Sonnet/high R1 found two material issues: an existing exact ref
+  could abort reconciliation after same-family Party merge, and a failed
+  one-shot canary could leave its receipt pending. Both paths were corrected
+  and regression-tested; R2 returned `NO MATERIAL FINDINGS`. R1 used six model
+  calls / 101,879 maximum context tokens; R2 used ten calls / 96,705.
+- Verification: focused exact identity/context/canary suites pass; root format,
+  typecheck, build, continuity/capability checks pass; independent runner build
+  and 45/45 tests pass; disposable PostgreSQL 2/2 passes. Full root is 3,298
+  pass / 27 skip with one unrelated CNPC wrapper assertion failure reproduced
+  at exact base `416384fc`.
+- Deployment: none yet; live remains `416384fc` with all 420 rows held.
+- Rollback: discard source before deployment; host pointer rollback afterward;
+  exact refs/receipts remain evidence and are not destructively removed.
+- Documentation: exact identity rule, active work, decision, evidence.
+- Follow-up: commit/push, revalidate live lineage, deploy, reconcile natural
+  safe refs, run one exact content-minimized canary, and verify adjacent health.
+
 ### NC-20260826-001 — Tandem OS generic relationship owner
 
 - Date: 2026-08-26T13:44:52Z

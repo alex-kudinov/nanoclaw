@@ -195,6 +195,18 @@ the exact migration plus credential-free Trafft host-ledger shadow deployment.
 It does not authorize `party_context_get` grants, guessed identity, provider
 writes, or Plutio field/data changes.
 
+`NC-20260826-003` adds no migration and does not broaden those provider or
+action authorities. It may reconcile exact Trafft customer refs only for a
+unique post-registration Party created by Trafft within the bounded creation
+window; appointment refs additionally require that their canonical ledger
+Party agrees with the exact customer ref. Booking checks an exact customer ref
+before its historical email fallback, while legacy, shared, ambiguous, and
+mismatched rows stay held. Same-family Party merges may re-canonicalize an
+existing ref; different-family conflicts refuse. The separately invoked
+host-only read canary consumes one exact Booking grant, requests only the
+appointments section, and exposes status/count/receipt metadata rather than
+Party identity or context values. It is not a scheduled or minion capability.
+
 Migration 138 is `NC-20260826-001`'s Tandem OS relationship-owner authority.
 It registers the append-only `team:tandem` / `Tandem Team` organizational
 principal with `action_authority='none'` and one exact decision-bound

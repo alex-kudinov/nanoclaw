@@ -1,0 +1,15 @@
+{
+  "decision_id": "decision:relationship-context-trafft-exact-identity-2026-08-26",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-26T19:36:00+00:00",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "program",
+    "work:relationship-context-trafft-exact-identity"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Proceed with as much implementation as possible and stop only for absolute blockers. This authorizes exact-live implementation, review, deployment, and live verification of deterministic Trafft customer and appointment reference binding only for Parties provably created by Trafft after the relationship-context adapter began, plus later appointments belonging to an already exact-bound Trafft customer. It authorizes resulting appointment projections and a narrowly policy-bound read pilot only when exact references exist. It does not authorize binding legacy or returning Parties from email or historical consistency, provider/customer communication, provider or Plutio writes, credential changes, broad minion access, payment/contract action, or changes to checkout recovery, Community lifecycle, Circle, or legacy receivers.",
+  "source_task": "Current owner instruction in Codex: proceed with as much implementation as possible and stop only for absolute blockers, after natural Trafft appointments validated the live shadow."
+}

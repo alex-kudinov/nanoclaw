@@ -75,4 +75,34 @@ describe('relationship context in-memory repository', () => {
       identityExceptionFingerprint(structuredClone(input)),
     );
   });
+
+  it('rebinds a reference to the winner after its Party is merged', async () => {
+    const repository = new InMemoryRelationshipContextRepository();
+    repository.parties.set(1, null);
+    repository.parties.set(2, null);
+    const reference = {
+      provider: 'trafft',
+      scope: 'primary',
+      entityType: 'customer',
+      externalId: 'customer-merge',
+    };
+    await repository.bindExternalRef({
+      partyId: 1,
+      reference,
+      adapterKey: 'trafft_host_ledger',
+      adapterVersion: '1.0.0',
+      observedAt: '2026-08-26T18:00:00Z',
+      receiptSha256: 'a'.repeat(64),
+    });
+    repository.parties.set(1, 2);
+    await repository.bindExternalRef({
+      partyId: 2,
+      reference,
+      adapterKey: 'trafft_host_ledger',
+      adapterVersion: '1.0.0',
+      observedAt: '2026-08-26T19:00:00Z',
+      receiptSha256: 'b'.repeat(64),
+    });
+    expect(await repository.resolveExternalRef(reference)).toBe(2);
+  });
 });

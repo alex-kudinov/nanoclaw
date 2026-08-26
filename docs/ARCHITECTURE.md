@@ -530,6 +530,19 @@ and held, with zero projections; an exact replay produced 414 duplicates.
 See `docs/RELATIONSHIP-CONTEXT-PRODUCTION-ROLLOUT.md` for deployment and live
 verification gates.
 
+NC-20260826-003 adds the first exact-identity reconciliation candidate without
+turning email into authority. A Trafft customer reference is eligible only for
+a post-registration Party created by Trafft, with its first interaction inside
+the Party's five-minute creation window, exactly one customer ID in that
+window, and one canonical Party for that customer across the ledger. Later
+appointment refs bind only when their canonical ledger Party agrees with the
+exact customer ref. Booking identity resolution checks that exact customer ref
+before preserving the existing email fallback. Exact rows append a new
+`exact_reference` observation and current projection; legacy, shared,
+ambiguous, or mismatched rows stay held. A host-only one-shot canary may consume
+one exact Booking grant and return only status/count/receipt metadata for the
+appointments section. Scheduled/group query capability remains off.
+
 ### Tandem OS relationship-owner authority (`NC-20260826-001`)
 
 Migration 138 adds a separate admin-only organizational-accountability layer:

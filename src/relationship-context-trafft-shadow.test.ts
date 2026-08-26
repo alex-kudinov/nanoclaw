@@ -73,6 +73,37 @@ describe('relationship context Trafft shadow', () => {
     );
   });
 
+  it('projects current context only after an exact appointment reference exists', async () => {
+    const repository = new InMemoryRelationshipContextRepository();
+    repository.parties.set(17, null);
+    await repository.bindExternalRef({
+      partyId: 17,
+      reference: {
+        provider: 'trafft',
+        scope: 'primary',
+        entityType: 'appointment',
+        externalId: 'appt-419',
+      },
+      adapterKey: 'trafft_host_ledger',
+      adapterVersion: '1.0.0',
+      observedAt: '2026-08-25T20:01:00Z',
+      verifiedAt: '2026-08-25T20:00:00Z',
+      receiptSha256: 'a'.repeat(64),
+    });
+    const result = await ingestTrafftShadowRows({
+      repository,
+      rows: [{ ...row, updatedAt: '2026-08-26T19:00:00Z' }],
+    });
+    expect(result.heldIdentityFacts).toBe(0);
+    expect(result.projectionsChanged).toBe(1);
+    const projections = await repository.listProjections(17, ['appointments']);
+    expect(projections).toHaveLength(1);
+    expect(projections[0].status).toBe('current');
+    expect(projections[0].value).toMatchObject({
+      value: { identity_state: 'exact_reference' },
+    });
+  });
+
   it('stays disabled without touching the database unless explicitly enabled', async () => {
     const health = await runTrafftRelationshipContextShadow({
       env: {} as NodeJS.ProcessEnv,
@@ -97,6 +128,9 @@ describe('relationship context Trafft shadow', () => {
       observationsDuplicate: 0,
       projectionsChanged: 0,
       heldIdentityFacts: 1,
+      exactCustomerReferences: 0,
+      exactAppointmentReferences: 0,
+      exactReferenceConflicts: 0,
     });
     const health = await runTrafftRelationshipContextShadow({
       env: {

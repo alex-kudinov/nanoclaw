@@ -118,8 +118,9 @@ Current gaps:
   multiple parties. It converts ambiguity into an apparently certain match.
 - `party_emails` intentionally has no global uniqueness, but callers generally
   do not surface that ambiguity.
-- Trafft customer IDs are stored only inside interaction/create metadata; no
-  persistent Trafft-customer-to-Party reference exists.
+- The live baseline stores Trafft customer IDs only inside interaction/create
+  metadata. NC-20260826-003 adds a gated exact-ref candidate for uniquely
+  Trafft-created Parties; it is not live authority until deployment/readback.
 - `parties.source_provider/source_id` can describe only one origin and cannot
   represent multiple workspaces/accounts, identifier history, or verification.
 - merges redirect several child rows but do not provide a general source-ref
@@ -161,10 +162,12 @@ The current booked path is mechanically stronger than the retrieval path:
 - the Booking minion has no provider credentials and reads database state.
 
 However, booking metadata is a JSON payload inside the generic interaction
-ledger. There is no typed current-appointment projection, no persistent Trafft
-customer reference, no one-call person lookup for upcoming/past/cancelled/
-rescheduled appointments, and no freshness/conflict result. This is why data
-can exist while Sales still cannot answer an appointment question safely.
+ledger. NC-20260826-003 can derive a persistent exact customer/appointment ref
+and current appointments projection only for the strict source-created cohort;
+legacy/ambiguous history remains held. There is still no broadly enabled
+one-call person lookup for upcoming/past/cancelled/rescheduled appointments or
+Sales grant. This is why data can exist while Sales still cannot answer an
+appointment question safely.
 
 ### 3.4 Plutio
 
@@ -800,16 +803,15 @@ Implementation should use an isolated clean worktree based on the intended
 live lineage. The shared primary checkout contains extensive unrelated work and
 does not include the exact live lifecycle source in HEAD.
 
-Until D2 is separately authorized, implemented, and live-verified, the existing
-Booking write path remains historical production behavior and may continue to
-select `best_party_by_email`; this design does not silently change it. During
-C/D shadow work, every multi-Party email candidate and every disagreement
-between the legacy selection and proposed resolver becomes a privacy-minimal
-identity exception/divergence receipt. The new context service must not become
-authoritative for Booking or any downstream action while unexplained
-divergence exists. D2 must seed exact Trafft customer references where the
-provider can verify them, quarantine ambiguous events rather than attach them
-to a guessed Party, and reconcile the build-window backlog before activation.
+NC-20260826-003 is the first bounded D2 implementation candidate. It changes
+future Booking resolution only when an exact Trafft customer ref already
+exists; otherwise the historical fallback remains. It seeds refs solely from
+the unique post-registration Trafft-created cohort, quarantines ambiguity and
+Party disagreement, and appends exact observations without erasing held
+history. Its host-only canary proves a single minimized appointments read, not
+a group/minion rollout or downstream action authority. The candidate is not
+live authority until immutable deployment, natural reconciliation, exact
+readback, and non-interference verification complete.
 
 ## 10. Verification plan
 

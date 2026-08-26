@@ -7,6 +7,7 @@ import {
   consumeRelationshipContextGrant,
   issueRelationshipContextGrant,
 } from './relationship-context-policy.js';
+import { runRelationshipContextExactReadCanary } from './relationship-context-live-canary.js';
 import { ingestTrafftRelationshipContextShadowWithClient } from './relationship-context-trafft-shadow.js';
 import {
   REFERENCE_LMS_FACTS,
@@ -161,7 +162,10 @@ suite('relationship context disposable PostgreSQL store', () => {
             event_type: 'booked',
             status: 'approved',
             service: 'Fixture consultation',
-            raw_payload: { customerEmail: 'must-not-persist@example.invalid' },
+            raw_payload: {
+              customerId: 'legacy-customer-pg',
+              customerEmail: 'must-not-persist@example.invalid',
+            },
           }),
         ],
       );
@@ -172,6 +176,68 @@ suite('relationship context disposable PostgreSQL store', () => {
       expect(first.observationsNew).toBeGreaterThanOrEqual(1);
       expect(first.complete).toBe(true);
       expect(first.heldIdentityFacts).toBe(first.rows.length);
+      expect(first.exactCustomerReferences).toBe(0);
+      expect(first.exactAppointmentReferences).toBe(0);
+
+      const safeParty = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.parties
+           (party_type,display_name,source_provider,last_updated_by)
+         VALUES ('person','Safe Trafft Fixture','trafft','integration')
+         RETURNING id::text`,
+      );
+      await client.query(
+        `INSERT INTO business_v2.interactions
+           (party_id,channel,direction,subject,occurred_at,source_provider,
+            source_id,metadata,last_updated_by)
+         VALUES ($1,'booking','inbound','safe fixture booking',now(),'trafft',
+                 'appt-safe-pg',$2::jsonb,'integration')`,
+        [
+          safeParty.rows[0].id,
+          JSON.stringify({
+            event_type: 'booked',
+            status: 'approved',
+            service: 'Safe fixture consultation',
+            raw_payload: {
+              customerId: 'safe-customer-pg',
+              customerEmail: 'also-must-not-persist@example.invalid',
+            },
+          }),
+        ],
+      );
+      const ambiguousParty = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.parties
+           (party_type,display_name,source_provider,last_updated_by)
+         VALUES ('person','Ambiguous Trafft Fixture','trafft','integration')
+         RETURNING id::text`,
+      );
+      for (const suffix of ['a', 'b']) {
+        await client.query(
+          `INSERT INTO business_v2.interactions
+             (party_id,channel,direction,subject,occurred_at,source_provider,
+              source_id,metadata,last_updated_by)
+           VALUES ($1,'booking','inbound','ambiguous fixture booking',now(),
+                   'trafft',$2,$3::jsonb,'integration')`,
+          [
+            ambiguousParty.rows[0].id,
+            `appt-ambiguous-pg-${suffix}`,
+            JSON.stringify({
+              event_type: 'booked',
+              status: 'approved',
+              service: 'Ambiguous fixture consultation',
+              raw_payload: { customerId: `ambiguous-customer-pg-${suffix}` },
+            }),
+          ],
+        );
+      }
+      const exact = await ingestTrafftRelationshipContextShadowWithClient(
+        client,
+        { limit: 100, observedAt: '2026-08-25T20:05:30Z' },
+      );
+      expect(exact.exactCustomerReferences).toBe(1);
+      expect(exact.exactAppointmentReferences).toBe(1);
+      expect(exact.exactReferenceConflicts).toBe(0);
+      expect(exact.projectionsChanged).toBe(1);
+      expect(exact.heldIdentityFacts).toBe(3);
       const replay = await ingestTrafftRelationshipContextShadowWithClient(
         client,
         { limit: 100, observedAt: '2026-08-25T20:06:00Z' },
@@ -194,9 +260,108 @@ suite('relationship context disposable PostgreSQL store', () => {
       const projectionCount = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count
            FROM business_v2.party_context_projections
-          WHERE section='appointments'`,
+          WHERE party_id=$1 AND section='appointments'`,
+        [partyId],
       );
       expect(projectionCount.rows[0].count).toBe('0');
+      const exactState = await client.query<{
+        current_party_id: string | null;
+        projection_count: string;
+        projection_status: string | null;
+        ref_count: string;
+      }>(
+        `SELECT
+           (SELECT current_party_id::text
+              FROM business_v2.party_context_observations
+             WHERE source_record_id='appt-safe-pg') AS current_party_id,
+           (SELECT count(*)::text
+              FROM business_v2.party_context_projections
+             WHERE party_id=$1 AND section='appointments') AS projection_count,
+           (SELECT status
+              FROM business_v2.party_context_projections
+             WHERE party_id=$1 AND section='appointments'
+             LIMIT 1) AS projection_status,
+           (SELECT count(*)::text
+              FROM business_v2.party_external_refs
+             WHERE party_id=$1 AND provider='trafft'
+               AND entity_type IN ('customer','appointment')) AS ref_count`,
+        [safeParty.rows[0].id],
+      );
+      expect(exactState.rows[0]).toEqual({
+        current_party_id: safeParty.rows[0].id,
+        projection_count: '1',
+        projection_status: 'current',
+        ref_count: '2',
+      });
+      const canary = await runRelationshipContextExactReadCanary({
+        repository: new PostgresRelationshipContextRepository(client),
+        reference: {
+          provider: 'trafft',
+          scope: 'primary',
+          entityType: 'appointment',
+          externalId: 'appt-safe-pg',
+        },
+        nowMs: Date.parse('2026-08-25T20:06:30Z'),
+      });
+      expect(canary).toMatchObject({
+        resolution: 'resolved',
+        sectionStatus: 'current',
+        projectionCount: 1,
+        deliveryStatus: 'delivered',
+      });
+      const mergeWinner = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.parties
+           (party_type,display_name,last_updated_by)
+         VALUES ('person','Safe Trafft Merge Winner','integration')
+         RETURNING id::text`,
+      );
+      await client.query(
+        `SELECT business_v2.fn_merge_parties($1,$2,'exact ref integration')`,
+        [safeParty.rows[0].id, mergeWinner.rows[0].id],
+      );
+      const mergedRepository = new PostgresRelationshipContextRepository(
+        client,
+      );
+      await mergedRepository.bindExternalRef({
+        partyId: Number(mergeWinner.rows[0].id),
+        reference: {
+          provider: 'trafft',
+          scope: 'primary',
+          entityType: 'customer',
+          externalId: 'safe-customer-pg',
+        },
+        adapterKey: 'trafft_host_ledger',
+        adapterVersion: '1.0.0',
+        observedAt: '2026-08-25T20:07:00Z',
+        verifiedAt: '2026-08-25T20:05:30Z',
+        receiptSha256: 'c'.repeat(64),
+      });
+      expect(
+        await mergedRepository.resolveExternalRef({
+          provider: 'trafft',
+          scope: 'primary',
+          entityType: 'customer',
+          externalId: 'safe-customer-pg',
+        }),
+      ).toBe(Number(mergeWinner.rows[0].id));
+      const ambiguousState = await client.query<{
+        ref_count: string;
+        attached_count: string;
+      }>(
+        `SELECT
+           (SELECT count(*)::text
+              FROM business_v2.party_external_refs
+             WHERE party_id=$1 AND provider='trafft') AS ref_count,
+           (SELECT count(*)::text
+              FROM business_v2.party_context_observations
+             WHERE source_record_id LIKE 'appt-ambiguous-pg-%'
+               AND current_party_id IS NOT NULL) AS attached_count`,
+        [ambiguousParty.rows[0].id],
+      );
+      expect(ambiguousState.rows[0]).toEqual({
+        ref_count: '0',
+        attached_count: '0',
+      });
       const registration = await client.query<{
         enabled: boolean;
         conformance_status: string;

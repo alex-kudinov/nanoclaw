@@ -85,6 +85,7 @@ export interface RelationshipContextRepository {
     adapterKey: string;
     adapterVersion: string;
     observedAt: string;
+    verifiedAt?: string | null;
     receiptSha256: string;
   }): Promise<void>;
   resolveIdentifierClaim(kind: string, fingerprint: string): Promise<number[]>;
@@ -195,14 +196,18 @@ export class InMemoryRelationshipContextRepository implements RelationshipContex
     adapterKey: string;
     adapterVersion: string;
     observedAt: string;
+    verifiedAt?: string | null;
     receiptSha256: string;
   }): Promise<void> {
     const canonical = await this.canonicalParty(input.partyId);
     if (!canonical) throw new Error('relationship_context_party_unknown');
     const key = refKey(input.reference);
     const existing = this.refs.get(key);
-    if (existing != null && existing !== canonical) {
-      throw new Error('relationship_context_external_ref_conflict');
+    if (existing != null) {
+      const existingCanonical = await this.canonicalParty(existing);
+      if (existingCanonical !== canonical) {
+        throw new Error('relationship_context_external_ref_conflict');
+      }
     }
     this.refs.set(key, canonical);
   }
@@ -440,22 +445,30 @@ export class PostgresRelationshipContextRepository implements RelationshipContex
     adapterKey: string;
     adapterVersion: string;
     observedAt: string;
+    verifiedAt?: string | null;
     receiptSha256: string;
   }): Promise<void> {
     await this.client.query(
       `INSERT INTO business_v2.party_external_refs
          (party_id, provider, source_scope, entity_type, external_id,
-          adapter_key, adapter_version, schema_version, status,
+          adapter_key, adapter_version, schema_version, status, verified_at,
           first_seen_at, last_seen_at, source_receipt_sha256)
        VALUES ($1,$2,$3,$4,$5,$6,$7,1,'active',$8::timestamptz,
-               $8::timestamptz,$9)
+               $9::timestamptz,$9::timestamptz,$10)
        ON CONFLICT (provider,source_scope,entity_type,external_id) DO UPDATE
-         SET last_seen_at=GREATEST(
+         SET party_id=business_v2.canonical_party_id(EXCLUDED.party_id),
+             last_seen_at=GREATEST(
                business_v2.party_external_refs.last_seen_at,
                EXCLUDED.last_seen_at
              ),
+             verified_at=COALESCE(
+               business_v2.party_external_refs.verified_at,
+               EXCLUDED.verified_at
+             ),
              updated_at=now()
-         WHERE business_v2.party_external_refs.party_id=EXCLUDED.party_id`,
+         WHERE business_v2.canonical_party_id(
+                 business_v2.party_external_refs.party_id
+               )=business_v2.canonical_party_id(EXCLUDED.party_id)`,
       [
         input.partyId,
         input.reference.provider,
@@ -464,12 +477,16 @@ export class PostgresRelationshipContextRepository implements RelationshipContex
         input.reference.externalId,
         input.adapterKey,
         input.adapterVersion,
+        input.verifiedAt ?? null,
         input.observedAt,
         input.receiptSha256,
       ],
     );
     const resolved = await this.resolveExternalRef(input.reference);
-    if (resolved !== input.partyId) {
+    const resolvedCanonical =
+      resolved == null ? null : await this.canonicalParty(resolved);
+    const inputCanonical = await this.canonicalParty(input.partyId);
+    if (resolvedCanonical == null || resolvedCanonical !== inputCanonical) {
       throw new Error('relationship_context_external_ref_conflict');
     }
   }

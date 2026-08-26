@@ -136,7 +136,9 @@ describe('resolveOrCreateParty', () => {
 
 describe('resolveTrafftCustomer', () => {
   it('builds display_name from first+last and tags source=trafft', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: '10046' }] });
+    mockQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: '10046' }] });
     const id = await resolveTrafftCustomer({
       customerId: 28,
       customerEmail: 'jamie.maak@finvari.com',
@@ -144,13 +146,27 @@ describe('resolveTrafftCustomer', () => {
       customerLastName: 'Maak',
     });
     expect(id).toBe(10046);
-    expect(mockQuery.mock.calls[0][1]).toEqual([
+    expect(mockQuery.mock.calls[0][0]).toContain('party_external_refs');
+    expect(mockQuery.mock.calls[1][1]).toEqual([
       'person',
       'Jamie Maak',
       'jamie.maak@finvari.com',
       'trafft',
       JSON.stringify({ trafft_customer_id: '28' }),
     ]);
+  });
+
+  it('uses an exact Trafft customer reference before email resolution', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: '10088' }] });
+    const id = await resolveTrafftCustomer({
+      customerId: 88,
+      customerEmail: 'changed@example.com',
+    });
+    expect(id).toBe(10088);
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(mockQuery.mock.calls[0][0]).toContain('party_external_refs');
+    expect(mockQuery.mock.calls[0][0]).not.toContain('fn_create_party');
+    expect(mockQuery.mock.calls[0][1]).toEqual(['88']);
   });
 
   it('includes trafft_customer_id only when provided', async () => {

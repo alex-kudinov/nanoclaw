@@ -1,7 +1,8 @@
 /**
  * Phase 4 — identity-join helpers (Trafft ↔ Plutio via email).
  *
- * Plutio is the system of record for person identity. Email is the join key.
+ * Exact scoped provider references are the first identity authority. The
+ * legacy email path remains only for customers that do not yet have one.
  * `business_v2.fn_create_party` is idempotent on email (advisory lock + best-
  * party-by-email lookup), and as of migration 95 it auto-enqueues
  * `plutio_outbox(sync, party)` on new-insert. The reaper resolves the Plutio
@@ -11,9 +12,8 @@
  * sweeper (Phase 5) and any future webhook-side identity work can converge
  * on the same `party_id` regardless of which system saw the email first.
  *
- * No persistent (trafft_customer_id → party_id) cache is maintained — the
- * email is the durable join key, and Trafft customer IDs are preserved in
- * interaction metadata for forensics.
+ * Relationship Context persists exact Trafft customer references. Once one is
+ * present, a changed/shared email cannot redirect future appointments.
  */
 
 import type { QueryResultRow } from 'pg';
@@ -123,6 +123,27 @@ export async function resolveTrafftCustomer(
 ): Promise<number> {
   if (!c?.customerEmail) {
     throw new Error('resolveTrafftCustomer: customerEmail required');
+  }
+  if (c.customerId != null) {
+    const exact = await callFn<{ id: string }>(
+      `SELECT business_v2.canonical_party_id(party_id)::text AS id
+         FROM business_v2.party_external_refs
+        WHERE provider='trafft' AND source_scope='primary'
+          AND entity_type='customer' AND external_id=$1 AND status='active'`,
+      [String(c.customerId)],
+      opts.agent,
+    );
+    if (exact.length === 1) {
+      const id = Number(exact[0].id);
+      logger.debug(
+        { source_hint: 'trafft', party_id: id, identity: 'exact_customer_ref' },
+        'identity-join: resolveTrafftCustomer',
+      );
+      return id;
+    }
+    if (exact.length > 1) {
+      throw new Error('resolveTrafftCustomer: exact customer ref ambiguous');
+    }
   }
   return resolveOrCreateParty({
     email: c.customerEmail,

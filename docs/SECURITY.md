@@ -578,9 +578,24 @@ The runner may expose the tool definition, but source presence plus an absent
 feature flag/grant always denies before repository access. NC-004's separately
 gated Trafft shadow has no credential or provider network path, reads only
 minimized host-ledger fields, and records exact appointment references with
-null Party identity and no projection. `RELATIONSHIP_CONTEXT_ENABLED=0` remains
-the live production query boundary; no group is granted or configured. Live
-readback confirms zero query receipts/grants, zero projections, and zero
+null Party identity and no projection.
+
+NC-20260826-003 preserves that fail-closed boundary while adding a narrow
+exact-identity reconciliation candidate. It refuses email as proof: only a
+unique Trafft-created Party/customer association inside the bounded creation
+window may create a customer ref, and appointment refs additionally require
+canonical Party agreement. Different-family ref conflicts, shared creation
+windows, legacy/returning email matches, and mismatches stay unbound and held.
+Merge-lineage re-canonicalization is permitted only within the same canonical
+family. Exact observations are appended rather than rewriting held history.
+
+Its one-shot canary is host-only, appointment-section-only, consumes one exact
+grant, and outputs only resolution/status/count/receipt/delivery metadata. A
+not-ready result terminally marks the receipt failed before returning failure;
+neither successful nor failed output contains identity or context values.
+`RELATIONSHIP_CONTEXT_ENABLED=0` remains the scheduled/group query boundary;
+no group is granted or configured. Before this candidate deploys, live
+readback remains zero query receipts/grants, zero projections, and zero
 prohibited raw/email/phone/name/custom-field value keys.
 
 ## Relationship-owner boundary (`NC-20260826-001`)
