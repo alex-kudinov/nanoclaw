@@ -12,9 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-26T17:26:12Z
 - Owner/client: Codex
-- State: ready_for_review; content-free read-only evidence complete, commit and
-  program reconciliation pending
-- Commit/PR: `codex/sales-lineage-proof-20260826` from final owner-authority
+- State: complete; content-free evidence committed/pushed and program
+  completion reconciled
+- Commit/PR: pushed `codex/sales-lineage-proof-20260826`; evidence
+  `7d9a96054ebce9128de589c891819dd144343106` from final owner-authority
   evidence `249e53c7`
 - Change class: C2 internal evidence/program reconciliation
 - Outcome: a natural approved Sales action carries exact pipeline entry
@@ -27,9 +28,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   schedule, provider, or runtime mutation occurred.
 - Evidence:
   `docs/programs/company-os/evidence/NC-20260826-002-sales-lineage-proof.md`.
-- Follow-up: reconcile `work:sales-lineage-proof` done. The now
-  dependency-complete `work:followup-lane-activation` remains a separate
-  not-authorized candidate requiring an exact owner decision.
+- Follow-up: `work:sales-lineage-proof` is done. The dependency-complete
+  `work:followup-lane-activation` remains a separate not-authorized candidate
+  requiring an exact owner decision.
 
 ### NC-20260826-001 — Tandem OS generic relationship owner
 
