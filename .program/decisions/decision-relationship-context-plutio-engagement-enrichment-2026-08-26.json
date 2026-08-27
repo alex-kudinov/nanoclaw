@@ -1,0 +1,15 @@
+{
+  "decision_id": "decision:relationship-context-plutio-engagement-enrichment-2026-08-26",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-27T03:58:55+00:00",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "program",
+    "work:relationship-context-plutio-engagement-enrichment"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Proceed with the next client-mapping phase by adding authoritative Plutio contract/project engagement evidence to the existing provider-neutral Party graph. This authorizes privacy-minimized read-only Plutio/toolbox discovery, safe repair of the shared Plutio read path when required without inspecting or changing credential values or scopes, exact binding only through an existing scoped Plutio person reference, versioned native contract/project facts and deterministic engagement projections, independent Claude Sonnet/high review, immutable release deployment, and live aggregate verification. Plutio remains authority only for its native object identity/status/time/client links; a contact record, provider label, title, price, invoice, proposal, task, note, activity, email, display name, or project membership alone may not declare an active coaching engagement. Unsupported, ambiguous, conflicting, non-coaching, or incomplete evidence remains unknown or legacy. This decision does not authorize Plutio/provider/customer/project/contract/invoice/proposal mutation, credential rotation or value edits, Party merges, role/source-reference rewrites, payment/refund/consent actions, communications, broad minion access, or changes to checkout recovery, lifecycle, Circle, Sales support, or legacy receivers.",
+  "source_task": "Current owner instruction in Codex: proceed after NC-006 identified authoritative Plutio contract/engagement evidence as the next mapping gap."
+}
