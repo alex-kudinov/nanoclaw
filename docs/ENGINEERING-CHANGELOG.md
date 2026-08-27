@@ -12,12 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-27T03:05:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; reviewed implementation `371e6e0a` is merged with the
-  newer exact live release `f8595966` after the production drain detected a
-  concurrent activation before mutation
-- Commit/PR: pushed implementation `371e6e0a` on
-  `codex/sales-support-entry-fix-20260826`; combined-lineage merge commit,
-  rebuild, push, and deployment pending
+- State: complete; prompt correction, natural response, deterministic host
+  enforcement, independent reviews, exact deployment, and inert rejection
+  canary are live-verified
+- Commit/PR: pushed prompt implementation `371e6e0a`, combined-lineage release
+  `55efd52f`, and exact enforcement release `25b44f98` on
+  `codex/sales-support-entry-fix-20260826`
 - Change class: C3 approval-gated support drafting and release; the change
   itself sends no customer email and creates no approval
 - Affected systems: Sales behavior/workflow authority, existing host approval
@@ -72,9 +72,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   provider rollback is required. The live canary must remain unapproved.
 - Documentation: Sales role/workflow/compatibility prompt, project map, active
   work, and this changelog.
-- Follow-ups: the Mac UI is locked. After unlock, re-drive the exact existing
-  Sales thread and verify one unapproved support card plus unchanged zero open
-  pipeline rows. Customer sending remains a separate exact operator approval.
+- Follow-ups: none. The customer response is Gmail-confirmed once; the duplicate
+  support card is unapproved and explicitly stopped. Future malformed
+  support-as-Sales cards fail before approval.
 - Natural canary addendum 2026-08-27T03:50:00Z: the operator correctly noted
   that NanoClaw can re-drive Sales without Mac UI access. Before the host route
   landed, the operator's own generic retry produced an invalid but parseable
@@ -98,9 +98,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   creation, and historical execution compatibility. R2 used 13 model calls,
   1,453,615 cache-read tokens, 15,530 output tokens, and 160,948 maximum
   context, above the 100k review target. Pinned typecheck, format, continuity,
-  email replay 13/13, email-critical 746/746, and full root 3,324 pass / 30 skip
+  email replay 13/13, email-critical 748/748, and full root 3,324 pass / 30 skip
   gates pass with the sole unchanged CNPC wrapper assertion. Commit, release,
   deployment, and inert malformed-card live rejection remain pending.
+- Enforcement deployment addendum 2026-08-27T03:59:00Z: exact commit/release
+  `25b44f985ba179bd264278ec1d338907a74147eb` is live. Its 1,004-file artifact
+  hash is `d29f619520c631e4776d06bf1addd6b99d5280049ebb63b464d7cf62677ecc31`
+  and archive SHA-256 is
+  `927b21268a2012e2a6073ecf22698582c5be18467d76ca21ec39cbf276aa128e`;
+  local and Mini extraction verification pass under Node 22.23.2. The already-
+  complete Sales container was stopped by exact name after it reported the
+  work item complete, yielding zero active/waiting work and no pending send
+  states. Activation changed the three release pointers and retained rollback
+  at
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-55efd52fb991-2026-08-27T03-58-51-586Z`.
+  Live health proves exact release/code root, one listener, connected Gmail and
+  Slack, empty queues, healthy Relationship Context workers, and query disabled
+  with zero grants. An inert `example.invalid` Sales/SERVICE canary produced one
+  visible approval-card rejection, quarantined the source IPC, posted none of
+  its fenced body, and created zero pending actions. Ari remains one confirmed
+  Gmail action, zero duplicate actions, and zero open pipeline entries. No
+  second customer email, approval, database row, permission, schema, provider
+  action, credential, or query activation occurred.
 
 ### NC-20260826-006 — Defensible client and customer relationship projection
 
