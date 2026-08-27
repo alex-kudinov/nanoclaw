@@ -7,7 +7,9 @@ Program item: `work:relationship-context-client-relationship-projection`
 Decision:
 `.program/decisions/decision-relationship-context-client-relationship-projection-2026-08-26.json`
 
-Status: implementation and review in progress; runtime remains default-off.
+Status: exact release `f8595966ffa145dee19051ed792b9ff616456e5e` is
+deployed, enabled, privacy-checked, replayed, and live-verified with no
+unresolved material review finding.
 
 ## Objective and truth boundary
 
@@ -73,8 +75,14 @@ All projections are `partial` in version 1 because active-engagement evidence
 is unavailable. `active_engagement_evidence_unavailable` is always explicit;
 Parties without positive client/customer evidence also carry
 `client_evidence_not_found`. A recorded client label additionally carries
-`client_role_provenance_unavailable`. These codes mean no accepted evidence is currently
-available, not that the Party is proven never to have been a client.
+`client_role_provenance_unavailable`. These codes mean no accepted evidence is
+currently available, not that the Party is proven never to have been a client.
+
+The first live run covers all 1,437 active Parties: 62 paid customers, five
+active subscribers, nine recorded client labels, two recorded student labels,
+1,317 recorded prospect labels, and 96 summary-unknown Parties. Controlled
+overlaps explain why those evidence totals do not sum to the Party total. Exact
+replay changed zero projections; all rows remain version 1.
 
 ## Runtime and health
 

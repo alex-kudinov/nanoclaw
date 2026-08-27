@@ -130,6 +130,20 @@ lifecycle, Circle, and legacy receivers must remain unchanged.
 Rollback disables the new flag before restoring the prior release. It does not
 delete migration-137 projections or modify any source/provider system.
 
+NC-006 crossed that boundary under exact release
+`f8595966ffa145dee19051ed792b9ff616456e5e`, source tree
+`845151b300a04ee0ff8ea8cfebd5f3b2e2f922a5`, 1,004-file artifact
+`80e3cdafc3e87e4b5a1c973d21cc1683c2f10ad85070dbbd4c389822ab8afa70`,
+and archive
+`9aa310c3ee80a8e882b75257f3ac5704ebcad98ef1904fa085220f1b714886e7`.
+Fresh local/Mini verification and the readable PostgreSQL/SQLite/plist backup
+passed. Off-first activation changed only three release pointers; a semantic
+one-key plist comparison then enabled only the client projection. Live
+coverage is 1,437/1,437 active Parties, all version 1 with zero prohibited
+values; exact replay changed zero projections. One listener, channels, queues,
+query grants, source adapters, lifecycle, checkout, and the 273-line error
+baseline remain healthy/unchanged. Rollback is retained to exact `d5375964`.
+
 Beginning with `NC-20260824-009`, the archive binds migration 136 and its
 history-preserving rollback. Migration 135 must already be live. Take a
 custom-format `business_v2` backup plus the normal SQLite/plist backups,

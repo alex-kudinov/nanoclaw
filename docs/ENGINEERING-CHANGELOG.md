@@ -12,13 +12,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-27T02:42:42Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_deploy; implementation, independent review, focused/full/
-  runner, disposable-PostgreSQL, continuity, commit, and push complete;
-  release/deployment pending
+- State: complete; independently reviewed, committed/pushed, immutable release
+  deployed, enabled, privacy-checked, replayed, and live-verified
 - Commit/PR: pushed implementation
   `0ca7939fbb50e7e236969846d6b7987bc4fb3c73` on
   `codex/relationship-context-client-projection-20260826` from clean pushed
-  NC-005 final-evidence commit `13c855db8db0dc61b2e652609d21569c7d75d742`
+  NC-005 final-evidence commit `13c855db8db0dc61b2e652609d21569c7d75d742`;
+  exact live release `f8595966ffa145dee19051ed792b9ff616456e5e`
 - Change class: C5 relationship/identity interpretation boundary plus
   separately gated C3 release
 - Affected systems: host-only migration-137 Party Context projections, health,
@@ -67,17 +67,42 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   with the sole unchanged NC-005-baseline CNPC wrapper-literal assertion
   failure; independent runner build and 45/45 pass. Diff, secret-pattern, and
   private-value scans are clean.
-- Deployment/migration: no migration; runtime flag remains default-off and no
-  production projection or service/configuration change has occurred.
+- Release: source tree `845151b300a04ee0ff8ea8cfebd5f3b2e2f922a5`,
+  1,004-file artifact
+  `80e3cdafc3e87e4b5a1c973d21cc1683c2f10ad85070dbbd4c389822ab8afa70`,
+  archive
+  `9aa310c3ee80a8e882b75257f3ac5704ebcad98ef1904fa085220f1b714886e7`,
+  exact Node 22.23.2; fresh local/Mini verification passes.
+- Deployment/migration: no migration. Mode-0700 backup
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260826-006-20260827T032200Z`
+  passed custom-PostgreSQL listing and SQLite quick-check. Off-first activation
+  changed exactly three release pointers and retained rollback plist
+  `com.nanoclaw.plist.rollback-d5375964f467-2026-08-27T03-22-09-222Z`.
+  Exact release/source/channel/queue/lifecycle/checkout/query health passed,
+  then a semantic one-key plist comparison added only the new flag and reloaded
+  once.
+- Live outcome: first run projected 1,437/1,437 active Parties: 62 paid
+  customers, five active subscribers, nine unproven recorded client labels,
+  two recorded student labels, 1,317 recorded prospect labels, and 96
+  summary-unknown Parties with controlled overlaps. All 1,437 rows are partial
+  with unknown engagement and version 1. Release-owned replay changed zero;
+  count/version/fingerprint remained 1,437/1,437/max-1/
+  `be9bda53b90e80a2836834a713f327ad`. Prohibited and raw-identity-like values
+  are 0/0.
+- Live non-interference: one listener, Gmail/Slack connected, zero active/
+  waiting containers, zero outgoing queue/pending sends, query off/zero grants,
+  Trafft/source enrichment healthy, lifecycle 41/0/23 with consumers/Circle
+  off, checkout production mode/cutoff preserved, error baseline 273, and
+  active Party/role/Stripe-fact aggregates unchanged.
 - Rollback/recovery: disable the new flag before restoring a prior release;
   preserve versioned projections under migration 137. The dirty primary
   checkout remains preserved.
 - Documentation: accepted decision, active work, control-plane design, client
   projection runbook, project map, security model, release contract, aggregate
   database query guide, `.env.example`, and launchd/setup templates.
-- Follow-ups: immutable commit/push/build/backup/off-first deployment, one-key
-  enable, live aggregate coverage/privacy/replay/non-interference proof, and
-  program reconciliation.
+- Follow-ups: none for this phase. Authoritative Plutio contract/engagement
+  evidence and any role-provenance contract remain separate future source
+  slices; do not infer them from current labels.
 
 ### NC-20260826-005 — Stripe, contact-form, and verified-Chaos Party Context
 

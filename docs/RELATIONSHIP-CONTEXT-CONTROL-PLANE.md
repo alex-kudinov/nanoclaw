@@ -864,8 +864,10 @@ or contract. All version-1 projections therefore retain explicit unknown
 engagement evidence. The worker is separately default-off, provider-free,
 transaction/advisory-lock bounded, privacy-minimized, consumer-disabled, and
 idempotent by per-Party source watermarks. See
-`docs/RELATIONSHIP-CONTEXT-CLIENT-PROJECTION.md`. Deployment and live aggregate
-evidence remain separate from source presence until recorded under NC-006.
+`docs/RELATIONSHIP-CONTEXT-CLIENT-PROJECTION.md`. Exact release `f8595966`
+live-projects all 1,437 active Parties: 62 defensible paid customers, nine
+separately unproven client labels, and explicit unknown engagement. Replay is
+zero-change at version 1 and query/minion consumers remain off.
 
 ## 10. Verification plan
 
