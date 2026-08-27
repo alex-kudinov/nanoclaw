@@ -7,9 +7,9 @@ Program item: `work:relationship-context-stripe-contact-chaos-enrichment`
 Decision:
 `.program/decisions/decision-relationship-context-stripe-contact-chaos-enrichment-2026-08-26.json`
 
-Status: local implementation, disposable-PostgreSQL proof, and independent
-Claude Sonnet/high review complete with no unresolved material finding; commit,
-release, deployment, and live reconciliation remain separate gates.
+Status: exact release `d5375964f4675839e485eb50d3c847472fd8aa6c`
+is deployed, enabled, replayed, privacy-checked, and live-verified with no
+unresolved material review finding.
 
 ## Objective and boundary
 

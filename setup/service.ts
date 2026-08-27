@@ -140,6 +140,10 @@ function setupLaunchd(
         <string>0</string>
         <key>RELATIONSHIP_CONTEXT_TRAFFT_SHADOW_ENABLED</key>
         <string>0</string>
+        <key>RELATIONSHIP_CONTEXT_SOURCE_ENRICHMENT_ENABLED</key>
+        <string>0</string>
+        <key>RELATIONSHIP_CONTEXT_CLIENT_PROJECTION_ENABLED</key>
+        <string>0</string>
     </dict>
     <key>StandardOutPath</key>
     <string>${projectRoot}/logs/nanoclaw.log</string>

@@ -31,6 +31,10 @@
 		<string>0</string>
 		<key>RELATIONSHIP_CONTEXT_TRAFFT_SHADOW_ENABLED</key>
 		<string>0</string>
+		<key>RELATIONSHIP_CONTEXT_SOURCE_ENRICHMENT_ENABLED</key>
+		<string>0</string>
+		<key>RELATIONSHIP_CONTEXT_CLIENT_PROJECTION_ENABLED</key>
+		<string>0</string>
 		<key>PATH</key>
 		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/Users/xbohdpukc/.local/bin</string>
 	</dict>

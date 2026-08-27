@@ -10,6 +10,10 @@ import {
 } from './relationship-context-policy.js';
 import { runRelationshipContextExactReadCanary } from './relationship-context-live-canary.js';
 import {
+  CLIENT_RELATIONSHIP_PROJECTION_KEY,
+  projectClientRelationshipsWithClient,
+} from './relationship-context-client-projection.js';
+import {
   ingestEnchargeSnapshotWithClient,
   reconcilePlutioReferencesWithClient,
 } from './relationship-context-provider-reconciliation.js';
@@ -999,6 +1003,323 @@ suite('relationship context disposable PostgreSQL store', () => {
           WHERE status='open' AND reason_code='external_ref_conflict'`,
       );
       expect(exception.rows[0].count).toBe('1');
+    } finally {
+      client.release();
+    }
+  });
+
+  it('projects every active Party from defensible client evidence without replay churn', async () => {
+    const client = await pool.connect();
+    try {
+      const parties = await client.query<{
+        id: string;
+        display_name: string;
+      }>(
+        `INSERT INTO business_v2.parties
+           (party_type,display_name,last_updated_by)
+         VALUES ('person','Client Projection Paid','integration'),
+                ('person','Client Projection Accepted','integration'),
+                ('person','Client Projection Student','integration'),
+                ('org','Client Projection Organization','integration'),
+                ('person','Client Projection Merge Loser','integration'),
+                ('person','Client Projection Merge Winner','integration')
+         RETURNING id::text,display_name`,
+      );
+      const ids = Object.fromEntries(
+        parties.rows.map((row) => [row.display_name, Number(row.id)]),
+      );
+      await client.query(
+        `INSERT INTO business_v2.party_roles
+           (party_id,role_type,started_at,metadata)
+         VALUES ($1,'prospect','2026-08-26T00:00:00Z','{}'::jsonb),
+                ($2,'client','2026-08-26T00:00:00Z','{}'::jsonb),
+                ($3,'student','2026-08-26T00:00:00Z','{}'::jsonb),
+                ($4,'client','2026-08-26T00:00:00Z','{}'::jsonb)`,
+        [
+          ids['Client Projection Paid'],
+          ids['Client Projection Accepted'],
+          ids['Client Projection Student'],
+          ids['Client Projection Merge Loser'],
+        ],
+      );
+      const repository = new PostgresRelationshipContextRepository(client);
+      await repository.recordObservation({
+        adapterKey: 'stripe_account_snapshot',
+        adapterVersion: '1.0.0',
+        partyId: ids['Client Projection Paid'],
+        fact: {
+          factType: 'commercial.stripe.payment_intent_status@1',
+          sourceFactKey: 'client-projection-pi:succeeded',
+          subject: { partyId: ids['Client Projection Paid'] },
+          value: {
+            status: 'succeeded',
+            currency: 'usd',
+            customer_link: 'exact_customer_ref',
+          },
+          sourceSystem: 'stripe',
+          sourceScope: 'heartbeat',
+          sourceRecordType: 'payment_intent',
+          sourceRecordId: 'pi_client_projection_fixture',
+          sourceEventId: null,
+          effectiveAt: '2026-08-26T00:00:00Z',
+          observedAt: '2026-08-26T01:00:00Z',
+          verifiedAt: '2026-08-26T01:00:00Z',
+          freshUntil: '2026-08-26T01:15:00Z',
+          confidence: 'source_verified',
+          conflictState: 'none',
+          privacyClass: 'internal',
+          factSchemaVersion: 1,
+        },
+      });
+      await repository.recordObservation({
+        adapterKey: 'stripe_account_snapshot',
+        adapterVersion: '1.0.0',
+        partyId: ids['Client Projection Merge Loser'],
+        fact: {
+          factType: 'commercial.stripe.payment_intent_status@1',
+          sourceFactKey: 'client-projection-merged-pi:succeeded',
+          subject: { partyId: ids['Client Projection Merge Loser'] },
+          value: {
+            status: 'succeeded',
+            currency: 'usd',
+            customer_link: 'exact_customer_ref',
+          },
+          sourceSystem: 'stripe',
+          sourceScope: 'tandem',
+          sourceRecordType: 'payment_intent',
+          sourceRecordId: 'pi_client_projection_merged_fixture',
+          sourceEventId: null,
+          effectiveAt: '2026-08-26T00:00:00Z',
+          observedAt: '2026-08-26T01:00:00Z',
+          verifiedAt: '2026-08-26T01:00:00Z',
+          freshUntil: '2026-08-26T01:15:00Z',
+          confidence: 'source_verified',
+          conflictState: 'none',
+          privacyClass: 'internal',
+          factSchemaVersion: 1,
+        },
+      });
+      await client.query(
+        `SELECT business_v2.fn_merge_parties($1,$2,'client projection fixture')`,
+        [
+          ids['Client Projection Merge Loser'],
+          ids['Client Projection Merge Winner'],
+        ],
+      );
+      await repository.recordObservation({
+        adapterKey: 'stripe_account_snapshot',
+        adapterVersion: '1.0.0',
+        partyId: ids['Client Projection Paid'],
+        fact: {
+          factType: 'commercial.stripe.subscription_status@1',
+          sourceFactKey: 'client-projection-sub:active',
+          subject: { partyId: ids['Client Projection Paid'] },
+          value: {
+            status: 'active',
+            cancel_at_period_end: false,
+            current_period_end: '2026-09-26T00:00:00Z',
+            customer_link: 'exact_customer_ref',
+          },
+          sourceSystem: 'stripe',
+          sourceScope: 'heartbeat',
+          sourceRecordType: 'subscription',
+          sourceRecordId: 'sub_client_projection_fixture',
+          sourceEventId: null,
+          effectiveAt: '2026-08-26T00:00:00Z',
+          observedAt: '2026-08-26T01:00:00Z',
+          verifiedAt: '2026-08-26T01:00:00Z',
+          freshUntil: '2026-08-26T01:15:00Z',
+          confidence: 'source_verified',
+          conflictState: 'none',
+          privacyClass: 'internal',
+          factSchemaVersion: 1,
+        },
+      });
+
+      const first = await projectClientRelationshipsWithClient({
+        client,
+        observedAt: '2026-08-27T03:00:00Z',
+        pageSize: 200,
+      });
+      expect(first.complete).toBe(true);
+      expect(first.activeParties).toBe(first.projectedParties);
+      expect(first.projectionsChanged).toBe(first.activeParties);
+      expect(first.customerOrClientParties).toBeGreaterThanOrEqual(1);
+      expect(first.activeSubscriberParties).toBeGreaterThanOrEqual(1);
+
+      const fixtureProjections = await client.query<{
+        party_id: string;
+        version: number;
+        status: string;
+        value: Record<string, unknown>;
+        missing_codes: string[];
+      }>(
+        `SELECT party_id::text,version,status,value,
+                ARRAY(SELECT jsonb_array_elements_text(missing_codes))
+                  AS missing_codes
+           FROM business_v2.party_context_projections
+          WHERE party_id=ANY($1::bigint[])
+            AND section='relationship' AND projection_key=$2
+          ORDER BY party_id`,
+        [Object.values(ids), CLIENT_RELATIONSHIP_PROJECTION_KEY],
+      );
+      expect(fixtureProjections.rows).toHaveLength(5);
+      const byParty = new Map(
+        fixtureProjections.rows.map((row) => [Number(row.party_id), row]),
+      );
+      expect(byParty.get(ids['Client Projection Paid'])).toMatchObject({
+        version: 1,
+        status: 'partial',
+        value: {
+          relationship_state: 'paid_customer',
+          customer_or_client: true,
+          paid_customer_history: true,
+          active_subscription: true,
+          recorded_prospect_role: true,
+          active_engagement_status: 'unknown',
+        },
+      });
+      expect(byParty.get(ids['Client Projection Accepted'])).toMatchObject({
+        value: {
+          relationship_state: 'recorded_client',
+          customer_or_client: false,
+          recorded_client_role: true,
+          active_engagement_status: 'unknown',
+        },
+      });
+      expect(
+        byParty.get(ids['Client Projection Accepted'])?.missing_codes,
+      ).toContain('client_role_provenance_unavailable');
+      expect(byParty.get(ids['Client Projection Student'])).toMatchObject({
+        value: {
+          relationship_state: 'recorded_student',
+          customer_or_client: false,
+          recorded_student_role: true,
+        },
+      });
+      expect(byParty.get(ids['Client Projection Organization'])).toMatchObject({
+        value: {
+          party_type: 'org',
+          relationship_state: 'unknown',
+          customer_or_client: false,
+        },
+      });
+      expect(
+        byParty.get(ids['Client Projection Organization'])?.missing_codes,
+      ).toContain('active_engagement_evidence_unavailable');
+      expect(byParty.has(ids['Client Projection Merge Loser'])).toBe(false);
+      expect(byParty.get(ids['Client Projection Merge Winner'])).toMatchObject({
+        value: {
+          relationship_state: 'paid_customer',
+          customer_or_client: true,
+          paid_customer_history: true,
+          recorded_client_role: true,
+        },
+      });
+
+      const replay = await projectClientRelationshipsWithClient({
+        client,
+        observedAt: '2026-08-27T03:15:00Z',
+        pageSize: 200,
+      });
+      expect(replay.projectionsChanged).toBe(0);
+      await repository.recordObservation({
+        adapterKey: 'stripe_account_snapshot',
+        adapterVersion: '1.0.0',
+        partyId: ids['Client Projection Paid'],
+        fact: {
+          factType: 'commercial.stripe.subscription_status@1',
+          sourceFactKey: 'client-projection-sub:canceled',
+          subject: { partyId: ids['Client Projection Paid'] },
+          value: {
+            status: 'canceled',
+            cancel_at_period_end: false,
+            current_period_end: '2026-09-26T00:00:00Z',
+            customer_link: 'exact_customer_ref',
+          },
+          sourceSystem: 'stripe',
+          sourceScope: 'heartbeat',
+          sourceRecordType: 'subscription',
+          sourceRecordId: 'sub_client_projection_fixture',
+          sourceEventId: null,
+          effectiveAt: '2026-08-27T03:16:00Z',
+          observedAt: '2026-08-27T03:16:00Z',
+          verifiedAt: '2026-08-27T03:16:00Z',
+          freshUntil: '2026-08-27T03:31:00Z',
+          confidence: 'source_verified',
+          conflictState: 'none',
+          privacyClass: 'internal',
+          factSchemaVersion: 1,
+        },
+      });
+      const subscriptionChanged = await projectClientRelationshipsWithClient({
+        client,
+        observedAt: '2026-08-27T03:17:00Z',
+        pageSize: 200,
+      });
+      expect(subscriptionChanged.projectionsChanged).toBe(1);
+      const paidProjection = await client.query<{
+        version: number;
+        active_subscription: boolean;
+      }>(
+        `SELECT version,(value->>'active_subscription')::boolean
+                  AS active_subscription
+           FROM business_v2.party_context_projections
+          WHERE party_id=$1 AND section='relationship' AND projection_key=$2`,
+        [ids['Client Projection Paid'], CLIENT_RELATIONSHIP_PROJECTION_KEY],
+      );
+      expect(paidProjection.rows[0]).toEqual({
+        version: 2,
+        active_subscription: false,
+      });
+      const addedRole = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.party_roles
+           (party_id,role_type,started_at,metadata)
+         VALUES ($1,'client','2026-08-27T03:18:00Z','{}'::jsonb)
+         RETURNING id::text`,
+        [ids['Client Projection Student']],
+      );
+      const changed = await projectClientRelationshipsWithClient({
+        client,
+        observedAt: '2026-08-27T03:19:00Z',
+        pageSize: 200,
+      });
+      expect(changed.projectionsChanged).toBe(1);
+      await client.query(
+        `UPDATE business_v2.party_roles
+            SET ended_at='2026-08-27T03:20:00Z'
+          WHERE id=$1`,
+        [addedRole.rows[0].id],
+      );
+      const removed = await projectClientRelationshipsWithClient({
+        client,
+        observedAt: '2026-08-27T03:21:00Z',
+        pageSize: 200,
+      });
+      expect(removed.projectionsChanged).toBe(1);
+      const studentProjection = await client.query<{
+        version: number;
+        relationship_state: string;
+      }>(
+        `SELECT version,(value->>'relationship_state') AS relationship_state
+           FROM business_v2.party_context_projections
+          WHERE party_id=$1 AND section='relationship' AND projection_key=$2`,
+        [ids['Client Projection Student'], CLIENT_RELATIONSHIP_PROJECTION_KEY],
+      );
+      expect(studentProjection.rows[0]).toEqual({
+        version: 3,
+        relationship_state: 'recorded_student',
+      });
+      const privacy = await client.query<{
+        prohibited_values: string;
+      }>(
+        `SELECT count(*)::text AS prohibited_values
+           FROM business_v2.party_context_projections
+          WHERE section='relationship' AND projection_key=$1
+            AND value::text ~* '(email|name|phone|address|amount|currency|external_id|source_record_id|payload|metadata)'`,
+        [CLIENT_RELATIONSHIP_PROJECTION_KEY],
+      );
+      expect(privacy.rows[0].prohibited_values).toBe('0');
     } finally {
       client.release();
     }

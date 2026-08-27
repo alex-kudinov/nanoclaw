@@ -42,4 +42,22 @@ describe('relationship context Trafft shadow host wiring', () => {
       'await runRelationshipContextSourceEnrichmentTick();',
     );
   });
+
+  it('runs client projection without blocking, overlapping, or retaining the event loop', () => {
+    expect(indexSource).toContain(
+      'void runRelationshipContextClientProjectionTick();',
+    );
+    expect(indexSource).toContain(
+      'relationshipContextClientProjectionTimer.unref();',
+    );
+    expect(indexSource).toContain(
+      'if (relationshipContextClientProjectionInFlight)',
+    );
+    expect(indexSource).toContain(
+      'relationshipContextClientProjectionInFlight = false;',
+    );
+    expect(indexSource).not.toContain(
+      'await runRelationshipContextClientProjectionTick();',
+    );
+  });
 });

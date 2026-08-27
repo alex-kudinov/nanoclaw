@@ -12,10 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-27T03:05:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_deploy; reviewed and locally verified from exact live release
-  `d5375964`
-- Commit/PR: uncommitted on `codex/sales-support-entry-fix-20260826`; commit,
-  push, immutable build, and deployment pending
+- State: validating; reviewed implementation `371e6e0a` is merged with the
+  newer exact live release `f8595966` after the production drain detected a
+  concurrent activation before mutation
+- Commit/PR: pushed implementation `371e6e0a` on
+  `codex/sales-support-entry-fix-20260826`; combined-lineage merge commit,
+  rebuild, push, and deployment pending
 - Change class: C3 approval-gated support drafting and release; the change
   itself sends no customer email and creates no approval
 - Affected systems: Sales behavior/workflow authority, existing host approval
@@ -39,13 +41,19 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   and direct regression coverage; no unresolved material finding remains. One
   round used 10 model calls, 705,222 cache-read tokens, 21,695 output tokens,
   and 111,774 maximum context, exceeding the 100k review target.
-- Verification: focused prompt/approval/watchdog tests pass 87/87; combined
+- Verification before live-lineage merge: focused prompt/approval/watchdog tests pass 87/87; combined
   Sales/Mailman prompt contracts pass 15/15; pinned Node 22.23.2 typecheck,
   Prettier check, documentation continuity/capability check, and diff check
   pass. Full root is 3,311 pass / 29 skip with the sole unchanged unrelated
-  CNPC wrapper-literal assertion. Release verification, deployment health, and
-  the draft-only live canary remain pending.
-- Deployment/migration: no schema or data migration. Deployment pending.
+  CNPC wrapper-literal assertion. Email replay 13/13, email-critical 742/742,
+  and independent runner 45/45 pass; clean artifact `371e6e0a` verified but was
+  not activated after the dry run reported production had moved to
+  `f8595966`. Combined-lineage verification, deployment health, and the
+  draft-only live canary remain pending.
+- Deployment/migration: no schema or data migration. The daemon was not changed
+  by the first activation attempt. Reviewed Sales prompts were copied after a
+  zero-work drain and are backed up; their temporary mismatch with daemon
+  release `f8595966` is being closed by the combined release.
 - Rollback/recovery: restore the prior immutable release pointer; no database or
   provider rollback is required. The live canary must remain unapproved.
 - Documentation: Sales role/workflow/compatibility prompt, project map, active
@@ -53,17 +61,88 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Follow-ups: none outside the task; customer sending remains a separate exact
   operator approval.
 
+### NC-20260826-006 — Defensible client and customer relationship projection
+
+- Date: 2026-08-27T02:42:42Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_deploy; implementation, independent review, focused/full/
+  runner, disposable-PostgreSQL, continuity, commit, and push complete;
+  release/deployment pending
+- Commit/PR: pushed implementation
+  `0ca7939fbb50e7e236969846d6b7987bc4fb3c73` on
+  `codex/relationship-context-client-projection-20260826` from clean pushed
+  NC-005 final-evidence commit `13c855db8db0dc61b2e652609d21569c7d75d742`
+- Change class: C5 relationship/identity interpretation boundary plus
+  separately gated C3 release
+- Affected systems: host-only migration-137 Party Context projections, health,
+  runtime configuration/templates, Relationship Context authority/security/
+  release documents; no schema or provider API change
+- Outcome: a separately default-off provider-free worker pages every active
+  canonical person and organization under a transaction advisory lock and
+  maintains one fixed `relationship.client_status.v1` projection. Exact latest
+  succeeded Stripe PaymentIntent and active-subscription evidence are the only
+  current positive customer signals. Recorded client/student/prospect rows,
+  active engagement, and unsupported source history remain separately explicit
+  rather than inferred.
+- Discovery correction: the initial aggregate suggested 69 defensible
+  customer/client Parties by combining 62 exact paid customers with nine active
+  client-role rows. Live provenance readback found all nine client, both
+  student, and all 1,317 prospect rows have empty metadata and no source or
+  accepted-decision receipt. The implementation therefore treats the role rows
+  as unproven recorded labels; the current positive baseline is 62 paid
+  customers, five also actively subscribed. Plutio contract/project/invoice
+  discovery failed before provider access because the toolbox environment file
+  is not parseable; no credential/value was inspected or changed and no active
+  engagement was inferred.
+- Privacy/action boundary: projections contain only Party type, controlled
+  status/boolean/count/tier fields and per-Party numeric watermarks. Health is
+  aggregate-only. No Party ID appears inside the value; no name, email, phone,
+  address, provider object ID, amount, currency, instrument, payload, metadata,
+  contract content, Party merge, role/source-ref mutation, provider/customer/
+  payment/contract/consent action, communication, query/minion grant, checkout,
+  lifecycle, Circle, or legacy-receiver change is authorized.
+- Review: one bounded Claude Sonnet/high round reported a High merge-lineage
+  concern. Codex inspected the excluded migration sources and disproved its
+  premise: the core merge moves role rows and migration 137 moves current
+  observation identity to the canonical winner. A new exact merge regression
+  proves the winner retains paid/recorded-client evidence and the loser gets no
+  projection. No implementation correction or second round was warranted; no
+  material finding remains. Review usage was 9 model calls, 116,135 cache-
+  creation, 550,498 cache-read, 29,603 output tokens, and 116,137 maximum
+  context, above the 100k target and recorded as orchestration debt.
+- Verification: pinned Node 22.23.2 initial focused 8/8 and post-correction/
+  review focused 9/9 and broader focused 34/34;
+  typecheck/build/format/continuity/capability checks pass. Disposable PostgreSQL 5/5
+  covers 1,400+ Party pagination, persons/organizations, recorded-role
+  downgrade, latest Stripe state, evidence addition/removal, Party merge,
+  one-Party-only version advancement, exact replay with zero churn, complete
+  coverage, and prohibited-value readback. Full root is 3,317 pass / 30 skip
+  with the sole unchanged NC-005-baseline CNPC wrapper-literal assertion
+  failure; independent runner build and 45/45 pass. Diff, secret-pattern, and
+  private-value scans are clean.
+- Deployment/migration: no migration; runtime flag remains default-off and no
+  production projection or service/configuration change has occurred.
+- Rollback/recovery: disable the new flag before restoring a prior release;
+  preserve versioned projections under migration 137. The dirty primary
+  checkout remains preserved.
+- Documentation: accepted decision, active work, control-plane design, client
+  projection runbook, project map, security model, release contract, aggregate
+  database query guide, `.env.example`, and launchd/setup templates.
+- Follow-ups: immutable commit/push/build/backup/off-first deployment, one-key
+  enable, live aggregate coverage/privacy/replay/non-interference proof, and
+  program reconciliation.
+
 ### NC-20260826-005 — Stripe, contact-form, and verified-Chaos Party Context
 
 - Date: 2026-08-26T23:25:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review pending
-- State: validating; local implementation and disposable PostgreSQL proof
-  complete, not committed, released, deployed, or live-reconciled
+- State: complete; independently reviewed, committed/pushed, exact release
+  deployed, reconciled, replayed, privacy-checked, and live-verified
 - Commit/PR: implementation `7a4a876ba89a3543b57c7ca2841f2d3ce2d41770`
   on `codex/relationship-context-stripe-contact-chaos-20260826` from pushed
   `5c02acd3`, which directly contains exact live implementation `1a381e48`;
-  review boundary `0489e3db9542bc02df273538773d29262ab106d3` and branch
-  are pushed; immutable release build remains pending
+  review boundary `0489e3db9542bc02df273538773d29262ab106d3` and exact
+  release `d5375964f4675839e485eb50d3c847472fd8aa6c` are pushed
 - Change class: C5 identity/security boundary plus separately gated C3 release
 - Outcome: adds three provider-neutral, default-off, read-only adapters: both
   distinct Stripe account scopes; immutable archived contact-form submissions;
@@ -109,16 +188,20 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   and focused/disposable PostgreSQL checks pass. Independent review is closed
   with no unresolved material finding; final clean verification/commit/release
   remain pending.
-- Deployment/migration: implementation committed; no migration; source flag
-  defaults off. Immutable
-  release, flag transaction, replay, live aggregates, and non-interference
-  remain pending.
+- Deployment/migration: no migration. Exact release is live under Node 22.23.2;
+  the source flag is enabled after an off-first activation, sanitized one-key
+  plist transaction, and bounded reload. First live reconciliation is healthy
+  and complete; exact-timestamp replay is duplicate-only with projection
+  versions unchanged at 1.
 - Rollback/recovery: disable the source flag and restore the prior release
   pointer; preserve migration-137 evidence. No ordinary rollback deletes
   imported refs, observations, projections, exceptions, or receipts.
 - Documentation: `docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`, control
   plane, project map, security model, release contract, database guide, active
-  work, and `.env.example`.
+  work, `.env.example`, and
+  `docs/programs/company-os/evidence/NC-20260826-005-stripe-contact-chaos-enrichment.md`.
+- Program: Company OS revision 123 marks the work item done with all ten
+  continuity commitments completed and no active/eligible item.
 
 ### NC-20260826-004 — Best-effort multi-provider identity reconciliation
 

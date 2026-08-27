@@ -223,7 +223,7 @@ Exact live `1a381e48` has 1,364 Plutio person refs, 1,242 Encharge person refs,
 159 Trafft customer refs, 358 appointment refs, and 66 terminal legacy
 appointment exceptions with zero provider conflicts. Query remains disabled.
 
-`NC-20260826-005` adds no migration. Its local source introduces default-off,
+`NC-20260826-005` adds no migration. Exact live release `d5375964` enables
 read-only adapters for both fixed Stripe account scopes, immutable archived
 contact submissions, and verified Chaos visitor links. Stripe retains an
 existing exact customer ref or requires one account-local unique provider
@@ -233,8 +233,7 @@ inbox evidence. Every unresolved or conflicting identity is terminal legacy;
 a prior active Chaos ref becomes conflicted on later disagreement. Persisted
 facts exclude raw payloads, emails, names, messages, amounts/card data, intent
 summaries, and browsing history. `RELATIONSHIP_CONTEXT_ENABLED=0` and zero
-minion grants remain unchanged. Source presence is not deployment or live
-reconciliation evidence; follow
+minion grants remain unchanged. Follow
 `docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`.
 
 The contact/Chaos adapters reuse migration 97's admin-owned

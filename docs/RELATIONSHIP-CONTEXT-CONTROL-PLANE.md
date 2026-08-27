@@ -830,8 +830,9 @@ Plutio and 1,242 Encharge person refs support 159 Trafft customers/358
 appointment records; 14 customers/66 appointment records are terminal legacy,
 with zero conflicts and duplicate-only replay.
 
-`NC-20260826-005` locally adds the next three ordinary adapters without a core
-or schema change. Stripe uses two fixed, distinct account scopes; a customer
+`NC-20260826-005` adds the next three ordinary adapters without a core or schema
+change. Exact live release `d5375964` runs them read-only and consumer-disabled.
+Stripe uses two fixed, distinct account scopes; a customer
 binds from an existing exact ref or one account-local unique provider email to
 one canonical Party, while payment/subscription facts attach only through that
 customer ref. Contact form uses the immutable webhook-inbox row as the exact
@@ -846,8 +847,25 @@ consumer-disabled. Existing migration-97 watermarks make contact/Chaos pages
 durably resumable, while over-cap Stripe lists recursively bisect their
 half-open created-time ranges and require both distinct account identities
 before either scope ingests. See
-`docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`; review, exact release,
-deployment, and live reconciliation remain separate evidence gates.
+`docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`; live aggregate evidence is
+recorded in
+`docs/programs/company-os/evidence/NC-20260826-005-stripe-contact-chaos-enrichment.md`.
+
+`NC-20260826-006` implements the first aggregate `relationship` projection over
+the now-source-bound graph. One fixed projection is maintained for every active
+canonical person or organization. Recorded client/student/prospect roles,
+latest exact succeeded Stripe PaymentIntent state, and latest exact active
+subscription state remain separately labeled; deterministic precedence chooses
+only the summary state. The live role rows lack source/decision provenance, so
+version 1 labels them as recorded but does not use them as positive client
+authority. Paid history and subscription do not claim an active
+coaching engagement, payer/participant relationship, assigned coach, product,
+or contract. All version-1 projections therefore retain explicit unknown
+engagement evidence. The worker is separately default-off, provider-free,
+transaction/advisory-lock bounded, privacy-minimized, consumer-disabled, and
+idempotent by per-Party source watermarks. See
+`docs/RELATIONSHIP-CONTEXT-CLIENT-PROJECTION.md`. Deployment and live aggregate
+evidence remain separate from source presence until recorded under NC-006.
 
 ## 10. Verification plan
 
