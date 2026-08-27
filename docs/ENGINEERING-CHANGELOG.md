@@ -12,19 +12,20 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-27T03:58:55Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; read-tool repair, provider inventory, implementation,
+- State: ready_for_deploy; read-tool repair, provider inventory, implementation,
   independent review, focused/full/runner, and disposable-PostgreSQL proof
-  complete; final diff/commit/release/deployment pending
+  complete; exact-live merge/commit/push complete; release/deployment pending
 - Continuity correction: exact live lineage already contained a different
   Sales task under `NC-20260826-008`. Per the collision rule, this still-
   unpublished Plutio task is renumbered to `NC-20260826-009`; report filenames,
   active work, changelog, authority docs, and Company OS claim are reconciled.
 - Commit/PR: NanoClaw branch
   `codex/relationship-context-plutio-engagement-20260826`; implementation
-  `2e55df75072d76da49d657c69436632bb4ea2c75` is being merged with exact live
-  `f52f708f5125fcbe888d1eaf7d72e4ea0ef17d93`; shared toolbox repair committed
+  `2e55df75072d76da49d657c69436632bb4ea2c75` merged with exact live
+  `f52f708f5125fcbe888d1eaf7d72e4ea0ef17d93` in pushed combined commit
+  `0b687f7e49cb3d34ebfc2bb9e871e3135ac4307f`; shared toolbox repair committed
   locally as `922b7feab7a99022410a1971891bfe795e2db231` because that repository has no
-  configured remote; combined-lineage verification/merge commit remain pending
+  configured remote
 - Change class: C5 relationship/identity interpretation and credential-loader
   boundary plus separately gated C3 release
 - Affected systems: shared Plutio read auth/tool surface, provider-neutral Party
@@ -85,7 +86,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   unchanged CNPC wrapper-literal assertion before live-lineage merge. Combined
   exact-live verification passes 69/69 focused, typecheck/build/continuity,
   full 3,333 pass / 31 skip with the same sole CNPC baseline assertion, and
-  independent runner 45/45. Final diff/secret checks remain pending.
+  independent runner 45/45. Final diff/secret checks pass.
 - Deployment/migration: no migration or production host/toolbox/config change
   has occurred. Runtime flag remains default-off.
 - Rollback/recovery: exact pre-repair NanoClaw environment and operational
