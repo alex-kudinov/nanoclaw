@@ -164,3 +164,11 @@ Company OS state revision 129 marks
 claim/next action, and reconciles all nine continuity commitments to
 `completed` against this evidence and the exact release receipts. Program
 validation passes with no active or eligible work item.
+
+Post-closure observation: production subsequently advanced to exact two-parent
+merge `55efd52fb9919c98e75d41d7a6f200fa4ef87ef2`, whose second direct parent is
+the verified NC-006 release `f8595966ffa145dee19051ed792b9ff616456e5e`.
+Current live health retains complete 1,437/1,437 coverage, 62 paid customers,
+five active subscribers, zero-change projection replay state, healthy source/
+Trafft/channel/queue state, and disabled query access. This is a superseding
+release identity, not a replacement for the recorded NC-006 deployment proof.

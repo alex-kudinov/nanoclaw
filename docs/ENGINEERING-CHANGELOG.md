@@ -96,6 +96,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   active Party/role/Stripe-fact aggregates unchanged.
 - Program: Company OS revision 129 marks the work item done with all nine
   continuity commitments completed and no active or eligible item.
+- Post-closure addendum at 2026-08-27T03:28:00Z: a concurrent release advanced
+  production to exact merge `55efd52fb9919c98e75d41d7a6f200fa4ef87ef2`.
+  Git verification shows parents `371e6e0a…` and the NC-006 release
+  `f8595966…`. Current health still reports 1,437/1,437 projections,
+  `projectionsChanged=0`, 62 paid customers, five active subscribers, healthy
+  source/Trafft adapters and channels, empty queues/containers, and query off.
+  This supersedes current-release identity only; it does not invalidate the
+  original NC-006 activation, backup, rollback, or replay receipts.
 - Rollback/recovery: disable the new flag before restoring a prior release;
   preserve versioned projections under migration 137. The dirty primary
   checkout remains preserved.

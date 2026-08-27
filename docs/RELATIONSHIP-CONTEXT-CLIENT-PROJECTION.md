@@ -7,9 +7,11 @@ Program item: `work:relationship-context-client-relationship-projection`
 Decision:
 `.program/decisions/decision-relationship-context-client-relationship-projection-2026-08-26.json`
 
-Status: exact release `f8595966ffa145dee19051ed792b9ff616456e5e` is
-deployed, enabled, privacy-checked, replayed, and live-verified with no
-unresolved material review finding.
+Status: introduced by exact release
+`f8595966ffa145dee19051ed792b9ff616456e5e` and preserved by current exact
+descendant merge `55efd52fb9919c98e75d41d7a6f200fa4ef87ef2`; enabled,
+privacy-checked, replayed, and live-verified with no unresolved material review
+finding.
 
 ## Objective and truth boundary
 
