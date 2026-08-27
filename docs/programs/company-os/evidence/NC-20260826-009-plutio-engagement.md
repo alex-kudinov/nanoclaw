@@ -222,5 +222,14 @@ write occurred.
 
 ## Program reconciliation
 
-Pending final Company OS commitment reconciliation and registration of the
-remaining exact Plutio person/company identity-coverage gap as a candidate.
+Company OS state revision 134 closes
+`work:relationship-context-plutio-engagement-enrichment` as done with all ten
+continuity commitments individually completed against this evidence, the
+review artifacts, release receipts, live replay, and non-interference proof.
+There is no active or eligible program item.
+
+The remaining exact-reference gap is preserved as unauthorized candidate
+`work:relationship-context-plutio-client-ref-coverage`: 50 qualifying person
+links and eight company links may be mapped only after the owner directs that
+phase and an exact source-authoritative provider reference is accepted. Name
+or email matching remains prohibited.

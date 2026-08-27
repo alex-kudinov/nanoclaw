@@ -124,6 +124,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Follow-ups: none for this phase. Preserve the 50-person/eight-company exact-
   reference gap as a separately authorized candidate; never close it by name or
   email matching.
+- Program reconciliation: Company OS revision 134 marks
+  `work:relationship-context-plutio-engagement-enrichment` done after closing
+  all ten continuity commitments. It registers
+  `work:relationship-context-plutio-client-ref-coverage` as an unauthorized
+  candidate; no active or eligible program item remains.
+
 ### NC-20260826-008 — Operator-answer support fast path
 
 - Date: 2026-08-27T04:04:00Z
