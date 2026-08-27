@@ -78,4 +78,16 @@ describe('relationship context Trafft shadow host wiring', () => {
       'await runRelationshipContextPlutioEngagementTick();',
     );
   });
+
+  it('runs Stripe ingress parity without blocking, overlapping, or retaining the event loop', () => {
+    expect(indexSource).toContain('void runContadorStripeIngressParityTick();');
+    expect(indexSource).toContain('contadorStripeIngressParityTimer.unref();');
+    expect(indexSource).toContain('if (contadorStripeIngressParityInFlight)');
+    expect(indexSource).toContain(
+      'contadorStripeIngressParityInFlight = false;',
+    );
+    expect(indexSource).not.toContain(
+      'await runContadorStripeIngressParityTick();',
+    );
+  });
 });

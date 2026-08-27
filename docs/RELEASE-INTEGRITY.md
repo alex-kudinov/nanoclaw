@@ -120,6 +120,20 @@ exact replay is no-op, and protected payment/inbox/dead-letter/alias counts are
 unchanged. Main/watchdog jobs, one listener, channels, queues, query, checkout,
 lifecycle, and context workers pass.
 
+`NC-20260827-003` is a no-migration release over live migration 139. Build and
+activate first with `CONTADOR_STRIPE_INGRESS_PARITY_ENABLED=0`; verify exact
+release, case/inbox/alias/receipt/public-payment fingerprints, channels/queues,
+checkout/lifecycle/context/watchdog, and retained prior pointer. Back up current
+PostgreSQL, WAL-safe SQLite, plist, and release state.
+
+The value-redacted configuration transaction may add only the new parity flag.
+After one reload, require two distinct fixed account identities, stable complete
+72-hour scans, one exact known missing-payment exception, six minimized
+receipts, no `public.payments`/provider/inbox/roster change, and exact second-run
+zero-create replay. Rollback disables parity before restoring the prior release;
+it preserves the owned exception as historical evidence and never deletes or
+replays it.
+
 `NC-20260826-005` is a no-migration Relationship Context source release over
 already-live migration 137. Build and activate first with
 `RELATIONSHIP_CONTEXT_SOURCE_ENRICHMENT_ENABLED=0`; verify exact release,

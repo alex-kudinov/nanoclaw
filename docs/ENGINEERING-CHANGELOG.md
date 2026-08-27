@@ -8,6 +8,40 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260827-003 — Stripe-to-host payment ingress parity
+
+- Date: 2026-08-27T18:45:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: in_progress; implementation/focused/disposable proof, review, and
+  release gates complete; commit, release, deployment, and live capture pending
+- Authorization: accepted
+  `decision:stripe-payment-ingress-parity-2026-08-27` for a bounded both-account
+  read-only source and host-owned missing-ingress exception; no replay/payment/
+  refund/customer/accounting authority
+- Trigger: one of two distinct same-course payments today completed through
+  the host; the earlier has no exact inbox/case/PostgreSQL row despite active
+  n8n/destination readback. Historical cause remains unknown.
+- Implementation: separately default-off 72-hour stable double-read of fixed
+  Stripe PaymentIntent sources; strict page/row/time/account/drift gates; exact
+  natural-admission lock; atomic existing-case skip or privacy-minimized
+  `needs_review` case, one Payment Intent alias, and six truthful receipts.
+  Natural later webhook can reopen; parity never processes/replays.
+- Privacy/non-action: no customer/name/email/amount/currency/product/card/raw
+  payload persistence or health output; no Stripe/n8n/Payment Log/roster/
+  `public.payments`/refund/communication/accounting/product/student action.
+- Verification: focused parity/config/wiring/ledger/host 59/59; format/typecheck;
+  disposable PostgreSQL proves exact creation, six receipts, replay no-op, and
+  later natural version-1 reopening. Disposable state was removed. Production
+  remains unchanged. Independent bounded review R1 found no material findings;
+  its only note is a future lock-duration concern if the fixed caps are raised.
+  Pinned Node 22 format/type/build/docs/capability gates pass and agent-runner
+  builds with 45/45 tests. The full root suite has 3,359 passing/31 skipped and
+  only two unrelated failures: the known CNPC wrapper assertion and a Trafft
+  fixture that crossed its hard-coded 24-hour freshness window; neither source
+  nor test is changed by NC-003.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260827-003-stripe-payment-ingress-parity.md`.
+
 ### NC-20260827-002 — Close low-value Plutio identity cleanup
 
 - Date: 2026-08-27T13:18:58Z

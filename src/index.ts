@@ -174,6 +174,12 @@ import {
   plutioEngagementEnabled,
   runPlutioEngagementEnrichment,
 } from './relationship-context-plutio-engagement.js';
+import {
+  CONTADOR_STRIPE_INGRESS_PARITY_INTERVAL_MS,
+  contadorStripeIngressParityEnabled,
+  getContadorStripeIngressParityHealth,
+  runContadorStripeIngressParity,
+} from './contador-stripe-ingress-parity.js';
 import { relationshipContextPolicyDiagnostic } from './relationship-context-policy.js';
 import { startHeartbeat } from './heartbeat.js';
 import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
@@ -2187,6 +2193,7 @@ async function main(): Promise<void> {
           tandemPaymentFailureDelayMinutes: 5,
           heartbeatMode: 'stripe_events_only',
         },
+        contadorStripeIngressParity: getContadorStripeIngressParityHealth(),
         relationshipContext: {
           query: relationshipContextPolicyDiagnostic(),
           trafftShadow: getTrafftRelationshipContextShadowHealth(),
@@ -2424,6 +2431,29 @@ async function main(): Promise<void> {
       PLUTIO_ENGAGEMENT_INTERVAL_MS,
     );
     relationshipContextPlutioEngagementTimer.unref();
+  }
+  let contadorStripeIngressParityInFlight = false;
+  const runContadorStripeIngressParityTick = async (): Promise<void> => {
+    if (contadorStripeIngressParityInFlight) {
+      logger.warn('Contador Stripe ingress parity tick already running');
+      return;
+    }
+    contadorStripeIngressParityInFlight = true;
+    try {
+      await runContadorStripeIngressParity();
+    } catch (err) {
+      logger.error({ err }, 'Contador Stripe ingress parity tick failed');
+    } finally {
+      contadorStripeIngressParityInFlight = false;
+    }
+  };
+  if (contadorStripeIngressParityEnabled()) {
+    void runContadorStripeIngressParityTick();
+    const contadorStripeIngressParityTimer = setInterval(
+      () => void runContadorStripeIngressParityTick(),
+      CONTADOR_STRIPE_INGRESS_PARITY_INTERVAL_MS,
+    );
+    contadorStripeIngressParityTimer.unref();
   }
   if (STUDENT_LIFECYCLE_ENABLED) {
     setInterval(() => {

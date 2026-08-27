@@ -502,6 +502,20 @@ was no-op. Processing is zero, aliases and operational payment mirrors are
 unchanged, and the separately missed provider delivery/refund work remains
 outside this authority.
 
+### Stripe ingress parity boundary (`NC-20260827-003`)
+
+Parity is a provider read plus host-owned exception write, not payment or event
+execution. It may retain only fixed account scope/identity, bounded Payment
+Intent identity/time, state/codes/hashes/deadline, and aggregate health. It
+must discard customer/name/email/amount/currency/product/card/raw payloads.
+
+Both complete provider reads must agree before one transaction opens. Exact
+natural-admission advisory locking and case/alias uniqueness prevent races.
+Existing authority is a no-op; missing authority receives not-applicable
+downstream receipts because no Payment Log/PostgreSQL/roster call ran. A later
+natural webhook may reopen the exception under the ordinary ledger; parity has
+no external processor/client beyond read-only Stripe HTTPS.
+
 `webhook_inbox.handled` is not fulfillment authority by itself. It becomes
 credible for this source only when `related_entity` binds the exact durable
 case/version after a complete or explicit exception transaction.
