@@ -663,7 +663,7 @@ not become client authority. Active engagement remains explicitly unknown
 until a separate source is accepted. The flag and health surface grant no
 query/minion access or action, and rollback preserves versioned projections.
 
-NC-20260826-008 adds no new identity or provider-write authority. The
+NC-20260826-009 adds no new identity or provider-write authority. The
 default-off Plutio engagement adapter uses only existing exact Plutio person
 refs; company and missing-person links hold. It discards project names,
 descriptions, custom values, signatures, signees, amounts, contact data, files,

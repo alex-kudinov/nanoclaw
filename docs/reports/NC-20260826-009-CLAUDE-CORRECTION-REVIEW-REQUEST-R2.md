@@ -1,10 +1,10 @@
-# NC-20260826-008 — bounded correction review R2
+# NC-20260826-009 — bounded correction review R2
 
 Review mode: Claude Sonnet/high, fresh bounded correction review.
 
 Write only:
 
-`docs/reports/NC-20260826-008-CLAUDE-CORRECTION-RESPONSE-R2.md`
+`docs/reports/NC-20260826-009-CLAUDE-CORRECTION-RESPONSE-R2.md`
 
 Do not edit code/tests/docs/configuration or use Bash, web, MCP, `.env`,
 credentials, databases, Git, or unrelated files.
@@ -18,7 +18,7 @@ Review only the load-bearing disposition/corrections to R1 Findings 1–3:
 3. host startup/overlap/unref/health wiring that R1 could not inspect.
 
 R1 response:
-`docs/reports/NC-20260826-008-CLAUDE-IMPLEMENTATION-RESPONSE-R1.md`
+`docs/reports/NC-20260826-009-CLAUDE-IMPLEMENTATION-RESPONSE-R1.md`
 
 ## Allowed read paths
 

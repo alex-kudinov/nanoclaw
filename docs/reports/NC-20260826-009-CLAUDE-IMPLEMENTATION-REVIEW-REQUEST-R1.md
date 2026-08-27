@@ -1,4 +1,4 @@
-# NC-20260826-008 — bounded implementation review R1
+# NC-20260826-009 — bounded implementation review R1
 
 Review mode: independent bounded review, Claude Sonnet/high.
 
@@ -11,7 +11,7 @@ isolation, credential, startup, or release defects.
 
 Write the response only to:
 
-`docs/reports/NC-20260826-008-CLAUDE-IMPLEMENTATION-RESPONSE-R1.md`
+`docs/reports/NC-20260826-009-CLAUDE-IMPLEMENTATION-RESPONSE-R1.md`
 
 Do not edit implementation, tests, authority docs, configuration, Git, or
 runtime state. Do not use Bash, web, MCP, provider access, `.env`, credential/

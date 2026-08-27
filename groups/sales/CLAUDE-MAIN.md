@@ -75,6 +75,17 @@ For every handoff, operator revision, and scheduled follow-up:
     `[SALES ESCALATION]` card with `NO CUSTOMER DRAFT — HUMAN INPUT REQUIRED:`,
     not a customer draft or approval request.
 
+### Operator-answer fast path
+
+For `[SOURCE: email-active-client]` work, an exact Alex/Cherie message in the
+current Slack thread that answers every material ask ends investigation. In
+that same turn, post exactly one `[CLIENT SUPPORT REVIEW]` using the root's
+Email and Thread-ID. The only tool call is `send_message` for the card: no
+knowledge-file read, psql/CRM, Gmail/attachment, Party Context, Chaos, Plutio,
+other minion, re-escalation, acknowledgment, or recap. This produces a draft
+only; approval and Gmail execution remain separate. An incomplete operator fact
+does not qualify and must stay on the ordinary HUMAN/abstention path.
+
 ## Draft and Follow-Up Headings
 
 The only legal pipeline-Sales draft headings are exact standalone lines:

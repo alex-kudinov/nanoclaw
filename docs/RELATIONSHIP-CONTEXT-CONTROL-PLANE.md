@@ -867,7 +867,7 @@ idempotent by per-Party source watermarks. See
 `docs/RELATIONSHIP-CONTEXT-CLIENT-PROJECTION.md`. Deployment and live aggregate
 evidence remain separate from source presence until recorded under NC-006.
 
-`NC-20260826-008` adds the next native relationship source without changing
+`NC-20260826-009` adds the next native relationship source without changing
 identity authority. The Plutio engagement adapter reads complete project,
 contract, and project-custom-field snapshots through the host/toolbox boundary.
 An exact person client may bind only through the existing `(plutio, primary,

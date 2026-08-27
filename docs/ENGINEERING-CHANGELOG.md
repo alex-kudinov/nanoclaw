@@ -8,19 +8,23 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
-### NC-20260826-008 — Exact Plutio coaching-engagement context
+### NC-20260826-009 — Exact Plutio coaching-engagement context
 
 - Date: 2026-08-27T03:58:55Z
 - Owner/client: Codex with independent Claude Sonnet/high review
 - State: validating; read-tool repair, provider inventory, implementation,
   independent review, focused/full/runner, and disposable-PostgreSQL proof
   complete; final diff/commit/release/deployment pending
+- Continuity correction: exact live lineage already contained a different
+  Sales task under `NC-20260826-008`. Per the collision rule, this still-
+  unpublished Plutio task is renumbered to `NC-20260826-009`; report filenames,
+  active work, changelog, authority docs, and Company OS claim are reconciled.
 - Commit/PR: NanoClaw branch
-  `codex/relationship-context-plutio-engagement-20260826` from exact live merge
-  `55efd52fb9919c98e75d41d7a6f200fa4ef87ef2`; shared toolbox repair committed
+  `codex/relationship-context-plutio-engagement-20260826`; implementation
+  `2e55df75072d76da49d657c69436632bb4ea2c75` is being merged with exact live
+  `f52f708f5125fcbe888d1eaf7d72e4ea0ef17d93`; shared toolbox repair committed
   locally as `922b7feab7a99022410a1971891bfe795e2db231` because that repository has no
-  configured remote; NanoClaw implementation remains uncommitted at this
-  boundary
+  configured remote; combined-lineage verification/merge commit remain pending
 - Change class: C5 relationship/identity interpretation and credential-loader
   boundary plus separately gated C3 release
 - Affected systems: shared Plutio read auth/tool surface, provider-neutral Party
@@ -78,31 +82,62 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   holds, current/historical/planned/canceled and freshness semantics,
   registration, duplicate replay, aggregate projection, scale/merge continuity,
   and prohibited-value refusal. Full root is 3,326 pass / 31 skip with the sole
-  unchanged CNPC wrapper-literal assertion; independent runner build and 45/45
-  pass. Final diff/secret checks remain pending.
+  unchanged CNPC wrapper-literal assertion before live-lineage merge. Combined
+  exact-live verification passes 69/69 focused, typecheck/build/continuity,
+  full 3,333 pass / 31 skip with the same sole CNPC baseline assertion, and
+  independent runner 45/45. Final diff/secret checks remain pending.
 - Deployment/migration: no migration or production host/toolbox/config change
   has occurred. Runtime flag remains default-off.
 - Rollback/recovery: exact pre-repair NanoClaw environment and operational
   toolbox helper backups are retained under
-  `~/.local/share/nanoclaw-config-backups/NC-20260826-008-*`; disable the future
-  adapter before host/toolbox rollback and preserve migration-137 evidence.
+  `~/.local/share/nanoclaw-config-backups/NC-20260826-008-*` (created before the
+  task-ID collision forced renumbering to NC-009); disable the future adapter
+  before host/toolbox rollback and preserve migration-137 evidence.
 - Documentation: accepted decision, active work, control plane, Plutio
   engagement runbook, project map, security/release contracts, aggregate query
   guide, configuration templates, and this changelog.
 - Follow-ups: immutable current-lineage commit/release, exact toolbox helper
   backup/install, off-first deployment, one-key enable, aggregate live
   readback/replay/non-interference, and program reconciliation.
+### NC-20260826-008 — Operator-answer support fast path
 
+- Date: 2026-08-27T04:04:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_deploy; reviewed and verified from exact live enforcement
+  `25b44f98`
+- Commit/PR: uncommitted on `codex/sales-operator-fast-path-20260826`
+- Change class: C3 approval-gated support drafting; no customer send or approval
+  is authorized by this implementation
+- Affected systems: Sales runtime/compatibility/workflow prompts, static prompt
+  contract, immutable NanoClaw release; no host routing, schema, database,
+  provider, Gmail capability, or model configuration change
+- Outcome: the prompt authority now makes an exact Alex/Cherie answer in the
+  active-client work thread a standalone same-turn `SERVICE` trigger. It emits
+  one support approval card without CRM/Gmail/attachment/context/escalation
+  detours, whether the thread previously held a draft or a no-draft escalation.
+- Verification/review: focused Sales/email 92/92; email replay 13/13;
+  email-critical 748/748 host plus 45/45 runner; typecheck, format, and docs
+  continuity pass. Full `npm test`: 3,325 passed / 30 skipped / one unchanged
+  unrelated CNPC wrapper-literal baseline failure. Claude Sonnet/high R1 found
+  the trigger-heading and SERVICE-gate gaps; both were fixed and R2 reports no
+  material findings. Review session peak was 150,846 context tokens, so Codex
+  independently adjudicated the findings and final diff.
+- Deployment: pending exact commit, push, immutable release activation, prompt
+  hash verification, and safe no-send behavior proof.
+- Rollback/recovery: restore the prior Sales prompts and exact release pointer;
+  no data/provider rollback is required.
+- Follow-ups: none outside this task; customer sending remains separately
+  approval-gated.
 ### NC-20260826-007 — Active-client support no longer invents Sales pipeline work
 
 - Date: 2026-08-27T03:05:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; reviewed implementation `371e6e0a` is merged with the
-  newer exact live release `f8595966` after the production drain detected a
-  concurrent activation before mutation
-- Commit/PR: pushed implementation `371e6e0a` on
-  `codex/sales-support-entry-fix-20260826`; combined-lineage merge commit,
-  rebuild, push, and deployment pending
+- State: complete; prompt correction, natural response, deterministic host
+  enforcement, independent reviews, exact deployment, and inert rejection
+  canary are live-verified
+- Commit/PR: pushed prompt implementation `371e6e0a`, combined-lineage release
+  `55efd52f`, and exact enforcement release `25b44f98` on
+  `codex/sales-support-entry-fix-20260826`
 - Change class: C3 approval-gated support drafting and release; the change
   itself sends no customer email and creates no approval
 - Affected systems: Sales behavior/workflow authority, existing host approval
@@ -135,16 +170,76 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   not activated after the dry run reported production had moved to
   `f8595966`. Combined-lineage verification, deployment health, and the
   draft-only live canary remain pending.
-- Deployment/migration: no schema or data migration. The daemon was not changed
-  by the first activation attempt. Reviewed Sales prompts were copied after a
-  zero-work drain and are backed up; their temporary mismatch with daemon
-  release `f8595966` is being closed by the combined release.
+- Deployment/migration: no schema or data migration. The first artifact was
+  correctly not activated when its dry run detected a concurrent production
+  move from `d5375964` to `f8595966`. Commit `55efd52f` merges that exact newer
+  live lineage with reviewed implementation `371e6e0a`; its 1,004-file
+  artifact hash is `5b3ae0e8b84b4fd0542953688aa9ede806048a35770c57c2f9dac8726745270b`
+  and archive SHA-256 is
+  `3f83e87ce57a2f4e7d15afde343ac916acddee7e5ca1daf35443d59e0be71d13`.
+  Local and Mini extraction verification pass under Node 22.23.2. A zero-work
+  drain, empty pending-action check, WAL-safe SQLite backup, plist/prompt
+  backups, and exact prior-release prompt hash comparison preceded the
+  three-pointer activation. Rollback plist:
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-f8595966ffa1-2026-08-27T03-27-42-123Z`.
+  Live health proves exact release/code root, one listener, connected
+  Gmail/Slack, empty queues, exact operational Sales prompt hashes, disabled
+  Relationship Context query with zero grants, and healthy Trafft, source-
+  enrichment, and client-projection workers. No customer email, approval,
+  pipeline/database row, permission, schema, provider action, or query
+  activation occurred.
 - Rollback/recovery: restore the prior immutable release pointer; no database or
   provider rollback is required. The live canary must remain unapproved.
 - Documentation: Sales role/workflow/compatibility prompt, project map, active
   work, and this changelog.
-- Follow-ups: none outside the task; customer sending remains a separate exact
-  operator approval.
+- Follow-ups: none. The customer response is Gmail-confirmed once; the duplicate
+  support card is unapproved and explicitly stopped. Future malformed
+  support-as-Sales cards fail before approval.
+- Natural canary addendum 2026-08-27T03:50:00Z: the operator correctly noted
+  that NanoClaw can re-drive Sales without Mac UI access. Before the host route
+  landed, the operator's own generic retry produced an invalid but parseable
+  `[SALES REVIEW] Lead #(none)` with `Route: SERVICE`; the operator approved
+  that exact card and Gmail confirmed Action
+  `82c85082-0c54-4be0-9cc7-028c872b51b7` once with receipt
+  `1a04153d4f7024db` on the original Gmail thread. The subsequent host reprocess
+  produced the correct pipeline-free `[CLIENT SUPPORT REVIEW]`; a host stop
+  follows it, it remains unapproved, the ledger contains one confirmed action,
+  and Party 11069 still has zero open pipeline entries.
+- Enforcement correction: prompt policy alone did not fail closed on model
+  drift. The host now classifies route/card semantic defects separately from
+  historical execution parsing. New posts and approvals reject
+  SERVICE-as-Sales, a Sales card without one numeric Lead ID, and a support card
+  without exactly one SERVICE route across IPC admission, Slack defense in
+  depth, and action arming. Historical approved-card execution remains
+  parseable for receipt/replay reconciliation. Focused parser/watchdog/Slack/
+  IPC coverage passes 222/222. Bounded Claude Sonnet/high R2 returned
+  `NO MATERIAL FINDINGS` after checking structured-header isolation, exact
+  marker scope, all three enforcement points, body non-disclosure, action non-
+  creation, and historical execution compatibility. R2 used 13 model calls,
+  1,453,615 cache-read tokens, 15,530 output tokens, and 160,948 maximum
+  context, above the 100k review target. Pinned typecheck, format, continuity,
+  email replay 13/13, email-critical 748/748, and full root 3,324 pass / 30 skip
+  gates pass with the sole unchanged CNPC wrapper assertion. Commit, release,
+  deployment, and inert malformed-card live rejection remain pending.
+- Enforcement deployment addendum 2026-08-27T03:59:00Z: exact commit/release
+  `25b44f985ba179bd264278ec1d338907a74147eb` is live. Its 1,004-file artifact
+  hash is `d29f619520c631e4776d06bf1addd6b99d5280049ebb63b464d7cf62677ecc31`
+  and archive SHA-256 is
+  `927b21268a2012e2a6073ecf22698582c5be18467d76ca21ec39cbf276aa128e`;
+  local and Mini extraction verification pass under Node 22.23.2. The already-
+  complete Sales container was stopped by exact name after it reported the
+  work item complete, yielding zero active/waiting work and no pending send
+  states. Activation changed the three release pointers and retained rollback
+  at
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-55efd52fb991-2026-08-27T03-58-51-586Z`.
+  Live health proves exact release/code root, one listener, connected Gmail and
+  Slack, empty queues, healthy Relationship Context workers, and query disabled
+  with zero grants. An inert `example.invalid` Sales/SERVICE canary produced one
+  visible approval-card rejection, quarantined the source IPC, posted none of
+  its fenced body, and created zero pending actions. Ari remains one confirmed
+  Gmail action, zero duplicate actions, and zero open pipeline entries. No
+  second customer email, approval, database row, permission, schema, provider
+  action, credential, or query activation occurred.
 
 ### NC-20260826-006 — Defensible client and customer relationship projection
 

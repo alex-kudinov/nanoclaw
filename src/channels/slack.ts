@@ -15,6 +15,7 @@ import {
   isExternalWriteDeniedError,
 } from '../action-safety.js';
 import {
+  approvalCardSemanticIssue,
   approvalCardRejectedText,
   buildApprovedHandoff,
   isApprovalCard,
@@ -1089,6 +1090,7 @@ export class SlackChannel implements Channel {
       const prefix = slackMessagePrefix(text, fromGroup);
       const overlongApprovalCard =
         isApprovalCard(text) && isSlackMessageOverLimit(text, fromGroup);
+      const semanticApprovalIssue = approvalCardSemanticIssue(text);
       const parsedApprovalCard = isApprovalCard(text)
         ? buildApprovedHandoff(text)
         : null;
@@ -1110,14 +1112,21 @@ export class SlackChannel implements Channel {
               : 'The authoring group',
             `This draft was not posted for approval because its complete exact card exceeds Slack's ${MAX_MESSAGE_LENGTH}-character limit and would be split into unapprovable fragments.`,
           )
-        : blockedApprovalCard
+        : semanticApprovalIssue
           ? approvalCardRejectedText(
               fromGroup
                 ? fromGroup.charAt(0).toUpperCase() + fromGroup.slice(1)
                 : 'The authoring group',
-              `This draft was not posted for approval because its exact subject/body fail the host content guard: ${approvalContentCheck!.violations.join('; ')}.`,
+              `This draft was not posted for approval because ${semanticApprovalIssue}`,
             )
-          : text;
+          : blockedApprovalCard
+            ? approvalCardRejectedText(
+                fromGroup
+                  ? fromGroup.charAt(0).toUpperCase() + fromGroup.slice(1)
+                  : 'The authoring group',
+                `This draft was not posted for approval because its exact subject/body fail the host content guard: ${approvalContentCheck!.violations.join('; ')}.`,
+              )
+            : text;
       const displayText = prefix + outboundText;
 
       const baseOpts: {

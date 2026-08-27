@@ -87,6 +87,43 @@ describe('Sales request-first prompt contract', () => {
     );
   });
 
+  it('turns a complete Alex or Cherie answer into a same-turn zero-tool support draft', () => {
+    expect(role).toContain('**Operator-answer fast path:**');
+    expect(role).toContain(
+      '### 3. Operator answer to support escalation or pending draft',
+    );
+    expect(normalizedContract).toContain(
+      'a prior `[SALES ESCALATION]` card with no draft',
+    );
+    expect(normalizedContract).toContain(
+      'the response stays within route `SERVICE`',
+    );
+    expect(workflows).toContain(
+      '## Operator-answer fast path (zero tool detours)',
+    );
+    expect(normalizedContract).toContain(
+      'When the current work root is `[SOURCE: email-active-client]` and an exact message from Alex or Cherie in this same Slack thread supplies the fact or decision that makes every material ask answerable',
+    );
+    expect(normalizedContract).toContain(
+      'produce one `[CLIENT SUPPORT REVIEW]` immediately in this same turn',
+    );
+    expect(normalizedContract).toContain(
+      'The only tool call is `send_message` for the card',
+    );
+    expect(workflows).toContain(
+      'make **zero** calls to psql/CRM, Gmail or attachment',
+    );
+    expect(normalizedContract).toContain(
+      'Do not read KNOWLEDGE, SCHEDULE, or LEARNED',
+    );
+    expect(normalizedContract).toContain(
+      'This shortcut drafts only; it never approves or sends.',
+    );
+    expect(normalizedContract).toContain(
+      'If the operator message does not actually answer every material ask',
+    );
+  });
+
   it('fails closed on relationship evidence and unsupported answers', () => {
     expect(normalizedContract).toContain(
       'only when its own evidence predates the current inbound',

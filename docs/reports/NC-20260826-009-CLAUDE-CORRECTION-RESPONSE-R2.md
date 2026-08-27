@@ -1,4 +1,4 @@
-# NC-20260826-008 — bounded correction review R2 (response)
+# NC-20260826-009 — bounded correction review R2 (response)
 
 Reviewer: Claude Sonnet, independent bounded correction review.
 

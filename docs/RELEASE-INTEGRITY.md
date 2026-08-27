@@ -130,7 +130,7 @@ lifecycle, Circle, and legacy receivers must remain unchanged.
 Rollback disables the new flag before restoring the prior release. It does not
 delete migration-137 projections or modify any source/provider system.
 
-`NC-20260826-008` is a no-migration release over migration 137 with one external
+`NC-20260826-009` is a no-migration release over migration 137 with one external
 toolbox dependency. Before host activation, back up and install the exact
 reviewed `shared/plutio/lib/auth.sh`, verify its hash/literal-env tests/shared
 registry, and prove one read-only Plutio call through the project toolbox. The
