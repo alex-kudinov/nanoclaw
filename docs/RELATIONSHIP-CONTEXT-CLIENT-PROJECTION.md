@@ -7,8 +7,9 @@ Program item: `work:relationship-context-client-relationship-projection`
 Decision:
 `.program/decisions/decision-relationship-context-client-relationship-projection-2026-08-26.json`
 
-Status: NC-006 is live in current exact descendant merge `55efd52f`; NC-008's
-Plutio engagement extension is local/default-off pending review and release.
+Status: NC-006 plus NC-009 are live in exact release `6a978328`; Plutio adds
+one fresh active and one historical exact engagement while query/minion access
+remains disabled.
 
 ## Objective and truth boundary
 
@@ -35,7 +36,7 @@ uses them as positive client/customer authority.
 A succeeded payment proves paid-customer history. It does not prove an active
 coaching engagement. An active subscription proves current subscription state,
 not the service, participant, payer/sponsor relationship, assigned coach, or
-contract. NC-008 adds separately authoritative Plutio project evidence under
+contract. NC-009 adds separately authoritative Plutio project evidence under
 the exact coaching-field/client-ref rules in
 `docs/RELATIONSHIP-CONTEXT-PLUTIO-ENGAGEMENT.md`.
 
@@ -113,7 +114,7 @@ does not call Stripe, Plutio, Trafft, Heartbeat, Encharge, contact forms, Chaos,
 Gmail, or any other provider. Source adapters remain responsible for exact
 native facts and identity references.
 
-NC-008 repairs the shared Plutio read loader without changing credentials and
+NC-009 repairs the shared Plutio read loader without changing credentials and
 adds a separately governed provider adapter. This aggregate worker still calls
 no provider directly; it consumes only normalized source-bound observations.
 

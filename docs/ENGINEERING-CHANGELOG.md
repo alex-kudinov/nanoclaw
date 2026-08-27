@@ -12,9 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-27T03:58:55Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_deploy; read-tool repair, provider inventory, implementation,
-  independent review, focused/full/runner, and disposable-PostgreSQL proof
-  complete; exact-live merge/commit/push complete; release/deployment pending
+- State: complete; read-tool repair, provider inventory, implementation,
+  independent review, focused/full/runner and disposable-PostgreSQL proof,
+  immutable release, off-first deployment, live readback, exact replay,
+  privacy checks, and non-interference proof complete
 - Continuity correction: exact live lineage already contained a different
   Sales task under `NC-20260826-008`. Per the collision rule, this still-
   unpublished Plutio task is renumbered to `NC-20260826-009`; report filenames,
@@ -23,7 +24,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `codex/relationship-context-plutio-engagement-20260826`; implementation
   `2e55df75072d76da49d657c69436632bb4ea2c75` merged with exact live
   `f52f708f5125fcbe888d1eaf7d72e4ea0ef17d93` in pushed combined commit
-  `0b687f7e49cb3d34ebfc2bb9e871e3135ac4307f`; shared toolbox repair committed
+  `0b687f7e49cb3d34ebfc2bb9e871e3135ac4307f`; review-boundary exact release
+  `6a9783281a749b0fd8bd244dabebcbbc0d9a5fcb`; shared toolbox repair committed
   locally as `922b7feab7a99022410a1971891bfe795e2db231` because that repository has no
   configured remote
 - Change class: C5 relationship/identity interpretation and credential-loader
@@ -87,8 +89,30 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   exact-live verification passes 69/69 focused, typecheck/build/continuity,
   full 3,333 pass / 31 skip with the same sole CNPC baseline assertion, and
   independent runner 45/45. Final diff/secret checks pass.
-- Deployment/migration: no migration or production host/toolbox/config change
-  has occurred. Runtime flag remains default-off.
+- Deployment/migration: no migration. The 1,008-file immutable release has
+  source-tree hash `859302c781d0e2904b877db084cdc08afcc186a2`, artifact SHA-256
+  `216e5191a1597c008b465073068dfd519bd4b2acbacda481de02c72b08a9d55b`,
+  and archive SHA-256
+  `6900a21fa5d289813a405d5da03cf07b2eb9bacf726da48952a485a959b5a6f3`.
+  Local and Mini extraction/runtime verification pass under Node 22.23.2.
+  Off-first activation changed exactly the three release pointers; a semantic
+  one-key plist diff then enabled only
+  `RELATIONSHIP_CONTEXT_PLUTIO_ENGAGEMENT_ENABLED` and reloaded once.
+- Live outcome: two exact person links produced two version-1 observations and
+  projections: one fresh active coaching engagement and one historical. Fifty
+  person links and eight company links remain held. Provider replay was zero
+  new/two duplicate/zero changed. The client projection covers 1,438/1,438
+  active Parties with 63 defensible customer/client Parties, one active and one
+  historical coaching relationship, 62 paid-history, five active subscriptions,
+  95 summary-unknown, zero stale-current, and exact replay changing zero. Query
+  remains off with zero grants; normalized fact values contain zero prohibited
+  or email-like values.
+- Live non-interference: exact release, one listener, Gmail/Slack, inherited
+  Sales prompt bytes, existing Relationship Context workers, lifecycle,
+  checkout, channels, and Plutio read passed. NC-009 changed no Party, role,
+  source ref, provider object, customer action, approval, message, or outbound
+  work. One unrelated natural container appeared after verification; NC-009
+  created none.
 - Rollback/recovery: exact pre-repair NanoClaw environment and operational
   toolbox helper backups are retained under
   `~/.local/share/nanoclaw-config-backups/NC-20260826-008-*` (created before the
@@ -97,9 +121,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Documentation: accepted decision, active work, control plane, Plutio
   engagement runbook, project map, security/release contracts, aggregate query
   guide, configuration templates, and this changelog.
-- Follow-ups: immutable current-lineage commit/release, exact toolbox helper
-  backup/install, off-first deployment, one-key enable, aggregate live
-  readback/replay/non-interference, and program reconciliation.
+- Follow-ups: none for this phase. Preserve the 50-person/eight-company exact-
+  reference gap as a separately authorized candidate; never close it by name or
+  email matching.
 ### NC-20260826-008 — Operator-answer support fast path
 
 - Date: 2026-08-27T04:04:00Z

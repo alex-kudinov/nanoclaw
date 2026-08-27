@@ -7,7 +7,9 @@ Program item: `work:relationship-context-plutio-engagement-enrichment`
 Decision:
 `.program/decisions/decision-relationship-context-plutio-engagement-enrichment-2026-08-26.json`
 
-Status: implementation and review in progress; runtime remains default-off.
+Status: exact release `6a9783281a749b0fd8bd244dabebcbbc0d9a5fcb` is
+deployed, enabled, privacy-checked, replayed, and live-verified with no
+unresolved material review finding.
 
 ## Objective and authority boundary
 
@@ -141,6 +143,12 @@ facts become stale and non-authorizing until a complete stable refresh.
 coaching/status counts, exact/missing/unsupported links, distinct Parties,
 observation/projection changes, timestamps, completion, and bounded error
 codes. It fixes `consumerEnabled=false` and returns no identities or values.
+
+The first live snapshot mapped two of 52 person links through existing exact
+refs: one fresh active engagement and one historical engagement. Fifty person
+links and all eight company links remain held. The all-Party projection is
+1,438/1,438 with 63 defensible customer/client Parties; exact provider and
+client-projection replays changed zero semantic projections.
 
 ## Shared toolbox dependency
 

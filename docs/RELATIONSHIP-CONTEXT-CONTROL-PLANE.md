@@ -881,7 +881,10 @@ facts into logical source scope `primary-engagement`; the aggregate client
 projection consumes only latest fresh/current or completed facts and makes
 stale current evidence explicit. See
 `docs/RELATIONSHIP-CONTEXT-PLUTIO-ENGAGEMENT.md`; release/live outcome remain
-separate until NC-008 evidence records them.
+separate until NC-009 evidence records them. Exact live release `6a978328`
+maps two exact person links (one active, one historical), holds 50 missing
+person refs and eight company links, and preserves zero-change replay plus
+disabled query/minion consumers.
 
 ## 10. Verification plan
 

@@ -156,6 +156,25 @@ communication, payment, consent, checkout, lifecycle, Circle, Sales-support,
 and legacy-receiver state must not change. Rollback disables the adapter before
 restoring host/toolbox pointers and preserves migration-137 evidence.
 
+`NC-20260826-009` crossed that boundary under exact release
+`6a9783281a749b0fd8bd244dabebcbbc0d9a5fcb`. Its source-tree hash is
+`859302c781d0e2904b877db084cdc08afcc186a2`; the 1,008-file artifact SHA-256 is
+`216e5191a1597c008b465073068dfd519bd4b2acbacda481de02c72b08a9d55b`; and the
+archive SHA-256 is
+`6900a21fa5d289813a405d5da03cf07b2eb9bacf726da48952a485a959b5a6f3`.
+Fresh local and Mini extraction/runtime verification passed under Node 22.23.2.
+The retained mode-0700 backup is
+`~/.local/share/nanoclaw-deploy-backups/NC-20260826-009-20260827T045800Z`, and
+the rollback plist is
+`~/Library/LaunchAgents/com.nanoclaw.plist.rollback-f52f708f5125-2026-08-27T04-59-05-327Z`.
+Off-first activation changed exactly the three release pointers; the later
+semantic configuration transaction added only the new adapter flag and
+reloaded once. Live accounting mapped two exact person links into one fresh
+active and one historical engagement, held 50 missing-person and eight company
+links, and replayed with zero new observations or changed projections. Query
+remained off with zero grants, normalized facts were privacy-clean, and no
+provider/Party/role/ref/action/communication or protected workflow changed.
+
 Beginning with `NC-20260824-009`, the archive binds migration 136 and its
 history-preserving rollback. Migration 135 must already be live. Take a
 custom-format `business_v2` backup plus the normal SQLite/plist backups,
