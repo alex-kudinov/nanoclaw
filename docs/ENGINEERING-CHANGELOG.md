@@ -12,9 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-27T04:04:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_deploy; reviewed and verified from exact live enforcement
-  `25b44f98`
-- Commit/PR: uncommitted on `codex/sales-operator-fast-path-20260826`
+- State: deployed_unverified; exact release and prompt bytes are live-verified,
+  while the next real qualifying operator reply remains the natural outcome
+  gate
+- Commit/PR: pushed `f52f708f5125fcbe888d1eaf7d72e4ea0ef17d93`
+  on `codex/sales-operator-fast-path-20260826`
 - Change class: C3 approval-gated support drafting; no customer send or approval
   is authorized by this implementation
 - Affected systems: Sales runtime/compatibility/workflow prompts, static prompt
@@ -31,8 +33,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   the trigger-heading and SERVICE-gate gaps; both were fixed and R2 reports no
   material findings. Review session peak was 150,846 context tokens, so Codex
   independently adjudicated the findings and final diff.
-- Deployment: pending exact commit, push, immutable release activation, prompt
-  hash verification, and safe no-send behavior proof.
+- Deployment/live: exact release `f52f708f5125fcbe888d1eaf7d72e4ea0ef17d93`
+  is active on `mini-claw.local`. The 1,004-file artifact SHA-256 is
+  `d29f619520c631e4776d06bf1addd6b99d5280049ebb63b464d7cf62677ecc31`;
+  archive SHA-256 is
+  `af6c4f00baf6b170723948a93ef4772e2316b961f4f9e0f42e04d50d64155d96`.
+  Local and Mini fresh extraction verification pass under Node 22.23.2. A
+  zero-work/pending-send drain, WAL-safe SQLite backup, plist backup, and exact
+  three-prompt backups preceded activation. Rollback plist:
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-25b44f985ba1-2026-08-27T04-17-56-577Z`;
+  affected-state backup suffix:
+  `rollback-NC-20260826-008-f52f708f-20260827T0418Z` (SQLite quick-check
+  `ok`). Live health proves exact release/code root, one listener, connected
+  Gmail/Slack, empty active/waiting/outgoing queues, zero pending send states,
+  exact release/operational Sales prompt hashes, Relationship Context query
+  disabled with zero grants, and healthy Trafft/source/client workers.
+- Natural-outcome boundary: no synthetic Slack/customer canary was created.
+  The host cannot truthfully impersonate Alex/Cherie, and Ari already has one
+  Gmail-confirmed response; manufacturing another work item would create noise
+  or duplicate customer risk. The next real qualifying operator answer must be
+  observed for one same-turn support card and zero pre-draft lookup/tool
+  detours. No email, approval, database/pipeline row, provider action,
+  permission, schema, model, or query-setting change occurred in this release.
 - Rollback/recovery: restore the prior Sales prompts and exact release pointer;
   no data/provider rollback is required.
 - Follow-ups: none outside this task; customer sending remains separately
