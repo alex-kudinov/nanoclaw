@@ -867,6 +867,22 @@ idempotent by per-Party source watermarks. See
 `docs/RELATIONSHIP-CONTEXT-CLIENT-PROJECTION.md`. Deployment and live aggregate
 evidence remain separate from source presence until recorded under NC-006.
 
+`NC-20260826-008` adds the next native relationship source without changing
+identity authority. The Plutio engagement adapter reads complete project,
+contract, and project-custom-field snapshots through the host/toolbox boundary.
+An exact person client may bind only through the existing `(plutio, primary,
+person)` ref. Nonempty values under the eight accepted coaching field
+definitions establish project type while their raw values are discarded.
+In-progress is fresh current engagement; Completed is historical; New and
+Canceled do not make a client claim. Signed contracts corroborate a project but
+do not identify the participant. Company links remain unsupported until exact
+company refs exist. The separately default-off adapter writes controlled native
+facts into logical source scope `primary-engagement`; the aggregate client
+projection consumes only latest fresh/current or completed facts and makes
+stale current evidence explicit. See
+`docs/RELATIONSHIP-CONTEXT-PLUTIO-ENGAGEMENT.md`; release/live outcome remain
+separate until NC-008 evidence records them.
+
 ## 10. Verification plan
 
 ### Identity and temporal truth

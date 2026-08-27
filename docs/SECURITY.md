@@ -663,6 +663,23 @@ not become client authority. Active engagement remains explicitly unknown
 until a separate source is accepted. The flag and health surface grant no
 query/minion access or action, and rollback preserves versioned projections.
 
+NC-20260826-008 adds no new identity or provider-write authority. The
+default-off Plutio engagement adapter uses only existing exact Plutio person
+refs; company and missing-person links hold. It discards project names,
+descriptions, custom values, signatures, signees, amounts, contact data, files,
+tasks, notes, and provider payloads. Persisted values contain only controlled
+status/engagement/field/link/corroboration codes. In-progress evidence expires
+after 26 hours without a complete refresh; stale evidence cannot keep an active
+client claim. Completed evidence is historical, while New/Canceled remains
+non-authorizing.
+
+The shared Plutio auth helper must never source arbitrary `.env` shell. Its
+reviewed dependency imports only four declared Plutio keys as literal values,
+allows one absolute readable credential-file pointer, gives process values
+precedence, and never logs them. NanoClaw references the existing Bizmgr-owned
+credential file by path; it does not copy or rotate credentials. The adapter,
+health endpoint, and toolbox repair grant no query/minion access or action.
+
 ## Relationship-owner boundary (`NC-20260826-001`)
 
 The explicit generic owner is a routing/accountability principal, not an

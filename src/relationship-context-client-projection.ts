@@ -19,7 +19,9 @@ const CLIENT_RELATIONSHIP_LOCK_KEY =
   'relationship-context-client-projection-v1';
 
 export type RelationshipState =
+  | 'active_coaching_client'
   | 'paid_customer'
+  | 'historical_coaching_client'
   | 'recorded_client'
   | 'recorded_student'
   | 'recorded_prospect'
@@ -32,6 +34,9 @@ export interface ClientRelationshipEvidence {
   recordedProspectRoleCount: number;
   succeededPaymentIntentCount: number;
   activeSubscriptionCount: number;
+  currentCoachingEngagementCount: number;
+  historicalCoachingEngagementCount: number;
+  staleCurrentEngagementCount: number;
 }
 
 export interface ClientRelationshipProjectionValue extends Record<
@@ -47,11 +52,17 @@ export interface ClientRelationshipProjectionValue extends Record<
   active_subscription: boolean;
   recorded_student_role: boolean;
   recorded_prospect_role: boolean;
-  active_engagement_status: 'unknown';
+  active_coaching_engagement: boolean;
+  historical_coaching_engagement: boolean;
+  stale_current_engagement_evidence: boolean;
+  active_engagement_status: 'current' | 'unknown';
   evidence_counts: {
     recorded_client_roles: number;
     succeeded_payment_intents: number;
     active_subscriptions: number;
+    current_coaching_engagements: number;
+    historical_coaching_engagements: number;
+    stale_current_engagements: number;
     recorded_student_roles: number;
     recorded_prospect_roles: number;
   };
@@ -83,44 +94,75 @@ export function deriveClientRelationshipProjection(
   const activeSubscriptionCount = nonNegativeInteger(
     evidence.activeSubscriptionCount,
   );
+  const currentCoachingEngagementCount = nonNegativeInteger(
+    evidence.currentCoachingEngagementCount,
+  );
+  const historicalCoachingEngagementCount = nonNegativeInteger(
+    evidence.historicalCoachingEngagementCount,
+  );
+  const staleCurrentEngagementCount = nonNegativeInteger(
+    evidence.staleCurrentEngagementCount,
+  );
   const recordedClient = recordedClientRoleCount > 0;
   const paidCustomer = succeededPaymentIntentCount > 0;
   const activeSubscription = activeSubscriptionCount > 0;
   const recordedStudent = recordedStudentRoleCount > 0;
   const recordedProspect = recordedProspectRoleCount > 0;
-  const relationshipState: RelationshipState =
-    paidCustomer || activeSubscription
+  const currentCoachingEngagement = currentCoachingEngagementCount > 0;
+  const historicalCoachingEngagement = historicalCoachingEngagementCount > 0;
+  const staleCurrentEngagement = staleCurrentEngagementCount > 0;
+  const relationshipState: RelationshipState = currentCoachingEngagement
+    ? 'active_coaching_client'
+    : paidCustomer || activeSubscription
       ? 'paid_customer'
-      : recordedClient
-        ? 'recorded_client'
-        : recordedStudent
-          ? 'recorded_student'
-          : recordedProspect
-            ? 'recorded_prospect'
-            : 'unknown';
+      : historicalCoachingEngagement
+        ? 'historical_coaching_client'
+        : recordedClient
+          ? 'recorded_client'
+          : recordedStudent
+            ? 'recorded_student'
+            : recordedProspect
+              ? 'recorded_prospect'
+              : 'unknown';
   const evidenceTiers: string[] = [];
+  if (currentCoachingEngagement) {
+    evidenceTiers.push('plutio_current_coaching_project_v1');
+  }
+  if (historicalCoachingEngagement) {
+    evidenceTiers.push('plutio_completed_coaching_project_v1');
+  }
   if (paidCustomer) evidenceTiers.push('stripe_succeeded_payment_v1');
   if (activeSubscription) {
     evidenceTiers.push('stripe_current_active_subscription_v1');
   }
   if (recordedClient) evidenceTiers.push('unproven_client_role_v1');
-  if (recordedStudent) evidenceTiers.push('accepted_student_role_v1');
+  if (recordedStudent) evidenceTiers.push('unproven_student_role_v1');
   if (recordedProspect) evidenceTiers.push('recorded_prospect_role_v1');
   return {
     schema_version: 1,
     party_type: evidence.partyType,
     relationship_state: relationshipState,
-    customer_or_client: paidCustomer || activeSubscription,
+    customer_or_client:
+      currentCoachingEngagement ||
+      historicalCoachingEngagement ||
+      paidCustomer ||
+      activeSubscription,
     recorded_client_role: recordedClient,
     paid_customer_history: paidCustomer,
     active_subscription: activeSubscription,
     recorded_student_role: recordedStudent,
     recorded_prospect_role: recordedProspect,
-    active_engagement_status: 'unknown',
+    active_coaching_engagement: currentCoachingEngagement,
+    historical_coaching_engagement: historicalCoachingEngagement,
+    stale_current_engagement_evidence: staleCurrentEngagement,
+    active_engagement_status: currentCoachingEngagement ? 'current' : 'unknown',
     evidence_counts: {
       recorded_client_roles: recordedClientRoleCount,
       succeeded_payment_intents: succeededPaymentIntentCount,
       active_subscriptions: activeSubscriptionCount,
+      current_coaching_engagements: currentCoachingEngagementCount,
+      historical_coaching_engagements: historicalCoachingEngagementCount,
+      stale_current_engagements: staleCurrentEngagementCount,
       recorded_student_roles: recordedStudentRoleCount,
       recorded_prospect_roles: recordedProspectRoleCount,
     },
@@ -136,8 +178,12 @@ interface ClientRelationshipRow extends QueryResultRow {
   recorded_prospect_role_count: string;
   succeeded_payment_intent_count: string;
   active_subscription_count: string;
+  current_coaching_engagement_count: string;
+  historical_coaching_engagement_count: string;
+  stale_current_engagement_count: string;
   role_watermark: string;
   stripe_watermark: string;
+  plutio_watermark: string;
   prior_version: number | null;
 }
 
@@ -202,6 +248,53 @@ stripe_evidence AS (
         FROM latest_subscriptions
     ) evidence
    GROUP BY party_id
+),
+latest_plutio_projects AS (
+  SELECT DISTINCT ON (
+           o.current_party_id,o.source_scope,o.source_record_id
+         )
+         o.current_party_id AS party_id,o.id,
+         o.value->>'engagement_state' AS engagement_state
+    FROM business_v2.party_context_observations o
+    JOIN page p ON p.id=o.current_party_id
+   WHERE o.fact_type='relationship.plutio.coaching_project@1'
+   ORDER BY o.current_party_id,o.source_scope,o.source_record_id,
+            o.observed_at DESC,o.id DESC
+),
+plutio_adapter_freshness AS (
+  SELECT max(last_health_at) AS last_health_at
+    FROM business_v2.party_context_adapter_registrations
+   WHERE adapter_key='plutio_engagement_snapshot'
+     AND adapter_version='1.0.0'
+     AND source_scope='primary-engagement'
+     AND enabled=true
+     AND conformance_status='passed'
+     AND circuit_status='closed'
+     AND failure_count=0
+),
+plutio_evidence AS (
+  SELECT party_id,
+         count(*) FILTER (
+           WHERE engagement_state='current'
+             AND freshness.last_health_at IS NOT NULL
+             AND freshness.last_health_at>
+                 $4::timestamptz-interval '26 hours'
+         )::text AS current_coaching_engagement_count,
+         count(*) FILTER (
+           WHERE engagement_state='historical'
+         )::text AS historical_coaching_engagement_count,
+         count(*) FILTER (
+           WHERE engagement_state='current'
+             AND (
+               freshness.last_health_at IS NULL OR
+               freshness.last_health_at<=
+                 $4::timestamptz-interval '26 hours'
+             )
+         )::text AS stale_current_engagement_count,
+         coalesce(max(id),0)::text AS plutio_watermark
+    FROM latest_plutio_projects
+    CROSS JOIN plutio_adapter_freshness freshness
+   GROUP BY party_id
 )
 SELECT p.id::text AS party_id,p.party_type,
        coalesce(r.recorded_client_role_count,'0')
@@ -214,12 +307,20 @@ SELECT p.id::text AS party_id,p.party_type,
          AS succeeded_payment_intent_count,
        coalesce(s.active_subscription_count,'0')
          AS active_subscription_count,
+       coalesce(pe.current_coaching_engagement_count,'0')
+         AS current_coaching_engagement_count,
+       coalesce(pe.historical_coaching_engagement_count,'0')
+         AS historical_coaching_engagement_count,
+       coalesce(pe.stale_current_engagement_count,'0')
+         AS stale_current_engagement_count,
        coalesce(r.role_watermark,'0') AS role_watermark,
        coalesce(s.stripe_watermark,'0') AS stripe_watermark,
+       coalesce(pe.plutio_watermark,'0') AS plutio_watermark,
        prior.version AS prior_version
   FROM page p
   LEFT JOIN role_evidence r ON r.party_id=p.id
   LEFT JOIN stripe_evidence s ON s.party_id=p.id
+  LEFT JOIN plutio_evidence pe ON pe.party_id=p.id
   LEFT JOIN business_v2.party_context_projections prior
     ON prior.party_id=p.id
    AND prior.section='relationship'
@@ -235,12 +336,15 @@ export interface ClientRelationshipProjectionResult {
   recordedClientRoleParties: number;
   paidCustomerParties: number;
   activeSubscriberParties: number;
+  activeCoachingClientParties: number;
+  historicalCoachingClientParties: number;
+  staleCurrentEngagementParties: number;
   recordedStudentParties: number;
   recordedProspectParties: number;
   unknownRelationshipParties: number;
   projectionsChanged: number;
   complete: boolean;
-  activeEngagementEvidenceAvailable: false;
+  activeEngagementEvidenceAvailable: boolean;
 }
 
 function numberFromDatabase(value: string): number {
@@ -254,7 +358,12 @@ function numberFromDatabase(value: string): number {
 function projectionMissingCodes(
   value: ClientRelationshipProjectionValue,
 ): string[] {
-  const missing = ['active_engagement_evidence_unavailable'];
+  const missing = value.active_coaching_engagement
+    ? []
+    : ['active_engagement_evidence_unavailable'];
+  if (value.stale_current_engagement_evidence) {
+    missing.push('active_engagement_evidence_stale');
+  }
   if (value.recorded_client_role) {
     missing.push('client_role_provenance_unavailable');
   }
@@ -292,6 +401,9 @@ export async function projectClientRelationshipsWithClient(input: {
     recordedClientRoleParties: 0,
     paidCustomerParties: 0,
     activeSubscriberParties: 0,
+    activeCoachingClientParties: 0,
+    historicalCoachingClientParties: 0,
+    staleCurrentEngagementParties: 0,
     recordedStudentParties: 0,
     recordedProspectParties: 0,
     unknownRelationshipParties: 0,
@@ -303,7 +415,7 @@ export async function projectClientRelationshipsWithClient(input: {
   while (true) {
     const page = await input.client.query<ClientRelationshipRow>(
       CLIENT_RELATIONSHIP_PAGE_SQL,
-      [cursor, pageSize, CLIENT_RELATIONSHIP_PROJECTION_KEY],
+      [cursor, pageSize, CLIENT_RELATIONSHIP_PROJECTION_KEY, input.observedAt],
     );
     if (page.rows.length === 0) break;
     for (const row of page.rows) {
@@ -325,6 +437,15 @@ export async function projectClientRelationshipsWithClient(input: {
         activeSubscriptionCount: numberFromDatabase(
           row.active_subscription_count,
         ),
+        currentCoachingEngagementCount: numberFromDatabase(
+          row.current_coaching_engagement_count,
+        ),
+        historicalCoachingEngagementCount: numberFromDatabase(
+          row.historical_coaching_engagement_count,
+        ),
+        staleCurrentEngagementCount: numberFromDatabase(
+          row.stale_current_engagement_count,
+        ),
       });
       const projection: Omit<StoredProjection, 'id' | 'version'> = {
         partyId,
@@ -335,6 +456,7 @@ export async function projectClientRelationshipsWithClient(input: {
         sourceWatermarks: {
           party_roles: row.role_watermark,
           stripe_observations: row.stripe_watermark,
+          plutio_observations: row.plutio_watermark,
           projection_policy: CLIENT_RELATIONSHIP_DECISION,
         },
         status: 'partial',
@@ -356,6 +478,15 @@ export async function projectClientRelationshipsWithClient(input: {
       if (value.recorded_client_role) result.recordedClientRoleParties += 1;
       if (value.paid_customer_history) result.paidCustomerParties += 1;
       if (value.active_subscription) result.activeSubscriberParties += 1;
+      if (value.active_coaching_engagement) {
+        result.activeCoachingClientParties += 1;
+      }
+      if (value.historical_coaching_engagement) {
+        result.historicalCoachingClientParties += 1;
+      }
+      if (value.stale_current_engagement_evidence) {
+        result.staleCurrentEngagementParties += 1;
+      }
       if (value.recorded_student_role) result.recordedStudentParties += 1;
       if (value.recorded_prospect_role) result.recordedProspectParties += 1;
       if (value.relationship_state === 'unknown') {
@@ -387,6 +518,8 @@ export async function projectClientRelationshipsWithClient(input: {
     activeParties === result.activeParties &&
     projectedParties === activeParties &&
     result.projectedParties === result.activeParties;
+  result.activeEngagementEvidenceAvailable =
+    result.activeCoachingClientParties > 0;
   if (!result.complete) {
     throw new Error('relationship_context_client_projection_incomplete');
   }

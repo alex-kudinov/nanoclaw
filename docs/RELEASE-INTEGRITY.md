@@ -130,6 +130,32 @@ lifecycle, Circle, and legacy receivers must remain unchanged.
 Rollback disables the new flag before restoring the prior release. It does not
 delete migration-137 projections or modify any source/provider system.
 
+`NC-20260826-008` is a no-migration release over migration 137 with one external
+toolbox dependency. Before host activation, back up and install the exact
+reviewed `shared/plutio/lib/auth.sh`, verify its hash/literal-env tests/shared
+registry, and prove one read-only Plutio call through the project toolbox. The
+helper may parse only `PLUTIO_ENV_FILE`, `PLUTIO_API_CLIENTID`,
+`PLUTIO_API_CLIENTSECRET`, and `PLUTIO_SUBDOMAIN`; do not print/copy/change
+credential values.
+
+Activate the host first with `RELATIONSHIP_CONTEXT_PLUTIO_ENGAGEMENT_ENABLED=0`
+while preserving NC-006 client projection and all existing source flags. Back
+up active Party/ref/role/client-projection, Plutio observation/registration,
+channel/queue/lifecycle/checkout, installed plist, operational toolbox helper,
+and environment bytes. Verify exact release/code root, one listener, empty
+work, query off/zero grants, current relationship coverage, and healthy existing
+adapters before a semantic one-key enable.
+
+After reload, require complete 117-project/183-contract/eight-field current
+snapshot accounting or a newly revalidated aggregate, exact/missing/company
+link counts, controlled current/historical/planned/canceled facts, zero
+prohibited values, updated all-Party projection, and one exact replay with no
+new observation or semantic client-projection version. Provider/customer/
+project/contract/invoice/proposal/task/note/activity, credential, Party/role/ref,
+communication, payment, consent, checkout, lifecycle, Circle, Sales-support,
+and legacy-receiver state must not change. Rollback disables the adapter before
+restoring host/toolbox pointers and preserves migration-137 evidence.
+
 Beginning with `NC-20260824-009`, the archive binds migration 136 and its
 history-preserving rollback. Migration 135 must already be live. Take a
 custom-format `business_v2` backup plus the normal SQLite/plist backups,

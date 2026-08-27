@@ -30,7 +30,14 @@ describe('Plutio external-write brake', () => {
       'OK []',
     );
     await expect(callPlutioTool('list-notes.sh', [])).resolves.toBe('OK []');
-    expect(exec).toHaveBeenCalledTimes(2);
+    await expect(callPlutioTool('list-projects.sh', [])).resolves.toBe('OK []');
+    await expect(callPlutioTool('list-contracts.sh', [])).resolves.toBe(
+      'OK []',
+    );
+    await expect(callPlutioTool('list-custom-fields.sh', [])).resolves.toBe(
+      'OK []',
+    );
+    expect(exec).toHaveBeenCalledTimes(5);
 
     await expect(
       callPlutioTool('create-proposal.sh', ['--data', '{}']),
@@ -38,7 +45,7 @@ describe('Plutio external-write brake', () => {
       name: 'ExternalWriteDeniedError',
       code: 'global_safe_mode',
     });
-    expect(exec).toHaveBeenCalledTimes(2);
+    expect(exec).toHaveBeenCalledTimes(5);
   });
 });
 

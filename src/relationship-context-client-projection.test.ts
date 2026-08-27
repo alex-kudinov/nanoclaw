@@ -17,6 +17,9 @@ function evidence(
     recordedProspectRoleCount: 0,
     succeededPaymentIntentCount: 0,
     activeSubscriptionCount: 0,
+    currentCoachingEngagementCount: 0,
+    historicalCoachingEngagementCount: 0,
+    staleCurrentEngagementCount: 0,
     ...overrides,
   };
 }
@@ -42,11 +45,17 @@ describe('relationship context client relationship projection', () => {
       active_subscription: true,
       recorded_student_role: false,
       recorded_prospect_role: true,
+      active_coaching_engagement: false,
+      historical_coaching_engagement: false,
+      stale_current_engagement_evidence: false,
       active_engagement_status: 'unknown',
       evidence_counts: {
         recorded_client_roles: 1,
         succeeded_payment_intents: 2,
         active_subscriptions: 1,
+        current_coaching_engagements: 0,
+        historical_coaching_engagements: 0,
+        stale_current_engagements: 0,
         recorded_student_roles: 0,
         recorded_prospect_roles: 1,
       },
@@ -56,6 +65,49 @@ describe('relationship context client relationship projection', () => {
         'unproven_client_role_v1',
         'recorded_prospect_role_v1',
       ],
+    });
+  });
+
+  it('gives exact current and historical coaching projects stronger relationship semantics', () => {
+    expect(
+      deriveClientRelationshipProjection(
+        evidence({
+          succeededPaymentIntentCount: 1,
+          currentCoachingEngagementCount: 2,
+          historicalCoachingEngagementCount: 3,
+        }),
+      ),
+    ).toMatchObject({
+      relationship_state: 'active_coaching_client',
+      customer_or_client: true,
+      active_coaching_engagement: true,
+      historical_coaching_engagement: true,
+      active_engagement_status: 'current',
+    });
+    expect(
+      deriveClientRelationshipProjection(
+        evidence({ historicalCoachingEngagementCount: 1 }),
+      ),
+    ).toMatchObject({
+      relationship_state: 'historical_coaching_client',
+      customer_or_client: true,
+      active_coaching_engagement: false,
+      historical_coaching_engagement: true,
+      active_engagement_status: 'unknown',
+    });
+  });
+
+  it('does not use stale current-project evidence as an active engagement', () => {
+    expect(
+      deriveClientRelationshipProjection(
+        evidence({ staleCurrentEngagementCount: 1 }),
+      ),
+    ).toMatchObject({
+      relationship_state: 'unknown',
+      customer_or_client: false,
+      active_coaching_engagement: false,
+      stale_current_engagement_evidence: true,
+      active_engagement_status: 'unknown',
     });
   });
 

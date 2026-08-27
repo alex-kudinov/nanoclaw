@@ -60,4 +60,22 @@ describe('relationship context Trafft shadow host wiring', () => {
       'await runRelationshipContextClientProjectionTick();',
     );
   });
+
+  it('runs Plutio engagement enrichment without blocking, overlapping, or retaining the event loop', () => {
+    expect(indexSource).toContain(
+      'void runRelationshipContextPlutioEngagementTick();',
+    );
+    expect(indexSource).toContain(
+      'relationshipContextPlutioEngagementTimer.unref();',
+    );
+    expect(indexSource).toContain(
+      'if (relationshipContextPlutioEngagementInFlight)',
+    );
+    expect(indexSource).toContain(
+      'relationshipContextPlutioEngagementInFlight = false;',
+    );
+    expect(indexSource).not.toContain(
+      'await runRelationshipContextPlutioEngagementTick();',
+    );
+  });
 });

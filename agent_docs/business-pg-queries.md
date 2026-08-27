@@ -111,6 +111,37 @@ LEFT JOIN business_v2.party_context_projections projection
  AND projection.projection_key = 'relationship.client_status.v1';
 ```
 
+## Plutio coaching-engagement aggregate
+
+This query returns controlled states and counts only. It never returns source
+record IDs, Party identity, custom-field values, or provider payloads.
+
+```sql
+WITH latest AS (
+  SELECT DISTINCT ON (current_party_id,source_scope,source_record_id)
+         current_party_id,id,value,fresh_until
+  FROM business_v2.party_context_observations
+  WHERE fact_type = 'relationship.plutio.coaching_project@1'
+    AND current_party_id IS NOT NULL
+  ORDER BY current_party_id,source_scope,source_record_id,
+           observed_at DESC,id DESC
+)
+SELECT value->>'engagement_state' AS engagement_state,
+       count(*) AS projects,
+       count(DISTINCT current_party_id) AS parties,
+       count(*) FILTER (
+         WHERE value->>'engagement_state' = 'current'
+           AND fresh_until > now()
+       ) AS fresh_current_projects,
+       count(*) FILTER (
+         WHERE value->>'engagement_state' = 'current'
+           AND (fresh_until IS NULL OR fresh_until <= now())
+       ) AS stale_current_projects
+FROM latest
+GROUP BY value->>'engagement_state'
+ORDER BY engagement_state;
+```
+
 ## Hive sync failures
 ```sql
 SELECT gmail_thread_id, sender_email, subject, label, reaper_attempts, hive_sync_dead_lettered

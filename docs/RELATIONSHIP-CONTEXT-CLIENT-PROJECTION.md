@@ -7,7 +7,8 @@ Program item: `work:relationship-context-client-relationship-projection`
 Decision:
 `.program/decisions/decision-relationship-context-client-relationship-projection-2026-08-26.json`
 
-Status: implementation and review in progress; runtime remains default-off.
+Status: NC-006 is live in current exact descendant merge `55efd52f`; NC-008's
+Plutio engagement extension is local/default-off pending review and release.
 
 ## Objective and truth boundary
 
@@ -20,6 +21,9 @@ The first policy version uses only:
 
 - the latest exact source-bound Stripe state showing a succeeded PaymentIntent;
 - the latest exact source-bound Stripe state showing an active subscription;
+- the latest exact source-bound Plutio coaching-project observation, with
+  freshness required for current engagement and Completed retained as
+  historical engagement;
 - active recorded client, student, and prospect roles as separately labeled
   non-authoritative evidence.
 
@@ -31,8 +35,9 @@ uses them as positive client/customer authority.
 A succeeded payment proves paid-customer history. It does not prove an active
 coaching engagement. An active subscription proves current subscription state,
 not the service, participant, payer/sponsor relationship, assigned coach, or
-contract. Active engagement remains `unknown` until a separately authoritative
-contract or engagement source is available.
+contract. NC-008 adds separately authoritative Plutio project evidence under
+the exact coaching-field/client-ref rules in
+`docs/RELATIONSHIP-CONTEXT-PLUTIO-ENGAGEMENT.md`.
 
 The worker never declares a client from Party existence, display name, email,
 provider label, contact form, Chaos activity, website path, appointment alone,
@@ -48,33 +53,40 @@ transaction advisory lock. For each Party it reads:
 - active role counts and that Party's role-row watermark;
 - the latest observation for each exact Stripe PaymentIntent and subscription
   source record across both account scopes;
+- the latest observation for each exact Plutio coaching project, including
+  current freshness and historical completion;
 - the Party's existing fixed projection version.
 
 Precedence is:
 
-1. `paid_customer` from succeeded payment or active subscription;
-2. `recorded_client`;
-3. `recorded_student`;
-4. `recorded_prospect`;
-5. `unknown`.
+1. `active_coaching_client` from a fresh latest In-progress project;
+2. `paid_customer` from succeeded payment or active subscription;
+3. `historical_coaching_client` from a latest Completed project;
+4. `recorded_client`;
+5. `recorded_student`;
+6. `recorded_prospect`;
+7. `unknown`.
 
 The precedence chooses one summary state but does not erase overlapping facts.
 The value retains booleans and aggregate counts for recorded client role, paid
-history, active subscription, student role, and prospect role separately. It
-also fixes `active_engagement_status='unknown'` and stores no identity or
-provider-record value.
+history, active subscription, current/historical/stale coaching engagement,
+student role, and prospect role separately. Active engagement is `current`
+only from fresh evidence and otherwise remains `unknown`; no identity or
+provider-record value is stored.
 
-Each Party carries only its own role and Stripe observation watermarks plus the
-accepted projection-policy decision. An unrelated Party's new fact therefore
-does not advance every projection version. Exact replay with unchanged value,
-status, and watermarks is a no-op.
+Each Party carries only its own role, Stripe, and Plutio observation watermarks
+plus the accepted projection-policy decision. An unrelated Party's new fact
+therefore does not advance every projection version. Exact replay with
+unchanged value, status, and watermarks is a no-op.
 
-All projections are `partial` in version 1 because active-engagement evidence
-is unavailable. `active_engagement_evidence_unavailable` is always explicit;
+All projections remain `partial`: a fresh current engagement removes
+`active_engagement_evidence_unavailable`, while expired current evidence adds
+`active_engagement_evidence_stale`. Otherwise active engagement remains
+explicitly unavailable/unknown.
 Parties without positive client/customer evidence also carry
 `client_evidence_not_found`. A recorded client label additionally carries
-`client_role_provenance_unavailable`. These codes mean no accepted evidence is currently
-available, not that the Party is proven never to have been a client.
+`client_role_provenance_unavailable`. These codes mean no accepted evidence is
+currently available, not that the Party is proven never to have been a client.
 
 ## Runtime and health
 
@@ -101,11 +113,9 @@ does not call Stripe, Plutio, Trafft, Heartbeat, Encharge, contact forms, Chaos,
 Gmail, or any other provider. Source adapters remain responsible for exact
 native facts and identity references.
 
-Plutio contract/project/invoice discovery failed before provider access because
-the shared toolbox environment file is not parseable. No credential or
-environment value was inspected or changed, and no Plutio status is inferred.
-A future Plutio contract/engagement adapter is a separately governed source
-slice.
+NC-008 repairs the shared Plutio read loader without changing credentials and
+adds a separately governed provider adapter. This aggregate worker still calls
+no provider directly; it consumes only normalized source-bound observations.
 
 No Party merge, role mutation, source-reference mutation, identity promotion,
 provider/customer/payment/refund/contract/consent action, communication,

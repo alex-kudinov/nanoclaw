@@ -8,6 +8,91 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260826-008 — Exact Plutio coaching-engagement context
+
+- Date: 2026-08-27T03:58:55Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; read-tool repair, provider inventory, implementation,
+  independent review, focused/full/runner, and disposable-PostgreSQL proof
+  complete; final diff/commit/release/deployment pending
+- Commit/PR: NanoClaw branch
+  `codex/relationship-context-plutio-engagement-20260826` from exact live merge
+  `55efd52fb9919c98e75d41d7a6f200fa4ef87ef2`; shared toolbox repair committed
+  locally as `922b7feab7a99022410a1971891bfe795e2db231` because that repository has no
+  configured remote; NanoClaw implementation remains uncommitted at this
+  boundary
+- Change class: C5 relationship/identity interpretation and credential-loader
+  boundary plus separately gated C3 release
+- Affected systems: shared Plutio read auth/tool surface, provider-neutral Party
+  Context adapter/observations/projections/health, NC-006 aggregate client
+  projection, runtime configuration/templates, and Relationship Context
+  authority/security/release documents; no schema migration
+- Tool repair: the old shared helper sourced the whole project `.env` as shell,
+  so unrelated literal angle brackets and ampersands broke or executed during
+  Plutio reads. The replacement parses only four declared Plutio keys as
+  literal dotenv values, evaluates no unrelated lines, supports one absolute
+  readable credential-file pointer, and preserves process-value precedence.
+  Existing NanoClaw values were syntax-quoted with byte-identical hashes and a
+  non-secret path points to the existing Bizmgr credential; no credential was
+  printed, copied, rotated, widened, or changed.
+- Aggregate provider discovery: complete MCP pagination found 117 projects,
+  183 contracts, eight exact coaching custom-field definitions, and 59 projects
+  with nonempty accepted coaching fields: 11 In progress, 41 Completed, five
+  Canceled, and two New. They contain 52 person and eight company links. The 11
+  current projects cover 11 distinct provider clients via nine person/three
+  company links with one overlap. Companies hold because the Party graph has
+  no exact Plutio company refs. Of 131 signed contracts, 109 link to a returned
+  project and 22 do not; signatures/signees are discarded and cannot identify
+  participants.
+- Outcome: a separately default-off `plutio_engagement_snapshot@1.0.0` adapter
+  reads complete bounded project/contract/custom-field snapshots, qualifies
+  coaching by exact field definitions plus nonempty value, binds only existing
+  exact `(plutio,primary,person)` refs, and writes controlled
+  `relationship.plutio.coaching_project@1` facts under isolated source scope
+  `primary-engagement`. In-progress is freshness-bounded current engagement,
+  Completed historical, and New/Canceled non-authorizing. NC-006 client status
+  adds current/historical/stale counts without conflating payment or unproven
+  role labels.
+- Privacy/action boundary: project names/descriptions, custom values, client/
+  contract/signature content, emails, contact data, amounts, files, tasks,
+  notes, and payloads never enter fact values/health/evidence. No Plutio or
+  provider write, credential-value/scope change, Party merge, identity/ref/role
+  mutation, payment/consent action, communication, minion grant, checkout,
+  lifecycle, Circle, Sales-support, or legacy-receiver change is authorized.
+- Review: Claude Sonnet/high R1 found a Medium per-poll watermark churn defect,
+  a Low offset-pagination omission risk, and unverified host wiring. The final
+  correction uses content-only watermarks plus transactionally refreshed
+  adapter-registration health, so byte-identical later polls refresh current
+  authority without observation/projection churn; a stable double-read hash
+  barrier refuses provider mutation/offset omission; and host wiring is now
+  directly covered. R2 returned `NO MATERIAL FINDINGS`. R1 disclosed reading
+  two unlisted core files to confirm watermark mechanics; no write/secret/tool
+  action occurred. Two rounds used 18 model calls, 195,806 cache-creation,
+  1,070,164 cache-read, and 41,647 output tokens; maximum context was 129,160,
+  above the 100k target and recorded as orchestration debt.
+- Verification: toolbox literal/no-evaluation/fallback/precedence tests and
+  shared Plutio registry pass; representative MCP/project read passes. Pinned
+  Node 22.23.2 focused Plutio/relationship/wiring tests pass 24/24; format,
+  typecheck, build, documentation continuity, and capability checks pass.
+  Disposable PostgreSQL 6/6 proves exact person links, company/missing
+  holds, current/historical/planned/canceled and freshness semantics,
+  registration, duplicate replay, aggregate projection, scale/merge continuity,
+  and prohibited-value refusal. Full root is 3,326 pass / 31 skip with the sole
+  unchanged CNPC wrapper-literal assertion; independent runner build and 45/45
+  pass. Final diff/secret checks remain pending.
+- Deployment/migration: no migration or production host/toolbox/config change
+  has occurred. Runtime flag remains default-off.
+- Rollback/recovery: exact pre-repair NanoClaw environment and operational
+  toolbox helper backups are retained under
+  `~/.local/share/nanoclaw-config-backups/NC-20260826-008-*`; disable the future
+  adapter before host/toolbox rollback and preserve migration-137 evidence.
+- Documentation: accepted decision, active work, control plane, Plutio
+  engagement runbook, project map, security/release contracts, aggregate query
+  guide, configuration templates, and this changelog.
+- Follow-ups: immutable current-lineage commit/release, exact toolbox helper
+  backup/install, off-first deployment, one-key enable, aggregate live
+  readback/replay/non-interference, and program reconciliation.
+
 ### NC-20260826-007 — Active-client support no longer invents Sales pipeline work
 
 - Date: 2026-08-27T03:05:00Z

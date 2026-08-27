@@ -28,6 +28,9 @@ const READ_ONLY_SCRIPTS = new Set([
   'list-invoices.sh',
   'list-transactions.sh',
   'list-people.sh',
+  'list-projects.sh',
+  'list-contracts.sh',
+  'list-custom-fields.sh',
 ]);
 
 type PlutioExecFile = (

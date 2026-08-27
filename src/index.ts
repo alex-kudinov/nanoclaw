@@ -168,6 +168,12 @@ import {
   getClientRelationshipProjectionHealth,
   runClientRelationshipProjection,
 } from './relationship-context-client-projection.js';
+import {
+  PLUTIO_ENGAGEMENT_INTERVAL_MS,
+  getPlutioEngagementHealth,
+  plutioEngagementEnabled,
+  runPlutioEngagementEnrichment,
+} from './relationship-context-plutio-engagement.js';
 import { relationshipContextPolicyDiagnostic } from './relationship-context-policy.js';
 import { startHeartbeat } from './heartbeat.js';
 import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
@@ -2186,6 +2192,7 @@ async function main(): Promise<void> {
           trafftShadow: getTrafftRelationshipContextShadowHealth(),
           sourceEnrichment: getSourceEnrichmentHealth(),
           clientProjection: getClientRelationshipProjectionHealth(),
+          plutioEngagement: getPlutioEngagementHealth(),
         },
       };
     },
@@ -2388,6 +2395,35 @@ async function main(): Promise<void> {
       CLIENT_RELATIONSHIP_PROJECTION_INTERVAL_MS,
     );
     relationshipContextClientProjectionTimer.unref();
+  }
+  let relationshipContextPlutioEngagementInFlight = false;
+  const runRelationshipContextPlutioEngagementTick =
+    async (): Promise<void> => {
+      if (relationshipContextPlutioEngagementInFlight) {
+        logger.warn(
+          'relationship context Plutio engagement tick already running',
+        );
+        return;
+      }
+      relationshipContextPlutioEngagementInFlight = true;
+      try {
+        await runPlutioEngagementEnrichment();
+      } catch (err) {
+        logger.error(
+          { err },
+          'relationship context Plutio engagement tick failed',
+        );
+      } finally {
+        relationshipContextPlutioEngagementInFlight = false;
+      }
+    };
+  if (plutioEngagementEnabled()) {
+    void runRelationshipContextPlutioEngagementTick();
+    const relationshipContextPlutioEngagementTimer = setInterval(
+      () => void runRelationshipContextPlutioEngagementTick(),
+      PLUTIO_ENGAGEMENT_INTERVAL_MS,
+    );
+    relationshipContextPlutioEngagementTimer.unref();
   }
   if (STUDENT_LIFECYCLE_ENABLED) {
     setInterval(() => {

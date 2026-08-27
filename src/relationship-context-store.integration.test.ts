@@ -10,6 +10,10 @@ import {
 } from './relationship-context-policy.js';
 import { runRelationshipContextExactReadCanary } from './relationship-context-live-canary.js';
 import {
+  ingestPlutioEngagementSnapshotWithClient,
+  type PlutioEngagementSnapshot,
+} from './relationship-context-plutio-engagement.js';
+import {
   CLIENT_RELATIONSHIP_PROJECTION_KEY,
   projectClientRelationshipsWithClient,
 } from './relationship-context-client-projection.js';
@@ -933,6 +937,249 @@ suite('relationship context disposable PostgreSQL store', () => {
         },
       ]);
     } finally {
+      client.release();
+    }
+  });
+
+  it('imports exact Plutio coaching projects and updates current/historical relationship semantics', async () => {
+    const client = await pool.connect();
+    await client.query('BEGIN');
+    try {
+      const parties = await client.query<{ id: string; display_name: string }>(
+        `INSERT INTO business_v2.parties
+           (party_type,display_name,last_updated_by)
+         VALUES ('person','Plutio Engagement Current','integration'),
+                ('person','Plutio Engagement Historical','integration'),
+                ('person','Plutio Engagement Planned','integration'),
+                ('person','Plutio Engagement Canceled','integration')
+         RETURNING id::text,display_name`,
+      );
+      const ids = Object.fromEntries(
+        parties.rows.map((row) => [row.display_name, Number(row.id)]),
+      );
+      const repository = new PostgresRelationshipContextRepository(client);
+      for (const [externalId, partyId] of [
+        ['person_current', ids['Plutio Engagement Current']],
+        ['person_historical', ids['Plutio Engagement Historical']],
+        ['person_planned', ids['Plutio Engagement Planned']],
+        ['person_canceled', ids['Plutio Engagement Canceled']],
+      ] as const) {
+        await repository.bindExternalRef({
+          partyId,
+          reference: {
+            provider: 'plutio',
+            scope: 'primary',
+            entityType: 'person',
+            externalId,
+          },
+          adapterKey: 'plutio_reference_ledger',
+          adapterVersion: '1.0.0',
+          observedAt: '2026-08-27T04:00:00Z',
+          verifiedAt: '2026-08-27T04:00:00Z',
+          receiptSha256: sha256Json({ externalId, partyId }),
+        });
+      }
+      const snapshot: PlutioEngagementSnapshot = {
+        observedAt: '2026-08-27T04:00:00Z',
+        complete: true,
+        projectsScanned: 6,
+        contractsScanned: 3,
+        customFieldsScanned: 8,
+        signedContracts: 2,
+        signedContractsWithoutProject: 1,
+        projects: [
+          {
+            id: 'project_current',
+            status: 'in_progress',
+            engagementState: 'current',
+            clients: [{ id: 'person_current', entityType: 'person' }],
+            coachingFieldCodes: ['coach', 'session_count'],
+            signedContractCorroborated: true,
+            effectiveAt: '2026-08-01T00:00:00Z',
+            updatedAt: '2026-08-26T00:00:00Z',
+          },
+          {
+            id: 'project_historical',
+            status: 'completed',
+            engagementState: 'historical',
+            clients: [{ id: 'person_historical', entityType: 'person' }],
+            coachingFieldCodes: ['mentor_coach'],
+            signedContractCorroborated: true,
+            effectiveAt: '2026-01-01T00:00:00Z',
+            updatedAt: '2026-08-20T00:00:00Z',
+          },
+          {
+            id: 'project_planned',
+            status: 'new',
+            engagementState: 'planned',
+            clients: [{ id: 'person_planned', entityType: 'person' }],
+            coachingFieldCodes: ['session_count'],
+            signedContractCorroborated: false,
+            effectiveAt: null,
+            updatedAt: '2026-08-20T00:00:00Z',
+          },
+          {
+            id: 'project_canceled',
+            status: 'canceled',
+            engagementState: 'canceled',
+            clients: [{ id: 'person_canceled', entityType: 'person' }],
+            coachingFieldCodes: ['coach'],
+            signedContractCorroborated: false,
+            effectiveAt: null,
+            updatedAt: '2026-08-20T00:00:00Z',
+          },
+          {
+            id: 'project_company',
+            status: 'in_progress',
+            engagementState: 'current',
+            clients: [{ id: 'company_unmapped', entityType: 'company' }],
+            coachingFieldCodes: ['coach'],
+            signedContractCorroborated: false,
+            effectiveAt: null,
+            updatedAt: '2026-08-20T00:00:00Z',
+          },
+          {
+            id: 'project_missing_person',
+            status: 'in_progress',
+            engagementState: 'current',
+            clients: [{ id: 'person_missing', entityType: 'person' }],
+            coachingFieldCodes: ['coach'],
+            signedContractCorroborated: false,
+            effectiveAt: null,
+            updatedAt: '2026-08-20T00:00:00Z',
+          },
+        ],
+      };
+      const first = await ingestPlutioEngagementSnapshotWithClient({
+        client,
+        snapshot,
+      });
+      expect(first).toMatchObject({
+        complete: true,
+        projectsScanned: 6,
+        coachingProjects: 6,
+        currentProjects: 3,
+        historicalProjects: 1,
+        plannedProjects: 1,
+        canceledProjects: 1,
+        exactPersonLinks: 4,
+        distinctExactParties: 4,
+        unsupportedCompanyLinks: 1,
+        missingExactPersonReferences: 1,
+        observationsNew: 4,
+        observationsDuplicate: 0,
+        projectionsChanged: 4,
+      });
+      const replay = await ingestPlutioEngagementSnapshotWithClient({
+        client,
+        snapshot: {
+          ...snapshot,
+          observedAt: '2026-08-27T04:15:00Z',
+        },
+      });
+      expect(replay).toMatchObject({
+        observationsNew: 0,
+        observationsDuplicate: 4,
+        projectionsChanged: 0,
+      });
+
+      const projected = await projectClientRelationshipsWithClient({
+        client,
+        observedAt: '2026-08-27T04:16:00Z',
+        pageSize: 200,
+      });
+      expect(projected.activeCoachingClientParties).toBeGreaterThanOrEqual(1);
+      expect(projected.historicalCoachingClientParties).toBeGreaterThanOrEqual(
+        1,
+      );
+      const relationshipRows = await client.query<{
+        party_id: string;
+        value: Record<string, unknown>;
+      }>(
+        `SELECT party_id::text,value
+           FROM business_v2.party_context_projections
+          WHERE party_id=ANY($1::bigint[])
+            AND section='relationship'
+            AND projection_key='relationship.client_status.v1'`,
+        [Object.values(ids)],
+      );
+      const byParty = new Map(
+        relationshipRows.rows.map((row) => [Number(row.party_id), row.value]),
+      );
+      expect(byParty.get(ids['Plutio Engagement Current'])).toMatchObject({
+        relationship_state: 'active_coaching_client',
+        customer_or_client: true,
+        active_coaching_engagement: true,
+        active_engagement_status: 'current',
+      });
+      expect(byParty.get(ids['Plutio Engagement Historical'])).toMatchObject({
+        relationship_state: 'historical_coaching_client',
+        customer_or_client: true,
+        historical_coaching_engagement: true,
+        active_engagement_status: 'unknown',
+      });
+      expect(byParty.get(ids['Plutio Engagement Planned'])).toMatchObject({
+        relationship_state: 'unknown',
+        customer_or_client: false,
+      });
+      expect(byParty.get(ids['Plutio Engagement Canceled'])).toMatchObject({
+        relationship_state: 'unknown',
+        customer_or_client: false,
+      });
+
+      const stale = await projectClientRelationshipsWithClient({
+        client,
+        observedAt: '2026-08-28T07:00:01Z',
+        pageSize: 200,
+      });
+      expect(stale.staleCurrentEngagementParties).toBeGreaterThanOrEqual(1);
+      const staleCurrent = await client.query<{
+        value: Record<string, unknown>;
+        missing_codes: string[];
+      }>(
+        `SELECT value,
+                ARRAY(SELECT jsonb_array_elements_text(missing_codes))
+                  AS missing_codes
+           FROM business_v2.party_context_projections
+          WHERE party_id=$1 AND section='relationship'
+            AND projection_key='relationship.client_status.v1'`,
+        [ids['Plutio Engagement Current']],
+      );
+      expect(staleCurrent.rows[0].value).toMatchObject({
+        relationship_state: 'unknown',
+        customer_or_client: false,
+        active_coaching_engagement: false,
+        stale_current_engagement_evidence: true,
+      });
+      expect(staleCurrent.rows[0].missing_codes).toContain(
+        'active_engagement_evidence_stale',
+      );
+
+      const privacy = await client.query<{ prohibited: string }>(
+        `SELECT count(*)::text AS prohibited
+           FROM business_v2.party_context_observations
+          WHERE fact_type='relationship.plutio.coaching_project@1'
+            AND value::text ~* '(email|name|phone|address|amount|currency|external_id|source_record_id|payload|metadata|project_id|client_id|contract_id)'`,
+      );
+      expect(privacy.rows[0].prohibited).toBe('0');
+      const registration = await client.query<{
+        adapter_key: string;
+        source_scope: string;
+        conformance_status: string;
+      }>(
+        `SELECT adapter_key,source_scope,conformance_status
+           FROM business_v2.party_context_adapter_registrations
+          WHERE adapter_key='plutio_engagement_snapshot'`,
+      );
+      expect(registration.rows).toEqual([
+        {
+          adapter_key: 'plutio_engagement_snapshot',
+          source_scope: 'primary-engagement',
+          conformance_status: 'passed',
+        },
+      ]);
+    } finally {
+      await client.query('ROLLBACK');
       client.release();
     }
   });
