@@ -58,6 +58,36 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   payment/refund case ledger; the first dependency-complete candidate is the
   separately unselected priority-9 Bizmgr payables visibility queue.
 
+### NC-20260827-001 — Deployment-safe external watchdog heartbeat grace
+
+- Date: 2026-08-27T05:29:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: complete; reviewed artifact deployed and live-verified through the
+  first fresh heartbeat and following watchdog tick
+- Commit/PR: pushed `6dcdf4bd` on
+  `codex/watchdog-heartbeat-grace-20260827`
+- Change class: C3 deterministic host recovery behavior
+- Incident: an ordinary deployment restart inherited a stale stored Slack
+  heartbeat and the watchdog repeatedly restarted the otherwise healthy daemon
+  before its configured first heartbeat could run.
+- Repair: derive timing from `HEARTBEAT_INTERVAL_MS` and suppress only the
+  stale-heartbeat score while the daemon is healthy, Slack-connected, and
+  inside one bounded first-heartbeat window. Disconnected/malformed/stale-after-
+  window states still fail loud; other recovery paths are unchanged.
+- Review/tests: exact incident/boundary tests pass; Claude Sonnet/high returned
+  `NO MATERIAL FINDINGS` in six calls with maximum context 80,751.
+- Deployment/live: exact reviewed script SHA-256 `ec488448` is installed with
+  predecessor rollback retained. Natural grace ticks, first fresh heartbeat,
+  following plain-OK tick, unchanged PID, connected channels, empty queues,
+  and zero failures passed; no daemon/watchdog service restart was required.
+- Non-interference: no database/provider/customer/message/approval/schedule/
+  credential mutation or manufactured work.
+- Evidence:
+  `docs/reports/NC-20260827-001-CLAUDE-IMPLEMENTATION-REVIEW-RESPONSE-R1.md`.
+- Lineage addendum: NC-20260823-006 merges the reviewed source/tests/docs into
+  its next immutable daemon release without reinstalling or changing the
+  separately live external watchdog artifact.
+
 ### NC-20260826-009 — Exact Plutio coaching-engagement context
 
 - Date: 2026-08-27T03:58:55Z

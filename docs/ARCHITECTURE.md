@@ -601,6 +601,14 @@ Jobs defined in `data/ipc/*/current_jobs.json`. Campanero agent manages them via
 | `com.nanoclaw.procurement-browser` | `scripts/start-procurement-browser.sh` | Always on | Chrome for procurement scraping |
 | `com.nanoclaw.transcript-watcher` | `scripts/transcript-worker.sh` | Always on | Process meeting transcripts |
 
+The external watchdog derives its Slack-heartbeat stale threshold from
+`HEARTBEAT_INTERVAL_MS` (with a 15-minute minimum). After any daemon start, it
+uses the live health endpoint's process uptime to grant a bounded
+first-heartbeat window, but only while Slack reports connected. This prevents
+an ordinary deployment restart from repeatedly resetting the heartbeat timer;
+disconnected Slack, missing uptime, and stale heartbeats after the window still
+accumulate restart failures.
+
 ---
 
 ## Infrastructure

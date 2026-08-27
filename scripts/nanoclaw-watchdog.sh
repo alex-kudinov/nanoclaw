@@ -2,6 +2,45 @@
 # nanoclaw-watchdog.sh — External health monitor and auto-recovery for NanoClaw.
 # Runs via launchd every 120s. Checks heartbeat, health endpoint, Slack connection,
 # error logs, DB heartbeat messages, and zombie containers. Restarts when degraded.
+
+heartbeat_interval_sec() {
+  local interval_ms="${1:-}"
+  if [[ ! "$interval_ms" =~ ^[0-9]+$ ]] || (( interval_ms <= 0 )); then
+    interval_ms=600000
+  fi
+  echo $(( (interval_ms + 999) / 1000 ))
+}
+
+heartbeat_stale_after_sec() {
+  local interval_sec
+  interval_sec=$(heartbeat_interval_sec "${1:-}")
+  local stale_after=$(( interval_sec + 300 ))
+  (( stale_after < 900 )) && stale_after=900
+  echo "$stale_after"
+}
+
+heartbeat_startup_grace_sec() {
+  local interval_sec
+  interval_sec=$(heartbeat_interval_sec "${1:-}")
+  # Allow the first scheduled heartbeat plus one watchdog tick and 60s jitter.
+  echo $(( interval_sec + 180 ))
+}
+
+should_grace_stale_heartbeat() {
+  local slack_connected="${1:-null}"
+  local daemon_uptime_sec="${2:-null}"
+  local startup_grace_sec="${3:-0}"
+  [[ "$slack_connected" == "true" ]] \
+    && [[ "$daemon_uptime_sec" =~ ^[0-9]+$ ]] \
+    && [[ "$startup_grace_sec" =~ ^[0-9]+$ ]] \
+    && (( daemon_uptime_sec < startup_grace_sec ))
+}
+
+# Tests source these pure timing helpers without running the operational body.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+  return 0
+fi
+
 set -uo pipefail  # NO -e — explicit error handling to prevent jq/sqlite3 failures from killing the script
 
 PROJECT_ROOT="/Users/xbohdpukc/dev/NanoClaw"
@@ -22,6 +61,8 @@ set -a; source "$PROJECT_ROOT/.env" 2>/dev/null; source "$HOME/dev/.env.shared" 
 export TOOLBOX_PUSHOVER_APP_TOKEN="${TOOLBOX_PUSHOVER_APP_TOKEN:-${PUSHOVER_APP_TOKEN:-}}"
 export TOOLBOX_PUSHOVER_USER_KEY="${TOOLBOX_PUSHOVER_USER_KEY:-${PUSHOVER_USER_KEY:-}}"
 HEARTBEAT_JID="${HEARTBEAT_JID:-}"
+HEARTBEAT_STALE_AFTER_SEC=$(heartbeat_stale_after_sec "${HEARTBEAT_INTERVAL_MS:-}")
+HEARTBEAT_STARTUP_GRACE_SEC=$(heartbeat_startup_grace_sec "${HEARTBEAT_INTERVAL_MS:-}")
 
 # Prevent concurrent execution (macOS has no flock — use mkdir atomic lock)
 LOCK_DIR="$STATE_FILE.lock"
@@ -191,6 +232,7 @@ fi
 health=""
 slack_connected="null"
 slack_last_sec="null"
+daemon_uptime_sec="null"
 if ! $needs_restart; then
   health=$(curl -sf --max-time 5 http://localhost:8088/health 2>/dev/null) || health=""
   if [[ -z "$health" ]]; then
@@ -207,6 +249,7 @@ fi
 if [[ -n "$health" ]] && ! $needs_restart; then
   slack_connected=$(echo "$health" | jq -r '.channels.slack.connected // "null"' 2>/dev/null || echo "null")
   slack_last_sec=$(echo "$health" | jq -r '.channels.slack.lastActivitySec // "null"' 2>/dev/null || echo "null")
+  daemon_uptime_sec=$(echo "$health" | jq -r 'if (.uptime? | type) == "number" then (.uptime | floor) else "null" end' 2>/dev/null || echo "null")
 
   if [[ "$slack_connected" == "false" ]]; then
     if [[ "$slack_last_sec" == "null" ]] || { [[ "$slack_last_sec" =~ ^[0-9]+$ ]] && (( slack_last_sec > 300 )); }; then
@@ -234,9 +277,13 @@ if [[ -n "$HEARTBEAT_JID" ]] && ! $needs_restart && command -v sqlite3 &>/dev/nu
   [[ "$hb_epoch" =~ ^[0-9]+$ ]] || hb_epoch=0
   if (( hb_epoch > 0 )); then
     hb_age=$(( now_s - hb_epoch ))
-    if (( hb_age > 900 )); then
-      log "WARN: Slack heartbeat stale (${hb_age}s) — send failing"
-      consecutive_failures=$(( consecutive_failures + 2 ))
+    if (( hb_age > HEARTBEAT_STALE_AFTER_SEC )); then
+      if should_grace_stale_heartbeat "$slack_connected" "$daemon_uptime_sec" "$HEARTBEAT_STARTUP_GRACE_SEC"; then
+        log "Grace period — Slack heartbeat stale (${hb_age}s) but healthy daemon uptime ${daemon_uptime_sec}s is within first-heartbeat window (${HEARTBEAT_STARTUP_GRACE_SEC}s)"
+      else
+        log "WARN: Slack heartbeat stale (${hb_age}s) — send failing"
+        consecutive_failures=$(( consecutive_failures + 2 ))
+      fi
     fi
   fi
 fi
