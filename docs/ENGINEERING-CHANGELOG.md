@@ -14,9 +14,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Owner/client: Codex with independent Claude Sonnet/high review pending
 - State: validating; local implementation and disposable PostgreSQL proof
   complete, not committed, released, deployed, or live-reconciled
-- Commit/PR: isolated
-  `codex/relationship-context-stripe-contact-chaos-20260826` from pushed
-  `5c02acd3`, which directly contains exact live implementation `1a381e48`
+- Commit/PR: implementation `7a4a876ba89a3543b57c7ca2841f2d3ce2d41770`
+  on `codex/relationship-context-stripe-contact-chaos-20260826` from pushed
+  `5c02acd3`, which directly contains exact live implementation `1a381e48`;
+  branch push and release commit remain pending
 - Change class: C5 identity/security boundary plus separately gated C3 release
 - Outcome: adds three provider-neutral, default-off, read-only adapters: both
   distinct Stripe account scopes; immutable archived contact-form submissions;
@@ -62,7 +63,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   and focused/disposable PostgreSQL checks pass. Independent review is closed
   with no unresolved material finding; final clean verification/commit/release
   remain pending.
-- Deployment/migration: no migration; source flag defaults off. Immutable
+- Deployment/migration: implementation committed; no migration; source flag
+  defaults off. Immutable
   release, flag transaction, replay, live aggregates, and non-interference
   remain pending.
 - Rollback/recovery: disable the source flag and restore the prior release
