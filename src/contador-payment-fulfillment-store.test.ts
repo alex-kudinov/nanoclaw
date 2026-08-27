@@ -2,8 +2,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  assertContadorProviderAlias,
   beginContadorFulfillmentWithClient,
   finalizeContadorFulfillmentWithClient,
+  terminalizeExpiredContadorFulfillmentCaseWithClient,
 } from './contador-payment-fulfillment-store.js';
 
 const LEASE = '00000000-0000-4000-8000-000000000001';
@@ -45,6 +47,18 @@ function beginInput() {
 }
 
 describe('Contador payment fulfillment store', () => {
+  it('accepts Stripe ch_ and py_ charge objects but rejects other prefixes', () => {
+    expect(() =>
+      assertContadorProviderAlias({ kind: 'charge', id: 'ch_charge' }),
+    ).not.toThrow();
+    expect(() =>
+      assertContadorProviderAlias({ kind: 'charge', id: 'py_charge' }),
+    ).not.toThrow();
+    expect(() =>
+      assertContadorProviderAlias({ kind: 'charge', id: 'pa_charge' }),
+    ).toThrow('invalid charge alias');
+  });
+
   it('admits one new case before processor work and records the source receipt', async () => {
     const query = vi
       .fn()
@@ -61,6 +75,7 @@ describe('Contador payment fulfillment store', () => {
     expect(result).toMatchObject({
       duplicateComplete: false,
       inFlight: false,
+      terminalHeld: false,
       leaseToken: LEASE,
       item: { id: '42', state: 'processing', version: 0, attemptCount: 1 },
     });
@@ -94,6 +109,7 @@ describe('Contador payment fulfillment store', () => {
     expect(result).toMatchObject({
       duplicateComplete: true,
       inFlight: false,
+      terminalHeld: false,
       leaseToken: null,
       item: { state: 'complete', version: 2, attemptCount: 2 },
     });
@@ -119,6 +135,7 @@ describe('Contador payment fulfillment store', () => {
     expect(result).toMatchObject({
       duplicateComplete: false,
       inFlight: true,
+      terminalHeld: false,
       leaseToken: null,
       item: { id: '42', version: 0, attemptCount: 1 },
     });
@@ -257,5 +274,109 @@ describe('Contador payment fulfillment store', () => {
     await expect(
       beginContadorFulfillmentWithClient({ query } as any, beginInput()),
     ).rejects.toThrow('provider alias belongs to another case');
+  });
+
+  it('terminalizes one exact expired processing case without external replay', async () => {
+    const expired = caseRow({ lease_active: false });
+    const terminal = caseRow({
+      state: 'write_failed',
+      lease_token: null,
+      lease_expires_at: null,
+      lease_active: false,
+      last_error_code: 'expired_processing_terminalized',
+      review_deadline: '2026-08-28T03:01:00.000Z',
+    });
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [expired] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [terminal] })
+      .mockResolvedValueOnce({ rows: [] });
+    const result = await terminalizeExpiredContadorFulfillmentCaseWithClient(
+      { query } as any,
+      { caseId: '42', expectedVersion: 0, expectedAttemptCount: 1 },
+      '2026-08-27T03:01:00.000Z',
+    );
+    expect(result).toMatchObject({
+      alreadyTerminalized: false,
+      item: {
+        id: '42',
+        state: 'write_failed',
+        lastErrorCode: 'expired_processing_terminalized',
+      },
+    });
+    expect(query.mock.calls[0][0]).toContain('FOR UPDATE');
+    expect(query.mock.calls[5][0]).toContain("state = 'write_failed'");
+    expect(
+      query.mock.calls.filter((call) =>
+        String(call[0]).includes(
+          'INSERT INTO business_v2.contador_payment_fulfillment_receipts',
+        ),
+      ),
+    ).toHaveLength(5);
+  });
+
+  it('refuses terminalization while the exact processing lease is active', async () => {
+    const query = vi.fn().mockResolvedValueOnce({ rows: [caseRow()] });
+    await expect(
+      terminalizeExpiredContadorFulfillmentCaseWithClient(
+        { query } as any,
+        { caseId: '42', expectedVersion: 0, expectedAttemptCount: 1 },
+        '2026-08-27T03:01:00.000Z',
+      ),
+    ).rejects.toThrow('terminalization refused (lease_not_expired)');
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it('makes exact terminalization replay a no-op', async () => {
+    const terminal = caseRow({
+      state: 'write_failed',
+      lease_token: null,
+      lease_expires_at: null,
+      lease_active: false,
+      last_error_code: 'expired_processing_terminalized',
+      review_deadline: '2026-08-28T03:01:00.000Z',
+    });
+    const query = vi.fn().mockResolvedValueOnce({ rows: [terminal] });
+    const result = await terminalizeExpiredContadorFulfillmentCaseWithClient(
+      { query } as any,
+      { caseId: '42', expectedVersion: 0, expectedAttemptCount: 1 },
+      '2026-08-27T03:01:00.000Z',
+    );
+    expect(result.alreadyTerminalized).toBe(true);
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it('never reopens a case closed by expired-processing terminalization', async () => {
+    const terminal = caseRow({
+      state: 'write_failed',
+      lease_token: null,
+      lease_expires_at: null,
+      lease_active: false,
+      last_error_code: 'expired_processing_terminalized',
+      review_deadline: '2026-08-28T03:01:00.000Z',
+    });
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [terminal] });
+    const result = await beginContadorFulfillmentWithClient(
+      { query } as any,
+      beginInput(),
+    );
+    expect(result).toMatchObject({
+      duplicateComplete: false,
+      inFlight: false,
+      terminalHeld: true,
+      leaseToken: null,
+      item: {
+        state: 'write_failed',
+        lastErrorCode: 'expired_processing_terminalized',
+      },
+    });
+    expect(query).toHaveBeenCalledTimes(2);
   });
 });

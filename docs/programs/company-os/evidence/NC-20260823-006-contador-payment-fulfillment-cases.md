@@ -206,3 +206,56 @@ gate and no active claim. It registers candidate
 detection and owned exception capture without automatic replay. The refund
 candidate remains separate; the product/student identity candidates remain
 blocked on the terminal case-ledger invariant.
+
+## Authorized terminal-state correction — reviewed, deployment pending
+
+The owner's 2026-08-27 keep-going instruction is recorded as accepted decision
+`decision:contador-terminal-case-correction-2026-08-27`. The bounded
+implementation:
+
+- adds migration/rollback 139 so charge aliases accept provider-supported
+  `ch_` and `py_` objects while every other typed alias remains unchanged;
+- validates processor aliases before final transition;
+- converts processor execution or contract failures into returned durable
+  `write_failed` results, allowing the webhook row to bind/handle the owned
+  exception instead of reaper churn;
+- adds a compiled default-dry-run exact-case terminalizer requiring case ID,
+  version, attempt count, `processing` state, and an expired lease;
+- writes only content-minimized failed-stage plus final exception receipts and
+  clears the expired lease; it preserves the original source-observed time and
+  never invokes Stripe, n8n, Payment Log, roster, `public.payments`, or another
+  processor;
+- makes exact terminalization replay a no-op and refuses partial batches,
+  active leases, state/version/attempt drift, missing cases, and duplicates.
+
+Disposable PostgreSQL proof applies migrations 133/139, accepts `py_`, dry-
+runs and applies two exact expired cases, produces two terminal
+`write_failed/expired_processing_terminalized` cases with five receipts each,
+proves exact replay/no-op and version-mismatch refusal, makes rollback 139
+refuse while a `py_` alias exists, then restores the old constraint only after
+the disposable alias is removed. The disposable database was dropped.
+
+Claude Sonnet/high R1 found one material no-replay defect: an ordinary later
+delivery could reopen a host-terminalized `write_failed` case through the
+pre-existing retry branch and launch the external processor. The correction
+adds an exact `terminalHeld` admission state before ordinary retries, performs
+no alias/receipt/case mutation, returns no lease, and makes the host return a
+held result before `execFile` or finalization. Ordinary non-terminalized
+`write_failed` cases remain retryable. Direct store and host regressions prove
+the no-mutation/no-external path. R2 returned `NO MATERIAL FINDINGS`.
+
+Review usage: the Info subscription attempt was rejected before reading files
+and consumed zero tokens. Alex R1 used 14 turns, 122,256 cache-creation,
+486,451 cache-read, and 22,977 output tokens; the maximum context crossed the
+100k target and is recorded as orchestration debt. Narrow R2 used 11 turns,
+61,208 cache-creation, 392,625 cache-read, and 4,157 output tokens. No third
+round occurred.
+
+Final local verification: focused host/store/source/webhook/reaper/safety/
+migration/CLI 125/125; format, typecheck, build, documentation continuity, and
+capability checks pass; full root is 3,347 pass / 31 skip with the sole
+unchanged CNPC wrapper-literal assertion; independent runner build and 45/45
+pass. Disposable PostgreSQL evidence remains green and removed. Commit,
+immutable release, production migration, exact two-case terminalization, and
+live proof remain pending. No production mutation occurred during
+implementation/review.

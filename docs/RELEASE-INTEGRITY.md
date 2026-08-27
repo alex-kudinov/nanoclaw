@@ -88,6 +88,24 @@ history. Bundling, applying, or activating migration 133 grants no historical
 repair, customer communication, accounting, QuickBooks, product-mapping, or
 payer/student authority.
 
+The NC-20260823-006 terminal-state correction additionally binds migration 139
+and its guarded rollback. Before activation, take a current custom-format
+PostgreSQL backup plus the normal SQLite/plist/release backup; record the exact
+case-state/version/attempt/receipt fingerprint and require only the two accepted
+expired processing cases. Apply migration 139 before activating the reviewed
+host release, verify the `ch_`/`py_` typed constraint, then run the compiled
+terminalizer in dry-run mode with exact case/version/attempt specs. Applied mode
+may run only after that readback and may write only failed-stage/final receipts
+plus `write_failed/expired_processing_terminalized` for those two cases. It may
+not invoke Stripe, n8n, Sheets, roster, `public.payments`, a payment processor,
+refund, or communication.
+
+Require zero `processing` cases, exact receipt increments, unchanged complete/
+needs-product/refund cases, exact terminalizer replay no-op, healthy release/
+channels/queues, and unchanged protected checkout/lifecycle/watchdog state.
+Code rollback preserves the new terminal evidence. SQL rollback 139 must refuse
+if any `py_` alias exists; it never deletes an alias or terminal receipt.
+
 `NC-20260826-005` is a no-migration Relationship Context source release over
 already-live migration 137. Build and activate first with
 `RELATIONSHIP_CONTEXT_SOURCE_ENRICHMENT_ENABLED=0`; verify exact release,

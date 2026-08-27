@@ -79,6 +79,26 @@ export interface FinalizeContadorFulfillmentInput {
   receipts: ContadorStageReceiptInput[];
 }
 
+export interface ContadorExpiredCaseSpec {
+  caseId: string;
+  expectedVersion: number;
+  expectedAttemptCount: number;
+}
+
+export interface ContadorExpiredCaseInspection extends ContadorExpiredCaseSpec {
+  state: ContadorFulfillmentState | 'missing';
+  leaseExpired: boolean;
+  eligible: boolean;
+  alreadyTerminalized: boolean;
+  errorCode:
+    | null
+    | 'case_missing'
+    | 'state_not_processing'
+    | 'version_mismatch'
+    | 'attempt_count_mismatch'
+    | 'lease_not_expired';
+}
+
 export interface DurableContadorFulfillmentCase {
   id: string;
   stripeAccount: ContadorStripeAccount;
@@ -101,6 +121,7 @@ export interface BeginContadorFulfillmentResult {
   item: DurableContadorFulfillmentCase;
   duplicateComplete: boolean;
   inFlight: boolean;
+  terminalHeld: boolean;
   leaseToken: string | null;
 }
 
@@ -170,11 +191,13 @@ function assertIso(value: string, label: string): void {
   }
 }
 
-function assertAlias(alias: ContadorProviderAlias): void {
+export function assertContadorProviderAlias(
+  alias: ContadorProviderAlias,
+): void {
   const patterns: Record<ContadorAliasKind, RegExp> = {
     payment_intent: /^pi_[A-Za-z0-9_]+$/,
     checkout_session: /^cs_[A-Za-z0-9_]+$/,
-    charge: /^ch_[A-Za-z0-9_]+$/,
+    charge: /^(ch|py)_[A-Za-z0-9_]+$/,
     invoice: /^in_[A-Za-z0-9_]+$/,
     refund: /^re_[A-Za-z0-9_]+$/,
     event: /^evt_[A-Za-z0-9_]+$/,
@@ -217,7 +240,7 @@ function assertBegin(input: BeginContadorFulfillmentInput): void {
   ) {
     throw new Error('contador-fulfillment: invalid lease token');
   }
-  input.aliases.forEach(assertAlias);
+  input.aliases.forEach(assertContadorProviderAlias);
   if (
     !input.aliases.some(
       (alias) =>
@@ -248,7 +271,7 @@ function assertFinalize(input: FinalizeContadorFulfillmentInput): void {
     throw new Error('contador-fulfillment: invalid source event');
   }
   assertIso(input.occurredAt, 'occurredAt');
-  input.aliases.forEach(assertAlias);
+  input.aliases.forEach(assertContadorProviderAlias);
   if (
     input.state === 'complete' ? input.errorCode !== null : !input.errorCode
   ) {
@@ -413,6 +436,7 @@ export async function beginContadorFulfillmentWithClient(
   let row: CaseRow;
   let duplicateComplete = false;
   let inFlight = false;
+  let terminalHeld = false;
   if (!prior.rows[0]) {
     const inserted = await client.query<CaseRow>(
       `INSERT INTO business_v2.contador_payment_fulfillment_cases
@@ -439,6 +463,12 @@ export async function beginContadorFulfillmentWithClient(
   } else if (prior.rows[0].state === 'complete') {
     row = prior.rows[0];
     duplicateComplete = true;
+  } else if (
+    prior.rows[0].state === 'write_failed' &&
+    prior.rows[0].last_error_code === 'expired_processing_terminalized'
+  ) {
+    row = prior.rows[0];
+    terminalHeld = true;
   } else if (
     prior.rows[0].state === 'processing' &&
     prior.rows[0].lease_active
@@ -472,8 +502,10 @@ export async function beginContadorFulfillmentWithClient(
     row = updated.rows[0];
   }
 
-  await bindAliases(client, row.id, input.stripeAccount, input.aliases);
-  if (!duplicateComplete && !inFlight) {
+  if (!terminalHeld) {
+    await bindAliases(client, row.id, input.stripeAccount, input.aliases);
+  }
+  if (!duplicateComplete && !inFlight && !terminalHeld) {
     await insertReceipt(client, {
       caseId: row.id,
       caseVersion: row.version,
@@ -489,7 +521,9 @@ export async function beginContadorFulfillmentWithClient(
     item: toItem(row),
     duplicateComplete,
     inFlight,
-    leaseToken: duplicateComplete || inFlight ? null : input.leaseToken,
+    terminalHeld,
+    leaseToken:
+      duplicateComplete || inFlight || terminalHeld ? null : input.leaseToken,
   };
 }
 
@@ -587,6 +621,270 @@ export async function finalizeContadorFulfillmentWithClient(
     occurredAt: input.occurredAt,
   });
   return toItem(updated.rows[0]);
+}
+
+function assertExpiredCaseSpec(spec: ContadorExpiredCaseSpec): void {
+  if (!/^[1-9][0-9]*$/.test(spec.caseId)) {
+    throw new Error('contador-fulfillment: invalid terminalization case id');
+  }
+  if (!Number.isInteger(spec.expectedVersion) || spec.expectedVersion < 0) {
+    throw new Error('contador-fulfillment: invalid terminalization version');
+  }
+  if (
+    !Number.isInteger(spec.expectedAttemptCount) ||
+    spec.expectedAttemptCount < 1
+  ) {
+    throw new Error(
+      'contador-fulfillment: invalid terminalization attempt count',
+    );
+  }
+}
+
+async function inspectExpiredCaseWithClient(
+  client: ContadorFulfillmentStoreClient,
+  spec: ContadorExpiredCaseSpec,
+  lock: boolean,
+): Promise<{
+  row: CaseRow | null;
+  inspection: ContadorExpiredCaseInspection;
+}> {
+  assertExpiredCaseSpec(spec);
+  const result = await client.query<CaseRow>(
+    `SELECT ${CASE_COLUMNS}
+       FROM business_v2.contador_payment_fulfillment_cases
+      WHERE id = $1
+      ${lock ? 'FOR UPDATE' : ''}`,
+    [spec.caseId],
+  );
+  const row = result.rows[0] ?? null;
+  if (!row) {
+    return {
+      row: null,
+      inspection: {
+        ...spec,
+        state: 'missing',
+        leaseExpired: false,
+        eligible: false,
+        alreadyTerminalized: false,
+        errorCode: 'case_missing',
+      },
+    };
+  }
+  const leaseExpired = row.state === 'processing' && !row.lease_active;
+  const alreadyTerminalized =
+    row.state === 'write_failed' &&
+    row.last_error_code === 'expired_processing_terminalized' &&
+    row.version === spec.expectedVersion &&
+    row.attempt_count === spec.expectedAttemptCount;
+  let errorCode: ContadorExpiredCaseInspection['errorCode'] = null;
+  if (row.version !== spec.expectedVersion) errorCode = 'version_mismatch';
+  else if (row.attempt_count !== spec.expectedAttemptCount) {
+    errorCode = 'attempt_count_mismatch';
+  } else if (!alreadyTerminalized && row.state !== 'processing') {
+    errorCode = 'state_not_processing';
+  } else if (!alreadyTerminalized && !leaseExpired) {
+    errorCode = 'lease_not_expired';
+  }
+  return {
+    row,
+    inspection: {
+      ...spec,
+      state: row.state,
+      leaseExpired,
+      eligible: !alreadyTerminalized && errorCode === null,
+      alreadyTerminalized,
+      errorCode,
+    },
+  };
+}
+
+export async function inspectExpiredContadorFulfillmentCases(
+  specs: ContadorExpiredCaseSpec[],
+): Promise<ContadorExpiredCaseInspection[]> {
+  if (specs.length < 1 || specs.length > 20) {
+    throw new Error(
+      'contador-fulfillment: terminalization batch out of bounds',
+    );
+  }
+  const ids = new Set(specs.map((spec) => spec.caseId));
+  if (ids.size !== specs.length) {
+    throw new Error('contador-fulfillment: duplicate terminalization case id');
+  }
+  return withAgentContext(ACTOR, async (client) => {
+    const inspections: ContadorExpiredCaseInspection[] = [];
+    for (const spec of specs) {
+      inspections.push(
+        (await inspectExpiredCaseWithClient(client, spec, false)).inspection,
+      );
+    }
+    return inspections;
+  });
+}
+
+export async function terminalizeExpiredContadorFulfillmentCaseWithClient(
+  client: ContadorFulfillmentStoreClient,
+  spec: ContadorExpiredCaseSpec,
+  occurredAt: string,
+): Promise<{
+  item: DurableContadorFulfillmentCase;
+  alreadyTerminalized: boolean;
+}> {
+  assertIso(occurredAt, 'terminalization occurredAt');
+  const { row, inspection } = await inspectExpiredCaseWithClient(
+    client,
+    spec,
+    true,
+  );
+  if (!row)
+    throw new Error('contador-fulfillment: terminalization case missing');
+  if (inspection.alreadyTerminalized) {
+    return { item: toItem(row), alreadyTerminalized: true };
+  }
+  if (!inspection.eligible) {
+    throw new Error(
+      `contador-fulfillment: terminalization refused (${inspection.errorCode})`,
+    );
+  }
+
+  const terminalStage: ContadorStageReceiptInput['stage'] = [
+    'charge.refunded',
+    'refund.created',
+    'refund.updated',
+    'charge.refund.updated',
+  ].includes(row.last_event_type)
+    ? 'refund_fulfillment'
+    : 'student_roster';
+  const receipts: ContadorStageReceiptInput[] = [
+    {
+      stage: 'stripe_source',
+      outcome: 'verified',
+      resultCode: 'stripe_source_resolved_at_admission',
+    },
+    {
+      stage: 'payment_log',
+      outcome: 'failed',
+      resultCode: 'expired_processing_no_verified_readback',
+    },
+    {
+      stage: 'postgres_payment',
+      outcome: 'failed',
+      resultCode: 'expired_processing_no_verified_readback',
+    },
+    {
+      stage: terminalStage,
+      outcome: 'failed',
+      resultCode: 'expired_processing_no_verified_readback',
+    },
+  ];
+  for (const receipt of receipts) {
+    await insertReceipt(client, {
+      caseId: row.id,
+      caseVersion: row.version,
+      stage: receipt.stage,
+      outcome: receipt.outcome,
+      resultCode: receipt.resultCode,
+      evidenceSha256: sha([
+        'expired_processing_terminalization',
+        row.stripe_account,
+        row.payment_intent_id,
+        row.version,
+        row.attempt_count,
+        receipt.stage,
+        receipt.outcome,
+        receipt.resultCode,
+      ]),
+      sourceEventId: row.last_source_event_id,
+      occurredAt,
+    });
+  }
+  const errorCode = 'expired_processing_terminalized';
+  const finalEvidence = sha([
+    'expired_processing_terminalization',
+    row.stripe_account,
+    row.payment_intent_id,
+    row.version,
+    row.attempt_count,
+    errorCode,
+    receipts,
+  ]);
+  const updated = await client.query<CaseRow>(
+    `UPDATE business_v2.contador_payment_fulfillment_cases
+        SET state = 'write_failed', last_error_code = $2,
+            last_evidence_sha256 = $3,
+            lease_token = NULL, lease_expires_at = NULL,
+            review_deadline = now() + interval '1 day', resolved_at = NULL,
+            updated_at = now()
+      WHERE id = $1 AND version = $4 AND attempt_count = $5
+        AND state = 'processing' AND lease_expires_at <= now()
+      RETURNING ${CASE_COLUMNS}`,
+    [
+      row.id,
+      errorCode,
+      finalEvidence,
+      spec.expectedVersion,
+      spec.expectedAttemptCount,
+    ],
+  );
+  if (!updated.rows[0]) {
+    throw new Error('contador-fulfillment: terminalization lost exact guard');
+  }
+  await insertReceipt(client, {
+    caseId: row.id,
+    caseVersion: row.version,
+    stage: 'final',
+    outcome: 'exception',
+    resultCode: errorCode,
+    evidenceSha256: finalEvidence,
+    sourceEventId: row.last_source_event_id,
+    occurredAt,
+  });
+  return { item: toItem(updated.rows[0]), alreadyTerminalized: false };
+}
+
+export async function terminalizeExpiredContadorFulfillmentCases(
+  specs: ContadorExpiredCaseSpec[],
+  occurredAt: string,
+): Promise<
+  Array<{ item: DurableContadorFulfillmentCase; alreadyTerminalized: boolean }>
+> {
+  if (specs.length < 1 || specs.length > 20) {
+    throw new Error(
+      'contador-fulfillment: terminalization batch out of bounds',
+    );
+  }
+  const ids = new Set(specs.map((spec) => spec.caseId));
+  if (ids.size !== specs.length) {
+    throw new Error('contador-fulfillment: duplicate terminalization case id');
+  }
+  assertIso(occurredAt, 'terminalization occurredAt');
+  return withAgentContext(ACTOR, async (client) => {
+    for (const spec of specs) {
+      const { inspection } = await inspectExpiredCaseWithClient(
+        client,
+        spec,
+        true,
+      );
+      if (!inspection.eligible && !inspection.alreadyTerminalized) {
+        throw new Error(
+          `contador-fulfillment: terminalization refused for case ${spec.caseId} (${inspection.errorCode})`,
+        );
+      }
+    }
+    const results: Array<{
+      item: DurableContadorFulfillmentCase;
+      alreadyTerminalized: boolean;
+    }> = [];
+    for (const spec of specs) {
+      results.push(
+        await terminalizeExpiredContadorFulfillmentCaseWithClient(
+          client,
+          spec,
+          occurredAt,
+        ),
+      );
+    }
+    return results;
+  });
 }
 
 export async function beginContadorFulfillment(

@@ -487,6 +487,15 @@ A persisted five-minute UUID lease prevents overlapping direct/reaper or
 Checkout/PaymentIntent deliveries from running concurrent children; an expired
 lease creates a new version and invalidates the old token before takeover.
 
+Migration 139 extends only the typed charge alias from `ch_` to the provider-
+supported `ch_`/`py_` pair. Processor aliases are validated before finalization;
+a processor/contract failure returns a durable handled `write_failed` case
+rather than leaving the webhook retry loop as ownership. The host-only expired-
+case terminalizer is default-dry-run, exact case/version/attempt bound, refuses
+active leases or state drift, and has no provider/Sheet/roster/payment client.
+Its repair receipts contain only bounded codes/hashes/timestamps and preserve
+the original source-observed time.
+
 `webhook_inbox.handled` is not fulfillment authority by itself. It becomes
 credible for this source only when `related_entity` binds the exact durable
 case/version after a complete or explicit exception transaction.

@@ -9,6 +9,11 @@ vi.mock('./stripe-payment-source.js', () => ({
   resolveStripePaymentSource: mockResolveSource,
 }));
 vi.mock('./contador-payment-fulfillment-store.js', () => ({
+  assertContadorProviderAlias: (alias: { kind: string; id: string }) => {
+    if (alias.kind === 'charge' && !/^(ch|py)_[A-Za-z0-9_]+$/.test(alias.id)) {
+      throw new Error('invalid charge alias');
+    }
+  },
   beginContadorFulfillment: mockBeginFulfillment,
   finalizeContadorFulfillment: mockFinalizeFulfillment,
 }));
@@ -58,6 +63,7 @@ beforeEach(() => {
   mockBeginFulfillment.mockResolvedValue({
     duplicateComplete: false,
     inFlight: false,
+    terminalHeld: false,
     leaseToken: '00000000-0000-4000-8000-000000000001',
     item: {
       id: '42',
@@ -337,6 +343,7 @@ describe('handleStripePayment', () => {
     mockBeginFulfillment.mockResolvedValueOnce({
       duplicateComplete: true,
       inFlight: false,
+      terminalHeld: false,
       leaseToken: null,
       item: { id: '42', state: 'complete', version: 2, attemptCount: 2 },
     });
@@ -359,6 +366,7 @@ describe('handleStripePayment', () => {
     mockBeginFulfillment.mockResolvedValueOnce({
       duplicateComplete: false,
       inFlight: true,
+      terminalHeld: false,
       leaseToken: null,
       item: { id: '42', state: 'processing', version: 0, attemptCount: 1 },
     });
@@ -373,6 +381,38 @@ describe('handleStripePayment', () => {
     ).rejects.toBeInstanceOf(StripeFulfillmentInFlightError);
     expect(invocation).not.toHaveBeenCalled();
     expect(mockFinalizeFulfillment).not.toHaveBeenCalled();
+  });
+
+  it('never reruns external writes for a terminalized expired case', async () => {
+    mockBeginFulfillment.mockResolvedValueOnce({
+      duplicateComplete: false,
+      inFlight: false,
+      terminalHeld: true,
+      leaseToken: null,
+      item: {
+        id: '42',
+        state: 'write_failed',
+        version: 3,
+        attemptCount: 4,
+      },
+    });
+    const invocation = vi.fn();
+    execFileImpl = (...args: any[]) => invocation(...args);
+    const result = await handleStripePayment({
+      stripe_id: 'pi_terminalized',
+      event_type: 'payment_intent.succeeded',
+      account: 'heartbeat',
+    });
+    expect(invocation).not.toHaveBeenCalled();
+    expect(mockFinalizeFulfillment).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      fulfillmentCaseId: '42',
+      fulfillmentState: 'write_failed',
+      fulfillmentVersion: 3,
+      duplicateComplete: false,
+      lifecycleEnqueued: false,
+    });
+    expect(result.summary).toContain('[PAYMENT HELD]');
   });
 
   it('invokes process-payment.cjs with the stripe id', async () => {
@@ -503,13 +543,37 @@ describe('handleStripePayment', () => {
         stderr: '',
       });
     };
-    await expect(
-      handleStripePayment({
-        stripe_id: 'pi_incomplete',
-        event_type: 'payment_intent.succeeded',
-        account: 'heartbeat',
+    const result = await handleStripePayment({
+      stripe_id: 'pi_incomplete',
+      event_type: 'payment_intent.succeeded',
+      account: 'heartbeat',
+    });
+    expect(result.fulfillmentState).toBe('write_failed');
+    expect(mockFinalizeFulfillment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        state: 'write_failed',
+        errorCode: 'processor_contract_invalid',
       }),
-    ).rejects.toThrow('incomplete Stripe processor stage receipts');
+    );
+  });
+
+  it('persists and returns a durable exception for a script failure', async () => {
+    execFileImpl = (_f: string, _a: string[], _o: any, cb: any) =>
+      cb(new Error('[EL CONTADOR] ERROR: Stripe 404'), {
+        stdout: '',
+        stderr: '',
+      });
+    const result = await handleStripePayment({
+      stripe_id: 'pi_dead',
+      event_type: 'payment_intent.succeeded',
+      account: 'heartbeat',
+    });
+    expect(result).toMatchObject({
+      fulfillmentState: 'write_failed',
+      duplicateComplete: false,
+      lifecycleEnqueued: false,
+    });
+    expect(result.summary).toContain('[PAYMENT HELD]');
     expect(mockFinalizeFulfillment).toHaveBeenCalledWith(
       expect.objectContaining({
         state: 'write_failed',
@@ -518,23 +582,115 @@ describe('handleStripePayment', () => {
     );
   });
 
-  it('propagates a script failure', async () => {
-    execFileImpl = (_f: string, _a: string[], _o: any, cb: any) =>
-      cb(new Error('[EL CONTADOR] ERROR: Stripe 404'), {
-        stdout: '',
+  it('accepts a provider-supported py_ charge alias from the processor', async () => {
+    execFileImpl = (_file: string, args: string[], _opts: any, cb: any) => {
+      const fulfillment = {
+        version: 1,
+        stripeAccount: 'heartbeat',
+        paymentIntentId: args[1],
+        sourceObjectId: args[1],
+        state: 'complete',
+        errorCode: null,
+        aliases: [
+          { kind: 'payment_intent', id: args[1] },
+          { kind: 'charge', id: 'py_provider_charge' },
+        ],
+        receipts: [
+          {
+            stage: 'stripe_source',
+            outcome: 'verified',
+            resultCode: 'stripe_source_resolved',
+          },
+          {
+            stage: 'payment_log',
+            outcome: 'verified',
+            resultCode: 'payment_log_readback_verified',
+          },
+          {
+            stage: 'postgres_payment',
+            outcome: 'verified',
+            resultCode: 'postgres_payment_readback_verified',
+          },
+          {
+            stage: 'student_roster',
+            outcome: 'verified',
+            resultCode: 'student_roster_readback_verified',
+          },
+        ],
+      };
+      cb(null, {
+        stdout: `summary\n__CONTADOR_FULFILLMENT__${Buffer.from(JSON.stringify(fulfillment)).toString('base64url')}\n`,
         stderr: '',
       });
-    await expect(
-      handleStripePayment({
-        stripe_id: 'pi_dead',
-        event_type: 'payment_intent.succeeded',
-        account: 'heartbeat',
+    };
+    const result = await handleStripePayment({
+      stripe_id: 'pi_py_charge',
+      event_type: 'payment_intent.succeeded',
+      account: 'heartbeat',
+    });
+    expect(result.fulfillmentState).toBe('complete');
+    expect(mockFinalizeFulfillment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        aliases: expect.arrayContaining([
+          { kind: 'charge', id: 'py_provider_charge' },
+        ]),
       }),
-    ).rejects.toThrow(/EL CONTADOR/);
+    );
+  });
+
+  it('holds an invalid optional alias instead of stranding processing', async () => {
+    execFileImpl = (_file: string, args: string[], _opts: any, cb: any) => {
+      const fulfillment = {
+        version: 1,
+        stripeAccount: 'heartbeat',
+        paymentIntentId: args[1],
+        sourceObjectId: args[1],
+        state: 'complete',
+        errorCode: null,
+        aliases: [
+          { kind: 'payment_intent', id: args[1] },
+          { kind: 'charge', id: 'pa_invalid_charge' },
+        ],
+        receipts: [
+          {
+            stage: 'stripe_source',
+            outcome: 'verified',
+            resultCode: 'stripe_source_resolved',
+          },
+          {
+            stage: 'payment_log',
+            outcome: 'verified',
+            resultCode: 'payment_log_readback_verified',
+          },
+          {
+            stage: 'postgres_payment',
+            outcome: 'verified',
+            resultCode: 'postgres_payment_readback_verified',
+          },
+          {
+            stage: 'student_roster',
+            outcome: 'verified',
+            resultCode: 'student_roster_readback_verified',
+          },
+        ],
+      };
+      cb(null, {
+        stdout: `summary\n__CONTADOR_FULFILLMENT__${Buffer.from(JSON.stringify(fulfillment)).toString('base64url')}\n`,
+        stderr: '',
+      });
+    };
+    const result = await handleStripePayment({
+      stripe_id: 'pi_invalid_alias',
+      event_type: 'payment_intent.succeeded',
+      account: 'heartbeat',
+    });
+    expect(result.fulfillmentState).toBe('write_failed');
+    expect(mockFinalizeFulfillment).toHaveBeenCalledTimes(1);
     expect(mockFinalizeFulfillment).toHaveBeenCalledWith(
       expect.objectContaining({
         state: 'write_failed',
-        errorCode: 'processor_failed',
+        errorCode: 'processor_contract_invalid',
+        aliases: [{ kind: 'payment_intent', id: 'pi_invalid_alias' }],
       }),
     );
   });

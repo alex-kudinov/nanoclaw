@@ -233,6 +233,15 @@ inbox/case/PostgreSQL row. The happy path is proven, but terminalization and
 ingress parity remain open. Do not replay or repair either payment under the
 observation task.
 
+The authorized correction uses migration 139 to admit both provider-supported
+`ch_` and `py_` charge objects, prevalidates processor aliases, and returns a
+durable handled `write_failed` result for processor/contract failure instead of
+throwing after terminal state exists. A compiled exact-case terminalizer is
+dry-run by default and requires matching case/version/attempt plus an expired
+processing lease; its applied path writes only failed-stage/final receipts and
+never replays an event or invokes an external system. Production application
+is pending independent review and release gates.
+
 Minimum fields:
 
 - source account plus Payment Intent, Checkout Session, charge, invoice, and

@@ -25,6 +25,7 @@ import {
 import { readEnvFile } from './env.js';
 import { logger } from './logger.js';
 import {
+  assertContadorProviderAlias,
   beginContadorFulfillment,
   finalizeContadorFulfillment,
   type ContadorFulfillmentState,
@@ -257,6 +258,11 @@ function assertProcessorFulfillment(
       'invalid Stripe processor fulfillment receipts',
     );
   }
+  try {
+    result.aliases.forEach(assertContadorProviderAlias);
+  } catch {
+    throw new StripePayloadError('invalid Stripe processor fulfillment alias');
+  }
   const byStage = new Map<string, ContadorStageReceiptInput>(
     result.receipts.map((receipt) => [receipt.stage, receipt]),
   );
@@ -293,6 +299,67 @@ function buildScriptEnv(): NodeJS.ProcessEnv {
     SHEETS_SA_JSON: SA_JSON,
     PGDATABASE: 'nanoclaw_business',
     PATH: `${process.env.PATH ?? ''}:${PSQL_DIR}`,
+  };
+}
+
+async function persistProcessorFailure(input: {
+  stripeId: string;
+  source: ResolvedStripePaymentSource;
+  admission: Awaited<ReturnType<typeof beginContadorFulfillment>>;
+  isRefund: boolean;
+  errorCode: 'processor_failed' | 'processor_contract_invalid';
+  finalizeFulfillment: typeof finalizeContadorFulfillment;
+}): Promise<StripePaymentResult> {
+  const failedCase = await input.finalizeFulfillment({
+    caseId: input.admission.item.id,
+    expectedVersion: input.admission.item.version,
+    leaseToken: input.admission.leaseToken!,
+    sourceEventId: input.source.sourceEventId,
+    state: 'write_failed',
+    errorCode: input.errorCode,
+    occurredAt: input.source.observedAt,
+    aliases: input.source.aliases,
+    receipts: [
+      {
+        stage: 'stripe_source',
+        outcome: 'verified',
+        resultCode: 'stripe_source_resolved',
+      },
+      {
+        stage: 'payment_log',
+        outcome: 'failed',
+        resultCode: 'processor_failed_before_verified_receipt',
+      },
+      {
+        stage: 'postgres_payment',
+        outcome: 'failed',
+        resultCode: 'processor_failed_before_verified_receipt',
+      },
+      {
+        stage: input.isRefund ? 'refund_fulfillment' : 'student_roster',
+        outcome: 'failed',
+        resultCode: 'processor_failed_before_verified_receipt',
+      },
+    ],
+  });
+  logger.warn(
+    {
+      caseId: failedCase.id,
+      fulfillmentState: failedCase.state,
+      errorCode: input.errorCode,
+    },
+    input.isRefund
+      ? 'Stripe refund held as durable fulfillment exception'
+      : 'Stripe payment held as durable fulfillment exception',
+  );
+  return {
+    stripeId: input.stripeId,
+    summary: `${input.isRefund ? '[REFUND HELD]' : '[PAYMENT HELD]'}\nFulfillment Case: ${failedCase.id}\nState: ${failedCase.state}`,
+    lifecycleEnqueued: false,
+    fulfillmentCaseId: failedCase.id,
+    fulfillmentState: failedCase.state,
+    fulfillmentVersion: failedCase.version,
+    duplicateComplete: false,
   };
 }
 
@@ -355,6 +422,17 @@ export async function handleStripePayment(
       duplicateComplete: true,
     };
   }
+  if (admission.terminalHeld) {
+    return {
+      stripeId,
+      summary: `${isRefund ? '[REFUND HELD]' : '[PAYMENT HELD]'}\nFulfillment Case: ${admission.item.id}\nState: ${admission.item.state}`,
+      lifecycleEnqueued: false,
+      fulfillmentCaseId: admission.item.id,
+      fulfillmentState: admission.item.state,
+      fulfillmentVersion: admission.item.version,
+      duplicateComplete: false,
+    };
+  }
   if (admission.inFlight || !admission.leaseToken) {
     throw new StripeFulfillmentInFlightError(admission.item.id);
   }
@@ -386,38 +464,19 @@ export async function handleStripePayment(
     parsed = parseLifecycleSentinel(stdout);
     fulfillment = assertProcessorFulfillment(parsed.fulfillment, source);
   } catch (err) {
+    const errorCode =
+      err instanceof StripePayloadError
+        ? 'processor_contract_invalid'
+        : 'processor_failed';
     try {
-      await (deps.finalizeFulfillment ?? finalizeContadorFulfillment)({
-        caseId: admission.item.id,
-        expectedVersion: admission.item.version,
-        leaseToken: admission.leaseToken,
-        sourceEventId: source.sourceEventId,
-        state: 'write_failed',
-        errorCode: 'processor_failed',
-        occurredAt: source.observedAt,
-        aliases: source.aliases,
-        receipts: [
-          {
-            stage: 'stripe_source',
-            outcome: 'verified',
-            resultCode: 'stripe_source_resolved',
-          },
-          {
-            stage: 'payment_log',
-            outcome: 'failed',
-            resultCode: 'processor_failed_before_verified_receipt',
-          },
-          {
-            stage: 'postgres_payment',
-            outcome: 'failed',
-            resultCode: 'processor_failed_before_verified_receipt',
-          },
-          {
-            stage: isRefund ? 'refund_fulfillment' : 'student_roster',
-            outcome: 'failed',
-            resultCode: 'processor_failed_before_verified_receipt',
-          },
-        ],
+      return await persistProcessorFailure({
+        stripeId,
+        source,
+        admission,
+        isRefund,
+        errorCode,
+        finalizeFulfillment:
+          deps.finalizeFulfillment ?? finalizeContadorFulfillment,
       });
     } catch (ledgerError) {
       logger.error(
@@ -429,7 +488,6 @@ export async function handleStripePayment(
         { cause: err },
       );
     }
-    throw err;
   }
   const finalCase: DurableContadorFulfillmentCase = await (
     deps.finalizeFulfillment ?? finalizeContadorFulfillment

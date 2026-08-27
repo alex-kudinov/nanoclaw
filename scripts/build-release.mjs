@@ -155,6 +155,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_137_relationship_context_dark.sql',
     'data/business/migrations/nanoclaw-v2/138_relationship_owner_authority.sql',
     'data/business/migrations/nanoclaw-v2/rollback_138_relationship_owner_authority.sql',
+    'data/business/migrations/nanoclaw-v2/139_contador_charge_alias_compatibility.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_139_contador_charge_alias_compatibility.sql',
     'scripts/verify-release.mjs',
     'scripts/runtime-doctor.mjs',
     'scripts/with-pinned-node.sh',

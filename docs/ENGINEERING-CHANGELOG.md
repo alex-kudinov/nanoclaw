@@ -1280,6 +1280,32 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   on the bounded alias/terminalization correction and registers separate
   unauthorized `work:stripe-payment-ingress-parity`. Refund closure remains a
   distinct candidate and is not part of the successful payment proof.
+- Terminal-state correction implementation addendum 2026-08-27T18:10:00Z:
+  accepted decision `decision:contador-terminal-case-correction-2026-08-27`
+  authorizes the smallest no-replay correction. Migration/rollback 139 adds
+  typed `ch_`/`py_` charge aliases; host prevalidation turns processor/contract
+  failures into returned durable `write_failed` cases; and a compiled default-
+  dry-run terminalizer requires exact case/version/attempt plus expired lease
+  before writing bounded failed-stage/final receipts. It preserves source time
+  and has no Stripe/n8n/Sheet/roster/payment/refund/communication client.
+- Correction verification so far: focused host/store/source/webhook/reaper/
+  safety/migration/CLI tests 123/123, format, typecheck, build, and disposable
+  PostgreSQL migration/apply/replay/refusal/rollback pass. Disposable state was
+  removed. Independent review, full gates, release, migration, exact two-case
+  terminalization, and live non-interference remain pending; production is
+  unchanged.
+- Independent correction review: Claude Sonnet/high R1 found that a later
+  delivery could reopen an `expired_processing_terminalized` case and rerun
+  external processing. The verified fix adds `terminalHeld` before ordinary
+  retry, skips alias/receipt/case mutation, returns no lease, and exits host
+  handling before processor/finalizer/lifecycle work. Direct store/host
+  regressions pass; R2 returned `NO MATERIAL FINDINGS`. The Info attempt used
+  zero tokens; Alex R1/R2 used 25 turns total, 183,464 cache-creation, 879,076
+  cache-read, and 27,134 output tokens. R1 exceeded the 100k context target.
+- Final local correction gates: focused 125/125; format, typecheck, build,
+  continuity/capability pass; full root 3,347 pass / 31 skip with the sole
+  unchanged CNPC assertion; runner build/45 pass. Commit/release/migration/live
+  terminalization remain pending and production is unchanged.
 
 ### NC-20260822-011 — Host-owned Gmail attachment processing
 
