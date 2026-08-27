@@ -856,6 +856,10 @@ CORRECTIONS`. The plan now includes the missing fixtures-only reconciliation
   waiting because expired `processing` is neither complete nor an owned
   terminal exception. Fixing compatibility and terminalizing existing rows
   without external replay requires a bounded correction/data decision.
+- Program reconciliation: revision 142 leaves the item `waiting`, registers
+  `work:stripe-payment-ingress-parity` as a separate unauthorized candidate,
+  and keeps product/student identity dependency-blocked. Refund closure remains
+  its own candidate and is not required for the admitted-payment proof.
 
 - Authorization: accepted decision
   `decision:contador-fulfillment-case-ledger-authority` covers this C4

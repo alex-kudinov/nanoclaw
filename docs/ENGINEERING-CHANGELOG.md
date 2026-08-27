@@ -1246,6 +1246,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   refund, communication, code, configuration, or deployment occurred. A
   bounded correction/data decision and a separate ingress-parity item are
   required; product/student identity remains dependency-blocked.
+- Program reconciliation: revision 142 returns the ledger item to `waiting`
+  on the bounded alias/terminalization correction and registers separate
+  unauthorized `work:stripe-payment-ingress-parity`. Refund closure remains a
+  distinct candidate and is not part of the successful payment proof.
 
 ### NC-20260822-011 — Host-owned Gmail attachment processing
 

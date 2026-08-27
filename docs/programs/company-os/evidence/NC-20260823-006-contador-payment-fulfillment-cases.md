@@ -198,3 +198,11 @@ compatible and terminalize the two existing cases host-side without external
 replay under separately recorded authority. Missing provider delivery is a
 separate ingress-parity work item. Product/student identity stays dependency-
 blocked; refund closure stays separate.
+
+Company OS revision 142 returns
+`work:contador-fulfillment-case-ledger` to `waiting` with that exact correction
+gate and no active claim. It registers candidate
+`work:stripe-payment-ingress-parity` for content-minimized both-account
+detection and owned exception capture without automatic replay. The refund
+candidate remains separate; the product/student identity candidates remain
+blocked on the terminal case-ledger invariant.
