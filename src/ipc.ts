@@ -92,6 +92,7 @@ import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
 import {
+  approvalCardSemanticIssue,
   approvalCardRejectedText,
   buildApprovedHandoff,
   isApprovalCard,
@@ -598,6 +599,43 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     ([, g]) => g.folder === sourceGroup,
                   );
                   if (sourceEntry) {
+                    const semanticIssue = approvalCardSemanticIssue(data.text);
+                    if (semanticIssue) {
+                      writeRejectedApprovalCardInput(
+                        sourceGroup,
+                        data.source_container,
+                        deps.deliverSourceInput,
+                        semanticIssue,
+                      );
+                      const recipient = parseApprovalCardRecipient(data.text);
+                      await deps.sendMessage(
+                        sourceEntry[0],
+                        approvalCardRejectedText(
+                          sourceEntry[1].name,
+                          `This draft was not posted for approval because ${semanticIssue}`,
+                        ),
+                        {
+                          fromGroup: sourceGroup,
+                          threadTs: outboundThreadTsFor(sourceEntry[0]),
+                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                            sourceEntry[0],
+                          ),
+                          ...(recipient
+                            ? { threadKey: `lead:${recipient}` }
+                            : {}),
+                        },
+                      );
+                      const quarantinedAt = quarantineIpcFile(
+                        filePath,
+                        sourceGroup,
+                        'approval-card-semantic',
+                      );
+                      logger.error(
+                        { sourceGroup, semanticIssue, quarantinedAt },
+                        'IPC guard: semantically invalid approval card rejected before approval',
+                      );
+                      continue;
+                    }
                     const approvedHandoff = buildApprovedHandoff(data.text);
                     if (!approvedHandoff) {
                       writeRejectedApprovalCardInput(

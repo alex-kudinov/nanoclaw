@@ -3,11 +3,66 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import {
+  approvalCardSemanticIssue,
   buildApprovedHandoff,
   isApprovalCard,
   parseApprovalCardRecipientHeaders,
   parseMailmanHandoff,
 } from './approved-send-handoff.js';
+
+describe('approvalCardSemanticIssue', () => {
+  const validSalesCard = `[SALES REVIEW] Lead #871
+Category: enrollment
+Email: learner@example.com
+Route: ANSWER
+
+DRAFT RESPONSE TO LEAD:
+---
+Subject: Re: Course support
+
+Exact response.
+---`;
+
+  it('rejects SERVICE work disguised as a Sales Review before approval', () => {
+    const card = `[SALES REVIEW] Lead #(none — unresolved)
+Email: learner@example.com
+Route: SERVICE
+
+DRAFT RESPONSE TO LEAD:
+---
+Subject: Re: Course support
+
+Exact support response.
+---`;
+    expect(approvalCardSemanticIssue(card)).toContain(
+      'Route: SERVICE must use [CLIENT SUPPORT REVIEW]',
+    );
+    // Historical execution parsing stays available for reconciliation.
+    expect(buildApprovedHandoff(card)).not.toBeNull();
+  });
+
+  it('requires a numeric lead for Sales Review and SERVICE for support', () => {
+    expect(
+      approvalCardSemanticIssue(
+        validSalesCard.replace('Lead #871', 'Lead #(none)'),
+      ),
+    ).toContain('requires one numeric Lead #');
+    expect(
+      approvalCardSemanticIssue(
+        `[CLIENT SUPPORT REVIEW]\nEmail: learner@example.com\nRoute: ANSWER\n\nDRAFT RESPONSE:\n---\nSubject: Re: Help\n\nBody.\n---`,
+      ),
+    ).toContain('requires exactly one Route: SERVICE');
+  });
+
+  it('accepts the current route/card combinations', () => {
+    expect(approvalCardSemanticIssue(validSalesCard)).toBeUndefined();
+    expect(
+      approvalCardSemanticIssue(
+        `[CLIENT SUPPORT REVIEW]\nEmail: learner@example.com\nRoute: SERVICE\n\nDRAFT RESPONSE:\n---\nSubject: Re: Help\n\nBody.\n---`,
+      ),
+    ).toBeUndefined();
+  });
+});
 
 // The real Lead #871 card the operator approved on 2026-07-31, which sales then
 // failed to hand off.

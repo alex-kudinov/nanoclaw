@@ -50,6 +50,45 @@ export function isApprovalCard(text: string): boolean {
   return CARD_MARKER.test(text);
 }
 
+/**
+ * Reject route/card combinations that are parseable but would corrupt the
+ * workflow model. Keep this separate from `buildApprovedHandoff`: execution
+ * must remain able to reconcile historical approved cards, while every new
+ * post and approval is held to the current producer contract.
+ */
+export function approvalCardSemanticIssue(text: string): string | undefined {
+  const marker = text.match(CARD_MARKER)?.[0]?.trim().toUpperCase();
+  if (!marker) return undefined;
+
+  const lines = text.split(/\r?\n/);
+  const boundary = lines.findIndex(
+    (line) => DRAFT_HEADING.test(line) || FENCE.test(line),
+  );
+  const header = lines.slice(0, boundary === -1 ? lines.length : boundary);
+  const routes = header
+    .map((line) => /^\s*Route\s*:\s*([A-Z_-]+)\s*$/i.exec(line)?.[1])
+    .filter((route): route is string => route !== undefined)
+    .map((route) => route.toUpperCase());
+
+  if (marker === '[SALES REVIEW]') {
+    if (routes.includes('SERVICE')) {
+      return 'Route: SERVICE must use [CLIENT SUPPORT REVIEW], never [SALES REVIEW].';
+    }
+    if (!LEAD_LINE.test(header.join('\n'))) {
+      return 'A [SALES REVIEW] requires one numeric Lead #; support work must use [CLIENT SUPPORT REVIEW].';
+    }
+  }
+
+  if (
+    marker === '[CLIENT SUPPORT REVIEW]' &&
+    (routes.length !== 1 || routes[0] !== 'SERVICE')
+  ) {
+    return 'A [CLIENT SUPPORT REVIEW] requires exactly one Route: SERVICE line.';
+  }
+
+  return undefined;
+}
+
 /** One operator-visible vocabulary for every fail-closed approval-card path. */
 export function approvalCardRejectedText(
   authorName: string,

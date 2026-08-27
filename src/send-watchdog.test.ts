@@ -266,6 +266,16 @@ describe('recordApproval', () => {
     expect(store.rows).toHaveLength(0);
   });
 
+  it('refuses to arm SERVICE work posted as a Sales Review', () => {
+    const store = makeStore();
+    const invalid = CARD.replace(
+      'Category: program-info',
+      'Category: program-info\nRoute: SERVICE',
+    );
+    expect(recordApproval({ ...base, cardText: invalid }, store)).toBeNull();
+    expect(store.rows).toHaveLength(0);
+  });
+
   it('records durable Gmail scope for a support-reply approval', () => {
     const store = makeStore();
     const row = recordApproval(

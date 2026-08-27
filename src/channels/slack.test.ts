@@ -2605,6 +2605,40 @@ Use https://zoom.us.evil.example/j/123.
       );
     });
 
+    it('refuses SERVICE work posted as a Sales Review before approval', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = await connected();
+      const invalidCard = `[SALES REVIEW] Lead #(none — unresolved)
+Email: learner@example.com
+Route: SERVICE
+
+DRAFT RESPONSE TO LEAD:
+---
+Subject: Re: Course support
+
+Exact support response.
+---`;
+
+      await channel.sendMessage(JID, invalidCard, { fromGroup: 'sales' });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post).toHaveBeenCalledTimes(1);
+      expect(post).toHaveBeenCalledWith(
+        expect.objectContaining({
+          thread_ts: '1785230544.590929',
+          text: expect.stringMatching(
+            /\[APPROVAL CARD REJECTED\].*Route: SERVICE must use \[CLIENT SUPPORT REVIEW\].*Sales must repost/,
+          ),
+        }),
+      );
+      expect(post.mock.calls[0][0].text).not.toContain(
+        'Exact support response.',
+      );
+    });
+
     it('posts a discount card only when the exact term came from a human in that thread', async () => {
       vi.mocked(resolveThreadAnchor).mockReturnValue({
         threadTs: '1786475865.628699',

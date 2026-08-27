@@ -405,6 +405,44 @@ describe('IPC handoff routing', () => {
     );
   });
 
+  it('rejects SERVICE work disguised as a Sales Review before Slack approval', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.deliverSourceInput = vi.fn(() => true);
+    const card =
+      '[SALES REVIEW] Lead #(none — unresolved)\nCategory: program-content\n' +
+      'Email: learner@example.com\nRoute: SERVICE\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\nSubject: Re: Course support\n\nExact support response.\n---';
+    writeHandoffFile(
+      'sales',
+      card,
+      undefined,
+      'lead:learner@example.com',
+      'nanoclaw-sales-support-invalid',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringMatching(
+        /\[APPROVAL CARD REJECTED\].*Route: SERVICE must use \[CLIENT SUPPORT REVIEW\]/,
+      ),
+      expect.objectContaining({ fromGroup: 'sales' }),
+    );
+    expect(
+      sendMessage.mock.calls.some((call) =>
+        String(call[1]).includes('Exact support response.'),
+      ),
+    ).toBe(false);
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-support-invalid',
+      expect.stringContaining('[approval_card REJECTED]'),
+    );
+  });
+
   it('acknowledges a host-accepted approval card to its exact originating container', async () => {
     process.env.MAILMAN_HOLD_SECONDS = '0';
     const { startIpcWatcher } = await import('./ipc.js');

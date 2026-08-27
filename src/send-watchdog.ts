@@ -20,6 +20,7 @@
  */
 
 import {
+  approvalCardSemanticIssue,
   approvalCardRejectedText,
   buildApprovedHandoff,
   isApprovalCard,
@@ -193,6 +194,7 @@ export function recordApproval(
   store: SendWatchdogStore,
 ): PendingSend | null {
   if (!isTrackableCard(opts.cardText)) return null;
+  if (approvalCardSemanticIssue(opts.cardText)) return null;
   const approved = buildApprovedHandoff(opts.cardText);
   // The arming surface is exactly the same parseability contract enforced
   // before the card reaches Slack. Never mint an action for a malformed or
@@ -253,14 +255,16 @@ export async function observeApprovalCard(
   const pending = recordApproval(opts, store);
   const rejected = isApprovalCard(opts.cardText) && !pending;
   if (rejected) {
+    const semanticIssue = approvalCardSemanticIssue(opts.cardText);
     const parsed = buildApprovedHandoff(opts.cardText);
     const contentCheck = parsed
       ? checkContent(parsed.subject, parsed.body, {
           authorizedDiscountTerms: opts.authorizedDiscountTerms,
         })
       : undefined;
-    const reason =
-      contentCheck && !contentCheck.ok
+    const reason = semanticIssue
+      ? `This approval was not armed because ${semanticIssue} It was NOT sent.`
+      : contentCheck && !contentCheck.ok
         ? `This approval was not armed because its exact subject/body fail the host content guard: ${contentCheck.violations.join('; ')}. It was NOT sent.`
         : 'This approval was not armed because the card cannot be bound to one exact Email, fenced Subject, and body. It was NOT sent.';
     await postRejected(approvalCardRejectedText(opts.authorName, reason));

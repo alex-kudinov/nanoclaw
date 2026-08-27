@@ -75,6 +75,32 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Follow-ups: the Mac UI is locked. After unlock, re-drive the exact existing
   Sales thread and verify one unapproved support card plus unchanged zero open
   pipeline rows. Customer sending remains a separate exact operator approval.
+- Natural canary addendum 2026-08-27T03:50:00Z: the operator correctly noted
+  that NanoClaw can re-drive Sales without Mac UI access. Before the host route
+  landed, the operator's own generic retry produced an invalid but parseable
+  `[SALES REVIEW] Lead #(none)` with `Route: SERVICE`; the operator approved
+  that exact card and Gmail confirmed Action
+  `82c85082-0c54-4be0-9cc7-028c872b51b7` once with receipt
+  `1a04153d4f7024db` on the original Gmail thread. The subsequent host reprocess
+  produced the correct pipeline-free `[CLIENT SUPPORT REVIEW]`; a host stop
+  follows it, it remains unapproved, the ledger contains one confirmed action,
+  and Party 11069 still has zero open pipeline entries.
+- Enforcement correction: prompt policy alone did not fail closed on model
+  drift. The host now classifies route/card semantic defects separately from
+  historical execution parsing. New posts and approvals reject
+  SERVICE-as-Sales, a Sales card without one numeric Lead ID, and a support card
+  without exactly one SERVICE route across IPC admission, Slack defense in
+  depth, and action arming. Historical approved-card execution remains
+  parseable for receipt/replay reconciliation. Focused parser/watchdog/Slack/
+  IPC coverage passes 222/222. Bounded Claude Sonnet/high R2 returned
+  `NO MATERIAL FINDINGS` after checking structured-header isolation, exact
+  marker scope, all three enforcement points, body non-disclosure, action non-
+  creation, and historical execution compatibility. R2 used 13 model calls,
+  1,453,615 cache-read tokens, 15,530 output tokens, and 160,948 maximum
+  context, above the 100k review target. Pinned typecheck, format, continuity,
+  email replay 13/13, email-critical 746/746, and full root 3,324 pass / 30 skip
+  gates pass with the sole unchanged CNPC wrapper assertion. Commit, release,
+  deployment, and inert malformed-card live rejection remain pending.
 
 ### NC-20260826-006 — Defensible client and customer relationship projection
 
