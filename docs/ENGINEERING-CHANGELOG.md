@@ -12,8 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-27T05:29:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_deploy; production still runs the pre-change artifact at
-  this boundary
+- State: complete; reviewed artifact deployed and live-verified through the
+  first fresh heartbeat and following watchdog tick
+- Commit/PR: pushed `6dcdf4bd` on
+  `codex/watchdog-heartbeat-grace-20260827`
 - Change class: C3 deterministic host recovery behavior
 - Incident: an ordinary 23:17 local daemon deployment restart inherited a
   23:08:54 stored Slack heartbeat. The 120-second watchdog scored the heartbeat
@@ -33,9 +35,19 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   model calls, maximum context 80,751, 240,911 cache-read and 17,255 output
   tokens. The earlier Info attempt consumed zero tokens and produced no review
   because that subscription was at its monthly limit.
-- Scope/non-interference: isolated worktree only. No production artifact,
-  daemon/watchdog service, database, provider, customer, message, approval,
-  schedule, or credential state changed at this review boundary.
+- Deployment: preflight proved the live script exactly matched predecessor
+  SHA-256 `77d7d05d`. Exact reviewed SHA-256 `ec488448` was syntax/hash checked,
+  installed atomically into the existing path, and read back exact. Rollback:
+  `scripts/nanoclaw-watchdog.sh.rollback-NC-20260827-001-20260827T0532Z`.
+  Neither NanoClaw nor the watchdog launchd job was restarted.
+- Live verification: natural 00:33:50 and 00:35:51 ticks applied bounded grace
+  and logged `OK`; NanoClaw stored a fresh Slack heartbeat at 00:37:15 and the
+  00:37:52 tick logged plain `OK`. PID 28556 remained unchanged beyond its
+  configured 600-second first-heartbeat point. Slack/Gmail were connected,
+  active/waiting/outgoing queues were empty, and watchdog failures were zero.
+- Non-interference: no database/provider/customer/message/approval/schedule/
+  credential mutation and no manufactured work. The independently deployed
+  NanoClaw release remained outside this script-only change.
 - Evidence:
   `docs/reports/NC-20260827-001-CLAUDE-IMPLEMENTATION-REVIEW-RESPONSE-R1.md`.
 
