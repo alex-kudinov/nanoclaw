@@ -223,6 +223,33 @@ Exact live `1a381e48` has 1,364 Plutio person refs, 1,242 Encharge person refs,
 159 Trafft customer refs, 358 appointment refs, and 66 terminal legacy
 appointment exceptions with zero provider conflicts. Query remains disabled.
 
+`NC-20260826-005` adds no migration. Its local source introduces default-off,
+read-only adapters for both fixed Stripe account scopes, immutable archived
+contact submissions, and verified Chaos visitor links. Stripe retains an
+existing exact customer ref or requires one account-local unique provider
+email to one canonical Party; contact form requires one unique submitted
+identity; Chaos requires one interaction Party plus agreeing handled verified
+inbox evidence. Every unresolved or conflicting identity is terminal legacy;
+a prior active Chaos ref becomes conflicted on later disagreement. Persisted
+facts exclude raw payloads, emails, names, messages, amounts/card data, intent
+summaries, and browsing history. `RELATIONSHIP_CONTEXT_ENABLED=0` and zero
+minion grants remain unchanged. Source presence is not deployment or live
+reconciliation evidence; follow
+`docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`.
+
+The contact/Chaos adapters reuse migration 97's admin-owned
+`sweeper_watermarks` with dedicated keys and exact keyset cursors; no new
+migration is introduced. Chaos stores versioned interaction/inbox bigint
+positions, reads bounded numeric-ID pages, and groups full evidence only for
+the bounded changed visitor set. Each source ledger resets its cycle
+independently so late commits with lower allocated sequence IDs are not skipped
+and a low-volume lane cannot park behind a busier one. A fully processed page
+may advance while first-coverage health remains incomplete until both ledgers
+have completed at least one cycle.
+Stripe uses complete created-time partitions and recursively bisects an
+overflowing provider page range; one scope cannot ingest unless both account
+identities were read and proved distinct in the same run.
+
 Migration 138 is `NC-20260826-001`'s Tandem OS relationship-owner authority.
 It registers the append-only `team:tandem` / `Tandem Team` organizational
 principal with `action_authority='none'` and one exact decision-bound

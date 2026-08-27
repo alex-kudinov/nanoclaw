@@ -88,6 +88,27 @@ history. Bundling, applying, or activating migration 133 grants no historical
 repair, customer communication, accounting, QuickBooks, product-mapping, or
 payer/student authority.
 
+`NC-20260826-005` is a no-migration Relationship Context source release over
+already-live migration 137. Build and activate first with
+`RELATIONSHIP_CONTEXT_SOURCE_ENRICHMENT_ENABLED=0`; verify exact release,
+query disabled/zero grants, source health disabled, channels, queues, checkout,
+lifecycle, Circle, and legacy receivers. Before enabling, retain the prior
+release pointer and readable custom PostgreSQL plus WAL-safe SQLite/plist
+backups, and record aggregate Stripe/contact/Chaos/context fingerprints.
+Include the two dedicated migration-97 watermark rows (or their confirmed
+absence before first enable) in the affected PostgreSQL backup/readback.
+
+The value-redacted enable transaction may change only that one flag. After one
+bounded restart, require two distinct Stripe account fingerprints, complete
+read-only pagination, exact/legacy/conflict counts for all three sources,
+PII-negative database readback, and one duplicate-only exact replay. Provider,
+customer, payment, subscription, form, Chaos, communication, consent, Party
+merge, query grant, checkout, lifecycle, Circle, and legacy-receiver state must
+not change. Do not manufacture a provider event. Rollback disables the flag
+before restoring the prior release; it preserves imported migration-137
+evidence and never deletes refs/observations/projections/exceptions as an
+ordinary release rollback.
+
 Beginning with `NC-20260824-009`, the archive binds migration 136 and its
 history-preserving rollback. Migration 135 must already be live. Take a
 custom-format `business_v2` backup plus the normal SQLite/plist backups,

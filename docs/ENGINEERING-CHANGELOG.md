@@ -8,6 +8,70 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260826-005 — Stripe, contact-form, and verified-Chaos Party Context
+
+- Date: 2026-08-26T23:25:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review pending
+- State: validating; local implementation and disposable PostgreSQL proof
+  complete, not committed, released, deployed, or live-reconciled
+- Commit/PR: isolated
+  `codex/relationship-context-stripe-contact-chaos-20260826` from pushed
+  `5c02acd3`, which directly contains exact live implementation `1a381e48`
+- Change class: C5 identity/security boundary plus separately gated C3 release
+- Outcome: adds three provider-neutral, default-off, read-only adapters: both
+  distinct Stripe account scopes; immutable archived contact-form submissions;
+  and only verified Chaos visitor links whose host ledgers agree on one Party.
+  Provider/source refs and native commercial/attribution facts remain scoped;
+  uncorroborated identities are terminal legacy and conflicting prior Chaos
+  refs fail closed.
+- Aggregate discovery: Stripe Heartbeat/Tandem have 173/624 customers,
+  412/1,013 payment intents, and 14/32 subscriptions; direct contact ingress
+  has 191 handled rows but no provider event/submission IDs or Party bindings;
+  Chaos has 1,331 stable visitor interactions, 38 missing interaction links,
+  three Party mismatches, and zero interaction-side multi-Party visitor IDs.
+- Privacy/action boundary: no provider/customer/form/Chaos write, Party merge,
+  communication, consent, payment/refund/contract action, checkout/lifecycle/
+  Circle/legacy-receiver change, query grant, or broad minion access. Facts and
+  health exclude raw payloads, email/name/message, amount/card/address,
+  metadata, intent summary, IP/device/session/referrer, fields, and browsing
+  history.
+- Review: Claude Sonnet/high R1 found three material scale/accounting defects:
+  all-time host-ledger ceilings, sibling-failure bypass of Stripe account
+  distinctness, and silently dropped malformed Chaos IDs. Corrections add
+  durable migration-97 keyset cursors, recursively bisected Stripe time
+  partitions, two-scope fail-closed admission, explicit malformed legacy, and
+  exact cursor preservation. R2 verified Stripe/sibling/malformed corrections
+  but found Chaos still grouping full history; the replacement now uses two
+  versioned bigint cursors, bounded numeric PK pages, and full evidence only for
+  changed visitors. Disposable PostgreSQL caught and corrected a text-alias
+  ordering defect (`10` before `8/9`). R3 then found that sequence allocation
+  can precede commit; completed contact/Chaos cycles now reset to zero so a
+  late-committing lower ID is picked up on a later bounded replay. R4 found a
+  quiet Chaos lane could park behind a continuously busy sibling; both ledger
+  cursors now advance/reset independently with persisted first-coverage flags
+  and per-lane page-completeness health. R5 returned
+  `NO MATERIAL FINDINGS` on that final correction.
+- Verification: focused manifest/identity/page/provider/wiring suites pass;
+  pinned Node 22.23.2 typecheck passes; disposable PostgreSQL 4/4 proves exact
+  refs/facts/projections, bounded cursor-cycle drain/replay, terminal malformed
+  legacy, conflict refusal, duplicate-only replay, and PII-negative readback.
+  The pre-review
+  full root was 3,309 pass / 29 skip with the sole known CNPC baseline failure;
+  post-correction full root is 3,310 pass / 29 skip with the same sole baseline
+  failure. Runner 45/45, format/typecheck/build, continuity/capability, diff,
+  and focused/disposable PostgreSQL checks pass. Independent review is closed
+  with no unresolved material finding; final clean verification/commit/release
+  remain pending.
+- Deployment/migration: no migration; source flag defaults off. Immutable
+  release, flag transaction, replay, live aggregates, and non-interference
+  remain pending.
+- Rollback/recovery: disable the source flag and restore the prior release
+  pointer; preserve migration-137 evidence. No ordinary rollback deletes
+  imported refs, observations, projections, exceptions, or receipts.
+- Documentation: `docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`, control
+  plane, project map, security model, release contract, database guide, active
+  work, and `.env.example`.
+
 ### NC-20260826-004 — Best-effort multi-provider identity reconciliation
 
 - Date: 2026-08-26T21:18:00Z

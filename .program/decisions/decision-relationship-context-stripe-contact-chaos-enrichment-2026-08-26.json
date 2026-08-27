@@ -1,0 +1,15 @@
+{
+  "decision_id": "decision:relationship-context-stripe-contact-chaos-enrichment-2026-08-26",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-26T22:27:00+00:00",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "program",
+    "work:relationship-context-stripe-contact-chaos-enrichment"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Continue the accepted best-effort identity/enrichment strategy with both Tandem Stripe accounts, verified contact-form submissions, and Chaos verified-visitor records. This authorizes read-only aggregate/provider discovery, stable account-scoped external references, bounded first-party attribution/identity observations, independently reviewed implementation, exact release deployment, and live aggregate verification. Stripe is native authority only for its customer/payment/subscription objects; contact forms for the exact submitted identity and entry-page evidence; Chaos only for an already verified visitor/contact mapping and measured attribution. It does not authorize Stripe/payment/customer mutation, contact-form submission or routing mutation, Chaos identity invention from browsing, Party merges, email-based forced joins, customer communication, consent changes, payment/refund/contract action, broad minion access, or changes to checkout recovery, lifecycle, Circle, or legacy receivers.",
+  "source_task": "Current owner instruction in Codex: add our Stripe accounts, contact-form submissions, and maybe Chaos as additional identity sources, continuing the prior connect-all-best-effort rule."
+}

@@ -13,6 +13,11 @@ import {
   ingestEnchargeSnapshotWithClient,
   reconcilePlutioReferencesWithClient,
 } from './relationship-context-provider-reconciliation.js';
+import {
+  ingestChaosVerifiedLedgerWithClient,
+  ingestContactFormLedgerWithClient,
+  ingestStripeAccountSnapshotWithClient,
+} from './relationship-context-source-enrichment.js';
 import { ingestTrafftRelationshipContextShadowWithClient } from './relationship-context-trafft-shadow.js';
 import {
   REFERENCE_LMS_FACTS,
@@ -531,6 +536,396 @@ suite('relationship context disposable PostgreSQL store', () => {
           adapter_key: 'trafft_host_ledger',
           enabled: true,
           conformance_status: 'passed',
+        },
+      ]);
+    } finally {
+      client.release();
+    }
+  });
+
+  it('imports exact Stripe/contact/Chaos context and leaves conflicts legacy without PII', async () => {
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `INSERT INTO business_v2.party_emails
+           (party_id,email,is_primary,verified_at)
+         VALUES ($1,'source-enrichment@example.invalid',false,now())
+         ON CONFLICT DO NOTHING`,
+        [partyId],
+      );
+      const stripe = await ingestStripeAccountSnapshotWithClient({
+        client,
+        snapshot: {
+          scope: 'heartbeat',
+          accountId: 'acct_source_fixture',
+          observedAt: '2026-08-26T23:30:00Z',
+          complete: true,
+          customers: [
+            {
+              id: 'cus_source_fixture',
+              email: 'source-enrichment@example.invalid',
+              createdAt: '2026-08-20T00:00:00Z',
+              delinquent: false,
+            },
+            {
+              id: 'cus_source_legacy',
+              email: 'no-party@example.invalid',
+              createdAt: '2026-08-20T00:00:00Z',
+              delinquent: false,
+            },
+          ],
+          paymentIntents: [
+            {
+              id: 'pi_source_fixture',
+              customerId: 'cus_source_fixture',
+              status: 'succeeded',
+              createdAt: '2026-08-20T00:00:00Z',
+              currency: 'usd',
+            },
+            {
+              id: 'pi_source_held',
+              customerId: 'cus_source_legacy',
+              status: 'requires_payment_method',
+              createdAt: '2026-08-20T00:00:00Z',
+              currency: 'usd',
+            },
+          ],
+          subscriptions: [
+            {
+              id: 'sub_source_fixture',
+              customerId: 'cus_source_fixture',
+              status: 'active',
+              createdAt: '2026-08-20T00:00:00Z',
+              currentPeriodEnd: '2026-09-20T00:00:00Z',
+              cancelAtPeriodEnd: false,
+            },
+          ],
+        },
+      });
+      expect(stripe).toMatchObject({
+        exactCustomerReferences: 1,
+        exactPaymentIntentReferences: 1,
+        exactSubscriptionReferences: 1,
+        legacyCustomers: 1,
+        heldNativeFacts: 1,
+        identityConflicts: 0,
+        observationsNew: 3,
+        projectionsChanged: 3,
+      });
+      const stripeReplay = await ingestStripeAccountSnapshotWithClient({
+        client,
+        snapshot: {
+          scope: 'heartbeat',
+          accountId: 'acct_source_fixture',
+          observedAt: '2026-08-26T23:30:00Z',
+          complete: true,
+          customers: [
+            {
+              id: 'cus_source_fixture',
+              email: 'source-enrichment@example.invalid',
+              createdAt: '2026-08-20T00:00:00Z',
+              delinquent: false,
+            },
+            {
+              id: 'cus_source_legacy',
+              email: 'no-party@example.invalid',
+              createdAt: '2026-08-20T00:00:00Z',
+              delinquent: false,
+            },
+          ],
+          paymentIntents: [
+            {
+              id: 'pi_source_fixture',
+              customerId: 'cus_source_fixture',
+              status: 'succeeded',
+              createdAt: '2026-08-20T00:00:00Z',
+              currency: 'usd',
+            },
+            {
+              id: 'pi_source_held',
+              customerId: 'cus_source_legacy',
+              status: 'requires_payment_method',
+              createdAt: '2026-08-20T00:00:00Z',
+              currency: 'usd',
+            },
+          ],
+          subscriptions: [
+            {
+              id: 'sub_source_fixture',
+              customerId: 'cus_source_fixture',
+              status: 'active',
+              createdAt: '2026-08-20T00:00:00Z',
+              currentPeriodEnd: '2026-09-20T00:00:00Z',
+              cancelAtPeriodEnd: false,
+            },
+          ],
+        },
+      });
+      expect(stripeReplay.observationsDuplicate).toBe(3);
+      expect(stripeReplay.projectionsChanged).toBe(0);
+
+      await client.query(
+        `INSERT INTO business_v2.webhook_inbox
+           (source,event_type,raw_body,status,handled_at,handled_by)
+         VALUES ('contact-form','lead-submission',$1::jsonb,'handled',now(),
+                 'fixture'),
+                ('contact-form','lead-submission',$2::jsonb,'handled',now(),
+                 'fixture')`,
+        [
+          JSON.stringify({
+            email: 'source-enrichment@example.invalid',
+            name: 'must not persist',
+            company: 'must not persist',
+            message: 'must not persist',
+            entry_page:
+              'https://tandemcoach.co/training/mentor?email=must-not-persist',
+            submitted_at: '2026-08-26T22:00:00Z',
+          }),
+          JSON.stringify({
+            email: 'no-party-contact@example.invalid',
+            message: 'must not persist',
+            entry_page: '/contact-us/?token=must-not-persist',
+            submitted_at: '2026-08-26T22:01:00Z',
+          }),
+        ],
+      );
+      const contactFirstPage = await ingestContactFormLedgerWithClient({
+        client,
+        observedAt: '2026-08-26T23:31:00Z',
+        limit: 1,
+      });
+      expect(contactFirstPage).toMatchObject({ complete: false, scanned: 1 });
+      const contact = await ingestContactFormLedgerWithClient({
+        client,
+        observedAt: '2026-08-26T23:31:15Z',
+        limit: 1,
+      });
+      expect(contact).toMatchObject({
+        complete: true,
+        scanned: 1,
+        exactSubmissionReferences: 1,
+        legacySubmissions: 1,
+        identityConflicts: 0,
+      });
+      const contactReplayFirstPage = await ingestContactFormLedgerWithClient({
+        client,
+        observedAt: '2026-08-26T23:31:30Z',
+        limit: 1,
+      });
+      expect(contactReplayFirstPage).toMatchObject({
+        complete: false,
+        scanned: 1,
+        observationsDuplicate: 1,
+      });
+      const contactReplay = await ingestContactFormLedgerWithClient({
+        client,
+        observedAt: '2026-08-26T23:31:45Z',
+        limit: 1,
+      });
+      expect(contactReplay).toMatchObject({
+        complete: true,
+        scanned: 1,
+        exactSubmissionReferences: 1,
+        legacySubmissions: 1,
+      });
+
+      const mismatchParty = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.parties
+           (party_type,display_name,last_updated_by)
+         VALUES ('person','Chaos Mismatch Fixture','integration')
+         RETURNING id::text`,
+      );
+      await client.query(
+        `INSERT INTO business_v2.interactions
+           (party_id,channel,direction,subject,occurred_at,source_provider,
+            source_id,metadata,last_updated_by)
+         VALUES ($1,'chaos','inbound','verified fixture',
+                 '2026-08-26T22:10:00Z','chaos','990001',$2::jsonb,
+                 'integration'),
+                ($1,'chaos','inbound','mismatch fixture',
+                 '2026-08-26T22:11:00Z','chaos','990002',$2::jsonb,
+                 'integration'),
+                ($1,'chaos','inbound','malformed fixture',
+                 '2026-08-26T22:12:00Z','chaos','bad-visitor',$2::jsonb,
+                 'integration')`,
+        [
+          partyId,
+          JSON.stringify({
+            form_event_type: 'form_contact',
+            form_page:
+              'https://tandemcoach.co/contact-us/?email=must-not-persist',
+            intent_summary: 'must not persist',
+          }),
+        ],
+      );
+      await client.query(
+        `INSERT INTO business_v2.webhook_inbox
+           (source,event_id,event_type,raw_body,status,handled_at,handled_by,
+            party_id)
+         VALUES ('chaos','chaos:visitor:990001:verified','form_contact',
+                 $1::jsonb,'handled',now(),'fixture',$2),
+                ('chaos','chaos:visitor:990002:verified','form_contact',
+                 $3::jsonb,'handled',now(),'fixture',$4),
+                ('chaos','chaos:visitor:bad:verified','form_contact',
+                 $5::jsonb,'handled',now(),'fixture',$2)`,
+        [
+          JSON.stringify({
+            visitor_id: 990001,
+            identity_status: 'verified',
+            email: 'source-enrichment@example.invalid',
+          }),
+          partyId,
+          JSON.stringify({
+            visitor_id: 990002,
+            identity_status: 'verified',
+            email: 'source-enrichment@example.invalid',
+          }),
+          mismatchParty.rows[0].id,
+          JSON.stringify({
+            visitor_id: 'bad-visitor',
+            identity_status: 'verified',
+            email: 'source-enrichment@example.invalid',
+          }),
+        ],
+      );
+      const chaosInboxBefore = await client.query<{
+        count: string;
+        max_id: string;
+      }>(
+        `SELECT count(*)::text AS count,max(id)::text AS max_id
+           FROM business_v2.webhook_inbox
+          WHERE source='chaos' AND raw_body->>'visitor_id' IS NOT NULL`,
+      );
+      expect(chaosInboxBefore.rows[0].count).toBe('3');
+      const chaosFirstPage = await ingestChaosVerifiedLedgerWithClient({
+        client,
+        observedAt: '2026-08-26T23:32:00Z',
+        limit: 2,
+      });
+      expect(chaosFirstPage).toMatchObject({
+        complete: false,
+        interactionChangesScanned: 1,
+        inboxChangesScanned: 1,
+      });
+      const chaosPages = [chaosFirstPage];
+      for (
+        let page = 1;
+        !(
+          chaosPages.at(-1)!.interactionPageComplete &&
+          chaosPages.at(-1)!.inboxPageComplete
+        ) && page < 5;
+        page += 1
+      ) {
+        chaosPages.push(
+          await ingestChaosVerifiedLedgerWithClient({
+            client,
+            observedAt: new Date(
+              Date.parse('2026-08-26T23:32:00Z') + page * 15_000,
+            ).toISOString(),
+            limit: 2,
+          }),
+        );
+      }
+      const chaos = chaosPages.at(-1)!;
+      expect(chaos.complete).toBe(true);
+      expect(
+        chaosPages.reduce(
+          (total, page) => total + page.interactionChangesScanned,
+          0,
+        ),
+      ).toBe(3);
+      expect(
+        chaosPages.reduce((total, page) => total + page.inboxChangesScanned, 0),
+      ).toBe(3);
+      expect(chaos.exactVisitorReferences).toBeGreaterThanOrEqual(1);
+      expect(chaos.legacyVisitors).toBeGreaterThanOrEqual(2);
+      expect(chaos.identityConflicts).toBe(0);
+      const chaosReplayPages: typeof chaosPages = [];
+      for (let page = 0; page < 5; page += 1) {
+        chaosReplayPages.push(
+          await ingestChaosVerifiedLedgerWithClient({
+            client,
+            observedAt: new Date(
+              Date.parse('2026-08-26T23:33:30Z') + page * 15_000,
+            ).toISOString(),
+            limit: 2,
+          }),
+        );
+        if (
+          chaosReplayPages.at(-1)!.interactionPageComplete &&
+          chaosReplayPages.at(-1)!.inboxPageComplete
+        ) {
+          break;
+        }
+      }
+      const chaosReplay = chaosReplayPages.at(-1)!;
+      expect(chaosReplay).toMatchObject({
+        complete: true,
+        exactVisitorReferences: chaos.exactVisitorReferences,
+        legacyVisitors: chaos.legacyVisitors,
+      });
+      expect(
+        chaosReplayPages.reduce(
+          (total, page) => total + page.interactionChangesScanned,
+          0,
+        ),
+      ).toBe(3);
+      expect(
+        chaosReplayPages.reduce(
+          (total, page) => total + page.inboxChangesScanned,
+          0,
+        ),
+      ).toBe(3);
+      expect(
+        chaosReplayPages.reduce(
+          (total, page) => total + page.observationsDuplicate,
+          0,
+        ),
+      ).toBeGreaterThanOrEqual(1);
+      const malformed = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count
+           FROM business_v2.party_identity_exceptions
+          WHERE status='no_action'
+            AND evidence_refs->>'evidence_tier'='chaos_visitor_id_malformed'`,
+      );
+      expect(malformed.rows[0].count).toBe('1');
+
+      const stored = await client.query<{ payload: string }>(
+        `SELECT coalesce(jsonb_agg(jsonb_build_object(
+                  'value',o.value,'evidence',p.source_watermarks
+                ))::text,'[]') AS payload
+           FROM business_v2.party_context_observations o
+           LEFT JOIN business_v2.party_context_projections p
+             ON p.party_id=o.current_party_id
+          WHERE o.source_system IN ('stripe','contact_form','chaos')`,
+      );
+      expect(stored.rows[0].payload).not.toMatch(
+        /source-enrichment@|must not persist|email=must-not-persist|99999/i,
+      );
+      const registrations = await client.query<{
+        adapter_key: string;
+        source_scope: string;
+      }>(
+        `SELECT adapter_key,source_scope
+           FROM business_v2.party_context_adapter_registrations
+          WHERE adapter_key IN (
+            'stripe_account_snapshot','contact_form_host_ledger',
+            'chaos_verified_host_ledger'
+          )
+          ORDER BY adapter_key,source_scope`,
+      );
+      expect(registrations.rows).toEqual([
+        {
+          adapter_key: 'chaos_verified_host_ledger',
+          source_scope: 'tandem-web',
+        },
+        {
+          adapter_key: 'contact_form_host_ledger',
+          source_scope: 'tandem-web',
+        },
+        {
+          adapter_key: 'stripe_account_snapshot',
+          source_scope: 'heartbeat',
         },
       ]);
     } finally {

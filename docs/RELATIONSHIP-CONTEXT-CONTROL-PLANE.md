@@ -830,6 +830,25 @@ Plutio and 1,242 Encharge person refs support 159 Trafft customers/358
 appointment records; 14 customers/66 appointment records are terminal legacy,
 with zero conflicts and duplicate-only replay.
 
+`NC-20260826-005` locally adds the next three ordinary adapters without a core
+or schema change. Stripe uses two fixed, distinct account scopes; a customer
+binds from an existing exact ref or one account-local unique provider email to
+one canonical Party, while payment/subscription facts attach only through that
+customer ref. Contact form uses the immutable webhook-inbox row as the exact
+first-party submission record because current n8n strips the Gravity Forms
+entry ID; submitted identity is transient and only one canonical Party may
+bind. Chaos requires one stable visitor interaction Party plus agreeing handled
+verified-inbox Party evidence; disagreement conflicts any prior active ref.
+Persisted facts exclude raw provider/form/Chaos payloads, emails, names,
+messages, amounts, card data, intent summaries, and browsing history. The
+source runner is separately default-off, read-only, per-source isolated, and
+consumer-disabled. Existing migration-97 watermarks make contact/Chaos pages
+durably resumable, while over-cap Stripe lists recursively bisect their
+half-open created-time ranges and require both distinct account identities
+before either scope ingests. See
+`docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`; review, exact release,
+deployment, and live reconciliation remain separate evidence gates.
+
 ## 10. Verification plan
 
 ### Identity and temporal truth

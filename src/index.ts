@@ -156,6 +156,12 @@ import {
   TRAFFT_SHADOW_INTERVAL_MS,
   trafftRelationshipContextShadowEnabled,
 } from './relationship-context-trafft-shadow.js';
+import {
+  getSourceEnrichmentHealth,
+  runRelationshipContextSourceEnrichment,
+  SOURCE_ENRICHMENT_INTERVAL_MS,
+  sourceEnrichmentEnabled,
+} from './relationship-context-source-enrichment.js';
 import { relationshipContextPolicyDiagnostic } from './relationship-context-policy.js';
 import { startHeartbeat } from './heartbeat.js';
 import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
@@ -2172,6 +2178,7 @@ async function main(): Promise<void> {
         relationshipContext: {
           query: relationshipContextPolicyDiagnostic(),
           trafftShadow: getTrafftRelationshipContextShadowHealth(),
+          sourceEnrichment: getSourceEnrichmentHealth(),
         },
       };
     },
@@ -2316,6 +2323,35 @@ async function main(): Promise<void> {
       TRAFFT_SHADOW_INTERVAL_MS,
     );
     relationshipContextTrafftShadowTimer.unref();
+  }
+  let relationshipContextSourceEnrichmentInFlight = false;
+  const runRelationshipContextSourceEnrichmentTick =
+    async (): Promise<void> => {
+      if (relationshipContextSourceEnrichmentInFlight) {
+        logger.warn(
+          'relationship context source enrichment tick already running',
+        );
+        return;
+      }
+      relationshipContextSourceEnrichmentInFlight = true;
+      try {
+        await runRelationshipContextSourceEnrichment();
+      } catch (err) {
+        logger.error(
+          { err },
+          'relationship context source enrichment tick failed',
+        );
+      } finally {
+        relationshipContextSourceEnrichmentInFlight = false;
+      }
+    };
+  if (sourceEnrichmentEnabled()) {
+    void runRelationshipContextSourceEnrichmentTick();
+    const relationshipContextSourceEnrichmentTimer = setInterval(
+      () => void runRelationshipContextSourceEnrichmentTick(),
+      SOURCE_ENRICHMENT_INTERVAL_MS,
+    );
+    relationshipContextSourceEnrichmentTimer.unref();
   }
   if (STUDENT_LIFECYCLE_ENABLED) {
     setInterval(() => {

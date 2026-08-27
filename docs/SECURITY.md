@@ -614,6 +614,33 @@ prohibited raw/email/name/phone/address/IP/payload/tag/browser/device value
 keys. Encharge and Trafft replays are duplicate-only, every private temporary
 file was deleted, and query/minion access remains off.
 
+NC-20260826-005 preserves that boundary for Stripe, contact form, and Chaos.
+The two Stripe credential handles must resolve to distinct accounts; only an
+account fingerprint is persisted. Provider emails exist transiently for one
+account-local uniqueness check and never enter facts, logs, health, receipts,
+or evidence. Payment/subscription objects attach only through an exact customer
+ref, and commercial facts exclude amounts, instruments, addresses, metadata,
+and raw objects. Contact submission email/name/company/message are discarded;
+the immutable host inbox row is the source ref and only a bounded entry path is
+retained. Chaos requires exact verified-inbox/interaction Party agreement,
+conflicts a prior ref on later disagreement, and retains no browsing history,
+intent summary, user-agent, IP/device, session, referrer, or form fields. The
+source flag defaults off, each source runs in an isolated transaction, health
+is aggregate-only, `consumerEnabled=false`, and `party_context_get` remains
+separately disabled and grant-bound.
+
+The source cursors are host/admin state, not model input. Contact advances by
+immutable inbox ID. Chaos stores versioned global bigint positions for the
+interaction and webhook-inbox ledgers, reads bounded primary-key pages, and
+expands full evidence only for changed visitor IDs. Each ledger resets its own
+cycle independently, so a quiet lane cannot park behind a busy lane and a lower
+sequence ID that commits late is reconsidered on a later bounded cycle. Numeric
+columns own ordering so text casts cannot jump from 10 ahead of 8/9.
+Malformed visitor IDs are hashed into terminal legacy instead of disappearing
+from health. Stripe over-cap lists are divided into non-overlapping half-open
+time partitions; a sibling fetch failure blocks both scopes because account
+distinctness is then unproved.
+
 ## Relationship-owner boundary (`NC-20260826-001`)
 
 The explicit generic owner is a routing/accountability principal, not an

@@ -24,4 +24,22 @@ describe('relationship context Trafft shadow host wiring', () => {
       'await runRelationshipContextTrafftShadowTick();',
     );
   });
+
+  it('runs source enrichment without blocking, overlapping, or retaining the event loop', () => {
+    expect(indexSource).toContain(
+      'void runRelationshipContextSourceEnrichmentTick();',
+    );
+    expect(indexSource).toContain(
+      'relationshipContextSourceEnrichmentTimer.unref();',
+    );
+    expect(indexSource).toContain(
+      'if (relationshipContextSourceEnrichmentInFlight)',
+    );
+    expect(indexSource).toContain(
+      'relationshipContextSourceEnrichmentInFlight = false;',
+    );
+    expect(indexSource).not.toContain(
+      'await runRelationshipContextSourceEnrichmentTick();',
+    );
+  });
 });
