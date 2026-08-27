@@ -78,6 +78,11 @@ The existing exact release
 - query disabled with zero grants; Gmail/Slack connected; active/waiting and
   outgoing queues empty.
 
+A later final health refresh observed one unrelated natural Slack conversation
+active. It was not a task container and had zero pending task, waiting-group,
+or outgoing-queue work. NC-20260827-002 created no container, queue item,
+approval, message, or outbound action.
+
 No historical project/client assignment or reassignment occurred. No Plutio,
 provider, Party, role, source-ref, payment, consent, communication, minion,
 checkout, lifecycle, Circle, Sales-support, external-watchdog, or legacy-

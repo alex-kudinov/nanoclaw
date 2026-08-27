@@ -39,7 +39,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   1,444/1,444 active Parties with 63 defensible customer/client Parties, one
   active and one historical coaching relationship, zero stale-current, and
   zero changed. Query is off with zero grants, Gmail/Slack are connected, and
-  queues are empty.
+  queues were empty at the audit boundary. A later final refresh showed one
+  unrelated natural non-task Slack conversation with zero pending task,
+  waiting-group, or outgoing-queue work; NC-20260827-002 created none.
 - Non-interference: no Plutio/provider/project/client, Party/ref/role, database,
   code, configuration, credential, payment, consent, communication, minion,
   checkout, lifecycle, Circle, Sales-support, external-watchdog, or legacy-
