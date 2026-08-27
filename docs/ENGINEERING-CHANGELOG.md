@@ -8,6 +8,37 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260827-001 — Deployment-safe external watchdog heartbeat grace
+
+- Date: 2026-08-27T05:29:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_deploy; production still runs the pre-change artifact at
+  this boundary
+- Change class: C3 deterministic host recovery behavior
+- Incident: an ordinary 23:17 local daemon deployment restart inherited a
+  23:08:54 stored Slack heartbeat. The 120-second watchdog scored the heartbeat
+  stale twice and restarted the otherwise healthy daemon at 23:26, before its
+  configured 600-second first heartbeat. Each forced restart reset that timer,
+  creating repeated `Consecutive failures: 4` alerts about every eight minutes.
+- Repair: validate/derive heartbeat timing from `HEARTBEAT_INTERVAL_MS`, read
+  live daemon uptime from `/health`, and suppress only the stale-heartbeat score
+  while Slack is explicitly connected and the daemon is inside a bounded
+  first-heartbeat window. Disconnected Slack, missing/malformed health or
+  uptime, and stale heartbeats after the window still fail loud; every other
+  recovery path is unchanged.
+- Tests: Bash syntax, exact-incident timing, grace boundary, custom/malformed
+  intervals, disconnected Slack, missing uptime, genuinely stale daemon, and
+  diff checks pass. ShellCheck is unavailable locally.
+- Review: bounded Claude Sonnet/high R1 returned `NO MATERIAL FINDINGS`; six
+  model calls, maximum context 80,751, 240,911 cache-read and 17,255 output
+  tokens. The earlier Info attempt consumed zero tokens and produced no review
+  because that subscription was at its monthly limit.
+- Scope/non-interference: isolated worktree only. No production artifact,
+  daemon/watchdog service, database, provider, customer, message, approval,
+  schedule, or credential state changed at this review boundary.
+- Evidence:
+  `docs/reports/NC-20260827-001-CLAUDE-IMPLEMENTATION-REVIEW-RESPONSE-R1.md`.
+
 ### NC-20260826-008 — Operator-answer support fast path
 
 - Date: 2026-08-27T04:04:00Z
