@@ -12,13 +12,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-26T23:25:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review pending
-- State: validating; local implementation and disposable PostgreSQL proof
-  complete, not committed, released, deployed, or live-reconciled
+- State: complete; independently reviewed, committed/pushed, exact release
+  deployed, reconciled, replayed, privacy-checked, and live-verified
 - Commit/PR: implementation `7a4a876ba89a3543b57c7ca2841f2d3ce2d41770`
   on `codex/relationship-context-stripe-contact-chaos-20260826` from pushed
   `5c02acd3`, which directly contains exact live implementation `1a381e48`;
-  review boundary `0489e3db9542bc02df273538773d29262ab106d3` and branch
-  are pushed; immutable release build remains pending
+  review boundary `0489e3db9542bc02df273538773d29262ab106d3` and exact
+  release `d5375964f4675839e485eb50d3c847472fd8aa6c` are pushed
 - Change class: C5 identity/security boundary plus separately gated C3 release
 - Outcome: adds three provider-neutral, default-off, read-only adapters: both
   distinct Stripe account scopes; immutable archived contact-form submissions;
@@ -64,16 +64,18 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   and focused/disposable PostgreSQL checks pass. Independent review is closed
   with no unresolved material finding; final clean verification/commit/release
   remain pending.
-- Deployment/migration: implementation committed; no migration; source flag
-  defaults off. Immutable
-  release, flag transaction, replay, live aggregates, and non-interference
-  remain pending.
+- Deployment/migration: no migration. Exact release is live under Node 22.23.2;
+  the source flag is enabled after an off-first activation, sanitized one-key
+  plist transaction, and bounded reload. First live reconciliation is healthy
+  and complete; exact-timestamp replay is duplicate-only with projection
+  versions unchanged at 1.
 - Rollback/recovery: disable the source flag and restore the prior release
   pointer; preserve migration-137 evidence. No ordinary rollback deletes
   imported refs, observations, projections, exceptions, or receipts.
 - Documentation: `docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`, control
   plane, project map, security model, release contract, database guide, active
-  work, and `.env.example`.
+  work, `.env.example`, and
+  `docs/programs/company-os/evidence/NC-20260826-005-stripe-contact-chaos-enrichment.md`.
 
 ### NC-20260826-004 — Best-effort multi-provider identity reconciliation
 

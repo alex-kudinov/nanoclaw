@@ -830,8 +830,9 @@ Plutio and 1,242 Encharge person refs support 159 Trafft customers/358
 appointment records; 14 customers/66 appointment records are terminal legacy,
 with zero conflicts and duplicate-only replay.
 
-`NC-20260826-005` locally adds the next three ordinary adapters without a core
-or schema change. Stripe uses two fixed, distinct account scopes; a customer
+`NC-20260826-005` adds the next three ordinary adapters without a core or schema
+change. Exact live release `d5375964` runs them read-only and consumer-disabled.
+Stripe uses two fixed, distinct account scopes; a customer
 binds from an existing exact ref or one account-local unique provider email to
 one canonical Party, while payment/subscription facts attach only through that
 customer ref. Contact form uses the immutable webhook-inbox row as the exact
@@ -846,8 +847,9 @@ consumer-disabled. Existing migration-97 watermarks make contact/Chaos pages
 durably resumable, while over-cap Stripe lists recursively bisect their
 half-open created-time ranges and require both distinct account identities
 before either scope ingests. See
-`docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`; review, exact release,
-deployment, and live reconciliation remain separate evidence gates.
+`docs/RELATIONSHIP-CONTEXT-STRIPE-CONTACT-CHAOS.md`; live aggregate evidence is
+recorded in
+`docs/programs/company-os/evidence/NC-20260826-005-stripe-contact-chaos-enrichment.md`.
 
 ## 10. Verification plan
 
