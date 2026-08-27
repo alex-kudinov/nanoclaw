@@ -325,3 +325,10 @@ The host-admitted fulfillment case ledger now satisfies complete-or-owned-
 terminal-exception. The distinct missed-ingress payment remains the separate
 `work:stripe-payment-ingress-parity` candidate, and refund closure remains
 separate.
+
+Company OS revision 146 marks `work:contador-fulfillment-case-ledger` done with
+all correction commitments individually closed. No active or eligible item
+remains. The first priority candidate is now the separately unauthorized
+Stripe-to-host ingress parity work; product and payer/student identity have
+their ledger dependency satisfied but remain unselected/unauthorized. Refund
+closure remains a distinct candidate, as the owner requested.

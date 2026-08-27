@@ -893,6 +893,10 @@ CORRECTIONS`. The plan now includes the missing fixtures-only reconciliation
   `work:stripe-payment-ingress-parity` as a separate unauthorized candidate,
   and keeps product/student identity dependency-blocked. Refund closure remains
   its own candidate and is not required for the admitted-payment proof.
+- Final program reconciliation: revision 146 marks the host-admitted ledger
+  done with all correction commitments closed. No active/eligible item remains.
+  Ingress parity is the first priority candidate; product/student identity is
+  dependency-complete but still unselected, and refund closure stays separate.
 
 - Authorization: accepted decision
   `decision:contador-fulfillment-case-ledger-authority` covers this C4

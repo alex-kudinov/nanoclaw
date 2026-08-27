@@ -1335,6 +1335,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - State: complete for the host-admitted fulfillment ledger. Missing provider
   delivery remains separate `work:stripe-payment-ingress-parity`; refund
   closure remains a distinct candidate.
+- Program reconciliation: Company OS revision 146 marks the ledger item done
+  with every correction commitment closed and no active/eligible work. Ingress
+  parity is now the first-priority unselected candidate; product/student
+  identity is dependency-complete but remains unauthorized, and refund closure
+  stays separate.
 
 ### NC-20260822-011 — Host-owned Gmail attachment processing
 
