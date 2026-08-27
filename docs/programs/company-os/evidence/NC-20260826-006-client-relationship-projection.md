@@ -159,4 +159,8 @@ never wrote them.
 
 ## Program reconciliation
 
-Pending final Company OS commitment reconciliation against this evidence.
+Company OS state revision 129 marks
+`work:relationship-context-client-relationship-projection` done, clears its
+claim/next action, and reconciles all nine continuity commitments to
+`completed` against this evidence and the exact release receipts. Program
+validation passes with no active or eligible work item.

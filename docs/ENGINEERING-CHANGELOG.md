@@ -94,6 +94,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Trafft/source enrichment healthy, lifecycle 41/0/23 with consumers/Circle
   off, checkout production mode/cutoff preserved, error baseline 273, and
   active Party/role/Stripe-fact aggregates unchanged.
+- Program: Company OS revision 129 marks the work item done with all nine
+  continuity commitments completed and no active or eligible item.
 - Rollback/recovery: disable the new flag before restoring a prior release;
   preserve versioned projections under migration 137. The dirty primary
   checkout remains preserved.
