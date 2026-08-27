@@ -76,6 +76,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   plane, project map, security model, release contract, database guide, active
   work, `.env.example`, and
   `docs/programs/company-os/evidence/NC-20260826-005-stripe-contact-chaos-enrichment.md`.
+- Program: Company OS revision 123 marks the work item done with all ten
+  continuity commitments completed and no active/eligible item.
 
 ### NC-20260826-004 — Best-effort multi-provider identity reconciliation
 

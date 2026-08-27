@@ -142,3 +142,11 @@ rollback is required. Preserve migration-137 refs, observations, projections,
 exceptions, registrations, and watermark receipts; an ordinary rollback must
 not delete historical evidence. Provider systems require no rollback because
 this slice never wrote them.
+
+## Program reconciliation
+
+Company OS state revision 123 marks
+`work:relationship-context-stripe-contact-chaos-enrichment` done, clears its
+claim/next action, attaches this evidence and the exact release/receipt set,
+and reconciles all ten continuity commitments to `completed`. Program
+validation passes with no active or eligible work item.
