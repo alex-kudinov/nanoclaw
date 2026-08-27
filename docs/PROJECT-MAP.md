@@ -993,6 +993,17 @@ an anchored, emphasis-tolerant, case-insensitive grammar. The historical
 fixture lives outside the Sales container mount at
 `evals/sales/request-first-cases.json`; it does not itself prove response quality.
 
+`NC-20260826-007` removes a retained lead-only assumption from this surface.
+`[SOURCE: email-active-client]` and other evidence-supported `SERVICE` work use
+the already host-validated `[CLIENT SUPPORT REVIEW]` approval card: no
+`Lead #`, Entry ID, pipeline creation, or pipeline transition is required. The
+exact approved recipient/subject/body, Action-ID, Gmail execution receipt, and
+one-time send boundary remain unchanged. Genuine sales inquiries still require
+an Entry ID, resolved through `v_active_pipeline` and created only through the
+granted `fn_create_pipeline_entry` helper; direct base-table reads and DML stay
+forbidden. This is a group-policy correction over an existing host capability,
+not a database grant or Gmail-policy expansion.
+
 ## 10. Agent/group map
 
 The local SQLite snapshot contains 19 registered folders. That snapshot was
@@ -1004,7 +1015,7 @@ last active around 2026-07-06 and is not asserted to be current production.
 | `chief`                                                   | coordination, escalation, decision routing, support-draft approval            | must not revive the old DB-dispatch pattern                                                                                                             |
 | `inbox`                                                   | qualify inbound leads and create modern CRM evidence                          | no direct sales ownership                                                                                                                               |
 | `mailman`                                                 | classify and label email; execute approved outbound work                      | full Gmail family, limited to host-assigned resources and host-verified recipients                                                                      |
-| `sales`                                                   | approval-gated sales drafts and pipeline follow-up                            | assigned Gmail thread/search reads only; no Gmail send/reply                                                                                            |
+| `sales`                                                   | approval-gated sales drafts, active-client support drafts, and pipeline follow-up | assigned Gmail thread/search reads only; no Gmail send/reply; support drafts do not manufacture pipeline entries                                    |
 | `booking`                                                 | Trafft booking events and interaction logging                                 | host/business mounts                                                                                                                                    |
 | `contador`                                                | Stripe, payment Sheets, PostgreSQL, vendor invoices                           | exact host-assigned invoice-message reads; Haiku locally                                                                                                |
 | `certifier`                                               | pending certification workflow and Sertifier actions                          | explicit approval before consequential issue/send                                                                                                       |

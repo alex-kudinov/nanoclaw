@@ -325,8 +325,8 @@ Updated draft ready. Reply "Approved" to send, or reply with more changes.`;
     expect(built.body).not.toContain('Updated draft ready');
   });
 
-  // Without an Entry ID mailman refuses the send outright, which is exactly how
-  // this approval died the first time.
+  // Historical support cards may have a host-resolved entry, but the modern
+  // support path must not require or manufacture one.
   it('carries a host-resolved Entry ID when the card names no lead', () => {
     const built = buildApprovedHandoff(SUPPORT_CARD, { entryId: 970 })!;
     expect(built.text).toContain('Entry ID: 970');

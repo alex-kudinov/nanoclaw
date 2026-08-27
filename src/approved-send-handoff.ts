@@ -224,10 +224,11 @@ export function buildApprovedHandoff(
     .replace(/\s+$/, '');
   if (!body) return null;
 
-  // A support card names no `Lead #N`, but mailman still needs an Entry ID —
-  // without one the send is refused ("per protocol I can't invent an Entry ID")
-  // and the approval dies silently. The caller resolves it from the recipient
-  // host-side; omitting it is still safe, it just leaves mailman to refuse.
+  // Sales cards name their pipeline entry as `Lead #N`. Support cards do not:
+  // the approval/action/Gmail receipt is their durable lifecycle, and creating
+  // a sales opportunity merely to make support sendable would corrupt CRM
+  // state. A host-resolved entry remains accepted for historical cards, but it
+  // is intentionally optional at this execution boundary.
   const leadRef = cardText.match(LEAD_LINE)?.[1] ?? opts.entryId?.toString();
   const original =
     opts.originalMessage?.trim() ||

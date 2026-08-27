@@ -53,6 +53,40 @@ describe('Sales request-first prompt contract', () => {
     }
   });
 
+  it('keeps client support pipeline-free and uses least-privilege entry creation only for genuine sales work', () => {
+    expect(role).toContain('[SOURCE: email-active-client]');
+    expect(role).toContain('no Entry ID or pipeline mutation is required');
+    expect(workflows).toContain('## Client Support Review (no pipeline entry)');
+    expect(workflows).toContain('[CLIENT SUPPORT REVIEW]');
+    expect(workflows).toContain(
+      'Do not add `Lead #`, `Entry ID`, `PROGRAM MATCH`, `ESTIMATED DEAL`, or a sales',
+    );
+    expect(workflows).toContain(
+      'The host already recognizes `[CLIENT SUPPORT REVIEW]`',
+    );
+    expect(workflows).toContain(
+      'If it is a `[CLIENT SUPPORT REVIEW]`, do not query or mutate pipeline state.',
+    );
+    expect(role).toContain(
+      'For a Client Support Review, skip this step entirely',
+    );
+    expect(workflows).toContain(
+      'Party ID: {party_id when already resolved — otherwise omit the entire line for CLIENT SUPPORT REVIEW}',
+    );
+    expect(role).toContain('Client Support Review with no Party ID');
+    expect(workflows).toContain(
+      'SELECT pipeline_entry_id FROM business_v2.v_active_pipeline',
+    );
+    expect(workflows).toContain('business_v2.fn_create_pipeline_entry');
+    expect(workflows).toContain(
+      'Direct `SELECT`, `INSERT`, `UPDATE`, or `DELETE` against',
+    );
+    expect(workflows).not.toContain('INSERT INTO business_v2.pipeline_entries');
+    expect(workflows).not.toContain(
+      'SELECT id FROM business_v2.pipeline_entries WHERE party_id',
+    );
+  });
+
   it('fails closed on relationship evidence and unsupported answers', () => {
     expect(normalizedContract).toContain(
       'only when its own evidence predates the current inbound',

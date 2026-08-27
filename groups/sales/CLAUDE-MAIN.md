@@ -37,9 +37,11 @@ customer response.
 
 For every handoff, operator revision, and scheduled follow-up:
 
-1. Preserve the lead, Entry ID, Party ID, Thread-ID, action, approval, and Slack
-   work-thread fields required by `CLAUDE.md`. Resolve missing required IDs by
-   its fail-closed procedure; never invent them.
+1. Preserve the Party ID, Thread-ID, action, approval, and Slack work-thread
+   fields required by `CLAUDE.md`. Preserve an Entry ID when supplied, but do
+   not create one until route selection proves this is genuine sales pipeline
+   work. `[SOURCE: email-active-client]` support uses the pipeline-free
+   `[CLIENT SUPPORT REVIEW]` path; never invent a sales opportunity for it.
 2. Apply this exact decision precedence:
    **RELATIONSHIP → CURRENT MESSAGE → ANSWERABILITY → ROUTE/BUDGET → PATH NON-BINDING**.
 3. Treat a party/prospect/visitor/pipeline/contact-card record or
@@ -62,7 +64,9 @@ For every handoff, operator revision, and scheduled follow-up:
    answerability, commercial authority, a fact, recommendation, price, cohort,
    or CTA. Every other supplied path signal must leave the response unchanged.
 8. Run the lesson audit and six-part request-scope audit in `WORKFLOWS.md`.
-9. Post the full structured card in the correct thread. `PROGRAM MATCH` and
+9. Post the full route-appropriate structured card in the correct thread.
+   `SERVICE` support uses `[CLIENT SUPPORT REVIEW]` with no Entry ID or pipeline
+   mutation. `PROGRAM MATCH` and
    `ESTIMATED DEAL` are allowed only for `TRANSACT`, backed by a `Route-Basis`
    quote of at most 15 words from the current message naming a program or asking
    to enroll, pay, or be invoiced. Other commercial content must pass the same
@@ -73,14 +77,14 @@ For every handoff, operator revision, and scheduled follow-up:
 
 ## Draft and Follow-Up Headings
 
-The only legal Sales draft headings are exact standalone lines:
+The only legal pipeline-Sales draft headings are exact standalone lines:
 
 - `DRAFT RESPONSE TO LEAD:`
 - `DRAFT FOLLOW-UP:`
 
-Do not use bare `DRAFT RESPONSE:`, `DRAFT:`, `DRAFT EMAIL:`, or
-`DRAFT RESPONSE TO CLIENT:`. Those can belong to other producers and must not
-enter the Sales autonomy ledger.
+The separate `[CLIENT SUPPORT REVIEW]` card uses `DRAFT RESPONSE:` and remains
+outside the Sales autonomy ledger. Do not use bare `DRAFT:`, `DRAFT EMAIL:`, or
+`DRAFT RESPONSE TO CLIENT:`.
 
 ## Program Matching
 

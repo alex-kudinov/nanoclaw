@@ -128,7 +128,56 @@ after approval. Copy both unchanged into Mailman. If Gmail's latest visible
 participants no longer support an approved CC at execution time, the host
 blocks before send; do not remove or replace recipients to work around it.
 
-## Draft Format
+## Client Support Review (no pipeline entry)
+
+Use this path when the handoff is `[SOURCE: email-active-client]` or the current
+thread contains other exact evidence that this is support for a client,
+student, partner, or existing engagement and route `SERVICE` is answerable.
+This is not a sales opportunity. Do not look up, create, advance, or repurpose a
+pipeline entry merely to make the response sendable.
+
+The absence of an engagement, pipeline, or client-status row does not disprove
+the person's stated enrollment. Treat absence as unknown. An exact Alex or
+Cherie fact in this work thread can make the support answer `YES` even when the
+CRM is incomplete. If an attachment is unavailable but that exact fact answers
+the ask, draft from the fact and make no claim about the attachment.
+
+Post this host-supported approval card in the existing work thread:
+
+```
+[CLIENT SUPPORT REVIEW]
+Category: {pricing | enrollment | program-content | scheduling | account-access | payment-issue | other}
+Email: {exact primary recipient}
+Cc: {optional only under the bounded reply-all rule; otherwise omit}
+Thread-ID: {required real Gmail thread ID for an email-originated support reply}
+Route: SERVICE
+Confidence: {HIGH | MEDIUM}
+
+{name} | {company or "(none)"}
+
+THEIR ASK:
+1. [{CURRENT MESSAGE | THREAD | OPERATOR}] {concise request}
+
+ANSWERABLE: {YES | PARTIAL} — {exact evidence boundary}
+
+ABSTAINED: {PARTIAL only; exact unsupported item}
+
+DRAFT RESPONSE:
+---
+Subject: {exact reply subject}
+
+{warm, concise support response based only on the current thread and verified facts}
+---
+
+Waiting for approval. Reply "Approved" to send, or reply with changes.
+```
+
+Do not add `Lead #`, `Entry ID`, `PROGRAM MATCH`, `ESTIMATED DEAL`, or a sales
+CTA. The host already recognizes `[CLIENT SUPPORT REVIEW]`, binds its exact
+recipient/subject/body to approval, and can execute the approved handoff without
+a pipeline ID. Approval still gates Gmail; drafting this card never sends.
+
+## Sales Review Draft Format
 
 Post this to `#gru-sales` using `mcp__nanoclaw__send_message`:
 
@@ -137,7 +186,7 @@ Post this to `#gru-sales` using `mcp__nanoclaw__send_message`:
 Category: {exactly one of: pricing | enrollment | program-content | scheduling | account-access | payment-issue | other — the inquiry's primary subject. Powers the autonomy ladder; never omit.}
 Email: {lead email — MANDATORY, on its own line. The host threads this card under the lead's inbound message using this address. Omit it and the card lands as a stray top-level post.}
 Cc: {optional comma-separated bare addresses from Reply-All-Candidates; include only under the bounded reply-all rule above, otherwise omit the entire line}
-Route: {exactly one of: SERVICE | TRANSACT | ANSWER | ORIENT | CLARIFY | HUMAN | DECLINE}
+Route: {exactly one of: TRANSACT | ANSWER | ORIENT | CLARIFY | HUMAN | DECLINE; SERVICE uses Client Support Review above}
 Confidence: {HIGH | MEDIUM | LOW}
 
 {name} | {company or "(none)"}
@@ -191,9 +240,10 @@ be drafted.` Do not ask the operator to approve an escalation card. The distinct
 header keeps it outside the approved-send watchdog.
 
 The only legal Sales draft headings are the exact standalone lines
-`DRAFT RESPONSE TO LEAD:` and `DRAFT FOLLOW-UP:`. Do not use `DRAFT:`,
-`DRAFT EMAIL:`, `DRAFT RESPONSE:`, or `DRAFT RESPONSE TO CLIENT:`; those do not
-enter the Sales autonomy ladder.
+`DRAFT RESPONSE TO LEAD:` and `DRAFT FOLLOW-UP:`. The separate
+`[CLIENT SUPPORT REVIEW]` card deliberately uses `DRAFT RESPONSE:` and stays
+outside the Sales autonomy ladder. Do not use `DRAFT:`, `DRAFT EMAIL:`, or
+`DRAFT RESPONSE TO CLIENT:`.
 
 The host recognizes the exact historical `REVISED DRAFT FOLLOW-UP:` line only
 for ledger/report compatibility. It is not a legal producer heading; revisions
@@ -220,7 +270,7 @@ human instruction not to use the term revokes it.
 
 When you receive feedback (not "Approved") — the message will have a `thread_ts`:
 
-1. Find your most recent draft in the `<messages>` block above (it's the message from you that starts with `[SALES REVIEW]`)
+1. Find your most recent draft in the `<messages>` block above (it starts with `[SALES REVIEW]` or `[CLIENT SUPPORT REVIEW]`)
 2. Apply the requested changes
 3. Run the Request-First Draft Review — apply feedback first, then rerun the decision procedure, lesson audit, and request-scope audit
 4. Re-post the FULL audited draft (not just the diff) in the same thread using `thread_ts`
@@ -228,22 +278,23 @@ When you receive feedback (not "Approved") — the message will have a `thread_t
 
 ## Handling Approval
 
-When you receive "Approved" (the message will have a `thread_ts` — use it for your reply): 0. **This turn is exclusively for this one approved lead.** Do not process a
+When you receive "Approved" (the message will have a `thread_ts` — use it for your reply): 0. **This turn is exclusively for this one approved recipient.** Do not process a
 second approval, lead, lookup result, or unrelated message in the same turn.
 Reconstruct this card from the current thread, execute its one handoff, and
 stop.
 
 1. Find your most recent draft in the `<messages>` block above
-2. Advance pipeline stage in DB:
+2. If it is a `[SALES REVIEW]`, advance its pipeline stage in DB:
    ```bash
    psql -c "SELECT business_v2.fn_advance_pipeline_stage({entry_id}, 'proposal', 'approved');"
    ```
+   If it is a `[CLIENT SUPPORT REVIEW]`, do not query or mutate pipeline state.
 3. Hand off to Mailman for email sending. This is an ACTION, not output: call
    `mcp__nanoclaw__send_message` with `target_group: "mailman"`, the current
    `thread_ts`, and the exact text below. The handoff is not complete until the
    tool returns successfully. **Never print this block as final assistant prose.**
    After success, emit no final text. On tool failure, post
-   `[BLOCKED] Mailman handoff failed for Lead #{id} — email not sent.` in the
+   `[BLOCKED] Mailman handoff failed for this approved recipient — email not sent.` in the
    approval thread and stop.
 
    ```
@@ -252,15 +303,15 @@ stop.
    Cc: {exact approved Cc line when present — otherwise omit}
    Subject: {email subject from the draft}
    Action-ID: {host-issued ID from the [EMAIL ACTION] line in this approval thread}
-   Entry ID: {pipeline_entry_id}
-   Party ID: {party_id}
+   Entry ID: {pipeline_entry_id — SALES REVIEW only; omit the entire line for CLIENT SUPPORT REVIEW}
+   Party ID: {party_id when already resolved — otherwise omit the entire line for CLIENT SUPPORT REVIEW}
    Thread-ID: {real Gmail thread ID if available — OMIT THIS ENTIRE LINE when none exists; never use "(none)", "N/A", or explanatory prose}
    Reply: true (ONLY when responding to a lead's email reply — i.e. from [HANDOFF: mailman→sales] [SOURCE: email-reply]. Omit for first responses to new inquiries.)
    Original-Message:
    {the lead's original message — copied verbatim from the inbound handoff at the root of this thread}
    ---END-ORIGINAL---
    Body:
-   {the full draft response text from your DRAFT RESPONSE TO LEAD section — markdown formatting preserved}
+   {the full draft response text from DRAFT RESPONSE TO LEAD or DRAFT RESPONSE — markdown formatting preserved}
    ```
 
    **Thread-ID field — HARD GATE. For any email-originated conversation the Thread-ID line MUST be present before you emit the handoff.** Three sources, in priority order:
@@ -497,9 +548,15 @@ When human replies "Approved" to a follow-up draft:
 
 ### Resolving Missing Entry ID
 
-`Entry ID` (the `business_v2.pipeline_entries` row id) MUST be present in every `[HANDOFF: sales→mailman]` message. Without it, mailman cannot run `fn_advance_pipeline_stage` and the lead's pipeline state never moves — even though the email goes out. This is the cause of `Note: Handoff had Entry ID: (none) — pipeline stage could not be advanced. No DB write performed.` in mailman's confirmation.
+This section applies only to a genuine Sales Review. A Client Support Review
+does not represent pipeline work: omit `Entry ID` and never create a row for it.
 
-If your incoming handoff (from inbox, chief, mailman→sales reply, or anywhere) does NOT include an `Entry ID:` line, resolve one yourself before handing off to mailman. Run these in order, stopping as soon as one returns a value:
+For a genuine Sales Review, `Entry ID` (the
+`business_v2.pipeline_entries` row id) must be present before the review card is
+posted. Without it, the lead's pipeline state cannot advance.
+
+If a genuine sales handoff does not include an `Entry ID:` line, resolve one
+yourself. Run these in order, stopping as soon as one returns a value:
 
 1. **Resolve party from email.** The handoff almost always has the lead's email. Get the canonical party_id:
 
@@ -507,28 +564,41 @@ If your incoming handoff (from inbox, chief, mailman→sales reply, or anywhere)
    PARTY_ID=$(psql -tAc "SELECT business_v2.best_party_by_email('${LEAD_EMAIL}'::citext);")
    ```
 
-   If `PARTY_ID` is empty, the contact is brand-new with no party record yet — escalate to chief with `[ESCALATION] No party for ${LEAD_EMAIL} — sales cannot create entry without party. Inbox or contador needs to onboard.` Stop here; do not invent IDs.
+   If `PARTY_ID` is empty, the contact is brand-new with no party record yet —
+   escalate to chief with `[ESCALATION] No party for ${LEAD_EMAIL} — sales
+   cannot create entry without party. Inbox or contador needs to onboard.` Stop
+   here; do not invent IDs.
 
-2. **Find an existing open entry.** Some entries fall outside the host matcher's 60-day window or sit in stages the matcher excludes. Check the table directly — the PK column is `id` (not `entry_id`):
+2. **Find an existing open entry through the granted view.** Do not query the
+   base table; the Sales role intentionally has no base-table access.
 
    ```bash
-   ENTRY_ID=$(psql -tAc "SELECT id FROM business_v2.pipeline_entries WHERE party_id = ${PARTY_ID} AND stage NOT IN ('won','lost') ORDER BY created_at DESC LIMIT 1;")
+   ENTRY_ID=$(psql -tAc "SELECT pipeline_entry_id FROM business_v2.v_active_pipeline WHERE party_id = ${PARTY_ID} ORDER BY entered_stage_at DESC LIMIT 1;")
    ```
 
    If non-empty, use this `ENTRY_ID` in the handoff and skip step 3.
 
-3. **Create a new entry.** Only if steps 1 and 2 returned a party but no entry. `pipeline_entries` has a `program_id` FK (not a `program_slug` column) and a unique `(party_id, program_id)` constraint for any entry not in `won`/`lost`. First resolve the program id from your matched slug:
+3. **Create a new entry through the existing helper.** Only for a genuine sales
+   inquiry when steps 1 and 2 returned a party but no entry. Choose one of the
+   seeded pipeline categories: `certification-inquiry` for credential/training
+   transactions, `coaching-inquiry` for coaching-service transactions, or
+   `general-inquiry` otherwise. Do not invent a product-specific program slug.
 
    ```bash
-   PROGRAM_ID=$(psql -tAc "SELECT id FROM business_v2.programs WHERE slug = '${PROGRAM_SLUG}';")
-   ENTRY_ID=$(psql -tAc "INSERT INTO business_v2.pipeline_entries (party_id, program_id, stage, last_updated_by) VALUES (${PARTY_ID}, ${PROGRAM_ID}, 'qualifying', 'sales') RETURNING id;")
+   PROGRAM_ID=$(psql -tAc "SELECT id FROM business_v2.programs WHERE slug = '${PIPELINE_PROGRAM_SLUG}';")
+   ENTRY_ID=$(psql -tAc "SELECT business_v2.fn_create_pipeline_entry(${PARTY_ID}, ${PROGRAM_ID}, 'qualifying', 0, 'USD', '{\"source\": \"sales\"}'::jsonb);")
    ```
 
-   `PROGRAM_SLUG` is the slug from the program-matching table (e.g. `mentor-coaching-foundations`, `acc`, `pcc`). If you can't pin a specific program from the inquiry, use `coaching-inquiry` as a generic placeholder; sales/inbox can re-classify later.
+   Direct `SELECT`, `INSERT`, `UPDATE`, or `DELETE` against
+   `business_v2.pipeline_entries` is forbidden. A permission denial on the base
+   table is the boundary working as designed; do not request a wider grant.
 
 4. **Use the resolved `ENTRY_ID`** as the `entry_id` argument to `fn_advance_pipeline_stage(p_entry_id bigint, p_new_stage text, p_reason text)` (Processing Protocol step 6) AND in the `Entry ID:` field of the `[HANDOFF: sales→mailman]` message.
 
-If any step fails (psql error, schema drift), do NOT silently proceed. Post `[BLOCKED] Entry ID resolution failed for ${LEAD_EMAIL} — ${error}. Email not sent.` to chief and stop. Sending without an Entry ID leaves an orphan in the pipeline that nobody will follow up on.
+If a genuine sales-entry step fails (psql error, schema drift), do not silently
+proceed. Post `[BLOCKED] Entry ID resolution failed for ${LEAD_EMAIL} —
+${error}. Email not sent.` to chief and stop. Never use Relationship Context as
+a fallback for creating pipeline state; it is a read-only context capability.
 
 ### Handling Replies (from mailman)
 

@@ -8,6 +8,51 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260826-007 — Active-client support no longer invents Sales pipeline work
+
+- Date: 2026-08-27T03:05:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_deploy; reviewed and locally verified from exact live release
+  `d5375964`
+- Commit/PR: uncommitted on `codex/sales-support-entry-fix-20260826`; commit,
+  push, immutable build, and deployment pending
+- Change class: C3 approval-gated support drafting and release; the change
+  itself sends no customer email and creates no approval
+- Affected systems: Sales behavior/workflow authority, existing host approval
+  card parser/watchdog contract, Sales prompt tests, immutable NanoClaw release,
+  and one post-deployment Slack draft canary in the existing Ari Nakahara work
+  thread
+- Outcome: `[SOURCE: email-active-client]` and other evidence-supported
+  `SERVICE` work use `[CLIENT SUPPORT REVIEW]` without a Lead/Entry ID or
+  pipeline mutation. Genuine sales-entry recovery uses `v_active_pipeline` and
+  `fn_create_pipeline_entry`; the stale direct base-table lookup/INSERT path is
+  removed. Database grants, Gmail policy, approval, exact-card execution, and
+  one-time receipt behavior are unchanged.
+- Incident evidence: Ari's active-client assignment-feedback inquiry had no
+  open pipeline row. Sales ignored the owner's exact prerequisite fact, tried a
+  deliberately forbidden base-table INSERT and an unrelated disabled context
+  query, then blocked instead of drafting. Read-only production checks proved
+  Sales lacks table INSERT but can execute the existing create helper.
+- Review: bounded Claude Sonnet/high R1 found two material prompt-contract gaps:
+  an unconditional Party-ID handoff line for support and missing assertions for
+  post-approval no-mutation. Both were corrected with explicit omission rules
+  and direct regression coverage; no unresolved material finding remains. One
+  round used 10 model calls, 705,222 cache-read tokens, 21,695 output tokens,
+  and 111,774 maximum context, exceeding the 100k review target.
+- Verification: focused prompt/approval/watchdog tests pass 87/87; combined
+  Sales/Mailman prompt contracts pass 15/15; pinned Node 22.23.2 typecheck,
+  Prettier check, documentation continuity/capability check, and diff check
+  pass. Full root is 3,311 pass / 29 skip with the sole unchanged unrelated
+  CNPC wrapper-literal assertion. Release verification, deployment health, and
+  the draft-only live canary remain pending.
+- Deployment/migration: no schema or data migration. Deployment pending.
+- Rollback/recovery: restore the prior immutable release pointer; no database or
+  provider rollback is required. The live canary must remain unapproved.
+- Documentation: Sales role/workflow/compatibility prompt, project map, active
+  work, and this changelog.
+- Follow-ups: none outside the task; customer sending remains a separate exact
+  operator approval.
+
 ### NC-20260826-005 — Stripe, contact-form, and verified-Chaos Party Context
 
 - Date: 2026-08-26T23:25:00Z

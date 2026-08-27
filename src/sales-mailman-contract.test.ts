@@ -32,8 +32,8 @@ const normalizedMailmanPrompt = mailmanPrompt.replace(/\s+/g, ' ');
 const normalizedMailmanProcedure = mailmanProcedure.replace(/\s+/g, ' ');
 
 describe('Sales to Mailman approval contract', () => {
-  it('requires one lead and a successful typed handoff', () => {
-    expect(salesPrompt).toContain('One approval turn = one lead');
+  it('requires one recipient and a successful typed handoff', () => {
+    expect(salesPrompt).toContain('One approval turn = one recipient');
     expect(salesPrompt).toContain('target_group: "mailman"');
     expect(salesPrompt).toContain('is a delivery failure');
     expect(workflow).toContain(

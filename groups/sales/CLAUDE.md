@@ -46,6 +46,15 @@ mechanical confirmation), not a task. Take no action and send no response.
 
 Message starts with `[HANDOFF: inbox→sales]` or `[HANDOFF: chief→sales]`. Both follow the same Processing Protocol below. Chief routes inquiries that arrived via escalation rather than the normal inbox pipeline — treat them identically.
 
+Mailman may also route `[SOURCE: email-active-client]` work here. That marker is
+a host routing decision that this is client/student support, not a new sales
+opportunity. Use route `SERVICE` and the pipeline-free Client Support Review
+procedure in `WORKFLOWS.md`. Do not create a pipeline entry merely to answer a
+support question. A missing CRM engagement, pipeline row, or client-status row
+does not contradict the person's stated enrollment; absence is unknown, not
+evidence that they are not a student. An exact Alex/Cherie fact in the current
+Slack work thread is operative answer authority for that response.
+
 ### 2. Operator reply in a pending-draft thread
 
 Any operator message that lands in a thread where you have a draft awaiting approval is DIRECTION ON THAT DRAFT — never a status update to file away and go quiet on. Treat it as either:
@@ -71,7 +80,7 @@ An exact whole-message "Approved" (case-insensitive, optional punctuation) or
 a check-mark approval in the draft thread authorizes the final action. Free-form
 text that merely contains the word is feedback, not host approval.
 
-**One approval turn = one lead, one thread, one handoff.** Process only the
+**One approval turn = one recipient, one thread, one handoff.** Process only the
 approved card in the current Slack thread. Do not combine another lead, another
 approval, a Gmail lookup, or unrelated queued work into this execution turn.
 
@@ -91,12 +100,12 @@ for the host's Gmail-confirmed receipt in this same thread.
 
 ## Processing Protocol
 
-1. Parse handoff. **Save Thread-ID** if present — must include in mailman handoff for threading, and **carry it across EVERY round**, including operator approvals that arrive later via Slack ("Approved", "refunded", "send it"). An approval is not a new conversation — it is the same email thread. If the Thread-ID is no longer in front of you when you build the final handoff (multi-round approval, revised draft), **recover it before emitting** — see `WORKFLOWS.md → Thread-ID field` (query the party's most recent outbound interaction). Never emit `[HANDOFF: sales→mailman]` for an email-originated conversation with a missing Thread-ID — that sends a detached new email instead of threading the reply (Carol Del Priore refund, 2026-06-09). **Exception:** `[SOURCE: forwarded-email]` / `[FORWARDED-INQUIRY: send-new-email]` deliberately has no reply Thread-ID: `Source-Thread-ID` is the internal forwarding thread and must never be copied, recovered, or passed as `Thread-ID`. After approval, send a new email to the host-resolved external lead address. **Save the host-supplied `Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context` lines across every draft/approval round.** They are current-message context, not permission; use the bounded rule in `WORKFLOWS.md` and never invent or expose BCC. **Save Known-To-Us** if present, but apply the evidence gate in `WORKFLOWS.md`: only evidence that predates the current inbound can establish a relationship. If it is absent or insufficient, set relationship to `unknown`. Do not run a post-intake contact-card lookup to infer relationship; inbox may have created those records for this inquiry. **If `Entry ID:` is absent or `(none)`, do NOT proceed without resolving it** — follow `WORKFLOWS.md → Resolving Missing Entry ID` to look up or create a `business_v2.pipeline_entries` row before drafting. Sending to mailman without an Entry ID skips the pipeline-stage update and leaves the lead orphaned.
+1. Parse handoff. **Save Thread-ID** if present — must include in mailman handoff for threading, and **carry it across EVERY round**, including operator approvals that arrive later via Slack ("Approved", "refunded", "send it"). An approval is not a new conversation — it is the same email thread. If the Thread-ID is no longer in front of you when you build the final handoff (multi-round approval, revised draft), **recover it before emitting** — see `WORKFLOWS.md → Thread-ID field` (query the party's most recent outbound interaction). Never emit `[HANDOFF: sales→mailman]` for an email-originated conversation with a missing Thread-ID — that sends a detached new email instead of threading the reply (Carol Del Priore refund, 2026-06-09). **Exception:** `[SOURCE: forwarded-email]` / `[FORWARDED-INQUIRY: send-new-email]` deliberately has no reply Thread-ID: `Source-Thread-ID` is the internal forwarding thread and must never be copied, recovered, or passed as `Thread-ID`. After approval, send a new email to the host-resolved external lead address. **Save the host-supplied `Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context` lines across every draft/approval round.** They are current-message context, not permission; use the bounded rule in `WORKFLOWS.md` and never invent or expose BCC. **Save Known-To-Us** if present, but apply the evidence gate in `WORKFLOWS.md`: only evidence that predates the current inbound can establish a relationship. If it is absent or insufficient, set relationship to `unknown`. Do not run a post-intake contact-card lookup to infer relationship; inbox may have created those records for this inquiry. **Do not resolve or create an Entry ID before choosing the route.** For `[SOURCE: email-active-client]` or another evidence-supported `SERVICE` case, follow `WORKFLOWS.md → Client Support Review`; no Entry ID or pipeline mutation is required. For a genuine sales inquiry, follow `WORKFLOWS.md → Resolving Missing Entry ID` before posting a Sales Review card.
 2. Read `/workspace/extra/knowledge/KNOWLEDGE.md`
 3. Run the deterministic Request-First Decision Procedure in `WORKFLOWS.md`. Use this exact precedence: **RELATIONSHIP → CURRENT MESSAGE → ANSWERABILITY → ROUTE/BUDGET → PATH NON-BINDING**. Do not select a program, quote a price, add a cohort, or propose a next step until the first four decisions justify it. Broad browsing-path evidence remains quarantined from customer-facing drafting. The only exception is a host-supplied contact-form `Entry-Page`, which may resolve one explicit page-relative reference under the narrow boundary in `WORKFLOWS.md`; it supplies no fact or commercial authority.
 4. Draft and audit the response using Request-First Draft Review (see `WORKFLOWS.md`). **Hard rule on program assumptions:** if the current message and thread do not establish a program and no valid `Entry-Page` resolves an explicit page-relative reference, do not silently assume one or use browsing behavior to infer one. Ask one focused clarifying question when that can safely resolve the request; otherwise abstain and request human input. Never quote ACC pricing/cohorts/timezone for a "what time are classes?" message that did not establish ACC. Alex caught this exact failure on the Marius case (2026-04-27).
-5. Post the audited draft using the Draft Format in `WORKFLOWS.md`. It carries a one-line `Email:` field (the host threads on it), an optional exact `Cc:` only when the bounded reply-all rule permits it, and a short THEIR ASK excerpt — **not** the full inbound. The verbatim message is already the thread root; repeating it makes the operator scroll the same text twice and pushes the card past Slack's length limit. You still need the verbatim text later for the mailman `Original-Message:` field — read it from the handoff at the top of this thread, never from the card.
-6. Update DB (use Entry ID from handoff):
+5. Post the audited draft using the route-appropriate Draft Format in `WORKFLOWS.md`. It carries a one-line `Email:` field (the host threads on it), an optional exact `Cc:` only when the bounded reply-all rule permits it, and a short THEIR ASK excerpt — **not** the full inbound. The verbatim message is already the thread root; repeating it makes the operator scroll the same text twice and pushes the card past Slack's length limit. You still need the verbatim text later for the mailman `Original-Message:` field — read it from the handoff at the top of this thread, never from the card.
+6. For a genuine Sales Review with an Entry ID, update DB. For a Client Support Review, skip this step entirely:
    ```bash
    psql -c "SELECT business_v2.fn_advance_pipeline_stage({entry_id}, 'qualifying', 'sales review');"
    ```
@@ -152,19 +161,30 @@ resolved, otherwise omit the entire line.
 
 ## Edge Cases
 
-- **Missing Entry ID:** Resolve before handing off — see `WORKFLOWS.md → Resolving Missing Entry ID`. Never hand off to mailman with `Entry ID: (none)`; this skips `fn_advance_pipeline_stage` and the lead never advances. If resolution fails, escalate to chief and stop.
-- **Thread-ID lost across approval rounds:** If you drafted from an email-originated handoff (it carried a Thread-ID, or `[SOURCE: email-reply]`) and the approval came back later via Slack, the Thread-ID and Entry ID may have scrolled out of view. Before emitting the final `[HANDOFF: sales→mailman]`, re-resolve BOTH from the party (`WORKFLOWS.md → Thread-ID field` source #2, keyed by `party_id`). A bare handoff sends the reply as a new, detached email. The same approval path dropped both fields on the Carol Del Priore refund (2026-06-09).
+- **Missing Entry ID:** First choose the route. For a Client Support Review,
+  omit the Entry ID line entirely and never create a pipeline row. For a
+  genuine Sales Review, resolve it through `v_active_pipeline` and
+  `fn_create_pipeline_entry` as documented in `WORKFLOWS.md`; never use direct
+  base-table DML. Never emit `Entry ID: (none)`.
+- **Thread-ID lost across approval rounds:** If you drafted from an email-originated handoff (it carried a Thread-ID, or `[SOURCE: email-reply]`) and the approval came back later via Slack, the Thread-ID may have scrolled out of view. Recover it from the original handoff or the party's latest outbound interaction before emitting the final `[HANDOFF: sales→mailman]`. For a Sales Review, also recover its Entry ID; for a Client Support Review, omit Entry ID. A bare handoff sends the reply as a new, detached email. The same approval path dropped both fields on the Carol Del Priore refund (2026-06-09).
 - **Forwarded inquiry:** `[SOURCE: forwarded-email]` is intentionally a new
   outbound email. Use the external lead on `Email`/`To`; never turn
   `Source-Thread-ID` into `Thread-ID`, and never address the internal
   `Forwarded-By` teammate.
 - **Missing Party ID only (Entry ID present):** Process from handoff alone — Plutio activity log step is the only thing that gets skipped.
+- **Client Support Review with no Party ID:** Omit the `Party ID:` handoff line.
+  Never resolve or invent it merely to make support sendable; the host resolves
+  identity from the exact approved recipient/thread when available.
 - **No program match:** use `CLARIFY` when one focused question can resolve the request; otherwise use `HUMAN` and abstain. Do not force a discovery call or a program recommendation.
 - **Possible prior contact:** Do not infer relationship from a pipeline entry;
   intake creates one for the current inquiry. Use only the pre-inbound evidence
   gate in `WORKFLOWS.md`. If it does not establish prior contact, choose
   `unknown`; if it conflicts with the person's message, choose `HUMAN`.
 - **Ambiguous message:** Treat as feedback on most recent pending draft.
+- **Unavailable attachment:** Sales has no `gmail_read` authority. Do not call
+  it. If the current thread or an exact operator fact answers the request,
+  draft from that evidence and state no claim about the attachment. Escalate
+  only when the attachment itself is material to a safe answer.
 
 ## Activity Logging (Plutio)
 
