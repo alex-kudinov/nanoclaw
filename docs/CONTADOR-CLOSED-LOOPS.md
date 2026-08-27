@@ -250,13 +250,16 @@ and zero processing. Provider/payment/Sheet/roster and protected mirror counts
 did not change. The host-admitted ledger slice is complete; missed ingress and
 refund closure remain separate.
 
-`NC-20260827-003` adds the separately default-off provider-to-host parity
+Exact release `d11e949b` deploys the separately default-off provider-to-host parity
 boundary. It stable-double-reads a strict 72-hour succeeded-PaymentIntent window
 for both fixed accounts, compares exact account/Payment Intent identity under
 the natural admission lock, and creates only a host-owned `needs_review`
 exception plus content-minimized receipts when host case authority is absent.
-It never replays or processes the event. Implementation and focused/disposable
-proof are complete; review and deployment remain pending.
+It never replays or processes the event. The flag is now enabled after dark
+deployment. Its first complete scan captured the one known missing Tandem
+payment as a `needs_review` exception with six receipts and one alias; exact
+second-run replay created nothing. Stripe inbox and `public.payments` did not
+change, and the separate refund review remains blocked.
 
 Minimum fields:
 

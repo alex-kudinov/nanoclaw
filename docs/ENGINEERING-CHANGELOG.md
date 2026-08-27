@@ -12,8 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-27T18:45:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: in_progress; implementation/focused/disposable proof, review, and
-  release gates complete; commit, release, deployment, and live capture pending
+- State: complete; reviewed, committed, pushed, immutable-released, deployed,
+  enabled, live-verified, and exact replay-verified
+- Commit/release: `d11e949bd1c29e8677c6293331db7ec5f93b986d`;
+  source tree `7b3581fc`; artifact `9dea1bad`; archive `53c369fe`; 1,016 files
 - Authorization: accepted
   `decision:stripe-payment-ingress-parity-2026-08-27` for a bounded both-account
   read-only source and host-owned missing-ingress exception; no replay/payment/
@@ -39,6 +41,19 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   only two unrelated failures: the known CNPC wrapper assertion and a Trafft
   fixture that crossed its hard-coded 24-hour freshness window; neither source
   nor test is changed by NC-003.
+- Deployment: fresh local/remote verification and backup
+  `NC-20260827-003-20260827T191149Z`; off-first activation changed only the
+  three release pointers, then one config-only enable/reload set the parity
+  flag. Rollback plist is
+  `com.nanoclaw.plist.rollback-6778be024ca1-2026-08-27T19-13-02-508Z`.
+- Live result: first complete scan saw Heartbeat 2 succeeded/2 existing and
+  Tandem 9 succeeded/8 existing, creating exactly one missing-ingress
+  exception. Exact second run saw 9/9 existing and created zero. Ledger delta
+  is one `needs_review` case, six receipts, and one alias; Stripe inbox remains
+  13 recent rows and `public.payments` remains 272. One listener, zero active
+  containers/in-flight sends, empty queue, and connected Slack/Gmail verify.
+  No provider replay, payment/refund processing, customer action, or message
+  occurred; refund review remains separate.
 - Evidence:
   `docs/programs/company-os/evidence/NC-20260827-003-stripe-payment-ingress-parity.md`.
 

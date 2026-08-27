@@ -134,6 +134,12 @@ zero-create replay. Rollback disables parity before restoring the prior release;
 it preserves the owned exception as historical evidence and never deletes or
 replays it.
 
+Exact release `d11e949b` completed that sequence on 2026-08-27. Fresh local and
+Mini verification proved source tree `7b3581fc`, artifact `9dea1bad`, and 1,016
+files. Dark activation changed only the three release pointers; adding only the
+parity flag then produced one complete known-gap capture and an exact zero-create
+second run. Protected Stripe inbox and `public.payments` counts were unchanged.
+
 `NC-20260826-005` is a no-migration Relationship Context source release over
 already-live migration 137. Build and activate first with
 `RELATIONSHIP_CONTEXT_SOURCE_ENRICHMENT_ENABLED=0`; verify exact release,

@@ -82,7 +82,34 @@ proven. This task records visibility only and does not repair that payment.
   plus a Trafft shadow fixture whose hard-coded 2026-08-26 timestamp crossed
   its 24-hour freshness boundary on 2026-08-27. The Trafft source and test are
   unchanged from the task base; the new parity-focused set remains green;
-- no production provider/database/config/runtime mutation occurred.
+- exact reviewed commit `d11e949bd1c29e8677c6293331db7ec5f93b986d`
+  was pushed and packaged as a 1,016-file immutable release with source tree
+  `7b3581fc1cb8bb9eb67f3bf83d566680eac1f8ab`, compiled artifact hash
+  `9dea1bad0b8d54ce5c51592f0d62ffafed58b748d6ed20ffab64294566828247`,
+  and archive hash
+  `53c369fe51c71d7bdcba9cb691d2173e0a8e027bfbec1a5ada3e211fc23bcc1a`;
+- the archive verified after fresh extraction locally and on the production
+  Mini. Backup
+  `~/.local/share/nanoclaw-deploy-backups/NC-20260827-003-20260827T191149Z`
+  contains filtered business-v2/public-payments dumps, WAL-safe SQLite, all
+  relevant plists/watchdog, prior manifest, and protected aggregates;
+- activation from exact release `6778be02` changed only the three release
+  pointers and produced rollback plist
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-6778be024ca1-2026-08-27T19-13-02-508Z`.
+  Dark health proved parity disabled and no ledger or protected-state delta;
+- adding only `CONTADOR_STRIPE_INGRESS_PARITY_ENABLED=1` and reloading produced
+  one healthy complete scan: Heartbeat 2 succeeded/2 existing/0 exceptions;
+  Tandem 9 succeeded/8 existing/1 exception. The known missed payment became
+  one exact version-0/attempt-1 Contador-owned `provider_delivery_missing`
+  case, one Payment Intent alias, and six truthful receipts;
+- an exact second run on the deployed release returned Heartbeat 2/2 and
+  Tandem 9/9 with zero new exceptions. Final deltas are `needs_review +1`,
+  receipts `+6`, aliases `+1`; the recent Stripe inbox remains 13 and
+  `public.payments` remains 272. No provider replay, payment/refund processing,
+  Payment Log/roster write, customer action, or communication occurred;
+- live release identity/hash/root, one listener, zero active containers,
+  empty in-flight send/queue state, and connected Slack/Gmail all verify.
 
-Immutable release, backup, off-first deployment, one-key enable, known
-missing-payment capture, exact replay, and live non-interference remain pending.
+The bounded ingress-parity slice is complete. The captured payment remains an
+owned visibility exception for separate product/student/payment repair, and the
+pre-existing refund review remains separate and blocked.

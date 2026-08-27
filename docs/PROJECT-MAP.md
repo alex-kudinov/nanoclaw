@@ -668,11 +668,12 @@ count is zero and protected payment/inbox/alias state is unchanged. Ingress
 parity, the missed payment, product/student identity, and refund closure remain
 separate.
 
-NC-20260827-003 locally adds default-off both-account Stripe-to-host ingress
+Exact release `d11e949b` deploys the default-off both-account Stripe-to-host ingress
 parity: stable bounded 72-hour succeeded-PaymentIntent reads, exact shared-lock
 case comparison, and privacy-minimized owned exceptions with no replay or
-payment processing. Focused/disposable proof passes; independent review,
-release, enablement, and live capture remain pending.
+payment processing. Review found no material issues. Off-first activation plus
+one-key enable captured the known missed payment exactly once; exact second run
+created nothing, while inbox and `public.payments` stayed unchanged.
 
 ### Reliability and autonomy
 
