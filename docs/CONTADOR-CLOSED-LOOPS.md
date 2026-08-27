@@ -223,6 +223,16 @@ Exact release `b131071c74fc…` and migration 133 are live with empty tables and
 unchanged payment/webhook aggregates. No historical event was replayed; the
 first natural typed payment/refund remains the outcome gate.
 
+Natural observation on 2026-08-27 supersedes that empty-table checkpoint. One
+natural admitted Foundations payment is exact-readback complete in one attempt
+with all six stages and handled webhook binding; refund proof is not required
+for the payment path. Ledger-wide state also exposes two expired
+admission-only `processing` cases whose source inbox rows dead-lettered on
+`invalid_charge_alias`, plus a separate succeeded course payment with no host
+inbox/case/PostgreSQL row. The happy path is proven, but terminalization and
+ingress parity remain open. Do not replay or repair either payment under the
+observation task.
+
 Minimum fields:
 
 - source account plus Payment Intent, Checkout Session, charge, invoice, and

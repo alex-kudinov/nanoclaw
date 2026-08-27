@@ -645,10 +645,17 @@ The ledger is operational rather than financial. It stores no names, email,
 product text, amount/card data, raw webhook content, or accounting facts and
 grants no agent access. It does not replay the historical Stripe backlog,
 change product/student resolution, or move any Bizmgr/QuickBooks authority.
-Exact release `b131071c74fc…` and migration 133 are live with three empty,
-admin-only tables, healthy service/channels, and unchanged 261-payment/249-
-webhook aggregates. This is deployment proof, not natural event outcome; the
-first typed payment/refund remains pending and no history was replayed.
+Exact release `b131071c74fc…` and migration 133 are contained in current live
+`6a978328`. A 2026-08-27 natural Foundations payment completed in one attempt
+with exact aliases, all six verified stage receipts, handled n8n binding, and
+Payment Log/PostgreSQL/roster readback; refund proof remains separate. Current
+aggregate is six complete, two needs-product, one write-failed, one refund
+needs-review, and two stale-processing. The stale cases have expired leases,
+admission-only receipts, and source inbox rows dead-lettered on
+`invalid_charge_alias`. A distinct same-day succeeded payment never reached
+host inbox/case/PostgreSQL. The admitted happy path is proven, but
+terminalization and provider-to-host ingress parity remain open; no event was
+replayed or repaired.
 
 ### Reliability and autonomy
 

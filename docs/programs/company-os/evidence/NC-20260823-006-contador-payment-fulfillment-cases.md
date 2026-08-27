@@ -142,3 +142,59 @@ No historical or manufactured Stripe event was processed. No live Stripe,
 Sheets, roster, payment, customer, Slack, accounting, QuickBooks, or schedule
 mutation was performed for deployment proof. The first natural typed payment or
 refund remains the outcome gate.
+
+## Natural payment observation — 2026-08-27
+
+The owner reported a course payment and explicitly allowed refund validation to
+remain separate. Read-only Stripe reconciliation found two distinct succeeded
+Foundations purchases on the Tandem/alternate account today, at 04:14 and 07:54
+CDT. They have different customers, checkout tokens, emails, and Chaos session
+tokens; this is not a duplicate-charge pair. No payer identity or raw provider
+payload is retained here.
+
+The 07:54 payment reached exact live release `6a978328`, which contains the
+reviewed `b131071c` implementation. It produced:
+
+- one version-0 `complete` case in one attempt and about five seconds;
+- one payment-intent, one charge, and one event alias;
+- verified `admission`, `stripe_source`, `payment_log`,
+  `postgres_payment`, `student_roster`, and `final` receipts;
+- one handled n8n `webhook_inbox` row bound to the exact case/state/version;
+- one succeeded `public.payments` readback row.
+
+The natural admitted-payment happy path is therefore outcome-validated. A
+refund is not required for that proof and the separately proposed refund/
+roster closure remains held.
+
+The same audit exposed two distinct unresolved boundaries:
+
+1. The 04:14 succeeded same-course payment has no NanoClaw webhook-inbox row,
+   fulfillment case, or `public.payments` row. The n8n workflow and its Stripe
+   event destination are currently active/enabled, but historical delivery
+   cause is not proven. This is provider-to-host ingress parity, outside the
+   admitted-case implementation, and must not be silently replayed.
+2. Ledger-wide aggregate is six `complete`, two `needs_product`, one
+   `write_failed`, one refund `needs_review`, and two stale `processing`. The
+   two processing cases date to August 25–26, have expired leases, version
+   3/2, four/three admission-only receipts, and no later stage receipt. Their
+   exact source inbox rows are dead-lettered after five attempts with bounded
+   error `invalid_charge_alias`.
+
+The tracked alias schema and host validator accept `ch_` charge IDs; Stripe's
+current charge tooling accepts `ch_` and `py_`. The latter is a strong
+compatibility explanation for the bounded error, but exact offending values
+were intentionally not retained in this evidence and implementation review
+must confirm the causal payload shape.
+
+No Stripe event, payment, Sheet, roster, PostgreSQL payment, case, refund,
+provider, customer, message, configuration, or runtime state was replayed,
+repaired, or changed during this observation. Exact live `6a978328` remains
+healthy with Gmail/Slack connected and zero active/waiting/outgoing backlog.
+
+The item remains `deployed_unverified`: the admitted happy path is proven, but
+expired `processing` violates the promised complete-or-owned-exception
+terminal invariant. A bounded correction must make charge-alias handling
+compatible and terminalize the two existing cases host-side without external
+replay under separately recorded authority. Missing provider delivery is a
+separate ingress-parity work item. Product/student identity stays dependency-
+blocked; refund closure stays separate.

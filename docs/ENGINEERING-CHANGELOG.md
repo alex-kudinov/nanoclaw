@@ -1225,6 +1225,27 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   gate.
 - Evidence:
   `docs/programs/company-os/evidence/NC-20260823-006-contador-payment-fulfillment-cases.md`.
+- Natural-payment addendum 2026-08-27T17:05:00Z: two distinct Foundations
+  charges succeeded today on the Tandem Stripe account. The 07:54 CDT charge
+  reached exact live `6a978328`; one version-0 case completed in one attempt
+  with payment-intent/charge/event aliases, six verified admission/source/
+  Payment Log/PostgreSQL/roster/final receipts, a handled n8n binding, and one
+  succeeded `public.payments` readback. This validates the admitted-payment
+  happy path; refund/roster closure remains separate.
+- Natural-boundary finding: the distinct 04:14 CDT same-course charge has no
+  host inbox, case, or PostgreSQL row. Separately, aggregate case state is six
+  complete, two needs-product, one write-failed, one refund needs-review, and
+  two stale-processing. Both processing leases expired after four/three
+  admission-only attempts; their inbox rows dead-lettered after five attempts
+  on `invalid_charge_alias`. The current `ch_`-only charge alias contract is
+  incompatible with Stripe tooling's `ch_`/`py_` surface, an evidence-backed
+  causal hypothesis that implementation review must confirm.
+- Updated state: remains `deployed_unverified`. The happy path is proven, but
+  stale processing violates complete-or-owned-exception. No provider/event
+  replay, missed-payment repair, Sheet/roster/PostgreSQL/payment/case write,
+  refund, communication, code, configuration, or deployment occurred. A
+  bounded correction/data decision and a separate ingress-parity item are
+  required; product/student identity remains dependency-blocked.
 
 ### NC-20260822-011 — Host-owned Gmail attachment processing
 
