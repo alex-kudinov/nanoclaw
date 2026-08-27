@@ -17,7 +17,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Commit/PR: implementation `7a4a876ba89a3543b57c7ca2841f2d3ce2d41770`
   on `codex/relationship-context-stripe-contact-chaos-20260826` from pushed
   `5c02acd3`, which directly contains exact live implementation `1a381e48`;
-  branch push and release commit remain pending
+  review boundary `0489e3db9542bc02df273538773d29262ab106d3` and branch
+  are pushed; immutable release build remains pending
 - Change class: C5 identity/security boundary plus separately gated C3 release
 - Outcome: adds three provider-neutral, default-off, read-only adapters: both
   distinct Stripe account scopes; immutable archived contact-form submissions;
