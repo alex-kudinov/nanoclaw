@@ -12,13 +12,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-27T02:42:42Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; implementation, independent review, focused/full/runner,
-  disposable-PostgreSQL, and continuity proof complete; commit/release/
-  deployment pending
-- Commit/PR: reserved/pushed
+- State: ready_for_deploy; implementation, independent review, focused/full/
+  runner, disposable-PostgreSQL, continuity, commit, and push complete;
+  release/deployment pending
+- Commit/PR: pushed implementation
+  `0ca7939fbb50e7e236969846d6b7987bc4fb3c73` on
   `codex/relationship-context-client-projection-20260826` from clean pushed
-  NC-005 final-evidence commit `13c855db8db0dc61b2e652609d21569c7d75d742`;
-  implementation remains uncommitted at this boundary
+  NC-005 final-evidence commit `13c855db8db0dc61b2e652609d21569c7d75d742`
 - Change class: C5 relationship/identity interpretation boundary plus
   separately gated C3 release
 - Affected systems: host-only migration-137 Party Context projections, health,
