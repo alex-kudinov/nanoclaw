@@ -183,6 +183,11 @@ outside the current client conversation.
   1,444 client projection coverage, one active/one historical engagement, zero
   changed projections, query off/zero grants, connected channels, and empty
   queues.
+- Program reconciliation: revision 138 closes the item and all eight
+  commitments. No active or eligible work remains. The first dependency-
+  complete roadmap candidate is the separately unselected Bizmgr payables
+  visibility queue; the higher nominal Contador identity candidates remain
+  blocked on a natural payment/refund case.
 - Prohibited work: historical project/client assignment or reassignment,
   Plutio/provider mutation, name/email similarity, contact-presence promotion,
   Party merge, role/ref rewrite without accepted exact authority, customer

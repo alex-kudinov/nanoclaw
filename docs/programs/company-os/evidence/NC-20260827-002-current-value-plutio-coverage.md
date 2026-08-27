@@ -86,3 +86,20 @@ receiver state changed.
 The unresolved current eight-person/two-company gap and the older historical
 holds remain explicit unknowns. This is the accepted useful coverage ceiling,
 not unfinished cleanup work.
+
+## Program reconciliation and roadmap return
+
+Company OS revision 138 marks
+`work:relationship-context-plutio-client-ref-coverage` done with all eight
+continuity commitments individually completed. No Plutio identity-coverage
+candidate remains active, ready, or waiting. The portfolio has no active or
+eligible item.
+
+The nominal priority-7 product-identity and priority-8 payer/student-identity
+candidates remain dependency-blocked by the authorized payment-fulfillment
+case ledger, which is waiting for a natural typed Stripe payment/refund and may
+not be manufactured. The first dependency-complete roadmap candidate by
+priority is `work:bizmgr-payables-visibility-queue` (priority 9): make every
+captured vendor invoice visible as owned due/missing-information/QuickBooks-
+entry/payment/reconciliation work while preserving manual accounting apply.
+It remains a separately unselected and unauthorized queue/schema decision.

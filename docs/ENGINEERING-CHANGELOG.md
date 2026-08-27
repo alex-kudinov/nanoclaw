@@ -50,6 +50,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Follow-up: close the Plutio mapping lane and select a higher-value Company OS
   roadmap item separately; do not reopen historical identity cleanup by
   default.
+- Program reconciliation: Company OS revision 138 marks the Plutio coverage
+  item done with all eight commitments closed and no active/eligible work. The
+  priority-7/8 Contador identity candidates remain blocked on the natural
+  payment/refund case ledger; the first dependency-complete candidate is the
+  separately unselected priority-9 Bizmgr payables visibility queue.
 
 ### NC-20260826-009 — Exact Plutio coaching-engagement context
 
