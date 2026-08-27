@@ -150,6 +150,29 @@ links and all eight company links remain held. The all-Party projection is
 1,438/1,438 with 63 defensible customer/client Parties; exact provider and
 client-projection replays changed zero semantic projections.
 
+## Current-value identity coverage closure
+
+NC-20260827-002 applies the owner's proportionality boundary: finish only
+useful current/returning-client coverage and do not assign or reassign
+historical Plutio projects or clients.
+
+A stable current-only audit found nine person objects and three company-link
+occurrences across two distinct companies on the 11 qualifying In-progress
+projects. All objects still exist in Plutio. Exactly one current person is
+already present in both the authoritative `plutio_refs` ledger and the active
+exact Party ref graph; it is the existing active engagement above. The other
+eight people and two companies have no host ledger bridge, populated provider
+external-ID/custom-field value, or conflict.
+
+No additional zero-touch mapping is therefore defensible. Creating one would
+require provider-side relinking/cleanup or name/email inference. Both are
+outside the accepted boundary, so current and historical holds remain explicit
+unknowns and the Plutio mapping lane is closed. This closure made no code,
+database, provider, Party, role/ref, configuration, or runtime change and
+requires no release or rollback. At closure, exact live `6a978328` remains
+healthy; the client projection covers 1,444/1,444 active Parties and both
+provider/client replays change zero projections.
+
 ## Shared toolbox dependency
 
 Discovery exposed that `shared/plutio/lib/auth.sh` sourced the entire project

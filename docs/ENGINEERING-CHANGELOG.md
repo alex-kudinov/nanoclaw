@@ -8,6 +8,49 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260827-002 — Close low-value Plutio identity cleanup
+
+- Date: 2026-08-27T13:18:58Z
+- Owner/client: Codex, recording and executing the current owner boundary
+- State: complete; current-only exact-source audit and live non-interference
+  verification complete; no implementation or deployment warranted
+- Commit/PR: pushed
+  `codex/relationship-context-current-plutio-coverage-20260827` from NC-009
+  final evidence `c813879d`; exact live release remains `6a978328`
+- Change class: C1 read-only evidence and program closure; the potential C5
+  identity mutation was not performed because no accepted exact source exists
+- Owner decision: finish only useful current/returning-client mapping; do not
+  spend effort assigning or reassigning historical Plutio projects/clients;
+  then return to higher-value roadmap work
+- Current audit: 11 qualifying In-progress projects carry nine person links and
+  three company-link occurrences across two distinct companies. Stable provider
+  double reads returned all nine person and both company objects.
+- Exact-source result: the Party graph has 1,372 active verified Plutio person
+  refs, but only one of the nine current people is in the authoritative ledger
+  and exact ref graph. The remaining eight people and both companies have no
+  authoritative ledger/ref, populated custom identifier, or conflict. The one
+  existing person is already NC-009's active coaching mapping.
+- Disposition: no additional zero-touch mapping is defensible. Any remaining
+  binding would require rejected Plutio cleanup or prohibited name/email
+  inference. Historical and unresolved current links remain explicit holds;
+  they are not future cleanup work by default.
+- Live verification: exact release `6a978328` remains verified/healthy; Plutio
+  replay is zero new/two duplicate/zero changed; client projection covers
+  1,444/1,444 active Parties with 63 defensible customer/client Parties, one
+  active and one historical coaching relationship, zero stale-current, and
+  zero changed. Query is off with zero grants, Gmail/Slack are connected, and
+  queues are empty.
+- Non-interference: no Plutio/provider/project/client, Party/ref/role, database,
+  code, configuration, credential, payment, consent, communication, minion,
+  checkout, lifecycle, Circle, Sales-support, external-watchdog, or legacy-
+  receiver mutation. No Claude implementation review, build, release,
+  deployment, or rollback is required because there is no implementation delta.
+- Evidence:
+  `docs/programs/company-os/evidence/NC-20260827-002-current-value-plutio-coverage.md`.
+- Follow-up: close the Plutio mapping lane and select a higher-value Company OS
+  roadmap item separately; do not reopen historical identity cleanup by
+  default.
+
 ### NC-20260826-009 — Exact Plutio coaching-engagement context
 
 - Date: 2026-08-27T03:58:55Z
