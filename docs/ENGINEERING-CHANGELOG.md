@@ -8,6 +8,36 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260826-008 — Operator-answer support fast path
+
+- Date: 2026-08-27T04:04:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_deploy; reviewed and verified from exact live enforcement
+  `25b44f98`
+- Commit/PR: uncommitted on `codex/sales-operator-fast-path-20260826`
+- Change class: C3 approval-gated support drafting; no customer send or approval
+  is authorized by this implementation
+- Affected systems: Sales runtime/compatibility/workflow prompts, static prompt
+  contract, immutable NanoClaw release; no host routing, schema, database,
+  provider, Gmail capability, or model configuration change
+- Outcome: the prompt authority now makes an exact Alex/Cherie answer in the
+  active-client work thread a standalone same-turn `SERVICE` trigger. It emits
+  one support approval card without CRM/Gmail/attachment/context/escalation
+  detours, whether the thread previously held a draft or a no-draft escalation.
+- Verification/review: focused Sales/email 92/92; email replay 13/13;
+  email-critical 748/748 host plus 45/45 runner; typecheck, format, and docs
+  continuity pass. Full `npm test`: 3,325 passed / 30 skipped / one unchanged
+  unrelated CNPC wrapper-literal baseline failure. Claude Sonnet/high R1 found
+  the trigger-heading and SERVICE-gate gaps; both were fixed and R2 reports no
+  material findings. Review session peak was 150,846 context tokens, so Codex
+  independently adjudicated the findings and final diff.
+- Deployment: pending exact commit, push, immutable release activation, prompt
+  hash verification, and safe no-send behavior proof.
+- Rollback/recovery: restore the prior Sales prompts and exact release pointer;
+  no data/provider rollback is required.
+- Follow-ups: none outside this task; customer sending remains separately
+  approval-gated.
+
 ### NC-20260826-007 — Active-client support no longer invents Sales pipeline work
 
 - Date: 2026-08-27T03:05:00Z

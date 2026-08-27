@@ -1004,6 +1004,16 @@ granted `fn_create_pipeline_entry` helper; direct base-table reads and DML stay
 forbidden. This is a group-policy correction over an existing host capability,
 not a database grant or Gmail-policy expansion.
 
+`NC-20260826-008` adds a narrow operator-answer fast path inside that support
+route. When the root is `[SOURCE: email-active-client]` and an exact Alex or
+Cherie message in the same Slack thread supplies the fact/decision that answers
+every material ask, Sales must post one `[CLIENT SUPPORT REVIEW]` in the same
+turn using the existing recipient and Thread-ID. It performs no knowledge-file,
+CRM, Gmail/attachment, Party Context, Chaos, Plutio, other-minion, escalation,
+or pipeline work first. The shortcut ends at a draft; exact human approval and
+host-owned Gmail execution remain unchanged. Incomplete operator facts retain
+the ordinary HUMAN/abstention path.
+
 ## 10. Agent/group map
 
 The local SQLite snapshot contains 19 registered folders. That snapshot was

@@ -128,6 +128,37 @@ after approval. Copy both unchanged into Mailman. If Gmail's latest visible
 participants no longer support an approved CC at execution time, the host
 blocks before send; do not remove or replace recipients to work around it.
 
+## Operator-answer fast path (zero tool detours)
+
+Use this only when all are true:
+
+1. the work root carries `[SOURCE: email-active-client]`;
+2. the newest substantive operator message is from Alex or Cherie in this exact
+   Slack thread;
+3. that message supplies the missing fact or decision needed to answer every
+   material customer ask; and
+4. the response can stay within route `SERVICE` without adding an unsupported
+   fact, policy, promise, or action.
+
+When all four hold, the next action is mechanical:
+
+1. reuse the exact Email and Thread-ID from the root;
+2. translate the operator fact into the shortest warm answer to the customer's
+   stated ask;
+3. call `mcp__nanoclaw__send_message` exactly once with the complete
+   `[CLIENT SUPPORT REVIEW]` card below; and
+4. end the turn with no text.
+
+Before posting that card, make **zero** calls to psql/CRM, Gmail or attachment
+tools, Party Context, Chaos, Plutio, other minions, or any lookup. Do not read
+KNOWLEDGE, SCHEDULE, or LEARNED, acknowledge, narrate, re-escalate, or post a
+blocked notice. The operator just supplied the needed authority; another check
+adds latency without making the answer safer.
+
+This path never approves or sends. If any material ask remains unanswered,
+none of these shortcuts applies: use the ordinary answerability/HUMAN path and
+name the exact missing fact.
+
 ## Client Support Review (no pipeline entry)
 
 Use this path when the handoff is `[SOURCE: email-active-client]` or the current
