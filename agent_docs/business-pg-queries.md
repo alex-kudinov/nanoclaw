@@ -73,6 +73,44 @@ FROM invoices i JOIN contracts c ON i.contract_id = c.id
 WHERE i.status = 'pending' ORDER BY i.due_date;
 ```
 
+## Relationship Context client/customer projection aggregate
+
+This query is aggregate-only. It does not return Party identity or projection
+payloads.
+
+```sql
+SELECT value->>'relationship_state' AS relationship_state,
+       count(*) AS parties,
+       count(*) FILTER (
+         WHERE (value->>'customer_or_client')::boolean
+       ) AS customer_or_client_parties,
+       count(*) FILTER (
+         WHERE (value->>'active_subscription')::boolean
+       ) AS active_subscription_parties,
+       min(version) AS min_version,
+       max(version) AS max_version
+FROM business_v2.party_context_projections
+WHERE section = 'relationship'
+  AND projection_key = 'relationship.client_status.v1'
+GROUP BY value->>'relationship_state'
+ORDER BY relationship_state;
+```
+
+Projection coverage must equal all active canonical Parties. Missing evidence
+is not proof of non-client status:
+
+```sql
+SELECT count(*) FILTER (WHERE party.merged_into IS NULL) AS active_parties,
+       count(projection.id) FILTER (
+         WHERE party.merged_into IS NULL
+       ) AS projected_parties
+FROM business_v2.parties party
+LEFT JOIN business_v2.party_context_projections projection
+  ON projection.party_id = party.id
+ AND projection.section = 'relationship'
+ AND projection.projection_key = 'relationship.client_status.v1';
+```
+
 ## Hive sync failures
 ```sql
 SELECT gmail_thread_id, sender_email, subject, label, reaper_attempts, hive_sync_dead_lettered

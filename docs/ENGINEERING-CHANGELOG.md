@@ -8,6 +8,77 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260826-006 — Defensible client and customer relationship projection
+
+- Date: 2026-08-27T02:42:42Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; implementation, independent review, focused/full/runner,
+  disposable-PostgreSQL, and continuity proof complete; commit/release/
+  deployment pending
+- Commit/PR: reserved/pushed
+  `codex/relationship-context-client-projection-20260826` from clean pushed
+  NC-005 final-evidence commit `13c855db8db0dc61b2e652609d21569c7d75d742`;
+  implementation remains uncommitted at this boundary
+- Change class: C5 relationship/identity interpretation boundary plus
+  separately gated C3 release
+- Affected systems: host-only migration-137 Party Context projections, health,
+  runtime configuration/templates, Relationship Context authority/security/
+  release documents; no schema or provider API change
+- Outcome: a separately default-off provider-free worker pages every active
+  canonical person and organization under a transaction advisory lock and
+  maintains one fixed `relationship.client_status.v1` projection. Exact latest
+  succeeded Stripe PaymentIntent and active-subscription evidence are the only
+  current positive customer signals. Recorded client/student/prospect rows,
+  active engagement, and unsupported source history remain separately explicit
+  rather than inferred.
+- Discovery correction: the initial aggregate suggested 69 defensible
+  customer/client Parties by combining 62 exact paid customers with nine active
+  client-role rows. Live provenance readback found all nine client, both
+  student, and all 1,317 prospect rows have empty metadata and no source or
+  accepted-decision receipt. The implementation therefore treats the role rows
+  as unproven recorded labels; the current positive baseline is 62 paid
+  customers, five also actively subscribed. Plutio contract/project/invoice
+  discovery failed before provider access because the toolbox environment file
+  is not parseable; no credential/value was inspected or changed and no active
+  engagement was inferred.
+- Privacy/action boundary: projections contain only Party type, controlled
+  status/boolean/count/tier fields and per-Party numeric watermarks. Health is
+  aggregate-only. No Party ID appears inside the value; no name, email, phone,
+  address, provider object ID, amount, currency, instrument, payload, metadata,
+  contract content, Party merge, role/source-ref mutation, provider/customer/
+  payment/contract/consent action, communication, query/minion grant, checkout,
+  lifecycle, Circle, or legacy-receiver change is authorized.
+- Review: one bounded Claude Sonnet/high round reported a High merge-lineage
+  concern. Codex inspected the excluded migration sources and disproved its
+  premise: the core merge moves role rows and migration 137 moves current
+  observation identity to the canonical winner. A new exact merge regression
+  proves the winner retains paid/recorded-client evidence and the loser gets no
+  projection. No implementation correction or second round was warranted; no
+  material finding remains. Review usage was 9 model calls, 116,135 cache-
+  creation, 550,498 cache-read, 29,603 output tokens, and 116,137 maximum
+  context, above the 100k target and recorded as orchestration debt.
+- Verification: pinned Node 22.23.2 initial focused 8/8 and post-correction/
+  review focused 9/9 and broader focused 34/34;
+  typecheck/build/format/continuity/capability checks pass. Disposable PostgreSQL 5/5
+  covers 1,400+ Party pagination, persons/organizations, recorded-role
+  downgrade, latest Stripe state, evidence addition/removal, Party merge,
+  one-Party-only version advancement, exact replay with zero churn, complete
+  coverage, and prohibited-value readback. Full root is 3,317 pass / 30 skip
+  with the sole unchanged NC-005-baseline CNPC wrapper-literal assertion
+  failure; independent runner build and 45/45 pass. Diff, secret-pattern, and
+  private-value scans are clean.
+- Deployment/migration: no migration; runtime flag remains default-off and no
+  production projection or service/configuration change has occurred.
+- Rollback/recovery: disable the new flag before restoring a prior release;
+  preserve versioned projections under migration 137. The dirty primary
+  checkout remains preserved.
+- Documentation: accepted decision, active work, control-plane design, client
+  projection runbook, project map, security model, release contract, aggregate
+  database query guide, `.env.example`, and launchd/setup templates.
+- Follow-ups: immutable commit/push/build/backup/off-first deployment, one-key
+  enable, live aggregate coverage/privacy/replay/non-interference proof, and
+  program reconciliation.
+
 ### NC-20260826-005 — Stripe, contact-form, and verified-Chaos Party Context
 
 - Date: 2026-08-26T23:25:00Z

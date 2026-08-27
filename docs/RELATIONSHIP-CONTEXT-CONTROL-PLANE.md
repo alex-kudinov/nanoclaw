@@ -851,6 +851,22 @@ before either scope ingests. See
 recorded in
 `docs/programs/company-os/evidence/NC-20260826-005-stripe-contact-chaos-enrichment.md`.
 
+`NC-20260826-006` implements the first aggregate `relationship` projection over
+the now-source-bound graph. One fixed projection is maintained for every active
+canonical person or organization. Recorded client/student/prospect roles,
+latest exact succeeded Stripe PaymentIntent state, and latest exact active
+subscription state remain separately labeled; deterministic precedence chooses
+only the summary state. The live role rows lack source/decision provenance, so
+version 1 labels them as recorded but does not use them as positive client
+authority. Paid history and subscription do not claim an active
+coaching engagement, payer/participant relationship, assigned coach, product,
+or contract. All version-1 projections therefore retain explicit unknown
+engagement evidence. The worker is separately default-off, provider-free,
+transaction/advisory-lock bounded, privacy-minimized, consumer-disabled, and
+idempotent by per-Party source watermarks. See
+`docs/RELATIONSHIP-CONTEXT-CLIENT-PROJECTION.md`. Deployment and live aggregate
+evidence remain separate from source presence until recorded under NC-006.
+
 ## 10. Verification plan
 
 ### Identity and temporal truth

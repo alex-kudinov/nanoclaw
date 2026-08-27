@@ -641,6 +641,28 @@ from health. Stripe over-cap lists are divided into non-overlapping half-open
 time partitions; a sibling fetch failure blocks both scopes because account
 distinctness is then unproved.
 
+NC-20260826-006 adds no new identity or provider authority. Its default-off
+client-relationship worker reads only active recorded Party roles and existing
+exact Stripe observations, then writes one fixed, content-minimized
+`relationship.client_status.v1` projection per active canonical Party. It is
+serialized by a process guard and transaction advisory lock, pages Parties by
+numeric ID, and uses per-Party watermarks so unrelated facts cannot churn every
+projection. Projection values contain only Party type, controlled status
+labels, booleans, aggregate evidence counts, and controlled evidence-tier
+codes. They contain no Party ID, name, email, provider object ID, amount,
+currency, address, instrument, payload, or contract content.
+
+The positive boundary is deliberately narrower than ordinary business usage.
+The current client/student/prospect rows carry no source or decision receipt,
+so they remain non-authoritative recorded labels. Only succeeded exact Stripe
+payment and current exact active subscription establish customer evidence.
+Payment or subscription may establish customer history but never active
+coaching engagement. Prospect/student roles,
+appointments, contact forms, Chaos, provider labels, and identity presence do
+not become client authority. Active engagement remains explicitly unknown
+until a separate source is accepted. The flag and health surface grant no
+query/minion access or action, and rollback preserves versioned projections.
+
 ## Relationship-owner boundary (`NC-20260826-001`)
 
 The explicit generic owner is a routing/accountability principal, not an

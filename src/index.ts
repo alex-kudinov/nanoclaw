@@ -162,6 +162,12 @@ import {
   SOURCE_ENRICHMENT_INTERVAL_MS,
   sourceEnrichmentEnabled,
 } from './relationship-context-source-enrichment.js';
+import {
+  CLIENT_RELATIONSHIP_PROJECTION_INTERVAL_MS,
+  clientRelationshipProjectionEnabled,
+  getClientRelationshipProjectionHealth,
+  runClientRelationshipProjection,
+} from './relationship-context-client-projection.js';
 import { relationshipContextPolicyDiagnostic } from './relationship-context-policy.js';
 import { startHeartbeat } from './heartbeat.js';
 import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
@@ -2179,6 +2185,7 @@ async function main(): Promise<void> {
           query: relationshipContextPolicyDiagnostic(),
           trafftShadow: getTrafftRelationshipContextShadowHealth(),
           sourceEnrichment: getSourceEnrichmentHealth(),
+          clientProjection: getClientRelationshipProjectionHealth(),
         },
       };
     },
@@ -2352,6 +2359,35 @@ async function main(): Promise<void> {
       SOURCE_ENRICHMENT_INTERVAL_MS,
     );
     relationshipContextSourceEnrichmentTimer.unref();
+  }
+  let relationshipContextClientProjectionInFlight = false;
+  const runRelationshipContextClientProjectionTick =
+    async (): Promise<void> => {
+      if (relationshipContextClientProjectionInFlight) {
+        logger.warn(
+          'relationship context client projection tick already running',
+        );
+        return;
+      }
+      relationshipContextClientProjectionInFlight = true;
+      try {
+        await runClientRelationshipProjection();
+      } catch (err) {
+        logger.error(
+          { err },
+          'relationship context client projection tick failed',
+        );
+      } finally {
+        relationshipContextClientProjectionInFlight = false;
+      }
+    };
+  if (clientRelationshipProjectionEnabled()) {
+    void runRelationshipContextClientProjectionTick();
+    const relationshipContextClientProjectionTimer = setInterval(
+      () => void runRelationshipContextClientProjectionTick(),
+      CLIENT_RELATIONSHIP_PROJECTION_INTERVAL_MS,
+    );
+    relationshipContextClientProjectionTimer.unref();
   }
   if (STUDENT_LIFECYCLE_ENABLED) {
     setInterval(() => {

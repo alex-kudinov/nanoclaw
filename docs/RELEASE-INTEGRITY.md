@@ -109,6 +109,27 @@ before restoring the prior release; it preserves imported migration-137
 evidence and never deletes refs/observations/projections/exceptions as an
 ordinary release rollback.
 
+`NC-20260826-006` is also a no-migration release over migration 137. Build and
+activate first with `RELATIONSHIP_CONTEXT_CLIENT_PROJECTION_ENABLED=0` while
+preserving the already-enabled NC-005 source-enrichment value. Verify exact
+release/code root, query disabled/zero grants, client-projection health
+disabled, source/Trafft health, channels, queues, checkout, lifecycle, Circle,
+and legacy receivers before enabling the new worker.
+
+The affected PostgreSQL backup/readback must include active Party counts by
+type, active role counts, exact Stripe observation counts, existing
+relationship projection count/version fingerprint, and prohibited-value count.
+The value-redacted configuration transaction may change only the new flag. One
+bounded reload must produce one fixed projection for every active canonical
+Party, aggregate evidence-state counts, explicit unknown engagement, zero
+prohibited values, and a healthy complete receipt. A second exact run must
+leave all projection versions and counts unchanged. Provider/customer/payment/
+contract/role/source-ref/Party state, query grants, communications, checkout,
+lifecycle, Circle, and legacy receivers must remain unchanged.
+
+Rollback disables the new flag before restoring the prior release. It does not
+delete migration-137 projections or modify any source/provider system.
+
 Beginning with `NC-20260824-009`, the archive binds migration 136 and its
 history-preserving rollback. Migration 135 must already be live. Take a
 custom-format `business_v2` backup plus the normal SQLite/plist backups,
