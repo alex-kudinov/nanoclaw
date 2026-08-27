@@ -242,6 +242,14 @@ processing lease; its applied path writes only failed-stage/final receipts and
 never replays an event or invokes an external system. Production application
 is pending independent review and release gates.
 
+Exact release `6778be02` and migration 139 are now live. The guarded repair
+terminalized only the two accepted expired cases, added five truthful receipts
+each, preserved source timestamps, and replays as no-op. Final ledger state is
+six complete, two needs-product, three write-failed, one refund needs-review,
+and zero processing. Provider/payment/Sheet/roster and protected mirror counts
+did not change. The host-admitted ledger slice is complete; missed ingress and
+refund closure remain separate.
+
 Minimum fields:
 
 - source account plus Payment Intent, Checkout Session, charge, invoice, and

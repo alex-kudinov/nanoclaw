@@ -259,3 +259,69 @@ pass. Disposable PostgreSQL evidence remains green and removed. Commit,
 immutable release, production migration, exact two-case terminalization, and
 live proof remain pending. No production mutation occurred during
 implementation/review.
+
+## Terminal-state correction release and live outcome
+
+Exact reviewed release
+`6778be024ca10b6b0a9898b4d4250087a8bf885a` is live. Its source tree is
+`4944e41fe7d0cf706e2041f98a5453e2f408e2b3`; the 1,012-file artifact SHA-256
+is `7179bc8f07d1dad79719cae964b75eb19343d38d9e66f3d708733a4067d56693`;
+and archive SHA-256 is
+`4afd03c1f5396baef0cd0f1517b36f9deed40904e582d3c7ccc94ef47836a566`.
+Fresh local and Mini extraction/runtime verification passed under Node
+22.23.2, including migration/rollback 139 and the compiled terminalizer.
+
+The first attempted full-cluster `pg_dump` refused before deployment because
+an unrelated Procurement table has RLS; incomplete protected preflight
+artifacts remain under
+`~/.local/share/nanoclaw-deploy-backups/NC-20260823-006-20260827T183122Z`.
+The accepted mode-0700 backup is
+`~/.local/share/nanoclaw-deploy-backups/NC-20260823-006-20260827T183244Z`.
+It contains readable custom-format `business_v2` and exact `public.payments`
+dumps, WAL-safe SQLite, main/fast/watchdog plists, prior release manifest,
+exact watchdog script, case/state/constraint/protected aggregates, and hashes.
+
+After a natural zero-work drain, both main and watchdog jobs were stopped.
+Migration 139 applied and read back the exact typed `ch_`/`py_` constraint.
+The new compiled terminalizer dry-run accepted only cases 8:v3/a4 and
+11:v2/a3 as processing/expired/exact. The established activator changed only
+the three release pointers, retained rollback plist
+`~/Library/LaunchAgents/com.nanoclaw.plist.rollback-6a9783281a74-2026-08-27T18-36-33-727Z`,
+and verified the exact new release/code root before repair.
+
+Applied terminalization returned both cases as
+`write_failed/expired_processing_terminalized`, cleared both leases, preserved
+their original source-observed timestamps, and appended exactly five receipts
+per case: verified source-at-admission, failed Payment Log/PostgreSQL/roster,
+and final exception. Exact applied replay returned both as
+`alreadyTerminalized=true` with no new receipt or state change.
+
+Final ledger state:
+
+| State | Count |
+| --- | ---: |
+| Complete payments | 6 |
+| Needs product | 2 |
+| Write failed, including two terminalized | 3 |
+| Refund needs review | 1 |
+| Processing | 0 |
+
+Protected readback proves `public.payments`, Stripe inbox rows, Stripe
+dead-letter rows, and aliases unchanged; receipt delta is exactly +10. No
+Stripe, n8n, Sheet, roster, payment processor, refund, customer, communication,
+product/student, accounting, QuickBooks, ingress-parity, or missed-payment
+action occurred.
+
+Live health reports exact release/tree/artifact/code root, PID 92845, one
+listener and one main job, connected Gmail/Slack, no waiting/outgoing backlog,
+query off/zero grants, healthy Relationship Context replay, checkout production
+mode preserved, and lifecycle consumers/Circle still off. One unrelated
+natural non-task Slack conversation was active at final readback with zero
+pending task. The external watchdog job is restored once with its previously
+reviewed operational script hash `ec488448`; the merged Git source lineage
+contains the same correction and the installed artifact was not recopied.
+
+The host-admitted fulfillment case ledger now satisfies complete-or-owned-
+terminal-exception. The distinct missed-ingress payment remains the separate
+`work:stripe-payment-ingress-parity` candidate, and refund closure remains
+separate.

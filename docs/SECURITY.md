@@ -496,6 +496,12 @@ active leases or state drift, and has no provider/Sheet/roster/payment client.
 Its repair receipts contain only bounded codes/hashes/timestamps and preserve
 the original source-observed time.
 
+Exact release `6778be02` applies this boundary live. Two exact expired cases
+were terminalized with ten bounded receipts and no external call; exact replay
+was no-op. Processing is zero, aliases and operational payment mirrors are
+unchanged, and the separately missed provider delivery/refund work remains
+outside this authority.
+
 `webhook_inbox.handled` is not fulfillment authority by itself. It becomes
 credible for this source only when `related_entity` binds the exact durable
 case/version after a complete or explicit exception transaction.

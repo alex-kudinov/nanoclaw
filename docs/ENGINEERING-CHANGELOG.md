@@ -1306,6 +1306,35 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   continuity/capability pass; full root 3,347 pass / 31 skip with the sole
   unchanged CNPC assertion; runner build/45 pass. Commit/release/migration/live
   terminalization remain pending and production is unchanged.
+- Terminal-state deployment addendum 2026-08-27T18:38:00Z: exact reviewed
+  release `6778be024ca10b6b0a9898b4d4250087a8bf885a` is live. Source tree
+  `4944e41f`, 1,012-file artifact SHA-256 `7179bc8f`, and archive SHA-256
+  `4afd03c1` verified locally and on Mini under Node 22.23.2. Release gate
+  748/748 plus runner 45/45 passed.
+- Backup/migration: a full-cluster dump refused unrelated Procurement RLS and
+  was retained incomplete; accepted protected backup
+  `NC-20260823-006-20260827T183244Z` contains custom `business_v2` and
+  `public.payments` dumps, WAL-safe SQLite, main/fast/watchdog plists, release/
+  watchdog artifacts, exact case/constraint/aggregate evidence, and hashes.
+  Migration 139 read back typed `ch_`/`py_`. Activation changed only three
+  release pointers and retained rollback
+  `com.nanoclaw.plist.rollback-6a9783281a74-2026-08-27T18-36-33-727Z`.
+- Live terminalization: dry-run accepted only 8:v3/a4 and 11:v2/a3; applied
+  mode made both `write_failed/expired_processing_terminalized`, cleared leases,
+  preserved source time, and added exactly ten truthful receipts. Exact applied
+  replay was no-op. Final state is six complete, two needs-product, three
+  write-failed, one refund needs-review, zero processing. `public.payments`,
+  Stripe inbox/dead-letter rows, and aliases are unchanged.
+- Live non-interference: exact release/code root, one listener/main job,
+  connected channels, zero waiting/outgoing, query off/zero grants, healthy
+  Relationship Context, checkout production state, lifecycle consumers/Circle
+  off, and the exact separately installed watchdog pass. One unrelated natural
+  non-task Slack conversation was active with zero pending task. No provider/
+  event replay, missed-payment repair, refund, customer communication,
+  product/student, accounting/QuickBooks, or ingress-parity action occurred.
+- State: complete for the host-admitted fulfillment ledger. Missing provider
+  delivery remains separate `work:stripe-payment-ingress-parity`; refund
+  closure remains a distinct candidate.
 
 ### NC-20260822-011 — Host-owned Gmail attachment processing
 

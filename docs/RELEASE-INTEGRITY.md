@@ -106,6 +106,20 @@ channels/queues, and unchanged protected checkout/lifecycle/watchdog state.
 Code rollback preserves the new terminal evidence. SQL rollback 139 must refuse
 if any `py_` alias exists; it never deletes an alias or terminal receipt.
 
+The correction crossed this boundary under exact release
+`6778be024ca10b6b0a9898b4d4250087a8bf885a`, source tree `4944e41f`,
+1,012-file artifact SHA-256 `7179bc8f`, and archive SHA-256 `4afd03c1`.
+Fresh local/Mini extraction passed. Accepted backup
+`NC-20260823-006-20260827T183244Z` contains `business_v2` plus
+`public.payments` custom dumps and all specified host artifacts; a prior full
+dump refused unrelated Procurement RLS and was retained incomplete. Migration
+139 and exact dry-run preceded a three-pointer activation with rollback
+`com.nanoclaw.plist.rollback-6a9783281a74-2026-08-27T18-36-33-727Z`.
+Applied repair changed exactly two cases and ten receipts; processing is zero,
+exact replay is no-op, and protected payment/inbox/dead-letter/alias counts are
+unchanged. Main/watchdog jobs, one listener, channels, queues, query, checkout,
+lifecycle, and context workers pass.
+
 `NC-20260826-005` is a no-migration Relationship Context source release over
 already-live migration 137. Build and activate first with
 `RELATIONSHIP_CONTEXT_SOURCE_ENRICHMENT_ENABLED=0`; verify exact release,

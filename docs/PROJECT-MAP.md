@@ -661,10 +661,12 @@ The accepted terminal-state correction adds migration 139's typed `ch_`/`py_`
 charge compatibility, pre-finalization alias validation, handled durable
 exceptions for processor/contract failures, and an exact-guarded host-only
 expired-case terminalizer. Claude R1's terminal-case replay finding is fixed;
-R2 returned no material findings. It is fully locally verified but not yet
-deployed. The terminalizer has no external client and preserves
-source-observed time; ingress parity, the missed payment, product/student
-identity, and refund closure remain separate.
+R2 returned no material findings. Exact release `6778be02` and migration 139
+are live. The terminalizer has no external client and preserves source-observed
+time. Only the two accepted stale cases were terminalized; final processing
+count is zero and protected payment/inbox/alias state is unchanged. Ingress
+parity, the missed payment, product/student identity, and refund closure remain
+separate.
 
 ### Reliability and autonomy
 
