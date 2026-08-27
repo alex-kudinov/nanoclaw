@@ -50,16 +50,31 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   not activated after the dry run reported production had moved to
   `f8595966`. Combined-lineage verification, deployment health, and the
   draft-only live canary remain pending.
-- Deployment/migration: no schema or data migration. The daemon was not changed
-  by the first activation attempt. Reviewed Sales prompts were copied after a
-  zero-work drain and are backed up; their temporary mismatch with daemon
-  release `f8595966` is being closed by the combined release.
+- Deployment/migration: no schema or data migration. The first artifact was
+  correctly not activated when its dry run detected a concurrent production
+  move from `d5375964` to `f8595966`. Commit `55efd52f` merges that exact newer
+  live lineage with reviewed implementation `371e6e0a`; its 1,004-file
+  artifact hash is `5b3ae0e8b84b4fd0542953688aa9ede806048a35770c57c2f9dac8726745270b`
+  and archive SHA-256 is
+  `3f83e87ce57a2f4e7d15afde343ac916acddee7e5ca1daf35443d59e0be71d13`.
+  Local and Mini extraction verification pass under Node 22.23.2. A zero-work
+  drain, empty pending-action check, WAL-safe SQLite backup, plist/prompt
+  backups, and exact prior-release prompt hash comparison preceded the
+  three-pointer activation. Rollback plist:
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-f8595966ffa1-2026-08-27T03-27-42-123Z`.
+  Live health proves exact release/code root, one listener, connected
+  Gmail/Slack, empty queues, exact operational Sales prompt hashes, disabled
+  Relationship Context query with zero grants, and healthy Trafft, source-
+  enrichment, and client-projection workers. No customer email, approval,
+  pipeline/database row, permission, schema, provider action, or query
+  activation occurred.
 - Rollback/recovery: restore the prior immutable release pointer; no database or
   provider rollback is required. The live canary must remain unapproved.
 - Documentation: Sales role/workflow/compatibility prompt, project map, active
   work, and this changelog.
-- Follow-ups: none outside the task; customer sending remains a separate exact
-  operator approval.
+- Follow-ups: the Mac UI is locked. After unlock, re-drive the exact existing
+  Sales thread and verify one unapproved support card plus unchanged zero open
+  pipeline rows. Customer sending remains a separate exact operator approval.
 
 ### NC-20260826-006 — Defensible client and customer relationship projection
 
