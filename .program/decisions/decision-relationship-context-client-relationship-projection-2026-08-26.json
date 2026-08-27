@@ -1,0 +1,15 @@
+{
+  "decision_id": "decision:relationship-context-client-relationship-projection-2026-08-26",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-08-27T02:42:42+00:00",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "program",
+    "work:relationship-context-client-relationship-projection"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "Proceed with the next client-mapping phase by converting already source-bound evidence into one deterministic, privacy-minimized relationship projection per active canonical Party. Accepted client and student role records, exact succeeded Stripe PaymentIntent facts, and exact current Stripe subscription facts may contribute separately labeled evidence. The implementation may perform aggregate read-only discovery, write internal Party Context projections and receipts, undergo independent Claude Sonnet/high review, and be committed, pushed, migrated or deployed through the established immutable release workflow with live aggregate verification. Payment proves paid-customer history, not an active coaching engagement; a provider label, prospect role, appointment, contact form, Chaos activity, display name, or email alone may not declare a client. Plutio contract or engagement state remains unknown until exact provider evidence is available. This decision does not authorize Party merges, source-reference invention, legacy promotion, party-role rewrites, provider or customer mutations, communications, consent/payment/refund/contract actions, Plutio writes, broad minion access, or changes to checkout recovery, student lifecycle, Circle, or legacy receivers.",
+  "source_task": "Current owner instruction in Codex: proceed with the next mapping phase, following the live all-client mapping status review."
+}
