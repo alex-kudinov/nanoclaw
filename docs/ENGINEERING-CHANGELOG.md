@@ -50,6 +50,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Follow-up: commit/push, build/verify the exact release, deploy through the
   established activator, and require natural scheduler, bundle, backlog,
   health, and no-recontamination proof before completion.
+- 2026-08-28T02:04:00Z addendum: state is now `complete`. Implementation
+  `2773def5be14629c88289d7a66cf268579334765` is pushed and live with source
+  tree `bdd2fa83`, artifact `24242ae5`, 1,020 compiled files, and archive
+  SHA-256 `2c98654ca7ee4cb91af37b642c73efebcbc77f60c06cdbb4367d0a8c9a440707`.
+  The archive verified after fresh local extraction, transfer checksum, and
+  fresh Mini extraction. Activation dry-run/apply changed only the exact three
+  release pointers and retained rollback plist
+  `com.nanoclaw.plist.rollback-d11e949bd1c2-2026-08-28T02-02-40-405Z`.
+  The first natural cron after recovery completed at 02:00:45Z with exit 0.
+  On the new release, a release-root logger canary emitted pretty output,
+  created no JSONL file, and left the full-bundle verifier green; the exact
+  Plutio wrapper then processed zero remaining rows. Final live readback is one
+  process/listener, exact release/Node/code-root identity, connected Gmail and
+  Slack, zero active sends, zero actionable outbox rows, and healthy
+  Stripe-ingress parity with zero new exceptions. No follow-up remains.
 
 ### NC-20260827-003 — Stripe-to-host payment ingress parity
 
