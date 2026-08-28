@@ -1826,6 +1826,13 @@ code root, and code-root match. Activation is dry-run by default and derives an
 exact-three-field candidate from the installed plist so machine-local service
 configuration is preserved.
 
+The default structured logger path is also release-aware: when a diagnostic is
+started with an inventory-bearing immutable release as its working directory,
+the implicit JSONL sink is disabled so a canary cannot mutate the bundle and
+block later full-inventory checks. Explicit diagnostic routing is allowed only
+through `NANOCLAW_JSONL_PATH`; production continues to write under the
+operational checkout preserved by launchd.
+
 ### Authentication
 
 - Gmail consent: `npm run gmail:auth`.

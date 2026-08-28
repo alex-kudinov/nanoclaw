@@ -135,16 +135,16 @@ if (fs.existsSync(fileListPath)) {
       throw new Error(`release bundle file mismatch: ${match[2]}`);
     }
   }
-  const missing = expectedBundleFiles.filter(
+  const unlisted = expectedBundleFiles.filter(
     (relative) => !listed.has(relative),
   );
-  const extra = [...listed].filter(
+  const absent = [...listed].filter(
     (relative) => !expectedBundleFiles.includes(relative),
   );
-  if (missing.length || extra.length) {
+  if (unlisted.length || absent.length) {
     throw new Error(
-      `release bundle inventory mismatch: missing=${missing.join(',') || 'none'} ` +
-        `extra=${extra.join(',') || 'none'}`,
+      `release bundle inventory mismatch: unlisted=${unlisted.join(',') || 'none'} ` +
+        `absent=${absent.join(',') || 'none'}`,
     );
   }
 }

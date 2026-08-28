@@ -84,7 +84,9 @@ describe('release bundle verifier', () => {
   it('refuses unlisted files added to the release bundle', () => {
     const root = makeBundle();
     fs.writeFileSync(path.join(root, 'unlisted.js'), 'unexpected\n');
-    expect(() => verify(root)).toThrow('release bundle inventory mismatch');
+    expect(() => verify(root)).toThrow(
+      'release bundle inventory mismatch: unlisted=unlisted.js absent=none',
+    );
   });
 
   it('refuses paths that escape the extracted release root', () => {

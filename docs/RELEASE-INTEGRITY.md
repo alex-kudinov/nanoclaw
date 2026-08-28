@@ -770,6 +770,19 @@ treats a missing or denied prerequisite as an empty port. A target that is
 already the installed release, including a symlink alias, and a missing/pruned
 rollback directory both fail with direct diagnostics before mutation.
 
+Runtime commands must not use an inventory-bearing release directory as a
+writable working directory. The structured logger disables its implicit JSONL
+sink whenever the current directory is the release root or one of its
+descendants; human-readable stdout/stderr logging remains available. A bounded
+diagnostic that genuinely needs structured output must set
+`NANOCLAW_JSONL_PATH` to an explicit path outside the release. The bundle
+verifier reports a newly created runtime file as `unlisted`. A missing,
+non-file, or modified inventoried path fails earlier as
+`release bundle file mismatch: <path>`; `absent` is reserved for a valid listed
+path whose exact name is not in the enumerated bundle set. Preserve any
+discrepancy outside the release before recovery, then re-run the verifier
+rather than updating the inventory around runtime state.
+
 If the activator reports a stale lock, do not remove it merely because the PID
 is dead: first prove no activation command is running and preserve the error
 output. Only then remove the exact reported

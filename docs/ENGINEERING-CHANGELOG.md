@@ -8,6 +8,49 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260827-004 — Restore and harden the Plutio reaper release boundary
+
+- Date: 2026-08-28T01:47:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; live incident recovered and source reviewed; clean commit,
+  immutable release, deployment, and natural scheduler proof pending
+- Change class: C4 because recovery executed six already-authorized durable
+  Plutio outbox operations; the source hardening itself is C2
+- Incident: exact live release `d11e949b` acquired one unlisted 426-byte
+  `logs/nanoclaw.jsonl` at 2026-08-27T19:14:08Z. The reaper's full-bundle
+  preflight then failed 26 consecutive 15-minute runs before any Plutio call,
+  and six pending rows accumulated.
+- Live recovery: moved the exact contaminant to
+  `.release-backups/NC-20260827-004-20260828T0147Z/` with SHA-256
+  `cc3fe7d0ae7171fabc9650e00ece4b48506a2e3f92af84f5c25126a5da0d1e71`;
+  the unchanged 1,016-file release verified; the established host reaper then
+  processed 6/6 with zero retries/dead letters. Aggregate readback is 1,396
+  processed, 15 historical dead, and zero pending/failed.
+- Source: added a pure release-aware JSONL path resolver. The implicit sink is
+  disabled from an inventory-bearing release root or descendant while ordinary
+  operational working directories and explicit outside overrides are
+  preserved. Bundle inventory diagnostics now say `unlisted`/`absent` instead
+  of the misleading `missing`/`extra` labels.
+- Review: bounded Claude Sonnet/high R1 found one material documentation error:
+  a genuinely missing inventoried file fails as `release bundle file mismatch`
+  before `absent` accounting. Codex verified the control flow and corrected the
+  authoritative runbook; no second review round is required.
+- Verification: focused logger/verifier tests 9/9, formatting, typecheck, and
+  continuity pass under Node 22.23.2. Full root suite is 3,363 passing/31
+  skipped with only the exact two pre-existing NC-003 baseline failures: CNPC
+  wrapper text drift and the date-stale Trafft fixture. Neither affected source
+  is changed by NC-004.
+- Deployment: runtime contaminant recovery and six-row reaper drain are live on
+  `d11e949b`; reviewed hardening is not yet committed, released, or deployed.
+- Rollback/recovery: the incident artifact is preserved rather than deleted;
+  source rollback remains the prior exact `d11e949b` implementation. Do not
+  restore the contaminant into an active immutable release.
+- Documentation: `docs/ACTIVE-WORK.md`, `docs/RELEASE-INTEGRITY.md`, and
+  `docs/PROJECT-MAP.md`.
+- Follow-up: commit/push, build/verify the exact release, deploy through the
+  established activator, and require natural scheduler, bundle, backlog,
+  health, and no-recontamination proof before completion.
+
 ### NC-20260827-003 — Stripe-to-host payment ingress parity
 
 - Date: 2026-08-27T18:45:00Z
