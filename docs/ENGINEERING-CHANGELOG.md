@@ -153,6 +153,32 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   cache-read tokens, and 20,733 output tokens, slightly exceeding the bounded
   review warnings. No provider template, deployment, customer event/email,
   historical case, or Stripe transaction has changed yet.
+- Customer-remediation deployment: exact NanoClaw commit/release
+  `b7004bb8f4af3ad5f57e17543f378abf35f20b6f` is pushed and live with source
+  tree `a9221462`, artifact SHA-256 `022cc7ce` over 1,028 files, and archive
+  SHA-256 `dc9b37f0`. Fresh local/Mini extraction and runtime verification pass.
+  Mode-0700 backup
+  `NC-20260829-001-remediation-20260829T194300Z` protects the WAL-safe SQLite,
+  plist, and prior release identity; activation retained rollback plist
+  `com.nanoclaw.plist.rollback-38123d7cfaca-2026-08-29T19-43-18-052Z`.
+  Exact health proves Node 22.23.2, matching code root, one listener, connected
+  Gmail/Slack, zero active/waiting/outgoing work, and checkout delivery still
+  production-gated. Checkout cases remained 31 and send health remained
+  pending/failed/leased/held zero and accepted four across activation.
+- Tandemweb was rebased over exact current main `d9fb12cd3`, pushed and deployed
+  as exact main `24784caf7902`; the webhook purged LiteSpeed and Cloudflare
+  successfully. Public cache-busted checkout JS/CSS hashes are respectively
+  `f7977294` and `c02bc64a`, equal to source, and expose the dedicated failure
+  step, safe classifier/key, retry/support controls, and no raw
+  `result.error.message` rendering.
+- Encharge templates `479523`-`479530` were updated in place only after the host
+  was live. Provider readback proves all eight are unarchived, category
+  `251170`, subject `{{person.checkout_recovery_subject}}`, and contain the
+  guidance-title/body and support person fields. Flow `400441` remains active
+  with all eight locale/touch event filters, eight template IDs, and its four
+  touch-two no-reply filters. No event or customer email was generated for
+  validation; the first natural eligible failure/received-message outcome
+  remains open.
 - Rollback/recovery: dirty primaries untouched; implementation uses three
   isolated branches. Deployment must protect queue/workflow/database/service
   backups and quarantine historical work before n8n repair.
@@ -162,6 +188,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Follow-ups: observe the next natural website/Stripe checkout lifecycle and
   close only after one correctly grouped, human-readable operator incident and
   the corresponding safe customer-facing result are evidenced without replay.
+  For a consented failed payment, also require the visible localized remediation
+  step and one received failure-specific reminder with no blank merge field,
+  duplicate, stale post-purchase send, or contact after reply/unsubscribe.
 
 ### NC-20260827-004 — Restore and harden the Plutio reaper release boundary
 
