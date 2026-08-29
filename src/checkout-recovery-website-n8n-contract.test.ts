@@ -15,6 +15,14 @@ const raw = fs.readFileSync(
   ),
   'utf8',
 );
+const verifierSource = fs.readFileSync(
+  new URL('../setup/n8n/checkout-recovery-website-verify.js', import.meta.url),
+  'utf8',
+);
+const patch = fs.readFileSync(
+  new URL('../setup/n8n/checkout-failure-workflow-patch.json', import.meta.url),
+  'utf8',
+);
 const workflow = JSON.parse(raw) as {
   active: boolean;
   settings: Record<string, unknown>;
@@ -41,16 +49,19 @@ describe('inactive website checkout recovery relay', () => {
       (node) => node.type === 'n8n-nodes-base.webhook',
     );
     expect(trigger?.parameters.responseMode).toBe('lastNode');
+    expect(trigger?.parameters.options).toMatchObject({ rawBody: true });
+    expect(patch).toContain('"rawBody": true');
     expect(raw).not.toMatch(/https?:\\?\/\\?\/[A-Za-z0-9]/);
     expect(raw).not.toMatch(/["'][0-9a-f]{64}["']/i);
   });
 
   it('verifies ingress and emits a host-accepted bounded envelope', () => {
-    const code = String(
+    const embeddedCode = String(
       workflow.nodes.find((node) => node.type === 'n8n-nodes-base.code')
         ?.parameters.jsCode,
     );
-    const run = new Function('$input', '$env', 'require', code) as (
+    expect(embeddedCode).toBe(verifierSource);
+    const run = new Function('$input', '$env', 'require', verifierSource) as (
       input: unknown,
       env: Record<string, string>,
       requireFn: NodeRequire,
@@ -76,9 +87,11 @@ describe('inactive website checkout recovery relay', () => {
       product_name: 'ACC Level 1 Full Program',
       ignored: 'not-forwarded',
     };
+    const exactRawBody = JSON.stringify(body).replace(/\//g, '\\/');
+    expect(exactRawBody).not.toBe(JSON.stringify(body));
     const ingressSignature = crypto
       .createHmac('sha256', ingressSecret)
-      .update(`${timestamp}.${JSON.stringify(body)}`, 'utf8')
+      .update(`${timestamp}.${exactRawBody}`, 'utf8')
       .digest('hex');
     const result = run(
       {
@@ -89,6 +102,7 @@ describe('inactive website checkout recovery relay', () => {
               'x-checkout-signature': `sha256=${ingressSignature}`,
             },
             body,
+            rawBody: exactRawBody,
           },
         }),
       },
@@ -120,6 +134,32 @@ describe('inactive website checkout recovery relay', () => {
       return_url: 'https://tandemcoach.co/acc/',
       product_name: 'ACC Level 1 Full Program',
     });
+    const wrongSignature = crypto
+      .createHmac('sha256', ingressSecret)
+      .update(`${timestamp}.${JSON.stringify(body)}`, 'utf8')
+      .digest('hex');
+    expect(() =>
+      run(
+        {
+          first: () => ({
+            json: {
+              headers: {
+                'x-checkout-timestamp': timestamp,
+                'x-checkout-signature': `sha256=${wrongSignature}`,
+              },
+              body,
+              rawBody: exactRawBody,
+            },
+          }),
+        },
+        {
+          CHECKOUT_RECOVERY_INGRESS_SECRET: ingressSecret,
+          CHECKOUT_RECOVERY_RELAY_SECRET: relaySecret,
+          CHECKOUT_RECOVERY_HOST_URL: 'https://disabled.invalid/private-path',
+        },
+        createRequire(import.meta.url),
+      ),
+    ).toThrow(/signature/);
   });
 
   it('contains no customer action or Encharge node', () => {

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   CHECKOUT_RECOVERY_ENCHARGE_EVENT,
+  checkoutReminderPolicyAllows,
   dispatchCheckoutRecoveryToEncharge,
   type CheckoutRecoveryClaimedIntent,
   type CheckoutRecoverySendConfig,
@@ -85,14 +86,35 @@ describe('checkout recovery Encharge handoff', () => {
     ).rejects.toThrow('encharge_write_key_unavailable');
   });
 
-  it('contains cross-case purchase, v2 consent, cutoff, and allowlist guards', () => {
+  it('accepts only affirmative v2/v3 reminder policies', () => {
+    for (const policy of [
+      'checkout-reminder-v2',
+      'checkout-reminder-v3-explicit',
+      'checkout-reminder-v3-legacy-explicit',
+      'checkout-reminder-v3-uk-softoptin',
+      'checkout-reminder-v3-us-optout',
+    ]) {
+      expect(checkoutReminderPolicyAllows(policy)).toBe(true);
+    }
+    for (const policy of [
+      null,
+      'checkout-reminder-v3-user-optout',
+      'checkout-reminder-v3-strict-no-consent',
+      'checkout-reminder-v3-unknown-no-consent',
+      'checkout-reminder-v3-legacy-denied',
+    ]) {
+      expect(checkoutReminderPolicyAllows(policy)).toBe(false);
+    }
+  });
+
+  it('contains cross-case purchase, consent, cutoff, and allowlist guards', () => {
     const source = fs.readFileSync(
       new URL('./checkout-recovery-sender.ts', import.meta.url),
       'utf8',
     );
     for (const guard of [
       'purchased_at >= $4::timestamptz',
-      "consentPolicyVersion !== 'checkout-reminder-v2'",
+      '!checkoutReminderPolicyAllows(item.consentPolicyVersion)',
       "'pre_activation_case'",
       "'not_allowlisted'",
       "'sibling_purchase'",

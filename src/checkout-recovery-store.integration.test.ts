@@ -7,6 +7,7 @@ import {
 } from './checkout-recovery.js';
 import { claimDueCheckoutRecoverySendIntentsWithClient } from './checkout-recovery-sender.js';
 import {
+  listDueCheckoutRecoveryOperatorIncidentsWithClient,
   recordPreparedCheckoutRecoveryWithClient,
   sweepCheckoutRecoveryShadowWithClient,
 } from './checkout-recovery-store.js';
@@ -93,6 +94,8 @@ describe.skipIf(!TEST_DATABASE_URL)(
       if (!pool) throw new Error('disposable pool unavailable');
       await pool.query(`
       TRUNCATE
+        business_v2.checkout_recovery_operator_incident_cases,
+        business_v2.checkout_recovery_operator_incidents,
         business_v2.checkout_recovery_send_receipts,
         business_v2.checkout_recovery_send_intents,
         business_v2.checkout_recovery_receipts,
@@ -610,6 +613,79 @@ describe.skipIf(!TEST_DATABASE_URL)(
         { product_slug: 'acc-full', status: 'leased' },
         { product_slug: 'pcc-full', status: 'pending' },
       ]);
+    });
+
+    it('groups two PaymentIntents and six failures into one fixed-window incident', async () => {
+      const attempts = [
+        { pi: 'pi_firstfailure1234567', base: '2026-08-29T15:06:13.000Z' },
+        { pi: 'pi_secondfailure123456', base: '2026-08-29T15:10:55.000Z' },
+      ];
+      let event = 0;
+      for (const attempt of attempts) {
+        for (let offset = 0; offset < 3; offset++) {
+          event++;
+          await record(
+            prepareStripeCheckoutRecoveryEnvelope(
+              {
+                account: 'tandem',
+                event_type: 'payment_intent.payment_failed',
+                event_id: `evt_groupedfailure${String(event).padStart(10, '0')}`,
+                observed_at: new Date(
+                  Date.parse(attempt.base) + offset * 30_000,
+                ).toISOString(),
+                stripe_id: attempt.pi,
+                payment_intent_id: attempt.pi,
+                email: 'buyer@example.com',
+                product_slug: 'mcs-foundations',
+                product_name: 'Mentor Coaching Foundations',
+                amount_cents: 29900,
+                currency: 'usd',
+                failure_code: 'card_declined',
+                decline_code: 'do_not_honor',
+                advice_code: 'do_not_try_again',
+                payment_method_brand: 'visa',
+                payment_method_last4: '3188',
+              },
+              'tandem',
+              SECRET,
+            ),
+          );
+        }
+      }
+      const incidents = await pool!.query(
+        `SELECT case_count,payment_intent_count,provider_failure_count,
+                episode_started_at,episode_ends_at
+           FROM business_v2.checkout_recovery_operator_incidents`,
+      );
+      expect(incidents.rows).toHaveLength(1);
+      expect(incidents.rows[0]).toMatchObject({
+        case_count: 2,
+        payment_intent_count: 2,
+        provider_failure_count: 6,
+      });
+      expect(
+        Date.parse(incidents.rows[0].episode_ends_at) -
+          Date.parse(incidents.rows[0].episode_started_at),
+      ).toBe(30 * 60_000);
+      const dueClient = await pool!.connect();
+      let due: Awaited<
+        ReturnType<typeof listDueCheckoutRecoveryOperatorIncidentsWithClient>
+      >;
+      try {
+        due = await listDueCheckoutRecoveryOperatorIncidentsWithClient(
+          dueClient,
+          { now: new Date('2026-08-29T15:17:00.000Z') },
+        );
+      } finally {
+        dueClient.release();
+      }
+      expect(due).toHaveLength(1);
+      expect(due[0]).toMatchObject({
+        caseCount: 2,
+        paymentIntentCount: 2,
+        providerFailureCount: 6,
+        guidanceKey: 'contact_issuer_or_change_method',
+      });
     });
 
     it('deduplicates exact event keys and stores no email in event facts', async () => {

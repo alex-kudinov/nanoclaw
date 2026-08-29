@@ -214,11 +214,6 @@ export interface WebhookServerDeps {
       webhookInboxId: number | null;
       transientEmail?: string | null;
     }) => Promise<CheckoutRecoveryProcessResult>;
-    markProjectionNotified: (input: {
-      caseId: number;
-      expectedVersion: number;
-      occurredAt?: string;
-    }) => Promise<boolean>;
   };
   // Per-group serialization. Webhook agent runs go through the GroupQueue
   // (like the message loop and scheduled tasks) so concurrent webhooks to one
@@ -1054,22 +1049,6 @@ export class WebhookServer {
               customer_message_sent: false,
             },
           });
-          if (!result.shouldNotify) return;
-          const inbox = Object.entries(this.deps.getRegisteredGroups()).find(
-            ([, registered]) => registered.folder === 'inbox',
-          );
-          if (inbox) {
-            const p = result.projection;
-            await this.deps.sendMessage(
-              inbox[0],
-              `[checkout shadow] ${p.stripeAccount} - ${p.productSlug ?? p.programSlug ?? 'unknown product'} - ${p.state}; consent ${p.consentState}/${p.eligibilityState}; case ${p.caseId}; no customer message sent`,
-              { fromGroup: 'inbox' },
-            );
-            await checkoutRecovery.markProjectionNotified({
-              caseId: p.caseId,
-              expectedVersion: p.version,
-            });
-          }
         })
         .catch(async (err) => {
           const reason = err instanceof Error ? err.message : String(err);
@@ -1523,23 +1502,6 @@ export class WebhookServer {
                 customer_message_sent: false,
               },
             });
-          }
-          if (recoveryResult.shouldNotify) {
-            const inbox = Object.entries(this.deps.getRegisteredGroups()).find(
-              ([, registered]) => registered.folder === 'inbox',
-            );
-            if (inbox) {
-              const p = recoveryResult.projection;
-              await this.deps.sendMessage(
-                inbox[0],
-                `[checkout shadow] ${p.stripeAccount} - ${p.productSlug ?? p.programSlug ?? 'unknown product'} - ${p.state}; consent ${p.consentState}/${p.eligibilityState}; case ${p.caseId}; no customer message sent`,
-                { fromGroup: 'inbox' },
-              );
-              await checkoutRecovery!.markProjectionNotified({
-                caseId: p.caseId,
-                expectedVersion: p.version,
-              });
-            }
           }
           logger.info(
             {

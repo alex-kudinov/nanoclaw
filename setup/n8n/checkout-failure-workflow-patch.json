@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "workflows": [
+    {
+      "id": "stripe-payment",
+      "must_be_active": true,
+      "nodes": [
+        {
+          "name": "Extract Tandem",
+          "type": "n8n-nodes-base.code",
+          "operation": "replace_code",
+          "source": "setup/vps/n8n-stripe-lifecycle-extractor.js",
+          "substitutions": {
+            "__ACCOUNT__": "tandem"
+          }
+        },
+        {
+          "name": "Extract Heartbeat",
+          "type": "n8n-nodes-base.code",
+          "operation": "replace_code",
+          "source": "setup/vps/n8n-stripe-lifecycle-extractor.js",
+          "substitutions": {
+            "__ACCOUNT__": "heartbeat"
+          }
+        },
+        {
+          "name": "POST to El Contador",
+          "type": "n8n-nodes-base.httpRequest",
+          "operation": "replace_json_body",
+          "value": "={{ JSON.stringify($json) }}"
+        }
+      ]
+    },
+    {
+      "id": "checkout-recovery-website-shadow",
+      "must_be_active": true,
+      "nodes": [
+        {
+          "name": "Tandem Website Checkout Lifecycle",
+          "type": "n8n-nodes-base.webhook",
+          "operation": "merge_options",
+          "value": {
+            "rawBody": true
+          }
+        },
+        {
+          "name": "Verify Normalize and Sign Checkout Recovery",
+          "type": "n8n-nodes-base.code",
+          "operation": "replace_code",
+          "source": "setup/n8n/checkout-recovery-website-verify.js",
+          "substitutions": {}
+        }
+      ]
+    }
+  ]
+}

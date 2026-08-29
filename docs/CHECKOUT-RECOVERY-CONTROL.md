@@ -1,6 +1,6 @@
 # Checkout recovery control
 
-Status: implementation in review under `NC-20260824-009`
+Status: live control with `NC-20260829-001` correction in review
 Authority: Growth decision `decision:abandoned-checkout-two-reminder-activation-2026-08-24`
 Mode: host-owned shadow plus separately gated prospective delivery
 
@@ -8,8 +8,8 @@ Mode: host-owned shadow plus separately gated prospective delivery
 
 Starting checkout is now durable work, not only a Slack notification. NanoClaw
 stores one privacy-minimized case, updates it from exact website and Stripe
-facts, and surfaces a bounded internal shadow item when the attempt remains
-unpaid. The system does not email the buyer.
+facts, and surfaces a bounded internal incident when the attempt remains
+unpaid. Prospective reminders remain separately consented and policy-gated.
 
 This is not Contador. Contador begins with a completed payment or refund and
 owns payment-to-student fulfillment receipts. Checkout recovery is a separate
@@ -48,6 +48,11 @@ It must not use an immediate/on-receipt response mode: WordPress removes a retry
 only after a 2xx response, so an early acknowledgment would turn a downstream
 relay failure into silent event loss.
 
+The HMAC covers the exact HTTP request bytes. The n8n Webhook node must retain
+`rawBody`; verification uses those bytes and parses JSON only after a
+timing-safe match. Parsed/re-serialized JSON is not signature authority because
+escaped URLs and Unicode can change bytes without changing the object.
+
 ### Stripe
 
 The existing fixed-account n8n code owns the `heartbeat` or `tandem` account
@@ -61,6 +66,13 @@ failure, and PaymentIntent success. Treat the trigger definitions as the
 durable provider contract. A direct edit to a current Stripe event destination
 is only temporary because n8n recreates the destination from those definitions
 after workflow republication or restart.
+
+The fixed-account extractor and downstream HTTP node form one contract. The
+HTTP node forwards the complete normalized allowlist, not a second ID-only
+projection. Failure facts include bounded Stripe customer/email/product/
+amount/currency plus safe error/decline/advice codes and card brand/last4. Raw
+Stripe payloads, full PaymentMethods, billing details, fingerprints, CVC/AVS,
+and provider recovery URLs are excluded.
 
 Failure/expiry never enters `process-payment.cjs`. Success still finishes the
 Contador path and then binds/closes the recovery case before the webhook inbox
@@ -88,9 +100,9 @@ separately authorized delivery, plus a stable HMAC digest for dedupe. Events,
 reports, and Slack projections contain no email, name, checkout token, raw
 payload, recovery URL, provider endpoint, or secret.
 
-Tandemweb presents an unchecked reminder choice in English, Spanish, Japanese,
-and French. Policy `checkout-reminder-v2` explicitly authorizes up to two
-checkout reminders and remains separate from course/newsletter messages.
+Tandemweb presents localized policy-v3 reminder controls. Affirmative v2 or
+allowlisted v3 decisions authorize up to two checkout reminders and remain
+separate from course/newsletter messages.
 Consent is granted, denied, or unknown. Missing transient/Stripe metadata is
 `unknown`, never an invented denial.
 
@@ -101,7 +113,7 @@ cutover are independent gates.
 
 ## Prospective two-reminder delivery
 
-NanoClaw schedules touch one only when a post-cutoff, policy-v2, consented
+NanoClaw schedules touch one only when a post-cutoff, affirmatively consented
 Tandemweb case becomes `shadow_ready`. Touch two is due 24 hours after capture
 and never less than 20 hours after a late first touch, and cannot be leased
 until touch one's provider event has been accepted. Each handoff locks and
@@ -130,9 +142,11 @@ immutable core fields. Rollback refuses after any case/evidence exists.
 
 The five-minute host sweep selects due Tandem cases with row locks, records a
 `checkout.shadow_timeout` event, determines consent eligibility, and returns a
-content-minimized projection. One transition-only line goes to the registered
-Inbox group and is acknowledged in the case receipt only after Slack accepts
-the post. The canonical case, not Slack, owns closure.
+content-minimized projection. One fixed-window operator incident goes to the
+registered Inbox group after five quiet minutes and is acknowledged only after
+Slack accepts the post. Repeated PaymentIntents/provider events use one stable
+thread. Internal state labels are never operator copy. The canonical incident
+and cases, not Slack, own closure.
 
 Captured, payment-created, and client-abandoned cases become due after 45
 minutes. An exact `payment.failed` fact is a stronger signal and becomes due

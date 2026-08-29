@@ -228,8 +228,9 @@ import {
   StudentLifecycleHealthMonitor,
 } from './student-lifecycle-health.js';
 import {
-  formatCheckoutRecoveryProjection,
-  markCheckoutRecoveryProjectionNotified,
+  formatCheckoutRecoveryOperatorIncident,
+  listDueCheckoutRecoveryOperatorIncidents,
+  markCheckoutRecoveryOperatorIncidentNotified,
   recordPreparedCheckoutRecovery,
   sweepCheckoutRecoveryShadow,
 } from './checkout-recovery-store.js';
@@ -2297,7 +2298,6 @@ async function main(): Promise<void> {
       relaySecret: CHECKOUT_RECOVERY_RELAY_SECRET,
       identitySecret: CHECKOUT_RECOVERY_IDENTITY_SECRET,
       record: recordPreparedCheckoutRecovery,
-      markProjectionNotified: markCheckoutRecoveryProjectionNotified,
     },
     gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
     handleGmailPush: async (emailAddress: string, historyId: string) => {
@@ -2471,9 +2471,12 @@ async function main(): Promise<void> {
   const runCheckoutRecoveryShadowTick = async (): Promise<void> => {
     if (!CHECKOUT_RECOVERY_ENABLED) return;
     try {
-      const items = await sweepCheckoutRecoveryShadow({
+      await sweepCheckoutRecoveryShadow({
         limit: 25,
         sendConfig: checkoutRecoverySendConfig,
+      });
+      const items = await listDueCheckoutRecoveryOperatorIncidents({
+        limit: 25,
       });
       if (items.length === 0) return;
       const inbox = Object.entries(registeredGroups).find(
@@ -2491,11 +2494,11 @@ async function main(): Promise<void> {
         if (!channel) break;
         await channel.sendMessage(
           inbox[0],
-          formatOutbound(formatCheckoutRecoveryProjection(item)),
-          { fromGroup: 'inbox' },
+          formatOutbound(formatCheckoutRecoveryOperatorIncident(item)),
+          { fromGroup: 'inbox', threadKey: item.threadKey },
         );
-        await markCheckoutRecoveryProjectionNotified({
-          caseId: item.caseId,
+        await markCheckoutRecoveryOperatorIncidentNotified({
+          incidentId: item.incidentId,
           expectedVersion: item.version,
         });
       }

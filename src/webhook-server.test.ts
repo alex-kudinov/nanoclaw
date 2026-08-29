@@ -1430,7 +1430,6 @@ describe('WebhookServer — checkout recovery website shadow relay', () => {
         relaySecret: secret,
         identitySecret: 'checkout-recovery-identity-test-secret-123456',
         record,
-        markProjectionNotified: vi.fn(async () => true),
       },
     });
     const instance = new WebhookServer(deps);
@@ -1591,7 +1590,6 @@ describe('WebhookServer — Stripe fulfillment acknowledgement', () => {
 
   it('routes failed payments to the shadow case without invoking Contador', async () => {
     const markWebhookHandled = vi.fn(async () => {});
-    const markProjectionNotified = vi.fn(async () => true);
     const record = vi.fn(async () => ({
       caseId: 77,
       eventId: 78,
@@ -1599,7 +1597,7 @@ describe('WebhookServer — Stripe fulfillment acknowledgement', () => {
       state: 'payment_failed' as const,
       duplicate: false,
       resultCode: 'payment_failed',
-      shouldNotify: true,
+      shouldNotify: false,
       projection: {
         caseId: 77,
         version: 1,
@@ -1638,7 +1636,6 @@ describe('WebhookServer — Stripe fulfillment acknowledgement', () => {
         relaySecret: 'checkout-recovery-relay-test-secret-12345',
         identitySecret: 'checkout-recovery-identity-test-secret-1234',
         record,
-        markProjectionNotified,
       },
     });
     const server = new WebhookServer(deps);
@@ -1679,14 +1676,6 @@ describe('WebhookServer — Stripe fulfillment acknowledgement', () => {
         }),
       }),
     );
-    expect(deps.sendMessage).toHaveBeenCalledWith(
-      'slack:INBOX',
-      expect.stringContaining('no customer message sent'),
-      { fromGroup: 'inbox' },
-    );
-    expect(markProjectionNotified).toHaveBeenCalledWith({
-      caseId: 77,
-      expectedVersion: 1,
-    });
+    expect(deps.sendMessage).not.toHaveBeenCalled();
   });
 });

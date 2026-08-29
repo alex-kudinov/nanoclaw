@@ -157,6 +157,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_138_relationship_owner_authority.sql',
     'data/business/migrations/nanoclaw-v2/139_contador_charge_alias_compatibility.sql',
     'data/business/migrations/nanoclaw-v2/rollback_139_contador_charge_alias_compatibility.sql',
+    'data/business/migrations/nanoclaw-v2/140_checkout_failure_incidents.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_140_checkout_failure_incidents.sql',
     'scripts/verify-release.mjs',
     'scripts/runtime-doctor.mjs',
     'scripts/with-pinned-node.sh',
@@ -178,6 +180,11 @@ try {
     'scripts/start-procurement-browser.sh',
     'setup/n8n/student-lifecycle-community-shadow-code.txt',
     'setup/n8n/student-lifecycle-community-shadow-workflow.json',
+    'setup/n8n/checkout-failure-workflow-patch.json',
+    'setup/n8n/checkout-recovery-website-shadow-workflow.json',
+    'setup/n8n/checkout-recovery-website-verify.js',
+    'setup/vps/n8n-stripe-lifecycle-extractor.js',
+    'scripts/render-checkout-recovery-n8n-template.mjs',
     'tools/sync-program-facts.py',
   );
   for (const relative of [...new Set(tracked)].sort()) {

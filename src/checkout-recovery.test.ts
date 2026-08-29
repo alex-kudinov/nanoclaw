@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   checkoutRecoveryArchiveEnvelope,
   checkoutEligibility,
+  checkoutFailureGuidance,
   nextCheckoutRecoveryState,
   prepareStripeCheckoutRecoveryEnvelope,
   prepareWebsiteCheckoutRecoveryEnvelope,
@@ -121,6 +122,50 @@ describe('checkout recovery contract', () => {
     expect(() =>
       prepareStripeCheckoutRecoveryEnvelope(payload, 'tandem', IDENTITY_SECRET),
     ).toThrow(/perimeter mismatch/);
+  });
+
+  it('normalizes bounded failure context and maps customer-safe guidance', () => {
+    const result = prepareStripeCheckoutRecoveryEnvelope(
+      {
+        account: 'tandem',
+        event_type: 'payment_intent.payment_failed',
+        event_id: 'evt_failed1234567890',
+        event_created: 1787594400,
+        stripe_id: 'pi_failed1234567890',
+        payment_intent_id: 'pi_failed1234567890',
+        customer_id: 'cus_failed1234567890',
+        email: 'buyer@example.com',
+        product_slug: 'mcs-foundations',
+        product_name: 'Mentor Coaching Foundations',
+        amount_cents: 29900,
+        currency: 'usd',
+        failure_code: 'card_declined',
+        decline_code: 'do_not_honor',
+        advice_code: 'do_not_try_again',
+        payment_method_brand: 'visa',
+        payment_method_last4: '3188',
+      },
+      'tandem',
+      IDENTITY_SECRET,
+    );
+    expect(result.prepared).toMatchObject({
+      stripe_customer_id: 'cus_failed1234567890',
+      failure_code: 'card_declined',
+      decline_code: 'do_not_honor',
+      advice_code: 'do_not_try_again',
+      customer_guidance_key: 'contact_issuer_or_change_method',
+      payment_method_brand: 'visa',
+      payment_method_last4: '3188',
+    });
+    expect(checkoutFailureGuidance({ declineCode: 'lost_card' })).toBe(
+      'generic_decline',
+    );
+    expect(checkoutFailureGuidance({ declineCode: 'incorrect_cvc' })).toBe(
+      'verify_card_details',
+    );
+    expect(
+      checkoutFailureGuidance({ declineCode: 'authentication_required' }),
+    ).toBe('authenticate_payment');
   });
 
   it('accepts exact HMAC and rejects changed body, stale time, and missing secret', () => {

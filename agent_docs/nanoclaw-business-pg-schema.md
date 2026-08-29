@@ -283,6 +283,60 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   checkout_locale               text
   return_url                    text
   product_name                  text
+  party_id                      bigint
+  party_evidence_tier           text
+  stripe_customer_id            text
+  last_failure_code             text
+  last_decline_code             text
+  last_advice_code              text
+  customer_guidance_key         text
+  payment_method_brand          text
+  payment_method_last4          text
+  operator_incident_id          bigint
+```
+
+## business_v2.checkout_recovery_operator_incidents
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.checkout_recovery_operator_incidents_id_seq'::regclass)
+  incident_uuid                 uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  incident_key                  text                 NOT NULL
+  group_key                     text                 NOT NULL
+  subject_key                   text                 NOT NULL
+  party_id                      bigint
+  stripe_account                text                 NOT NULL
+  incident_kind                 text                 NOT NULL
+  product_key                   text                 NOT NULL
+  product_name                  text
+  amount_cents                  bigint
+  currency                      text
+  episode_started_at            timestamp with time zone NOT NULL
+  episode_ends_at               timestamp with time zone NOT NULL
+  last_failure_at               timestamp with time zone NOT NULL
+  notify_due_at                 timestamp with time zone NOT NULL
+  status                        text                 NOT NULL DEFAULT='open'::text
+  version                       integer              NOT NULL DEFAULT=1
+  notified_version              integer              NOT NULL DEFAULT=0
+  case_count                    integer              NOT NULL DEFAULT=1
+  payment_intent_count          integer              NOT NULL DEFAULT=0
+  provider_failure_count        integer              NOT NULL DEFAULT=0
+  customer_guidance_key         text
+  payment_method_brand          text
+  payment_method_last4          text
+  reminder_state                text                 NOT NULL DEFAULT='not_sent_consent_missing'::text
+  root_notified_at              timestamp with time zone
+  last_notified_at              timestamp with time zone
+  closed_at                     timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.checkout_recovery_operator_incident_cases
+
+```
+  incident_id                   bigint               NOT NULL
+  case_id                       bigint               NOT NULL
+  joined_at                     timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.checkout_recovery_events

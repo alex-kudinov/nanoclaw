@@ -21,6 +21,26 @@ export type CheckoutRecoveryState =
 export type CheckoutRecoveryConsent = 'unknown' | 'denied' | 'granted';
 export type CheckoutRecoveryEligibility = 'unknown' | 'ineligible' | 'eligible';
 export type CheckoutRecoveryLocale = 'en' | 'es' | 'ja' | 'fr';
+export type CheckoutFailureGuidanceKey =
+  | 'verify_card_details'
+  | 'authenticate_payment'
+  | 'use_different_method'
+  | 'contact_issuer_or_change_method'
+  | 'retry_later_or_change_method'
+  | 'generic_decline';
+export type CheckoutPaymentMethodBrand =
+  | 'amex'
+  | 'cartes_bancaires'
+  | 'diners'
+  | 'discover'
+  | 'eftpos_au'
+  | 'interac'
+  | 'jcb'
+  | 'link'
+  | 'mastercard'
+  | 'unionpay'
+  | 'visa'
+  | 'unknown';
 export type CheckoutRecoveryAliasKind =
   | 'checkout_token'
   | 'payment_intent'
@@ -63,6 +83,13 @@ export interface PreparedCheckoutRecoveryEvent {
   checkout_locale: CheckoutRecoveryLocale | null;
   return_url: string | null;
   product_name: string | null;
+  stripe_customer_id: string | null;
+  failure_code: string | null;
+  decline_code: string | null;
+  advice_code: string | null;
+  customer_guidance_key: CheckoutFailureGuidanceKey | null;
+  payment_method_brand: CheckoutPaymentMethodBrand | null;
+  payment_method_last4: string | null;
   aliases: CheckoutRecoveryAlias[];
   recovered_from: string | null;
 }
@@ -92,6 +119,13 @@ export interface CheckoutRecoveryArchiveEnvelope {
     consent_policy_version: string | null;
     checkout_locale: CheckoutRecoveryLocale | null;
     product_name: string | null;
+    stripe_customer_present: boolean;
+    failure_code: string | null;
+    decline_code: string | null;
+    advice_code: string | null;
+    customer_guidance_key: CheckoutFailureGuidanceKey | null;
+    payment_method_brand: CheckoutPaymentMethodBrand | null;
+    payment_method_last4_present: boolean;
     alias_kinds: CheckoutRecoveryAliasKind[];
     recovered_from_present: boolean;
   };
@@ -124,6 +158,22 @@ const PI_RE = /^pi_[A-Za-z0-9_]+$/;
 const CS_RE = /^cs_[A-Za-z0-9_]+$/;
 const CH_RE = /^ch_[A-Za-z0-9_]+$/;
 const EVT_RE = /^evt_[A-Za-z0-9_]+$/;
+const CUSTOMER_RE = /^cus_[A-Za-z0-9_]{10,200}$/;
+const SAFE_CODE_RE = /^[a-z][a-z0-9_]{0,99}$/;
+const PAYMENT_METHOD_BRANDS = new Set<CheckoutPaymentMethodBrand>([
+  'amex',
+  'cartes_bancaires',
+  'diners',
+  'discover',
+  'eftpos_au',
+  'interac',
+  'jcb',
+  'link',
+  'mastercard',
+  'unionpay',
+  'visa',
+  'unknown',
+]);
 
 function object(value: unknown, field: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -211,6 +261,113 @@ function shaText(value: string): string {
   return crypto.createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
+function safeCode(value: unknown, field: string): string | null {
+  const parsed = text(value, field, 100)?.toLowerCase() ?? null;
+  if (parsed !== null && !SAFE_CODE_RE.test(parsed)) {
+    throw new CheckoutRecoveryPayloadError(`${field} is invalid`);
+  }
+  return parsed;
+}
+
+function stripeCustomerId(value: unknown): string | null {
+  const parsed = text(value, 'customer_id', 204);
+  if (parsed !== null && !CUSTOMER_RE.test(parsed)) {
+    throw new CheckoutRecoveryPayloadError('customer_id is invalid');
+  }
+  return parsed;
+}
+
+function paymentMethodBrand(value: unknown): CheckoutPaymentMethodBrand | null {
+  const parsed = text(value, 'payment_method_brand', 40)?.toLowerCase() ?? null;
+  if (
+    parsed !== null &&
+    !PAYMENT_METHOD_BRANDS.has(parsed as CheckoutPaymentMethodBrand)
+  ) {
+    throw new CheckoutRecoveryPayloadError('payment_method_brand is invalid');
+  }
+  return parsed as CheckoutPaymentMethodBrand | null;
+}
+
+function paymentMethodLast4(value: unknown): string | null {
+  const parsed = text(value, 'payment_method_last4', 4);
+  if (parsed !== null && !/^[0-9]{4}$/.test(parsed)) {
+    throw new CheckoutRecoveryPayloadError('payment_method_last4 is invalid');
+  }
+  return parsed;
+}
+
+const VERIFY_CARD_CODES = new Set([
+  'incorrect_address',
+  'incorrect_cvc',
+  'incorrect_number',
+  'invalid_cvc',
+  'invalid_expiry_month',
+  'invalid_expiry_year',
+  'invalid_number',
+]);
+const AUTHENTICATE_CODES = new Set([
+  'authentication_required',
+  'mobile_device_authentication_required',
+]);
+const DIFFERENT_METHOD_CODES = new Set([
+  'card_velocity_exceeded',
+  'expired_card',
+  'insufficient_funds',
+  'pin_try_exceeded',
+  'withdrawal_count_limit_exceeded',
+]);
+const RETRY_LATER_CODES = new Set([
+  'issuer_not_available',
+  'processing_error',
+  'reenter_transaction',
+  'try_again_later',
+]);
+const CONTACT_ISSUER_CODES = new Set([
+  'do_not_honor',
+  'do_not_try_again',
+  'generic_decline',
+  'new_account_information_available',
+  'no_action_taken',
+  'not_permitted',
+  'stop_payment_order',
+  'transaction_not_allowed',
+]);
+const SENSITIVE_CODES = new Set([
+  'fraudulent',
+  'lost_card',
+  'merchant_blacklist',
+  'pickup_card',
+  'restricted_card',
+  'revocation_of_all_authorizations',
+  'revocation_of_authorization',
+  'security_violation',
+  'stolen_card',
+]);
+
+export function checkoutFailureGuidance(input: {
+  declineCode?: string | null;
+  failureCode?: string | null;
+  adviceCode?: string | null;
+}): CheckoutFailureGuidanceKey {
+  const code = (input.declineCode ?? input.failureCode ?? '').toLowerCase();
+  if (SENSITIVE_CODES.has(code)) return 'generic_decline';
+  if (VERIFY_CARD_CODES.has(code) || input.adviceCode === 'confirm_card_data') {
+    return 'verify_card_details';
+  }
+  if (AUTHENTICATE_CODES.has(code)) return 'authenticate_payment';
+  if (DIFFERENT_METHOD_CODES.has(code)) return 'use_different_method';
+  if (RETRY_LATER_CODES.has(code) || input.adviceCode === 'try_again_later') {
+    return 'retry_later_or_change_method';
+  }
+  if (
+    CONTACT_ISSUER_CODES.has(code) ||
+    input.adviceCode === 'do_not_try_again'
+  ) {
+    return 'contact_issuer_or_change_method';
+  }
+  return 'generic_decline';
+}
+
 /**
  * Content-minimized envelope for the shared webhook archive. Exact source keys,
  * checkout tokens, and provider alias ids remain only in the admin-only
@@ -240,6 +397,13 @@ export function checkoutRecoveryArchiveEnvelope(
       consent_policy_version: event.consent_policy_version,
       checkout_locale: event.checkout_locale,
       product_name: event.product_name,
+      stripe_customer_present: event.stripe_customer_id !== null,
+      failure_code: event.failure_code,
+      decline_code: event.decline_code,
+      advice_code: event.advice_code,
+      customer_guidance_key: event.customer_guidance_key,
+      payment_method_brand: event.payment_method_brand,
+      payment_method_last4_present: event.payment_method_last4 !== null,
       alias_kinds: [
         ...new Set(event.aliases.map((entry) => entry.kind)),
       ].sort(),
@@ -395,6 +559,13 @@ export function prepareWebsiteCheckoutRecoveryEnvelope(
     checkout_locale: checkoutLocale(p.locale),
     return_url: safeReturnUrl(p.return_url),
     product_name: text(p.product_name, 'product_name', 300),
+    stripe_customer_id: null,
+    failure_code: null,
+    decline_code: null,
+    advice_code: null,
+    customer_guidance_key: null,
+    payment_method_brand: null,
+    payment_method_last4: null,
     aliases: uniqueAliases(aliases),
     recovered_from: null,
   };
@@ -452,6 +623,13 @@ export function prepareStripeCheckoutRecoveryEnvelope(
   if (charge) aliases.push(alias('charge', charge));
   if (recoveredFrom) aliases.push(alias('recovered_from', recoveredFrom));
   const email = normalizedEmail(p.email);
+  const failureCode = safeCode(p.failure_code, 'failure_code');
+  const declineCode = safeCode(p.decline_code, 'decline_code');
+  const adviceCode = safeCode(p.advice_code, 'advice_code');
+  const guidance =
+    eventType === 'payment.failed'
+      ? checkoutFailureGuidance({ declineCode, failureCode, adviceCode })
+      : null;
   const canonical = pi ?? cs ?? stripeId;
   const normalized = {
     schema_version: 1 as const,
@@ -473,6 +651,13 @@ export function prepareStripeCheckoutRecoveryEnvelope(
     checkout_locale: checkoutLocale(p.locale),
     return_url: safeReturnUrl(p.return_url),
     product_name: text(p.product_name, 'product_name', 300),
+    stripe_customer_id: stripeCustomerId(p.customer_id),
+    failure_code: failureCode,
+    decline_code: declineCode,
+    advice_code: adviceCode,
+    customer_guidance_key: guidance,
+    payment_method_brand: paymentMethodBrand(p.payment_method_brand),
+    payment_method_last4: paymentMethodLast4(p.payment_method_last4),
     aliases: uniqueAliases(aliases),
     recovered_from: recoveredFrom,
   };

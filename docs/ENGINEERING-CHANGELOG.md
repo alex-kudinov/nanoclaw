@@ -8,6 +8,68 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260829-001 — Repair checkout failure context and recovery guidance
+
+- Date: 2026-08-29T15:27:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; root cause/design, local implementation, and independent
+  implementation review complete; commit, release, deployment, and natural
+  outcome proof remain
+- Change class: C4 because the existing prospective recovery flow can send
+  consented customer reminders; this correction sends nothing during validation
+- Affected systems: Tandemweb checkout PHP/JS and retry queue; active n8n
+  website/Stripe workflows; NanoClaw checkout parser/store/sweep/Slack/threading,
+  PostgreSQL migration 140, Party Context linkage, and Encharge consent gate;
+  shared n8n toolbox patch surface
+- Root cause: exact WordPress HMAC bytes were parsed/re-serialized by n8n after
+  URL/product fields were added, so 99 website facts queued and 57 exhausted.
+  The live Stripe Code nodes extracted useful context but the HTTP node rebuilt
+  a seven-field ID-only body. NanoClaw therefore created context-free cases and
+  posted both raw failure and raw readiness states. A further source audit found
+  live policy-v3 affirmative consent was rejected by the literal v2 sender gate.
+- Design review: Sonnet/high R1 found a critical historical-queue replay window
+  and an unguarded incident find-or-create race. The design now quarantines and
+  clears retry cron before n8n reactivation, uses a prospective source epoch,
+  and defines a dedicated incident table with fixed first-case anchor,
+  transaction advisory lock, unique incident/case constraints, quiet-period
+  debounce, and one stable Slack thread. R2 closed both findings with no new
+  material issue.
+- Implementation review: Sonnet/high R3 found that a later sibling failure
+  could reopen a purchased incident and that n8n rollback failure was hidden.
+  R4 verified those fixes and found two narrower defects: the closure catch-up
+  used an unsafe exact version test and rollback status was assigned inside the
+  remote shell. The final correction records `closed_at`, emits a closure only
+  when it is newer than the last notice, refuses post-close sibling mutation,
+  and reports rollback status locally. R5 closed every material finding with no
+  new issue.
+- Implementation: exact raw-body n8n verifier; full minimized Stripe forward
+  contract with safe error/decline/advice/card fields; migration/rollback 140;
+  exact Stripe-customer then unique-email Party binding; one incident projection
+  and purchase closure thread update; no immediate webhook Slack posts;
+  customer-safe six-key decline policy shared with localized checkout copy;
+  v2 plus affirmative v3 reminder gate; WordPress protected quarantine/epoch;
+  guarded exact-node n8n patch tooling with credential/topology preservation.
+- Verification so far: NanoClaw focused 72/72, format, typecheck, documentation
+  continuity, and 3,370/3,372 full tests; the two failures are unchanged,
+  unrelated CNPC-wrapper and date-stale Trafft fixtures. Migration 140 passed a
+  schema-only production-shape apply/permissions/rollback rehearsal. Tandemweb
+  focused syntax/contracts passed and 49/50 full plugin test files passed, with
+  the exact pre-existing exam-fulfillment assertion as the sole failure.
+  Toolbox n8n passed 17 argument contracts plus the exact-node patch fixture;
+  live patch dry-runs preserve credential-binding hashes and list only the
+  intended nodes/paths. No production/provider/customer mutation occurred.
+- Deployment/migration: not yet applied. Exact live NanoClaw remains `2773def5`;
+  website remains `bed21735`; n8n workflows remain active and unmodified; the
+  historical queue remains live but still blocked by the broken HMAC path.
+- Rollback/recovery: dirty primaries untouched; implementation uses three
+  isolated branches. Deployment must protect queue/workflow/database/service
+  backups and quarantine historical work before n8n repair.
+- Documentation: `docs/CHECKOUT-FAILURE-RECOVERY.md`, updated checkout control,
+  project map, schema reference, active work, design review artifacts, and this
+  record.
+- Follow-ups: complete implementation review/full gates, commit/push, guarded
+  deployment, structural canaries, and next-natural-checkout outcome proof.
+
 ### NC-20260827-004 — Restore and harden the Plutio reaper release boundary
 
 - Date: 2026-08-28T01:47:00Z

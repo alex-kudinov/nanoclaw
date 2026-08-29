@@ -161,7 +161,7 @@ function prospectiveEligible(
   if (
     item.stripeAccount !== 'tandem' ||
     item.consentState !== 'granted' ||
-    item.consentPolicyVersion !== 'checkout-reminder-v2' ||
+    !checkoutReminderPolicyAllows(item.consentPolicyVersion) ||
     item.checkoutLocale === null ||
     item.returnUrl === null ||
     item.productName === null ||
@@ -176,6 +176,16 @@ function prospectiveEligible(
     (config.pilotEmailSha256 !== null &&
       item.emailSha256 === config.pilotEmailSha256)
   );
+}
+
+export function checkoutReminderPolicyAllows(policy: string | null): boolean {
+  return new Set([
+    'checkout-reminder-v2',
+    'checkout-reminder-v3-explicit',
+    'checkout-reminder-v3-legacy-explicit',
+    'checkout-reminder-v3-uk-softoptin',
+    'checkout-reminder-v3-us-optout',
+  ]).has(policy ?? '');
 }
 
 export async function scheduleCheckoutRecoveryTouchesWithClient(
@@ -389,8 +399,8 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
         : item.eligibility_state !== 'eligible'
           ? 'case_not_eligible'
           : item.consent_state !== 'granted' ||
-              item.consent_policy_version !== 'checkout-reminder-v2'
-            ? 'consent_not_v2_granted'
+              !checkoutReminderPolicyAllows(item.consent_policy_version)
+            ? 'consent_policy_not_granted'
             : Date.parse(item.created_at) < activatedAt.getTime()
               ? 'pre_activation_case'
               : config.mode === 'pilot' &&

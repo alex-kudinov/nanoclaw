@@ -9,7 +9,9 @@ import {
   type CheckoutRecoveryAlias,
   type CheckoutRecoveryConsent,
   type CheckoutRecoveryEligibility,
+  type CheckoutFailureGuidanceKey,
   type CheckoutRecoveryLocale,
+  type CheckoutPaymentMethodBrand,
   type CheckoutRecoveryState,
   type PreparedCheckoutRecoveryEvent,
 } from './checkout-recovery.js';
@@ -39,6 +41,20 @@ interface CaseRow extends QueryResultRow {
   checkout_locale: CheckoutRecoveryLocale | null;
   return_url: string | null;
   product_name: string | null;
+  party_id: string | null;
+  party_evidence_tier:
+    | 'stripe_customer_exact_ref_v1'
+    | 'unique_party_email_v1'
+    | 'identity_unresolved_v1'
+    | null;
+  stripe_customer_id: string | null;
+  last_failure_code: string | null;
+  last_decline_code: string | null;
+  last_advice_code: string | null;
+  customer_guidance_key: CheckoutFailureGuidanceKey | null;
+  payment_method_brand: CheckoutPaymentMethodBrand | null;
+  payment_method_last4: string | null;
+  operator_incident_id: string | null;
   eligibility_state: CheckoutRecoveryEligibility;
   suppression_code: string | null;
   started_at: string;
@@ -61,6 +77,38 @@ export interface CheckoutRecoveryProjection {
   eligibilityState: CheckoutRecoveryEligibility;
   ageMinutes: number;
   customerMessageSent: false;
+}
+
+export interface CheckoutRecoveryOperatorIncident {
+  incidentId: number;
+  incidentUuid: string;
+  version: number;
+  isRoot: boolean;
+  threadKey: string;
+  kind: 'payment_failed' | 'checkout_incomplete';
+  outcome: 'open' | 'purchased';
+  partyId: number | null;
+  partyDisplayName: string | null;
+  relationshipState: string | null;
+  productName: string | null;
+  productKey: string;
+  amountCents: number | null;
+  currency: string | null;
+  guidanceKey: CheckoutFailureGuidanceKey | null;
+  paymentMethodBrand: CheckoutPaymentMethodBrand | null;
+  paymentMethodLast4: string | null;
+  caseCount: number;
+  paymentIntentCount: number;
+  providerFailureCount: number;
+  episodeStartedAt: string;
+  lastFailureAt: string;
+  reminderState:
+    | 'not_sent_consent_missing'
+    | 'not_sent_opted_out'
+    | 'eligible_pending'
+    | 'provider_accepted'
+    | 'suppressed'
+    | 'not_applicable';
 }
 
 export interface CheckoutRecoveryProcessResult {
@@ -119,10 +167,78 @@ const CASE_COLUMNS = `
   program_slug, product_slug, amount_cents::text, currency,
   contact_email::text, email_sha256, consent_state, consent_policy_version,
   checkout_locale, return_url, product_name,
+  party_id::text, party_evidence_tier, stripe_customer_id,
+  last_failure_code, last_decline_code, last_advice_code,
+  customer_guidance_key, payment_method_brand, payment_method_last4,
+  operator_incident_id::text,
   eligibility_state, suppression_code, started_at::text,
   last_observed_at::text, shadow_due_at::text, shadow_notified_at::text,
   created_at::text
 `;
+
+interface PartyResolution {
+  partyId: number | null;
+  evidenceTier:
+    | 'stripe_customer_exact_ref_v1'
+    | 'unique_party_email_v1'
+    | 'identity_unresolved_v1';
+}
+
+async function resolveCheckoutPartyWithClient(
+  client: PoolClient,
+  input: {
+    stripeAccount: CheckoutRecoveryAccount;
+    stripeCustomerId: string | null;
+    email: string | null;
+  },
+): Promise<PartyResolution> {
+  if (input.stripeCustomerId) {
+    const exact = await client.query<{ party_id: string }>(
+      `SELECT DISTINCT r.party_id::text
+         FROM business_v2.party_external_refs r
+         JOIN business_v2.parties p ON p.id=r.party_id
+        WHERE r.provider='stripe' AND r.source_scope=$1
+          AND r.entity_type='customer' AND r.external_id=$2
+          AND r.status='active' AND p.merged_into IS NULL
+        LIMIT 2`,
+      [input.stripeAccount, input.stripeCustomerId],
+    );
+    if (exact.rows.length === 1) {
+      return {
+        partyId: Number(exact.rows[0].party_id),
+        evidenceTier: 'stripe_customer_exact_ref_v1',
+      };
+    }
+    if (exact.rows.length > 1) {
+      return { partyId: null, evidenceTier: 'identity_unresolved_v1' };
+    }
+  }
+  if (input.email) {
+    const owners = await client.query<{ party_id: string }>(
+      `WITH candidates AS (
+         SELECT p.id AS party_id
+           FROM business_v2.parties p
+          WHERE p.merged_into IS NULL
+            AND lower(p.primary_email::text)=lower($1)
+         UNION
+         SELECT pe.party_id
+           FROM business_v2.party_emails pe
+           JOIN business_v2.parties p ON p.id=pe.party_id
+          WHERE p.merged_into IS NULL
+            AND lower(pe.email::text)=lower($1)
+       )
+       SELECT party_id::text FROM candidates ORDER BY party_id LIMIT 2`,
+      [input.email],
+    );
+    if (owners.rows.length === 1) {
+      return {
+        partyId: Number(owners.rows[0].party_id),
+        evidenceTier: 'unique_party_email_v1',
+      };
+    }
+  }
+  return { partyId: null, evidenceTier: 'identity_unresolved_v1' };
+}
 
 async function findCaseIdsByAliases(
   client: PoolClient,
@@ -182,16 +298,6 @@ function shadowDueAt(
     return new Date(observed + 45 * 60_000).toISOString();
   }
   return null;
-}
-
-function transitionShouldNotify(
-  previous: CheckoutRecoveryState | null,
-  next: CheckoutRecoveryState,
-): boolean {
-  return (
-    previous !== next &&
-    ['payment_failed', 'expired', 'held', 'recovered'].includes(next)
-  );
 }
 
 async function insertReceipt(
@@ -287,6 +393,12 @@ export async function recordPreparedCheckoutRecoveryWithClient(
     throw new Error('checkout_recovery_aliases_span_multiple_cases');
   }
 
+  const partyResolution = await resolveCheckoutPartyWithClient(client, {
+    stripeAccount: input.event.stripe_account,
+    stripeCustomerId: input.event.stripe_customer_id,
+    email: input.transientEmail ?? null,
+  });
+
   let caseId = aliasCaseIds[0] ?? null;
   if (caseId === null) {
     const created = await client.query<{ id: string }>(
@@ -295,12 +407,16 @@ export async function recordPreparedCheckoutRecoveryWithClient(
             program_slug, product_slug, amount_cents, currency,
             contact_email, email_sha256, consent_state,
             consent_policy_version, checkout_locale, return_url, product_name,
+            party_id, party_evidence_tier, stripe_customer_id,
+            last_failure_code, last_decline_code, last_advice_code,
+            customer_guidance_key, payment_method_brand, payment_method_last4,
             eligibility_state, last_event_type,
             last_source_event_key, last_evidence_sha256, started_at,
             last_observed_at, shadow_due_at)
          VALUES ($1, $2, $3, 'captured', $4, $5, $6, $7, $8::citext, $9,
-                 $10, $11, $12, $13, $14, $15, $16, $17, $18,
-                 $19::timestamptz, $19::timestamptz, NULL)
+                 $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+                 $21, $22, $23, $24, $25, $26, $27,
+                 $28::timestamptz, $28::timestamptz, NULL)
          ON CONFLICT (source_system, source_case_key) DO NOTHING
          RETURNING id::text`,
       [
@@ -320,6 +436,15 @@ export async function recordPreparedCheckoutRecoveryWithClient(
         input.event.checkout_locale,
         input.event.return_url,
         input.event.product_name,
+        partyResolution.partyId,
+        partyResolution.evidenceTier,
+        input.event.stripe_customer_id,
+        input.event.failure_code,
+        input.event.decline_code,
+        input.event.advice_code,
+        input.event.customer_guidance_key,
+        input.event.payment_method_brand,
+        input.event.payment_method_last4,
         checkoutEligibility(input.event.consent_state, null),
         input.event.event_type,
         input.event.source_event_key,
@@ -377,6 +502,12 @@ export async function recordPreparedCheckoutRecoveryWithClient(
       current.product_slug !== input.event.product_slug
     ) {
       forcedHold = 'product_conflict';
+    } else if (
+      current.party_id &&
+      partyResolution.partyId !== null &&
+      Number(current.party_id) !== partyResolution.partyId
+    ) {
+      forcedHold = 'identity_conflict';
     }
   }
   const transition = terminalPrecedence
@@ -409,15 +540,27 @@ export async function recordPreparedCheckoutRecoveryWithClient(
               checkout_locale = COALESCE(checkout_locale, $12),
               return_url = COALESCE(return_url, $13),
               product_name = COALESCE(product_name, $14),
-              eligibility_state = $15,
-              suppression_code = COALESCE($16, suppression_code),
-              last_event_type = $17,
-              last_source_event_key = $18,
-              last_evidence_sha256 = $19,
-              last_observed_at = GREATEST(last_observed_at, $20::timestamptz),
-              shadow_due_at = CASE WHEN $21 THEN NULL ELSE COALESCE($22::timestamptz, shadow_due_at) END,
-              purchased_at = CASE WHEN $21 THEN COALESCE(purchased_at, $20::timestamptz) ELSE purchased_at END,
-              closed_at = CASE WHEN $21 THEN COALESCE(closed_at, $20::timestamptz) ELSE closed_at END,
+              party_id = COALESCE(party_id, $15),
+              party_evidence_tier = CASE
+                WHEN party_id IS NULL AND $15::bigint IS NOT NULL THEN $16
+                ELSE COALESCE(party_evidence_tier, $16)
+              END,
+              stripe_customer_id = COALESCE(stripe_customer_id, $17),
+              last_failure_code = COALESCE($18, last_failure_code),
+              last_decline_code = COALESCE($19, last_decline_code),
+              last_advice_code = COALESCE($20, last_advice_code),
+              customer_guidance_key = COALESCE($21, customer_guidance_key),
+              payment_method_brand = COALESCE($22, payment_method_brand),
+              payment_method_last4 = COALESCE($23, payment_method_last4),
+              eligibility_state = $24,
+              suppression_code = COALESCE($25, suppression_code),
+              last_event_type = $26,
+              last_source_event_key = $27,
+              last_evidence_sha256 = $28,
+              last_observed_at = GREATEST(last_observed_at, $29::timestamptz),
+              shadow_due_at = CASE WHEN $30 THEN NULL ELSE COALESCE($31::timestamptz, shadow_due_at) END,
+              purchased_at = CASE WHEN $30 THEN COALESCE(purchased_at, $29::timestamptz) ELSE purchased_at END,
+              closed_at = CASE WHEN $30 THEN COALESCE(closed_at, $29::timestamptz) ELSE closed_at END,
               updated_at = now()
         WHERE id = $1
         RETURNING ${CASE_COLUMNS}`,
@@ -436,6 +579,15 @@ export async function recordPreparedCheckoutRecoveryWithClient(
       input.event.checkout_locale,
       input.event.return_url,
       input.event.product_name,
+      partyResolution.partyId,
+      partyResolution.evidenceTier,
+      input.event.stripe_customer_id,
+      input.event.failure_code,
+      input.event.decline_code,
+      input.event.advice_code,
+      input.event.customer_guidance_key,
+      input.event.payment_method_brand,
+      input.event.payment_method_last4,
       eligibility,
       forcedHold,
       input.event.event_type,
@@ -472,6 +624,14 @@ export async function recordPreparedCheckoutRecoveryWithClient(
         has_email: input.event.email_sha256 !== null,
         consent_state: consentState,
         recovered_from_present: input.event.recovered_from !== null,
+        party_linked: item.party_id !== null,
+        party_evidence_tier: item.party_evidence_tier,
+        failure_code: input.event.failure_code,
+        decline_code: input.event.decline_code,
+        advice_code: input.event.advice_code,
+        customer_guidance_key: input.event.customer_guidance_key,
+        payment_method_brand: input.event.payment_method_brand,
+        payment_method_last4_present: input.event.payment_method_last4 !== null,
       }),
     ],
   );
@@ -489,6 +649,31 @@ export async function recordPreparedCheckoutRecoveryWithClient(
     sourceEventKey: input.event.source_event_key,
     occurredAt: input.event.observed_at,
   });
+  const isFailureEvent =
+    input.event.event_type === 'payment.failed' ||
+    input.event.event_type === 'checkout.session_expired';
+  const isPurchaseEvent =
+    input.event.event_type === 'payment.succeeded' ||
+    input.event.event_type === 'checkout.session_completed';
+  if (!terminal && isFailureEvent) {
+    await ensureCheckoutRecoveryIncidentWithClient(client, item, {
+      kind:
+        input.event.event_type === 'payment.failed'
+          ? 'payment_failed'
+          : 'checkout_incomplete',
+      observedAt: input.event.observed_at,
+    });
+  } else if (
+    terminal &&
+    isPurchaseEvent &&
+    item.operator_incident_id !== null
+  ) {
+    await markCheckoutRecoveryIncidentPurchasedWithClient(
+      client,
+      Number(item.operator_incident_id),
+      input.event.observed_at,
+    );
+  }
   return {
     caseId,
     eventId: Number(eventRow.rows[0].id),
@@ -496,9 +681,273 @@ export async function recordPreparedCheckoutRecoveryWithClient(
     state: transition.state,
     duplicate: false,
     resultCode: transition.resultCode,
-    shouldNotify: transitionShouldNotify(current.state, transition.state),
+    shouldNotify: false,
     projection: projection(item),
   };
+}
+
+interface IncidentRow extends QueryResultRow {
+  id: string;
+  incident_uuid: string;
+  incident_key: string;
+  group_key: string;
+  subject_key: string;
+  party_id: string | null;
+  stripe_account: CheckoutRecoveryAccount;
+  incident_kind: 'payment_failed' | 'checkout_incomplete';
+  product_key: string;
+  product_name: string | null;
+  amount_cents: string | null;
+  currency: string | null;
+  episode_started_at: string;
+  episode_ends_at: string;
+  last_failure_at: string;
+  notify_due_at: string;
+  status: 'open' | 'notified' | 'closed';
+  version: number;
+  notified_version: number;
+  case_count: number;
+  payment_intent_count: number;
+  provider_failure_count: number;
+  customer_guidance_key: CheckoutFailureGuidanceKey | null;
+  payment_method_brand: CheckoutPaymentMethodBrand | null;
+  payment_method_last4: string | null;
+  reminder_state: CheckoutRecoveryOperatorIncident['reminderState'];
+  root_notified_at: string | null;
+  last_notified_at: string | null;
+  closed_at: string | null;
+  party_display_name?: string | null;
+  relationship_state?: string | null;
+}
+
+const INCIDENT_COLUMNS = `
+  id::text,incident_uuid::text,incident_key,group_key,subject_key,
+  party_id::text,stripe_account,incident_kind,product_key,product_name,
+  amount_cents::text,currency,episode_started_at::text,episode_ends_at::text,
+  last_failure_at::text,notify_due_at::text,status,version,notified_version,
+  case_count,payment_intent_count,provider_failure_count,
+  customer_guidance_key,payment_method_brand,payment_method_last4,
+  reminder_state,root_notified_at::text,last_notified_at::text,closed_at::text
+`;
+
+function incidentSubjectKey(row: CaseRow): string {
+  if (row.party_id !== null) return sha(`party:${row.party_id}`);
+  if (row.email_sha256 !== null) return sha(`email:${row.email_sha256}`);
+  return sha(`case:${row.case_uuid}`);
+}
+
+function incidentProductKey(row: CaseRow): string {
+  return (
+    row.product_slug ??
+    row.program_slug ??
+    row.product_name ??
+    'unknown_product'
+  );
+}
+
+async function ensureCheckoutRecoveryIncidentWithClient(
+  client: PoolClient,
+  row: CaseRow,
+  input: {
+    kind: 'payment_failed' | 'checkout_incomplete';
+    observedAt: string;
+  },
+): Promise<number> {
+  const subjectKey = incidentSubjectKey(row);
+  const productKey = incidentProductKey(row);
+  const groupKey = sha({
+    subject_key: subjectKey,
+    stripe_account: row.stripe_account,
+    product_key: productKey,
+    amount_cents: row.amount_cents,
+    currency: row.currency,
+  });
+  await client.query(
+    `SELECT pg_advisory_xact_lock(
+       hashtextextended('checkout-recovery-incident:' || $1,0)
+     )`,
+    [groupKey],
+  );
+  let incident: IncidentRow | undefined;
+  if (row.operator_incident_id !== null) {
+    const existing = await client.query<IncidentRow>(
+      `SELECT ${INCIDENT_COLUMNS}
+         FROM business_v2.checkout_recovery_operator_incidents
+        WHERE id=$1 FOR UPDATE`,
+      [row.operator_incident_id],
+    );
+    incident = existing.rows[0];
+    if (incident?.status === 'closed') return Number(incident.id);
+  } else {
+    const existing = await client.query<IncidentRow>(
+      `SELECT ${INCIDENT_COLUMNS}
+         FROM business_v2.checkout_recovery_operator_incidents
+        WHERE group_key=$1
+          AND status<>'closed'
+          AND $2::timestamptz>=episode_started_at
+          AND $2::timestamptz<episode_ends_at
+        ORDER BY episode_started_at DESC,id DESC
+        LIMIT 1 FOR UPDATE`,
+      [groupKey, row.started_at],
+    );
+    incident = existing.rows[0];
+  }
+  if (!incident) {
+    const episodeStartedAt = row.started_at;
+    const episodeEndsAt = new Date(
+      Date.parse(episodeStartedAt) + 30 * 60_000,
+    ).toISOString();
+    const notifyDueAt = new Date(
+      Math.min(
+        Date.parse(episodeEndsAt),
+        Date.parse(input.observedAt) + 5 * 60_000,
+      ),
+    ).toISOString();
+    const incidentKey = sha({
+      group_key: groupKey,
+      episode_started_at: episodeStartedAt,
+    });
+    const created = await client.query<IncidentRow>(
+      `INSERT INTO business_v2.checkout_recovery_operator_incidents
+         (incident_key,group_key,subject_key,party_id,stripe_account,
+          incident_kind,product_key,product_name,amount_cents,currency,
+          episode_started_at,episode_ends_at,last_failure_at,notify_due_at,
+          customer_guidance_key,payment_method_brand,payment_method_last4)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::timestamptz,
+               $12::timestamptz,$13::timestamptz,$14::timestamptz,$15,$16,$17)
+       ON CONFLICT (incident_key) DO UPDATE SET updated_at=now()
+       RETURNING ${INCIDENT_COLUMNS}`,
+      [
+        incidentKey,
+        groupKey,
+        subjectKey,
+        row.party_id,
+        row.stripe_account,
+        input.kind,
+        productKey,
+        row.product_name,
+        row.amount_cents,
+        row.currency,
+        episodeStartedAt,
+        episodeEndsAt,
+        input.observedAt,
+        notifyDueAt,
+        row.customer_guidance_key,
+        row.payment_method_brand,
+        row.payment_method_last4,
+      ],
+    );
+    incident = created.rows[0];
+  } else {
+    const updated = await client.query<IncidentRow>(
+      `UPDATE business_v2.checkout_recovery_operator_incidents
+          SET incident_kind=CASE WHEN $2='payment_failed'
+                                 THEN 'payment_failed' ELSE incident_kind END,
+              party_id=COALESCE(party_id,$3),
+              product_name=COALESCE(product_name,$4),
+              last_failure_at=GREATEST(last_failure_at,$5::timestamptz),
+              notify_due_at=LEAST(
+                episode_ends_at,$5::timestamptz+interval '5 minutes'
+              ),
+              customer_guidance_key=COALESCE($6,customer_guidance_key),
+              payment_method_brand=COALESCE($7,payment_method_brand),
+              payment_method_last4=COALESCE($8,payment_method_last4),
+              version=version+1,updated_at=now()
+        WHERE id=$1
+        RETURNING ${INCIDENT_COLUMNS}`,
+      [
+        incident.id,
+        input.kind,
+        row.party_id,
+        row.product_name,
+        input.observedAt,
+        row.customer_guidance_key,
+        row.payment_method_brand,
+        row.payment_method_last4,
+      ],
+    );
+    incident = updated.rows[0];
+  }
+  if (!incident) throw new Error('checkout_recovery_incident_create_failed');
+  await client.query(
+    `INSERT INTO business_v2.checkout_recovery_operator_incident_cases
+       (incident_id,case_id) VALUES ($1,$2)
+     ON CONFLICT (case_id) DO NOTHING`,
+    [incident.id, row.id],
+  );
+  const linked = await client.query<{ incident_id: string }>(
+    `SELECT incident_id::text
+       FROM business_v2.checkout_recovery_operator_incident_cases
+      WHERE case_id=$1`,
+    [row.id],
+  );
+  if (!linked.rows[0] || linked.rows[0].incident_id !== incident.id) {
+    throw new Error('checkout_recovery_case_incident_conflict');
+  }
+  await client.query(
+    `UPDATE business_v2.checkout_recovery_cases
+        SET operator_incident_id=$2,updated_at=now()
+      WHERE id=$1 AND (operator_incident_id IS NULL OR operator_incident_id=$2)`,
+    [row.id, incident.id],
+  );
+  await client.query(
+    `UPDATE business_v2.checkout_recovery_operator_incidents i
+        SET case_count=(
+              SELECT count(*) FROM business_v2.checkout_recovery_operator_incident_cases c
+               WHERE c.incident_id=i.id
+            ),
+            payment_intent_count=(
+              SELECT count(DISTINCT a.alias_id)
+                FROM business_v2.checkout_recovery_operator_incident_cases c
+                JOIN business_v2.checkout_recovery_aliases a ON a.case_id=c.case_id
+               WHERE c.incident_id=i.id AND a.alias_kind='payment_intent'
+            ),
+            provider_failure_count=(
+              SELECT count(*)
+                FROM business_v2.checkout_recovery_operator_incident_cases c
+                JOIN business_v2.checkout_recovery_events e ON e.case_id=c.case_id
+               WHERE c.incident_id=i.id AND e.event_type='payment.failed'
+            ),
+            reminder_state=CASE
+              WHEN EXISTS (
+                SELECT 1 FROM business_v2.checkout_recovery_operator_incident_cases c
+                JOIN business_v2.checkout_recovery_send_intents s ON s.case_id=c.case_id
+                WHERE c.incident_id=i.id AND s.status='accepted'
+              ) THEN 'provider_accepted'
+              WHEN EXISTS (
+                SELECT 1 FROM business_v2.checkout_recovery_operator_incident_cases c
+                JOIN business_v2.checkout_recovery_cases rc ON rc.id=c.case_id
+                WHERE c.incident_id=i.id AND rc.eligibility_state='eligible'
+              ) THEN 'eligible_pending'
+              WHEN EXISTS (
+                SELECT 1 FROM business_v2.checkout_recovery_operator_incident_cases c
+                JOIN business_v2.checkout_recovery_cases rc ON rc.id=c.case_id
+                WHERE c.incident_id=i.id AND rc.consent_state='denied'
+              ) THEN 'not_sent_opted_out'
+              ELSE 'not_sent_consent_missing'
+            END,
+            updated_at=now()
+      WHERE i.id=$1`,
+    [incident.id],
+  );
+  return Number(incident.id);
+}
+
+async function markCheckoutRecoveryIncidentPurchasedWithClient(
+  client: PoolClient,
+  incidentId: number,
+  occurredAt: string,
+): Promise<void> {
+  await client.query(
+    `UPDATE business_v2.checkout_recovery_operator_incidents
+        SET status='closed',version=version+1,
+            closed_at=COALESCE(closed_at,$2::timestamptz),
+            notify_due_at=CASE WHEN root_notified_at IS NULL
+                               THEN notify_due_at ELSE $2::timestamptz END,
+            updated_at=now()
+      WHERE id=$1`,
+    [incidentId, occurredAt],
+  );
 }
 
 export async function sweepCheckoutRecoveryShadow(
@@ -626,6 +1075,13 @@ export async function sweepCheckoutRecoveryShadowWithClient(
         now,
       );
     }
+    const incidentCase = updated.rows[0];
+    if (incidentCase.operator_incident_id === null) {
+      await ensureCheckoutRecoveryIncidentWithClient(client, incidentCase, {
+        kind: 'checkout_incomplete',
+        observedAt: now.toISOString(),
+      });
+    }
     output.push(projection(updated.rows[0], now.getTime()));
   }
   return output;
@@ -696,13 +1152,199 @@ export async function checkoutRecoveryHealth(): Promise<CheckoutRecoveryHealth> 
   });
 }
 
-export function formatCheckoutRecoveryProjection(
-  item: CheckoutRecoveryProjection,
+export async function listDueCheckoutRecoveryOperatorIncidents(
+  input: { limit?: number; now?: Date } = {},
+): Promise<CheckoutRecoveryOperatorIncident[]> {
+  return withAgentContext(ACTOR, (client) =>
+    listDueCheckoutRecoveryOperatorIncidentsWithClient(client, input),
+  );
+}
+
+export async function listDueCheckoutRecoveryOperatorIncidentsWithClient(
+  client: PoolClient,
+  input: { limit?: number; now?: Date } = {},
+): Promise<CheckoutRecoveryOperatorIncident[]> {
+  const limit = Math.max(1, Math.min(input.limit ?? 25, 100));
+  const now = input.now ?? new Date();
+  const rows = await client.query<IncidentRow>(
+    `SELECT ${INCIDENT_COLUMNS},p.display_name AS party_display_name,
+              relationship.value->>'relationship_state' AS relationship_state
+         FROM business_v2.checkout_recovery_operator_incidents i
+         LEFT JOIN business_v2.parties p ON p.id=i.party_id
+         LEFT JOIN business_v2.party_context_projections relationship
+           ON relationship.party_id=i.party_id
+          AND relationship.section='relationship'
+          AND relationship.projection_key='relationship.client_status.v1'
+        WHERE i.notify_due_at<=$1::timestamptz
+          AND (
+            (i.notified_version=0 AND i.status<>'closed') OR
+            (
+              i.notified_version>0 AND i.version>i.notified_version AND
+              (
+                i.status<>'closed' OR
+                (
+                  i.status='closed' AND
+                  i.closed_at IS NOT NULL AND
+                  i.closed_at>i.last_notified_at
+                )
+              )
+            )
+          )
+        ORDER BY i.notify_due_at,i.id
+        LIMIT $2`,
+    [now.toISOString(), limit],
+  );
+  return rows.rows.map((row) => ({
+    incidentId: Number(row.id),
+    incidentUuid: row.incident_uuid,
+    version: Number(row.version),
+    isRoot: Number(row.notified_version) === 0,
+    threadKey: `checkout:failure:${row.incident_uuid}`,
+    kind: row.incident_kind,
+    outcome: row.status === 'closed' ? 'purchased' : 'open',
+    partyId: row.party_id === null ? null : Number(row.party_id),
+    partyDisplayName: row.party_display_name ?? null,
+    relationshipState: row.relationship_state ?? null,
+    productName: row.product_name,
+    productKey: row.product_key,
+    amountCents: row.amount_cents === null ? null : Number(row.amount_cents),
+    currency: row.currency,
+    guidanceKey: row.customer_guidance_key,
+    paymentMethodBrand: row.payment_method_brand,
+    paymentMethodLast4: row.payment_method_last4,
+    caseCount: Number(row.case_count),
+    paymentIntentCount: Number(row.payment_intent_count),
+    providerFailureCount: Number(row.provider_failure_count),
+    episodeStartedAt: row.episode_started_at,
+    lastFailureAt: row.last_failure_at,
+    reminderState: row.reminder_state,
+  }));
+}
+
+export async function markCheckoutRecoveryOperatorIncidentNotified(input: {
+  incidentId: number;
+  expectedVersion: number;
+  occurredAt?: string;
+}): Promise<boolean> {
+  return withAgentContext(ACTOR, async (client) => {
+    const occurredAt = input.occurredAt ?? new Date().toISOString();
+    const updated = await client.query(
+      `UPDATE business_v2.checkout_recovery_operator_incidents
+          SET status=CASE WHEN status='open' THEN 'notified' ELSE status END,
+              notified_version=$2,
+              root_notified_at=COALESCE(root_notified_at,$3::timestamptz),
+              last_notified_at=$3::timestamptz,updated_at=now()
+        WHERE id=$1 AND version=$2 AND notified_version<$2`,
+      [input.incidentId, input.expectedVersion, occurredAt],
+    );
+    if (updated.rowCount !== 1) return false;
+    const cases = await client.query<{
+      id: string;
+      version: number;
+    }>(
+      `UPDATE business_v2.checkout_recovery_cases rc
+          SET shadow_notified_at=COALESCE(shadow_notified_at,$2::timestamptz),
+              updated_at=now()
+         FROM business_v2.checkout_recovery_operator_incident_cases membership
+        WHERE membership.incident_id=$1 AND membership.case_id=rc.id
+        RETURNING rc.id::text,rc.version`,
+      [input.incidentId, occurredAt],
+    );
+    for (const item of cases.rows) {
+      await insertReceipt(client, {
+        caseId: Number(item.id),
+        caseVersion: Number(item.version),
+        type: 'shadow_projection',
+        outcome: 'verified',
+        resultCode: 'operator_incident_posted',
+        evidenceSha256: sha({
+          incident_id: input.incidentId,
+          incident_version: input.expectedVersion,
+          occurred_at: occurredAt,
+        }),
+        sourceEventKey: `checkout:incident:${input.incidentId}:v${input.expectedVersion}`,
+        occurredAt,
+      });
+    }
+    return true;
+  });
+}
+
+function guidanceText(key: CheckoutFailureGuidanceKey | null): string {
+  switch (key) {
+    case 'verify_card_details':
+      return 'Ask the customer to check their card and billing details, then try again.';
+    case 'authenticate_payment':
+      return 'Ask the customer to retry and complete the bank verification step.';
+    case 'use_different_method':
+      return 'Ask the customer to use another card or payment method.';
+    case 'contact_issuer_or_change_method':
+      return 'The bank gave no specific reason; ask the customer to contact the issuer or use another payment method.';
+    case 'retry_later_or_change_method':
+      return 'Ask the customer to retry once later, then use another method or contact the issuer.';
+    default:
+      return 'Ask the customer to contact the card issuer or use another payment method.';
+  }
+}
+
+function reminderText(
+  state: CheckoutRecoveryOperatorIncident['reminderState'],
 ): string {
-  const product = item.productSlug ?? item.programSlug ?? 'unknown product';
-  const value =
+  switch (state) {
+    case 'provider_accepted':
+      return 'provider accepted the consented reminder';
+    case 'eligible_pending':
+      return 'consented reminder is eligible/pending';
+    case 'not_sent_opted_out':
+      return 'not sent — customer opted out';
+    case 'suppressed':
+      return 'not sent — suppressed by current purchase/policy evidence';
+    case 'not_applicable':
+      return 'not applicable';
+    default:
+      return 'not sent — checkout reminder consent was not received';
+  }
+}
+
+export function formatCheckoutRecoveryOperatorIncident(
+  item: CheckoutRecoveryOperatorIncident,
+): string {
+  if (item.outcome === 'purchased') {
+    return `Checkout completed after the failed attempt.${
+      item.productName || item.productKey
+        ? ` Product: ${item.productName ?? item.productKey}.`
+        : ''
+    } No further recovery action is needed.`;
+  }
+  const product = item.productName ?? item.productKey;
+  const amount =
     item.amountCents === null || item.currency === null
-      ? 'amount unknown'
+      ? 'amount unavailable'
       : `${item.currency.toUpperCase()} ${(item.amountCents / 100).toFixed(2)}`;
-  return `[checkout shadow] ${item.stripeAccount} — ${product} — ${item.state}; ${value}; consent ${item.consentState}/${item.eligibilityState}; case ${item.caseId}; no customer message sent`;
+  const customer =
+    item.partyId === null
+      ? 'identity not resolved'
+      : `${item.partyDisplayName ?? 'Known contact'} — Party ${item.partyId}${
+          item.relationshipState
+            ? ` (${item.relationshipState.replace(/_/g, ' ')})`
+            : ''
+        }`;
+  const method =
+    item.paymentMethodBrand && item.paymentMethodLast4
+      ? `${item.paymentMethodBrand.replace('_', ' ')} ending ${item.paymentMethodLast4}`
+      : 'payment method unavailable';
+  const minutes = Math.max(
+    0,
+    Math.round(
+      (Date.parse(item.lastFailureAt) - Date.parse(item.episodeStartedAt)) /
+        60_000,
+    ),
+  );
+  return [
+    `Payment unsuccessful: ${product} — ${amount}`,
+    `Customer: ${customer}`,
+    `Stripe: ${method}; ${guidanceText(item.guidanceKey)}`,
+    `Attempts: ${item.paymentIntentCount} payment intent${item.paymentIntentCount === 1 ? '' : 's'} / ${item.providerFailureCount} provider failure${item.providerFailureCount === 1 ? '' : 's'} over ${minutes} minute${minutes === 1 ? '' : 's'}.`,
+    `Reminder: ${reminderText(item.reminderState)}.`,
+  ].join('\n');
 }

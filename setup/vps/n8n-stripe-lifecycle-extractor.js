@@ -106,6 +106,50 @@ const latestCharge =
   /^ch_[A-Za-z0-9_]{10,200}$/.test(inner.latest_charge)
     ? inner.latest_charge
     : null;
+const customerId =
+  typeof inner.customer === 'string' &&
+  /^cus_[A-Za-z0-9_]{10,200}$/.test(inner.customer)
+    ? inner.customer
+    : null;
+const lastPaymentError =
+  inner.last_payment_error && typeof inner.last_payment_error === 'object'
+    ? inner.last_payment_error
+    : {};
+const paymentMethod =
+  lastPaymentError.payment_method &&
+  typeof lastPaymentError.payment_method === 'object'
+    ? lastPaymentError.payment_method
+    : {};
+const card =
+  paymentMethod.card && typeof paymentMethod.card === 'object'
+    ? paymentMethod.card
+    : {};
+const safeCode = (value) =>
+  typeof value === 'string' && /^[a-z][a-z0-9_]{0,99}$/.test(value)
+    ? value
+    : null;
+const cardBrand =
+  typeof card.brand === 'string' &&
+  [
+    'amex',
+    'cartes_bancaires',
+    'diners',
+    'discover',
+    'eftpos_au',
+    'interac',
+    'jcb',
+    'link',
+    'mastercard',
+    'unionpay',
+    'visa',
+    'unknown',
+  ].includes(card.brand)
+    ? card.brand
+    : null;
+const cardLast4 =
+  typeof card.last4 === 'string' && /^[0-9]{4}$/.test(card.last4)
+    ? card.last4
+    : null;
 
 return [
   {
@@ -118,6 +162,7 @@ return [
       event_id: eventId,
       event_created: eventCreated,
       account: ACCOUNT,
+      customer_id: customerId,
       email: email || null,
       program_slug:
         typeof metadata.program === 'string' ? metadata.program : null,
@@ -145,6 +190,11 @@ return [
           : null,
       product_name:
         typeof inner.description === 'string' ? inner.description : null,
+      failure_code: safeCode(lastPaymentError.code),
+      decline_code: safeCode(lastPaymentError.decline_code),
+      advice_code: safeCode(lastPaymentError.advice_code),
+      payment_method_brand: cardBrand,
+      payment_method_last4: cardLast4,
       recovered_from: recoveredFrom,
     },
   },
