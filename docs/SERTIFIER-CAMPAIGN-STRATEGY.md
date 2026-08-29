@@ -1,7 +1,7 @@
 # Sertifier canonical campaign strategy
 
-Status: implementation authority for `NC-20260828-002`  
-Owner decision: one reusable, versioned campaign per certificate preset  
+Status: implementation authority for `NC-20260828-002`
+Owner decision: one reusable, versioned campaign per certificate preset
 Provider guidance: [Sertifier API quickstart](https://help.sertifier.com/sertifier-api-quickstart), [campaign recipient behavior](https://help.sertifier.com/how-do-i-add-recipients)
 
 ## 1. Problem and evidence

@@ -16,10 +16,10 @@ describe('Certifier canonical campaign prompt contract', () => {
   it('treats campaigns as preset-owned versioned containers', () => {
     expect(prompt).toContain('| `icf-competencies` |');
     expect(prompt).toContain('versioned canonical Sertifier campaign');
+    expect(prompt).toContain('Individual issuance NEVER creates a campaign');
     expect(prompt).toContain(
-      'Individual issuance NEVER creates a campaign',
+      'Gru never invents, creates, selects, or passes a campaign ID',
     );
-    expect(prompt).toContain('Gru never invents, creates, selects, or passes a campaign ID');
     expect(prompt).not.toContain('Each issuance creates its own campaign');
     expect(steps).toContain('Pending scripts never contain');
     expect(steps).toContain('`--campaign-id`');
@@ -30,9 +30,7 @@ describe('Certifier canonical campaign prompt contract', () => {
       'test the exact Explicit campaign send grammar before the generic Send/Cancel bucket',
     );
     expect(prompt).toContain('prepare-send-command.sh --text');
-    expect(prompt).toContain(
-      'send ai for coaches to person@example.com',
-    );
+    expect(prompt).toContain('send ai for coaches to person@example.com');
     expect(steps).toContain('runs before generic bare-`send` handling');
     expect(steps).toContain('attributes_required');
   });
@@ -48,12 +46,8 @@ describe('Certifier canonical campaign prompt contract', () => {
   });
 
   it('reports duplicate and delivery outcomes truthfully', () => {
-    expect(prompt).toContain(
-      '`already_issued` means no add/no resend',
-    );
-    expect(prompt).toContain(
-      '`issued` also requires `emailConfirmed:true`',
-    );
+    expect(prompt).toContain('`already_issued` means no add/no resend');
+    expect(prompt).toContain('`issued` also requires `emailConfirmed:true`');
     expect(steps).toContain('duplicate-safe no-op');
     expect(steps).toContain(
       'Campaign ID, API acceptance, or `emailRequested:true` alone is not',
