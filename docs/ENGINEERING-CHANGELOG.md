@@ -12,12 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-29T20:37:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_deploy; implementation, correction review, and local
-  verification are complete, while commit, release, deployment, and
-  replacement-draft evidence remain pending
-- Commit/PR: reviewed implementation `37005d37` on
-  `codex/sales-intake-voice-20260829`, based directly on exact live release
-  `b7004bb8f4af3ad5f57e17543f378abf35f20b6f`; deployment-record commit pending
+- State: complete; exact release and prompt bytes are live-verified, and the
+  requested replacement approval card is posted without approval or send
+- Commit/PR: reviewed implementation `37005d37`; exact release/record commit
+  `d834cb2fad0b118007c8a1a9ed09d9dee835f92f`; pushed branch
+  `codex/sales-intake-voice-20260829`
 - Change class: C3 because the policy changes customer-facing Sales drafts and
   the task will replace one internal approval card; no customer send is
   authorized
@@ -48,18 +47,35 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   and diff check pass. Full root is 3,384 pass/32 skip with two reproducible
   unrelated baseline failures: the CNPC wrapper-source assertion and a Trafft
   projection fixture whose 2026-08-25 timestamp is stale on 2026-08-29. Neither
-  failing file is changed by this task. Live model/draft evidence remains
-  pending.
-- Deployment/migration: not deployed; no schema or migration; the original card
-  is pending approval with no Gmail send receipt.
-- Rollback/recovery: restore the seven Sales prompt/test artifacts from
-  `b7004bb8`; retain the original unapproved card as incident evidence and never
-  approve/send it after the replacement is posted.
+  failing file is changed by this task. The immutable release gate passes
+  30 files/748 tests and the independent runner passes 8 files/45 tests. Local
+  and Mini archive/runtime verification prove commit `d834cb2f`, source tree
+  `d3e9bbe7`, artifact SHA-256 `022cc7ce` over 1,028 files, archive SHA-256
+  `dd86343c`, and exact Node 22.23.2.
+- Deployment/migration: no schema or migration. The Mini activated exact release
+  `d834cb2f` from `b7004bb8` through the three-pointer activator. Health reports
+  the exact commit/code root, verified release mode, one listener at PID 63003,
+  connected Gmail/Slack, no waiting queue, and zero nonterminal sends. The five
+  operational Sales prompt files hash-match the release-owned copies. Lead
+  #1276's same-thread replacement card posted at 2026-08-29T21:00:24Z as
+  `ORIENT/MEDIUM/PARTIAL` with the exact calibrated copy, was host-accepted, and
+  has zero `pending_sends` rows, Mailman handoffs, approvals, or Gmail receipts.
+  The customer email remains unsent by design.
+- Rollback/recovery: activator rollback plist is
+  `com.nanoclaw.plist.rollback-b7004bb8f4af-2026-08-29T20-57-10-871Z`; prior
+  operational prompts are preserved under
+  `~/.local/share/nanoclaw-group-prompt-backups/NC-20260829-002-before-d834cb2f`.
+  Restore both before returning to `b7004bb8`. The original unapproved card is
+  retained as incident evidence and must not be approved after its replacement.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, this changelog,
   and the four bounded Claude review artifacts.
-- Follow-ups: after release, verify the replacement card is
-  `ORIENT/MEDIUM/PARTIAL`, free of mirrored/prevalence/outcome language, and
-  pending approval only; natural response quality remains an outcome gate.
+- Follow-ups: no required task remains. Observe later natural narrative
+  inquiries before making a broader model-quality claim; the Lead #1276 customer
+  send remains subject to the normal separate operator approval gate.
+
+- 2026-08-29T21:01:00Z deployment addendum: release activation, live prompt
+  hash comparison, health/listener/channel verification, and the same-thread
+  replacement card all passed. No customer email or new lead/thread was created.
 
 ### NC-20260829-001 — Repair checkout failure context and recovery guidance
 
