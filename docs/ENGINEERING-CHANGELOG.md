@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-29T15:27:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; root cause/design, local implementation, and independent
-  implementation review complete; commit, release, deployment, and natural
-  outcome proof remain
+- State: deployed_unverified; root cause/design, independent implementation
+  review, guarded release, migration, and structural live verification are
+  complete; the next natural checkout remains the outcome proof
 - Change class: C4 because the existing prospective recovery flow can send
   consented customer reminders; this correction sends nothing during validation
 - Affected systems: Tandemweb checkout PHP/JS and retry queue; active n8n
@@ -58,17 +58,47 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Toolbox n8n passed 17 argument contracts plus the exact-node patch fixture;
   live patch dry-runs preserve credential-binding hashes and list only the
   intended nodes/paths. No production/provider/customer mutation occurred.
-- Deployment/migration: not yet applied. Exact live NanoClaw remains `2773def5`;
-  website remains `bed21735`; n8n workflows remain active and unmodified; the
-  historical queue remains live but still blocked by the broken HMAC path.
+- Commit/release: NanoClaw `702dcd59b8a7` and Tandemweb `9071c10a08e1`
+  are pushed; local shared-toolbox commit `ab155bd` has no configured remote.
+  The NanoClaw archive SHA-256 is
+  `0626a0cde7236b43f60d6d7d1341a585fcc1438e0bbf6bfd15e7d42e748dddfc`;
+  fresh local/Mini verification proves source tree `c929c54a`, artifact
+  `3f6e7459`, 1,020 compiled files, and Node 22.23.2.
+- Deployment/migration: protected queue backup
+  `NC-20260829-001-20260829T164700Z` retained 80,671 bytes; WordPress held all
+  99 historical facts (57 exhausted) under
+  `tandem_checkout_recovery_shadow_held_20260829_164721`, cleared one retry
+  cron, set source epoch `1788022041`, and read back zero active work before
+  the n8n correction. Tandemweb deployed exact `9071c10a`; the public checkout
+  JS hash is `570e2535` and contains the safe issuer guidance without a raw
+  `result.error.message` render. Mini backup
+  `NC-20260829-001-20260829T164800Z` protects SQLite, plist, health, release
+  pointer, and the complete `business_v2` custom dump. Migration 140 applied
+  empty/admin-only with ten case columns, two incident tables, and zero
+  non-admin grants. After a natural 20-minute zero-work drain, exact release
+  `702dcd59` activated with rollback plist
+  `com.nanoclaw.plist.rollback-2773def5be14-2026-08-29T17-06-14-077Z`.
+  Guarded n8n patches retained full backups
+  `20260829T170632Z-stripe-payment-node-patch` and
+  `20260829T170655Z-checkout-recovery-website-shadow-node-patch`; both active
+  workflow projections equal the reviewed candidate hashes and preserve their
+  credential-binding hashes.
+- Live verification: exact release/code root/Node and one listener pass;
+  Gmail/Slack are connected with zero active/waiting/outgoing work; n8n health
+  is OK; the website queue is zero with retry cron absent and held count 99;
+  database readback remains 31 cases, zero incidents/memberships, zero recent
+  case updates, and zero recent send receipts. Party Context query remains off
+  with zero grants. No historical replay, customer communication, synthetic
+  Stripe failure, payment action, or identity merge occurred.
 - Rollback/recovery: dirty primaries untouched; implementation uses three
   isolated branches. Deployment must protect queue/workflow/database/service
   backups and quarantine historical work before n8n repair.
 - Documentation: `docs/CHECKOUT-FAILURE-RECOVERY.md`, updated checkout control,
   project map, schema reference, active work, design review artifacts, and this
   record.
-- Follow-ups: complete implementation review/full gates, commit/push, guarded
-  deployment, structural canaries, and next-natural-checkout outcome proof.
+- Follow-ups: observe the next natural website/Stripe checkout lifecycle and
+  close only after one correctly grouped, human-readable operator incident and
+  the corresponding safe customer-facing result are evidenced without replay.
 
 ### NC-20260827-004 — Restore and harden the Plutio reaper release boundary
 
