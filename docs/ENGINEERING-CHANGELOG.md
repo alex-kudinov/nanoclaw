@@ -14,8 +14,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Owner/client: Codex with independent Claude Sonnet/high review
 - State: complete; provider components created/read back, production
   prompt/presets deployed, and production dry runs live-verified
-- Commit/release: NanoClaw branch commit pending this entry; toolbox local-only
-  clean commit `f01d183` (repository has no Git remote); Practitioner authority
+- Commit/release: NanoClaw `155b58da` pushed on
+  `codex/sertifier-practitioner-presets-20260828`; toolbox local-only clean
+  commit `f01d183` (repository has no Git remote); Practitioner authority
   receipt `32fbb49` pushed on
   `codex/sertifier-practitioner-presets-20260828`. Host daemon release remains
   exact healthy `2773def5`; no host build or restart was required.
