@@ -12,11 +12,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-29T01:39:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_deploy; provider campaigns live/read back, implementation
-  reviewed and locally verified, commits and production overlay pending
-- Commit/release: NanoClaw branch
-  `codex/sertifier-canonical-campaigns-20260828` from `19a9a405`; toolbox branch
-  of the same name from `f01d183`; no new daemon release yet
+- State: complete; provider campaigns, reviewed implementation, production
+  overlay, and no-send live verification complete
+- Commit/release: NanoClaw `aa41a134` pushed on
+  `codex/sertifier-canonical-campaigns-20260828`; toolbox local-only commit
+  `44c6617` (repository has no Git remote). Host daemon remains exact verified
+  release `2773def5`; mounted prompt/tool/config changes required no rebuild or
+  restart.
 - Change class: C3 because the exact command authorizes a customer-facing
   credential and email, although implementation and deployment verification
   issue no real certificate
@@ -51,9 +53,17 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   skipped with the same two unrelated baseline failures: CNPC wrapper text
   drift and the date-stale Trafft fixture.
 - Deployment/external state: only ten empty campaign containers were created.
-  No recipient, credential, certificate email, Slack canary, Heartbeat write,
-  historical campaign mutation, or daemon restart occurred. Production prompt,
-  toolbox, and runtime verification remain pending.
+  Task-owned prompt/procedure/tool/config files synced byte-for-byte to the
+  Mini. The operational registry preserved the independent `update-credential`
+  entry while adding and validating all campaign tools. Production focused
+  suites pass; live readback verifies 10/10 campaign keys; the exact AI command
+  parses immediate; an unknown identity fails closed; and the `.invalid` AI
+  dry run resolves canonical campaign
+  `08df056a-6919-4710-89aa-148220d3990d` with `willSend:true`. Exact release
+  `2773def5` remains verified on Node 22.23.2 with Slack/Gmail connected and no
+  waiting groups; two unrelated natural Mailman containers were active at the
+  health sample. No recipient, credential, certificate email, Slack canary,
+  Heartbeat write, historical campaign mutation, or daemon restart occurred.
 - Rollback/recovery: remove or disable canonical campaign configuration to stop
   new issue attempts; keep empty campaigns for audit. Do not delete historical
   campaigns or retry an uncertain issue automatically.
@@ -61,10 +71,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `groups/certifier/CLAUDE.md`, `groups/certifier/EXECUTION-STEPS.md`,
   `groups/certifier/workflows/`, `docs/PROJECT-MAP.md`, active work, and this
   entry.
-- Follow-up: commit both repositories, overlay only task-owned changes into the
-  preserved dirty operational roots, sync through the established Mini path,
-  and live-verify hashes, registry, campaign readback, command preparation,
-  `.invalid` dry run, and service health without issuing a real credential.
+- Follow-up: none for this implementation. The first real command is a natural
+  business outcome and will create/send a credential only when the owner names
+  an actual recipient with the exact grammar.
 
 ### NC-20260828-001 — Register two Practitioner Series Sertifier packages
 
