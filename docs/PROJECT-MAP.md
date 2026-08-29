@@ -1054,7 +1054,7 @@ last active around 2026-07-06 and is not asserted to be current production.
 | `sales`                                                   | approval-gated sales drafts, active-client support drafts, and pipeline follow-up | assigned Gmail thread/search reads only; no Gmail send/reply; support drafts do not manufacture pipeline entries                                    |
 | `booking`                                                 | Trafft booking events and interaction logging                                 | host/business mounts                                                                                                                                    |
 | `contador`                                                | Stripe, payment Sheets, PostgreSQL, vendor invoices                           | exact host-assigned invoice-message reads; Haiku locally                                                                                                |
-| `certifier`                                               | pending certification workflow and Sertifier actions                          | explicit approval before consequential issue/send                                                                                                       |
+| `certifier`                                               | pending certification workflow and Sertifier actions                          | exact campaign-send grammar can authorize one same-turn issue; ordinary and attribute-bearing flows retain explicit review before consequential issue/send |
 | `courses`                                                 | session recap preparation and distribution                                    | current raw SMTP path bypasses Gmail controls and is scheduled for retirement                                                                           |
 | `grader`                                                  | rubric/data-driven MCS grading and durable results                            | Sonnet; one thread/container per submission; calibration holds                                                                                          |
 | `procurement`                                             | CaleProcure/email review control plane plus legacy Bonfire/proposal lifecycle | scheduled intake uses host-owned task/source-run identity; review and commercial actions remain separately gated; Bonfire CDP remains isolate-or-retire |
@@ -1103,6 +1103,30 @@ Both presets record Practitioner catalog revision 2 and its exact SHA-256.
 Provider Details and template titles/bodies were read back, production files
 hash-match the reviewed sources, and production dry runs resolve the exact
 component IDs without creating a campaign, recipient, credential, or email.
+
+### Canonical Sertifier campaigns (`NC-20260828-002`)
+
+Each of the ten configured certificate presets owns one versioned canonical
+Sertifier campaign. The stored campaign ID is configuration, while the preset's
+design, Detail, badge, email template, sender, subject, privacy, and allowed
+status form a required live fingerprint. Recipient issuance validates that
+fingerprint before duplicate search and uses `Campaign/AddCredentials`; it
+never creates a campaign. Historical recipient-named campaigns remain audit
+history and are neither migrated nor reused.
+
+The exact, single-recipient grammar `send <registered alias> to <email>` runs
+before generic bare-send handling. Only attribute-free presets can authorize a
+same-turn issue, and only after one nonblank, case-insensitive exact Heartbeat
+email match supplies the recipient name. Missing, multiple, mismatched, or
+blank identity results stop. Attribute-bearing presets retain the normal
+collection/review path. Duplicate issuance is a no-add/no-resend result;
+uncertain provider reconciliation is held durably and never auto-retried.
+
+The ten empty campaigns were created and their complete fingerprints read back
+without adding a recipient or sending email. The campaign registry and command
+implementation are independently reviewed and locally verified; production
+deployment state is recorded in `docs/ACTIVE-WORK.md` and the engineering
+changelog rather than inferred from these sources.
 The existing per-recipient search, pending-script, `[CERTIFICATE REVIEW]`, and
 separate send approval remain the issuance boundary. Adding a design alone is
 not registration; every future course still needs a catalog-bound Detail,

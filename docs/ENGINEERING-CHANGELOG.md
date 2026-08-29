@@ -8,6 +8,64 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260828-002 — Canonical Sertifier campaign issuance
+
+- Date: 2026-08-29T01:39:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_deploy; provider campaigns live/read back, implementation
+  reviewed and locally verified, commits and production overlay pending
+- Commit/release: NanoClaw branch
+  `codex/sertifier-canonical-campaigns-20260828` from `19a9a405`; toolbox branch
+  of the same name from `f01d183`; no new daemon release yet
+- Change class: C3 because the exact command authorizes a customer-facing
+  credential and email, although implementation and deployment verification
+  issue no real certificate
+- Outcome: replaced the one-recipient/one-campaign operating model with one
+  canonical versioned campaign per configured preset. The exact command
+  `send ai for coaches to person@example.com` can resolve one exact Heartbeat
+  member and add/send that recipient through the AI campaign in the same turn.
+- Provider state: created ten empty canonical campaigns and read back every
+  design, Detail, badge, email template, sender, subject, privacy, and status
+  field. Existing 74 MCS credentials and recipient-named campaigns were not
+  edited, migrated, deleted, or resent. Exact IDs and fingerprints are recorded
+  in `shared/sertifier/lib/presets.json` and
+  `docs/SERTIFIER-CAMPAIGN-STRATEGY.md`.
+- Implementation: preset-owned campaign registry and exact aliases; fail-closed
+  live campaign validation; `Campaign/AddCredentials` issuance with duplicate
+  no-resend and uncertain-reconciliation holds; exact anchored command parser;
+  deterministic Heartbeat email/name resolver; combined authorization
+  preparation; and read-only campaign verification. Gru's tracked prompt and
+  execution procedures put this grammar before generic bare send, create the
+  durable pending script before provider write, and retain ordinary review for
+  attribute-bearing or incomplete requests.
+- Review: strategy R1 found eight material gaps, all corrected and closed by
+  R2. Final implementation R3 verified all eleven safety invariants and found
+  one ordinary-flow completeness gap: the `icf-competencies` preset was absent
+  from the prompt mapping table. That row and a regression assertion were added;
+  no unresolved safety or implementation finding remains.
+- Verification: live read-only campaign verifier 10/10; mixed-case exact
+  Heartbeat resolution; `.invalid` canonical AI dry run with no provider call;
+  toolbox syntax, canonical/component suites, registry validation, and full
+  65/65 framework suite; NanoClaw prompt contract 4/4, typecheck, continuity,
+  capability check, and diff checks. Full root suite is 3,367 passing/31
+  skipped with the same two unrelated baseline failures: CNPC wrapper text
+  drift and the date-stale Trafft fixture.
+- Deployment/external state: only ten empty campaign containers were created.
+  No recipient, credential, certificate email, Slack canary, Heartbeat write,
+  historical campaign mutation, or daemon restart occurred. Production prompt,
+  toolbox, and runtime verification remain pending.
+- Rollback/recovery: remove or disable canonical campaign configuration to stop
+  new issue attempts; keep empty campaigns for audit. Do not delete historical
+  campaigns or retry an uncertain issue automatically.
+- Documentation: `docs/SERTIFIER-CAMPAIGN-STRATEGY.md`,
+  `groups/certifier/CLAUDE.md`, `groups/certifier/EXECUTION-STEPS.md`,
+  `groups/certifier/workflows/`, `docs/PROJECT-MAP.md`, active work, and this
+  entry.
+- Follow-up: commit both repositories, overlay only task-owned changes into the
+  preserved dirty operational roots, sync through the established Mini path,
+  and live-verify hashes, registry, campaign readback, command preparation,
+  `.invalid` dry run, and service health without issuing a real credential.
+
 ### NC-20260828-001 — Register two Practitioner Series Sertifier packages
 
 - Date: 2026-08-29T00:27:00Z
