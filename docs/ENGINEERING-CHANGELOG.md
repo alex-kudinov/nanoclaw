@@ -179,6 +179,34 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   touch-two no-reply filters. No event or customer email was generated for
   validation; the first natural eligible failure/received-message outcome
   remains open.
+- Emergency enrollment incident and correction: after the capture-first
+  identity cutover, all 18 observed live Step-1 attempts between 15:27 and
+  15:39 CT failed HTTP 502. WordPress correctly signed its exact JSON, but live
+  n8n 2.1.4 did not expose the configured string `rawBody`; the verifier
+  therefore failed every request with `invalid_checkout_raw_body` before
+  NanoClaw. The structural pre-cutover probe used a non-production body shape
+  and did not exercise n8n's real application/json parsing behavior.
+  Correction `483bd7cc` accepts only an already-string `rawBody` or `body` and
+  never reserializes a parsed object; Tandemweb `b1ab5a3b9` sends the same
+  signed JSON bytes as `text/plain; charset=utf-8` for identity and lifecycle
+  calls. Focused NanoClaw 63/63, typecheck, full 3,383/3,385 with the two known
+  unrelated fixtures, Tandemweb identity 23/23 and full 57/58 with the known
+  unrelated exam fixture pass. Bounded Sonnet/high session
+  `fd0adc64-2b95-4b72-acb6-092b4c1499af` returned `NO MATERIAL FINDINGS`;
+  Codex corrected its mistaken assumption that WordPress was already live and
+  retained the required n8n-first, WordPress-second rollout.
+- Guarded n8n patch backup
+  `20260829T204709Z-checkout-recovery-website-shadow-node-patch` preserves the
+  prior workflow; live projection is `8d990587`, credential bindings remain
+  `00786ca0`, the flow is active, and health/readback pass. Tandemweb main
+  `b1ab5a3b9` then deployed with successful LiteSpeed/Cloudflare purge. A
+  deliberately invalid signed request passed the corrected verifier and was
+  rejected only by NanoClaw validation. The exact owner ACC capture then
+  returned success at 399900 USD cents; n8n executions 37477-37479 were three
+  consecutive successes for resolve, bind, and captured. Live minimized
+  readback proves one Party, one checkout identity interaction, and one active
+  Tandem Stripe Customer ref. Active WordPress queue remains zero, held history
+  remains 99, retry cron is absent, and no payment was created.
 - Rollback/recovery: dirty primaries untouched; implementation uses three
   isolated branches. Deployment must protect queue/workflow/database/service
   backups and quarantine historical work before n8n repair.
