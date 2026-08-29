@@ -1114,11 +1114,14 @@ fingerprint before duplicate search and uses `Campaign/AddCredentials`; it
 never creates a campaign. Historical recipient-named campaigns remain audit
 history and are neither migrated nor reused.
 
-The exact, single-recipient grammar `send <registered alias> to <email>` runs
-before generic bare-send handling. Only attribute-free presets can authorize a
-same-turn issue, and only after one nonblank, case-insensitive exact Heartbeat
-email match supplies the recipient name. Missing, multiple, mismatched, or
-blank identity results stop. Attribute-bearing presets retain the normal
+The exact, single-recipient grammar accepts `send` or `issue`, one registered
+alias, and either a bare email or `Name <email>` on the same or next line. It
+runs before New certificate and generic bare-send handling. Only attribute-free
+presets can authorize a same-turn issue, and only after one nonblank,
+case-insensitive exact Heartbeat email match supplies the recipient name; a
+typed name must match it. Attachments, multiple emails, missing/mismatched/
+blank identity, and ambiguous pending matches stop. One exact pending tuple is
+reused rather than duplicated. Attribute-bearing presets retain the normal
 collection/review path. Duplicate issuance is a no-add/no-resend result;
 uncertain provider reconciliation is held durably and never auto-retried.
 

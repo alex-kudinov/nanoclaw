@@ -27,12 +27,24 @@ describe('Certifier canonical campaign prompt contract', () => {
 
   it('gives exact campaign-send grammar precedence over bare send', () => {
     expect(prompt).toContain(
-      'test the exact Explicit campaign send grammar before the generic Send/Cancel bucket',
+      'test the exact Explicit campaign send grammar before both New certificate and the generic Send/Cancel bucket',
     );
     expect(prompt).toContain('prepare-send-command.sh --text');
     expect(prompt).toContain('send ai for coaches to person@example.com');
+    expect(prompt).toContain(
+      'issue coaching tools to\\nJane Student <jane@example.com>',
+    );
+    expect(prompt).toContain(
+      'before both New certificate and the generic Send/Cancel bucket',
+    );
     expect(steps).toContain('runs before generic bare-`send` handling');
     expect(steps).toContain('attributes_required');
+    expect(steps).toContain('match; do not create a duplicate');
+    expect(steps).toContain(
+      'If more than one exact match exists, hold and ask which ID',
+    );
+    expect(steps).toContain('comparing email case-insensitively');
+    expect(steps).toContain('there is no alternate campaign bypass');
   });
 
   it('fails identity and uncertain provider outcomes closed', () => {

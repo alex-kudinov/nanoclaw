@@ -8,6 +8,52 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260828-003 — Natural canonical-campaign issue command
+
+- Date: 2026-08-29T02:35:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_deploy; live owner-authorized issuance complete and
+  reconciled, parser/prompt correction reviewed and locally verified
+- Change class: C3 because the expanded exact grammar can authorize a
+  customer-facing credential and email in the same turn
+- Live outcome: one exact Heartbeat identity, zero prior Sertifier credentials,
+  and matching Pending #003 were verified before one Coaching Tools Mastery
+  issue. Sertifier validated canonical campaign `coaching-tools-mastery@v1`,
+  created one active public credential, and confirmed delivery with email
+  tracking 2. Search/get readback passed, Pending #003 was archived to
+  `completed/`, and the Plutio Activity Log entry was created/read back. No
+  retry or second credential occurred.
+- Root cause: the deployed deterministic fast parser recognized only
+  `send <alias> to <email>`. The owner's explicit multiline `issue` plus
+  `Name <email>` therefore fell into ordinary review, and a later instruction
+  was misread as a cancellation ambiguity even though the pending script would
+  already call the current canonical-campaign issue tool.
+- Correction: accept exact anchored `send|issue` with one alias and either one
+  bare email or one optional name plus angle-bracketed email; preserve typed
+  name casing; require exactly one `@` and one optional angle-bracket pair;
+  resolve and use the exact Heartbeat identity; reject supplied-name mismatch,
+  attachments, multiple emails/recipients, unknown aliases, and required-
+  attribute presets. Gru reuses one exact pending name/email/preset tuple,
+  comparing email case-insensitively, and holds multiple matches.
+- Review: bounded Sonnet/high R1 found two material defects in the first patch:
+  a greedy name capture admitted a two-email tail until the downstream identity
+  gate, and matching against lowercased text lost the typed name's casing.
+  Both were independently reproduced and fixed with explicit delimiter counts,
+  original-text capture, constrained name parsing, and fail-loud assertions.
+- Verification: canonical toolbox suite passes; raw parser receipts prove the
+  owner's generic multiline shape succeeds with preserved name and that two
+  bracketed recipients fail at the parser; Certifier prompt contract 4/4,
+  typecheck, continuity/capability checks, and diff checks pass.
+- Deployment/external state: the one authorized certificate/email and Plutio
+  activity are live and verified. The parser/prompt correction is not yet
+  deployed; production canary must be parse/prepare only and must not issue or
+  resend another credential.
+- Rollback/recovery: revert only the parser/preparation/prompt/procedure change;
+  the already issued credential and completed operational receipt remain valid
+  history and must not be deleted or resent.
+- Follow-up: commit/deploy the mounted correction, then verify production
+  parsing and exact Heartbeat resolution without running `issue-certificate`.
+
 ### NC-20260828-002 — Canonical Sertifier campaign issuance
 
 - Date: 2026-08-29T01:39:00Z

@@ -52,10 +52,13 @@ A reaction to the missing-email ask confirms only the email, not issuance.
 
 ### Phase 1d — Explicit campaign send
 
-The exact owner command below can authorize same-turn issuance:
+Either exact owner command below can authorize same-turn issuance:
 
 ```text
 send ai for coaches to person@example.com
+
+issue coaching tools to
+Jane Student <jane@example.com>
 ```
 
 Enter this phase only after
@@ -70,14 +73,20 @@ not enter this phase.
    receipt; never re-parse or substitute values from memory.
 2. The preparation tool has already enforced one nonblank, case-insensitive
    exact Heartbeat match.
-3. If identity fails, write `pending/drafts/{id}.sh` with
+3. If identity fails or a typed name mismatches the exact Heartbeat name, write `pending/drafts/{id}.sh` with
    `--name "AWAITING_NAME"`, the confirmed email, and comment marker
    ` (awaiting name; explicit send not retained)`. Ask for the certificate
    name. A later name reply promotes the draft to normal review and waits for
    a new `send`.
-4. If identity passes, write the normal pending script with the resolved
-   name/email and comment marker ` (explicit campaign send authorized)`.
-5. Read that exact script back and run it once with `--send` in the same turn.
+4. If identity passes, inspect `pending/*.sh` for the exact resolved
+   name/email/preset tuple, comparing email case-insensitively. Reuse one exact
+   match; do not create a duplicate.
+   If more than one exact match exists, hold and ask which ID. If none exists,
+   write the normal pending script with comment marker
+   ` (explicit campaign send authorized)`.
+5. Read that exact new-or-reused script back and run it once with `--send` in
+   the same turn. A pending script always calls the current issue tool, so it
+   already uses the canonical campaign; there is no alternate campaign bypass.
 6. Branch on the structured receipt:
    - `issued` AND `emailConfirmed:true`: archive to `completed/`; report
      recipient, preset, canonical campaign key/ID, credential URLs, and
