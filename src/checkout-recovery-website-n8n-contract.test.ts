@@ -162,6 +162,64 @@ describe('inactive website checkout recovery relay', () => {
     ).toThrow(/signature/);
   });
 
+  it('forwards only the exact capture-first identity operation fields', () => {
+    const run = new Function('$input', '$env', 'require', verifierSource) as (
+      input: unknown,
+      env: Record<string, string>,
+      requireFn: NodeRequire,
+    ) => Array<{ json: Record<string, string> }>;
+    const ingressSecret = 'checkout-ingress-test-secret-at-least-32-chars';
+    const relaySecret = 'checkout-relay-test-secret-at-least-32-characters';
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const body = {
+      schema_version: 1,
+      request_kind: 'checkout.identity.resolve',
+      source_request_key: `tw:v1:${'A'.repeat(32)}:identity_resolve`,
+      observed_at: new Date().toISOString(),
+      checkout_token: 'A'.repeat(32),
+      email: 'buyer@example.com',
+      first_name: 'Buyer',
+      last_name: 'Example',
+      product_slug: 'acc-full',
+      ignored: 'not-forwarded',
+    };
+    const exactRawBody = JSON.stringify(body);
+    const signature = crypto
+      .createHmac('sha256', ingressSecret)
+      .update(`${timestamp}.${exactRawBody}`, 'utf8')
+      .digest('hex');
+    const result = run(
+      {
+        first: () => ({
+          json: {
+            headers: {
+              'x-checkout-timestamp': timestamp,
+              'x-checkout-signature': `sha256=${signature}`,
+            },
+            rawBody: exactRawBody,
+          },
+        }),
+      },
+      {
+        CHECKOUT_RECOVERY_INGRESS_SECRET: ingressSecret,
+        CHECKOUT_RECOVERY_RELAY_SECRET: relaySecret,
+        CHECKOUT_RECOVERY_HOST_URL: 'https://disabled.invalid/private-path',
+      },
+      createRequire(import.meta.url),
+    )[0].json;
+    expect(JSON.parse(result.body_text)).toEqual({
+      schema_version: 1,
+      request_kind: 'checkout.identity.resolve',
+      source_request_key: body.source_request_key,
+      observed_at: body.observed_at,
+      checkout_token: body.checkout_token,
+      email: body.email,
+      first_name: body.first_name,
+      last_name: body.last_name,
+      product_slug: body.product_slug,
+    });
+  });
+
   it('contains no customer action or Encharge node', () => {
     const serialized = raw.toLowerCase();
     for (const forbidden of [

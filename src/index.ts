@@ -235,6 +235,10 @@ import {
   sweepCheckoutRecoveryShadow,
 } from './checkout-recovery-store.js';
 import {
+  bindCheckoutCustomerIdentity,
+  resolveCheckoutCustomerIdentity,
+} from './checkout-customer-identity.js';
+import {
   claimDueCheckoutRecoverySendIntents,
   dispatchCheckoutRecoveryToEncharge,
   markCheckoutRecoveryProviderAccepted,
@@ -2298,6 +2302,16 @@ async function main(): Promise<void> {
       relaySecret: CHECKOUT_RECOVERY_RELAY_SECRET,
       identitySecret: CHECKOUT_RECOVERY_IDENTITY_SECRET,
       record: recordPreparedCheckoutRecovery,
+      resolveIdentity: (request) =>
+        resolveCheckoutCustomerIdentity({
+          request,
+          identitySecret: CHECKOUT_RECOVERY_IDENTITY_SECRET,
+        }),
+      bindIdentity: (request) =>
+        bindCheckoutCustomerIdentity({
+          request,
+          identitySecret: CHECKOUT_RECOVERY_IDENTITY_SECRET,
+        }),
     },
     gmailPushSecret: GMAIL_PUSH_WEBHOOK_SECRET,
     handleGmailPush: async (emailAddress: string, historyId: string) => {

@@ -39,6 +39,22 @@ size-bounded, and default off.
 Accepted website facts are `checkout.captured`, `payment.created`,
 `checkout.client_abandoned`, `payment.failed`, and `payment.succeeded`.
 
+The same exact-byte bridge also carries two authoritative, synchronous identity
+operations before lifecycle facts: `checkout.identity.resolve` and
+`checkout.identity.bind`. Resolve returns only a Party/interaction receipt and
+a short-lived host-signed binding token; it creates a prospect Party only when
+zero canonical email candidates exist and rejects two. Bind verifies that
+token and creates/replays the exact `stripe/tandem/customer` external ref. Raw
+identity operations bypass the generic webhook archive and are retained only in
+the canonical Party, bounded interactions, and external reference.
+
+WordPress must complete resolve → Stripe Customer → bind before exposing a
+checkout session or creating a PaymentIntent/subscription. A Stripe Customer
+already bound to the Party is authoritative; otherwise exact email/name reuse
+is permitted only when unambiguous, and Customer creation is idempotent on the
+Party rather than a browser/session token. Party/prospect existence is not a
+paid-customer, client, student, fulfillment, or revenue claim.
+
 The WordPress producer keeps a bounded retry queue. Successful relay receipt or
 exhausted retry remains distinguishable. Checkout and Stripe webhook success
 never depend on the shadow observer.

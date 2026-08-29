@@ -48,6 +48,7 @@ try {
 if (!source || typeof source !== 'object' || Array.isArray(source)) {
   throw new Error('invalid_checkout_body');
 }
+if (source.schema_version !== 1) throw new Error('unsupported_checkout_schema');
 const allowedEvents = new Set([
   'checkout.captured',
   'payment.created',
@@ -55,28 +56,55 @@ const allowedEvents = new Set([
   'payment.failed',
   'payment.succeeded',
 ]);
-if (source.schema_version !== 1 || !allowedEvents.has(source.event_type)) {
-  throw new Error('unsupported_checkout_event');
+const allowedIdentityRequests = new Set([
+  'checkout.identity.resolve',
+  'checkout.identity.bind',
+]);
+let fields;
+if (allowedIdentityRequests.has(source.request_kind)) {
+  fields = source.request_kind === 'checkout.identity.resolve'
+    ? [
+        'schema_version',
+        'request_kind',
+        'source_request_key',
+        'observed_at',
+        'checkout_token',
+        'email',
+        'first_name',
+        'last_name',
+        'product_slug',
+      ]
+    : [
+        'schema_version',
+        'request_kind',
+        'source_request_key',
+        'observed_at',
+        'stripe_customer_id',
+        'binding_token',
+      ];
+} else if (allowedEvents.has(source.event_type)) {
+  fields = [
+    'schema_version',
+    'source_event_key',
+    'event_type',
+    'observed_at',
+    'checkout_token',
+    'email',
+    'program_slug',
+    'product_slug',
+    'product_name',
+    'amount_cents',
+    'currency',
+    'consent_state',
+    'consent_policy_version',
+    'locale',
+    'return_url',
+    'payment_intent_id',
+    'checkout_session_id',
+  ];
+} else {
+  throw new Error('unsupported_checkout_request');
 }
-const fields = [
-  'schema_version',
-  'source_event_key',
-  'event_type',
-  'observed_at',
-  'checkout_token',
-  'email',
-  'program_slug',
-  'product_slug',
-  'product_name',
-  'amount_cents',
-  'currency',
-  'consent_state',
-  'consent_policy_version',
-  'locale',
-  'return_url',
-  'payment_intent_id',
-  'checkout_session_id',
-];
 const normalized = {};
 for (const field of fields) {
   if (source[field] !== undefined) normalized[field] = source[field];

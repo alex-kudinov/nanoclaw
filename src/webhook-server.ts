@@ -78,6 +78,14 @@ import {
   type PreparedCheckoutRecoveryEvent,
 } from './checkout-recovery.js';
 import type { CheckoutRecoveryProcessResult } from './checkout-recovery-store.js';
+import {
+  CheckoutCustomerIdentityError,
+  prepareCheckoutCustomerIdentityRequest,
+  type CheckoutIdentityBindRequest,
+  type CheckoutIdentityBindResult,
+  type CheckoutIdentityResolveRequest,
+  type CheckoutIdentityResolveResult,
+} from './checkout-customer-identity.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -214,6 +222,12 @@ export interface WebhookServerDeps {
       webhookInboxId: number | null;
       transientEmail?: string | null;
     }) => Promise<CheckoutRecoveryProcessResult>;
+    resolveIdentity?: (
+      request: CheckoutIdentityResolveRequest,
+    ) => Promise<CheckoutIdentityResolveResult>;
+    bindIdentity?: (
+      request: CheckoutIdentityBindRequest,
+    ) => Promise<CheckoutIdentityBindResult>;
   };
   // Per-group serialization. Webhook agent runs go through the GroupQueue
   // (like the message loop and scheduled tasks) so concurrent webhooks to one
@@ -985,10 +999,91 @@ export class WebhookServer {
         res.end(JSON.stringify({ error: 'invalid checkout recovery relay' }));
         return;
       }
+      let rawPayload: unknown;
+      try {
+        rawPayload = JSON.parse(rawBody.toString('utf8')) as unknown;
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid checkout recovery payload' }));
+        return;
+      }
+      const requestKind =
+        rawPayload &&
+        typeof rawPayload === 'object' &&
+        !Array.isArray(rawPayload)
+          ? (rawPayload as Record<string, unknown>).request_kind
+          : null;
+      if (
+        requestKind === 'checkout.identity.resolve' ||
+        requestKind === 'checkout.identity.bind'
+      ) {
+        try {
+          const prepared = prepareCheckoutCustomerIdentityRequest(
+            rawPayload,
+            checkoutRecovery.identitySecret,
+          );
+          if (prepared.kind === 'checkout.identity.resolve') {
+            if (!checkoutRecovery.resolveIdentity) {
+              throw new CheckoutCustomerIdentityError(
+                'checkout_identity_resolver_unconfigured',
+                503,
+              );
+            }
+            const result = await checkoutRecovery.resolveIdentity(prepared);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                success: true,
+                data: {
+                  party_id: result.partyId,
+                  interaction_id: result.interactionId,
+                  resolution: result.resolution,
+                  binding_token: result.bindingToken,
+                  stripe_customer_id: result.stripeCustomerId,
+                },
+              }),
+            );
+          } else {
+            if (!checkoutRecovery.bindIdentity) {
+              throw new CheckoutCustomerIdentityError(
+                'checkout_identity_binder_unconfigured',
+                503,
+              );
+            }
+            const result = await checkoutRecovery.bindIdentity(prepared);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                success: true,
+                data: {
+                  party_id: result.partyId,
+                  stripe_customer_id: result.stripeCustomerId,
+                  bound: result.bound,
+                  duplicate: result.duplicate,
+                },
+              }),
+            );
+          }
+        } catch (err) {
+          const status =
+            err instanceof CheckoutCustomerIdentityError ? err.statusCode : 500;
+          const code =
+            err instanceof CheckoutCustomerIdentityError
+              ? err.message
+              : 'checkout_identity_failed';
+          logger.error(
+            { err, requestKind },
+            'checkout identity handshake failed',
+          );
+          res.writeHead(status, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: code }));
+        }
+        return;
+      }
       let parsed: ReturnType<typeof prepareWebsiteCheckoutRecoveryEnvelope>;
       try {
         parsed = prepareWebsiteCheckoutRecoveryEnvelope(
-          JSON.parse(rawBody.toString('utf8')) as unknown,
+          rawPayload,
           checkoutRecovery.identitySecret,
         );
       } catch (err) {

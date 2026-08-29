@@ -1418,6 +1418,19 @@ describe('WebhookServer — checkout recovery website shadow relay', () => {
         customerMessageSent: false as const,
       },
     }));
+    const resolveIdentity = vi.fn(async () => ({
+      partyId: 42,
+      interactionId: 99,
+      resolution: 'existing' as const,
+      bindingToken: 'v1.test.signature',
+      stripeCustomerId: null,
+    }));
+    const bindIdentity = vi.fn(async () => ({
+      partyId: 42,
+      stripeCustomerId: 'cus_1234567890abc',
+      bound: true as const,
+      duplicate: false,
+    }));
     const deps = makeDeps({
       getRegisteredGroups: vi.fn(() => ({})),
       archiveWebhook: vi.fn(async () => ({ id: 601, isDuplicate: false })),
@@ -1430,12 +1443,14 @@ describe('WebhookServer — checkout recovery website shadow relay', () => {
         relaySecret: secret,
         identitySecret: 'checkout-recovery-identity-test-secret-123456',
         record,
+        resolveIdentity,
+        bindIdentity,
       },
     });
     const instance = new WebhookServer(deps);
     await instance.start();
     deps.port = instance.getPort();
-    return { instance, deps, record };
+    return { instance, deps, record, resolveIdentity, bindIdentity };
   }
 
   it('archives a redacted prepared event and performs no send or agent run', async () => {
@@ -1469,6 +1484,45 @@ describe('WebhookServer — checkout recovery website shadow relay', () => {
       );
       expect(deps.runAgent).not.toHaveBeenCalled();
       expect(deps.sendMessage).not.toHaveBeenCalled();
+    } finally {
+      await instance.stop();
+    }
+  });
+
+  it('resolves capture identity synchronously without generic webhook archive', async () => {
+    const { instance, deps, record, resolveIdentity } = await start();
+    try {
+      const rawBody = JSON.stringify({
+        schema_version: 1,
+        request_kind: 'checkout.identity.resolve',
+        source_request_key: `tw:v1:${token}:identity_resolve`,
+        observed_at: new Date().toISOString(),
+        checkout_token: token,
+        email: 'buyer@example.com',
+        first_name: 'Buyer',
+        last_name: 'Example',
+        product_slug: 'acc-full',
+      });
+      const response = await makeRequest(deps.port, {
+        path,
+        headers: signedHeaders(rawBody),
+        body: rawBody,
+      });
+      expect(response.status).toBe(200);
+      expect(JSON.parse(response.body)).toMatchObject({
+        success: true,
+        data: {
+          party_id: 42,
+          interaction_id: 99,
+          resolution: 'existing',
+          binding_token: 'v1.test.signature',
+          stripe_customer_id: null,
+        },
+      });
+      expect(resolveIdentity).toHaveBeenCalledOnce();
+      expect(deps.archiveWebhook).not.toHaveBeenCalled();
+      expect(record).not.toHaveBeenCalled();
+      expect(deps.runAgent).not.toHaveBeenCalled();
     } finally {
       await instance.stop();
     }

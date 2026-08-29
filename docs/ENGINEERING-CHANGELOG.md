@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-29T15:27:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: deployed_unverified; root cause/design, independent implementation
-  review, guarded release, migration, and structural live verification are
-  complete; the next natural checkout remains the outcome proof
+- State: validating; implementing a capture-first dual-identity extension over the
+  structurally live failure-recovery release; the next natural checkout remains
+  the outcome proof
 - Change class: C4 because the existing prospective recovery flow can send
   consented customer reminders; this correction sends nothing during validation
 - Affected systems: Tandemweb checkout PHP/JS and retry queue; active n8n
@@ -90,6 +90,24 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   case updates, and zero recent send receipts. Party Context query remains off
   with zero grants. No historical replay, customer communication, synthetic
   Stripe failure, payment action, or identity merge occurred.
+- Capture-first extension: owner follow-up proved the prior billing-details
+  repair intentionally retained guest PaymentIntents. Both shown people already
+  had one Chaos-created canonical Party and prospect role before payment, but
+  neither had a Tandem Stripe Customer ref. Local implementation now makes
+  capture synchronously resolve/create exactly one Party, creates/reuses a
+  Party-idempotent Stripe Customer, durably binds the `cus_` ref back to that
+  Party, and only then permits a PaymentIntent/subscription. Ambiguous Party,
+  Customer, token, or binding ownership blocks payment; unpaid identity remains
+  prospect state. The existing retention-free n8n relay carries the two
+  authoritative request shapes without generic webhook archive. Local focused
+  NanoClaw 63/63, typecheck, Tandemweb 22/22 identity, and live n8n exact-node
+  dry-run pass. Owner-approved Sonnet/high R3 found no blocking defect. Its one
+  excluded-source concurrency question is closed by migration 95's
+  email-scoped advisory lock and locked canonical recheck inside
+  `fn_create_party`. R3 used 13 model calls, 803,046 cache-read tokens, and
+  18,415 output tokens; max context 104,644 exceeded the nominal bounded-review
+  target but remained below the 24-call/2M-reread warnings. No capture-first
+  bytes are deployed yet.
 - Rollback/recovery: dirty primaries untouched; implementation uses three
   isolated branches. Deployment must protect queue/workflow/database/service
   backups and quarantine historical work before n8n repair.
