@@ -12,9 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-29T15:27:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; implementing a capture-first dual-identity extension over the
-  structurally live failure-recovery release; the next natural checkout remains
-  the outcome proof
+- State: deployed_unverified; capture-first dual identity is structurally live
+  over the failure-recovery release; the next natural checkout remains the
+  outcome proof
 - Change class: C4 because the existing prospective recovery flow can send
   consented customer reminders; this correction sends nothing during validation
 - Affected systems: Tandemweb checkout PHP/JS and retry queue; active n8n
@@ -106,8 +106,31 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   email-scoped advisory lock and locked canonical recheck inside
   `fn_create_party`. R3 used 13 model calls, 803,046 cache-read tokens, and
   18,415 output tokens; max context 104,644 exceeded the nominal bounded-review
-  target but remained below the 24-call/2M-reread warnings. No capture-first
-  bytes are deployed yet.
+  target but remained below the 24-call/2M-reread warnings.
+- Capture-first deployment: NanoClaw commit/release `38123d7cfaca` is pushed,
+  source tree `b251502e`, artifact SHA-256 `25cb41c4` with 1,024 files, and
+  archive SHA-256
+  `af31aa3f2b961330f2cb38bcfa5b3fd7d345a4fa8b818972837c378cd7024c59`.
+  Fresh Mini verification, zero-work activation, one listener, exact code root,
+  Gmail/Slack, and empty queues pass; rollback plist is
+  `com.nanoclaw.plist.rollback-702dcd59b8a7-2026-08-29T18-07-18-317Z` and
+  mode-0700 backup is
+  `NC-20260829-001-capture-first-20260829T180900Z`. Guarded n8n patch backup
+  `20260829T180731Z-checkout-recovery-website-shadow-node-patch` retains the
+  prior workflow; live projection hash is `ac303ca5` and credential hash remains
+  `00786ca0`. Tandemweb was rebased over concurrent sitemap release `2877a0ab`,
+  pushed/deployed as exact `6e02da19f`; PHP source hash matches. Its protected
+  queue backup `NC-20260829-001-capture-first-20260829T180800Z` was three bytes
+  (`[]`), and live active/exhausted queue plus retry cron remain zero/absent.
+- Capture-first live verification: a correctly signed but invalid-name identity
+  request traversed WordPress → n8n → NanoClaw and failed before Party work;
+  checkout-identity and Stripe-bind interaction counts remained exactly zero.
+  Nano release inventory, health/channels/listener, n8n health/readback, public
+  source commit/hash, and existing recovery queue pass. No Customer, Party,
+  external ref, PaymentIntent, subscription, payment, historical Guest mutation,
+  communication, enrollment, or role promotion was manufactured. The next
+  natural validated capture must prove Party resolve/create, Stripe Customer
+  bind, and customer-associated payment creation.
 - Rollback/recovery: dirty primaries untouched; implementation uses three
   isolated branches. Deployment must protect queue/workflow/database/service
   backups and quarantine historical work before n8n repair.

@@ -1,6 +1,7 @@
 # Capture-first checkout customer identity
 
-Status: implementation design under `NC-20260829-001`
+Status: deployed and structurally live-verified under `NC-20260829-001`;
+natural checkout outcome pending
 
 Authority:
 `.program/decisions/decision-checkout-capture-first-customer-identity-2026-08-29.json`
