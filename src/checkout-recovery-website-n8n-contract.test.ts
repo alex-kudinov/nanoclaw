@@ -101,8 +101,9 @@ describe('inactive website checkout recovery relay', () => {
               'x-checkout-timestamp': timestamp,
               'x-checkout-signature': `sha256=${ingressSignature}`,
             },
-            body,
-            rawBody: exactRawBody,
+            // Live n8n 2.1.4 preserves text/plain request bytes here rather
+            // than exposing the Webhook node's configured rawBody property.
+            body: exactRawBody,
           },
         }),
       },
@@ -218,6 +219,8 @@ describe('inactive website checkout recovery relay', () => {
       last_name: body.last_name,
       product_slug: body.product_slug,
     });
+    expect(verifierSource).toContain("typeof wrapped.body === 'string'");
+    expect(verifierSource).not.toContain('JSON.stringify(wrapped.body)');
   });
 
   it('contains no customer action or Encharge node', () => {

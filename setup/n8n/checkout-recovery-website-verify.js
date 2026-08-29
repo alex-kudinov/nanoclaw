@@ -3,7 +3,16 @@ const crypto = require('crypto');
 const wrapped = $input.first().json || {};
 const headers =
   wrapped.headers && typeof wrapped.headers === 'object' ? wrapped.headers : {};
-const rawBody = typeof wrapped.rawBody === 'string' ? wrapped.rawBody : '';
+// n8n 2.1.4 does not expose `rawBody` for the live Webhook node despite the
+// enabled raw-body option. WordPress therefore sends signed JSON bytes as
+// text/plain, which n8n preserves exactly in `body`. Never stringify a parsed
+// object here: the HMAC authority is the exact request bytes.
+const rawBody =
+  typeof wrapped.rawBody === 'string'
+    ? wrapped.rawBody
+    : typeof wrapped.body === 'string'
+      ? wrapped.body
+      : '';
 if (!rawBody || Buffer.byteLength(rawBody, 'utf8') > 32768) {
   throw new Error('invalid_checkout_raw_body');
 }
