@@ -12,8 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-29T02:35:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_deploy; live owner-authorized issuance complete and
-  reconciled, parser/prompt correction reviewed and locally verified
+- State: complete; live owner-authorized issuance and mounted parser/prompt
+  correction deployed and verified
+- Commit/release: NanoClaw `53d87824` pushed on
+  `codex/sertifier-natural-campaign-command-20260828`; toolbox local-only
+  commit `3f7e413` (repository has no Git remote). Host daemon remains exact
+  verified release `2773def5`; mounted changes required no rebuild or restart.
 - Change class: C3 because the expanded exact grammar can authorize a
   customer-facing credential and email in the same turn
 - Live outcome: one exact Heartbeat identity, zero prior Sertifier credentials,
@@ -45,14 +49,19 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   bracketed recipients fail at the parser; Certifier prompt contract 4/4,
   typecheck, continuity/capability checks, and diff checks pass.
 - Deployment/external state: the one authorized certificate/email and Plutio
-  activity are live and verified. The parser/prompt correction is not yet
-  deployed; production canary must be parse/prepare only and must not issue or
-  resend another credential.
+  activity are live and verified. Task-owned prompt/procedure/parser/
+  preparation/test files synced byte-for-byte to the Mini while the merged
+  registry retained independent `update-credential` work. Production parser
+  readback of the owner's exact multiline shape returns the preserved name,
+  `coaching-tools-mastery`, and `immediate:true`; Heartbeat preparation returns
+  `authorized:true`; the two-recipient canary returns `not_explicit_send`.
+  Production canonical suite passes, Pending #003 remains completed, exact
+  release `2773def5` is verified on Node 22.23.2, Slack/Gmail are connected,
+  and waiting groups are zero. No second issue or email occurred.
 - Rollback/recovery: revert only the parser/preparation/prompt/procedure change;
   the already issued credential and completed operational receipt remain valid
   history and must not be deleted or resent.
-- Follow-up: commit/deploy the mounted correction, then verify production
-  parsing and exact Heartbeat resolution without running `issue-certificate`.
+- Follow-up: none.
 
 ### NC-20260828-002 — Canonical Sertifier campaign issuance
 
