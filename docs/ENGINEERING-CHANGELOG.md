@@ -15,8 +15,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - State: ready_for_deploy; implementation, correction review, and local
   verification are complete, while commit, release, deployment, and
   replacement-draft evidence remain pending
-- Commit/PR: uncommitted on `codex/sales-intake-voice-20260829`, based directly
-  on exact live release `b7004bb8f4af3ad5f57e17543f378abf35f20b6f`
+- Commit/PR: reviewed implementation `37005d37` on
+  `codex/sales-intake-voice-20260829`, based directly on exact live release
+  `b7004bb8f4af3ad5f57e17543f378abf35f20b6f`; deployment-record commit pending
 - Change class: C3 because the policy changes customer-facing Sales drafts and
   the task will replace one internal approval card; no customer send is
   authorized
