@@ -42,3 +42,25 @@ State: enrollment restored and live-verified
   Tandem Stripe Customer ref.
 - WordPress active recovery queue zero, protected held history 99, no retry
   cron, no payment or customer communication created by the verification.
+
+## Cross-path Step-1 matrix
+
+The owner requested live first-page coverage beyond ACC. Using the same exact
+internal Party/Customer identity with reminders explicitly disabled, these
+public production captures all returned `success=true`:
+
+| Path | Product | Expected live result | Outcome |
+| --- | --- | --- | --- |
+| Required MCS cohort + installment-capable | `mcs-full` | 299700 USD cents; `mcs-practicum` retained | passed |
+| Required AACS cohort + installment-capable | `supervision-inaugural` | 399600 USD cents; `supervision` retained | passed |
+| Spanish regional pricing | `mcs-foundations-es`, Mexico | 19900 USD cents; regional applied | passed |
+| Spanish standard fallback | `prac-tools-es`, United States | 19900 USD cents; regional not applied | passed |
+| Japanese localized | `mcs-foundations-ja` | 29900 USD cents | passed |
+| French localized | `mcs-foundations-fr` | 29900 USD cents | passed |
+
+Post-matrix readback found 34/34 successful and zero failed n8n workflow
+executions across repeated resolve/bind/capture operations, one canonical
+Party, one active Tandem Stripe Customer ref, zero new purchased cases, zero
+active WordPress recovery queue, and no retry cron. No PaymentIntent,
+subscription, coupon, payment, enrollment, or reminder was created; this matrix
+stopped at the requested first-page boundary.

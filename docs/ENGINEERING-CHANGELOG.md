@@ -207,6 +207,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   readback proves one Party, one checkout identity interaction, and one active
   Tandem Stripe Customer ref. Active WordPress queue remains zero, held history
   remains 99, retry cron is absent, and no payment was created.
+- Owner-requested cross-path live Step-1 matrix also passed: required MCS
+  cohort/299700, inaugural AACS cohort/399600, Spanish regional/19900, Spanish
+  standard fallback/19900, Japanese/29900, and French/29900. Repeated
+  resolve/bind/capture operations produced 34/34 successful and zero failed n8n
+  executions, one canonical Party, one active Tandem Stripe Customer ref, zero
+  new purchased cases, zero active WordPress queue, and no retry cron. Testing
+  stopped before PaymentIntent, subscription, coupon, payment, enrollment, or
+  reminder creation.
 - Rollback/recovery: dirty primaries untouched; implementation uses three
   isolated branches. Deployment must protect queue/workflow/database/service
   backups and quarantine historical work before n8n repair.
