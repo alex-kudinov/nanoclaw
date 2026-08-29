@@ -8,6 +8,65 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260828-001 — Register two Practitioner Series Sertifier packages
+
+- Date: 2026-08-29T00:27:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: complete; provider components created/read back, production
+  prompt/presets deployed, and production dry runs live-verified
+- Commit/release: NanoClaw branch commit pending this entry; toolbox local-only
+  clean commit `f01d183` (repository has no Git remote); Practitioner authority
+  receipt `32fbb49` pushed on
+  `codex/sertifier-practitioner-presets-20260828`. Host daemon release remains
+  exact healthy `2773def5`; no host build or restart was required.
+- Change class: C3 because the new presets can later produce customer-facing
+  credentials and delivery email, although this task issued and sent none
+- Outcome: created and read back one Detail and one branded delivery template
+  for each owner-created design. Coaching Tools Mastery is bound to 20 CCE
+  hours (13 Core Competency + 7 Resource Development). AI for Coaches is bound
+  to 20 CCE hours (6 Core Competency + 14 Resource Development), with 3 hours
+  of ethics instruction described only inside Core and never as a separate ICF
+  designation. The owner corrected the AI design's inconsistent total from 10
+  to 20 before registration.
+- Provider IDs: Coaching Tools design `08df053a-7e57-47c7-850e-e8b020b4ebf1`,
+  Detail `08df0562-a6d0-4207-82dc-305f2738104b`, email template
+  `08df0562-c573-4946-8cf3-b3fed796a230`; AI design
+  `08ded7df-418f-47ea-8467-9592eac91460`, Detail
+  `08df0562-ab51-402b-81ca-7885b7b2b9f2`, email template
+  `08df0562-e069-42b4-8d29-0275ebfeabf0`.
+- Implementation: added reusable `sertifier/create-detail`; registered
+  `coaching-tools-mastery` and `ai-for-coaches` with exact catalog revision/hash,
+  sender/subject, zero required attributes, and per-course component IDs; made
+  `issue-certificate --help` derive preset discovery from `presets.json`; added
+  natural-language mappings without weakening pending-script/review/send gates.
+- Review: R1 required the known AI design correction and questioned one
+  framework name. Owner correction plus source verification changed the Detail
+  to the exact `Five-Layer Trap`. R2 found no unresolved material issue.
+- Verification: provider Detail getters; email title getter plus saved/reopened
+  rendered DOM; AI design rendered DOM; focused component/search/receipt tests;
+  registry validation; full toolbox 65/65; local and production preset discovery;
+  exact local/Mini file hashes; production `.invalid` dry runs resolving the
+  correct design/Detail/template/subject with `willSend:false`; healthy Mini
+  release/channels, zero active containers, and no waiting/outgoing queue.
+  Pinned Node 22.23.2 NanoClaw documentation continuity and typecheck pass. The
+  full root suite is 3,363 passing/31 skipped with only the two exact known
+  unrelated release-baseline failures already recorded by `NC-20260827-004`:
+  the CNPC wrapper assertion and date-stale Trafft fixture.
+- Deployment/external state: two Details and two email templates created; one
+  owner design corrected. Prompt/preset/tool files synced byte-for-byte to
+  `mini-claw.local`. No campaign, recipient, credential, certificate email,
+  Slack canary, customer communication, Heartbeat mutation, or daemon restart.
+- Rollback/recovery: remove the two preset records and prompt mappings to
+  disable issuance immediately; provider components are unused and can remain
+  for audit. Do not delete issued credentials or reuse either course's
+  component IDs for another preset.
+- Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, this changelog,
+  `groups/certifier/CLAUDE.md`, and Practitioner authority receipt
+  `program-facts/receipts/2026-08-29-sertifier-practitioner-package-registration.json`.
+- Follow-ups: create the remaining Practitioner designs first, then repeat the
+  same catalog-bound Detail/template/readback/preset gate. Real issuance stays
+  per-recipient and separately approved.
+
 ### NC-20260827-004 — Restore and harden the Plutio reaper release boundary
 
 - Date: 2026-08-28T01:47:00Z

@@ -29,6 +29,8 @@ Map user language to preset codes:
 | "supervision", "coaching supervision" | `supervision` |
 | "CNPC", "CNPC supervision", "reflective supervision" | `cnpc-supervision` |
 | "MCS", "MCS Foundation", "Mentor Coaching Specialization", "mentor coaching foundation" | `mcs-foundation` |
+| "Coaching Tools Mastery", "coaching tools", "tools mastery", "Practitioner Series coaching tools" | `coaching-tools-mastery` |
+| "AI for Coaches", "AI coaching course", "Practitioner Series AI" | `ai-for-coaches` |
 
 After identifying the preset, read `/workspace/extra/sertifier/lib/presets.json` to discover the `requiredAttributes` array for that preset. Do NOT hardcode attribute requirements — always read from the file.
 

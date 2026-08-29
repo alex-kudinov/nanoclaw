@@ -1086,6 +1086,28 @@ folder before changing routing.
 Each concrete group overrides that pattern. The concrete file wins for its
 role, subject to repository-wide and host safety rules.
 
+### Practitioner Series Certifier packages (`NC-20260828-001`)
+
+The production Certifier group now recognizes two catalog-bound Practitioner
+Series presets in addition to the existing Foundation and general certificate
+packages:
+
+- `coaching-tools-mastery` — design, credential Detail, and branded delivery
+  template for 20 ICF CCE hours (13 Core Competency + 7 Resource Development);
+- `ai-for-coaches` — design, credential Detail, and branded delivery template
+  for 20 ICF CCE hours (6 Core Competency + 14 Resource Development), with the
+  curriculum's 3 ethics-instruction hours described inside Core and not as a
+  separate ICF designation.
+
+Both presets record Practitioner catalog revision 2 and its exact SHA-256.
+Provider Details and template titles/bodies were read back, production files
+hash-match the reviewed sources, and production dry runs resolve the exact
+component IDs without creating a campaign, recipient, credential, or email.
+The existing per-recipient search, pending-script, `[CERTIFICATE REVIEW]`, and
+separate send approval remain the issuance boundary. Adding a design alone is
+not registration; every future course still needs a catalog-bound Detail,
+delivery template, preset, prompt mapping, and destination readback.
+
 ## 11. IPC and host capability model
 
 Agents do not receive unrestricted host access. They issue structured requests
