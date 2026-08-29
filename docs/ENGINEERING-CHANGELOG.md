@@ -8,6 +8,58 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260829-002 — Calibrate narrative coaching inquiries without parroting
+
+- Date: 2026-08-29T20:37:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_deploy; implementation, correction review, and local
+  verification are complete, while commit, release, deployment, and
+  replacement-draft evidence remain pending
+- Commit/PR: uncommitted on `codex/sales-intake-voice-20260829`, based directly
+  on exact live release `b7004bb8f4af3ad5f57e17543f378abf35f20b6f`
+- Change class: C3 because the policy changes customer-facing Sales drafts and
+  the task will replace one internal approval card; no customer send is
+  authorized
+- Affected systems: Sales role/workflow/voice/email-response authorities,
+  compatibility context, request-first fixture/contract test, operational
+  project map, and the existing Lead #1276 Slack work thread
+- Root cause: the natural card classified a narrative “I believe I need
+  coaching” intake as `ANSWER/HIGH/YES` because `leaders` and `ADHD` matched a
+  service. It then replayed the person's language and turned the one-person
+  message into unsupported “most clients,” exact-pattern, fit, and outcome
+  claims. Existing voice rules prohibited restatement, but the route/claim audit
+  did not bind narrative custom engagements and structural tests did not run the
+  model.
+- Outcome: narrative coaching need is `ORIENT`, not factual `ANSWER`; keyword
+  matching identifies only a candidate service; unresolved fit records
+  `PARTIAL/MEDIUM`; customer copy must synthesize rather than mirror and cannot
+  generalize one inquiry into client prevalence, medication history, confirmed
+  fit, or promised results. The bounded custom-engagement exception permits one
+  verified fit-conversation invitation without leaking calls or CTAs into
+  fixed-information training-program inquiries.
+- Review: bounded Claude Sonnet/high R1 found one material conflict between the
+  fit-conversation requirement and the older unqualified no-discovery-call
+  rule. Codex narrowed that rule to fixed-information training programs and
+  bound the Executive/ADHD Executive exception in the contract test. R2 returned
+  `NO MATERIAL FINDINGS`.
+- Verification: pinned Node 22.23.2 focused Sales/mailman/AI-tell/content-guard
+  checks pass 49/49; typecheck, documentation continuity, capability matrix,
+  and diff check pass. Full root is 3,384 pass/32 skip with two reproducible
+  unrelated baseline failures: the CNPC wrapper-source assertion and a Trafft
+  projection fixture whose 2026-08-25 timestamp is stale on 2026-08-29. Neither
+  failing file is changed by this task. Live model/draft evidence remains
+  pending.
+- Deployment/migration: not deployed; no schema or migration; the original card
+  is pending approval with no Gmail send receipt.
+- Rollback/recovery: restore the seven Sales prompt/test artifacts from
+  `b7004bb8`; retain the original unapproved card as incident evidence and never
+  approve/send it after the replacement is posted.
+- Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, this changelog,
+  and the four bounded Claude review artifacts.
+- Follow-ups: after release, verify the replacement card is
+  `ORIENT/MEDIUM/PARTIAL`, free of mirrored/prevalence/outcome language, and
+  pending approval only; natural response quality remains an outcome gate.
+
 ### NC-20260829-001 — Repair checkout failure context and recovery guidance
 
 - Date: 2026-08-29T15:27:00Z

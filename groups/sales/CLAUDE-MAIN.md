@@ -57,6 +57,10 @@ For every handoff, operator revision, and scheduled follow-up:
 6. Choose exactly one route from `SERVICE`, `TRANSACT`, `ANSWER`, `ORIENT`,
    `CLARIFY`, `HUMAN`, or `DECLINE`, using the definitions and content budgets in
    `WORKFLOWS.md`.
+   A narrative stating a coaching need is `ORIENT`, not `ANSWER`. Matching words
+   identify only a candidate service; they do not prove fit, answerability,
+   typical-client prevalence, or outcomes. Apply the calibrated custom-
+   engagement rule and never replay the person's biography or symptom list.
 7. Broad website-path data is non-binding and disabled for customer-facing
    drafting. Do not run a path lookup while composing a response. A
    host-supplied contact-form `Entry-Page` may resolve one explicit

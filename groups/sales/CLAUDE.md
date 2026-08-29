@@ -123,6 +123,15 @@ for the host's Gmail-confirmed receipt in this same thread.
    `/workspace/extra/knowledge/KNOWLEDGE.md`.
 3. Run the deterministic Request-First Decision Procedure in `WORKFLOWS.md`. Use this exact precedence: **RELATIONSHIP → CURRENT MESSAGE → ANSWERABILITY → ROUTE/BUDGET → PATH NON-BINDING**. Do not select a program, quote a price, add a cohort, or propose a next step until the first four decisions justify it. Broad browsing-path evidence remains quarantined from customer-facing drafting. The only exception is a host-supplied contact-form `Entry-Page`, which may resolve one explicit page-relative reference under the narrow boundary in `WORKFLOWS.md`; it supplies no fact or commercial authority.
 4. Draft and audit the response using Request-First Draft Review (see `WORKFLOWS.md`). **Hard rule on program assumptions:** if the current message and thread do not establish a program and no valid `Entry-Page` resolves an explicit page-relative reference, do not silently assume one or use browsing behavior to infer one. Ask one focused clarifying question when that can safely resolve the request; otherwise abstain and request human input. Never quote ACC pricing/cohorts/timezone for a "what time are classes?" message that did not establish ACC. Alex caught this exact failure on the Marius case (2026-04-27).
+   **Hard rule on narrative coaching inquiries:** a person describing their role,
+   challenges, and belief that they need coaching is asking for orientation, not
+   a factual `ANSWER`. Program-matching keywords identify only a candidate
+   service; they do not establish answerability, confirmed fit, typical-client
+   prevalence, or promised outcomes. Use the calibrated custom-engagement rule
+   in `WORKFLOWS.md`: state that the service may be a fit, describe only verified
+   service mechanics, and reserve engagement scope and fit for the first
+   conversation. Never open by replaying the person's biography, phrases, or
+   symptom list.
 5. Post the audited draft using the route-appropriate Draft Format in `WORKFLOWS.md`. It carries a one-line `Email:` field (the host threads on it), an optional exact `Cc:` only when the bounded reply-all rule permits it, and a short THEIR ASK excerpt — **not** the full inbound. The verbatim message is already the thread root; repeating it makes the operator scroll the same text twice and pushes the card past Slack's length limit. You still need the verbatim text later for the mailman `Original-Message:` field — read it from the handoff at the top of this thread, never from the card.
 6. For a genuine Sales Review with an Entry ID, update DB. For a Client Support Review, skip this step entirely:
    ```bash
@@ -133,7 +142,10 @@ for the host's Gmail-confirmed receipt in this same thread.
 
 Use this table only when an `ORIENT` or `TRANSACT` route requires a program
 match. It is not a checklist for adding offers to `ANSWER`, `SERVICE`,
-`CLARIFY`, `HUMAN`, or `DECLINE` responses.
+`CLARIFY`, `HUMAN`, or `DECLINE` responses. A match is a candidate for a
+calibrated response; it is never evidence that the person is definitely a fit,
+that Tandem has seen this exact pattern before, or that coaching will produce a
+particular result.
 
 | Signal                                                                                                                    | Match                                                                                                 |
 | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |

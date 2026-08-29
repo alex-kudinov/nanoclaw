@@ -991,7 +991,7 @@ facts, and manually reconciled contradictions.
 ### Sales request-first behavior (`NC-20260809-004`)
 
 The runtime Sales behavior authority is `groups/sales/CLAUDE.md`, supplemented
-by `groups/sales/WORKFLOWS.md` and
+by `groups/sales/WORKFLOWS.md`, `groups/sales/VOICE-AND-TONE.md`, and
 `groups/sales/EMAIL-RESPONSE-GUIDELINES.md`. `groups/sales/CLAUDE-MAIN.md` is a
 compatibility/staging companion and is not loaded by the current host or
 container runtime; contract tests include it to prevent contradictory guidance.
@@ -1018,6 +1018,17 @@ an anchored, emphasis-tolerant, case-insensitive grammar. The historical
 `REVISED DRAFT FOLLOW-UP:` label remains recognition-only. The structural eval
 fixture lives outside the Sales container mount at
 `evals/sales/request-first-cases.json`; it does not itself prove response quality.
+
+`NC-20260829-002` closes a natural narrative-inquiry failure inside this model.
+A first-person description of coaching need plus a stated desire for coaching is
+`ORIENT`, not a factual `ANSWER`; a keyword match names only a candidate service
+and cannot establish `HIGH/YES` fit, client prevalence, medication history, or
+an outcome. Custom-scoped Executive/ADHD Executive orientation uses one
+calibrated fit statement, verified service mechanics, and one fit-conversation
+invitation while keeping scope and individual fit unresolved. The customer copy
+must synthesize rather than replay biography, distinctive phrases, or a symptom
+list. The fixture and prompt contract bind those expectations, but the actual
+replacement draft and later natural responses remain the model-quality evidence.
 
 `NC-20260826-007` removes a retained lead-only assumption from this surface.
 `[SOURCE: email-active-client]` and other evidence-supported `SERVICE` work use

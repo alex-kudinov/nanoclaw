@@ -10,7 +10,8 @@ const role = readSalesFile('CLAUDE.md');
 const mainContext = readSalesFile('CLAUDE-MAIN.md');
 const workflows = readSalesFile('WORKFLOWS.md');
 const guidelines = readSalesFile('EMAIL-RESPONSE-GUIDELINES.md');
-const contract = `${role}\n${mainContext}\n${workflows}\n${guidelines}`;
+const voice = readSalesFile('VOICE-AND-TONE.md');
+const contract = `${role}\n${mainContext}\n${workflows}\n${guidelines}\n${voice}`;
 const normalizeWhitespace = (text: string): string =>
   text.replace(/\s+/g, ' ').trim();
 const normalizedContract = normalizeWhitespace(contract);
@@ -210,6 +211,49 @@ describe('Sales request-first prompt contract', () => {
     );
     expect(workflows).toContain('`DRAFT RESPONSE TO LEAD:`');
     expect(workflows).toContain('`DRAFT FOLLOW-UP:`');
+  });
+
+  it('treats narrative coaching need as calibrated orientation without parroting or unsupported claims', () => {
+    expect(normalizedContract).toContain(
+      'a person describing their role, challenges, and belief that they need coaching is asking for orientation, not a factual `ANSWER`',
+    );
+    expect(normalizedContract).toContain(
+      'Program matching does not determine answerability or confidence.',
+    );
+    expect(workflows).toContain('### Calibrated custom-engagement rule');
+    expect(normalizedContract).toContain(
+      "The person's message is evidence about that person only.",
+    );
+    expect(normalizedContract).toContain('Synthesize; do not mirror.');
+    expect(voice).toContain('**Do not manufacture social proof.**');
+    expect(guidelines).toContain(
+      '`ORIENT` may invite the person to the verified fit conversation',
+    );
+    expect(normalizedGuidelines).toContain(
+      'NEVER suggest consultation calls or discovery calls for fixed-information training-program inquiries.',
+    );
+    expect(normalizedGuidelines).toContain(
+      'This does not apply to a supported custom-scoped Executive or ADHD Executive Coaching `ORIENT` inquiry',
+    );
+
+    const narrativeCase = evalCases.find(
+      (testCase) => testCase.id === 'narrative-adhd-executive-coaching-fit',
+    );
+    expect(narrativeCase).toMatchObject({
+      expectedRoute: 'ORIENT',
+      expectedConfidence: 'MEDIUM',
+      answerability: 'PARTIAL',
+      draftExpected: true,
+    });
+    expect(narrativeCase?.mustNotInclude).toEqual(
+      expect.arrayContaining([
+        "what you're describing",
+        'exactly the pattern',
+        'most clients',
+        'repeated symptom list',
+        'guaranteed outcome',
+      ]),
+    );
   });
 
   it('does not invent new value in scheduled follow-ups', () => {

@@ -118,5 +118,28 @@
     "draftExpected": true,
     "mustInclude": ["address invoice-copy request"],
     "mustNotInclude": ["PCC", "path-based recommendation", "price", "cohort"]
+  },
+  {
+    "id": "narrative-adhd-executive-coaching-fit",
+    "relationshipEvidence": "Only a non-coaching visitor-verification event exists; no prior relationship is established",
+    "currentMessage": "I lead sales at a technology startup and have ADHD. The habits that worked in larger organizations no longer feel sustainable in this broader build-and-sell role. I believe I need coaching to develop a more reliable way to prioritize and follow through.",
+    "expectedRoute": "ORIENT",
+    "expectedConfidence": "MEDIUM",
+    "answerability": "PARTIAL",
+    "draftExpected": true,
+    "mustInclude": [
+      "calibrated provisional fit",
+      "verified service mechanics",
+      "fit and scope remain to be explored",
+      "one fit-conversation invitation"
+    ],
+    "mustNotInclude": [
+      "what you're describing",
+      "exactly the pattern",
+      "most clients",
+      "repeated symptom list",
+      "guaranteed outcome",
+      "price"
+    ]
   }
 ]

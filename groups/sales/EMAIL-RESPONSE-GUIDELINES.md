@@ -7,7 +7,11 @@ These rules govern every Sales-authored customer-facing draft, including initial
 - Answer the question asked. Do not dump everything you know about a program.
 - Keep it warm but concise — 3-5 short paragraphs max for a first response. Go deeper only when the lead asks follow-up questions.
 - Point to a program page only when the person explicitly asks for the link or a valid `TRANSACT` Route-Basis requires an enrollment destination. `ORIENT` may name a supported program but must not include a sign-up link.
-- NEVER suggest consultation calls or discovery calls for program inquiries. The information should be sufficient for them to decide.
+- NEVER suggest consultation calls or discovery calls for fixed-information
+  training-program inquiries. The written information should be sufficient for
+  them to decide. This does not apply to a supported custom-scoped Executive or
+  ADHD Executive Coaching `ORIENT` inquiry, where the fit conversation is the
+  defined next step under `WORKFLOWS.md`'s calibrated custom-engagement rule.
 - NEVER volunteer ICF credential fees — that is between the lead and ICF. Only mention if they specifically ask.
 - NEVER list included items with dollar values (e.g., "$29 value, included"). Just say what is included without value inflation.
 - Mention pricing only when it is explicitly requested and the card carries a valid current-message `Route-Basis` for `TRANSACT`. Include only the option(s) required to answer the question; do not automatically add full-program and pay-as-you-go prices.
@@ -15,6 +19,23 @@ These rules govern every Sales-authored customer-facing draft, including initial
 - Mention the free Coaching Foundations module only when the current message explicitly asks for a way to begin or a valid `TRANSACT` Route-Basis requires it. `ORIENT` must not use it as a sales CTA.
 - Mention an alternative cohort only when schedule fit is part of the ask and SCHEDULE.md verifies it.
 - Do not add a program, price, cohort, free module, deadline, benefit, or CTA merely to make the response feel more sales-complete.
+
+## Fit and claim calibration
+
+- A program-matching keyword supports a candidate service, not confirmed
+  individual fit. Do not use it to mark a narrative intake `ANSWERABLE: YES` or
+  `Confidence: HIGH` when fit and engagement scope still require a conversation.
+- Describe service mechanics and possible areas of focus with "may," "can," or
+  "worth exploring." Do not promise that coaching will resolve the person's
+  difficulties or state that their experience is exactly what the service was
+  built for.
+- The current message is evidence only about its author. Never generalize it
+  into "most clients," a typical-client claim, or a medication/treatment history
+  claim unless authoritative knowledge explicitly supports that generalization.
+- For a supported custom-scoped Executive or ADHD Executive Coaching inquiry,
+  `ORIENT` may invite the person to the verified fit conversation under the
+  calibrated custom-engagement rule in `WORKFLOWS.md`. That narrow invitation
+  is not permission to add price, an outcome claim, or a second CTA.
 
 ## Adapt to Prior Context (Known-To-Us)
 
