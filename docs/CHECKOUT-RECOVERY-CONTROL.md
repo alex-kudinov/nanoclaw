@@ -1,6 +1,7 @@
 # Checkout recovery control
 
-Status: live control with `NC-20260829-001` correction in review
+Status: live control with `NC-20260829-001` customer-remediation extension in
+review
 Authority: Growth decision `decision:abandoned-checkout-two-reminder-activation-2026-08-24`
 Mode: host-owned shadow plus separately gated prospective delivery
 
@@ -192,11 +193,22 @@ an append-only receipt and is never automatically replayed. A verified
 provider failure can still follow the bounded retry schedule.
 
 Encharge event-property merge tags are not a reliable rendering surface in
-this account. The host therefore mirrors only the already-minimized public
-product name and query-free Tandem return URL into dedicated mutable person
-fields on the same ingest event. Templates render those two fields; the event
-properties remain the trigger/routing facts. No payment or checkout token is
+this account. The host therefore mirrors the already-minimized public product
+name, query-free Tandem return URL, localized safe subject, guidance title/body,
+and locale-specific support URL into dedicated mutable person fields on the
+same ingest event. Templates render those fields; the event properties remain
+the trigger/routing facts and include only the closed guidance key plus whether
+the case has a known failure. Generic abandonment uses separate copy. No raw
+Stripe code, provider message, payment identifier, or checkout token is
 projected into Encharge.
+
+The tracked provider source is
+`docs/programs/company-os/provider-assets/checkout-recovery/`. Its eight files
+map exactly to active flow `400441` templates `479523` through `479530`. Every
+template preserves reply, category preferences, unsubscribe, safe fresh-checkout
+CTA, and human-support routes. The website's immediate failure step and the
+email both use the same six-key customer-safe policy, while independently
+localized copy prevents an internal state label from becoming customer text.
 
 ## Deployment and rollback
 

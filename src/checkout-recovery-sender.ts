@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import type { PoolClient, QueryResultRow } from 'pg';
 
 import { withAgentContext } from './business-db.js';
+import type { CheckoutFailureGuidanceKey } from './checkout-recovery.js';
+import { checkoutRecoveryCustomerCopy } from './checkout-recovery-guidance.js';
 
 const ACTOR = 'checkout-recovery:sender';
 export const CHECKOUT_RECOVERY_ENCHARGE_EVENT =
@@ -31,6 +33,7 @@ export interface CheckoutRecoverySchedulableCase {
   productSlug: string | null;
   emailSha256: string | null;
   contactEmail: string | null;
+  guidanceKey: CheckoutFailureGuidanceKey | null;
 }
 
 interface IntentRow extends QueryResultRow {
@@ -63,6 +66,7 @@ interface CaseRow extends QueryResultRow {
   shadow_notified_at: string | null;
   checkout_locale: 'en' | 'es' | 'ja' | 'fr' | null;
   return_url: string | null;
+  customer_guidance_key: CheckoutFailureGuidanceKey | null;
 }
 
 export interface CheckoutRecoveryClaimedIntent {
@@ -79,6 +83,10 @@ export interface CheckoutRecoveryClaimedIntent {
       email: string;
       checkout_recovery_product_name: string;
       checkout_recovery_return_url: string;
+      checkout_recovery_subject: string;
+      checkout_recovery_guidance_title: string;
+      checkout_recovery_guidance_body: string;
+      checkout_recovery_support_url: string;
     };
     properties: {
       touch: 1 | 2;
@@ -92,6 +100,8 @@ export interface CheckoutRecoveryClaimedIntent {
       case_ref: string;
       intent_ref: string;
       mode: 'pilot' | 'production';
+      guidance_key: CheckoutFailureGuidanceKey | 'checkout_incomplete';
+      failure_specific: boolean;
     };
   };
 }
@@ -348,7 +358,8 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
                 product_name, amount_cents::text, currency,
                 contact_email::text, email_sha256, consent_state,
                 consent_policy_version, eligibility_state, suppression_code,
-                shadow_notified_at::text, checkout_locale, return_url
+                shadow_notified_at::text, checkout_locale, return_url,
+                customer_guidance_key
            FROM business_v2.checkout_recovery_cases
           WHERE id = $1 FOR UPDATE`,
       [intent.case_id],
@@ -447,12 +458,21 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
     if (otherCaseRenderContextInFlight.rowCount) continue;
     const leaseToken = crypto.randomUUID();
     const attemptNumber = intent.attempt_count + 1;
+    const customerCopy = checkoutRecoveryCustomerCopy({
+      locale: item.checkout_locale,
+      guidanceKey: item.customer_guidance_key,
+      touch: intent.touch as 1 | 2,
+    });
     const payload: CheckoutRecoveryClaimedIntent['payload'] = {
       name: CHECKOUT_RECOVERY_ENCHARGE_EVENT,
       user: {
         email: item.contact_email,
         checkout_recovery_product_name: item.product_name,
         checkout_recovery_return_url: item.return_url,
+        checkout_recovery_subject: customerCopy.subject,
+        checkout_recovery_guidance_title: customerCopy.title,
+        checkout_recovery_guidance_body: customerCopy.body,
+        checkout_recovery_support_url: customerCopy.supportUrl,
       },
       properties: {
         touch: intent.touch as 1 | 2,
@@ -467,6 +487,8 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
         case_ref: item.case_uuid,
         intent_ref: intent.intent_uuid,
         mode: sendMode,
+        guidance_key: customerCopy.guidanceKey,
+        failure_specific: customerCopy.failureSpecific,
       },
     };
     const payloadSha256 = sha(payload);

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;background:#f5f3ee;font-family:Arial,sans-serif;color:#19342d">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f3ee;padding:24px 12px"><tr><td align="center">
+    <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:16px;padding:32px"><tr><td>
+      <p style="margin:0 0 18px;font-size:16px;line-height:1.8">{{person.firstName | default: "お客様"}} 様</p>
+      <h1 style="font-size:25px;line-height:1.4;margin:0 0 18px">{{person.checkout_recovery_subject}}</h1>
+      <p style="font-size:16px;line-height:1.8">これは、<strong>{{person.checkout_recovery_product_name}}</strong>についてご希望いただいた2通目で最後の決済リマインダーです。</p>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;background:#f5f3ee;border-left:4px solid #135740;border-radius:10px"><tr><td style="padding:18px">
+        <p style="margin:0 0 8px;font-size:17px;line-height:1.6;font-weight:bold">{{person.checkout_recovery_guidance_title}}</p>
+        <p style="margin:0;font-size:15px;line-height:1.8">{{person.checkout_recovery_guidance_body}}</p>
+      </td></tr></table>
+      <p style="font-size:16px;line-height:1.8">引き続き受講をご希望の場合は、新しい決済手続きを開始できます。</p>
+      <p style="margin:26px 0"><a href="{{person.checkout_recovery_return_url}}" style="display:inline-block;background:#135740;color:#fff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">決済ページに戻る</a></p>
+      <p style="font-size:14px;line-height:1.8;color:#52645f">新しい決済手続きが開きます。以前の決済手続きは再開されません。</p>
+      <p style="font-size:16px;line-height:1.8">担当者のサポートをご希望の場合は、このメールに返信するか、<a href="{{person.checkout_recovery_support_url}}" style="color:#135740;font-weight:bold">お問い合わせ</a>ください。</p>
+      <p style="font-size:16px;line-height:1.8;margin-bottom:0">Cherie Silas, MCC<br>Tandem Coaching</p>
+    </td></tr></table>
+    <p style="font-size:12px;line-height:1.8;color:#687772;max-width:600px"><a href="{{person.managePreferencesURL}}">配信設定を管理</a> · <a href="{{person.unsubscribeURL}}">配信停止</a><br>{{account.mailingAddress}}</p>
+  </td></tr></table>
+</body></html>

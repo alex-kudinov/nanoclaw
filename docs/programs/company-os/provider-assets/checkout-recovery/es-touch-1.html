@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;background:#f5f3ee;font-family:Arial,sans-serif;color:#19342d">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f3ee;padding:24px 12px"><tr><td align="center">
+    <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:16px;padding:32px"><tr><td>
+      <p style="margin:0 0 18px;font-size:16px;line-height:1.6">{{person.firstName | default: "Hola"}},</p>
+      <h1 style="font-size:25px;line-height:1.25;margin:0 0 18px">{{person.checkout_recovery_subject}}</h1>
+      <p style="font-size:16px;line-height:1.6">Iniciaste el pago de <strong>{{person.checkout_recovery_product_name}}</strong>, pero no se completó.</p>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;background:#f5f3ee;border-left:4px solid #135740;border-radius:10px"><tr><td style="padding:18px">
+        <p style="margin:0 0 8px;font-size:17px;line-height:1.4;font-weight:bold">{{person.checkout_recovery_guidance_title}}</p>
+        <p style="margin:0;font-size:15px;line-height:1.6">{{person.checkout_recovery_guidance_body}}</p>
+      </td></tr></table>
+      <p style="font-size:16px;line-height:1.6">Si todavía quieres inscribirte, vuelve a la página del curso e inicia un pago nuevo.</p>
+      <p style="margin:26px 0"><a href="{{person.checkout_recovery_return_url}}" style="display:inline-block;background:#135740;color:#fff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">Volver al pago</a></p>
+      <p style="font-size:14px;line-height:1.6;color:#52645f">Se abrirá un pago nuevo; no se reanudará el intento anterior.</p>
+      <p style="font-size:16px;line-height:1.6">Responde a este correo o <a href="{{person.checkout_recovery_support_url}}" style="color:#135740;font-weight:bold">escríbenos</a>, y te ayudaré a completar la inscripción.</p>
+      <p style="font-size:16px;line-height:1.6;margin-bottom:0">Cherie Silas, MCC<br>Tandem Coaching</p>
+    </td></tr></table>
+    <p style="font-size:12px;line-height:1.6;color:#687772;max-width:600px"><a href="{{person.managePreferencesURL}}">Gestionar preferencias</a> · <a href="{{person.unsubscribeURL}}">Cancelar suscripción</a><br>{{account.mailingAddress}}</p>
+  </td></tr></table>
+</body></html>

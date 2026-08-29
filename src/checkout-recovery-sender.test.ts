@@ -23,6 +23,11 @@ const intent: CheckoutRecoveryClaimedIntent = {
       email: 'pilot@example.com',
       checkout_recovery_product_name: 'ACC Level 1 Full Program',
       checkout_recovery_return_url: 'https://tandemcoach.co/acc/',
+      checkout_recovery_subject: 'We can help with your checkout',
+      checkout_recovery_guidance_title: 'Your checkout is still available',
+      checkout_recovery_guidance_body:
+        'You started checkout but it was not completed.',
+      checkout_recovery_support_url: 'https://tandemcoach.co/contact-us/',
     },
     properties: {
       touch: 1,
@@ -36,6 +41,8 @@ const intent: CheckoutRecoveryClaimedIntent = {
       case_ref: '33333333-3333-4333-8333-333333333333',
       intent_ref: '11111111-1111-4111-8111-111111111111',
       mode: 'pilot',
+      guidance_key: 'checkout_incomplete',
+      failure_specific: false,
     },
   },
 };

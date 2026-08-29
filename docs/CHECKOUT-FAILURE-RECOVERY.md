@@ -1,8 +1,10 @@
 # Checkout failure recovery correction
 
-Status: proposed correction design under `NC-20260829-001`
+Status: capture-first correction live; customer remediation extension validating
+under `NC-20260829-001`
 Authority: accepted
-`decision:checkout-failure-customer-recovery-2026-08-29`
+`decision:checkout-failure-customer-recovery-2026-08-29` and
+`decision:checkout-failure-specific-followup-2026-08-29`
 Supersedes: no prior evidence; narrows and corrects the implemented mechanics
 under `docs/CHECKOUT-RECOVERY-CONTROL.md`
 
@@ -130,11 +132,27 @@ sees raw decline codes or sensitive fraud/lost/stolen/blacklist detail.
 sensitive codes always map to `generic_decline`. Stripe's human-readable error
 message is evidence, not directly rendered customer copy.
 
-The checkout frontend renders localized English, Spanish, Japanese, and French
-copy from the safe guidance key available on the Stripe.js error. It preserves
-the payment form and alternative-method controls. This immediate inline message
-does not send an email. Outbound reminders retain the existing prospective,
-policy-v2, consent, purchase-suppression, and provider-acceptance gates.
+The checkout frontend renders a persistent, focused remediation step in
+localized English, Spanish, Japanese, and French from the safe guidance key
+available on the Stripe.js error. It states that payment was not completed,
+explains the safe reason, keeps the payment form and alternative-method
+controls available, and offers retry plus a locale-specific support link. This
+immediate checkout step does not send an email or expose raw Stripe detail.
+
+The existing two-touch Encharge flow `400441` remains the only outbound path.
+NanoClaw projects the safe key into localized subject, guidance title/body, and
+support URL person fields before emitting the existing versioned event. All
+eight tracked locale/touch templates render those fields alongside the product
+and query-free return URL. Generic abandonment remains explicitly distinct
+from a known payment failure. The flow's existing prospective cutoff,
+affirmative consent, purchase and sibling-case suppression, touch-one
+acceptance prerequisite, touch-two reply check, preferences, unsubscribe,
+idempotency, and ambiguous-lease hold remain unchanged.
+
+Provider event acceptance or template readback is structural proof, not proof
+that a customer received or acted on a reminder. No historical customer is
+contacted and no Stripe failure is manufactured; the next naturally eligible
+failure is the outcome canary.
 
 ## One operator incident
 

@@ -1070,6 +1070,7 @@ export async function sweepCheckoutRecoveryShadowWithClient(
           productSlug: scheduledCase.product_slug,
           emailSha256: scheduledCase.email_sha256,
           contactEmail: scheduledCase.contact_email,
+          guidanceKey: scheduledCase.customer_guidance_key,
         },
         input.sendConfig,
         now,

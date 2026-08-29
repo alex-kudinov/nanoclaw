@@ -131,6 +131,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   communication, enrollment, or role promotion was manufactured. The next
   natural validated capture must prove Party resolve/create, Stripe Customer
   bind, and customer-associated payment creation.
+- Customer-remediation extension: the prior checkout only rendered a transient
+  safe error banner and the already-active Encharge flow `400441` sent generic
+  abandonment copy even when NanoClaw retained a safe failure category. The
+  implementation adds a persistent localized payment-failure step with the
+  actual safe reason, retry, and human support; projects localized subject,
+  guidance title/body, support URL, closed guidance key, and failure-specific
+  flag into the existing provider handoff; and tracks all eight existing
+  locale/touch templates as source. Raw Stripe codes/messages remain excluded,
+  generic abandonment stays distinct, and every existing consent/cutoff/
+  purchase/reply/unsubscribe/idempotency/suppression gate remains unchanged.
+  Focused NanoClaw 14/14, typecheck/build/docs continuity, and Tandemweb
+  syntax/static contracts pass. Full NanoClaw is 3,383 pass / 32 skip with
+  only the two unchanged CNPC-wrapper and date-stale Trafft failures; full
+  Tandemweb is 57/58 with only the unchanged exam-fulfillment assertion.
+  Independent bounded Claude Sonnet/high review returned
+  `NO MATERIAL FINDINGS`; Codex's full gate then caught and removed a local
+  shared-Encharge toolbox opt-in that would have violated NanoClaw's existing
+  read-only provider-tool boundary. The review used session
+  `faed3d33-35f3-48a2-a2e1-1a5396f8277a`, 25 model/tool turns, 2,049,962
+  cache-read tokens, and 20,733 output tokens, slightly exceeding the bounded
+  review warnings. No provider template, deployment, customer event/email,
+  historical case, or Stripe transaction has changed yet.
 - Rollback/recovery: dirty primaries untouched; implementation uses three
   isolated branches. Deployment must protect queue/workflow/database/service
   backups and quarantine historical work before n8n repair.

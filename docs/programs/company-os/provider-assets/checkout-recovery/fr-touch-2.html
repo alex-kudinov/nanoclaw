@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;background:#f5f3ee;font-family:Arial,sans-serif;color:#19342d">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f3ee;padding:24px 12px"><tr><td align="center">
+    <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:16px;padding:32px"><tr><td>
+      <p style="margin:0 0 18px;font-size:16px;line-height:1.6">{{person.firstName | default: "Bonjour"}},</p>
+      <h1 style="font-size:25px;line-height:1.25;margin:0 0 18px">{{person.checkout_recovery_subject}}</h1>
+      <p style="font-size:16px;line-height:1.6">Voici le deuxième et dernier rappel de paiement que vous avez demandé pour <strong>{{person.checkout_recovery_product_name}}</strong>.</p>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;background:#f5f3ee;border-left:4px solid #135740;border-radius:10px"><tr><td style="padding:18px">
+        <p style="margin:0 0 8px;font-size:17px;line-height:1.4;font-weight:bold">{{person.checkout_recovery_guidance_title}}</p>
+        <p style="margin:0;font-size:15px;line-height:1.6">{{person.checkout_recovery_guidance_body}}</p>
+      </td></tr></table>
+      <p style="font-size:16px;line-height:1.6">Si le programme vous convient toujours, vous pouvez démarrer un nouveau paiement.</p>
+      <p style="margin:26px 0"><a href="{{person.checkout_recovery_return_url}}" style="display:inline-block;background:#135740;color:#fff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">Revenir au paiement</a></p>
+      <p style="font-size:14px;line-height:1.6;color:#52645f">Un nouveau paiement s’ouvrira ; la tentative précédente ne reprendra pas.</p>
+      <p style="font-size:16px;line-height:1.6">Si vous souhaitez une aide humaine, répondez à cet e-mail ou <a href="{{person.checkout_recovery_support_url}}" style="color:#135740;font-weight:bold">contactez-nous</a>.</p>
+      <p style="font-size:16px;line-height:1.6;margin-bottom:0">Cherie Silas, MCC<br>Tandem Coaching</p>
+    </td></tr></table>
+    <p style="font-size:12px;line-height:1.6;color:#687772;max-width:600px"><a href="{{person.managePreferencesURL}}">Gérer les préférences</a> · <a href="{{person.unsubscribeURL}}">Se désabonner</a><br>{{account.mailingAddress}}</p>
+  </td></tr></table>
+</body></html>
