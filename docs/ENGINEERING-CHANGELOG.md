@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-31T02:56:13Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; implementation and review complete, release/deployment and
-  live canary pending
-- Commit/release: uncommitted on `codex/grader-thread-routing-20260830`, based
-  directly on exact live release `d834cb2fad0b`
+- State: ready_for_deploy; implementation, review, verification, commit, and
+  push complete, while release/deployment and live canary remain pending
+- Commit/release: pushed `43511ecf` on
+  `codex/grader-thread-routing-20260830`, based directly on exact live release
+  `d834cb2fad0b`
 - Change class: C3 because the corrected path publishes operator-visible grader
   decisions in Slack; no certificate or customer communication is authorized
 - Root cause: one discrepancy turn called the message tool without `thread_ts`,
