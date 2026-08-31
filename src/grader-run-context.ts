@@ -53,6 +53,11 @@ interface StoredGraderRunContext {
   context: GraderRunContext;
 }
 
+export interface GraderRunBinding {
+  threadTs: string;
+  context: GraderRunContext;
+}
+
 const contexts = new Map<string, StoredGraderRunContext>();
 const latestRunByThread = new Map<string, string>();
 
@@ -96,19 +101,38 @@ export function getGraderRunContext(
   threadTs: string | undefined,
   nowMs: number = Date.now(),
 ): GraderRunContext | undefined {
-  if (typeof runId !== 'string' || !runId || !threadTs) return undefined;
+  if (!threadTs) return undefined;
+  const binding = getGraderRunBinding(runId, jid, nowMs);
+  if (!binding || binding.threadTs !== threadTs) return undefined;
+  return binding.context;
+}
+
+/**
+ * Resolve the host-owned destination binding for one exact grader turn.
+ *
+ * The model may omit or misstate `thread_ts` in a `send_message` tool call.
+ * The MCP server stamps `run_id` outside the model's tool schema, so the host
+ * can safely recover the immutable thread recorded before that turn started.
+ * A missing, expired, or wrong-destination run remains unbound.
+ */
+export function getGraderRunBinding(
+  runId: unknown,
+  jid: string,
+  nowMs: number = Date.now(),
+): GraderRunBinding | undefined {
+  if (typeof runId !== 'string' || !runId) return undefined;
   const stored = contexts.get(runId);
-  if (!stored || stored.jid !== jid || stored.threadTs !== threadTs) {
-    return undefined;
-  }
+  if (!stored || stored.jid !== jid) return undefined;
   if (nowMs - stored.context.registeredAtMs > CONTEXT_TTL_MS) {
     contexts.delete(runId);
-    if (latestRunByThread.get(threadKeyFor(jid, threadTs)) === runId) {
-      latestRunByThread.delete(threadKeyFor(jid, threadTs));
+    if (
+      latestRunByThread.get(threadKeyFor(stored.jid, stored.threadTs)) === runId
+    ) {
+      latestRunByThread.delete(threadKeyFor(stored.jid, stored.threadTs));
     }
     return undefined;
   }
-  return stored.context;
+  return { threadTs: stored.threadTs, context: stored.context };
 }
 
 /**

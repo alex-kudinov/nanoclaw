@@ -83,7 +83,10 @@ import {
   type GraderDeliveryRequest,
   type GraderDeliveryResult,
 } from './grader-delivery.js';
-import { getGraderRunContext } from './grader-run-context.js';
+import {
+  getGraderRunBinding,
+  getGraderRunContext,
+} from './grader-run-context.js';
 import {
   handleClassificationLesson,
   isClassificationLesson,
@@ -975,14 +978,35 @@ export function startIpcWatcher(deps: IpcDeps): void {
                         'Grader output boundary is unavailable; message not sent',
                       );
                     }
+                    const runBinding = getGraderRunBinding(
+                      data.run_id,
+                      targetJid,
+                    );
+                    const effectiveThreadTs =
+                      runBinding?.threadTs ?? data.thread_ts;
+                    if (
+                      runBinding &&
+                      data.thread_ts !== undefined &&
+                      data.thread_ts !== runBinding.threadTs
+                    ) {
+                      logger.warn(
+                        {
+                          targetJid,
+                          sourceGroup,
+                          suppliedThreadTs: data.thread_ts,
+                          boundThreadTs: runBinding.threadTs,
+                        },
+                        'Grader IPC thread differed from host run binding; host binding used',
+                      );
+                    }
                     const runContext = getGraderRunContext(
                       data.run_id,
                       targetJid,
-                      data.thread_ts,
+                      effectiveThreadTs,
                     );
                     const result = await deps.deliverGraderOutput({
                       jid: targetJid,
-                      threadTs: data.thread_ts,
+                      threadTs: effectiveThreadTs,
                       text: data.text,
                       source: 'ipc',
                       submissionContext: runContext

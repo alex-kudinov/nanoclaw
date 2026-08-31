@@ -5,6 +5,7 @@ import {
   CONTEXT_TTL_MS,
   formatHostAssignmentContext,
   formatHostContextUnavailable,
+  getGraderRunBinding,
   getGraderRunContext,
   MAX_LIVE_CLONE_AGE_MS,
   prepareLatestGraderRunContext,
@@ -56,6 +57,15 @@ describe('the run-context registry', () => {
     );
   });
 
+  it('returns the host-owned thread binding without trusting a model thread', () => {
+    setGraderRunContext(RUN, JID, THREAD, context());
+    expect(getGraderRunBinding(RUN, JID, NOW)).toMatchObject({
+      threadTs: THREAD,
+      context: { studentName: 'Ada Lovelace' },
+    });
+    expect(getGraderRunBinding(RUN, 'slack:C0OTHER', NOW)).toBeUndefined();
+  });
+
   it('has nothing for an unregistered thread, which is the post-restart state', () => {
     expect(getGraderRunContext(RUN, JID, THREAD, NOW)).toBeUndefined();
   });
@@ -80,6 +90,9 @@ describe('the run-context registry', () => {
     ).toBeDefined();
     expect(
       getGraderRunContext(RUN, JID, THREAD, NOW + CONTEXT_TTL_MS + 1),
+    ).toBeUndefined();
+    expect(
+      getGraderRunBinding(RUN, JID, NOW + CONTEXT_TTL_MS + 1),
     ).toBeUndefined();
   });
 

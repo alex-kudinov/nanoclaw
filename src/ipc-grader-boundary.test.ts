@@ -353,7 +353,7 @@ describe('IPC grader output boundary', () => {
     _resetGraderRunContexts();
   });
 
-  it('rejects a run id replayed into a different thread', async () => {
+  it('uses the host-bound thread when the model supplies a different thread', async () => {
     const { setGraderRunContext, _resetGraderRunContexts } =
       await import('./grader-run-context.js');
     _resetGraderRunContexts();
@@ -376,7 +376,45 @@ describe('IPC grader output boundary', () => {
     await vi.advanceTimersByTimeAsync(50);
 
     expect(deliverGraderOutput).toHaveBeenCalledWith(
-      expect.objectContaining({ submissionContext: undefined }),
+      expect.objectContaining({
+        threadTs: 'thr-original',
+        submissionContext: expect.objectContaining({
+          studentName: 'Original Student',
+        }),
+      }),
+    );
+    _resetGraderRunContexts();
+  });
+
+  it('recovers an omitted operator-message thread from the exact run binding', async () => {
+    const { setGraderRunContext, _resetGraderRunContexts } =
+      await import('./grader-run-context.js');
+    _resetGraderRunContexts();
+    const runId = '09caf233-a951-4d57-81a7-82ab44c782f2';
+    setGraderRunContext(runId, GRADER_JID, 'thr-bound-operator', {
+      studentName: 'Vedat Erol',
+      code: 'foundation-m3',
+      title: 'Module 3 Assignment: Managing the MC Process',
+      mode: 'snapshot-only',
+      registeredAtMs: Date.now(),
+    });
+    const { startIpcWatcher } = await import('./ipc.js');
+    writeIpcMessage('grader', {
+      chatJid: GRADER_JID,
+      text: 'OPERATOR ONLY - DO NOT COPY TO HEARTBEAT\nDiscrepancy, not graded.',
+      run_id: runId,
+    });
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(deliverGraderOutput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        threadTs: 'thr-bound-operator',
+        submissionContext: expect.objectContaining({
+          studentName: 'Vedat Erol',
+        }),
+      }),
     );
     _resetGraderRunContexts();
   });

@@ -127,9 +127,10 @@ stated module number, the deliverable type it plainly is) match the requested re
 does it answer the loaded prompt at all? If yes, grade and say nothing about the check. If it
 looks like a different module/assignment than requested (classic case: asked to grade Module 5,
 but the content is Module 4's deliverable), STOP - do not grade, produce no verdict, persist
-nothing. Post one operator-only flag naming what you were asked to grade vs. what the submission
-actually is and why scoring it as-is is meaningless, then ask whether to grade it as the
-requested reference anyway, re-grade as the reference the content matches, or wait for the
+nothing. Call `mcp__nanoclaw__send_message` with `text` and the triggering message's exact
+`thread_ts`; do not leave the notice only in final text. Begin the text with the operator-only
+marker, name what was requested vs. submitted and why scoring it as-is is meaningless, then ask
+whether to grade it as requested, re-grade as the reference the content matches, or wait for the
 correct file - and WAIT for the answer. Grading first and raising the mismatch only afterward
 is the exact failure this gate prevents; a well-written wrong-module submission still halts.
 

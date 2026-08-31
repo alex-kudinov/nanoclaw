@@ -8,6 +8,49 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260830-001 — Keep grader discrepancy output in the submission thread
+
+- Date: 2026-08-31T02:56:13Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; implementation and review complete, release/deployment and
+  live canary pending
+- Commit/release: uncommitted on `codex/grader-thread-routing-20260830`, based
+  directly on exact live release `d834cb2fad0b`
+- Change class: C3 because the corrected path publishes operator-visible grader
+  decisions in Slack; no certificate or customer communication is authorized
+- Root cause: one discrepancy turn called the message tool without `thread_ts`,
+  so its operator notice posted at the channel root despite an exact host run
+  binding; another skipped the staging tool and left its decision only in
+  suppressed final text. Both submission threads therefore received the generic
+  `final-text-without-thread-output` notice rather than a usable result.
+- Outcome: grader IPC now uses the exact unexpired host-minted run/JID/thread
+  binding when the model omits or conflicts on `thread_ts`. The prompt requires
+  discrepancy notices to call the message tool with `text` and the triggering
+  thread. Missing/expired/wrong-JID/post-restart behavior, student-copy gates,
+  duplicate protection, cross-group traffic, and certifier handoffs remain
+  unchanged.
+- Student-state recovery: the two affected Heartbeat records were independently
+  reviewed against the live assignment and current attachments. The matching
+  development plan was approved with a non-blocking format note; the document
+  for a different recording received its first verified Retry. Tracker results
+  were reconciled. No certificate was issued.
+- Review: the first Claude attempt was stopped before artifact creation after
+  exceeding the bounded-review drift threshold. A fresh narrower Sonnet/high
+  review inspected only six named source/range surfaces and returned
+  `NO MATERIAL FINDINGS` in R1B.
+- Verification: pinned Node 22.23.2 focused 4 files / 74 tests and typecheck
+  pass. Full root: 3,387 pass / 32 skip, with the unchanged CNPC wrapper and
+  date-stale Trafft fixture failures already recorded on the exact live base.
+- Deployment: not yet performed. No daemon, database, credential, external
+  Slack canary, or release pointer changed in this source step.
+- Rollback/recovery: revert the run-binding lookup, IPC effective-thread use,
+  and prompt/test changes together. The prior path remains fail-closed for
+  student copy but can misplace operator-only output.
+- Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, this changelog,
+  and bounded Claude request/response artifacts.
+- Follow-ups: build and verify one immutable release, drain live work, deploy,
+  and run one sanitized operator-only grader canary with no Heartbeat writeback.
+
 ### NC-20260829-002 — Calibrate narrative coaching inquiries without parroting
 
 - Date: 2026-08-29T20:37:00Z

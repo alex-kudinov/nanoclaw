@@ -1350,6 +1350,18 @@ paths. Delivery requires an exact host-minted run UUID bound to the resolved
 grader JID/thread; missing, stale, replayed, restarted, or adopted proof cannot
 stage student copy.
 
+`NC-20260830-001` closes a narrower operator-output routing gap exposed by two
+live discrepancy runs. A grader turn could omit or misstate `thread_ts` in its
+message tool call even though the host had already registered the exact
+run/JID/thread proof. Operator-only text then escaped at the channel root and
+the real submission thread received a misleading missing-output notice. The
+IPC watcher now derives the effective thread from the unexpired host-minted
+run binding whenever it exists; a model-supplied thread cannot override that
+binding. Missing, expired, wrong-JID, restarted, and adopted runs retain the
+prior fail-closed behavior. The grader discrepancy instruction also requires
+an explicit thread-bound message tool call instead of leaving the decision only
+in suppressed final text.
+
 Before each mapped Foundation run, the host resolves the assignment from the
 grading registry and performs one bounded, allowlisted, read-only Heartbeat
 lesson GET. Exact lesson ID and localized title must match, and a returned

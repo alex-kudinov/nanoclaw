@@ -24,7 +24,14 @@ describe('grader feedback prompt contract', () => {
       'vary the wording instead of substituting a new fixed bridge',
     );
     expect(prose).not.toContain('vary the shape');
-    expect(prompt.split('\n')).toHaveLength(216);
+    expect(prompt.split('\n')).toHaveLength(217);
+  });
+
+  it('requires discrepancy notices to use the thread-bound staging tool', () => {
+    expect(prose).toContain(
+      "Call `mcp__nanoclaw__send_message` with `text` and the triggering message's exact `thread_ts`",
+    );
+    expect(prose).toContain('do not leave the notice only in final text');
   });
 
   it('accepts the Module 4 observation form as a container while enforcing live requirements', () => {
