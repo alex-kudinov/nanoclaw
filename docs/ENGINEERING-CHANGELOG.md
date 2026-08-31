@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-08-31T02:56:13Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_deploy; implementation, review, verification, commit, and
-  push complete, while release/deployment and live canary remain pending
+- State: complete; implementation, review, immutable release, deployment, and
+  sanitized live canary are verified
 - Commit/release: pushed `43511ecf` on
   `codex/grader-thread-routing-20260830`, based directly on exact live release
   `d834cb2fad0b`
@@ -42,15 +42,33 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Verification: pinned Node 22.23.2 focused 4 files / 74 tests and typecheck
   pass. Full root: 3,387 pass / 32 skip, with the unchanged CNPC wrapper and
   date-stale Trafft fixture failures already recorded on the exact live base.
-- Deployment: not yet performed. No daemon, database, credential, external
-  Slack canary, or release pointer changed in this source step.
+- Release: exact live `8df61d98c9e46ac63bf7de7850e3e7decbaa9560`,
+  source tree `949ae24901eabcc9efaadd75cbf6ee04c4c1f514`, 1,028-file
+  artifact SHA-256 `ed214585660df8898c48f942ffa701d0576bee854f87fa83226616c5b1ad766a`,
+  and archive SHA-256
+  `4e9439baa954a1a4c5c848afd639f50778e6fef731f3639430b9d62af4602150`.
+  Fresh local and Mini extraction verification passed under Node 22.23.2.
+- Deployment: zero active/waiting/outgoing work and zero protected pending-send
+  rows preceded backup and activation. Backup
+  `NC-20260830-001-20260831T030454Z` contains WAL-safe SQLite, plist, and the
+  prior grader prompt. Activation changed exactly the three release pointers;
+  rollback plist
+  `com.nanoclaw.plist.rollback-d834cb2fad0b-2026-08-31T03-05-31-359Z`
+  is retained. The operational grader prompt moved only from the verified prior
+  hash to the exact release hash.
+- Live verification: health reports exact release/code root and Node 22.23.2;
+  one listener, connected Gmail/Slack, zero active/waiting/outgoing work, and a
+  clean post-start bundle verification. Sanitized grader root
+  `1788145594.661179` received one operator-only discrepancy notice inside that
+  exact thread; the run ended without a generic missing-output notice, student
+  verdict, grading record, or ledger row.
 - Rollback/recovery: revert the run-binding lookup, IPC effective-thread use,
   and prompt/test changes together. The prior path remains fail-closed for
   student copy but can misplace operator-only output.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, this changelog,
   and bounded Claude request/response artifacts.
-- Follow-ups: build and verify one immutable release, drain live work, deploy,
-  and run one sanitized operator-only grader canary with no Heartbeat writeback.
+- Follow-ups: none. Any recurrence is a new incident; do not weaken final-text
+  suppression or exact-run context to recover it.
 
 ### NC-20260829-002 — Calibrate narrative coaching inquiries without parroting
 
