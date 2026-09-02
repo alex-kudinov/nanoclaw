@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-02T11:54:40Z
 - Owner/client: Codex with independent Claude Sonnet/high review complete
-- State: ready_for_deploy; reviewed implementation is committed locally and no
-  production state has changed
+- State: complete; reviewed implementation, immutable release, deployment, and
+  live technical/outcome verification are complete
 - Commit/PR: reviewed commit
   `8dcadfda4e01458a8827394b3cc52ff15bcd0db6` on
   `codex/sales-knowledge-runtime-20260902`, based on pushed post-live lineage
@@ -63,16 +63,45 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   review artifact. Usage was 25 model calls, 160,141 cache-create, 2,969,006
   cache-read, 21,159 output, and 160,143 maximum context; this exceeded the
   bounded-review warning thresholds, so no ceremonial second round is run.
-- Deployment/migration: none. No schema, provider, schedule, approval, Slack
-  post, customer email, checkout, or service state changed.
+- Deployment/migration: no schema or provider migration. Immutable release
+  `658b473061a3a684e837c409fa3737812fe3a8e9` has source tree
+  `7fd5c4e9824fb85f9b925c54b605557c39c7b953`, 1,028 compiled files, artifact
+  SHA-256 `be92afc0ec503568ec4a7b9d4d2e80c0e9e173931ee8c729e19ae8f8ab51266d`,
+  and archive SHA-256
+  `deff9511dfb0bf36b4525d734ae0fd4678d6c0d06838424bc14b9104dab44bf0`.
+  Fresh local extraction and the installed Mini bundle verify under Node
+  22.23.2.
+- Operational knowledge: pre-change backup
+  `/Users/xbohdpukc/nanoclaw-knowledge-backups/NC-20260902-001-20260902T1230Z/operational-knowledge-before.tar.gz`
+  is SHA-256 `95568754…218f`. Target-release injection/check passed across 14
+  current consumers. Sales `SCHEDULE.md` remained `f5e1c1b0…93ae`,
+  `LEARNED.md` remained `5a3a3e2e…b6ed`, and the installed validation script
+  hash-matches the release at `3f8dcc7e…0c37`.
+- Activation: all Sales/Procurement work drained naturally; the final gate had
+  zero active containers, waiting groups, or pending approved/executing email
+  actions. Dry-run and apply changed exactly the three release pointers.
+  Rollback plist:
+  `com.nanoclaw.plist.rollback-8df61d98c9e4-2026-09-02T13-20-43-242Z`.
+- Live verification: PID, sole listener, and launchd agree on 30957. Health
+  reports exact release `658b4730`, matching code root/Node 22.23.2, connected
+  Gmail and Slack, and zero active/waiting work. The compiled live planner maps
+  Sales to the operational KB and Procurement to the release procedure tree.
+  Sales has one exact AACS block and zero exact stale claims. The exact-release
+  detector checks five domains with current products available and zero
+  findings.
+- Outcome: the original Lead #1311 thread now contains a corrected, unapproved
+  draft stating Coaching Supervision Mastery is enrolling and using both current
+  schedules. No approval or customer email occurred. That card completed during
+  the pre-activation drain; post-activation proof is the exact live mount,
+  consumer, bundle, and detector readback.
 - Rollback/recovery: revert the mount allowlist/catalog/check changes together.
   A service rollback to `8df61d98` restores the known stale Sales release mount
   and must be treated as incident recovery only, not a fact-safe steady state.
 - Documentation: project map, minion framework, release-integrity runbook,
   active work, facts source notes, and this changelog.
-- Follow-ups: complete pinned focused/full/release gates, bounded Sonnet/high
-  review, exact operational backup/injection, immutable deployment, and one
-  non-sending replay of the Lead #1311 pathway.
+- Follow-ups: none for this fix. The corrected Lead #1311 draft remains behind
+  normal human approval. The pre-existing checkout-recovery ambiguous-column
+  tick failure is unchanged from `8df61d98` and belongs to its existing scope.
 
 ### NC-20260830-001 — Keep grader discrepancy output in the submission thread
 
