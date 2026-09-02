@@ -8,6 +8,71 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260902-001 — Bind live minion knowledge to immutable fact authority
+
+- Date: 2026-09-02T11:54:40Z
+- Owner/client: Codex with independent Claude Sonnet/high review complete
+- State: validating; implementation is local in an isolated worktree and no
+  production state has changed
+- Commit/PR: `codex/sales-knowledge-runtime-20260902`, based on pushed
+  post-live lineage `59fbdbea`; exact live release at investigation was
+  `8df61d98c9e46ac63bf7de7850e3e7decbaa9560`
+- Change class: C3 because Sales knowledge can shape approval-gated customer
+  drafts; this task does not approve or send a customer message
+- Root cause: Lead #1311 did not ignore the corrected operational KB. The host
+  mounted the release-owned Sales directory, whose exact stale guardrail said
+  Coaching Supervision Mastery was pre-launch/in development with no public
+  dates or price. That release contained no ignored daily `SCHEDULE.md` and only
+  49 of the operational Sales KB's 97 learned lessons. The behavior came from
+  the effective source, not model invention.
+- Implementation: release-owned knowledge precedence is explicitly limited to
+  Procurement's executable browser procedures. Sales and other business KBs
+  retain their configured operational mount, restoring daily schedules and
+  host-written learned corrections. Release packages only the Procurement
+  procedure tree rather than thirteen plausible stale KB decoys. The detector
+  keeps facts/catalogs release-owned but reads the operational Sales KB that
+  Sales actually consumes.
+- Fact authority: a raw-byte-hash-bound Coaching Supervision Mastery catalog and
+  minion pack record live/enrolling AACS status, the October 7, 2026 inaugural
+  cohort, $3,996/$4,796 tuition, active PCC/MCC eligibility, English-only
+  verified delivery, both checkout expectations, and four forbidden stale
+  claims. Deterministic injection removes the superseded hand-written CSS
+  section and places the exact pack in all 13 tracked KBs.
+- Release gates: source build refuses missing/stale canonical consumers. The
+  activator runs the target release's sync checker against the installed
+  operational checkout before dry-run or apply and never mutates it. Deployment
+  must back up and explicitly inject the target packs first. Weekly validation
+  resolves sync code/catalogs from `NANOCLAW_CODE_ROOT` while continuing to
+  update the operational target.
+- Verification so far: canonical injection/check succeeds across 13 KBs; pure
+  detector reports five checked domains and zero findings against current
+  checkout products; focused mount, facts, release-source, activation, and
+  Sales contracts pass 92/92; Python injection/catalog/alternate-target tests
+  pass 8/8; pinned Node 22.23.2 typecheck, formatting, shell/Python syntax,
+  documentation continuity, email-critical 748/748, and runner 45/45 pass.
+  Full root is 3,394 pass/32 skip with two failures; both reproduce exactly on
+  untouched base `59fbdbea` (CNPC wrapper-literal expectation and date-stale
+  Trafft projection fixture). One initial isolated-worktree
+  run had no dependencies and executed no tests; one test-only realpath
+  expectation and one assertion-case mismatch were corrected before the green
+  rerun.
+- Independent review: Claude Sonnet 5/high R1 session
+  `1f2d3e94-8d70-416b-b8d6-6491972a6c9d` returned `GO` with no material
+  findings. Codex verified the response and that Claude wrote only its named
+  review artifact. Usage was 25 model calls, 160,141 cache-create, 2,969,006
+  cache-read, 21,159 output, and 160,143 maximum context; this exceeded the
+  bounded-review warning thresholds, so no ceremonial second round is run.
+- Deployment/migration: none. No schema, provider, schedule, approval, Slack
+  post, customer email, checkout, or service state changed.
+- Rollback/recovery: revert the mount allowlist/catalog/check changes together.
+  A service rollback to `8df61d98` restores the known stale Sales release mount
+  and must be treated as incident recovery only, not a fact-safe steady state.
+- Documentation: project map, minion framework, release-integrity runbook,
+  active work, facts source notes, and this changelog.
+- Follow-ups: complete pinned focused/full/release gates, bounded Sonnet/high
+  review, exact operational backup/injection, immutable deployment, and one
+  non-sending replay of the Lead #1311 pathway.
+
 ### NC-20260830-001 — Keep grader discrepancy output in the submission thread
 
 - Date: 2026-08-31T02:56:13Z

@@ -348,13 +348,27 @@ Each minion that needs business knowledge gets a subset of:
 | `SCHEDULE.md` | `/workspace/extra/knowledge/SCHEDULE.md` | Live cohort dates | `schedule-refresh` job → `tools/refresh-schedule.py` (auto, daily 6:30 CT) — sources the `calendar-debug` endpoint, honors sequential/flexible/cohort + two timezone tracks |
 | `LEARNED.md` | `/workspace/extra/knowledge/LEARNED.md` | Accumulated feedback lessons | `learn_lesson` IPC → host appends |
 
-Knowledge files live in `knowledge/agents/{group}/` on the host and are mounted read-only into containers.
+Business knowledge files live in the operational checkout at
+`knowledge/agents/{group}/` and are mounted into containers with the configured
+read/write policy. This is deliberate: `schedule-refresh`, `learn_lesson`, and
+reviewed operator corrections must take effect between application releases.
+The immutable release owns the canonical catalogs and generated fact packs;
+the program-facts detector and release activator verify that the effective
+operational KB contains those exact packs and no catalog-declared stale claims.
+
+Procurement is the explicit exception. Its `knowledge/agents/procurement`
+directory contains executable browser procedures, so that one directory is
+packaged and mounted read-only from the verified release. Adding another
+release-owned knowledge group requires an explicit code allowlist entry and
+mount regression; packaging a directory alone must never silently change which
+knowledge an agent consumes.
 
 The learning loop:
 1. Minion completes a feedback-and-approval cycle
 2. Minion writes a `learn_lesson` IPC file to `/workspace/ipc/messages/`
 3. Host `learn-ipc-handler.ts` reads it, appends to `LEARNED.md`
-4. Next invocation: minion reads `LEARNED.md` and applies accumulated lessons
+4. Next invocation: minion reads the operational `LEARNED.md` and applies the
+   accumulated lessons without waiting for a software release
 
 ---
 

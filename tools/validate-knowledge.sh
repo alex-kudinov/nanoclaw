@@ -19,6 +19,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 KNOWLEDGE="$PROJECT_ROOT/knowledge/shared/KNOWLEDGE.md"
 LLMS_FULL="$PROJECT_ROOT/knowledge/shared/llms-full.txt"
 TANDEMWEB_LLMS="${HOME}/dev/tandemweb/llms-full.txt"
+PROGRAM_FACT_ROOT="${NANOCLAW_CODE_ROOT:-$PROJECT_ROOT}"
+PROGRAM_FACT_SYNC="$PROGRAM_FACT_ROOT/tools/sync-program-facts.py"
 
 UPDATE_HASH=false
 COPY_FIRST=false
@@ -170,7 +172,7 @@ if $UPDATE_HASH; then
     echo "Copied to all agent folders"
 
     # Reapply source-controlled domain facts after any generic KB propagation.
-    python3 "$PROJECT_ROOT/tools/sync-program-facts.py" inject
+    python3 "$PROGRAM_FACT_SYNC" inject --target-root "$PROJECT_ROOT"
 fi
 
 # ── Regenerate if requested and hash changed ──
@@ -206,10 +208,10 @@ fi
 
 echo ""
 echo "--- Canonical program-facts check ---"
-if python3 "$PROJECT_ROOT/tools/sync-program-facts.py" check; then
-    echo "  Practitioner catalog and every tracked minion KB agree"
+if python3 "$PROGRAM_FACT_SYNC" check --target-root "$PROJECT_ROOT"; then
+    echo "  Canonical catalogs and every tracked minion KB agree"
 else
-    echo "  Practitioner catalog drift found — run tools/sync-program-facts.py sync"
+    echo "  Canonical program-facts drift found — run tools/sync-program-facts.py sync"
     ERRORS=$((ERRORS + 1))
 fi
 

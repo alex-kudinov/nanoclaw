@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "catalog_id": "coaching-supervision-mastery",
+  "catalog_revision": 1,
+  "verified_at": "2026-09-02T11:54:40Z",
+  "program": {
+    "name": "Coaching Supervision Mastery",
+    "sales_url": "https://tandemcoach.co/coaching-supervisor-training/",
+    "status": "live_enrolling",
+    "delivery_language": "English",
+    "eligibility": "Active ICF PCC or MCC",
+    "duration_hours": 72,
+    "live_percentage": 64,
+    "cohort_size": "9-12",
+    "faculty": "Cherie Silas, MCC, EMCC ESIA, ACTC"
+  },
+  "accreditation": {
+    "program_level": "ICF Advanced Accreditation in Coaching Supervision (AACS)",
+    "granted": "2026-07-22",
+    "valid_through": "2029-07-31",
+    "individual_pathway": "ICF Coaching Supervisor Specialization (CSS)"
+  },
+  "current_enrollment": {
+    "cohort": "Inaugural cohort",
+    "start": "2026-10-07",
+    "end": "2027-02-10",
+    "weekday": "Wednesday",
+    "time": "10:00 AM ET / 9:00 AM CT",
+    "live_classes": 16,
+    "checkout_product": "supervision-inaugural",
+    "price_cents": 399600,
+    "installments": {
+      "count": 4,
+      "amount_cents": 99900
+    }
+  },
+  "regular_tuition": {
+    "checkout_product": "supervision-regular",
+    "price_cents": 479600,
+    "installments": {
+      "count": 4,
+      "amount_cents": 119900
+    }
+  },
+  "checkout_expectations": [
+    {
+      "product": "supervision-inaugural",
+      "price_cents": 399600,
+      "active": true
+    },
+    {
+      "product": "supervision-regular",
+      "price_cents": 479600,
+      "active": false
+    }
+  ],
+  "stale_claims": [
+    "The program is PRE-LAUNCH / in development — a founding cohort is forming.",
+    "Do NOT quote a student price — none is public.",
+    "Capture founding-cohort interest — no date, no price promised.",
+    "Status: founding cohort / interest capture — no price quote."
+  ],
+  "boundaries": [
+    "AACS is the accreditation held by the education program; CSS is the specialization an individual applies for through ICF.",
+    "Use the operational SCHEDULE.md for the latest cohort choices and exact dates; never infer that a missing schedule means the program is in development.",
+    "No Turkish-language delivery is currently verified. Do not infer another delivery language from a lead's location or language preference."
+  ],
+  "evidence": {
+    "owner_instruction": "NC-20260902-001 durable correction authorized by the owner",
+    "program_authority": "/Users/xbohdpukc/dev/courses/community/icf/supervision",
+    "website_source": "/Users/xbohdpukc/dev/tandemweb/pages/coaching-supervisor-training",
+    "checkout_source": "/Users/xbohdpukc/dev/tandemweb/data/checkout/products.json",
+    "public_readback": {
+      "checked_at": "2026-09-02T11:54:40Z",
+      "url": "https://tandemcoach.co/coaching-supervisor-training/",
+      "status": 200
+    }
+  }
+}

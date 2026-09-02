@@ -107,6 +107,34 @@ function verifyBundle(nodePath: string, releaseDir: string): void {
   run(nodePath, [verifier, releaseDir, '--runtime']);
 }
 
+function verifyOperationalKnowledge(
+  releaseDir: string,
+  installed: LaunchdPlist,
+): void {
+  const operationalRoot = installed.WorkingDirectory;
+  if (
+    typeof operationalRoot !== 'string' ||
+    !path.isAbsolute(operationalRoot)
+  ) {
+    throw new Error(
+      'installed plist must provide an absolute WorkingDirectory',
+    );
+  }
+  const sync = path.join(releaseDir, 'tools', 'sync-program-facts.py');
+  if (!fs.existsSync(sync)) {
+    throw new Error(`release program-facts verifier missing: ${sync}`);
+  }
+  run('/usr/bin/env', [
+    'python3',
+    sync,
+    'check',
+    '--source',
+    path.join(releaseDir, '.no-external-program-facts-source'),
+    '--target-root',
+    operationalRoot,
+  ]);
+}
+
 async function getHealth(url: string, timeoutMs: number): Promise<unknown> {
   const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
   if (!response.ok) {
@@ -306,6 +334,7 @@ export async function activateRelease(
   assertInterpreter(nodePath, manifest.nodePin);
   verifyBundle(nodePath, releaseDir);
   verifyBundle(nodePath, plan.current.releaseDir);
+  verifyOperationalKnowledge(releaseDir, plan.installed);
   if (!options.recoverFromDown) {
     assertHealthyRollbackRelease(
       await getHealth(options.healthUrl, Math.min(options.timeoutMs, 5_000)),

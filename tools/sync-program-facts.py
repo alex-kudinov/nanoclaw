@@ -27,6 +27,10 @@ MCS_CATALOG = LOCAL_DIR / "mcs-foundations-locales.json"
 MCS_PACK = LOCAL_DIR / "mcs-foundations-locales.minion.md"
 MCS_BEGIN = "<!-- BEGIN CANONICAL PROGRAM FACTS: mcs-foundations-locales -->"
 MCS_END = "<!-- END CANONICAL PROGRAM FACTS: mcs-foundations-locales -->"
+AACS_CATALOG = LOCAL_DIR / "coaching-supervision-mastery.json"
+AACS_PACK = LOCAL_DIR / "coaching-supervision-mastery.minion.md"
+AACS_BEGIN = "<!-- BEGIN CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->"
+AACS_END = "<!-- END CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->"
 
 
 def expected_block(pack: str) -> str:
@@ -35,6 +39,10 @@ def expected_block(pack: str) -> str:
 
 def expected_mcs_block(pack: str) -> str:
     return f"{MCS_BEGIN}\n{pack.strip()}\n{MCS_END}"
+
+
+def expected_aacs_block(pack: str) -> str:
+    return f"{AACS_BEGIN}\n{pack.strip()}\n{AACS_END}"
 
 
 def repair_legacy_practitioner_copy(text: str) -> str:
@@ -75,9 +83,45 @@ def inject_mcs_locales(text: str, pack: str) -> str:
     return text.rstrip() + "\n\n" + block + "\n"
 
 
-def knowledge_paths() -> list[Path]:
-    paths = [ROOT / "knowledge" / "shared" / "KNOWLEDGE.md"]
-    paths.extend(sorted((ROOT / "knowledge" / "agents").glob("*/KNOWLEDGE.md")))
+def remove_legacy_aacs_section(text: str) -> str:
+    """Remove the superseded hand-written CSS section before canonical injection."""
+    heading = re.search(
+        r'^## Coaching Supervisor Specialization \(CSS\) & "Coaching Supervision Mastery"\s*$',
+        text,
+        re.MULTILINE,
+    )
+    if not heading:
+        return text
+    remainder = text[heading.end() :]
+    next_boundaries = [
+        match.start()
+        for pattern in (r"^## (?!#)", r"^<!-- BEGIN CANONICAL PROGRAM FACTS:")
+        for match in [re.search(pattern, remainder, re.MULTILINE)]
+        if match
+    ]
+    end = heading.end() + min(next_boundaries) if next_boundaries else len(text)
+    return (text[: heading.start()].rstrip() + "\n\n" + text[end:].lstrip()).rstrip() + "\n"
+
+
+def inject_aacs(text: str, pack: str) -> str:
+    text = remove_legacy_aacs_section(text)
+    block = expected_aacs_block(pack)
+    marker_pattern = re.compile(
+        rf"{re.escape(AACS_BEGIN)}.*?{re.escape(AACS_END)}", re.DOTALL
+    )
+    if marker_pattern.search(text):
+        return marker_pattern.sub(block, text, count=1)
+    heading = re.search(r"^## Other Services\b", text, re.MULTILINE)
+    if heading:
+        return text[: heading.start()] + block + "\n\n" + text[heading.start() :]
+    return text.rstrip() + "\n\n" + block + "\n"
+
+
+def knowledge_paths(target_root: Path = ROOT) -> list[Path]:
+    paths = [target_root / "knowledge" / "shared" / "KNOWLEDGE.md"]
+    paths.extend(
+        sorted((target_root / "knowledge" / "agents").glob("*/KNOWLEDGE.md"))
+    )
     return paths
 
 
@@ -147,20 +191,85 @@ def validate_mcs_locales(catalog_path: Path, pack_path: Path) -> list[str]:
     return errors
 
 
-def inject_local() -> list[str]:
+def validate_aacs(catalog_path: Path, pack_path: Path) -> list[str]:
+    errors: list[str] = []
+    if not catalog_path.exists():
+        return [f"missing Coaching Supervision Mastery catalog: {catalog_path}"]
+    if not pack_path.exists():
+        return [f"missing Coaching Supervision Mastery minion pack: {pack_path}"]
+    catalog_bytes = catalog_path.read_bytes()
+    try:
+        catalog = json.loads(catalog_bytes)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return ["Coaching Supervision Mastery catalog is not valid UTF-8 JSON"]
+    if not isinstance(catalog, dict):
+        return ["Coaching Supervision Mastery catalog root must be an object"]
+    if catalog.get("catalog_id") != "coaching-supervision-mastery":
+        errors.append("Coaching Supervision Mastery catalog has an invalid catalog_id")
+    revision = catalog.get("catalog_revision")
+    if not isinstance(revision, int) or revision < 1:
+        errors.append("Coaching Supervision Mastery catalog has an invalid revision")
+    program = catalog.get("program")
+    if not isinstance(program, dict) or program.get("status") != "live_enrolling":
+        errors.append("Coaching Supervision Mastery catalog is not live_enrolling")
+    accreditation = catalog.get("accreditation")
+    if (
+        not isinstance(accreditation, dict)
+        or accreditation.get("program_level")
+        != "ICF Advanced Accreditation in Coaching Supervision (AACS)"
+    ):
+        errors.append("Coaching Supervision Mastery catalog lacks exact AACS authority")
+    expectations = catalog.get("checkout_expectations")
+    expected_products = [
+        ("supervision-inaugural", 399600, True),
+        ("supervision-regular", 479600, False),
+    ]
+    actual_products = (
+        [
+            (item.get("product"), item.get("price_cents"), item.get("active"))
+            for item in expectations
+        ]
+        if isinstance(expectations, list)
+        and all(isinstance(item, dict) for item in expectations)
+        else []
+    )
+    if actual_products != expected_products:
+        errors.append("Coaching Supervision Mastery checkout expectations are invalid")
+    stale_claims = catalog.get("stale_claims")
+    if not isinstance(stale_claims, list) or len(stale_claims) < 4 or any(
+        not isinstance(claim, str) or not claim for claim in stale_claims
+    ):
+        errors.append("Coaching Supervision Mastery stale-claim set is invalid")
+    digest = hashlib.sha256(catalog_bytes).hexdigest()
+    pack = pack_path.read_text(encoding="utf-8")
+    marker = re.search(
+        r"program-facts: coaching-supervision-mastery revision=(\d+) sha256=([a-f0-9]{64})",
+        pack,
+    )
+    if not marker:
+        errors.append("Coaching Supervision Mastery minion pack lacks catalog revision/hash marker")
+    elif int(marker.group(1)) != revision or marker.group(2) != digest:
+        errors.append("Coaching Supervision Mastery catalog and minion pack revision/hash do not agree")
+    return errors
+
+
+def inject_local(target_root: Path = ROOT) -> list[str]:
     errors = validate_exports(LOCAL_WEB, LOCAL_PACK)
     errors.extend(validate_mcs_locales(MCS_CATALOG, MCS_PACK))
+    errors.extend(validate_aacs(AACS_CATALOG, AACS_PACK))
     if errors:
         return errors
     pack = LOCAL_PACK.read_text(encoding="utf-8")
     mcs_pack = MCS_PACK.read_text(encoding="utf-8")
-    for target in knowledge_paths():
+    aacs_pack = AACS_PACK.read_text(encoding="utf-8")
+    for target in knowledge_paths(target_root):
         text = inject(target.read_text(encoding="utf-8"), pack)
-        target.write_text(inject_mcs_locales(text, mcs_pack), encoding="utf-8")
+        text = inject_mcs_locales(text, mcs_pack)
+        target.write_text(inject_aacs(text, aacs_pack), encoding="utf-8")
     return []
 
 
-def sync(source: Path) -> list[str]:
+def sync(source: Path, target_root: Path = ROOT) -> list[str]:
     source_web = source / "practitioner-series.web.json"
     source_pack = source / "practitioner-series.minion.md"
     errors = validate_exports(source_web, source_pack)
@@ -169,12 +278,13 @@ def sync(source: Path) -> list[str]:
     LOCAL_DIR.mkdir(parents=True, exist_ok=True)
     LOCAL_WEB.write_bytes(source_web.read_bytes())
     LOCAL_PACK.write_bytes(source_pack.read_bytes())
-    return inject_local()
+    return inject_local(target_root)
 
 
-def check(source: Path | None = None) -> list[str]:
+def check(source: Path | None = None, target_root: Path = ROOT) -> list[str]:
     errors = validate_exports(LOCAL_WEB, LOCAL_PACK)
     errors.extend(validate_mcs_locales(MCS_CATALOG, MCS_PACK))
+    errors.extend(validate_aacs(AACS_CATALOG, AACS_PACK))
     if errors:
         return errors
     if source and source.exists():
@@ -196,22 +306,37 @@ def check(source: Path | None = None) -> list[str]:
     block = expected_block(pack)
     mcs_pack = MCS_PACK.read_text(encoding="utf-8")
     mcs_block = expected_mcs_block(mcs_pack)
-    for target in knowledge_paths():
+    aacs_pack = AACS_PACK.read_text(encoding="utf-8")
+    aacs_block = expected_aacs_block(aacs_pack)
+    aacs_catalog = json.loads(AACS_CATALOG.read_text(encoding="utf-8"))
+    aacs_stale_claims = aacs_catalog.get("stale_claims", [])
+    for target in knowledge_paths(target_root):
         text = target.read_text(encoding="utf-8")
         if block not in text:
-            errors.append(f"missing/stale canonical block: {target.relative_to(ROOT)}")
+            errors.append(
+                f"missing/stale canonical block: {target.relative_to(target_root)}"
+            )
         if re.search(r"For the \*\*3 approved\*\* courses|courses still in review", text):
             errors.append(
-                f"legacy Practitioner approval prose remains: {target.relative_to(ROOT)}"
+                f"legacy Practitioner approval prose remains: {target.relative_to(target_root)}"
             )
         stale_count = sum(claim in text for claim in superseded_claims)
         if stale_count:
             errors.append(
-                f"{stale_count} superseded Practitioner claim(s) remain: {target.relative_to(ROOT)}"
+                f"{stale_count} superseded Practitioner claim(s) remain: {target.relative_to(target_root)}"
             )
         if mcs_block not in text:
             errors.append(
-                f"missing/stale MCS locales block: {target.relative_to(ROOT)}"
+                f"missing/stale MCS locales block: {target.relative_to(target_root)}"
+            )
+        if aacs_block not in text:
+            errors.append(
+                f"missing/stale Coaching Supervision Mastery block: {target.relative_to(target_root)}"
+            )
+        stale_aacs_count = sum(claim in text for claim in aacs_stale_claims)
+        if stale_aacs_count:
+            errors.append(
+                f"{stale_aacs_count} stale Coaching Supervision Mastery claim(s) remain: {target.relative_to(target_root)}"
             )
     return errors
 
@@ -220,19 +345,22 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=("sync", "inject", "check"))
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
+    parser.add_argument("--target-root", type=Path, default=ROOT)
     args = parser.parse_args()
+    target_root = args.target_root.resolve()
     if args.command == "sync":
-        errors = sync(args.source)
+        errors = sync(args.source, target_root)
     elif args.command == "inject":
-        errors = inject_local()
+        errors = inject_local(target_root)
     else:
-        errors = check(args.source)
+        errors = check(args.source, target_root)
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
         return 1
     print(
-        f"VALID: Practitioner and MCS locale facts pinned and present in {len(knowledge_paths())} knowledge files"
+        "VALID: Practitioner, MCS locale, and Coaching Supervision Mastery facts "
+        f"pinned and present in {len(knowledge_paths(target_root))} knowledge files"
     )
     return 0
 

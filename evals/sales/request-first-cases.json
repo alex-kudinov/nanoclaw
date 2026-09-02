@@ -141,5 +141,29 @@
       "guaranteed outcome",
       "price"
     ]
+  },
+  {
+    "id": "aacs-live-pathway-orientation",
+    "relationshipEvidence": "No prior relationship; current message establishes active PCC, no mentor-coaching experience, a before-2027 goal, and asks whether Mentor Coach and Coaching Supervisor training can overlap",
+    "currentMessage": "I recently obtained PCC, have no prior mentor-coaching experience, and want the Mentor Coach and Coaching Supervisor pathways before 2027. Can I pursue them concurrently, and what suitable Tandem programs are available in English or Turkish?",
+    "expectedRoute": "ORIENT",
+    "expectedConfidence": "MEDIUM",
+    "answerability": "PARTIAL",
+    "draftExpected": true,
+    "mustInclude": [
+      "Mentor Coach Training Standard Path",
+      "Coaching Supervision Mastery is live and AACS-accredited",
+      "October 7, 2026 cohort",
+      "sequencing guidance grounded in the two verified schedules",
+      "English is the only verified delivery language"
+    ],
+    "mustNotInclude": [
+      "still in development",
+      "pre-launch",
+      "founding cohort is forming",
+      "no dates or pricing set",
+      "interest list",
+      "unverified Turkish delivery"
+    ]
   }
 ]

@@ -11,6 +11,30 @@ const mainContext = readSalesFile('CLAUDE-MAIN.md');
 const workflows = readSalesFile('WORKFLOWS.md');
 const guidelines = readSalesFile('EMAIL-RESPONSE-GUIDELINES.md');
 const voice = readSalesFile('VOICE-AND-TONE.md');
+const salesKnowledge = readFileSync(
+  resolve(process.cwd(), 'knowledge', 'agents', 'sales', 'KNOWLEDGE.md'),
+  'utf8',
+);
+const coachingSupervisionPack = readFileSync(
+  resolve(
+    process.cwd(),
+    'facts',
+    'catalogs',
+    'coaching-supervision-mastery.minion.md',
+  ),
+  'utf8',
+);
+const coachingSupervisionCatalog = JSON.parse(
+  readFileSync(
+    resolve(
+      process.cwd(),
+      'facts',
+      'catalogs',
+      'coaching-supervision-mastery.json',
+    ),
+    'utf8',
+  ),
+) as { stale_claims: string[] };
 const contract = `${role}\n${mainContext}\n${workflows}\n${guidelines}\n${voice}`;
 const normalizeWhitespace = (text: string): string =>
   text.replace(/\s+/g, ' ').trim();
@@ -254,6 +278,28 @@ describe('Sales request-first prompt contract', () => {
         'guaranteed outcome',
       ]),
     );
+  });
+
+  it('replays the AACS incident against live, schedule-aware canonical facts', () => {
+    const aacsCase = evalCases.find(
+      (testCase) => testCase.id === 'aacs-live-pathway-orientation',
+    );
+    expect(aacsCase).toMatchObject({
+      expectedRoute: 'ORIENT',
+      expectedConfidence: 'MEDIUM',
+      answerability: 'PARTIAL',
+      draftExpected: true,
+    });
+    expect(salesKnowledge).toContain(coachingSupervisionPack.trim());
+    expect(coachingSupervisionPack).toContain(
+      'Coaching Supervision Mastery is live, ICF-accredited under AACS, and',
+    );
+    expect(coachingSupervisionPack).toContain(
+      'A missing or unreadable schedule is an explicit knowledge hold.',
+    );
+    for (const stale of coachingSupervisionCatalog.stale_claims) {
+      expect(salesKnowledge).not.toContain(stale);
+    }
   });
 
   it('does not invent new value in scheduled follow-ups', () => {

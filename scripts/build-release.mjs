@@ -27,6 +27,22 @@ if (status) {
   );
 }
 
+// The release must carry canonical fact sources that can reproduce every
+// tracked consumer before any artifact is built. This is source-local and
+// does not depend on an external provider checkout.
+execFileSync(
+  'python3',
+  [
+    path.join(root, 'tools', 'sync-program-facts.py'),
+    'check',
+    '--source',
+    path.join(root, '.git', 'no-external-program-facts-source'),
+    '--target-root',
+    root,
+  ],
+  { cwd: root, stdio: 'inherit' },
+);
+
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], {
   cwd: root,
   encoding: 'utf8',
@@ -103,7 +119,7 @@ try {
       'container',
       'facts',
       'groups',
-      'knowledge',
+      'knowledge/agents/procurement',
       'launchd',
       'setup/launchd',
       'tools/contador',
@@ -186,6 +202,7 @@ try {
     'setup/vps/n8n-stripe-lifecycle-extractor.js',
     'scripts/render-checkout-recovery-n8n-template.mjs',
     'tools/sync-program-facts.py',
+    'tools/validate-knowledge.sh',
   );
   for (const relative of [...new Set(tracked)].sort()) {
     const source = path.join(root, relative);

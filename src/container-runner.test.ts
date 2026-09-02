@@ -292,6 +292,24 @@ describe('release-owned instruction mounts', () => {
     ]);
   });
 
+  it('keeps Sales on the operational knowledge mount even when the release packages a stale copy', () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.statSync).mockReturnValue({
+      isDirectory: () => true,
+    } as never);
+    const configured = [
+      {
+        hostPath: '/operations/NanoClaw/knowledge/agents/sales',
+        containerPath: 'knowledge',
+        readonly: true,
+      },
+    ];
+
+    expect(
+      planReleaseOwnedInstructionMounts('/releases/stale', 'sales', configured),
+    ).toEqual({ knowledgeMount: null, additionalMounts: configured });
+  });
+
   it.each([
     {
       containerPath: '',

@@ -140,6 +140,89 @@ For the **3 approved** courses the certificate carries the **ICF CCE-Approved Pr
                     msg=f"expected {expected!r} in {errors!r}",
                 )
 
+    def test_aacs_inject_removes_superseded_section_and_is_idempotent(self):
+        source = """# KB
+
+## Coaching Supervisor Specialization (CSS) & "Coaching Supervision Mastery"
+
+The program is PRE-LAUNCH / in development — a founding cohort is forming.
+
+<!-- BEGIN CANONICAL PROGRAM FACTS: practitioner-series -->
+## Canonical Practitioner Series Facts
+<!-- END CANONICAL PROGRAM FACTS: practitioner-series -->
+"""
+        pack = "## Canonical Coaching Supervision Mastery Facts\n\nLive and enrolling."
+        once = sync_program_facts.inject_aacs(source, pack)
+        twice = sync_program_facts.inject_aacs(once, pack)
+        self.assertEqual(once, twice)
+        self.assertNotIn("PRE-LAUNCH", once)
+        self.assertIn(sync_program_facts.AACS_BEGIN, once)
+        self.assertIn(sync_program_facts.BEGIN, once)
+
+    def test_aacs_catalog_and_pack_are_exactly_hash_bound(self):
+        catalog = {
+            "catalog_id": "coaching-supervision-mastery",
+            "catalog_revision": 1,
+            "program": {"status": "live_enrolling"},
+            "accreditation": {
+                "program_level": "ICF Advanced Accreditation in Coaching Supervision (AACS)"
+            },
+            "checkout_expectations": [
+                {
+                    "product": "supervision-inaugural",
+                    "price_cents": 399600,
+                    "active": True,
+                },
+                {
+                    "product": "supervision-regular",
+                    "price_cents": 479600,
+                    "active": False,
+                },
+            ],
+            "stale_claims": ["one", "two", "three", "four"],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            catalog_path = root / "catalog.json"
+            pack_path = root / "pack.md"
+            catalog_path.write_text(json.dumps(catalog), encoding="utf-8")
+            digest = hashlib.sha256(catalog_path.read_bytes()).hexdigest()
+            pack_path.write_text(
+                "<!-- program-facts: coaching-supervision-mastery "
+                f"revision=1 sha256={digest} -->\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                sync_program_facts.validate_aacs(catalog_path, pack_path), []
+            )
+            pack_path.write_text(
+                "<!-- program-facts: coaching-supervision-mastery "
+                f"revision=1 sha256={'0' * 64} -->\n",
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "Coaching Supervision Mastery catalog and minion pack revision/hash do not agree",
+                sync_program_facts.validate_aacs(catalog_path, pack_path),
+            )
+
+    def test_inject_and_check_support_a_separate_operational_target(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target_root = Path(tmp)
+            shared = target_root / "knowledge" / "shared" / "KNOWLEDGE.md"
+            sales = target_root / "knowledge" / "agents" / "sales" / "KNOWLEDGE.md"
+            shared.parent.mkdir(parents=True)
+            sales.parent.mkdir(parents=True)
+            shared.write_text("# Shared\n", encoding="utf-8")
+            sales.write_text("# Sales\n", encoding="utf-8")
+            self.assertEqual(sync_program_facts.inject_local(target_root), [])
+            self.assertEqual(
+                sync_program_facts.check(Path("/nonexistent"), target_root), []
+            )
+            self.assertIn(
+                sync_program_facts.AACS_BEGIN,
+                sales.read_text(encoding="utf-8"),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -27,14 +27,21 @@ silently removed security and delivery fixes.
   tracked runtime inputs required by the daemon and agent containers;
 - `RELEASE.json` and `FILES.sha256` inside the archive.
 
-The archive includes tracked `container/`, `facts/`, `groups/`, and
-`knowledge/` bytes plus the deterministic program-fact sync/check command.
-When a release contains `knowledge/agents/<group>`, the host mounts that
-manifest-covered directory read-only at `/workspace/extra/knowledge` and
-suppresses any mutable configured mount targeting the same container path.
-Older releases without packaged knowledge retain the configured operational
-mount so rollback remains viable. `FILES.sha256` therefore attests the group
-prompt and the procedures to which it delegates as one release identity.
+The archive includes tracked `container/`, `facts/`, `groups/`, the explicitly
+release-owned `knowledge/agents/procurement` procedure tree, and the
+deterministic program-fact sync/check command. Procurement's manifest-covered
+directory mounts read-only at `/workspace/extra/knowledge` and suppresses its
+configured mutable alias. Every business-fact KB, including Sales, remains an
+operational projection so daily schedules and learned corrections take effect
+between releases. Packaging a KB does not grant release ownership; the runtime
+allowlist is explicit.
+
+The release-owned catalogs and sync command reproduce and verify the effective
+operational knowledge tree. The builder refuses a source tree whose tracked KBs
+do not contain every exact canonical pack. The activator separately refuses a
+target whose operational checkout is missing or contradicts those packs. Thus
+`FILES.sha256` attests stable instructions and fact authorities without turning
+live schedules or lessons into a frozen release snapshot.
 
 NC-20260821-006 crossed the dark follow-up-evidence release boundary under
 exact release `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`, source tree
@@ -717,6 +724,23 @@ NC-20260803-001 this includes `groups/chief/CLAUDE.md`,
 `groups/sales/WORKFLOWS.md`, and `groups/mailman/OUTBOUND-EMAIL.md`. This is a
 correctness gate: the active host resolves `GROUPS_DIR` from the operational
 working directory rather than `NANOCLAW_CODE_ROOT`.
+
+For releases that change canonical program facts, first back up the affected
+operational `knowledge/` files outside the target release, then use the target
+release's exact sync command to inject and verify the operational consumers:
+
+```bash
+python3 <release>/tools/sync-program-facts.py inject \
+  --target-root <operational-checkout>
+python3 <release>/tools/sync-program-facts.py check \
+  --source <release>/.no-external-program-facts-source \
+  --target-root <operational-checkout>
+```
+
+The activator repeats the second command and refuses both dry-run and apply if
+the effective consumer is missing, stale, or contradicts a catalog. It never
+injects automatically; backup and synchronization remain explicit deployment
+steps.
 
 1. Inspect the current service, health response, listener count, pending work,
    installed Node runtime, and production checkout without changing them.

@@ -305,13 +305,15 @@ course mirrors, then derived website, course, brochure, presentation, video,
 certificate, minion, and messaging surfaces. Stripe checkout remains authority
 for price and active sale state; Heartbeat remains authority for learner state;
 Sertifier remains authority for issued certificate/template state.
-Tracked facts, the Sales KB, and both catalog snapshots resolve from the
-immutable `NANOCLAW_CODE_ROOT` during production jobs, even though the job
-retains the operational checkout as its working directory for `.env`, data,
-and logs. Explicit test and diagnostic path overrides remain available.
+Tracked facts and catalog snapshots resolve from the immutable
+`NANOCLAW_CODE_ROOT` during production jobs. The Sales KB resolves from the
+operational working directory because that is the exact consumer mounted into
+Sales; the detector therefore checks what the agent actually reads. Explicit
+test and diagnostic path overrides remain available.
 The release builder packages and attests `facts/` plus the deterministic sync
-checker alongside `knowledge/`; a source-contract test prevents either runtime
-input from silently falling out of the immutable bundle.
+checker alongside the release-owned Procurement procedure tree; a
+source-contract test prevents either runtime input from silently falling out of
+the immutable bundle.
 
 `NC-20260824-003` extends that same regeneration-safe mechanism with a pinned
 Mentor Coaching Foundations language-availability catalog and exact minion
@@ -321,6 +323,19 @@ Standard Path cohorts or evidence of translated ICF recognition.
 `tools/sync-program-facts.py` injects both canonical packs into every tracked
 minion KB, and the detector fails on a missing catalog/pack, hash/revision or
 language-set mismatch, or non-exact Sales block.
+
+`NC-20260902-001` closes the knowledge-source regression exposed by Lead #1311.
+Release `ec62c300` had generalized Procurement's immutable procedure mount to
+every minion, freezing Sales on a stale pre-launch AACS snapshot and omitting
+its ignored daily `SCHEDULE.md`; host learning continued writing the
+operational `LEARNED.md`, which the next Sales run no longer read. Release
+ownership is now explicitly limited to Procurement procedures. Business KBs
+again mount from the operational checkout, while immutable catalogs remain the
+higher fact authority. The Coaching Supervision Mastery catalog/pack declares
+the live AACS status, current inaugural cohort and tuition, language boundary,
+checkout expectations, and stale negative claims. Build and activation checks
+bind the release catalogs to the exact operational consumer before code can
+enter service.
 
 `NC-20260817-002` deployed the first bounded source adapter in exact release
 `baed66d` and applied migration 121. After the
@@ -612,7 +627,7 @@ dependencies, not active runtime channels in this snapshot.
 | CNPC             | `src/cnpc-intake.ts`, `src/cnpc-match-result.ts`, migration 116                                                                                                          | host-owned intake, policy, bounded coach pool, and validated match result                                                                                                                                                                  |
 | Student lifecycle | `src/student-lifecycle*.ts`, `src/webhook-server.ts`, `src/webhook-inbox-reaper.ts`, migration 134, `facts/catalogs/student-lifecycle-community-*.json`, `setup/n8n/student-lifecycle-community-*-workflow.json`, `docs/STUDENT-LIFECYCLE-SHADOW-RUNBOOK.md` | exact live `8e475e036ad6` restores the Community-only four-action shadow after NC-010 corrected real minimal-payload action inference and discarded-field host drift: protected legacy 18 + four empty-filter rows, active no-retention relay, registry receipt 4, four-action direct canary/no-error proof, healthy aggregate store, and checkout-send preservation; progress is still held on `AUTH_ERROR`, while Circle, legacy cutover, all lifecycle consumers, and outcome completion remain excluded |
 | Relationship Context | `src/relationship-context*.ts`, `src/identity-join.ts`, `src/relationship-owner.ts`, migrations/rollbacks 137-138, `docs/RELATIONSHIP-CONTEXT-{CONTROL-PLANE,IMPLEMENTATION-PLAN,PRODUCTION-ROLLOUT,TRAFFT-EXACT-IDENTITY,PROVIDER-RECONCILIATION,STRIPE-CONTACT-CHAOS,CLIENT-PROJECTION,PLUTIO-ENGAGEMENT}.md`, `docs/RELATIONSHIP-OWNER-AUTHORITY.md` | current exact live `6a978328` preserves the source graph and enables NC-009's native Plutio engagement adapter. Stable complete accounting is 117 projects, 183 contracts, eight coaching definitions, and 59 qualified projects (11 In progress, 41 Completed, five Canceled, two New) with 52 person/eight company links. Existing exact refs map two person links: one fresh active and one historical engagement; 50 person/eight company links hold. NC-20260827-002 closes further Plutio cleanup after the current-only audit found one already-mapped exact person among nine current person objects and no exact refs for two current companies; the remaining eight people/two companies require provider relinking or name/email inference and stay held. No historical assignment/reassignment campaign is planned. The client projection covers 1,444/1,444 active Parties with 63 defensible customer/client Parties, one active coaching, one historical coaching, 62 paid history, five active subscriptions, 95 summary-unknown, zero stale-current, and zero-change replay. The reviewed literal-only Plutio auth helper is hash-equal/tested on both hosts and copies no credentials. Query stays off/zero grants; provider writes, Party merges/role/ref rewrites, broad minion access, and actions remain excluded. |
-| Knowledge drift  | `facts/programs.yaml`, `facts/catalogs/*`, `tools/sync-program-facts.py`, `src/program-facts-drift.ts`, `src/program-facts-drift-job.ts`, `src/program-facts-company-work.ts`, `src/lesson-conflict.ts`, `src/learn-ipc-handler.ts`, migration 125 | deterministic factual controls and exact generated KB blocks plus the live detector-to-Company-Work adapter; Practitioner facts and the verified English/French/Japanese/Spanish Foundations availability set are hash-bound and injected into every tracked minion KB, while provider/public evidence remains higher authority |
+| Knowledge drift  | `facts/programs.yaml`, `facts/catalogs/*`, `tools/sync-program-facts.py`, `src/program-facts-drift.ts`, `src/program-facts-drift-job.ts`, `src/program-facts-company-work.ts`, `src/lesson-conflict.ts`, `src/learn-ipc-handler.ts`, migration 125 | deterministic factual controls and exact generated KB blocks plus the live detector-to-Company-Work adapter; Practitioner facts, the verified English/French/Japanese/Spanish Foundations availability set, and Coaching Supervision Mastery's live AACS/enrollment/checkout facts are hash-bound and injected into every tracked minion KB, while provider/public evidence remains higher authority; the detector checks the operational Sales KB actually mounted at runtime |
 | Brief/digests    | `src/brief-promote.ts`, `src/digest-generator.ts`, `src/digest-delivery.ts`                                                                                              | operational briefing; Things promotion denies before HTTP fetch under the common brake                                                                                                                                                     |
 | SEO              | `src/seo-stats.ts`                                                                                                                                                       | SEO job support                                                                                                                                                                                                                            |
 
@@ -2105,8 +2120,11 @@ separate explicit decision; do not open, publish, or delete them casually.
   `knowledge/`, and `container-runner` mounts
   `knowledge/agents/<group>` from the verified active code root read-only when
   present, suppressing every normalized mutable configured alias of the same
-  target. Older releases fall back to the configured mount so rollback remains
-  viable. Claude R10 found and closed the raw-target alias gap (`''`,
+  target. NC-20260902-001 later found that this procedure-specific correction
+  had frozen every packaged business KB, schedule, and lesson; release-owned
+  precedence is therefore now limited to Procurement. Older releases retain
+  their historical behavior. Claude R10 found and closed the raw-target alias
+  gap (`''`,
   `knowledge/`, and `./knowledge`) and otherwise accepted the R9 procedure and
   release-integrity repairs. Claude R11 returned `GO` after independently
   exercising the resolution boundary and focused gates; immutable

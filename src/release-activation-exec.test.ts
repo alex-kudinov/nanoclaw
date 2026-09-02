@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   printResults: [] as string[],
   failLsof: false,
   failShlock: false,
+  failKnowledgeCheck: false,
   healthFallback: undefined as unknown,
 }));
 
@@ -20,6 +21,15 @@ vi.mock('child_process', () => ({
       return JSON.stringify(state.installed);
     }
     if (args[0] === '--version') return 'v22.23.2\n';
+    if (
+      file === '/usr/bin/env' &&
+      args[0] === 'python3' &&
+      state.failKnowledgeCheck
+    ) {
+      throw Object.assign(new Error('knowledge check failed'), {
+        stderr: 'stale Coaching Supervision Mastery facts',
+      });
+    }
     if (file === '/bin/launchctl' && args[0] === 'print') {
       return state.printResults.shift() ?? '';
     }
@@ -61,6 +71,10 @@ function makeFixture() {
     fs.mkdirSync(path.join(release, 'scripts'), { recursive: true });
     fs.writeFileSync(path.join(release, 'scripts', 'verify-release.mjs'), '');
   }
+  fs.mkdirSync(path.join(newRoot, 'tools'), { recursive: true });
+  fs.writeFileSync(path.join(newRoot, 'tools', 'sync-program-facts.py'), '');
+  const operationalRoot = path.join(root, 'operational');
+  fs.mkdirSync(operationalRoot);
   fs.writeFileSync(
     path.join(newRoot, 'dist', 'release-manifest.json'),
     JSON.stringify({
@@ -77,7 +91,7 @@ function makeFixture() {
   const installed = {
     Label: 'com.nanoclaw',
     KeepAlive: true,
-    WorkingDirectory: '/Users/operator/dev/NanoClaw',
+    WorkingDirectory: operationalRoot,
     ProgramArguments: [
       '/Users/operator/.local/node/22.23.2/bin/node',
       path.join(oldRoot, 'dist', 'index.js'),
@@ -96,6 +110,7 @@ function makeFixture() {
   return {
     oldRoot: fs.realpathSync(oldRoot),
     newRoot: fs.realpathSync(newRoot),
+    operationalRoot,
     plistPath: fs.realpathSync(plistPath),
     original,
   };
@@ -117,6 +132,7 @@ beforeEach(() => {
   state.printResults = [];
   state.failLsof = false;
   state.failShlock = false;
+  state.failKnowledgeCheck = false;
   state.healthFallback = undefined;
   vi.stubGlobal(
     'fetch',
@@ -157,6 +173,37 @@ describe('release activation executor', () => {
       file: '/usr/sbin/lsof',
       args: ['-v'],
     });
+    expect(state.calls).toContainEqual({
+      file: '/usr/bin/env',
+      args: [
+        'python3',
+        path.join(fixture.newRoot, 'tools', 'sync-program-facts.py'),
+        'check',
+        '--source',
+        path.join(fixture.newRoot, '.no-external-program-facts-source'),
+        '--target-root',
+        fixture.operationalRoot,
+      ],
+    });
+  });
+
+  it('refuses activation when the effective operational knowledge is stale', async () => {
+    const fixture = makeFixture();
+    state.failKnowledgeCheck = true;
+
+    await expect(
+      activateRelease({
+        releaseDir: fixture.newRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: false,
+      }),
+    ).rejects.toThrow('stale Coaching Supervision Mastery facts');
+    expect(state.calls.some((call) => call.file === '/bin/launchctl')).toBe(
+      false,
+    );
+    expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
   });
 
   it('performs exactly one legacy unload/load and proves target health', async () => {

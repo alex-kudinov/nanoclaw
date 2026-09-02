@@ -44,3 +44,8 @@ programs:
       - "10 CCE hours"
       - "English, French, Japanese, and Spanish"
     kb_absent: []
+
+  # Practitioner Series, localized Foundations availability, and Coaching
+  # Supervision Mastery/AACS use versioned catalogs under facts/catalogs/.
+  # Do not duplicate their current facts here; the detector validates each
+  # exact catalog/pack/consumer block and its provider-specific expectations.

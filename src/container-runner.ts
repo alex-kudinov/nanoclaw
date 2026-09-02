@@ -187,6 +187,22 @@ export interface ReleaseOwnedInstructionMountPlan {
   additionalMounts: AdditionalMount[];
 }
 
+// Only directories that contain executable/operational procedures belong to
+// the immutable release. Sales and the other business KBs are operational
+// projections: schedule-refresh and learn_lesson update them between releases.
+const RELEASE_OWNED_KNOWLEDGE_GROUPS = new Set(['procurement']);
+
+function isKnowledgeMountTarget(mount: AdditionalMount | VolumeMount): boolean {
+  const rawContainerPath = mount.containerPath || path.basename(mount.hostPath);
+  const normalizedContainerPath = path.posix
+    .normalize(`/${rawContainerPath}`)
+    .replace(/\/+$/, '');
+  return (
+    normalizedContainerPath === '/knowledge' ||
+    normalizedContainerPath === '/workspace/extra/knowledge'
+  );
+}
+
 export function coursesSmtpCapabilityAllowed(
   groupFolder: string | undefined,
   config: ActionSafetyConfig = loadActionSafetyConfig(),
@@ -236,9 +252,10 @@ export function filterExternalWriteMounts(
 }
 
 /**
- * Prefer manifest-covered per-group knowledge from the active code root.
- * Older releases that do not package knowledge retain their configured
- * operational mount, so rollback remains viable.
+ * Prefer manifest-covered per-group procedures only for explicitly approved
+ * groups. Business knowledge, schedules, and learned corrections remain on
+ * the operational checkout so their established update loops take effect
+ * without rebuilding application code.
  */
 export function planReleaseOwnedInstructionMounts(
   codeRoot: string,
@@ -246,6 +263,9 @@ export function planReleaseOwnedInstructionMounts(
   additionalMounts: AdditionalMount[],
 ): ReleaseOwnedInstructionMountPlan {
   if (!/^[A-Za-z0-9_-]+$/.test(groupFolder)) {
+    return { knowledgeMount: null, additionalMounts };
+  }
+  if (!RELEASE_OWNED_KNOWLEDGE_GROUPS.has(groupFolder)) {
     return { knowledgeMount: null, additionalMounts };
   }
 
@@ -272,14 +292,9 @@ export function planReleaseOwnedInstructionMounts(
       containerPath: '/workspace/extra/knowledge',
       readonly: true,
     },
-    additionalMounts: additionalMounts.filter((mount) => {
-      const rawContainerPath =
-        mount.containerPath || path.basename(mount.hostPath);
-      const normalizedContainerPath = path.posix
-        .normalize(`/${rawContainerPath}`)
-        .replace(/\/+$/, '');
-      return normalizedContainerPath !== '/knowledge';
-    }),
+    additionalMounts: additionalMounts.filter(
+      (mount) => !isKnowledgeMountTarget(mount),
+    ),
   };
 }
 
@@ -519,6 +534,16 @@ export function buildVolumeMounts(
       isMain,
     );
     mounts.push(...validatedMounts);
+    const operationalKnowledge = validatedMounts.find(isKnowledgeMountTarget);
+    if (operationalKnowledge) {
+      logger.info(
+        {
+          group: group.name,
+          hostPath: operationalKnowledge.hostPath,
+        },
+        'Using operational group knowledge mount',
+      );
+    }
   }
 
   return mounts;

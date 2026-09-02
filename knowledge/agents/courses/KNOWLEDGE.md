@@ -264,6 +264,45 @@ Availability boundaries:
   languages and ask whether one works for them.
 <!-- END CANONICAL PROGRAM FACTS: mcs-foundations-locales -->
 
+<!-- BEGIN CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->
+## Canonical Coaching Supervision Mastery Facts
+
+<!-- program-facts: coaching-supervision-mastery revision=1 sha256=285b306d5d8936881009f4663cf2a726896a72a55c860b69193cfcd00f3870c4 -->
+
+This block is deterministic authority output. Current provider/checkout
+evidence and accepted owner decisions outrank it; website browsing history,
+model memory, older messages, and unmarked prose elsewhere do not.
+
+**Coaching Supervision Mastery is live, ICF-accredited under AACS, and
+enrolling now.** Never describe it as in development, pre-launch, a waitlist,
+or an interest-only offer, and never say that dates or pricing are not public.
+
+- Program: Coaching Supervision Mastery, Tandem's coaching-supervisor training
+  for active ICF PCC or MCC coaches.
+- Accreditation: ICF Advanced Accreditation in Coaching Supervision (AACS),
+  granted July 22, 2026 for 72 hours and valid through July 31, 2029.
+- Pathway distinction: AACS belongs to the education program. The Coaching
+  Supervisor Specialization (CSS) is the individual designation a graduate
+  applies for through ICF.
+- Delivery: approximately 72 hours, 64% live, with 16 live classes; English is
+  the only currently verified delivery language.
+- Current enrollment: the inaugural cohort runs October 7, 2026 through
+  February 10, 2027, Wednesdays at 10:00 AM ET / 9:00 AM CT.
+- Tuition: $3,996 for the inaugural cohort, payable in full or four monthly
+  payments of $999. Regular tuition is $4,796, or four monthly payments of
+  $1,199.
+- Enrollment page: https://tandemcoach.co/coaching-supervisor-training/
+
+Schedule boundary:
+
+- Read the operational `SCHEDULE.md` for the latest cohort choices and exact
+  dates whenever timing affects the answer.
+- A missing or unreadable schedule is an explicit knowledge hold. It is never
+  evidence that the program is still in development or has no dates.
+- For any language other than English, state that delivery is not currently
+  verified and do not infer availability from the lead's location or language.
+<!-- END CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->
+
 ## Other Services
 
 ### Mentor Coaching Foundations (self-paced course)
@@ -645,12 +684,30 @@ focused on human-needs items.
 
 ---
 
-## Coaching Supervisor Specialization (CSS) & "Coaching Supervision Mastery"
+## Canonical Practitioner Series Facts
 
-New pre-launch supervisor-training program (no enrolled students yet — sales fields inquiries).
-- **CSS = Coach Supervisor Specialization** — ICF **individual** designation (formerly CSQ) a coach earns (active **PCC or MCC** + 41+ hrs supervision training, ≥50% live, aligned to ICF's 8 Coaching Supervision Competencies).
-- **AACS = Advanced Accreditation in Coaching Supervision** — ICF accreditation for the **program/school**; **$1,500 is the school's fee to ICF, not a student price**.
-- **Tandem's program = "Coaching Supervision Mastery"** (AACS track, ~60–70h across 8 modules + practicum, faculty Cherie Silas, Heartbeat course_id `1f2febfe-eb34-463a-818e-ce7d0cac1251`) — **PRE-LAUNCH, founding cohort forming.** Prerequisite: PCC/MCC. Distinct from the standalone Group Supervision service. Pages: `/coaching-supervisor-specialization-css/`, `/coaching-supervisor-training/`.
+<!-- program-facts: practitioner-series revision=2 sha256=d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00 -->
+
+This block is deterministic authority output. Provider evidence and accepted owner decisions outrank it; website prose, lessons, memories, presentations, and prior messages do not.
+
+- Current public portfolio: 7 live courses; 6 are ICF CCE-approved programs.
+- Approved pathway total: 150 CCE hours (77 Core Competency + 73 Resource Development).
+- Setting Up Your Coaching Practice is live but deliberately outside the CCE track. It carries no CCE claim.
+- CCE is continuing education, not a credential or certification.
+- Ethics wording: a course may teach three ethics hours inside its approved Core Competency total, but these approval records do not show ICF separately designating or awarding ethics hours. Keep the course documentation; ICF makes the final renewal determination.
+
+| Course | Current accreditation fact |
+|---|---|
+| Setting Up Your Coaching Practice | No CCE claim |
+| Running a Coaching Business | ICF CCE-approved: 40 hours, 9 Core Competency + 31 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+| Coaching Tools Mastery | ICF CCE-approved: 20 hours, 13 Core Competency + 7 Resource Development |
+| AI for Coaches | ICF CCE-approved: 20 hours, 6 Core Competency + 14 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+| Career & Transition Coaching | ICF CCE-approved: 20 hours, 14 Core Competency + 6 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+| ADHD Coaching | ICF CCE-approved: 20 hours, 13 Core Competency + 7 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+| Systemic Coaching for Executive Teams | ICF CCE-approved: 30 hours, 22 Core Competency + 8 Resource Development; provider documents 3 ethics-instruction hours inside Core, not separately ICF-designated |
+
+Current approved splits supersede submitted targets and older page, course, slide, narration, brochure, minion, and email text.
+<!-- END CANONICAL PROGRAM FACTS: practitioner-series -->
 
 <!-- BEGIN CANONICAL PROGRAM FACTS: practitioner-series -->
 ## Canonical Practitioner Series Facts

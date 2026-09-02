@@ -3,9 +3,12 @@ import { createHash } from 'node:crypto';
 
 import {
   buildProgramFactsDetectorEvidence,
+  detectCoachingSupervisionCatalogDrift,
   detectDrift,
   detectMcsLocalesCatalogDrift,
   detectPractitionerCatalogDrift,
+  resolveCoachingSupervisionCatalogPath,
+  resolveCoachingSupervisionPackPath,
   resolveFactsPath,
   resolveKbPath,
   resolveMcsLocalesCatalogPath,
@@ -111,7 +114,7 @@ describe('release-owned detector inputs', () => {
       '/tmp/nanoclaw-release/facts/programs.yaml',
     );
     expect(resolveKbPath()).toBe(
-      '/tmp/nanoclaw-release/knowledge/agents/sales/KNOWLEDGE.md',
+      `${process.cwd()}/knowledge/agents/sales/KNOWLEDGE.md`,
     );
     expect(resolvePractitionerCatalogPath()).toBe(
       '/tmp/nanoclaw-release/facts/catalogs/practitioner-series.web.json',
@@ -124,6 +127,118 @@ describe('release-owned detector inputs', () => {
     );
     expect(resolveMcsLocalesPackPath()).toBe(
       '/tmp/nanoclaw-release/facts/catalogs/mcs-foundations-locales.minion.md',
+    );
+    expect(resolveCoachingSupervisionCatalogPath()).toBe(
+      '/tmp/nanoclaw-release/facts/catalogs/coaching-supervision-mastery.json',
+    );
+    expect(resolveCoachingSupervisionPackPath()).toBe(
+      '/tmp/nanoclaw-release/facts/catalogs/coaching-supervision-mastery.minion.md',
+    );
+  });
+});
+
+describe('detectCoachingSupervisionCatalogDrift', () => {
+  const catalog = JSON.stringify({
+    catalog_id: 'coaching-supervision-mastery',
+    catalog_revision: 1,
+    program: { status: 'live_enrolling' },
+    accreditation: {
+      program_level:
+        'ICF Advanced Accreditation in Coaching Supervision (AACS)',
+    },
+    checkout_expectations: [
+      {
+        product: 'supervision-inaugural',
+        price_cents: 399600,
+        active: true,
+      },
+      {
+        product: 'supervision-regular',
+        price_cents: 479600,
+        active: false,
+      },
+    ],
+    stale_claims: [
+      'The program is PRE-LAUNCH / in development — a founding cohort is forming.',
+      'Do NOT quote a student price — none is public.',
+      'Capture founding-cohort interest — no date, no price promised.',
+      'Status: founding cohort / interest capture — no price quote.',
+    ],
+  });
+  const digest = createHash('sha256').update(catalog).digest('hex');
+  const pack = `## Canonical Coaching Supervision Mastery Facts
+
+<!-- program-facts: coaching-supervision-mastery revision=1 sha256=${digest} -->
+
+Live and enrolling.`;
+  const kb = `# Sales
+
+<!-- BEGIN CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->
+${pack}
+<!-- END CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->`;
+  const products = {
+    'supervision-inaugural': { price_cents: 399600, active: true },
+    'supervision-regular': { price_cents: 479600, active: false },
+  };
+
+  it('accepts the exact live catalog, pack, checkout state, and Sales block', () => {
+    expect(
+      detectCoachingSupervisionCatalogDrift(catalog, pack, kb, products),
+    ).toEqual({ checked: 1, findings: [] });
+  });
+
+  it('fails closed on stale pre-launch copy even when the canonical block exists', () => {
+    expect(
+      detectCoachingSupervisionCatalogDrift(
+        catalog,
+        pack,
+        `${kb}\nThe program is PRE-LAUNCH / in development — a founding cohort is forming.`,
+        products,
+      ).findings,
+    ).toEqual([
+      expect.objectContaining({
+        kind: 'catalog_kb_mismatch',
+        detail: expect.stringContaining('1 stale'),
+      }),
+    ]);
+  });
+
+  it('flags checkout price or active-state drift', () => {
+    expect(
+      detectCoachingSupervisionCatalogDrift(catalog, pack, kb, {
+        ...products,
+        'supervision-inaugural': { price_cents: 399600, active: false },
+      }).findings,
+    ).toEqual([
+      expect.objectContaining({
+        kind: 'price_mismatch',
+        detail: expect.stringContaining('supervision-inaugural'),
+      }),
+    ]);
+  });
+
+  it('refuses a missing catalog, malformed authority, or stale pack hash', () => {
+    expect(
+      detectCoachingSupervisionCatalogDrift(null, pack, kb, products).findings,
+    ).toEqual([expect.objectContaining({ kind: 'catalog_missing' })]);
+    expect(
+      detectCoachingSupervisionCatalogDrift('{}', pack, kb, products).findings,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'catalog_pack_mismatch' }),
+      ]),
+    );
+    expect(
+      detectCoachingSupervisionCatalogDrift(
+        catalog,
+        pack.replace(digest, '0'.repeat(64)),
+        kb,
+        products,
+      ).findings,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'catalog_pack_mismatch' }),
+      ]),
     );
   });
 });

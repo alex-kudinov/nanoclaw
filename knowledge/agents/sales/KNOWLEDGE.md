@@ -264,6 +264,45 @@ Availability boundaries:
   languages and ask whether one works for them.
 <!-- END CANONICAL PROGRAM FACTS: mcs-foundations-locales -->
 
+<!-- BEGIN CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->
+## Canonical Coaching Supervision Mastery Facts
+
+<!-- program-facts: coaching-supervision-mastery revision=1 sha256=285b306d5d8936881009f4663cf2a726896a72a55c860b69193cfcd00f3870c4 -->
+
+This block is deterministic authority output. Current provider/checkout
+evidence and accepted owner decisions outrank it; website browsing history,
+model memory, older messages, and unmarked prose elsewhere do not.
+
+**Coaching Supervision Mastery is live, ICF-accredited under AACS, and
+enrolling now.** Never describe it as in development, pre-launch, a waitlist,
+or an interest-only offer, and never say that dates or pricing are not public.
+
+- Program: Coaching Supervision Mastery, Tandem's coaching-supervisor training
+  for active ICF PCC or MCC coaches.
+- Accreditation: ICF Advanced Accreditation in Coaching Supervision (AACS),
+  granted July 22, 2026 for 72 hours and valid through July 31, 2029.
+- Pathway distinction: AACS belongs to the education program. The Coaching
+  Supervisor Specialization (CSS) is the individual designation a graduate
+  applies for through ICF.
+- Delivery: approximately 72 hours, 64% live, with 16 live classes; English is
+  the only currently verified delivery language.
+- Current enrollment: the inaugural cohort runs October 7, 2026 through
+  February 10, 2027, Wednesdays at 10:00 AM ET / 9:00 AM CT.
+- Tuition: $3,996 for the inaugural cohort, payable in full or four monthly
+  payments of $999. Regular tuition is $4,796, or four monthly payments of
+  $1,199.
+- Enrollment page: https://tandemcoach.co/coaching-supervisor-training/
+
+Schedule boundary:
+
+- Read the operational `SCHEDULE.md` for the latest cohort choices and exact
+  dates whenever timing affects the answer.
+- A missing or unreadable schedule is an explicit knowledge hold. It is never
+  evidence that the program is still in development or has no dates.
+- For any language other than English, state that delivery is not currently
+  verified and do not infer availability from the lead's location or language.
+<!-- END CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->
+
 ## Other Services
 
 ### Mentor Coaching Foundations (self-paced course)
@@ -720,38 +759,3 @@ focused on human-needs items.
 - Classify Heartbeat community event reminders (from events@heartbeat.chat or The Hearth) as `MrGru/notification/system`. Auto-archive.
 
 ---
-
-## Coaching Supervisor Specialization (CSS) & "Coaching Supervision Mastery"
-
-**Different from the "Coaching Supervision (standalone)" / Group Supervision service above.** That service ($89–$699) is a coach *receiving* supervision. This is the **training program to *become* a coaching supervisor.** Do not conflate them.
-
-### Keep the two acronyms straight
-- **CSS = Coach Supervisor Specialization** — an ICF **individual** designation (formerly "CSQ"), earned by a coach. ICF eligibility: **active PCC or MCC** + **41+ hours** of coaching-supervision training (≥50% delivered live/synchronous), aligned to ICF's 8 Coaching Supervision Competencies (published Sept 2024). Valid 3 years; renewal = 10h professional development including 5h of *receiving* supervision.
-- **AACS = Advanced Accreditation in Coaching Supervision** — an ICF accreditation for the **education program/school** (not a person), against a 60+ hour competency-based standard. The **$1,500 USD** fee is what the *school pays ICF* for a 3-year accreditation cycle (applications open mid-June 2026). An AACS-accredited program *prepares* a coach for CSS; it does not itself confer CSS.
-
-### Tandem's program — "Coaching Supervision Mastery" (AACS track)
-- **What it is:** Tandem's coaching-supervisor training, built on the AACS standard + the 8 ICF Coaching Supervision Competencies. Completing it gives a coach the education required to apply for the **CSS** designation.
-- **Who it's for:** Experienced ICF coaches — **active PCC or MCC** — who want to become qualified coaching supervisors. (Add ACTC / a team-coaching credential if they'll supervise ACTC applicants.)
-- **Prerequisite:** Active **PCC or MCC**. No prior supervision experience required.
-- **Hours / format:** roughly **60–70 contact hours** (well above the 41h CSS floor and the 60h AACS expectation), **~50% live / ~50% self-paced**. 8 competency modules (foundations & role/scope, ethics & boundaries, contracting & CLEAR, reflective practice & use-of-self, supportive environment, facilitating reflection incl. the **Seven-Eyed Model**, coach development across levels, group supervision) + a **practicum** (5 observed supervision sessions, written feedback on ≥3; ~5 supervision hours = 2h receiving supervision + 3h supervision-on-supervision) + a final reflective portfolio / case analysis.
-- **Faculty:** **Cherie Silas** (MCC, EMCC ESIA, ACTC) — sole faculty of record on the AACS submission.
-- **Demand / why now:** ICF built the supervisor pathway 2024–2026; from **Jan 2027**, CSS becomes the standard for validating renewal/ACTC supervision hours (ACTC supervision must come from a CSS-qualified supervisor), plus a new ICF Coaching Supervisor Registry — real and growing pull for the credential.
-
-### ⚠️ Guardrails — READ before quoting anything
-- **The program is PRE-LAUNCH / in development — a founding cohort is forming.** The public pages capture interest; they do not sell a seat yet.
-- **Do NOT quote a student price — none is public.** If asked cost: say founding-cohort pricing is being finalized and offer to add them to the interest list and notify them when enrollment opens.
-- **Never quote $1,500 as the student cost** — that is the ICF *accreditation application fee the school pays ICF*, not a participant price.
-- Don't conflate **CSS** (what the lead earns) with **AACS** (the accreditation Tandem holds), and don't confuse either with the standalone Group Supervision service.
-
-### How to field a CSS / supervisor-training inquiry
-1. Confirm they hold (or are near) **PCC or MCC** — the hard prerequisite. If not yet PCC, the right first step is the credential (ACC/PCC), not CSS.
-2. Explain the CSS pathway and that Tandem's AACS-track program (~60–70h, live + self-paced, Cherie Silas faculty) provides the education to qualify.
-3. **Capture founding-cohort interest — no date, no price promised.**
-4. Advance/route as a supervisor-training lead.
-
-### Links
-- CSS explainer: https://tandemcoach.co/coaching-supervisor-specialization-css/
-- Supervisor-training / interest landing: https://tandemcoach.co/coaching-supervisor-training/
-
-### Program-match trigger
-Signals: "coaching supervisor", "become a supervisor", "supervision training/qualification", "CSS", "CSQ", "AACS", "supervise coaches", "supervisor certification" → **Coaching Supervision Mastery (CSS track)**. Prereq: PCC/MCC. Status: founding cohort / interest capture — no price quote.
