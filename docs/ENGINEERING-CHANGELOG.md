@@ -12,11 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-02T11:54:40Z
 - Owner/client: Codex with independent Claude Sonnet/high review complete
-- State: validating; implementation is local in an isolated worktree and no
+- State: ready_for_deploy; reviewed implementation is committed locally and no
   production state has changed
-- Commit/PR: `codex/sales-knowledge-runtime-20260902`, based on pushed
-  post-live lineage `59fbdbea`; exact live release at investigation was
-  `8df61d98c9e46ac63bf7de7850e3e7decbaa9560`
+- Commit/PR: reviewed commit
+  `8dcadfda4e01458a8827394b3cc52ff15bcd0db6` on
+  `codex/sales-knowledge-runtime-20260902`, based on pushed post-live lineage
+  `59fbdbea`; exact live release at investigation was `8df61d98`
 - Change class: C3 because Sales knowledge can shape approval-gated customer
   drafts; this task does not approve or send a customer message
 - Root cause: Lead #1311 did not ignore the corrected operational KB. The host
