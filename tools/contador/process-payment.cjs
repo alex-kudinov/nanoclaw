@@ -73,6 +73,12 @@ const SA_PATH =
   process.env.SHEETS_SA_JSON ||
   '/workspace/extra/service-accounts/sheets-service-account.json';
 
+// Product Map sentinel (column B, compared lowercased). A delivered service is
+// still a payment, but buying it does not make the payer a student. This rule
+// was previously live only in an uncommitted operational checkout and was lost
+// from later immutable releases.
+const NOT_A_STUDENT = '(not a student)';
+
 // ── HTTP timeout guard ──────────────────────────────────────────────────────
 // Node's https has NO default socket timeout: a stalled/half-open connection
 // hangs forever. This script chains ~15-20 sequential calls whose only backstop
@@ -80,6 +86,8 @@ const SA_PATH =
 // pipeline. Abort any request idle for HTTP_TIMEOUT_MS so the failure is fast
 // and retryable (the webhook-inbox-reaper re-runs the idempotent pipeline).
 const HTTP_TIMEOUT_MS = 20000;
+const SHEETS_READ_ATTEMPTS = 2;
+const SHEETS_READ_RETRY_DELAY_MS = 500;
 
 function attachTimeout(req, label) {
   req.setTimeout(HTTP_TIMEOUT_MS, () => {
@@ -185,34 +193,61 @@ async function getAccessToken() {
 
 // ── Google Sheets API ───────────────────────────────────────────────────────
 
-function sheetsRequest(sheetId, method, path, body) {
-  return getAccessToken().then(
-    (token) =>
-      new Promise((resolve, reject) => {
-        const options = {
-          hostname: 'sheets.googleapis.com',
-          path: `/v4/spreadsheets/${sheetId}/${path}`,
-          method,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        };
-        const req = https.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => (data += chunk));
-          res.on('end', () => {
-            if (res.statusCode >= 400)
-              reject(new Error(`Sheets API ${res.statusCode}: ${data}`));
-            else resolve(JSON.parse(data));
-          });
-        });
-        req.on('error', reject);
-        attachTimeout(req, 'Sheets request');
-        if (body) req.write(JSON.stringify(body));
-        req.end();
-      }),
+function shouldRetrySheetsRequest(method, error) {
+  if (method !== 'GET') return false;
+  const message = String(error?.message || error || '');
+  return /timed out|ECONNRESET|EPIPE|EAI_AGAIN|socket hang up|Sheets API (408|429|5\d\d):/i.test(
+    message,
   );
+}
+
+function sheetsRequestOnce(token, sheetId, method, path, body) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'sheets.googleapis.com',
+      path: `/v4/spreadsheets/${sheetId}/${path}`,
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => (data += chunk));
+      res.on('end', () => {
+        if (res.statusCode >= 400) {
+          reject(new Error(`Sheets API ${res.statusCode}: ${data}`));
+          return;
+        }
+        try {
+          resolve(JSON.parse(data));
+        } catch {
+          reject(new Error(`Sheets response parse error: ${data.slice(0, 200)}`));
+        }
+      });
+    });
+    req.on('error', reject);
+    attachTimeout(req, 'Sheets request');
+    if (body) req.write(JSON.stringify(body));
+    req.end();
+  });
+}
+
+async function sheetsRequest(sheetId, method, path, body) {
+  const token = await getAccessToken();
+  const attempts = method === 'GET' ? SHEETS_READ_ATTEMPTS : 1;
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await sheetsRequestOnce(token, sheetId, method, path, body);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= attempts || !shouldRetrySheetsRequest(method, error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, SHEETS_READ_RETRY_DELAY_MS));
+    }
+  }
+  throw lastError;
 }
 
 function sheetsGet(sheetId, range) {
@@ -232,6 +267,15 @@ function sheetsUpdate(sheetId, range, values) {
     'PUT',
     `values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
     { values },
+  );
+}
+
+function sheetsClear(sheetId, range) {
+  return sheetsRequest(
+    sheetId,
+    'POST',
+    `values/${encodeURIComponent(range)}:clear`,
+    {},
   );
 }
 
@@ -356,6 +400,73 @@ function preferredProductName(incoming, existing, eventType) {
   if (!keep || keep.toLowerCase() === 'unknown') return incoming;
   if (eventType === 'checkout.session.completed') return incoming;
   return keep;
+}
+
+function resolveRosterTargets(productRows) {
+  const notAStudent = productRows.some(
+    (row) => String(row[1] || '').trim().toLowerCase() === NOT_A_STUDENT,
+  );
+  const rosterMatches = productRows
+    .filter(
+      (row) =>
+        row[1] &&
+        row[2] &&
+        String(row[1]).trim().toLowerCase() !== NOT_A_STUDENT,
+    )
+    .map((row) => ({ tab: row[1], column: row[2] }));
+  return {
+    notAStudent,
+    rosterMatches,
+    hasPrepExam: rosterMatches.some((match) => match.tab === 'Prep Exam'),
+    // Program tabs no longer end in " Roster". Testing the role, not the tab
+    // title, keeps exam routing intact across the live tab rename.
+    programTabs: rosterMatches.filter((match) => match.tab !== 'Prep Exam'),
+  };
+}
+
+function isPlutioInvoiceDescription(productName) {
+  return /^Invoice #tca-\d+-pl from Tandem Coaching Partners LLC \([A-Za-z0-9]+\)$/.test(
+    String(productName || '').trim(),
+  );
+}
+
+function formatRosterSummary({
+  productName,
+  rosterMatches,
+  rosterMode,
+  studentRosterResult,
+}) {
+  if (rosterMode === 'not_student') {
+    return 'nowhere (not a student — delivered service)';
+  }
+  if (rosterMode === 'unmapped_product') {
+    return 'Sales tab (unmapped product)';
+  }
+  if (rosterMode === 'missing_student') {
+    return isPlutioInvoiceDescription(productName)
+      ? 'not filed — Plutio invoice participant identity required'
+      : 'not filed — student identity required';
+  }
+  if (rosterMatches.length > 0) {
+    return rosterMatches.map((match) => `${match.tab} → ${match.column}`).join(', ');
+  }
+  return `not classified — ${studentRosterResult || 'Student Roster unavailable'}`;
+}
+
+async function clearSalesCatchAll(accountingStripeId, receivedStripeId) {
+  const ids = await sheetsGet(SHEETS_ROSTER_ID, 'Sales!F:F');
+  const candidateIds = new Set([accountingStripeId, receivedStripeId]);
+  const rows = (ids.values || [])
+    .map((row, index) => ({ id: row[0], sheetRow: index + 1 }))
+    .filter(({ id, sheetRow }) => sheetRow > 1 && candidateIds.has(id));
+  for (const { sheetRow } of rows) {
+    await sheetsClear(SHEETS_ROSTER_ID, `Sales!A${sheetRow}:F${sheetRow}`);
+    const readback = await sheetsGet(SHEETS_ROSTER_ID, `Sales!F${sheetRow}`);
+    if (String(readback.values?.[0]?.[0] || '').trim()) {
+      throw new Error('Sales catch-all cleanup readback mismatch');
+    }
+  }
+  return rows.length;
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -535,24 +646,22 @@ async function resolveExamRouting(allMatches, programTabs, email) {
   let studentHasModules = false;
 
   for (const { tab } of programTabs) {
-    try {
-      const fullTab = await sheetsGet(SHEETS_ROSTER_ID, `'${tab}'`);
-      const tabRows = fullTab.values || [];
-      if (tabRows.length < 2) continue;
-      const headers = tabRows[0];
-      const moduleCols = headers.reduce((acc, h, i) => {
-        if (MODULE_HEADERS.has(h)) acc.push(i);
-        return acc;
-      }, []);
-      for (let i = 1; i < tabRows.length; i++) {
-        const row = tabRows[i];
-        if (!row[0] || row[0].toLowerCase() !== email.toLowerCase()) continue;
-        if (moduleCols.some((ci) => row[ci] && row[ci].trim())) {
-          studentHasModules = true;
-          break;
-        }
+    const fullTab = await sheetsGet(SHEETS_ROSTER_ID, `'${tab}'`);
+    const tabRows = fullTab.values || [];
+    if (tabRows.length < 2) continue;
+    const headers = tabRows[0];
+    const moduleCols = headers.reduce((acc, h, i) => {
+      if (MODULE_HEADERS.has(h)) acc.push(i);
+      return acc;
+    }, []);
+    for (let i = 1; i < tabRows.length; i++) {
+      const row = tabRows[i];
+      if (!row[0] || row[0].toLowerCase() !== email.toLowerCase()) continue;
+      if (moduleCols.some((ci) => row[ci] && row[ci].trim())) {
+        studentHasModules = true;
+        break;
       }
-    } catch { /* non-fatal */ }
+    }
     if (studentHasModules) break;
   }
 
@@ -609,7 +718,7 @@ function derivePaymentFulfillmentOutcome({
   } else if (rosterMode === 'unmapped_product') {
     state = 'needs_product';
     errorCode = 'product_mapping_missing';
-  } else if (rosterMode === 'mapped_verified') {
+  } else if (rosterMode === 'mapped_verified' || rosterMode === 'not_student') {
     state = 'complete';
   } else {
     state = 'write_failed';
@@ -620,12 +729,16 @@ function derivePaymentFulfillmentOutcome({
     outcome:
       rosterMode === 'mapped_verified'
         ? 'verified'
+        : rosterMode === 'not_student'
+          ? 'not_applicable'
         : ['missing_student', 'unmapped_product'].includes(rosterMode)
           ? 'exception'
           : 'failed',
     resultCode:
       rosterMode === 'mapped_verified'
         ? 'student_roster_readback_verified'
+        : rosterMode === 'not_student'
+          ? 'student_roster_not_applicable'
         : rosterMode === 'missing_student'
           ? 'student_identity_missing'
           : rosterMode === 'unmapped_product'
@@ -698,6 +811,7 @@ async function main() {
   let paymentLogVerified = false;
   let postgresVerified = false;
   let rosterMode = 'write_failed';
+  let notAStudent = false;
 
   // 2. Google Sheets operations (separate sheets for payments vs roster)
   const hasSaCreds = fs.existsSync(SA_PATH);
@@ -813,21 +927,34 @@ async function main() {
       // Combo products have multiple rows — one per roster tab
       const mapping = await sheetsGet(SHEETS_ROSTER_ID, 'Product Map!A:C');
       const rows = mapping.values || [];
-      rosterMatches = rows
-        .filter((r, i) => i > 0 && r[0] && r[0].toLowerCase() === productName.toLowerCase() && r[1] && r[2])
-        .map((r) => ({ tab: r[1], column: r[2] }));
+      const productRows = rows.filter(
+        (row, index) =>
+          index > 0 &&
+          row[0] &&
+          row[0].toLowerCase() === productName.toLowerCase(),
+      );
+      const targets = resolveRosterTargets(productRows);
+      ({ notAStudent, rosterMatches } = targets);
 
       // Exam routing: when product maps to both a program roster AND Prep Exam,
       // check if student already has modules on the program roster.
       // If yes → keep program roster entry, skip Prep Exam.
       // If no → use Prep Exam only, skip program roster.
-      const hasPrepExam = rosterMatches.some((m) => m.tab === 'Prep Exam');
-      const programTabs = rosterMatches.filter((m) => m.tab !== 'Prep Exam' && m.tab.endsWith(' Roster'));
+      const { hasPrepExam, programTabs } = targets;
       if (hasPrepExam && programTabs.length > 0 && customerEmail) {
         rosterMatches = await resolveExamRouting(rosterMatches, programTabs, customerEmail);
       }
 
-      if (rosterMatches.length > 0 && customerEmail) {
+      if (notAStudent) {
+        try {
+          const cleared = await clearSalesCatchAll(accountingStripeId, STRIPE_ID);
+          results.sheets_roster = `skipped (not a student — delivered service${cleared ? '; stale Sales row cleared' : ''})`;
+          rosterMode = 'not_student';
+        } catch (error) {
+          results.sheets_roster = `Sales cleanup ERROR: ${error.message.slice(0, 80)}`;
+          rosterMode = 'write_failed';
+        }
+      } else if (rosterMatches.length > 0 && customerEmail) {
         const rosterResults = [];
         let verifiedTargets = 0;
         for (const { tab, column } of rosterMatches) {
@@ -926,11 +1053,26 @@ async function main() {
             rosterResults.push(`${tab}: ERROR: ${e.message.slice(0, 80)}`);
           }
         }
-        results.sheets_roster = rosterResults.join('; ');
         rosterMode =
           verifiedTargets === rosterMatches.length
             ? 'mapped_verified'
             : 'write_failed';
+        if (rosterMode === 'mapped_verified') {
+          try {
+            const cleared = await clearSalesCatchAll(accountingStripeId, STRIPE_ID);
+            if (cleared) rosterResults.push('stale Sales row cleared (readback verified)');
+          } catch (error) {
+            rosterResults.push(`Sales cleanup ERROR: ${error.message.slice(0, 80)}`);
+            rosterMode = 'write_failed';
+          }
+        }
+        results.sheets_roster = rosterResults.join('; ');
+      } else if (isPlutioInvoiceDescription(productName)) {
+        // A Plutio invoice description identifies the bill, not its participant.
+        // Filing the payer/company as a student is worse than holding the case.
+        results.sheets_roster =
+          'not written (Plutio invoice participant identity required)';
+        rosterMode = 'missing_student';
       } else if (rosterMatches.length === 0) {
         // Unrecognized product — no exact Product Map row. This is the case for
         // sales-closed deals paid via a Plutio/Stripe invoice (description is
@@ -1067,9 +1209,12 @@ async function main() {
     customerName, customerEmail, productName, amountDollars, currency,
     feeDollars, netDollars, refundedCents, transactionDate, recordedDate,
     accountingStripeId, idType: ID_TYPE, receivedStripeId: STRIPE_ID,
-    rosterSummary: rosterMatches.length > 0
-      ? rosterMatches.map(m => `${m.tab} → ${m.column}`).join(', ')
-      : 'Sales tab (unmapped product)',
+    rosterSummary: formatRosterSummary({
+      productName,
+      rosterMatches,
+      rosterMode,
+      studentRosterResult: results.sheets_roster,
+    }),
     paymentLogResult: results.sheets_log,
     studentRosterResult: results.sheets_roster,
     dbResult: results.db,
@@ -1131,6 +1276,11 @@ module.exports = {
   buildPsqlVarArgs,
   formatPaymentSummary,
   derivePaymentFulfillmentOutcome,
+  shouldRetrySheetsRequest,
+  resolveRosterTargets,
+  isPlutioInvoiceDescription,
+  formatRosterSummary,
+  NOT_A_STUDENT,
 };
 
 if (require.main === module) {

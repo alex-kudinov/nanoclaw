@@ -690,6 +690,20 @@ payment processing. Review found no material issues. Off-first activation plus
 one-key enable captured the known missed payment exactly once; exact second run
 created nothing, while inbox and `public.payments` stayed unchanged.
 
+`NC-20260903-001` audited 96 distinct payment objects over 2026-08-03 through
+2026-09-03 and found 20 unmapped/error signals. The audit distinguishes genuine
+aliases, transient Sheet failures, already-repaired historical rows,
+non-student services, and Plutio payer/participant ambiguity. Ten exact archived
+transactions were replayed through host-owned cases to verified completion,
+two missing aliases were added/read back, and eight stale in-window Sales rows
+were cleared after destination proof. The local release correction keeps
+retryable write/readback failures in the five-attempt webhook queue, retries
+one safe Sheets GET, stops rendering failed classification as unmapped,
+restores the non-student and renamed-tab routing controls, treats Plutio invoice
+descriptions as `needs_student`, and prevents manual agent reruns from being
+reported as durable case completion. See the content-minimized month audit in
+`docs/reports/NC-20260903-001-GRU-BOOKKEEPER-MONTH-AUDIT.md`.
+
 ### Reliability and autonomy
 
 | Area                     | Main files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |

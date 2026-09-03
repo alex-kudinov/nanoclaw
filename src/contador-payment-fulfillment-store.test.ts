@@ -218,6 +218,60 @@ describe('Contador payment fulfillment store', () => {
     ]);
   });
 
+  it('accepts an exact non-student disposition without a fake roster write', async () => {
+    const finalRow = caseRow({
+      state: 'complete',
+      resolved_at: '2026-08-24T03:01:00.000Z',
+    });
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [caseRow()] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [finalRow] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await finalizeContadorFulfillmentWithClient(
+      { query } as any,
+      {
+        caseId: '42',
+        expectedVersion: 0,
+        leaseToken: LEASE,
+        sourceEventId: 'evt_test',
+        state: 'complete',
+        errorCode: null,
+        occurredAt: '2026-08-24T03:01:00.000Z',
+        aliases: [],
+        receipts: [
+          {
+            stage: 'stripe_source',
+            outcome: 'verified',
+            resultCode: 'stripe_source_resolved',
+          },
+          {
+            stage: 'payment_log',
+            outcome: 'verified',
+            resultCode: 'payment_log_readback_verified',
+          },
+          {
+            stage: 'postgres_payment',
+            outcome: 'verified',
+            resultCode: 'postgres_payment_readback_verified',
+          },
+          {
+            stage: 'student_roster',
+            outcome: 'not_applicable',
+            resultCode: 'student_roster_not_applicable',
+          },
+        ],
+      },
+    );
+
+    expect(result.state).toBe('complete');
+  });
+
   it('rejects invalid final state/error pairs before touching the database', async () => {
     const query = vi.fn();
     await expect(

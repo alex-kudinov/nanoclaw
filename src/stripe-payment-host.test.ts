@@ -35,6 +35,7 @@ import {
   parseStripeAccount,
   parseLifecycleSentinel,
   handleStripePayment,
+  isRetryableFulfillmentErrorCode,
   StripeFulfillmentInFlightError,
   StripePayloadError,
 } from './stripe-payment-host.js';
@@ -138,6 +139,27 @@ beforeEach(() => {
       stderr: '',
     });
   };
+});
+
+describe('retryable fulfillment failures', () => {
+  it.each([
+    'payment_log_readback_failed',
+    'postgres_payment_readback_failed',
+    'student_roster_readback_failed',
+    'processor_failed',
+  ])('retries transient stage failure %s', (code) => {
+    expect(isRetryableFulfillmentErrorCode(code)).toBe(true);
+  });
+
+  it.each([
+    'product_mapping_missing',
+    'student_identity_missing',
+    'processor_contract_invalid',
+    'expired_processing_terminalized',
+    null,
+  ])('does not blindly retry owned/manual failure %s', (code) => {
+    expect(isRetryableFulfillmentErrorCode(code)).toBe(false);
+  });
 });
 
 describe('Stripe external-write brake', () => {
@@ -331,12 +353,64 @@ describe('handleStripePayment', () => {
       account: 'heartbeat',
     });
     expect(result.fulfillmentState).toBe('needs_product');
+    expect(result.retryable).toBe(false);
     expect(mockFinalizeFulfillment).toHaveBeenCalledWith(
       expect.objectContaining({
         state: 'needs_product',
         errorCode: 'product_mapping_missing',
       }),
     );
+  });
+
+  it('accepts a verified non-student product without inventing a roster write', async () => {
+    execFileImpl = (_file: string, args: string[], _opts: any, cb: any) => {
+      const fulfillment = {
+        version: 1,
+        stripeAccount: 'heartbeat',
+        paymentIntentId: args[1],
+        sourceObjectId: args[1],
+        state: 'complete',
+        errorCode: null,
+        aliases: [{ kind: 'payment_intent', id: args[1] }],
+        receipts: [
+          {
+            stage: 'stripe_source',
+            outcome: 'verified',
+            resultCode: 'stripe_source_resolved',
+          },
+          {
+            stage: 'payment_log',
+            outcome: 'verified',
+            resultCode: 'payment_log_readback_verified',
+          },
+          {
+            stage: 'postgres_payment',
+            outcome: 'verified',
+            resultCode: 'postgres_payment_readback_verified',
+          },
+          {
+            stage: 'student_roster',
+            outcome: 'not_applicable',
+            resultCode: 'student_roster_not_applicable',
+          },
+        ],
+      };
+      cb(null, {
+        stdout: `summary\n__CONTADOR_FULFILLMENT__${Buffer.from(JSON.stringify(fulfillment)).toString('base64url')}\n`,
+        stderr: '',
+      });
+    };
+
+    const result = await handleStripePayment({
+      stripe_id: 'pi_service',
+      event_type: 'payment_intent.succeeded',
+      account: 'heartbeat',
+    });
+    expect(result).toMatchObject({
+      fulfillmentState: 'complete',
+      fulfillmentErrorCode: null,
+      retryable: false,
+    });
   });
 
   it('does not rerun external writes for a case already verified complete', async () => {
@@ -549,6 +623,7 @@ describe('handleStripePayment', () => {
       account: 'heartbeat',
     });
     expect(result.fulfillmentState).toBe('write_failed');
+    expect(result.retryable).toBe(false);
     expect(mockFinalizeFulfillment).toHaveBeenCalledWith(
       expect.objectContaining({
         state: 'write_failed',
@@ -570,6 +645,8 @@ describe('handleStripePayment', () => {
     });
     expect(result).toMatchObject({
       fulfillmentState: 'write_failed',
+      fulfillmentErrorCode: 'processor_failed',
+      retryable: true,
       duplicateComplete: false,
       lifecycleEnqueued: false,
     });

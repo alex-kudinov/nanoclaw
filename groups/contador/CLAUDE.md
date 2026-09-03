@@ -18,21 +18,35 @@ Read `/workspace/extra/knowledge/KNOWLEDGE.md` before processing any payment. It
 
 Do not narrate, acknowledge, or summarize. Emit only the structured output token or nothing. The host posts a mechanical processing message on your behalf — a pre-work acknowledgment from you is redundant token cost.
 
-**Ignore host-generated mechanical lines.** A message whose entire content is a `→ Routed to …`, `[PROCESSING] …`, or `[EMAIL SENT] …` line is host noise — no action, no response.
+**Ignore host-generated mechanical lines.** A message whose entire content is a `→ Routed to …`, `[PROCESSING] …`, `[PAYMENT RETRY …]`, or `[EMAIL SENT] …` line is host noise — no action, no response.
 
 ## How You Get Triggered
 
-You run in 2 situations. Read the incoming `<messages>` block to determine which:
+You run for invoice handoffs and operator follow-ups. New Stripe payment and
+refund webhooks are processed mechanically by the host; they do not need an
+agent turn.
 
-### 1. New Payment
+### Host-owned new payment
 
-The message contains a Stripe webhook payload with either a `session_id` (starts with `cs_`) or a `payment_intent_id` (starts with `pi_`). Both are completed payments — enrich and record.
+The host owns the fulfillment case, runs the deterministic script, verifies
+Payment Log/PostgreSQL/roster readback, and automatically retries transient
+write/readback failures through the durable webhook queue. Do not run
+`process-payment.cjs` manually in response to an operator asking why a prior
+transaction was unmapped or failed. A direct script rerun bypasses the durable
+case and can make Slack look fixed while the owning case remains failed.
 
-### 2. Invoice from Mailman
+If an operator corrects a product mapping, acknowledge only after the host-owned
+case has been replayed and the case plus roster have both been read back. Never
+call a Product Map edit or a direct script result a completed repair by itself.
+
+### Invoice from Mailman
 
 The message starts with `[HANDOFF: mailman→contador]` and contains `[TYPE: invoice]`. This is an emailed invoice forwarded by the mailman. Follow the Invoice Logging steps below.
 
-## Execution Steps (follow this exact order)
+## Legacy direct-payment execution steps
+
+These steps are retained only for an explicit host-provided raw payment payload
+that has no host-owned case path. They are not a manual retry procedure.
 
 ### Step 1 — Extract Stripe ID
 
@@ -159,7 +173,15 @@ If no due date, skip this step.
 
 ## Edge Cases
 
-- **Unrecognized product name:** The script writes to Payment Log, skips Student Roster, and notes it in the summary. No action needed from the agent.
+- **Unrecognized product name:** This is a durable `needs_product` exception,
+  not success. The Product Map must be corrected and the exact host-owned case
+  replayed through verified roster readback.
+- **Plutio invoice description:** The invoice identifies a payer/bill, not the
+  participant. Keep the case `needs_student` until exact participant evidence
+  exists; never register a company or sponsor as the student.
+- **Transient Sheets/API/readback error:** The host leaves the webhook retryable
+  and reprocesses it automatically. Do not ask the operator to check the sheet
+  or run the script manually.
 - **Stripe API error:** The script exits with an error. Post the error message to Slack.
 - **Missing customer email:** The script handles this — logs payment, skips roster update.
 - **Duplicate session ID:** DB has `ON CONFLICT (stripe_session_id) DO NOTHING`. Safe to re-process.

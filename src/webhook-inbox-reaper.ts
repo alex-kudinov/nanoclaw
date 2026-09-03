@@ -73,6 +73,12 @@ interface ReaperDeps {
   enqueueBookingPlutioActivity: (
     webhookInboxId: number,
   ) => Promise<BookingPlutioEnqueueResult>;
+  /** Test seam; production writes the ordinary host IPC notice below. */
+  writeGroupNotice?: (input: {
+    folder: string;
+    chatJid: string;
+    text: string;
+  }) => void;
 }
 
 export interface ReaperResult {
@@ -83,37 +89,52 @@ export interface ReaperResult {
   deadLetterDetails: Array<{ id: number; source: string; error: string }>;
 }
 
-function chiefJid(deps: ReaperDeps): string | null {
+function groupJid(deps: ReaperDeps, folder: string): string | null {
   const groups = deps.getRegisteredGroups();
-  const chief = Object.entries(groups).find(([, g]) => g.folder === 'chief');
-  return chief?.[0] ?? null;
+  const group = Object.entries(groups).find(([, g]) => g.folder === folder);
+  return group?.[0] ?? null;
 }
 
-function alertChief(deps: ReaperDeps, text: string): void {
-  const jid = chiefJid(deps);
+function postGroupNotice(deps: ReaperDeps, folder: string, text: string): void {
+  const jid = groupJid(deps, folder);
   if (!jid) {
     logger.warn(
-      { text },
-      'webhook-inbox-reaper: chief group not registered; alert dropped',
+      { folder },
+      'webhook-inbox-reaper: target group not registered; notice dropped',
     );
     return;
   }
-  const dir = path.join(DATA_DIR, 'ipc', 'chief', 'messages');
-  fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(
-    dir,
-    `webhook-inbox-reaper-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 6)}.json`,
-  );
-  // IPC handler requires chatJid + text to route a 'message' type to Slack.
-  // The plutio + hive reapers omit chatJid and silently lose alerts — fix
-  // tracked in docs/WEBHOOK-RELIABILITY.md §6.
-  fs.writeFileSync(
-    file,
-    JSON.stringify({ type: 'message', chatJid: jid, text }, null, 2),
-    'utf-8',
-  );
+  try {
+    if (deps.writeGroupNotice) {
+      deps.writeGroupNotice({ folder, chatJid: jid, text });
+      return;
+    }
+    const dir = path.join(DATA_DIR, 'ipc', folder, 'messages');
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(
+      dir,
+      `webhook-inbox-reaper-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 6)}.json`,
+    );
+    // IPC handler requires chatJid + text to route a 'message' type to Slack.
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ type: 'message', chatJid: jid, text }, null, 2),
+      'utf-8',
+    );
+  } catch (err) {
+    // A presentation failure must never reopen an already-handled payment or
+    // cause the external processor to run twice.
+    logger.error(
+      { folder, err },
+      'webhook-inbox-reaper: group notice write failed after business outcome',
+    );
+  }
+}
+
+function alertChief(deps: ReaperDeps, text: string): void {
+  postGroupNotice(deps, 'chief', text);
 }
 
 function loadWebhooks(filePath: string): WebhookDefinition[] {
@@ -222,6 +243,11 @@ async function dispatchRow(row: InboxRow, deps: ReaperDeps): Promise<void> {
   // Idempotent (Sheets upsert + Postgres ON CONFLICT), zero LLM.
   if (row.source === 'stripe-payment') {
     const result = await handleStripePayment(row.raw_body);
+    if (result.retryable) {
+      throw new Error(
+        `contador_retryable:${result.fulfillmentErrorCode ?? 'write_failed'}:case_${result.fulfillmentCaseId}`,
+      );
+    }
     await markHandled(row.id, {
       handled_by: 'stripe:reaper',
       related_entity: {
@@ -231,6 +257,11 @@ async function dispatchRow(row: InboxRow, deps: ReaperDeps): Promise<void> {
         version: result.fulfillmentVersion,
       },
     });
+    postGroupNotice(
+      deps,
+      'contador',
+      `[PAYMENT RETRY ${result.fulfillmentState === 'complete' ? 'SUCCEEDED' : 'FINISHED'}]\n${result.summary}\nFulfillment Case: ${result.fulfillmentCaseId} (${result.fulfillmentState})`,
+    );
     return;
   }
   const groups = deps.getRegisteredGroups();

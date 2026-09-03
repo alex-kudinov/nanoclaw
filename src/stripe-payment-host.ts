@@ -94,7 +94,22 @@ export interface StripePaymentResult {
   fulfillmentCaseId: string;
   fulfillmentState: ContadorFulfillmentState;
   fulfillmentVersion: number;
+  fulfillmentErrorCode: string | null;
+  retryable: boolean;
   duplicateComplete: boolean;
+}
+
+const RETRYABLE_FULFILLMENT_ERROR_CODES = new Set([
+  'payment_log_readback_failed',
+  'postgres_payment_readback_failed',
+  'student_roster_readback_failed',
+  'processor_failed',
+]);
+
+export function isRetryableFulfillmentErrorCode(
+  errorCode: string | null | undefined,
+): boolean {
+  return Boolean(errorCode && RETRYABLE_FULFILLMENT_ERROR_CODES.has(errorCode));
 }
 
 export interface StripePaymentHostDeps {
@@ -273,10 +288,19 @@ function assertProcessorFulfillment(
   if (required.some((stage) => !byStage.has(stage))) {
     throw new StripePayloadError('incomplete Stripe processor stage receipts');
   }
+  const stageCompleted = (stage: string): boolean => {
+    const receipt = byStage.get(stage);
+    if (receipt?.outcome === 'verified') return true;
+    return (
+      stage === 'student_roster' &&
+      receipt?.outcome === 'not_applicable' &&
+      receipt.resultCode === 'student_roster_not_applicable'
+    );
+  };
   if (
     (result.state === 'complete' && isRefund) ||
     (result.state === 'complete' &&
-      required.some((stage) => byStage.get(stage)?.outcome !== 'verified'))
+      required.some((stage) => !stageCompleted(stage)))
   ) {
     throw new StripePayloadError(
       'Stripe processor completion lacks verified stage readback',
@@ -359,6 +383,8 @@ async function persistProcessorFailure(input: {
     fulfillmentCaseId: failedCase.id,
     fulfillmentState: failedCase.state,
     fulfillmentVersion: failedCase.version,
+    fulfillmentErrorCode: input.errorCode,
+    retryable: isRetryableFulfillmentErrorCode(input.errorCode),
     duplicateComplete: false,
   };
 }
@@ -419,6 +445,8 @@ export async function handleStripePayment(
       fulfillmentCaseId: admission.item.id,
       fulfillmentState: admission.item.state,
       fulfillmentVersion: admission.item.version,
+      fulfillmentErrorCode: null,
+      retryable: false,
       duplicateComplete: true,
     };
   }
@@ -430,6 +458,8 @@ export async function handleStripePayment(
       fulfillmentCaseId: admission.item.id,
       fulfillmentState: admission.item.state,
       fulfillmentVersion: admission.item.version,
+      fulfillmentErrorCode: admission.item.lastErrorCode,
+      retryable: false,
       duplicateComplete: false,
     };
   }
@@ -546,6 +576,8 @@ export async function handleStripePayment(
     fulfillmentCaseId: finalCase.id,
     fulfillmentState: finalCase.state,
     fulfillmentVersion: finalCase.version,
+    fulfillmentErrorCode: finalCase.lastErrorCode,
+    retryable: isRetryableFulfillmentErrorCode(finalCase.lastErrorCode),
     duplicateComplete: false,
   };
 }
