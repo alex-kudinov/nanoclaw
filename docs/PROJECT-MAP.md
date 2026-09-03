@@ -696,13 +696,18 @@ aliases, transient Sheet failures, already-repaired historical rows,
 non-student services, and Plutio payer/participant ambiguity. Ten exact archived
 transactions were replayed through host-owned cases to verified completion,
 two missing aliases were added/read back, and eight stale in-window Sales rows
-were cleared after destination proof. The local release correction keeps
+were cleared after destination proof. Exact live release `5942196f` keeps
 retryable write/readback failures in the five-attempt webhook queue, retries
 one safe Sheets GET, stops rendering failed classification as unmapped,
 restores the non-student and renamed-tab routing controls, treats Plutio invoice
 descriptions as `needs_student`, and prevents manual agent reruns from being
 reported as durable case completion. See the content-minimized month audit in
 `docs/reports/NC-20260903-001-GRU-BOOKKEEPER-MONTH-AUDIT.md`.
+One natural Plutio invoice arrived under the prior release during deployment
+drain; deployed replay correctly held sponsor/participant ambiguity, exact
+invoice evidence placed the named participant on ACC Full Program, and case 47
+closed with verified source/Payment Log/PostgreSQL/roster receipts. Final live
+ledger has zero `needs_product` and zero `processing`.
 
 ### Reliability and autonomy
 

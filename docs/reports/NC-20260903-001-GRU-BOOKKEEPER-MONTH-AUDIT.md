@@ -119,6 +119,38 @@ pass. The full root suite is 3,414 pass / 32 skip with the same two exact-base
 failures (CNPC wrapper-literal expectation and date-stale Trafft fixture).
 Claude Sonnet/high R1B returned `NO MATERIAL FINDINGS`; Codex applied its one
 non-material consistency suggestion and reran the gates. Commit, immutable
-release, deployment, and a controlled transient-failure live canary remain
-pending at this report revision. The production data repair above is already
-applied and read back; the automatic-retry code is not yet live.
+release, deployment, and live verification are recorded in the addendum below.
+
+## Deployment and natural post-window addendum
+
+Exact reviewed commit `5942196f71da4641990308cdf3cf565b8550185e` is live.
+Source tree `92bb9d082f3e92cfdef3a3f67905920a59283dbc`, compiled artifact
+SHA-256 `cf6d5bec1e5414f317483f164a15abace38942e16786da618adab0624c5e22f5`,
+1,028 files, and archive SHA-256
+`f4526749f6fc6d12b330d8cf0ea96c2e347cafd08a5d7fbcc97b8aefba21ad13`
+verified locally and on the Mini under Node 22.23.2. Activation changed only the
+three approved release pointers and retains rollback to exact prior release
+`658b4730`. The operational Contador prompt hash matches the release.
+
+One natural Plutio invoice payment arrived at 07:58 CT while the deployment was
+waiting for unrelated work to drain, still under the old release. It became
+case 47 `needs_product`. After activation, exact replay reclassified it as
+`needs_student`, proving the deployed payer/participant hold. The Plutio invoice
+line itself named one exact sponsored ACC Level 1 participant and cohort; that
+participant was written/read back on ACC Full Program dated 2026-09-03 with
+cohort `2026-09`, the stale sponsor catch-all row was cleared, and case 47
+version 2 closed `complete` with verified Plutio-source, Payment Log,
+PostgreSQL, roster, and final receipts.
+
+Final live ledger is 42 `complete`, three separately owned `needs_review`, two
+predecessor terminalized `write_failed`, zero `needs_product`, and zero
+`processing`. Stripe inbox has no failed row. Five older Plutio-invoice
+catch-all rows outside this audit window remain. Installed-release probes prove
+GET timeout retry is on, POST timeout retry is off, a failed map read renders
+`not classified`, renamed program tabs and non-student sentinel resolve, Plutio
+invoice descriptions hold participant identity, roster readback failures are
+retryable, and mapping misses are not blindly retried. `/health` reports the
+exact release/code root, one listener, connected Gmail/Slack, healthy Stripe
+parity, and no outgoing/waiting backlog. A future natural Sheets failure will
+remain the outcome observation for the five-attempt retry loop; no provider
+failure was manufactured for this release.

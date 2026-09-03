@@ -2,8 +2,8 @@
 
 Status: current-state diagnosis plus accepted target; invoice-routing foundation
 and payment-fulfillment cases are live. `NC-20260903-001` repaired the current
-month's product/roster exceptions in production; automatic transient-failure
-retry is implemented locally and pending review/release.
+month's product/roster exceptions in production; exact release `5942196f` now
+keeps transient failures in the durable five-attempt retry loop.
 Boundary: `docs/CONTADOR-BIZMGR-BOUNDARY.md`
 Accounting authority: `/Users/xbohdpukc/dev/bizmgr/agent_docs/RULEBOOK.md`
 

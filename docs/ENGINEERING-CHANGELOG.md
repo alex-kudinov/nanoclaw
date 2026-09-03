@@ -12,10 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-03T12:42:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review complete
-- State: validating; production data repair is applied/read back, source release
-  is local and not deployed
-- Commit/PR: uncommitted on `codex/gru-bookkeeper-retry-20260903`, based on
-  exact live release `658b473061a3a684e837c409fa3737812fe3a8e9`
+- State: complete; production data repair and exact reviewed release are live
+  and read back
+- Commit/PR: pushed commit
+  `5942196f71da4641990308cdf3cf565b8550185e` on
+  `codex/gru-bookkeeper-retry-20260903`, based on prior exact live release
+  `658b473061a3a684e837c409fa3737812fe3a8e9`
 - Change class: C4 because replay and roster/Payment Log repair mutate the
   operational payment-to-student record
 - Trigger: a mapped Mentor Coaching Foundations payment hit a 20-second Student
@@ -39,6 +41,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   eight separate Aug 6 group-invoice seats. Cleared eight stale in-window Sales
   rows after destination proof. No payment, refund, customer communication,
   accounting/QuickBooks action, or new enrollment purchase was created.
+- Natural drain addendum: one Plutio invoice payment arrived at 07:58 CT under
+  the prior release and became case 47 `needs_product`. Deployed replay correctly
+  changed it to `needs_student`, holding the sponsor/participant distinction.
+  Exact Plutio line-item evidence named one ACC Level 1 participant and cohort;
+  the participant was written/read back on ACC Full Program for 2026-09-03,
+  the stale sponsor catch-all row was cleared, and case 47 version 2 closed
+  `complete` with six verified stage/final receipts.
 - Source outcome: safe one-retry Sheets GET policy; truthful `not classified`
   summary on read failure; retryable stage failures stay in the durable webhook
   queue; reaper results post back to Contador; restored non-student and
@@ -65,8 +74,23 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   documentation continuity; capability and diff checks. Full root is 3,414
   pass / 32 skip / two unchanged exact-base failures (CNPC wrapper-literal
   expectation and date-stale Trafft fixture).
-- Deployment/migration: data repair only. Automatic retry source has not been
-  committed, packaged, deployed, or live-canary verified.
+- Deployment/migration: no migration. Exact source tree `92bb9d08`, compiled
+  artifact SHA-256 `cf6d5bec` over 1,028 files, and archive SHA-256 `f4526749`
+  verified locally and on the Mini. Mode-0700 backup
+  `NC-20260903-001-20260903T1308Z` contains readable `business_v2` and
+  `public.payments` custom dumps, WAL-safe SQLite, prior plist/release, and
+  prior Contador prompt. After natural zero-work drain, the operational prompt
+  hash matched the release and activation changed only the three approved
+  release pointers. Exact release `5942196f` is live with rollback plist
+  `com.nanoclaw.plist.rollback-658b473061a3-2026-09-03T13-23-32-110Z`.
+  `/health` proves Node 22.23.2, exact code root, one listener, connected
+  Gmail/Slack, healthy Stripe parity, and no outgoing/waiting backlog. Installed
+  probes verify safe GET retry, no POST retry, truthful failed-map summary,
+  renamed-tab/non-student/Plutio classification, and retryable versus terminal
+  codes. Final ledger is 42 complete, three needs-review, two predecessor
+  terminalized write-failed, zero needs-product, and zero processing; Stripe
+  inbox has no failed row. A natural future Sheets failure remains outcome
+  evidence; no provider failure was manufactured.
 - Rollback/recovery: exact mapping rows can be removed only with an inverse
   readback; cleared catch-all evidence remains in Payment Log, `public.payments`,
   Slack source summaries, webhook inbox, and fulfillment receipts. Replaying a
@@ -74,8 +98,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   but it restores the no-retry/false-unmapped defect.
 - Documentation: active work, Contador closed-loop design, project map, this
   changelog, and the month audit.
-- Follow-ups: commit/push, immutable deployment after a natural drain, and one controlled
-  transient-read retry canary with exact case/inbox/roster proof.
+- Follow-ups: observe the next natural Sheets failure as outcome evidence; do
+  not manufacture provider failure. Five older Plutio-invoice Sales rows outside
+  the audited window remain separate participant-resolution work.
 
 ### NC-20260902-001 — Bind live minion knowledge to immutable fact authority
 
