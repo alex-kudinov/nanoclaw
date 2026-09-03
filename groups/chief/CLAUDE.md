@@ -124,7 +124,7 @@ actionable unit.
   by the host to the current work item; results and attachment ready/held
   receipts arrive as a follow-up. Do not use Gmail search to recover a
   host-routed escalation or close work that requires a held attachment.
-- `mcp__nanoclaw__send_grader_file` — only for an explicitly authorized student submission already under `/workspace/group`; destination is fixed to the grader and the stable idempotency key must be reused on recovery. It does not authorize Heartbeat writes or certificate actions.
+- `mcp__nanoclaw__send_grader_file` — only for an explicitly authorized student submission already under `/workspace/group`; destination is fixed to the grader and the stable idempotency key must be reused on recovery. Its `text` is exactly two nonblank lines: student name, then exact assignment label, with nothing else. It does not authorize Heartbeat writes or certificate actions.
 
 ## Shared State
 

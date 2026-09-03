@@ -60,7 +60,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   provider, payment, approval, or production runtime mutation has occurred.
   Pre-deployment inspection caught that the explicit immutable release inventory
   ended at migration 140; migration 141 and its rollback are now required by a
-  contract test and packaged before any production mutation.
+  contract test and packaged before any production mutation. Lineage preflight
+  also merged the concurrently deployed Contador release `5942196f` and
+  preserved the operational Chief grader-upload two-line constraint in tracked
+  source instead of overwriting that unrelated safety hardening.
 - Rollback/recovery: restore the prior immutable release; use
   `rollback_141_classification_routing_integrity.sql` only if the new taxonomy
   rows must be removed. Never rewrite action, approval, or Gmail receipts.

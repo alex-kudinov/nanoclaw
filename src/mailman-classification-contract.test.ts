@@ -72,6 +72,9 @@ describe('Mailman classification contract', () => {
 
   it('makes Sales the only customer-reply drafting owner', () => {
     expect(chief).toContain('Chief never drafts a customer email.');
+    expect(chief).toContain(
+      'exactly two nonblank lines: student name, then exact assignment label',
+    );
     expect(retiredChiefDraft).toContain('Status: retired');
     expect(sales).toContain('[SOURCE: email-support]');
     expect(sales).toContain('Shared Gmail Thread-ID');
