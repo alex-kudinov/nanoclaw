@@ -175,6 +175,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_139_contador_charge_alias_compatibility.sql',
     'data/business/migrations/nanoclaw-v2/140_checkout_failure_incidents.sql',
     'data/business/migrations/nanoclaw-v2/rollback_140_checkout_failure_incidents.sql',
+    'data/business/migrations/nanoclaw-v2/141_classification_routing_integrity.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_141_classification_routing_integrity.sql',
     'scripts/verify-release.mjs',
     'scripts/runtime-doctor.mjs',
     'scripts/with-pinned-node.sh',

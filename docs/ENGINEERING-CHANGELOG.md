@@ -14,10 +14,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Owner/client: Codex with independent Claude Sonnet/high design and
   implementation review
 - State: ready_for_deploy; implementation, independent review, and local gates
-  complete; commit/migration/deployment/live recovery pending
-- Commit/PR: uncommitted on `codex/support-routing-integrity-20260903`, based on
-  exact post-live lineage `58bfa985`; production release at investigation was
-  `658b4730`
+  complete; exact commit created; migration/deployment/live recovery pending
+- Commit/PR: `e4ff74ebd2ec5f7df3abd71735b716f8bbd183be` plus the pending
+  release-inventory correction on `codex/support-routing-integrity-20260903`,
+  based on exact post-live lineage `58bfa985`; production release at
+  investigation was `658b4730`
 - Change class: C5 because the change touches host Gmail/classification/run
   binding and customer-work routing; it does not approve or send email
 - Root cause: the prior design made Mailman independently post a visible
@@ -57,6 +58,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   continuity, capability, formatting, and diff checks pass.
 - Deployment/migration: not yet applied. No database, Gmail, Slack, customer,
   provider, payment, approval, or production runtime mutation has occurred.
+  Pre-deployment inspection caught that the explicit immutable release inventory
+  ended at migration 140; migration 141 and its rollback are now required by a
+  contract test and packaged before any production mutation.
 - Rollback/recovery: restore the prior immutable release; use
   `rollback_141_classification_routing_integrity.sql` only if the new taxonomy
   rows must be removed. Never rewrite action, approval, or Gmail receipts.
@@ -770,6 +774,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   no data/provider rollback is required.
 - Follow-ups: none outside this task; customer sending remains separately
   approval-gated.
+
 ### NC-20260826-007 — Active-client support no longer invents Sales pipeline work
 
 - Date: 2026-08-27T03:05:00Z

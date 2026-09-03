@@ -36,6 +36,10 @@ const migration = fs.readFileSync(
   'utf8',
 );
 const ipc = fs.readFileSync(path.join(root, 'src/ipc.ts'), 'utf8');
+const releaseBuilder = fs.readFileSync(
+  path.join(root, 'scripts/build-release.mjs'),
+  'utf8',
+);
 const normalizedMailman = mailman.replace(/\s+/g, ' ');
 
 describe('Mailman classification contract', () => {
@@ -58,6 +62,12 @@ describe('Mailman classification contract', () => {
       expect(mailman, label).toContain(`\`${label}\``);
       expect(migration, label).toContain(`'${label}'`);
     }
+    expect(releaseBuilder).toContain(
+      '141_classification_routing_integrity.sql',
+    );
+    expect(releaseBuilder).toContain(
+      'rollback_141_classification_routing_integrity.sql',
+    );
   });
 
   it('makes Sales the only customer-reply drafting owner', () => {
