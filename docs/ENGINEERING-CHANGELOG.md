@@ -8,7 +8,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
-### NC-20260903-001 — Make inbound customer work single-owner and restart-safe
+### NC-20260903-002 — Make inbound customer work single-owner and restart-safe
 
 - Date: 2026-09-03T12:00:00Z
 - Owner/client: Codex with independent Claude Sonnet/high design and
@@ -70,6 +70,75 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Follow-ups: after reviewed deployment, recover only the exact stranded
   overnight support messages that still have no Sales work/customer response;
   create approval-gated Sales work only and do not approve or send it.
+
+### NC-20260903-001 — Retry Gru Bookkeeper roster failures and repair the month
+
+- Date: 2026-09-03T12:42:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review complete
+- State: validating; production data repair is applied/read back, source release
+  is local and not deployed
+- Commit/PR: uncommitted on `codex/gru-bookkeeper-retry-20260903`, based on
+  exact live release `658b473061a3a684e837c409fa3737812fe3a8e9`
+- Change class: C4 because replay and roster/Payment Log repair mutate the
+  operational payment-to-student record
+- Trigger: a mapped Mentor Coaching Foundations payment hit a 20-second Student
+  Roster timeout, was labeled `Sales tab (unmapped product)`, and remained a
+  durable `write_failed` case until an operator prompted Gru to rerun the raw
+  script manually.
+- Month audit: 98 summaries / 96 distinct Stripe objects from 2026-08-03 through
+  2026-09-03; 20 objects were called unmapped or carried Sheet/readback errors.
+  The exact content-minimized disposition for every object is in
+  `docs/reports/NC-20260903-001-GRU-BOOKKEEPER-MONTH-AUDIT.md`.
+- Root cause: Product Map read failures rendered the default empty match list
+  as unmapped; `write_failed` cases still marked their webhook handled, so the
+  five-attempt reaper never retried; manual Gru reruns bypassed case state;
+  localized/prefix aliases were missing; and earlier non-student/tab-rename
+  routing fixes remained outside the immutable release lineage.
+- Applied production repair: added/read back exact French Foundations and
+  `ICF `-prefixed Level 1 Individual Mentoring mappings. AAMC had already been
+  added in the live operator thread. Replayed ten exact archived transactions
+  through the host boundary; cases 1, 2, 3, 15, 16, 30, 35, 38, 43, and new
+  case 46 are `complete`. Verified their destination roster cells, including
+  eight separate Aug 6 group-invoice seats. Cleared eight stale in-window Sales
+  rows after destination proof. No payment, refund, customer communication,
+  accounting/QuickBooks action, or new enrollment purchase was created.
+- Source outcome: safe one-retry Sheets GET policy; truthful `not classified`
+  summary on read failure; retryable stage failures stay in the durable webhook
+  queue; reaper results post back to Contador; restored non-student and
+  renamed-tab-safe routing; stale Sales cleanup only after readback; Plutio
+  invoice descriptions hold for participant identity; and the Contador prompt
+  forbids treating direct-script reruns as durable completion.
+- Files: `tools/contador/process-payment.cjs` and tests;
+  `src/stripe-payment-host.ts`, `src/webhook-server.ts`,
+  `src/webhook-inbox-reaper.ts` and tests; `groups/contador/CLAUDE.md`;
+  Contador design/project map/audit/continuity records.
+- Independent review: R1 session
+  `03140f36-be86-448e-9c5c-82208596f4ee` was interrupted without a verdict
+  after oversized full-file/test rereads crossed the bounded context target
+  (six calls; 151,757 cache-create, 483,934 cache-read, 13,110 output; maximum
+  context 160,323). Fresh narrow R1B session
+  `01df1330-07e3-402e-b86e-2b8e9aac3dd3` read only exact changed ranges and
+  returned `NO MATERIAL FINDINGS`. Codex independently fixed its one
+  non-material consistency note around non-student Sales cleanup and corrected
+  one concurrency-sensitive test setup that had not exercised its intended
+  mock. R1B usage: four calls; 78,804 cache-create, 137,299 cache-read, 24,948
+  output; maximum context 85,578; no audit warning.
+- Verification: Node 22.23.2; processor syntax; focused processor/store/host/
+  webhook/reaper 149/149; typecheck; build; root TypeScript format;
+  documentation continuity; capability and diff checks. Full root is 3,414
+  pass / 32 skip / two unchanged exact-base failures (CNPC wrapper-literal
+  expectation and date-stale Trafft fixture).
+- Deployment/migration: data repair only. Automatic retry source has not been
+  committed, packaged, deployed, or live-canary verified.
+- Rollback/recovery: exact mapping rows can be removed only with an inverse
+  readback; cleared catch-all evidence remains in Payment Log, `public.payments`,
+  Slack source summaries, webhook inbox, and fulfillment receipts. Replaying a
+  now-complete case is a no-op. Source rollback is the prior immutable release,
+  but it restores the no-retry/false-unmapped defect.
+- Documentation: active work, Contador closed-loop design, project map, this
+  changelog, and the month audit.
+- Follow-ups: commit/push, immutable deployment after a natural drain, and one
+  controlled transient-read retry canary with exact case/inbox/roster proof.
 
 ### NC-20260902-001 — Bind live minion knowledge to immutable fact authority
 

@@ -1618,6 +1618,41 @@ export class WebhookServer {
             transientEmail: preparedRecovery.transient_email,
           });
         }
+        if (r.retryable) {
+          if (inboxId === null || !this.deps.markWebhookFailed) {
+            throw new Error(
+              'Retryable Contador failure has no durable webhook retry boundary',
+            );
+          }
+          const retryCode = r.fulfillmentErrorCode ?? 'write_failed';
+          await this.deps.markWebhookFailed(
+            inboxId,
+            `contador_retryable:${retryCode}`,
+          );
+          logger.warn(
+            {
+              hookId,
+              inboxId,
+              fulfillmentCaseId: r.fulfillmentCaseId,
+              fulfillmentState: r.fulfillmentState,
+              retryCode,
+            },
+            'Stripe payment incomplete; durable retry scheduled',
+          );
+          await this.deps
+            .sendMessage(
+              webhook.chat_jid,
+              `${r.summary}\nRetry: scheduled automatically (Fulfillment Case ${r.fulfillmentCaseId}; ${retryCode})`,
+              { fromGroup: group.folder },
+            )
+            .catch((err) =>
+              logger.error(
+                { hookId, inboxId, err },
+                'stripe retry summary post failed',
+              ),
+            );
+          return;
+        }
         // process-payment.cjs has already durably recorded the payment
         // (Stripe → Sheets → Postgres). The recovery close is recorded before
         // the inbox row is terminal so replay repairs either side safely.

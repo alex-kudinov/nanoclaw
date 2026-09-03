@@ -8,7 +8,78 @@ const {
   buildPsqlVarArgs,
   formatPaymentSummary,
   derivePaymentFulfillmentOutcome,
+  shouldRetrySheetsRequest,
+  resolveRosterTargets,
+  isPlutioInvoiceDescription,
+  formatRosterSummary,
 } = require('./process-payment.cjs');
+
+describe('Sheets retry and truthful roster classification', () => {
+  it('retries only safe reads for transient timeout/5xx failures', () => {
+    expect(
+      shouldRetrySheetsRequest(
+        'GET',
+        new Error('Sheets request timed out after 20000ms'),
+      ),
+    ).toBe(true);
+    expect(
+      shouldRetrySheetsRequest('GET', new Error('Sheets API 503: unavailable')),
+    ).toBe(true);
+    expect(
+      shouldRetrySheetsRequest('POST', new Error('Sheets API 503: unavailable')),
+    ).toBe(false);
+    expect(
+      shouldRetrySheetsRequest('GET', new Error('Sheets API 403: denied')),
+    ).toBe(false);
+  });
+
+  it('never calls a failed Product Map read an unmapped product', () => {
+    expect(
+      formatRosterSummary({
+        productName: 'Mentor Coaching Foundations (Program A)',
+        rosterMatches: [],
+        rosterMode: 'write_failed',
+        studentRosterResult: 'ERROR: Sheets request timed out after 20000ms',
+      }),
+    ).toBe(
+      'not classified — ERROR: Sheets request timed out after 20000ms',
+    );
+  });
+
+  it('keeps renamed program tabs eligible for exam routing', () => {
+    expect(
+      resolveRosterTargets([
+        ['ACC Exam Prep', 'ACC', 'Exam Prep'],
+        ['ACC Exam Prep', 'Prep Exam', 'ACC Exam Prep'],
+      ]),
+    ).toMatchObject({
+      hasPrepExam: true,
+      programTabs: [{ tab: 'ACC', column: 'Exam Prep' }],
+    });
+  });
+
+  it('recognizes the Product Map non-student sentinel', () => {
+    expect(
+      resolveRosterTargets([
+        ['Individual Supervision - Single Session', '(not a student)', 'n/a'],
+      ]),
+    ).toMatchObject({ notAStudent: true, rosterMatches: [] });
+  });
+
+  it('holds a Plutio invoice for participant evidence instead of filing the payer', () => {
+    const description =
+      'Invoice #tca-386-pl from Tandem Coaching Partners LLC (SGzQSAj4uCGx2cCQR)';
+    expect(isPlutioInvoiceDescription(description)).toBe(true);
+    expect(
+      formatRosterSummary({
+        productName: description,
+        rosterMatches: [],
+        rosterMode: 'missing_student',
+        studentRosterResult: 'not written',
+      }),
+    ).toBe('not filed — Plutio invoice participant identity required');
+  });
+});
 
 describe('formatPaymentSummary', () => {
   it('leads with the human payment event and moves diagnostics to the end', () => {
@@ -232,6 +303,20 @@ describe('derivePaymentFulfillmentOutcome', () => {
     ).toMatchObject({
       state: 'needs_student',
       errorCode: 'student_identity_missing',
+    });
+  });
+
+  it('completes a delivered service without pretending a roster write occurred', () => {
+    const result = derivePaymentFulfillmentOutcome({
+      paymentLogVerified: true,
+      postgresVerified: true,
+      rosterMode: 'not_student',
+    });
+    expect(result).toMatchObject({ state: 'complete', errorCode: null });
+    expect(result.receipts).toContainEqual({
+      stage: 'student_roster',
+      outcome: 'not_applicable',
+      resultCode: 'student_roster_not_applicable',
     });
   });
 

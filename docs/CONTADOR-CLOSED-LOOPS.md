@@ -1,8 +1,9 @@
 # Contador closed-loop design
 
 Status: current-state diagnosis plus accepted target; invoice-routing foundation
-is live in the current lineage and payment-fulfillment cases are deployed under
-`NC-20260823-006`; natural payment/refund outcome pending
+and payment-fulfillment cases are live. `NC-20260903-001` repaired the current
+month's product/roster exceptions in production; automatic transient-failure
+retry is implemented locally and pending review/release.
 Boundary: `docs/CONTADOR-BIZMGR-BOUNDARY.md`
 Accounting authority: `/Users/xbohdpukc/dev/bizmgr/agent_docs/RULEBOOK.md`
 
@@ -63,7 +64,7 @@ Gmail email
   -> separate pay-bills and bank-reconcile procedures
 ```
 
-### Current failure points
+### Failure points confirmed before `NC-20260903-001`
 
 1. `routed_at` means the handoff file was written, not that a bill was captured.
 2. Before `NC-20260822-008`, an operator Gmail label correction taught Mailman
@@ -260,6 +261,19 @@ deployment. Its first complete scan captured the one known missing Tandem
 payment as a `needs_review` exception with six receipts and one alias; exact
 second-run replay created nothing. Stripe inbox and `public.payments` did not
 change, and the separate refund review remains blocked.
+
+`NC-20260903-001` found a second closure defect: ordinary transient
+Payment Log/roster readback failures reached a durable `write_failed` case but
+their webhook row was marked handled immediately, so the existing five-attempt
+reaper never retried them. Product Map read failures also rendered the default
+empty match list as `unmapped`, even when classification never occurred. The
+correction keeps retryable write/readback failures in the webhook retry queue,
+retries one safe Sheets GET in-process, renders failed classification
+truthfully, restores non-student/renamed-tab routing lost from the immutable
+lineage, and clears stale catch-all rows only after destination readback.
+Plutio invoice descriptions become `needs_student`, never payer-as-student.
+The exact 2026-08-03 through 2026-09-03 audit and applied repair receipts are
+in `docs/reports/NC-20260903-001-GRU-BOOKKEEPER-MONTH-AUDIT.md`.
 
 Minimum fields:
 

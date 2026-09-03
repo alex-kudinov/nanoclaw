@@ -1,4 +1,4 @@
-# NC-20260903-001 — Runtime wiring closeout R4
+# NC-20260903-002 — Runtime wiring closeout R4
 
 Resolve only R3's two packet-scope questions.
 
@@ -15,6 +15,6 @@ Read:
    `classificationPolicyFor`, including classify-only and support/refund paths.
 
 Do not reopen other findings. Write only
-`docs/reports/NC-20260903-001-CLAUDE-RUNTIME-WIRING-RESPONSE-R4.md`.
+`docs/reports/NC-20260903-002-CLAUDE-RUNTIME-WIRING-RESPONSE-R4.md`.
 No Bash, web, MCP, edits, tests, runtime data, or deployment. End with `GO` or
 one exact material finding.

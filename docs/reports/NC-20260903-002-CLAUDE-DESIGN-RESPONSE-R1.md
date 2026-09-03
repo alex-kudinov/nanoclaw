@@ -1,4 +1,4 @@
-# NC-20260903-001 — Claude design response R1
+# NC-20260903-002 — Claude design response R1
 
 Reviewed against the allowed packet only: `src/host-router.ts`,
 `src/classify-ipc-handlers.ts`, `src/ipc.ts`,

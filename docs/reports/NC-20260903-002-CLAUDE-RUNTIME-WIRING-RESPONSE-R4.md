@@ -1,4 +1,4 @@
-# NC-20260903-001 — Runtime wiring closeout R4 response
+# NC-20260903-002 — Runtime wiring closeout R4 response
 
 ## Item 1 — `src/ipc.ts:1846-1873`
 

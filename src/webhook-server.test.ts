@@ -1642,6 +1642,69 @@ describe('WebhookServer — Stripe fulfillment acknowledgement', () => {
     });
   });
 
+  it('keeps transient fulfillment failures in the durable retry queue', async () => {
+    mockHandleStripePayment.mockResolvedValueOnce({
+      stripeId: 'pi_webhook',
+      summary:
+        'Payment received: Example — Mentor Coaching Foundations — $299.00 USD\n' +
+        'Roster: not classified — ERROR: Sheets request timed out after 20000ms',
+      lifecycleEnqueued: false,
+      fulfillmentCaseId: '42',
+      fulfillmentState: 'write_failed',
+      fulfillmentVersion: 0,
+      fulfillmentErrorCode: 'student_roster_readback_failed',
+      retryable: true,
+      duplicateComplete: false,
+    });
+    const markWebhookHandled = vi.fn(async () => {});
+    const markWebhookFailed = vi.fn(async () => {});
+    const deps = makeDeps({
+      getRegisteredGroups: () => ({
+        'slack:CONTADOR': {
+          name: 'Contador',
+          folder: 'contador',
+          trigger: '@Gru',
+          added_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+      archiveWebhook: vi.fn(async () => ({ id: 602, isDuplicate: false })),
+      markWebhookHandled,
+      markWebhookFailed,
+    });
+    const server = new WebhookServer(deps);
+    await server.start();
+    deps.port = server.getPort();
+    (server as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      stripeWebhook,
+    ];
+    try {
+      const response = await makeRequest(deps.port, {
+        path: '/hook/stripe-payment',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+        body: JSON.stringify({
+          stripe_id: 'pi_webhook',
+          event_type: 'payment_intent.succeeded',
+          account: 'tandem',
+        }),
+      });
+      expect(response.status).toBe(202);
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    } finally {
+      await server.stop().catch(() => {});
+    }
+
+    expect(markWebhookHandled).not.toHaveBeenCalled();
+    expect(markWebhookFailed).toHaveBeenCalledWith(
+      602,
+      'contador_retryable:student_roster_readback_failed',
+    );
+    expect(deps.sendMessage).toHaveBeenCalledWith(
+      'slack:CONTADOR',
+      expect.stringContaining('Retry: scheduled automatically'),
+      { fromGroup: 'contador' },
+    );
+  });
+
   it('routes failed payments to the shadow case without invoking Contador', async () => {
     const markWebhookHandled = vi.fn(async () => {});
     const record = vi.fn(async () => ({

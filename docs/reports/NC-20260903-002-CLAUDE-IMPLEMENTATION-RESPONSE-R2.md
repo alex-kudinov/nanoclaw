@@ -1,7 +1,7 @@
-# NC-20260903-001 — Claude implementation review R2
+# NC-20260903-002 — Claude implementation review R2
 
 Reviewed against the allowed packet only: this request and
-`docs/reports/NC-20260903-001-IMPLEMENTATION-DIFF-R1.patch` (design response
+`docs/reports/NC-20260903-002-IMPLEMENTATION-DIFF-R1.patch` (design response
 R1 consulted only to confirm two required changes).
 
 ## Material finding 1 — the bounded diff is not self-contained; several load-bearing files it depends on are not in it
@@ -13,7 +13,7 @@ files that are not part of this diff: `canonicalClassificationLabel` /
 (`src/mailman-run-context.ts`), and the routed-at-null sweep implied by the
 new exported `retryUnroutedClassification` (presumably driven by
 `src/gmail-classification-reaper.ts`). None of these three files, nor their
-paired test files, are in `NC-20260903-001-IMPLEMENTATION-DIFF-R1.patch`.
+paired test files, are in `NC-20260903-002-IMPLEMENTATION-DIFF-R1.patch`.
 
 Concretely unverifiable from this diff alone:
 

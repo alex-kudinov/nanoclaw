@@ -1,7 +1,7 @@
-# NC-20260903-001 — Implementation review R2
+# NC-20260903-002 — Implementation review R2
 
 Review the bounded implementation diff in
-`docs/reports/NC-20260903-001-IMPLEMENTATION-DIFF-R1.patch` against the accepted
+`docs/reports/NC-20260903-002-IMPLEMENTATION-DIFF-R1.patch` against the accepted
 design and protected email boundaries. Report only material correctness,
 security, durability, or rollout findings. Do not restate the patch or propose
 unrelated improvements.
@@ -47,13 +47,13 @@ unrelated improvements.
 Read only:
 
 1. this request;
-2. `docs/reports/NC-20260903-001-IMPLEMENTATION-DIFF-R1.patch`;
+2. `docs/reports/NC-20260903-002-IMPLEMENTATION-DIFF-R1.patch`;
 3. the prior design response
-   `docs/reports/NC-20260903-001-CLAUDE-DESIGN-RESPONSE-R1.md` only if needed to
+   `docs/reports/NC-20260903-002-CLAUDE-DESIGN-RESPONSE-R1.md` only if needed to
    verify a required change.
 
 Write only
-`docs/reports/NC-20260903-001-CLAUDE-IMPLEMENTATION-RESPONSE-R2.md`.
+`docs/reports/NC-20260903-002-CLAUDE-IMPLEMENTATION-RESPONSE-R2.md`.
 
 No credentials, runtime databases, customer data, web, Bash, MCP, edits, tests,
 or deployment. End with `GO`, `GO WITH REQUIRED CHANGES`, or `STOP`.

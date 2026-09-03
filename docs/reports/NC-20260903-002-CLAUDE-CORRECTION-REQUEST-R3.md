@@ -1,4 +1,4 @@
-# NC-20260903-001 — Final correction review R3
+# NC-20260903-002 — Final correction review R3
 
 The owner approved this third bounded review and deployment. Review only the
 two R2 findings and report material issues.
@@ -35,6 +35,6 @@ email-critical passed 750/750; runner passed 45/45. No production mutation or
 customer send has occurred.
 
 Write only
-`docs/reports/NC-20260903-001-CLAUDE-CORRECTION-RESPONSE-R3.md`.
+`docs/reports/NC-20260903-002-CLAUDE-CORRECTION-RESPONSE-R3.md`.
 No Bash, web, MCP, credentials, runtime data, edits, tests, or deployment.
 End with `GO`, `GO WITH REQUIRED CHANGES`, or `STOP`.

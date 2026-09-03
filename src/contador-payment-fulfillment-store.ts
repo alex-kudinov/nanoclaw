@@ -325,7 +325,15 @@ function assertReceiptCompleteness(
   }
   if (
     input.state === 'complete' &&
-    required.some((stage) => byStage.get(stage)?.outcome !== 'verified')
+    required.some((stage) => {
+      const receipt = byStage.get(stage);
+      if (receipt?.outcome === 'verified') return false;
+      return !(
+        stage === 'student_roster' &&
+        receipt?.outcome === 'not_applicable' &&
+        receipt.resultCode === 'student_roster_not_applicable'
+      );
+    })
   ) {
     throw new Error(
       'contador-fulfillment: complete requires verified readback for every stage',

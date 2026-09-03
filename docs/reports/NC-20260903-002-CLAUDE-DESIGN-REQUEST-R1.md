@@ -1,4 +1,4 @@
-# NC-20260903-001 — Inbound customer-work routing design review
+# NC-20260903-002 — Inbound customer-work routing design review
 
 ## Objective
 
@@ -30,7 +30,7 @@ acceptance tests before Codex implements.
   6. `groups/chief/CLAUDE.md`
   7. `groups/sales/CLAUDE.md`
   8. `src/gmail-ipc-policy.ts`
-- Write only `docs/reports/NC-20260903-001-CLAUDE-DESIGN-RESPONSE-R1.md`.
+- Write only `docs/reports/NC-20260903-002-CLAUDE-DESIGN-RESPONSE-R1.md`.
 
 ## Verified incident facts (sanitized)
 

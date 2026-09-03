@@ -1,6 +1,6 @@
 # Inbound customer-work routing
 
-Status: implemented under `NC-20260903-001`; deployment and live verification
+Status: implemented under `NC-20260903-002`; deployment and live verification
 remain separate evidence until recorded in the engineering changelog.
 
 ## Objective

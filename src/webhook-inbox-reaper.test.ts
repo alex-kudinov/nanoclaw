@@ -5,13 +5,20 @@ const mockQuery = vi.fn();
 const mockWithAgentContext = vi.fn();
 const mockHandleStripePayment = vi.hoisted(() => vi.fn());
 const mockRecordPreparedCommunityLifecycle = vi.hoisted(() => vi.fn());
+const mockLoggerWarn = vi.hoisted(() => vi.fn());
+const mockLoggerError = vi.hoisted(() => vi.fn());
 vi.mock('./business-db.js', () => ({
   query: (...args: any[]) => mockQuery(...args),
   withAgentContext: (...args: any[]) => mockWithAgentContext(...args),
 }));
 vi.mock('./config.js', () => ({ DATA_DIR: '/tmp/nc-reaper-test' }));
 vi.mock('./logger.js', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  logger: {
+    info: vi.fn(),
+    warn: mockLoggerWarn,
+    error: mockLoggerError,
+    debug: vi.fn(),
+  },
 }));
 vi.mock('./stripe-payment-host.js', () => ({
   handleStripePayment: mockHandleStripePayment,
@@ -84,6 +91,8 @@ beforeEach(() => {
     fulfillmentCaseId: '42',
     fulfillmentState: 'needs_product',
     fulfillmentVersion: 1,
+    fulfillmentErrorCode: 'product_mapping_missing',
+    retryable: false,
     duplicateComplete: false,
   });
   mockRecordPreparedCommunityLifecycle.mockResolvedValue({
@@ -198,6 +207,128 @@ describe('runReaper', () => {
         version: 1,
       }),
     ]);
+  });
+
+  it('requeues a retryable Stripe write failure instead of marking it handled', async () => {
+    const claimed = [
+      {
+        id: 118,
+        source: 'stripe-payment',
+        event_type: 'payment_intent.succeeded',
+        raw_body: {
+          stripe_id: 'pi_retryable',
+          event_type: 'payment_intent.succeeded',
+          account: 'tandem',
+        },
+        attempts: 1,
+      },
+    ];
+    mockWithAgentContext.mockImplementation(async (_role: string, fn: any) => {
+      const client = {
+        query: vi
+          .fn()
+          .mockResolvedValueOnce({ rows: claimed })
+          .mockResolvedValue({ rows: [] }),
+      };
+      return fn(client);
+    });
+    mockQuery.mockResolvedValue({ rows: [] });
+    mockHandleStripePayment.mockResolvedValueOnce({
+      stripeId: 'pi_retryable',
+      summary: 'Student Roster timeout',
+      lifecycleEnqueued: false,
+      fulfillmentCaseId: '43',
+      fulfillmentState: 'write_failed',
+      fulfillmentVersion: 2,
+      fulfillmentErrorCode: 'student_roster_readback_failed',
+      retryable: true,
+      duplicateComplete: false,
+    });
+    const deps = makeDeps();
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(
+      JSON.stringify([
+        { ...testWebhook, id: 'stripe-payment', group: 'contador' },
+      ]),
+    );
+
+    const result = await runReaper(deps);
+
+    expect(result).toMatchObject({ succeeded: 0, retried: 1, deadLettered: 0 });
+    expect(mockHandleStripePayment).toHaveBeenCalledWith(claimed[0].raw_body);
+    expect(
+      mockQuery.mock.calls.some((call) =>
+        call[0].includes("status = 'handled'"),
+      ),
+    ).toBe(false);
+    expect(
+      mockQuery.mock.calls.some((call) =>
+        call[0].includes("status = 'failed'"),
+      ),
+    ).toBe(true);
+  });
+
+  it('does not reopen a handled payment when the retry notice cannot be written', async () => {
+    const claimed = [
+      {
+        id: 119,
+        source: 'stripe-payment',
+        event_type: 'payment_intent.succeeded',
+        raw_body: {
+          stripe_id: 'pi_notice_failure',
+          event_type: 'payment_intent.succeeded',
+          account: 'tandem',
+        },
+        attempts: 1,
+      },
+    ];
+    mockWithAgentContext.mockImplementation(async (_role: string, fn: any) => {
+      const client = {
+        query: vi
+          .fn()
+          .mockResolvedValueOnce({ rows: claimed })
+          .mockResolvedValue({ rows: [] }),
+      };
+      return fn(client);
+    });
+    mockQuery.mockResolvedValue({ rows: [] });
+    mockHandleStripePayment.mockResolvedValueOnce({
+      stripeId: 'pi_notice_failure',
+      summary: 'verified',
+      lifecycleEnqueued: false,
+      fulfillmentCaseId: '44',
+      fulfillmentState: 'complete',
+      fulfillmentVersion: 2,
+      fulfillmentErrorCode: null,
+      retryable: false,
+      duplicateComplete: false,
+    });
+    const deps = makeDeps();
+    deps.getRegisteredGroups = () => ({
+      'slack:CONTADOR': { ...testGroup, folder: 'contador' },
+      'slack:CHIEF': chiefGroup,
+    });
+    deps.writeGroupNotice = () => {
+      throw new Error('disk full');
+    };
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(
+      JSON.stringify([
+        { ...testWebhook, id: 'stripe-payment', group: 'contador' },
+      ]),
+    );
+
+    const result = await runReaper(deps);
+
+    expect(result).toMatchObject({ succeeded: 1, retried: 0, deadLettered: 0 });
+    expect(
+      mockQuery.mock.calls.some((call) =>
+        call[0].includes("status = 'handled'"),
+      ),
+    ).toBe(true);
+    expect(
+      mockQuery.mock.calls.some((call) =>
+        call[0].includes("status = 'failed'"),
+      ),
+    ).toBe(false);
   });
 
   it.each(['received', 'failed', 'stale dispatched'])(
