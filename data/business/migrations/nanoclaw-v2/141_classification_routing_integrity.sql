@@ -1,6 +1,6 @@
 BEGIN;
 
--- NC-20260903-001: reconcile every label the active Mailman contract may emit
+-- NC-20260903-002: reconcile every label the active Mailman contract may emit
 -- with the live taxonomy before the host enforces canonical routing.
 INSERT INTO public.classification_taxonomy (
   label,

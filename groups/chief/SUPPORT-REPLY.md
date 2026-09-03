@@ -1,6 +1,6 @@
 # Customer Reply Routing
 
-Status: retired by `NC-20260903-001`.
+Status: retired by `NC-20260903-002`.
 
 Chief does not draft or approve customer email. Any customer, student, or
 prospect message that needs a reply is handed to Sales with the exact Email,
