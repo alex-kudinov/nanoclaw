@@ -96,3 +96,33 @@ export async function runGmailClassificationReaper(now = new Date()): Promise<{
   );
   return { scanned: messages.length, recoveredMissing, retriedUnrouted };
 }
+
+export function startGmailClassificationReaperLoop(options?: {
+  intervalMs?: number;
+  run?: () => Promise<unknown>;
+}): () => void {
+  const intervalMs =
+    options?.intervalMs ?? GMAIL_CLASSIFICATION_REAPER_INTERVAL_MS;
+  const run = options?.run ?? runGmailClassificationReaper;
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const schedule = () => {
+    if (stopped) return;
+    timer = setTimeout(() => {
+      timer = null;
+      void run()
+        .catch((err) =>
+          logger.error({ err }, 'gmail-classification-reaper: unhandled error'),
+        )
+        .finally(schedule);
+    }, intervalMs);
+  };
+
+  schedule();
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+    timer = null;
+  };
+}

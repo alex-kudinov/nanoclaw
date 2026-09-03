@@ -199,10 +199,7 @@ import {
 } from './send-watchdog.js';
 import { resolveHumanAuthorizedDiscountTerms } from './human-commercial-term-authorization.js';
 import { runNameReaper } from './contador-name-reaper.js';
-import {
-  GMAIL_CLASSIFICATION_REAPER_INTERVAL_MS,
-  runGmailClassificationReaper,
-} from './gmail-classification-reaper.js';
+import { startGmailClassificationReaperLoop } from './gmail-classification-reaper.js';
 import { runChaosLifecycleOutbox } from './chaos-lifecycle-outbox.js';
 import { runChaosLifecycleReconciliation } from './chaos-lifecycle-reconcile.js';
 import { runChaosReconcile } from './chaos-reconciler.js';
@@ -3092,19 +3089,7 @@ async function main(): Promise<void> {
   // Accepted inbound Gmail must not depend on Mailman completing a raw file
   // write. Reconcile both missing classifications and durable rows whose host
   // route stalled, including after daemon restart. This never sends email.
-  setInterval(() => {
-    void runGmailClassificationReaper().catch((err) =>
-      logger.error({ err }, 'gmail-classification-reaper: unhandled error'),
-    );
-  }, GMAIL_CLASSIFICATION_REAPER_INTERVAL_MS);
-  setTimeout(() => {
-    void runGmailClassificationReaper().catch((err) =>
-      logger.error(
-        { err },
-        'gmail-classification-reaper: startup invocation failed',
-      ),
-    );
-  }, GMAIL_CLASSIFICATION_REAPER_INTERVAL_MS);
+  startGmailClassificationReaperLoop();
 
   // Trafft sweeper — every 6h. Reconciles Trafft API state against
   // webhook_inbox; synthesizes missing events; advances watermark only on

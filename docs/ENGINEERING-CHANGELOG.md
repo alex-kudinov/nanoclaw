@@ -13,12 +13,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-09-03T12:00:00Z
 - Owner/client: Codex with independent Claude Sonnet/high design and
   implementation review
-- State: ready_for_deploy; implementation, independent review, and local gates
-  complete; exact commit created; migration/deployment/live recovery pending
-- Commit/PR: `e4ff74ebd2ec5f7df3abd71735b716f8bbd183be` plus the pending
-  release-inventory correction on `codex/support-routing-integrity-20260903`,
-  based on exact post-live lineage `58bfa985`; production release at
-  investigation was `658b4730`
+- State: validating; migration and first exact release are live, and the
+  scheduler correction passed independent review pending follow-up deployment
+- Commit/PR: exact first live release
+  `769c155f6c7d5833d9e15d41237a611295f592c0` on
+  `codex/support-routing-integrity-20260903`, descended from the concurrently
+  deployed Contador release `5942196f`
 - Change class: C5 because the change touches host Gmail/classification/run
   binding and customer-work routing; it does not approve or send email
 - Root cause: the prior design made Mailman independently post a visible
@@ -49,6 +49,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   it was corrected into one behavior-tested validator. R3/R4 verified the
   reaper/policy/runtime wiring and found only a missing direct expiry assertion;
   that assertion was added. No unresolved material review finding remains.
+  Live verification then exposed the reaper's duplicate same-boundary
+  `setInterval`/`setTimeout` registration. The correction uses one
+  self-scheduling loop that arms its next timer only after settlement. Claude
+  Sonnet/high R5 session `a7591ea2-1f05-4542-b0c7-a25ea71c7c79` returned
+  `NO MATERIAL FINDINGS`; seven calls, 47,500 cache-create, 233,318 cache-read,
+  5,829 output, and 47,502 maximum context with no audit warning.
 - Verification: pinned Node 22.23.2 typecheck and root build pass. Focused
   classification/router/Gmail/prompt/run/reaper suites pass, post-correction
   binding/contract tests pass 59/59, email replay 13/13, email-critical 750/750,
@@ -56,14 +62,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   unchanged base failures (CNPC wrapper literal and date-stale Trafft fixture),
   with the final added expiry assertion separately green. Documentation
   continuity, capability, formatting, and diff checks pass.
-- Deployment/migration: not yet applied. No database, Gmail, Slack, customer,
-  provider, payment, approval, or production runtime mutation has occurred.
+- Deployment/migration: migration 141 applied/read back 34 enabled canonical
+  labels with exact archive flags. Exact release `769c155f` is live with one
+  listener, connected Gmail/Slack, verified bundle, rebuilt runner image
+  `08760fe9`, 18 runner snapshots at source hash `4cf50071`, and exact reviewed
+  operational prompt hashes. The first scheduled minute emitted two concurrent
+  completion receipts 456 ms apart over the same 138 candidates, proving the
+  duplicate scheduler; host routing remained approval-gated and no customer
+  email was approved or sent. The reviewed follow-up release is pending.
+
   Pre-deployment inspection caught that the explicit immutable release inventory
   ended at migration 140; migration 141 and its rollback are now required by a
   contract test and packaged before any production mutation. Lineage preflight
   also merged the concurrently deployed Contador release `5942196f` and
   preserved the operational Chief grader-upload two-line constraint in tracked
   source instead of overwriting that unrelated safety hardening.
+
 - Rollback/recovery: restore the prior immutable release; use
   `rollback_141_classification_routing_integrity.sql` only if the new taxonomy
   rows must be removed. Never rewrite action, approval, or Gmail receipts.

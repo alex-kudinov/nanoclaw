@@ -6,7 +6,9 @@ vi.mock('./classify-ipc-handlers.js', () => ({
   handleClassifyLabelWrite: vi.fn(),
   retryUnroutedClassification: vi.fn(),
 }));
-vi.mock('./logger.js', () => ({ logger: { info: vi.fn() } }));
+vi.mock('./logger.js', () => ({
+  logger: { info: vi.fn(), error: vi.fn() },
+}));
 
 import { query } from './business-db.js';
 import {
@@ -14,7 +16,10 @@ import {
   retryUnroutedClassification,
 } from './classify-ipc-handlers.js';
 import { listRawInboundGmailMessagesBefore } from './db.js';
-import { runGmailClassificationReaper } from './gmail-classification-reaper.js';
+import {
+  runGmailClassificationReaper,
+  startGmailClassificationReaperLoop,
+} from './gmail-classification-reaper.js';
 
 const mockQuery = vi.mocked(query);
 const mockList = vi.mocked(listRawInboundGmailMessagesBefore);
@@ -90,5 +95,36 @@ describe('Gmail classification reaper', () => {
     await runGmailClassificationReaper(new Date('2026-09-03T00:10:00.000Z'));
     expect(mockFallback).not.toHaveBeenCalled();
     expect(mockRetry).not.toHaveBeenCalled();
+  });
+
+  it('schedules exactly one sweep at a time and waits for completion before the next interval', async () => {
+    vi.useFakeTimers();
+    let resolveFirst!: () => void;
+    const run = vi
+      .fn<() => Promise<void>>()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockResolvedValue(undefined);
+    const stop = startGmailClassificationReaperLoop({
+      intervalMs: 1_000,
+      run,
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(run).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(run).toHaveBeenCalledTimes(1);
+
+    resolveFirst();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(run).toHaveBeenCalledTimes(2);
+
+    stop();
+    vi.useRealTimers();
   });
 });
