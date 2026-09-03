@@ -99,6 +99,26 @@ beforeEach(() => {
   });
   mockRemove.mockResolvedValue(undefined);
   mockRecord.mockResolvedValue(undefined);
+  _initTestDatabase();
+  storeChatMetadata(
+    'gmail:test@example.com',
+    '2026-09-03T00:00:00.000Z',
+    'Gmail',
+    'gmail',
+    false,
+  );
+  storeMessageDirect({
+    id: 'msg-1',
+    chat_jid: 'gmail:test@example.com',
+    sender: 'alice@example.com',
+    sender_name: 'Alice',
+    content:
+      'From: Alice <alice@example.com>\nSubject: Receipt\nThread-ID: thr-1\nMessage-ID: msg-1\n\nHello world',
+    timestamp: '2026-09-03T00:00:00.000Z',
+    is_from_me: false,
+    is_bot_message: false,
+    thread_ts: 'thr-1',
+  });
 });
 
 describe('isClassifyIpcType', () => {
@@ -402,25 +422,81 @@ describe('handleClassifyLabelWrite', () => {
     expect(payload.text).not.toMatch(/^Thread-ID:/m);
   });
 
-  it('escalates to chief when confidence < 0.5 without touching DB', async () => {
+  it('records a durable other fallback when confidence is below 0.5', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            label: 'MrGru/other',
+            hive_share_target: null,
+            auto_archive: false,
+            enabled: true,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] });
     await handleClassifyLabelWrite(basePayload({ confidence: 0.3 }));
-    expect(mockQuery).not.toHaveBeenCalled();
-    expect(mockReplace).not.toHaveBeenCalled();
-    const chiefDir = path.join(tmpDir, 'ipc', 'chief', 'messages');
+    expect(mockQuery.mock.calls[0][0]).toMatch(/FROM classification_taxonomy/);
+    expect(mockQuery.mock.calls[0][1][4]).toBe('MrGru/other');
+    expect(mockReplace).toHaveBeenCalledWith('thr-1', 'MrGru/other');
+    const chiefDir = path.join(tmpDir, 'ipc', 'mailman', 'messages');
     const files = fs.readdirSync(chiefDir);
     expect(files.length).toBe(1);
     const body = JSON.parse(
       fs.readFileSync(path.join(chiefDir, files[0]), 'utf-8'),
     );
-    expect(body.text).toMatch(/CLASSIFY-REVIEW/);
+    expect(body.text).toContain('[HANDOFF: mailman→chief]');
+    expect(body.text).toContain('Body:\nHello world');
+  });
+
+  it('normalizes an unknown label before the classification insert', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ auto_archive: false, enabled: true }],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ routed_at: null }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] });
+    await handleClassifyLabelWrite(
+      basePayload({ label: 'MrGru/student/made-up' }),
+    );
+    expect(mockQuery.mock.calls[0][0]).toMatch(
+      /FROM classification_taxonomy[\s\S]*enabled = true/,
+    );
+    expect(mockQuery.mock.calls[0][1][4]).toBe('MrGru/other');
+  });
+
+  it('does not let a late model classification replace an already-routed host fallback', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ auto_archive: false, enabled: true }],
+      });
+    await handleClassifyLabelWrite(
+      basePayload({ classifier_version: 'mailman-v3' }),
+    );
+    expect(mockQuery.mock.calls[0][0]).toMatch(
+      /classifier_version = 'mailman-host-fallback-v1'[\s\S]*routed_at IS NOT NULL/,
+    );
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it('short-circuits a same-version classification that was already routed', async () => {
     mockQuery
       .mockResolvedValueOnce({ rowCount: 0, rows: [] })
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] });
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ auto_archive: false, enabled: true }],
+      });
     await handleClassifyLabelWrite(basePayload());
-    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery).toHaveBeenCalledTimes(3);
     expect(mockQuery.mock.calls[1][0]).toMatch(/routed_at IS NULL/);
     expect(mockReplace).not.toHaveBeenCalled();
   });
@@ -476,11 +552,15 @@ describe('handleClassifyLabelWrite', () => {
   it('does not race a recent same-version classification still routing', async () => {
     mockQuery
       .mockResolvedValueOnce({ rowCount: 0, rows: [] })
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] });
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ auto_archive: false, enabled: true }],
+      });
 
     await handleClassifyLabelWrite(basePayload());
 
-    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery).toHaveBeenCalledTimes(3);
     expect(mockQuery.mock.calls[1][0]).toMatch(/INTERVAL '30 seconds'/);
     expect(mockReplace).not.toHaveBeenCalled();
   });
@@ -488,13 +568,17 @@ describe('handleClassifyLabelWrite', () => {
   it('never retries rules-runner-v1 because Gmail owns its direct route', async () => {
     mockQuery
       .mockResolvedValueOnce({ rowCount: 0, rows: [] })
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] });
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ auto_archive: false, enabled: true }],
+      });
 
     await handleClassifyLabelWrite(
       basePayload({ classifier_version: 'rules-runner-v1' }),
     );
 
-    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery).toHaveBeenCalledTimes(3);
     expect(mockQuery.mock.calls[1][0]).toMatch(/\$2 <> 'rules-runner-v1'/);
     expect(mockReplace).not.toHaveBeenCalled();
     expect(fs.existsSync(path.join(tmpDir, 'ipc', 'mailman'))).toBe(false);

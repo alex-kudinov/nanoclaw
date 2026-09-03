@@ -223,6 +223,15 @@ the other seven Heartbeat actions, and every lifecycle consumer remain off.
 
 ## Gmail capability and resource policy
 
+Mailman Gmail calls carry a host-minted per-turn identity. An unapproved send
+attempt from an inbound-classification turn remains quarantined and cannot call
+Gmail, but is treated as an expected role-boundary denial rather than false
+customer-work evidence. Any denial from a real approved-delivery turn retains
+the existing Chief/approval-thread alert. Classification proposals are bound
+to an exact stored inbound Gmail message and canonical enabled label before the
+durable row is written; model-supplied sender/thread fields never widen source
+authority.
+
 `NC-20260729-004` introduced the deployed baseline below. The Procurement row
 was added by `NC-20260730-003` and its migration 114 plus matching
 host/container source were deployed gates-off under `NC-20260730-004`.

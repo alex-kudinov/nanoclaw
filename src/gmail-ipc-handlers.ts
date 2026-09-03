@@ -49,6 +49,8 @@ export interface GmailIpcPayload {
   groupFolder: string;
   /** Host-verifiable origin used to target asynchronous results to one session. */
   source_container?: string;
+  /** Host-minted identity for the exact container turn that emitted this IPC. */
+  run_id?: string;
   timestamp: string;
   // gmail_reply + gmail_get_thread
   threadId?: string;

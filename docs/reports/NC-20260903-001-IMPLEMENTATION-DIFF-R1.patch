@@ -1,0 +1,865 @@
+diff --git a/container/agent-runner/src/ipc-mcp-stdio.ts b/container/agent-runner/src/ipc-mcp-stdio.ts
+index 504fc950..54f50004 100644
+--- a/container/agent-runner/src/ipc-mcp-stdio.ts
++++ b/container/agent-runner/src/ipc-mcp-stdio.ts
+@@ -566,6 +566,68 @@ Use available_groups.json to find the JID for a group. The folder name must be c
+
+ // --- Gmail tools ---
+
++registerTool(
++  'classify_email',
++  'Record the one required classification for the current inbound Gmail message. The host validates the label and reloads exact sender, subject, thread, message, body, and recipient context from its stored source before routing. Do not separately escalate or reply to the email.',
++  {
++    message_id: z
++      .string()
++      .min(1)
++      .describe('Exact Gmail Message-ID from the current inbound message'),
++    thread_id: z
++      .string()
++      .min(1)
++      .describe('Exact Gmail Thread-ID from the current inbound message'),
++    sender_email: z
++      .string()
++      .email()
++      .describe('Sender email shown in the current inbound message'),
++    subject: z
++      .string()
++      .max(1000)
++      .describe('Subject shown in the current inbound message'),
++    label: z.string().regex(/^MrGru\/[a-z0-9]+(?:[/-][a-z0-9]+)*$/),
++    confidence: z.number().min(0).max(1),
++    reasoning: z.string().min(1).max(2000),
++  },
++  async (args) => {
++    if (groupFolder !== 'mailman') {
++      return {
++        content: [
++          {
++            type: 'text' as const,
++            text: 'Denied: classify_email is restricted to Mailman.',
++          },
++        ],
++        isError: true,
++      };
++    }
++    writeIpcFile(MESSAGES_DIR, {
++      type: 'classify_label_write',
++      gmail_message_id: args.message_id,
++      gmail_thread_id: args.thread_id,
++      sender_email: args.sender_email,
++      subject: args.subject,
++      label: args.label,
++      confidence: args.confidence,
++      reasoning: args.reasoning,
++      classifier_version: 'mailman-v3',
++      groupFolder,
++      source_container: containerName || undefined,
++      run_id: runId,
++      timestamp: new Date().toISOString(),
++    });
++    return {
++      content: [
++        {
++          type: 'text' as const,
++          text: 'Classification queued for host validation and routing. Do not post a separate escalation or customer reply.',
++        },
++      ],
++    };
++  },
++);
++
+ registerTool(
+   'gmail_reply',
+   'Reply to an email thread. The reply goes to the original sender with proper In-Reply-To/References headers and Gmail thread grouping.',
+@@ -605,6 +667,7 @@ registerTool(
+       emailType: args.email_type,
+       groupFolder,
+       source_container: containerName || undefined,
++      run_id: runId,
+       timestamp: new Date().toISOString(),
+     });
+
+@@ -667,6 +730,7 @@ registerTool(
+       emailType: args.email_type,
+       groupFolder,
+       source_container: containerName || undefined,
++      run_id: runId,
+       timestamp: new Date().toISOString(),
+     });
+
+@@ -704,6 +768,7 @@ registerTool(
+       maxResults: args.max_results,
+       groupFolder,
+       source_container: containerName || undefined,
++      run_id: runId,
+       timestamp: new Date().toISOString(),
+     });
+
+@@ -730,6 +795,7 @@ registerTool(
+       messageId: args.message_id,
+       groupFolder,
+       source_container: containerName || undefined,
++      run_id: runId,
+       timestamp: new Date().toISOString(),
+     });
+
+@@ -756,6 +822,7 @@ registerTool(
+       threadId: args.thread_id,
+       groupFolder,
+       source_container: containerName || undefined,
++      run_id: runId,
+       timestamp: new Date().toISOString(),
+     });
+
+diff --git a/data/business/migrations/nanoclaw-v2/141_classification_routing_integrity.sql b/data/business/migrations/nanoclaw-v2/141_classification_routing_integrity.sql
+new file mode 100644
+index 00000000..05e7c0bc
+--- /dev/null
++++ b/data/business/migrations/nanoclaw-v2/141_classification_routing_integrity.sql
+@@ -0,0 +1,61 @@
++BEGIN;
++
++-- NC-20260903-001: reconcile every label the active Mailman contract may emit
++-- with the live taxonomy before the host enforces canonical routing.
++INSERT INTO public.classification_taxonomy (
++  label,
++  parent_label,
++  description,
++  hive_share_target,
++  digest_priority,
++  auto_archive,
++  enabled
++)
++VALUES
++  ('MrGru/association/event', 'MrGru/association', 'Professional association event, proposal, or membership correspondence', ARRAY['cherie','alex']::text[], 1, false, true),
++  ('MrGru/client/active', 'MrGru/client', 'Email from a current paying client', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/client/dormant', 'MrGru/client', 'Email from a past client', ARRAY['cherie','alex']::text[], 1, false, true),
++  ('MrGru/financial/bill', 'MrGru/financial', 'Vendor bill or invoice requiring payable handling', ARRAY['cherie']::text[], 2, false, true),
++  ('MrGru/financial/receipt', 'MrGru/financial', 'Routine payment receipt', ARRAY['cherie']::text[], 0, true, true),
++  ('MrGru/financial/refund', 'MrGru/financial', 'Customer refund request requiring response and review', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/internal/cofounder', 'MrGru/internal', 'Internal cofounder correspondence', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/internal/team', 'MrGru/internal', 'Routine internal team or sent-mail echo', NULL, 0, true, true),
++  ('MrGru/lead/declined', 'MrGru/lead', 'Lead or prospect explicitly declined or opted out', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/lead/hot', 'MrGru/lead', 'High-intent prospect asking about enrollment, price, or an imminent cohort', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/lead/inquiry', 'MrGru/lead', 'New prospect inquiry', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/lead/offer', 'MrGru/lead', 'Lead or prospect commercial offer', ARRAY['cherie','alex']::text[], 1, false, true),
++  ('MrGru/lead/reply', 'MrGru/lead', 'Reply from an existing lead or prospect conversation', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/legal/contract', 'MrGru/legal', 'Contract correspondence requiring review', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/legal/nda', 'MrGru/legal', 'Nondisclosure agreement or confidentiality terms', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/legal/notice', 'MrGru/legal', 'Legal notice requiring review', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/meeting-assets/notes', 'MrGru/meeting-assets', 'Meeting notes or transcript requiring archival handling', ARRAY['alex']::text[], 1, false, true),
++  ('MrGru/meeting-assets/recording', 'MrGru/meeting-assets', 'Meeting recording requiring archival handling', ARRAY['alex']::text[], 1, false, true),
++  ('MrGru/meeting-assets/zoom', 'MrGru/meeting-assets', 'Routine Zoom asset notification', NULL, 0, true, true),
++  ('MrGru/newsletter/digest', 'MrGru/newsletter', 'Newsletter digest', NULL, 0, true, true),
++  ('MrGru/newsletter/general', 'MrGru/newsletter', 'General newsletter', NULL, 0, true, true),
++  ('MrGru/notification/calendar', 'MrGru/notification', 'Routine calendar notification', NULL, 0, true, true),
++  ('MrGru/notification/monitoring', 'MrGru/notification', 'Automated website, search, uptime, or performance monitoring report', ARRAY['alex']::text[], 1, false, true),
++  ('MrGru/notification/system', 'MrGru/notification', 'Routine automated platform notification', NULL, 0, true, true),
++  ('MrGru/other', NULL, 'Does not fit a canonical category and requires review', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/personal', NULL, 'Personal correspondence requiring owner review', ARRAY['cherie','alex']::text[], 1, false, true),
++  ('MrGru/procurement/rfp', 'MrGru/procurement', 'Procurement request for proposal', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/procurement/rfq', 'MrGru/procurement', 'Procurement request for quotation', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/recruiting/applicant', 'MrGru/recruiting', 'Job applicant correspondence', ARRAY['cherie']::text[], 1, false, true),
++  ('MrGru/recruiting/outreach', 'MrGru/recruiting', 'Routine recruiting outreach', NULL, 0, true, true),
++  ('MrGru/spam', NULL, 'Unsolicited irrelevant or malicious commercial email', NULL, 0, true, true),
++  ('MrGru/student/support', 'MrGru/student', 'Student or customer asking for account, access, course, or administrative help', ARRAY['cherie','alex']::text[], 2, false, true),
++  ('MrGru/vendor/cold', 'MrGru/vendor', 'Unsolicited vendor outreach', NULL, 0, true, true),
++  ('MrGru/vendor/warm', 'MrGru/vendor', 'Known or relevant vendor correspondence', ARRAY['cherie']::text[], 1, false, true)
++ON CONFLICT (label) DO UPDATE SET
++  auto_archive = EXCLUDED.auto_archive,
++  enabled = true,
++  updated_at = NOW();
++
++-- These existing labels are declared as host-only noise in the operational
++-- contract. Correct the live flags so they cannot fall through to Chief.
++UPDATE public.classification_taxonomy
++   SET auto_archive = true,
++       updated_at = NOW()
++ WHERE label IN ('MrGru/internal/team', 'MrGru/notification/calendar');
++
++COMMIT;
+diff --git a/groups/chief/CLAUDE.md b/groups/chief/CLAUDE.md
+index bd5f837c..5398c373 100644
+--- a/groups/chief/CLAUDE.md
++++ b/groups/chief/CLAUDE.md
+@@ -72,22 +72,15 @@ Rules:
+   internal forwarder; Sales must send a new email to the external lead.
+ - This is a routing action, not a reply — you are not drafting content, just forwarding
+
+-### Support Reply Drafting
+-
+-When Alex/Cherie tells you in `#gru-chief` to reply to a client escalation, the chat text is **operator intent, not finished email copy**. Never forward it to mailman verbatim — mailman is a verbatim sender and shorthand would reach the client as-is.
+-
+-Flow: chief drafts a polished email → posts the exact fenced `[SUPPORT-DRAFT]`
+-shape from `SUPPORT-REPLY.md` to `#gru-chief` → operator approves with a
+-check-mark or an exact whole-message "Approved" in that draft's thread, or edits
+-→ chief iterates → on approval, the host emits the byte-identical approved body
+-with its `[EMAIL ACTION] Action-ID`. Never invent or alter the ID. A queued
+-Mailman result is not delivery; wait for the Gmail-confirmed receipt in the same
+-thread. Patterns from operator edits get captured via `route_lesson` to chief's
+-own LEARNED.md.
+-
+-Full spec, composition rules, and worked example: **`SUPPORT-REPLY.md`** in this folder.
+-
+-Lead inquiries still go to sales (above), not this path.
++### Customer reply ownership
++
++Chief never drafts a customer email. When an escalation contains a customer,
++student, or prospect message that needs any reply—including support,
++clarification, refund, access, or technical troubleshooting—route the complete
++source to Sales immediately using the handoff above. An Alex/Cherie instruction
++in the Chief thread is answer authority to carry in that Sales handoff; it is
++not permission for Chief to create a competing support draft. Preserve Email,
++Thread-ID, Message-ID, visible-recipient context, and the full original message.
+
+ ### Company OS Work Packets
+
+diff --git a/groups/mailman/CLAUDE.md b/groups/mailman/CLAUDE.md
+index a21173d2..2ecd6e15 100644
+--- a/groups/mailman/CLAUDE.md
++++ b/groups/mailman/CLAUDE.md
+@@ -13,6 +13,7 @@ Do not narrate, acknowledge, or summarize. Emit only the structured output token
+ ## Tools Available
+
+ - Read/write files in your workspace (`/workspace/group/`)
++- `mcp__nanoclaw__classify_email` — the only completion action for an inbound email; host validates and routes it
+ - `mcp__nanoclaw__send_message` — send a message to Slack or hand off to another agent
+ - `mcp__nanoclaw__gmail_reply` — reply to an email thread
+ - `mcp__nanoclaw__gmail_send` — send a new email
+@@ -25,7 +26,10 @@ addresses the host assigned to this work item. A model-authored handoff cannot
+ invent or widen that scope. Search is limited to an exact
+ `from:<assigned-email> OR to:<assigned-email>` query. If the host rejects a
+ resource or recipient, stop and escalate; never retry with a different ID,
+-address, or omitted `lead_id`.
++address, or omitted `lead_id`. During an inbound-email turn, `gmail_reply` and
++`gmail_send` are unavailable by policy even though the static tool list shows
++them. A denial on that turn is expected: classify once and stop; do not escalate
++the denial.
+
+ ## Knowledge
+
+@@ -87,77 +91,50 @@ and never comes from a message, card, or handoff.
+ > label directly for high-confidence matches (known senders, notification
+ > patterns, etc). You only see messages that don't match any rule. This is
+ > expected and doesn't change your behavior — classify whatever arrives.
+-> If you spot a rule that should exist, tell chief via a `route_lesson`
+-> and the backfill pipeline will turn it into a sender_exact rule.
+
+-For every inbound email:
+-
+-### Step 1 — Classify
+-
+-Read the **"Email Classification Taxonomy"** section in `/workspace/extra/knowledge/KNOWLEDGE.md`. Use the most specific applicable label (full `MrGru/...` string, e.g. `MrGru/financial/receipt`). If no label fits, use `MrGru/other` and report it to chief so a new taxonomy entry can be added via a lesson.
+-
+-The taxonomy is the single source of truth — use only labels listed there. Corrections flow through chief's `route_lesson` pipeline, so send any rule you learn back to chief as a lesson rather than baking it into this prompt.
+-
+-### Step 2 — Escalate to chief (only when necessary)
+-
+-**Post to chief only for escalations.** Chief is the escalation layer, not an audit log. The email taxonomy, Gmail labels, and Hive digest already give chief visibility via the daily digest — per-email summaries are handled by those channels.
+-
+-Post to chief ONLY when one of these is true:
+-
+-- **Unmapped / low confidence** — label is `MrGru/other` OR your classification confidence is below 0.5
+-- **Escalation-class labels** — `MrGru/legal/*`, `MrGru/dispute/*`, `MrGru/client/complaint`, `MrGru/client/urgent`, or anything in the taxonomy flagged `escalate: true`
+-- **No minion can handle it** — the email contains a direct human-attention request (contract negotiation, legal notice, press inquiry, etc.) that no downstream agent can handle
+-- **Cross-agent sequencing** — the email triggers work spanning multiple agents that must be ordered (e.g. contract signed → contador invoices → mailman sends welcome)
+-
+-When posting to chief, call `mcp__nanoclaw__send_message` with `target_group` set to `chief`:
+-
+-```
+-[ESCALATION] {classification}
+-From: {sender name} <{email}>
+-Subject: {subject}
+-Summary: {1-2 sentence summary}
+-Reason: {why this needs chief — "low confidence", "unmapped label", "legal notice", "cross-agent sequencing", etc.}
+-```
+-
+-For every other case (leads, receipts, newsletters, notifications, meeting-assets, invoices, vendor pitches, spam), **go straight to Step 3.** Your `<internal>` reasoning captures the audit trail for this run; the classification IPC in Step 3 captures the long-term audit trail.
+-
+-> **Host handles routing via Gate 3 (host-router). Your only job is classification.**
+-
+-### Step 3 — Record classification (mandatory, all categories)
+-
+-Persist the classification so the host can write the Gmail label, sync Hive, and include this email in the daily digest. Write a JSON IPC file into `/workspace/ipc/messages/classify-{timestamp}.json`:
+-
+-```json
+-{
+-  "type": "classify_label_write",
+-  "gmail_message_id": "{Message-ID from email header — NOT the Thread-ID}",
+-  "gmail_thread_id": "{thread_id from email header}",
+-  "sender_email": "{sender email}",
+-  "subject": "{subject}",
+-  "label": "{full canonical label from the KNOWLEDGE.md taxonomy, e.g. MrGru/financial/receipt}",
+-  "confidence": 0.85,
+-  "reasoning": "{one short sentence: why this label}",
+-  "classifier_version": "mailman-v2"
+-}
+-```
+-
+-Guidance:
+-
+-- `label` MUST be the full `MrGru/...` string from the taxonomy in KNOWLEDGE.md — use only canonical taxonomy labels, always the full path.
+-- For a trusted internal forward, the host emits `Forwarded-Inquiry: yes`,
+-  keeps the internal teammate on `Forwarded-By`, and places the external
+-  original author on the top-level `From:` line. Use that top-level external
+-  `From:` address as `sender_email`; never substitute `Forwarded-By`.
+-- `confidence` is a float 0–1. If you are unsure between two labels, drop below 0.5 and the host will escalate to chief for review instead of writing a label.
+-- Before writing, dedupe inside the container in case you are re-processing: `jq -e ".gmail_message_id == \"${MSG_ID}\"" /workspace/ipc/messages/classify-*.json 2>/dev/null | grep -q true && exit 0` — if a file already exists for this `gmail_message_id`, skip the write.
+-- This is non-blocking: write the file and wrap up. The host picks it up asynchronously and handles routing.
++For every inbound email, make exactly one decision and call
++`mcp__nanoclaw__classify_email` exactly once. Do not call `send_message`,
++`gmail_reply`, `gmail_send`, Gmail search/read, a database, or another minion.
++The host reloads the exact stored Gmail source, validates the label, persists
++the receipt, and performs every Sales/Chief/minion dispatch. A visible Slack
++message is not a classification receipt and is forbidden on this path.
++
++Use the most specific canonical label below. This exact list, not the legacy
++`LEAD`/`STUDENT` section in generated knowledge, is the classification contract:
++
++- `MrGru/association/event`
++- `MrGru/client/active`, `MrGru/client/dormant`
++- `MrGru/financial/bill`, `MrGru/financial/receipt`, `MrGru/financial/refund`
++- `MrGru/internal/cofounder`, `MrGru/internal/team`
++- `MrGru/lead/declined`, `MrGru/lead/hot`, `MrGru/lead/inquiry`, `MrGru/lead/offer`, `MrGru/lead/reply`
++- `MrGru/legal/contract`, `MrGru/legal/nda`, `MrGru/legal/notice`
++- `MrGru/meeting-assets/notes`, `MrGru/meeting-assets/recording`, `MrGru/meeting-assets/zoom`
++- `MrGru/newsletter/digest`, `MrGru/newsletter/general`
++- `MrGru/notification/calendar`, `MrGru/notification/monitoring`, `MrGru/notification/system`
++- `MrGru/procurement/rfp`, `MrGru/procurement/rfq`
++- `MrGru/recruiting/applicant`, `MrGru/recruiting/outreach`
++- `MrGru/student/support`
++- `MrGru/vendor/cold`, `MrGru/vendor/warm`
++- `MrGru/personal`, `MrGru/spam`, `MrGru/other`
++
++Use `MrGru/student/support` for course/community/login/access problems and other
++student help even when paid-client status is not independently available. Use
++`MrGru/client/active` or `MrGru/client/dormant` only when exact relationship
++evidence is present. If no label fits, use `MrGru/other`. If confidence is below
++0.5, still call the tool with the best proposed label and honest confidence;
++the host records a durable `MrGru/other` review fallback with the exact source.
++
++For a trusted internal forward, use the host-resolved external top-level `From`
++address, never `Forwarded-By`. Use the exact Message-ID, Thread-ID, sender, and
++subject displayed in the current inbound message. The host treats them as
++candidates and replaces them from stored source authority before persistence.
+
+ ## Communication
+
+ All output MUST be wrapped in `<internal>` tags. The Gmail channel's sendMessage is a no-op — communicate exclusively through tools:
+
+-- `send_message` for Slack notifications
+-- `gmail_reply` / `gmail_send` for email responses
++- `classify_email` for inbound email
++- `gmail_reply` / `gmail_send` only for an approved outbound handoff
+
+ Use plain text only in Slack messages. See `SCHEMA.md` for database references.
+
+diff --git a/groups/sales/CLAUDE.md b/groups/sales/CLAUDE.md
+index 4e1233b7..7c3749ce 100644
+--- a/groups/sales/CLAUDE.md
++++ b/groups/sales/CLAUDE.md
+@@ -46,8 +46,8 @@ mechanical confirmation), not a task. Take no action and send no response.
+
+ Message starts with `[HANDOFF: inbox→sales]` or `[HANDOFF: chief→sales]`. Both follow the same Processing Protocol below. Chief routes inquiries that arrived via escalation rather than the normal inbox pipeline — treat them identically.
+
+-Mailman may also route `[SOURCE: email-active-client]` work here. That marker is
+-a host routing decision that this is client/student support, not a new sales
++Mailman may also route `[SOURCE: email-support]` work here. That marker is
++a host routing decision that this is customer/student support, not a new sales
+ opportunity. Use route `SERVICE` and the pipeline-free Client Support Review
+ procedure in `WORKFLOWS.md`. Do not create a pipeline entry merely to answer a
+ support question. A missing CRM engagement, pipeline row, or client-status row
+@@ -69,7 +69,7 @@ Either way: apply it, re-post the revised draft, and wait for approval. The ONLY
+ **Operator-answer fast path:** this rule is independent of whether the thread
+ currently holds a pending `[CLIENT SUPPORT REVIEW]` draft or a prior
+ `[SALES ESCALATION]` card with no draft. When the current work root is
+-`[SOURCE: email-active-client]` and an exact message from Alex or Cherie in this
++`[SOURCE: email-support]` and an exact message from Alex or Cherie in this
+ same Slack thread supplies the fact or decision that makes every material ask
+ answerable, and the response stays within route `SERVICE`, produce one
+ `[CLIENT SUPPORT REVIEW]` immediately in this same turn. Call only
+@@ -117,7 +117,7 @@ for the host's Gmail-confirmed receipt in this same thread.
+
+ ## Processing Protocol
+
+-1. Parse handoff. **Save Thread-ID** if present — must include in mailman handoff for threading, and **carry it across EVERY round**, including operator approvals that arrive later via Slack ("Approved", "refunded", "send it"). An approval is not a new conversation — it is the same email thread. If the Thread-ID is no longer in front of you when you build the final handoff (multi-round approval, revised draft), **recover it before emitting** — see `WORKFLOWS.md → Thread-ID field` (query the party's most recent outbound interaction). Never emit `[HANDOFF: sales→mailman]` for an email-originated conversation with a missing Thread-ID — that sends a detached new email instead of threading the reply (Carol Del Priore refund, 2026-06-09). **Exception:** `[SOURCE: forwarded-email]` / `[FORWARDED-INQUIRY: send-new-email]` deliberately has no reply Thread-ID: `Source-Thread-ID` is the internal forwarding thread and must never be copied, recovered, or passed as `Thread-ID`. After approval, send a new email to the host-resolved external lead address. **Save the host-supplied `Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context` lines across every draft/approval round.** They are current-message context, not permission; use the bounded rule in `WORKFLOWS.md` and never invent or expose BCC. **Save Known-To-Us** if present, but apply the evidence gate in `WORKFLOWS.md`: only evidence that predates the current inbound can establish a relationship. If it is absent or insufficient, set relationship to `unknown`. Do not run a post-intake contact-card lookup to infer relationship; inbox may have created those records for this inquiry. **Do not resolve or create an Entry ID before choosing the route.** For `[SOURCE: email-active-client]` or another evidence-supported `SERVICE` case, follow `WORKFLOWS.md → Client Support Review`; no Entry ID or pipeline mutation is required. For a genuine sales inquiry, follow `WORKFLOWS.md → Resolving Missing Entry ID` before posting a Sales Review card.
++1. Parse handoff. **Save Thread-ID** if present — must include in mailman handoff for threading, and **carry it across EVERY round**, including operator approvals that arrive later via Slack ("Approved", "refunded", "send it"). An approval is not a new conversation — it is the same email thread. If the Thread-ID is no longer in front of you when you build the final handoff (multi-round approval, revised draft), **recover it before emitting** — see `WORKFLOWS.md → Thread-ID field` (query the party's most recent outbound interaction). Never emit `[HANDOFF: sales→mailman]` for an email-originated conversation with a missing Thread-ID — that sends a detached new email instead of threading the reply (Carol Del Priore refund, 2026-06-09). **Exception:** `[SOURCE: forwarded-email]` / `[FORWARDED-INQUIRY: send-new-email]` deliberately has no reply Thread-ID: `Source-Thread-ID` is the internal forwarding thread and must never be copied, recovered, or passed as `Thread-ID`. After approval, send a new email to the host-resolved external lead address. **Save the host-supplied `Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context` lines across every draft/approval round.** They are current-message context, not permission; use the bounded rule in `WORKFLOWS.md` and never invent or expose BCC. **Save Known-To-Us** if present, but apply the evidence gate in `WORKFLOWS.md`: only evidence that predates the current inbound can establish a relationship. If it is absent or insufficient, set relationship to `unknown`. Do not run a post-intake contact-card lookup to infer relationship; inbox may have created those records for this inquiry. **Do not resolve or create an Entry ID before choosing the route.** For `[SOURCE: email-support]` or another evidence-supported `SERVICE` case, follow `WORKFLOWS.md → Client Support Review`; no Entry ID or pipeline mutation is required. For a genuine sales inquiry, follow `WORKFLOWS.md → Resolving Missing Entry ID` before posting a Sales Review card.
+ 2. If the Operator-answer fast path applies, skip all reads/lookups and go
+    directly to the Client Support Review card. Otherwise read
+    `/workspace/extra/knowledge/KNOWLEDGE.md`.
+@@ -216,6 +216,12 @@ resolved, otherwise omit the entire line.
+   it. If the current thread or an exact operator fact answers the request,
+   draft from that evidence and state no claim about the attachment. Escalate
+   only when the attachment itself is material to a safe answer.
++- **Shared Gmail Thread-ID:** Gmail can group replies from different recipients
++  of a templated outbound message under one mailbox Thread-ID. Never treat
++  Thread-ID reuse alone, or an expected unapproved Mailman inbound-send denial,
++  as a collision, spoofing event, or reason to withhold a draft. The current
++  Lead Email/From + Message-ID + Thread-ID tuple identifies the work item; the
++  host's exact approval and recipient checks remain the send authority.
+
+ ## Activity Logging (Plutio)
+
+diff --git a/src/classify-ipc-handlers.ts b/src/classify-ipc-handlers.ts
+index 3f51f38e..4f68a7a9 100644
+--- a/src/classify-ipc-handlers.ts
++++ b/src/classify-ipc-handlers.ts
+@@ -19,6 +19,7 @@ import { grantHostGmailResources } from './gmail-ipc-policy.js';
+ import { extractHeaderAddresses } from './gmail-parser.js';
+ import { recordClassification } from './hive-bridge.js';
+ import { routeClassifiedEmail } from './host-router.js';
++import { canonicalClassificationLabel } from './classification-policy.js';
+ import {
+   extractSenderEmail,
+   resetRulesCache,
+@@ -41,6 +42,8 @@ export interface ClassifyLabelWritePayload {
+   confidence: number;
+   reasoning: string;
+   classifier_version: string;
++  source_container?: string;
++  run_id?: string;
+ }
+
+ export interface ClassifyCorrectionDetectedPayload {
+@@ -82,8 +85,10 @@ export function isClassifyIpcType(type: string): boolean {
+ export { writeHostMessage } from './ipc-writer.js';
+
+ interface TaxonomyRow {
++  label: string;
+   hive_share_target: string[] | null;
+   auto_archive: boolean;
++  enabled: boolean;
+ }
+
+ /** Check if a label's taxonomy entry has auto_archive=true (safe to skip mailman). */
+@@ -94,11 +99,11 @@ export async function isAutoArchiveLabel(label: string): Promise<boolean> {
+
+ async function loadTaxonomyRow(label: string): Promise<TaxonomyRow | null> {
+   const res = await query<TaxonomyRow>(
+-    'SELECT hive_share_target, auto_archive FROM classification_taxonomy WHERE label = $1 LIMIT 1',
++    'SELECT label, hive_share_target, auto_archive, enabled FROM classification_taxonomy WHERE label = $1 LIMIT 1',
+     [label],
+   );
+   if (res.rows.length === 0) return null;
+-  return res.rows[0];
++  return { ...res.rows[0], enabled: res.rows[0].enabled !== false };
+ }
+
+ // ---------- Auto-rule creation ----------
+@@ -325,31 +330,120 @@ async function routeAfterClassify(
+   }
+ }
+
++/** Claim and retry one durable actionable classification whose route stalled. */
++export async function retryUnroutedClassification(
++  data: ClassifyLabelWritePayload,
++): Promise<boolean> {
++  const claim = await query<{ label: string }>(
++    `UPDATE email_classifications
++        SET classified_at = NOW()
++      WHERE gmail_message_id = $1
++        AND classifier_version = $2
++        AND routed_at IS NULL
++        AND classified_at < NOW() - INTERVAL '30 seconds'
++    RETURNING label`,
++    [data.gmail_message_id, data.classifier_version],
++  );
++  const label = claim.rows[0]?.label;
++  if (!label) return false;
++  const canonical = canonicalClassificationLabel(label);
++  const taxonomy = canonical ? await loadTaxonomyRow(canonical) : null;
++  if (!canonical || !taxonomy?.enabled) return false;
++  const routed = await routeAfterClassify({ ...data, label: canonical });
++  if (routed) {
++    await markClassificationRouted(
++      data.gmail_message_id,
++      data.classifier_version,
++    );
++  }
++  return routed;
++}
++
+ // ---------- Handlers ----------
+
+ export async function handleClassifyLabelWrite(
+-  data: ClassifyLabelWritePayload,
++  proposed: ClassifyLabelWritePayload,
+ ): Promise<void> {
+   const start = Date.now();
+-  if (data.confidence < CLASSIFIER_CONFIDENCE_FLOOR) {
++  const stored = getMessageById(proposed.gmail_message_id);
++  const trustedRuleRunner = proposed.classifier_version === 'rules-runner-v1';
++  if (!stored && !trustedRuleRunner) {
++    throw new Error(
++      'classification source is not an exact stored inbound Gmail message',
++    );
++  }
++  if (
++    stored &&
++    (stored.is_from_me ||
++      !stored.chat_jid.startsWith('gmail:') ||
++      stored.id !== proposed.gmail_message_id)
++  ) {
++    throw new Error(
++      'classification source is not an exact stored inbound Gmail message',
++    );
++  }
++  let boundProposal = proposed;
++  if (stored) {
++    const blankLineIdx = stored.content.search(/\r?\n\r?\n/);
++    const headerRegion =
++      blankLineIdx >= 0
++        ? stored.content.slice(0, blankLineIdx)
++        : stored.content;
++    const storedThreadId =
++      headerRegion.match(/^Thread-ID:\s*(\S+)\s*$/im)?.[1] || stored.thread_ts;
++    const storedSubject =
++      headerRegion.match(/^Subject:\s*([^\r\n]*)$/im)?.[1] ?? '';
++    const storedFrom = headerRegion.match(/^From:\s*([^\r\n]+)$/im)?.[1] ?? '';
++    boundProposal = {
++      ...proposed,
++      gmail_message_id: stored.id,
++      gmail_thread_id: storedThreadId || proposed.gmail_thread_id,
++      sender_email: extractSenderEmail(storedFrom) || proposed.sender_email,
++      subject: storedSubject,
++    };
++  }
++  const canonical = canonicalClassificationLabel(boundProposal.label);
++  const invalidProposal = !canonical;
++  const lowConfidence = boundProposal.confidence < CLASSIFIER_CONFIDENCE_FLOOR;
++  let data: ClassifyLabelWritePayload = {
++    ...boundProposal,
++    ...(canonical ? { label: canonical } : {}),
++  };
++
++  // Validate before the INSERT. Unknown, disabled, and low-confidence labels
++  // become one durable, routable fallback instead of a visible-but-unrecorded
++  // Chief message or an invalid label falsely stamped routed.
++  if (invalidProposal || lowConfidence) {
++    const reason = invalidProposal
++      ? `invalid or disabled proposed label "${proposed.label}"`
++      : `low-confidence proposal ${proposed.confidence.toFixed(2)} for "${proposed.label}"`;
+     logger.warn(
+-      { gmail_message_id: data.gmail_message_id, confidence: data.confidence },
+-      'classify_label_write: confidence below floor, escalating to chief',
++      {
++        gmail_message_id: boundProposal.gmail_message_id,
++        label: boundProposal.label,
++        confidence: boundProposal.confidence,
++        reason,
++      },
++      'classify_label_write: normalizing proposal to durable fallback',
+     );
+-    writeHostMessage('chief', {
+-      type: 'message',
+-      text:
+-        `[CLASSIFY-REVIEW] Low confidence ${data.confidence.toFixed(2)} for ` +
+-        `${data.gmail_message_id} (${data.subject ?? 'no subject'}): proposed "${data.label}" — please confirm or relabel.`,
+-    });
+-    return;
++    data = {
++      ...boundProposal,
++      label: 'MrGru/other',
++      reasoning: `[HOST FALLBACK: ${reason}] ${boundProposal.reasoning}`.slice(
++        0,
++        2000,
++      ),
++    };
+   }
+
+   const insert = await query(
+     `INSERT INTO email_classifications
+        (gmail_message_id, gmail_thread_id, sender_email, subject,
+         label, confidence, classifier_version, reasoning)
+-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
++     SELECT $1, $2, $3, $4, $5, $6, $7, $8
++       FROM classification_taxonomy
++      WHERE label = $5
++        AND enabled = true
+      ON CONFLICT (gmail_message_id) DO UPDATE SET
+        label = EXCLUDED.label,
+        classifier_version = EXCLUDED.classifier_version,
+@@ -358,6 +452,10 @@ export async function handleClassifyLabelWrite(
+        classified_at = NOW(),
+        routed_at = NULL
+      WHERE email_classifications.classifier_version <> EXCLUDED.classifier_version
++       AND NOT (
++         email_classifications.classifier_version = 'mailman-host-fallback-v1'
++         AND email_classifications.routed_at IS NOT NULL
++       )
+      RETURNING id`,
+     [
+       data.gmail_message_id,
+@@ -395,7 +493,7 @@ export async function handleClassifyLabelWrite(
+       // authority for this retry even if a replaying model supplies another.
+       const retryData = { ...data, label: storedLabel };
+       const taxonomy = await loadTaxonomyRow(storedLabel);
+-      if (!taxonomy?.auto_archive) {
++      if (taxonomy?.enabled) {
+         const routed = await routeAfterClassify(retryData);
+         if (routed) {
+           await markClassificationRouted(
+@@ -406,6 +504,24 @@ export async function handleClassifyLabelWrite(
+       }
+       return;
+     }
++    const effectiveTaxonomy = await loadTaxonomyRow(data.label);
++    if (!effectiveTaxonomy?.enabled) {
++      if (data.label === 'MrGru/other') {
++        throw new Error(
++          'canonical MrGru/other fallback is missing or disabled',
++        );
++      }
++      await handleClassifyLabelWrite({
++        ...data,
++        label: 'MrGru/other',
++        reasoning:
++          `[HOST FALLBACK: proposed label "${data.label}" is absent or disabled in the live taxonomy] ${data.reasoning}`.slice(
++            0,
++            2000,
++          ),
++      });
++      return;
++    }
+     logger.debug(
+       {
+         gmail_message_id: data.gmail_message_id,
+@@ -417,6 +533,11 @@ export async function handleClassifyLabelWrite(
+   }
+
+   const taxonomy = await loadTaxonomyRow(data.label);
++  if (!taxonomy?.enabled) {
++    throw new Error(
++      `effective classification label is unavailable: ${data.label}`,
++    );
++  }
+
+   await replaceClassLabelsOnThread(data.gmail_thread_id, data.label);
+
+@@ -427,10 +548,7 @@ export async function handleClassifyLabelWrite(
+   // Route through host-router for LLM-originated classifications.
+   // The rules-runner path already calls routeClassifiedEmail() in gmail.ts,
+   // so skip it here to avoid double-routing.
+-  if (
+-    data.classifier_version !== 'rules-runner-v1' &&
+-    !taxonomy?.auto_archive
+-  ) {
++  if (data.classifier_version !== 'rules-runner-v1') {
+     // Dedup check: skip if this (message_id, classifier_version) pair was already routed.
+     let alreadyRouted = false;
+     try {
+diff --git a/src/host-router.ts b/src/host-router.ts
+index 000d730e..60196603 100644
+--- a/src/host-router.ts
++++ b/src/host-router.ts
+@@ -11,6 +11,7 @@ import {
+ } from './trafft-custom-fields.js';
+ import { grantHostGmailResources } from './gmail-ipc-policy.js';
+ import { extractHeaderAddresses } from './gmail-parser.js';
++import { classificationPolicyFor } from './classification-policy.js';
+ import { logger } from './logger.js';
+ import { ingestEmailProcurementObservation } from './procurement-intake.js';
+
+@@ -170,13 +171,13 @@ function fmtInbox(p: RouteParams): string {
+   ].join('\n');
+ }
+
+-function fmtClientResponse(p: RouteParams): string {
++function fmtSupportResponse(p: RouteParams): string {
+   return [
+     '[HANDOFF: mailman\u2192sales]',
+     isForwardedInquiry(p)
+       ? '[SOURCE: forwarded-email]'
+-      : '[SOURCE: email-active-client]',
+-    `[CONTEXT: ${p.label} \u2014 already-paid client, draft customer-success response, not a sales pitch]`,
++      : '[SOURCE: email-support]',
++    `[CONTEXT: ${p.label} \u2014 customer/student support, draft a SERVICE response, not a sales pitch and not proof of paid status]`,
+     `Lead Email: ${leadEmail(p)}`,
+     `From: ${p.senderName} <${p.senderEmail}>`,
+     ...recipientContextLines(p),
+@@ -347,30 +348,72 @@ function routeChief(params: RouteParams, reason: string): RouteResult {
+ export async function routeClassifiedEmail(
+   params: RouteParams,
+ ): Promise<RouteResult> {
+-  // Strip namespace prefix (e.g. "MrGru/client/active" → "client/active").
+-  // Taxonomy labels have 2+ slashes when prefixed; bare labels have 0-1.
+-  const parts = params.label.split('/');
+-  const bare = parts.length >= 3 ? parts.slice(1).join('/') : params.label;
+-  const prefix = bare.split('/')[0];
+-
+-  if (prefix === 'lead') return routeLead(params);
+-  if (prefix === 'client') return writeMailman(fmtClientResponse(params));
+-  if (prefix === 'procurement') return routeProcurementEmail(params);
+-  if (bare === 'financial/bill') return writeMailman(fmtContador(params));
+-  if (bare === 'financial/refund') return routeChief(params, 'refund review');
+-  if (prefix === 'meeting-assets') return writeMailman(fmtArchivarista(params));
+-  if (['legal', 'recruiting', 'internal'].includes(prefix))
+-    return routeChief(params, `${bare} review`);
+-  if (bare === 'personal' || bare === 'other')
+-    return routeChief(params, `${bare} review`);
+-
+-  // Unrecognized label — chief fallback
++  const policy = classificationPolicyFor(params.label);
++  if (!policy) {
++    // Unknown labels must be normalized before persistence. Keep this final
++    // defense fail-closed for direct diagnostic callers.
++    logger.error(
++      { label: params.label },
++      'host-router: refused label absent from canonical routing policy',
++    );
++    return {
++      routed: false,
++      action: 'error',
++      target: 'none',
++      reason: 'label absent from canonical routing policy',
++    };
++  }
++
++  const routedParams = { ...params, label: policy.label };
++  switch (policy.disposition) {
++    case 'lead':
++      return routeLead(routedParams);
++    case 'support':
++      return writeMailman(fmtSupportResponse(routedParams));
++    case 'refund_support': {
++      // The customer-response owner is always Sales. Chief receives secondary
++      // visibility only after the primary work item exists; a Chief failure
++      // can never strand the reply.
++      const primary = writeMailman(fmtSupportResponse(routedParams));
++      if (!primary.routed) return primary;
++      const visibility = routeChief(
++        routedParams,
++        'refund visibility; Sales owns response',
++      );
++      if (!visibility.routed) {
++        logger.warn(
++          { label: policy.label, reason: visibility.reason },
++          'host-router: secondary refund visibility failed after Sales handoff',
++        );
++      }
++      return { ...primary, target: 'sales+chief' };
++    }
++    case 'contador':
++      return writeMailman(fmtContador(routedParams));
++    case 'procurement':
++      return routeProcurementEmail(routedParams);
++    case 'archivarista':
++      return writeMailman(fmtArchivarista(routedParams));
++    case 'chief':
++      return routeChief(
++        routedParams,
++        `${policy.label.slice('MrGru/'.length)} review`,
++      );
++    case 'classify_only':
++      return { routed: true, action: 'classify_only', target: 'none' };
++  }
++
++  /* c8 ignore next -- exhaustive switch guard */
+   logger.warn(
+-    { label: params.label },
+-    'host-router: unrecognized label, falling back to chief',
++    { label: policy.label },
++    'host-router: canonical policy disposition was not handled',
+   );
+-  const result = routeChief(params, 'unrecognized label');
+-  return { ...result, reason: 'unrecognized label prefix' };
++  return {
++    routed: false,
++    action: 'error',
++    target: 'none',
++    reason: 'unhandled disposition',
++  };
+ }
+
+ // ── Lead sub-route ─────────────────────────────────────────────────
+diff --git a/src/ipc.ts b/src/ipc.ts
+index 22af6b70..b367a95b 100644
+--- a/src/ipc.ts
++++ b/src/ipc.ts
+@@ -103,6 +103,10 @@ import {
+ } from './approved-send-handoff.js';
+ import { checkContent } from './email-content-guard.js';
+ import { resolveHumanAuthorizedDiscountTerms } from './human-commercial-term-authorization.js';
++import {
++  getMailmanRunContext,
++  mailmanUnboundSendDisposition,
++} from './mailman-run-context.js';
+ import {
+   isSlackMessageOverLimit,
+   SLACK_MESSAGE_MAX_LENGTH,
+@@ -251,11 +255,12 @@ function writeDeniedGmailInput(
+   reason: string | undefined,
+   sourceContainer?: string,
+   deliverSourceInput?: IpcDeps['deliverSourceInput'],
++  nextInstruction = 'Do not retry with a different ID or address; escalate.',
+ ): void {
+   try {
+     const text =
+       `[${operation} DENIED] ${reason || 'host authorization failed'}. ` +
+-      'Do not retry with a different ID or address; escalate.';
++      nextInstruction;
+     if (sourceContainer && deliverSourceInput) {
+       if (deliverSourceInput(sourceGroup, sourceContainer, text)) return;
+       logger.error(
+@@ -1317,16 +1322,22 @@ export function startIpcWatcher(deps: IpcDeps): void {
+                     { sourceGroup, type: data.type, quarantinedAt },
+                     'Mailman Gmail send is not bound to one exact host-approved action',
+                   );
++                  const denial = mailmanUnboundSendDisposition(
++                    typeof data.run_id === 'string' ? data.run_id : undefined,
++                  );
+                   writeDeniedGmailInput(
+                     sourceGroup,
+                     data.type,
+                     'no exact host-approved email action is available',
+                     data.source_container,
+                     deps.deliverSourceInput,
++                    denial.nextInstruction,
+                   );
+-                  await postBoundaryFailure(
+-                    `🚫 [EMAIL ACTION HELD] A Mailman request was not bound to one exact host-approved action. Nothing was sent. Approve the exact draft in its Slack thread before retrying.`,
+-                  );
++                  if (denial.alertChief) {
++                    await postBoundaryFailure(
++                      `🚫 [EMAIL ACTION HELD] A Mailman request was not bound to one exact host-approved action. Nothing was sent. Approve the exact draft in its Slack thread before retrying.`,
++                    );
++                  }
+                   continue;
+                 }
+                 const postActionStatus = async (
+@@ -1831,6 +1842,35 @@ export function startIpcWatcher(deps: IpcDeps): void {
+                   );
+                   continue;
+                 }
++                if (data.type === 'classify_label_write' && data.run_id) {
++                  const turn = getMailmanRunContext(
++                    typeof data.run_id === 'string' ? data.run_id : undefined,
++                  );
++                  const sourceContext = deps.resolveSourceThread?.(
++                    sourceGroup,
++                    String(data.source_container ?? ''),
++                  );
++                  if (
++                    turn?.kind !== 'inbound_classification' ||
++                    !turn.messageIds.includes(
++                      String(data.gmail_message_id ?? ''),
++                    ) ||
++                    !sourceContext ||
++                    sourceContext.chatJid !== turn.chatJid ||
++                    sourceContext.threadTs !== turn.threadTs
++                  ) {
++                    const quarantinedAt = quarantineIpcFile(
++                      filePath,
++                      sourceGroup,
++                      'classify-binding',
++                    );
++                    logger.warn(
++                      { sourceGroup, type: data.type, quarantinedAt },
++                      'classify_label_write: host turn binding rejected',
++                    );
++                    continue;
++                  }
++                }
+                 try {
+                   await dispatchClassifyIpc(data as ClassifyIpcPayload);
+                   fs.unlinkSync(filePath);

@@ -46,8 +46,8 @@ mechanical confirmation), not a task. Take no action and send no response.
 
 Message starts with `[HANDOFF: inbox→sales]` or `[HANDOFF: chief→sales]`. Both follow the same Processing Protocol below. Chief routes inquiries that arrived via escalation rather than the normal inbox pipeline — treat them identically.
 
-Mailman may also route `[SOURCE: email-active-client]` work here. That marker is
-a host routing decision that this is client/student support, not a new sales
+Mailman may also route `[SOURCE: email-support]` work here. That marker is
+a host routing decision that this is customer/student support, not a new sales
 opportunity. Use route `SERVICE` and the pipeline-free Client Support Review
 procedure in `WORKFLOWS.md`. Do not create a pipeline entry merely to answer a
 support question. A missing CRM engagement, pipeline row, or client-status row
@@ -69,7 +69,7 @@ Either way: apply it, re-post the revised draft, and wait for approval. The ONLY
 **Operator-answer fast path:** this rule is independent of whether the thread
 currently holds a pending `[CLIENT SUPPORT REVIEW]` draft or a prior
 `[SALES ESCALATION]` card with no draft. When the current work root is
-`[SOURCE: email-active-client]` and an exact message from Alex or Cherie in this
+`[SOURCE: email-support]` and an exact message from Alex or Cherie in this
 same Slack thread supplies the fact or decision that makes every material ask
 answerable, and the response stays within route `SERVICE`, produce one
 `[CLIENT SUPPORT REVIEW]` immediately in this same turn. Call only
@@ -117,7 +117,7 @@ for the host's Gmail-confirmed receipt in this same thread.
 
 ## Processing Protocol
 
-1. Parse handoff. **Save Thread-ID** if present — must include in mailman handoff for threading, and **carry it across EVERY round**, including operator approvals that arrive later via Slack ("Approved", "refunded", "send it"). An approval is not a new conversation — it is the same email thread. If the Thread-ID is no longer in front of you when you build the final handoff (multi-round approval, revised draft), **recover it before emitting** — see `WORKFLOWS.md → Thread-ID field` (query the party's most recent outbound interaction). Never emit `[HANDOFF: sales→mailman]` for an email-originated conversation with a missing Thread-ID — that sends a detached new email instead of threading the reply (Carol Del Priore refund, 2026-06-09). **Exception:** `[SOURCE: forwarded-email]` / `[FORWARDED-INQUIRY: send-new-email]` deliberately has no reply Thread-ID: `Source-Thread-ID` is the internal forwarding thread and must never be copied, recovered, or passed as `Thread-ID`. After approval, send a new email to the host-resolved external lead address. **Save the host-supplied `Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context` lines across every draft/approval round.** They are current-message context, not permission; use the bounded rule in `WORKFLOWS.md` and never invent or expose BCC. **Save Known-To-Us** if present, but apply the evidence gate in `WORKFLOWS.md`: only evidence that predates the current inbound can establish a relationship. If it is absent or insufficient, set relationship to `unknown`. Do not run a post-intake contact-card lookup to infer relationship; inbox may have created those records for this inquiry. **Do not resolve or create an Entry ID before choosing the route.** For `[SOURCE: email-active-client]` or another evidence-supported `SERVICE` case, follow `WORKFLOWS.md → Client Support Review`; no Entry ID or pipeline mutation is required. For a genuine sales inquiry, follow `WORKFLOWS.md → Resolving Missing Entry ID` before posting a Sales Review card.
+1. Parse handoff. **Save Thread-ID** if present — must include in mailman handoff for threading, and **carry it across EVERY round**, including operator approvals that arrive later via Slack ("Approved", "refunded", "send it"). An approval is not a new conversation — it is the same email thread. If the Thread-ID is no longer in front of you when you build the final handoff (multi-round approval, revised draft), **recover it before emitting** — see `WORKFLOWS.md → Thread-ID field` (query the party's most recent outbound interaction). Never emit `[HANDOFF: sales→mailman]` for an email-originated conversation with a missing Thread-ID — that sends a detached new email instead of threading the reply (Carol Del Priore refund, 2026-06-09). **Exception:** `[SOURCE: forwarded-email]` / `[FORWARDED-INQUIRY: send-new-email]` deliberately has no reply Thread-ID: `Source-Thread-ID` is the internal forwarding thread and must never be copied, recovered, or passed as `Thread-ID`. After approval, send a new email to the host-resolved external lead address. **Save the host-supplied `Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context` lines across every draft/approval round.** They are current-message context, not permission; use the bounded rule in `WORKFLOWS.md` and never invent or expose BCC. **Save Known-To-Us** if present, but apply the evidence gate in `WORKFLOWS.md`: only evidence that predates the current inbound can establish a relationship. If it is absent or insufficient, set relationship to `unknown`. Do not run a post-intake contact-card lookup to infer relationship; inbox may have created those records for this inquiry. **Do not resolve or create an Entry ID before choosing the route.** For `[SOURCE: email-support]` or another evidence-supported `SERVICE` case, follow `WORKFLOWS.md → Client Support Review`; no Entry ID or pipeline mutation is required. For a genuine sales inquiry, follow `WORKFLOWS.md → Resolving Missing Entry ID` before posting a Sales Review card.
 2. If the Operator-answer fast path applies, skip all reads/lookups and go
    directly to the Client Support Review card. Otherwise read
    `/workspace/extra/knowledge/KNOWLEDGE.md`.
@@ -216,6 +216,12 @@ resolved, otherwise omit the entire line.
   it. If the current thread or an exact operator fact answers the request,
   draft from that evidence and state no claim about the attachment. Escalate
   only when the attachment itself is material to a safe answer.
+- **Shared Gmail Thread-ID:** Gmail can group replies from different recipients
+  of a templated outbound message under one mailbox Thread-ID. Never treat
+  Thread-ID reuse alone, or an expected unapproved Mailman inbound-send denial,
+  as a collision, spoofing event, or reason to withhold a draft. The current
+  Lead Email/From + Message-ID + Thread-ID tuple identifies the work item; the
+  host's exact approval and recipient checks remain the send authority.
 
 ## Activity Logging (Plutio)
 

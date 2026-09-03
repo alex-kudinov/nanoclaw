@@ -185,6 +185,16 @@ Gmail is both a channel and a business pipeline:
 6. outbound email crosses host recipient and content guards;
 7. approval-gated workflows remain pending until an authorized action.
 
+`NC-20260903-001` makes classification a single typed, host-bound action. The
+host reloads exact Gmail source fields, validates the canonical enabled label
+before insertion, and owns every primary/secondary dispatch. A periodic
+restart-safe reaper closes both missing classifications and actionable rows
+with `routed_at IS NULL`. Support/refund response work is Sales-owned and
+pipeline-free; Chief has no competing customer-draft workflow. A host-minted
+Mailman turn identity distinguishes an expected inbound send denial from a real
+approved-action failure without weakening any delivery guard. See
+`docs/INBOUND-CUSTOMER-WORK-ROUTING.md`.
+
 Sales commercial terms have a narrow provenance exception to the global
 invented-discount block: the host derives canonical numeric terms from non-bot
 human messages stored in the exact Slack work thread, applies later revocation,

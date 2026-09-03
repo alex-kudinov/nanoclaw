@@ -965,44 +965,12 @@ In enrollment-confirmation and welcome emails, proactively include the community
 - **Cohort window not in KB:** When a lead asks about a cohort window that doesn't match published dates, hold the response and confirm with Cherie/Alex before replying.
 - When a lead has a conflict with an orientation date, proactively include the confirmed orientation dates AND the next cohort fallback option.
 
-### Email Classification Taxonomy (MrGru Labels)
+### Email Classification Taxonomy
 
-The following labels are used by the email classification agent (MrGru) to categorize incoming emails:
-
-#### Primary Categories
-- **LEAD** — New prospect inquiry about programs or services
-- **STUDENT** — Current student communication (enrolled in a program)
-- **ALUMNI** — Graduate/past student communication
-- **PARTNER** — Business partner, affiliate, or collaboration inquiry
-- **VENDOR** — Vendor, supplier, or service provider communication
-- **SPAM** — Unsolicited commercial email, marketing spam
-- **INTERNAL** — Internal team communication
-- **PERSONAL** — Personal (non-business) communication to Cherie/team
-
-#### Sub-Categories (LEAD)
-- **LEAD/HOT** — High-intent prospect (asking about enrollment, pricing, next cohort)
-- **LEAD/WARM** — Moderate interest (asking general questions, downloaded resources)
-- **LEAD/COLD** — Low intent (general inquiry, information gathering)
-- **LEAD/RETURNING** — Previous lead re-engaging
-
-#### Sub-Categories (STUDENT)
-- **STUDENT/ACTIVE** — Currently enrolled and participating
-- **STUDENT/SUPPORT** — Requesting help, having issues
-- **STUDENT/ADMIN** — Administrative requests (scheduling, payments, documents)
-
-#### Additional Taxonomy Labels
-- **MrGru/lead/declined** — Explicit opt-out, unsubscribe, or "not interested" reply from a lead or prospect. Auto-archive. When a lead sends a clear decline, suppress all future automated outreach to that email address.
-- **MrGru/association/event** — Correspondence from ICF, EMCC, Scrum Alliance, or other professional associations about events, conferences, proposals, or membership. Hive: cherie+alex, priority 1.
-- **MrGru/notification/monitoring** — Automated site health, SEO audit, uptime, or performance reports (e.g., Labrika, UptimeRobot, Pingdom, Google Search Console alerts). Do not escalate. Appears in daily digest for Alex's review.
-- **MrGru/notification/system** — Routine automated platform notifications (e.g., Forwardly bank notifications, Heartbeat community event reminders). Auto-archive. Do not escalate.
-- **MrGru/notification/calendar** — Calendar invites, acceptances, rescheduling notices, event confirmations from Google Calendar or any calendar system. Auto-archive immediately. Do NOT escalate to chief. No agent action needed.
-- **MrGru/internal/team** — Internal team communication. Emails from @tandemcoach.co or @tandemcoaching.academy addresses are sent-mail echoes — auto-archive, do NOT escalate.
-
-#### Action Flags
-- **URGENT** — Requires immediate attention
-- **FOLLOWUP** — Requires follow-up but not urgent
-- **FYI** — Informational only, no action needed
-- **HANDOFF** — Needs to be routed to a specific team member
+Mailman's exact canonical label list and one-action classification procedure
+live in `groups/mailman/CLAUDE.md` and the host's
+`src/classification-policy.ts`. Historical generic `LEAD`/`STUDENT` names are
+not labels and must never be inferred from shared knowledge prose.
 
 ### Sent-Mail Echo Suppression
 Emails arriving from info@tandemcoach.co, info@tandemcoaching.academy, or any @tandemcoach.co / @tandemcoaching.academy address are sent-mail echoes (outbound email reflected back as inbound). Auto-archive immediately. Do NOT escalate to chief. Do NOT classify as a lead, client, or inquiry. These are noise.

@@ -552,7 +552,7 @@ describe('GmailChannel', () => {
       );
     });
 
-    it('receipts completed rule auto-archive as accepted', async () => {
+    it('routes an auto-archived rule through canonical disposition before receipt', async () => {
       mockGmail.users.messages.get.mockResolvedValueOnce(
         gmailMessage('msg-autoarchive'),
       );
@@ -563,6 +563,11 @@ describe('GmailChannel', () => {
         pattern_value: 'sender@example.com',
       });
       mockIsAutoArchiveLabel.mockResolvedValueOnce(true);
+      mockRouteClassifiedEmail.mockResolvedValueOnce({
+        routed: true,
+        action: 'classify_only',
+        target: 'none',
+      });
       const channel = new GmailChannel(createTestOpts());
       await channel.connect();
 
@@ -573,9 +578,10 @@ describe('GmailChannel', () => {
         expect.objectContaining({
           messageId: 'msg-autoarchive',
           disposition: 'accepted',
-          reasonKey: 'rule_auto_archive_completed',
+          reasonKey: 'classified_route_persisted',
         }),
       );
+      expect(mockRouteClassifiedEmail).toHaveBeenCalledOnce();
     });
 
     it('receipts an exact Gmail message-get 404 as terminal unavailable', async () => {

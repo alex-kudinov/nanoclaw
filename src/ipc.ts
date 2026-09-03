@@ -104,6 +104,11 @@ import {
 import { checkContent } from './email-content-guard.js';
 import { resolveHumanAuthorizedDiscountTerms } from './human-commercial-term-authorization.js';
 import {
+  getMailmanRunContext,
+  mailmanClassificationBindingIssue,
+  mailmanUnboundSendDisposition,
+} from './mailman-run-context.js';
+import {
   isSlackMessageOverLimit,
   SLACK_MESSAGE_MAX_LENGTH,
 } from './slack-limits.js';
@@ -251,11 +256,12 @@ function writeDeniedGmailInput(
   reason: string | undefined,
   sourceContainer?: string,
   deliverSourceInput?: IpcDeps['deliverSourceInput'],
+  nextInstruction = 'Do not retry with a different ID or address; escalate.',
 ): void {
   try {
     const text =
       `[${operation} DENIED] ${reason || 'host authorization failed'}. ` +
-      'Do not retry with a different ID or address; escalate.';
+      nextInstruction;
     if (sourceContainer && deliverSourceInput) {
       if (deliverSourceInput(sourceGroup, sourceContainer, text)) return;
       logger.error(
@@ -1317,16 +1323,22 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     { sourceGroup, type: data.type, quarantinedAt },
                     'Mailman Gmail send is not bound to one exact host-approved action',
                   );
+                  const denial = mailmanUnboundSendDisposition(
+                    typeof data.run_id === 'string' ? data.run_id : undefined,
+                  );
                   writeDeniedGmailInput(
                     sourceGroup,
                     data.type,
                     'no exact host-approved email action is available',
                     data.source_container,
                     deps.deliverSourceInput,
+                    denial.nextInstruction,
                   );
-                  await postBoundaryFailure(
-                    `🚫 [EMAIL ACTION HELD] A Mailman request was not bound to one exact host-approved action. Nothing was sent. Approve the exact draft in its Slack thread before retrying.`,
-                  );
+                  if (denial.alertChief) {
+                    await postBoundaryFailure(
+                      `🚫 [EMAIL ACTION HELD] A Mailman request was not bound to one exact host-approved action. Nothing was sent. Approve the exact draft in its Slack thread before retrying.`,
+                    );
+                  }
                   continue;
                 }
                 const postActionStatus = async (
@@ -1830,6 +1842,35 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     'classify_*: rejected non-mailman source, quarantined',
                   );
                   continue;
+                }
+                if (data.type === 'classify_label_write') {
+                  const sourceContext = deps.resolveSourceThread?.(
+                    sourceGroup,
+                    String(data.source_container ?? ''),
+                  );
+                  const bindingIssue = mailmanClassificationBindingIssue({
+                    runId:
+                      typeof data.run_id === 'string' ? data.run_id : undefined,
+                    gmailMessageId: String(data.gmail_message_id ?? ''),
+                    sourceContext,
+                  });
+                  if (bindingIssue) {
+                    const quarantinedAt = quarantineIpcFile(
+                      filePath,
+                      sourceGroup,
+                      'classify-binding',
+                    );
+                    logger.warn(
+                      {
+                        sourceGroup,
+                        type: data.type,
+                        bindingIssue,
+                        quarantinedAt,
+                      },
+                      'classify_label_write: host turn binding rejected',
+                    );
+                    continue;
+                  }
                 }
                 try {
                   await dispatchClassifyIpc(data as ClassifyIpcPayload);

@@ -105,9 +105,13 @@ Rules runner (mature classification_rules DB entries, 60s cache) → if match:
     ↓ (no rule match)
 onMessage() → normal message loop → mailman container
     ↓
-Mailman classifies → classify_label_write IPC
+Mailman calls typed classify_email exactly once
+    ↓
+host binds to stored Gmail source → validates canonical enabled label
     ↓
 handleClassifyLabelWrite() → store + label + auto-rule + routeAfterClassify()
+    ↓
+60s restart-safe reaper closes missing classifications and routed_at gaps
 ```
 
 ### Outbound
@@ -200,6 +204,7 @@ Channels self-register when their module is imported. `channels/index.ts` is the
 |--------|--------|:---:|:---:|
 | `lead/*` | inquiry, offer | No | alex+cherie |
 | `client/*` | active, dormant | No | alex+cherie |
+| `student/*` | support | No | alex+cherie |
 | `financial/*` | bill, refund, receipt | receipt only | cherie |
 | `vendor/*` | warm, cold | cold only | cherie |
 | `meeting-assets/*` | recording, zoom | zoom only | alex |
@@ -243,6 +248,17 @@ classify-backfill.ts relabels historical emails (cap: 25)
 ```
 
 ### Host Router (`host-router.ts`)
+
+Executable label dispositions are enumerated in
+`src/classification-policy.ts`; migration 141 reconciles the live taxonomy.
+`auto_archive` controls Gmail inbox cleanup only and never suppresses canonical
+owner routing.
+Unknown or disabled labels are normalized to a durable `MrGru/other` review
+before persistence. `student/support` and `client/*` create Sales-owned
+pipeline-free SERVICE work. `financial/refund` creates Sales work first and
+then Chief visibility. Routine notification/newsletter/spam labels are explicit
+classify-only outcomes rather than Chief fallbacks. See
+`docs/INBOUND-CUSTOMER-WORK-ROUTING.md`.
 
 Dispatch table for classified emails:
 

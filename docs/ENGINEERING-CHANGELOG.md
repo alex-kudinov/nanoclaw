@@ -8,6 +8,65 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260903-001 — Make inbound customer work single-owner and restart-safe
+
+- Date: 2026-09-03T12:00:00Z
+- Owner/client: Codex with independent Claude Sonnet/high design and
+  implementation review
+- State: ready_for_deploy; implementation, independent review, and local gates
+  complete; commit/migration/deployment/live recovery pending
+- Commit/PR: uncommitted on `codex/support-routing-integrity-20260903`, based on
+  exact post-live lineage `58bfa985`; production release at investigation was
+  `658b4730`
+- Change class: C5 because the change touches host Gmail/classification/run
+  binding and customer-work routing; it does not approve or send email
+- Root cause: the prior design made Mailman independently post a visible
+  escalation and write a raw classification IPC, while only the latter drove
+  host routing. The prompt exposed send tools during inbound classification;
+  an expected approval denial instructed Mailman to escalate. Classification
+  knowledge, live taxonomy, and hard-coded prefix routing disagreed, and the
+  host stored unknown labels as successfully routed. Chief also retained a
+  competing support-draft workflow. Overnight this sent two nonexistent
+  `student/support` labels to Chief, left one visible escalation with no durable
+  classification, and contaminated a correctly Sales-routed case with a false
+  delivery-integrity escalation.
+- Implementation: canonical typed label/disposition policy plus migration 141;
+  validation through enabled taxonomy before insert; `student/support`,
+  `client/*`, and refund response ownership in Sales; explicit classify-only
+  outcomes; typed host-bound `classify_email`; exact stored-source reload;
+  Mailman run-kind proof on Gmail IPC; expected inbound denial containment;
+  one-minute restart-safe recovery for both missing classifications and
+  `routed_at IS NULL`; routed-fallback late-write guard; one Sales drafting
+  owner and sender/message/thread identity guidance.
+- Review: Claude Sonnet/high design R1 returned `GO WITH REQUIRED CHANGES` and
+  identified turn-kind proof, unrouted-row recovery, and late-fallback race
+  coverage. All three are incorporated. Session
+  `6643492d-a22d-4f7c-b8da-0034b11c8568`: eight model calls, 161,011
+  cache-create, 620,249 cache-read, 20,180 output, 161,013 max context; the
+  bounded-review context warning is recorded and no ceremonial design round is
+  planned. Implementation R2 found the missing-run-proof check was fail-open;
+  it was corrected into one behavior-tested validator. R3/R4 verified the
+  reaper/policy/runtime wiring and found only a missing direct expiry assertion;
+  that assertion was added. No unresolved material review finding remains.
+- Verification: pinned Node 22.23.2 typecheck and root build pass. Focused
+  classification/router/Gmail/prompt/run/reaper suites pass, post-correction
+  binding/contract tests pass 59/59, email replay 13/13, email-critical 750/750,
+  and runner build/tests 45/45. Full root is 3,407 pass/32 skip plus two exact
+  unchanged base failures (CNPC wrapper literal and date-stale Trafft fixture),
+  with the final added expiry assertion separately green. Documentation
+  continuity, capability, formatting, and diff checks pass.
+- Deployment/migration: not yet applied. No database, Gmail, Slack, customer,
+  provider, payment, approval, or production runtime mutation has occurred.
+- Rollback/recovery: restore the prior immutable release; use
+  `rollback_141_classification_routing_integrity.sql` only if the new taxonomy
+  rows must be removed. Never rewrite action, approval, or Gmail receipts.
+- Documentation: inbound customer-work routing design, architecture, project
+  map, security model, Mailman/Chief/Sales authorities, active work, and this
+  changelog.
+- Follow-ups: after reviewed deployment, recover only the exact stranded
+  overnight support messages that still have no Sales work/customer response;
+  create approval-gated Sales work only and do not approve or send it.
+
 ### NC-20260902-001 — Bind live minion knowledge to immutable fact authority
 
 - Date: 2026-09-02T11:54:40Z

@@ -11,6 +11,7 @@ import {
 } from './trafft-custom-fields.js';
 import { grantHostGmailResources } from './gmail-ipc-policy.js';
 import { extractHeaderAddresses } from './gmail-parser.js';
+import { classificationPolicyFor } from './classification-policy.js';
 import { logger } from './logger.js';
 import { ingestEmailProcurementObservation } from './procurement-intake.js';
 
@@ -170,13 +171,13 @@ function fmtInbox(p: RouteParams): string {
   ].join('\n');
 }
 
-function fmtClientResponse(p: RouteParams): string {
+function fmtSupportResponse(p: RouteParams): string {
   return [
     '[HANDOFF: mailman\u2192sales]',
     isForwardedInquiry(p)
       ? '[SOURCE: forwarded-email]'
-      : '[SOURCE: email-active-client]',
-    `[CONTEXT: ${p.label} \u2014 already-paid client, draft customer-success response, not a sales pitch]`,
+      : '[SOURCE: email-support]',
+    `[CONTEXT: ${p.label} \u2014 customer/student support, draft a SERVICE response, not a sales pitch and not proof of paid status]`,
     `Lead Email: ${leadEmail(p)}`,
     `From: ${p.senderName} <${p.senderEmail}>`,
     ...recipientContextLines(p),
@@ -347,30 +348,72 @@ function routeChief(params: RouteParams, reason: string): RouteResult {
 export async function routeClassifiedEmail(
   params: RouteParams,
 ): Promise<RouteResult> {
-  // Strip namespace prefix (e.g. "MrGru/client/active" → "client/active").
-  // Taxonomy labels have 2+ slashes when prefixed; bare labels have 0-1.
-  const parts = params.label.split('/');
-  const bare = parts.length >= 3 ? parts.slice(1).join('/') : params.label;
-  const prefix = bare.split('/')[0];
+  const policy = classificationPolicyFor(params.label);
+  if (!policy) {
+    // Unknown labels must be normalized before persistence. Keep this final
+    // defense fail-closed for direct diagnostic callers.
+    logger.error(
+      { label: params.label },
+      'host-router: refused label absent from canonical routing policy',
+    );
+    return {
+      routed: false,
+      action: 'error',
+      target: 'none',
+      reason: 'label absent from canonical routing policy',
+    };
+  }
 
-  if (prefix === 'lead') return routeLead(params);
-  if (prefix === 'client') return writeMailman(fmtClientResponse(params));
-  if (prefix === 'procurement') return routeProcurementEmail(params);
-  if (bare === 'financial/bill') return writeMailman(fmtContador(params));
-  if (bare === 'financial/refund') return routeChief(params, 'refund review');
-  if (prefix === 'meeting-assets') return writeMailman(fmtArchivarista(params));
-  if (['legal', 'recruiting', 'internal'].includes(prefix))
-    return routeChief(params, `${bare} review`);
-  if (bare === 'personal' || bare === 'other')
-    return routeChief(params, `${bare} review`);
+  const routedParams = { ...params, label: policy.label };
+  switch (policy.disposition) {
+    case 'lead':
+      return routeLead(routedParams);
+    case 'support':
+      return writeMailman(fmtSupportResponse(routedParams));
+    case 'refund_support': {
+      // The customer-response owner is always Sales. Chief receives secondary
+      // visibility only after the primary work item exists; a Chief failure
+      // can never strand the reply.
+      const primary = writeMailman(fmtSupportResponse(routedParams));
+      if (!primary.routed) return primary;
+      const visibility = routeChief(
+        routedParams,
+        'refund visibility; Sales owns response',
+      );
+      if (!visibility.routed) {
+        logger.warn(
+          { label: policy.label, reason: visibility.reason },
+          'host-router: secondary refund visibility failed after Sales handoff',
+        );
+      }
+      return { ...primary, target: 'sales+chief' };
+    }
+    case 'contador':
+      return writeMailman(fmtContador(routedParams));
+    case 'procurement':
+      return routeProcurementEmail(routedParams);
+    case 'archivarista':
+      return writeMailman(fmtArchivarista(routedParams));
+    case 'chief':
+      return routeChief(
+        routedParams,
+        `${policy.label.slice('MrGru/'.length)} review`,
+      );
+    case 'classify_only':
+      return { routed: true, action: 'classify_only', target: 'none' };
+  }
 
-  // Unrecognized label — chief fallback
+  /* c8 ignore next -- exhaustive switch guard */
   logger.warn(
-    { label: params.label },
-    'host-router: unrecognized label, falling back to chief',
+    { label: policy.label },
+    'host-router: canonical policy disposition was not handled',
   );
-  const result = routeChief(params, 'unrecognized label');
-  return { ...result, reason: 'unrecognized label prefix' };
+  return {
+    routed: false,
+    action: 'error',
+    target: 'none',
+    reason: 'unhandled disposition',
+  };
 }
 
 // ── Lead sub-route ─────────────────────────────────────────────────

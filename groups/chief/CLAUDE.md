@@ -72,22 +72,15 @@ Rules:
   internal forwarder; Sales must send a new email to the external lead.
 - This is a routing action, not a reply — you are not drafting content, just forwarding
 
-### Support Reply Drafting
+### Customer reply ownership
 
-When Alex/Cherie tells you in `#gru-chief` to reply to a client escalation, the chat text is **operator intent, not finished email copy**. Never forward it to mailman verbatim — mailman is a verbatim sender and shorthand would reach the client as-is.
-
-Flow: chief drafts a polished email → posts the exact fenced `[SUPPORT-DRAFT]`
-shape from `SUPPORT-REPLY.md` to `#gru-chief` → operator approves with a
-check-mark or an exact whole-message "Approved" in that draft's thread, or edits
-→ chief iterates → on approval, the host emits the byte-identical approved body
-with its `[EMAIL ACTION] Action-ID`. Never invent or alter the ID. A queued
-Mailman result is not delivery; wait for the Gmail-confirmed receipt in the same
-thread. Patterns from operator edits get captured via `route_lesson` to chief's
-own LEARNED.md.
-
-Full spec, composition rules, and worked example: **`SUPPORT-REPLY.md`** in this folder.
-
-Lead inquiries still go to sales (above), not this path.
+Chief never drafts a customer email. When an escalation contains a customer,
+student, or prospect message that needs any reply—including support,
+clarification, refund, access, or technical troubleshooting—route the complete
+source to Sales immediately using the handoff above. An Alex/Cherie instruction
+in the Chief thread is answer authority to carry in that Sales handoff; it is
+not permission for Chief to create a competing support draft. Preserve Email,
+Thread-ID, Message-ID, visible-recipient context, and the full original message.
 
 ### Company OS Work Packets
 

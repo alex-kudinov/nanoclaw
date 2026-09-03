@@ -1,28 +1,19 @@
-# Support Reply Drafting
+# Customer Reply Routing
 
-Chief drafts → operator approves → mailman sends. This replaces the old
-"Approved Reply Passthrough" pattern, which forwarded operator chat text
-verbatim and produced unpolished client-facing emails.
+Status: retired by `NC-20260903-001`.
 
-## When this applies
+Chief does not draft or approve customer email. Any customer, student, or
+prospect message that needs a reply is handed to Sales with the exact Email,
+Thread-ID, Message-ID, visible-recipient context, and original message. Sales
+creates the approval-gated `[CLIENT SUPPORT REVIEW]`; Mailman executes only the
+host-approved action.
 
-When Alex or Cherie tells you in `#gru-chief` to reply to a client escalation,
-the chat text is **operator intent, not finished email copy**. Draft a polished
-email from that intent, get explicit approval, then hand off to mailman.
+Historical `[SUPPORT-DRAFT]` cards remain parseable for receipt reconciliation,
+but Chief must never create a new one.
 
-Lead inquiries still route to sales. This path is only for support replies Chief
-is handling itself.
+## Historical parser fixture — not an operational template
 
-## The verbatim contract
-
-**Never relay operator chat text directly to mailman.** Mailman is a verbatim
-sender: whatever you put in the handoff body goes out word-for-word. The host
-will arm an approval only when it can slice the exact recipient, subject, and
-body from the posted card without guessing.
-
-## Step 1 — Post a draft for approval
-
-Post this exact structure to `#gru-chief`:
+The host's backwards-compatible approval parser tests this exact inert fixture.
 
 <!-- APPROVAL-CARD-TEMPLATE:START -->
 
@@ -45,104 +36,3 @@ React ✅ to approve | reply with edits to iterate
 ```
 
 <!-- APPROVAL-CARD-TEMPLATE:END -->
-
-The two `---` lines are mandatory. `Subject:` must be the first nonblank line
-inside them. The email body is everything after `Subject:` and before the
-closing `---`; operator-facing summaries and approval instructions stay outside.
-
-Add `Cc:` only when the latest external sender explicitly asks to copy/CC
-everyone, reply all, or keep named visible participants copied, or when Alex or
-Cherie explicitly directs reply-all in this exact work thread. Every address
-must be a bare address from the host-supplied `Reply-All-Candidates` list,
-preserve its order, exclude `To`, and stay at ten or fewer. Candidates without
-explicit intent do not authorize CC. Never infer or emit BCC. The exact `To` and
-optional `Cc` remain visible on every revised card.
-
-When permitted, insert `Cc: {comma-separated bare addresses}` immediately after
-the `To:` line. Otherwise the base template above remains unchanged and has no
-`Cc:` line.
-
-## Step 2 — Iterate until approved
-
-If the operator replies with edits ("warmer", "shorter", "mention the refund
-window"), post a complete revised `[SUPPORT-DRAFT]` block in the same exact
-structure. Repeat until the operator replies `Approved`, ✅, or "send it".
-
-## Step 3 — Hand off to mailman only after approval
-
-The host normally emits the canonical handoff from the bytes the operator
-approved. If Chief is instructed to emit it, use this exact field structure and
-copy the host-issued Action-ID without inventing or changing it:
-
-```text
-[HANDOFF: chief→mailman]
-To: {recipient_email}
-Cc: {exact approved Cc line when present — otherwise omit}
-Subject: Re: {subject}
-Action-ID: {host_issued_action_id}
-Thread-ID: {gmail_thread_id}
-Original-Message:
-{client's original message verbatim}
----END-ORIGINAL---
-Body:
-{the approved DRAFT RESPONSE body, byte-identical to what was approved}
-```
-
-The body and subject in the handoff must be byte-identical to the approved card.
-Never send without the host-issued Action-ID. A queued Mailman response is not a
-delivery receipt; wait for the Gmail-confirmed outcome in the approval thread.
-
-## Step 4 — Capture iteration as a lesson when it is a pattern
-
-If the operator's edits reveal a recurring pattern, call `route_lesson` with
-`target_agents=['chief']`. One-off corrections do not need a lesson.
-
-## Composition rules
-
-- **Greeting:** "Hi {first_name}," — never "Dear" or "To whom it may concern".
-- **Structure:** a short acknowledgment, the answer/action, and a warm close.
-- **Voice:** warm, direct, and free of filler or jargon.
-- **Length:** under 120 words for routine support; longer only when necessary.
-- **Apologies:** only when Tandem actually caused the problem.
-- **Sign-off:** "Warmly,\nTandem Coaching Team" unless explicitly directed
-  otherwise.
-- **Links:** spell out the URL; do not rely on markdown link rendering.
-
-## Rules
-
-- Use this path only when Alex or Cherie gave intent for a support reply.
-- The fenced DRAFT RESPONSE is polished customer-facing copy, ready to ship.
-- Always preserve the real Thread-ID and original message in the handoff.
-- Never skip approval, even for a trivial reply.
-- Never change the To, optional Cc, subject, or body after approval.
-
-## Worked example
-
-```text
-[SUPPORT-DRAFT]
-Thread-ID: 198abc...
-To: learner@example.com
-
-THEIR REQUEST:
-The learner cannot access the course because the welcome email did not arrive.
-
-> {original message quoted verbatim}
-
-DRAFT RESPONSE:
----
-Subject: Re: Course access
-
-Hi there,
-
-Sorry about the delivery hiccup on the welcome email — that's on us.
-
-You can log in directly at community.tandemcoaching.academy using the email
-address you registered with. If you hit any trouble at the login screen, reply
-here and we'll sort it.
-
-Warmly,
-Tandem Coaching Team
----
-
-React ✅ to approve | reply with edits to iterate
-```

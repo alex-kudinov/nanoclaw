@@ -40,7 +40,6 @@ import { grantHostGmailResources } from '../gmail-ipc-policy.js';
 import {
   handleClassifyLabelWrite,
   isClassificationRouted,
-  isAutoArchiveLabel,
   markClassificationRouted,
 } from '../classify-ipc-handlers.js';
 import {
@@ -779,41 +778,16 @@ export class GmailChannel implements Channel {
         });
         await recordRuleHit(ruleMatch.rule_id);
 
-        // Only skip mailman for auto-archive labels (newsletters, notifications,
-        // receipts, etc.). Actionable labels (client, lead, procurement) still
-        // need mailman for routing to the correct minion.
-        const canSkipMailman = await isAutoArchiveLabel(ruleMatch.target_label);
-        if (canSkipMailman) {
-          logger.info(
-            {
-              messageId: msg.id,
-              ruleId: ruleMatch.rule_id,
-              label: ruleMatch.target_label,
-            },
-            'Gmail: pre-classified via rule runner, skipped mailman',
-          );
-          this.recordTerminalDisposition({
-            messageId: msg.id,
-            disposition: 'accepted',
-            reasonKey: 'rule_auto_archive_completed',
-            observedAt,
-            evidenceParts: [
-              msg.id,
-              ruleMatch.rule_id,
-              ruleMatch.target_label,
-              'rules-runner-v1',
-            ],
-          });
-          return true;
-        }
-        // Actionable label — fall through to mailman for routing
+        // Archive metadata never decides work ownership. Every canonical label
+        // reaches the host disposition policy; classify-only outcomes return
+        // without a handoff, while actionable labels dispatch to their owner.
         logger.info(
           {
             messageId: msg.id,
             ruleId: ruleMatch.rule_id,
             label: ruleMatch.target_label,
           },
-          'Gmail: pre-classified via rule runner, forwarding to mailman for routing',
+          'Gmail: pre-classified via rule runner, applying canonical host disposition',
         );
         // Gate 3: host-router dispatches classified email to target group
         try {

@@ -19,6 +19,7 @@ import { grantHostGmailResources } from './gmail-ipc-policy.js';
 import { extractHeaderAddresses } from './gmail-parser.js';
 import { recordClassification } from './hive-bridge.js';
 import { routeClassifiedEmail } from './host-router.js';
+import { canonicalClassificationLabel } from './classification-policy.js';
 import {
   extractSenderEmail,
   resetRulesCache,
@@ -41,6 +42,8 @@ export interface ClassifyLabelWritePayload {
   confidence: number;
   reasoning: string;
   classifier_version: string;
+  source_container?: string;
+  run_id?: string;
 }
 
 export interface ClassifyCorrectionDetectedPayload {
@@ -82,8 +85,10 @@ export function isClassifyIpcType(type: string): boolean {
 export { writeHostMessage } from './ipc-writer.js';
 
 interface TaxonomyRow {
+  label: string;
   hive_share_target: string[] | null;
   auto_archive: boolean;
+  enabled: boolean;
 }
 
 /** Check if a label's taxonomy entry has auto_archive=true (safe to skip mailman). */
@@ -94,11 +99,11 @@ export async function isAutoArchiveLabel(label: string): Promise<boolean> {
 
 async function loadTaxonomyRow(label: string): Promise<TaxonomyRow | null> {
   const res = await query<TaxonomyRow>(
-    'SELECT hive_share_target, auto_archive FROM classification_taxonomy WHERE label = $1 LIMIT 1',
+    'SELECT label, hive_share_target, auto_archive, enabled FROM classification_taxonomy WHERE label = $1 LIMIT 1',
     [label],
   );
   if (res.rows.length === 0) return null;
-  return res.rows[0];
+  return { ...res.rows[0], enabled: res.rows[0].enabled !== false };
 }
 
 // ---------- Auto-rule creation ----------
@@ -325,31 +330,120 @@ async function routeAfterClassify(
   }
 }
 
+/** Claim and retry one durable actionable classification whose route stalled. */
+export async function retryUnroutedClassification(
+  data: ClassifyLabelWritePayload,
+): Promise<boolean> {
+  const claim = await query<{ label: string }>(
+    `UPDATE email_classifications
+        SET classified_at = NOW()
+      WHERE gmail_message_id = $1
+        AND classifier_version = $2
+        AND routed_at IS NULL
+        AND classified_at < NOW() - INTERVAL '30 seconds'
+    RETURNING label`,
+    [data.gmail_message_id, data.classifier_version],
+  );
+  const label = claim.rows[0]?.label;
+  if (!label) return false;
+  const canonical = canonicalClassificationLabel(label);
+  const taxonomy = canonical ? await loadTaxonomyRow(canonical) : null;
+  if (!canonical || !taxonomy?.enabled) return false;
+  const routed = await routeAfterClassify({ ...data, label: canonical });
+  if (routed) {
+    await markClassificationRouted(
+      data.gmail_message_id,
+      data.classifier_version,
+    );
+  }
+  return routed;
+}
+
 // ---------- Handlers ----------
 
 export async function handleClassifyLabelWrite(
-  data: ClassifyLabelWritePayload,
+  proposed: ClassifyLabelWritePayload,
 ): Promise<void> {
   const start = Date.now();
-  if (data.confidence < CLASSIFIER_CONFIDENCE_FLOOR) {
-    logger.warn(
-      { gmail_message_id: data.gmail_message_id, confidence: data.confidence },
-      'classify_label_write: confidence below floor, escalating to chief',
+  const stored = getMessageById(proposed.gmail_message_id);
+  const trustedRuleRunner = proposed.classifier_version === 'rules-runner-v1';
+  if (!stored && !trustedRuleRunner) {
+    throw new Error(
+      'classification source is not an exact stored inbound Gmail message',
     );
-    writeHostMessage('chief', {
-      type: 'message',
-      text:
-        `[CLASSIFY-REVIEW] Low confidence ${data.confidence.toFixed(2)} for ` +
-        `${data.gmail_message_id} (${data.subject ?? 'no subject'}): proposed "${data.label}" — please confirm or relabel.`,
-    });
-    return;
+  }
+  if (
+    stored &&
+    (stored.is_from_me ||
+      !stored.chat_jid.startsWith('gmail:') ||
+      stored.id !== proposed.gmail_message_id)
+  ) {
+    throw new Error(
+      'classification source is not an exact stored inbound Gmail message',
+    );
+  }
+  let boundProposal = proposed;
+  if (stored) {
+    const blankLineIdx = stored.content.search(/\r?\n\r?\n/);
+    const headerRegion =
+      blankLineIdx >= 0
+        ? stored.content.slice(0, blankLineIdx)
+        : stored.content;
+    const storedThreadId =
+      headerRegion.match(/^Thread-ID:\s*(\S+)\s*$/im)?.[1] || stored.thread_ts;
+    const storedSubject =
+      headerRegion.match(/^Subject:\s*([^\r\n]*)$/im)?.[1] ?? '';
+    const storedFrom = headerRegion.match(/^From:\s*([^\r\n]+)$/im)?.[1] ?? '';
+    boundProposal = {
+      ...proposed,
+      gmail_message_id: stored.id,
+      gmail_thread_id: storedThreadId || proposed.gmail_thread_id,
+      sender_email: extractSenderEmail(storedFrom) || proposed.sender_email,
+      subject: storedSubject,
+    };
+  }
+  const canonical = canonicalClassificationLabel(boundProposal.label);
+  const invalidProposal = !canonical;
+  const lowConfidence = boundProposal.confidence < CLASSIFIER_CONFIDENCE_FLOOR;
+  let data: ClassifyLabelWritePayload = {
+    ...boundProposal,
+    ...(canonical ? { label: canonical } : {}),
+  };
+
+  // Validate before the INSERT. Unknown, disabled, and low-confidence labels
+  // become one durable, routable fallback instead of a visible-but-unrecorded
+  // Chief message or an invalid label falsely stamped routed.
+  if (invalidProposal || lowConfidence) {
+    const reason = invalidProposal
+      ? `invalid or disabled proposed label "${proposed.label}"`
+      : `low-confidence proposal ${proposed.confidence.toFixed(2)} for "${proposed.label}"`;
+    logger.warn(
+      {
+        gmail_message_id: boundProposal.gmail_message_id,
+        label: boundProposal.label,
+        confidence: boundProposal.confidence,
+        reason,
+      },
+      'classify_label_write: normalizing proposal to durable fallback',
+    );
+    data = {
+      ...boundProposal,
+      label: 'MrGru/other',
+      reasoning: `[HOST FALLBACK: ${reason}] ${boundProposal.reasoning}`.slice(
+        0,
+        2000,
+      ),
+    };
   }
 
   const insert = await query(
     `INSERT INTO email_classifications
        (gmail_message_id, gmail_thread_id, sender_email, subject,
         label, confidence, classifier_version, reasoning)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     SELECT $1, $2, $3, $4, $5, $6, $7, $8
+       FROM classification_taxonomy
+      WHERE label = $5
+        AND enabled = true
      ON CONFLICT (gmail_message_id) DO UPDATE SET
        label = EXCLUDED.label,
        classifier_version = EXCLUDED.classifier_version,
@@ -358,6 +452,10 @@ export async function handleClassifyLabelWrite(
        classified_at = NOW(),
        routed_at = NULL
      WHERE email_classifications.classifier_version <> EXCLUDED.classifier_version
+       AND NOT (
+         email_classifications.classifier_version = 'mailman-host-fallback-v1'
+         AND email_classifications.routed_at IS NOT NULL
+       )
      RETURNING id`,
     [
       data.gmail_message_id,
@@ -395,7 +493,7 @@ export async function handleClassifyLabelWrite(
       // authority for this retry even if a replaying model supplies another.
       const retryData = { ...data, label: storedLabel };
       const taxonomy = await loadTaxonomyRow(storedLabel);
-      if (!taxonomy?.auto_archive) {
+      if (taxonomy?.enabled) {
         const routed = await routeAfterClassify(retryData);
         if (routed) {
           await markClassificationRouted(
@@ -404,6 +502,24 @@ export async function handleClassifyLabelWrite(
           );
         }
       }
+      return;
+    }
+    const effectiveTaxonomy = await loadTaxonomyRow(data.label);
+    if (!effectiveTaxonomy?.enabled) {
+      if (data.label === 'MrGru/other') {
+        throw new Error(
+          'canonical MrGru/other fallback is missing or disabled',
+        );
+      }
+      await handleClassifyLabelWrite({
+        ...data,
+        label: 'MrGru/other',
+        reasoning:
+          `[HOST FALLBACK: proposed label "${data.label}" is absent or disabled in the live taxonomy] ${data.reasoning}`.slice(
+            0,
+            2000,
+          ),
+      });
       return;
     }
     logger.debug(
@@ -417,6 +533,11 @@ export async function handleClassifyLabelWrite(
   }
 
   const taxonomy = await loadTaxonomyRow(data.label);
+  if (!taxonomy?.enabled) {
+    throw new Error(
+      `effective classification label is unavailable: ${data.label}`,
+    );
+  }
 
   await replaceClassLabelsOnThread(data.gmail_thread_id, data.label);
 
@@ -427,10 +548,7 @@ export async function handleClassifyLabelWrite(
   // Route through host-router for LLM-originated classifications.
   // The rules-runner path already calls routeClassifiedEmail() in gmail.ts,
   // so skip it here to avoid double-routing.
-  if (
-    data.classifier_version !== 'rules-runner-v1' &&
-    !taxonomy?.auto_archive
-  ) {
+  if (data.classifier_version !== 'rules-runner-v1') {
     // Dedup check: skip if this (message_id, classifier_version) pair was already routed.
     let alreadyRouted = false;
     try {

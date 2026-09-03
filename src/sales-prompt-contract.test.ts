@@ -79,7 +79,7 @@ describe('Sales request-first prompt contract', () => {
   });
 
   it('keeps client support pipeline-free and uses least-privilege entry creation only for genuine sales work', () => {
-    expect(role).toContain('[SOURCE: email-active-client]');
+    expect(role).toContain('[SOURCE: email-support]');
     expect(role).toContain('no Entry ID or pipeline mutation is required');
     expect(workflows).toContain('## Client Support Review (no pipeline entry)');
     expect(workflows).toContain('[CLIENT SUPPORT REVIEW]');
@@ -127,7 +127,7 @@ describe('Sales request-first prompt contract', () => {
       '## Operator-answer fast path (zero tool detours)',
     );
     expect(normalizedContract).toContain(
-      'When the current work root is `[SOURCE: email-active-client]` and an exact message from Alex or Cherie in this same Slack thread supplies the fact or decision that makes every material ask answerable',
+      'When the current work root is `[SOURCE: email-support]` and an exact message from Alex or Cherie in this same Slack thread supplies the fact or decision that makes every material ask answerable',
     );
     expect(normalizedContract).toContain(
       'produce one `[CLIENT SUPPORT REVIEW]` immediately in this same turn',

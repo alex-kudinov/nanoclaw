@@ -567,6 +567,68 @@ Use available_groups.json to find the JID for a group. The folder name must be c
 // --- Gmail tools ---
 
 registerTool(
+  'classify_email',
+  'Record the one required classification for the current inbound Gmail message. The host validates the label and reloads exact sender, subject, thread, message, body, and recipient context from its stored source before routing. Do not separately escalate or reply to the email.',
+  {
+    message_id: z
+      .string()
+      .min(1)
+      .describe('Exact Gmail Message-ID from the current inbound message'),
+    thread_id: z
+      .string()
+      .min(1)
+      .describe('Exact Gmail Thread-ID from the current inbound message'),
+    sender_email: z
+      .string()
+      .email()
+      .describe('Sender email shown in the current inbound message'),
+    subject: z
+      .string()
+      .max(1000)
+      .describe('Subject shown in the current inbound message'),
+    label: z.string().regex(/^MrGru\/[a-z0-9]+(?:[/-][a-z0-9]+)*$/),
+    confidence: z.number().min(0).max(1),
+    reasoning: z.string().min(1).max(2000),
+  },
+  async (args) => {
+    if (groupFolder !== 'mailman') {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: 'Denied: classify_email is restricted to Mailman.',
+          },
+        ],
+        isError: true,
+      };
+    }
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'classify_label_write',
+      gmail_message_id: args.message_id,
+      gmail_thread_id: args.thread_id,
+      sender_email: args.sender_email,
+      subject: args.subject,
+      label: args.label,
+      confidence: args.confidence,
+      reasoning: args.reasoning,
+      classifier_version: 'mailman-v3',
+      groupFolder,
+      source_container: containerName || undefined,
+      run_id: runId,
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: 'Classification queued for host validation and routing. Do not post a separate escalation or customer reply.',
+        },
+      ],
+    };
+  },
+);
+
+registerTool(
   'gmail_reply',
   'Reply to an email thread. The reply goes to the original sender with proper In-Reply-To/References headers and Gmail thread grouping.',
   {
@@ -605,6 +667,7 @@ registerTool(
       emailType: args.email_type,
       groupFolder,
       source_container: containerName || undefined,
+      run_id: runId,
       timestamp: new Date().toISOString(),
     });
 
@@ -667,6 +730,7 @@ registerTool(
       emailType: args.email_type,
       groupFolder,
       source_container: containerName || undefined,
+      run_id: runId,
       timestamp: new Date().toISOString(),
     });
 
@@ -704,6 +768,7 @@ registerTool(
       maxResults: args.max_results,
       groupFolder,
       source_container: containerName || undefined,
+      run_id: runId,
       timestamp: new Date().toISOString(),
     });
 
@@ -730,6 +795,7 @@ registerTool(
       messageId: args.message_id,
       groupFolder,
       source_container: containerName || undefined,
+      run_id: runId,
       timestamp: new Date().toISOString(),
     });
 
@@ -756,6 +822,7 @@ registerTool(
       threadId: args.thread_id,
       groupFolder,
       source_container: containerName || undefined,
+      run_id: runId,
       timestamp: new Date().toISOString(),
     });
 

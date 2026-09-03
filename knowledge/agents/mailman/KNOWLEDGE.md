@@ -604,11 +604,10 @@ When describing the ACC program format to leads, always mention that a significa
 
 ## Email Classification Taxonomy
 
-Mailman classifies every inbound email into exactly one canonical label from
-this taxonomy. Labels follow the pattern `MrGru/{category}` or
-`MrGru/{category}/{subcategory}`. Pick the most specific applicable label. If
-no label fits, use `MrGru/other` and report it to chief so a new taxonomy
-entry can be added.
+Mailman's exact canonical label list and one-action procedure are in
+`/workspace/group/CLAUDE.md`; that executable contract wins over this
+descriptive reference. Pick the most specific applicable label. If no label
+fits, use `MrGru/other`; the host owns review routing.
 
 The `hive_share_target` column indicates which humans care about this category
 (`alex`, `cherie`, or both). When set, classified emails are surfaced in the
@@ -622,11 +621,16 @@ focused on human-needs items.
 ### Leads (prospective clients)
 - 📬 `MrGru/lead/inquiry` — General coaching/program inquiry from a new prospect (hive: cherie+alex, priority 2)
 - 📬 `MrGru/lead/offer` — Inbound RFP or paid engagement offer (hive: cherie+alex, priority 2)
+- 📬 `MrGru/lead/hot` — High-intent enrollment, pricing, or imminent-cohort inquiry (hive: cherie+alex, priority 2)
+- 📬 `MrGru/lead/reply` — Reply in an existing lead/prospect conversation (hive: cherie+alex, priority 2)
 - 📪 `MrGru/lead/declined` — Explicit opt-out, unsubscribe, or "not interested" reply from a lead or prospect (no hive share, priority 0, archived). When a lead sends a clear decline, classify as MrGru/lead/declined and suppress all future automated outreach to that email address.
 
 ### Clients (current or past)
 - 📬 `MrGru/client/active` — Email from a current paying client (hive: cherie+alex, priority 2)
 - 📬 `MrGru/client/dormant` — Email from a past client who has not engaged recently (hive: cherie+alex, priority 1)
+
+### Student and customer support
+- 📬 `MrGru/student/support` — Course, community, login, access, or administrative help; use even when exact paid-client status is unavailable (hive: cherie+alex, priority 2)
 
 ### Financial
 - 📪 `MrGru/financial/receipt` — Payment receipt, invoice confirmation, purchase acknowledgment (hive: cherie, priority 1, archived)
@@ -647,6 +651,7 @@ focused on human-needs items.
 ### Meeting assets
 - 📪 `MrGru/meeting-assets/zoom` — Zoom meeting invitation, link, or access credential (no hive share, priority 0, archived)
 - 📬 `MrGru/meeting-assets/recording` — Zoom or video recording delivery notification (hive: alex, priority 1)
+- 📬 `MrGru/meeting-assets/notes` — Meeting notes or transcript for archival handling (hive: alex, priority 1)
 
 ### Internal
 - 📬 `MrGru/internal/team` — Internal team communication from a known colleague (no hive share, priority 0)
@@ -654,6 +659,7 @@ focused on human-needs items.
 
 ### Legal
 - 📬 `MrGru/legal/contract` — Contract, agreement, or legal document (hive: cherie+alex, priority 2)
+- 📬 `MrGru/legal/nda` — Nondisclosure agreement or confidentiality terms (hive: cherie+alex, priority 2)
 - 📬 `MrGru/legal/notice` — Legal notice, cease-and-desist, or compliance communication (hive: cherie+alex, priority 2)
 
 ### Recruiting
@@ -672,11 +678,11 @@ focused on human-needs items.
 ### Fallbacks
 - 📬 `MrGru/personal` — Personal or family email unrelated to business operations (no hive share, priority 0)
 - 📬 `MrGru/other` — Does not fit any defined category; triggers taxonomy review via chief (no hive share, priority 0)
+- 📪 `MrGru/spam` — Unsolicited irrelevant or malicious commercial email (no hive share, priority 0, archived)
 
 **Rules:**
 - Exactly one `MrGru/*` label per message — the host enforces this via `replaceClassLabelsOnThread`.
-- If you corrected a prior classification, chief should route a `route_lesson` to mailman with a rule like: `"When sender is X, classify as MrGru/Y"`. The host picks up the lesson and backfills matching past emails (up to 25 by default; over that triggers an approval request in `#gru-chief`).
-- Never invent labels outside this list. If something doesn't fit, use `MrGru/other` and flag it.
+- Never invent labels outside the exact list in `/workspace/group/CLAUDE.md`.
 - Classify all emails from Labrika (info@labrika.com or any @labrika.com sender) as `MrGru/notification/monitoring`.
 - Classify all emails from Forwardly (any @forwardly.com sender or subject containing 'Forwardly') as `MrGru/notification/system`. Auto-archive. Do not escalate.
 - Classify internal Tandem calendar invite updates and forwards (from cherie@tandemcoaching.academy or alex@tandemcoach.co) as `MrGru/notification/calendar`, not `MrGru/other`.

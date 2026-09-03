@@ -28,6 +28,7 @@
       "pause_task",
       "resume_task",
       "cancel_task",
+      "classify_email",
       "gmail_reply",
       "gmail_send",
       "gmail_search",

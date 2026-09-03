@@ -377,10 +377,11 @@ describe('host-router', () => {
     expect(group).toBe('mailman');
     const text: string = payload.text;
     expect(text).toContain('[HANDOFF: mailman→sales]');
-    expect(text).toContain('[SOURCE: email-active-client]');
+    expect(text).toContain('[SOURCE: email-support]');
     expect(text).toContain('Lead Email: bob@example.com');
     expect(deriveLeadThreadKey(text)).toBe('lead:bob@example.com');
-    expect(text).toContain('already-paid client');
+    expect(text).toContain('customer/student support');
+    expect(text).toContain('not proof of paid status');
     expect(text).toContain('Body:');
   });
 
@@ -402,7 +403,7 @@ describe('host-router', () => {
   it('stores and routes procurement/* with one exact read-only Gmail resource', async () => {
     const r = await routeClassifiedEmail(
       makeParams({
-        label: 'procurement/rfp',
+        label: 'MrGru/procurement/rfp',
         body: 'Untrusted body that must not be copied into the handoff.',
       }),
     );
@@ -413,7 +414,7 @@ describe('host-router', () => {
     });
     expect(mockProcurementIntake).toHaveBeenCalledWith(
       expect.objectContaining({
-        label: 'procurement/rfp',
+        label: 'MrGru/procurement/rfp',
         messageId: 'msg-1',
         threadId: 'thr-1',
       }),
@@ -492,21 +493,28 @@ describe('host-router', () => {
     expect(text.length).toBeLessThan(800);
   });
 
-  it('routes financial/refund to chief for review', async () => {
+  it('routes financial/refund to Sales first and retains Chief visibility', async () => {
     const r = await routeClassifiedEmail(
       makeParams({ label: 'financial/refund' }),
     );
-    // Delivered as a mailman→chief handoff (written to the mailman source
-    // folder) so an idle chief spawns instead of self-echo-filtering it.
     expect(r).toEqual({
       routed: true,
       action: 'ipc_written',
-      target: 'mailman',
+      target: 'sales+chief',
     });
-    expect(mockWrite.mock.calls[0][0]).toBe('mailman');
-    const text: string = mockWrite.mock.calls[0][1].text;
-    expect(text).toContain('[HANDOFF: mailman→chief]');
-    expect(text).toContain('Reason: refund review');
+    expect(mockWrite).toHaveBeenCalledTimes(2);
+    expect(mockWrite.mock.calls[0][1].text).toContain(
+      '[HANDOFF: mailman→sales]',
+    );
+    expect(mockWrite.mock.calls[0][1].text).toContain(
+      '[SOURCE: email-support]',
+    );
+    expect(mockWrite.mock.calls[1][1].text).toContain(
+      '[HANDOFF: mailman→chief]',
+    );
+    expect(mockWrite.mock.calls[1][1].text).toContain(
+      'Reason: refund visibility; Sales owns response',
+    );
   });
 
   it('routes meeting-assets/* to archivarista via mailman', async () => {
@@ -571,31 +579,18 @@ describe('host-router', () => {
     expect(mockWrite.mock.calls[0][1].text).toContain('Reason: other review');
   });
 
-  it('falls back to chief for unrecognized labels', async () => {
+  it('refuses labels absent from the canonical routing policy', async () => {
     const r = await routeClassifiedEmail(
       makeParams({ label: 'xyzzy/unknown' }),
     );
-    expect(r.routed).toBe(true);
-    expect(r.action).toBe('ipc_written');
-    expect(r.target).toBe('mailman');
-    expect(r.reason).toBe('unrecognized label prefix');
-    expect(mockWrite).toHaveBeenCalledWith(
-      'mailman',
-      expect.objectContaining({ type: 'message' }),
-    );
-    expect(mockWrite.mock.calls[0][1].text).toContain(
-      '[HANDOFF: mailman→chief]',
-    );
-    expect(mockWrite.mock.calls[0][1].text).toContain('Thread-ID: thr-1');
-    expect(mockWrite.mock.calls[0][1].text).toContain('Message-ID: msg-1');
-    expect(mockWrite.mock.calls[0][1].text).toContain('Body-Complete: yes');
-    expect(mockWrite.mock.calls[0][1].text).toContain('Body:\nHello world');
-    expect(mockWrite.mock.calls[0][1].text).toContain(
-      'call gmail_read once with the exact Message-ID above; do not search Gmail',
-    );
-    expect(mockGrant).toHaveBeenCalledWith('chief', {
-      messageId: 'msg-1',
+    expect(r).toEqual({
+      routed: false,
+      action: 'error',
+      target: 'none',
+      reason: 'label absent from canonical routing policy',
     });
+    expect(mockWrite).not.toHaveBeenCalled();
+    expect(mockGrant).not.toHaveBeenCalled();
   });
 
   it('keeps a long chief escalation in one Slack-sized handoff', async () => {
@@ -633,7 +628,7 @@ describe('host-router', () => {
     await routeClassifiedEmail(makeParams({ label: 'financial/bill' }));
     await routeClassifiedEmail(makeParams({ label: 'meeting-assets/zoom' }));
     await routeClassifiedEmail(makeParams({ label: 'legal/nda' }));
-    await routeClassifiedEmail(makeParams({ label: 'unknown-thing' }));
+    await routeClassifiedEmail(makeParams({ label: 'vendor/warm' }));
 
     expect(mockWrite.mock.calls.length).toBeGreaterThanOrEqual(6);
     for (const [, payload] of mockWrite.mock.calls) {
@@ -663,7 +658,7 @@ describe('host-router', () => {
       });
       const text: string = mockWrite.mock.calls[0][1].text;
       expect(text).toContain('[HANDOFF: mailman→sales]');
-      expect(text).toContain('[SOURCE: email-active-client]');
+      expect(text).toContain('[SOURCE: email-support]');
     });
 
     it('routes MrGru/lead/inquiry with no match to inbox', async () => {
@@ -756,16 +751,14 @@ describe('host-router', () => {
       );
     });
 
-    it('routes MrGru/notification/system as unrecognized → chief', async () => {
+    it('treats MrGru/notification/system as classify-only', async () => {
       const r = await routeClassifiedEmail(
         makeParams({ label: 'MrGru/notification/system' }),
       );
       expect(r.routed).toBe(true);
-      expect(r.target).toBe('mailman');
-      expect(r.reason).toBe('unrecognized label prefix');
-      expect(mockWrite.mock.calls[0][1].text).toContain(
-        '[HANDOFF: mailman→chief]',
-      );
+      expect(r.action).toBe('classify_only');
+      expect(r.target).toBe('none');
+      expect(mockWrite).not.toHaveBeenCalled();
     });
   });
 

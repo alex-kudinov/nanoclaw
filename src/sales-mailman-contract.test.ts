@@ -19,6 +19,10 @@ const chiefProcedure = fs.readFileSync(
   path.join(root, 'groups', 'chief', 'SUPPORT-REPLY.md'),
   'utf8',
 );
+const chiefPrompt = fs.readFileSync(
+  path.join(root, 'groups', 'chief', 'CLAUDE.md'),
+  'utf8',
+);
 const mailmanPrompt = fs.readFileSync(
   path.join(root, 'groups', 'mailman', 'CLAUDE.md'),
   'utf8',
@@ -27,7 +31,7 @@ const mailmanProcedure = fs.readFileSync(
   path.join(root, 'groups', 'mailman', 'OUTBOUND-EMAIL.md'),
   'utf8',
 );
-const normalizedChiefProcedure = chiefProcedure.replace(/\s+/g, ' ');
+const normalizedChiefPrompt = chiefPrompt.replace(/\s+/g, ' ');
 const normalizedMailmanPrompt = mailmanPrompt.replace(/\s+/g, ' ');
 const normalizedMailmanProcedure = mailmanProcedure.replace(/\s+/g, ' ');
 
@@ -61,16 +65,15 @@ describe('Sales to Mailman approval contract', () => {
   });
 
   it('requires an operator-visible exact Cc before Chief or Sales can hand off', () => {
-    expect(normalizedChiefProcedure).toContain(
-      'latest external sender explicitly asks to copy/CC',
+    expect(normalizedChiefPrompt).toContain(
+      'Preserve the host-supplied `Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context` lines exactly',
     );
-    expect(normalizedChiefProcedure).toContain(
-      'Alex or Cherie explicitly directs reply-all in this exact work thread',
+    expect(normalizedChiefPrompt).toContain(
+      'They are visible-envelope context, not automatic reply-all permission; BCC is never available.',
     );
-    expect(normalizedChiefProcedure).toContain(
-      'Candidates without explicit intent do not authorize CC.',
+    expect(chiefProcedure).toContain(
+      'Chief does not draft or approve customer email.',
     );
-    expect(chiefProcedure).toContain('Never infer or emit BCC.');
     expect(workflow).toContain(
       "The card's exact `Email:` and optional `Cc:` are operator-visible and immutable",
     );

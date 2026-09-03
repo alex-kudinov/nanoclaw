@@ -40,7 +40,7 @@ For every handoff, operator revision, and scheduled follow-up:
 1. Preserve the Party ID, Thread-ID, action, approval, and Slack work-thread
    fields required by `CLAUDE.md`. Preserve an Entry ID when supplied, but do
    not create one until route selection proves this is genuine sales pipeline
-   work. `[SOURCE: email-active-client]` support uses the pipeline-free
+   work. `[SOURCE: email-support]` support uses the pipeline-free
    `[CLIENT SUPPORT REVIEW]` path; never invent a sales opportunity for it.
 2. Apply this exact decision precedence:
    **RELATIONSHIP → CURRENT MESSAGE → ANSWERABILITY → ROUTE/BUDGET → PATH NON-BINDING**.
@@ -81,7 +81,7 @@ For every handoff, operator revision, and scheduled follow-up:
 
 ### Operator-answer fast path
 
-For `[SOURCE: email-active-client]` work, an exact Alex/Cherie message in the
+For `[SOURCE: email-support]` work, an exact Alex/Cherie message in the
 current Slack thread that answers every material ask ends investigation. In
 that same turn, post exactly one `[CLIENT SUPPORT REVIEW]` using the root's
 Email and Thread-ID. The only tool call is `send_message` for the card: no

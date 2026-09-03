@@ -175,7 +175,7 @@ blocks before send; do not remove or replace recipients to work around it.
 
 Use this only when all are true:
 
-1. the work root carries `[SOURCE: email-active-client]`;
+1. the work root carries `[SOURCE: email-support]`;
 2. the newest substantive operator message is from Alex or Cherie in this exact
    Slack thread;
 3. that message supplies the missing fact or decision needed to answer every
@@ -204,7 +204,7 @@ name the exact missing fact.
 
 ## Client Support Review (no pipeline entry)
 
-Use this path when the handoff is `[SOURCE: email-active-client]` or the current
+Use this path when the handoff is `[SOURCE: email-support]` or the current
 thread contains other exact evidence that this is support for a client,
 student, partner, or existing engagement and route `SERVICE` is answerable.
 This is not a sales opportunity. Do not look up, create, advance, or repurpose a

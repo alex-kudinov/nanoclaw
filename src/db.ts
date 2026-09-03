@@ -1255,6 +1255,32 @@ export function getMessageIdsForJid(chatJid: string): string[] {
   return rows.map((r) => r.id);
 }
 
+/**
+ * Retained raw inbound Gmail rows eligible for classification reconciliation.
+ * Host-routed staging copies and agent/tool output are excluded.
+ */
+export function listRawInboundGmailMessagesBefore(
+  beforeIso: string,
+  limit = 100,
+  afterIso = '1970-01-01T00:00:00.000Z',
+): NewMessage[] {
+  const bounded = Math.max(1, Math.min(500, Math.trunc(limit)));
+  return db
+    .prepare(
+      `SELECT *
+         FROM messages
+        WHERE chat_jid LIKE 'gmail:%'
+          AND is_from_me = 0
+          AND COALESCE(is_bot_message, 0) = 0
+          AND (from_group IS NULL OR from_group = '')
+          AND timestamp >= ?
+          AND timestamp <= ?
+        ORDER BY timestamp DESC
+        LIMIT ?`,
+    )
+    .all(afterIso, beforeIso, bounded) as NewMessage[];
+}
+
 export interface GmailInboundDispositionStoreResult {
   receipt: GmailInboundDispositionReceipt;
   applied: boolean;

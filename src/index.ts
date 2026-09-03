@@ -132,6 +132,7 @@ import {
   setGraderRunContext,
   type GraderRunContext,
 } from './grader-run-context.js';
+import { registerMailmanRunContext } from './mailman-run-context.js';
 import { isApprovalCardSuccessRecap } from './approval-recap.js';
 import { startIpcWatcher } from './ipc.js';
 import { loadJobRegistry, watchJobRegistry } from './job-registry.js';
@@ -198,6 +199,10 @@ import {
 } from './send-watchdog.js';
 import { resolveHumanAuthorizedDiscountTerms } from './human-commercial-term-authorization.js';
 import { runNameReaper } from './contador-name-reaper.js';
+import {
+  GMAIL_CLASSIFICATION_REAPER_INTERVAL_MS,
+  runGmailClassificationReaper,
+} from './gmail-classification-reaper.js';
 import { runChaosLifecycleOutbox } from './chaos-lifecycle-outbox.js';
 import { runChaosLifecycleReconciliation } from './chaos-lifecycle-reconcile.js';
 import { runChaosReconcile } from './chaos-reconciler.js';
@@ -915,8 +920,10 @@ async function processGroupMessages(
       'Other packets visible in the thread are context only and must not be re-attempted.';
   }
   let graderRunId: string | undefined;
+  let agentRunId: string | undefined;
   if (group.folder === GRADER_GROUP_FOLDER && threadTs) {
     graderRunId = crypto.randomUUID();
+    agentRunId = graderRunId;
     const contextBlock = await establishGraderRunContext(
       group,
       chatJid,
@@ -924,6 +931,15 @@ async function processGroupMessages(
       graderRunId,
     );
     if (contextBlock) prompt = `${prompt}\n\n${contextBlock}`;
+  }
+  if (group.folder === 'mailman') {
+    agentRunId = crypto.randomUUID();
+    registerMailmanRunContext({
+      runId: agentRunId,
+      chatJid,
+      threadTs,
+      messages: missedMessages,
+    });
   }
 
   // Advance cursor so the piping path in startMessageLoop won't re-fetch
@@ -1100,7 +1116,7 @@ async function processGroupMessages(
             },
           )
       : undefined,
-    graderRunId,
+    agentRunId,
   );
 
   if (companyWorkPacketAttempt && !companyWorkPacketAttemptFinished) {
@@ -1444,6 +1460,15 @@ async function startMessageLoop(): Promise<void> {
               ? formatHostAssignmentContext(pipedContext)
               : formatHostContextUnavailable('submission-context-unavailable');
             formatted = `${formatted}\n\n${contextBlock}`;
+          }
+          if (group.folder === 'mailman') {
+            pipedRunId = crypto.randomUUID();
+            registerMailmanRunContext({
+              runId: pipedRunId,
+              chatJid,
+              threadTs,
+              messages: messagesToSend,
+            });
           }
 
           // Try piping to an active container first — follow-up messages
@@ -3063,6 +3088,23 @@ async function main(): Promise<void> {
       logger.error({ err }, 'webhook-inbox-reaper: unhandled error');
     });
   }, WEBHOOK_INBOX_REAPER_INTERVAL_MS);
+
+  // Accepted inbound Gmail must not depend on Mailman completing a raw file
+  // write. Reconcile both missing classifications and durable rows whose host
+  // route stalled, including after daemon restart. This never sends email.
+  setInterval(() => {
+    void runGmailClassificationReaper().catch((err) =>
+      logger.error({ err }, 'gmail-classification-reaper: unhandled error'),
+    );
+  }, GMAIL_CLASSIFICATION_REAPER_INTERVAL_MS);
+  setTimeout(() => {
+    void runGmailClassificationReaper().catch((err) =>
+      logger.error(
+        { err },
+        'gmail-classification-reaper: startup invocation failed',
+      ),
+    );
+  }, GMAIL_CLASSIFICATION_REAPER_INTERVAL_MS);
 
   // Trafft sweeper — every 6h. Reconciles Trafft API state against
   // webhook_inbox; synthesizes missing events; advances watermark only on
