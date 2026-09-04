@@ -22,6 +22,7 @@ const https = require('https');
 const crypto = require('crypto');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
+const { resolveCohortLabel, COHORT_COLUMN } = require('./lib/cohort.cjs');
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -469,6 +470,30 @@ async function clearSalesCatchAll(accountingStripeId, receivedStripeId) {
   return rows.length;
 }
 
+async function fillCohortCell(tab, headerRow, sheetRow, cohort) {
+  if (!cohort) return { verified: true, changed: false, value: '' };
+  const colIndex = headerRow.findIndex((header) => header === COHORT_COLUMN);
+  if (colIndex < 0) {
+    throw new Error(`cohort column missing on ${tab}`);
+  }
+  const cell = `${tab}!${colIndexToLetter(colIndex)}${sheetRow}`;
+  const before = String(
+    (await sheetsGet(SHEETS_ROSTER_ID, cell)).values?.[0]?.[0] || '',
+  ).trim();
+  const expected = before || cohort;
+  if (!before) {
+    await sheetsUpdate(SHEETS_ROSTER_ID, cell, [[cohort]]);
+  }
+  const after = String(
+    (await sheetsGet(SHEETS_ROSTER_ID, cell)).values?.[0]?.[0] || '',
+  ).trim();
+  return {
+    verified: after === expected,
+    changed: !before,
+    value: after,
+  };
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Heartbeat (course/community platform) creates the Stripe customer and fires
@@ -530,6 +555,8 @@ async function fetchPaymentData() {
   let stripeCreatedAt = 0;
   let chargeId = '';
   let invoiceId = '';
+  let chargeDescription = '';
+  let chargeMetadata = {};
 
   if (ID_TYPE === 'checkout') {
     const session = await stripeGet(
@@ -540,6 +567,7 @@ async function fetchPaymentData() {
     productName = firstItem?.price?.product?.name || 'Unknown';
     productId = firstItem?.price?.product?.id || '';
     const csMeta = session.metadata || {};
+    chargeMetadata = { ...csMeta };
     customerEmail = session.customer_details?.email || session.customer_email || csMeta.email || '';
     customerName = session.customer_details?.name || csMeta.name || 'Unknown';
     amountCents = session.amount_total || 0;
@@ -558,12 +586,15 @@ async function fetchPaymentData() {
         // also fetch, so both halves read the identical metadata.product —
         // no drift/preservation logic is needed for the slug itself.
         canonicalProductSlug = validateCanonicalProductSlug(pi.metadata?.product);
+        chargeMetadata = { ...chargeMetadata, ...(pi.metadata || {}) };
         invoiceId = typeof pi.invoice === 'string' ? pi.invoice : pi.invoice?.id || '';
         if (pi.latest_charge) {
           chargeId = typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge.id || '';
           const charge = await stripeGet(`/v1/charges/${chargeId}?expand[]=balance_transaction`);
           feeCents = charge.balance_transaction?.fee || 0;
           refundedCents = charge.amount_refunded || 0;
+          chargeDescription = charge.description || '';
+          chargeMetadata = { ...chargeMetadata, ...(charge.metadata || {}) };
           if (customerName === 'Unknown' && charge.billing_details?.name) {
             customerName = charge.billing_details.name;
           }
@@ -575,6 +606,7 @@ async function fetchPaymentData() {
     productName = pi.description || 'Unknown';
     productId = '';
     canonicalProductSlug = validateCanonicalProductSlug(pi.metadata?.product);
+    chargeMetadata = { ...(pi.metadata || {}) };
     // Subscription / installment payments carry a useless PI description
     // ("Subscription creation"); the real product is on the invoice line item.
     // Follow pi.invoice → invoice line → product so the Product Map lookup and
@@ -609,6 +641,8 @@ async function fetchPaymentData() {
       charge = await stripeGet(`/v1/charges/${chargeId}?expand[]=balance_transaction`);
       feeCents = charge.balance_transaction?.fee || 0;
       refundedCents = charge.amount_refunded || 0;
+      chargeDescription = charge.description || '';
+      chargeMetadata = { ...chargeMetadata, ...(charge.metadata || {}) };
     }
 
     const customerId = pi.customer || charge?.customer;
@@ -633,6 +667,7 @@ async function fetchPaymentData() {
     amountCents, currency, paymentStatus, eventType,
     feeCents, refundedCents, lineItems, stripeCreatedAt,
     canonicalTransactionId, canonicalProductSlug, chargeId, invoiceId,
+    chargeDescription, chargeMetadata,
   };
 }
 
@@ -759,6 +794,7 @@ function formatPaymentSummary({
   feeDollars, netDollars, refundedCents, transactionDate, recordedDate,
   accountingStripeId, idType, receivedStripeId, rosterSummary,
   paymentLogResult, studentRosterResult, dbResult, debug, lineItemCount,
+  cohort,
 }) {
   const refundNote = refundedCents > 0
     ? `; $${(refundedCents / 100).toFixed(2)} refunded`
@@ -767,6 +803,7 @@ function formatPaymentSummary({
     `Payment received: ${customerName} — ${productName} — $${amountDollars} ${currency}${refundNote}`,
     `Customer: ${customerEmail}`,
     `Date: ${transactionDate} (recorded: ${recordedDate})`,
+    `Cohort: ${cohort || '(none named by Stripe)'}`,
     `Fee / net: $${feeDollars} / $${netDollars}`,
     `Roster: ${rosterSummary}`,
     `Processing: Payment Log ${paymentLogResult}; Student Roster ${studentRosterResult}; DB ${dbResult}`,
@@ -787,7 +824,7 @@ async function main() {
     amountCents, currency, paymentStatus, eventType,
     feeCents, refundedCents, lineItems, stripeCreatedAt,
     canonicalTransactionId, stripeAccount, canonicalProductSlug,
-    chargeId, invoiceId,
+    chargeId, invoiceId, chargeDescription, chargeMetadata,
   } = fetchResult;
   const accountingStripeId = canonicalTransactionId || STRIPE_ID;
 
@@ -800,6 +837,12 @@ async function main() {
   const amountDollars = (amountCents / 100).toFixed(2);
   const feeDollars = (feeCents / 100).toFixed(2);
   const netDollars = ((amountCents - feeCents) / 100).toFixed(2);
+  const cohort = resolveCohortLabel({
+    chargeMetadata,
+    chargeDescription,
+    productName,
+    purchasedAt: txnDateObj,
+  });
 
   const results = {
     stripe: 'OK',
@@ -1025,6 +1068,12 @@ async function main() {
                 }
               }
               if (writtenRow) {
+                const cohortReadback = await fillCohortCell(
+                  tab,
+                  headerRow,
+                  writtenRow,
+                  cohort,
+                );
                 const colLetter = colIndexToLetter(colIndex);
                 const readback = await sheetsGet(
                   SHEETS_ROSTER_ID,
@@ -1035,10 +1084,10 @@ async function main() {
                   String(row[0] || '').toLowerCase() ===
                   customerEmail.toLowerCase();
                 const targetPresent = Boolean(String(row[colIndex] || '').trim());
-                if (emailMatches && targetPresent) {
+                if (emailMatches && targetPresent && cohortReadback.verified) {
                   verifiedTargets++;
                   rosterResults.push(
-                    `${tab}: ${refundedCents > 0 ? 'OK (refunded)' : 'OK'} (readback verified)`,
+                    `${tab}: ${refundedCents > 0 ? 'OK (refunded)' : 'OK'} (readback verified${cohortReadback.value ? `; cohort ${cohortReadback.value}` : ''})`,
                   );
                 } else {
                   rosterResults.push(`${tab}: ERROR: readback mismatch`);
@@ -1146,15 +1195,17 @@ async function main() {
       email: customerEmail, name: customerName, product: productName,
       prodid: productId, amount: String(amountCents), currency,
       sid: accountingStripeId, status: paymentStatus, evt: eventType,
-      paid: transactionDateISO, legacy: STRIPE_ID,
+      paid: transactionDateISO, legacy: STRIPE_ID, cohort,
     };
     const args = buildPsqlVarArgs(params);
     const sql = `
       BEGIN;
       INSERT INTO payments (email, name, product_name, product_id, amount_cents,
-                            currency, stripe_session_id, payment_status, event_type, paid_at)
+                            currency, stripe_session_id, payment_status, event_type, paid_at,
+                            cohort)
       VALUES (:'email', :'name', :'product', :'prodid', :'amount'::int,
-              :'currency', :'sid', :'status', :'evt', :'paid'::date)
+              :'currency', :'sid', :'status', :'evt', :'paid'::date,
+              NULLIF(:'cohort', ''))
       ON CONFLICT (stripe_session_id) DO UPDATE SET
         email = EXCLUDED.email, name = EXCLUDED.name,
         amount_cents = EXCLUDED.amount_cents,
@@ -1173,12 +1224,13 @@ async function main() {
           THEN EXCLUDED.product_name ELSE payments.product_name END,
         product_id = CASE WHEN EXCLUDED.product_id <> '' THEN EXCLUDED.product_id
                           ELSE payments.product_id END,
+        cohort = COALESCE(NULLIF(BTRIM(payments.cohort), ''), EXCLUDED.cohort),
         event_type = CASE
           WHEN EXCLUDED.event_type = 'checkout.session.completed'
           THEN EXCLUDED.event_type ELSE payments.event_type END;
       DELETE FROM payments WHERE stripe_session_id = :'legacy' AND :'legacy' <> :'sid';
       COMMIT;
-      SELECT stripe_session_id
+      SELECT stripe_session_id, COALESCE(cohort, '')
         FROM payments
        WHERE stripe_session_id = :'sid';`;
     // Fed on stdin via -f -, not -c: psql performs :'var' interpolation only
@@ -1193,10 +1245,12 @@ async function main() {
         encoding: 'utf8',
       },
     );
-    postgresVerified = dbReadback
+    const dbRow = dbReadback
       .split('\n')
       .map((line) => line.trim())
-      .includes(accountingStripeId);
+      .find((line) => line.startsWith(`${accountingStripeId}|`));
+    const dbCohort = dbRow?.slice(accountingStripeId.length + 1).trim() || '';
+    postgresVerified = Boolean(dbRow) && (!cohort || Boolean(dbCohort));
     results.db = postgresVerified
       ? 'OK (readback verified)'
       : 'ERROR: Postgres payment readback missing';
@@ -1220,6 +1274,7 @@ async function main() {
     dbResult: results.db,
     debug: fetchResult._debug,
     lineItemCount: lineItems.length,
+    cohort,
   }));
 
   const fulfillment = derivePaymentFulfillmentOutcome({

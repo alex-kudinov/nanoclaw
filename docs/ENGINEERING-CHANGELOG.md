@@ -8,6 +8,67 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260904-001 — Restore Stripe webhook delivery and tracked MCS cohort recording
+
+- Date: 2026-09-04T20:36:32Z
+- Owner/client: Codex with independent Claude Sonnet/high review complete
+- State: ready_for_deploy; ingress and the exact reported payment are repaired,
+  and the reviewed cohort-lineage correction is locally verified
+- Commit/PR: uncommitted on `codex/stripe-webhook-recovery-20260904`, based on
+  exact live release `a00edaeb7d9709d6d4069ab5a9719d7ef6b3d3ef`
+- Change class: C5 because a production Cloudflare security boundary changed;
+  the payment/roster repair is C4
+- Root cause: Cloudflare OWASP rule `949110` assigned one valid Stripe JSON body
+  an inbound-anomaly score above its block threshold, returning 403 for the
+  original delivery and first automatic retry while adjacent deliveries to the
+  same endpoint returned 200. Separately, NC-20260817-001 had deployed the MCS
+  cohort resolver/writer from uncommitted operational files; later immutable
+  releases correctly omitted that helper and silently lost cohort recording.
+- External repair: active custom rule `44343c96ea2c43789a39319c1f68be11`
+  skips managed WAF rules only for exact host
+  `webhooks.tandemcoach.co`, method `POST`, and path
+  `/webhook/stripe-payment/stripetandem/webhook`. Custom rules, rate limits,
+  and n8n Stripe-signature verification remain active. Manual resend of the
+  original event returned 200; fulfillment case 55 advanced from
+  `provider_delivery_missing` to `complete` with verified Stripe source,
+  Payment Log, PostgreSQL, Student Roster, and final receipts. The live MCS row
+  was read back; no payment/refund/customer communication was created.
+- Local correction: the tracked cohort resolver supports legacy product/charge
+  text plus current `cohort_program`, `cohort_start`, `cohort_range`, and
+  plural `cohort_label` metadata. The processor fills only blank roster and
+  Postgres cohort values, preserves operator values, and requires cohort
+  readback before roster success. The release builder refuses an untracked or
+  missing resolver dependency.
+- Independent review: R1 found one material scope defect: legacy free-text
+  month/weekday matching could assign a cohort to an unrelated product or make
+  its roster fail. The resolver now requires explicit MCS practicum evidence
+  and fails closed on a contradictory program. Focused tests pass after the
+  correction; fresh R2 returned `NO MATERIAL FINDINGS`. R1 used eight model
+  calls, 132,409 cache-create, 455,355 cache-read, 24,684 output, and 132,411
+  maximum context tokens, exceeding the bounded-review context target because
+  the full processor file was large. Narrow R2 used ten calls, 43,658
+  cache-create, 404,385 cache-read, 6,878 output, and 52,224 maximum context.
+- Files: `tools/contador/process-payment.cjs` and tests;
+  `tools/contador/lib/cohort.cjs` and tests;
+  `src/contador-cohort-release.test.ts`; `scripts/build-release.mjs`; Contador,
+  release, project-map, active-work, and changelog documentation.
+- Verification: exact live Stripe resend 200; case 55 version 1 complete with
+  all six version-1 receipts; MCS row 192 read back. Local processor/host/store/
+  webhook/reaper and release-lineage tests pass 160/160; Node 22.23.2 syntax,
+  typecheck, build, and continuity pass. Full root is 3,440 pass / 32 skip /
+  two unchanged recorded base failures: the CNPC wrapper-literal expectation
+  and date-stale Trafft fixture. Immutable release, deployment, and exact
+  cohort repair remain pending.
+- Deployment/migration: Cloudflare rule deployed; no database migration and no
+  NanoClaw source deployment yet.
+- Rollback/recovery: disable/delete only custom rule
+  `44343c96ea2c43789a39319c1f68be11` to restore prior WAF behavior. Source
+  rollback returns to `a00edaeb` but restores the missing-cohort defect.
+- Documentation: active work, Contador closed-loop design, release-integrity
+  runbook, project map, root source map, and this changelog.
+- Follow-ups: commit/push and deploy the exact reviewed descendant, then
+  repair/read back only the reported payment's MCS cohort.
+
 ### NC-20260903-002 — Make inbound customer work single-owner and restart-safe
 
 - Date: 2026-09-03T12:00:00Z

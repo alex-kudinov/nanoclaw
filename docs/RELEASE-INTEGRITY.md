@@ -644,6 +644,12 @@ deployment.
 Development runs may omit the manifest only when production enforcement is not
 enabled. They still require the exact `.nvmrc` runtime.
 
+Release-time runtime dependencies must be Git-tracked, not merely present in an
+operational checkout. The builder explicitly refuses to package Contador when
+`tools/contador/process-payment.cjs` or its required cohort resolver is absent
+from the tracked input set; this prevents a locally deployed helper from
+silently disappearing when immutable release ownership takes effect.
+
 ## Exact runtime
 
 The repository pins Node `22.23.2` in `.nvmrc`, both package engine contracts,

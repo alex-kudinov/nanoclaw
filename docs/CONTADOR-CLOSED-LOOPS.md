@@ -165,6 +165,21 @@ this bounded slice; their replay semantics were not broadened implicitly.
 
 ## Loop B — Stripe payment to correct student
 
+### Cloudflare ingress and cohort lineage checkpoint (`NC-20260904-001`)
+
+On 2026-09-04 Cloudflare's OWASP managed rule `949110` blocked one valid Tandem
+`payment_intent.succeeded` body at the exact n8n Stripe endpoint while adjacent
+deliveries to the same endpoint returned 200. The repair skips managed WAF
+inspection only for the exact `POST` host/path; custom rules and rate limits
+remain active, and n8n's Stripe Trigger remains the signature boundary.
+
+The recovered payment exposed a separate authority defect: the MCS cohort
+resolver and writer had been deployed from uncommitted operational files under
+NC-20260817-001. Immutable releases later became the runtime authority and
+correctly omitted those files, so a payment could complete with a blank cohort.
+The resolver is now a required tracked release input and supports both legacy
+cohort slugs/text and the current `cohort_start` + `cohort_label` metadata.
+
 ### Current path
 
 ```text

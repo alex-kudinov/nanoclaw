@@ -130,6 +130,15 @@ try {
     .toString('utf8')
     .split('\0')
     .filter(Boolean);
+  const requiredTrackedRuntimeInputs = [
+    'tools/contador/process-payment.cjs',
+    'tools/contador/lib/cohort.cjs',
+  ];
+  for (const relative of requiredTrackedRuntimeInputs) {
+    if (!tracked.includes(relative)) {
+      throw new Error(`required tracked runtime input missing: ${relative}`);
+    }
+  }
   tracked.push(
     'data/business/migrations/nanoclaw-v2/119_company_work_job_runs.sql',
     'data/business/migrations/nanoclaw-v2/rollback_119_company_work_job_runs.sql',

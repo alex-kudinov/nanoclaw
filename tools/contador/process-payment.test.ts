@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const {
@@ -103,12 +104,14 @@ describe('formatPaymentSummary', () => {
       dbResult: 'OK',
       debug: 'keys=1 | try-0=tandem | ok-0=tandem',
       lineItemCount: 1,
+      cohort: 'September 2026 – Friday',
     });
 
     expect(summary.split('\n')[0]).toBe(
       'Payment received: Lin Chen — Mentor Coaching Foundations — $999.00 USD',
     );
     expect(summary).not.toContain('(v3-debug)');
+    expect(summary).toContain('Cohort: September 2026 – Friday');
     expect(summary.split('\n').at(-1)).toBe(
       'Diagnostics: keys=1 | try-0=tandem | ok-0=tandem',
     );
@@ -135,12 +138,26 @@ describe('formatPaymentSummary', () => {
       dbResult: 'OK',
       debug: 'no-debug',
       lineItemCount: 1,
+      cohort: '',
     });
 
     expect(summary.split('\n')[0]).toBe(
       'Payment received: Lin — Course — $100.00 USD; $25.00 refunded',
     );
     expect(summary).not.toContain('Diagnostics:');
+    expect(summary).toContain('Cohort: (none named by Stripe)');
+  });
+});
+
+describe('cohort persistence contract', () => {
+  it('fills a missing Postgres cohort without overwriting an existing operator value', () => {
+    const source = readFileSync(new URL('./process-payment.cjs', import.meta.url), 'utf8');
+    expect(source).toContain(
+      "cohort = COALESCE(NULLIF(BTRIM(payments.cohort), ''), EXCLUDED.cohort)",
+    );
+    expect(source).not.toContain(
+      'cohort = COALESCE(EXCLUDED.cohort, payments.cohort)',
+    );
   });
 });
 
