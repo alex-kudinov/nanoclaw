@@ -12,10 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-04T20:36:32Z
 - Owner/client: Codex with independent Claude Sonnet/high review complete
-- State: ready_for_deploy; ingress and the exact reported payment are repaired,
-  and the reviewed cohort-lineage correction is locally verified
-- Commit/PR: uncommitted on `codex/stripe-webhook-recovery-20260904`, based on
-  exact live release `a00edaeb7d9709d6d4069ab5a9719d7ef6b3d3ef`
+- State: complete; ingress, exact payment/roster/cohort outcome, and the
+  reviewed immutable release are live and read back
+- Commit/PR: pushed implementation
+  `886e258730729a2cade1baee70466e62e2bff59e` on
+  `codex/stripe-webhook-recovery-20260904`, based on exact prior live release
+  `a00edaeb7d9709d6d4069ab5a9719d7ef6b3d3ef`
 - Change class: C5 because a production Cloudflare security boundary changed;
   the payment/roster repair is C4
 - Root cause: Cloudflare OWASP rule `949110` assigned one valid Stripe JSON body
@@ -58,16 +60,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   typecheck, build, and continuity pass. Full root is 3,440 pass / 32 skip /
   two unchanged recorded base failures: the CNPC wrapper-literal expectation
   and date-stale Trafft fixture. Immutable release, deployment, and exact
-  cohort repair remain pending.
-- Deployment/migration: Cloudflare rule deployed; no database migration and no
-  NanoClaw source deployment yet.
+  cohort repair subsequently passed as recorded below.
+- Deployment/migration: no migration. Immutable release `886e2587` has source
+  tree `f5809a87`, artifact SHA-256 `d4b739ee` over 1,040 files, and archive
+  SHA-256 `94082123`; fresh local and Mini extraction/runtime verification
+  passed under Node 22.23.2, including the tracked cohort dependency and exact
+  current-metadata resolution. Mode-0700 backup
+  `NC-20260904-001-20260904T205215Z` contains WAL-safe SQLite, readable custom
+  PostgreSQL, prior plist, and prior release evidence. After zero active/
+  waiting/outgoing/Stripe work, activation changed only the three release
+  pointers and retained rollback plist
+  `com.nanoclaw.plist.rollback-a00edaeb7d97-2026-09-04T20-52-58-696Z`.
+  `/health` now proves exact release/code root, Node 22.23.2, one healthy
+  service, connected Gmail/Slack, empty queues/containers, and healthy Stripe
+  parity.
+- Exact cohort repair: the first direct operator run proved the installed
+  resolver but had no host service-account/Postgres path and made no roster/DB
+  write. A second run used the exact host service-account path and hit the same
+  transient Product Map timeout while updating the idempotent Payment Log; a
+  third run added exact `PGDATABASE`, persisted/read back the Postgres cohort,
+  and again held on the transient roster GET. One exact blank-only repair then
+  wrote `MCS!J192` and read it back. Final checks prove matching roster identity,
+  MCS Practicum date `9/4/2026`, cohort `September 2026 – Friday`, succeeded
+  Payment Log, Postgres payment cohort, unchanged complete case 55, and healthy
+  release/service state.
 - Rollback/recovery: disable/delete only custom rule
   `44343c96ea2c43789a39319c1f68be11` to restore prior WAF behavior. Source
   rollback returns to `a00edaeb` but restores the missing-cohort defect.
 - Documentation: active work, Contador closed-loop design, release-integrity
   runbook, project map, root source map, and this changelog.
-- Follow-ups: commit/push and deploy the exact reviewed descendant, then
-  repair/read back only the reported payment's MCS cohort.
+- Follow-ups: none for this incident. Preserve the Cloudflare and activation
+  rollback IDs; any future signed Stripe payload block or missing cohort is a
+  fresh regression.
 
 ### NC-20260903-002 — Make inbound customer work single-owner and restart-safe
 
