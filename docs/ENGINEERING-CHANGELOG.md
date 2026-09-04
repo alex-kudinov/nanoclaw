@@ -8,6 +8,42 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260904-002 — Backfill exact MCS Practicum cohorts
+
+- Date: 2026-09-04T21:07:00Z
+- Owner/client: Codex
+- State: complete; five exact roster/payment cohort gaps are applied and read
+  back, while twelve no-source rows remain honestly blank
+- Commit/PR: uncommitted evidence on `codex/mcs-cohort-backfill-20260904`, based
+  on final NC-001 evidence `daeb8ef4`; live implementation remains reviewed
+  release `886e2587`
+- Change class: C4 because Student Roster and operational payment records were
+  repaired; no money movement or accounting action occurred
+- Audit: 32 MCS rows have a practicum date; 17 cohorts were blank. Five had
+  exact source evidence. Eleven of the remaining twelve expose only the old
+  `MCS - Standard path`, which names no month/weekday; the last has no matching
+  Payment Log, `public.payments`, or Stripe identity result. All twelve remain
+  blank rather than guessed.
+- Applied outcome: exact identity/blank-cell preconditions filled MCS rows 60,
+  159, 166, 186, and 190; immediate readback returned two `September 2026 –
+  Thursday` and three `September 2026 – Friday` values. One matching Postgres
+  payment was already correct; four blank cohorts were transactionally filled,
+  and final readback is five of five matching.
+- Verification: final practicum distribution is 13 Friday, 7 Thursday, and 12
+  blank. Exact five-cell Sheet readback, five-payment Postgres readback, and
+  unchanged verified release/Gmail/Slack/queues/Stripe-parity health pass.
+- Deployment/migration: not applicable; no source, schema, configuration,
+  prompt, service, or release change. This was a bounded production data repair
+  under the cohort behavior already live in `886e2587`.
+- Rollback/recovery: protected mode-0700 backup
+  `NC-20260904-002-20260904T210406Z` contains the exact pre-change Sheet rows
+  and a readable custom `public.payments` dump. Any inverse must target only
+  the five exact Sheet cells and four exact payment rows after value readback.
+- Documentation: active work, this changelog, and
+  `docs/reports/NC-20260904-002-MCS-COHORT-BACKFILL.md`.
+- Follow-ups: none. The twelve unresolved rows need new authoritative evidence,
+  not date inference.
+
 ### NC-20260904-001 — Restore Stripe webhook delivery and tracked MCS cohort recording
 
 - Date: 2026-09-04T20:36:32Z
