@@ -270,6 +270,21 @@ rollback refuses after any row exists. Repository presence grants no authority
 to apply the migration, inspect/reconcile/backfill students, activate adapters
 or projections, change a provider/Sheet/runtime, deploy, or communicate.
 
+Migration 143 is `NC-20260905-005`'s source-only Academy capacity extension to
+migration 142. It defines canonical delivery blocks, exactly one seat pool per
+delivery block in v1, versioned many-offer mappings, checkout/manual/internal
+waitlist reservations, FIFO waitlist entries and human-approved offer state,
+append-only capacity events, and an aggregate occupancy view. Pending and
+active class assignments consume seats; only unexpired held reservations count
+as reserved. Composite foreign keys preserve order/seat and pool/waitlist/
+reservation agreement, and the assignment delivery-block foreign key is
+`NOT VALID` so no blind historical backfill is inferred. Migration 143 is
+packaged but unapplied and unwired, grants only `nanoclaw_admin`, and its
+rollback refuses after any capacity evidence exists. Repository presence does
+not authorize real-student reconciliation, provider or Sheet writes, Capacity
+minion activation, waitlist outreach, checkout or Bookkeeper wiring,
+deployment, live cohort-state changes, or authority cutover.
+
 ## Connection
 
 ```bash

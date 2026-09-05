@@ -1,6 +1,6 @@
 # Academy Capacity Control Plane
 
-Status: accepted architecture v1; design and Company OS portfolio authority only
+Status: accepted architecture v1; local dark extension implemented by `NC-20260905-005`; migration 143 remains unapplied and unwired
 
 Task: `NC-20260905-004`
 
@@ -31,6 +31,10 @@ message sender.
 This acceptance completes the architecture gate only. It authorizes no
 migration, runtime change, historical student reconciliation, provider write,
 roster mutation, minion activation, waitlist contact, or deployment.
+
+The separately authorized `NC-20260905-005` local dark implementation now
+exists as migration/rollback 143 and `src/academy-capacity.ts`. It does not
+cross any of those operational boundaries.
 
 ## Integration with the existing foundations
 

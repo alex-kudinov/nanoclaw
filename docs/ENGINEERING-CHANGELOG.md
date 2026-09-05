@@ -8,6 +8,46 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260905-005 — Build the local Academy capacity dark extension
+
+- Date: 2026-09-05T20:40:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; reviewed local C2 implementation with commit and
+  release-package receipt pending
+- Commit/PR: `codex/academy-capacity-extension-20260905` from exact reviewed
+  enrollment-foundation tip `deac91a8` plus accepted capacity architecture
+- Change class: C2 reversible local source; no operational system is wired
+- Outcome: adds source-only migration/rollback 143 and a pure capacity command
+  layer for delivery blocks, one-block seat pools, many-offer mapping,
+  checkout/manual/internal-waitlist holds, assignment-derived occupancy,
+  commit/transfer/withdraw, close/reopen/reconcile, FIFO waitlist offers, and
+  exact replay without duplicating enrollment, entitlement, finance,
+  participant, assignment, receipt, or exception authority.
+- SQL: seven admin-only tables plus occupancy view; composite order/seat and
+  pool/entry/reservation integrity; current enrollment/block uniqueness;
+  append-only events; guarded rollback; assignment FK is `NOT VALID` so no
+  historical reconciliation is inferred. Migration remains unapplied.
+- Independent review: one bounded Sonnet/high round returned
+  `NO MATERIAL FINDINGS` after 13 load-bearing checks. Usage: 16 model calls,
+  170,284 cache-create, 1,767,207 cache-read, 34,477 output, and 178,850 maximum
+  context tokens. The 150k target was exceeded because both large command
+  engines remained load-bearing; no second round was needed.
+- Verification: typecheck, format, focused capacity/enrollment 54/54,
+  documentation continuity/capability, JSON, unwired, and diff checks pass.
+  Full root is 3,523 passed / 32 skipped / two exact unchanged predecessor
+  failures in the CNPC wrapper assertion and date-sensitive Trafft fixture.
+- Deployment/migration: neither applicable nor authorized. No migration apply,
+  real-student or provider inspection/reconciliation, live cohort state,
+  checkout/Bookkeeper/Sheet/runtime/minion wiring, message, deployment, or
+  authority cutover occurred.
+- Rollback/recovery: revert the local source commit. The unapplied rollback is
+  guarded against deleting capacity evidence after any later authorized apply.
+- Documentation: accepted architecture, exact dark implementation contract,
+  data guide, Project Map, Active Work, evidence, changelog, and review packet.
+- Follow-ups: every migration proof/application, reconciliation, integration,
+  operator/minion activation, Tandemweb cutover, outreach, deployment, and
+  authority-cutover gate remains separately authorized.
+
 ### NC-20260905-003 — Build the local multi-source enrollment dark foundation
 
 - Date: 2026-09-05T19:20:00Z
