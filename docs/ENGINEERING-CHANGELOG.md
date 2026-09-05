@@ -12,8 +12,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-05T02:30:00Z
 - Owner/client: Codex with two independent Claude Sonnet/high review rounds
-- State: ready_for_deploy; provider packages and no-send
-  verification complete
+- State: complete; provider packages, mounted-file deployment, and live
+  no-send verification complete
+- Commit/release: NanoClaw `86d430d3` pushed on
+  `codex/mcs-sertifier-packages-20260904`; toolbox local-only commit
+  `a1697715` (repository has no remote). The daemon remains exact verified
+  release `886e2587`; mounted prompt/tool/config changes required no rebuild or
+  restart.
 - Change class: C3 because the presets can later issue participant-facing
   credentials and email; this task creates no recipient or credential
 - Outcome: created the complete full MCS/AAMC Practicum graduation package and
@@ -46,6 +51,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   suites, registry, and 65/65 framework suite; NanoClaw prompt 5/5, typecheck,
   continuity, and 3,368 passing/31 skipped full suite with two unchanged
   unrelated failures.
+- Deployment: exact target hashes match between the reviewed worktrees and
+  `mini-claw.local`. The merged live Sertifier registry retains the independent
+  `update-credential` operation. Production registry and focused suites pass;
+  campaign verification is 2/2; both `.invalid` dry runs resolve the intended
+  campaign/components/attributes with `willSend:false`. Release `886e2587` is
+  verified on Node 22.23.2 with Slack and Gmail connected, zero active
+  containers, and no waiting groups. Rollback snapshot:
+  `.release-backups/NC-20260904-003-20260905T0235Z/`.
 - Artifact archive: established Google Drive MCS Graduation and Partial
   Completion folders now contain distinct `Sertifier Package` manifests and
   provider assets; the graduation package includes the 3000px transparent badge

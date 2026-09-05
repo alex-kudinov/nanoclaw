@@ -86,3 +86,21 @@ issued credential, certificate email, Heartbeat mutation, historical credential
 mutation, or individual MCS designation. A real issue still requires verified
 completion, exact identity, prior-credential preflight, durable pending state,
 review, and separate send approval.
+
+## Deployment receipt
+
+- NanoClaw commit `86d430d3` is pushed on
+  `codex/mcs-sertifier-packages-20260904`.
+- Toolbox commit `a1697715` is local-only because that repository has no
+  configured remote.
+- The reviewed prompt, presets, merged registry, issuance tool, and focused
+  tests are byte-identical on `mini-claw.local`; the merged registry preserves
+  the independent `update-credential` operation.
+- Production registry, component/canonical tests, campaign verifier 2/2, and
+  both `.invalid` dry runs pass. `willSend:false` and zero recipients remain
+  verified.
+- The daemon remains verified release `886e2587` on Node 22.23.2 with Slack and
+  Gmail connected, zero active containers, and no waiting groups. No restart
+  was required.
+- Rollback snapshot:
+  `/Users/xbohdpukc/dev/NanoClaw/.release-backups/NC-20260904-003-20260905T0235Z/`.

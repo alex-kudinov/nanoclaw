@@ -1120,6 +1120,9 @@ badge, and requires three per-recipient attributes: completed module/class,
 participant contact hours, and completion date. Its canonical campaign is
 private. Both retain the normal pending-script, review, distinct send approval,
 campaign-fingerprint, duplicate-prevention, and reconciliation gates.
+Both live campaign fingerprints and empty recipient sets are verified. The
+reviewed prompt/tool/config overlay is byte-identical on `mini-claw.local`, and
+both production `.invalid` dry runs return `willSend:false`.
 
 ### Canonical Sertifier campaigns (`NC-20260828-002`)
 
