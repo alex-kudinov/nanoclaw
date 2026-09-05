@@ -440,6 +440,14 @@ No update may rewrite the original fact. Corrections append a superseding fact.
 
 ### 9.3 `student_lifecycle_enrollments`
 
+The original single-enrollment projection below is refined by
+`docs/STUDENT-ENROLLMENT-FOUNDATION.md`. Future implementation must first
+capture an enrollment order, create one or more independently assignable seats,
+and materialize at most one current student enrollment per exact assigned seat.
+Append-only order source references prevent webhook/email/manual aliases from
+creating duplicate orders. Financial agreements and their dated obligations
+remain separate entities. This refinement changes no live schema or runtime.
+
 One current projection per enrollment episode:
 
 - internal enrollment UUID and monotonically increasing version;

@@ -8,6 +8,60 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260905-002 — Define the multi-source student enrollment foundation
+
+- Date: 2026-09-05T18:05:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: complete; reviewed C1 source/design authority, with deployment not
+  applicable
+- Commit/PR: `codex/student-enrollment-foundation-20260905`, based on pushed
+  entitlement catalog `ba4437be`; exact task commit added at closure
+- Change class: C1 internal design, schema, deterministic validation, and
+  synthetic fixtures only
+- Affected systems: Company OS student lifecycle and future Student Roster,
+  Heartbeat, Encharge, Plutio, Stripe, check/ACH/wire, sponsor, scholarship,
+  and manual-enrollment interfaces
+- Outcome: defines enrollment order -> one-or-many seats -> exact student
+  enrollment as the canonical process. Component entitlements, class
+  assignments, financial agreements/obligations, source aliases, projection
+  receipts, and durable exceptions remain separate. Payer identity never
+  silently becomes participant identity; partially named sponsor orders can
+  advance exact seats while unknown seats remain owned.
+- Files: `docs/STUDENT-ENROLLMENT-FOUNDATION.md`;
+  `facts/catalogs/student-enrollment-foundation-v1*.json`;
+  `scripts/validate-student-enrollment-foundation.*`;
+  `src/student-enrollment-foundation.test.ts`; lifecycle/entitlement/project
+  authority and continuity records; bounded Claude review artifacts.
+- Independent review: Sonnet/high R1 found two P0s, two P1s, and one P2:
+  undefined financial-obligation identity, decorative validation gaps, missing
+  source-alias mechanics, missing materialization version tokens, and undefined
+  pending semantics. All were corrected. R2 verified those fixes and found one
+  residual missing assertion for financial-term classification; Codex added the
+  assertion and mutation test. No material finding remains unresolved.
+- Review usage: R1 used four Sonnet model calls, 72,595 cache-create, 126,649
+  cache-read, 18,425 output, and 72,597 maximum context tokens. R2 used seven
+  calls, 69,437 cache-create, 308,531 cache-read, 14,818 output, and 78,003
+  maximum context tokens. Both stayed below the 100k bounded-review target.
+- Verification: foundation validator reports 10 entities / 8 channels / 11
+  commands / 18 exceptions / 10 synthetic scenarios. Focused foundation plus
+  entitlement tests pass 22/22; after the residual correction, the foundation
+  file passes 13/13. Pinned-Node typecheck, build, formatting, documentation
+  continuity/capability checks, JSON parsing, and diff checks pass. Full root
+  is 3,462 passed / 32 skipped / two exact unchanged baseline failures:
+  `cnpc-prompt-contract.test.ts` expects the pre-wrapper registration literal,
+  and the date-sensitive Trafft shadow fixture expects August evidence to
+  remain current. Neither failing file is changed.
+- Deployment/migration: not applicable. No student population was inspected;
+  no reconciliation, backfill, database/provider/runtime write, deployment, or
+  communication occurred.
+- Rollback/recovery: revert task-owned C1 artifacts. Live and external state is
+  unchanged.
+- Documentation: foundation contract, entitlement and lifecycle cross-links,
+  Project Map, Active Work, changelog, and bounded review record.
+- Follow-ups: owner decisions and every dark schema/runtime, read-only
+  reconciliation, operator pilot, provider projection, historical backfill,
+  deployment, and communication gate remain separate.
+
 ### NC-20260905-001 — Version complete-program entitlements before cohort classification
 
 - Date: 2026-09-05T16:25:00Z

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tandemcoach.co/schemas/student-enrollment-foundation-v1.schema.json",
+  "title": "Tandem student enrollment foundation contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "contract_id", "contract_revision", "effective_from", "authority", "phase_boundary", "entities", "source_channels", "state_machines", "state_semantics", "materialization_gates", "commands", "exception_codes", "query_contracts", "projection_policy", "privacy_and_audit", "later_gates", "synthetic_scenarios"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "contract_id": {"const": "student-enrollment-foundation"},
+    "contract_revision": {"type": "integer", "minimum": 1},
+    "effective_from": {"type": "string", "format": "date-time"},
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["canonical_process_owner", "identity_owner", "entitlement_catalog", "native_fact_owners", "projections_not_masters"],
+      "properties": {
+        "canonical_process_owner": {"const": "Company OS"},
+        "identity_owner": {"type": "string", "minLength": 1},
+        "entitlement_catalog": {"const": "facts/catalogs/student-entitlements-v1.json"},
+        "native_fact_owners": {"type": "object", "minProperties": 6},
+        "projections_not_masters": {"$ref": "#/$defs/uniqueStrings"}
+      }
+    },
+    "phase_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "forbidden"],
+      "properties": {"allowed": {"$ref": "#/$defs/uniqueStrings"}, "forbidden": {"$ref": "#/$defs/uniqueStrings"}}
+    },
+    "entities": {"type": "array", "minItems": 10, "items": {"$ref": "#/$defs/entity"}},
+    "source_channels": {"type": "array", "minItems": 8, "items": {"$ref": "#/$defs/sourceChannel"}},
+    "state_machines": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/uniqueStrings"},
+      "required": ["order", "seat", "enrollment", "obligation", "projection", "exception"]
+    },
+    "state_semantics": {
+      "type": "object", "additionalProperties": false, "required": ["enrollment"],
+      "properties": {"enrollment": {"type": "object", "minProperties": 6, "additionalProperties": {"type": "string", "minLength": 1}}}
+    },
+    "materialization_gates": {"type": "array", "minItems": 7, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "commands": {"type": "array", "minItems": 11, "items": {"$ref": "#/$defs/command"}},
+    "exception_codes": {"$ref": "#/$defs/uniqueStrings"},
+    "query_contracts": {"type": "array", "minItems": 5, "items": {"$ref": "#/$defs/query"}},
+    "projection_policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["targets", "verified_requires_exact_readback", "success_exit_or_message_is_not_receipt", "direct_operator_target_edit_is_not_canonical_intake", "heartbeat_access_groups_remain_constant", "heartbeat_marker_groups_are_zero_content_parallel_projection"],
+      "properties": {
+        "targets": {"$ref": "#/$defs/uniqueStrings"},
+        "verified_requires_exact_readback": {"const": true},
+        "success_exit_or_message_is_not_receipt": {"const": true},
+        "direct_operator_target_edit_is_not_canonical_intake": {"const": true},
+        "heartbeat_access_groups_remain_constant": {"const": true},
+        "heartbeat_marker_groups_are_zero_content_parallel_projection": {"const": true}
+      }
+    },
+    "privacy_and_audit": {
+      "type": "object", "additionalProperties": false,
+      "required": ["store_source_references_not_raw_financial_documents", "raw_participant_uploads_short_lived", "append_only_evidence_and_transition_history", "named_actor_for_manual_decisions", "content_minimized_operational_views", "retention_policy_requires_owner_acceptance_before_build"],
+      "properties": {
+        "store_source_references_not_raw_financial_documents": {"const": true},
+        "raw_participant_uploads_short_lived": {"const": true},
+        "append_only_evidence_and_transition_history": {"const": true},
+        "named_actor_for_manual_decisions": {"const": true},
+        "content_minimized_operational_views": {"const": true},
+        "retention_policy_requires_owner_acceptance_before_build": {"const": true}
+      }
+    },
+    "later_gates": {"$ref": "#/$defs/uniqueStrings"},
+    "synthetic_scenarios": {"type": "array", "minItems": 8, "items": {"$ref": "#/$defs/scenario"}}
+  },
+  "$defs": {
+    "key": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$"},
+    "uniqueStrings": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "entity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "cardinality", "identity", "purpose"],
+      "properties": {"key": {"$ref": "#/$defs/key"}, "cardinality": {"type": "string"}, "identity": {"type": "string"}, "purpose": {"type": "string"}}
+    },
+    "sourceChannel": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "payment_required", "allows_multiple_seats", "participant_evidence", "payer_equals_participant"],
+      "properties": {
+        "key": {"$ref": "#/$defs/key"}, "payment_required": {"type": "boolean"}, "allows_multiple_seats": {"type": "boolean"},
+        "participant_evidence": {"const": "required"},
+        "payer_equals_participant": {"enum": ["only_with_explicit_self_purchase_evidence", "never_inferred", "not_applicable"]}
+      }
+    },
+    "command": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "writes", "requires"],
+      "properties": {"key": {"$ref": "#/$defs/key"}, "writes": {"enum": ["canonical_only", "append_only", "outbox_only"]}, "requires": {"$ref": "#/$defs/uniqueStrings"}}
+    },
+    "query": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "starts_from", "requires", "forbids"],
+      "properties": {"key": {"$ref": "#/$defs/key"}, "starts_from": {"$ref": "#/$defs/key"}, "requires": {"$ref": "#/$defs/uniqueStrings"}, "forbids": {"$ref": "#/$defs/uniqueStrings"}}
+    },
+    "scenario": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "channel", "seats", "participant_state", "expected"],
+      "properties": {"key": {"$ref": "#/$defs/key"}, "channel": {"$ref": "#/$defs/key"}, "seats": {"type": "integer", "minimum": 1}, "participant_state": {"enum": ["exact", "partial", "missing"]}, "expected": {"type": "string", "minLength": 1}}
+    }
+  }
+}

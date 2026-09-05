@@ -1,0 +1,177 @@
+{
+  "schema_version": "1.0",
+  "contract_id": "student-enrollment-foundation",
+  "contract_revision": 1,
+  "effective_from": "2026-09-05T00:00:00Z",
+  "authority": {
+    "canonical_process_owner": "Company OS",
+    "identity_owner": "business_v2 Party Context with source-bound external references",
+    "entitlement_catalog": "facts/catalogs/student-entitlements-v1.json",
+    "native_fact_owners": {
+      "payment": ["Stripe", "Plutio invoice evidence", "bank or check receipt"],
+      "participant": ["checkout or application", "sponsor participant roster", "operator-confirmed source evidence"],
+      "course_access": ["Heartbeat membership", "verified provisioner receipt"],
+      "schedule": ["accepted delivery-block catalog", "Google Calendar or Trafft where explicitly mapped"],
+      "learning_progress": ["Heartbeat documented API or webhook"],
+      "communication": ["purpose-specific consent and suppression ledgers"]
+    },
+    "projections_not_masters": ["Student Roster", "Heartbeat", "Encharge", "Plutio student projects"]
+  },
+  "phase_boundary": {
+    "allowed": ["design", "schemas", "synthetic fixtures", "deterministic validation", "documentation", "independent review"],
+    "forbidden": ["historical student inspection", "reconciliation", "backfill", "provider write", "database migration", "runtime change", "deployment", "student communication"]
+  },
+  "entities": [
+    {
+      "key": "enrollment_order",
+      "cardinality": "one_per_commercial_or_grant_episode",
+      "identity": "order_id plus immutable source references",
+      "purpose": "Captures why and under what commercial or grant authority seats exist; it is not a student record."
+    },
+    {
+      "key": "enrollment_seat",
+      "cardinality": "one_or_many_per_order",
+      "identity": "order_id plus stable seat_id",
+      "purpose": "Represents one participant slot; it may remain unassigned without inventing a student."
+    },
+    {
+      "key": "student_enrollment",
+      "cardinality": "zero_or_one_current_materialization_per_assigned_seat",
+      "identity": "enrollment_id plus version; never party plus course",
+      "purpose": "Binds one exact participant to one offer and frozen bundle version for one enrollment episode."
+    },
+    {
+      "key": "component_entitlement",
+      "cardinality": "many_per_student_enrollment",
+      "identity": "enrollment_id plus component_key plus grant episode",
+      "purpose": "Materializes catalog promises independently of scheduling, consumption, progress, or finance."
+    },
+    {
+      "key": "class_assignment",
+      "cardinality": "zero_or_many_per_student_enrollment",
+      "identity": "assignment_id plus immutable delivery_block_key",
+      "purpose": "Names the exact scheduled class or series; it is the source for class lists and future marker projection."
+    },
+    {
+      "key": "financial_agreement",
+      "cardinality": "zero_or_one_per_order",
+      "identity": "agreement_id plus source references",
+      "purpose": "Owns actual obligations and payment schedule; entitlement alone never creates money due."
+    },
+    {
+      "key": "financial_obligation",
+      "cardinality": "many_per_financial_agreement",
+      "identity": "agreement_id plus stable obligation_id plus version",
+      "purpose": "Represents one dated amount or no-payment disposition whose independent state is the only source for what is actually due."
+    },
+    {
+      "key": "order_source_reference",
+      "cardinality": "one_or_many_per_order",
+      "identity": "source_scope plus source_object_type plus source_object_id",
+      "purpose": "Links provider and operator aliases to one order; a conflicting reuse is held instead of creating or merging an order."
+    },
+    {
+      "key": "projection_receipt",
+      "cardinality": "many_per_target_and_subject_version",
+      "identity": "target plus subject_type plus subject_id plus subject_version plus attempt",
+      "purpose": "Proves requested, applied, and read-back state for Roster, Heartbeat, Encharge, or Plutio."
+    },
+    {
+      "key": "enrollment_exception",
+      "cardinality": "zero_or_many_per_order_seat_enrollment_or_projection",
+      "identity": "stable fingerprint plus affected object",
+      "purpose": "Keeps missing or conflicting work owned until evidence-backed resolution."
+    }
+  ],
+  "source_channels": [
+    {"key":"website_stripe_checkout","payment_required":true,"allows_multiple_seats":false,"participant_evidence":"required","payer_equals_participant":"only_with_explicit_self_purchase_evidence"},
+    {"key":"manual_stripe_payment","payment_required":true,"allows_multiple_seats":true,"participant_evidence":"required","payer_equals_participant":"never_inferred"},
+    {"key":"plutio_invoice_or_contract","payment_required":true,"allows_multiple_seats":true,"participant_evidence":"required","payer_equals_participant":"never_inferred"},
+    {"key":"check_ach_or_wire","payment_required":true,"allows_multiple_seats":true,"participant_evidence":"required","payer_equals_participant":"never_inferred"},
+    {"key":"sponsored_cohort","payment_required":true,"allows_multiple_seats":true,"participant_evidence":"required","payer_equals_participant":"never_inferred"},
+    {"key":"scholarship","payment_required":false,"allows_multiple_seats":true,"participant_evidence":"required","payer_equals_participant":"not_applicable"},
+    {"key":"complimentary_owner_grant","payment_required":false,"allows_multiple_seats":true,"participant_evidence":"required","payer_equals_participant":"not_applicable"},
+    {"key":"migration_or_correction","payment_required":false,"allows_multiple_seats":true,"participant_evidence":"required","payer_equals_participant":"never_inferred"}
+  ],
+  "state_machines": {
+    "order": ["captured", "needs_source_evidence", "needs_offer", "needs_financial_terms", "needs_participants", "ready_to_materialize", "partially_materialized", "materialized", "held", "cancelled"],
+    "seat": ["unassigned", "assigned", "accepted", "materialized", "transferred", "cancelled"],
+    "enrollment": ["pending", "active", "held", "completed", "withdrawn", "cancelled"],
+    "obligation": ["not_due", "due", "paid", "waived", "cancelled", "refunded", "disputed"],
+    "projection": ["not_requested", "queued", "applied", "verified", "failed", "held", "superseded"],
+    "exception": ["open", "acknowledged", "resolved", "accepted_no_action", "superseded"]
+  },
+  "state_semantics": {
+    "enrollment": {
+      "pending": "Materialized with a future effective start or a separately accepted activation condition; no projection may represent it as active.",
+      "active": "Effective and not held, withdrawn, cancelled, or completed.",
+      "held": "Materialized but blocked by an explicit policy or evidence exception.",
+      "completed": "Program-level completion established by its own accepted criteria, not by access alone.",
+      "withdrawn": "Participant ended participation under an explicit sourced decision.",
+      "cancelled": "Enrollment was cancelled before activation or under an explicit sourced correction."
+    }
+  },
+  "materialization_gates": [
+    "order_has_immutable_source_reference",
+    "offer_key_and_bundle_version_are_exact",
+    "seat_is_assigned_to_one_exact_party",
+    "participant_evidence_is_source_bound",
+    "payer_participant_relationship_is_explicit",
+    "required_financial_terms_are_classified",
+    "no_blocking_identity_offer_or_entitlement_conflict"
+  ],
+  "commands": [
+    {"key":"capture_order","writes":"canonical_only","requires":["source_channel", "idempotency_key", "source_reference"]},
+    {"key":"link_source_reference","writes":"append_only","requires":["order_version", "source_scope", "source_object_type", "source_object_id", "idempotency_key"]},
+    {"key":"attach_evidence","writes":"append_only","requires":["subject_version", "evidence_type", "source_reference", "observed_at"]},
+    {"key":"create_seats","writes":"canonical_only","requires":["order_version", "seat_count_authority"]},
+    {"key":"assign_participant","writes":"canonical_only","requires":["seat_version", "party_reference", "participant_evidence"]},
+    {"key":"materialize_enrollment","writes":"canonical_only","requires":["order_version", "seat_version", "all_materialization_gates"]},
+    {"key":"assign_class","writes":"canonical_only","requires":["enrollment_version", "component_entitlement", "delivery_block_key", "schedule_evidence"]},
+    {"key":"request_projection","writes":"outbox_only","requires":["subject_version", "target", "idempotency_key"]},
+    {"key":"record_projection_readback","writes":"append_only","requires":["projection_attempt", "exact_target_readback"]},
+    {"key":"resolve_exception","writes":"append_only","requires":["exception_version", "resolution_evidence", "named_actor"]},
+    {"key":"correct_or_transfer","writes":"append_only","requires":["current_version", "reason_code", "source_evidence"]}
+  ],
+  "exception_codes": [
+    "source_evidence_missing", "offer_unknown", "bundle_version_unknown", "financial_terms_unknown", "seat_count_mismatch", "participant_missing", "participant_ambiguous", "payer_participant_relationship_missing", "duplicate_source_conflict", "class_assignment_missing", "delivery_block_unknown", "entitlement_conflict", "projection_failed", "projection_readback_missing", "roster_drift", "heartbeat_access_drift", "communication_identity_missing", "consent_or_suppression_unknown"
+  ],
+  "query_contracts": [
+    {"key":"class_recipients","starts_from":"class_assignment","requires":["active_enrollment", "verified_contact", "purpose_eligible", "no_delivery_hold"],"forbids":["payer_email", "payment_channel", "broad_access_group"]},
+    {"key":"cohort_roster","starts_from":"class_assignment","requires":["delivery_block_key", "current_assignment_version"],"forbids":["product_name_guess", "payment_date_guess"]},
+    {"key":"next_payment_due","starts_from":"financial_obligation","requires":["actual_agreement", "due_date", "current_obligation_state"],"forbids":["entitlement_only", "next_module_assumption"]},
+    {"key":"unassigned_sponsor_seats","starts_from":"enrollment_seat","requires":["sponsor_order", "unassigned_state"],"forbids":["invented_participant"]},
+    {"key":"fulfillment_exceptions","starts_from":"enrollment_exception","requires":["open_state", "owner", "review_time"],"forbids":["slack_only_status"]}
+  ],
+  "projection_policy": {
+    "targets": ["student_roster", "heartbeat", "encharge", "plutio"],
+    "verified_requires_exact_readback": true,
+    "success_exit_or_message_is_not_receipt": true,
+    "direct_operator_target_edit_is_not_canonical_intake": true,
+    "heartbeat_access_groups_remain_constant": true,
+    "heartbeat_marker_groups_are_zero_content_parallel_projection": true
+  },
+  "privacy_and_audit": {
+    "store_source_references_not_raw_financial_documents": true,
+    "raw_participant_uploads_short_lived": true,
+    "append_only_evidence_and_transition_history": true,
+    "named_actor_for_manual_decisions": true,
+    "content_minimized_operational_views": true,
+    "retention_policy_requires_owner_acceptance_before_build": true
+  },
+  "later_gates": [
+    "schema_and_dark_runtime_implementation", "read_only_reconciliation", "operator_pilot", "provider_projection_writes", "bounded_historical_backfill", "deployment", "student_communication"
+  ],
+  "synthetic_scenarios": [
+    {"key":"self_pay_full","channel":"website_stripe_checkout","seats":1,"participant_state":"exact","expected":"materializable"},
+    {"key":"separate_payer_one_student","channel":"plutio_invoice_or_contract","seats":1,"participant_state":"exact","expected":"materializable"},
+    {"key":"sponsor_nine_named_students","channel":"sponsored_cohort","seats":9,"participant_state":"exact","expected":"materializable"},
+    {"key":"sponsor_nine_only_four_named","channel":"sponsored_cohort","seats":9,"participant_state":"partial","expected":"partially_materializable"},
+    {"key":"check_without_participant","channel":"check_ach_or_wire","seats":1,"participant_state":"missing","expected":"held_needs_participant"},
+    {"key":"scholarship_no_payment","channel":"scholarship","seats":1,"participant_state":"exact","expected":"materializable_without_payment"},
+    {"key":"module_only_future_module","channel":"website_stripe_checkout","seats":1,"participant_state":"exact","expected":"no_future_payment_obligation_without_agreement"},
+    {"key":"duplicate_manual_capture","channel":"manual_stripe_payment","seats":1,"participant_state":"exact","expected":"deduplicated_by_source_key"},
+    {"key":"participant_transfer","channel":"migration_or_correction","seats":1,"participant_state":"exact","expected":"append_only_transfer"},
+    {"key":"refund_or_dispute","channel":"website_stripe_checkout","seats":1,"participant_state":"exact","expected":"held_for_policy_not_silent_revoke"}
+  ]
+}

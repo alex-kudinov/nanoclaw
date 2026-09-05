@@ -159,14 +159,18 @@ The complete evidence and conflict disposition are in
 
 ## Next implementation gates
 
-1. Obtain owner decisions for the unresolved ACC/PCC/ACTC quantities and
+1. Use `docs/STUDENT-ENROLLMENT-FOUNDATION.md` for the accepted order, seat,
+   participant, financial-obligation, assignment, projection, and exception
+   process. Do not implement a Stripe-only enrollment path.
+2. Obtain owner decisions for the unresolved ACC/PCC/ACTC quantities and
    consumption rules.
-2. Add ordered `business_v2` bundle, component, entitlement, assignment, and
-   consumption migrations plus deterministic materialization tests.
-3. Ingest the structured checkout cohort fields and exact bundle version into
+3. Add ordered `business_v2` order, seat, enrollment, bundle, component,
+   entitlement, obligation, assignment, source-reference, projection, and
+   exception migrations plus deterministic materialization tests.
+4. Ingest the structured checkout cohort fields and exact bundle version into
    the payment/enrollment case.
-4. Produce read-only Student Roster and Encharge projections.
-5. Reconcile existing Heartbeat September groups by exact purpose before
+5. Produce read-only Student Roster and Encharge projections.
+6. Reconcile existing Heartbeat September groups by exact purpose before
    proposing any marker creation.
-6. Separately authorize marker groups, membership backfill, provider actions,
+7. Separately authorize marker groups, membership backfill, provider actions,
    messages, and lifecycle consumers only after dark reconciliation passes.
