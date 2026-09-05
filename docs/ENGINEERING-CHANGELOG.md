@@ -12,8 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-05T22:42:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: complete read-only reconciliation; local report/validator ready for
-  commit and push, with seven held source exceptions and no operational write
+- State: complete read-only reconciliation; report/validator committed and
+  pushed, with seven held source exceptions and no operational write
+- Commit/PR: pushed `codex/academy-capacity-readonly-reconciliation-20260905`;
+  report/validator/evidence `c0779fcb` from reviewed capacity proof `0b3129cc`
 - Change class: C2 reversible local evidence and validation source plus
   authorized read-only provider/public observations
 - Scope: MCS September 24 Thursday, September 25 Friday, January 7/8 transfer
@@ -50,7 +52,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Follow-up: a separate source-write decision must resolve the seven exceptions
   and correct the Tandemweb lower owner-count override before any production
   population, Bookkeeper/minion integration, checkout cutover, waitlist action,
-  deployment, or authority transition.
+  deployment, or authority transition. Company OS revision 195 records
+  `work:academy-capacity-reconciliation-resolution` as not authorized.
 
 ### NC-20260905-007 — Prove migrations 142 and 143 together disposably
 

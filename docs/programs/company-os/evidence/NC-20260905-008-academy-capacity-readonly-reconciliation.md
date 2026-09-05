@@ -113,6 +113,11 @@ keyword used by the contract before the domain checks. Bounded R2 returned
 - Full root: 3,538 passed / 32 skipped / two exact predecessor failures: the
   CNPC wrapper-literal assertion and date-sensitive Trafft freshness fixture.
 - External observation: read-only only; no operational mutation or deployment.
+- Exact report/validator/evidence commit: `c0779fcb`, pushed to
+  `codex/academy-capacity-readonly-reconciliation-20260905`.
+- Company OS: all seven continuity commitments completed, the reconciliation
+  closed, and its not-authorized source-resolution successor registered at
+  revision 195.
 
 ## Next gate
 
