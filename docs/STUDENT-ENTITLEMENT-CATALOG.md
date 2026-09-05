@@ -6,6 +6,11 @@ Task: `NC-20260905-001`
 
 Machine-readable authority: `facts/catalogs/student-entitlements-v1.json`
 
+Accepted capacity extension architecture:
+`docs/ACADEMY-CAPACITY-CONTROL-PLANE.md`. Multiple commercial offers may consume
+one delivery block's seat pool while retaining their distinct frozen bundle
+promises.
+
 ## Decision
 
 A full program is a versioned bundle of heterogeneous component promises. It

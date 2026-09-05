@@ -7,6 +7,11 @@ Task: `NC-20260905-002`
 Machine-readable authority:
 `facts/catalogs/student-enrollment-foundation-v1.json`
 
+Accepted capacity extension architecture:
+`docs/ACADEMY-CAPACITY-CONTROL-PLANE.md`. It adds seat pools, reservations,
+occupancy, waitlists, and the Capacity minion boundary without creating a
+parallel enrollment, participant, funding, entitlement, or assignment model.
+
 ## Decision
 
 Every legitimate Academy enrollment enters one provider-neutral Company OS
