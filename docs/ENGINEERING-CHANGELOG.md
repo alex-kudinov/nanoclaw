@@ -52,7 +52,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   data guide, Project Map, Active Work, evidence, changelog, and review packet.
 - Follow-ups: every migration proof/application, reconciliation, integration,
   operator/minion activation, Tandemweb cutover, outreach, deployment, and
-  authority-cutover gate remains separately authorized.
+  authority-cutover gate remains separately authorized. Company OS revision
+  184 registers `work:academy-capacity-disposable-schema-proof` as a required
+  predecessor of capacity reconciliation after the enrollment schema proof.
 
 ### NC-20260905-003 — Build the local multi-source enrollment dark foundation
 

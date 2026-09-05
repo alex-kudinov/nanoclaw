@@ -102,4 +102,7 @@ Disposable PostgreSQL apply/replay/rollback proof, production empty-schema
 migration, read-only reconciliation, Bookkeeper integration, operator/Capacity
 minion workflow, Tandemweb reservation cutover, waitlist outreach, and final
 authority cutover remain separate Company OS work and require their own
-authorization/evidence.
+authorization/evidence. Revision 184 registers the synthetic-only capacity
+proof as `work:academy-capacity-disposable-schema-proof` and makes it a
+prerequisite of capacity reconciliation, so no later task can skip directly
+from source SQL to real student data.
