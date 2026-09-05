@@ -293,6 +293,15 @@ rollback refuses after any capacity evidence exists. Repository presence does
 not authorize real-student reconciliation, provider or Sheet writes, Capacity
 minion activation, waitlist outreach, checkout or Bookkeeper wiring,
 deployment, live cohort-state changes, or authority cutover.
+`NC-20260905-007` separately proves the ordered 142-to-143 chain on generated
+local PostgreSQL 16.15. It verifies seven tables, one view, seven sequences,
+admin ownership and zero non-admin grants; shared-pool multi-offer occupancy;
+live, expired, and consumed reservations; five reason-matched integrity
+refusals; populated rollback retention; explicit removal of a class assignment
+coupled to a capacity delivery block; empty rollback/reapply; and zero database
+residue. The verifier reuses migration 142's pinned `/tmp:5432`, stripped-`PG*`,
+generated-name-only safety boundary. This synthetic proof does not authorize
+production migration or any real-data/provider/runtime action.
 
 ## Connection
 

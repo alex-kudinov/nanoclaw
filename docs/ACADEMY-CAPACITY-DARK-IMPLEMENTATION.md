@@ -1,6 +1,8 @@
 # Academy Capacity Dark Implementation
 
-Status: `NC-20260905-005` local implementation complete at `5b69e107`; migration 143 unapplied and runtime unwired
+Status: `NC-20260905-005` local implementation complete at `5b69e107`;
+`NC-20260905-007` proves migrations 142 and 143 together on disposable local
+PostgreSQL; both migrations remain unapplied and runtime unwired
 
 Base: reviewed enrollment dark-foundation tip `deac91a8` and accepted capacity
 architecture `docs/ACADEMY-CAPACITY-CONTROL-PLANE.md`
@@ -58,6 +60,13 @@ an assignment cannot double-consume capacity.
 The guarded rollback refuses after any migration-143 table contains a row. It
 then removes only migration-143's assignment constraint, view, triggers,
 tables, and sequences. It never drops migration-142 state.
+
+The disposable proof makes the cross-migration cleanup consequence explicit:
+before an empty rollback of 143, it deletes the synthetic migration-142 class
+assignment whose delivery block belongs to 143, asserts that deletion, clears
+the seven capacity tables in foreign-key order, and verifies that the
+enrollment order foundation remains. It does not hide this coupling behind a
+cascading truncate.
 
 Composite foreign keys also ensure a reservation's seat belongs to its stated
 order and a waitlist offer's entry and reservation belong to its stated pool.
@@ -138,12 +147,15 @@ Focused tests cover:
   reservation release on terminal outcomes;
 - SQL objects, constraints, append-only events, least privilege, guarded
   rollback, release packaging, and production unwired proof.
+- disposable PostgreSQL 16.15 apply/shape/behavior/populated-refusal/explicit
+  cleanup/empty-rollback/reapply for ordered migrations 142 and 143, including
+  exact zero database residue under poisoned ambient `PG*` values.
 
 ## Promotion gates
 
-1. Commit and push this reviewed local source.
+1. Commit and push this reviewed local source. Complete under `NC-20260905-005`.
 2. Separately authorize disposable PostgreSQL migration-142-plus-143
-   apply/replay/rollback validation.
+   apply/replay/rollback validation. Complete under `NC-20260905-007`.
 3. Separately authorize production empty-schema migration with backups and
    least-privilege readback.
 4. Separately authorize read-only schedule, offer, Bookkeeper, Stripe, and
@@ -151,4 +163,4 @@ Focused tests cover:
 5. Separately authorize operator/minion, Tandemweb, provider, communication,
    and authority-cutover stages.
 
-Nothing in this task authorizes gates 2-5.
+Nothing in `NC-20260905-007` authorizes gates 3-5.

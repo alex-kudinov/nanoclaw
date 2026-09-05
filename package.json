@@ -47,6 +47,7 @@
     "student-entitlements:validate": "./scripts/with-pinned-node.sh node scripts/validate-student-entitlements.mjs",
     "student-enrollment-foundation:validate": "./scripts/with-pinned-node.sh node scripts/validate-student-enrollment-foundation.mjs",
     "student-enrollment-disposable:verify": "./scripts/with-pinned-node.sh node scripts/verify-student-enrollment-disposable.mjs",
+    "academy-capacity-disposable:verify": "./scripts/with-pinned-node.sh node scripts/verify-academy-capacity-disposable.mjs",
     "test:watch": "./scripts/with-pinned-node.sh vitest",
     "release:build": "./scripts/with-pinned-node.sh node scripts/build-release.mjs",
     "release:verify": "./scripts/with-pinned-node.sh node scripts/verify-release.mjs",

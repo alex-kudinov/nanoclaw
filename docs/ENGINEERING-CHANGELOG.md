@@ -8,6 +8,47 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260905-007 — Prove migrations 142 and 143 together disposably
+
+- Date: 2026-09-05T22:07:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: complete; reviewed local C2 verifier and synthetic PostgreSQL proof,
+  with no production migration or deployment
+- Commit/PR: `codex/academy-capacity-disposable-proof-20260905`; exact commits
+  recorded in the closure update after the implementation commit
+- Change class: C2 local source plus uniquely generated disposable PostgreSQL
+- Outcome: extends the corrected migration-142 verifier through bounded hooks
+  and proves the ordered 142-to-143 chain without duplicating its database,
+  target-safety, failure-matching, or cleanup machinery.
+- Live synthetic proof: PostgreSQL 16.15 verified seven capacity tables, one
+  view, seven sequences, admin-only ownership/grants, one shared seat pool
+  mapped to two offers, assignment-derived occupancy, live/expired/consumed
+  reservations, FIFO waitlist state, and five reason-matched refusals. The run
+  succeeded with poisoned ambient `PG*`; exact prefix residue was zero before
+  and after.
+- Rollback/reapply: populated rollback refused and retained two pools. Cleanup
+  explicitly deleted the migration-142 class assignment coupled to a 143
+  delivery block, then cleared capacity rows in FK order. Empty 143 rollback
+  retained the enrollment order foundation, 142's own proof resumed, both
+  migrations reapplied and rolled back in order, and the database was dropped.
+- Review: R1 found one material implicit-cascade defect and one minor missing
+  capacity-CLI residue self-check. Both were fixed. R2 returned
+  `NO MATERIAL FINDINGS`. R1 usage: 7 calls / 97,247 cache-create / 345,987
+  cache-read / 28,531 output / 105,813 max context. R2: 7 calls / 84,339
+  cache-create / 399,595 cache-read / 11,571 output / 92,905 max context.
+- Verification: focused 25/25, pinned typecheck/build, formatting,
+  documentation continuity/capability, diff check, poisoned-`PG*` proof, and
+  zero residue pass. Full root is 3,531 passed / 32 skipped / two exact
+  unchanged predecessor failures in the CNPC wrapper assertion and
+  date-sensitive Trafft fixture.
+- Boundary: no production database, real student, provider, Student Roster,
+  payment, cohort, runtime, message, deployment, or cluster-role change. No
+  persistent database remains and migrations 142-143 remain unapplied.
+- Follow-up: read-only real-source reconciliation is still a separate owner
+  gate. Production migration, backfill, integration, operator/minion
+  activation, Tandemweb cutover, outreach, deployment, and authority cutover
+  remain separately authorized stages.
+
 ### NC-20260905-005 — Build the local Academy capacity dark extension
 
 - Date: 2026-09-05T20:40:00Z

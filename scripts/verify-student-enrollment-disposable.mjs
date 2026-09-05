@@ -125,6 +125,46 @@ function expectScalar(database, sql, expected, label) {
     throw new Error(`${label}: expected ${expected}, received ${actual}`);
 }
 
+function assertMigrationFile(filePath) {
+  const resolved = path.resolve(filePath);
+  const migrationRoot = path.join(ROOT, 'data/business/migrations/nanoclaw-v2');
+  if (!resolved.startsWith(`${migrationRoot}${path.sep}`))
+    throw new Error('refusing disposable SQL outside the migration directory');
+  if (!fs.existsSync(resolved) || path.extname(resolved) !== '.sql')
+    throw new Error('disposable migration SQL is unavailable');
+  return resolved;
+}
+
+function extensionContext(database) {
+  return Object.freeze({
+    database,
+    execute(sql) {
+      psql(database, ['-c', sql]);
+    },
+    executeFile(filePath) {
+      psql(database, ['-f', assertMigrationFile(filePath)]);
+    },
+    expectFailure(sql, expectedMessage) {
+      psql(database, ['-c', sql], {
+        expectFailure: true,
+        expectedMessage,
+      });
+    },
+    expectFileFailure(filePath, expectedMessage) {
+      psql(database, ['-f', assertMigrationFile(filePath)], {
+        expectFailure: true,
+        expectedMessage,
+      });
+    },
+    scalar(sql) {
+      return scalar(database, sql);
+    },
+    expectScalar(sql, expected, label) {
+      expectScalar(database, sql, expected, label);
+    },
+  });
+}
+
 function sqlLiteral(value) {
   return `'${value.replaceAll("'", "''")}'`;
 }
@@ -149,11 +189,13 @@ function parseDatabaseArgument(argv) {
   const index = argv.indexOf('--database');
   if (index === -1) return generatedDisposableDatabaseName();
   if (!argv[index + 1] || index + 2 !== argv.length)
-    throw new Error('usage: verify-student-enrollment-disposable [--database safe_name]');
+    throw new Error(
+      'usage: verify-student-enrollment-disposable [--database safe_name]',
+    );
   return assertDisposableDatabaseName(argv[index + 1]);
 }
 
-function databaseExists(database) {
+export function databaseExists(database) {
   const count = maintenanceQuery(
     `SELECT count(*) FROM pg_database WHERE datname=${sqlLiteral(database)}`,
   );
@@ -516,7 +558,10 @@ function verifyUninstalled(database) {
   );
 }
 
-export function runStudentEnrollmentDisposableProof({ database }) {
+export function runStudentEnrollmentDisposableProof({
+  database,
+  extension = {},
+}) {
   assertDisposableDatabaseName(database);
   if (!fs.existsSync(MIGRATION) || !fs.existsSync(ROLLBACK))
     throw new Error('migration 142 source or rollback is missing');
@@ -538,12 +583,15 @@ export function runStudentEnrollmentDisposableProof({ database }) {
     installPrerequisites(database);
     applyMigration(database);
     verifyInstalledShape(database);
+    const context = extensionContext(database);
+    extension.afterEnrollmentMigration?.(context);
     insertSyntheticChain(database);
     verifySyntheticConstraints(database);
+    extension.afterSyntheticChain?.(context);
     applyRollback(database, true);
     expectScalar(
       database,
-      "SELECT count(*) FROM business_v2.student_enrollment_orders",
+      'SELECT count(*) FROM business_v2.student_enrollment_orders',
       '1',
       'populated rollback data preservation',
     );
@@ -552,11 +600,12 @@ export function runStudentEnrollmentDisposableProof({ database }) {
     verifyUninstalled(database);
     applyMigration(database);
     verifyInstalledShape(database);
+    extension.afterEnrollmentReapply?.(context);
     applyRollback(database);
     verifyUninstalled(database);
     return {
       ok: true,
-      serverVersion: maintenanceQuery("SHOW server_version"),
+      serverVersion: maintenanceQuery('SHOW server_version'),
       tables: 13,
       views: 1,
       syntheticChains: 1,
