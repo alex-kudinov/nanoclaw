@@ -1,6 +1,6 @@
 # Academy Capacity Dark Implementation
 
-Status: `NC-20260905-005` local implementation authority
+Status: `NC-20260905-005` local implementation complete at `5b69e107`; migration 143 unapplied and runtime unwired
 
 Base: reviewed enrollment dark-foundation tip `deac91a8` and accepted capacity
 architecture `docs/ACADEMY-CAPACITY-CONTROL-PLANE.md`

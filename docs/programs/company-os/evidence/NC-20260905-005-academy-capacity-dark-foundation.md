@@ -64,6 +64,15 @@ exception record.
   `cnpc-prompt-contract.test.ts` expects the older wrapper literal and the
   date-sensitive Trafft fixture classifies August evidence as stale.
 - JSON/diff/unwired checks: pass.
+- Exact implementation commit: `5b69e107a7b68499cbf5c9b0be3e08cf61ec0f2a`,
+  pushed to `codex/academy-capacity-extension-20260905`.
+- Immutable local release package: source tree `ffc69d8affa3d96c2f1eceabea536b50b9c08e6f`,
+  1,048-file artifact hash
+  `3337ecab4d4a55f689c144b9fd5f3308157fae685834f92cc9852e8ac8af71e9`,
+  archive hash
+  `5329c83dfe1a1bcea8fee1def8a0e2427a4c5fa64064961b53b93eb026ff9d88`.
+  Release-critical tests passed 750/750 and the independent container runner
+  passed build plus 45/45 tests. The archive was not deployed.
 
 ## Independent review
 

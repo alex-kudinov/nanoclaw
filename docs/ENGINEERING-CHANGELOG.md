@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-05T20:40:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; reviewed local C2 implementation with commit and
-  release-package receipt pending
-- Commit/PR: `codex/academy-capacity-extension-20260905` from exact reviewed
-  enrollment-foundation tip `deac91a8` plus accepted capacity architecture
+- State: complete; reviewed local C2 implementation is committed, pushed, and
+  packaged, with migration and deployment not authorized
+- Commit/PR: pushed `codex/academy-capacity-extension-20260905`;
+  implementation `5b69e107`, from exact reviewed enrollment-foundation tip
+  `deac91a8` plus accepted capacity architecture
 - Change class: C2 reversible local source; no operational system is wired
 - Outcome: adds source-only migration/rollback 143 and a pure capacity command
   layer for delivery blocks, one-block seat pools, many-offer mapping,
@@ -36,6 +37,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   documentation continuity/capability, JSON, unwired, and diff checks pass.
   Full root is 3,523 passed / 32 skipped / two exact unchanged predecessor
   failures in the CNPC wrapper assertion and date-sensitive Trafft fixture.
+- Release package: exact clean commit `5b69e107a7b6`, source tree
+  `ffc69d8affa3`, 1,048-file artifact hash `3337ecab4d4a55f6`; release-critical
+  750/750 and independent runner build/tests 45/45 passed. Archive
+  `nanoclaw-5b69e107a7b6.tar.gz` hash `5329c83dfe1a1bce` was built locally and
+  not deployed.
 - Deployment/migration: neither applicable nor authorized. No migration apply,
   real-student or provider inspection/reconciliation, live cohort state,
   checkout/Bookkeeper/Sheet/runtime/minion wiring, message, deployment, or
