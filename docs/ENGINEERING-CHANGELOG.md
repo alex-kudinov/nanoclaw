@@ -14,8 +14,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Owner/client: Codex with independent Claude Sonnet/high review
 - State: complete; reviewed C1 source/design authority, with deployment not
   applicable
-- Commit/PR: `codex/student-enrollment-foundation-20260905`, based on pushed
-  entitlement catalog `ba4437be`; exact task commit added at closure
+- Commit/PR: pushed `codex/student-enrollment-foundation-20260905`; foundation
+  commit `ca544654`, based on pushed entitlement catalog `ba4437be`; closure
+  record follows in the branch tip
 - Change class: C1 internal design, schema, deterministic validation, and
   synthetic fixtures only
 - Affected systems: Company OS student lifecycle and future Student Roster,
