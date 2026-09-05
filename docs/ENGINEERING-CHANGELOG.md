@@ -68,6 +68,50 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   schema, ingress adapters, read-only reconciliation, projections, backfill,
   deployment, and communications each remain separate owner-gated work.
 
+### NC-20260905-004 — Adopt the Academy capacity architecture into Company OS
+
+- Date: 2026-09-05T19:50:00Z
+- Owner/client: Codex; source architecture independently reviewed in two
+  Claude Sonnet/high rounds and then accepted by the owner
+- State: complete C1 architecture/program adoption; implementation and
+  deployment not authorized
+- Commit/PR: `codex/academy-capacity-adoption-20260905`, based on the pushed
+  enrollment-foundation tip `1d77ae5a`; source Tandemweb architecture
+  `2bc59b670`
+- Change class: C1 internal architecture, authority, and portfolio records only
+- Outcome: Company OS owns Academy capacity. One v1 seat pool belongs to one
+  exact delivery block and may be shared by multiple offers; occupancy comes
+  only from current capacity-bearing class assignments. Checkout and manual
+  holds share one reservation boundary; refund and withdrawal remain separate;
+  transfers are atomic; waitlist selection is FIFO and outreach remains
+  human-approved; Tandemweb is a signed projection/reservation client; the
+  narrow Capacity minion invokes typed host commands without owning state.
+- Reinvention correction: the earlier conceptual `academy_*` names are mapped
+  onto the existing entitlement and enrollment foundations. Capacity extends
+  enrollment order/seat/student-enrollment/class-assignment/finance/receipt/
+  exception records and does not create a parallel student model.
+- Concurrency: the first Company OS compare-and-swap correctly rejected stale
+  revision 173 after another task advanced the portfolio. Reorientation found
+  active `work:student-enrollment-dark-foundation` under its existing
+  `NC-20260905-003` claim. Revision 177 preserves it and adds capacity as six
+  dependent, separately gated candidates; none is eligible or authorized.
+- Operational correction: MCS Thursday 2026-09-24 remains open. The accepted
+  September sold-out scope is the September 7 ACC shared pool and September 25
+  MCS Friday only.
+- Verification: Company OS validation/render, documentation continuity,
+  foundation/entitlement validators, focused source tests, JSON parsing, link
+  and diff checks. The source proposal's second Claude review had no material
+  finding after the one-cohort-per-pool glossary correction; no third review
+  was started for this semantic integration.
+- Deployment/migration: none. No schema/runtime/provider/Student Roster/student/
+  waitlist/message/cohort-state or production release mutation occurred.
+- Follow-up: `work:academy-capacity-extension` requires a separate owner Gate B
+  authorization after the active enrollment dark foundation completes and its
+  remaining pre-build policy decisions are resolved. Reconciliation,
+  Bookkeeper integration, Capacity minion/operator activation, Tandemweb
+  cutover, customer outreach, and authority cutover each remain separately
+  gated.
+
 ### NC-20260905-002 — Define the multi-source student enrollment foundation
 
 - Date: 2026-09-05T18:05:00Z
