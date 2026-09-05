@@ -15,9 +15,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Claude Sonnet/high rounds and then accepted by the owner
 - State: complete C1 architecture/program adoption; implementation and
   deployment not authorized
-- Commit/PR: `codex/academy-capacity-adoption-20260905`, based on the pushed
-  enrollment-foundation tip `1d77ae5a`; source Tandemweb architecture
-  `2bc59b670`
+- Commit/PR: pushed `codex/academy-capacity-adoption-20260905`; adoption
+  commit `38106bc6`, based on the pushed enrollment-foundation tip
+  `1d77ae5a`; source Tandemweb architecture `2bc59b670`
 - Change class: C1 internal architecture, authority, and portfolio records only
 - Outcome: Company OS owns Academy capacity. One v1 seat pool belongs to one
   exact delivery block and may be shared by multiple offers; occupancy comes
