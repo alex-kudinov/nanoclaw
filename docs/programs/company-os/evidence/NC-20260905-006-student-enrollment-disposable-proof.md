@@ -74,6 +74,8 @@ All were corrected. Narrow R2 returned `NO MATERIAL FINDINGS`.
 - Full root: 3,505 passed / 32 skipped / two exact predecessor failures:
   the CNPC wrapper-literal assertion and date-sensitive Trafft freshness fixture.
 - Database residue: zero.
+- Exact verifier/evidence commit: `04695633`, pushed to
+  `codex/student-enrollment-disposable-proof-20260905`.
 
 ## Boundary preserved
 
