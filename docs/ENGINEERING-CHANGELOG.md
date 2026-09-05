@@ -56,6 +56,41 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   184 registers `work:academy-capacity-disposable-schema-proof` as a required
   predecessor of capacity reconciliation after the enrollment schema proof.
 
+### NC-20260905-006 — Prove migration 142 in disposable PostgreSQL
+
+- Date: 2026-09-05T21:30:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; corrected verifier and live synthetic proof are complete,
+  with commit/push pending
+- Commit/PR: `codex/student-enrollment-disposable-proof-20260905` from exact
+  reviewed migration-142 foundation `deac91a8`
+- Change class: C2 local source plus generated disposable PostgreSQL only
+- Outcome: adds a credential-free verifier that pins `/tmp:5432`, strips
+  ambient `PG*`, refuses unsafe/existing names, creates one generated database,
+  installs structure-only prerequisites, applies migration 142, verifies 13
+  tables/one view/13 sequences and exact ownership/grants, exercises one
+  synthetic all-table chain plus reason-matched failures, proves populated
+  rollback refusal and retention, proves empty rollback/reapply, and removes
+  the database in `finally`.
+- Review: R1 found three material defects—ambient target inheritance,
+  exit-code-only expected failures, and omitted sequence verification. All were
+  corrected. R2 returned `NO MATERIAL FINDINGS`. R1 usage: 4 calls / 79,434
+  cache-create / 150,780 cache-read / 18,447 output / 88,000 max context. R2:
+  4 calls / 48,968 cache-create / 130,772 cache-read / 7,090 output / 57,534
+  max context.
+- Live synthetic proof: succeeded on local PostgreSQL 16.15 even with poisoned
+  parent `PGHOST`, `PGPORT`, `PGDATABASE=nanoclaw_business`, and a dummy
+  password; child commands discarded them. All proof flags were true and exact
+  prefix residue was zero before/after.
+- Verification: syntax/JSON, typecheck, focused 12/12, and full 3,505 pass / 32
+  skip with only the two exact predecessor CNPC-wrapper and date-sensitive
+  Trafft failures. Continuity/capability/diff checks follow with commit.
+- Boundary: no `nanoclaw_business`, real student, provider, roster, payment,
+  cohort, runtime, deployment, communication, or cluster-role mutation. No
+  persistent database remains.
+- Follow-up: the separately gated capacity proof must apply migrations 142 and
+  143 together through this corrected safety boundary before reconciliation.
+
 ### NC-20260905-003 — Build the local multi-source enrollment dark foundation
 
 - Date: 2026-09-05T19:20:00Z

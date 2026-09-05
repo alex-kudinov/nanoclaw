@@ -269,6 +269,15 @@ aggregate health view. It is packaged but unapplied and unwired. Its guarded
 rollback refuses after any row exists. Repository presence grants no authority
 to apply the migration, inspect/reconcile/backfill students, activate adapters
 or projections, change a provider/Sheet/runtime, deploy, or communicate.
+`NC-20260905-006` separately proves migration 142 on local disposable
+PostgreSQL 16.15: 13 tables, one view, 13 sequences, exact admin ownership and
+zero non-admin grants, representative synthetic constraints and append-only
+refusal, populated rollback refusal with retained data, empty rollback,
+reapply, and zero database residue. The verifier pins `/tmp:5432`, strips all
+ambient `PG*` variables, requires a local server address, refuses existing or
+production-like names, and never creates/alters a cluster role. This proof does
+not authorize production migration, real-data reconciliation, adapters,
+providers, runtime, deployment, or communication.
 
 Migration 143 is `NC-20260905-005`'s source-only Academy capacity extension to
 migration 142. It defines canonical delivery blocks, exactly one seat pool per
