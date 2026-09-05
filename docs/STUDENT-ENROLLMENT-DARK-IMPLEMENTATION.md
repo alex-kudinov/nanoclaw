@@ -1,6 +1,6 @@
 # Student Enrollment Dark Implementation
 
-Status: `NC-20260905-003` local implementation authority
+Status: `NC-20260905-003` local implementation complete; migration 142 disposable PostgreSQL proof completed by `NC-20260905-006`; production remains unapplied
 
 Base: reviewed foundation revision 1 at `1d77ae5a`
 
@@ -115,8 +115,10 @@ Focused tests cover:
 ## Promotion gates
 
 1. Commit and push this reviewed local foundation.
-2. Separately authorize disposable PostgreSQL apply/replay/rollback if a safe
-   isolated database is available; do not point at production.
+2. **Complete:** the reviewed credential-free verifier proved PostgreSQL 16.15
+   apply, constraints, ownership/grants, populated refusal, empty rollback,
+   reapply, and zero residue using synthetic rows only. It pins `/tmp:5432`,
+   strips ambient `PG*` variables, and refuses existing/unsafe names.
 3. Separately authorize production empty-schema migration with backup and
    least-privilege readback.
 4. Separately implement/wire ingress adapters in shadow mode.
