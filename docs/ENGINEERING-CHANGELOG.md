@@ -60,10 +60,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-05T21:30:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: validating; corrected verifier and live synthetic proof are complete,
-  with commit/push pending
-- Commit/PR: `codex/student-enrollment-disposable-proof-20260905` from exact
-  reviewed migration-142 foundation `deac91a8`
+- State: complete; corrected verifier and live synthetic proof are committed
+  and pushed, with no production migration or deployment
+- Commit/PR: pushed `codex/student-enrollment-disposable-proof-20260905`;
+  verifier/evidence `04695633` from exact reviewed migration-142 foundation
+  `deac91a8`
 - Change class: C2 local source plus generated disposable PostgreSQL only
 - Outcome: adds a credential-free verifier that pins `/tmp:5432`, strips
   ambient `PG*`, refuses unsafe/existing names, creates one generated database,
