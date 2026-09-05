@@ -8,6 +8,55 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260904-003 — MCS Practicum Sertifier packages
+
+- Date: 2026-09-05T02:30:00Z
+- Owner/client: Codex with two independent Claude Sonnet/high review rounds
+- State: ready_for_deploy; provider packages and no-send
+  verification complete
+- Change class: C3 because the presets can later issue participant-facing
+  credentials and email; this task creates no recipient or credential
+- Outcome: created the complete full MCS/AAMC Practicum graduation package and
+  a materially distinct partial-completion companion. The full package records
+  71 total/41 participant-contact/30 asynchronous hours, all AAMC program
+  requirements, ACC BARS and PCC Markers training, and uses a Tandem-only badge
+  without ICF/AAMC marks. The partial package has no AAMC logo or badge and
+  requires completed module/class, participant contact hours, and completion
+  date.
+- Provider state: full certificate `08df06dd-6b9b-471f-844f-157cf5d7021e`,
+  Detail `08df0ae3-d74d-4e26-81fa-1b1f734a758c`, badge
+  `08df0ae3-9d01-4b10-8c35-4d671abeeb33`, email
+  `08df0ae4-4da4-4626-8ea0-6a1c2b06c9f4`, and empty public campaign
+  `08df0ae5-fc15-454e-81a5-ac6db9e34959`; partial certificate
+  `08df0ae9-8410-4185-8845-94d97b9e3f37`, Detail
+  `08df0ae9-b72c-468b-86da-7acdd9198c4e`, email
+  `08df0aea-22f7-432d-8b1a-99adaec7cc11`, and empty private campaign
+  `08df0ae0-ce12-45f0-8048-545cc146d18e`. Both campaign fingerprints and zero
+  recipient counts were read back.
+- Implementation: registered `mcs-practicum` and
+  `mcs-practicum-partial`, exact aliases/component fingerprints/privacy,
+  three named partial-record flags, and number/date validation. Gru explicitly
+  distinguishes Foundation, Practicum graduation, and Practicum partial;
+  bare MCS cannot enter the exact-send fast path.
+- Review: R1 found missing ordinary-flow mappings. R2 found the old Foundation
+  aliases still accepted bare MCS terms. Both were corrected and regression-
+  tested; no unresolved material finding remains.
+- Verification: provider getters and credential searches; canonical campaign
+  verifier 2/2; both `.invalid` dry runs with `willSend:false`; toolbox focused
+  suites, registry, and 65/65 framework suite; NanoClaw prompt 5/5, typecheck,
+  continuity, and 3,368 passing/31 skipped full suite with two unchanged
+  unrelated failures.
+- Artifact archive: established Google Drive MCS Graduation and Partial
+  Completion folders now contain distinct `Sertifier Package` manifests and
+  provider assets; the graduation package includes the 3000px transparent badge
+  master.
+- External-action boundary: no recipient, issued credential, email, Heartbeat
+  mutation, historical credential mutation, or individual MCS designation.
+  Real issuance retains exact identity, completion proof, duplicate preflight,
+  pending script, review, and distinct send approval.
+- Documentation: `docs/reports/NC-20260904-003-SERTIFIER-PACKAGE-EVIDENCE.md`,
+  provider payload/draft, prompt, project map, active work, and this entry.
+
 ### NC-20260828-003 — Natural canonical-campaign issue command
 
 - Date: 2026-08-29T02:35:00Z

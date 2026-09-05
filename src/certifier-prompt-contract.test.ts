@@ -25,6 +25,18 @@ describe('Certifier canonical campaign prompt contract', () => {
     expect(steps).toContain('`--campaign-id`');
   });
 
+  it('routes the three MCS credential families without guessing', () => {
+    expect(prompt).toContain('| `mcs-foundation` |');
+    expect(prompt).toContain('| `mcs-practicum` |');
+    expect(prompt).toContain('| `mcs-practicum-partial` |');
+    expect(prompt).toContain(
+      'Bare "MCS" or "Mentor Coaching Specialization" is now ambiguous',
+    );
+    expect(prompt).toContain(
+      'whether the user means Foundation, Practicum graduation, or Practicum partial completion',
+    );
+  });
+
   it('gives exact campaign-send grammar precedence over bare send', () => {
     expect(prompt).toContain(
       'test the exact Explicit campaign send grammar before both New certificate and the generic Send/Cancel bucket',

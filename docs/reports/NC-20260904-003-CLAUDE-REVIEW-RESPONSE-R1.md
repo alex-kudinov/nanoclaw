@@ -1,0 +1,19 @@
+# NC-20260904-003 — Claude review response R1
+
+Reviewed only the packet and paths listed in the request. No package source, repository code, provider state, or asset was edited.
+
+## Material finding
+
+**`groups/certifier/CLAUDE.md`'s "Available Presets" table has no row for `mcs-practicum` or `mcs-practicum-partial`, so the ordinary two-step "New certificate" collection flow cannot resolve either new package by name.**
+
+- The table's only Mentor-Coaching-Specialization row is `"MCS", "MCS Foundation", "Mentor Coaching Specialization", "mentor coaching foundation"` → `mcs-foundation` — a different, already-existing preset with different hours/credential.
+- Collection Rule 4 says: "If the user names a program but not the exact preset, use the mapping table above." A conversational request such as "MCS Practicum for Jane Doe, jane@x.com" (the documented `New certificate` example pattern, not the exact `send <alias> to <email>` explicit-send grammar) has no row to match against for the new packages.
+- This matters specifically for **Package 2 (`mcs-practicum-partial`)**: per `SERTIFIER-CAMPAIGN-STRATEGY.md` §5, attribute-bearing presets are excluded from immediate one-command execution and always fall back to this same collection/review flow. The partial-completion package's `sendAliases` are therefore not sufficient on their own — the preset also depends on this table for normal operation, and the table doesn't have it.
+- Best case, every such request stalls on an unnecessary "which preset?" disambiguation because the phrase matches nothing. Worst case — depending on how the underlying phrase-to-preset matching actually behaves, which is not visible in the reviewed packet — a bare "MCS" mention could bind to the existing `mcs-foundation` row instead of surfacing the new Practicum/partial-completion options, misrouting a request between two materially different credentials.
+- This is a gap in the reviewed prompt file itself, not a request to change anything outside the allowed packet. `SERTIFIER-CAMPAIGN-STRATEGY.md` §6 already anticipates that "the Certifier operating prompt and execution steps must change with the tool" — this table update belongs in that same change.
+
+## Verification notes
+
+1. The full-graduation certificate design (`08df06dd-6b9b-471f-844f-157cf5d7021e`, "MCS Practicum") is an accepted existing artifact and was not included as a rendered asset in the review packet — only the digital badge and the partial-completion template image were provided. I could not visually confirm the AAMC-required fields (organization name, program name, all-requirements confirmation, graduation date, signature, evaluation-tool levels) actually appear on that certificate's artwork; the draft's claim that "the fixed certificate artwork states the 71/41-hour and evaluation-tool facts" is taken on the owner's word, not independently verified here.
+2. Both canonical campaigns use sender `Tandem Coaching Academy <info@tandemcoach.co>`, a different domain than `info@tandemcoaching.academy` seen elsewhere in the reviewed paths. Consistent between both packages, so likely the established Certifier send domain from the prior 74 campaigns, but this was not confirmable from the allowed packet.
+3. Everything else checked out: no MCC BARS anywhere in either package, partial-completion package correctly omits the AAMC logo and graduation language and includes all seven AAMC-required fields (org name, module/class, participant, hours, date, portion-of-full-program statement, signature), the full-graduation badge asset carries no ICF/AAMC logo, both canonical-campaign blocks match the `Canonical | <preset> | v<version>` naming and `[1,3]`-status contract in `SERTIFIER-CAMPAIGN-STRATEGY.md`, and Package 2's `private: true` is a deliberate, in-scope deviation from the public default (explicitly called out as intentional, which the strategy doc permits via reviewed preset versions).

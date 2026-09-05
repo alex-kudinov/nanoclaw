@@ -1,0 +1,47 @@
+{
+  "full_detail": {
+    "title": "Mentor Coaching Specialization – Practicum",
+    "description": "<p>This credential recognizes verified graduation from Mentor Coaching Specialization – Practicum, Tandem Coaching Academy’s 71-hour program accredited by the International Coaching Federation under the Advanced Accreditation in Mentor Coaching (AAMC).</p><p><br></p><p>The program comprises 41 participant contact hours and 30 asynchronous hours. The holder completed five observed mentor-coaching sessions, received written feedback on at least three, completed five hours of mentoring-on-mentoring and the final assignment, and fulfilled all AAMC program requirements.</p><p><br></p><p>The accredited program includes ICF evaluation-tool training in ACC Behaviorally Anchored Rating Scales (BARS) and PCC Markers. This credential documents Tandem program completion and supports the holder’s application to ICF; ICF separately reviews and awards the individual Mentor Coach Specialization.</p>",
+    "type": 19,
+    "duration": 4,
+    "durationNumber": 71,
+    "durationType": 1,
+    "cost": 1,
+    "level": 4,
+    "skills": [
+      {
+        "title": "Mentor Coaching",
+        "skillId": "",
+        "languageCode": "en"
+      }
+    ],
+    "earningCriteria": "<p>To earn this credential, the holder completed and was verified on every requirement of Tandem Coaching Academy’s ICF-accredited Mentor Coaching Specialization – Practicum.</p><p><br></p><ol><li>Completed all 71 program hours: 41 participant contact hours and 30 asynchronous hours.</li><li>Completed five observed mentor-coaching sessions and received written feedback on at least three.</li><li>Completed five hours of mentoring-on-mentoring.</li><li>Completed the final assignment.</li><li>Completed ICF evaluation-tool training in ACC Behaviorally Anchored Rating Scales (BARS) and PCC Markers.</li><li>Met all Advanced Accreditation in Mentor Coaching (AAMC) program requirements.</li></ol><p><br></p><p>The credential is released only after the program administrator verifies every requirement in the participant record.</p>",
+    "dontSendExpireDateEmail": false
+  },
+  "partial_detail": {
+    "title": "Mentor Coaching Specialization – Practicum: Partial Completion Record",
+    "description": "<p>This record documents verified partial completion of Tandem Coaching Academy’s Mentor Coaching Specialization – Practicum.</p><p><br></p><p>The record identifies the completed module or class, the participant contact hours completed, and the date those hours were completed. It does not certify graduation from the full Advanced Accreditation in Mentor Coaching (AAMC) program and does not carry the AAMC logo.</p>",
+    "type": 19,
+    "cost": 1,
+    "level": 4,
+    "skills": [
+      {
+        "title": "Mentor Coaching",
+        "skillId": "",
+        "languageCode": "en"
+      }
+    ],
+    "earningCriteria": "<p>This record is issued only after Tandem Coaching Academy verifies the participant’s completed module or class, participant contact hours, and completion date in the program record.</p><p><br></p><p>It documents partial completion only. It does not confirm completion of all AAMC requirements and is not evidence that the holder has graduated from the full Mentor Coaching Specialization – Practicum.</p>",
+    "dontSendExpireDateEmail": false
+  },
+  "full_email": {
+    "title": "MCS Practicum Graduation",
+    "subject": "Your MCS Practicum Graduation Credential is Here",
+    "body": "Hi [recipient.name],\n\nCongratulations — you have graduated from Mentor Coaching Specialization – Practicum, Tandem Coaching Academy’s 71-hour program accredited by the International Coaching Federation under the Advanced Accreditation in Mentor Coaching (AAMC).\n\nYour credential documents 71 total program hours, including 41 participant contact hours, and confirms completion of all AAMC program requirements. It also documents ICF evaluation-tool training in ACC Behaviorally Anchored Rating Scales (BARS) and PCC Markers.\n\nThis is the program-completion credential you can use to support your MCS application to ICF. ICF, not Tandem Coaching Academy, reviews and awards the individual Mentor Coach Specialization.\n\nUse your verified credential link for your ICF application records and professional profile.\n\n— Tandem Coaching Academy"
+  },
+  "partial_email": {
+    "title": "MCS Practicum Partial Completion",
+    "subject": "Your MCS Practicum Partial Completion Record",
+    "body": "Hi [recipient.name],\n\nYour Mentor Coaching Specialization – Practicum partial completion record is ready.\n\nIt documents the verified module or class, participant contact hours, and completion date shown on the record. It does not certify graduation from the full program or completion of all AAMC requirements.\n\nKeep the verified record for your files or provide it to another education provider if you are requesting recognition of the completed hours.\n\n— Tandem Coaching Academy"
+  }
+}

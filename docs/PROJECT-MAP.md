@@ -1104,6 +1104,23 @@ Provider Details and template titles/bodies were read back, production files
 hash-match the reviewed sources, and production dry runs resolve the exact
 component IDs without creating a campaign, recipient, credential, or email.
 
+### MCS Practicum Sertifier packages (`NC-20260904-003`)
+
+Mentor Coaching Specialization now has three deliberately distinct Certifier
+presets: `mcs-foundation`, the full 71-hour `mcs-practicum` graduation
+credential, and `mcs-practicum-partial` for verified partial records. Bare
+"MCS" is ambiguous and must be clarified; it must never silently resolve to one
+of the three packages.
+
+The full Practicum package uses the owner-approved graduation certificate, a
+Tandem-only graduate badge, a 71-hour Detail that records 41 participant
+contact hours, and a branded delivery template. It carries no custom recipient
+attributes. The partial package is materially different, has no AAMC logo or
+badge, and requires three per-recipient attributes: completed module/class,
+participant contact hours, and completion date. Its canonical campaign is
+private. Both retain the normal pending-script, review, distinct send approval,
+campaign-fingerprint, duplicate-prevention, and reconciliation gates.
+
 ### Canonical Sertifier campaigns (`NC-20260828-002`)
 
 Each of the ten configured certificate presets owns one versioned canonical

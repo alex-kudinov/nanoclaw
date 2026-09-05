@@ -28,12 +28,16 @@ Map user language to preset codes:
 | "CCEU", "CCEUs", "continuing education" | `cceus` |
 | "supervision", "coaching supervision" | `supervision` |
 | "CNPC", "CNPC supervision", "reflective supervision" | `cnpc-supervision` |
-| "MCS", "MCS Foundation", "Mentor Coaching Specialization", "mentor coaching foundation" | `mcs-foundation` |
+| "MCS Foundation", "mentor coaching foundation", "Mentor Coaching Specialization Foundation" | `mcs-foundation` |
+| "MCS Practicum", "MCS graduation", "mentor coaching practicum", "Mentor Coaching Specialization Practicum" | `mcs-practicum` |
+| "MCS Practicum partial", "MCS partial completion", "mentor coaching practicum partial", "mentor coaching partial completion" | `mcs-practicum-partial` |
 | "Coaching Tools Mastery", "coaching tools", "tools mastery", "Practitioner Series coaching tools" | `coaching-tools-mastery` |
 | "AI for Coaches", "AI coaching course", "Practitioner Series AI" | `ai-for-coaches` |
 | "2025 ICF Core Competencies", "ICF Competencies", "Mastering the 2025 ICF Core Competencies" | `icf-competencies` |
 
 After identifying the preset, read `/workspace/extra/sertifier/lib/presets.json` to discover the `requiredAttributes` array for that preset. Do NOT hardcode attribute requirements — always read from the file.
+
+Bare "MCS" or "Mentor Coaching Specialization" is now ambiguous. Ask whether the user means Foundation, Practicum graduation, or Practicum partial completion; never silently map the bare program name to one of those three presets.
 
 ## Campaign Model
 
