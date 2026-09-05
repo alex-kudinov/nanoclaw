@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tandemcoach.co/schemas/student-entitlements-v1.schema.json",
+  "title": "Tandem student entitlement catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "catalog_id",
+    "catalog_revision",
+    "effective_from",
+    "authority",
+    "heartbeat_projection_policy",
+    "components",
+    "bundles",
+    "offers",
+    "known_conflicts"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "catalog_id": { "const": "student-entitlements" },
+    "catalog_revision": { "type": "integer", "minimum": 1 },
+    "effective_from": { "type": "string", "format": "date-time" },
+    "authority": { "type": "object" },
+    "heartbeat_projection_policy": { "type": "object" },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "bundles": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/bundle" }
+    },
+    "offers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/offer" }
+    },
+    "known_conflicts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/conflict" }
+    }
+  },
+  "$defs": {
+    "sourceRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "quantity": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["value", "unit", "status"],
+      "properties": {
+        "value": { "type": ["number", "string"] },
+        "unit": { "type": "string", "minLength": 1 },
+        "status": {
+          "enum": ["verified", "source_confirmed", "historical_requires_confirmation", "unknown"]
+        }
+      }
+    },
+    "heartbeatProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["access_group_ids", "course_ids", "attachment_status"],
+      "properties": {
+        "access_group_ids": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" },
+          "uniqueItems": true
+        },
+        "course_ids": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" },
+          "uniqueItems": true
+        },
+        "attachment_status": {
+          "enum": [
+            "exact_component_group_and_course_verified",
+            "group_and_course_verified_attachment_unavailable",
+            "full_group_verified_contents_unavailable",
+            "group_verified_course_unresolved",
+            "not_applicable"
+          ]
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_key",
+        "name",
+        "component_type",
+        "delivery_mode",
+        "scheduling_model",
+        "consumption_model",
+        "marker_policy",
+        "quantity",
+        "heartbeat",
+        "evidence_status",
+        "sources",
+        "open_questions"
+      ],
+      "properties": {
+        "component_key": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:-]+$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "component_type": {
+          "enum": [
+            "course",
+            "live_class_series",
+            "group_mentoring",
+            "individual_mentoring",
+            "group_supervision",
+            "individual_supervision",
+            "observed_practice",
+            "assessment",
+            "performance_evaluation",
+            "exam_preparation",
+            "resource_access",
+            "fieldwork",
+            "capstone",
+            "certificate_outcome"
+          ]
+        },
+        "delivery_mode": {
+          "enum": [
+            "self_paced",
+            "live_group",
+            "individual_appointment",
+            "blended",
+            "submission",
+            "provider_access",
+            "earned_on_completion"
+          ]
+        },
+        "scheduling_model": {
+          "enum": [
+            "none",
+            "module_class_block",
+            "program_cohort_series",
+            "group_series",
+            "individual_booking",
+            "milestone_window",
+            "self_paced"
+          ]
+        },
+        "consumption_model": {
+          "enum": [
+            "binary_access",
+            "course_completion",
+            "session_count",
+            "hour_count",
+            "attendance",
+            "submission_count",
+            "milestone_completion",
+            "provider_entitlement"
+          ]
+        },
+        "marker_policy": {
+          "enum": ["none", "class_block", "program_cohort", "group_series"]
+        },
+        "quantity": { "$ref": "#/$defs/quantity" },
+        "heartbeat": { "$ref": "#/$defs/heartbeatProjection" },
+        "evidence_status": {
+          "enum": ["verified", "source_confirmed", "provisional", "unresolved"]
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "bundleComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component_key", "inclusion"],
+      "properties": {
+        "component_key": { "type": "string" },
+        "inclusion": { "enum": ["included", "conditional", "earned_on_completion"] },
+        "condition": { "type": ["string", "null"] }
+      }
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundle_key",
+        "program_key",
+        "version",
+        "effective_from",
+        "components",
+        "sources",
+        "evidence_status"
+      ],
+      "properties": {
+        "bundle_key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+        "program_key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+        "version": { "type": "integer", "minimum": 1 },
+        "effective_from": { "type": "string", "format": "date-time" },
+        "components": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/bundleComponent" }
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        },
+        "evidence_status": { "enum": ["verified", "source_confirmed", "provisional", "unresolved"] }
+      }
+    },
+    "offer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offer_key",
+        "bundle_key",
+        "status",
+        "enrollment_scope",
+        "price_cents",
+        "currency",
+        "stripe_product_ids",
+        "stripe_price_ids",
+        "heartbeat_full_access_group_ids",
+        "provider_content_status",
+        "sources"
+      ],
+      "properties": {
+        "offer_key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+        "bundle_key": { "type": "string" },
+        "status": { "enum": ["active", "active_future_cohort", "inactive", "historical"] },
+        "enrollment_scope": { "enum": ["full_program", "cohort_program"] },
+        "price_cents": { "type": "integer", "minimum": 0 },
+        "currency": { "type": "string", "pattern": "^[a-z]{3}$" },
+        "stripe_product_ids": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^prod_[A-Za-z0-9]+$" },
+          "uniqueItems": true
+        },
+        "stripe_price_ids": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^price_[A-Za-z0-9]+$" },
+          "uniqueItems": true
+        },
+        "heartbeat_full_access_group_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "format": "uuid" },
+          "uniqueItems": true
+        },
+        "provider_content_status": {
+          "enum": ["full_group_verified_contents_unavailable", "group_and_course_verified"]
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        }
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conflict_id", "severity", "summary", "disposition", "sources"],
+      "properties": {
+        "conflict_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+        "severity": { "enum": ["high", "medium", "low"] },
+        "summary": { "type": "string", "minLength": 1 },
+        "disposition": { "enum": ["resolved", "held", "requires_owner_decision"] },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        }
+      }
+    }
+  }
+}

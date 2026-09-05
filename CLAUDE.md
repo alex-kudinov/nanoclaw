@@ -87,6 +87,8 @@ Two databases. Read the schema reference BEFORE writing any query — always loo
 | `src/contador-name-reaper.ts` | 30-min cron: repairs "Unknown" student names (Heartbeat sets Stripe `customer.name` after the payment webhook fires) via `backfill-names.cjs` |
 | `tools/contador/process-payment.cjs` | Deterministic Stripe→Sheets(roster+payment log)→Postgres payment pipeline; `fetchCustomerWithName()` retries the customer-name race |
 | `tools/contador/lib/cohort.cjs` | Release-required MCS cohort resolver for legacy cohort slugs/text and the current `cohort_start` + `cohort_label` checkout metadata contract |
+| `facts/catalogs/student-entitlements-v1.json` | Versioned full-program bundle/component authority separating enrollment, entitlement, scheduled assignment, consumption, progress, finance, and provider projections; revision 1 creates no Heartbeat markers |
+| `scripts/validate-student-entitlements.mjs` | Deterministic structural and safety validator for the student entitlement catalog |
 | `tools/contador/backfill-names.cjs` | Idempotent name reconciler (3 phases): `payments` table (A), Student Roster (B), Payment Log/transaction sheet (C). Re-resolves Stripe `customer.name` for Unknown rows; `--apply`, dry-run default |
 | `data/business/classification-schema.sql` | Taxonomy + email_classifications DDL + 25-label seed |
 | `setup/gmail/CUTOVER-info-forwarding.md` | Operational runbook for retiring info@ forwarding |

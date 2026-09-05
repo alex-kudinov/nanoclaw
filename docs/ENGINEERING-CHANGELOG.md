@@ -8,6 +8,71 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260905-001 — Version complete-program entitlements before cohort classification
+
+- Date: 2026-09-05T16:25:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review complete
+- State: validating
+- Commit/PR: uncommitted on `codex/student-entitlement-catalog-20260905`,
+  based on exact live release `886e258730729a2cade1baee70466e62e2bff59e`
+- Change class: C1 internal source/design and read-only provider inventory
+- Affected systems: Company OS student lifecycle authority; Tandemweb offer and
+  checkout evidence; read-only Stripe, Heartbeat, and Student Roster inventory;
+  historical ICF tracking authority in the courses repository
+- Outcome: adds a machine-validated revision-1 catalog with 42 typed components,
+  six bundle versions, and seven active/future complete-program offers. It
+  separates commercial enrollment, component entitlement, scheduled assignment,
+  consumption, progress, finance, and communication eligibility. Constant
+  Heartbeat course-access groups remain distinct from future hidden,
+  admin-controlled, zero-content enrollment/class markers. Full-program and
+  module-only students in one delivery block share one class marker.
+- Evidence: current published ACC/PCC/ACTC/Professional/MCS/AACS sources;
+  checkout catalog; exact provider group/course/product identities; Product Map;
+  exact production health; and the retained historical Plutio template/hours
+  design. No student membership or personal data was read or retained.
+- Conflicts: full Heartbeat group attachment graphs are unavailable through the
+  supported read surface; several ACC/PCC/ACTC quantities and consumption rules
+  remain provisional; the inactive PCC individual-exam checkout points at the
+  ACC Practice Test group; the roster collapses bundles into `Full Program`;
+  existing September 2026 Heartbeat marker names are ambiguous. Each is held or
+  owner-gated rather than inferred.
+- Files: `facts/catalogs/student-entitlements-v1*.json`;
+  `scripts/validate-student-entitlements.*`; `src/student-entitlements.test.ts`;
+  `docs/STUDENT-ENTITLEMENT-CATALOG.md`; lifecycle/project/continuity docs; and
+  a scoped courses-repository authority correction.
+- Independent review: Sonnet/high R1 found two material issues. The validator
+  parsed its schema but omitted several enum/conflict checks, and MCS
+  mentoring-on-mentoring incorrectly carried a cohort marker despite being an
+  individual-mentoring component. The dependency-free validator now enforces
+  all closed vocabulary named by R1; individual mentoring/supervision is
+  marker-free regardless of delivery mode; focused regressions cover both.
+  Narrow R2 returned `NO MATERIAL FINDINGS`. R1 used nine model calls,
+  133,894 cache-create, 750,612 cache-read, 27,318 output, and 133,896 maximum
+  context tokens (above the bounded-review target because the 42-component
+  manifest was the review subject). R2 used six calls, 79,911 cache-create,
+  233,930 cache-read, 6,523 output, and 79,913 maximum context.
+- Verification: catalog validation passes with 42 components / 6 bundles / 7
+  offers / 6 explicit conflicts / 20 open questions; focused Vitest 9/9,
+  typecheck, build, formatting, documentation continuity, capability, JSON, and
+  diff checks pass. Full root regression is 3,449 passed / 32 skipped / 2 exact
+  unchanged base failures: `cnpc-prompt-contract.test.ts` still expects the old
+  wrapper literal, and the date-sensitive Trafft shadow fixture expects current
+  freshness from an August timestamp. Neither failing file is changed.
+- Cross-repository source: courses authority correction pushed as `419981a1`
+  on `codex/student-entitlement-catalog-20260905`; it preserves the dirty
+  courses primary and changes only the two ICF student-tracking authority docs.
+- Deployment/migration: not applicable to this source/design slice. No schema,
+  runtime, provider, group, membership, spreadsheet, flow, message, or student
+  state changed.
+- Rollback/recovery: revert the task-owned catalog/validator/docs commits. The
+  live runtime and every external provider remain unchanged.
+- Documentation: entitlement contract, lifecycle authority, project map,
+  active work, evidence report, changelog, and the courses ICF authority surface.
+- Follow-ups: exact quantity/consumption owner decisions, bundle/entitlement DB
+  implementation, provider attachment observability, existing-marker
+  reconciliation, roster/Encharge projections, and any Heartbeat marker creation
+  remain separately gated.
+
 ### NC-20260904-001 — Restore Stripe webhook delivery and tracked MCS cohort recording
 
 - Date: 2026-09-04T20:36:32Z

@@ -44,6 +44,7 @@
     "student-lifecycle:shadow-catalog": "./scripts/with-pinned-node.sh node dist/student-lifecycle-shadow-cli.js",
     "student-lifecycle:registry": "./scripts/with-pinned-node.sh node dist/student-lifecycle-provider-registry-cli.js",
     "student-lifecycle:reconcile": "./scripts/with-pinned-node.sh node dist/student-lifecycle-reconciliation-cli.js",
+    "student-entitlements:validate": "./scripts/with-pinned-node.sh node scripts/validate-student-entitlements.mjs",
     "test:watch": "./scripts/with-pinned-node.sh vitest",
     "release:build": "./scripts/with-pinned-node.sh node scripts/build-release.mjs",
     "release:verify": "./scripts/with-pinned-node.sh node scripts/verify-release.mjs",

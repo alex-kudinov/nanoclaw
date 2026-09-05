@@ -383,6 +383,32 @@ The catalog must not be inferred by reversing the website's group mapping.
 Shared groups prove only the explicitly recorded scope. Payment/entitlement
 receipts select paid offer and cohort; course completion alone cannot.
 
+### 8.3 Bundle, entitlement, assignment, and Heartbeat projection
+
+`facts/catalogs/student-entitlements-v1.json` is the machine-readable bundle
+and component authority introduced by `NC-20260905-001`. A complete program is
+not a single access flag and is not equivalent to its numbered modules. One
+versioned enrollment episode materializes each included or conditional course,
+mentoring, supervision, evaluation, exam-preparation, review, resource, and
+earned-outcome component separately.
+
+Commercial enrollment, component entitlement, scheduled class/group
+assignment, service consumption, learning progress, financial obligation, and
+communication eligibility remain independent facts. A full-program and a
+module-only student assigned to the same class block share one class assignment;
+their entitlement sources remain different. A full purchase creates only the
+starting class assignment selected at checkout. Future assignments require
+schedule-backed registration or an accepted program rule.
+
+Existing paid and Course Access Groups are constant content-access projections.
+Future cohort markers are separate hidden, admin-controlled, zero-content
+projections under a `Student Markers` parent. Marker identity is based on the
+actual delivery block, never purchase scope. Individual appointments,
+self-paced access, assessments, resources, and certificate outcomes receive no
+cohort marker. Catalog revision 1 grants no provider-create or membership
+authority. The full contract and current evidence gaps are in
+`docs/STUDENT-ENTITLEMENT-CATALOG.md`.
+
 ## 9. Durable data model
 
 The future build should use ordered `business_v2` migrations and the existing
