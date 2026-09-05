@@ -14,8 +14,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Owner/client: Codex with independent Claude Sonnet/high review
 - State: complete; reviewed local C2 verifier and synthetic PostgreSQL proof,
   with no production migration or deployment
-- Commit/PR: `codex/academy-capacity-disposable-proof-20260905`; exact commits
-  recorded in the closure update after the implementation commit
+- Commit/PR: pushed `codex/academy-capacity-disposable-proof-20260905`;
+  verifier/evidence `7091d120` from capacity foundation `b7b95824` plus the
+  corrected enrollment verifier lineage
 - Change class: C2 local source plus uniquely generated disposable PostgreSQL
 - Outcome: extends the corrected migration-142 verifier through bounded hooks
   and proves the ordered 142-to-143 chain without duplicating its database,

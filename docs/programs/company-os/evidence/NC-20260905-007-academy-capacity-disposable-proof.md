@@ -78,6 +78,10 @@ base residue check for the capacity CLI. Bounded R2 returned
   CNPC wrapper-literal assertion and date-sensitive Trafft freshness fixture.
 - Poisoned-environment disposable PostgreSQL proof: pass.
 - Database residue: zero.
+- Exact verifier/evidence commit: `7091d120`, pushed to
+  `codex/academy-capacity-disposable-proof-20260905`.
+- Company OS: all six continuity commitments completed and the work item
+  closed at state revision 191.
 
 ## Boundary and next gate
 
