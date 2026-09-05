@@ -1,8 +1,11 @@
 # NC-20260905-001 student entitlement audit
 
-Date: 2026-09-05  
-Task: `NC-20260905-001`  
-Program item: `work:student-lifecycle-entitlement-catalog`  
+Date: 2026-09-05
+
+Task: `NC-20260905-001`
+
+Program item: `work:student-lifecycle-entitlement-catalog`
+
 Boundary: read-only provider and source inventory; no student/member rows, group
 creation, membership/access change, sheet mutation, message, flow, runtime, or
 deployment.

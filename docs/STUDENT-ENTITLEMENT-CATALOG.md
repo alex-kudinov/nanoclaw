@@ -1,7 +1,9 @@
 # Student Entitlement Catalog
 
-Status: catalog revision 1, source/design authority only  
-Task: `NC-20260905-001`  
+Status: catalog revision 1, source/design authority only
+
+Task: `NC-20260905-001`
+
 Machine-readable authority: `facts/catalogs/student-entitlements-v1.json`
 
 ## Decision
