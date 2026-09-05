@@ -12,8 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-05T16:25:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review complete
-- State: validating
-- Commit/PR: NanoClaw implementation/review commit `64f48df8` on
+- State: complete; source/design authority is reviewed, committed, pushed, and
+  deployment is not applicable
+- Commit/PR: NanoClaw implementation/review commit `64f48df8` plus review
+  record `8a0d3b10` on
   `codex/student-entitlement-catalog-20260905`, based on exact live release
   `886e258730729a2cade1baee70466e62e2bff59e`; courses authority commit
   `419981a1`
