@@ -39,7 +39,7 @@
       "properties": {"enrollment": {"type": "object", "minProperties": 6, "additionalProperties": {"type": "string", "minLength": 1}}}
     },
     "materialization_gates": {"type": "array", "minItems": 7, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
-    "commands": {"type": "array", "minItems": 11, "items": {"$ref": "#/$defs/command"}},
+    "commands": {"type": "array", "minItems": 14, "items": {"$ref": "#/$defs/command"}},
     "exception_codes": {"$ref": "#/$defs/uniqueStrings"},
     "query_contracts": {"type": "array", "minItems": 5, "items": {"$ref": "#/$defs/query"}},
     "projection_policy": {

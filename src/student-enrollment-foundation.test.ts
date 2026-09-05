@@ -17,7 +17,7 @@ describe('student enrollment foundation', () => {
     expect(result.summary).toEqual({
       entities: 10,
       channels: 8,
-      commands: 11,
+      commands: 14,
       exceptions: 18,
       scenarios: 10,
     });
@@ -90,6 +90,19 @@ describe('student enrollment foundation', () => {
         'source reference linking must be append-only',
         'materialize_enrollment must require order_version',
         'materialize_enrollment must require seat_version',
+      ]),
+    );
+  });
+
+  it('requires versioned financial agreement and obligation commands', () => {
+    const contract = fixture();
+    contract.commands.find(
+      (entry: any) => entry.key === 'transition_financial_obligation',
+    ).requires = ['new_state'];
+    expect(validateStudentEnrollmentFoundation(contract).findings).toEqual(
+      expect.arrayContaining([
+        'transition_financial_obligation must require obligation_version',
+        'transition_financial_obligation must require source_evidence',
       ]),
     );
   });

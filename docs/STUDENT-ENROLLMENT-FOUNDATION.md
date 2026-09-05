@@ -1,6 +1,6 @@
 # Student Enrollment Foundation
 
-Status: foundation revision 1, design and machine-readable contract only
+Status: foundation revision 2, design and local dark implementation contract
 
 Task: `NC-20260905-002`
 
@@ -121,15 +121,18 @@ Heartbeat directly.
 2. `link_source_reference` appends another provider/operator alias to that
    order after exact collision checks.
 3. `attach_evidence` appends commercial, payment, participant, or grant proof.
-4. `create_seats` uses an explicit seat-count authority.
-5. `assign_participant` binds one seat to one exact Party reference.
-6. `materialize_enrollment` compare-and-swaps both order and seat versions and
+4. `record_financial_agreement`, `record_financial_obligation`, and
+   `transition_financial_obligation` keep actual dated obligations versioned
+   and independent from enrollment or entitlement.
+5. `create_seats` uses an explicit seat-count authority.
+6. `assign_participant` binds one seat to one exact Party reference.
+7. `materialize_enrollment` compare-and-swaps both order and seat versions and
    checks every gate atomically.
-7. `assign_class` binds eligible components to accepted delivery blocks.
-8. `request_projection` writes a version-bound outbox command.
-9. `record_projection_readback` records the exact target result.
-10. `resolve_exception` requires evidence and a named actor.
-11. `correct_or_transfer` appends a new version and preserves prior facts.
+8. `assign_class` binds eligible components to accepted delivery blocks.
+9. `request_projection` writes a version-bound outbox command.
+10. `record_projection_readback` records the exact target result.
+11. `resolve_exception` requires evidence and a named actor.
+12. `correct_or_transfer` appends a new version and preserves prior facts.
 
 ### Idempotency
 
@@ -302,7 +305,11 @@ capture, alias collision, stale version, partial materialization, transfer,
 reversal, outbox replay, exact-readback mismatch, least privilege, retention,
 and rollback.
 
-## Owner decisions still required before build
+## Owner decisions still required before production promotion
+
+The local dark build uses the conservative defaults in
+`facts/catalogs/student-enrollment-policy-v1.json`. Before applying migration
+142 or enabling any runtime path, the owner must confirm or version-replace:
 
 - accepted retention periods for evidence, raw uploads, receipts, and history;
 - which roles can confirm participants, seat counts, transfers, and grants;

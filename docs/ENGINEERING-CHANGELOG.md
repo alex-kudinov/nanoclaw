@@ -8,6 +8,65 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260905-003 — Build the local multi-source enrollment dark foundation
+
+- Date: 2026-09-05T19:20:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: validating; local implementation and review corrections are complete,
+  with commit/push and final verification pending
+- Commit/PR: `codex/student-enrollment-dark-foundation-20260905`, based on
+  pushed foundation `1d77ae5a`
+- Change class: C2 reversible local source; highest future operational class is
+  C4, but no financial/student/provider operation is wired or performed
+- Affected systems: source-only Company OS student enrollment contract,
+  migration 142, release packaging, and pure local command/domain mechanics
+- Outcome: adds conservative policy defaults and an unwired deterministic
+  order -> seats -> exact participant enrollment engine. It covers append-only
+  source aliases/evidence, incomplete-order correction, financial agreements
+  and obligations, component entitlements, class assignments, outbox/readback
+  receipts, durable recurring exceptions, explicit order holds/cancellation,
+  and pre/post-activation transfer without inferring payer relationships.
+- Schema: migration/rollback 142 define 13 admin-only tables and one aggregate
+  view. Current aggregates are optimistic-versioned; source refs, evidence,
+  receipts, and history are append-only; JSON is bounded; current enrollment is
+  unique per seat; rollback refuses after any row exists. Migration is packaged
+  but unapplied.
+- Independent review: Sonnet/high R1 found one P0, six P1, and two P2. Fixes
+  aligned every SQL-required audit field, exception re-observation/conflict,
+  transfer preconditions, all-exception materialization blocks, projection
+  supersession versions/history, runtime enums/numeric bounds, SQL key limits,
+  explicit order states, and duplicate assignment protection. R2 verified
+  those corrections and found two residual input checks; lower-snake code and
+  evidence-subject validation plus direct negative tests close them. No
+  reviewed material finding remains unresolved.
+- Review usage: R1 used six Sonnet calls, 124,919 cache-create, 309,063
+  cache-read, 35,982 output, and 133,485 maximum context tokens under the
+  intentional 150k implementation-review budget. R2 used eight calls, 122,366
+  cache-create, 481,547 cache-read, 20,471 output, and 130,932 maximum context;
+  this exceeded the nominal 100k correction target because the corrected
+  domain file plus R1 evidence remained load-bearing.
+- Verification: contract validation reports 10 entities / 8 channels / 14
+  commands / 18 exceptions / 10 synthetic scenarios. Five focused files / 61
+  tests, pinned-Node typecheck/build/format, documentation continuity/
+  capability, JSON, and diff checks pass. Full root is 3,501 passed / 32
+  skipped / two exact unchanged baseline failures:
+  `cnpc-prompt-contract.test.ts` expects the old pre-wrapper literal and the
+  date-sensitive Trafft shadow fixture expects August evidence to remain
+  current. Neither failing file is changed.
+- Deployment/migration: not applicable and not authorized. No migration apply,
+  real student inspection/reconciliation, backfill, adapter/projection wiring,
+  provider/Sheet/Heartbeat/Encharge/Plutio/runtime write, deployment, or
+  communication occurred.
+- Rollback/recovery: revert the local source commit. No live state exists to
+  unwind; the unapplied SQL rollback is guarded for any future separately
+  authorized empty-schema application.
+- Documentation: policy catalog, foundation revision 2, exact dark
+  implementation plan, data operating guide, Project Map, Active Work,
+  changelog, and Claude review artifacts.
+- Follow-ups: disposable PostgreSQL apply/replay/rollback, production empty
+  schema, ingress adapters, read-only reconciliation, projections, backfill,
+  deployment, and communications each remain separate owner-gated work.
+
 ### NC-20260905-002 — Define the multi-source student enrollment foundation
 
 - Date: 2026-09-05T18:05:00Z

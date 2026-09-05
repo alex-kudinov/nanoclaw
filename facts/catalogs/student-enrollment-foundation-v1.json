@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "contract_id": "student-enrollment-foundation",
-  "contract_revision": 1,
+  "contract_revision": 2,
   "effective_from": "2026-09-05T00:00:00Z",
   "authority": {
     "canonical_process_owner": "Company OS",
@@ -124,6 +124,9 @@
     {"key":"capture_order","writes":"canonical_only","requires":["source_channel", "idempotency_key", "source_reference"]},
     {"key":"link_source_reference","writes":"append_only","requires":["order_version", "source_scope", "source_object_type", "source_object_id", "idempotency_key"]},
     {"key":"attach_evidence","writes":"append_only","requires":["subject_version", "evidence_type", "source_reference", "observed_at"]},
+    {"key":"record_financial_agreement","writes":"canonical_only","requires":["order_version", "agreement_type", "source_evidence"]},
+    {"key":"record_financial_obligation","writes":"canonical_only","requires":["agreement_version", "sequence_number", "source_evidence"]},
+    {"key":"transition_financial_obligation","writes":"canonical_only","requires":["obligation_version", "new_state", "source_evidence"]},
     {"key":"create_seats","writes":"canonical_only","requires":["order_version", "seat_count_authority"]},
     {"key":"assign_participant","writes":"canonical_only","requires":["seat_version", "party_reference", "participant_evidence"]},
     {"key":"materialize_enrollment","writes":"canonical_only","requires":["order_version", "seat_version", "all_materialization_gates"]},

@@ -260,6 +260,16 @@ group, pipeline duplication, and recent activity remain forbidden fallbacks.
 The schema is admin-only and grants no draft, approval, send, provider-write,
 follow-up-activation, payment, contract, credential, or minion authority.
 
+Migration 142 is `NC-20260905-003`'s source-only multi-source student
+enrollment dark foundation. It defines admin-only orders, append-only source
+references/evidence, independently assignable seats, exact participant
+enrollments, component entitlements, financial agreements/obligations, class
+assignments, projection outbox/receipts, durable exceptions, history, and an
+aggregate health view. It is packaged but unapplied and unwired. Its guarded
+rollback refuses after any row exists. Repository presence grants no authority
+to apply the migration, inspect/reconcile/backfill students, activate adapters
+or projections, change a provider/Sheet/runtime, deploy, or communicate.
+
 ## Connection
 
 ```bash

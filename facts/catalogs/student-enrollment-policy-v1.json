@@ -1,0 +1,74 @@
+{
+  "schema_version": "1.0",
+  "policy_id": "student-enrollment-policy",
+  "policy_revision": 1,
+  "effective_for": "dark_foundation_only",
+  "authority": {
+    "process_owner": "Company OS",
+    "production_activation": "separate_owner_decision_required",
+    "policy_changes": "versioned_append_only_decision"
+  },
+  "roles": {
+    "source_adapter": ["capture_order", "link_source_reference", "attach_evidence"],
+    "enrollment_operator": ["create_seats", "assign_participant", "assign_class", "resolve_nonfinancial_exception"],
+    "finance_operator": ["confirm_off_platform_payment", "record_financial_agreement", "record_financial_obligation"],
+    "owner_admin": ["grant_scholarship", "grant_complimentary", "approve_post_activation_transfer", "decide_refund_dispute_withdrawal"],
+    "projection_worker": ["claim_projection_outbox", "record_projection_readback"]
+  },
+  "financial_evidence": {
+    "stripe": "verified_account_scoped_provider_object",
+    "plutio": "exact_invoice_or_contract_reference_plus_payment_state",
+    "check_ach_or_wire": "named_finance_operator_confirmation_plus_external_receipt_reference",
+    "unpaid_invoice": "may_create_order_and_seats_but_not_active_enrollment_unless_terms_explicitly_allow",
+    "scholarship_or_complimentary": "accepted_grant_receipt_marks_finance_not_applicable"
+  },
+  "activation": {
+    "paid_offer_default": "requires_settled_payment_or_explicit_active_terms",
+    "future_start": "materialize_pending_until_effective_at",
+    "missing_or_conflicting_finance": "hold",
+    "scholarship_or_complimentary": "may_activate_with_accepted_grant_receipt",
+    "provider_projection_from_pending": false
+  },
+  "sponsor_seats": {
+    "partial_participant_list": "materialize_only_exact_assigned_seats",
+    "unassigned_seats": "remain_owned_and_visible",
+    "replacement_before_activation": "versioned_reassignment_with_source_evidence",
+    "replacement_after_activation": "owner_admin_transfer_decision_required",
+    "payer_as_participant": "never_inferred"
+  },
+  "refund_dispute_withdrawal": {
+    "default": "open_policy_hold",
+    "silent_access_revocation": false,
+    "silent_entitlement_deletion": false,
+    "requires": ["exact_subject_version", "source_evidence", "owner_admin_decision", "projection_supersession_plan"]
+  },
+  "retention_defaults": {
+    "raw_participant_upload_days": 7,
+    "source_reference_and_audit_years": 7,
+    "projection_receipt_years": 2,
+    "resolved_exception_years": 2,
+    "production_acceptance": "requires_privacy_and_legal_review_before_retention_job"
+  },
+  "roster_coexistence": {
+    "initial_mode": "projection_preview_only",
+    "nonempty_operator_cell": "preserve_and_open_drift_exception",
+    "canonical_columns": ["Enrollment ID", "Program", "Offer Version", "Bundle Version", "Enrollment Route", "Cohort", "Class Assignment", "Enrollment State", "Projection State"],
+    "cutover": "separate_owner_decision_after_shadow_parity"
+  },
+  "projection_sequence": ["student_roster", "heartbeat_access", "heartbeat_markers", "encharge", "plutio"],
+  "projection_failure": {
+    "independent_targets": true,
+    "later_target_failure_does_not_rollback_verified_prior_target": true,
+    "retry_from_immutable_outbox": true,
+    "ambiguous_acceptance": "hold_for_readback_not_blind_retry",
+    "complete_requires_exact_readback": true
+  },
+  "phase_boundary": {
+    "runtime_enabled": false,
+    "adapters_wired": false,
+    "projections_enabled": false,
+    "migration_applied": false,
+    "real_data_allowed": false,
+    "deployment_allowed": false
+  }
+}

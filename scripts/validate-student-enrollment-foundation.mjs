@@ -203,6 +203,34 @@ export function validateStudentEnrollmentFoundation(contract) {
       findings,
     );
   }
+  const requiredFinancialCommands = new Map([
+    [
+      'record_financial_agreement',
+      ['order_version', 'agreement_type', 'source_evidence'],
+    ],
+    [
+      'record_financial_obligation',
+      ['agreement_version', 'sequence_number', 'source_evidence'],
+    ],
+    [
+      'transition_financial_obligation',
+      ['obligation_version', 'new_state', 'source_evidence'],
+    ],
+  ]);
+  for (const [commandKey, fields] of requiredFinancialCommands) {
+    add(
+      commandMap.get(commandKey)?.writes === 'canonical_only',
+      `${commandKey} must write canonical state`,
+      findings,
+    );
+    for (const field of fields) {
+      add(
+        commandMap.get(commandKey)?.requires?.includes(field),
+        `${commandKey} must require ${field}`,
+        findings,
+      );
+    }
+  }
   for (const field of [
     'order_version',
     'seat_version',

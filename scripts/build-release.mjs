@@ -186,6 +186,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_140_checkout_failure_incidents.sql',
     'data/business/migrations/nanoclaw-v2/141_classification_routing_integrity.sql',
     'data/business/migrations/nanoclaw-v2/rollback_141_classification_routing_integrity.sql',
+    'data/business/migrations/nanoclaw-v2/142_student_enrollment_dark_foundation.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_142_student_enrollment_dark_foundation.sql',
     'scripts/verify-release.mjs',
     'scripts/runtime-doctor.mjs',
     'scripts/with-pinned-node.sh',
