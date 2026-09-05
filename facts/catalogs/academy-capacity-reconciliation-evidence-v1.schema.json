@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "academy-capacity-reconciliation-evidence-v1.schema.json",
+  "title": "Academy capacity read-only reconciliation evidence",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "report_id",
+    "task_id",
+    "observed_at",
+    "source_window",
+    "privacy",
+    "authority",
+    "sources",
+    "delivery_blocks",
+    "exceptions",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "report_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+    "task_id": { "type": "string", "pattern": "^NC-[0-9]{8}-[0-9]{3}$" },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "source_window": {
+      "type": "object",
+      "required": ["from", "through"],
+      "properties": {
+        "from": { "type": "string", "format": "date" },
+        "through": { "type": "string", "format": "date" }
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "type": "object",
+      "required": [
+        "classification",
+        "exact_identity_transient_only",
+        "persisted_content"
+      ],
+      "properties": {
+        "classification": { "const": "aggregate_hash_only" },
+        "exact_identity_transient_only": { "const": true },
+        "persisted_content": {
+          "const": "aggregate_counts_hashes_and_exceptions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authority": { "type": "array", "minItems": 4 },
+    "sources": { "type": "object" },
+    "delivery_blocks": { "type": "array", "minItems": 5 },
+    "exceptions": { "type": "array", "minItems": 1 },
+    "boundary": { "type": "object" }
+  },
+  "additionalProperties": false
+}

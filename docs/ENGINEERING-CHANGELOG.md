@@ -8,6 +8,50 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260905-008 — Reconcile September Academy capacity read-only
+
+- Date: 2026-09-05T22:42:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: complete read-only reconciliation; local report/validator ready for
+  commit and push, with seven held source exceptions and no operational write
+- Change class: C2 reversible local evidence and validation source plus
+  authorized read-only provider/public observations
+- Scope: MCS September 24 Thursday, September 25 Friday, January 7/8 transfer
+  destinations, and ACC Module 1 September 7 with `acc-module-1`, `acc-full`,
+  and `acc-pcc-full`; source window 2026-01-01 through 2026-09-05.
+- Current facts: MCS Thursday is 5/12 and open. Friday has 13 active roster
+  assignments against capacity 12 and remains fail-closed sold out; the owner
+  hypothesis of 12 is variance evidence, not a lower override. The owner-named
+  deferral is currently in January Thursday, but its September origin weekday
+  is not proven by current state. ACC September 7 has eight active assignments
+  and remains sold out, but numeric capacity is absent; six Full Program rows
+  collapse the $3,999/$7,499 offers and lack exact cohort-bound funding.
+- Source separation: Stripe found 10 Friday, 6 Thursday, and 2 ACC successful
+  funding identities plus one Thursday full refund and one Friday failed
+  charge. Product Map, possible Plutio invoices, and Heartbeat aggregate groups
+  were inspected without treating payer, invoice title, or program access as
+  participant/class authority.
+- Evidence contract: one aggregate/hash-only JSON report, reusable applied
+  JSON Schema, deterministic domain/privacy validator, and seven owned
+  exceptions. No student name, email, or raw Stripe ID is persisted.
+- Review: R1 found a missing MCS funding exception and a schema that was loaded
+  but not applied. Both were fixed; R2 returned `NO MATERIAL FINDINGS`. R1
+  usage: 5 calls / 79,205 cache-create / 201,163 cache-read / 22,543 output /
+  87,771 max context. R2: 6 calls / 58,839 cache-create / 248,341 cache-read /
+  10,083 output / 67,405 max context.
+- Verification: validator pass; focused 20/20; pinned typecheck/build,
+  formatting, documentation continuity/capability, JSON, privacy, and diff
+  checks pass. Full root is 3,538 passed / 32 skipped / two exact unchanged
+  predecessor failures in the CNPC wrapper assertion and date-sensitive
+  Trafft fixture.
+- Boundary: read-only external observation only. No Student Roster, Stripe,
+  Plutio, Heartbeat, calendar, website, production database, cohort, waitlist,
+  runtime, minion, message, migration, deployment, backfill, or authority write.
+- Follow-up: a separate source-write decision must resolve the seven exceptions
+  and correct the Tandemweb lower owner-count override before any production
+  population, Bookkeeper/minion integration, checkout cutover, waitlist action,
+  deployment, or authority transition.
+
 ### NC-20260905-007 — Prove migrations 142 and 143 together disposably
 
 - Date: 2026-09-05T22:07:00Z

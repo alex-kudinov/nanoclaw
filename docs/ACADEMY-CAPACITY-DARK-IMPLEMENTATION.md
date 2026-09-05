@@ -2,7 +2,9 @@
 
 Status: `NC-20260905-005` local implementation complete at `5b69e107`;
 `NC-20260905-007` proves migrations 142 and 143 together on disposable local
-PostgreSQL; both migrations remain unapplied and runtime unwired
+PostgreSQL; `NC-20260905-008` records the bounded read-only source
+reconciliation and seven owned exceptions; both migrations remain unapplied and
+runtime unwired
 
 Base: reviewed enrollment dark-foundation tip `deac91a8` and accepted capacity
 architecture `docs/ACADEMY-CAPACITY-CONTROL-PLANE.md`
@@ -131,6 +133,24 @@ create a student assignment; the existing reservation must pass ordinary
 commit validation. Decline, expiry, and cancellation release the reservation.
 No command sends a message.
 
+## Read-only source reconciliation
+
+`NC-20260905-008` tests the current MCS September/January and ACC September 7
+facts without populating this model. MCS Thursday is reconciled at 5/12 and
+remains open. MCS Friday has 13 active roster assignments against capacity 12,
+not the owner hypothesis of 12; it remains sold out and blocked from import.
+The owner-named deferral is currently assigned to January Thursday, but its
+origin weekday is disputed by the prior transfer record and owner count
+context. ACC September 7 has eight active assignments and remains sold out,
+but its numeric capacity is absent and six Full Program rows cannot distinguish
+the $3,999 from the $7,499 offer or prove exact funding source.
+
+The reusable evidence validator rejects lower owner overrides, unknown-capacity
+availability claims, PII/raw Stripe IDs, unowned exceptions, funding gaps
+without owned exceptions, population drift, and Heartbeat membership as
+capacity authority. The report is evidence for a
+later source-write decision, not a parallel operational catalog.
+
 ## Test matrix
 
 Focused tests cover:
@@ -159,8 +179,10 @@ Focused tests cover:
 3. Separately authorize production empty-schema migration with backups and
    least-privilege readback.
 4. Separately authorize read-only schedule, offer, Bookkeeper, Stripe, and
-   Student Roster reconciliation.
+   Student Roster reconciliation. The bounded September/January population is
+   complete under `NC-20260905-008`, with seven exceptions held from import.
 5. Separately authorize operator/minion, Tandemweb, provider, communication,
    and authority-cutover stages.
 
-Nothing in `NC-20260905-007` authorizes gates 3-5.
+Nothing in `NC-20260905-008` authorizes gates 3 or 5, production population, or
+resolution of the held source exceptions.

@@ -302,6 +302,16 @@ coupled to a capacity delivery block; empty rollback/reapply; and zero database
 residue. The verifier reuses migration 142's pinned `/tmp:5432`, stripped-`PG*`,
 generated-name-only safety boundary. This synthetic proof does not authorize
 production migration or any real-data/provider/runtime action.
+`NC-20260905-008` then performs a bounded read-only reconciliation without
+populating migrations 142-143. The privacy-minimized evidence holds MCS
+Thursday at 5/12 open, MCS Friday at 13 roster assignments against capacity 12
+and sold out, one January Thursday assignment with disputed transfer origin,
+and ACC September 7 at eight assignments but unknown numeric capacity. Seven
+owned exceptions block import where owner count, transfer origin, offer,
+funding, capacity, or the Tandemweb lower-override behavior remains unresolved.
+The reusable validator and evidence schema are tracked, but they are not a
+parallel assignment or capacity authority. Repository evidence does not grant
+source repair, production population, provider write, or runtime authority.
 
 ## Connection
 

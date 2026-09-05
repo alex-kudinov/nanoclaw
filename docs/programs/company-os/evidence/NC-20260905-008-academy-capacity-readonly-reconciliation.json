@@ -1,0 +1,327 @@
+{
+  "schema_version": "1.0",
+  "report_id": "academy-capacity-readonly-reconciliation-2026-09-05",
+  "task_id": "NC-20260905-008",
+  "observed_at": "2026-09-05T22:20:22Z",
+  "source_window": {
+    "from": "2026-01-01",
+    "through": "2026-09-05"
+  },
+  "privacy": {
+    "classification": "aggregate_hash_only",
+    "exact_identity_transient_only": true,
+    "persisted_content": "aggregate_counts_hashes_and_exceptions"
+  },
+  "authority": [
+    {
+      "fact": "class_assignment",
+      "source": "Student Roster exact dated cohort",
+      "rule": "active non-refunded roster assignment is the current seat fact; conflicts remain exceptions"
+    },
+    {
+      "fact": "payment_and_refund",
+      "source": "Stripe or exact invoicing evidence",
+      "rule": "funding evidence never infers participant identity or class assignment"
+    },
+    {
+      "fact": "schedule",
+      "source": "published Google Calendar projection",
+      "rule": "schedule identifies delivery blocks but does not determine capacity"
+    },
+    {
+      "fact": "public_state",
+      "source": "current Tandemweb capacity guard",
+      "rule": "sold-out owner overrides remain fail-closed while reconciliation is unresolved"
+    },
+    {
+      "fact": "course_access",
+      "source": "Heartbeat group membership",
+      "rule": "program-wide access is evidence only and is never a cohort capacity counter"
+    }
+  ],
+  "sources": {
+    "student_roster": {
+      "source_type": "google_sheet_read_only",
+      "spreadsheet_title": "Tandem - Student Roster",
+      "mcs": {
+        "tab_gid": 1886737117,
+        "range": "MCS!A1:AD250",
+        "relevant_rows": 20,
+        "relevant_rowset_sha256": "958a9936c4a8c941db8582f1c18cff1ad80df2637e91fc257dc9bf477e44959e",
+        "owner_named_deferral_matches": 1,
+        "owner_named_deferral_row_sha256": "3e920793ec9024595e533c7b8c0a06c2d3e17fab6a25948956aa86cc0ff1b684"
+      },
+      "acc": {
+        "tab_gid": 690286021,
+        "range": "ACC!A1:Z200",
+        "relevant_rows": 8,
+        "relevant_rowset_sha256": "a89c9567174b084041b0a573fa583e2c124d29b5f7aa3a4ce49ce940e1c0ada6"
+      },
+      "product_map": {
+        "tab_gid": 1755355115,
+        "relevant_mappings": 8,
+        "acc_module_1_columns": ["ACC:M1"],
+        "acc_full_columns": ["ACC:Full Program"],
+        "professional_coach_columns": [
+          "ACC:Full Program",
+          "PCC:Full Program",
+          "ACTC:Full Program"
+        ],
+        "mcs_september_columns": ["MCS:MCS Practicum"]
+      }
+    },
+    "stripe": {
+      "source_type": "stripe_read_only_search",
+      "account_scope": "all",
+      "matching_records_account": "alt",
+      "identity_rule": "one successful non-refunded payment identity is funding evidence only",
+      "mcs_thursday": {
+        "matched_charges": 7,
+        "successful_seats": 6,
+        "fully_refunded_seats": 1,
+        "failed_charges": 0
+      },
+      "mcs_friday": {
+        "matched_charges": 11,
+        "successful_seats": 10,
+        "fully_refunded_seats": 0,
+        "failed_charges": 1
+      },
+      "acc_september_7": {
+        "successful_seats": 2,
+        "fully_refunded_seats": 0,
+        "by_offer": {
+          "acc-module-1": 1,
+          "acc-full": 1,
+          "acc-pcc-full": 0
+        }
+      }
+    },
+    "plutio": {
+      "source_type": "read_only_invoice_name_search",
+      "result": "not_cohort_bindable",
+      "potential_acc_3999_paid_matches": 2,
+      "counted_as_seats": 0,
+      "reason": "invoice title and amount do not prove the participant or dated class assignment"
+    },
+    "heartbeat": {
+      "source_type": "privacy_minimized_group_snapshot",
+      "capacity_authority": false,
+      "groups": {
+        "mcs-full": {
+          "member_count": 24,
+          "sha256": "0c754f72bd644daca2b2366a479719facd1845856e7e5fa9fbd0050e1a85edb4"
+        },
+        "acc-full": {
+          "member_count": 22,
+          "sha256": "9b7e6a82994246841a083524990fd90086856fed1aab48a982b3f66d48fb65dc"
+        },
+        "acc-pcc-full": {
+          "member_count": 3,
+          "sha256": "6593828d98af85b7c1e75a5f1417ba6932094bc61895f7e751679924ad2c9543"
+        }
+      }
+    },
+    "tandemweb": {
+      "source_type": "tracked_release_and_live_public_readback",
+      "evidence_commit": "4e01dc896caa6036fab8ef0d80a9e773b39316e4",
+      "acc_url": "https://tandemcoach.co/icf/acc-coach-certification-training/",
+      "mcs_url": "https://tandemcoach.co/mcs/advanced-accreditation-mentor-coaching/",
+      "acc_september_7": "sold_out_with_dated_waitlist",
+      "mcs_september_24": "open",
+      "mcs_september_25": "sold_out_with_dated_waitlist"
+    }
+  },
+  "delivery_blocks": [
+    {
+      "delivery_block_key": "mcs-practicum:2026-09-24",
+      "program_key": "mcs-practicum",
+      "starts_on": "2026-09-24",
+      "schedule_label": "Thursday",
+      "offers": ["mcs-full"],
+      "capacity": 12,
+      "public_state": "open",
+      "state_basis": "roster_and_payment_reconciled",
+      "roster": { "rows": 6, "refunded": 1, "active": 5 },
+      "payments": {
+        "successful": 6,
+        "fully_refunded": 1,
+        "failed": 0,
+        "transfer_reconciliation_delta": -1
+      },
+      "computed": { "occupied": 5, "available": 7, "over_capacity": 0 },
+      "reconciliation_status": "matched",
+      "exception_ids": ["exception:mcs-deferral-origin-track-conflict"]
+    },
+    {
+      "delivery_block_key": "mcs-practicum:2026-09-25",
+      "program_key": "mcs-practicum",
+      "starts_on": "2026-09-25",
+      "schedule_label": "Friday",
+      "offers": ["mcs-full"],
+      "capacity": 12,
+      "public_state": "sold_out",
+      "state_basis": "roster_fail_closed",
+      "roster": { "rows": 13, "refunded": 0, "active": 13 },
+      "payments": {
+        "successful": 10,
+        "fully_refunded": 0,
+        "failed": 1,
+        "funding_unresolved_or_non_stripe": 3
+      },
+      "owner_hypothesis": { "active": 12, "variance_from_roster": 1 },
+      "computed": { "occupied": 13, "available": 0, "over_capacity": 1 },
+      "reconciliation_status": "needs_resolution",
+      "exception_ids": [
+        "exception:mcs-friday-owner-roster-count-conflict",
+        "exception:mcs-deferral-origin-track-conflict",
+        "exception:tandemweb-owner-override-masks-roster-overcapacity",
+        "exception:mcs-friday-funding-source-coverage-incomplete"
+      ]
+    },
+    {
+      "delivery_block_key": "mcs-practicum:2027-01-07",
+      "program_key": "mcs-practicum",
+      "starts_on": "2027-01-07",
+      "schedule_label": "Thursday",
+      "offers": ["mcs-full"],
+      "capacity": 12,
+      "public_state": "open",
+      "state_basis": "current_roster_assignment",
+      "roster": { "rows": 1, "refunded": 0, "active": 1 },
+      "payments": {
+        "successful": 0,
+        "fully_refunded": 0,
+        "failed": 0,
+        "transfer_reconciliation_delta": 1
+      },
+      "computed": { "occupied": 1, "available": 11, "over_capacity": 0 },
+      "reconciliation_status": "needs_resolution",
+      "exception_ids": ["exception:mcs-deferral-origin-track-conflict"]
+    },
+    {
+      "delivery_block_key": "mcs-practicum:2027-01-08",
+      "program_key": "mcs-practicum",
+      "starts_on": "2027-01-08",
+      "schedule_label": "Friday",
+      "offers": ["mcs-full"],
+      "capacity": 12,
+      "public_state": "open",
+      "state_basis": "current_roster_assignment",
+      "roster": { "rows": 0, "refunded": 0, "active": 0 },
+      "payments": {
+        "successful": 0,
+        "fully_refunded": 0,
+        "failed": 0,
+        "transfer_reconciliation_delta": 0
+      },
+      "computed": { "occupied": 0, "available": 12, "over_capacity": 0 },
+      "reconciliation_status": "needs_resolution",
+      "exception_ids": ["exception:mcs-deferral-origin-track-conflict"]
+    },
+    {
+      "delivery_block_key": "acc.module-1:2026-09-07",
+      "program_key": "acc",
+      "starts_on": "2026-09-07",
+      "schedule_label": "US daytime / Europe",
+      "offers": ["acc-module-1", "acc-full", "acc-pcc-full"],
+      "capacity": null,
+      "public_state": "sold_out",
+      "state_basis": "owner_override_fail_closed",
+      "roster": {
+        "rows": 8,
+        "refunded": 0,
+        "active": 8,
+        "module_1_only": 2,
+        "full_program_offer_collapsed": 6
+      },
+      "payments": {
+        "successful": 2,
+        "fully_refunded": 0,
+        "by_offer": { "acc-module-1": 1, "acc-full": 1, "acc-pcc-full": 0 },
+        "funding_unresolved_or_non_stripe": 6
+      },
+      "computed": {
+        "occupied_floor": 8,
+        "available": null,
+        "over_capacity": null
+      },
+      "reconciliation_status": "policy_only_needs_resolution",
+      "exception_ids": [
+        "exception:acc-september-capacity-unknown",
+        "exception:acc-full-program-offer-attribution-collapsed",
+        "exception:acc-funding-source-coverage-incomplete"
+      ]
+    }
+  ],
+  "exceptions": [
+    {
+      "exception_id": "exception:mcs-friday-owner-roster-count-conflict",
+      "severity": "blocks_assignment_import",
+      "facts": "Friday has 13 active non-refunded roster assignments against capacity 12; the owner hypothesis is 12.",
+      "owner": "academy_operations",
+      "next_evidence": "Identify and disposition the one extra Friday-labelled assignment from authoritative attendance or enrollment evidence; do not remove a row by payment-name inference."
+    },
+    {
+      "exception_id": "exception:mcs-deferral-origin-track-conflict",
+      "severity": "blocks_transfer_import",
+      "facts": "The owner-named deferral subject is currently assigned to January Thursday. The preexisting transfer ledger says the origin was September Thursday, while the owner count context associated the deferral with Friday; current roster state does not preserve origin evidence.",
+      "owner": "academy_operations",
+      "next_evidence": "Confirm the original September delivery block and intended January weekday from dated enrollment or attendance evidence before any transfer is imported or another roster row is changed."
+    },
+    {
+      "exception_id": "exception:tandemweb-owner-override-masks-roster-overcapacity",
+      "severity": "blocks_reconciler_promotion",
+      "facts": "The current Tandemweb reconciler substitutes owner_confirmed_occupied_seats for the 13-row roster result and reports 12/12, hiding one authoritative roster over-capacity assignment.",
+      "owner": "capacity_engineering",
+      "next_evidence": "Make roster occupancy fail-closed and keep owner assertions as variance evidence before reusing this reconciler for Company OS population."
+    },
+    {
+      "exception_id": "exception:mcs-friday-funding-source-coverage-incomplete",
+      "severity": "blocks_funding_reconciliation",
+      "facts": "Thirteen active Friday assignments exist, but only ten successful non-refunded Stripe payment identities are bound to this cohort.",
+      "owner": "bookkeeper_integration",
+      "next_evidence": "Reconcile the three remaining assignments to exact invoice, ACH, sponsored, scholarship, or operator-grant evidence with separate payer and participant identities."
+    },
+    {
+      "exception_id": "exception:acc-september-capacity-unknown",
+      "severity": "blocks_capacity_population",
+      "facts": "September 7 is publicly sold out by owner decision, but no numeric seat capacity is recorded, so eight active assignments cannot produce an available-seat calculation.",
+      "owner": "academy_operations",
+      "next_evidence": "Record the approved numeric capacity and its source for the September 7 delivery block."
+    },
+    {
+      "exception_id": "exception:acc-full-program-offer-attribution-collapsed",
+      "severity": "blocks_offer_level_reconciliation",
+      "facts": "Six September ACC rows use one Full Program column shared by acc-full and acc-pcc-full, so assignment counts cannot be attributed to the $3,999 versus $7,499 offers.",
+      "owner": "academy_operations",
+      "next_evidence": "Bind each full-program participant to an exact source offer without inferring from payer identity."
+    },
+    {
+      "exception_id": "exception:acc-funding-source-coverage-incomplete",
+      "severity": "blocks_funding_reconciliation",
+      "facts": "Eight assignments exist, but only two exact September 7 website Stripe payments are cohort-bound; possible invoices are not participant/cohort-bound and are not counted as seats.",
+      "owner": "bookkeeper_integration",
+      "next_evidence": "Reconcile the six remaining assignments to exact invoice, ACH, sponsored, scholarship, or operator-grant evidence with separate payer and participant identities."
+    }
+  ],
+  "boundary": {
+    "external_reads_only": true,
+    "repository_writes": [
+      "privacy_minimized_evidence",
+      "validator",
+      "tests",
+      "continuity"
+    ],
+    "forbidden_actions": [
+      "student_roster_write",
+      "provider_write",
+      "production_database_write",
+      "website_or_cohort_state_change",
+      "waitlist_contact",
+      "runtime_or_minion_activation",
+      "migration_or_backfill",
+      "deployment_or_authority_cutover"
+    ]
+  }
+}
