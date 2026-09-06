@@ -72,6 +72,19 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   applies once, and reads back the exact registration. This is a mechanical
   deployment-helper correction; runtime command semantics reviewed in R1/R2
   are unchanged.
+- Natural read-only canary: Alex asked the private `#gru-capacity` channel for
+  current class capacity. The first minion turn correctly treated the MCP queue
+  acknowledgment as pending; the host then piped the exact result into the same
+  warm container, and the second turn reported all five pools with the Friday
+  variance. PostgreSQL remained zero operator cases/receipts, reservations,
+  waitlist entries, and waitlist offers; cohort occupancy was unchanged.
+- Canary prompt correction: the otherwise correct answer offered to pull
+  participant details and run another reconciliation. Capacity has neither
+  participant-list authority nor permission to invent a follow-up mutation.
+  The prompt now requires answer-and-stop behavior, forbids offering identity
+  enumeration or unsolicited mutations, and reports accepted 21/12 and 13/12
+  occupancy as oversold rather than speculating about a data error. A static
+  prompt/capability contract test locks the boundary.
 - Boundary: no checkout/Tandemweb/public cutover, provider/Sheet mutation,
   customer communication, automatic waitlist promotion, refund, payment,
   certificate, or assignment/capacity authority cutover. The current public
