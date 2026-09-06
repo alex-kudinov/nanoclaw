@@ -5,12 +5,17 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultReportPath,
   defaultSchemaPath,
+  defaultCorrectionPath,
+  defaultCorrectionSchemaPath,
   validateAcademyCapacityReconciliation,
+  validateAcademyCapacitySalesReconstruction,
   validateJsonSchemaDocument,
 } from '../scripts/validate-academy-capacity-reconciliation.mjs';
 
 const report = JSON.parse(fs.readFileSync(defaultReportPath, 'utf8'));
+const correction = JSON.parse(fs.readFileSync(defaultCorrectionPath, 'utf8'));
 const copy = () => structuredClone(report);
+const correctionCopy = () => structuredClone(correction);
 
 describe('Academy capacity read-only reconciliation evidence', () => {
   it('validates the privacy-minimized current snapshot', () => {
@@ -96,6 +101,62 @@ describe('Academy capacity read-only reconciliation evidence', () => {
     );
     expect(validateAcademyCapacityReconciliation(changed)).toContain(
       'mcs-practicum:2026-09-25: unresolved funding requires an owned coverage exception',
+    );
+  });
+});
+
+describe('Academy capacity sales reconstruction correction', () => {
+  it('applies the correction schema and validates the 21-seat evidence', () => {
+    const schema = JSON.parse(
+      fs.readFileSync(defaultCorrectionSchemaPath, 'utf8'),
+    );
+    expect(validateJsonSchemaDocument(schema, correction)).toEqual([]);
+    expect(validateAcademyCapacitySalesReconstruction(correction)).toEqual([]);
+  });
+
+  it('counts 8 explicit plus 13 unlabeled participants once', () => {
+    expect(correction.shared_pool.operational_unique_seats).toBe(21);
+    expect(correction.shared_pool.by_roster_route).toEqual({
+      module_1: 10,
+      full_program_collapsed: 11,
+    });
+    expect(correction.projection_coverage).toMatchObject({
+      pcc_roster_candidate_intersection: 0,
+      actc_roster_candidate_intersection: 0,
+      professional_heartbeat_group_candidate_intersection: 0,
+    });
+  });
+
+  it('rejects a projection-driven capacity double count', () => {
+    const changed = correctionCopy();
+    changed.shared_pool.operational_unique_seats = 22;
+    expect(validateAcademyCapacitySalesReconstruction(changed)).toContain(
+      'shared-pool unique-seat calculation is incorrect',
+    );
+  });
+
+  it('keeps the one-row 21-versus-22 boundary explicit', () => {
+    const changed = correctionCopy();
+    changed.source_boundary.upper_boundary_total = 21;
+    expect(validateAcademyCapacitySalesReconstruction(changed)).toContain(
+      '21-versus-22 upper boundary does not balance',
+    );
+  });
+
+  it('does not invent a Professional Coach count from missing projections', () => {
+    const changed = correctionCopy();
+    changed.projection_coverage.professional_offer_count = 3;
+    expect(validateAcademyCapacitySalesReconstruction(changed)).toContain(
+      'missing Professional Coach projections must remain unresolved',
+    );
+  });
+
+  it('requires the probable Friday origin and accepted January destination', () => {
+    const changed = correctionCopy();
+    changed.owner_corrections.mcs_deferral.current_destination =
+      '2027-01-08-friday';
+    expect(validateAcademyCapacitySalesReconstruction(changed)).toContain(
+      'MCS Friday-to-January owner correction is incomplete',
     );
   });
 });

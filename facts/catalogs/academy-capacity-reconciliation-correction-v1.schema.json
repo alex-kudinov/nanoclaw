@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "academy-capacity-reconciliation-correction-v1.schema.json",
+  "title": "Academy capacity reconciliation correction evidence",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "correction_id",
+    "task_id",
+    "observed_at",
+    "corrects",
+    "privacy",
+    "owner_corrections",
+    "source_boundary",
+    "shared_pool",
+    "source_coverage",
+    "projection_coverage",
+    "exceptions",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "correction_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+    "task_id": { "type": "string", "pattern": "^NC-[0-9]{8}-[0-9]{3}$" },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "corrects": {
+      "type": "object",
+      "required": ["report_id", "task_id", "commit"],
+      "properties": {
+        "report_id": { "type": "string" },
+        "task_id": { "type": "string" },
+        "commit": { "type": "string", "pattern": "^[a-f0-9]{8,40}$" }
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "type": "object",
+      "required": [
+        "classification",
+        "exact_identity_transient_only",
+        "persisted_content"
+      ],
+      "properties": {
+        "classification": { "const": "aggregate_hash_only" },
+        "exact_identity_transient_only": { "const": true },
+        "persisted_content": {
+          "const": "aggregate_counts_hashes_corrections_and_exceptions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "owner_corrections": { "type": "object" },
+    "source_boundary": { "type": "object" },
+    "shared_pool": { "type": "object" },
+    "source_coverage": { "type": "object" },
+    "projection_coverage": { "type": "object" },
+    "exceptions": { "type": "array", "minItems": 1 },
+    "boundary": { "type": "object" }
+  },
+  "additionalProperties": false
+}

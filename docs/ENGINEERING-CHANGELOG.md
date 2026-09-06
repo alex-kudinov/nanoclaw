@@ -8,6 +8,54 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260905-009 — Reconstruct the September ACC shared-pool sales
+
+- Date: 2026-09-06T01:07:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: complete read-only correction; local aggregate/hash evidence and
+  validator ready for commit/push, with no source or production write
+- Change class: C2 reversible local evidence/validation plus authorized
+  transient read-only identity joins
+- Correction: NC-008 counted only eight explicitly labeled September ACC rows.
+  The owner clarified that Module 1, `$3,999` ACC Full, and `$7,499`
+  Professional Coach participants all consume one September 7 ACC seat and
+  that check/email/invoice sales must be included.
+- Reconstructed count: 8 explicit plus 13 cohort-blank rows from the June 3
+  next-entry boundary gives 21 operational unique seats. One May 27 candidate
+  yields a held upper boundary of 22. The 21 split into 10 Module 1 and 11 Full
+  Program roster routes. Numeric capacity remains unknown, so the sold-out
+  state stays fail-closed and the oversold quantity is not invented.
+- Offer/funding: Payment Log has rows for all 21 candidate emails but exact
+  Product Map matching identifies 8 `acc-module-1`, 5 `acc-full`, and 0
+  `acc-pcc-full`, leaving 8 unclassified. Direct Stripe identifies only one
+  Module 1 and one ACC Full payment. Plutio/email evidence is not counted
+  without exact participant/offer binding.
+- Projection: none of the 21 intersects PCC, ACTC, or the Professional Coach
+  Heartbeat group. Any `$7,499` students therefore have missing projections;
+  those surfaces add no seats and do not prove the subgroup is zero.
+- MCS correction: the negotiated January assignment remains unchanged. Friday
+  is recorded only as the probable origin from owner recollection, pending
+  historical evidence before any transfer import.
+- Evidence: a correction schema and the combined validator preserve NC-008,
+  verify correction lineage and hashes, enforce 21/22 arithmetic, prevent
+  projection double counting, keep capacity/Professional count unknown, reject
+  PII/raw payment IDs, and require six owned exceptions.
+- Review: one bounded Sonnet/high round returned `NO MATERIAL FINDINGS` after
+  13 load-bearing checks. Usage: 6 calls / 86,088 cache-create / 255,925
+  cache-read / 22,410 output / 86,090 max context.
+- Verification: combined validator, correction 13/13 and combined focused
+  26/26, pinned typecheck/build, JSON/schema formatting, documentation
+  continuity/capability, privacy, and diff checks pass. Full root is 3,544
+  passed / 32 skipped / two exact unchanged predecessor failures in the CNPC
+  wrapper assertion and date-sensitive Trafft fixture.
+- Boundary: no Student Roster, Payment Log, Stripe, Plutio, Heartbeat, Gmail,
+  website, production database, cohort, waitlist, runtime, minion, migration,
+  deployment, backfill, communication, or authority write.
+- Follow-up: the existing not-authorized source-resolution item now depends on
+  this correction and must settle 21 versus 22, numeric capacity, the 11-row
+  `$3,999`/`$7,499` split, eight funding gaps, and missing combined-program
+  projections before population or cutover.
+
 ### NC-20260905-008 — Reconcile September Academy capacity read-only
 
 - Date: 2026-09-05T22:42:00Z

@@ -13,6 +13,14 @@ export const defaultSchemaPath = path.join(
   ROOT,
   'facts/catalogs/academy-capacity-reconciliation-evidence-v1.schema.json',
 );
+export const defaultCorrectionPath = path.join(
+  ROOT,
+  'docs/programs/company-os/evidence/NC-20260905-009-academy-capacity-sales-reconstruction.json',
+);
+export const defaultCorrectionSchemaPath = path.join(
+  ROOT,
+  'facts/catalogs/academy-capacity-reconciliation-correction-v1.schema.json',
+);
 const KEY = /^[a-z0-9][a-z0-9._:-]+$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const REQUIRED_BLOCKS = new Set([
@@ -416,23 +424,244 @@ export function validateAcademyCapacityReconciliation(report) {
   return findings;
 }
 
+export function validateAcademyCapacitySalesReconstruction(correction) {
+  const findings = [];
+  add(
+    correction?.schema_version === '1.0',
+    'correction schema_version must be 1.0',
+    findings,
+  );
+  add(
+    correction?.correction_id ===
+      'academy-capacity-sales-reconstruction-2026-09-05',
+    'unexpected correction_id',
+    findings,
+  );
+  add(
+    correction?.task_id === 'NC-20260905-009',
+    'unexpected correction task_id',
+    findings,
+  );
+  add(
+    correction?.corrects?.report_id ===
+      'academy-capacity-readonly-reconciliation-2026-09-05' &&
+      correction?.corrects?.task_id === 'NC-20260905-008' &&
+      correction?.corrects?.commit === 'c0779fcb',
+    'correction lineage is incomplete',
+    findings,
+  );
+  add(
+    correction?.privacy?.classification === 'aggregate_hash_only' &&
+      correction?.privacy?.exact_identity_transient_only === true &&
+      correction?.privacy?.persisted_content ===
+        'aggregate_counts_hashes_corrections_and_exceptions',
+    'correction privacy boundary is incomplete',
+    findings,
+  );
+  validatePrivacy(correction, findings);
+
+  const ownerAcc = correction?.owner_corrections?.acc_september_7 ?? {};
+  add(
+    ownerAcc.expected_unique_seats === 21 &&
+      JSON.stringify([...(ownerAcc.included_offers ?? [])].sort()) ===
+        JSON.stringify(['acc-full', 'acc-module-1', 'acc-pcc-full']),
+    'owner ACC shared-pool correction is incomplete',
+    findings,
+  );
+  add(
+    ownerAcc.professional_projection_rule ===
+      'one_participant_one_shared_acc_seat_even_when_projected_to_acc_pcc_actc',
+    'Professional Coach projection must not double-count capacity',
+    findings,
+  );
+  const ownerMcs = correction?.owner_corrections?.mcs_deferral ?? {};
+  add(
+    ownerMcs.origin === '2026-09-25-friday_probable' &&
+      ownerMcs.origin_confidence === 'owner_recollection_not_confirmed' &&
+      ownerMcs.current_destination === '2027-01-07-thursday' &&
+      ownerMcs.destination_disposition ===
+        'accepted_in_january_no_further_move' &&
+      ownerMcs.current_friday_roster_excludes_deferral_subject === true,
+    'MCS Friday-to-January owner correction is incomplete',
+    findings,
+  );
+
+  const sourceBoundary = correction?.source_boundary ?? {};
+  add(
+    sourceBoundary.explicit_september_rows === 8 &&
+      sourceBoundary.unlabeled_rows_from_operational_boundary === 13 &&
+      sourceBoundary.operational_total === 21 &&
+      sourceBoundary.operational_total ===
+        sourceBoundary.explicit_september_rows +
+          sourceBoundary.unlabeled_rows_from_operational_boundary,
+    'operational 21-seat boundary does not balance',
+    findings,
+  );
+  add(
+    sourceBoundary.unlabeled_rows_from_first_candidate === 14 &&
+      sourceBoundary.upper_boundary_total === 22 &&
+      sourceBoundary.upper_boundary_total ===
+        sourceBoundary.explicit_september_rows +
+          sourceBoundary.unlabeled_rows_from_first_candidate,
+    '21-versus-22 upper boundary does not balance',
+    findings,
+  );
+  add(
+    sourceBoundary.operational_september_boundary_date === '2026-06-03' &&
+      sourceBoundary.first_unlabeled_post_cohort_candidate_date ===
+        '2026-05-27',
+    'source boundary dates changed unexpectedly',
+    findings,
+  );
+
+  const pool = correction?.shared_pool ?? {};
+  add(
+    pool.delivery_block_key === 'acc.module-1:2026-09-07' &&
+      pool.operational_unique_seats === 21 &&
+      pool.explicit_cohort_seats === 8 &&
+      pool.unlabeled_operational_seats === 13 &&
+      pool.by_roster_route?.module_1 === 10 &&
+      pool.by_roster_route?.full_program_collapsed === 11 &&
+      pool.by_roster_route.module_1 +
+        pool.by_roster_route.full_program_collapsed ===
+        pool.operational_unique_seats,
+    'shared-pool unique-seat calculation is incorrect',
+    findings,
+  );
+  add(
+    pool.unique_participant_rule ===
+      'normalized_participant_email_once_across_all_roster_tabs_and_offers',
+    'shared pool lacks a unique-participant rule',
+    findings,
+  );
+  add(
+    pool.capacity === null &&
+      pool.availability === null &&
+      pool.over_capacity === null &&
+      pool.public_state === 'sold_out',
+    'unknown ACC capacity must remain sold out without invented availability',
+    findings,
+  );
+
+  const log = correction?.source_coverage?.payment_log ?? {};
+  const exactOffers = log.by_exact_offer ?? {};
+  const exactOfferTotal =
+    (exactOffers['acc-module-1'] ?? 0) +
+    (exactOffers['acc-full'] ?? 0) +
+    (exactOffers['acc-pcc-full'] ?? 0);
+  add(
+    log.candidate_emails_with_any_rows === 21 &&
+      log.exact_product_map_unique_participants === 13 &&
+      exactOfferTotal === 13 &&
+      log.without_exact_product_map_offer === 8 &&
+      log.exact_product_map_unique_participants +
+        log.without_exact_product_map_offer ===
+        pool.operational_unique_seats,
+    'Payment Log offer coverage does not balance to 21 unique seats',
+    findings,
+  );
+  add(
+    exactOffers['acc-module-1'] === 8 &&
+      exactOffers['acc-full'] === 5 &&
+      exactOffers['acc-pcc-full'] === 0,
+    'Payment Log exact-offer split changed unexpectedly',
+    findings,
+  );
+  add(
+    correction?.source_coverage?.stripe?.capacity_authority === false,
+    'Stripe must not become capacity authority',
+    findings,
+  );
+  add(
+    correction?.source_coverage?.plutio_and_email
+      ?.counted_without_exact_binding === 0,
+    'Plutio or email evidence cannot count without participant binding',
+    findings,
+  );
+
+  const projection = correction?.projection_coverage ?? {};
+  add(
+    projection.pcc_roster_candidate_intersection === 0 &&
+      projection.actc_roster_candidate_intersection === 0 &&
+      projection.professional_heartbeat_group_candidate_intersection === 0 &&
+      projection.professional_offer_count === null,
+    'missing Professional Coach projections must remain unresolved',
+    findings,
+  );
+
+  const expectedExceptions = new Set([
+    'exception:acc-september-may-27-boundary',
+    'exception:acc-september-capacity-unknown',
+    'exception:acc-september-full-offer-split-unresolved',
+    'exception:acc-professional-projections-missing',
+    'exception:acc-september-funding-classification-incomplete',
+    'exception:mcs-deferral-origin-probable-friday',
+  ]);
+  const exceptions = correction?.exceptions ?? [];
+  const exceptionIds = exceptions.map((entry) => entry?.exception_id);
+  add(
+    exceptionIds.length === expectedExceptions.size &&
+      unique(exceptionIds) &&
+      exceptionIds.every((id) => expectedExceptions.has(id)),
+    'correction exception set is incomplete',
+    findings,
+  );
+  for (const exception of exceptions) {
+    add(
+      KEY.test(exception?.exception_id ?? '') &&
+        typeof exception?.owner === 'string' &&
+        exception.owner.length > 0 &&
+        typeof exception?.next_evidence === 'string' &&
+        exception.next_evidence.length > 0,
+      `${exception?.exception_id ?? 'unknown'}: exception is not owned`,
+      findings,
+    );
+  }
+  for (const digest of [
+    pool.candidate_rowset_sha256,
+    pool.explicit_rowset_sha256,
+    pool.unlabeled_rowset_sha256,
+    log.candidate_rows_sha256,
+  ])
+    add(
+      SHA256.test(digest ?? ''),
+      'correction source hash is invalid',
+      findings,
+    );
+  add(
+    correction?.boundary?.external_reads_only === true &&
+      correction?.boundary?.source_mutations === 0 &&
+      correction?.boundary?.production_mutations === 0 &&
+      Array.isArray(correction?.boundary?.forbidden_actions) &&
+      correction.boundary.forbidden_actions.length >= 8,
+    'correction read-only boundary is incomplete',
+    findings,
+  );
+  return findings;
+}
+
 function main() {
-  const reportPath = process.argv[2]
-    ? path.resolve(process.argv[2])
-    : defaultReportPath;
-  const schema = JSON.parse(fs.readFileSync(defaultSchemaPath, 'utf8'));
-  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-  const findings = [
-    ...validateJsonSchemaDocument(schema, report),
-    ...validateAcademyCapacityReconciliation(report),
-  ];
+  const report = JSON.parse(fs.readFileSync(defaultReportPath, 'utf8'));
+  const reportSchema = JSON.parse(fs.readFileSync(defaultSchemaPath, 'utf8'));
+  const correction = JSON.parse(fs.readFileSync(defaultCorrectionPath, 'utf8'));
+  const correctionSchema = JSON.parse(
+    fs.readFileSync(defaultCorrectionSchemaPath, 'utf8'),
+  );
+  const findings = process.argv[2]
+    ? ['custom report paths are not supported by this bounded validator']
+    : [
+        ...validateJsonSchemaDocument(reportSchema, report),
+        ...validateAcademyCapacityReconciliation(report),
+        ...validateJsonSchemaDocument(correctionSchema, correction),
+        ...validateAcademyCapacitySalesReconstruction(correction),
+      ];
   if (findings.length) {
     for (const finding of findings) process.stderr.write(`ERROR: ${finding}\n`);
     process.exitCode = 1;
     return;
   }
   process.stdout.write(
-    `${JSON.stringify({ ok: true, reportId: report.report_id, deliveryBlocks: report.delivery_blocks.length, exceptions: report.exceptions.length, privacy: report.privacy.classification })}\n`,
+    `${JSON.stringify({ ok: true, reports: 2, deliveryBlocks: report.delivery_blocks.length, baseExceptions: report.exceptions.length, correctionSeats: correction.shared_pool.operational_unique_seats, correctionExceptions: correction.exceptions.length, privacy: correction.privacy.classification })}\n`,
   );
 }
 

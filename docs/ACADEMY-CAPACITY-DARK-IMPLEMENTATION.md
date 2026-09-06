@@ -3,8 +3,9 @@
 Status: `NC-20260905-005` local implementation complete at `5b69e107`;
 `NC-20260905-007` proves migrations 142 and 143 together on disposable local
 PostgreSQL; `NC-20260905-008` records the bounded read-only source
-reconciliation and seven owned exceptions; both migrations remain unapplied and
-runtime unwired
+reconciliation and seven owned exceptions; `NC-20260905-009` corrects its
+labeled-only ACC count to 21 operational unique seats with an explicit
+21-versus-22 boundary; both migrations remain unapplied and runtime unwired
 
 Base: reviewed enrollment dark-foundation tip `deac91a8` and accepted capacity
 architecture `docs/ACADEMY-CAPACITY-CONTROL-PLANE.md`
@@ -136,14 +137,22 @@ No command sends a message.
 ## Read-only source reconciliation
 
 `NC-20260905-008` tests the current MCS September/January and ACC September 7
-facts without populating this model. MCS Thursday is reconciled at 5/12 and
+facts without populating this model. `NC-20260905-009` preserves that report as
+historical evidence and corrects its ACC conclusion after the owner identified
+check/email and combined-program sales outside the dated cohort labels. MCS
+Thursday is reconciled at 5/12 and
 remains open. MCS Friday has 13 active roster assignments against capacity 12,
 not the owner hypothesis of 12; it remains sold out and blocked from import.
 The owner-named deferral is currently assigned to January Thursday, but its
 origin weekday is disputed by the prior transfer record and owner count
-context. ACC September 7 has eight active assignments and remains sold out,
-but its numeric capacity is absent and six Full Program rows cannot distinguish
-the $3,999 from the $7,499 offer or prove exact funding source.
+context. ACC September 7 has 8 explicitly labeled plus 13 operationally bounded
+unlabeled assignments: 21 unique participants, or 22 if the held May 27 row
+also belongs to September. The operational 21 split into 10 Module 1 and 11
+Full Program roster routes. Numeric capacity is absent; current source evidence
+classifies 8 as Module 1, 5 as `$3,999` ACC Full, and none defensibly as
+`$7,499` Professional Coach. None of the 21 appears in PCC, ACTC, or the
+Professional Coach Heartbeat group, so the `$7,499` subgroup and expected
+projections remain held rather than inferred.
 
 The reusable evidence validator rejects lower owner overrides, unknown-capacity
 availability claims, PII/raw Stripe IDs, unowned exceptions, funding gaps
@@ -180,7 +189,8 @@ Focused tests cover:
    least-privilege readback.
 4. Separately authorize read-only schedule, offer, Bookkeeper, Stripe, and
    Student Roster reconciliation. The bounded September/January population is
-   complete under `NC-20260905-008`, with seven exceptions held from import.
+   complete under `NC-20260905-008/009`, with the corrected 21-seat operational
+   count, one 21-versus-22 boundary, and held source exceptions.
 5. Separately authorize operator/minion, Tandemweb, provider, communication,
    and authority-cutover stages.
 

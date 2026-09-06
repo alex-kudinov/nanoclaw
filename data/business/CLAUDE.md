@@ -312,6 +312,17 @@ funding, capacity, or the Tandemweb lower-override behavior remains unresolved.
 The reusable validator and evidence schema are tracked, but they are not a
 parallel assignment or capacity authority. Repository evidence does not grant
 source repair, production population, provider write, or runtime authority.
+`NC-20260905-009` corrects NC-008's ACC labeled-only count without rewriting
+the prior evidence. Eight explicit September rows plus 13 cohort-blank rows
+from the June 3 operational boundary yield 21 unique shared-pool participants;
+the earlier May 27 candidate gives a held upper boundary of 22. The operational
+21 contain 10 Module 1 and 11 collapsed Full Program roster routes. Current
+Payment Log evidence exactly classifies 8 `acc-module-1`, 5 `acc-full`, and 0
+`acc-pcc-full`; eight remain unclassified. None of the 21 appears in PCC, ACTC,
+or the Professional Coach Heartbeat group. These are missing offer/funding/
+projection facts, not additional capacity or proof that no `$7,499` sale
+occurred. The correction remains aggregate/hash-only and read-only; no source,
+migration, production, or runtime state changed.
 
 ## Connection
 

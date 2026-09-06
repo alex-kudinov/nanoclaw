@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0",
+  "correction_id": "academy-capacity-sales-reconstruction-2026-09-05",
+  "task_id": "NC-20260905-009",
+  "observed_at": "2026-09-06T00:55:00Z",
+  "corrects": {
+    "report_id": "academy-capacity-readonly-reconciliation-2026-09-05",
+    "task_id": "NC-20260905-008",
+    "commit": "c0779fcb"
+  },
+  "privacy": {
+    "classification": "aggregate_hash_only",
+    "exact_identity_transient_only": true,
+    "persisted_content": "aggregate_counts_hashes_corrections_and_exceptions"
+  },
+  "owner_corrections": {
+    "mcs_deferral": {
+      "origin": "2026-09-25-friday_probable",
+      "origin_confidence": "owner_recollection_not_confirmed",
+      "current_destination": "2027-01-07-thursday",
+      "destination_disposition": "accepted_in_january_no_further_move",
+      "current_friday_roster_excludes_deferral_subject": true
+    },
+    "acc_september_7": {
+      "expected_unique_seats": 21,
+      "expected_count_qualifier": "approximately_confirmed_by_owner",
+      "included_offers": ["acc-module-1", "acc-full", "acc-pcc-full"],
+      "included_channels": ["stripe", "check", "invoice", "email_or_operator"],
+      "professional_projection_rule": "one_participant_one_shared_acc_seat_even_when_projected_to_acc_pcc_actc"
+    }
+  },
+  "source_boundary": {
+    "prior_labeled_cohort": "2026-04",
+    "prior_labeled_latest_enrollment_date": "2026-04-03",
+    "first_unlabeled_post_cohort_candidate_date": "2026-05-27",
+    "operational_september_boundary_date": "2026-06-03",
+    "operational_boundary_evidence": "dated enrollment email says the prior cohort started June 3 and the next entry was September",
+    "explicit_september_rows": 8,
+    "unlabeled_rows_from_operational_boundary": 13,
+    "unlabeled_rows_from_first_candidate": 14,
+    "operational_total": 21,
+    "upper_boundary_total": 22,
+    "boundary_status": "one_may_27_assignment_requires_exact_cohort_disposition"
+  },
+  "shared_pool": {
+    "delivery_block_key": "acc.module-1:2026-09-07",
+    "public_state": "sold_out",
+    "capacity": null,
+    "unique_participant_rule": "normalized_participant_email_once_across_all_roster_tabs_and_offers",
+    "operational_unique_seats": 21,
+    "explicit_cohort_seats": 8,
+    "unlabeled_operational_seats": 13,
+    "by_roster_route": {
+      "module_1": 10,
+      "full_program_collapsed": 11
+    },
+    "candidate_rowset_sha256": "89cccbc062a109575ac0b56c2e7cffe7b3a0e76e56e18b560ccc3e7fb2722416",
+    "explicit_rowset_sha256": "a89c9567174b084041b0a573fa583e2c124d29b5f7aa3a4ce49ce940e1c0ada6",
+    "unlabeled_rowset_sha256": "9c6fa7592bd9579699062eaa1241d35958c42a65982f0e7346e11b3c973fe2de",
+    "availability": null,
+    "over_capacity": null,
+    "reconciliation_status": "count_reconstructed_offer_capacity_and_one_boundary_unresolved"
+  },
+  "source_coverage": {
+    "payment_log": {
+      "candidate_emails_with_any_rows": 21,
+      "candidate_rows_sha256": "cbd6408f58611fdf3089be9ebbd10c821d8502c8962b0f23729a6c53bbdd567b",
+      "exact_product_map_unique_participants": 13,
+      "by_exact_offer": {
+        "acc-module-1": 8,
+        "acc-full": 5,
+        "acc-pcc-full": 0
+      },
+      "without_exact_product_map_offer": 8,
+      "with_other_or_ambiguous_payment_rows": 4,
+      "without_any_exact_funding_classification": 8
+    },
+    "stripe": {
+      "exact_september_7_successful": 2,
+      "by_offer": { "acc-module-1": 1, "acc-full": 1, "acc-pcc-full": 0 },
+      "fully_refunded": 0,
+      "capacity_authority": false
+    },
+    "plutio_and_email": {
+      "evidence": "paid ACC invoices, a two-seat September invoice, purchase-order enrollment, and $7,499 sales conversations exist",
+      "participant_offer_bindings_persisted": 0,
+      "counted_without_exact_binding": 0,
+      "reason": "title amount payer or conversation does not prove participant offer and dated assignment"
+    }
+  },
+  "projection_coverage": {
+    "pcc_roster_candidate_intersection": 0,
+    "actc_roster_candidate_intersection": 0,
+    "professional_heartbeat_group_candidate_intersection": 0,
+    "acc_full_heartbeat_group_candidate_intersection": 10,
+    "professional_offer_count": null,
+    "finding": "the $7,499 subgroup cannot be identified from current projections; any such participants are missing their expected PCC and ACTC projection rather than duplicated for capacity"
+  },
+  "exceptions": [
+    {
+      "exception_id": "exception:acc-september-may-27-boundary",
+      "owner": "academy_operations",
+      "severity": "blocks_exact_final_count",
+      "facts": "The owner-backed operational boundary yields 21 seats; including the one earlier unlabeled May 27 assignment yields 22.",
+      "next_evidence": "Bind the May 27 assignment to its exact June or September delivery block."
+    },
+    {
+      "exception_id": "exception:acc-september-capacity-unknown",
+      "owner": "academy_operations",
+      "severity": "blocks_oversale_amount",
+      "facts": "The shared pool has an operational count of 21 but still has no approved numeric capacity, so the oversold quantity cannot be calculated.",
+      "next_evidence": "Record the approved numeric capacity and source for the September 7 delivery block."
+    },
+    {
+      "exception_id": "exception:acc-september-full-offer-split-unresolved",
+      "owner": "academy_operations",
+      "severity": "blocks_offer_reconciliation",
+      "facts": "Eleven seats are Full Program rows, but current roster and exact Product Map evidence do not split them between acc-full and acc-pcc-full.",
+      "next_evidence": "Bind each Full Program participant to the exact $3,999 or $7,499 source offer without using payer identity as participant identity."
+    },
+    {
+      "exception_id": "exception:acc-professional-projections-missing",
+      "owner": "academy_operations",
+      "severity": "blocks_fulfillment_reconciliation",
+      "facts": "None of the 21 candidate participants appears in PCC, ACTC, or the Professional Coach Heartbeat group, although a $7,499 enrollment should project there.",
+      "next_evidence": "After exact offer binding, create a repair plan for every missing PCC, ACTC, and Heartbeat projection; do not infer the subgroup from price or email conversation."
+    },
+    {
+      "exception_id": "exception:acc-september-funding-classification-incomplete",
+      "owner": "bookkeeper_integration",
+      "severity": "blocks_funding_reconciliation",
+      "facts": "Payment Log exactly classifies 13 of 21 candidates by offer and leaves eight without an exact Product Map offer; checks, invoices, and email/operator sales require source binding.",
+      "next_evidence": "Bind the eight remaining participants to exact check, invoice, sponsored, scholarship, or operator-grant evidence while keeping payer and participant identities separate."
+    },
+    {
+      "exception_id": "exception:mcs-deferral-origin-probable-friday",
+      "owner": "academy_operations",
+      "severity": "blocks_historical_transfer_import_only",
+      "facts": "The owner recalls Friday as the probable origin and confirms the negotiated destination remains January; current roster assignment is January Thursday and no further move is requested.",
+      "next_evidence": "Use dated enrollment or attendance evidence to confirm the historical Friday origin before importing transfer history; leave the January assignment unchanged."
+    }
+  ],
+  "boundary": {
+    "external_reads_only": true,
+    "source_mutations": 0,
+    "production_mutations": 0,
+    "forbidden_actions": [
+      "roster_or_payment_log_write",
+      "stripe_plutio_heartbeat_or_gmail_write",
+      "website_or_cohort_state_change",
+      "database_population_or_backfill",
+      "runtime_or_minion_activation",
+      "waitlist_or_student_contact",
+      "deployment",
+      "authority_cutover"
+    ]
+  }
+}
