@@ -95,9 +95,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-06T22:12:00Z
 - Owner/client: Codex with Claude Sonnet/high architecture and implementation review
-- State: in_progress; owner strategy and implementation authorization recorded,
-  Company OS work claimed at revision 219, and ten-part continuity receipt
-  attached at revision 220 before source edits
+- State: complete; owner strategy and implementation authorization recorded,
+  Company OS work claimed at revision 219, ten-part continuity attached at
+  revision 220, and the task identifier collision corrected at revision 222
 - Authority: accepted strategy decision
   `.program/decisions/decision-academy-capacity-simple-sync-strategy-2026-09-06.json`
   retires the proposed synchronous reservation cutover; accepted authorization
@@ -151,8 +151,20 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   failures (CNPC literal contract and date-sensitive Trafft projection).
   Tandemweb capacity publication, cohort capacity, and checkout selection pass
   41/41; the all-PHP sweep retains only the same four unrelated baseline
-  failures. Shell syntax and both diff checks pass. Commit, deployment, and
-  live verification remain.
+  failures. Shell syntax and both diff checks pass.
+- Production: Tandemweb `9e189a79e` is live from `main`. Migration 145 followed
+  a verified 12,949,361-byte custom backup; all new objects are admin-owned
+  with zero non-admin grants. The runner image is `sha256:bc64fbdc`, all 19
+  snapshots match source, and exact NanoClaw release `aa73538c` is live over
+  retained Sales lineage `663b63be` with connected channels and empty queues.
+  Five initial states delivered once with signed acknowledgements and completed
+  targeted Cloudflare purge/prewarm. Cached pages return `HIT`; ACC September 7
+  and MCS Friday render sold out with waitlist routing, MCS Thursday remains
+  selectable, both January MCS cohorts remain available, and live checkout
+  excludes September 7 for the $399, $3,999, and $7,499 products. No financial,
+  customer-message, roster, provider, refund, or waitlist-promotion canary ran.
+  Full evidence and recovery are recorded in
+  `docs/programs/company-os/evidence/NC-20260906-005-academy-capacity-simple-sync.md`.
 
 ### NC-20260906-003 — Release the Gate D Capacity operator pilot
 
