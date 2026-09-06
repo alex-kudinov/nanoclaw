@@ -57,7 +57,12 @@
         "value": { "type": ["number", "string"] },
         "unit": { "type": "string", "minLength": 1 },
         "status": {
-          "enum": ["verified", "source_confirmed", "historical_requires_confirmation", "unknown"]
+          "enum": [
+            "verified",
+            "source_confirmed",
+            "historical_requires_confirmation",
+            "unknown"
+          ]
         }
       }
     },
@@ -187,7 +192,9 @@
       "required": ["component_key", "inclusion"],
       "properties": {
         "component_key": { "type": "string" },
-        "inclusion": { "enum": ["included", "conditional", "earned_on_completion"] },
+        "inclusion": {
+          "enum": ["included", "conditional", "earned_on_completion"]
+        },
         "condition": { "type": ["string", "null"] }
       }
     },
@@ -204,8 +211,14 @@
         "evidence_status"
       ],
       "properties": {
-        "bundle_key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
-        "program_key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+        "bundle_key": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:-]+$"
+        },
+        "program_key": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:-]+$"
+        },
         "version": { "type": "integer", "minimum": 1 },
         "effective_from": { "type": "string", "format": "date-time" },
         "components": {
@@ -218,7 +231,9 @@
           "minItems": 1,
           "items": { "$ref": "#/$defs/sourceRef" }
         },
-        "evidence_status": { "enum": ["verified", "source_confirmed", "provisional", "unresolved"] }
+        "evidence_status": {
+          "enum": ["verified", "source_confirmed", "provisional", "unresolved"]
+        }
       }
     },
     "offer": {
@@ -240,8 +255,12 @@
       "properties": {
         "offer_key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
         "bundle_key": { "type": "string" },
-        "status": { "enum": ["active", "active_future_cohort", "inactive", "historical"] },
-        "enrollment_scope": { "enum": ["full_program", "cohort_program"] },
+        "status": {
+          "enum": ["active", "active_future_cohort", "inactive", "historical"]
+        },
+        "enrollment_scope": {
+          "enum": ["module", "full_program", "cohort_program"]
+        },
         "price_cents": { "type": "integer", "minimum": 0 },
         "currency": { "type": "string", "pattern": "^[a-z]{3}$" },
         "stripe_product_ids": {
@@ -261,7 +280,10 @@
           "uniqueItems": true
         },
         "provider_content_status": {
-          "enum": ["full_group_verified_contents_unavailable", "group_and_course_verified"]
+          "enum": [
+            "full_group_verified_contents_unavailable",
+            "group_and_course_verified"
+          ]
         },
         "sources": {
           "type": "array",
@@ -273,12 +295,23 @@
     "conflict": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["conflict_id", "severity", "summary", "disposition", "sources"],
+      "required": [
+        "conflict_id",
+        "severity",
+        "summary",
+        "disposition",
+        "sources"
+      ],
       "properties": {
-        "conflict_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+        "conflict_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:-]+$"
+        },
         "severity": { "enum": ["high", "medium", "low"] },
         "summary": { "type": "string", "minLength": 1 },
-        "disposition": { "enum": ["resolved", "held", "requires_owner_decision"] },
+        "disposition": {
+          "enum": ["resolved", "held", "requires_owner_decision"]
+        },
         "sources": {
           "type": "array",
           "minItems": 1,

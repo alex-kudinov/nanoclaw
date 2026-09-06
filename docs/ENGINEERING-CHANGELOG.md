@@ -8,6 +8,59 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260906-002 — Populate Academy capacity in production shadow mode
+
+- Date: 2026-09-06T18:15:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: in_progress; reviewed source and private-manifest preflight complete,
+  production backup/migration/population not yet started
+- Authority: Company OS decision
+  `.program/decisions/decision-academy-capacity-production-shadow-2026-09-06.json`;
+  item active at revision 211.
+- Production preflight: `mini-claw.local` is healthy on exact release
+  `886e258730729a2cade1baee70466e62e2bff59e`, Node 22.23.2, connected
+  Gmail/Slack, zero active containers and waiting queue. PostgreSQL 16.13 has
+  the prerequisite Party schema, append-only function, admin role membership,
+  and grants; migrations 142-143 are absent. Forty accepted participant emails
+  resolve 37 exact-one / 3 absent / 0 multiple active Parties.
+- Catalog: revision 1 now includes verified one-component
+  `acc-module-1:v1` and active `$399` `acc-module-1`, preventing Module 1-only
+  students from receiving the ACC Full bundle. Catalog validation is 42
+  components / 7 bundles / 8 offers / 6 conflicts.
+- Implementation: a private-manifest builder consumes mode-0600 roster
+  snapshots outside Git and allows only three hash-bound Party creations, one
+  held funding identity, and one held alias identity. The population command is
+  dry-run by default and requires exact manifest hash, hostname, database,
+  migrations, one transaction/advisory lock, exact Party matching, batch-scoped
+  keys/readback, subject-bound exceptions, and aggregate postconditions.
+- Approved private manifest: mode 0600 outside the repository, five delivery
+  blocks, 40 participants, three Party creation allowances, one held funding
+  classification, exactly three held exceptions, SHA-256
+  `d44839d2b8ea08495fffd69fb5ca8c8aa6e30a9980c428477c3a4c3ea52793d8`.
+  Repository/review artifacts persist no real student identity.
+- Disposable proof: first apply produces 5 blocks / 5 pools / 7 offer mappings
+  / 40 orders+enrollments+assignments / 310 entitlements / 3 exceptions / zero
+  pending projections, reservations, or waitlist rows. Occupancy is ACC 21/12,
+  MCS 5/12 and 13/12, January 1/12 and 0/12. Three allowed Parties are created,
+  replay inserts zero, and non-admin grants are zero.
+- Review: R1 found missing apply-time exception-subject binding and global
+  prefix readback. Both were corrected with direct negative tests; R2 returned
+  `NO MATERIAL FINDINGS`.
+- Verification so far: corrected focused suites pass 62/62; entitlement and
+  reconciliation validators, disposable first-apply/replay, pinned typecheck,
+  documentation continuity/capability, formatting, privacy, and diff checks
+  pass. Full NanoClaw is 3,567 passed / 32 skipped with the same two unrelated
+  predecessor failures in the CNPC wrapper literal assertion and date-sensitive
+  Trafft fixture. Release gates remain before production.
+- Review usage: R1 used 8 Sonnet calls / 109,589 cache-create / 562,231
+  cache-read / 26,469 output / 118,155 max context; R2 used 7 calls / 84,354
+  cache-create / 411,230 cache-read / 8,686 output / 92,920 max context. R1
+  exceeded the 100k target while tracing the generated SQL; R2 stayed bounded
+  and returned no material findings.
+- Boundary: no production backup, migration, database row, release activation,
+  runtime/minion consumer, checkout, provider/Sheet/public website, waitlist,
+  message, refund, certificate, payment, or authority-cutover mutation yet.
+
 ### NC-20260906-001 — Settle Rita and repair Academy capacity sources
 
 - Date: 2026-09-06T16:18:00Z

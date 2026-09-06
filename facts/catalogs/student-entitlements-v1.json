@@ -62,14 +62,21 @@
       "scheduling_model": "module_class_block",
       "consumption_model": "course_completion",
       "marker_policy": "class_block",
-      "quantity": { "value": 1, "unit": "module entitlement", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "module entitlement",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["37443ab2-874b-4c3b-8829-8da00025e355"],
         "course_ids": ["27fffe4b-28f5-4f59-b705-71c131c9023b"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:data/checkout/products.json#acc-module-1", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:data/checkout/products.json#acc-module-1",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": []
     },
     {
@@ -80,14 +87,21 @@
       "scheduling_model": "module_class_block",
       "consumption_model": "course_completion",
       "marker_policy": "class_block",
-      "quantity": { "value": 1, "unit": "module entitlement", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "module entitlement",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["03dd5ea5-a201-43a2-bc7d-088ac2671e8c"],
         "course_ids": ["b7e4a9b4-2948-45e9-8d39-76fb9715af30"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:data/checkout/products.json#acc-module-2", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:data/checkout/products.json#acc-module-2",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": []
     },
     {
@@ -98,14 +112,21 @@
       "scheduling_model": "module_class_block",
       "consumption_model": "course_completion",
       "marker_policy": "class_block",
-      "quantity": { "value": 1, "unit": "module entitlement", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "module entitlement",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["5df3f15a-2f60-4f4b-8742-f146a148f80e"],
         "course_ids": ["b889259e-b586-4ada-9102-cdf59bbd62eb"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:data/checkout/products.json#acc-module-3", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:data/checkout/products.json#acc-module-3",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": []
     },
     {
@@ -116,14 +137,21 @@
       "scheduling_model": "module_class_block",
       "consumption_model": "course_completion",
       "marker_policy": "class_block",
-      "quantity": { "value": 1, "unit": "module entitlement", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "module entitlement",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["7945ed4a-f918-4110-ae18-fd408aeb5c51"],
         "course_ids": ["7a3cdcff-089e-47e7-bdae-c59e05ae0789"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:data/checkout/products.json#acc-module-4", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:data/checkout/products.json#acc-module-4",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": []
     },
     {
@@ -134,15 +162,25 @@
       "scheduling_model": "group_series",
       "consumption_model": "hour_count",
       "marker_policy": "group_series",
-      "quantity": { "value": "8 hours across 4 sessions", "unit": "delivered mentoring", "status": "historical_requires_confirmation" },
+      "quantity": {
+        "value": "8 hours across 4 sessions",
+        "unit": "delivered mentoring",
+        "status": "historical_requires_confirmation"
+      },
       "heartbeat": {
         "access_group_ids": ["7a89b0f8-9b79-4b90-9356-86330ed6ba89"],
         "course_ids": ["cc660896-b415-4a72-928b-475b3236ea62"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "provisional",
-      "sources": ["tandemweb:pages/acc/05-section-program-overview.html", "courses:community/icf/STUDENT-TRACKING-FRAMEWORK.md#acc-level-1-template", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Confirm the current full-program session and countable-hour promise; the April Plutio template is historical evidence, not current authority."]
+      "sources": [
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "courses:community/icf/STUDENT-TRACKING-FRAMEWORK.md#acc-level-1-template",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Confirm the current full-program session and countable-hour promise; the April Plutio template is historical evidence, not current authority."
+      ]
     },
     {
       "component_key": "acc.individual-mentoring",
@@ -152,15 +190,25 @@
       "scheduling_model": "individual_booking",
       "consumption_model": "hour_count",
       "marker_policy": "none",
-      "quantity": { "value": "4.5 hours across 3 sessions", "unit": "delivered mentoring", "status": "historical_requires_confirmation" },
+      "quantity": {
+        "value": "4.5 hours across 3 sessions",
+        "unit": "delivered mentoring",
+        "status": "historical_requires_confirmation"
+      },
       "heartbeat": {
         "access_group_ids": ["a00695d5-efd8-40c7-acc7-d648309aba19"],
         "course_ids": ["2f0da0f8-7278-4cf4-baeb-f5f1949f8c77"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "provisional",
-      "sources": ["tandemweb:pages/acc/05-section-program-overview.html", "courses:community/icf/STUDENT-TRACKING-FRAMEWORK.md#acc-level-1-template", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Confirm current session count, duration, and whether coaching assessments consume the same allowance."]
+      "sources": [
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "courses:community/icf/STUDENT-TRACKING-FRAMEWORK.md#acc-level-1-template",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Confirm current session count, duration, and whether coaching assessments consume the same allowance."
+      ]
     },
     {
       "component_key": "acc.group-supervision",
@@ -170,15 +218,25 @@
       "scheduling_model": "group_series",
       "consumption_model": "hour_count",
       "marker_policy": "group_series",
-      "quantity": { "value": "6 hours across 3 sessions", "unit": "delivered supervision", "status": "historical_requires_confirmation" },
+      "quantity": {
+        "value": "6 hours across 3 sessions",
+        "unit": "delivered supervision",
+        "status": "historical_requires_confirmation"
+      },
       "heartbeat": {
         "access_group_ids": ["b979853f-bb7b-4f71-a694-c310b2a4ff6a"],
         "course_ids": ["ca2e4d23-3582-4e73-be7d-18d8ecbafdda"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "provisional",
-      "sources": ["tandemweb:pages/acc/05-section-program-overview.html", "courses:community/icf/STUDENT-TRACKING-FRAMEWORK.md#acc-level-1-template", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Confirm that the shared Group Supervision course is attached to the ACC-specific access group and confirm the current hours promise."]
+      "sources": [
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "courses:community/icf/STUDENT-TRACKING-FRAMEWORK.md#acc-level-1-template",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Confirm that the shared Group Supervision course is attached to the ACC-specific access group and confirm the current hours promise."
+      ]
     },
     {
       "component_key": "acc.performance-evaluation",
@@ -188,15 +246,24 @@
       "scheduling_model": "milestone_window",
       "consumption_model": "submission_count",
       "marker_policy": "none",
-      "quantity": { "value": "included", "unit": "evaluation preparation", "status": "source_confirmed" },
+      "quantity": {
+        "value": "included",
+        "unit": "evaluation preparation",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["a00695d5-efd8-40c7-acc7-d648309aba19"],
         "course_ids": ["2f0da0f8-7278-4cf4-baeb-f5f1949f8c77"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/acc/05-section-program-overview.html", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Define the current number of recording submissions/reviews and the transition from legacy performance evaluation to the 2027 formative-evaluation process."]
+      "sources": [
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Define the current number of recording submissions/reviews and the transition from legacy performance evaluation to the 2027 formative-evaluation process."
+      ]
     },
     {
       "component_key": "acc.exam-preparation",
@@ -206,15 +273,24 @@
       "scheduling_model": "self_paced",
       "consumption_model": "course_completion",
       "marker_policy": "none",
-      "quantity": { "value": 1, "unit": "course entitlement", "status": "source_confirmed" },
+      "quantity": {
+        "value": 1,
+        "unit": "course entitlement",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["94af2b4e-d0f5-47cb-8852-cb7533f3da1c"],
         "course_ids": ["43f59311-36c6-4c26-b41f-9cde7c6ef42e"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/acc/05-section-program-overview.html", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Verify provider attachment from the Level 1 full-access group."]
+      "sources": [
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Verify provider attachment from the Level 1 full-access group."
+      ]
     },
     {
       "component_key": "shared.coaching-tools-plus",
@@ -224,15 +300,26 @@
       "scheduling_model": "none",
       "consumption_model": "provider_entitlement",
       "marker_policy": "none",
-      "quantity": { "value": 1, "unit": "access entitlement", "status": "source_confirmed" },
+      "quantity": {
+        "value": 1,
+        "unit": "access entitlement",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["bc095770-0c8b-4495-9369-985e4c4649d7"],
         "course_ids": [],
         "attachment_status": "group_verified_course_unresolved"
       },
       "evidence_status": "provisional",
-      "sources": ["tandemweb:pages/acc/05-section-program-overview.html", "tandemweb:pages/pcc/05-section-program-overview.html", "tandemweb:pages/actc/05-section-program-overview.html", "live:heartbeat-group-inventory-2026-09-05"],
-      "open_questions": ["Confirm whether Coaching Tools Plus is the current group intended by all three full-program pages and what content/access interval it grants."]
+      "sources": [
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "tandemweb:pages/pcc/05-section-program-overview.html",
+        "tandemweb:pages/actc/05-section-program-overview.html",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Confirm whether Coaching Tools Plus is the current group intended by all three full-program pages and what content/access interval it grants."
+      ]
     },
     {
       "component_key": "systems.module-1",
@@ -242,14 +329,22 @@
       "scheduling_model": "module_class_block",
       "consumption_model": "course_completion",
       "marker_policy": "class_block",
-      "quantity": { "value": 1, "unit": "module entitlement", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "module entitlement",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["ed43ee64-d579-4123-979d-606a8aafb0e0"],
         "course_ids": ["9766b662-5d49-4282-8962-3372caad511c"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:data/checkout/products.json#pcc-module-1", "tandemweb:data/checkout/products.json#actc-module-1", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:data/checkout/products.json#pcc-module-1",
+        "tandemweb:data/checkout/products.json#actc-module-1",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": []
     },
     {
@@ -260,14 +355,22 @@
       "scheduling_model": "module_class_block",
       "consumption_model": "course_completion",
       "marker_policy": "class_block",
-      "quantity": { "value": 1, "unit": "module entitlement", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "module entitlement",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["2b1f7c4e-5a8c-4a52-bb13-cdf141adaa4a"],
         "course_ids": ["b2241aa8-da14-48d2-8d6e-9d419b957e36"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:data/checkout/products.json#pcc-module-2", "tandemweb:data/checkout/products.json#actc-module-2", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:data/checkout/products.json#pcc-module-2",
+        "tandemweb:data/checkout/products.json#actc-module-2",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": []
     },
     {
@@ -278,14 +381,22 @@
       "scheduling_model": "module_class_block",
       "consumption_model": "course_completion",
       "marker_policy": "class_block",
-      "quantity": { "value": 1, "unit": "module entitlement", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "module entitlement",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["d930d4ee-49b1-4766-a0e8-2f10683f902e"],
         "course_ids": ["17d6ce83-fdc6-422c-aa31-ebc1c8d7d12f"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:data/checkout/products.json#pcc-module-3", "tandemweb:data/checkout/products.json#actc-module-3", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:data/checkout/products.json#pcc-module-3",
+        "tandemweb:data/checkout/products.json#actc-module-3",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": []
     },
     {
@@ -296,14 +407,22 @@
       "scheduling_model": "module_class_block",
       "consumption_model": "course_completion",
       "marker_policy": "class_block",
-      "quantity": { "value": 1, "unit": "module entitlement", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "module entitlement",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["a918cbb6-b45e-4a12-bcc9-c39c2ec9e0bc"],
         "course_ids": ["70572040-5e35-4d03-bf59-9c95934b5a61"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:data/checkout/products.json#pcc-module-4", "tandemweb:data/checkout/products.json#actc-module-4", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:data/checkout/products.json#pcc-module-4",
+        "tandemweb:data/checkout/products.json#actc-module-4",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": []
     },
     {
@@ -314,15 +433,25 @@
       "scheduling_model": "group_series",
       "consumption_model": "hour_count",
       "marker_policy": "group_series",
-      "quantity": { "value": "included", "unit": "supervision entitlement", "status": "source_confirmed" },
+      "quantity": {
+        "value": "included",
+        "unit": "supervision entitlement",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["7c65c290-56db-422f-bca1-c4494ac2145a"],
         "course_ids": ["ca2e4d23-3582-4e73-be7d-18d8ecbafdda"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/pcc/05-section-program-overview.html", "tandemweb:pages/actc/05-section-program-overview.html", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Confirm current included hours/session count independently for PCC Full and ACTC Full."]
+      "sources": [
+        "tandemweb:pages/pcc/05-section-program-overview.html",
+        "tandemweb:pages/actc/05-section-program-overview.html",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Confirm current included hours/session count independently for PCC Full and ACTC Full."
+      ]
     },
     {
       "component_key": "systems.group-mentoring",
@@ -332,14 +461,21 @@
       "scheduling_model": "group_series",
       "consumption_model": "hour_count",
       "marker_policy": "group_series",
-      "quantity": { "value": "included", "unit": "mentoring entitlement", "status": "source_confirmed" },
+      "quantity": {
+        "value": "included",
+        "unit": "mentoring entitlement",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["0ce0734c-e359-4cf0-9251-4bb54070545a"],
         "course_ids": ["a3ec8de6-a854-4c41-b0d5-853ad272d1f0"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/pcc/05-section-program-overview.html", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:pages/pcc/05-section-program-overview.html",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": ["Confirm current included hours/session count."]
     },
     {
@@ -350,15 +486,24 @@
       "scheduling_model": "individual_booking",
       "consumption_model": "hour_count",
       "marker_policy": "none",
-      "quantity": { "value": "included", "unit": "mentoring entitlement", "status": "source_confirmed" },
+      "quantity": {
+        "value": "included",
+        "unit": "mentoring entitlement",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["2fec5ee0-586b-4146-891e-c534999d4da4"],
         "course_ids": ["ef42da65-acb6-4ee5-9b91-be1f2caa9358"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/pcc/05-section-program-overview.html", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Confirm current included hours/session count and assessment consumption relationship."]
+      "sources": [
+        "tandemweb:pages/pcc/05-section-program-overview.html",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Confirm current included hours/session count and assessment consumption relationship."
+      ]
     },
     {
       "component_key": "systems.performance-evaluation",
@@ -368,15 +513,24 @@
       "scheduling_model": "milestone_window",
       "consumption_model": "submission_count",
       "marker_policy": "none",
-      "quantity": { "value": "included", "unit": "evaluation preparation", "status": "source_confirmed" },
+      "quantity": {
+        "value": "included",
+        "unit": "evaluation preparation",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["2fec5ee0-586b-4146-891e-c534999d4da4"],
         "course_ids": ["ef42da65-acb6-4ee5-9b91-be1f2caa9358"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/pcc/05-section-program-overview.html", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Define exact current review/submission allowance and graduation gate."]
+      "sources": [
+        "tandemweb:pages/pcc/05-section-program-overview.html",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Define exact current review/submission allowance and graduation gate."
+      ]
     },
     {
       "component_key": "systems.individual-exam-preparation",
@@ -386,15 +540,25 @@
       "scheduling_model": "self_paced",
       "consumption_model": "course_completion",
       "marker_policy": "none",
-      "quantity": { "value": 1, "unit": "course entitlement", "status": "source_confirmed" },
+      "quantity": {
+        "value": 1,
+        "unit": "course entitlement",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["5c2616f5-3379-4144-bbef-8fc225e701c3"],
         "course_ids": ["5e9eb6c7-7f5c-4244-b352-e202a604969b"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "provisional",
-      "sources": ["tandemweb:pages/pcc/05-section-program-overview.html", "tandemweb:data/checkout/products.json#pcc-exam-prep-individual", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["The inactive standalone checkout maps to the ACC Practice Test group, while Heartbeat exposes a distinct PCC/MCC Practice Test group. Confirm the full-bundle attachment and correct the standalone mapping separately before activation."]
+      "sources": [
+        "tandemweb:pages/pcc/05-section-program-overview.html",
+        "tandemweb:data/checkout/products.json#pcc-exam-prep-individual",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "The inactive standalone checkout maps to the ACC Practice Test group, while Heartbeat exposes a distinct PCC/MCC Practice Test group. Confirm the full-bundle attachment and correct the standalone mapping separately before activation."
+      ]
     },
     {
       "component_key": "systems.team-exam-preparation",
@@ -404,15 +568,25 @@
       "scheduling_model": "self_paced",
       "consumption_model": "course_completion",
       "marker_policy": "none",
-      "quantity": { "value": 1, "unit": "course entitlement", "status": "source_confirmed" },
+      "quantity": {
+        "value": 1,
+        "unit": "course entitlement",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["4005359c-a4fb-4722-9e86-5fd9ccce3dfc"],
         "course_ids": ["0574df6b-1159-41f7-b52b-2e058a885856"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/pcc/05-section-program-overview.html", "tandemweb:pages/actc/05-section-program-overview.html", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Verify provider attachment from both PCC Bridge and ACTC Full groups."]
+      "sources": [
+        "tandemweb:pages/pcc/05-section-program-overview.html",
+        "tandemweb:pages/actc/05-section-program-overview.html",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Verify provider attachment from both PCC Bridge and ACTC Full groups."
+      ]
     },
     {
       "component_key": "actc.recording-review",
@@ -422,15 +596,25 @@
       "scheduling_model": "milestone_window",
       "consumption_model": "submission_count",
       "marker_policy": "none",
-      "quantity": { "value": 1, "unit": "recording review", "status": "source_confirmed" },
+      "quantity": {
+        "value": 1,
+        "unit": "recording review",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["414dc9c1-8083-4f49-acbe-72272ba6b30a"],
         "course_ids": ["8b9b0510-7bfd-4e16-ac4d-07e6393f2a31"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/actc/05-section-program-overview.html", "tandemweb:data/checkout/products.json#actc-recording-review", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Confirm whether the full offer includes exactly one review and whether resubmission is included."]
+      "sources": [
+        "tandemweb:pages/actc/05-section-program-overview.html",
+        "tandemweb:data/checkout/products.json#actc-recording-review",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Confirm whether the full offer includes exactly one review and whether resubmission is included."
+      ]
     },
     {
       "component_key": "mcs.foundations",
@@ -440,15 +624,24 @@
       "scheduling_model": "self_paced",
       "consumption_model": "course_completion",
       "marker_policy": "none",
-      "quantity": { "value": "six modules, 22 videos, 15 tools, 3 quizzes, 6 graded submissions", "unit": "curriculum", "status": "source_confirmed" },
+      "quantity": {
+        "value": "six modules, 22 videos, 15 tools, 3 quizzes, 6 graded submissions",
+        "unit": "curriculum",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["4c54983c-0e7b-4dd0-aebc-0f0cb1c82298"],
         "course_ids": ["abd312e4-b01a-4718-8918-f79d081753c0"],
         "attachment_status": "group_and_course_verified_attachment_unavailable"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Verify attachment from the MCS Standard Path full-access group."]
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Verify attachment from the MCS Standard Path full-access group."
+      ]
     },
     {
       "component_key": "mcs.acc-bars-training",
@@ -458,15 +651,24 @@
       "scheduling_model": "program_cohort_series",
       "consumption_model": "course_completion",
       "marker_policy": "program_cohort",
-      "quantity": { "value": "included", "unit": "evaluation training", "status": "source_confirmed" },
+      "quantity": {
+        "value": "included",
+        "unit": "evaluation training",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["bc59ba0d-bcb0-4306-aa51-4ae95613c241"],
         "course_ids": [],
         "attachment_status": "group_verified_course_unresolved"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html", "live:heartbeat-group-inventory-2026-09-05"],
-      "open_questions": ["Resolve the exact course ID and full-group attachment."]
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Resolve the exact course ID and full-group attachment."
+      ]
     },
     {
       "component_key": "mcs.pcc-markers-training",
@@ -476,15 +678,24 @@
       "scheduling_model": "program_cohort_series",
       "consumption_model": "course_completion",
       "marker_policy": "program_cohort",
-      "quantity": { "value": "included", "unit": "evaluation training", "status": "source_confirmed" },
+      "quantity": {
+        "value": "included",
+        "unit": "evaluation training",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["b4dcb464-f1e9-4099-a73a-66d24f32eb7d"],
         "course_ids": [],
         "attachment_status": "group_verified_course_unresolved"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html", "live:heartbeat-group-inventory-2026-09-05"],
-      "open_questions": ["Resolve the exact course ID and full-group attachment."]
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Resolve the exact course ID and full-group attachment."
+      ]
     },
     {
       "component_key": "mcs.live-practicum",
@@ -494,15 +705,25 @@
       "scheduling_model": "program_cohort_series",
       "consumption_model": "attendance",
       "marker_policy": "program_cohort",
-      "quantity": { "value": "12 classes x 2 hours", "unit": "live instruction", "status": "verified" },
+      "quantity": {
+        "value": "12 classes x 2 hours",
+        "unit": "live instruction",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["917a7a35-2ea8-4fb3-999a-26949d9de4da"],
         "course_ids": ["381ea897-a636-440b-b30c-250c1d03d54b"],
         "attachment_status": "full_group_verified_contents_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:data/checkout/products.json#mcs-full", "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html", "live:heartbeat-group-course-inventory-2026-09-05"],
-      "open_questions": ["Reconcile the current generic full group with the existing MCS Practicum September 2026 marker and three ambiguous September 2026 groups before creating any new marker taxonomy."]
+      "sources": [
+        "tandemweb:data/checkout/products.json#mcs-full",
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "open_questions": [
+        "Reconcile the current generic full group with the existing MCS Practicum September 2026 marker and three ambiguous September 2026 groups before creating any new marker taxonomy."
+      ]
     },
     {
       "component_key": "mcs.observed-practice",
@@ -512,14 +733,21 @@
       "scheduling_model": "program_cohort_series",
       "consumption_model": "submission_count",
       "marker_policy": "program_cohort",
-      "quantity": { "value": 5, "unit": "observed sessions with written feedback", "status": "verified" },
+      "quantity": {
+        "value": 5,
+        "unit": "observed sessions with written feedback",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["917a7a35-2ea8-4fb3-999a-26949d9de4da"],
         "course_ids": ["381ea897-a636-440b-b30c-250c1d03d54b"],
         "attachment_status": "full_group_verified_contents_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html", "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"],
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"
+      ],
       "open_questions": []
     },
     {
@@ -530,14 +758,20 @@
       "scheduling_model": "program_cohort_series",
       "consumption_model": "session_count",
       "marker_policy": "program_cohort",
-      "quantity": { "value": "3 ACC-level plus 3 PCC-level sessions delivered", "unit": "mentor coaching sessions", "status": "verified" },
+      "quantity": {
+        "value": "3 ACC-level plus 3 PCC-level sessions delivered",
+        "unit": "mentor coaching sessions",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["917a7a35-2ea8-4fb3-999a-26949d9de4da"],
         "course_ids": ["381ea897-a636-440b-b30c-250c1d03d54b"],
         "attachment_status": "full_group_verified_contents_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"],
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"
+      ],
       "open_questions": []
     },
     {
@@ -555,7 +789,9 @@
         "attachment_status": "full_group_verified_contents_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"],
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"
+      ],
       "open_questions": []
     },
     {
@@ -566,14 +802,21 @@
       "scheduling_model": "milestone_window",
       "consumption_model": "milestone_completion",
       "marker_policy": "none",
-      "quantity": { "value": 2, "unit": "capstone parts", "status": "verified" },
+      "quantity": {
+        "value": 2,
+        "unit": "capstone parts",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["917a7a35-2ea8-4fb3-999a-26949d9de4da"],
         "course_ids": ["381ea897-a636-440b-b30c-250c1d03d54b"],
         "attachment_status": "full_group_verified_contents_unavailable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html", "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"],
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"
+      ],
       "open_questions": []
     },
     {
@@ -591,8 +834,13 @@
         "attachment_status": "group_verified_course_unresolved"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html", "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"],
-      "open_questions": ["Conditional on the enrollee holding an active MCC credential; exact credential verification source must be defined before automatic grant."]
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html"
+      ],
+      "open_questions": [
+        "Conditional on the enrollee holding an active MCC credential; exact credential verification source must be defined before automatic grant."
+      ]
     },
     {
       "component_key": "mcs.certificate",
@@ -602,14 +850,21 @@
       "scheduling_model": "milestone_window",
       "consumption_model": "milestone_completion",
       "marker_policy": "none",
-      "quantity": { "value": 1, "unit": "71-hour completion certificate", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "71-hour completion certificate",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": [],
         "course_ids": [],
         "attachment_status": "not_applicable"
       },
       "evidence_status": "verified",
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html", "Sertifier:canonical MCS package registry"],
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+        "Sertifier:canonical MCS package registry"
+      ],
       "open_questions": []
     },
     {
@@ -620,14 +875,22 @@
       "scheduling_model": "self_paced",
       "consumption_model": "course_completion",
       "marker_policy": "none",
-      "quantity": { "value": "8 competency modules", "unit": "curriculum", "status": "verified" },
+      "quantity": {
+        "value": "8 competency modules",
+        "unit": "curriculum",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
         "course_ids": ["1f2febfe-eb34-463a-818e-ce7d0cac1251"],
         "attachment_status": "exact_component_group_and_course_verified"
       },
       "evidence_status": "verified",
-      "sources": ["facts/catalogs/coaching-supervision-mastery.json", "courses:community/icf/supervision/COURSE-STRUCTURE.md", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "facts/catalogs/coaching-supervision-mastery.json",
+        "courses:community/icf/supervision/COURSE-STRUCTURE.md",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "open_questions": []
     },
     {
@@ -638,14 +901,22 @@
       "scheduling_model": "program_cohort_series",
       "consumption_model": "attendance",
       "marker_policy": "program_cohort",
-      "quantity": { "value": "16 classes x 2 hours", "unit": "live instruction", "status": "verified" },
+      "quantity": {
+        "value": "16 classes x 2 hours",
+        "unit": "live instruction",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
         "course_ids": ["1f2febfe-eb34-463a-818e-ce7d0cac1251"],
         "attachment_status": "exact_component_group_and_course_verified"
       },
       "evidence_status": "verified",
-      "sources": ["facts/catalogs/coaching-supervision-mastery.json", "courses:community/icf/supervision/COURSE-STRUCTURE.md", "tandemweb:pages/coaching-supervisor-training/meta.json"],
+      "sources": [
+        "facts/catalogs/coaching-supervision-mastery.json",
+        "courses:community/icf/supervision/COURSE-STRUCTURE.md",
+        "tandemweb:pages/coaching-supervisor-training/meta.json"
+      ],
       "open_questions": []
     },
     {
@@ -656,15 +927,24 @@
       "scheduling_model": "group_series",
       "consumption_model": "hour_count",
       "marker_policy": "group_series",
-      "quantity": { "value": 14, "unit": "fieldwork hours", "status": "verified" },
+      "quantity": {
+        "value": 14,
+        "unit": "fieldwork hours",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
         "course_ids": ["1f2febfe-eb34-463a-818e-ce7d0cac1251"],
         "attachment_status": "exact_component_group_and_course_verified"
       },
       "evidence_status": "verified",
-      "sources": ["courses:community/icf/supervision/COURSE-STRUCTURE.md", "tandemweb:pages/coaching-supervisor-training/meta.json"],
-      "open_questions": ["Define whether standing-trio assignment merits a separate hidden series marker or remains an operator-managed sub-assignment."]
+      "sources": [
+        "courses:community/icf/supervision/COURSE-STRUCTURE.md",
+        "tandemweb:pages/coaching-supervisor-training/meta.json"
+      ],
+      "open_questions": [
+        "Define whether standing-trio assignment merits a separate hidden series marker or remains an operator-managed sub-assignment."
+      ]
     },
     {
       "component_key": "supervision.observed-sessions",
@@ -674,14 +954,21 @@
       "scheduling_model": "program_cohort_series",
       "consumption_model": "session_count",
       "marker_policy": "program_cohort",
-      "quantity": { "value": 5, "unit": "observed sessions", "status": "verified" },
+      "quantity": {
+        "value": 5,
+        "unit": "observed sessions",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
         "course_ids": ["1f2febfe-eb34-463a-818e-ce7d0cac1251"],
         "attachment_status": "exact_component_group_and_course_verified"
       },
       "evidence_status": "verified",
-      "sources": ["courses:community/icf/supervision/COURSE-STRUCTURE.md", "tandemweb:pages/coaching-supervisor-training/meta.json"],
+      "sources": [
+        "courses:community/icf/supervision/COURSE-STRUCTURE.md",
+        "tandemweb:pages/coaching-supervisor-training/meta.json"
+      ],
       "open_questions": []
     },
     {
@@ -692,7 +979,11 @@
       "scheduling_model": "milestone_window",
       "consumption_model": "submission_count",
       "marker_policy": "none",
-      "quantity": { "value": 3, "unit": "minimum written-feedback records", "status": "verified" },
+      "quantity": {
+        "value": 3,
+        "unit": "minimum written-feedback records",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
         "course_ids": ["1f2febfe-eb34-463a-818e-ce7d0cac1251"],
@@ -718,7 +1009,9 @@
       },
       "evidence_status": "verified",
       "sources": ["courses:community/icf/supervision/COURSE-STRUCTURE.md"],
-      "open_questions": ["Track the individual appointment separately from the live-class demonstration turn so both evidence sources remain exact."]
+      "open_questions": [
+        "Track the individual appointment separately from the live-class demonstration turn so both evidence sources remain exact."
+      ]
     },
     {
       "component_key": "supervision.supervision-on-supervision",
@@ -728,7 +1021,11 @@
       "scheduling_model": "program_cohort_series",
       "consumption_model": "hour_count",
       "marker_policy": "program_cohort",
-      "quantity": { "value": "4 delivered; 3 required", "unit": "hours", "status": "verified" },
+      "quantity": {
+        "value": "4 delivered; 3 required",
+        "unit": "hours",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
         "course_ids": ["1f2febfe-eb34-463a-818e-ce7d0cac1251"],
@@ -746,7 +1043,11 @@
       "scheduling_model": "milestone_window",
       "consumption_model": "submission_count",
       "marker_policy": "none",
-      "quantity": { "value": 28, "unit": "journal assignments", "status": "verified" },
+      "quantity": {
+        "value": 28,
+        "unit": "journal assignments",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
         "course_ids": ["1f2febfe-eb34-463a-818e-ce7d0cac1251"],
@@ -764,14 +1065,21 @@
       "scheduling_model": "milestone_window",
       "consumption_model": "milestone_completion",
       "marker_policy": "none",
-      "quantity": { "value": 1, "unit": "final applied assignment", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "final applied assignment",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
         "course_ids": ["1f2febfe-eb34-463a-818e-ce7d0cac1251"],
         "attachment_status": "exact_component_group_and_course_verified"
       },
       "evidence_status": "verified",
-      "sources": ["courses:community/icf/supervision/COURSE-STRUCTURE.md", "tandemweb:pages/coaching-supervisor-training/meta.json"],
+      "sources": [
+        "courses:community/icf/supervision/COURSE-STRUCTURE.md",
+        "tandemweb:pages/coaching-supervisor-training/meta.json"
+      ],
       "open_questions": []
     },
     {
@@ -782,14 +1090,20 @@
       "scheduling_model": "none",
       "consumption_model": "binary_access",
       "marker_policy": "none",
-      "quantity": { "value": 1, "unit": "resource library", "status": "source_confirmed" },
+      "quantity": {
+        "value": 1,
+        "unit": "resource library",
+        "status": "source_confirmed"
+      },
       "heartbeat": {
         "access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
         "course_ids": ["1f2febfe-eb34-463a-818e-ce7d0cac1251"],
         "attachment_status": "exact_component_group_and_course_verified"
       },
       "evidence_status": "source_confirmed",
-      "sources": ["tandemweb:pages/coaching-supervisor-training/04-section-curriculum.html"],
+      "sources": [
+        "tandemweb:pages/coaching-supervisor-training/04-section-curriculum.html"
+      ],
       "open_questions": []
     },
     {
@@ -800,36 +1114,107 @@
       "scheduling_model": "milestone_window",
       "consumption_model": "milestone_completion",
       "marker_policy": "none",
-      "quantity": { "value": 1, "unit": "72-hour completion certificate", "status": "verified" },
+      "quantity": {
+        "value": 1,
+        "unit": "72-hour completion certificate",
+        "status": "verified"
+      },
       "heartbeat": {
         "access_group_ids": [],
         "course_ids": [],
         "attachment_status": "not_applicable"
       },
       "evidence_status": "verified",
-      "sources": ["facts/catalogs/coaching-supervision-mastery.json", "courses:community/icf/supervision/COURSE-STRUCTURE.md"],
+      "sources": [
+        "facts/catalogs/coaching-supervision-mastery.json",
+        "courses:community/icf/supervision/COURSE-STRUCTURE.md"
+      ],
       "open_questions": []
     }
   ],
   "bundles": [
+    {
+      "bundle_key": "acc-module-1:v1",
+      "program_key": "acc",
+      "version": 1,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "components": [
+        {
+          "component_key": "acc.module-1",
+          "inclusion": "included",
+          "condition": null
+        }
+      ],
+      "sources": [
+        "tandemweb:data/checkout/products.json#acc-module-1",
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "live:stripe-product-inventory-2026-09-06",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
+      "evidence_status": "verified"
+    },
     {
       "bundle_key": "acc-full:v1",
       "program_key": "acc",
       "version": 1,
       "effective_from": "2026-09-05T00:00:00Z",
       "components": [
-        { "component_key": "acc.module-1", "inclusion": "included", "condition": null },
-        { "component_key": "acc.module-2", "inclusion": "included", "condition": null },
-        { "component_key": "acc.module-3", "inclusion": "included", "condition": null },
-        { "component_key": "acc.module-4", "inclusion": "included", "condition": null },
-        { "component_key": "acc.group-mentoring", "inclusion": "included", "condition": null },
-        { "component_key": "acc.individual-mentoring", "inclusion": "included", "condition": null },
-        { "component_key": "acc.group-supervision", "inclusion": "included", "condition": null },
-        { "component_key": "acc.performance-evaluation", "inclusion": "included", "condition": null },
-        { "component_key": "acc.exam-preparation", "inclusion": "included", "condition": null },
-        { "component_key": "shared.coaching-tools-plus", "inclusion": "included", "condition": null }
+        {
+          "component_key": "acc.module-1",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.module-2",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.module-3",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.module-4",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.group-mentoring",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.individual-mentoring",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.group-supervision",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.performance-evaluation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.exam-preparation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "shared.coaching-tools-plus",
+          "inclusion": "included",
+          "condition": null
+        }
       ],
-      "sources": ["tandemweb:pages/acc/05-section-program-overview.html", "tandemweb:data/checkout/products.json#acc-full", "live:heartbeat-group-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "tandemweb:data/checkout/products.json#acc-full",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ],
       "evidence_status": "provisional"
     },
     {
@@ -838,19 +1223,67 @@
       "version": 1,
       "effective_from": "2026-09-05T00:00:00Z",
       "components": [
-        { "component_key": "systems.module-1", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-2", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-3", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-4", "inclusion": "included", "condition": null },
-        { "component_key": "systems.group-supervision", "inclusion": "included", "condition": null },
-        { "component_key": "systems.group-mentoring", "inclusion": "included", "condition": null },
-        { "component_key": "systems.individual-mentoring", "inclusion": "included", "condition": null },
-        { "component_key": "systems.performance-evaluation", "inclusion": "included", "condition": null },
-        { "component_key": "systems.individual-exam-preparation", "inclusion": "included", "condition": null },
-        { "component_key": "systems.team-exam-preparation", "inclusion": "included", "condition": null },
-        { "component_key": "shared.coaching-tools-plus", "inclusion": "included", "condition": null }
+        {
+          "component_key": "systems.module-1",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-2",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-3",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-4",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.group-supervision",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.group-mentoring",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.individual-mentoring",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.performance-evaluation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.individual-exam-preparation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.team-exam-preparation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "shared.coaching-tools-plus",
+          "inclusion": "included",
+          "condition": null
+        }
       ],
-      "sources": ["tandemweb:pages/pcc/05-section-program-overview.html", "tandemweb:data/checkout/products.json#pcc-full", "live:heartbeat-group-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:pages/pcc/05-section-program-overview.html",
+        "tandemweb:data/checkout/products.json#pcc-full",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ],
       "evidence_status": "provisional"
     },
     {
@@ -859,16 +1292,52 @@
       "version": 1,
       "effective_from": "2026-09-05T00:00:00Z",
       "components": [
-        { "component_key": "systems.module-1", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-2", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-3", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-4", "inclusion": "included", "condition": null },
-        { "component_key": "systems.group-supervision", "inclusion": "included", "condition": null },
-        { "component_key": "actc.recording-review", "inclusion": "included", "condition": null },
-        { "component_key": "systems.team-exam-preparation", "inclusion": "included", "condition": null },
-        { "component_key": "shared.coaching-tools-plus", "inclusion": "included", "condition": null }
+        {
+          "component_key": "systems.module-1",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-2",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-3",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-4",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.group-supervision",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "actc.recording-review",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.team-exam-preparation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "shared.coaching-tools-plus",
+          "inclusion": "included",
+          "condition": null
+        }
       ],
-      "sources": ["tandemweb:pages/actc/05-section-program-overview.html", "tandemweb:data/checkout/products.json#actc-full", "live:heartbeat-group-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:pages/actc/05-section-program-overview.html",
+        "tandemweb:data/checkout/products.json#actc-full",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ],
       "evidence_status": "provisional"
     },
     {
@@ -877,28 +1346,112 @@
       "version": 1,
       "effective_from": "2026-09-05T00:00:00Z",
       "components": [
-        { "component_key": "acc.module-1", "inclusion": "included", "condition": null },
-        { "component_key": "acc.module-2", "inclusion": "included", "condition": null },
-        { "component_key": "acc.module-3", "inclusion": "included", "condition": null },
-        { "component_key": "acc.module-4", "inclusion": "included", "condition": null },
-        { "component_key": "acc.group-mentoring", "inclusion": "included", "condition": null },
-        { "component_key": "acc.individual-mentoring", "inclusion": "included", "condition": null },
-        { "component_key": "acc.group-supervision", "inclusion": "included", "condition": null },
-        { "component_key": "acc.performance-evaluation", "inclusion": "included", "condition": null },
-        { "component_key": "acc.exam-preparation", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-1", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-2", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-3", "inclusion": "included", "condition": null },
-        { "component_key": "systems.module-4", "inclusion": "included", "condition": null },
-        { "component_key": "systems.group-supervision", "inclusion": "included", "condition": null },
-        { "component_key": "systems.group-mentoring", "inclusion": "included", "condition": null },
-        { "component_key": "systems.individual-mentoring", "inclusion": "included", "condition": null },
-        { "component_key": "systems.performance-evaluation", "inclusion": "included", "condition": null },
-        { "component_key": "systems.individual-exam-preparation", "inclusion": "included", "condition": null },
-        { "component_key": "systems.team-exam-preparation", "inclusion": "included", "condition": null },
-        { "component_key": "shared.coaching-tools-plus", "inclusion": "included", "condition": null }
+        {
+          "component_key": "acc.module-1",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.module-2",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.module-3",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.module-4",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.group-mentoring",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.individual-mentoring",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.group-supervision",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.performance-evaluation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "acc.exam-preparation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-1",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-2",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-3",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.module-4",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.group-supervision",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.group-mentoring",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.individual-mentoring",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.performance-evaluation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.individual-exam-preparation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "systems.team-exam-preparation",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "shared.coaching-tools-plus",
+          "inclusion": "included",
+          "condition": null
+        }
       ],
-      "sources": ["tandemweb:pages/acc-pcc-certification/05-section-program-overview.html", "tandemweb:data/checkout/products.json#acc-pcc-full", "live:heartbeat-group-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:pages/acc-pcc-certification/05-section-program-overview.html",
+        "tandemweb:data/checkout/products.json#acc-pcc-full",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ],
       "evidence_status": "provisional"
     },
     {
@@ -907,18 +1460,63 @@
       "version": 1,
       "effective_from": "2026-09-05T00:00:00Z",
       "components": [
-        { "component_key": "mcs.foundations", "inclusion": "included", "condition": null },
-        { "component_key": "mcs.acc-bars-training", "inclusion": "included", "condition": null },
-        { "component_key": "mcs.pcc-markers-training", "inclusion": "included", "condition": null },
-        { "component_key": "mcs.live-practicum", "inclusion": "included", "condition": null },
-        { "component_key": "mcs.observed-practice", "inclusion": "included", "condition": null },
-        { "component_key": "mcs.peer-mentoring-arcs", "inclusion": "included", "condition": null },
-        { "component_key": "mcs.mentoring-on-mentoring", "inclusion": "included", "condition": null },
-        { "component_key": "mcs.capstone", "inclusion": "included", "condition": null },
-        { "component_key": "mcs.mcc-bars-bonus", "inclusion": "conditional", "condition": "Enrollee holds an active MCC credential." },
-        { "component_key": "mcs.certificate", "inclusion": "earned_on_completion", "condition": "All program completion and certificate-readiness requirements are satisfied." }
+        {
+          "component_key": "mcs.foundations",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "mcs.acc-bars-training",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "mcs.pcc-markers-training",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "mcs.live-practicum",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "mcs.observed-practice",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "mcs.peer-mentoring-arcs",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "mcs.mentoring-on-mentoring",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "mcs.capstone",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "mcs.mcc-bars-bonus",
+          "inclusion": "conditional",
+          "condition": "Enrollee holds an active MCC credential."
+        },
+        {
+          "component_key": "mcs.certificate",
+          "inclusion": "earned_on_completion",
+          "condition": "All program completion and certificate-readiness requirements are satisfied."
+        }
       ],
-      "sources": ["tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html", "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html", "tandemweb:data/checkout/products.json#mcs-full", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html",
+        "tandemweb:pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+        "tandemweb:data/checkout/products.json#mcs-full",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "evidence_status": "source_confirmed"
     },
     {
@@ -927,23 +1525,92 @@
       "version": 1,
       "effective_from": "2026-09-02T11:54:40Z",
       "components": [
-        { "component_key": "supervision.async-curriculum", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.live-practicum", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.fieldwork", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.observed-sessions", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.written-feedback", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.as-client", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.supervision-on-supervision", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.learning-journal", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.capstone", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.techniques-book", "inclusion": "included", "condition": null },
-        { "component_key": "supervision.certificate", "inclusion": "earned_on_completion", "condition": "All AACS program completion and certificate-readiness requirements are satisfied." }
+        {
+          "component_key": "supervision.async-curriculum",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.live-practicum",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.fieldwork",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.observed-sessions",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.written-feedback",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.as-client",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.supervision-on-supervision",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.learning-journal",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.capstone",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.techniques-book",
+          "inclusion": "included",
+          "condition": null
+        },
+        {
+          "component_key": "supervision.certificate",
+          "inclusion": "earned_on_completion",
+          "condition": "All AACS program completion and certificate-readiness requirements are satisfied."
+        }
       ],
-      "sources": ["facts/catalogs/coaching-supervision-mastery.json", "courses:community/icf/supervision/COURSE-STRUCTURE.md", "tandemweb:pages/coaching-supervisor-training/meta.json", "live:heartbeat-group-course-inventory-2026-09-05"],
+      "sources": [
+        "facts/catalogs/coaching-supervision-mastery.json",
+        "courses:community/icf/supervision/COURSE-STRUCTURE.md",
+        "tandemweb:pages/coaching-supervisor-training/meta.json",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ],
       "evidence_status": "verified"
     }
   ],
   "offers": [
+    {
+      "offer_key": "acc-module-1",
+      "bundle_key": "acc-module-1:v1",
+      "status": "active",
+      "enrollment_scope": "module",
+      "price_cents": 39900,
+      "currency": "usd",
+      "stripe_product_ids": ["prod_UH6JkPYLMo0rcZ"],
+      "stripe_price_ids": ["price_1TIY6rA7hTBWpVVqY6t4VpzY"],
+      "heartbeat_full_access_group_ids": [
+        "37443ab2-874b-4c3b-8829-8da00025e355"
+      ],
+      "provider_content_status": "group_and_course_verified",
+      "sources": [
+        "tandemweb:data/checkout/products.json#acc-module-1",
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "live:stripe-product-inventory-2026-09-06",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ]
+    },
     {
       "offer_key": "acc-full",
       "bundle_key": "acc-full:v1",
@@ -953,9 +1620,15 @@
       "currency": "usd",
       "stripe_product_ids": ["prod_UH6JxVERhLtwb4"],
       "stripe_price_ids": ["price_1TIY6rA7hTBWpVVqNg7G7XzC"],
-      "heartbeat_full_access_group_ids": ["1892f2a6-3117-4c6b-b5fa-540129ce0b3f"],
+      "heartbeat_full_access_group_ids": [
+        "1892f2a6-3117-4c6b-b5fa-540129ce0b3f"
+      ],
       "provider_content_status": "full_group_verified_contents_unavailable",
-      "sources": ["tandemweb:data/checkout/products.json#acc-full", "live:stripe-product-inventory-2026-09-05", "live:heartbeat-group-inventory-2026-09-05"]
+      "sources": [
+        "tandemweb:data/checkout/products.json#acc-full",
+        "live:stripe-product-inventory-2026-09-05",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ]
     },
     {
       "offer_key": "pcc-full",
@@ -966,9 +1639,15 @@
       "currency": "usd",
       "stripe_product_ids": ["prod_UHB9DrYIrstLJT"],
       "stripe_price_ids": ["price_1TIcnWA7hTBWpVVqJHoGwLnO"],
-      "heartbeat_full_access_group_ids": ["a8e3d6fd-00ea-4213-9cc3-05acedc57f74"],
+      "heartbeat_full_access_group_ids": [
+        "a8e3d6fd-00ea-4213-9cc3-05acedc57f74"
+      ],
       "provider_content_status": "full_group_verified_contents_unavailable",
-      "sources": ["tandemweb:data/checkout/products.json#pcc-full", "live:stripe-product-inventory-2026-09-05", "live:heartbeat-group-inventory-2026-09-05"]
+      "sources": [
+        "tandemweb:data/checkout/products.json#pcc-full",
+        "live:stripe-product-inventory-2026-09-05",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ]
     },
     {
       "offer_key": "actc-full",
@@ -979,9 +1658,15 @@
       "currency": "usd",
       "stripe_product_ids": ["prod_UH8vmY0DzypACl"],
       "stripe_price_ids": ["price_1TIadwA7hTBWpVVq4UQilXGE"],
-      "heartbeat_full_access_group_ids": ["5ff8be1e-1ce8-4732-a997-62661a1aa1ee"],
+      "heartbeat_full_access_group_ids": [
+        "5ff8be1e-1ce8-4732-a997-62661a1aa1ee"
+      ],
       "provider_content_status": "full_group_verified_contents_unavailable",
-      "sources": ["tandemweb:data/checkout/products.json#actc-full", "live:stripe-product-inventory-2026-09-05", "live:heartbeat-group-inventory-2026-09-05"]
+      "sources": [
+        "tandemweb:data/checkout/products.json#actc-full",
+        "live:stripe-product-inventory-2026-09-05",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ]
     },
     {
       "offer_key": "acc-pcc-full",
@@ -992,9 +1677,16 @@
       "currency": "usd",
       "stripe_product_ids": ["prod_UHBORCHyWDea4N"],
       "stripe_price_ids": ["price_1TId1qA7hTBWpVVqEqTpvs14"],
-      "heartbeat_full_access_group_ids": ["1892f2a6-3117-4c6b-b5fa-540129ce0b3f", "8eb5731a-a812-4ae6-ad6c-e4ad306f9c0a"],
+      "heartbeat_full_access_group_ids": [
+        "1892f2a6-3117-4c6b-b5fa-540129ce0b3f",
+        "8eb5731a-a812-4ae6-ad6c-e4ad306f9c0a"
+      ],
       "provider_content_status": "full_group_verified_contents_unavailable",
-      "sources": ["tandemweb:data/checkout/products.json#acc-pcc-full", "live:stripe-product-inventory-2026-09-05", "live:heartbeat-group-inventory-2026-09-05"]
+      "sources": [
+        "tandemweb:data/checkout/products.json#acc-pcc-full",
+        "live:stripe-product-inventory-2026-09-05",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ]
     },
     {
       "offer_key": "mcs-full",
@@ -1005,9 +1697,15 @@
       "currency": "usd",
       "stripe_product_ids": ["prod_UWzqD2zowB8apy", "prod_Uk2OvW03ZwxmAj"],
       "stripe_price_ids": ["price_1TkYJfA7hTBWpVVqm502swAb"],
-      "heartbeat_full_access_group_ids": ["917a7a35-2ea8-4fb3-999a-26949d9de4da"],
+      "heartbeat_full_access_group_ids": [
+        "917a7a35-2ea8-4fb3-999a-26949d9de4da"
+      ],
       "provider_content_status": "full_group_verified_contents_unavailable",
-      "sources": ["tandemweb:data/checkout/products.json#mcs-full", "live:stripe-product-inventory-2026-09-05", "live:heartbeat-group-inventory-2026-09-05"]
+      "sources": [
+        "tandemweb:data/checkout/products.json#mcs-full",
+        "live:stripe-product-inventory-2026-09-05",
+        "live:heartbeat-group-inventory-2026-09-05"
+      ]
     },
     {
       "offer_key": "supervision-inaugural",
@@ -1018,9 +1716,16 @@
       "currency": "usd",
       "stripe_product_ids": ["prod_UvqkpUONPWr8Bo"],
       "stripe_price_ids": ["price_1Tvz3MA7hTBWpVVqhF708kPv"],
-      "heartbeat_full_access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
+      "heartbeat_full_access_group_ids": [
+        "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"
+      ],
       "provider_content_status": "group_and_course_verified",
-      "sources": ["facts/catalogs/coaching-supervision-mastery.json", "tandemweb:data/checkout/products.json#supervision-inaugural", "live:stripe-product-inventory-2026-09-05", "live:heartbeat-group-course-inventory-2026-09-05"]
+      "sources": [
+        "facts/catalogs/coaching-supervision-mastery.json",
+        "tandemweb:data/checkout/products.json#supervision-inaugural",
+        "live:stripe-product-inventory-2026-09-05",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ]
     },
     {
       "offer_key": "supervision-regular",
@@ -1031,9 +1736,16 @@
       "currency": "usd",
       "stripe_product_ids": ["prod_UvqkMSjRqR4zho"],
       "stripe_price_ids": ["price_1Tvz3MA7hTBWpVVq9gL3v49F"],
-      "heartbeat_full_access_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
+      "heartbeat_full_access_group_ids": [
+        "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"
+      ],
       "provider_content_status": "group_and_course_verified",
-      "sources": ["facts/catalogs/coaching-supervision-mastery.json", "tandemweb:data/checkout/products.json#supervision-regular", "live:stripe-product-inventory-2026-09-05", "live:heartbeat-group-course-inventory-2026-09-05"]
+      "sources": [
+        "facts/catalogs/coaching-supervision-mastery.json",
+        "tandemweb:data/checkout/products.json#supervision-regular",
+        "live:stripe-product-inventory-2026-09-05",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ]
     }
   ],
   "known_conflicts": [
@@ -1042,21 +1754,32 @@
       "severity": "high",
       "summary": "The April 2026 ICF tracking framework names Plutio as the student source of truth, while the accepted Company OS lifecycle architecture makes source systems authoritative for native facts and Company OS authoritative for cross-provider enrollment, entitlement, reconciliation, and action state.",
       "disposition": "resolved",
-      "sources": ["courses:community/icf/CLAUDE.md#student-tracking", "courses:community/icf/STUDENT-TRACKING-FRAMEWORK.md", ".program/decisions/decision-student-entitlement-catalog-2026-09-05.json", "docs/STUDENT-LIFECYCLE-CONTROL-PLANE.md"]
+      "sources": [
+        "courses:community/icf/CLAUDE.md#student-tracking",
+        "courses:community/icf/STUDENT-TRACKING-FRAMEWORK.md",
+        ".program/decisions/decision-student-entitlement-catalog-2026-09-05.json",
+        "docs/STUDENT-LIFECYCLE-CONTROL-PLANE.md"
+      ]
     },
     {
       "conflict_id": "heartbeat.full-group-contents-not-readable",
       "severity": "high",
       "summary": "Supported read-only Heartbeat tools verify full-access group and course identities but do not expose the complete group-to-content attachment graph. Published bundle promises therefore remain provisional until a documented provider read surface or exact owner-maintained mapping is available.",
       "disposition": "held",
-      "sources": ["live:heartbeat-group-course-inventory-2026-09-05", "docs/STUDENT-LIFECYCLE-CONTROL-PLANE.md"]
+      "sources": [
+        "live:heartbeat-group-course-inventory-2026-09-05",
+        "docs/STUDENT-LIFECYCLE-CONTROL-PLANE.md"
+      ]
     },
     {
       "conflict_id": "pcc.individual-exam-group-mismatch",
       "severity": "medium",
       "summary": "The inactive pcc-exam-prep-individual checkout points at the ACC Practice Test group, while Heartbeat exposes a distinct PCC/MCC Practice Test group and course. No activation or correction is authorized by this catalog task.",
       "disposition": "held",
-      "sources": ["tandemweb:data/checkout/products.json#pcc-exam-prep-individual", "live:heartbeat-group-course-inventory-2026-09-05"]
+      "sources": [
+        "tandemweb:data/checkout/products.json#pcc-exam-prep-individual",
+        "live:heartbeat-group-course-inventory-2026-09-05"
+      ]
     },
     {
       "conflict_id": "roster.full-program-collapses-components",
@@ -1077,7 +1800,12 @@
       "severity": "high",
       "summary": "Current public pages confirm inclusion of mentoring, supervision, evaluation, exam preparation, recording review, and Coaching Tools Plus, but several exact quantities, resubmission rights, consumption rules, and full-group attachments are not present in the supported source surfaces.",
       "disposition": "requires_owner_decision",
-      "sources": ["tandemweb:pages/acc/05-section-program-overview.html", "tandemweb:pages/pcc/05-section-program-overview.html", "tandemweb:pages/actc/05-section-program-overview.html", "tandemweb:pages/acc-pcc-certification/05-section-program-overview.html"]
+      "sources": [
+        "tandemweb:pages/acc/05-section-program-overview.html",
+        "tandemweb:pages/pcc/05-section-program-overview.html",
+        "tandemweb:pages/actc/05-section-program-overview.html",
+        "tandemweb:pages/acc-pcc-certification/05-section-program-overview.html"
+      ]
     }
   ]
 }

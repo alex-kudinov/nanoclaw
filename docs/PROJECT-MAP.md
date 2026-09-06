@@ -653,6 +653,17 @@ separating the Friday assignment origin from the Thursday payment source and
 binding three exact manual/legacy Friday payments. This does not apply
 migrations 142-143 or activate the capacity runtime.
 
+`NC-20260906-002` authorizes the production shadow boundary. The reviewed
+implementation adds the missing one-component Module 1 offer, a mode-0600
+private-manifest builder, a manifest-hash/hostname/database-gated atomic
+populator, and disposable first-apply/zero-insert-replay proof. The exact batch
+is five blocks, 40 assignments, 310 entitlements, and three held exceptions;
+all keys/readbacks are batch-scoped and all exception subjects are apply-time
+bound. The immutable artifact may transport migration tooling without
+activating the daemon; checkout, provider writers, public site, Capacity minion,
+communications, refunds, certificates, payments, waitlist, and authority
+cutover remain off.
+
 Internal deterministic Slack notifications follow a human-first preview
 contract: the first line names the business event and subject; implementation
 tags, CRM disposition, provider IDs, and diagnostics follow only as supporting

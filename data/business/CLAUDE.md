@@ -341,6 +341,14 @@ the prior June cohort. Exact evidence resolves the paid offers to 9 Module 1,
 source remains held. This receipt still does not populate migration 143,
 activate a runtime/minion, contact a student, issue a refund, or cut over
 authority.
+`NC-20260906-002` separately authorizes production shadow population. The
+production command accepts only a mode-0600 private manifest outside the
+repository, exact approved SHA-256, exact hostname, and expected database. It
+reuses one exact-email Party, creates only explicitly allowed no-match Parties,
+keeps payer identity unknown, and atomically populates five capacity blocks,
+40 assignment chains, 310 entitlements, verified roster projection receipts,
+and exactly three held exceptions. Batch-scoped readback must pass and replay
+must insert zero. No runtime consumer or provider/public authority is enabled.
 
 ## Connection
 

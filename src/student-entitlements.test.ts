@@ -19,12 +19,35 @@ describe('student entitlement catalog', () => {
     const result = loadAndValidateStudentEntitlementCatalog();
     expect(result.findings).toEqual([]);
     expect(result.summary).toMatchObject({
-      bundles: 6,
-      offers: 7,
+      bundles: 7,
+      offers: 8,
       conflicts: 6,
     });
     expect(result.summary.components).toBeGreaterThan(25);
     expect(result.summary.openQuestions).toBeGreaterThan(0);
+  });
+
+  it('defines the active Module 1 offer as a one-component module bundle', () => {
+    const catalog = catalogFixture() as any;
+    const offer = catalog.offers.find(
+      (entry: any) => entry.offer_key === 'acc-module-1',
+    );
+    const bundle = catalog.bundles.find(
+      (entry: any) => entry.bundle_key === 'acc-module-1:v1',
+    );
+    expect(offer).toMatchObject({
+      bundle_key: 'acc-module-1:v1',
+      status: 'active',
+      enrollment_scope: 'module',
+      price_cents: 39900,
+    });
+    expect(bundle.components).toEqual([
+      {
+        component_key: 'acc.module-1',
+        inclusion: 'included',
+        condition: null,
+      },
+    ]);
   });
 
   it('does not grant marker-group creation or attach content to marker groups', () => {
@@ -83,8 +106,11 @@ describe('student entitlement catalog', () => {
     const catalog = catalogFixture() as any;
     catalog.components[0].component_type = 'magic_bundle';
     catalog.components[1].consumption_model = 'sometimes';
-    catalog.offers[0].status = 'probably_active';
-    catalog.bundles[0].components[0].inclusion = 'maybe';
+    catalog.offers.find((entry: any) => entry.offer_key === 'acc-full').status =
+      'probably_active';
+    catalog.bundles.find(
+      (entry: any) => entry.bundle_key === 'acc-full:v1',
+    ).components[0].inclusion = 'maybe';
     catalog.known_conflicts[0].disposition = 'ignored';
     catalog.known_conflicts[0].summary = '';
     const result = validateStudentEntitlementCatalog(catalog);
@@ -103,11 +129,13 @@ describe('student entitlement catalog', () => {
 
   it('rejects a bundle that names an unknown component', () => {
     const catalog = catalogFixture() as any;
-    catalog.bundles[0].components.push({
-      component_key: 'unknown.component',
-      inclusion: 'included',
-      condition: null,
-    });
+    catalog.bundles
+      .find((entry: any) => entry.bundle_key === 'acc-full:v1')
+      .components.push({
+        component_key: 'unknown.component',
+        inclusion: 'included',
+        condition: null,
+      });
     const result = validateStudentEntitlementCatalog(catalog);
     expect(result.ok).toBe(false);
     expect(result.findings).toContain(
@@ -117,7 +145,9 @@ describe('student entitlement catalog', () => {
 
   it('rejects a full offer without a Heartbeat access group', () => {
     const catalog = catalogFixture() as any;
-    catalog.offers[0].heartbeat_full_access_group_ids = [];
+    catalog.offers.find(
+      (entry: any) => entry.offer_key === 'acc-full',
+    ).heartbeat_full_access_group_ids = [];
     const result = validateStudentEntitlementCatalog(catalog);
     expect(result.ok).toBe(false);
     expect(result.findings).toContain(

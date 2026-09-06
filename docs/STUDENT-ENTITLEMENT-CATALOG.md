@@ -50,9 +50,10 @@ completion does not consume an individual mentoring allowance.
 
 ## Bundle versions
 
-The catalog currently defines six entitlement bundles behind seven commercial
+The catalog currently defines seven entitlement bundles behind eight commercial
 offers:
 
+- ACC Module 1-only;
 - ACC Level 1 Full;
 - PCC + ACTC Level 2 Full;
 - ACTC-only Full;
@@ -161,6 +162,11 @@ rules remain unresolved and are explicitly marked provisional.
 
 The complete evidence and conflict disposition are in
 `docs/programs/company-os/evidence/NC-20260905-001-student-entitlement-audit.md`.
+
+`NC-20260906-002` adds the verified one-component `acc-module-1:v1` bundle and
+active `$399` `acc-module-1` offer required to represent the September 7 shadow
+population without granting a full-program entitlement. This catalog addition
+does not create provider membership or activate a consumer.
 
 ## Next implementation gates
 

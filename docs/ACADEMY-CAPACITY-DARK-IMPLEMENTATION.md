@@ -197,7 +197,9 @@ Focused tests cover:
 2. Separately authorize disposable PostgreSQL migration-142-plus-143
    apply/replay/rollback validation. Complete under `NC-20260905-007`.
 3. Separately authorize production empty-schema migration with backups and
-   least-privilege readback.
+   least-privilege readback. Authorized for shadow-only population under
+   `NC-20260906-002`; implementation and exact production readback are in
+   progress, with no daemon activation.
 4. Separately authorize read-only schedule, offer, Bookkeeper, Stripe, and
    Student Roster reconciliation. Complete under `NC-20260905-008/009`.
    Separately authorize exact source repairs. `NC-20260906-001` resolves the
@@ -208,5 +210,6 @@ Focused tests cover:
 5. Separately authorize operator/minion, Tandemweb, provider, communication,
    and authority-cutover stages.
 
-Nothing in `NC-20260906-001` authorizes gates 3 or 5, production population,
+`NC-20260906-002` authorizes gate 3 only: reviewed production schema and shadow
+population with the three held exceptions. It does not authorize gate 5,
 runtime activation, customer communication, refunds, or authority cutover.
