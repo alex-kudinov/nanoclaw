@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-06T15:20:00Z
 - Owner/client: Codex with two bounded Claude Sonnet/high review rounds
-- State: deployed_unverified; mounted workflow and live no-post verification complete, first natural announcement pending
+- State: complete; owner-authorized live post, idempotency, rendered certificate, and corrected automation verified
 - Scope: add one shared, dry-run-default `sertifier/announce-graduate`
   operation and one read-only `heartbeat/list-channels` helper; update Gru
   Certifier and the personal Heartbeat grading skill so a newly issued public
@@ -40,10 +40,20 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   typecheck, six focused prompt-contract tests, and documentation continuity
   pass. The earlier full NanoClaw run remains 3,369 passing/31 skipped with only
   the two unchanged CNPC wrapper and stale Trafft baseline failures.
-- External-action boundary: no certificate was issued, no existing graduate
-  was announced, no Heartbeat post was created, and no historical backfill or
-  private credential exposure occurred. The first natural authorized issuance
-  remains the customer-facing rendering/outcome proof.
+- Live outcome: the owner explicitly authorized Michelle Ambrose's existing
+  active public MCS Practicum credential as the one-person test. Exact
+  Heartbeat identity and a sole matching Sertifier credential were reconciled;
+  no certificate was issued or resent. The guarded operation created one
+  thread in `Our Graduates`, read it back, and a second call returned
+  `already_announced` without a duplicate.
+- Rendering correction: browser inspection proved the raw Google Storage PNG
+  iframe was blocked by Brave because it is served as
+  `application/octet-stream`. A certificate-only `srcdoc` experiment was also
+  stripped. The same test post was corrected in place to embed the branded
+  registrar verification page, which visibly rendered Michelle's certificate
+  and provider-owned verification details. Toolbox `02b1c10` makes that exact
+  live-proven embed target the default and regression-tests that the payload no
+  longer embeds the storage URL.
 - Commit/deployment: NanoClaw `ece2ef6d` is pushed on
   `codex/graduate-announcements-20260906`; toolbox source is committed locally
   as `d87447f` plus production-preflight correction `07e7582`. The Mini's
@@ -53,7 +63,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `Our Graduates` POSTS channel, and a real-credential dry run validates a
   2,138,729-byte PNG with `created:false` and `willPost:false`. Release
   `886e2587` remains verified on Node 22.23.2 with Slack/Gmail connected and no
-  waiting groups. No restart was required. Rollback snapshot:
+  waiting groups. Follow-up toolbox `02b1c10` is deployed byte-identically on
+  Studio and Mini; its focused and 65/65 framework suites pass, and an
+  unrelated public-credential dry run returns
+  `renderMode:verified_registrar_page_embed` with no post. No restart was
+  required. Rollback snapshot:
   `.release-backups/NC-20260906-001-20260906T1535Z/`.
 - Documentation: `docs/GRADUATE-ANNOUNCEMENTS.md`, project map, active work,
   both bounded review request/response pairs, prompt contract, and this entry.

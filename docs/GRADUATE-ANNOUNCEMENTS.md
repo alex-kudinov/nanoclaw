@@ -1,8 +1,8 @@
 # Graduate announcement delivery
 
-Status: implemented for review under `NC-20260906-001`  
-Provider channel: Heartbeat `Our Graduates`  
-Channel ID: `845b7ebb-d7b9-47de-be58-119de3614ab7`  
+Status: deployed and live-verified under `NC-20260906-001`
+Provider channel: Heartbeat `Our Graduates`
+Channel ID: `845b7ebb-d7b9-47de-be58-119de3614ab7`
 Channel type: `POSTS`
 
 ## Outcome
@@ -28,9 +28,12 @@ Heartbeat's documented `PUT /threads` request accepts rich-text `text`, one
 `channelID`, and optional iframe `embeds`. It does not document a native file or
 image field in the create request. The Heartbeat UI separately supports native
 file attachments up to 10 MB. The shared automation therefore downloads and
-validates the Sertifier PNG, then displays that same approved public URL using
-the documented iframe-embed field. It never depends on an undocumented
-Heartbeat upload endpoint.
+validates the Sertifier PNG, then embeds the branded registrar verification
+page that visibly renders that same certificate image. The first authorized
+live test proved that embedding the raw Google Storage PNG is blocked by Brave
+because the provider serves it as `application/octet-stream`; the registrar
+page is embeddable and rendered the certificate successfully. The workflow
+never depends on an undocumented Heartbeat upload endpoint.
 
 References:
 
@@ -68,8 +71,9 @@ verified certificate.
 ```
 
 The recipient and credential title come from Sertifier, not from caller prose.
-The final sentence links to the branded Tandem registrar. The certificate PNG
-is the only embed.
+The final sentence links to the branded Tandem registrar. The only embed is the
+same credential's registrar verification page, which renders the certificate
+image and its provider-owned verification details.
 
 ## Callers and eligibility
 
@@ -89,9 +93,13 @@ is the only embed.
 Local mocks prove dry-run, exact channel/type, PNG validation, live confirmation,
 payload shape, successful readback, duplicate recovery, and private/invalid
 image/wrong-channel refusal. A live dry run verifies the actual channel and a
-real public credential without posting. No existing graduate is used as a live
-canary; the first natural authorized issuance supplies the customer-facing
-outcome proof.
+real public credential without posting. The owner then explicitly authorized
+Michelle Ambrose's existing public MCS Practicum credential as the one-person
+live test: one post was created, its exact registrar URL was read back, a second
+dry run returned `already_announced`, and browser inspection exposed the raw
+PNG iframe failure. The post was corrected in place to embed the registrar
+verification page; browser inspection then visibly confirmed Michelle's
+certificate image and verification details inside the `Our Graduates` thread.
 
 ## Rollback
 

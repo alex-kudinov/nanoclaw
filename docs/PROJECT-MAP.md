@@ -1131,8 +1131,9 @@ Gru Certifier and the Heartbeat Foundation grading workflow. The operation
 reconciles the exact Sertifier credential/campaign/Detail, downloads and
 validates the person-specific certificate PNG, requires the exact Heartbeat
 `Our Graduates` POSTS channel, checks recent threads for the same branded
-registrar URL, creates one short congratulations thread with the certificate as
-a documented iframe embed, and reads it back. Private credentials and
+registrar URL, creates one short congratulations thread with the credential's
+branded registrar verification page as a documented iframe embed, and reads it
+back. The page visibly renders the person-specific certificate. Private credentials and
 `already_issued` reconciliations are excluded. Direct recipient delivery and
 the community post have separate receipts/exceptions. See
 `docs/GRADUATE-ANNOUNCEMENTS.md`.
@@ -1140,8 +1141,13 @@ the community post have separate receipts/exceptions. See
 The reviewed prompt/tool overlay is deployed on `mini-claw.local`. Live
 read-only channel discovery and a real-credential dry run prove the exact
 channel, provider reconciliation, and 2.1 MB PNG download/validation path while
-returning `created:false` and `willPost:false`. No canary graduate was posted;
-the first natural authorized issuance remains the rendering/outcome gate.
+returning `created:false` and `willPost:false`. The owner then explicitly
+authorized Michelle Ambrose's existing public MCS Practicum credential as a
+one-person live test. The first raw Google Storage iframe was blocked by Brave;
+the same post was corrected in place to the branded registrar-page embed and
+visibly verified with Michelle's certificate rendered. A second guarded call
+returned `already_announced` with no duplicate. Toolbox correction `02b1c10`
+is deployed byte-identically on Studio and Mini; NC-20260906-001 is complete.
 
 ### Canonical Sertifier campaigns (`NC-20260828-002`)
 
