@@ -17,7 +17,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   evidence, and Company OS reconciliation complete
 - Authority: accepted Gate D decision
   `.program/decisions/decision-academy-capacity-gate-d-2026-09-06.json`;
-  `work:academy-capacity-minion-operator-workflow` is active at revision 215.
+  `work:academy-capacity-minion-operator-workflow` is complete at revision 217
+  with all nine continuity commitments closed and validation clean.
 - Intended implementation: strict migration-backed operator cases/receipts,
   transaction-safe host commands for inventory/enrollment, manual reservation
   and release, transfer, withdrawal, reconciliation, and FIFO waitlist staging;
