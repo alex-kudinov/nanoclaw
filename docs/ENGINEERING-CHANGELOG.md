@@ -91,6 +91,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   no schema, prompt, knowledge, calendar, price, provider, or database rollback
   is required.
 
+### NC-20260906-004 — Simple Academy capacity status synchronization
+
+- Date: 2026-09-06T22:12:00Z
+- Owner/client: Codex with Claude Sonnet/high architecture and implementation review
+- State: in_progress; owner strategy and implementation authorization recorded,
+  Company OS work claimed at revision 219, and ten-part continuity receipt
+  attached at revision 220 before source edits
+- Authority: accepted strategy decision
+  `.program/decisions/decision-academy-capacity-simple-sync-strategy-2026-09-06.json`
+  retires the proposed synchronous reservation cutover; accepted authorization
+  `.program/decisions/decision-academy-capacity-simple-sync-authorization-2026-09-06.json`
+  scopes `work:academy-capacity-simple-status-sync` only.
+- Intended outcome: committed-seat updates from successful website sales and
+  explicit invoice/manual promises; versioned operator capacity adjustment;
+  preserved atomic transfer; daily reconciliation plus threshold-triggered
+  signed WordPress status publication; targeted affected-page purge/prewarm;
+  no short-lived checkout reservation or live NanoClaw dependency.
+- Protected facts: ACC September 7 and MCS Friday remain sold out; MCS Thursday
+  remains available; Rita remains settled in January Thursday. No automatic
+  customer/waitlist message, refund/payment execution, or full roster,
+  provider, or assignment-authority cutover is authorized.
+
 ### NC-20260906-003 — Release the Gate D Capacity operator pilot
 
 - Date: 2026-09-06T19:16:00Z
