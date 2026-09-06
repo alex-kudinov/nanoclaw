@@ -12,8 +12,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-06T16:18:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: in_progress; exact source writes completed and read back, source
-  documentation/validation and final cross-repository review underway
+- State: blocked after exact source writes/readback, reviewed source commits,
+  and Company OS revision 208 reconciliation; three non-Rita facts remain held
 - Source commits: Tandemweb pushed `56bb8f6ee` (prevention predecessor rebased
   to `4bb852bb3`) on `codex/capacity-roster-floor-20260906`; Toolbox clean local
   commit `8d996dd` on `codex/heartbeat-remove-group-membership-20260906` has no
@@ -72,6 +72,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Boundary: no refund, customer message, certificate, payment, Plutio write,
   public website deployment, production database population, runtime/minion
   activation, migration, or authority cutover.
+- Program reconciliation: revision 208 completes all six continuity
+  commitments, clears the claim, and leaves no active or eligible item. Rita is
+  explicitly barred from returning as an exception. The only remaining source
+  facts are the separate 13th Friday MCS roster row, one ACC Module 1 funding
+  source, and one exact roster/Heartbeat email alias.
 
 ### NC-20260905-010 — Confirm capacity 12 and begin oversale prevention
 
