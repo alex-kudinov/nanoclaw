@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-06T21:43:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review pending
-- State: ready_for_deploy
+- State: complete
 - Base: rebased onto final Capacity lineage `0102dfb5`; production preflight
   verifies exact live release `da2869fbc65586a76c80537623c34074c60a9896`;
   isolated branch `codex/sales-fact-consistency-20260906`
@@ -69,6 +69,27 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   The operational Sales schedule is fresh and contains the October 2026 plus
   March/July 2027 Supervision cohorts. No production mutation occurred during
   preflight.
+- Release/deployment 2026-09-06T22:02:00Z: clean reviewed commit
+  `663b63be2035a19a628121daed56ba4c915fc33c` built source tree `a610ab8e`,
+  artifact digest `1997d7db`, 1,064 inventoried files, and archive digest
+  `053ddcf2`. A fresh local extraction and the transferred Mini extraction both
+  passed the runtime verifier. Dry-run named exactly the three release-pointer
+  changes; activation replaced verified `da2869fb` and retained rollback plist
+  `com.nanoclaw.plist.rollback-da2869fbc655-2026-09-06T22-00-28-552Z`.
+- Live verification: health, launchd, and one `:8088` listener agree on
+  `663b63be`, release/source/artifact identity, and Node 22.23.2. Gmail and
+  Slack are connected; active containers, queued groups, and active/attention
+  send states are zero. The deployed compiled validator, run read-only against
+  the operational Sales schedule and immutable catalog, rejects the incident
+  sentence with `schedule_contradiction` plus `price_contradiction` and accepts
+  the corrected March/July 2027 and $4,796 statement. It produced no approval,
+  Slack post, Gmail call, action, or send. The next natural schedule-dependent
+  Sales card is business-outcome observation, not a reason to manufacture a
+  customer communication.
+- Rollback: restore the retained `da2869fb` launchd plist/release pointer and
+  verify prior release identity, one listener, connected channels, and queue;
+  no schema, prompt, knowledge, calendar, price, provider, or database rollback
+  is required.
 
 ### NC-20260906-003 — Release the Gate D Capacity operator pilot
 
