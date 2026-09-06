@@ -1,0 +1,107 @@
+{
+  "task_id": "NC-20260906-002",
+  "program": "program:company-os",
+  "work_item": "work:academy-capacity-production-shadow-population",
+  "recorded_at": "2026-09-06T19:06:26Z",
+  "authorization": {
+    "decision": ".program/decisions/decision-academy-capacity-production-shadow-2026-09-06.json",
+    "scope": "production_shadow_only",
+    "runtime_activation": false,
+    "provider_mutation": false,
+    "customer_communication": false
+  },
+  "release": {
+    "commit": "a9839d9299da815eb63b5730348b62c27b8138b7",
+    "source_tree": "30d44bbb13d277df53492803f0d0578ff88c7bfd",
+    "artifact_sha256": "3337ecab4d4a55f689c144b9fd5f3308157fae685834f92cc9852e8ac8af71e9",
+    "archive_sha256": "94e5f32d10ee4f272f09e7fddacdedaea03e98d49e01b548b13206de67f8ddb3",
+    "artifact_files": 1048,
+    "node_pin": "22.23.2",
+    "production_extraction_verified": true,
+    "daemon_activated": false
+  },
+  "backup": {
+    "path": "/Users/xbohdpukc/.local/share/nanoclaw-deploy-backups/NC-20260906-002-20260906T190343Z/business_v2-pre-shadow.dump",
+    "sha256": "e58d398371aebb317b104ebe42a7201f8f5d02142d7e6538ca877c6b773d70dd",
+    "bytes": 12746378,
+    "mode": "0600",
+    "pg_restore_list_verified": true
+  },
+  "manifest": {
+    "batch_key": "academy-capacity-shadow-2026-09-06",
+    "sha256": "d44839d2b8ea08495fffd69fb5ca8c8aa6e30a9980c428477c3a4c3ea52793d8",
+    "mode": "0600",
+    "delivery_blocks": 5,
+    "participants": 40,
+    "party_creation_allowances": 3,
+    "held_exceptions": 3
+  },
+  "schema": {
+    "migrations_applied": [142, 143],
+    "target_objects": 112,
+    "target_objects_owned_by_nanoclaw_admin": 112,
+    "target_tables": 20,
+    "target_sequences": 20,
+    "target_views": 2,
+    "non_admin_table_grants": 0
+  },
+  "population": {
+    "first_apply": {
+      "delivery_blocks": 5,
+      "seat_pools": 5,
+      "offer_mappings": 7,
+      "orders": 40,
+      "seats": 40,
+      "agreements": 40,
+      "enrollments": 40,
+      "entitlements": 310,
+      "assignments": 40,
+      "projection_outbox": 40,
+      "projection_receipts": 40,
+      "exceptions": 3,
+      "parties": 3
+    },
+    "replay_inserted_rows": 0,
+    "pending_projections": 0,
+    "reservations": 0,
+    "waitlist_entries": 0,
+    "waitlist_offers": 0,
+    "orders_with_inferred_payer": 0
+  },
+  "occupancy": [
+    {"delivery_block": "acc.module-1:2026-09-07", "capacity": 12, "occupied": 21, "available": 0, "public_state": "sold_out"},
+    {"delivery_block": "mcs-practicum:2026-09-24", "capacity": 12, "occupied": 5, "available": 7, "public_state": "open"},
+    {"delivery_block": "mcs-practicum:2026-09-25", "capacity": 12, "occupied": 13, "available": 0, "public_state": "sold_out"},
+    {"delivery_block": "mcs-practicum:2027-01-07", "capacity": 12, "occupied": 1, "available": 11, "public_state": "open"},
+    {"delivery_block": "mcs-practicum:2027-01-08", "capacity": 12, "occupied": 0, "available": 12, "public_state": "open"}
+  ],
+  "held_exceptions": [
+    "cross_provider_email_alias_unresolved",
+    "funding_source_unresolved",
+    "mcs_friday_owner_count_variance"
+  ],
+  "verification": {
+    "focused_tests": "62 passed",
+    "disposable_database": "passed",
+    "catalog_validation": "passed: 42 components, 7 bundles, 8 offers, 6 curricula",
+    "typecheck": "passed",
+    "release_build": "passed",
+    "claude_review": "no unresolved material findings",
+    "claude_review_sessions": [
+      "19e20bb3-3146-440b-9c80-5bba86bd4fb2",
+      "c60e4753-b1ce-4b8b-88bd-67fb885a9717"
+    ],
+    "full_test_suite": "3567 passed, 32 skipped, 2 known unrelated predecessor failures"
+  },
+  "non_interference": {
+    "live_daemon_commit": "886e258730729a2cade1baee70466e62e2bff59e",
+    "live_release_verified": true,
+    "gmail_connected": true,
+    "slack_connected": true,
+    "active_containers": 0,
+    "queue_active": 0,
+    "waiting_groups": 0,
+    "student_lifecycle_action_consumers": false,
+    "checkout_or_provider_writes": 0
+  }
+}
