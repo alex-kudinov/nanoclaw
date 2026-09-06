@@ -12,8 +12,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-06T19:16:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: in_progress; Company OS authorization, claim, and continuity receipt
-  complete before source edits
+- State: complete; reviewed implementation, production migration, private
+  operator pilot, natural canary, corrected immutable release, live readback,
+  evidence, and Company OS reconciliation complete
 - Authority: accepted Gate D decision
   `.program/decisions/decision-academy-capacity-gate-d-2026-09-06.json`;
   `work:academy-capacity-minion-operator-workflow` is active at revision 215.
@@ -85,6 +86,23 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   enumeration or unsolicited mutations, and reports accepted 21/12 and 13/12
   occupancy as oversold rather than speculating about a data error. A static
   prompt/capability contract test locks the boundary.
+- Final release: immutable `da2869fbc65586a76c80537623c34074c60a9896`
+  (`sourceTree=7676759b9a351ec49d53c00971f0a1d7112cf319`, artifact
+  `0db98268c84421407f477ceaa19d6df40defbbf1f02f632a0147468747103ba2`,
+  archive
+  `db637838e3869fedcfb205e9871f9501347ed873bc1b16b297266181ffe99cd8`)
+  was freshly extracted, independently verified, and activated on
+  `mini-claw.local`. The old-prompt Capacity container exited first. Health
+  proves the exact release/root, Node 22.23.2, connected Gmail/Slack, registered
+  group, enforced capability, enabled operator, zero outgoing backlog, and no
+  waiting group. Release-native registration readback is `unchanged`.
+- Final production SQL readback: 0 operator cases, 0 operator receipts, 0
+  reservations, 0 waitlist entries, and 0 waitlist offers. Occupancy remains
+  ACC 21/12 sold out; MCS Thursday 5/12 open; MCS Friday 13/12 sold out;
+  January Thursday 1/12 open; January Friday 0/12 open. Migration 144 has 12/12
+  admin-owned objects and zero non-admin table/view grants. The production
+  structure-only schema reference and privacy-minimal JSON/Markdown evidence
+  are refreshed.
 - Boundary: no checkout/Tandemweb/public cutover, provider/Sheet mutation,
   customer communication, automatic waitlist promotion, refund, payment,
   certificate, or assignment/capacity authority cutover. The current public

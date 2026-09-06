@@ -1,10 +1,195 @@
 # Schema: nanoclaw_business (Postgres)
 
-Generated: 2026-08-24T18:43:41.470Z
+Generated: 2026-09-06T21:30:24.628Z
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
 business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
+
+## booking_events
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('booking_events_id_seq'::regclass)
+  trafft_appointment_id         text
+  event_type                    text                 NOT NULL
+  status                        text
+  customer_name                 text
+  customer_email                text
+  customer_phone                text
+  service_name                  text
+  employee_name                 text
+  start_date_time               timestamp with time zone
+  end_date_time                 timestamp with time zone
+  raw_payload                   jsonb                NOT NULL
+  follow_up_status              text                 DEFAULT='pending'::text
+  follow_up_draft               text
+  notes                         text
+  created_at                    timestamp with time zone DEFAULT=now()
+  plutio_person_id              text
+```
+
+## classification_backfill_pending
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('classification_backfill_pending_id_seq'::regclass)
+  lesson_title                  text                 NOT NULL
+  pattern_type                  text                 NOT NULL
+  pattern_value                 text                 NOT NULL
+  target_label                  text                 NOT NULL
+  match_count                   integer              NOT NULL
+  dry_run_summary               text
+  status                        text                 NOT NULL DEFAULT='awaiting_confirmation'::text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  expires_at                    timestamp with time zone NOT NULL DEFAULT=(now() + '24:00:00'::interval)
+  resolved_at                   timestamp with time zone
+  resolved_by                   text
+```
+
+## classification_rules
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('classification_rules_id_seq'::regclass)
+  pattern_type                  text                 NOT NULL
+  pattern_value                 text                 NOT NULL
+  target_label                  text                 NOT NULL
+  source                        text                 NOT NULL
+  lesson_id                     integer
+  hit_count                     integer              DEFAULT=0
+  last_hit_at                   timestamp with time zone
+  enabled                       boolean              DEFAULT=true
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  probation_until               timestamp with time zone
+```
+
+## classification_taxonomy
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('classification_taxonomy_id_seq'::regclass)
+  label                         text                 NOT NULL
+  parent_label                  text
+  description                   text
+  hive_share_target             ARRAY
+  digest_priority               integer              DEFAULT=0
+  enabled                       boolean              DEFAULT=true
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  auto_archive                  boolean              NOT NULL DEFAULT=false
+```
+
+## clients
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('clients_id_seq'::regclass)
+  contract_id                   integer
+  name                          text                 NOT NULL
+  email                         text
+  coach_id                      integer
+  start_date                    date
+  session_count                 integer              NOT NULL DEFAULT=0
+  status                        text                 NOT NULL DEFAULT='active'::text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## coaches
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('coaches_id_seq'::regclass)
+  name                          text                 NOT NULL
+  email                         text
+  capacity                      integer              NOT NULL DEFAULT=5
+  current_clients               integer              NOT NULL DEFAULT=0
+  certifications                jsonb
+  status                        text                 NOT NULL DEFAULT='active'::text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## contracts
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('contracts_id_seq'::regclass)
+  proposal_id                   integer
+  client                        text                 NOT NULL
+  coach_assigned                text
+  start_date                    date
+  end_date                      date
+  status                        text                 NOT NULL DEFAULT='active'::text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## email_classifications
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('email_classifications_id_seq'::regclass)
+  gmail_message_id              text                 NOT NULL
+  gmail_thread_id               text                 NOT NULL
+  sender_email                  text
+  subject                       text
+  label                         text                 NOT NULL
+  confidence                    numeric
+  classifier_version            text                 NOT NULL
+  reasoning                     text
+  classified_at                 timestamp with time zone NOT NULL DEFAULT=now()
+  corrected_at                  timestamp with time zone
+  corrected_from_label          text
+  hive_synced                   boolean              DEFAULT=false
+  hive_synced_at                timestamp with time zone
+  reaper_attempts               integer              DEFAULT=0
+  hive_sync_dead_lettered       boolean              DEFAULT=false
+  routed_at                     timestamp with time zone
+```
+
+## invoices
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('invoices_id_seq'::regclass)
+  contract_id                   integer
+  amount                        numeric              NOT NULL
+  status                        text                 NOT NULL DEFAULT='pending'::text
+  due_date                      date
+  paid_at                       timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## leads
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('leads_id_seq'::regclass)
+  source                        text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='new'::text
+  name                          text
+  email                         text
+  company                       text
+  message                       text
+  assigned_to                   text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  follow_up_count               integer              NOT NULL DEFAULT=0
+  last_contact_at               timestamp with time zone
+  thread_id                     text
+  plutio_person_id              text
+```
+
+## payments
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('payments_id_seq'::regclass)
+  email                         character varying    NOT NULL
+  name                          character varying
+  product_name                  character varying
+  product_id                    character varying    DEFAULT=''::character varying
+  amount_cents                  integer
+  currency                      character varying    DEFAULT='USD'::character varying
+  stripe_session_id             character varying
+  payment_status                character varying
+  event_type                    character varying
+  paid_at                       timestamp without time zone
+  created_at                    timestamp without time zone DEFAULT=now()
+  cohort                        text
+```
 
 ## procurement_observations
 
@@ -160,6 +345,33 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   terminal_reason               text
 ```
 
+## proposals
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('proposals_id_seq'::regclass)
+  lead_id                       integer
+  status                        text                 NOT NULL DEFAULT='draft'::text
+  amount                        numeric
+  sent_at                       timestamp with time zone
+  signed_at                     timestamp with time zone
+  notes                         text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## tasks
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('tasks_id_seq'::regclass)
+  from_agent                    text                 NOT NULL
+  to_agent                      text                 NOT NULL
+  type                          text                 NOT NULL
+  payload                       jsonb                NOT NULL
+  status                        text                 NOT NULL DEFAULT='pending'::text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## v_procurement_pursuit_queue
 
 ```
@@ -196,6 +408,184 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   first_seen_at                 timestamp with time zone
   last_seen_at                  timestamp with time zone
   days_until_close              integer
+```
+
+## vendors
+
+```
+  id                            integer              NOT NULL DEFAULT=nextval('vendors_id_seq'::regclass)
+  name                          text                 NOT NULL
+  category                      text
+  cost                          numeric
+  renewal_date                  date
+  status                        text                 NOT NULL DEFAULT='active'::text
+  notes                         text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.academy_capacity_events
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_capacity_events_id_seq'::regclass)
+  event_key                     text                 NOT NULL
+  subject_type                  text                 NOT NULL
+  subject_key                   text                 NOT NULL
+  previous_version              integer
+  new_version                   integer              NOT NULL
+  event_type                    text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  actor                         text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL
+```
+
+## business_v2.academy_capacity_operator_cases
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_capacity_operator_cases_id_seq'::regclass)
+  case_key                      text                 NOT NULL
+  source_group                  text                 NOT NULL
+  command_type                  text                 NOT NULL
+  request_sha256                text                 NOT NULL
+  request_summary               jsonb                NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  result_code                   text
+  result_sha256                 text
+  result_summary                jsonb
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  completed_at                  timestamp with time zone
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.academy_capacity_operator_receipts
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_capacity_operator_receipts_id_seq'::regclass)
+  receipt_key                   text                 NOT NULL
+  case_id                       bigint               NOT NULL
+  case_version                  integer              NOT NULL
+  stage                         text                 NOT NULL
+  outcome                       text                 NOT NULL
+  result_code                   text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  summary_json                  jsonb                NOT NULL
+  actor                         text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL
+```
+
+## business_v2.academy_capacity_reservations
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_capacity_reservations_id_seq'::regclass)
+  reservation_key               text                 NOT NULL
+  pool_id                       bigint               NOT NULL
+  channel                       text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  idempotency_key               text                 NOT NULL
+  offer_key                     text                 NOT NULL
+  catalog_revision              integer              NOT NULL
+  order_id                      bigint
+  seat_id                       bigint
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  expires_at                    timestamp with time zone NOT NULL
+  reason                        text
+  source_evidence_sha256        text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.academy_delivery_blocks
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_delivery_blocks_id_seq'::regclass)
+  delivery_block_key            text                 NOT NULL
+  component_key                 text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  source_object_id              text                 NOT NULL
+  starts_at                     timestamp with time zone NOT NULL
+  ends_at                       timestamp with time zone NOT NULL
+  timezone                      text                 NOT NULL
+  session_set_sha256            text                 NOT NULL
+  schedule_evidence_sha256      text                 NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.academy_seat_pool_offers
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_seat_pool_offers_id_seq'::regclass)
+  mapping_key                   text                 NOT NULL
+  pool_id                       bigint               NOT NULL
+  offer_key                     text                 NOT NULL
+  catalog_revision              integer              NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  evidence_sha256               text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.academy_seat_pools
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_seat_pools_id_seq'::regclass)
+  pool_key                      text                 NOT NULL
+  delivery_block_id             bigint               NOT NULL
+  capacity                      integer              NOT NULL
+  operational_state             text                 NOT NULL
+  close_reason                  text
+  configuration_evidence_sha256 text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.academy_waitlist_entries
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_waitlist_entries_id_seq'::regclass)
+  entry_key                     text                 NOT NULL
+  pool_id                       bigint               NOT NULL
+  offer_key                     text                 NOT NULL
+  catalog_revision              integer              NOT NULL
+  participant_party_id          bigint
+  contact_reference_sha256      text                 NOT NULL
+  sequence_number               bigint               NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  joined_at                     timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.academy_waitlist_offers
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_waitlist_offers_id_seq'::regclass)
+  waitlist_offer_key            text                 NOT NULL
+  entry_id                      bigint               NOT NULL
+  pool_id                       bigint               NOT NULL
+  reservation_id                bigint               NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  expires_at                    timestamp with time zone NOT NULL
+  approval_evidence_sha256      text
+  delivery_receipt_sha256       text
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
 ```
 
 ## business_v2.attachments
@@ -295,6 +685,36 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   operator_incident_id          bigint
 ```
 
+## business_v2.checkout_recovery_events
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.checkout_recovery_events_id_seq'::regclass)
+  event_uuid                    uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  case_id                       bigint               NOT NULL
+  schema_version                integer              NOT NULL
+  source_system                 text                 NOT NULL
+  stripe_account                text                 NOT NULL
+  source_event_key              text                 NOT NULL
+  event_type                    text                 NOT NULL
+  observed_at                   timestamp with time zone NOT NULL
+  received_at                   timestamp with time zone NOT NULL DEFAULT=now()
+  webhook_inbox_id              bigint
+  payload_sha256                text                 NOT NULL
+  previous_state                text
+  next_state                    text                 NOT NULL
+  result_code                   text                 NOT NULL
+  facts                         jsonb                NOT NULL DEFAULT='{}'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.checkout_recovery_operator_incident_cases
+
+```
+  incident_id                   bigint               NOT NULL
+  case_id                       bigint               NOT NULL
+  joined_at                     timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.checkout_recovery_operator_incidents
 
 ```
@@ -329,36 +749,6 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   closed_at                     timestamp with time zone
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-## business_v2.checkout_recovery_operator_incident_cases
-
-```
-  incident_id                   bigint               NOT NULL
-  case_id                       bigint               NOT NULL
-  joined_at                     timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-## business_v2.checkout_recovery_events
-
-```
-  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.checkout_recovery_events_id_seq'::regclass)
-  event_uuid                    uuid                 NOT NULL DEFAULT=gen_random_uuid()
-  case_id                       bigint               NOT NULL
-  schema_version                integer              NOT NULL
-  source_system                 text                 NOT NULL
-  stripe_account                text                 NOT NULL
-  source_event_key              text                 NOT NULL
-  event_type                    text                 NOT NULL
-  observed_at                   timestamp with time zone NOT NULL
-  received_at                   timestamp with time zone NOT NULL DEFAULT=now()
-  webhook_inbox_id              bigint
-  payload_sha256                text                 NOT NULL
-  previous_state                text
-  next_state                    text                 NOT NULL
-  result_code                   text                 NOT NULL
-  facts                         jsonb                NOT NULL DEFAULT='{}'::jsonb
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.checkout_recovery_receipts
@@ -585,9 +975,6 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   party_id                      bigint
   pipeline_entry_id             bigint
   owner_group                   text                 NOT NULL
-  relationship_owner_principal_key text
-  relationship_owner_assignment_id bigint
-  relationship_owner_decision_ref  text
   policy_version                text                 NOT NULL
   source_fingerprint            text                 NOT NULL
   decision_fingerprint          text                 NOT NULL
@@ -607,6 +994,9 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   presentation_count            integer              NOT NULL DEFAULT=0
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  relationship_owner_principal_keytext
+  relationship_owner_assignment_idbigint
+  relationship_owner_decision_reftext
 ```
 
 ## business_v2.company_followup_events
@@ -630,32 +1020,6 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
   operator_decision             text
   operator_fingerprint          text
-```
-
-## business_v2.relationship_owner_principals
-
-```
-  principal_key                 text                 NOT NULL
-  principal_type                text                 NOT NULL
-  display_name                  text                 NOT NULL
-  managing_system               text                 NOT NULL
-  action_authority              text                 NOT NULL DEFAULT='none'::text
-  decision_ref                  text                 NOT NULL
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-## business_v2.relationship_owner_assignments
-
-```
-  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.relationship_owner_assignments_id_seq'::regclass)
-  scope_type                    text                 NOT NULL
-  scope_key                     text                 NOT NULL
-  principal_key                 text                 NOT NULL
-  decision_ref                  text                 NOT NULL
-  effective_from                timestamp with time zone NOT NULL
-  supersedes_assignment_id      bigint
-  assignment_fingerprint        text                 NOT NULL
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.company_gmail_mailbox_audit_candidates
@@ -1371,6 +1735,131 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   for_party_id                  bigint               NOT NULL
 ```
 
+## business_v2.party_context_adapter_registrations
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_context_adapter_registrations_id_seq'::regclass)
+  adapter_key                   text                 NOT NULL
+  adapter_version               text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  manifest_version              integer              NOT NULL
+  manifest_sha256               text                 NOT NULL
+  manifest                      jsonb                NOT NULL
+  config_declaration            jsonb                NOT NULL DEFAULT='{}'::jsonb
+  enabled                       boolean              NOT NULL DEFAULT=false
+  conformance_status            text                 NOT NULL DEFAULT='pending'::text
+  conformance_receipt_sha256    text
+  circuit_status                text                 NOT NULL DEFAULT='closed'::text
+  failure_count                 integer              NOT NULL DEFAULT=0
+  last_error_code               text
+  last_health_at                timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.party_context_observations
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_context_observations_id_seq'::regclass)
+  observation_uuid              uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  schema_version                integer              NOT NULL
+  adapter_key                   text                 NOT NULL
+  adapter_version               text                 NOT NULL
+  source_system                 text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  source_fact_key               text                 NOT NULL
+  fact_type                     text                 NOT NULL
+  fact_schema_version           integer              NOT NULL
+  original_party_id             bigint
+  current_party_id              bigint
+  related_party_ids             ARRAY                NOT NULL DEFAULT='{}'::bigint[]
+  value                         jsonb                NOT NULL
+  value_sha256                  text                 NOT NULL
+  source_record_type            text                 NOT NULL
+  source_record_id              text                 NOT NULL
+  source_event_id               text
+  effective_at                  timestamp with time zone
+  observed_at                   timestamp with time zone NOT NULL
+  verified_at                   timestamp with time zone
+  fresh_until                   timestamp with time zone
+  confidence                    text                 NOT NULL
+  conflict_state                text                 NOT NULL DEFAULT='none'::text
+  privacy_class                 text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.party_context_plutio_projection_receipts
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_context_plutio_projection_receipts_id_seq'::regclass)
+  plan_uuid                     uuid                 NOT NULL
+  original_party_id             bigint               NOT NULL
+  current_party_id              bigint               NOT NULL
+  plutio_ref_entity_type        text                 NOT NULL DEFAULT='party'::text
+  plutio_ref_entity_id          bigint
+  projection_version            integer              NOT NULL
+  projection_sha256             text                 NOT NULL
+  proposed_fields               jsonb                NOT NULL DEFAULT='{}'::jsonb
+  proposed_field_count          integer              NOT NULL
+  mode                          text                 NOT NULL DEFAULT='dry_run'::text
+  status                        text                 NOT NULL
+  conflict_codes                jsonb                NOT NULL DEFAULT='[]'::jsonb
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.party_context_projections
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_context_projections_id_seq'::regclass)
+  party_id                      bigint               NOT NULL
+  section                       text                 NOT NULL
+  projection_key                text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=1
+  value                         jsonb                NOT NULL
+  value_sha256                  text                 NOT NULL
+  source_watermarks             jsonb                NOT NULL DEFAULT='{}'::jsonb
+  status                        text                 NOT NULL
+  missing_codes                 jsonb                NOT NULL DEFAULT='[]'::jsonb
+  conflict_codes                jsonb                NOT NULL DEFAULT='[]'::jsonb
+  effective_at                  timestamp with time zone
+  observed_at                   timestamp with time zone NOT NULL
+  fresh_until                   timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.party_context_query_receipts
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_context_query_receipts_id_seq'::regclass)
+  request_uuid                  uuid                 NOT NULL
+  run_id                        uuid                 NOT NULL
+  source_container_sha256       text                 NOT NULL
+  work_item_id                  text                 NOT NULL
+  actor_group                   text                 NOT NULL
+  purpose                       text                 NOT NULL
+  original_party_id             bigint
+  current_party_id              bigint
+  unresolved_subject_sha256     text
+  requested_sections            jsonb                NOT NULL
+  returned_sections             jsonb                NOT NULL
+  projection_versions           jsonb                NOT NULL DEFAULT='{}'::jsonb
+  source_watermarks             jsonb                NOT NULL DEFAULT='{}'::jsonb
+  policy_decision               text                 NOT NULL
+  result_status                 text                 NOT NULL
+  error_code                    text
+  response_sha256               text                 NOT NULL
+  delivery_status               text                 NOT NULL DEFAULT='pending'::text
+  delivery_error_code           text
+  delivered_at                  timestamp with time zone
+  started_at                    timestamp with time zone NOT NULL
+  completed_at                  timestamp with time zone NOT NULL
+  duration_ms                   integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.party_emails
 
 ```
@@ -1378,6 +1867,67 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   email                         USER-DEFINED         NOT NULL
   is_primary                    boolean              NOT NULL DEFAULT=false
   verified_at                   timestamp with time zone
+```
+
+## business_v2.party_external_refs
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_external_refs_id_seq'::regclass)
+  party_id                      bigint               NOT NULL
+  provider                      text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_type                   text                 NOT NULL
+  external_id                   text                 NOT NULL
+  adapter_key                   text                 NOT NULL
+  adapter_version               text                 NOT NULL
+  schema_version                integer              NOT NULL
+  status                        text                 NOT NULL DEFAULT='active'::text
+  verified_at                   timestamp with time zone
+  first_seen_at                 timestamp with time zone NOT NULL
+  last_seen_at                  timestamp with time zone NOT NULL
+  source_receipt_sha256         text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.party_identifier_claims
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_identifier_claims_id_seq'::regclass)
+  party_id                      bigint               NOT NULL
+  identifier_kind               text                 NOT NULL
+  identifier_fingerprint        text                 NOT NULL
+  restricted_value              text
+  source_ref_id                 bigint
+  verification_method           text                 NOT NULL
+  confidence                    text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='active'::text
+  valid_from                    timestamp with time zone NOT NULL
+  valid_until                   timestamp with time zone
+  evidence_sha256               text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.party_identity_exceptions
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_identity_exceptions_id_seq'::regclass)
+  fingerprint                   text                 NOT NULL
+  current_party_id              bigint
+  candidate_party_ids           ARRAY                NOT NULL DEFAULT='{}'::bigint[]
+  reason_code                   text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='open'::text
+  owner_group                   text                 NOT NULL DEFAULT='chief'::text
+  evidence_refs                 jsonb                NOT NULL DEFAULT='{}'::jsonb
+  occurrence_count              integer              NOT NULL DEFAULT=1
+  first_seen_at                 timestamp with time zone NOT NULL
+  last_seen_at                  timestamp with time zone NOT NULL
+  resolution_code               text
+  resolution_receipt_sha256     text
+  resolved_at                   timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.party_relationships
@@ -1578,6 +2128,32 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   sent_at                       timestamp with time zone
 ```
 
+## business_v2.relationship_owner_assignments
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.relationship_owner_assignments_id_seq'::regclass)
+  scope_type                    text                 NOT NULL
+  scope_key                     text                 NOT NULL
+  principal_key                 text                 NOT NULL
+  decision_ref                  text                 NOT NULL
+  effective_from                timestamp with time zone NOT NULL
+  supersedes_assignment_id      bigint
+  assignment_fingerprint        text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.relationship_owner_principals
+
+```
+  principal_key                 text                 NOT NULL
+  principal_type                text                 NOT NULL
+  display_name                  text                 NOT NULL
+  managing_system               text                 NOT NULL
+  action_authority              text                 NOT NULL DEFAULT='none'::text
+  decision_ref                  text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.relationship_types
 
 ```
@@ -1605,6 +2181,203 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   label                         text                 NOT NULL
   description                   text                 NOT NULL DEFAULT=''::text
   enabled                       boolean              NOT NULL DEFAULT=true
+```
+
+## business_v2.student_class_assignments
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_class_assignments_id_seq'::regclass)
+  assignment_key                text                 NOT NULL
+  enrollment_id                 bigint               NOT NULL
+  entitlement_id                bigint               NOT NULL
+  delivery_block_key            text                 NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  schedule_evidence_sha256      text                 NOT NULL
+  starts_at                     timestamp with time zone
+  ends_at                       timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.student_component_entitlements
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_component_entitlements_id_seq'::regclass)
+  entitlement_key               text                 NOT NULL
+  enrollment_id                 bigint               NOT NULL
+  component_key                 text                 NOT NULL
+  grant_episode                 integer              NOT NULL DEFAULT=1
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  evidence_sha256               text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.student_enrollment_evidence
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_enrollment_evidence_id_seq'::regclass)
+  evidence_key                  text                 NOT NULL
+  subject_type                  text                 NOT NULL
+  subject_key                   text                 NOT NULL
+  evidence_type                 text                 NOT NULL
+  source_reference_id           bigint
+  evidence_sha256               text                 NOT NULL
+  observed_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL
+  recorded_by                   text                 NOT NULL
+```
+
+## business_v2.student_enrollment_exceptions_v2
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_enrollment_exceptions_v2_id_seq'::regclass)
+  exception_key                 text                 NOT NULL
+  subject_type                  text                 NOT NULL
+  subject_key                   text                 NOT NULL
+  reason_code                   text                 NOT NULL
+  state                         text                 NOT NULL
+  severity                      text                 NOT NULL
+  owner_role                    text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  occurrence_count              integer              NOT NULL DEFAULT=1
+  evidence_sha256               text                 NOT NULL
+  first_seen_at                 timestamp with time zone NOT NULL
+  last_seen_at                  timestamp with time zone NOT NULL
+  review_at                     timestamp with time zone NOT NULL
+  resolved_at                   timestamp with time zone
+  resolution_sha256             text
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.student_enrollment_history
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_enrollment_history_id_seq'::regclass)
+  subject_type                  text                 NOT NULL
+  subject_key                   text                 NOT NULL
+  previous_version              integer
+  new_version                   integer              NOT NULL
+  command_key                   text                 NOT NULL
+  reason_code                   text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  actor                         text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL
+```
+
+## business_v2.student_enrollment_order_source_refs
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_enrollment_order_source_refs_id_seq'::regclass)
+  order_id                      bigint               NOT NULL
+  source_scope                  text                 NOT NULL
+  source_object_type            text                 NOT NULL
+  source_object_id              text                 NOT NULL
+  idempotency_key               text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  observed_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL
+  recorded_by                   text                 NOT NULL
+```
+
+## business_v2.student_enrollment_orders
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_enrollment_orders_id_seq'::regclass)
+  order_key                     text                 NOT NULL
+  source_channel                text                 NOT NULL
+  offer_key                     text
+  bundle_key                    text
+  bundle_version                integer
+  payer_party_id                bigint
+  seat_count                    integer              NOT NULL
+  financial_classification      text                 NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  policy_revision               integer              NOT NULL
+  evidence_sha256               text                 NOT NULL
+  effective_at                  timestamp with time zone
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.student_enrollment_seats
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_enrollment_seats_id_seq'::regclass)
+  seat_key                      text                 NOT NULL
+  order_id                      bigint               NOT NULL
+  seat_number                   integer              NOT NULL
+  participant_party_id          bigint
+  participant_evidence_sha256   text
+  payer_relationship            text                 NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.student_enrollments_v2
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_enrollments_v2_id_seq'::regclass)
+  enrollment_key                text                 NOT NULL
+  order_id                      bigint               NOT NULL
+  seat_id                       bigint               NOT NULL
+  participant_party_id          bigint               NOT NULL
+  offer_key                     text                 NOT NULL
+  bundle_key                    text                 NOT NULL
+  bundle_version                integer              NOT NULL
+  catalog_revision              integer              NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  effective_at                  timestamp with time zone
+  ended_at                      timestamp with time zone
+  materialization_sha256        text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.student_financial_agreements
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_financial_agreements_id_seq'::regclass)
+  agreement_key                 text                 NOT NULL
+  order_id                      bigint               NOT NULL
+  agreement_type                text                 NOT NULL
+  state                         text                 NOT NULL
+  source_reference_id           bigint
+  version                       integer              NOT NULL DEFAULT=0
+  evidence_sha256               text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
+```
+
+## business_v2.student_financial_obligations
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_financial_obligations_id_seq'::regclass)
+  obligation_key                text                 NOT NULL
+  agreement_id                  bigint               NOT NULL
+  sequence_number               integer              NOT NULL
+  amount_minor                  bigint
+  currency                      text
+  due_at                        timestamp with time zone
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  evidence_sha256               text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  updated_by                    text                 NOT NULL
 ```
 
 ## business_v2.student_lifecycle_catalog_entries
@@ -1793,6 +2566,43 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
+## business_v2.student_projection_outbox
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_projection_outbox_id_seq'::regclass)
+  projection_key                text                 NOT NULL
+  target                        text                 NOT NULL
+  subject_type                  text                 NOT NULL
+  subject_key                   text                 NOT NULL
+  subject_version               integer              NOT NULL
+  state                         text                 NOT NULL
+  attempt_count                 integer              NOT NULL DEFAULT=0
+  payload_sha256                text                 NOT NULL
+  expected_readback_sha256      text                 NOT NULL
+  payload_json                  jsonb                NOT NULL
+  lease_token                   text
+  lease_expires_at              timestamp with time zone
+  last_error_code               text
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+```
+
+## business_v2.student_projection_receipts
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.student_projection_receipts_id_seq'::regclass)
+  receipt_key                   text                 NOT NULL
+  outbox_id                     bigint               NOT NULL
+  subject_version               integer              NOT NULL
+  stage                         text                 NOT NULL
+  outcome                       text                 NOT NULL
+  result_code                   text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  actor                         text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL
+```
+
 ## business_v2.sweeper_watermarks
 
 ```
@@ -1805,6 +2615,38 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_run_error                text
   last_run_recovered            integer              NOT NULL DEFAULT=0
   last_run_failed               integer              NOT NULL DEFAULT=0
+```
+
+## business_v2.v_academy_capacity_operator_cases
+
+```
+  case_key                      text
+  command_type                  text
+  state                         text
+  version                       integer
+  result_code                   text
+  request_summary               jsonb
+  result_summary                jsonb
+  created_at                    timestamp with time zone
+  completed_at                  timestamp with time zone
+  receipt_count                 integer
+  last_receipt_at               timestamp with time zone
+```
+
+## business_v2.v_academy_seat_pool_occupancy
+
+```
+  pool_key                      text
+  delivery_block_key            text
+  capacity                      integer
+  occupied                      integer
+  reserved                      integer
+  available                     integer
+  waitlist_count                integer
+  public_state                  text
+  pool_version                  integer
+  source_updated_at             timestamp with time zone
+  calculated_at                 timestamp with time zone
 ```
 
 ## business_v2.v_active_engagements
@@ -1914,6 +2756,33 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_interaction_at           timestamp with time zone
 ```
 
+## business_v2.v_party_context_health
+
+```
+  active_external_ref_count     bigint
+  open_identity_exception_count bigint
+  observation_count             bigint
+  projection_count              bigint
+  enabled_adapter_count         bigint
+  last_observed_at              timestamp with time zone
+  last_query_at                 timestamp with time zone
+```
+
+## business_v2.v_party_context_identity_exception_queue
+
+```
+  id                            bigint
+  fingerprint                   text
+  reason_code                   text
+  status                        text
+  owner_group                   text
+  occurrence_count              integer
+  first_seen_at                 timestamp with time zone
+  last_seen_at                  timestamp with time zone
+  resolution_code               text
+  resolved_at                   timestamp with time zone
+```
+
 ## business_v2.v_party_timeline
 
 ```
@@ -1978,6 +2847,16 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   days_waiting                  numeric
 ```
 
+## business_v2.v_student_enrollment_dark_health
+
+```
+  order_count                   bigint
+  seat_count                    bigint
+  enrollment_count              bigint
+  pending_projection_count      bigint
+  open_exception_count          bigint
+```
+
 ## business_v2.v_student_lifecycle_exception_queue
 
 ```
@@ -2038,208 +2917,4 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   handled_by                    text
   party_id                      bigint
   related_entity                jsonb
-```
-
-## Migration 137 local target — not current production schema
-
-The following structure-only relations are defined by the local, unapplied
-`137_relationship_context_dark.sql`. Source presence is not migration,
-activation, provider access, or minion authority.
-
-### business_v2.party_external_refs
-
-```
-  id                            bigint               NOT NULL
-  party_id                      bigint               NOT NULL
-  provider                      text                 NOT NULL
-  source_scope                  text                 NOT NULL
-  entity_type                   text                 NOT NULL
-  external_id                   text                 NOT NULL
-  adapter_key                   text                 NOT NULL
-  adapter_version               text                 NOT NULL
-  schema_version                integer              NOT NULL
-  status                        text                 NOT NULL DEFAULT='active'
-  verified_at                   timestamp with time zone
-  first_seen_at                 timestamp with time zone NOT NULL
-  last_seen_at                  timestamp with time zone NOT NULL
-  source_receipt_sha256         text                 NOT NULL
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
-  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-### business_v2.party_identifier_claims
-
-```
-  id                            bigint               NOT NULL
-  party_id                      bigint               NOT NULL
-  identifier_kind               text                 NOT NULL
-  identifier_fingerprint        text                 NOT NULL
-  restricted_value              text
-  source_ref_id                 bigint
-  verification_method           text                 NOT NULL
-  confidence                    text                 NOT NULL
-  status                        text                 NOT NULL DEFAULT='active'
-  valid_from                    timestamp with time zone NOT NULL
-  valid_until                   timestamp with time zone
-  evidence_sha256               text                 NOT NULL
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
-  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-### business_v2.party_identity_exceptions
-
-```
-  id                            bigint               NOT NULL
-  fingerprint                   text                 NOT NULL
-  current_party_id              bigint
-  candidate_party_ids           ARRAY                NOT NULL DEFAULT={}
-  reason_code                   text                 NOT NULL
-  status                        text                 NOT NULL DEFAULT='open'
-  owner_group                   text                 NOT NULL DEFAULT='chief'
-  evidence_refs                 jsonb                NOT NULL DEFAULT={}
-  occurrence_count              integer              NOT NULL DEFAULT=1
-  first_seen_at                 timestamp with time zone NOT NULL
-  last_seen_at                  timestamp with time zone NOT NULL
-  resolution_code               text
-  resolution_receipt_sha256     text
-  resolved_at                   timestamp with time zone
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
-  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-### business_v2.party_context_adapter_registrations
-
-```
-  id                            bigint               NOT NULL
-  adapter_key                   text                 NOT NULL
-  adapter_version               text                 NOT NULL
-  source_system                 text                 NOT NULL
-  source_scope                  text                 NOT NULL
-  manifest_version              integer              NOT NULL
-  manifest_sha256               text                 NOT NULL
-  manifest                      jsonb                NOT NULL
-  config_declaration            jsonb                NOT NULL DEFAULT={}
-  enabled                       boolean              NOT NULL DEFAULT=false
-  conformance_status            text                 NOT NULL DEFAULT='pending'
-  conformance_receipt_sha256    text
-  circuit_status                text                 NOT NULL DEFAULT='closed'
-  failure_count                 integer              NOT NULL DEFAULT=0
-  last_error_code               text
-  last_health_at                timestamp with time zone
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
-  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-### business_v2.party_context_observations
-
-```
-  id                            bigint               NOT NULL
-  observation_uuid              uuid                 NOT NULL
-  schema_version                integer              NOT NULL
-  adapter_key                   text                 NOT NULL
-  adapter_version               text                 NOT NULL
-  source_system                 text                 NOT NULL
-  source_scope                  text                 NOT NULL
-  source_fact_key               text                 NOT NULL
-  fact_type                     text                 NOT NULL
-  fact_schema_version           integer              NOT NULL
-  original_party_id             bigint
-  current_party_id              bigint
-  related_party_ids             ARRAY                NOT NULL DEFAULT={}
-  value                         jsonb                NOT NULL
-  value_sha256                  text                 NOT NULL
-  source_record_type            text                 NOT NULL
-  source_record_id              text                 NOT NULL
-  source_event_id               text
-  effective_at                  timestamp with time zone
-  observed_at                   timestamp with time zone NOT NULL
-  verified_at                   timestamp with time zone
-  fresh_until                   timestamp with time zone
-  confidence                    text                 NOT NULL
-  conflict_state                text                 NOT NULL DEFAULT='none'
-  privacy_class                 text                 NOT NULL
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
-  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-### business_v2.party_context_projections
-
-```
-  id                            bigint               NOT NULL
-  party_id                      bigint               NOT NULL
-  section                       text                 NOT NULL
-  projection_key                text                 NOT NULL
-  version                       integer              NOT NULL DEFAULT=1
-  value                         jsonb                NOT NULL
-  value_sha256                  text                 NOT NULL
-  source_watermarks             jsonb                NOT NULL DEFAULT={}
-  status                        text                 NOT NULL
-  missing_codes                 jsonb                NOT NULL DEFAULT=[]
-  conflict_codes                jsonb                NOT NULL DEFAULT=[]
-  effective_at                  timestamp with time zone
-  observed_at                   timestamp with time zone NOT NULL
-  fresh_until                   timestamp with time zone
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
-  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-### business_v2.party_context_query_receipts
-
-```
-  id                            bigint               NOT NULL
-  request_uuid                  uuid                 NOT NULL
-  run_id                        uuid                 NOT NULL
-  source_container_sha256       text                 NOT NULL
-  work_item_id                  text                 NOT NULL
-  actor_group                   text                 NOT NULL
-  purpose                       text                 NOT NULL
-  original_party_id             bigint
-  current_party_id              bigint
-  unresolved_subject_sha256     text
-  requested_sections            jsonb                NOT NULL
-  returned_sections             jsonb                NOT NULL
-  projection_versions           jsonb                NOT NULL DEFAULT={}
-  source_watermarks             jsonb                NOT NULL DEFAULT={}
-  policy_decision               text                 NOT NULL
-  result_status                 text                 NOT NULL
-  error_code                    text
-  response_sha256               text                 NOT NULL
-  delivery_status               text                 NOT NULL DEFAULT='pending'
-  delivery_error_code           text
-  delivered_at                  timestamp with time zone
-  started_at                    timestamp with time zone NOT NULL
-  completed_at                  timestamp with time zone NOT NULL
-  duration_ms                   integer              NOT NULL
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-### business_v2.party_context_plutio_projection_receipts
-
-```
-  id                            bigint               NOT NULL
-  plan_uuid                     uuid                 NOT NULL
-  original_party_id             bigint               NOT NULL
-  current_party_id              bigint               NOT NULL
-  plutio_ref_entity_type        text                 NOT NULL DEFAULT='party'
-  plutio_ref_entity_id          bigint
-  projection_version            integer              NOT NULL
-  projection_sha256             text                 NOT NULL
-  proposed_fields               jsonb                NOT NULL DEFAULT={}
-  proposed_field_count          integer              NOT NULL
-  mode                          text                 NOT NULL DEFAULT='dry_run'
-  status                        text                 NOT NULL
-  conflict_codes                jsonb                NOT NULL DEFAULT=[]
-  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
-```
-
-### business_v2.v_party_context_health
-
-```
-  active_external_ref_count     bigint
-  open_identity_exception_count bigint
-  observation_count             bigint
-  projection_count              bigint
-  enabled_adapter_count         bigint
-  last_observed_at              timestamp with time zone
-  last_query_at                 timestamp with time zone
 ```

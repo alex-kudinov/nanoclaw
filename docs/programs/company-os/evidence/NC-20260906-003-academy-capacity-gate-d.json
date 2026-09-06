@@ -1,0 +1,155 @@
+{
+  "task_id": "NC-20260906-003",
+  "program": "program:company-os",
+  "work_item": "work:academy-capacity-minion-operator-workflow",
+  "recorded_at": "2026-09-06T21:35:00Z",
+  "authorization": {
+    "decision": ".program/decisions/decision-academy-capacity-gate-d-2026-09-06.json",
+    "scope": "gate_d_internal_operator_pilot",
+    "excluded": [
+      "checkout_or_tandemweb_cutover",
+      "provider_or_sheet_write",
+      "customer_communication",
+      "automatic_waitlist_promotion",
+      "refund_payment_or_certificate",
+      "assignment_or_capacity_authority_cutover"
+    ]
+  },
+  "implementation": {
+    "feature_commit": "1637434de2aaec10f56ae81001543e862ffe0fa9",
+    "registration_commit": "99bd6808be485e737e90d866729f721b8e7932b1",
+    "final_commit": "da2869fbc65586a76c80537623c34074c60a9896",
+    "migration": 144,
+    "operator_commands": [
+      "reserve_manual",
+      "release_reservation",
+      "transfer_assignment",
+      "withdraw_assignment",
+      "reconcile_pool",
+      "join_waitlist",
+      "stage_waitlist_offer"
+    ],
+    "read_surfaces": ["capacity_inventory", "capacity_enrollment"],
+    "default_off_switch": "ACADEMY_CAPACITY_OPERATOR_ENABLED"
+  },
+  "review": {
+    "model": "Claude Sonnet",
+    "effort": "high",
+    "round_1_session": "ff3a5063-a9f8-4062-bf1d-412f2e261d51",
+    "round_1_finding": "zero-row persistence failures lacked exact result codes",
+    "round_1_resolution": "distinct write-conflict and missing-reference codes with savepoint rollback proof",
+    "round_2_session": "6c584bbf-e132-4ef1-bf69-97da2881e9a8",
+    "round_2_result": "NO MATERIAL FINDINGS",
+    "round_1_usage": {
+      "calls": 4,
+      "cache_create_tokens": 101538,
+      "cache_read_tokens": 183074,
+      "output_tokens": 27209,
+      "max_context_tokens": 118702
+    },
+    "round_2_usage": {
+      "calls": 4,
+      "cache_create_tokens": 42931,
+      "cache_read_tokens": 119981,
+      "output_tokens": 6708,
+      "max_context_tokens": 49705
+    }
+  },
+  "verification": {
+    "disposable": {
+      "cases": 14,
+      "receipts": 28,
+      "simultaneous_one_seat_race": "one applied and one stale-version review",
+      "failure_injection": "assignment_insert_missing_reference with exact savepoint rollback",
+      "privacy_markers": 0,
+      "non_admin_grants": 0,
+      "populated_rollback_refused": true
+    },
+    "focused_tests": "passed",
+    "typecheck": "passed",
+    "build": "passed",
+    "agent_runner_tests": "45 passed",
+    "email_critical_tests": "750 passed",
+    "full_test_suite": "3582 passed, 32 skipped, 2 known unrelated predecessor failures",
+    "schema_document_refreshed_from_production": true
+  },
+  "production": {
+    "host": "mini-claw.local",
+    "node": "22.23.2",
+    "backup": {
+      "path": "/Users/xbohdpukc/.local/share/nanoclaw-deploy-backups/NC-20260906-003-20260906T201636Z/business_v2-pre-gate-d.dump",
+      "sha256": "253933ed2222b8f8bcb239cacec183658d4fa5c380e36cd5dbd813d03d42df68",
+      "bytes": 12920233,
+      "pg_restore_list_verified": true
+    },
+    "migration_144": {
+      "applied": true,
+      "objects": 12,
+      "objects_owned_by_nanoclaw_admin": 12,
+      "non_admin_table_grants": 0,
+      "operator_cases": 0,
+      "operator_receipts": 0
+    },
+    "container": {
+      "image": "nanoclaw-agent:latest",
+      "index_digest": "sha256:2b8e7f6d1eaa138f047450815d7c98d73f5653a2deec3188b8b852fa5566b876",
+      "node": "22.23.2",
+      "capacity_ipc_present": true
+    },
+    "operator_group": {
+      "folder": "capacity",
+      "name": "gru-capacity",
+      "channel_id": "C0C003FEWP3",
+      "channel_visibility": "private",
+      "registration_readback": "unchanged",
+      "capability_enforced": true,
+      "operator_enabled": true,
+      "prompt_sha256": "e5e4f273fb53c424e44bc5d602117417d3027635b1b431fde733617f3c27976e"
+    },
+    "release": {
+      "commit": "da2869fbc65586a76c80537623c34074c60a9896",
+      "source_tree": "7676759b9a351ec49d53c00971f0a1d7112cf319",
+      "artifact_sha256": "0db98268c84421407f477ceaa19d6df40defbbf1f02f632a0147468747103ba2",
+      "artifact_files": 1060,
+      "archive_sha256": "db637838e3869fedcfb205e9871f9501347ed873bc1b16b297266181ffe99cd8",
+      "activation_rollback_plist": "/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-99bd6808be48-2026-09-06T21-34-58-779Z",
+      "health_verified": true,
+      "code_root_matches_release": true,
+      "gmail_connected": true,
+      "slack_connected": true,
+      "outgoing_queue_depth": 0,
+      "waiting_groups": 0
+    },
+    "deployment_recovery": {
+      "issue": "the new capacity folder was prematurely added to the old release allowlist",
+      "impact": "the old daemon rejected the unknown folder; no Capacity command or domain write occurred",
+      "recovery": "remove only the premature entry, restore verified predecessor, activate new release disabled-first, register group, then enforce and restart once",
+      "documented": true
+    }
+  },
+  "natural_canary": {
+    "origin": "human",
+    "request_link": "https://cnpccoach.slack.com/archives/C0C003FEWP3/p1788729846914499",
+    "reply_link": "https://cnpccoach.slack.com/archives/C0C003FEWP3/p1788729872315099",
+    "first_turn": "queue acknowledgment without guessed inventory",
+    "second_turn": "exact five-pool inventory after host result was piped into the same session",
+    "duplicate_canary_sent": false,
+    "prompt_correction": "answer and stop; do not offer identity enumeration, unsupported detail, or unsolicited mutation",
+    "post_canary_operator_cases": 0,
+    "post_canary_operator_receipts": 0,
+    "post_canary_reservations": 0,
+    "post_canary_waitlist_entries": 0,
+    "post_canary_waitlist_offers": 0
+  },
+  "occupancy": [
+    {"delivery_block": "acc.module-1:2026-09-07", "capacity": 12, "occupied": 21, "available": 0, "state": "sold_out"},
+    {"delivery_block": "mcs-practicum:2026-09-24", "capacity": 12, "occupied": 5, "available": 7, "state": "open"},
+    {"delivery_block": "mcs-practicum:2026-09-25", "capacity": 12, "occupied": 13, "available": 0, "state": "sold_out"},
+    {"delivery_block": "mcs-practicum:2027-01-07", "capacity": 12, "occupied": 1, "available": 11, "state": "open"},
+    {"delivery_block": "mcs-practicum:2027-01-08", "capacity": 12, "occupied": 0, "available": 12, "state": "open"}
+  ],
+  "settled_boundary": {
+    "rita": "January Thursday; not reopened",
+    "gate_e_or_f": "not authorized or activated"
+  }
+}
