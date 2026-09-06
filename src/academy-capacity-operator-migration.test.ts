@@ -61,6 +61,14 @@ describe('Academy Capacity Gate D migration contract', () => {
     expect(release).toContain(
       "'data/business/migrations/nanoclaw-v2/rollback_144_academy_capacity_operator_pilot.sql'",
     );
-    expect(release).toContain("'scripts/register-capacity.ts'");
+    expect(release).toContain("'scripts/register-capacity.mjs'");
+    const registration = fs.readFileSync(
+      path.resolve('scripts/register-capacity.mjs'),
+      'utf8',
+    );
+    expect(registration).toContain("new URL('../dist/db.js'");
+    expect(registration).toContain(".backup '");
+    expect(registration).toContain('capacity registration readback mismatch');
+    expect(registration).not.toContain('../src/db.js');
   });
 });

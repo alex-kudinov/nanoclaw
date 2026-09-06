@@ -57,6 +57,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   recovery attempts produced no review artifact and were not used as evidence.
 - Corrected full root is 3,582 passed / 32 skipped with only the unchanged CNPC
   wrapper-literal assertion and date-sensitive Trafft status expectation.
+- Deployment recovery: adding `capacity` to the staged allowlist before the new
+  release was active made the old rollback daemon reject the unknown folder.
+  No Capacity command was enabled or applied. Removing only that allowlist
+  entry restored verified `886e2587`; `1637434d` then activated successfully
+  with the mutation switch off. After private `#gru-capacity` creation, exact
+  SQLite registration, and post-release allowlisting, health verifies the new
+  release, registered group, enforced capability, connected channels, empty
+  queues, and mutations still off.
+- Release-tool correction: the first packaged `register-capacity.ts` imported
+  unavailable source. It is replaced by release-native
+  `register-capacity.mjs`, which binds the exact release/project/channel/host,
+  defaults to dry-run, refuses rebinding, creates a WAL-safe SQLite backup,
+  applies once, and reads back the exact registration. This is a mechanical
+  deployment-helper correction; runtime command semantics reviewed in R1/R2
+  are unchanged.
 - Boundary: no checkout/Tandemweb/public cutover, provider/Sheet mutation,
   customer communication, automatic waitlist promotion, refund, payment,
   certificate, or assignment/capacity authority cutover. The current public

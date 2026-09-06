@@ -250,4 +250,9 @@ provider, email, general Slack-send, payment, refund, certificate, checkout, or
 public-site tool. Read commands require exact pool/enrollment keys and expose
 no participant identity. Mutation IPC is additionally guarded by
 `ACADEMY_CAPACITY_OPERATOR_ENABLED`; capability enforcement must include
-`capacity` before group registration and before that switch can be enabled.
+`capacity` before the registered group is loaded. For a new folder, activate
+the release that recognizes its manifest while the mutation switch is off;
+create/register the group without restarting the old daemon; add `capacity` to
+the enforced list; then restart once so group and manifest become visible
+atomically. Never put a new folder into an old release's enforced list because
+that also breaks its rollback startup.

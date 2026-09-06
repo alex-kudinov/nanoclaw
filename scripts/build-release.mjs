@@ -215,7 +215,7 @@ try {
     'scripts/build-academy-capacity-shadow-manifest.d.mts',
     'scripts/populate-academy-capacity-shadow.mjs',
     'scripts/populate-academy-capacity-shadow.d.mts',
-    'scripts/register-capacity.ts',
+    'scripts/register-capacity.mjs',
     'scripts/academy-capacity-operator-disposable-worker.ts',
     'scripts/verify-academy-capacity-operator-disposable.mjs',
     'scripts/verify-academy-capacity-operator-disposable.d.mts',
