@@ -2605,6 +2605,46 @@ Use https://zoom.us.evil.example/j/123.
       );
     });
 
+    it('refuses to post a Sales card that contradicts current program facts', async () => {
+      vi.mocked(resolveThreadAnchor).mockReturnValue({
+        threadTs: '1785230544.590929',
+        lastActivityAt: new Date().toISOString(),
+      });
+      const channel = new SlackChannel(
+        createTestOpts({
+          salesFactConsistencyIssue: () =>
+            'the operational schedule contains future cohorts',
+        }),
+      );
+      await channel.connect();
+      const staleCard = `[SALES REVIEW] Lead #1346
+Category: enrollment
+Email: learner@example.com
+Route: TRANSACT
+
+DRAFT RESPONSE TO LEAD:
+---
+Subject: Coaching Supervision Mastery — Cohort Questions
+
+2027 dates have not been announced.
+---`;
+
+      await channel.sendMessage(JID, staleCard, { fromGroup: 'sales' });
+
+      const post = currentApp().client.chat.postMessage;
+      expect(post).toHaveBeenCalledTimes(1);
+      expect(post.mock.calls[0][0].text).toMatch(
+        /\[APPROVAL CARD REJECTED\].*factual claims conflict with current authority.*future cohorts/,
+      );
+      expect(post.mock.calls[0][0].text).not.toContain(
+        '2027 dates have not been announced.',
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ fromGroup: 'sales' }),
+        expect.stringContaining('fact-inconsistent approval card'),
+      );
+    });
+
     it('refuses SERVICE work posted as a Sales Review before approval', async () => {
       vi.mocked(resolveThreadAnchor).mockReturnValue({
         threadTs: '1785230544.590929',

@@ -116,6 +116,7 @@ import {
   isSlackMessageOverLimit,
   SLACK_MESSAGE_MAX_LENGTH,
 } from './slack-limits.js';
+import { salesFactConsistencyIssue } from './sales-fact-consistency.js';
 
 export interface IpcDeps {
   sendMessage: SendMessageFn;
@@ -149,6 +150,8 @@ export interface IpcDeps {
     containerName: string,
     text: string,
   ) => boolean;
+  /** Test seam; production defaults to the host-owned operational fact check. */
+  salesFactConsistencyIssue?: (cardText: string) => string | undefined;
   // Host-generated Procurement card transport — optional so non-Slack tests and
   // configurations remain read-only.
   postProcurementReviewCard?: (
@@ -791,6 +794,49 @@ export function startIpcWatcher(deps: IpcDeps): void {
                           quarantinedAt,
                         },
                         'IPC guard: content-invalid approval card rejected and returned to author',
+                      );
+                      continue;
+                    }
+                    const factIssue =
+                      sourceGroup === 'sales'
+                        ? deps.salesFactConsistencyIssue
+                          ? deps.salesFactConsistencyIssue(data.text)
+                          : salesFactConsistencyIssue(data.text)
+                        : undefined;
+                    if (factIssue) {
+                      const rejectionReason = `The exact draft conflicts with current program authority: ${factIssue}.`;
+                      writeRejectedApprovalCardInput(
+                        sourceGroup,
+                        data.source_container,
+                        deps.deliverSourceInput,
+                        rejectionReason,
+                      );
+                      const recipient = parseApprovalCardRecipient(data.text);
+                      await deps.sendMessage(
+                        sourceEntry[0],
+                        approvalCardRejectedText(
+                          sourceEntry[1].name,
+                          `This draft was not posted for approval because ${rejectionReason.charAt(0).toLowerCase()}${rejectionReason.slice(1)}`,
+                        ),
+                        {
+                          fromGroup: sourceGroup,
+                          threadTs: outboundThreadTsFor(sourceEntry[0]),
+                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                            sourceEntry[0],
+                          ),
+                          ...(recipient
+                            ? { threadKey: `lead:${recipient}` }
+                            : {}),
+                        },
+                      );
+                      const quarantinedAt = quarantineIpcFile(
+                        filePath,
+                        sourceGroup,
+                        'approval-card-facts',
+                      );
+                      logger.error(
+                        { sourceGroup, factIssue, quarantinedAt },
+                        'IPC guard: fact-inconsistent approval card rejected before approval',
                       );
                       continue;
                     }

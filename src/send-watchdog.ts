@@ -34,6 +34,7 @@ import {
 } from './email-action.js';
 import { checkContent } from './email-content-guard.js';
 import { logger } from './logger.js';
+import { salesFactConsistencyIssue } from './sales-fact-consistency.js';
 
 /**
  * Grace period between approval and the expected mailman handoff. Generous
@@ -189,12 +190,20 @@ export function recordApproval(
     approvedGmailThreadId?: string;
     approvedGmailMessageId?: string;
     authorizedDiscountTerms?: readonly string[];
+    factConsistencyIssue?: (cardText: string) => string | undefined;
     now: Date;
   },
   store: SendWatchdogStore,
 ): PendingSend | null {
   if (!isTrackableCard(opts.cardText)) return null;
   if (approvalCardSemanticIssue(opts.cardText)) return null;
+  if (
+    opts.groupFolder === 'sales' &&
+    (opts.factConsistencyIssue
+      ? opts.factConsistencyIssue(opts.cardText)
+      : salesFactConsistencyIssue(opts.cardText))
+  )
+    return null;
   const approved = buildApprovedHandoff(opts.cardText);
   // The arming surface is exactly the same parseability contract enforced
   // before the card reaches Slack. Never mint an action for a malformed or
@@ -262,11 +271,19 @@ export async function observeApprovalCard(
           authorizedDiscountTerms: opts.authorizedDiscountTerms,
         })
       : undefined;
+    const factIssue =
+      opts.groupFolder === 'sales'
+        ? opts.factConsistencyIssue
+          ? opts.factConsistencyIssue(opts.cardText)
+          : salesFactConsistencyIssue(opts.cardText)
+        : undefined;
     const reason = semanticIssue
       ? `This approval was not armed because ${semanticIssue} It was NOT sent.`
       : contentCheck && !contentCheck.ok
         ? `This approval was not armed because its exact subject/body fail the host content guard: ${contentCheck.violations.join('; ')}. It was NOT sent.`
-        : 'This approval was not armed because the card cannot be bound to one exact Email, fenced Subject, and body. It was NOT sent.';
+        : factIssue
+          ? `This approval was not armed because its factual claims conflict with current authority: ${factIssue}. It was NOT sent.`
+          : 'This approval was not armed because the card cannot be bound to one exact Email, fenced Subject, and body. It was NOT sent.';
     await postRejected(approvalCardRejectedText(opts.authorName, reason));
   }
   return { pending, rejected };
@@ -496,6 +513,8 @@ export interface HandoffRescueDeps extends SendWatchdogDeps {
    * off without an Entry ID, exactly as before.
    */
   resolveEntryIdByEmail?(email: string): Promise<number | undefined>;
+  /** Test seam; production defaults to the host-owned operational fact check. */
+  factConsistencyIssue?: (cardText: string) => string | undefined;
 }
 
 /**
@@ -527,6 +546,26 @@ export async function rescueUnhandedSends(
   for (const row of candidates) {
     const card = deps.getApprovedCard(row.draftTs);
     if (!card) continue;
+
+    const factIssue =
+      row.groupFolder === 'sales'
+        ? deps.factConsistencyIssue
+          ? deps.factConsistencyIssue(card)
+          : salesFactConsistencyIssue(card)
+        : undefined;
+    if (factIssue) {
+      await deps.postThread(
+        row.chatJid,
+        `🚫 The approved send was stopped before handoff because its factual claims no longer match current program authority: ${factIssue}. It was NOT sent.`,
+        row.threadTs,
+      );
+      deps.store.markAlerted(row.draftTs);
+      logger.error(
+        { group: row.groupFolder, draftTs: row.draftTs, factIssue },
+        'send-watchdog: fact-inconsistent approved card blocked before rescue',
+      );
+      continue;
+    }
 
     // Resolved now, not at approval: a send blocked for a missing party is
     // retried here, and by this point the onboarding that unblocked it has

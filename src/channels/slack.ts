@@ -49,6 +49,7 @@ import {
 } from '../lead-thread-key.js';
 import { logger } from '../logger.js';
 import { splitForSlack } from '../message-split.js';
+import { salesFactConsistencyIssue } from '../sales-fact-consistency.js';
 import {
   MAX_SLACK_IMAGE_BYTES,
   stageSlackImage,
@@ -152,6 +153,8 @@ export interface SlackChannelOpts {
    * wanted. See lead-email-resolver.ts.
    */
   resolveLeadEmail?: (entryId: number) => Promise<string | undefined>;
+  /** Test seam; production defaults to the host-owned operational fact check. */
+  salesFactConsistencyIssue?: (cardText: string) => string | undefined;
 }
 
 export interface SlackApprovalProvenance {
@@ -1091,6 +1094,12 @@ export class SlackChannel implements Channel {
       const overlongApprovalCard =
         isApprovalCard(text) && isSlackMessageOverLimit(text, fromGroup);
       const semanticApprovalIssue = approvalCardSemanticIssue(text);
+      const factApprovalIssue =
+        fromGroup === 'sales' && isApprovalCard(text)
+          ? this.opts.salesFactConsistencyIssue
+            ? this.opts.salesFactConsistencyIssue(text)
+            : salesFactConsistencyIssue(text)
+          : undefined;
       const parsedApprovalCard = isApprovalCard(text)
         ? buildApprovedHandoff(text)
         : null;
@@ -1119,14 +1128,21 @@ export class SlackChannel implements Channel {
                 : 'The authoring group',
               `This draft was not posted for approval because ${semanticApprovalIssue}`,
             )
-          : blockedApprovalCard
+          : factApprovalIssue
             ? approvalCardRejectedText(
                 fromGroup
                   ? fromGroup.charAt(0).toUpperCase() + fromGroup.slice(1)
                   : 'The authoring group',
-                `This draft was not posted for approval because its exact subject/body fail the host content guard: ${approvalContentCheck!.violations.join('; ')}.`,
+                `This draft was not posted for approval because its factual claims conflict with current authority: ${factApprovalIssue}.`,
               )
-            : text;
+            : blockedApprovalCard
+              ? approvalCardRejectedText(
+                  fromGroup
+                    ? fromGroup.charAt(0).toUpperCase() + fromGroup.slice(1)
+                    : 'The authoring group',
+                  `This draft was not posted for approval because its exact subject/body fail the host content guard: ${approvalContentCheck!.violations.join('; ')}.`,
+                )
+              : text;
       const displayText = prefix + outboundText;
 
       const baseOpts: {
@@ -1253,6 +1269,17 @@ export class SlackChannel implements Channel {
             violations: approvalContentCheck!.violations,
           },
           'Slack refused to post an approval card that the Gmail content guard would reject',
+        );
+      }
+      if (factApprovalIssue) {
+        logger.error(
+          {
+            jid,
+            fromGroup,
+            threadTs: effectiveThreadTs,
+            issue: factApprovalIssue,
+          },
+          'Slack refused to post a fact-inconsistent approval card',
         );
       }
       this.lastActivityAt = Date.now();

@@ -659,6 +659,54 @@ describe('IPC handoff routing', () => {
     );
   });
 
+  it('returns and quarantines a fact-inconsistent Sales card before Slack approval', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.deliverSourceInput = vi.fn(() => true);
+    deps.salesFactConsistencyIssue = vi.fn(
+      () => 'the operational schedule contains future cohorts',
+    );
+    const stale =
+      '[SALES REVIEW] Lead #1346\nCategory: enrollment\n' +
+      'Email: learner@example.com\nRoute: TRANSACT\n\n' +
+      'DRAFT RESPONSE TO LEAD:\n---\n' +
+      'Subject: Coaching Supervision Mastery — Cohort Questions\n\n' +
+      '2027 dates have not been announced.\n---';
+    writeHandoffFile(
+      'sales',
+      stale,
+      undefined,
+      undefined,
+      'nanoclaw-sales-facts',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-facts',
+      expect.stringMatching(
+        /\[approval_card REJECTED\].*conflicts with current program authority.*future cohorts/,
+      ),
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringMatching(
+        /\[APPROVAL CARD REJECTED\].*conflicts with current program authority.*future cohorts/,
+      ),
+      expect.objectContaining({ threadKey: 'lead:learner@example.com' }),
+    );
+    expect(sendMessage).not.toHaveBeenCalledWith(
+      'slack:SALES',
+      stale,
+      expect.anything(),
+    );
+    expect(
+      fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
+    ).toEqual([expect.stringMatching(/^approval-card-facts-/)]);
+  });
+
   it('returns an overlong-card rejection to the exact Sales container before Slack', async () => {
     process.env.MAILMAN_HOLD_SECONDS = '0';
     const { startIpcWatcher } = await import('./ipc.js');

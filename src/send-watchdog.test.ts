@@ -189,6 +189,41 @@ describe('isTrackableCard', () => {
   });
 });
 
+describe('fact consistency boundaries', () => {
+  it('does not arm a fact-inconsistent approval', () => {
+    expect(
+      recordApproval(
+        {
+          ...base,
+          factConsistencyIssue: () =>
+            'the operational schedule contains future cohorts',
+        },
+        makeStore(),
+      ),
+    ).toBeNull();
+  });
+
+  it('makes a fact-inconsistent approval visibly fail closed', async () => {
+    const posts: string[] = [];
+    const observation = await observeApprovalCard(
+      {
+        ...base,
+        authorName: 'Sales',
+        factConsistencyIssue: () =>
+          'the operational schedule contains future cohorts',
+      },
+      makeStore(),
+      async (text) => {
+        posts.push(text);
+      },
+    );
+    expect(observation).toEqual({ pending: null, rejected: true });
+    expect(posts).toEqual([
+      expect.stringMatching(/factual claims conflict.*It was NOT sent/),
+    ]);
+  });
+});
+
 describe('extractApprovedGmailThreadId', () => {
   it('reads a structured header and ignores body-injected Thread-ID lines', () => {
     expect(
@@ -844,6 +879,30 @@ describe('rescueUnhandedSends', () => {
     expect(text).not.toContain('THEIR ASK');
     expect(text).not.toContain('Updated draft ready');
     expect(store.rows[0].handoffObservedAt).toBeTruthy();
+  });
+
+  it('rechecks facts and stops an approved card before host rescue', async () => {
+    const store = makeStore();
+    recordApproval(sendableBase, store);
+    const deps = {
+      ...rescueDeps(store),
+      factConsistencyIssue: () =>
+        'the operational schedule contains future cohorts',
+    };
+
+    const n = await rescueUnhandedSends(
+      new Date(NOW.getTime() + HANDOFF_RESCUE_MS + 1000),
+      deps,
+    );
+
+    expect(n).toBe(0);
+    expect(deps.emitHandoff).not.toHaveBeenCalled();
+    expect(deps.postThread).toHaveBeenCalledWith(
+      'slack:C0AHV1SGT6W',
+      expect.stringMatching(/stopped before handoff.*It was NOT sent/),
+      '1785230834.912489',
+    );
+    expect(store.rows[0].state).toBe('attention_required');
   });
 
   it('adds the executable approval marker to a Chief fallback', async () => {

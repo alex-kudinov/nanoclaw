@@ -8,6 +8,68 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260906-004 — Bind Sales drafts to current program authority
+
+- Date: 2026-09-06T21:43:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review pending
+- State: ready_for_deploy
+- Base: rebased onto final Capacity lineage `0102dfb5`; production preflight
+  verifies exact live release `da2869fbc65586a76c80537623c34074c60a9896`;
+  isolated branch `codex/sales-fact-consistency-20260906`
+- Change class: C3 — host enforcement over customer-facing Sales approval
+  drafts; implementation and tests are local only at this checkpoint
+- Trigger: one 2026-09-06 Sales card correctly cited March 3 and July 7, 2027
+  plus regular tuition in `ANSWERABLE`, then contradicted itself in the
+  customer draft by saying 2027 dates and pricing had not been announced. The
+  fresh operational schedule and immutable catalog were correct; the host
+  accepted the bad draft until the operator manually challenged it.
+- Implementation: `src/sales-fact-consistency.ts` parses the generated
+  operational schedule and immutable supervision catalog, rejects stale or
+  missing authority, negative schedule/price claims contradicted by published
+  facts, and unsupported explicit cohort/start dates. IPC, Slack, approval-arm,
+  host-rescue, and final Gmail execution boundaries all invoke it. Rejections
+  contain no customer content and preserve non-Sales behavior.
+- Documentation: the project map and minion framework describe the new output
+  boundary; `knowledge/README.md` no longer falsely calls `KNOWLEDGE.md` the
+  universal source of truth and now documents the daily schedule projection.
+- Verification: focused fact/boundary 215/215; email replay 13/13;
+  email-critical 767/767 plus runner 45/45; runtime doctor and typecheck pass;
+  full root 3,599 passed / 32 skipped with only the unchanged CNPC
+  wrapper-literal and date-sensitive Trafft failures. A live-shaped local check
+  against the current operational schedule rejects the incident sentence with
+  `schedule_contradiction` and `price_contradiction`.
+- Boundary: no customer email, Slack canary, approval, schedule/calendar,
+  knowledge, price, provider, database, build artifact, deployment, or service
+  change has occurred. Claude review, commit/push, immutable release,
+  activation, and non-sending production validation remain.
+- Review addendum 2026-09-06T21:51:00Z: bounded Claude Sonnet/high R1 verified
+  all five enforcement boundaries but found a material multi-program date-pool
+  bleed causing one false acceptance and one false rejection. Dates and claim
+  attribution are now retained per program; ambiguous multi-program claims fail
+  closed. Three direct regression cases pass, and corrected focused boundaries
+  are 218/218 with typecheck and diff check green. Narrow R2 is pending.
+- R1 usage: 14 model calls, 93,129 cache-create tokens, 874,454 cache-read
+  tokens, 23,636 output tokens, 101,695 maximum context. The 100k target was
+  exceeded slightly; R2 is restricted to the correction source/test and R1
+  findings only.
+- Review closure 2026-09-06T21:56:00Z: corrected per-program evidence and
+  three multi-program regression cases were re-reviewed in a narrow R2. Claude
+  returned `NO MATERIAL FINDINGS`; Codex independently reran the corrected
+  focused suite (218/218), email-critical suite (770/770 plus runner 45/45),
+  typecheck, and full root (3,602 passed / 32 skipped, same two predecessor
+  failures). R2 usage: 5 model calls, 65,519 cache-create tokens, 165,877
+  cache-read tokens, 14,689 output tokens, 65,521 maximum context; no usage
+  warning.
+- Final-lineage verification/preflight 2026-09-06T22:00:00Z: focused 218/218,
+  email-critical 770/770 plus runner 45/45, typecheck, runtime doctor, docs
+  continuity, and full root 3,604 passed / 32 skipped with the same two
+  predecessor failures. Production `da2869fb` is release-verified under Node
+  22.23.2 with one listener, Gmail/Slack connected, zero active containers,
+  zero queued groups, and zero pending-send rows in active/attention states.
+  The operational Sales schedule is fresh and contains the October 2026 plus
+  March/July 2027 Supervision cohorts. No production mutation occurred during
+  preflight.
+
 ### NC-20260906-003 — Release the Gate D Capacity operator pilot
 
 - Date: 2026-09-06T19:16:00Z

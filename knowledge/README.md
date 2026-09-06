@@ -7,9 +7,12 @@ at `/workspace/knowledge`.
 
 ## How Knowledge Works
 
-**Agents only read KNOWLEDGE.md.** It is the single source of truth, always
-complete, always current. Lessons from human feedback are automatically merged
-into KNOWLEDGE.md — agents never read LEARNED.md directly.
+Business minions read the subset of the knowledge trinity mounted for their
+role: `KNOWLEDGE.md` for curated/program facts, `SCHEDULE.md` for live cohort
+dates, and `LEARNED.md` for append-only human corrections. No one generated
+file is a universal source of truth. Provider evidence and accepted owner
+decisions are authority; canonical catalogs and live calendars are domain
+authorities; these Markdown files are checked operational projections.
 
 ### Pipeline
 
@@ -53,7 +56,7 @@ from future merges. Flagged lessons are not deleted — human review.
 | File | Content | Updated by |
 |------|---------|-----------|
 | `KNOWLEDGE.md` | Tandem facts + lessons merged in | `merge-lessons.sh` / `generate-knowledge.sh` |
-| `SCHEDULE.md` | Upcoming cohort dates (auto-generated) | `calendar_ctas.py` → Scheduler Minion |
+| `SCHEDULE.md` | Upcoming cohort dates (auto-generated) | daily `schedule-refresh` → `tools/refresh-schedule.py` → live `calendar-debug` |
 | `LEARNED.md` | Shared lessons (placeholder) | Gru approval flow |
 | `LEARNED-{agent}.md` | Per-agent lesson copies | `route_lesson` IPC handler (best-effort sync) |
 | `llms-full.txt` | Full tandemcoach.co site text (~766 KB) | Weekly via tandemweb pipeline |
@@ -85,7 +88,7 @@ Agent list is dynamic — `validate-knowledge.sh --update` discovers agents via 
 | `tools/merge-lessons.sh` | Merge lessons into KNOWLEDGE.md (claude --print) |
 | `tools/generate-knowledge.sh` | Regenerate KNOWLEDGE.md from llms-full.txt + lessons |
 | `tools/validate-knowledge.sh` | Validate prices/URLs, propagate copies, --regenerate |
-| `tools/sync-program-facts.py` | Pin the accepted Practitioner export and inject/check both the Practitioner and MCS Foundations language-availability blocks in every tracked minion KB |
+| `tools/sync-program-facts.py` | Pin/inject/check Practitioner, MCS Foundations locale, and Coaching Supervision Mastery catalog blocks in every tracked minion KB |
 
 ## Keeping copies fresh
 
@@ -103,12 +106,19 @@ accepted source catalog changes. Revise the MCS locale catalog and its
 hash-bound pack together after current provider/public verification; never
 hand-edit a generated block inside a KB.
 
-For SCHEDULE.md and llms-full.txt, manual copy or Scheduler Minion (when built):
+`schedule-refresh` regenerates `SCHEDULE.md` daily at 06:30 CT from the same
+live `calendar-debug` structures used by the website and copies it to Sales,
+Inbox, and Booking. The host rejects schedule-dependent Sales approval cards
+when this projection is missing, older than 36 hours, contradicts a published
+future cohort, or names an unsupported explicit cohort/start date.
+
+For disaster recovery only, the schedule copies can be restored manually:
 
 ```bash
-# SCHEDULE.md — inbox and sales
+# SCHEDULE.md — sales, inbox, and booking
 cp knowledge/shared/SCHEDULE.md knowledge/agents/inbox/SCHEDULE.md
 cp knowledge/shared/SCHEDULE.md knowledge/agents/sales/SCHEDULE.md
+cp knowledge/shared/SCHEDULE.md knowledge/agents/booking/SCHEDULE.md
 
 # llms-full.txt — inbox only
 cp ~/dev/tandemweb/llms-full.txt knowledge/shared/llms-full.txt

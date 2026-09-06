@@ -60,6 +60,19 @@ function request(overrides: Partial<GmailIpcPayload> = {}): GmailIpcPayload {
 }
 
 describe('buildHostApprovedEmailExecution', () => {
+  it('rechecks factual consistency at the final Gmail execution boundary', () => {
+    const result = buildHostApprovedEmailExecution(action(), card, request(), {
+      factConsistencyIssue: () =>
+        'the operational schedule contains future cohorts',
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      code: 'approved_card_fact_inconsistent',
+      reason: expect.stringContaining('future cohorts'),
+    });
+  });
+
   it('replaces every model-controlled customer field with approved host bytes', () => {
     const result = buildHostApprovedEmailExecution(action(), card, request());
 

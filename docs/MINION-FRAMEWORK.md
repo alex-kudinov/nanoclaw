@@ -356,6 +356,16 @@ The immutable release owns the canonical catalogs and generated fact packs;
 the program-facts detector and release activator verify that the effective
 operational KB contains those exact packs and no catalog-declared stale claims.
 
+Sales approval cards cross an additional host-owned output boundary. For a
+schedule-dependent card with a uniquely resolved program, the host reparses the
+operational Sales `SCHEDULE.md` and the immutable Coaching Supervision Mastery
+catalog. It rejects a missing or older-than-36-hour schedule, a negative
+schedule/price claim contradicted by published authority, or an unsupported
+explicit cohort/start date. The same check runs before Slack approval, when an
+approval is armed, before host handoff rescue, and at final Gmail execution.
+This closes the gap where the model's internal `ANSWERABLE` analysis can use
+current facts while its customer-facing draft contradicts them.
+
 Procurement is the explicit exception. Its `knowledge/agents/procurement`
 directory contains executable browser procedures, so that one directory is
 packaged and mounted read-only from the verified release. Adding another

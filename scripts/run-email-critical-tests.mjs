@@ -33,6 +33,7 @@ export const EMAIL_CRITICAL_TEST_ARGS = [
   'src/proposal-approved-email.test.ts',
   'src/proposal-followup.test.ts',
   'src/routing.test.ts',
+  'src/sales-fact-consistency.test.ts',
   'src/send-watchdog.test.ts',
   'src/slack-approval.test.ts',
   'src/sales-followup-task-completion.test.ts',
