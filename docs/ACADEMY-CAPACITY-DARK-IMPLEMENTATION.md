@@ -5,20 +5,21 @@ Status: `NC-20260905-005` local implementation complete at `5b69e107`;
 PostgreSQL; `NC-20260905-008` records the bounded read-only source
 reconciliation and seven owned exceptions; `NC-20260905-009` corrects its
 labeled-only ACC count to 21 operational unique seats with an explicit
-21-versus-22 boundary; `NC-20260905-010` records owner-confirmed capacity 12
-and begins fail-closed prevention hardening; both migrations remain unapplied
-and runtime unwired
+21-versus-22 boundary; `NC-20260905-010` records owner-confirmed capacity 12;
+`NC-20260906-002` applied migrations 142-143 and populated the exact production
+shadow; `NC-20260906-003` implements the separately authorized Gate D
+host/operator boundary while Gate E/F remain unapproved
 
 Base: reviewed enrollment dark-foundation tip `deac91a8` and accepted capacity
 architecture `docs/ACADEMY-CAPACITY-CONTROL-PLANE.md`
 
 ## Boundary
 
-This task creates portable, reversible source and deterministic tests only.
-Migration 143 remains unapplied. No production composition root imports the
-capacity engine. No real student, order, payment, roster, provider, schedule,
-waitlist, or cohort record is read or changed. No minion is created or
-activated, no customer is contacted, and nothing is deployed.
+The original Gate B task created portable, reversible source and deterministic
+tests only. Migrations 142-143 are now populated in production under the
+separate Gate C/shadow decision. Gate D adds a default-off host adapter and
+operator minion without changing checkout, provider, message, or public-site
+authority.
 
 ## Exact extension rule
 
@@ -213,3 +214,40 @@ Focused tests cover:
 `NC-20260906-002` authorizes gate 3 only: reviewed production schema and shadow
 population with the three held exceptions. It does not authorize gate 5,
 runtime activation, customer communication, refunds, or authority cutover.
+
+## Gate D operator implementation
+
+Migration 144 adds only two admin-owned tables and one privacy-minimized view:
+`academy_capacity_operator_cases`, append-only
+`academy_capacity_operator_receipts`, and
+`v_academy_capacity_operator_cases`. Cases store exact public/internal keys,
+versions, hashes, counts, and bounded result summaries; they do not store names,
+emails, payment details, provider payloads, or message content. A populated
+rollback refuses evidence deletion.
+
+`src/academy-capacity-operator-store.ts` is the host adapter. A mutation:
+
+1. takes an advisory lock on the exact case key;
+2. replays an identical completed case or rejects changed facts under the same
+   key;
+3. records a requested receipt;
+4. locks affected seat pools in stable ID order;
+5. reconstructs the existing canonical capacity/enrollment state and invokes
+   the reviewed pure command engine;
+6. applies only the engine delta under compare-and-swap versions;
+7. reloads database state and records a final hash-bound readback receipt.
+
+A savepoint preserves the case while rolling back every partial domain write
+on refusal or error. Last-seat competitors serialize on the same pool. The
+disposable proof demonstrates exactly one winner, one stale-version review
+case, identical replay, conflicting-case refusal, manual release, FIFO
+waitlist staging with no message, one-active-offer refusal, compatible atomic
+transfer, independent withdrawal, reconciliation, 14 cases/28 receipts, no PII
+markers in summaries, zero non-admin grants, and populated rollback refusal.
+
+The `capacity` capability has no credentials, network, Bash, filesystem write,
+provider, email, general Slack-send, payment, refund, certificate, checkout, or
+public-site tool. Read commands require exact pool/enrollment keys and expose
+no participant identity. Mutation IPC is additionally guarded by
+`ACADEMY_CAPACITY_OPERATOR_ENABLED`; capability enforcement must include
+`capacity` before group registration and before that switch can be enabled.

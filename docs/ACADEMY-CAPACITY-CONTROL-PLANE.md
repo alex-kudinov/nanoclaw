@@ -1,6 +1,8 @@
 # Academy Capacity Control Plane
 
-Status: accepted architecture v1; local dark extension implemented by `NC-20260905-005`; migration 143 remains unapplied and unwired
+Status: accepted architecture v1; migrations 142-143 and the exact source-bound
+shadow are live under `NC-20260906-002`; Gate D operator pilot implementation
+is active under `NC-20260906-003`
 
 Task: `NC-20260905-004`
 
@@ -242,6 +244,17 @@ out controls remain the public safety layer.
 | F — authority cutover | Tandem OS becomes assignment/capacity authority; prior writers become projections | Requires a separate owner cutover decision |
 
 No completed gate authorizes the next.
+
+Gate D is separately authorized by
+`.program/decisions/decision-academy-capacity-gate-d-2026-09-06.json`. Its
+host boundary derives actor and time, requires one immutable case key plus
+expected versions and evidence, serializes each affected pool, runs the pure
+capacity engine, persists only the validated delta, and returns an exact
+readback receipt. The Capacity container has no database credential, Bash,
+provider tool, general message tool, or network authority. Its runtime mutation
+switch remains fail-closed until the exact reviewed release and capability
+allowlist are live. Waitlist staging creates an internal reservation only; it
+cannot approve, send, accept, convert, or contact a customer.
 
 ## Rollback
 

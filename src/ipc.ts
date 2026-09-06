@@ -69,6 +69,10 @@ import {
   ProcurementIpcPayload,
 } from './procurement-ipc-handlers.js';
 import {
+  dispatchAcademyCapacityIpc,
+  isAcademyCapacityIpcType,
+} from './academy-capacity-ipc-handlers.js';
+import {
   dispatchRelationshipContextIpc,
   isRelationshipContextIpcType,
   type RelationshipContextGetPayload,
@@ -1728,6 +1732,54 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       err,
                     },
                     'Relationship Context IPC denied and quarantined',
+                  );
+                  continue;
+                }
+              } else if (isAcademyCapacityIpcType(data.type)) {
+                if (sourceGroup !== 'capacity') {
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'academy-capacity',
+                  );
+                  logger.warn(
+                    { sourceGroup, type: data.type, quarantinedAt },
+                    'Unauthorized Academy Capacity IPC quarantined',
+                  );
+                  continue;
+                }
+                try {
+                  if (!deps.deliverSourceInput) {
+                    throw new Error(
+                      'Academy Capacity source-input transport is unavailable',
+                    );
+                  }
+                  await dispatchAcademyCapacityIpc(sourceGroup, data, {
+                    deliverSourceInput: deps.deliverSourceInput,
+                  });
+                  fs.unlinkSync(filePath);
+                } catch (err) {
+                  const quarantinedAt = quarantineIpcFile(
+                    filePath,
+                    sourceGroup,
+                    'academy-capacity',
+                  );
+                  if (data.source_container && deps.deliverSourceInput) {
+                    deps.deliverSourceInput(
+                      sourceGroup,
+                      data.source_container,
+                      '[CAPACITY REQUEST DENIED] The host rejected the request shape, authority, or exact binding. No Capacity command was applied. Do not retry with altered IDs; refresh exact inventory/enrollment state.',
+                    );
+                  }
+                  logger.warn(
+                    {
+                      sourceGroup,
+                      sourceContainer: data.source_container,
+                      type: data.type,
+                      quarantinedAt,
+                      err,
+                    },
+                    'Academy Capacity IPC denied and quarantined',
                   );
                   continue;
                 }

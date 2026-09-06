@@ -1138,6 +1138,278 @@ registerTool(
   },
 );
 
+const capacityKey = z.string().regex(/^[a-z0-9][a-z0-9._:-]{0,249}$/);
+const capacitySha256 = z.string().regex(/^[0-9a-f]{64}$/);
+const capacityVersion = z.number().int().nonnegative();
+const capacityIdempotency = z
+  .string()
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,499}$/);
+
+function capacityDenied(tool: string) {
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: `${tool} is restricted to the Capacity group.`,
+      },
+    ],
+    isError: true,
+  };
+}
+
+function queueCapacity(type: string, data: Record<string, unknown>) {
+  writeIpcFile(MESSAGES_DIR, {
+    type,
+    ...data,
+    groupFolder,
+    source_container: containerName || undefined,
+    run_id: runId,
+    timestamp: new Date().toISOString(),
+  });
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: 'Capacity request queued for host validation. Wait for the exact readback receipt; this queue acknowledgment is not an applied command.',
+      },
+    ],
+  };
+}
+
+registerTool(
+  'capacity_inventory',
+  'Read current host-owned Academy seat-pool inventory. Omit pool_key to list every bounded pool. This never reserves or changes a seat.',
+  { pool_key: capacityKey.optional() },
+  async (args) => {
+    if (groupFolder !== 'capacity') return capacityDenied('capacity_inventory');
+    return queueCapacity('capacity_inventory', {
+      poolKey: args.pool_key ?? null,
+    });
+  },
+);
+
+registerTool(
+  'capacity_enrollment',
+  'Read one exact enrollment and its capacity assignments/exceptions without returning names, emails, payment details, or provider payloads.',
+  { enrollment_key: capacityKey },
+  async (args) => {
+    if (groupFolder !== 'capacity') return capacityDenied('capacity_enrollment');
+    return queueCapacity('capacity_enrollment', {
+      enrollmentKey: args.enrollment_key,
+    });
+  },
+);
+
+registerTool(
+  'capacity_reserve_manual',
+  'Create one reason-, source-, evidence-, version-, and TTL-bound internal manual seat hold. It cannot commit an assignment or contact a customer.',
+  {
+    case_key: capacityKey,
+    reservation_key: capacityKey,
+    pool_key: capacityKey,
+    expected_pool_version: capacityVersion,
+    source_scope: z.string().regex(/^[a-z0-9][a-z0-9._:-]{0,199}$/),
+    idempotency_key: capacityIdempotency,
+    offer_key: capacityKey,
+    catalog_revision: z.number().int().positive(),
+    order_key: capacityKey.nullable(),
+    seat_key: capacityKey.nullable(),
+    expires_at: z.string().datetime({ offset: true }),
+    reason: z.string().trim().min(1).max(500),
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_reserve_manual');
+    return queueCapacity('reserve_manual', {
+      caseKey: args.case_key,
+      reservationKey: args.reservation_key,
+      poolKey: args.pool_key,
+      expectedPoolVersion: args.expected_pool_version,
+      sourceScope: args.source_scope,
+      idempotencyKey: args.idempotency_key,
+      offerKey: args.offer_key,
+      catalogRevision: args.catalog_revision,
+      orderKey: args.order_key,
+      seatKey: args.seat_key,
+      expiresAt: args.expires_at,
+      reason: args.reason,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
+  'capacity_release_reservation',
+  'Release, cancel, or expire one exact held reservation with version and evidence binding.',
+  {
+    case_key: capacityKey,
+    reservation_key: capacityKey,
+    expected_reservation_version: capacityVersion,
+    expected_pool_version: capacityVersion,
+    outcome: z.enum(['released', 'cancelled', 'expired']),
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_release_reservation');
+    return queueCapacity('release_reservation', {
+      caseKey: args.case_key,
+      reservationKey: args.reservation_key,
+      expectedReservationVersion: args.expected_reservation_version,
+      expectedPoolVersion: args.expected_pool_version,
+      outcome: args.outcome,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
+  'capacity_transfer_assignment',
+  'Atomically transfer one exact active/pending assignment between compatible pools using stable locks and expected versions.',
+  {
+    case_key: capacityKey,
+    origin_assignment_key: capacityKey,
+    expected_origin_assignment_version: capacityVersion,
+    expected_origin_pool_version: capacityVersion,
+    destination_pool_key: capacityKey,
+    expected_destination_pool_version: capacityVersion,
+    new_assignment_key: capacityKey,
+    expected_enrollment_version: capacityVersion,
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_transfer_assignment');
+    return queueCapacity('transfer_assignment', {
+      caseKey: args.case_key,
+      originAssignmentKey: args.origin_assignment_key,
+      expectedOriginAssignmentVersion:
+        args.expected_origin_assignment_version,
+      expectedOriginPoolVersion: args.expected_origin_pool_version,
+      destinationPoolKey: args.destination_pool_key,
+      expectedDestinationPoolVersion: args.expected_destination_pool_version,
+      newAssignmentKey: args.new_assignment_key,
+      expectedEnrollmentVersion: args.expected_enrollment_version,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
+  'capacity_withdraw_assignment',
+  'Withdraw one exact active/pending class assignment. This does not infer or execute a refund.',
+  {
+    case_key: capacityKey,
+    assignment_key: capacityKey,
+    expected_assignment_version: capacityVersion,
+    expected_pool_version: capacityVersion,
+    reason_code: z.string().regex(/^[a-z][a-z0-9_]{0,99}$/),
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_withdraw_assignment');
+    return queueCapacity('withdraw_assignment', {
+      caseKey: args.case_key,
+      assignmentKey: args.assignment_key,
+      expectedAssignmentVersion: args.expected_assignment_version,
+      expectedPoolVersion: args.expected_pool_version,
+      reasonCode: args.reason_code,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
+  'capacity_reconcile_pool',
+  'Record an exact version-bound reconciliation only when occupied, reserved, and waitlist counts still match.',
+  {
+    case_key: capacityKey,
+    pool_key: capacityKey,
+    expected_pool_version: capacityVersion,
+    expected_occupied: z.number().int().nonnegative(),
+    expected_reserved: z.number().int().nonnegative(),
+    expected_waitlist_count: z.number().int().nonnegative(),
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_reconcile_pool');
+    return queueCapacity('reconcile_pool', {
+      caseKey: args.case_key,
+      poolKey: args.pool_key,
+      expectedPoolVersion: args.expected_pool_version,
+      expectedOccupied: args.expected_occupied,
+      expectedReserved: args.expected_reserved,
+      expectedWaitlistCount: args.expected_waitlist_count,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
+  'capacity_join_waitlist',
+  'Create one hash-bound FIFO waitlist entry. It sends no invitation or message and grants no enrollment.',
+  {
+    case_key: capacityKey,
+    entry_key: capacityKey,
+    pool_key: capacityKey,
+    expected_pool_version: capacityVersion,
+    offer_key: capacityKey,
+    catalog_revision: z.number().int().positive(),
+    participant_party_id: z.number().int().positive().nullable(),
+    contact_reference_sha256: capacitySha256,
+    sequence_number: z.number().int().positive(),
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_join_waitlist');
+    return queueCapacity('join_waitlist', {
+      caseKey: args.case_key,
+      entryKey: args.entry_key,
+      poolKey: args.pool_key,
+      expectedPoolVersion: args.expected_pool_version,
+      offerKey: args.offer_key,
+      catalogRevision: args.catalog_revision,
+      participantPartyId: args.participant_party_id,
+      contactReferenceSha256: args.contact_reference_sha256,
+      sequenceNumber: args.sequence_number,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
+  'capacity_stage_waitlist_offer',
+  'Stage one FIFO waitlist offer and internal reservation for human review. It cannot approve, send, accept, or convert the offer.',
+  {
+    case_key: capacityKey,
+    pool_key: capacityKey,
+    expected_pool_version: capacityVersion,
+    waitlist_offer_key: capacityKey,
+    reservation_key: capacityKey,
+    reservation_idempotency_key: capacityIdempotency,
+    expires_at: z.string().datetime({ offset: true }),
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_stage_waitlist_offer');
+    return queueCapacity('stage_waitlist_offer', {
+      caseKey: args.case_key,
+      poolKey: args.pool_key,
+      expectedPoolVersion: args.expected_pool_version,
+      waitlistOfferKey: args.waitlist_offer_key,
+      reservationKey: args.reservation_key,
+      reservationIdempotencyKey: args.reservation_idempotency_key,
+      expiresAt: args.expires_at,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
 const JOBS_DIR = path.join(IPC_DIR, 'jobs');
 
 registerTool(

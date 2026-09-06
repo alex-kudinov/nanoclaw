@@ -55,14 +55,24 @@ describe('capability manifests', () => {
       ...TRACKED_AGENT_FOLDERS,
     ]);
     expect(getCapabilityManifestStatus(process.cwd())).toMatchObject({
-      trackedManifestCount: 17,
-      validManifestCount: 17,
+      trackedManifestCount: 18,
+      validManifestCount: 18,
       invalidManifestCount: 0,
     });
     expect(
       catalog.find((manifest) => manifest.agent.folder === 'booking')
         ?.credentials.families,
     ).toEqual(['business_db']);
+    const capacity = catalog.find(
+      (manifest) => manifest.agent.folder === 'capacity',
+    );
+    expect(capacity).toMatchObject({
+      credentials: { families: [] },
+      network: { mode: 'none', services: [] },
+      actions: { approval: 'named_human' },
+    });
+    expect(capacity?.tools.mcp).not.toContain('send_message');
+    expect(capacity?.tools.claude).not.toContain('Bash');
     const operativeFolders = fs
       .readdirSync(path.join(process.cwd(), 'groups'), { withFileTypes: true })
       .filter(

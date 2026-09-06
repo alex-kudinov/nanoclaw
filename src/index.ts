@@ -64,6 +64,7 @@ import {
   getCapabilityManifestStatus,
   loadCapabilityManifestConfig,
 } from './capability-manifest.js';
+import { academyCapacityOperatorConfig } from './academy-capacity-operator-config.js';
 import {
   cleanupOrphans,
   ensureContainerRuntimeRunning,
@@ -2189,6 +2190,8 @@ async function main(): Promise<void> {
         logger.error({ err }, 'getCircuitBreakerStatus threw');
         circuitBreakerStatus = {};
       }
+      const capacityOperator = academyCapacityOperatorConfig();
+      const capabilityConfig = loadCapabilityManifestConfig();
       return {
         release: releaseIdentity,
         channels: channelHealth,
@@ -2202,6 +2205,16 @@ async function main(): Promise<void> {
         companyTimeTriggerObserver: companyTimeTriggerObserver.getStatus(),
         actionSafety: getActionSafetyStatus(),
         capabilityManifests: getCapabilityManifestStatus(),
+        academyCapacityOperator: {
+          ...capacityOperator,
+          groupRegistered: Object.values(registeredGroups).some(
+            (group) => group.folder === 'capacity',
+          ),
+          capabilityEnforced: capabilityManifestIsEnforced(
+            capabilityConfig,
+            'capacity',
+          ),
+        },
         studentLifecycle: {
           enabled: STUDENT_LIFECYCLE_ENABLED,
           workspace: 'community',

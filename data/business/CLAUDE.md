@@ -6,6 +6,17 @@ remain implementation authority; ordered migrations in
 
 PostgreSQL database for CRM and business operations. All agents access via `business_v2` schema views (reads) and SECURITY DEFINER helper functions (writes). Agent identity is transparently injected via PGOPTIONS session variables.
 
+Migration 144 is the separately gated Academy Capacity Gate D operator ledger.
+It extends the populated migrations 142-143 shadow with admin-only command
+cases, append-only requested/final receipts, and a privacy-minimized operator
+view. The Capacity minion receives no PostgreSQL role or credentials; only the
+host admin adapter may transact, and it must derive actor/time, lock affected
+pools, invoke the deterministic capacity engine, apply compare-and-swap deltas,
+and read back before final receipt. Schema/release presence does not authorize
+the runtime switch, group registration, customer messages, provider writes,
+checkout/public cutover, or assignment/capacity authority cutover. Populated
+rollback refuses deletion.
+
 Migration 118 is the live host-only Company OS work-ledger foundation. It
 grants no agent access. `NC-20260816-001` records its backed-up production
 application and live-verified bounded, default-off host observer; the observer

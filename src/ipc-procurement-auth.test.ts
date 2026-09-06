@@ -12,6 +12,7 @@ const testState = vi.hoisted(() => {
       pathModule.join(osModule.tmpdir(), 'nanoclaw-procurement-auth-'),
     ),
     dispatch: vi.fn(async (..._args: unknown[]) => {}),
+    capacityDispatch: vi.fn(async (..._args: unknown[]) => {}),
     graderDispatch: vi.fn(async (..._args: unknown[]) => ({
       status: 'complete',
       receipt: {
@@ -66,6 +67,11 @@ vi.mock('./procurement-ipc-handlers.js', () => ({
   dispatchProcurementIpc: (...args: unknown[]) => testState.dispatch(...args),
   isProcurementIpcType: (type: string) => type.startsWith('procurement_'),
 }));
+vi.mock('./academy-capacity-ipc-handlers.js', () => ({
+  dispatchAcademyCapacityIpc: (...args: unknown[]) =>
+    testState.capacityDispatch(...args),
+  isAcademyCapacityIpcType: (type: string) => type === 'capacity_inventory',
+}));
 vi.mock('./grader-file-message.js', () => ({
   dispatchGraderFileMessage: (...args: unknown[]) =>
     testState.graderDispatch(...args),
@@ -79,6 +85,12 @@ const registeredGroups: Record<string, RegisteredGroup> = {
   'slack:PROCUREMENT': {
     name: 'Procurement',
     folder: 'procurement',
+    trigger: '@Gru',
+    added_at: new Date().toISOString(),
+  },
+  'slack:CAPACITY': {
+    name: 'Capacity',
+    folder: 'capacity',
     trigger: '@Gru',
     added_at: new Date().toISOString(),
   },
@@ -143,6 +155,27 @@ function writeGraderRequest(group: string, filename: string): string {
   return requestPath;
 }
 
+function writeCapacityRequest(
+  group: string,
+  filename: string,
+  claimedGroup: string,
+): string {
+  const dir = path.join(testState.root, 'ipc', group, 'messages');
+  fs.mkdirSync(dir, { recursive: true });
+  const requestPath = path.join(dir, filename);
+  fs.writeFileSync(
+    requestPath,
+    JSON.stringify({
+      type: 'capacity_inventory',
+      groupFolder: claimedGroup,
+      poolKey: null,
+      source_container: 'capacity-session',
+      timestamp: '2026-09-06T00:00:00Z',
+    }),
+  );
+  return requestPath;
+}
+
 describe('Procurement IPC watcher authorization', () => {
   beforeAll(() => {
     vi.useFakeTimers();
@@ -174,6 +207,7 @@ describe('Procurement IPC watcher authorization', () => {
       postProcurementReviewCard: vi.fn(),
       postProcurementReviewThread: vi.fn(),
       postGraderFileMessage: vi.fn(),
+      deliverSourceInput: vi.fn(() => true),
     };
 
     startIpcWatcher(deps);
@@ -222,6 +256,37 @@ describe('Procurement IPC watcher authorization', () => {
         dataDir: testState.root,
         targetJid: 'slack:GRADER',
       }),
+    );
+  });
+
+  it('derives Capacity identity from the IPC directory and quarantines spoofed callers', async () => {
+    const denied = writeCapacityRequest(
+      'sales',
+      'sales-capacity.json',
+      'capacity',
+    );
+    const allowed = writeCapacityRequest(
+      'capacity',
+      'capacity-inventory.json',
+      'sales',
+    );
+    await vi.advanceTimersByTimeAsync(1_100);
+
+    expect(fs.existsSync(denied)).toBe(false);
+    expect(fs.existsSync(allowed)).toBe(false);
+    expect(
+      fs
+        .readdirSync(path.join(testState.root, 'ipc', 'quarantine', 'sales'))
+        .some((name) => name.includes('academy-capacity')),
+    ).toBe(true);
+    expect(testState.capacityDispatch).toHaveBeenCalledTimes(1);
+    expect(testState.capacityDispatch).toHaveBeenCalledWith(
+      'capacity',
+      expect.objectContaining({
+        type: 'capacity_inventory',
+        groupFolder: 'sales',
+      }),
+      expect.objectContaining({ deliverSourceInput: expect.any(Function) }),
     );
   });
 });

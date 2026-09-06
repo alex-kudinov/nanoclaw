@@ -143,6 +143,7 @@ describe('Academy capacity dark migration', () => {
     );
     const index = fs.readFileSync(path.resolve('src/index.ts'), 'utf8');
     expect(index).not.toContain("from './academy-capacity.js'");
-    expect(index).not.toContain('academyCapacity');
+    expect(index).toContain("from './academy-capacity-operator-config.js'");
+    expect(index).not.toContain("from './academy-capacity-operator-store.js'");
   });
 });

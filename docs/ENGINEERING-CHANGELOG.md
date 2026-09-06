@@ -23,6 +23,40 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   a narrowly permissioned Capacity group with no direct database or provider
   access; disposable concurrency/idempotency/refusal proof; reviewed immutable
   release; and disabled-first production activation with exact readback.
+- Implemented source: migration/rollback 144; a host-only transaction adapter
+  over the reviewed pure capacity engine; exact Capacity IPC and nine MCP
+  tools; a zero-credential/no-network/no-Bash capability and group prompt; a
+  release-bound registration script; and a default-off runtime switch with
+  hash/host-bound configuration tooling and health diagnostics.
+- Disposable evidence: 5-block/40-assignment shadow seed; a simultaneous
+  one-seat race produced exactly one applied hold and one stale-version review;
+  exact replay created no case/receipt/domain change; changed facts under the
+  same key were denied; manual release, FIFO join/stage, one-active-offer
+  refusal, compatible transfer, independent withdrawal, and reconciliation
+  passed. The run produced 14 cases/28 receipts, zero PII markers in summaries,
+  zero non-admin grants, all 11 migration-144 objects admin-owned, and exact
+  populated-rollback refusal. Staging reported approval required/message sent
+  false.
+- Focused verification so far: Capacity domain/migration/operator/IPC/config,
+  capability, directory-derived IPC authorization, and disposable tests pass;
+  pinned typecheck/build, documentation continuity/capability generation, and
+  agent-runner build plus 45/45 tests pass. Independent review and full release
+  gates remain.
+- Claude R1 found one material truthfulness defect: all zero-row persistence
+  results collapsed to `stale_version`. The correction gives each write or
+  missing-reference boundary an exact result code while retaining
+  `needs_review`. A failure-injected transfer now proves
+  `assignment_insert_missing_reference` and exact savepoint rollback before a
+  normal transfer succeeds. Corrected focused tests/typecheck pass; narrow R2
+  remains. R1 used 4 Sonnet calls / 101,538 cache-create / 183,074 cache-read /
+  27,209 output / 118,702 max context, above the 100k target; R2 is restricted
+  to the correction and its failure-injection proof.
+- Claude R2 returned `NO MATERIAL FINDINGS` on the exact correction. It used 4
+  Sonnet calls / 42,931 cache-create / 119,981 cache-read / 6,708 output /
+  49,705 max context with no usage warning. The prior duplicate-session
+  recovery attempts produced no review artifact and were not used as evidence.
+- Corrected full root is 3,582 passed / 32 skipped with only the unchanged CNPC
+  wrapper-literal assertion and date-sensitive Trafft status expectation.
 - Boundary: no checkout/Tandemweb/public cutover, provider/Sheet mutation,
   customer communication, automatic waitlist promotion, refund, payment,
   certificate, or assignment/capacity authority cutover. The current public
