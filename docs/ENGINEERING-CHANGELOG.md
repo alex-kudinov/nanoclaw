@@ -8,12 +8,33 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260906-003 — Release the Gate D Capacity operator pilot
+
+- Date: 2026-09-06T19:16:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: in_progress; Company OS authorization, claim, and continuity receipt
+  complete before source edits
+- Authority: accepted Gate D decision
+  `.program/decisions/decision-academy-capacity-gate-d-2026-09-06.json`;
+  `work:academy-capacity-minion-operator-workflow` is active at revision 215.
+- Intended implementation: strict migration-backed operator cases/receipts,
+  transaction-safe host commands for inventory/enrollment, manual reservation
+  and release, transfer, withdrawal, reconciliation, and FIFO waitlist staging;
+  a narrowly permissioned Capacity group with no direct database or provider
+  access; disposable concurrency/idempotency/refusal proof; reviewed immutable
+  release; and disabled-first production activation with exact readback.
+- Boundary: no checkout/Tandemweb/public cutover, provider/Sheet mutation,
+  customer communication, automatic waitlist promotion, refund, payment,
+  certificate, or assignment/capacity authority cutover. The current public
+  sold-out controls remain in force.
+
 ### NC-20260906-002 — Populate Academy capacity in production shadow mode
 
 - Date: 2026-09-06T18:15:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: in_progress; reviewed source and private-manifest preflight complete,
-  production backup/migration/population not yet started
+- State: complete; reviewed source, production backup, migrations, idempotent
+  shadow population, exact readback, evidence commit/push, and Company OS
+  revision 212 reconciliation complete
 - Authority: Company OS decision
   `.program/decisions/decision-academy-capacity-production-shadow-2026-09-06.json`;
   item active at revision 211.
@@ -57,9 +78,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   cache-create / 411,230 cache-read / 8,686 output / 92,920 max context. R1
   exceeded the 100k target while tracing the generated SQL; R2 stayed bounded
   and returned no material findings.
-- Boundary: no production backup, migration, database row, release activation,
-  runtime/minion consumer, checkout, provider/Sheet/public website, waitlist,
-  message, refund, certificate, payment, or authority-cutover mutation yet.
+- Production outcome: backup SHA-256 `e58d398371aebb317b104ebe42a7201f8f5d02142d7e6538ca877c6b773d70dd`
+  passed `pg_restore --list`; migrations 142-143 populated 5 blocks, 40
+  order/seat/agreement/enrollment/assignment chains, 310 entitlements, 40
+  verified projections, and three held exceptions. Replay inserted zero.
+- Exact readback: ACC 21/12 sold out; MCS Thursday 5/12 open; MCS Friday 13/12
+  sold out; January Thursday 1/12 open; January Friday 0/12 open; zero pending
+  projections, reservations, waitlist rows, provider actions, or inferred
+  payers. All 112 target objects are `nanoclaw_admin` owned with zero non-admin
+  target-table grants.
+- Delivery and non-interference: migration artifact `a9839d92` verified on the
+  Mini without daemon activation. Evidence commit `6c398329` is pushed. The
+  live daemon remains verified at `886e2587` with connected channels, empty
+  queues, and student-lifecycle action consumers off. No checkout,
+  provider/Sheet/public website, message, refund, certificate, payment,
+  waitlist, runtime/minion consumer, or authority-cutover mutation occurred.
 
 ### NC-20260906-001 — Settle Rita and repair Academy capacity sources
 
