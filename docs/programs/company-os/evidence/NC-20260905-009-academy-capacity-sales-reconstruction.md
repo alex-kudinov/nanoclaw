@@ -128,7 +128,11 @@ privacy, write boundary, export parity, and test count.
   continuity/capability, privacy and diff checks: pass.
 - Full root: 3,544 passed / 32 skipped / two exact predecessor failures: the
   CNPC wrapper-literal assertion and date-sensitive Trafft freshness fixture.
-- Exact commit, push, and program state are recorded at closure.
+- Exact correction/validator/evidence commit: `3d900ac0`, pushed to
+  `codex/academy-capacity-sales-reconstruction-20260905`.
+- Company OS: all seven continuity commitments completed, the reconstruction
+  closed, and source resolution remains separately unauthorized at revision
+  199.
 
 ## Next gate
 

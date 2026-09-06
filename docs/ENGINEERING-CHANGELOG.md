@@ -12,8 +12,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-06T01:07:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: complete read-only correction; local aggregate/hash evidence and
-  validator ready for commit/push, with no source or production write
+- State: complete read-only correction; aggregate/hash evidence and validator
+  committed and pushed, with no source or production write
+- Commit/PR: pushed `codex/academy-capacity-sales-reconstruction-20260905`;
+  correction/validator/evidence `3d900ac0` from NC-008 closure `5aad43a9`
 - Change class: C2 reversible local evidence/validation plus authorized
   transient read-only identity joins
 - Correction: NC-008 counted only eight explicitly labeled September ACC rows.
@@ -54,7 +56,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Follow-up: the existing not-authorized source-resolution item now depends on
   this correction and must settle 21 versus 22, numeric capacity, the 11-row
   `$3,999`/`$7,499` split, eight funding gaps, and missing combined-program
-  projections before population or cutover.
+  projections before population or cutover. Company OS revision 199 closes the
+  reconstruction and preserves that source-write gate as not authorized.
 
 ### NC-20260905-008 — Reconcile September Academy capacity read-only
 
