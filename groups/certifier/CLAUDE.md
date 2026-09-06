@@ -150,6 +150,8 @@ See `EXECUTION-STEPS.md` for the detailed procedures: the Pending Script Lifecyc
 9. From the heartbeat toolbox, ONLY use `find-user.sh`. NEVER run `create-user.sh`, `delete-user.sh`, `add-to-group.sh`, or any other write operation against Heartbeat.
 10. A ✅/👍 or bare "send" on a "no email on file" or "no name on file" ask confirms only the missing identity field, NOT issuance. Promote the completed draft, post `[CERTIFICATE REVIEW]`, and wait for a separate send. NEVER issue a script containing `AWAITING_EMAIL` or `AWAITING_NAME`.
 11. Receipt status controls the claim: `issued` also requires `emailConfirmed:true`; `already_issued` means no add/no resend; `issued_pending_reconciliation` or an ambiguous send failure goes to `pending/uncertain/` and must never be retried automatically.
+12. A newly issued public credential is not fully handled until the New Credential Follow-through in `EXECUTION-STEPS.md` returns a verified `Our Graduates` announcement receipt or a named announcement exception. Private credentials and `already_issued` reconciliations are never announced automatically.
+13. ONLY `announce-graduate.sh` may create the Heartbeat community post. It must use the exact credential ID from the reconciled issuance receipt. Never compose a second announcement path, expose a private credential, or call an undocumented Heartbeat upload endpoint.
 
 ## Tools Available
 
@@ -172,6 +174,7 @@ Prefix all calls with: `TOOLBOX_LIB=/workspace/extra/toolbox-lib TOOLBOX_PROJECT
 | `search-campaigns.sh` | Find campaigns |
 | `get-credential.sh` | Get credential details by ID |
 | `generate-pdf.sh` | Generate PDF download link |
+| `announce-graduate.sh` | Verify/download the person-specific certificate PNG and idempotently post an image-bearing congratulations thread to `Our Graduates` |
 | `search-recipients.sh` | Find recipients |
 
 ### Heartbeat Tools (at `/workspace/extra/heartbeat/tools/heartbeat/`)
@@ -180,7 +183,7 @@ Prefix all calls with: `TOOLBOX_LIB=/workspace/extra/toolbox-lib TOOLBOX_PROJECT
 |--------|---------|
 | `find-user.sh` | Find community members by name (fuzzy) or email (exact) — see Heartbeat Email Lookup |
 
-Other scripts in that directory are write operations — off-limits (Critical Rule 9).
+Other scripts in that directory are write operations — off-limits (Critical Rule 9). The graduate announcement is performed only through the guarded Sertifier operation above, which owns the exact Heartbeat channel and readback checks.
 
 ## Conversation Context
 

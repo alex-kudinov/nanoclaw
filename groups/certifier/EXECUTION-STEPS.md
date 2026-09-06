@@ -88,9 +88,10 @@ not enter this phase.
    the same turn. A pending script always calls the current issue tool, so it
    already uses the canonical campaign; there is no alternate campaign bypass.
 6. Branch on the structured receipt:
-   - `issued` AND `emailConfirmed:true`: archive to `completed/`; report
-     recipient, preset, canonical campaign key/ID, credential URLs, and
-     confirmed email.
+   - `issued` AND `emailConfirmed:true`: run the New Credential Follow-through
+     below, archive to `completed/`, then report recipient, preset, canonical
+     campaign key/ID, credential URLs, confirmed email, and the separate
+     graduate-announcement receipt or exception.
    - `already_issued`: archive to `completed/`; report duplicate-safe no-op,
      no add, and no resend. Show the existing credential receipt.
    - `issued_pending_reconciliation`, `emailConfirmed:false`, malformed
@@ -122,14 +123,57 @@ Triggered by a bare `send`/`send it`/`go ahead`, or ✅/👍 on a
    nothing pending. More than one: list and ask which ID.
 3. Run the selected script exactly once with `--send`.
 4. Branch on the receipt:
-   - `issued` AND `emailConfirmed:true`: archive, report campaign/credential
-     receipt, and log Plutio.
+   - `issued` AND `emailConfirmed:true`: run the New Credential Follow-through
+     below, archive, report campaign/credential plus graduate-announcement
+     receipt or exception, and log Plutio.
    - `already_issued`: archive, report no-op/no resend, do not log issuance.
    - pending reconciliation, false email confirmation, malformed output, or
      ambiguous/API failure: move to `pending/uncertain/`, post
      `[CERTIFICATE HOLD]`, and never retry automatically.
 5. Campaign ID, API acceptance, or `emailRequested:true` alone is not
    issuance/delivery completion.
+
+## New Credential Follow-through
+
+Run this only after a newly created credential returns `status:issued`,
+`created:true`, `emailConfirmed:true`, and a non-null `credential` object.
+Direct recipient delivery and the community announcement are separate outcomes;
+one must never be claimed from the other.
+
+1. Read `credential.isPublic`, `credential.id`, and
+   `credential.certificateImageLink` from the structured issuance receipt.
+2. If `isPublic` is not `true`, record
+   `graduate_announcement:not_applicable_private` and do not expose the private
+   credential in the community. This includes partial-completion records.
+3. For a public credential, require one credential UUID and a nonblank image
+   link, then run exactly:
+
+```bash
+TOOLBOX_LIB=/workspace/extra/toolbox-lib \
+TOOLBOX_PROJECT_ROOT=/workspace/extra/sertifier \
+HEARTBEAT_ROOT=/workspace/extra/heartbeat \
+  bash /workspace/extra/sertifier/tools/sertifier/announce-graduate.sh \
+  --id "CREDENTIAL_ID" \
+  --channel-name "Our Graduates" \
+  --execute \
+  --confirm ANNOUNCE-GRADUATE
+```
+
+4. Accept `status:announced`, `created:true`, `verified:true` only after the
+   tool has read back the thread in the exact `Our Graduates` POSTS channel.
+   `already_announced`, `created:false`, `verified:true` is an idempotent
+   recovery receipt, not a second post.
+5. If the live call returns an uncertain/API/readback failure, run the same tool
+   once without `--execute` as a read-only reconciliation. Treat
+   `already_announced` as recovered; otherwise record a graduate-announcement
+   exception and do not post again automatically.
+6. The announcement tool resolves the recipient and credential title from
+   Sertifier, downloads and validates the person-specific PNG, rejects private
+   credentials, resolves exactly one POSTS channel, checks recent threads for
+   the same verified credential URL, and uses Heartbeat's documented iframe
+   embed field. Never substitute an undocumented Heartbeat upload endpoint.
+7. `already_issued` credentials are not announced automatically. Historical
+   backfill or a missed announcement requires a separate explicit request.
 
 ### Phase 4 — Cancellation
 

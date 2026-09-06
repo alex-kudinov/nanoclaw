@@ -1124,6 +1124,19 @@ Both live campaign fingerprints and empty recipient sets are verified. The
 reviewed prompt/tool/config overlay is byte-identical on `mini-claw.local`, and
 both production `.invalid` dry runs return `willSend:false`.
 
+### Graduate announcements (`NC-20260906-001`)
+
+Newly issued public credentials use one shared post-issuance operation for both
+Gru Certifier and the Heartbeat Foundation grading workflow. The operation
+reconciles the exact Sertifier credential/campaign/Detail, downloads and
+validates the person-specific certificate PNG, requires the exact Heartbeat
+`Our Graduates` POSTS channel, checks recent threads for the same branded
+registrar URL, creates one short congratulations thread with the certificate as
+a documented iframe embed, and reads it back. Private credentials and
+`already_issued` reconciliations are excluded. Direct recipient delivery and
+the community post have separate receipts/exceptions. See
+`docs/GRADUATE-ANNOUNCEMENTS.md`.
+
 ### Canonical Sertifier campaigns (`NC-20260828-002`)
 
 Each of the ten configured certificate presets owns one versioned canonical

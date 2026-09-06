@@ -8,6 +8,45 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260906-001 — Our Graduates certificate announcements
+
+- Date: 2026-09-06T15:20:00Z
+- Owner/client: Codex with two bounded Claude Sonnet/high review rounds
+- State: validating; reviewed and verified locally, mounted-file deployment pending
+- Scope: add one shared, dry-run-default `sertifier/announce-graduate`
+  operation and one read-only `heartbeat/list-channels` helper; update Gru
+  Certifier and the personal Heartbeat grading skill so a newly issued public
+  credential retains its direct recipient delivery and also receives one
+  separate, verified `Our Graduates` announcement receipt or named exception.
+- Provider proof: one existing active public credential exposed a token-free
+  person-specific 1584x1224 PNG that downloaded and validated successfully;
+  Sertifier also generated its credential-specific PDF. Live Heartbeat
+  read-only discovery resolved exact channel ID
+  `845b7ebb-d7b9-47de-be58-119de3614ab7`, name `Our Graduates`, type `POSTS`.
+- Safety: the helper re-reads the exact active public credential, reconciles
+  campaign/Detail by credential ID, validates the approved PNG host/path and
+  10 MB ceiling, requires exact channel ID/name/type, rejects unsafe
+  certificate numbers, suppresses only an exact prior registrar-link anchor,
+  and requires `--execute --confirm ANNOUNCE-GRADUATE` for a live post. Private
+  and `already_issued` credentials are excluded; ambiguous results get one
+  read-only reconciliation and never a blind repost.
+- Review: R1 found an unbounded duplicate-link match and inconsistent URL
+  escaping. Both were corrected. R2 verified those corrections and requested
+  explicit hostile certificate-number coverage, which now passes. No third
+  review round is needed for that mechanical test addition.
+- Verification: announcement/component/canonical-campaign suites pass; toolbox
+  framework is 65/65; both registries parse; grading skill quick validation,
+  three ledger tests, and the full course-variant manifest pass; NanoClaw
+  typecheck, six focused prompt-contract tests, and documentation continuity
+  pass. The earlier full NanoClaw run remains 3,369 passing/31 skipped with only
+  the two unchanged CNPC wrapper and stale Trafft baseline failures.
+- External-action boundary: no certificate was issued, no existing graduate
+  was announced, no Heartbeat post was created, and no historical backfill or
+  private credential exposure occurred. The first natural authorized issuance
+  remains the customer-facing rendering/outcome proof.
+- Documentation: `docs/GRADUATE-ANNOUNCEMENTS.md`, project map, active work,
+  both bounded review request/response pairs, prompt contract, and this entry.
+
 ### NC-20260904-003 — MCS Practicum Sertifier packages
 
 - Date: 2026-09-05T02:30:00Z

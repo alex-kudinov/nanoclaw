@@ -77,4 +77,21 @@ describe('Certifier canonical campaign prompt contract', () => {
       'Campaign ID, API acceptance, or `emailRequested:true` alone is not',
     );
   });
+
+  it('announces only newly issued public credentials through one guarded path', () => {
+    expect(prompt).toContain('New Credential Follow-through');
+    expect(prompt).toContain('ONLY `announce-graduate.sh`');
+    expect(prompt).toContain(
+      'Private credentials and `already_issued` reconciliations are never announced automatically',
+    );
+    expect(steps).toContain('--confirm ANNOUNCE-GRADUATE');
+    expect(steps).toContain('graduate_announcement:not_applicable_private');
+    expect(steps).toContain(
+      '`already_issued` credentials are not announced automatically',
+    );
+    expect(steps).toContain(
+      'Never substitute an undocumented Heartbeat upload endpoint',
+    );
+    expect(steps).toContain('documented iframe');
+  });
 });
