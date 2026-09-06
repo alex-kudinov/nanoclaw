@@ -39,9 +39,9 @@ The 21 operational seats are 10 Module 1 rows and 11 Full Program rows. The
 roster-derived participant set is deduplicated by normalized participant email;
 PCC, ACTC, or Heartbeat projections never add another seat.
 
-The public state remains `sold_out`. Numeric capacity is still absent, so the
-evidence proves the 21-seat population but cannot yet state by how many seats
-the cohort is oversold.
+`NC-20260905-010` records the owner's subsequent confirmation that capacity was
+12. The public state remains `sold_out`: 21 operational seats are oversold by
+9, and the held 22-seat upper boundary would be oversold by 10.
 
 ## Offer and funding reconstruction
 
@@ -81,14 +81,13 @@ This distinction is load-bearing:
 
 ## Held exceptions
 
-Six privacy-minimized exceptions block source repair or production population:
+Five privacy-minimized exceptions block source repair or production population:
 
 1. the May 27 row that makes the exact boundary 21 versus 22;
-2. missing numeric September 7 capacity;
-3. unresolved split of 11 Full Program rows between $3,999 and $7,499;
-4. missing PCC/ACTC/Heartbeat projections for any exact $7,499 students;
-5. eight participants without exact Product Map funding classification;
-6. probable Friday MCS origin that remains unproven for historical import.
+2. unresolved split of 11 Full Program rows between $3,999 and $7,499;
+3. missing PCC/ACTC/Heartbeat projections for any exact $7,499 students;
+4. eight participants without exact Product Map funding classification;
+5. probable Friday MCS origin that remains unproven for historical import.
 
 Each exception has an owner and exact next evidence in the machine-readable
 correction. None authorizes a provider or roster write.
@@ -137,7 +136,7 @@ privacy, write boundary, export parity, and test count.
 ## Next gate
 
 The source-write resolution gate must first determine whether the May 27 row is
-June or September, record the numeric capacity, bind all 11 Full Program rows
+June or September, bind all 11 Full Program rows
 to `$3,999` or `$7,499`, bind eight funding gaps to exact evidence, and plan
 missing combined-program projections. Only then can migration 143 be populated
 or the operational sources be corrected with exact readback.

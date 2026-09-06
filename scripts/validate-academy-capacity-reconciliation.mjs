@@ -463,6 +463,8 @@ export function validateAcademyCapacitySalesReconstruction(correction) {
   const ownerAcc = correction?.owner_corrections?.acc_september_7 ?? {};
   add(
     ownerAcc.expected_unique_seats === 21 &&
+      ownerAcc.approved_capacity === 12 &&
+      ownerAcc.capacity_source === 'owner-confirmed-2026-09-06' &&
       JSON.stringify([...(ownerAcc.included_offers ?? [])].sort()) ===
         JSON.stringify(['acc-full', 'acc-module-1', 'acc-pcc-full']),
     'owner ACC shared-pool correction is incomplete',
@@ -535,11 +537,12 @@ export function validateAcademyCapacitySalesReconstruction(correction) {
     findings,
   );
   add(
-    pool.capacity === null &&
-      pool.availability === null &&
-      pool.over_capacity === null &&
+    pool.capacity === 12 &&
+      pool.availability === 0 &&
+      pool.over_capacity === 9 &&
+      pool.upper_boundary_over_capacity === 10 &&
       pool.public_state === 'sold_out',
-    'unknown ACC capacity must remain sold out without invented availability',
+    'confirmed ACC capacity and overage arithmetic are incorrect',
     findings,
   );
 
@@ -591,7 +594,6 @@ export function validateAcademyCapacitySalesReconstruction(correction) {
 
   const expectedExceptions = new Set([
     'exception:acc-september-may-27-boundary',
-    'exception:acc-september-capacity-unknown',
     'exception:acc-september-full-offer-split-unresolved',
     'exception:acc-professional-projections-missing',
     'exception:acc-september-funding-classification-incomplete',

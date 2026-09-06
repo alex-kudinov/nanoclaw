@@ -127,6 +127,17 @@ describe('Academy capacity sales reconstruction correction', () => {
     });
   });
 
+  it('records capacity 12 and the 9-seat operational overage', () => {
+    expect(correction.shared_pool).toMatchObject({
+      capacity: 12,
+      operational_unique_seats: 21,
+      availability: 0,
+      over_capacity: 9,
+      upper_boundary_over_capacity: 10,
+      public_state: 'sold_out',
+    });
+  });
+
   it('rejects a projection-driven capacity double count', () => {
     const changed = correctionCopy();
     changed.shared_pool.operational_unique_seats = 22;

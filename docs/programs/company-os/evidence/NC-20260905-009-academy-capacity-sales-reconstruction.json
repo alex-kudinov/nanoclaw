@@ -24,6 +24,8 @@
     "acc_september_7": {
       "expected_unique_seats": 21,
       "expected_count_qualifier": "approximately_confirmed_by_owner",
+      "approved_capacity": 12,
+      "capacity_source": "owner-confirmed-2026-09-06",
       "included_offers": ["acc-module-1", "acc-full", "acc-pcc-full"],
       "included_channels": ["stripe", "check", "invoice", "email_or_operator"],
       "professional_projection_rule": "one_participant_one_shared_acc_seat_even_when_projected_to_acc_pcc_actc"
@@ -45,7 +47,7 @@
   "shared_pool": {
     "delivery_block_key": "acc.module-1:2026-09-07",
     "public_state": "sold_out",
-    "capacity": null,
+    "capacity": 12,
     "unique_participant_rule": "normalized_participant_email_once_across_all_roster_tabs_and_offers",
     "operational_unique_seats": 21,
     "explicit_cohort_seats": 8,
@@ -57,9 +59,10 @@
     "candidate_rowset_sha256": "89cccbc062a109575ac0b56c2e7cffe7b3a0e76e56e18b560ccc3e7fb2722416",
     "explicit_rowset_sha256": "a89c9567174b084041b0a573fa583e2c124d29b5f7aa3a4ce49ce940e1c0ada6",
     "unlabeled_rowset_sha256": "9c6fa7592bd9579699062eaa1241d35958c42a65982f0e7346e11b3c973fe2de",
-    "availability": null,
-    "over_capacity": null,
-    "reconciliation_status": "count_reconstructed_offer_capacity_and_one_boundary_unresolved"
+    "availability": 0,
+    "over_capacity": 9,
+    "upper_boundary_over_capacity": 10,
+    "reconciliation_status": "oversold_by_9_with_held_upper_overage_10"
   },
   "source_coverage": {
     "payment_log": {
@@ -103,13 +106,6 @@
       "severity": "blocks_exact_final_count",
       "facts": "The owner-backed operational boundary yields 21 seats; including the one earlier unlabeled May 27 assignment yields 22.",
       "next_evidence": "Bind the May 27 assignment to its exact June or September delivery block."
-    },
-    {
-      "exception_id": "exception:acc-september-capacity-unknown",
-      "owner": "academy_operations",
-      "severity": "blocks_oversale_amount",
-      "facts": "The shared pool has an operational count of 21 but still has no approved numeric capacity, so the oversold quantity cannot be calculated.",
-      "next_evidence": "Record the approved numeric capacity and source for the September 7 delivery block."
     },
     {
       "exception_id": "exception:acc-september-full-offer-split-unresolved",

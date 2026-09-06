@@ -5,7 +5,9 @@ Status: `NC-20260905-005` local implementation complete at `5b69e107`;
 PostgreSQL; `NC-20260905-008` records the bounded read-only source
 reconciliation and seven owned exceptions; `NC-20260905-009` corrects its
 labeled-only ACC count to 21 operational unique seats with an explicit
-21-versus-22 boundary; both migrations remain unapplied and runtime unwired
+21-versus-22 boundary; `NC-20260905-010` records owner-confirmed capacity 12
+and begins fail-closed prevention hardening; both migrations remain unapplied
+and runtime unwired
 
 Base: reviewed enrollment dark-foundation tip `deac91a8` and accepted capacity
 architecture `docs/ACADEMY-CAPACITY-CONTROL-PLANE.md`
@@ -148,7 +150,8 @@ origin weekday is disputed by the prior transfer record and owner count
 context. ACC September 7 has 8 explicitly labeled plus 13 operationally bounded
 unlabeled assignments: 21 unique participants, or 22 if the held May 27 row
 also belongs to September. The operational 21 split into 10 Module 1 and 11
-Full Program roster routes. Numeric capacity is absent; current source evidence
+Full Program roster routes. `NC-20260905-010` confirms capacity 12, making the
+operational overage 9 and held upper-bound overage 10. Current source evidence
 classifies 8 as Module 1, 5 as `$3,999` ACC Full, and none defensibly as
 `$7,499` Professional Coach. None of the 21 appears in PCC, ACTC, or the
 Professional Coach Heartbeat group, so the `$7,499` subgroup and expected
@@ -190,7 +193,8 @@ Focused tests cover:
 4. Separately authorize read-only schedule, offer, Bookkeeper, Stripe, and
    Student Roster reconciliation. The bounded September/January population is
    complete under `NC-20260905-008/009`, with the corrected 21-seat operational
-   count, one 21-versus-22 boundary, and held source exceptions.
+   count, capacity 12, overage 9/10, one 21-versus-22 boundary, and held source
+   exceptions.
 5. Separately authorize operator/minion, Tandemweb, provider, communication,
    and authority-cutover stages.
 

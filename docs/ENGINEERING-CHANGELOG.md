@@ -8,6 +8,29 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260905-010 — Confirm capacity 12 and begin oversale prevention
+
+- Date: 2026-09-06T15:11:00Z
+- Owner/client: Codex; Claude Sonnet/high review pending in the continuation
+- State: in_progress; owner capacity fact and arithmetic are
+  locally implemented and focused-verified, with Tandemweb hardening pending
+- Branch/base: `codex/academy-capacity-prevention-20260906` from `5f3f1e75`
+- Confirmed fact: September 7 capacity is 12. The 21-seat operational
+  reconstruction is oversold by 9; the held 22-seat upper boundary would be
+  oversold by 10. Availability is zero and public state remains sold out.
+- Change: amends NC-009's current evidence and validator, removes the resolved
+  numeric-capacity exception, and adds exact 12/21/9/10 regression coverage.
+- Verification so far: combined evidence validator passes with 21 seats and
+  five remaining correction exceptions; focused reconstruction tests 14/14;
+  pinned typecheck and diff check pass.
+- Remaining: harden the existing Tandemweb reconciler so an owner estimate can
+  never lower roster occupancy; preserve one participant/one shared seat;
+  prepare exact remaining resolution plans; Claude review; full verification;
+  commit/push closure.
+- Boundary: no Student Roster, Payment Log, provider, email, website,
+  production database, cohort, waitlist, runtime, minion, migration,
+  deployment, backfill, communication, or authority-cutover write.
+
 ### NC-20260905-009 — Reconstruct the September ACC shared-pool sales
 
 - Date: 2026-09-06T01:07:00Z

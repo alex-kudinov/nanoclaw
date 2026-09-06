@@ -323,6 +323,11 @@ or the Professional Coach Heartbeat group. These are missing offer/funding/
 projection facts, not additional capacity or proof that no `$7,499` sale
 occurred. The correction remains aggregate/hash-only and read-only; no source,
 migration, production, or runtime state changed.
+`NC-20260905-010` subsequently records the owner-confirmed capacity of 12.
+Against the reconstructed 21 operational seats this is oversold by 9; the held
+22-seat upper boundary would be oversold by 10. Availability is zero and the
+public state remains sold out. This fact removes the numeric-capacity exception
+but grants no authority to populate migration 143 or repair any source.
 
 ## Connection
 
