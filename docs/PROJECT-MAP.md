@@ -1137,6 +1137,12 @@ a documented iframe embed, and reads it back. Private credentials and
 the community post have separate receipts/exceptions. See
 `docs/GRADUATE-ANNOUNCEMENTS.md`.
 
+The reviewed prompt/tool overlay is deployed on `mini-claw.local`. Live
+read-only channel discovery and a real-credential dry run prove the exact
+channel, provider reconciliation, and 2.1 MB PNG download/validation path while
+returning `created:false` and `willPost:false`. No canary graduate was posted;
+the first natural authorized issuance remains the rendering/outcome gate.
+
 ### Canonical Sertifier campaigns (`NC-20260828-002`)
 
 Each of the ten configured certificate presets owns one versioned canonical

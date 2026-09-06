@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-06T15:20:00Z
 - Owner/client: Codex with two bounded Claude Sonnet/high review rounds
-- State: validating; reviewed and verified locally, mounted-file deployment pending
+- State: deployed_unverified; mounted workflow and live no-post verification complete, first natural announcement pending
 - Scope: add one shared, dry-run-default `sertifier/announce-graduate`
   operation and one read-only `heartbeat/list-channels` helper; update Gru
   Certifier and the personal Heartbeat grading skill so a newly issued public
@@ -44,6 +44,17 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   was announced, no Heartbeat post was created, and no historical backfill or
   private credential exposure occurred. The first natural authorized issuance
   remains the customer-facing rendering/outcome proof.
+- Commit/deployment: NanoClaw `ece2ef6d` is pushed on
+  `codex/graduate-announcements-20260906`; toolbox source is committed locally
+  as `d87447f` plus production-preflight correction `07e7582`. The Mini's
+  separately mounted Certifier and Heartbeat component environments are loaded
+  independently. Merged production registries preserve all non-target entries;
+  prompt/script hashes are byte-identical. Live discovery returns the exact
+  `Our Graduates` POSTS channel, and a real-credential dry run validates a
+  2,138,729-byte PNG with `created:false` and `willPost:false`. Release
+  `886e2587` remains verified on Node 22.23.2 with Slack/Gmail connected and no
+  waiting groups. No restart was required. Rollback snapshot:
+  `.release-backups/NC-20260906-001-20260906T1535Z/`.
 - Documentation: `docs/GRADUATE-ANNOUNCEMENTS.md`, project map, active work,
   both bounded review request/response pairs, prompt contract, and this entry.
 
