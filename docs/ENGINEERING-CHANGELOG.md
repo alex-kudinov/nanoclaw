@@ -11,10 +11,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 ### NC-20260905-010 — Confirm capacity 12 and begin oversale prevention
 
 - Date: 2026-09-06T15:11:00Z
-- Owner/client: Codex; Claude Sonnet/high review pending in the continuation
-- State: in_progress; owner capacity fact and arithmetic are
-  locally implemented and focused-verified, with Tandemweb hardening pending
-- Branch/base: `codex/academy-capacity-prevention-20260906` from `5f3f1e75`
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: blocked after the complete first local prevention slice; source
+  repairs and all operational/production stages remain separately gated
+- Commit/branches: NanoClaw `codex/academy-capacity-prevention-20260906` @
+  `23ad8b94`; Tandemweb `codex/capacity-roster-floor-20260906` @ `6509cef2`
 - Confirmed fact: September 7 capacity is 12. The 21-seat operational
   reconstruction is oversold by 9; the held 22-seat upper boundary would be
   oversold by 10. Availability is zero and public state remains sold out.
@@ -23,10 +24,24 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Verification so far: combined evidence validator passes with 21 seats and
   five remaining correction exceptions; focused reconstruction tests 14/14;
   pinned typecheck and diff check pass.
-- Remaining: harden the existing Tandemweb reconciler so an owner estimate can
-  never lower roster occupancy; preserve one participant/one shared seat;
-  prepare exact remaining resolution plans; Claude review; full verification;
-  commit/push closure.
+- Tandemweb: the reconciler now uses
+  `max(roster_active, adjusted_stripe_floor, nonnegative_owner_assertion)`.
+  Owner variance is review evidence, so a 13-row roster with owner estimate 12
+  remains 13 occupied, over by 1, sold out, and `needs_review` with or without
+  Stripe. A negative adjustment cannot lower the roster floor.
+- Review: one bounded Sonnet/high round returned `NO MATERIAL FINDINGS` after
+  re-deriving owner, adjustment, transfer, Stripe-floor, malformed-transfer,
+  and refund paths. Usage: 4 calls / 108,976 cache-create / 255,412 cache-read /
+  21,693 output / 117,542 max context; the 100k target was exceeded while
+  tracing the historical registry and tests, so no ceremonial second round ran.
+- Verification: Tandemweb focused 10/10, Python compilation, read-only
+  live-shaped report, diff and design-system push gates pass. NanoClaw combined
+  validator, focused 14/14, pinned typecheck, continuity/capability, and diff
+  checks pass. Full repository suites remain to be refreshed only after the
+  separately authorized source-resolution implementation changes.
+- Remaining: source repairs for the May 27 boundary, 11 Full Program offer
+  bindings, eight funding gaps, missing combined-program projections, and
+  probable Friday MCS history require a separate decision and exact readback.
 - Boundary: no Student Roster, Payment Log, provider, email, website,
   production database, cohort, waitlist, runtime, minion, migration,
   deployment, backfill, communication, or authority-cutover write.
