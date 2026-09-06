@@ -7,15 +7,20 @@ import {
   defaultSchemaPath,
   defaultCorrectionPath,
   defaultCorrectionSchemaPath,
+  defaultResolutionPath,
+  defaultResolutionSchemaPath,
   validateAcademyCapacityReconciliation,
   validateAcademyCapacitySalesReconstruction,
+  validateAcademyCapacitySourceResolution,
   validateJsonSchemaDocument,
 } from '../scripts/validate-academy-capacity-reconciliation.mjs';
 
 const report = JSON.parse(fs.readFileSync(defaultReportPath, 'utf8'));
 const correction = JSON.parse(fs.readFileSync(defaultCorrectionPath, 'utf8'));
+const resolution = JSON.parse(fs.readFileSync(defaultResolutionPath, 'utf8'));
 const copy = () => structuredClone(report);
 const correctionCopy = () => structuredClone(correction);
+const resolutionCopy = () => structuredClone(resolution);
 
 describe('Academy capacity read-only reconciliation evidence', () => {
   it('validates the privacy-minimized current snapshot', () => {
@@ -168,6 +173,109 @@ describe('Academy capacity sales reconstruction correction', () => {
       '2027-01-08-friday';
     expect(validateAcademyCapacitySalesReconstruction(changed)).toContain(
       'MCS Friday-to-January owner correction is incomplete',
+    );
+  });
+});
+
+describe('Academy capacity source resolution', () => {
+  it('validates the privacy-minimized mutation and readback receipt', () => {
+    const schema = JSON.parse(
+      fs.readFileSync(defaultResolutionSchemaPath, 'utf8'),
+    );
+    expect(validateJsonSchemaDocument(schema, resolution)).toEqual([]);
+    expect(validateAcademyCapacitySourceResolution(resolution)).toEqual([]);
+  });
+
+  it('settles the Friday-to-January transfer without reopening Rita', () => {
+    expect(resolution.owner_decisions.mcs_deferral).toEqual({
+      origin: '2026-09-25-friday',
+      origin_confidence: 'owner_confirmed_final',
+      destination: '2027-01-07-thursday',
+      destination_disposition: 'settled_no_further_confirmation_required',
+    });
+    expect(
+      resolution.source_readback.heartbeat.owner_named_deferral,
+    ).toMatchObject({
+      user_retained: true,
+      base_mcs_access_retained: true,
+      september_membership_removed_and_verified: true,
+    });
+    expect(
+      resolution.remaining_exceptions.some((entry: { exception_id: string }) =>
+        entry.exception_id.includes('mcs-deferral'),
+      ),
+    ).toBe(false);
+  });
+
+  it('balances 21 explicit assignments into exact offers and one held funding case', () => {
+    expect(
+      resolution.source_readback.student_roster.acc_september,
+    ).toMatchObject({
+      active_rows: 21,
+      module_1_routes: 10,
+      full_program_routes: 11,
+      unlabeled_post_boundary_rows: 0,
+    });
+    expect(resolution.offer_and_funding.exact_paid_seats).toEqual({
+      'acc-module-1': 9,
+      'acc-full': 11,
+      'acc-pcc-full': 0,
+    });
+    expect(
+      resolution.offer_and_funding.assignment_without_exact_matching_live_offer,
+    ).toBe(1);
+    expect(resolution.capacity).toMatchObject({
+      capacity: 12,
+      occupied: 21,
+      available: 0,
+      over_capacity: 9,
+      public_state: 'sold_out',
+    });
+  });
+
+  it('refuses to keep the settled deferral as an active exception', () => {
+    const changed = resolutionCopy();
+    changed.remaining_exceptions.push({
+      exception_id: 'exception:mcs-deferral-origin-probable-friday',
+      facts: 'stale',
+      owner: 'academy_operations',
+      next_evidence: 'ask again',
+    });
+    expect(validateAcademyCapacitySourceResolution(changed)).toContain(
+      'settled MCS deferral must not remain an exception',
+    );
+  });
+
+  it('refuses resolved capacity arithmetic drift', () => {
+    const changed = resolutionCopy();
+    changed.capacity.occupied = 20;
+    changed.capacity.over_capacity = 8;
+    expect(validateAcademyCapacitySourceResolution(changed)).toEqual(
+      expect.arrayContaining([
+        'resolved ACC capacity arithmetic is incorrect',
+        'resolved ACC assignment routes do not balance',
+      ]),
+    );
+  });
+
+  it('refuses missing provider readback for the settled deferral', () => {
+    const changed = resolutionCopy();
+    changed.source_readback.heartbeat.owner_named_deferral.september_membership_removed_and_verified = false;
+    expect(validateAcademyCapacitySourceResolution(changed)).toContain(
+      'settled MCS Heartbeat projection readback is incomplete',
+    );
+  });
+
+  it('refuses invented Professional Coach projections or hidden mutations', () => {
+    const changed = resolutionCopy();
+    changed.offer_and_funding.exact_paid_seats['acc-pcc-full'] = 1;
+    changed.offer_and_funding.professional_projection_required = 1;
+    changed.boundary.source_mutations = 15;
+    expect(validateAcademyCapacitySourceResolution(changed)).toEqual(
+      expect.arrayContaining([
+        'resolved ACC offer and funding counts do not balance',
+        'source-resolution side-effect boundary is incomplete',
+      ]),
     );
   });
 });

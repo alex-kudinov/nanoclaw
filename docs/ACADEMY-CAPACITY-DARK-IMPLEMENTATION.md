@@ -145,17 +145,21 @@ check/email and combined-program sales outside the dated cohort labels. MCS
 Thursday is reconciled at 5/12 and
 remains open. MCS Friday has 13 active roster assignments against capacity 12,
 not the owner hypothesis of 12; it remains sold out and blocked from import.
-The owner-named deferral is currently assigned to January Thursday, but its
-origin weekday is disputed by the prior transfer record and owner count
-context. ACC September 7 has 8 explicitly labeled plus 13 operationally bounded
-unlabeled assignments: 21 unique participants, or 22 if the held May 27 row
-also belongs to September. The operational 21 split into 10 Module 1 and 11
-Full Program roster routes. `NC-20260905-010` confirms capacity 12, making the
-operational overage 9 and held upper-bound overage 10. Current source evidence
-classifies 8 as Module 1, 5 as `$3,999` ACC Full, and none defensibly as
-`$7,499` Professional Coach. None of the 21 appears in PCC, ACTC, or the
-Professional Coach Heartbeat group, so the `$7,499` subgroup and expected
-projections remain held rather than inferred.
+`NC-20260906-001` settles the owner-named deferral as September Friday to
+January Thursday. The roster already had the destination; the stale September
+Heartbeat membership was removed while preserving the user and base MCS
+access, and Tandemweb's paired transfer source is corrected. This fact must not
+return to the exception set.
+
+The same source-repair slice makes ACC September 7 explicit at 21 assignments:
+10 Module 1 and 11 Full Program routes, capacity 12, oversold by 9. The May 27
+row is assigned to the prior June cohort and there are zero post-boundary
+unlabeled rows. Exact payment and paid-invoice evidence classifies 9 as Module
+1, all 11 Full Program seats as `$3,999` ACC Full, and 0 as `$7,499`
+Professional Coach. One Module 1 assignment remains funding-source unresolved.
+All 11 ACC Full participants have current Full Course access in Heartbeat (10
+exact-email plus one explicit alias candidate); no Professional Coach
+projection is required.
 
 The reusable evidence validator rejects lower owner overrides, unknown-capacity
 availability claims, PII/raw Stripe IDs, unowned exceptions, funding gaps
@@ -191,12 +195,14 @@ Focused tests cover:
 3. Separately authorize production empty-schema migration with backups and
    least-privilege readback.
 4. Separately authorize read-only schedule, offer, Bookkeeper, Stripe, and
-   Student Roster reconciliation. The bounded September/January population is
-   complete under `NC-20260905-008/009`, with the corrected 21-seat operational
-   count, capacity 12, overage 9/10, one 21-versus-22 boundary, and held source
-   exceptions.
+   Student Roster reconciliation. Complete under `NC-20260905-008/009`.
+   Separately authorize exact source repairs. `NC-20260906-001` resolves the
+   May 27 boundary, labels all 21 September assignments, settles the 11-seat
+   `$3,999`/`$7,499` split as 11/0, reduces ACC funding uncertainty to one
+   assignment, and settles the MCS Friday-to-January transfer with provider
+   readback.
 5. Separately authorize operator/minion, Tandemweb, provider, communication,
    and authority-cutover stages.
 
-Nothing in `NC-20260905-008` authorizes gates 3 or 5, production population, or
-resolution of the held source exceptions.
+Nothing in `NC-20260906-001` authorizes gates 3 or 5, production population,
+runtime activation, customer communication, refunds, or authority cutover.

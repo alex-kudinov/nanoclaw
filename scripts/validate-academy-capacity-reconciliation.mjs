@@ -21,6 +21,14 @@ export const defaultCorrectionSchemaPath = path.join(
   ROOT,
   'facts/catalogs/academy-capacity-reconciliation-correction-v1.schema.json',
 );
+export const defaultResolutionPath = path.join(
+  ROOT,
+  'docs/programs/company-os/evidence/NC-20260906-001-academy-capacity-source-resolution.json',
+);
+export const defaultResolutionSchemaPath = path.join(
+  ROOT,
+  'facts/catalogs/academy-capacity-source-resolution-v1.schema.json',
+);
 const KEY = /^[a-z0-9][a-z0-9._:-]+$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const REQUIRED_BLOCKS = new Set([
@@ -642,12 +650,289 @@ export function validateAcademyCapacitySalesReconstruction(correction) {
   return findings;
 }
 
+export function validateAcademyCapacitySourceResolution(resolution) {
+  const findings = [];
+  add(
+    resolution?.schema_version === '1.0' &&
+      resolution?.resolution_id ===
+        'academy-capacity-source-resolution-2026-09-06' &&
+      resolution?.task_id === 'NC-20260906-001',
+    'source-resolution identity is incomplete',
+    findings,
+  );
+  add(
+    resolution?.resolves?.report_id ===
+      'academy-capacity-readonly-reconciliation-2026-09-05' &&
+      resolution?.resolves?.correction_id ===
+        'academy-capacity-sales-reconstruction-2026-09-05' &&
+      resolution?.resolves?.prevention_commit === '3b03332f',
+    'source-resolution lineage is incomplete',
+    findings,
+  );
+  add(
+    resolution?.privacy?.classification === 'aggregate_hash_only' &&
+      resolution?.privacy?.exact_identity_transient_only === true &&
+      resolution?.privacy?.persisted_content ===
+        'aggregate_counts_hashes_dispositions_and_receipts',
+    'source-resolution privacy boundary is incomplete',
+    findings,
+  );
+  validatePrivacy(resolution, findings);
+
+  const ownerMcs = resolution?.owner_decisions?.mcs_deferral ?? {};
+  add(
+    ownerMcs.origin === '2026-09-25-friday' &&
+      ownerMcs.origin_confidence === 'owner_confirmed_final' &&
+      ownerMcs.destination === '2027-01-07-thursday' &&
+      ownerMcs.destination_disposition ===
+        'settled_no_further_confirmation_required',
+    'settled MCS transfer must not remain probabilistic',
+    findings,
+  );
+  const roster = resolution?.source_readback?.student_roster ?? {};
+  add(
+    roster?.owner_named_deferral?.matches === 1 &&
+      roster?.owner_named_deferral?.destination === 'January 2027 – Thursday' &&
+      SHA256.test(roster?.owner_named_deferral?.row_sha256 ?? ''),
+    'settled MCS roster destination readback is incomplete',
+    findings,
+  );
+  const heartbeat = resolution?.source_readback?.heartbeat ?? {};
+  add(
+    heartbeat?.capacity_authority === false &&
+      heartbeat?.mcs_september?.owner_named_deferral_present === false &&
+      heartbeat?.owner_named_deferral?.user_retained === true &&
+      heartbeat?.owner_named_deferral?.base_mcs_access_retained === true &&
+      heartbeat?.owner_named_deferral
+        ?.september_membership_removed_and_verified === true,
+    'settled MCS Heartbeat projection readback is incomplete',
+    findings,
+  );
+  const tandemweb = resolution?.source_readback?.tandemweb ?? {};
+  add(
+    tandemweb?.prevention_commit === '4bb852bb3' &&
+      tandemweb?.source_resolution_commit === '7872a3a9b' &&
+      tandemweb?.mcs_transfer_origin === '2026-09-25' &&
+      tandemweb?.mcs_transfer_destination === '2027-01-07' &&
+      typeof tandemweb?.paired_adjustment_source_ref === 'string' &&
+      tandemweb.paired_adjustment_source_ref.length > 0,
+    'Tandemweb transfer pair does not match the settled owner decision',
+    findings,
+  );
+  const mcsReconciliation = tandemweb?.reconciliation ?? {};
+  add(
+    mcsReconciliation?.september_thursday?.roster_active === 5 &&
+      mcsReconciliation?.september_thursday?.stripe_floor === 6 &&
+      mcsReconciliation?.september_thursday?.occupied === 6 &&
+      mcsReconciliation?.september_thursday?.status === 'needs_review' &&
+      mcsReconciliation?.september_thursday?.public_state === 'open' &&
+      mcsReconciliation?.september_friday?.roster_active === 13 &&
+      mcsReconciliation?.september_friday?.stripe_floor === 10 &&
+      mcsReconciliation?.september_friday?.transfer_adjustment === -1 &&
+      mcsReconciliation?.september_friday?.occupied === 13 &&
+      mcsReconciliation?.september_friday?.status === 'needs_review' &&
+      mcsReconciliation?.september_friday?.public_state === 'sold_out' &&
+      mcsReconciliation?.january_thursday?.roster_active === 1 &&
+      mcsReconciliation?.january_thursday?.transfer_adjustment === 1 &&
+      mcsReconciliation?.january_thursday?.occupied === 1 &&
+      mcsReconciliation?.january_thursday?.status === 'matched' &&
+      mcsReconciliation?.january_thursday?.public_state === 'open',
+    'MCS post-transfer source reconciliation changed unexpectedly',
+    findings,
+  );
+
+  const acc = roster?.acc_september ?? {};
+  add(
+    acc.active_rows === 21 &&
+      acc.module_1_routes === 10 &&
+      acc.full_program_routes === 11 &&
+      acc.unlabeled_post_boundary_rows === 0 &&
+      acc.module_1_routes + acc.full_program_routes === acc.active_rows,
+    'ACC roster source repair does not balance to 21 explicit assignments',
+    findings,
+  );
+  add(
+    roster?.prior_june_boundary?.active_rows === 1 &&
+      SHA256.test(roster?.prior_june_boundary?.rowset_sha256 ?? ''),
+    'May 27 boundary is not durably assigned to the prior cohort',
+    findings,
+  );
+  const capacity = resolution?.capacity ?? {};
+  add(
+    capacity.delivery_block_key === 'acc.module-1:2026-09-07' &&
+      capacity.capacity === 12 &&
+      capacity.occupied === 21 &&
+      capacity.available === 0 &&
+      capacity.over_capacity === 9 &&
+      capacity.public_state === 'sold_out',
+    'resolved ACC capacity arithmetic is incorrect',
+    findings,
+  );
+
+  const offer = resolution?.offer_and_funding ?? {};
+  const routes = offer.assignment_routes ?? {};
+  const paid = offer.exact_paid_seats ?? {};
+  const paidTotal =
+    (paid['acc-module-1'] ?? 0) +
+    (paid['acc-full'] ?? 0) +
+    (paid['acc-pcc-full'] ?? 0);
+  add(
+    routes.module_1 === 10 &&
+      routes.full_program === 11 &&
+      routes.module_1 + routes.full_program === capacity.occupied,
+    'resolved ACC assignment routes do not balance',
+    findings,
+  );
+  add(
+    paid['acc-module-1'] === 9 &&
+      paid['acc-full'] === 11 &&
+      paid['acc-pcc-full'] === 0 &&
+      offer.assignment_without_exact_matching_live_offer === 1 &&
+      paidTotal + offer.assignment_without_exact_matching_live_offer ===
+        capacity.occupied &&
+      offer.refunded_assignments === 0 &&
+      offer.professional_projection_required === 0,
+    'resolved ACC offer and funding counts do not balance',
+    findings,
+  );
+  const log = resolution?.source_readback?.payment_log ?? {};
+  add(
+    log.seat_binding_rows === 17 &&
+      log.unique_participants === 16 &&
+      log.by_exact_offer?.['acc-module-1'] === 9 &&
+      log.by_exact_offer?.['acc-full'] === 7 &&
+      log.by_exact_offer?.['acc-pcc-full'] === 0 &&
+      log.product_cells_updated_and_verified === 2,
+    'Payment Log source repair coverage changed unexpectedly',
+    findings,
+  );
+  const plutio = resolution?.source_readback?.plutio ?? {};
+  add(
+    plutio.read_only === true &&
+      plutio.paid_invoice_receipts === 3 &&
+      plutio.paid_participant_seats === 4 &&
+      plutio.by_exact_offer?.['acc-full'] === 4 &&
+      plutio.by_exact_offer?.['acc-pcc-full'] === 0,
+    'Plutio invoice binding does not balance the four manual ACC Full seats',
+    findings,
+  );
+  add(
+    log.by_exact_offer['acc-full'] + plutio.by_exact_offer['acc-full'] ===
+      paid['acc-full'],
+    'ACC Full payment sources do not balance to 11 seats',
+    findings,
+  );
+  add(
+    heartbeat?.acc_full?.candidate_exact_email_matches === 10 &&
+      heartbeat?.acc_full?.candidate_exact_name_company_alias_matches === 1 &&
+      heartbeat?.acc_full?.candidate_total_matches === 11 &&
+      heartbeat?.professional_coach?.candidate_matches === 0,
+    'Heartbeat offer projection readback does not match resolved offers',
+    findings,
+  );
+
+  const mutation = roster?.mutation_receipt ?? {};
+  const boundary = resolution?.boundary ?? {};
+  add(
+    mutation.requested_updates === 13 &&
+      mutation.updated_and_verified === 11 &&
+      mutation.precondition_conflicts_already_desired === 2 &&
+      mutation.updated_and_verified +
+        mutation.precondition_conflicts_already_desired ===
+        mutation.requested_updates,
+    'Student Roster mutation/readback receipt does not balance',
+    findings,
+  );
+  add(
+    boundary.source_mutations === 14 &&
+      boundary.student_roster_mutations === 11 &&
+      boundary.payment_log_mutations === 2 &&
+      boundary.heartbeat_membership_mutations === 1 &&
+      boundary.student_roster_mutations +
+        boundary.payment_log_mutations +
+        boundary.heartbeat_membership_mutations ===
+        boundary.source_mutations &&
+      boundary.plutio_mutations === 0 &&
+      boundary.refund_mutations === 0 &&
+      boundary.communications === 0 &&
+      boundary.public_website_deployments === 0 &&
+      boundary.production_database_mutations === 0 &&
+      boundary.runtime_or_minion_activations === 0 &&
+      boundary.authority_cutovers === 0,
+    'source-resolution side-effect boundary is incomplete',
+    findings,
+  );
+
+  const expectedResolved = new Set([
+    'exception:mcs-deferral-origin-probable-friday',
+    'exception:acc-september-may-27-boundary',
+    'exception:acc-september-full-offer-split-unresolved',
+    'exception:acc-professional-projections-missing',
+    'exception:acc-september-funding-classification-incomplete',
+  ]);
+  const resolved = resolution?.resolved_exceptions ?? [];
+  add(
+    resolved.length === expectedResolved.size &&
+      unique(resolved.map((entry) => entry?.exception_id)) &&
+      resolved.every(
+        (entry) =>
+          expectedResolved.has(entry?.exception_id) &&
+          typeof entry?.disposition === 'string' &&
+          entry.disposition.length > 0,
+      ),
+    'source-resolution exception dispositions are incomplete',
+    findings,
+  );
+  const remaining = resolution?.remaining_exceptions ?? [];
+  add(
+    unique(remaining.map((entry) => entry?.exception_id)) &&
+      remaining.every(
+        (entry) =>
+          KEY.test(entry?.exception_id ?? '') &&
+          typeof entry?.facts === 'string' &&
+          entry.facts.length > 0 &&
+          typeof entry?.owner === 'string' &&
+          entry.owner.length > 0 &&
+          typeof entry?.next_evidence === 'string' &&
+          entry.next_evidence.length > 0,
+      ),
+    'remaining source exceptions must stay explicit and owned',
+    findings,
+  );
+  add(
+    !remaining.some((entry) =>
+      String(entry?.exception_id ?? '').includes('mcs-deferral'),
+    ),
+    'settled MCS deferral must not remain an exception',
+    findings,
+  );
+  for (const digest of [
+    acc.rowset_sha256,
+    roster?.prior_june_boundary?.rowset_sha256,
+    roster?.owner_named_deferral?.row_sha256,
+    log.seat_binding_rows_sha256,
+    plutio.receipt_sha256,
+    heartbeat?.mcs_september?.member_sha256,
+    heartbeat?.acc_full?.member_sha256,
+  ])
+    add(
+      SHA256.test(digest ?? ''),
+      'source-resolution receipt hash is invalid',
+      findings,
+    );
+  return findings;
+}
+
 function main() {
   const report = JSON.parse(fs.readFileSync(defaultReportPath, 'utf8'));
   const reportSchema = JSON.parse(fs.readFileSync(defaultSchemaPath, 'utf8'));
   const correction = JSON.parse(fs.readFileSync(defaultCorrectionPath, 'utf8'));
   const correctionSchema = JSON.parse(
     fs.readFileSync(defaultCorrectionSchemaPath, 'utf8'),
+  );
+  const resolution = JSON.parse(fs.readFileSync(defaultResolutionPath, 'utf8'));
+  const resolutionSchema = JSON.parse(
+    fs.readFileSync(defaultResolutionSchemaPath, 'utf8'),
   );
   const findings = process.argv[2]
     ? ['custom report paths are not supported by this bounded validator']
@@ -656,6 +941,8 @@ function main() {
         ...validateAcademyCapacityReconciliation(report),
         ...validateJsonSchemaDocument(correctionSchema, correction),
         ...validateAcademyCapacitySalesReconstruction(correction),
+        ...validateJsonSchemaDocument(resolutionSchema, resolution),
+        ...validateAcademyCapacitySourceResolution(resolution),
       ];
   if (findings.length) {
     for (const finding of findings) process.stderr.write(`ERROR: ${finding}\n`);
@@ -663,7 +950,7 @@ function main() {
     return;
   }
   process.stdout.write(
-    `${JSON.stringify({ ok: true, reports: 2, deliveryBlocks: report.delivery_blocks.length, baseExceptions: report.exceptions.length, correctionSeats: correction.shared_pool.operational_unique_seats, correctionExceptions: correction.exceptions.length, privacy: correction.privacy.classification })}\n`,
+    `${JSON.stringify({ ok: true, reports: 3, deliveryBlocks: report.delivery_blocks.length, baseExceptions: report.exceptions.length, correctionSeats: correction.shared_pool.operational_unique_seats, correctionExceptions: correction.exceptions.length, resolvedExceptions: resolution.resolved_exceptions.length, remainingExceptions: resolution.remaining_exceptions.length, privacy: resolution.privacy.classification })}\n`,
   );
 }
 

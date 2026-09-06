@@ -8,6 +8,62 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260906-001 — Settle Rita and repair Academy capacity sources
+
+- Date: 2026-09-06T16:18:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: in_progress; exact source writes completed and read back, source
+  documentation/validation and final cross-repository review underway
+- Source commits: Tandemweb pushed `7872a3a9b` (prevention predecessor rebased
+  to `4bb852bb3`) on `codex/capacity-roster-floor-20260906`; Toolbox clean local
+  commit `8d996dd` on `codex/heartbeat-remove-group-membership-20260906` has no
+  configured remote.
+- Authority: Company OS decision
+  `.program/decisions/decision-academy-capacity-source-repairs-2026-09-06.json`
+  and owner confirmation that Rita's Friday-to-January transfer is final.
+- Rita: Student Roster already read back January 2027 Thursday. One stale
+  `MCS Practicum - September 2026` Heartbeat membership was removed with exact
+  group/user/name preconditions and read back absent; the user and base
+  `MCS - Standard path` access remain. Tandemweb's transfer pair now originates
+  from September Friday rather than Thursday.
+- ACC roster: one May 27 boundary row was assigned to the prior `2026-06`
+  cohort. Thirteen September-label requests produced 11 guarded writes and two
+  precondition conflicts already at the desired value. Exact final readback is
+  21 active `2026-09` rows, 10 Module 1 routes, 11 Full Program routes, and zero
+  post-boundary unlabeled rows. At capacity 12, availability is zero and the
+  cohort is oversold by 9.
+- Offer/funding: exact Payment Log and paid Plutio invoice evidence resolves 9
+  Module 1 seats, 11 `$3,999` ACC Full seats, 0 `$7,499` Professional Coach
+  seats, and one assigned Module 1 seat without matching live-offer funding.
+  Two generic invoice Product cells were guardedly corrected and read back.
+  Plutio stayed read-only; four manual seats bind to three paid invoices,
+  including one two-seat corporate invoice.
+- Projection: all 11 ACC Full participants have Full Course Heartbeat access
+  through 10 exact emails plus one exact-name/company alias candidate. No
+  Professional Coach participant exists in this shared block, so no PCC/ACTC
+  or Professional access mutation was made.
+- Toolbox: local commit `8d996dd` adds guarded
+  `heartbeat/remove-from-group`. Full toolbox tests pass 65/65 plus focused
+  Heartbeat tests and strict registry validation. Claude R1's material
+  readback-refusal test gap and minor missing-argument test gap were corrected;
+  the provider method/path/body independently match Heartbeat's current
+  official OpenAPI.
+- Verification: aggregate/hash-only source receipt validates as the third
+  Academy reconciliation artifact; focused NanoClaw tests 21/21, pinned
+  typecheck, documentation continuity/capability, JSON formatting, privacy,
+  and diff checks pass. Full NanoClaw is 3,552 passed / 32 skipped with the two
+  unchanged predecessor failures in the CNPC wrapper literal assertion and
+  date-sensitive Trafft status fixture. Tandemweb focused tests pass 11/11 and
+  its generated-source/design-system push gates pass.
+- Review: two bounded Claude Sonnet/high rounds across Toolbox and the final
+  cross-repository receipt found test-coverage gaps only. The Toolbox
+  readback-refusal and missing-argument paths and the NanoClaw arithmetic-drift
+  and missing-provider-readback paths are now directly exercised. No material
+  finding remains.
+- Boundary: no refund, customer message, certificate, payment, Plutio write,
+  public website deployment, production database population, runtime/minion
+  activation, migration, or authority cutover.
+
 ### NC-20260905-010 — Confirm capacity 12 and begin oversale prevention
 
 - Date: 2026-09-06T15:11:00Z

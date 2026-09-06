@@ -1,0 +1,233 @@
+{
+  "schema_version": "1.0",
+  "resolution_id": "academy-capacity-source-resolution-2026-09-06",
+  "task_id": "NC-20260906-001",
+  "observed_at": "2026-09-06T16:17:40.708Z",
+  "resolves": {
+    "report_id": "academy-capacity-readonly-reconciliation-2026-09-05",
+    "correction_id": "academy-capacity-sales-reconstruction-2026-09-05",
+    "prevention_commit": "3b03332f"
+  },
+  "privacy": {
+    "classification": "aggregate_hash_only",
+    "exact_identity_transient_only": true,
+    "persisted_content": "aggregate_counts_hashes_dispositions_and_receipts"
+  },
+  "owner_decisions": {
+    "mcs_deferral": {
+      "origin": "2026-09-25-friday",
+      "origin_confidence": "owner_confirmed_final",
+      "destination": "2027-01-07-thursday",
+      "destination_disposition": "settled_no_further_confirmation_required"
+    },
+    "acc_september_7": {
+      "capacity": 12,
+      "unique_active_assignments": 21,
+      "public_state": "sold_out",
+      "unique_seat_rule": "one_participant_once_in_shared_module_1_delivery_block"
+    }
+  },
+  "source_readback": {
+    "student_roster": {
+      "spreadsheet_title": "Tandem - Student Roster",
+      "acc_gid": 690286021,
+      "mcs_gid": 1886737117,
+      "acc_september": {
+        "active_rows": 21,
+        "module_1_routes": 10,
+        "full_program_routes": 11,
+        "unlabeled_post_boundary_rows": 0,
+        "rowset_sha256": "7fefccd778f17aa4aa8a3a1a4d966092a0a94f0ca524d1f089d3a714b7a573d8"
+      },
+      "prior_june_boundary": {
+        "active_rows": 1,
+        "rowset_sha256": "99866aba26833f5275e3381f9c2f50541b5d43c668b90ecc9fb0ce8813201f39"
+      },
+      "owner_named_deferral": {
+        "matches": 1,
+        "destination": "January 2027 – Thursday",
+        "row_sha256": "ffeda513b67959776e10285f763b0ad7a3a1a9d452a8cc327d71603a2b0b5b4b"
+      },
+      "mutation_receipt": {
+        "requested_updates": 13,
+        "updated_and_verified": 11,
+        "precondition_conflicts_already_desired": 2
+      }
+    },
+    "payment_log": {
+      "spreadsheet_title": "Tandem - Stripe - Transactions",
+      "gid": 1549595565,
+      "seat_binding_rows": 17,
+      "unique_participants": 16,
+      "by_exact_offer": {
+        "acc-module-1": 9,
+        "acc-full": 7,
+        "acc-pcc-full": 0
+      },
+      "product_cells_updated_and_verified": 2,
+      "seat_binding_rows_sha256": "85594f892fe1862c7c3450b850767193261c29d002fb3fd647ed0e3f32ae9af5"
+    },
+    "plutio": {
+      "read_only": true,
+      "paid_invoice_receipts": 3,
+      "paid_participant_seats": 4,
+      "by_exact_offer": {
+        "acc-full": 4,
+        "acc-pcc-full": 0
+      },
+      "receipt_sha256": "107c29d7291d268f7c94c850d0bf18b487db1181b09c2a4bd4c98ae318f75cd7"
+    },
+    "heartbeat": {
+      "capacity_authority": false,
+      "mcs_september": {
+        "member_count": 16,
+        "owner_named_deferral_present": false,
+        "member_sha256": "ea34da062fc57f157b133bc5e5c0ebf46691079cdca3e3fedbd72d1dc99db812"
+      },
+      "owner_named_deferral": {
+        "user_retained": true,
+        "base_mcs_access_retained": true,
+        "september_membership_removed_and_verified": true
+      },
+      "acc_full": {
+        "member_count": 22,
+        "candidate_exact_email_matches": 10,
+        "candidate_exact_name_company_alias_matches": 1,
+        "candidate_total_matches": 11,
+        "member_sha256": "cd8433324e3476d8997b67e0acfdd13cac6cfae5ef497170e7ea6357a2c8b51e"
+      },
+      "professional_coach": {
+        "member_count": 3,
+        "candidate_matches": 0
+      }
+    },
+    "tandemweb": {
+      "branch": "codex/capacity-roster-floor-20260906",
+      "prevention_commit": "4bb852bb3",
+      "source_resolution_commit": "7872a3a9b",
+      "mcs_transfer_origin": "2026-09-25",
+      "mcs_transfer_destination": "2027-01-07",
+      "paired_adjustment_source_ref": "owner-confirmed-deferral-2026-09-04",
+      "reconciliation": {
+        "september_thursday": {
+          "roster_active": 5,
+          "stripe_floor": 6,
+          "occupied": 6,
+          "status": "needs_review",
+          "public_state": "open"
+        },
+        "september_friday": {
+          "roster_active": 13,
+          "stripe_floor": 10,
+          "transfer_adjustment": -1,
+          "occupied": 13,
+          "status": "needs_review",
+          "public_state": "sold_out"
+        },
+        "january_thursday": {
+          "roster_active": 1,
+          "transfer_adjustment": 1,
+          "occupied": 1,
+          "status": "matched",
+          "public_state": "open"
+        }
+      }
+    },
+    "toolbox": {
+      "branch": "codex/heartbeat-remove-group-membership-20260906",
+      "commit": "8d996dd",
+      "operation": "heartbeat/remove-from-group",
+      "full_tests": 65,
+      "focused_tests": "passed"
+    }
+  },
+  "capacity": {
+    "delivery_block_key": "acc.module-1:2026-09-07",
+    "capacity": 12,
+    "occupied": 21,
+    "available": 0,
+    "over_capacity": 9,
+    "public_state": "sold_out"
+  },
+  "offer_and_funding": {
+    "assignment_routes": {
+      "module_1": 10,
+      "full_program": 11
+    },
+    "exact_paid_seats": {
+      "acc-module-1": 9,
+      "acc-full": 11,
+      "acc-pcc-full": 0
+    },
+    "assignment_without_exact_matching_live_offer": 1,
+    "refunded_assignments": 0,
+    "professional_projection_required": 0
+  },
+  "resolved_exceptions": [
+    {
+      "exception_id": "exception:mcs-deferral-origin-probable-friday",
+      "disposition": "resolved_by_owner_final_decision_and_provider_readback"
+    },
+    {
+      "exception_id": "exception:acc-september-may-27-boundary",
+      "disposition": "resolved_to_prior_2026-06_cohort"
+    },
+    {
+      "exception_id": "exception:acc-september-full-offer-split-unresolved",
+      "disposition": "resolved_as_11_acc_full_and_0_professional_coach"
+    },
+    {
+      "exception_id": "exception:acc-professional-projections-missing",
+      "disposition": "not_applicable_zero_professional_coach_participants"
+    },
+    {
+      "exception_id": "exception:acc-september-funding-classification-incomplete",
+      "disposition": "reduced_from_8_to_1_exact_unresolved_assignment"
+    }
+  ],
+  "remaining_exceptions": [
+    {
+      "exception_id": "exception:mcs-thursday-funding-source-coverage-incomplete",
+      "facts": "After the settled transfer moved to the Friday origin, Thursday has five active roster assignments and a six-seat Stripe floor.",
+      "owner": "bookkeeper_integration",
+      "next_evidence": "Bind or disposition the separate sixth Thursday payment against exact assignment, refund, transfer, or participant evidence without reassigning the settled deferral."
+    },
+    {
+      "exception_id": "exception:mcs-friday-roster-owner-count-conflict",
+      "facts": "The current roster has 13 active Friday assignments excluding the settled deferral; the earlier owner count was 12.",
+      "owner": "academy_operations",
+      "next_evidence": "Disposition the separate thirteenth active Friday row from current attendance or enrollment evidence without attributing it to the settled deferral."
+    },
+    {
+      "exception_id": "exception:mcs-friday-funding-source-coverage-incomplete",
+      "facts": "Friday roster assignment and exact funding coverage remain unequal after the corrected transfer origin.",
+      "owner": "bookkeeper_integration",
+      "next_evidence": "Bind remaining Friday assignments to exact invoice, ACH, sponsored, scholarship, or operator-grant evidence."
+    },
+    {
+      "exception_id": "exception:acc-module-1-funding-source-unresolved",
+      "facts": "One live Module 1 roster assignment lacks a matching live Module 1 sale; its observed payment product is not the live cohort offer.",
+      "owner": "bookkeeper_integration",
+      "next_evidence": "Bind the assignment to an exact operator grant, invoice, sponsorship, scholarship, or separate live-offer payment without inferring from access alone."
+    },
+    {
+      "exception_id": "exception:acc-heartbeat-email-alias",
+      "facts": "One ACC Full participant is present in Heartbeat under a different email than the roster while exact name and company context agree.",
+      "owner": "student_identity",
+      "next_evidence": "Record an explicit source alias before database population; do not rewrite either provider email by name alone."
+    }
+  ],
+  "boundary": {
+    "source_mutations": 14,
+    "student_roster_mutations": 11,
+    "payment_log_mutations": 2,
+    "heartbeat_membership_mutations": 1,
+    "plutio_mutations": 0,
+    "refund_mutations": 0,
+    "communications": 0,
+    "public_website_deployments": 0,
+    "production_database_mutations": 0,
+    "runtime_or_minion_activations": 0,
+    "authority_cutovers": 0
+  }
+}
