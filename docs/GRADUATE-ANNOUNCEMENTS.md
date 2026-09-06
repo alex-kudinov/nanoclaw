@@ -26,14 +26,18 @@ link through the established `generate-pdf` operation.
 
 Heartbeat's documented `PUT /threads` request accepts rich-text `text`, one
 `channelID`, and optional iframe `embeds`. It does not document a native file or
-image field in the create request. The Heartbeat UI separately supports native
-file attachments up to 10 MB. The shared automation therefore downloads and
-validates the Sertifier PNG, then embeds the branded registrar verification
-page that visibly renders that same certificate image. The first authorized
-live test proved that embedding the raw Google Storage PNG is blocked by Brave
-because the provider serves it as `application/octet-stream`; the registrar
-page is embeddable and rendered the certificate successfully. The workflow
-never depends on an undocumented Heartbeat upload endpoint.
+image field in the create request. The Heartbeat UI's native attachment path
+uses a separately authenticated web-client contract unavailable to the public
+API key, so the workflow never extracts a browser token or depends on that
+private upload path.
+
+The shared automation downloads and validates the Sertifier PNG, then embeds a
+minimal Tandem-hosted card at `/certificate-embed/{certificate-number}/`. That
+public, noindex view contains only the responsive certificate image and a
+clickable branded registrar link. Its CSP permits framing only from the Tandem
+Heartbeat community. This avoids all registrar-page chrome and keeps the
+external anchor out of the post body, where Heartbeat would otherwise generate
+a second preview card.
 
 References:
 
@@ -53,10 +57,12 @@ cross-provider verification:
 3. read campaign and Detail to obtain the provider-owned credential title;
 4. download the PNG and verify its signature and 10 MB ceiling;
 5. require the exact channel ID, exact `Our Graduates` name, and `POSTS` type;
-6. scan the documented recent-thread surface for the same branded registrar
-   URL before creating anything;
+6. resolve the exact Heartbeat member by credential email and scan recent
+   threads for the same exact member mention plus credential title, while
+   retaining the legacy registrar-URL duplicate check;
 7. create the thread only with `--execute --confirm ANNOUNCE-GRADUATE`;
-8. read the thread back and require the exact channel and credential URL.
+8. read the thread back and require the exact channel, member mention, and
+   credential title.
 
 Dry-run is the default. `already_announced` is an idempotent recovery receipt,
 not a second post.
@@ -64,16 +70,16 @@ not a second post.
 ## Message contract
 
 ```text
-🎓 Please join us in congratulating RECIPIENT on completing CREDENTIAL TITLE!
+🎓 Please join us in congratulating @RECIPIENT on completing CREDENTIAL TITLE!
 
-We are delighted to celebrate this achievement with our community. View the
-verified certificate.
+We are delighted to celebrate this achievement with our community.
 ```
 
-The recipient and credential title come from Sertifier, not from caller prose.
-The final sentence links to the branded Tandem registrar. The only embed is the
-same credential's registrar verification page, which renders the certificate
-image and its provider-owned verification details.
+The recipient and credential title come from Sertifier, not caller prose. The
+recipient is an actual Heartbeat member mention resolved by the credential's
+exact email. The only embed is the Tandem certificate card; its link opens the
+branded registrar outside the iframe. There is no external anchor in the post
+body, so Heartbeat has nothing to turn into a link-preview card.
 
 ## Callers and eligibility
 
@@ -95,14 +101,19 @@ payload shape, successful readback, duplicate recovery, and private/invalid
 image/wrong-channel refusal. A live dry run verifies the actual channel and a
 real public credential without posting. The owner then explicitly authorized
 Michelle Ambrose's existing public MCS Practicum credential as the one-person
-live test: one post was created, its exact registrar URL was read back, a second
-dry run returned `already_announced`, and browser inspection exposed the raw
-PNG iframe failure. The post was corrected in place to embed the registrar
-verification page; browser inspection then visibly confirmed Michelle's
-certificate image and verification details inside the `Our Graduates` thread.
+live test: one post was created and a second dry run returned
+`already_announced`. Browser inspection exposed the raw PNG iframe failure and
+the oversized registrar-page fallback. After the owner's layout refinement,
+Tandemweb `583b240a0` deployed the narrowly reviewed certificate-card route.
+The post now uses an inline `@Michelle Ambrose` member mention and that compact
+card; live browser inspection confirms the complete certificate image plus its
+clickable verification link and no separate Heartbeat preview. Toolbox
+`c252fd3` produces the same structure for future announcements.
 
 ## Rollback
 
 Remove the Gru and grading-skill follow-through instructions or remove the
 `announce-graduate` operation from the mounted Sertifier toolbox. Existing
-certificates, direct messages, and prior community posts remain untouched.
+certificates, direct messages, and prior community posts remain untouched. The
+Tandem certificate-card route can be removed independently after no post embeds
+reference it.

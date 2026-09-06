@@ -54,6 +54,16 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   and provider-owned verification details. Toolbox `02b1c10` makes that exact
   live-proven embed target the default and regression-tests that the payload no
   longer embeds the storage URL.
+- Owner refinement: the registrar-page iframe was still visually oversized,
+  the member mention belonged inside the congratulatory sentence, and a normal
+  external anchor always caused Heartbeat's automatic preview card. Tandemweb
+  `583b240a0` adds a reviewed public/noindex
+  `/certificate-embed/{certificate-number}/` route containing only the
+  responsive certificate image and clickable branded registrar link, with CSP
+  `frame-ancestors` restricted to the Tandem community. The live Michelle post
+  now uses that card and an inline Heartbeat mention; browser inspection shows
+  the full certificate plus link and no separate preview. The public post API
+  never receives or extracts the logged-in web-client token.
 - Commit/deployment: NanoClaw `ece2ef6d` is pushed on
   `codex/graduate-announcements-20260906`; toolbox source is committed locally
   as `d87447f` plus production-preflight correction `07e7582`. The Mini's
@@ -69,6 +79,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `renderMode:verified_registrar_page_embed` with no post. No restart was
   required. Rollback snapshot:
   `.release-backups/NC-20260906-001-20260906T1535Z/`.
+- Final toolbox source: read-only `get-thread` inspection is `44ebaa4`; rejected
+  native-upload candidate `33ef161` is explicitly reverted by `2d9d024`; the
+  intermediate fitted image is `9e3287f`; final inline-mention/card behavior is
+  `c252fd3`. The latter is installed hash-identically on Studio and Mini.
 - Documentation: `docs/GRADUATE-ANNOUNCEMENTS.md`, project map, active work,
   both bounded review request/response pairs, prompt contract, and this entry.
 

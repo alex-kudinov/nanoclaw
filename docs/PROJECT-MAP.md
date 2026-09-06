@@ -1131,9 +1131,10 @@ Gru Certifier and the Heartbeat Foundation grading workflow. The operation
 reconciles the exact Sertifier credential/campaign/Detail, downloads and
 validates the person-specific certificate PNG, requires the exact Heartbeat
 `Our Graduates` POSTS channel, checks recent threads for the same branded
-registrar URL, creates one short congratulations thread with the credential's
-branded registrar verification page as a documented iframe embed, and reads it
-back. The page visibly renders the person-specific certificate. Private credentials and
+registrar URL or exact member/title identity, creates one short congratulations
+thread with an inline Heartbeat member mention and a compact Tandem-hosted
+certificate-card iframe, and reads it back. The card renders only the responsive
+person-specific certificate and its clickable registrar link. Private credentials and
 `already_issued` reconciliations are excluded. Direct recipient delivery and
 the community post have separate receipts/exceptions. See
 `docs/GRADUATE-ANNOUNCEMENTS.md`.
@@ -1144,10 +1145,13 @@ channel, provider reconciliation, and 2.1 MB PNG download/validation path while
 returning `created:false` and `willPost:false`. The owner then explicitly
 authorized Michelle Ambrose's existing public MCS Practicum credential as a
 one-person live test. The first raw Google Storage iframe was blocked by Brave;
-the same post was corrected in place to the branded registrar-page embed and
-visibly verified with Michelle's certificate rendered. A second guarded call
-returned `already_announced` with no duplicate. Toolbox correction `02b1c10`
-is deployed byte-identically on Studio and Mini; NC-20260906-001 is complete.
+the same post was first corrected to the branded registrar page, then refined
+after owner feedback. Tandemweb `583b240a0` now serves a noindex, frame-restricted
+certificate card with no page chrome. The final live post contains the inline
+`@Michelle Ambrose` member mention, full certificate image, and clickable link
+inside that card, with no separate Heartbeat preview. Toolbox `c252fd3` is
+deployed byte-identically on Studio and Mini and detects both legacy and current
+duplicates; NC-20260906-001 is complete.
 
 ### Canonical Sertifier campaigns (`NC-20260828-002`)
 
