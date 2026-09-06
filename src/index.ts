@@ -66,6 +66,11 @@ import {
 } from './capability-manifest.js';
 import { academyCapacityOperatorConfig } from './academy-capacity-operator-config.js';
 import {
+  academyCapacityPublicationConfig,
+  enqueueAcademyCapacityPublications,
+  runAcademyCapacityPublicationBatch,
+} from './academy-capacity-publication.js';
+import {
   cleanupOrphans,
   ensureContainerRuntimeRunning,
   stopContainer,
@@ -2191,6 +2196,7 @@ async function main(): Promise<void> {
         circuitBreakerStatus = {};
       }
       const capacityOperator = academyCapacityOperatorConfig();
+      const capacityPublication = academyCapacityPublicationConfig();
       const capabilityConfig = loadCapabilityManifestConfig();
       return {
         release: releaseIdentity,
@@ -2213,6 +2219,17 @@ async function main(): Promise<void> {
           capabilityEnforced: capabilityManifestIsEnforced(
             capabilityConfig,
             'capacity',
+          ),
+        },
+        academyCapacityPublication: {
+          enabled: capacityPublication.enabled,
+          valid: capacityPublication.valid,
+          reason: capacityPublication.reason,
+          siteConfigured: Boolean(capacityPublication.siteUrl),
+          keyConfigured: Boolean(capacityPublication.siteKey),
+          cloudflareConfigured: Boolean(
+            capacityPublication.cloudflareZoneId &&
+            capacityPublication.cloudflareToken,
           ),
         },
         studentLifecycle: {
@@ -2503,6 +2520,40 @@ async function main(): Promise<void> {
       CONTADOR_STRIPE_INGRESS_PARITY_INTERVAL_MS,
     );
     contadorStripeIngressParityTimer.unref();
+  }
+  const capacityPublicationConfig = academyCapacityPublicationConfig();
+  let capacityPublicationInFlight = false;
+  const runCapacityPublicationTick = async (
+    enqueueReason?: 'initial' | 'daily',
+  ): Promise<void> => {
+    if (capacityPublicationInFlight) return;
+    capacityPublicationInFlight = true;
+    try {
+      if (enqueueReason)
+        await enqueueAcademyCapacityPublications(enqueueReason);
+      await runAcademyCapacityPublicationBatch();
+    } catch (err) {
+      logger.error({ err }, 'Academy capacity publication tick failed');
+    } finally {
+      capacityPublicationInFlight = false;
+    }
+  };
+  if (capacityPublicationConfig.enabled && capacityPublicationConfig.valid) {
+    const capacityPublicationStartup = setTimeout(
+      () => void runCapacityPublicationTick('initial'),
+      30_000,
+    );
+    capacityPublicationStartup.unref();
+    const capacityPublicationRetryTimer = setInterval(
+      () => void runCapacityPublicationTick(),
+      5 * 60_000,
+    );
+    capacityPublicationRetryTimer.unref();
+    const capacityPublicationDailyTimer = setInterval(
+      () => void runCapacityPublicationTick('daily'),
+      24 * 60 * 60_000,
+    );
+    capacityPublicationDailyTimer.unref();
   }
   if (STUDENT_LIFECYCLE_ENABLED) {
     setInterval(() => {

@@ -2,15 +2,21 @@ import crypto from 'node:crypto';
 
 import type { PoolClient, QueryResultRow } from 'pg';
 
+import { enqueueAcademyCapacityPublications } from './academy-capacity-publication.js';
+import { logger } from './logger.js';
+
 import {
   CapacityCommandError,
+  changeSeatPoolCapacity,
   createEmptyAcademyCapacityState,
   joinWaitlist,
+  reconcileCommitment,
   reconcileSeatPool,
   releaseReservation,
   reserveCapacity,
   showInventory,
   stageWaitlistOffer,
+  transferCommitment,
   transferClassAssignment,
   withdrawClassAssignment,
   type AcademyCapacityState,
@@ -23,6 +29,27 @@ import {
 } from './student-enrollment-foundation.js';
 
 export type CapacityOperatorCommand =
+  | {
+      type: 'commit_seat';
+      caseKey: string;
+      commitmentKey: string;
+      poolKey: string;
+      expectedPoolVersion: number;
+      sourceScope:
+        | 'website_stripe_sale'
+        | 'invoice'
+        | 'check'
+        | 'sponsor'
+        | 'manual_sale';
+      idempotencyKey: string;
+      offerKey: string;
+      catalogRevision: number;
+      orderKey: string | null;
+      seatKey: string | null;
+      expiresAt: string;
+      reason: string;
+      evidenceSha256: string;
+    }
   | {
       type: 'reserve_manual';
       caseKey: string;
@@ -46,6 +73,35 @@ export type CapacityOperatorCommand =
       expectedReservationVersion: number;
       expectedPoolVersion: number;
       outcome: 'released' | 'cancelled' | 'expired';
+      evidenceSha256: string;
+    }
+  | {
+      type: 'change_capacity';
+      caseKey: string;
+      poolKey: string;
+      expectedPoolVersion: number;
+      newCapacity: number;
+      reason: string;
+      evidenceSha256: string;
+    }
+  | {
+      type: 'transfer_commitment';
+      caseKey: string;
+      commitmentKey: string;
+      expectedCommitmentVersion: number;
+      expectedOriginPoolVersion: number;
+      destinationPoolKey: string;
+      expectedDestinationPoolVersion: number;
+      evidenceSha256: string;
+    }
+  | {
+      type: 'reconcile_commitment';
+      caseKey: string;
+      commitmentKey: string;
+      expectedCommitmentVersion: number;
+      expectedPoolVersion: number;
+      assignmentKey: string;
+      expectedAssignmentVersion: number;
       evidenceSha256: string;
     }
   | {
@@ -141,16 +197,21 @@ export interface CapacityEnrollmentReadback {
 export interface CapacityOperatorStoreDeps {
   transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T>;
   now(): string;
+  enqueuePublication(): Promise<unknown>;
 }
 
 const defaultDeps: CapacityOperatorStoreDeps = {
   transaction: withTransaction,
   now: () => new Date().toISOString(),
+  enqueuePublication: () => enqueueAcademyCapacityPublications('threshold'),
 };
 
 const REVIEW_CODES = new Set([
   'assignment_not_found',
+  'capacity_below_commitments',
   'capacity_unavailable',
+  'commitment_not_found',
+  'commitment_assignment_conflict',
   'destination_not_found',
   'enrollment_blocked',
   'enrollment_not_found',
@@ -209,6 +270,22 @@ function requestSummary(
 ): Record<string, unknown> {
   const shared = { commandType: command.type };
   switch (command.type) {
+    case 'commit_seat':
+      return {
+        ...shared,
+        commitmentKey: command.commitmentKey,
+        poolKey: command.poolKey,
+        expectedPoolVersion: command.expectedPoolVersion,
+        sourceScope: command.sourceScope,
+        idempotencyKeySha256: sha256(command.idempotencyKey),
+        offerKey: command.offerKey,
+        catalogRevision: command.catalogRevision,
+        orderKey: command.orderKey,
+        seatKey: command.seatKey,
+        expiresAt: command.expiresAt,
+        reasonSha256: sha256(command.reason),
+        evidenceSha256: command.evidenceSha256,
+      };
     case 'reserve_manual':
       return {
         ...shared,
@@ -226,6 +303,10 @@ function requestSummary(
         evidenceSha256: command.evidenceSha256,
       };
     case 'release_reservation':
+      return { ...shared, ...command };
+    case 'change_capacity':
+    case 'transfer_commitment':
+    case 'reconcile_commitment':
       return { ...shared, ...command };
     case 'transfer_assignment':
       return { ...shared, ...command };
@@ -280,6 +361,45 @@ async function lockReservationPool(
     `SELECT id FROM business_v2.academy_capacity_reservations
       WHERE reservation_key=$1 FOR UPDATE`,
     [reservationKey],
+  );
+}
+
+async function lockCommitmentPools(
+  client: PoolClient,
+  commitmentKey: string,
+  destinationPoolKey?: string,
+): Promise<void> {
+  const result = await client.query<{ id: string }>(
+    `SELECT p.id::text
+       FROM business_v2.academy_seat_pools p
+      WHERE p.pool_key=$2
+         OR p.id=(
+              SELECT r.pool_id
+                FROM business_v2.academy_capacity_reservations r
+               WHERE r.reservation_key=$1 AND r.channel='commitment'
+            )
+      ORDER BY p.id`,
+    [commitmentKey, destinationPoolKey ?? '__none__'],
+  );
+  const expected = destinationPoolKey ? 2 : 1;
+  if (result.rows.length !== expected)
+    throw new CapacityCommandError(
+      destinationPoolKey ? 'destination_not_found' : 'commitment_not_found',
+      'committed seat or destination pool was not found',
+    );
+  const ids = result.rows.map((row) => asNumber(row.id));
+  await client.query(
+    `SELECT id
+       FROM business_v2.academy_seat_pools
+      WHERE id=ANY($1::bigint[])
+      ORDER BY id
+      FOR UPDATE`,
+    [ids],
+  );
+  await client.query(
+    `SELECT id FROM business_v2.academy_capacity_reservations
+      WHERE reservation_key=$1 AND channel='commitment' FOR UPDATE`,
+    [commitmentKey],
   );
 }
 
@@ -351,6 +471,20 @@ async function lockForCommand(
   switch (command.type) {
     case 'release_reservation':
       return lockReservationPool(client, command.reservationKey);
+    case 'transfer_commitment':
+      return lockCommitmentPools(
+        client,
+        command.commitmentKey,
+        command.destinationPoolKey,
+      );
+    case 'reconcile_commitment':
+      await lockCommitmentPools(client, command.commitmentKey);
+      await client.query(
+        `SELECT id FROM business_v2.student_class_assignments
+          WHERE assignment_key=$1 FOR UPDATE`,
+        [command.assignmentKey],
+      );
+      return;
     case 'transfer_assignment':
       return lockAssignmentPools(
         client,
@@ -757,13 +891,14 @@ async function persistDelta(
       await client.query(
         `UPDATE business_v2.academy_seat_pools
             SET capacity=$1,operational_state=$2,close_reason=$3,version=$4,
-                updated_at=$5,updated_by=$6
-          WHERE pool_key=$7 AND version=$8`,
+                configuration_evidence_sha256=$5,updated_at=$6,updated_by=$7
+          WHERE pool_key=$8 AND version=$9`,
         [
           after.capacity,
           after.operationalState,
           after.closeReason,
           after.version,
+          after.configurationEvidenceSha256,
           after.updatedAt,
           after.updatedBy,
           key,
@@ -816,11 +951,14 @@ async function persistDelta(
       await requireOne(
         await client.query(
           `UPDATE business_v2.academy_capacity_reservations
-              SET state=$1,version=$2,updated_at=$3,updated_by=$4
-            WHERE reservation_key=$5 AND version=$6`,
+              SET pool_id=(SELECT id FROM business_v2.academy_seat_pools WHERE pool_key=$1),
+                  state=$2,version=$3,expires_at=$4,updated_at=$5,updated_by=$6
+            WHERE reservation_key=$7 AND version=$8`,
           [
+            after.poolKey,
             after.state,
             after.version,
+            after.expiresAt,
             after.updatedAt,
             after.updatedBy,
             key,
@@ -1064,6 +1202,7 @@ function inventorySummary(
     capacity: value.capacity,
     occupied: value.occupied,
     reserved: value.reserved,
+    committed: value.committed,
     available: value.available,
     waitlistCount: value.waitlistCount,
     publicState: value.publicState,
@@ -1078,6 +1217,16 @@ function resultSummary(
   at: string,
 ): Record<string, unknown> {
   switch (command.type) {
+    case 'commit_seat': {
+      const commitment = capacity.reservations[command.commitmentKey];
+      return {
+        commitmentKey: commitment.reservationKey,
+        commitmentState: commitment.state,
+        commitmentVersion: commitment.version,
+        sourceScope: commitment.sourceScope,
+        inventory: inventorySummary(capacity, enrollment, command.poolKey, at),
+      };
+    }
     case 'reserve_manual': {
       const reservation = capacity.reservations[command.reservationKey];
       return {
@@ -1098,6 +1247,40 @@ function resultSummary(
           capacity,
           enrollment,
           reservation.poolKey,
+          at,
+        ),
+      };
+    }
+    case 'change_capacity':
+      return {
+        newCapacity: command.newCapacity,
+        inventory: inventorySummary(capacity, enrollment, command.poolKey, at),
+      };
+    case 'transfer_commitment': {
+      const commitment = capacity.reservations[command.commitmentKey];
+      return {
+        commitmentKey: commitment.reservationKey,
+        commitmentState: commitment.state,
+        commitmentVersion: commitment.version,
+        destinationInventory: inventorySummary(
+          capacity,
+          enrollment,
+          command.destinationPoolKey,
+          at,
+        ),
+      };
+    }
+    case 'reconcile_commitment': {
+      const commitment = capacity.reservations[command.commitmentKey];
+      return {
+        commitmentKey: commitment.reservationKey,
+        commitmentState: commitment.state,
+        commitmentVersion: commitment.version,
+        assignmentKey: command.assignmentKey,
+        inventory: inventorySummary(
+          capacity,
+          enrollment,
+          commitment.poolKey,
           at,
         ),
       };
@@ -1187,6 +1370,25 @@ async function applyCommand(
   let afterCapacity = before.capacity;
   let afterEnrollment = before.enrollment;
   switch (command.type) {
+    case 'commit_seat':
+      afterCapacity = reserveCapacity(before.capacity, before.enrollment, {
+        reservationKey: command.commitmentKey,
+        poolKey: command.poolKey,
+        expectedPoolVersion: command.expectedPoolVersion,
+        channel: 'commitment',
+        sourceScope: command.sourceScope,
+        idempotencyKey: command.idempotencyKey,
+        offerKey: command.offerKey,
+        catalogRevision: command.catalogRevision,
+        orderKey: command.orderKey,
+        seatKey: command.seatKey,
+        expiresAt: command.expiresAt,
+        reason: command.reason,
+        sourceEvidenceSha256: command.evidenceSha256,
+        actor,
+        occurredAt,
+      });
+      break;
     case 'reserve_manual':
       afterCapacity = reserveCapacity(before.capacity, before.enrollment, {
         reservationKey: command.reservationKey,
@@ -1212,6 +1414,45 @@ async function applyCommand(
         expectedReservationVersion: command.expectedReservationVersion,
         expectedPoolVersion: command.expectedPoolVersion,
         outcome: command.outcome,
+        evidenceSha256: command.evidenceSha256,
+        actor,
+        occurredAt,
+      });
+      break;
+    case 'change_capacity':
+      afterCapacity = changeSeatPoolCapacity(
+        before.capacity,
+        before.enrollment,
+        {
+          poolKey: command.poolKey,
+          expectedPoolVersion: command.expectedPoolVersion,
+          newCapacity: command.newCapacity,
+          reason: command.reason,
+          evidenceSha256: command.evidenceSha256,
+          actor,
+          occurredAt,
+        },
+      );
+      break;
+    case 'transfer_commitment':
+      afterCapacity = transferCommitment(before.capacity, before.enrollment, {
+        commitmentKey: command.commitmentKey,
+        expectedCommitmentVersion: command.expectedCommitmentVersion,
+        expectedOriginPoolVersion: command.expectedOriginPoolVersion,
+        destinationPoolKey: command.destinationPoolKey,
+        expectedDestinationPoolVersion: command.expectedDestinationPoolVersion,
+        evidenceSha256: command.evidenceSha256,
+        actor,
+        occurredAt,
+      });
+      break;
+    case 'reconcile_commitment':
+      afterCapacity = reconcileCommitment(before.capacity, before.enrollment, {
+        commitmentKey: command.commitmentKey,
+        expectedCommitmentVersion: command.expectedCommitmentVersion,
+        expectedPoolVersion: command.expectedPoolVersion,
+        assignmentKey: command.assignmentKey,
+        expectedAssignmentVersion: command.expectedAssignmentVersion,
         evidenceSha256: command.evidenceSha256,
         actor,
         occurredAt,
@@ -1340,146 +1581,164 @@ export async function executeAcademyCapacityOperatorCommand(
   const summary = requestSummary(command);
   const requestSha256 = sha256(summary);
 
-  return runtime.transaction(async (client) => {
-    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
-      command.caseKey,
-    ]);
-    const existing = await client.query<{
-      command_type: CapacityOperatorCommand['type'];
-      request_sha256: string;
-      state: CapacityOperatorResult['state'];
-      result_code: string;
-      result_sha256: string;
-      result_summary: Record<string, unknown>;
-    }>(
-      `SELECT command_type,request_sha256,state,result_code,result_sha256,result_summary
+  const outcome = await runtime.transaction<CapacityOperatorResult>(
+    async (client) => {
+      await client.query(
+        'SELECT pg_advisory_xact_lock(hashtextextended($1,0))',
+        [command.caseKey],
+      );
+      const existing = await client.query<{
+        command_type: CapacityOperatorCommand['type'];
+        request_sha256: string;
+        state: CapacityOperatorResult['state'];
+        result_code: string;
+        result_sha256: string;
+        result_summary: Record<string, unknown>;
+      }>(
+        `SELECT command_type,request_sha256,state,result_code,result_sha256,result_summary
          FROM business_v2.academy_capacity_operator_cases
         WHERE case_key=$1`,
-      [command.caseKey],
-    );
-    if (existing.rows[0]) {
-      const prior = existing.rows[0];
-      if (
-        prior.request_sha256 !== requestSha256 ||
-        prior.command_type !== command.type
-      ) {
-        const deniedSummary = { caseKey: command.caseKey };
+        [command.caseKey],
+      );
+      if (existing.rows[0]) {
+        const prior = existing.rows[0];
+        if (
+          prior.request_sha256 !== requestSha256 ||
+          prior.command_type !== command.type
+        ) {
+          const deniedSummary = { caseKey: command.caseKey };
+          return {
+            caseKey: command.caseKey,
+            commandType: command.type,
+            state: 'denied',
+            code: 'idempotency_conflict',
+            replayed: true,
+            resultSha256: sha256(deniedSummary),
+            summary: deniedSummary,
+          };
+        }
         return {
           caseKey: command.caseKey,
-          commandType: command.type,
-          state: 'denied',
-          code: 'idempotency_conflict',
+          commandType: prior.command_type,
+          state: prior.state,
+          code: prior.result_code,
           replayed: true,
-          resultSha256: sha256(deniedSummary),
-          summary: deniedSummary,
+          resultSha256: prior.result_sha256,
+          summary: prior.result_summary,
         };
       }
-      return {
-        caseKey: command.caseKey,
-        commandType: prior.command_type,
-        state: prior.state,
-        code: prior.result_code,
-        replayed: true,
-        resultSha256: prior.result_sha256,
-        summary: prior.result_summary,
-      };
-    }
 
-    const inserted = await client.query<{ id: string }>(
-      `INSERT INTO business_v2.academy_capacity_operator_cases
+      const inserted = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.academy_capacity_operator_cases
          (case_key,source_group,command_type,request_sha256,request_summary,
           state,version,created_at,updated_at,updated_by)
        VALUES ($1,'capacity',$2,$3,$4::jsonb,'processing',0,$5,$5,$6)
        RETURNING id::text`,
-      [
-        command.caseKey,
-        command.type,
-        requestSha256,
-        summary,
-        occurredAt,
-        actor,
-      ],
-    );
-    const caseId = asNumber(inserted.rows[0].id);
-    await client.query(
-      `INSERT INTO business_v2.academy_capacity_operator_receipts
+        [
+          command.caseKey,
+          command.type,
+          requestSha256,
+          summary,
+          occurredAt,
+          actor,
+        ],
+      );
+      const caseId = asNumber(inserted.rows[0].id);
+      await client.query(
+        `INSERT INTO business_v2.academy_capacity_operator_receipts
          (receipt_key,case_id,case_version,stage,outcome,result_code,
           evidence_sha256,summary_json,actor,occurred_at,recorded_at)
        VALUES ($1,$2,0,'requested','accepted','command_accepted',$3,$4::jsonb,$5,$6,$6)`,
-      [
-        `${command.caseKey}:receipt:requested:v0`,
-        caseId,
-        requestSha256,
-        summary,
-        actor,
-        occurredAt,
-      ],
-    );
-
-    await client.query('SAVEPOINT academy_capacity_operator_command');
-    let state: CapacityOperatorResult['state'] = 'applied';
-    let code = 'command_applied';
-    let result: Record<string, unknown>;
-    try {
-      result = await applyCommand(client, command, actor, occurredAt);
-      await client.query('RELEASE SAVEPOINT academy_capacity_operator_command');
-    } catch (error) {
-      await client.query(
-        'ROLLBACK TO SAVEPOINT academy_capacity_operator_command',
+        [
+          `${command.caseKey}:receipt:requested:v0`,
+          caseId,
+          requestSha256,
+          summary,
+          actor,
+          occurredAt,
+        ],
       );
-      const final = finalState(error);
-      state = final.state;
-      code = final.code;
-      result = {
-        caseKey: command.caseKey,
-        commandType: command.type,
-        refused: true,
-      };
-    }
-    const resultSha256 = sha256({ state, code, result });
-    const finalized = await client.query(
-      `UPDATE business_v2.academy_capacity_operator_cases
+
+      await client.query('SAVEPOINT academy_capacity_operator_command');
+      let state: CapacityOperatorResult['state'] = 'applied';
+      let code = 'command_applied';
+      let result: Record<string, unknown>;
+      try {
+        result = await applyCommand(client, command, actor, occurredAt);
+        await client.query(
+          'RELEASE SAVEPOINT academy_capacity_operator_command',
+        );
+      } catch (error) {
+        await client.query(
+          'ROLLBACK TO SAVEPOINT academy_capacity_operator_command',
+        );
+        const final = finalState(error);
+        state = final.state;
+        code = final.code;
+        result = {
+          caseKey: command.caseKey,
+          commandType: command.type,
+          refused: true,
+        };
+      }
+      const resultSha256 = sha256({ state, code, result });
+      const finalized = await client.query(
+        `UPDATE business_v2.academy_capacity_operator_cases
             SET state=$1,result_code=$2,result_sha256=$3,result_summary=$4::jsonb,
                 completed_at=$5,updated_at=$5,updated_by=$6
           WHERE id=$7 AND state='processing' AND version=0`,
-      [state, code, resultSha256, result, occurredAt, actor, caseId],
-    );
-    if (finalized.rowCount !== 1)
-      throw new Error('operator_case_finalization_conflict');
-    await client.query(
-      `INSERT INTO business_v2.academy_capacity_operator_receipts
+        [state, code, resultSha256, result, occurredAt, actor, caseId],
+      );
+      if (finalized.rowCount !== 1)
+        throw new Error('operator_case_finalization_conflict');
+      await client.query(
+        `INSERT INTO business_v2.academy_capacity_operator_receipts
          (receipt_key,case_id,case_version,stage,outcome,result_code,
           evidence_sha256,summary_json,actor,occurred_at,recorded_at)
        VALUES ($1,$2,0,'final',$3,$4,$5,$6::jsonb,$7,$8,$8)`,
-      [
-        `${command.caseKey}:receipt:final:v0`,
-        caseId,
-        state === 'applied' ? 'verified' : state,
-        code,
-        resultSha256,
-        result,
-        actor,
-        occurredAt,
-      ],
-    );
-    const readback = await client.query<{ receipt_count: string }>(
-      `SELECT count(*)::text AS receipt_count
+        [
+          `${command.caseKey}:receipt:final:v0`,
+          caseId,
+          state === 'applied' ? 'verified' : state,
+          code,
+          resultSha256,
+          result,
+          actor,
+          occurredAt,
+        ],
+      );
+      const readback = await client.query<{ receipt_count: string }>(
+        `SELECT count(*)::text AS receipt_count
          FROM business_v2.academy_capacity_operator_receipts
         WHERE case_id=$1 AND case_version=0`,
-      [caseId],
-    );
-    if (readback.rows[0]?.receipt_count !== '2')
-      throw new Error('Academy Capacity receipt readback failed');
-    return {
-      caseKey: command.caseKey,
-      commandType: command.type,
-      state,
-      code,
-      replayed: false,
-      resultSha256,
-      summary: result,
-    };
-  });
+        [caseId],
+      );
+      if (readback.rows[0]?.receipt_count !== '2')
+        throw new Error('Academy Capacity receipt readback failed');
+      return {
+        caseKey: command.caseKey,
+        commandType: command.type,
+        state,
+        code,
+        replayed: false,
+        resultSha256,
+        summary: result,
+      };
+    },
+  );
+  if (outcome.state === 'applied' && !outcome.replayed) {
+    if (!deps.transaction || deps.enqueuePublication) {
+      await runtime
+        .enqueuePublication()
+        .catch((error) =>
+          logger.warn(
+            { err: error, commandType: command.type, caseKey: command.caseKey },
+            'Academy capacity threshold publication enqueue failed',
+          ),
+        );
+    }
+  }
+  return outcome;
 }
 
 export async function readAcademyCapacityInventory(
@@ -1488,7 +1747,7 @@ export async function readAcademyCapacityInventory(
 ): Promise<CapacityInventoryReadback[]> {
   const run = async (queryable: Pick<PoolClient, 'query'>) => {
     const result = await queryable.query(
-      `SELECT v.pool_key,v.delivery_block_key,v.capacity,v.occupied,v.reserved,
+      `SELECT v.pool_key,v.delivery_block_key,v.capacity,v.occupied,v.reserved,v.committed,
               v.available,v.waitlist_count,v.public_state,v.pool_version,
               d.component_key,d.starts_at,d.ends_at,d.timezone,
               COALESCE(x.open_exceptions,'[]'::jsonb) AS open_exceptions
@@ -1517,6 +1776,7 @@ export async function readAcademyCapacityInventory(
       capacity: asNumber(row.capacity),
       occupied: asNumber(row.occupied),
       reserved: asNumber(row.reserved),
+      committed: asNumber(row.committed),
       available: asNumber(row.available),
       waitlistCount: asNumber(row.waitlist_count),
       publicState: row.public_state as never,

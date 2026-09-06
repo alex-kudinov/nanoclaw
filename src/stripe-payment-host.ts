@@ -16,6 +16,10 @@ import path from 'path';
 import { promisify } from 'util';
 
 import { assertExternalWriteAllowed } from './action-safety.js';
+import {
+  recordAcademyCapacityWebsiteSale,
+  type AcademyCapacitySaleFact,
+} from './academy-capacity-sale-ingress.js';
 import { DATA_DIR } from './config.js';
 import {
   enqueueStripeLifecycleFact,
@@ -97,6 +101,7 @@ export interface StripePaymentResult {
   fulfillmentErrorCode: string | null;
   retryable: boolean;
   duplicateComplete: boolean;
+  capacityCommitmentState?: string | null;
 }
 
 const RETRYABLE_FULFILLMENT_ERROR_CODES = new Set([
@@ -128,6 +133,7 @@ export interface StripePaymentHostDeps {
   resolveSource?: typeof resolveStripePaymentSource;
   beginFulfillment?: typeof beginContadorFulfillment;
   finalizeFulfillment?: typeof finalizeContadorFulfillment;
+  recordCapacitySale?: typeof recordAcademyCapacityWebsiteSale;
 }
 
 interface ProcessorFulfillmentResult {
@@ -203,9 +209,11 @@ export function parseLifecycleSentinel(stdout: string): {
   summary: string;
   fact: StripeLifecycleFact | null;
   fulfillment: ProcessorFulfillmentResult | null;
+  capacityFact: AcademyCapacitySaleFact | null;
 } {
   let fact: StripeLifecycleFact | null = null;
   let fulfillment: ProcessorFulfillmentResult | null = null;
+  let capacityFact: AcademyCapacitySaleFact | null = null;
   const summaryLines: string[] = [];
   for (const line of stdout.split('\n')) {
     if (line.startsWith('__CONTADOR_FULFILLMENT__')) {
@@ -217,6 +225,19 @@ export function parseLifecycleSentinel(stdout: string): {
       } catch {
         throw new StripePayloadError(
           'invalid fulfillment result from Stripe processor',
+        );
+      }
+      continue;
+    }
+    if (line.startsWith('__ACADEMY_CAPACITY_SALE__')) {
+      const encoded = line.slice('__ACADEMY_CAPACITY_SALE__'.length).trim();
+      try {
+        capacityFact = JSON.parse(
+          Buffer.from(encoded, 'base64url').toString('utf8'),
+        ) as AcademyCapacitySaleFact;
+      } catch {
+        throw new StripePayloadError(
+          'invalid Academy capacity result from Stripe processor',
         );
       }
       continue;
@@ -236,7 +257,12 @@ export function parseLifecycleSentinel(stdout: string): {
       );
     }
   }
-  return { summary: summaryLines.join('\n').trim(), fact, fulfillment };
+  return {
+    summary: summaryLines.join('\n').trim(),
+    fact,
+    fulfillment,
+    capacityFact,
+  };
 }
 
 function assertProcessorFulfillment(
@@ -556,7 +582,28 @@ export async function handleStripePayment(
       );
     }
   }
-  const summary = parsed.summary;
+  let capacityCommitmentState: string | null = null;
+  let capacitySummary = '';
+  if (finalCase.state === 'complete' && parsed.capacityFact?.eligible) {
+    try {
+      const result = await (
+        deps.recordCapacitySale ?? recordAcademyCapacityWebsiteSale
+      )(parsed.capacityFact);
+      capacityCommitmentState = result?.state ?? null;
+      capacitySummary = result
+        ? `[CAPACITY ${result.state === 'applied' ? 'COMMITTED' : 'REVIEW'}] ${result.code}; case ${result.caseKey}`
+        : '';
+    } catch (error) {
+      capacityCommitmentState = 'needs_review';
+      capacitySummary =
+        '[CAPACITY REVIEW] Verified payment could not be mapped to one committed seat; operator review required.';
+      logger.warn(
+        { stripeId, caseId: finalCase.id, err: error },
+        'Verified website sale was not committed to Academy capacity',
+      );
+    }
+  }
+  const summary = [parsed.summary, capacitySummary].filter(Boolean).join('\n');
   logger.info(
     {
       stripeId,
@@ -579,5 +626,6 @@ export async function handleStripePayment(
     fulfillmentErrorCode: finalCase.lastErrorCode,
     retryable: isRetryableFulfillmentErrorCode(finalCase.lastErrorCode),
     duplicateComplete: false,
+    capacityCommitmentState,
   };
 }

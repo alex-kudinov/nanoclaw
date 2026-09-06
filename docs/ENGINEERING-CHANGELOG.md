@@ -91,7 +91,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   no schema, prompt, knowledge, calendar, price, provider, or database rollback
   is required.
 
-### NC-20260906-004 — Simple Academy capacity status synchronization
+### NC-20260906-005 — Simple Academy capacity status synchronization
 
 - Date: 2026-09-06T22:12:00Z
 - Owner/client: Codex with Claude Sonnet/high architecture and implementation review
@@ -112,6 +112,47 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   remains available; Rita remains settled in January Thursday. No automatic
   customer/waitlist message, refund/payment execution, or full roster,
   provider, or assignment-authority cutover is authorized.
+- Claude plan R1 returned `AGREE WITH CORRECTIONS` but incorrectly retained the
+  WordPress reservation counter and treated an engine-only assignment function
+  as an exposed command. Codex rejected those claims. Fresh narrow R2 agreed
+  with the corrected no-hold plan and found one migration defect: the new
+  commitment channel must be added to both the channel and expiry CHECKs.
+  Both corrections are implemented. R1 used 9 calls / 184,603 cache-create /
+  943,971 cache-read / 28,700 output / 193,169 max context; R2 used 20 calls /
+  111,497 cache-create / 1,570,778 cache-read / 27,107 output / 119,708 max
+  context. Both exceeded the 100k target; implementation review will use a
+  smaller diff packet rather than resume either session.
+- Implemented locally: migration/rollback 145; a distinct durable commitment
+  channel counted separately from temporary holds; exact commit, release,
+  transfer, assignment-reconciliation, and capacity-change commands; verified
+  website-sale ingress after Contador fulfillment; PII-free publication
+  outbox/retry worker; daily plus threshold enqueue; signed WordPress option;
+  status-driven rendering and checkout; targeted LiteSpeed/Cloudflare purge
+  and prewarm; and a feature switch that stops new checkout holds while
+  allowing old in-flight metadata to drain.
+- Focused verification: NanoClaw 107/107 across domain, disposable PostgreSQL,
+  operator/IPC, migration, publication, sale ingress, Contador, and Stripe host;
+  pinned typecheck; agent runner build and 45/45 tests; documentation and
+  capability continuity. Tandemweb capacity/status/calendar suites pass
+  59/59; shell syntax and diff checks pass.
+- Fresh Claude Sonnet/high R3 implementation review found two material issues:
+  the no-hold checkout branch lacked a final server-side sold-out gate, and a
+  concurrent sale could leave a paid commitment at a terminal stale-version
+  result. Both findings were independently verified and corrected. Checkout
+  now checks the live status immediately before payment creation, and website
+  sale ingress refreshes and retries a stale pool version up to three times
+  while retaining stable PaymentIntent-derived commitment idempotency. R3 used
+  17 calls / 128,937 cache-create / 1,546,546 cache-read / 23,432 output /
+  128,939 max context and exceeded the 100k target; no further Claude round is
+  planned under the owner's three-round approval.
+- Post-correction verification: focused NanoClaw capacity tests pass 26/26;
+  typecheck passes; agent runner build and 45/45 tests pass. The full NanoClaw
+  suite passes 3,600 with 32 skipped and only the same two unrelated baseline
+  failures (CNPC literal contract and date-sensitive Trafft projection).
+  Tandemweb capacity publication, cohort capacity, and checkout selection pass
+  41/41; the all-PHP sweep retains only the same four unrelated baseline
+  failures. Shell syntax and both diff checks pass. Commit, deployment, and
+  live verification remain.
 
 ### NC-20260906-003 — Release the Gate D Capacity operator pilot
 

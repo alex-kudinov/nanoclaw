@@ -23,7 +23,8 @@ Those are new instructions with separate exact-input and authority checks.
   Payment Log, Plutio, Heartbeat, calendar, and email retain native evidence or
   projection roles but do not decide remaining capacity.
 - Occupied seats come only from active or pending canonical class assignments.
-  Live reservations are counted separately. Never use payment count,
+  Live manual/waitlist holds and durable committed-seat records are counted
+  separately. Never use an unbound payment count,
   enrollment count, Heartbeat membership, or waitlist size as occupancy.
 - One delivery block has one shared seat pool even when multiple offers sell
   into it.
@@ -48,6 +49,16 @@ Those are new instructions with separate exact-input and authority checks.
 
 ## Allowed commands
 
+- Record one durable committed seat for an exact website sale, invoice, check,
+  sponsor, or manual-sale reference. One command is one seat; use the delivery
+  block end returned by inventory as its expiry. This records capacity demand,
+  not participant identity or a class assignment.
+- Change one exact pool capacity with current version, new positive capacity,
+  reason, and evidence. The host refuses a value below occupied plus committed
+  seats.
+- Atomically move one committed seat to a compatible available destination,
+  or reconcile it only after the operator supplies an exact current assignment
+  for the same delivery block.
 - Read exact inventory and enrollment state.
 - Create a manual reservation only with a nonblank single-line reason, exact
   source scope, evidence hash, active offer mapping, expected pool version,

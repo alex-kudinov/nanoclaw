@@ -24,6 +24,7 @@ const MIGRATIONS = [
   '142_student_enrollment_dark_foundation.sql',
   '143_academy_capacity_dark.sql',
   '144_academy_capacity_operator_pilot.sql',
+  '145_academy_capacity_simple_sync.sql',
 ].map((file) =>
   path.join(ROOT, 'data/business/migrations/nanoclaw-v2', file),
 );

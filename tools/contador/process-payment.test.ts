@@ -159,6 +159,19 @@ describe('cohort persistence contract', () => {
       'cohort = COALESCE(EXCLUDED.cohort, payments.cohort)',
     );
   });
+
+  it('emits a PII-free committed-seat fact only after verified fulfillment', () => {
+    const source = readFileSync(
+      new URL('./process-payment.cjs', import.meta.url),
+      'utf8',
+    );
+    expect(source).toContain('__ACADEMY_CAPACITY_SALE__');
+    expect(source).toContain("fulfillment.state === 'complete'");
+    expect(source).toContain('payment_intent_id: accountingStripeId');
+    expect(source).toContain('product_slug: canonicalProductSlug || null');
+    expect(source).not.toContain('capacitySale.email');
+    expect(source).not.toContain('capacitySale.name');
+  });
 });
 
 // Tandem's checkout writes the canonical website product slug into the

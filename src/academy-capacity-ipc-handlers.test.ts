@@ -12,11 +12,42 @@ const HASH = 'a'.repeat(64);
 describe('Academy Capacity IPC contract', () => {
   it('recognizes only the exact bounded operation set', () => {
     expect(isAcademyCapacityIpcType('capacity_inventory')).toBe(true);
+    expect(isAcademyCapacityIpcType('commit_seat')).toBe(true);
+    expect(isAcademyCapacityIpcType('change_capacity')).toBe(true);
+    expect(isAcademyCapacityIpcType('transfer_commitment')).toBe(true);
+    expect(isAcademyCapacityIpcType('reconcile_commitment')).toBe(true);
     expect(isAcademyCapacityIpcType('reserve_manual')).toBe(true);
     expect(isAcademyCapacityIpcType('stage_waitlist_offer')).toBe(true);
     expect(isAcademyCapacityIpcType('capacity_send_waitlist')).toBe(false);
     expect(isAcademyCapacityIpcType('capacity_refund')).toBe(false);
     expect(isAcademyCapacityIpcType('capacity_checkout')).toBe(false);
+  });
+
+  it('strictly parses one committed seat and rejects unbounded sources', () => {
+    const valid = {
+      type: 'commit_seat',
+      caseKey: 'case:invoice:1',
+      commitmentKey: 'commitment:invoice:1',
+      poolKey: 'pool:january-friday',
+      expectedPoolVersion: 3,
+      sourceScope: 'invoice',
+      idempotencyKey: 'invoice-1-seat-1',
+      offerKey: 'mcs-full',
+      catalogRevision: 1,
+      orderKey: null,
+      seatKey: null,
+      expiresAt: '2027-03-26T12:00:00Z',
+      reason: 'Seat promised on issued invoice',
+      evidenceSha256: HASH,
+      source_container: 'capacity-session',
+    };
+    expect(parseAcademyCapacityIpcPayload(valid)).toMatchObject(valid);
+    expect(() =>
+      parseAcademyCapacityIpcPayload({
+        ...valid,
+        sourceScope: 'arbitrary_payment',
+      }),
+    ).toThrow('not a committed-seat source');
   });
 
   it('strictly parses a manual hold and rejects injected authority fields', () => {

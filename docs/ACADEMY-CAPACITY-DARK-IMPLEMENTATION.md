@@ -256,3 +256,42 @@ create/register the group without restarting the old daemon; add `capacity` to
 the enforced list; then restart once so group and manifest become visible
 atomically. Never put a new folder into an old release's enforced list because
 that also breaks its rollback startup.
+
+## Gate E simple status synchronization
+
+`NC-20260906-005` supersedes the proposed real-time reservation cutover. The
+owner explicitly prefers a small residual simultaneous-sale risk to making
+checkout depend on NanoClaw or creating 30-minute seat holds.
+
+Migration 145 adds `commitment` to both reservation constraints and separates
+durable committed seats from temporary `reserved` inventory in the occupancy
+view. A commitment is one successful website sale or one explicit
+invoice/check/sponsor/manual promise. It may exceed capacity because the sale
+has already happened and inventory must remain truthful; it stays live through
+the delivery-block end. Exact release, transfer, and assignment reconciliation
+prevent double count. The same migration extends operator case types and adds
+an admin-only retryable website-publication outbox.
+
+The host adds four bounded commands: `commit_seat`, `change_capacity`,
+`transfer_commitment`, and `reconcile_commitment`. Website Stripe facts enter
+only after Contador's exact PaymentIntent, Payment Log, PostgreSQL, and Student
+Roster disposition is complete. The fact carries no customer identity. Invoice
+and other off-site promises enter one seat at a time through Capacity. No
+command creates a participant or assignment, contacts a customer, or performs
+a financial action.
+
+`academy-capacity-publication.ts` maps only ACC Module 1 and MCS delivery blocks
+to `available|sold_out`. Threshold changes enqueue immediately; one daily pass
+replays every managed pool. A signed raw-body POST updates a monotonic local
+WordPress option. The host then purges only the program's fixed Cloudflare URLs
+and prewarms them before recording the acknowledgment. Failures retain the
+outbox row with bounded backoff and freeze the last accepted website state.
+
+Tandemweb's separate live option drives both calendar rendering and server-side
+checkout validation. `cohorts.json` remains the disabled-mode bootstrap and
+rollback fallback. When simple sync is enabled, new checkout attempts skip the
+legacy WordPress option reservation; existing in-flight reservation metadata
+can still drain safely. The signed endpoint purges only affected LiteSpeed URLs
+and prewarms them, while the host performs the exact Cloudflare purge and final
+prewarm. Program pages remain normally cached and make no per-visitor capacity
+request.

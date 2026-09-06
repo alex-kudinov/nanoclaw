@@ -10,12 +10,14 @@ import {
 } from './student-enrollment-foundation.js';
 import {
   CapacityCommandError,
+  changeSeatPoolCapacity,
   closeSeatPool,
   commitClassAssignment,
   configureSeatPool,
   createEmptyAcademyCapacityState,
   joinWaitlist,
   mapOfferToSeatPool,
+  reconcileCommitment,
   reconcileSeatPool,
   registerDeliveryBlock,
   releaseReservation,
@@ -24,6 +26,7 @@ import {
   resolveWaitlistOffer,
   showInventory,
   stageWaitlistOffer,
+  transferCommitment,
   transferClassAssignment,
   withdrawClassAssignment,
   type AcademyCapacityState,
@@ -218,6 +221,232 @@ function reserve(
 }
 
 describe('Academy capacity domain', () => {
+  it('records a durable sale commitment without a checkout hold or capacity refusal', () => {
+    const enrollments = createEmptyEnrollmentFoundationState();
+    let state = capacityFixture(1);
+    state = reserveCapacity(state, enrollments, {
+      reservationKey: 'commitment:pi-test:1',
+      poolKey: 'pool:acc:m1:2026-09-07',
+      expectedPoolVersion: 1,
+      channel: 'commitment',
+      sourceScope: 'website_stripe_sale',
+      idempotencyKey: 'pi_test_1',
+      offerKey: 'acc-full',
+      catalogRevision: 1,
+      orderKey: null,
+      seatKey: null,
+      expiresAt: '2026-09-28T17:00:00Z',
+      reason: 'verified website sale',
+      sourceEvidenceSha256: SHA_D,
+      actor: 'stripe-capacity-host',
+      occurredAt: NOW,
+    });
+    const replay = reserveCapacity(state, enrollments, {
+      reservationKey: 'commitment:pi-test:1',
+      poolKey: 'pool:acc:m1:2026-09-07',
+      expectedPoolVersion: 1,
+      channel: 'commitment',
+      sourceScope: 'website_stripe_sale',
+      idempotencyKey: 'pi_test_1',
+      offerKey: 'acc-full',
+      catalogRevision: 1,
+      orderKey: null,
+      seatKey: null,
+      expiresAt: '2026-09-28T17:00:00Z',
+      reason: 'verified website sale',
+      sourceEvidenceSha256: SHA_D,
+      actor: 'stripe-capacity-host',
+      occurredAt: NOW,
+    });
+    expect(
+      showInventory(state, enrollments, 'pool:acc:m1:2026-09-07', NOW),
+    ).toMatchObject({
+      capacity: 1,
+      reserved: 0,
+      committed: 1,
+      available: 0,
+      publicState: 'sold_out',
+    });
+    expect(replay).toEqual(state);
+    expectCode(
+      () =>
+        reserveCapacity(state, enrollments, {
+          reservationKey: 'commitment:pi-test:2',
+          poolKey: 'pool:acc:m1:2026-09-07',
+          expectedPoolVersion: 2,
+          channel: 'commitment',
+          sourceScope: 'website_stripe_sale',
+          idempotencyKey: 'pi_test_2',
+          offerKey: 'acc-full',
+          catalogRevision: 1,
+          orderKey: null,
+          seatKey: null,
+          expiresAt: '2026-09-28T16:59:59Z',
+          reason: 'verified website sale',
+          sourceEvidenceSha256: SHA_D,
+          actor: 'stripe-capacity-host',
+          occurredAt: NOW,
+        }),
+      'invalid_commitment_lifetime',
+    );
+  });
+
+  it('changes capacity with version and commitment-floor guards', () => {
+    const enrollments = createEmptyEnrollmentFoundationState();
+    let state = capacityFixture(1);
+    state = reserveCapacity(state, enrollments, {
+      reservationKey: 'commitment:invoice:1',
+      poolKey: 'pool:acc:m1:2026-09-07',
+      expectedPoolVersion: 1,
+      channel: 'commitment',
+      sourceScope: 'invoice',
+      idempotencyKey: 'invoice_1_seat_1',
+      offerKey: 'acc-full',
+      catalogRevision: 1,
+      orderKey: null,
+      seatKey: null,
+      expiresAt: '2026-09-28T17:00:00Z',
+      reason: 'seat promised on issued invoice',
+      sourceEvidenceSha256: SHA_D,
+      actor: 'capacity:host',
+      occurredAt: NOW,
+    });
+    state = changeSeatPoolCapacity(state, enrollments, {
+      poolKey: 'pool:acc:m1:2026-09-07',
+      expectedPoolVersion: 2,
+      newCapacity: 2,
+      reason: 'second facilitator confirmed',
+      evidenceSha256: SHA_C,
+      actor: 'capacity:host',
+      occurredAt: NEXT,
+    });
+    expect(state.seatPools['pool:acc:m1:2026-09-07']).toMatchObject({
+      capacity: 2,
+      version: 3,
+    });
+    state = reserveCapacity(state, enrollments, {
+      reservationKey: 'commitment:invoice:2',
+      poolKey: 'pool:acc:m1:2026-09-07',
+      expectedPoolVersion: 3,
+      channel: 'commitment',
+      sourceScope: 'invoice',
+      idempotencyKey: 'invoice_2_seat_1',
+      offerKey: 'acc-full',
+      catalogRevision: 1,
+      orderKey: null,
+      seatKey: null,
+      expiresAt: '2026-09-28T17:00:00Z',
+      reason: 'second promised seat',
+      sourceEvidenceSha256: SHA_A,
+      actor: 'capacity:host',
+      occurredAt: LATER,
+    });
+    expectCode(
+      () =>
+        changeSeatPoolCapacity(state, enrollments, {
+          poolKey: 'pool:acc:m1:2026-09-07',
+          expectedPoolVersion: 4,
+          newCapacity: 1,
+          reason: 'invalid reduction',
+          evidenceSha256: SHA_B,
+          actor: 'capacity:host',
+          occurredAt: LATER,
+        }),
+      'capacity_below_commitments',
+    );
+  });
+
+  it('moves commitments atomically and reconciles only against an exact assignment', () => {
+    let enrollments = enrollment();
+    let state = capacityFixture(2);
+    state = reserve(state, enrollments, {
+      key: 'reservation:assignment',
+      orderKey: 'order:test-1',
+      seatKey: 'seat:order:test-1:1',
+    });
+    const committed = commitClassAssignment(state, enrollments, {
+      reservationKey: 'reservation:assignment',
+      expectedReservationVersion: 0,
+      expectedPoolVersion: 2,
+      enrollmentKey: 'enrollment:order:test-1:1',
+      expectedEnrollmentVersion: 0,
+      entitlementKey: 'entitlement:order:test-1:m1',
+      assignmentKey: 'assignment:test-1',
+      assignmentState: 'active',
+      evidenceSha256: SHA_A,
+      actor: 'capacity:host',
+      occurredAt: NEXT,
+    });
+    state = committed.capacity;
+    enrollments = committed.enrollment;
+    state = reserveCapacity(state, enrollments, {
+      reservationKey: 'commitment:invoice:2',
+      poolKey: 'pool:acc:m1:2026-09-07',
+      expectedPoolVersion: 3,
+      channel: 'commitment',
+      sourceScope: 'invoice',
+      idempotencyKey: 'invoice_2_seat_1',
+      offerKey: 'acc-full',
+      catalogRevision: 1,
+      orderKey: null,
+      seatKey: null,
+      expiresAt: '2026-09-28T17:00:00Z',
+      reason: 'existing assignment reconciliation',
+      sourceEvidenceSha256: SHA_D,
+      actor: 'capacity:host',
+      occurredAt: NEXT,
+    });
+    state = reconcileCommitment(state, enrollments, {
+      commitmentKey: 'commitment:invoice:2',
+      expectedCommitmentVersion: 0,
+      expectedPoolVersion: 4,
+      assignmentKey: 'assignment:test-1',
+      expectedAssignmentVersion: 0,
+      evidenceSha256: SHA_B,
+      actor: 'capacity:host',
+      occurredAt: LATER,
+    });
+    expect(state.reservations['commitment:invoice:2'].state).toBe('consumed');
+
+    let movable = capacityFixture(2);
+    movable = reserveCapacity(movable, createEmptyEnrollmentFoundationState(), {
+      reservationKey: 'commitment:manual:move',
+      poolKey: 'pool:acc:m1:2026-09-07',
+      expectedPoolVersion: 1,
+      channel: 'commitment',
+      sourceScope: 'manual_sale',
+      idempotencyKey: 'manual_move_1',
+      offerKey: 'acc-full',
+      catalogRevision: 1,
+      orderKey: null,
+      seatKey: null,
+      expiresAt: '2026-09-28T17:00:00Z',
+      reason: 'owner promised seat',
+      sourceEvidenceSha256: SHA_C,
+      actor: 'capacity:host',
+      occurredAt: NOW,
+    });
+    movable = transferCommitment(
+      movable,
+      createEmptyEnrollmentFoundationState(),
+      {
+        commitmentKey: 'commitment:manual:move',
+        expectedCommitmentVersion: 0,
+        expectedOriginPoolVersion: 2,
+        destinationPoolKey: 'pool:acc:m1:2026-10-07',
+        expectedDestinationPoolVersion: 1,
+        evidenceSha256: SHA_A,
+        actor: 'capacity:host',
+        occurredAt: NEXT,
+      },
+    );
+    expect(movable.reservations['commitment:manual:move']).toMatchObject({
+      poolKey: 'pool:acc:m1:2026-10-07',
+      expiresAt: '2026-10-28T17:00:00Z',
+      version: 1,
+    });
+  });
+
   it('enforces one pool per delivery block while mapping many offers to it', () => {
     let state = capacityFixture(12);
     const pool = state.seatPools['pool:acc:m1:2026-09-07'];

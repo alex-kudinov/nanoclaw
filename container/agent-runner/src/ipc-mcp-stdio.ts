@@ -1201,6 +1201,130 @@ registerTool(
 );
 
 registerTool(
+  'capacity_commit_seat',
+  'Record one durable committed seat from an exact website sale, invoice, check, sponsor, or manual-sale source. This does not contact a customer or create an assignment.',
+  {
+    case_key: capacityKey,
+    commitment_key: capacityKey,
+    pool_key: capacityKey,
+    expected_pool_version: capacityVersion,
+    source_scope: z.enum([
+      'website_stripe_sale',
+      'invoice',
+      'check',
+      'sponsor',
+      'manual_sale',
+    ]),
+    idempotency_key: capacityIdempotency,
+    offer_key: capacityKey,
+    catalog_revision: z.number().int().positive(),
+    order_key: capacityKey.nullable(),
+    seat_key: capacityKey.nullable(),
+    expires_at: z.string().datetime({ offset: true }),
+    reason: z.string().trim().min(1).max(500),
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_commit_seat');
+    return queueCapacity('commit_seat', {
+      caseKey: args.case_key,
+      commitmentKey: args.commitment_key,
+      poolKey: args.pool_key,
+      expectedPoolVersion: args.expected_pool_version,
+      sourceScope: args.source_scope,
+      idempotencyKey: args.idempotency_key,
+      offerKey: args.offer_key,
+      catalogRevision: args.catalog_revision,
+      orderKey: args.order_key,
+      seatKey: args.seat_key,
+      expiresAt: args.expires_at,
+      reason: args.reason,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
+  'capacity_change_capacity',
+  'Change one exact seat-pool capacity with expected version, reason, and evidence. It refuses a value below occupied plus committed seats.',
+  {
+    case_key: capacityKey,
+    pool_key: capacityKey,
+    expected_pool_version: capacityVersion,
+    new_capacity: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(500),
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_change_capacity');
+    return queueCapacity('change_capacity', {
+      caseKey: args.case_key,
+      poolKey: args.pool_key,
+      expectedPoolVersion: args.expected_pool_version,
+      newCapacity: args.new_capacity,
+      reason: args.reason,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
+  'capacity_transfer_commitment',
+  'Atomically move one exact committed seat to a compatible destination pool. The destination must have availability.',
+  {
+    case_key: capacityKey,
+    commitment_key: capacityKey,
+    expected_commitment_version: capacityVersion,
+    expected_origin_pool_version: capacityVersion,
+    destination_pool_key: capacityKey,
+    expected_destination_pool_version: capacityVersion,
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_transfer_commitment');
+    return queueCapacity('transfer_commitment', {
+      caseKey: args.case_key,
+      commitmentKey: args.commitment_key,
+      expectedCommitmentVersion: args.expected_commitment_version,
+      expectedOriginPoolVersion: args.expected_origin_pool_version,
+      destinationPoolKey: args.destination_pool_key,
+      expectedDestinationPoolVersion: args.expected_destination_pool_version,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
+  'capacity_reconcile_commitment',
+  'Consume one committed-seat record only after an exact current class assignment exists for the same delivery block, preventing double count.',
+  {
+    case_key: capacityKey,
+    commitment_key: capacityKey,
+    expected_commitment_version: capacityVersion,
+    expected_pool_version: capacityVersion,
+    assignment_key: capacityKey,
+    expected_assignment_version: capacityVersion,
+    evidence_sha256: capacitySha256,
+  },
+  async (args) => {
+    if (groupFolder !== 'capacity')
+      return capacityDenied('capacity_reconcile_commitment');
+    return queueCapacity('reconcile_commitment', {
+      caseKey: args.case_key,
+      commitmentKey: args.commitment_key,
+      expectedCommitmentVersion: args.expected_commitment_version,
+      expectedPoolVersion: args.expected_pool_version,
+      assignmentKey: args.assignment_key,
+      expectedAssignmentVersion: args.expected_assignment_version,
+      evidenceSha256: args.evidence_sha256,
+    });
+  },
+);
+
+registerTool(
   'capacity_reserve_manual',
   'Create one reason-, source-, evidence-, version-, and TTL-bound internal manual seat hold. It cannot commit an assignment or contact a customer.',
   {

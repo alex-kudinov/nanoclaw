@@ -1,0 +1,2348 @@
+diff --git a/capabilities/capacity.json b/capabilities/capacity.json
+index 16af3010..d09631da 100644
+--- a/capabilities/capacity.json
++++ b/capabilities/capacity.json
+@@ -14,4 +14,8 @@
+       "capacity_inventory",
+       "capacity_enrollment",
++      "capacity_commit_seat",
++      "capacity_change_capacity",
++      "capacity_transfer_commitment",
++      "capacity_reconcile_commitment",
+       "capacity_reserve_manual",
+       "capacity_release_reservation",
+@@ -25,4 +29,8 @@
+       "capacity_inventory",
+       "capacity_enrollment",
++      "commit_seat",
++      "change_capacity",
++      "transfer_commitment",
++      "reconcile_commitment",
+       "reserve_manual",
+       "release_reservation",
+diff --git a/container/agent-runner/src/ipc-mcp-stdio.ts b/container/agent-runner/src/ipc-mcp-stdio.ts
+index 91e2c06b..bd0b1b2d 100644
+--- a/container/agent-runner/src/ipc-mcp-stdio.ts
++++ b/container/agent-runner/src/ipc-mcp-stdio.ts
+@@ -1201,4 +1201,128 @@ registerTool(
+ );
+
++registerTool(
++  'capacity_commit_seat',
++  'Record one durable committed seat from an exact website sale, invoice, check, sponsor, or manual-sale source. This does not contact a customer or create an assignment.',
++  {
++    case_key: capacityKey,
++    commitment_key: capacityKey,
++    pool_key: capacityKey,
++    expected_pool_version: capacityVersion,
++    source_scope: z.enum([
++      'website_stripe_sale',
++      'invoice',
++      'check',
++      'sponsor',
++      'manual_sale',
++    ]),
++    idempotency_key: capacityIdempotency,
++    offer_key: capacityKey,
++    catalog_revision: z.number().int().positive(),
++    order_key: capacityKey.nullable(),
++    seat_key: capacityKey.nullable(),
++    expires_at: z.string().datetime({ offset: true }),
++    reason: z.string().trim().min(1).max(500),
++    evidence_sha256: capacitySha256,
++  },
++  async (args) => {
++    if (groupFolder !== 'capacity')
++      return capacityDenied('capacity_commit_seat');
++    return queueCapacity('commit_seat', {
++      caseKey: args.case_key,
++      commitmentKey: args.commitment_key,
++      poolKey: args.pool_key,
++      expectedPoolVersion: args.expected_pool_version,
++      sourceScope: args.source_scope,
++      idempotencyKey: args.idempotency_key,
++      offerKey: args.offer_key,
++      catalogRevision: args.catalog_revision,
++      orderKey: args.order_key,
++      seatKey: args.seat_key,
++      expiresAt: args.expires_at,
++      reason: args.reason,
++      evidenceSha256: args.evidence_sha256,
++    });
++  },
++);
++
++registerTool(
++  'capacity_change_capacity',
++  'Change one exact seat-pool capacity with expected version, reason, and evidence. It refuses a value below occupied plus committed seats.',
++  {
++    case_key: capacityKey,
++    pool_key: capacityKey,
++    expected_pool_version: capacityVersion,
++    new_capacity: z.number().int().positive(),
++    reason: z.string().trim().min(1).max(500),
++    evidence_sha256: capacitySha256,
++  },
++  async (args) => {
++    if (groupFolder !== 'capacity')
++      return capacityDenied('capacity_change_capacity');
++    return queueCapacity('change_capacity', {
++      caseKey: args.case_key,
++      poolKey: args.pool_key,
++      expectedPoolVersion: args.expected_pool_version,
++      newCapacity: args.new_capacity,
++      reason: args.reason,
++      evidenceSha256: args.evidence_sha256,
++    });
++  },
++);
++
++registerTool(
++  'capacity_transfer_commitment',
++  'Atomically move one exact committed seat to a compatible destination pool. The destination must have availability.',
++  {
++    case_key: capacityKey,
++    commitment_key: capacityKey,
++    expected_commitment_version: capacityVersion,
++    expected_origin_pool_version: capacityVersion,
++    destination_pool_key: capacityKey,
++    expected_destination_pool_version: capacityVersion,
++    evidence_sha256: capacitySha256,
++  },
++  async (args) => {
++    if (groupFolder !== 'capacity')
++      return capacityDenied('capacity_transfer_commitment');
++    return queueCapacity('transfer_commitment', {
++      caseKey: args.case_key,
++      commitmentKey: args.commitment_key,
++      expectedCommitmentVersion: args.expected_commitment_version,
++      expectedOriginPoolVersion: args.expected_origin_pool_version,
++      destinationPoolKey: args.destination_pool_key,
++      expectedDestinationPoolVersion: args.expected_destination_pool_version,
++      evidenceSha256: args.evidence_sha256,
++    });
++  },
++);
++
++registerTool(
++  'capacity_reconcile_commitment',
++  'Consume one committed-seat record only after an exact current class assignment exists for the same delivery block, preventing double count.',
++  {
++    case_key: capacityKey,
++    commitment_key: capacityKey,
++    expected_commitment_version: capacityVersion,
++    expected_pool_version: capacityVersion,
++    assignment_key: capacityKey,
++    expected_assignment_version: capacityVersion,
++    evidence_sha256: capacitySha256,
++  },
++  async (args) => {
++    if (groupFolder !== 'capacity')
++      return capacityDenied('capacity_reconcile_commitment');
++    return queueCapacity('reconcile_commitment', {
++      caseKey: args.case_key,
++      commitmentKey: args.commitment_key,
++      expectedCommitmentVersion: args.expected_commitment_version,
++      expectedPoolVersion: args.expected_pool_version,
++      assignmentKey: args.assignment_key,
++      expectedAssignmentVersion: args.expected_assignment_version,
++      evidenceSha256: args.evidence_sha256,
++    });
++  },
++);
++
+ registerTool(
+   'capacity_reserve_manual',
+diff --git a/data/business/migrations/nanoclaw-v2/145_academy_capacity_simple_sync.sql b/data/business/migrations/nanoclaw-v2/145_academy_capacity_simple_sync.sql
+new file mode 100644
+index 00000000..eb8a41ac
+--- /dev/null
++++ b/data/business/migrations/nanoclaw-v2/145_academy_capacity_simple_sync.sql
+@@ -0,0 +1,134 @@
++-- 145_academy_capacity_simple_sync.sql
++--
++-- Durable, non-expiring-before-delivery commitments and the privacy-minimized
++-- website publication outbox for the owner-approved simple capacity sync.
++
++BEGIN;
++SET search_path TO business_v2, public, pg_catalog;
++
++DO $$ BEGIN
++  IF to_regclass('business_v2.academy_capacity_operator_cases') IS NULL THEN
++    RAISE EXCEPTION 'migration 144 must be applied before migration 145';
++  END IF;
++END $$;
++
++ALTER TABLE business_v2.academy_capacity_operator_cases
++  DROP CONSTRAINT academy_capacity_operator_cases_command_type_check;
++ALTER TABLE business_v2.academy_capacity_operator_cases
++  ADD CONSTRAINT academy_capacity_operator_cases_command_type_check
++    CHECK (command_type IN (
++      'reserve_manual', 'release_reservation', 'transfer_assignment',
++      'withdraw_assignment', 'reconcile_pool', 'join_waitlist',
++      'stage_waitlist_offer', 'commit_seat', 'change_capacity',
++      'transfer_commitment', 'reconcile_commitment'
++    ));
++
++ALTER TABLE business_v2.academy_capacity_reservations
++  DROP CONSTRAINT academy_capacity_reservations_channel_check,
++  DROP CONSTRAINT academy_capacity_reservations_check5;
++
++ALTER TABLE business_v2.academy_capacity_reservations
++  ADD CONSTRAINT academy_capacity_reservations_channel_check
++    CHECK (channel IN ('checkout', 'manual', 'waitlist_offer', 'commitment')),
++  ADD CONSTRAINT academy_capacity_reservations_check5 CHECK (
++    (channel = 'checkout' AND expires_at <= created_at + interval '30 minutes')
++    OR
++    (channel IN ('manual', 'waitlist_offer') AND expires_at <= created_at + interval '7 days')
++    OR
++    (channel = 'commitment' AND expires_at <= created_at + interval '3 years')
++  );
++
++CREATE OR REPLACE VIEW business_v2.v_academy_seat_pool_occupancy AS
++WITH assignment_counts AS (
++  SELECT delivery_block_key, count(*)::integer AS occupied
++  FROM business_v2.student_class_assignments
++  WHERE state IN ('pending', 'active')
++  GROUP BY delivery_block_key
++), reservation_counts AS (
++  SELECT pool_id, count(*)::integer AS reserved
++  FROM business_v2.academy_capacity_reservations
++  WHERE state = 'held' AND expires_at > now() AND channel <> 'commitment'
++  GROUP BY pool_id
++), commitment_counts AS (
++  SELECT pool_id, count(*)::integer AS committed
++  FROM business_v2.academy_capacity_reservations
++  WHERE state = 'held' AND expires_at > now() AND channel = 'commitment'
++  GROUP BY pool_id
++), waitlist_counts AS (
++  SELECT pool_id, count(*)::integer AS waitlist_count
++  FROM business_v2.academy_waitlist_entries
++  WHERE state IN ('waiting', 'offered', 'accepted')
++  GROUP BY pool_id
++)
++SELECT
++  sp.pool_key,
++  db.delivery_block_key,
++  sp.capacity,
++  COALESCE(ac.occupied, 0) AS occupied,
++  COALESCE(rc.reserved, 0) AS reserved,
++  GREATEST(
++    0,
++    sp.capacity - COALESCE(ac.occupied, 0) - COALESCE(rc.reserved, 0)
++      - COALESCE(cc.committed, 0)
++  ) AS available,
++  COALESCE(wc.waitlist_count, 0) AS waitlist_count,
++  CASE
++    WHEN sp.operational_state = 'closed' THEN 'closed'
++    WHEN sp.capacity - COALESCE(ac.occupied, 0) - COALESCE(rc.reserved, 0)
++      - COALESCE(cc.committed, 0) <= 0 THEN 'sold_out'
++    ELSE 'open'
++  END AS public_state,
++  sp.version AS pool_version,
++  sp.updated_at AS source_updated_at,
++  now() AS calculated_at,
++  COALESCE(cc.committed, 0) AS committed
++FROM business_v2.academy_seat_pools sp
++JOIN business_v2.academy_delivery_blocks db ON db.id = sp.delivery_block_id
++LEFT JOIN assignment_counts ac ON ac.delivery_block_key = db.delivery_block_key
++LEFT JOIN reservation_counts rc ON rc.pool_id = sp.id
++LEFT JOIN commitment_counts cc ON cc.pool_id = sp.id
++LEFT JOIN waitlist_counts wc ON wc.pool_id = sp.id;
++
++CREATE TABLE business_v2.academy_capacity_publications (
++  id bigserial PRIMARY KEY,
++  publication_key text NOT NULL UNIQUE
++    CHECK (publication_key ~ '^[a-z0-9][a-z0-9._:-]{0,249}$'),
++  pool_id bigint NOT NULL REFERENCES business_v2.academy_seat_pools(id),
++  pool_version integer NOT NULL CHECK (pool_version >= 0),
++  public_state text NOT NULL CHECK (public_state IN ('available', 'sold_out')),
++  reason text NOT NULL CHECK (reason IN ('threshold', 'daily', 'initial')),
++  payload_sha256 text NOT NULL CHECK (payload_sha256 ~ '^[0-9a-f]{64}$'),
++  state text NOT NULL CHECK (state IN ('pending', 'delivered', 'failed')),
++  attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
++  next_attempt_at timestamptz NOT NULL,
++  last_error_code text
++    CHECK (last_error_code IS NULL OR last_error_code ~ '^[a-z][a-z0-9_]{0,99}$'),
++  ack_sha256 text CHECK (ack_sha256 IS NULL OR ack_sha256 ~ '^[0-9a-f]{64}$'),
++  created_at timestamptz NOT NULL,
++  updated_at timestamptz NOT NULL,
++  delivered_at timestamptz,
++  updated_by text NOT NULL CHECK (btrim(updated_by) <> ''),
++  UNIQUE (pool_id, pool_version, reason, publication_key),
++  CHECK (created_at <= updated_at),
++  CHECK ((state = 'delivered') = (delivered_at IS NOT NULL AND ack_sha256 IS NOT NULL))
++);
++CREATE INDEX academy_capacity_publications_pending_idx
++  ON business_v2.academy_capacity_publications
++  (next_attempt_at, id)
++  WHERE state IN ('pending', 'failed');
++CREATE INDEX academy_capacity_publications_pool_idx
++  ON business_v2.academy_capacity_publications
++  (pool_id, delivered_at DESC, id DESC);
++
++DO $$
++BEGIN
++  ALTER TABLE business_v2.academy_capacity_publications OWNER TO nanoclaw_admin;
++  REVOKE ALL ON business_v2.academy_capacity_publications FROM PUBLIC;
++  GRANT ALL ON business_v2.academy_capacity_publications TO nanoclaw_admin;
++  ALTER SEQUENCE business_v2.academy_capacity_publications_id_seq OWNER TO nanoclaw_admin;
++  REVOKE ALL ON SEQUENCE business_v2.academy_capacity_publications_id_seq FROM PUBLIC;
++  GRANT ALL ON SEQUENCE business_v2.academy_capacity_publications_id_seq TO nanoclaw_admin;
++  ALTER VIEW business_v2.v_academy_seat_pool_occupancy OWNER TO nanoclaw_admin;
++END $$;
++
++COMMIT;
+diff --git a/data/business/migrations/nanoclaw-v2/rollback_145_academy_capacity_simple_sync.sql b/data/business/migrations/nanoclaw-v2/rollback_145_academy_capacity_simple_sync.sql
+new file mode 100644
+index 00000000..0cfb3005
+--- /dev/null
++++ b/data/business/migrations/nanoclaw-v2/rollback_145_academy_capacity_simple_sync.sql
+@@ -0,0 +1,98 @@
++-- rollback_145_academy_capacity_simple_sync.sql
++
++BEGIN;
++SET search_path TO business_v2, public, pg_catalog;
++
++DO $$
++BEGIN
++  IF EXISTS (
++    SELECT 1 FROM business_v2.academy_capacity_reservations
++     WHERE channel = 'commitment'
++  ) THEN
++    RAISE EXCEPTION 'rollback 145 refused: commitment rows exist';
++  END IF;
++  IF EXISTS (
++    SELECT 1 FROM business_v2.academy_capacity_publications
++  ) THEN
++    RAISE EXCEPTION 'rollback 145 refused: publication rows exist';
++  END IF;
++  IF EXISTS (
++    SELECT 1 FROM business_v2.academy_capacity_operator_cases
++     WHERE command_type IN (
++       'commit_seat', 'change_capacity', 'transfer_commitment',
++       'reconcile_commitment'
++     )
++  ) THEN
++    RAISE EXCEPTION 'rollback 145 refused: simple-sync operator cases exist';
++  END IF;
++END $$;
++
++DROP TABLE business_v2.academy_capacity_publications;
++
++DROP VIEW business_v2.v_academy_seat_pool_occupancy;
++CREATE VIEW business_v2.v_academy_seat_pool_occupancy AS
++WITH assignment_counts AS (
++  SELECT delivery_block_key, count(*)::integer AS occupied
++  FROM business_v2.student_class_assignments
++  WHERE state IN ('pending', 'active')
++  GROUP BY delivery_block_key
++), reservation_counts AS (
++  SELECT pool_id, count(*)::integer AS reserved
++  FROM business_v2.academy_capacity_reservations
++  WHERE state = 'held' AND expires_at > now()
++  GROUP BY pool_id
++), waitlist_counts AS (
++  SELECT pool_id, count(*)::integer AS waitlist_count
++  FROM business_v2.academy_waitlist_entries
++  WHERE state IN ('waiting', 'offered', 'accepted')
++  GROUP BY pool_id
++)
++SELECT
++  sp.pool_key,
++  db.delivery_block_key,
++  sp.capacity,
++  COALESCE(ac.occupied, 0) AS occupied,
++  COALESCE(rc.reserved, 0) AS reserved,
++  GREATEST(0, sp.capacity - COALESCE(ac.occupied, 0) - COALESCE(rc.reserved, 0)) AS available,
++  COALESCE(wc.waitlist_count, 0) AS waitlist_count,
++  CASE
++    WHEN sp.operational_state = 'closed' THEN 'closed'
++    WHEN sp.capacity - COALESCE(ac.occupied, 0) - COALESCE(rc.reserved, 0) <= 0 THEN 'sold_out'
++    ELSE 'open'
++  END AS public_state,
++  sp.version AS pool_version,
++  sp.updated_at AS source_updated_at,
++  now() AS calculated_at
++FROM business_v2.academy_seat_pools sp
++JOIN business_v2.academy_delivery_blocks db ON db.id = sp.delivery_block_id
++LEFT JOIN assignment_counts ac ON ac.delivery_block_key = db.delivery_block_key
++LEFT JOIN reservation_counts rc ON rc.pool_id = sp.id
++LEFT JOIN waitlist_counts wc ON wc.pool_id = sp.id;
++ALTER VIEW business_v2.v_academy_seat_pool_occupancy OWNER TO nanoclaw_admin;
++REVOKE ALL ON business_v2.v_academy_seat_pool_occupancy FROM PUBLIC;
++GRANT ALL ON business_v2.v_academy_seat_pool_occupancy TO nanoclaw_admin;
++
++ALTER TABLE business_v2.academy_capacity_operator_cases
++  DROP CONSTRAINT academy_capacity_operator_cases_command_type_check;
++ALTER TABLE business_v2.academy_capacity_operator_cases
++  ADD CONSTRAINT academy_capacity_operator_cases_command_type_check
++    CHECK (command_type IN (
++      'reserve_manual', 'release_reservation', 'transfer_assignment',
++      'withdraw_assignment', 'reconcile_pool', 'join_waitlist',
++      'stage_waitlist_offer'
++    ));
++
++ALTER TABLE business_v2.academy_capacity_reservations
++  DROP CONSTRAINT academy_capacity_reservations_channel_check,
++  DROP CONSTRAINT academy_capacity_reservations_check5;
++
++ALTER TABLE business_v2.academy_capacity_reservations
++  ADD CONSTRAINT academy_capacity_reservations_channel_check
++    CHECK (channel IN ('checkout', 'manual', 'waitlist_offer')),
++  ADD CONSTRAINT academy_capacity_reservations_check5 CHECK (
++    (channel = 'checkout' AND expires_at <= created_at + interval '30 minutes')
++    OR
++    (channel IN ('manual', 'waitlist_offer') AND expires_at <= created_at + interval '7 days')
++  );
++
++COMMIT;
+diff --git a/scripts/set-academy-capacity-publication.mjs b/scripts/set-academy-capacity-publication.mjs
+new file mode 100644
+index 00000000..0357fc70
+--- /dev/null
++++ b/scripts/set-academy-capacity-publication.mjs
+@@ -0,0 +1,114 @@
++#!/usr/bin/env node
++
++import crypto from 'node:crypto';
++import fs from 'node:fs';
++import os from 'node:os';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++
++const scriptDir = path.dirname(fileURLToPath(import.meta.url));
++const bundleRoot = path.resolve(scriptDir, '..');
++const args = process.argv.slice(2);
++const value = (name) => {
++  const index = args.indexOf(name);
++  if (index < 0 || !args[index + 1]) throw new Error(`${name} is required`);
++  return args[index + 1];
++};
++const envFile = path.resolve(value('--env-file'));
++const expectedRelease = value('--expected-release');
++const mode = value('--mode');
++const apply = args.includes('--apply');
++if (apply && args.includes('--dry-run'))
++  throw new Error('cannot combine --apply and --dry-run');
++if (!/^[0-9a-f]{40}$/.test(expectedRelease))
++  throw new Error('--expected-release requires a full commit');
++if (!['off', 'on'].includes(mode)) throw new Error('--mode must be off or on');
++const release = JSON.parse(
++  fs.readFileSync(path.join(bundleRoot, 'RELEASE.json'), 'utf8'),
++);
++if (release.commit !== expectedRelease)
++  throw new Error('expected release does not match this immutable bundle');
++if (apply && value('--confirm-host') !== os.hostname())
++  throw new Error(`--apply requires --confirm-host ${os.hostname()}`);
++if (!fs.lstatSync(envFile).isFile()) throw new Error('env file is not a file');
++
++let siteUrl = null;
++let siteKey = null;
++let cloudflareZoneId = null;
++let cloudflareToken = null;
++if (mode === 'on') {
++  const sourceEnvFile = path.resolve(value('--source-env-file'));
++  const stat = fs.statSync(sourceEnvFile);
++  if (!stat.isFile() || (stat.mode & 0o077) !== 0)
++    throw new Error('--source-env-file must be a mode-0600 file');
++  const source = Object.fromEntries(
++    fs
++      .readFileSync(sourceEnvFile, 'utf8')
++      .split('\n')
++      .map((line) => /^([A-Z0-9_]+)=(.*)$/.exec(line))
++      .filter(Boolean)
++      .map((match) => [match[1], match[2].replace(/^['"]|['"]$/g, '')]),
++  );
++  siteUrl = String(source.WP_SITE_URL ?? '').replace(/\/+$/, '');
++  if (!/^https:\/\//.test(siteUrl))
++    throw new Error('source WP_SITE_URL must be https');
++  siteKey = String(source.TANDEM_API_KEY ?? '');
++  if (siteKey.length < 16) throw new Error('site key is too short');
++  cloudflareZoneId = String(source.CF_ZONE_ID ?? '');
++  cloudflareToken = String(
++    source.CF_MGMT_TOKEN ?? source.CF_API_TOKEN ?? '',
++  );
++  if (!cloudflareZoneId || !cloudflareToken)
++    throw new Error('Cloudflare zone and token are required');
++}
++
++const original = fs.readFileSync(envFile, 'utf8');
++const updates = {
++  ACADEMY_CAPACITY_PUBLICATION_ENABLED: mode === 'on' ? '1' : '0',
++  ...(siteUrl ? { ACADEMY_CAPACITY_SITE_URL: siteUrl } : {}),
++  ...(siteKey ? { TANDEM_API_KEY: siteKey } : {}),
++  ...(cloudflareZoneId ? { CF_ZONE_ID: cloudflareZoneId } : {}),
++  ...(cloudflareToken ? { CF_MGMT_TOKEN: cloudflareToken } : {}),
++};
++const lines = original.split('\n');
++for (const [key, update] of Object.entries(updates)) {
++  const index = lines.findIndex((line) => line.startsWith(`${key}=`));
++  const rendered = `${key}=${update}`;
++  if (index >= 0) lines[index] = rendered;
++  else lines.push(rendered);
++}
++const next = lines.join('\n').replace(/\n+$/, '\n');
++const changed = next !== original;
++let backupPath = null;
++if (apply && changed) {
++  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
++  backupPath = `${envFile}.rollback-academy-capacity-publication-${stamp}`;
++  fs.copyFileSync(envFile, backupPath, fs.constants.COPYFILE_EXCL);
++  fs.chmodSync(backupPath, 0o600);
++  const temporary = `${envFile}.capacity-publication-${process.pid}.tmp`;
++  fs.writeFileSync(temporary, next, { mode: 0o600, flag: 'wx' });
++  fs.renameSync(temporary, envFile);
++  fs.chmodSync(envFile, 0o600);
++}
++process.stdout.write(
++  `${JSON.stringify(
++    {
++      mode: apply ? 'applied' : 'dry-run',
++      enabled: mode === 'on',
++      changed,
++      siteUrl,
++      siteKeySha256: siteKey
++        ? crypto.createHash('sha256').update(siteKey).digest('hex')
++        : null,
++      cloudflareTokenSha256: cloudflareToken
++        ? crypto.createHash('sha256').update(cloudflareToken).digest('hex')
++        : null,
++      cloudflareZoneConfigured: Boolean(cloudflareZoneId),
++      backupPath,
++      release: expectedRelease,
++      host: os.hostname(),
++    },
++    null,
++    2,
++  )}\n`,
++);
+diff --git a/src/academy-capacity-operator-store.ts b/src/academy-capacity-operator-store.ts
+index 1e3799be..3cca0402 100644
+--- a/src/academy-capacity-operator-store.ts
++++ b/src/academy-capacity-operator-store.ts
+@@ -3,8 +3,13 @@ import crypto from 'node:crypto';
+ import type { PoolClient, QueryResultRow } from 'pg';
+
++import { enqueueAcademyCapacityPublications } from './academy-capacity-publication.js';
++import { logger } from './logger.js';
++
+ import {
+   CapacityCommandError,
++  changeSeatPoolCapacity,
+   createEmptyAcademyCapacityState,
+   joinWaitlist,
++  reconcileCommitment,
+   reconcileSeatPool,
+   releaseReservation,
+@@ -12,4 +17,5 @@ import {
+   showInventory,
+   stageWaitlistOffer,
++  transferCommitment,
+   transferClassAssignment,
+   withdrawClassAssignment,
+@@ -24,4 +30,25 @@ import {
+
+ export type CapacityOperatorCommand =
++  | {
++      type: 'commit_seat';
++      caseKey: string;
++      commitmentKey: string;
++      poolKey: string;
++      expectedPoolVersion: number;
++      sourceScope:
++        | 'website_stripe_sale'
++        | 'invoice'
++        | 'check'
++        | 'sponsor'
++        | 'manual_sale';
++      idempotencyKey: string;
++      offerKey: string;
++      catalogRevision: number;
++      orderKey: string | null;
++      seatKey: string | null;
++      expiresAt: string;
++      reason: string;
++      evidenceSha256: string;
++    }
+   | {
+       type: 'reserve_manual';
+@@ -49,4 +76,33 @@ export type CapacityOperatorCommand =
+       evidenceSha256: string;
+     }
++  | {
++      type: 'change_capacity';
++      caseKey: string;
++      poolKey: string;
++      expectedPoolVersion: number;
++      newCapacity: number;
++      reason: string;
++      evidenceSha256: string;
++    }
++  | {
++      type: 'transfer_commitment';
++      caseKey: string;
++      commitmentKey: string;
++      expectedCommitmentVersion: number;
++      expectedOriginPoolVersion: number;
++      destinationPoolKey: string;
++      expectedDestinationPoolVersion: number;
++      evidenceSha256: string;
++    }
++  | {
++      type: 'reconcile_commitment';
++      caseKey: string;
++      commitmentKey: string;
++      expectedCommitmentVersion: number;
++      expectedPoolVersion: number;
++      assignmentKey: string;
++      expectedAssignmentVersion: number;
++      evidenceSha256: string;
++    }
+   | {
+       type: 'transfer_assignment';
+@@ -142,4 +198,5 @@ export interface CapacityOperatorStoreDeps {
+   transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T>;
+   now(): string;
++  enqueuePublication(): Promise<unknown>;
+ }
+
+@@ -147,9 +204,13 @@ const defaultDeps: CapacityOperatorStoreDeps = {
+   transaction: withTransaction,
+   now: () => new Date().toISOString(),
++  enqueuePublication: () => enqueueAcademyCapacityPublications('threshold'),
+ };
+
+ const REVIEW_CODES = new Set([
+   'assignment_not_found',
++  'capacity_below_commitments',
+   'capacity_unavailable',
++  'commitment_not_found',
++  'commitment_assignment_conflict',
+   'destination_not_found',
+   'enrollment_blocked',
+@@ -210,4 +271,20 @@ function requestSummary(
+   const shared = { commandType: command.type };
+   switch (command.type) {
++    case 'commit_seat':
++      return {
++        ...shared,
++        commitmentKey: command.commitmentKey,
++        poolKey: command.poolKey,
++        expectedPoolVersion: command.expectedPoolVersion,
++        sourceScope: command.sourceScope,
++        idempotencyKeySha256: sha256(command.idempotencyKey),
++        offerKey: command.offerKey,
++        catalogRevision: command.catalogRevision,
++        orderKey: command.orderKey,
++        seatKey: command.seatKey,
++        expiresAt: command.expiresAt,
++        reasonSha256: sha256(command.reason),
++        evidenceSha256: command.evidenceSha256,
++      };
+     case 'reserve_manual':
+       return {
+@@ -228,4 +305,8 @@ function requestSummary(
+     case 'release_reservation':
+       return { ...shared, ...command };
++    case 'change_capacity':
++    case 'transfer_commitment':
++    case 'reconcile_commitment':
++      return { ...shared, ...command };
+     case 'transfer_assignment':
+       return { ...shared, ...command };
+@@ -284,4 +365,43 @@ async function lockReservationPool(
+ }
+
++async function lockCommitmentPools(
++  client: PoolClient,
++  commitmentKey: string,
++  destinationPoolKey?: string,
++): Promise<void> {
++  const result = await client.query<{ id: string }>(
++    `SELECT p.id::text
++       FROM business_v2.academy_seat_pools p
++      WHERE p.pool_key=$2
++         OR p.id=(
++              SELECT r.pool_id
++                FROM business_v2.academy_capacity_reservations r
++               WHERE r.reservation_key=$1 AND r.channel='commitment'
++            )
++      ORDER BY p.id`,
++    [commitmentKey, destinationPoolKey ?? '__none__'],
++  );
++  const expected = destinationPoolKey ? 2 : 1;
++  if (result.rows.length !== expected)
++    throw new CapacityCommandError(
++      destinationPoolKey ? 'destination_not_found' : 'commitment_not_found',
++      'committed seat or destination pool was not found',
++    );
++  const ids = result.rows.map((row) => asNumber(row.id));
++  await client.query(
++    `SELECT id
++       FROM business_v2.academy_seat_pools
++      WHERE id=ANY($1::bigint[])
++      ORDER BY id
++      FOR UPDATE`,
++    [ids],
++  );
++  await client.query(
++    `SELECT id FROM business_v2.academy_capacity_reservations
++      WHERE reservation_key=$1 AND channel='commitment' FOR UPDATE`,
++    [commitmentKey],
++  );
++}
++
+ async function lockAssignmentPools(
+   client: PoolClient,
+@@ -352,4 +472,18 @@ async function lockForCommand(
+     case 'release_reservation':
+       return lockReservationPool(client, command.reservationKey);
++    case 'transfer_commitment':
++      return lockCommitmentPools(
++        client,
++        command.commitmentKey,
++        command.destinationPoolKey,
++      );
++    case 'reconcile_commitment':
++      await lockCommitmentPools(client, command.commitmentKey);
++      await client.query(
++        `SELECT id FROM business_v2.student_class_assignments
++          WHERE assignment_key=$1 FOR UPDATE`,
++        [command.assignmentKey],
++      );
++      return;
+     case 'transfer_assignment':
+       return lockAssignmentPools(
+@@ -758,6 +892,6 @@ async function persistDelta(
+         `UPDATE business_v2.academy_seat_pools
+             SET capacity=$1,operational_state=$2,close_reason=$3,version=$4,
+-                updated_at=$5,updated_by=$6
+-          WHERE pool_key=$7 AND version=$8`,
++                configuration_evidence_sha256=$5,updated_at=$6,updated_by=$7
++          WHERE pool_key=$8 AND version=$9`,
+         [
+           after.capacity,
+@@ -765,4 +899,5 @@ async function persistDelta(
+           after.closeReason,
+           after.version,
++          after.configurationEvidenceSha256,
+           after.updatedAt,
+           after.updatedBy,
+@@ -817,9 +952,12 @@ async function persistDelta(
+         await client.query(
+           `UPDATE business_v2.academy_capacity_reservations
+-              SET state=$1,version=$2,updated_at=$3,updated_by=$4
+-            WHERE reservation_key=$5 AND version=$6`,
++              SET pool_id=(SELECT id FROM business_v2.academy_seat_pools WHERE pool_key=$1),
++                  state=$2,version=$3,expires_at=$4,updated_at=$5,updated_by=$6
++            WHERE reservation_key=$7 AND version=$8`,
+           [
++            after.poolKey,
+             after.state,
+             after.version,
++            after.expiresAt,
+             after.updatedAt,
+             after.updatedBy,
+@@ -1065,4 +1203,5 @@ function inventorySummary(
+     occupied: value.occupied,
+     reserved: value.reserved,
++    committed: value.committed,
+     available: value.available,
+     waitlistCount: value.waitlistCount,
+@@ -1079,4 +1218,14 @@ function resultSummary(
+ ): Record<string, unknown> {
+   switch (command.type) {
++    case 'commit_seat': {
++      const commitment = capacity.reservations[command.commitmentKey];
++      return {
++        commitmentKey: commitment.reservationKey,
++        commitmentState: commitment.state,
++        commitmentVersion: commitment.version,
++        sourceScope: commitment.sourceScope,
++        inventory: inventorySummary(capacity, enrollment, command.poolKey, at),
++      };
++    }
+     case 'reserve_manual': {
+       const reservation = capacity.reservations[command.reservationKey];
+@@ -1103,4 +1252,38 @@ function resultSummary(
+       };
+     }
++    case 'change_capacity':
++      return {
++        newCapacity: command.newCapacity,
++        inventory: inventorySummary(capacity, enrollment, command.poolKey, at),
++      };
++    case 'transfer_commitment': {
++      const commitment = capacity.reservations[command.commitmentKey];
++      return {
++        commitmentKey: commitment.reservationKey,
++        commitmentState: commitment.state,
++        commitmentVersion: commitment.version,
++        destinationInventory: inventorySummary(
++          capacity,
++          enrollment,
++          command.destinationPoolKey,
++          at,
++        ),
++      };
++    }
++    case 'reconcile_commitment': {
++      const commitment = capacity.reservations[command.commitmentKey];
++      return {
++        commitmentKey: commitment.reservationKey,
++        commitmentState: commitment.state,
++        commitmentVersion: commitment.version,
++        assignmentKey: command.assignmentKey,
++        inventory: inventorySummary(
++          capacity,
++          enrollment,
++          commitment.poolKey,
++          at,
++        ),
++      };
++    }
+     case 'transfer_assignment': {
+       const origin = enrollment.assignments[command.originAssignmentKey];
+@@ -1188,4 +1371,23 @@ async function applyCommand(
+   let afterEnrollment = before.enrollment;
+   switch (command.type) {
++    case 'commit_seat':
++      afterCapacity = reserveCapacity(before.capacity, before.enrollment, {
++        reservationKey: command.commitmentKey,
++        poolKey: command.poolKey,
++        expectedPoolVersion: command.expectedPoolVersion,
++        channel: 'commitment',
++        sourceScope: command.sourceScope,
++        idempotencyKey: command.idempotencyKey,
++        offerKey: command.offerKey,
++        catalogRevision: command.catalogRevision,
++        orderKey: command.orderKey,
++        seatKey: command.seatKey,
++        expiresAt: command.expiresAt,
++        reason: command.reason,
++        sourceEvidenceSha256: command.evidenceSha256,
++        actor,
++        occurredAt,
++      });
++      break;
+     case 'reserve_manual':
+       afterCapacity = reserveCapacity(before.capacity, before.enrollment, {
+@@ -1218,4 +1420,43 @@ async function applyCommand(
+       });
+       break;
++    case 'change_capacity':
++      afterCapacity = changeSeatPoolCapacity(
++        before.capacity,
++        before.enrollment,
++        {
++          poolKey: command.poolKey,
++          expectedPoolVersion: command.expectedPoolVersion,
++          newCapacity: command.newCapacity,
++          reason: command.reason,
++          evidenceSha256: command.evidenceSha256,
++          actor,
++          occurredAt,
++        },
++      );
++      break;
++    case 'transfer_commitment':
++      afterCapacity = transferCommitment(before.capacity, before.enrollment, {
++        commitmentKey: command.commitmentKey,
++        expectedCommitmentVersion: command.expectedCommitmentVersion,
++        expectedOriginPoolVersion: command.expectedOriginPoolVersion,
++        destinationPoolKey: command.destinationPoolKey,
++        expectedDestinationPoolVersion: command.expectedDestinationPoolVersion,
++        evidenceSha256: command.evidenceSha256,
++        actor,
++        occurredAt,
++      });
++      break;
++    case 'reconcile_commitment':
++      afterCapacity = reconcileCommitment(before.capacity, before.enrollment, {
++        commitmentKey: command.commitmentKey,
++        expectedCommitmentVersion: command.expectedCommitmentVersion,
++        expectedPoolVersion: command.expectedPoolVersion,
++        assignmentKey: command.assignmentKey,
++        expectedAssignmentVersion: command.expectedAssignmentVersion,
++        evidenceSha256: command.evidenceSha256,
++        actor,
++        occurredAt,
++      });
++      break;
+     case 'transfer_assignment': {
+       const result = transferClassAssignment(
+@@ -1341,144 +1582,162 @@ export async function executeAcademyCapacityOperatorCommand(
+   const requestSha256 = sha256(summary);
+
+-  return runtime.transaction(async (client) => {
+-    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
+-      command.caseKey,
+-    ]);
+-    const existing = await client.query<{
+-      command_type: CapacityOperatorCommand['type'];
+-      request_sha256: string;
+-      state: CapacityOperatorResult['state'];
+-      result_code: string;
+-      result_sha256: string;
+-      result_summary: Record<string, unknown>;
+-    }>(
+-      `SELECT command_type,request_sha256,state,result_code,result_sha256,result_summary
++  const outcome = await runtime.transaction<CapacityOperatorResult>(
++    async (client) => {
++      await client.query(
++        'SELECT pg_advisory_xact_lock(hashtextextended($1,0))',
++        [command.caseKey],
++      );
++      const existing = await client.query<{
++        command_type: CapacityOperatorCommand['type'];
++        request_sha256: string;
++        state: CapacityOperatorResult['state'];
++        result_code: string;
++        result_sha256: string;
++        result_summary: Record<string, unknown>;
++      }>(
++        `SELECT command_type,request_sha256,state,result_code,result_sha256,result_summary
+          FROM business_v2.academy_capacity_operator_cases
+         WHERE case_key=$1`,
+-      [command.caseKey],
+-    );
+-    if (existing.rows[0]) {
+-      const prior = existing.rows[0];
+-      if (
+-        prior.request_sha256 !== requestSha256 ||
+-        prior.command_type !== command.type
+-      ) {
+-        const deniedSummary = { caseKey: command.caseKey };
++        [command.caseKey],
++      );
++      if (existing.rows[0]) {
++        const prior = existing.rows[0];
++        if (
++          prior.request_sha256 !== requestSha256 ||
++          prior.command_type !== command.type
++        ) {
++          const deniedSummary = { caseKey: command.caseKey };
++          return {
++            caseKey: command.caseKey,
++            commandType: command.type,
++            state: 'denied',
++            code: 'idempotency_conflict',
++            replayed: true,
++            resultSha256: sha256(deniedSummary),
++            summary: deniedSummary,
++          };
++        }
+         return {
+           caseKey: command.caseKey,
+-          commandType: command.type,
+-          state: 'denied',
+-          code: 'idempotency_conflict',
++          commandType: prior.command_type,
++          state: prior.state,
++          code: prior.result_code,
+           replayed: true,
+-          resultSha256: sha256(deniedSummary),
+-          summary: deniedSummary,
++          resultSha256: prior.result_sha256,
++          summary: prior.result_summary,
+         };
+       }
+-      return {
+-        caseKey: command.caseKey,
+-        commandType: prior.command_type,
+-        state: prior.state,
+-        code: prior.result_code,
+-        replayed: true,
+-        resultSha256: prior.result_sha256,
+-        summary: prior.result_summary,
+-      };
+-    }
+
+-    const inserted = await client.query<{ id: string }>(
+-      `INSERT INTO business_v2.academy_capacity_operator_cases
++      const inserted = await client.query<{ id: string }>(
++        `INSERT INTO business_v2.academy_capacity_operator_cases
+          (case_key,source_group,command_type,request_sha256,request_summary,
+           state,version,created_at,updated_at,updated_by)
+        VALUES ($1,'capacity',$2,$3,$4::jsonb,'processing',0,$5,$5,$6)
+        RETURNING id::text`,
+-      [
+-        command.caseKey,
+-        command.type,
+-        requestSha256,
+-        summary,
+-        occurredAt,
+-        actor,
+-      ],
+-    );
+-    const caseId = asNumber(inserted.rows[0].id);
+-    await client.query(
+-      `INSERT INTO business_v2.academy_capacity_operator_receipts
++        [
++          command.caseKey,
++          command.type,
++          requestSha256,
++          summary,
++          occurredAt,
++          actor,
++        ],
++      );
++      const caseId = asNumber(inserted.rows[0].id);
++      await client.query(
++        `INSERT INTO business_v2.academy_capacity_operator_receipts
+          (receipt_key,case_id,case_version,stage,outcome,result_code,
+           evidence_sha256,summary_json,actor,occurred_at,recorded_at)
+        VALUES ($1,$2,0,'requested','accepted','command_accepted',$3,$4::jsonb,$5,$6,$6)`,
+-      [
+-        `${command.caseKey}:receipt:requested:v0`,
+-        caseId,
+-        requestSha256,
+-        summary,
+-        actor,
+-        occurredAt,
+-      ],
+-    );
+-
+-    await client.query('SAVEPOINT academy_capacity_operator_command');
+-    let state: CapacityOperatorResult['state'] = 'applied';
+-    let code = 'command_applied';
+-    let result: Record<string, unknown>;
+-    try {
+-      result = await applyCommand(client, command, actor, occurredAt);
+-      await client.query('RELEASE SAVEPOINT academy_capacity_operator_command');
+-    } catch (error) {
+-      await client.query(
+-        'ROLLBACK TO SAVEPOINT academy_capacity_operator_command',
++        [
++          `${command.caseKey}:receipt:requested:v0`,
++          caseId,
++          requestSha256,
++          summary,
++          actor,
++          occurredAt,
++        ],
+       );
+-      const final = finalState(error);
+-      state = final.state;
+-      code = final.code;
+-      result = {
+-        caseKey: command.caseKey,
+-        commandType: command.type,
+-        refused: true,
+-      };
+-    }
+-    const resultSha256 = sha256({ state, code, result });
+-    const finalized = await client.query(
+-      `UPDATE business_v2.academy_capacity_operator_cases
++
++      await client.query('SAVEPOINT academy_capacity_operator_command');
++      let state: CapacityOperatorResult['state'] = 'applied';
++      let code = 'command_applied';
++      let result: Record<string, unknown>;
++      try {
++        result = await applyCommand(client, command, actor, occurredAt);
++        await client.query(
++          'RELEASE SAVEPOINT academy_capacity_operator_command',
++        );
++      } catch (error) {
++        await client.query(
++          'ROLLBACK TO SAVEPOINT academy_capacity_operator_command',
++        );
++        const final = finalState(error);
++        state = final.state;
++        code = final.code;
++        result = {
++          caseKey: command.caseKey,
++          commandType: command.type,
++          refused: true,
++        };
++      }
++      const resultSha256 = sha256({ state, code, result });
++      const finalized = await client.query(
++        `UPDATE business_v2.academy_capacity_operator_cases
+             SET state=$1,result_code=$2,result_sha256=$3,result_summary=$4::jsonb,
+                 completed_at=$5,updated_at=$5,updated_by=$6
+           WHERE id=$7 AND state='processing' AND version=0`,
+-      [state, code, resultSha256, result, occurredAt, actor, caseId],
+-    );
+-    if (finalized.rowCount !== 1)
+-      throw new Error('operator_case_finalization_conflict');
+-    await client.query(
+-      `INSERT INTO business_v2.academy_capacity_operator_receipts
++        [state, code, resultSha256, result, occurredAt, actor, caseId],
++      );
++      if (finalized.rowCount !== 1)
++        throw new Error('operator_case_finalization_conflict');
++      await client.query(
++        `INSERT INTO business_v2.academy_capacity_operator_receipts
+          (receipt_key,case_id,case_version,stage,outcome,result_code,
+           evidence_sha256,summary_json,actor,occurred_at,recorded_at)
+        VALUES ($1,$2,0,'final',$3,$4,$5,$6::jsonb,$7,$8,$8)`,
+-      [
+-        `${command.caseKey}:receipt:final:v0`,
+-        caseId,
+-        state === 'applied' ? 'verified' : state,
+-        code,
+-        resultSha256,
+-        result,
+-        actor,
+-        occurredAt,
+-      ],
+-    );
+-    const readback = await client.query<{ receipt_count: string }>(
+-      `SELECT count(*)::text AS receipt_count
++        [
++          `${command.caseKey}:receipt:final:v0`,
++          caseId,
++          state === 'applied' ? 'verified' : state,
++          code,
++          resultSha256,
++          result,
++          actor,
++          occurredAt,
++        ],
++      );
++      const readback = await client.query<{ receipt_count: string }>(
++        `SELECT count(*)::text AS receipt_count
+          FROM business_v2.academy_capacity_operator_receipts
+         WHERE case_id=$1 AND case_version=0`,
+-      [caseId],
+-    );
+-    if (readback.rows[0]?.receipt_count !== '2')
+-      throw new Error('Academy Capacity receipt readback failed');
+-    return {
+-      caseKey: command.caseKey,
+-      commandType: command.type,
+-      state,
+-      code,
+-      replayed: false,
+-      resultSha256,
+-      summary: result,
+-    };
+-  });
++        [caseId],
++      );
++      if (readback.rows[0]?.receipt_count !== '2')
++        throw new Error('Academy Capacity receipt readback failed');
++      return {
++        caseKey: command.caseKey,
++        commandType: command.type,
++        state,
++        code,
++        replayed: false,
++        resultSha256,
++        summary: result,
++      };
++    },
++  );
++  if (outcome.state === 'applied' && !outcome.replayed) {
++    if (!deps.transaction || deps.enqueuePublication) {
++      await runtime
++        .enqueuePublication()
++        .catch((error) =>
++          logger.warn(
++            { err: error, commandType: command.type, caseKey: command.caseKey },
++            'Academy capacity threshold publication enqueue failed',
++          ),
++        );
++    }
++  }
++  return outcome;
+ }
+
+@@ -1489,5 +1748,5 @@ export async function readAcademyCapacityInventory(
+   const run = async (queryable: Pick<PoolClient, 'query'>) => {
+     const result = await queryable.query(
+-      `SELECT v.pool_key,v.delivery_block_key,v.capacity,v.occupied,v.reserved,
++      `SELECT v.pool_key,v.delivery_block_key,v.capacity,v.occupied,v.reserved,v.committed,
+               v.available,v.waitlist_count,v.public_state,v.pool_version,
+               d.component_key,d.starts_at,d.ends_at,d.timezone,
+@@ -1518,4 +1777,5 @@ export async function readAcademyCapacityInventory(
+       occupied: asNumber(row.occupied),
+       reserved: asNumber(row.reserved),
++      committed: asNumber(row.committed),
+       available: asNumber(row.available),
+       waitlistCount: asNumber(row.waitlist_count),
+diff --git a/src/academy-capacity-publication.ts b/src/academy-capacity-publication.ts
+new file mode 100644
+index 00000000..64b0c189
+--- /dev/null
++++ b/src/academy-capacity-publication.ts
+@@ -0,0 +1,420 @@
++import crypto from 'node:crypto';
++
++import type { QueryResultRow } from 'pg';
++
++import { query } from './business-db.js';
++import { readEnvFile } from './env.js';
++import { logger } from './logger.js';
++
++export type CapacityPublicationReason = 'threshold' | 'daily' | 'initial';
++export type CapacitySiteState = 'available' | 'sold_out';
++
++export interface CapacityPublicationPayload {
++  schema_version: 1;
++  pool_key: string;
++  program: 'acc' | 'mcs-practicum';
++  cohort_start: string;
++  state: CapacitySiteState;
++  revision: number;
++  generated_at: string;
++  payload_sha256: string;
++}
++
++export interface AcademyCapacityPublicationConfig {
++  enabled: boolean;
++  valid: boolean;
++  siteUrl: string | null;
++  siteKey: string | null;
++  cloudflareZoneId: string | null;
++  cloudflareToken: string | null;
++  reason: string;
++}
++
++interface PublicationDeps {
++  query: typeof query;
++  fetch: typeof fetch;
++  now: () => string;
++}
++
++const defaultDeps: PublicationDeps = {
++  query,
++  fetch,
++  now: () => new Date().toISOString(),
++};
++
++const SITE_PATHS: Record<'acc' | 'mcs-practicum', string[]> = {
++  acc: [
++    '/icf/acc-coach-certification-training/',
++    '/icf/acc-pcc-certification/',
++    '/icf/pcc-professional-coach-certification/',
++  ],
++  'mcs-practicum': ['/mcs/', '/mcs/advanced-accreditation-mentor-coaching/'],
++};
++
++function stableJson(value: unknown): string {
++  if (value === null || typeof value !== 'object')
++    return JSON.stringify(value) ?? 'null';
++  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
++  const record = value as Record<string, unknown>;
++  return `{${Object.keys(record)
++    .sort()
++    .map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`)
++    .join(',')}}`;
++}
++
++function sha(value: string): string {
++  return crypto.createHash('sha256').update(value).digest('hex');
++}
++
++export function academyCapacityPublicationConfig(
++  env: NodeJS.ProcessEnv = process.env,
++): AcademyCapacityPublicationConfig {
++  const file = readEnvFile([
++    'ACADEMY_CAPACITY_PUBLICATION_ENABLED',
++    'ACADEMY_CAPACITY_SITE_URL',
++    'TANDEM_API_KEY',
++    'CF_ZONE_ID',
++    'CF_MGMT_TOKEN',
++    'CF_API_TOKEN',
++  ]);
++  const source = { ...file, ...env };
++  const enabled = source.ACADEMY_CAPACITY_PUBLICATION_ENABLED === '1';
++  const siteUrl = source.ACADEMY_CAPACITY_SITE_URL?.replace(/\/+$/, '') ?? null;
++  const siteKey = source.TANDEM_API_KEY ?? null;
++  const cloudflareZoneId = source.CF_ZONE_ID ?? null;
++  const cloudflareToken = source.CF_MGMT_TOKEN ?? source.CF_API_TOKEN ?? null;
++  if (!enabled)
++    return {
++      enabled,
++      valid: true,
++      siteUrl,
++      siteKey,
++      cloudflareZoneId,
++      cloudflareToken,
++      reason: 'disabled',
++    };
++  if (!siteUrl || !/^https:\/\//.test(siteUrl))
++    return {
++      enabled,
++      valid: false,
++      siteUrl,
++      siteKey,
++      cloudflareZoneId,
++      cloudflareToken,
++      reason: 'site_url_invalid',
++    };
++  if (!siteKey || siteKey.length < 16)
++    return {
++      enabled,
++      valid: false,
++      siteUrl,
++      siteKey: null,
++      cloudflareZoneId,
++      cloudflareToken,
++      reason: 'site_key_missing',
++    };
++  if (!cloudflareZoneId || !cloudflareToken)
++    return {
++      enabled,
++      valid: false,
++      siteUrl,
++      siteKey,
++      cloudflareZoneId,
++      cloudflareToken,
++      reason: 'cloudflare_config_missing',
++    };
++  return {
++    enabled,
++    valid: true,
++    siteUrl,
++    siteKey,
++    cloudflareZoneId,
++    cloudflareToken,
++    reason: 'enabled',
++  };
++}
++
++export function publicSiteState(
++  value: 'open' | 'sold_out' | 'closed',
++  waitlistCount = 0,
++): CapacitySiteState {
++  return value === 'open' && waitlistCount === 0 ? 'available' : 'sold_out';
++}
++
++export function publicProgramAndDate(deliveryBlockKey: string): {
++  program: 'acc' | 'mcs-practicum';
++  cohortStart: string;
++} | null {
++  const match = /^(acc\.module-1|mcs-practicum):(\d{4}-\d{2}-\d{2})$/.exec(
++    deliveryBlockKey,
++  );
++  if (!match) return null;
++  return {
++    program: match[1] === 'acc.module-1' ? 'acc' : 'mcs-practicum',
++    cohortStart: match[2],
++  };
++}
++
++export function buildCapacityPublicationPayload(input: {
++  poolKey: string;
++  deliveryBlockKey: string;
++  publicState: 'open' | 'sold_out' | 'closed';
++  poolVersion: number;
++  generatedAt: string;
++  waitlistCount?: number;
++}): CapacityPublicationPayload | null {
++  const publicIdentity = publicProgramAndDate(input.deliveryBlockKey);
++  if (!publicIdentity) return null;
++  const base = {
++    schema_version: 1 as const,
++    pool_key: input.poolKey,
++    program: publicIdentity.program,
++    cohort_start: publicIdentity.cohortStart,
++    state: publicSiteState(input.publicState, input.waitlistCount ?? 0),
++    revision: input.poolVersion,
++    generated_at: input.generatedAt,
++  };
++  return { ...base, payload_sha256: sha(stableJson(base)) };
++}
++
++export async function enqueueAcademyCapacityPublications(
++  reason: CapacityPublicationReason,
++  deps: Partial<PublicationDeps> = {},
++): Promise<{ scanned: number; enqueued: number; skipped: number }> {
++  const runtime = { ...defaultDeps, ...deps };
++  const now = runtime.now();
++  const result = await runtime.query(
++    `SELECT p.id::text AS pool_id,v.pool_key,v.delivery_block_key,v.public_state,
++            v.waitlist_count,
++            v.pool_version,
++            (SELECT x.public_state
++               FROM business_v2.academy_capacity_publications x
++              WHERE x.pool_id=p.id AND x.state='delivered'
++              ORDER BY x.delivered_at DESC,x.id DESC LIMIT 1) AS last_state
++       FROM business_v2.v_academy_seat_pool_occupancy v
++       JOIN business_v2.academy_seat_pools p ON p.pool_key=v.pool_key
++      ORDER BY p.id`,
++  );
++  let enqueued = 0;
++  let skipped = 0;
++  for (const row of result.rows as QueryResultRow[]) {
++    const projection = buildCapacityPublicationPayload({
++      poolKey: String(row.pool_key),
++      deliveryBlockKey: String(row.delivery_block_key),
++      publicState: row.public_state as 'open' | 'sold_out' | 'closed',
++      poolVersion: Number(row.pool_version),
++      generatedAt: now,
++      waitlistCount: Number(row.waitlist_count),
++    });
++    if (!projection) {
++      skipped += 1;
++      continue;
++    }
++    if (reason === 'threshold' && row.last_state === projection.state) {
++      skipped += 1;
++      continue;
++    }
++    const day = now.slice(0, 10);
++    const publicationKey = `capacity-publication:${sha(
++      `${projection.pool_key}|${row.pool_version}|${projection.state}|${reason}|${reason === 'daily' ? day : ''}`,
++    ).slice(0, 40)}`;
++    const inserted = await runtime.query<{ id: string }>(
++      `INSERT INTO business_v2.academy_capacity_publications
++         (publication_key,pool_id,pool_version,public_state,reason,payload_sha256,
++          state,attempt_count,next_attempt_at,created_at,updated_at,updated_by)
++       VALUES ($1,$2::bigint,$3,$4,$5,repeat('0',64),'pending',0,$6,$6,$6,'academy-capacity-publication:host')
++       ON CONFLICT (publication_key) DO NOTHING
++       RETURNING id::text`,
++      [
++        publicationKey,
++        String(row.pool_id),
++        Number(row.pool_version),
++        projection.state,
++        reason,
++        now,
++      ],
++    );
++    if (inserted.rowCount === 1 && inserted.rows[0]) {
++      const payload = buildCapacityPublicationPayload({
++        poolKey: String(row.pool_key),
++        deliveryBlockKey: String(row.delivery_block_key),
++        publicState: row.public_state as 'open' | 'sold_out' | 'closed',
++        poolVersion: Number(inserted.rows[0].id),
++        generatedAt: now,
++        waitlistCount: Number(row.waitlist_count),
++      })!;
++      const finalized = await runtime.query(
++        `UPDATE business_v2.academy_capacity_publications
++            SET payload_sha256=$1
++          WHERE id=$2::bigint AND payload_sha256=repeat('0',64)`,
++        [payload.payload_sha256, inserted.rows[0].id],
++      );
++      if (finalized.rowCount !== 1)
++        throw new Error(
++          'academy-capacity-publication: payload finalization failed',
++        );
++      enqueued += 1;
++    } else skipped += 1;
++  }
++  return { scanned: result.rows.length, enqueued, skipped };
++}
++
++export async function runAcademyCapacityPublicationBatch(
++  deps: Partial<PublicationDeps> = {},
++): Promise<{ attempted: number; delivered: number; failed: number }> {
++  const config = academyCapacityPublicationConfig();
++  if (!config.enabled) return { attempted: 0, delivered: 0, failed: 0 };
++  if (
++    !config.valid ||
++    !config.siteUrl ||
++    !config.siteKey ||
++    !config.cloudflareZoneId ||
++    !config.cloudflareToken
++  )
++    throw new Error(`academy-capacity-publication:${config.reason}`);
++  const runtime = { ...defaultDeps, ...deps };
++  const now = runtime.now();
++  const pending = await runtime.query(
++    `SELECT x.id::text,p.pool_key,d.delivery_block_key,x.public_state,
++            x.pool_version,x.payload_sha256,x.attempt_count,x.created_at
++       FROM business_v2.academy_capacity_publications x
++       JOIN business_v2.academy_seat_pools p ON p.id=x.pool_id
++       JOIN business_v2.academy_delivery_blocks d ON d.id=p.delivery_block_id
++      WHERE x.state IN ('pending','failed') AND x.next_attempt_at <= $1
++      ORDER BY x.next_attempt_at,x.id
++      LIMIT 20`,
++    [now],
++  );
++  let delivered = 0;
++  let failed = 0;
++  for (const row of pending.rows as QueryResultRow[]) {
++    const payload = buildCapacityPublicationPayload({
++      poolKey: String(row.pool_key),
++      deliveryBlockKey: String(row.delivery_block_key),
++      publicState:
++        String(row.public_state) === 'available' ? 'open' : 'sold_out',
++      poolVersion: Number(row.id),
++      generatedAt:
++        row.created_at instanceof Date
++          ? row.created_at.toISOString()
++          : String(row.created_at),
++    });
++    if (!payload || payload.payload_sha256 !== String(row.payload_sha256)) {
++      await runtime.query(
++        `UPDATE business_v2.academy_capacity_publications
++            SET state='failed',attempt_count=attempt_count+1,
++                last_error_code='payload_drift',next_attempt_at=$2,
++                updated_at=$1,updated_by='academy-capacity-publication:host'
++          WHERE id=$3::bigint`,
++        [
++          now,
++          new Date(Date.parse(now) + 3600_000).toISOString(),
++          String(row.id),
++        ],
++      );
++      failed += 1;
++      continue;
++    }
++    const body = stableJson(payload);
++    const signature = `sha256=${crypto
++      .createHmac('sha256', config.siteKey)
++      .update(body)
++      .digest('hex')}`;
++    let ack: string | null = null;
++    let errorCode = 'publication_failed';
++    try {
++      const response = await runtime.fetch(
++        `${config.siteUrl}/wp-json/tandem/v1/capacity-status`,
++        {
++          method: 'POST',
++          headers: {
++            'Content-Type': 'application/json',
++            'X-Tandem-Key': config.siteKey,
++            'X-Tandem-Signature': signature,
++          },
++          body,
++          signal: AbortSignal.timeout(30_000),
++        },
++      );
++      const json = (await response.json()) as Record<string, unknown>;
++      if (
++        response.ok &&
++        json.success === true &&
++        json.cache_complete === true &&
++        typeof json.ack_sha256 === 'string' &&
++        /^[0-9a-f]{64}$/.test(json.ack_sha256)
++      ) {
++        const paths = SITE_PATHS[payload.program];
++        const files = paths.map((path) => `${config.siteUrl}${path}`);
++        const purge = await runtime.fetch(
++          `https://api.cloudflare.com/client/v4/zones/${encodeURIComponent(config.cloudflareZoneId)}/purge_cache`,
++          {
++            method: 'POST',
++            headers: {
++              Authorization: `Bearer ${config.cloudflareToken}`,
++              'Content-Type': 'application/json',
++            },
++            body: JSON.stringify({ files }),
++            signal: AbortSignal.timeout(30_000),
++          },
++        );
++        if (!purge.ok) {
++          errorCode = 'cloudflare_purge_failed';
++        } else {
++          let warm = true;
++          for (const file of files) {
++            const warmed = await runtime.fetch(file, {
++              method: 'GET',
++              redirect: 'follow',
++              signal: AbortSignal.timeout(30_000),
++            });
++            if (!warmed.ok) warm = false;
++          }
++          if (warm) ack = json.ack_sha256;
++          else errorCode = 'page_prewarm_failed';
++        }
++      } else {
++        errorCode = response.ok ? 'cache_refresh_incomplete' : 'site_rejected';
++      }
++    } catch {
++      errorCode = 'site_unavailable';
++    }
++    if (ack) {
++      await runtime.query(
++        `UPDATE business_v2.academy_capacity_publications
++            SET state='delivered',attempt_count=attempt_count+1,
++                last_error_code=NULL,ack_sha256=$2,delivered_at=$1,
++                updated_at=$1,updated_by='academy-capacity-publication:host'
++          WHERE id=$3::bigint AND state IN ('pending','failed')`,
++        [now, ack, String(row.id)],
++      );
++      delivered += 1;
++    } else {
++      const attempt = Number(row.attempt_count) + 1;
++      const delayMs = Math.min(
++        6 * 3600_000,
++        60_000 * 2 ** Math.min(attempt, 8),
++      );
++      await runtime.query(
++        `UPDATE business_v2.academy_capacity_publications
++            SET state='failed',attempt_count=$2,last_error_code=$3,
++                next_attempt_at=$4,updated_at=$1,
++                updated_by='academy-capacity-publication:host'
++          WHERE id=$5::bigint AND state IN ('pending','failed')`,
++        [
++          now,
++          attempt,
++          errorCode,
++          new Date(Date.parse(now) + delayMs).toISOString(),
++          String(row.id),
++        ],
++      );
++      logger.warn(
++        { publicationId: String(row.id), errorCode, attempt },
++        'Academy capacity website publication retained for retry',
++      );
++      failed += 1;
++    }
++  }
++  return { attempted: pending.rows.length, delivered, failed };
++}
+diff --git a/src/academy-capacity-sale-ingress.ts b/src/academy-capacity-sale-ingress.ts
+new file mode 100644
+index 00000000..9547a8e1
+--- /dev/null
++++ b/src/academy-capacity-sale-ingress.ts
+@@ -0,0 +1,101 @@
++import crypto from 'node:crypto';
++
++import { query } from './business-db.js';
++import {
++  executeAcademyCapacityOperatorCommand,
++  type CapacityOperatorResult,
++} from './academy-capacity-operator-store.js';
++
++export interface AcademyCapacitySaleFact {
++  version: 1;
++  eligible: boolean;
++  payment_intent_id: string;
++  product_slug: string | null;
++  cohort_program: string | null;
++  cohort_start: string | null;
++}
++
++interface SaleIngressDeps {
++  query: typeof query;
++  execute: typeof executeAcademyCapacityOperatorCommand;
++}
++
++const defaultDeps: SaleIngressDeps = {
++  query,
++  execute: executeAcademyCapacityOperatorCommand,
++};
++
++function hash(value: string): string {
++  return crypto.createHash('sha256').update(value).digest('hex');
++}
++
++export async function recordAcademyCapacityWebsiteSale(
++  fact: AcademyCapacitySaleFact,
++  deps: Partial<SaleIngressDeps> = {},
++): Promise<CapacityOperatorResult | null> {
++  if (!fact.eligible) return null;
++  if (
++    fact.version !== 1 ||
++    !/^pi_[A-Za-z0-9_]+$/.test(fact.payment_intent_id) ||
++    !fact.product_slug ||
++    !/^[a-z0-9][a-z0-9._:-]{0,199}$/.test(fact.product_slug) ||
++    !['acc', 'mcs-practicum'].includes(fact.cohort_program ?? '') ||
++    !fact.cohort_start ||
++    !/^\d{4}-\d{2}-\d{2}/.test(fact.cohort_start)
++  ) {
++    throw new Error('academy-capacity-sale: invalid eligible fact');
++  }
++  const runtime = { ...defaultDeps, ...deps };
++  const date = fact.cohort_start.slice(0, 10);
++  const deliveryBlockKey = `${
++    fact.cohort_program === 'acc' ? 'acc.module-1' : 'mcs-practicum'
++  }:${date}`;
++  const target = await runtime.query<{
++    pool_key: string;
++    pool_version: number;
++    ends_at: Date | string;
++    catalog_revision: number;
++  }>(
++    `SELECT p.pool_key,p.version AS pool_version,d.ends_at,m.catalog_revision
++       FROM business_v2.academy_delivery_blocks d
++       JOIN business_v2.academy_seat_pools p ON p.delivery_block_id=d.id
++       JOIN business_v2.academy_seat_pool_offers m ON m.pool_id=p.id
++      WHERE d.delivery_block_key=$1 AND m.offer_key=$2 AND m.state='active'
++      LIMIT 2`,
++    [deliveryBlockKey, fact.product_slug],
++  );
++  if (target.rows.length !== 1)
++    throw new Error(
++      'academy-capacity-sale: exact pool/offer mapping not found',
++    );
++  const row = target.rows[0];
++  const evidenceSha256 = hash(
++    [
++      fact.payment_intent_id,
++      fact.product_slug,
++      fact.cohort_program,
++      fact.cohort_start,
++      deliveryBlockKey,
++    ].join('|'),
++  );
++  const identity = hash(fact.payment_intent_id).slice(0, 32);
++  return runtime.execute('capacity', {
++    type: 'commit_seat',
++    caseKey: `website-sale:${identity}`,
++    commitmentKey: `commitment:website:${identity}`,
++    poolKey: row.pool_key,
++    expectedPoolVersion: Number(row.pool_version),
++    sourceScope: 'website_stripe_sale',
++    idempotencyKey: fact.payment_intent_id,
++    offerKey: fact.product_slug,
++    catalogRevision: Number(row.catalog_revision),
++    orderKey: null,
++    seatKey: null,
++    expiresAt:
++      row.ends_at instanceof Date
++        ? row.ends_at.toISOString()
++        : new Date(row.ends_at).toISOString(),
++    reason: 'verified website sale',
++    evidenceSha256,
++  });
++}
+diff --git a/src/academy-capacity.ts b/src/academy-capacity.ts
+index 949272dd..fd732afb 100644
+--- a/src/academy-capacity.ts
++++ b/src/academy-capacity.ts
+@@ -9,5 +9,9 @@ export type DeliveryBlockState = 'scheduled' | 'cancelled' | 'completed';
+ export type SeatPoolOperationalState = 'open' | 'closed';
+ export type PublicInventoryState = 'open' | 'sold_out' | 'closed';
+-export type ReservationChannel = 'checkout' | 'manual' | 'waitlist_offer';
++export type ReservationChannel =
++  | 'checkout'
++  | 'manual'
++  | 'waitlist_offer'
++  | 'commitment';
+ export type ReservationState =
+   | 'held'
+@@ -164,4 +168,5 @@ export interface InventorySnapshot {
+   occupied: number;
+   reserved: number;
++  committed: number;
+   available: number;
+   waitlistCount: number;
+@@ -194,4 +199,12 @@ const RESERVATION_CHANNELS = new Set<ReservationChannel>([
+   'manual',
+   'waitlist_offer',
++  'commitment',
++]);
++const COMMITMENT_SOURCE_SCOPES = new Set([
++  'website_stripe_sale',
++  'invoice',
++  'check',
++  'sponsor',
++  'manual_sale',
+ ]);
+ const RESERVATION_RELEASE_OUTCOMES = new Set<
+@@ -677,5 +690,14 @@ export function showInventory(
+   ).length;
+   const reserved = Object.values(state.reservations).filter(
+-    (value) => value.poolKey === poolKey && reservationIsLive(value, atMs),
++    (value) =>
++      value.poolKey === poolKey &&
++      value.channel !== 'commitment' &&
++      reservationIsLive(value, atMs),
++  ).length;
++  const committed = Object.values(state.reservations).filter(
++    (value) =>
++      value.poolKey === poolKey &&
++      value.channel === 'commitment' &&
++      reservationIsLive(value, atMs),
+   ).length;
+   const waitlistCount = Object.values(state.waitlistEntries).filter(
+@@ -684,5 +706,8 @@ export function showInventory(
+       ['waiting', 'offered', 'accepted'].includes(value.state),
+   ).length;
+-  const available = Math.max(0, pool.capacity - occupied - reserved);
++  const available = Math.max(
++    0,
++    pool.capacity - occupied - reserved - committed,
++  );
+   return {
+     poolKey,
+@@ -691,4 +716,5 @@ export function showInventory(
+     occupied,
+     reserved,
++    committed,
+     available,
+     waitlistCount,
+@@ -761,5 +787,24 @@ export function reserveCapacity(
+       'reservation channel is invalid',
+     );
+-  assertReservationTtl(input.channel, input.occurredAt, input.expiresAt);
++  const block = state.deliveryBlocks[pool.deliveryBlockKey];
++  if (!block || block.state !== 'scheduled')
++    throw new CapacityCommandError(
++      'delivery_block_unavailable',
++      'scheduled delivery block is required',
++    );
++  if (input.channel === 'commitment') {
++    if (!COMMITMENT_SOURCE_SCOPES.has(input.sourceScope))
++      throw new CapacityCommandError(
++        'invalid_commitment_source',
++        'committed seat source is not supported',
++      );
++    if (input.expiresAt !== block.endsAt)
++      throw new CapacityCommandError(
++        'invalid_commitment_lifetime',
++        'committed seat must remain live through the delivery block end',
++      );
++  } else {
++    assertReservationTtl(input.channel, input.occurredAt, input.expiresAt);
++  }
+   if (input.channel === 'manual') {
+     if (!input.reason)
+@@ -770,4 +815,12 @@ export function reserveCapacity(
+     assertText(input.reason, 'reason', 500);
+   }
++  if (input.channel === 'commitment') {
++    if (!input.reason)
++      throw new CapacityCommandError(
++        'commitment_reason_required',
++        'committed seat requires a bounded reason',
++      );
++    assertText(input.reason, 'reason', 500);
++  }
+   if (input.channel === 'waitlist_offer' && input.reason !== 'waitlist_offer')
+     throw new CapacityCommandError(
+@@ -824,10 +877,4 @@ export function reserveCapacity(
+   if (pool.operationalState !== 'open')
+     throw new CapacityCommandError('pool_closed', 'seat pool is closed');
+-  const block = state.deliveryBlocks[pool.deliveryBlockKey];
+-  if (!block || block.state !== 'scheduled')
+-    throw new CapacityCommandError(
+-      'delivery_block_unavailable',
+-      'scheduled delivery block is required',
+-    );
+   requireActiveMapping(
+     state,
+@@ -847,5 +894,5 @@ export function reserveCapacity(
+     input.occurredAt,
+   );
+-  if (snapshot.available < 1)
++  if (snapshot.available < 1 && input.channel !== 'commitment')
+     throw new CapacityCommandError(
+       'capacity_unavailable',
+@@ -905,5 +952,8 @@ export function reserveCapacity(
+     subjectKey: input.reservationKey,
+     previousVersion: null,
+-    eventType: 'capacity_reserved',
++    eventType:
++      input.channel === 'commitment'
++        ? 'capacity_commitment_recorded'
++        : 'capacity_reserved',
+     evidenceSha256: input.sourceEvidenceSha256,
+     actor: input.actor,
+@@ -913,4 +963,285 @@ export function reserveCapacity(
+ }
+
++export function changeSeatPoolCapacity(
++  state: AcademyCapacityState,
++  enrollmentState: EnrollmentFoundationState,
++  input: {
++    poolKey: string;
++    expectedPoolVersion: number;
++    newCapacity: number;
++    reason: string;
++    evidenceSha256: string;
++    actor: string;
++    occurredAt: string;
++  },
++): AcademyCapacityState {
++  const pool = state.seatPools[input.poolKey];
++  if (!pool)
++    throw new CapacityCommandError('pool_not_found', 'seat pool not found');
++  assertPositiveInteger(input.newCapacity, 'newCapacity');
++  assertText(input.reason, 'reason', 500);
++  assertSha(input.evidenceSha256, 'evidenceSha256');
++  assertActor(input.actor);
++  assertTime(input.occurredAt, 'occurredAt');
++  if (pool.capacity === input.newCapacity) {
++    const receipt = [...state.events]
++      .reverse()
++      .find(
++        (value) =>
++          value.subjectType === 'seat_pool' &&
++          value.subjectKey === input.poolKey &&
++          value.eventType === 'seat_pool_capacity_changed',
++      );
++    if (receipt?.evidenceSha256 === input.evidenceSha256)
++      return copyCapacity(state);
++    throw new CapacityCommandError(
++      'idempotency_conflict',
++      'capacity already has this value with different evidence',
++    );
++  }
++  assertVersion(pool.version, input.expectedPoolVersion, 'seat pool');
++  const snapshot = showInventory(
++    state,
++    enrollmentState,
++    input.poolKey,
++    input.occurredAt,
++  );
++  if (
++    input.newCapacity <
++    snapshot.occupied + snapshot.reserved + snapshot.committed
++  )
++    throw new CapacityCommandError(
++      'capacity_below_commitments',
++      'new capacity is below occupied plus committed seats',
++    );
++  const next = copyCapacity(state);
++  next.seatPools[input.poolKey] = {
++    ...pool,
++    capacity: input.newCapacity,
++    configurationEvidenceSha256: input.evidenceSha256,
++    version: pool.version + 1,
++    updatedAt: input.occurredAt,
++    updatedBy: input.actor,
++  };
++  appendEvent(next, {
++    subjectType: 'seat_pool',
++    subjectKey: input.poolKey,
++    previousVersion: pool.version,
++    eventType: 'seat_pool_capacity_changed',
++    evidenceSha256: input.evidenceSha256,
++    actor: input.actor,
++    occurredAt: input.occurredAt,
++  });
++  return next;
++}
++
++export function transferCommitment(
++  state: AcademyCapacityState,
++  enrollmentState: EnrollmentFoundationState,
++  input: {
++    commitmentKey: string;
++    expectedCommitmentVersion: number;
++    expectedOriginPoolVersion: number;
++    destinationPoolKey: string;
++    expectedDestinationPoolVersion: number;
++    evidenceSha256: string;
++    actor: string;
++    occurredAt: string;
++  },
++): AcademyCapacityState {
++  const commitment = state.reservations[input.commitmentKey];
++  if (!commitment || commitment.channel !== 'commitment')
++    throw new CapacityCommandError(
++      'commitment_not_found',
++      'committed seat was not found',
++    );
++  const originPool = state.seatPools[commitment.poolKey];
++  const destinationPool = state.seatPools[input.destinationPoolKey];
++  const destinationBlock =
++    destinationPool && state.deliveryBlocks[destinationPool.deliveryBlockKey];
++  if (!originPool || !destinationPool || !destinationBlock)
++    throw new CapacityCommandError(
++      'destination_not_found',
++      'origin or destination pool was not found',
++    );
++  assertSha(input.evidenceSha256, 'evidenceSha256');
++  assertActor(input.actor);
++  assertTime(input.occurredAt, 'occurredAt');
++  if (commitment.state !== 'held')
++    throw new CapacityCommandError(
++      'commitment_terminal',
++      'only a live committed seat can move',
++    );
++  if (originPool.poolKey === destinationPool.poolKey)
++    throw new CapacityCommandError(
++      'same_pool_transfer',
++      'origin and destination pools must differ',
++    );
++  assertVersion(
++    commitment.version,
++    input.expectedCommitmentVersion,
++    'commitment',
++  );
++  assertVersion(
++    originPool.version,
++    input.expectedOriginPoolVersion,
++    'origin pool',
++  );
++  assertVersion(
++    destinationPool.version,
++    input.expectedDestinationPoolVersion,
++    'destination pool',
++  );
++  if (
++    destinationPool.operationalState !== 'open' ||
++    destinationBlock.state !== 'scheduled'
++  )
++    throw new CapacityCommandError(
++      'destination_closed',
++      'destination pool must be open and scheduled',
++    );
++  requireActiveMapping(
++    state,
++    destinationPool.poolKey,
++    commitment.offerKey,
++    commitment.catalogRevision,
++  );
++  if (
++    showInventory(
++      state,
++      enrollmentState,
++      destinationPool.poolKey,
++      input.occurredAt,
++    ).available < 1
++  )
++    throw new CapacityCommandError(
++      'capacity_unavailable',
++      'destination has no available seat',
++    );
++  const next = copyCapacity(state);
++  next.reservations[input.commitmentKey] = {
++    ...commitment,
++    poolKey: destinationPool.poolKey,
++    expiresAt: destinationBlock.endsAt,
++    version: commitment.version + 1,
++    updatedAt: input.occurredAt,
++    updatedBy: input.actor,
++  };
++  next.seatPools[originPool.poolKey] = {
++    ...originPool,
++    version: originPool.version + 1,
++    updatedAt: input.occurredAt,
++    updatedBy: input.actor,
++  };
++  next.seatPools[destinationPool.poolKey] = {
++    ...destinationPool,
++    version: destinationPool.version + 1,
++    updatedAt: input.occurredAt,
++    updatedBy: input.actor,
++  };
++  appendEvent(next, {
++    subjectType: 'reservation',
++    subjectKey: input.commitmentKey,
++    previousVersion: commitment.version,
++    eventType: 'capacity_commitment_transferred',
++    evidenceSha256: input.evidenceSha256,
++    actor: input.actor,
++    occurredAt: input.occurredAt,
++  });
++  return next;
++}
++
++export function reconcileCommitment(
++  state: AcademyCapacityState,
++  enrollmentState: EnrollmentFoundationState,
++  input: {
++    commitmentKey: string;
++    expectedCommitmentVersion: number;
++    expectedPoolVersion: number;
++    assignmentKey: string;
++    expectedAssignmentVersion: number;
++    evidenceSha256: string;
++    actor: string;
++    occurredAt: string;
++  },
++): AcademyCapacityState {
++  const commitment = state.reservations[input.commitmentKey];
++  if (!commitment || commitment.channel !== 'commitment')
++    throw new CapacityCommandError(
++      'commitment_not_found',
++      'committed seat was not found',
++    );
++  const pool = state.seatPools[commitment.poolKey];
++  const assignment = enrollmentState.assignments[input.assignmentKey];
++  if (!pool || !assignment)
++    throw new CapacityCommandError(
++      'assignment_not_found',
++      'pool or exact assignment was not found',
++    );
++  assertSha(input.evidenceSha256, 'evidenceSha256');
++  assertActor(input.actor);
++  assertTime(input.occurredAt, 'occurredAt');
++  if (commitment.state === 'consumed') {
++    const receipt = [...state.events]
++      .reverse()
++      .find(
++        (value) =>
++          value.subjectType === 'reservation' &&
++          value.subjectKey === input.commitmentKey &&
++          value.eventType === 'capacity_commitment_reconciled',
++      );
++    if (receipt?.evidenceSha256 === input.evidenceSha256)
++      return copyCapacity(state);
++    throw new CapacityCommandError(
++      'idempotency_conflict',
++      'commitment was reconciled with different evidence',
++    );
++  }
++  assertVersion(
++    commitment.version,
++    input.expectedCommitmentVersion,
++    'commitment',
++  );
++  assertVersion(pool.version, input.expectedPoolVersion, 'seat pool');
++  assertVersion(
++    assignment.version,
++    input.expectedAssignmentVersion,
++    'assignment',
++  );
++  if (
++    commitment.state !== 'held' ||
++    !ACTIVE_ASSIGNMENT_STATES.has(assignment.state) ||
++    assignment.deliveryBlockKey !== pool.deliveryBlockKey
++  )
++    throw new CapacityCommandError(
++      'commitment_assignment_conflict',
++      'commitment and assignment do not consume the same delivery block',
++    );
++  const next = copyCapacity(state);
++  next.reservations[input.commitmentKey] = {
++    ...commitment,
++    state: 'consumed',
++    version: commitment.version + 1,
++    updatedAt: input.occurredAt,
++    updatedBy: input.actor,
++  };
++  next.seatPools[pool.poolKey] = {
++    ...pool,
++    version: pool.version + 1,
++    updatedAt: input.occurredAt,
++    updatedBy: input.actor,
++  };
++  appendEvent(next, {
++    subjectType: 'reservation',
++    subjectKey: input.commitmentKey,
++    previousVersion: commitment.version,
++    eventType: 'capacity_commitment_reconciled',
++    evidenceSha256: input.evidenceSha256,
++    actor: input.actor,
++    occurredAt: input.occurredAt,
++  });
++  return next;
++}
++
+ export function releaseReservation(
+   state: AcademyCapacityState,
+diff --git a/src/capability-manifest.ts b/src/capability-manifest.ts
+index 21820ffa..12fe1044 100644
+--- a/src/capability-manifest.ts
++++ b/src/capability-manifest.ts
+@@ -54,4 +54,8 @@ export const MCP_TOOL_NAMES = [
+   'capacity_inventory',
+   'capacity_enrollment',
++  'capacity_commit_seat',
++  'capacity_change_capacity',
++  'capacity_transfer_commitment',
++  'capacity_reconcile_commitment',
+   'capacity_reserve_manual',
+   'capacity_release_reservation',
+@@ -83,4 +87,8 @@ export const HOST_OPERATION_NAMES = [
+   'capacity_inventory',
+   'capacity_enrollment',
++  'commit_seat',
++  'change_capacity',
++  'transfer_commitment',
++  'reconcile_commitment',
+   'reserve_manual',
+   'release_reservation',
+@@ -166,4 +174,8 @@ const MCP_HOST_OPERATION: Partial<Record<McpToolName, HostOperationName>> = {
+   capacity_inventory: 'capacity_inventory',
+   capacity_enrollment: 'capacity_enrollment',
++  capacity_commit_seat: 'commit_seat',
++  capacity_change_capacity: 'change_capacity',
++  capacity_transfer_commitment: 'transfer_commitment',
++  capacity_reconcile_commitment: 'reconcile_commitment',
+   capacity_reserve_manual: 'reserve_manual',
+   capacity_release_reservation: 'release_reservation',
+diff --git a/src/index.ts b/src/index.ts
+index 10b482f1..7e315f7f 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -66,4 +66,9 @@ import {
+ } from './capability-manifest.js';
+ import { academyCapacityOperatorConfig } from './academy-capacity-operator-config.js';
++import {
++  academyCapacityPublicationConfig,
++  enqueueAcademyCapacityPublications,
++  runAcademyCapacityPublicationBatch,
++} from './academy-capacity-publication.js';
+ import {
+   cleanupOrphans,
+@@ -2192,4 +2197,5 @@ async function main(): Promise<void> {
+       }
+       const capacityOperator = academyCapacityOperatorConfig();
++      const capacityPublication = academyCapacityPublicationConfig();
+       const capabilityConfig = loadCapabilityManifestConfig();
+       return {
+@@ -2216,4 +2222,15 @@ async function main(): Promise<void> {
+           ),
+         },
++        academyCapacityPublication: {
++          enabled: capacityPublication.enabled,
++          valid: capacityPublication.valid,
++          reason: capacityPublication.reason,
++          siteConfigured: Boolean(capacityPublication.siteUrl),
++          keyConfigured: Boolean(capacityPublication.siteKey),
++          cloudflareConfigured: Boolean(
++            capacityPublication.cloudflareZoneId &&
++            capacityPublication.cloudflareToken,
++          ),
++        },
+         studentLifecycle: {
+           enabled: STUDENT_LIFECYCLE_ENABLED,
+@@ -2505,4 +2522,38 @@ async function main(): Promise<void> {
+     contadorStripeIngressParityTimer.unref();
+   }
++  const capacityPublicationConfig = academyCapacityPublicationConfig();
++  let capacityPublicationInFlight = false;
++  const runCapacityPublicationTick = async (
++    enqueueReason?: 'initial' | 'daily',
++  ): Promise<void> => {
++    if (capacityPublicationInFlight) return;
++    capacityPublicationInFlight = true;
++    try {
++      if (enqueueReason)
++        await enqueueAcademyCapacityPublications(enqueueReason);
++      await runAcademyCapacityPublicationBatch();
++    } catch (err) {
++      logger.error({ err }, 'Academy capacity publication tick failed');
++    } finally {
++      capacityPublicationInFlight = false;
++    }
++  };
++  if (capacityPublicationConfig.enabled && capacityPublicationConfig.valid) {
++    const capacityPublicationStartup = setTimeout(
++      () => void runCapacityPublicationTick('initial'),
++      30_000,
++    );
++    capacityPublicationStartup.unref();
++    const capacityPublicationRetryTimer = setInterval(
++      () => void runCapacityPublicationTick(),
++      5 * 60_000,
++    );
++    capacityPublicationRetryTimer.unref();
++    const capacityPublicationDailyTimer = setInterval(
++      () => void runCapacityPublicationTick('daily'),
++      24 * 60 * 60_000,
++    );
++    capacityPublicationDailyTimer.unref();
++  }
+   if (STUDENT_LIFECYCLE_ENABLED) {
+     setInterval(() => {
+diff --git a/src/stripe-payment-host.ts b/src/stripe-payment-host.ts
+index 82435893..cb853d2b 100644
+--- a/src/stripe-payment-host.ts
++++ b/src/stripe-payment-host.ts
+@@ -17,4 +17,8 @@ import { promisify } from 'util';
+
+ import { assertExternalWriteAllowed } from './action-safety.js';
++import {
++  recordAcademyCapacityWebsiteSale,
++  type AcademyCapacitySaleFact,
++} from './academy-capacity-sale-ingress.js';
+ import { DATA_DIR } from './config.js';
+ import {
+@@ -98,4 +102,5 @@ export interface StripePaymentResult {
+   retryable: boolean;
+   duplicateComplete: boolean;
++  capacityCommitmentState?: string | null;
+ }
+
+@@ -129,4 +134,5 @@ export interface StripePaymentHostDeps {
+   beginFulfillment?: typeof beginContadorFulfillment;
+   finalizeFulfillment?: typeof finalizeContadorFulfillment;
++  recordCapacitySale?: typeof recordAcademyCapacityWebsiteSale;
+ }
+
+@@ -204,7 +210,9 @@ export function parseLifecycleSentinel(stdout: string): {
+   fact: StripeLifecycleFact | null;
+   fulfillment: ProcessorFulfillmentResult | null;
++  capacityFact: AcademyCapacitySaleFact | null;
+ } {
+   let fact: StripeLifecycleFact | null = null;
+   let fulfillment: ProcessorFulfillmentResult | null = null;
++  let capacityFact: AcademyCapacitySaleFact | null = null;
+   const summaryLines: string[] = [];
+   for (const line of stdout.split('\n')) {
+@@ -222,4 +230,17 @@ export function parseLifecycleSentinel(stdout: string): {
+       continue;
+     }
++    if (line.startsWith('__ACADEMY_CAPACITY_SALE__')) {
++      const encoded = line.slice('__ACADEMY_CAPACITY_SALE__'.length).trim();
++      try {
++        capacityFact = JSON.parse(
++          Buffer.from(encoded, 'base64url').toString('utf8'),
++        ) as AcademyCapacitySaleFact;
++      } catch {
++        throw new StripePayloadError(
++          'invalid Academy capacity result from Stripe processor',
++        );
++      }
++      continue;
++    }
+     if (!line.startsWith('__CHAOS_LIFECYCLE__')) {
+       summaryLines.push(line);
+@@ -237,5 +258,10 @@ export function parseLifecycleSentinel(stdout: string): {
+     }
+   }
+-  return { summary: summaryLines.join('\n').trim(), fact, fulfillment };
++  return {
++    summary: summaryLines.join('\n').trim(),
++    fact,
++    fulfillment,
++    capacityFact,
++  };
+ }
+
+@@ -557,5 +583,26 @@ export async function handleStripePayment(
+     }
+   }
+-  const summary = parsed.summary;
++  let capacityCommitmentState: string | null = null;
++  let capacitySummary = '';
++  if (finalCase.state === 'complete' && parsed.capacityFact?.eligible) {
++    try {
++      const result = await (
++        deps.recordCapacitySale ?? recordAcademyCapacityWebsiteSale
++      )(parsed.capacityFact);
++      capacityCommitmentState = result?.state ?? null;
++      capacitySummary = result
++        ? `[CAPACITY ${result.state === 'applied' ? 'COMMITTED' : 'REVIEW'}] ${result.code}; case ${result.caseKey}`
++        : '';
++    } catch (error) {
++      capacityCommitmentState = 'needs_review';
++      capacitySummary =
++        '[CAPACITY REVIEW] Verified payment could not be mapped to one committed seat; operator review required.';
++      logger.warn(
++        { stripeId, caseId: finalCase.id, err: error },
++        'Verified website sale was not committed to Academy capacity',
++      );
++    }
++  }
++  const summary = [parsed.summary, capacitySummary].filter(Boolean).join('\n');
+   logger.info(
+     {
+@@ -580,4 +627,5 @@ export async function handleStripePayment(
+     retryable: isRetryableFulfillmentErrorCode(finalCase.lastErrorCode),
+     duplicateComplete: false,
++    capacityCommitmentState,
+   };
+ }
+diff --git a/tools/contador/process-payment.cjs b/tools/contador/process-payment.cjs
+index a8fb2759..dcb8cecb 100644
+--- a/tools/contador/process-payment.cjs
++++ b/tools/contador/process-payment.cjs
+@@ -1321,4 +1321,20 @@ async function main() {
+     `__CHAOS_LIFECYCLE__${Buffer.from(JSON.stringify(lifecycle)).toString('base64url')}`,
+   );
++  const capacitySale = {
++    version: 1,
++    eligible:
++      fulfillment.state === 'complete' &&
++      /^pi_[A-Za-z0-9_]+$/.test(accountingStripeId) &&
++      Boolean(canonicalProductSlug) &&
++      ['acc', 'mcs-practicum'].includes(String(chargeMetadata.cohort_program || '')) &&
++      /^\d{4}-\d{2}-\d{2}/.test(String(chargeMetadata.cohort_start || '')),
++    payment_intent_id: accountingStripeId,
++    product_slug: canonicalProductSlug || null,
++    cohort_program: chargeMetadata.cohort_program || null,
++    cohort_start: chargeMetadata.cohort_start || null,
++  };
++  console.log(
++    `__ACADEMY_CAPACITY_SALE__${Buffer.from(JSON.stringify(capacitySale)).toString('base64url')}`,
++  );
+ }
+

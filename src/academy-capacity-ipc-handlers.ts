@@ -53,8 +53,12 @@ const defaultDeps: Omit<AcademyCapacityIpcDeps, 'deliverSourceInput'> = {
 const TYPES = new Set<AcademyCapacityIpcPayload['type']>([
   'capacity_inventory',
   'capacity_enrollment',
+  'commit_seat',
   'reserve_manual',
   'release_reservation',
+  'change_capacity',
+  'transfer_commitment',
+  'reconcile_commitment',
   'transfer_assignment',
   'withdraw_assignment',
   'reconcile_pool',
@@ -67,6 +71,13 @@ const SCOPE = /^[a-z0-9][a-z0-9._:-]{0,199}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 const LOWER_SNAKE = /^[a-z][a-z0-9_]{0,99}$/;
 const SAFE_IDEMPOTENCY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,499}$/;
+const COMMITMENT_SCOPES = new Set([
+  'website_stripe_sale',
+  'invoice',
+  'check',
+  'sponsor',
+  'manual_sale',
+]);
 
 function assertRecord(
   value: unknown,
@@ -168,6 +179,56 @@ export function parseAcademyCapacityIpcPayload(
         enrollmentKey: stringValue(value.enrollmentKey, 'enrollmentKey', KEY),
         source_container,
       };
+    case 'commit_seat': {
+      exactKeys(value, [
+        'caseKey',
+        'commitmentKey',
+        'poolKey',
+        'expectedPoolVersion',
+        'sourceScope',
+        'idempotencyKey',
+        'offerKey',
+        'catalogRevision',
+        'orderKey',
+        'seatKey',
+        'expiresAt',
+        'reason',
+        'evidenceSha256',
+      ]);
+      const sourceScope = stringValue(value.sourceScope, 'sourceScope', SCOPE);
+      if (!COMMITMENT_SCOPES.has(sourceScope))
+        throw new Error('sourceScope is not a committed-seat source');
+      return {
+        type: value.type,
+        ...baseMutation(value),
+        commitmentKey: stringValue(value.commitmentKey, 'commitmentKey', KEY),
+        poolKey: stringValue(value.poolKey, 'poolKey', KEY),
+        expectedPoolVersion: integerValue(
+          value.expectedPoolVersion,
+          'expectedPoolVersion',
+        ),
+        sourceScope: sourceScope as Extract<
+          CapacityOperatorCommand,
+          { type: 'commit_seat' }
+        >['sourceScope'],
+        idempotencyKey: stringValue(
+          value.idempotencyKey,
+          'idempotencyKey',
+          SAFE_IDEMPOTENCY,
+        ),
+        offerKey: stringValue(value.offerKey, 'offerKey', KEY),
+        catalogRevision: integerValue(
+          value.catalogRevision,
+          'catalogRevision',
+          1,
+        ),
+        orderKey: nullableKey(value.orderKey, 'orderKey'),
+        seatKey: nullableKey(value.seatKey, 'seatKey'),
+        expiresAt: dateTime(value.expiresAt, 'expiresAt'),
+        reason: reason(value.reason),
+        source_container,
+      };
+    }
     case 'reserve_manual':
       exactKeys(value, [
         'caseKey',
@@ -246,6 +307,89 @@ export function parseAcademyCapacityIpcPayload(
         source_container,
       };
     }
+    case 'change_capacity':
+      exactKeys(value, [
+        'caseKey',
+        'poolKey',
+        'expectedPoolVersion',
+        'newCapacity',
+        'reason',
+        'evidenceSha256',
+      ]);
+      return {
+        type: value.type,
+        ...baseMutation(value),
+        poolKey: stringValue(value.poolKey, 'poolKey', KEY),
+        expectedPoolVersion: integerValue(
+          value.expectedPoolVersion,
+          'expectedPoolVersion',
+        ),
+        newCapacity: integerValue(value.newCapacity, 'newCapacity', 1),
+        reason: reason(value.reason),
+        source_container,
+      };
+    case 'transfer_commitment':
+      exactKeys(value, [
+        'caseKey',
+        'commitmentKey',
+        'expectedCommitmentVersion',
+        'expectedOriginPoolVersion',
+        'destinationPoolKey',
+        'expectedDestinationPoolVersion',
+        'evidenceSha256',
+      ]);
+      return {
+        type: value.type,
+        ...baseMutation(value),
+        commitmentKey: stringValue(value.commitmentKey, 'commitmentKey', KEY),
+        expectedCommitmentVersion: integerValue(
+          value.expectedCommitmentVersion,
+          'expectedCommitmentVersion',
+        ),
+        expectedOriginPoolVersion: integerValue(
+          value.expectedOriginPoolVersion,
+          'expectedOriginPoolVersion',
+        ),
+        destinationPoolKey: stringValue(
+          value.destinationPoolKey,
+          'destinationPoolKey',
+          KEY,
+        ),
+        expectedDestinationPoolVersion: integerValue(
+          value.expectedDestinationPoolVersion,
+          'expectedDestinationPoolVersion',
+        ),
+        source_container,
+      };
+    case 'reconcile_commitment':
+      exactKeys(value, [
+        'caseKey',
+        'commitmentKey',
+        'expectedCommitmentVersion',
+        'expectedPoolVersion',
+        'assignmentKey',
+        'expectedAssignmentVersion',
+        'evidenceSha256',
+      ]);
+      return {
+        type: value.type,
+        ...baseMutation(value),
+        commitmentKey: stringValue(value.commitmentKey, 'commitmentKey', KEY),
+        expectedCommitmentVersion: integerValue(
+          value.expectedCommitmentVersion,
+          'expectedCommitmentVersion',
+        ),
+        expectedPoolVersion: integerValue(
+          value.expectedPoolVersion,
+          'expectedPoolVersion',
+        ),
+        assignmentKey: stringValue(value.assignmentKey, 'assignmentKey', KEY),
+        expectedAssignmentVersion: integerValue(
+          value.expectedAssignmentVersion,
+          'expectedAssignmentVersion',
+        ),
+        source_container,
+      };
     case 'transfer_assignment':
       exactKeys(value, [
         'caseKey',
@@ -442,7 +586,7 @@ function inventoryText(rows: CapacityInventoryReadback[]): string {
   return rows
     .map(
       (row) =>
-        `[CAPACITY INVENTORY] ${row.poolKey} v${row.poolVersion} | ${row.deliveryBlockKey} | ${row.publicState} | capacity ${row.capacity}, occupied ${row.occupied}, reserved ${row.reserved}, available ${row.available}, waitlist ${row.waitlistCount} | exceptions ${row.openExceptions.map((item) => `${item.reasonCode}/${item.severity}`).join('; ') || 'none'} | ${row.startsAt} to ${row.endsAt} ${row.timezone}`,
+        `[CAPACITY INVENTORY] ${row.poolKey} v${row.poolVersion} | ${row.deliveryBlockKey} | ${row.publicState} | capacity ${row.capacity}, occupied ${row.occupied}, committed ${row.committed}, temporary holds ${row.reserved}, available ${row.available}, waitlist ${row.waitlistCount} | exceptions ${row.openExceptions.map((item) => `${item.reasonCode}/${item.severity}`).join('; ') || 'none'} | ${row.startsAt} to ${row.endsAt} ${row.timezone}`,
     )
     .join('\n');
 }

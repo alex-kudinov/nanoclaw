@@ -1320,6 +1320,22 @@ async function main() {
   console.log(
     `__CHAOS_LIFECYCLE__${Buffer.from(JSON.stringify(lifecycle)).toString('base64url')}`,
   );
+  const capacitySale = {
+    version: 1,
+    eligible:
+      fulfillment.state === 'complete' &&
+      /^pi_[A-Za-z0-9_]+$/.test(accountingStripeId) &&
+      Boolean(canonicalProductSlug) &&
+      ['acc', 'mcs-practicum'].includes(String(chargeMetadata.cohort_program || '')) &&
+      /^\d{4}-\d{2}-\d{2}/.test(String(chargeMetadata.cohort_start || '')),
+    payment_intent_id: accountingStripeId,
+    product_slug: canonicalProductSlug || null,
+    cohort_program: chargeMetadata.cohort_program || null,
+    cohort_start: chargeMetadata.cohort_start || null,
+  };
+  console.log(
+    `__ACADEMY_CAPACITY_SALE__${Buffer.from(JSON.stringify(capacitySale)).toString('base64url')}`,
+  );
 }
 
 // Only run when executed directly. Without this guard, importing the file to

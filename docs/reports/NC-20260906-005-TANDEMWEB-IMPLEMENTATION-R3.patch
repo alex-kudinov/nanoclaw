@@ -1,0 +1,313 @@
+diff --git a/tools/update-calendars.sh b/tools/update-calendars.sh
+index de03e69fe..b385131fc 100755
+--- a/tools/update-calendars.sh
++++ b/tools/update-calendars.sh
+@@ -111,4 +111,18 @@ else
+     fi
+
++    # Refill the two page-cache layers immediately after targeted purges so
++    # ordinary visitors and performance tests continue to receive cached HTML.
++    echo ""
++    echo "Prewarming program pages..."
++    for page in "${PAGES[@]}"; do
++        warm_code=$(curl -s -L -o /dev/null -w "%{http_code}" \
++            --connect-timeout 10 --max-time 30 "${WP_SITE_URL}${page}") || warm_code="000"
++        if [[ "$warm_code" == "200" ]]; then
++            echo "  Warmed: $page"
++        else
++            echo "  Warm failed ($warm_code): $page"
++        fi
++    done
++
+     echo ""
+     echo "Done. Changes should be visible immediately."
+diff --git a/wordpress/tandem-snippets/includes/class-capacity-status-sync.php b/wordpress/tandem-snippets/includes/class-capacity-status-sync.php
+new file mode 100644
+index 000000000..e25095e67
+--- /dev/null
++++ b/wordpress/tandem-snippets/includes/class-capacity-status-sync.php
+@@ -0,0 +1,204 @@
++<?php
++/**
++ * Signed, two-state Academy capacity projection for cached program pages.
++ */
++
++defined('ABSPATH') || exit;
++
++class Tandem_Capacity_Status_Sync {
++
++    public const OPTION = 'tandem_capacity_status_v1';
++    public const ENABLED_OPTION = 'tandem_capacity_simple_sync_enabled';
++
++    private const PAGE_MAP = [
++        'acc' => [
++            '/icf/acc-coach-certification-training/',
++            '/icf/acc-pcc-certification/',
++            '/icf/pcc-professional-coach-certification/',
++        ],
++        'mcs-practicum' => [
++            '/mcs/',
++            '/mcs/advanced-accreditation-mentor-coaching/',
++        ],
++    ];
++
++    public function __construct() {
++        add_action('rest_api_init', [$this, 'register_routes']);
++    }
++
++    public static function enabled(): bool {
++        if (defined('TANDEM_CAPACITY_SIMPLE_SYNC_ENABLED')) {
++            return TANDEM_CAPACITY_SIMPLE_SYNC_ENABLED === true;
++        }
++        return get_option(self::ENABLED_OPTION, false) === true;
++    }
++
++    public function register_routes(): void {
++        register_rest_route('tandem/v1', '/capacity-status', [
++            'methods' => 'POST',
++            'callback' => [$this, 'handle_status'],
++            'permission_callback' => [$this, 'verify_request'],
++        ]);
++        register_rest_route('tandem/v1', '/capacity-status/config', [
++            'methods' => 'POST',
++            'callback' => [$this, 'handle_config'],
++            'permission_callback' => [$this, 'verify_request'],
++        ]);
++    }
++
++    public function handle_config(WP_REST_Request $request): WP_REST_Response {
++        $body = $request->get_json_params();
++        if (!array_key_exists('enabled', $body) || !is_bool($body['enabled'])) {
++            return new WP_REST_Response(['success' => false, 'code' => 'invalid_capacity_sync_config'], 400);
++        }
++        update_option(self::ENABLED_OPTION, $body['enabled'], false);
++        $readback = get_option(self::ENABLED_OPTION, false) === true;
++        if ($readback !== $body['enabled']) {
++            return new WP_REST_Response(['success' => false, 'code' => 'capacity_sync_config_write_failed'], 500);
++        }
++        return new WP_REST_Response(['success' => true, 'enabled' => $readback], 200);
++    }
++
++    public function verify_request(WP_REST_Request $request) {
++        if (!defined('TANDEM_API_KEY') || TANDEM_API_KEY === '') {
++            return new WP_Error('capacity_sync_config', 'Capacity sync is not configured', ['status' => 503]);
++        }
++        $provided = (string) $request->get_header('X-Tandem-Key');
++        $signature = (string) $request->get_header('X-Tandem-Signature');
++        if ($provided === '' || !hash_equals((string) TANDEM_API_KEY, $provided)) {
++            return new WP_Error('capacity_sync_auth', 'Invalid API key', ['status' => 403]);
++        }
++        $expected = 'sha256=' . hash_hmac('sha256', $request->get_body(), (string) TANDEM_API_KEY);
++        if ($signature === '' || !hash_equals($expected, $signature)) {
++            return new WP_Error('capacity_sync_signature', 'Invalid body signature', ['status' => 403]);
++        }
++        return true;
++    }
++
++    public function handle_status(WP_REST_Request $request): WP_REST_Response {
++        if (!self::enabled()) {
++            return new WP_REST_Response(['success' => false, 'code' => 'capacity_sync_disabled'], 503);
++        }
++        $body = $request->get_json_params();
++        $program = sanitize_key((string) ($body['program'] ?? ''));
++        $date = (string) ($body['cohort_start'] ?? '');
++        $state = sanitize_key((string) ($body['state'] ?? ''));
++        $revision = $body['revision'] ?? null;
++        $pool_key = (string) ($body['pool_key'] ?? '');
++        $payload_sha256 = (string) ($body['payload_sha256'] ?? '');
++        if (!isset(self::PAGE_MAP[$program])
++            || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)
++            || !in_array($state, ['available', 'sold_out'], true)
++            || !is_int($revision) || $revision < 0
++            || !preg_match('/^[a-z0-9][a-z0-9._:-]{0,249}$/', $pool_key)
++            || !preg_match('/^[a-f0-9]{64}$/', $payload_sha256)) {
++            return new WP_REST_Response(['success' => false, 'code' => 'invalid_capacity_status'], 400);
++        }
++
++        $key = $program . ':' . $date;
++        $registry = get_option(self::OPTION, ['schema_version' => 1, 'entries' => []]);
++        if (!is_array($registry)) $registry = ['schema_version' => 1, 'entries' => []];
++        if (!isset($registry['entries']) || !is_array($registry['entries'])) $registry['entries'] = [];
++        $current = $registry['entries'][$key] ?? null;
++        if (is_array($current)) {
++            $current_revision = (int) ($current['revision'] ?? -1);
++            if ($revision < $current_revision) {
++                return new WP_REST_Response(['success' => false, 'code' => 'stale_capacity_status'], 409);
++            }
++            if ($revision === $current_revision
++                && (($current['state'] ?? '') !== $state
++                    || ($current['payload_sha256'] ?? '') !== $payload_sha256)) {
++                return new WP_REST_Response(['success' => false, 'code' => 'capacity_status_conflict'], 409);
++            }
++            if ($revision === $current_revision) {
++                $cache = !empty($current['cache_complete'])
++                    ? []
++                    : $this->refresh_pages(self::PAGE_MAP[$program]);
++                $cache_complete = !empty($current['cache_complete']) || $this->cache_complete($cache, self::PAGE_MAP[$program]);
++                if ($cache_complete && empty($current['cache_complete'])) {
++                    $registry['entries'][$key]['cache_complete'] = true;
++                    update_option(self::OPTION, $registry, false);
++                }
++                return $this->accepted_response($key, $state, $revision, false, $cache, $cache_complete);
++            }
++        }
++
++        $changed = !is_array($current) || ($current['state'] ?? '') !== $state;
++        $registry['entries'][$key] = [
++            'pool_key' => $pool_key,
++            'state' => $state,
++            'revision' => $revision,
++            'payload_sha256' => $payload_sha256,
++            'cache_complete' => false,
++            'updated_at' => gmdate('c'),
++        ];
++        if (!update_option(self::OPTION, $registry, false)) {
++            $readback = get_option(self::OPTION, []);
++            if (!is_array($readback) || ($readback['entries'][$key]['payload_sha256'] ?? '') !== $payload_sha256) {
++                return new WP_REST_Response(['success' => false, 'code' => 'capacity_status_write_failed'], 500);
++            }
++        }
++
++        $cache = $changed ? $this->refresh_pages(self::PAGE_MAP[$program]) : [];
++        $cache_complete = !$changed || $this->cache_complete($cache, self::PAGE_MAP[$program]);
++        if ($cache_complete) {
++            $registry['entries'][$key]['cache_complete'] = true;
++            update_option(self::OPTION, $registry, false);
++        }
++        return $this->accepted_response($key, $state, $revision, $changed, $cache, $cache_complete);
++    }
++
++    private function accepted_response(string $key, string $state, int $revision, bool $changed, array $cache, bool $cache_complete = true): WP_REST_Response {
++        $ack = hash('sha256', $key . '|' . $state . '|' . $revision);
++        return new WP_REST_Response([
++            'success' => true,
++            'ack_sha256' => $ack,
++            'changed' => $changed,
++            'cache' => $cache,
++            'cache_complete' => $cache_complete,
++        ], 200);
++    }
++
++    private function cache_complete(array $cache, array $paths): bool {
++        foreach ($paths as $path) {
++            if (($cache['prewarm'][$path] ?? 0) !== 200) return false;
++        }
++        return true;
++    }
++
++    private function refresh_pages(array $paths): array {
++        $result = ['litespeed' => [], 'cloudflare' => 'not_configured', 'prewarm' => []];
++        foreach ($paths as $path) {
++            $url = home_url($path);
++            do_action('litespeed_purge_url', $url);
++            $result['litespeed'][] = $path;
++        }
++
++        if (defined('TANDEM_CF_ZONE_ID') && defined('TANDEM_CF_API_TOKEN')
++            && TANDEM_CF_ZONE_ID !== '' && TANDEM_CF_API_TOKEN !== '') {
++            $files = array_map(static fn($path) => home_url($path), $paths);
++            $response = wp_remote_post(
++                'https://api.cloudflare.com/client/v4/zones/' . rawurlencode((string) TANDEM_CF_ZONE_ID) . '/purge_cache',
++                [
++                    'timeout' => 20,
++                    'headers' => [
++                        'Authorization' => 'Bearer ' . TANDEM_CF_API_TOKEN,
++                        'Content-Type' => 'application/json',
++                    ],
++                    'body' => wp_json_encode(['files' => $files]),
++                ]
++            );
++            $result['cloudflare'] = !is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200
++                ? 'purged'
++                : 'failed';
++        }
++
++        foreach ($paths as $path) {
++            $response = wp_remote_get(home_url($path), ['timeout' => 20, 'redirection' => 3]);
++            $result['prewarm'][$path] = is_wp_error($response)
++                ? 0
++                : wp_remote_retrieve_response_code($response);
++        }
++        return $result;
++    }
++}
+diff --git a/wordpress/tandem-snippets/includes/class-cohort-capacity.php b/wordpress/tandem-snippets/includes/class-cohort-capacity.php
+index 09941e321..56a71cb66 100644
+--- a/wordpress/tandem-snippets/includes/class-cohort-capacity.php
++++ b/wordpress/tandem-snippets/includes/class-cohort-capacity.php
+@@ -1,10 +1,10 @@
+ <?php
+ /**
+- * Dated live-cohort capacity registry and atomic checkout reservations.
++ * Dated live-cohort status registry with a signed live-option projection.
+  *
+  * The committed JSON snapshot is the public/runtime authority. Stripe remains
+  * the financial evidence source and tools/cohort-capacity.py refreshes the
+- * snapshot. WordPress options add short-lived, atomic reservations after that
+- * snapshot so simultaneous checkouts cannot oversell the last seat.
++ * snapshot. The owner-approved simple-sync mode uses successful-sale and
++ * operator commitments instead of creating temporary checkout reservations.
+  */
+
+@@ -52,4 +52,8 @@ class Tandem_Cohort_Capacity {
+     public function status(string $program, string $start): string {
+         $program = sanitize_key($program);
++        $live = $this->live_status($program, $start);
++        if ($live !== null) {
++            return $live === 'available' ? 'open' : 'sold_out';
++        }
+         $cohort = $this->cohort($program, $start);
+         if ($cohort === null) {
+@@ -61,4 +65,20 @@ class Tandem_Cohort_Capacity {
+     }
+
++    private function live_status(string $program, string $start): ?string {
++        $enabled = defined('TANDEM_CAPACITY_SIMPLE_SYNC_ENABLED')
++            ? TANDEM_CAPACITY_SIMPLE_SYNC_ENABLED === true
++            : function_exists('get_option')
++                && get_option('tandem_capacity_simple_sync_enabled', false) === true;
++        if (!$enabled) {
++            return null;
++        }
++        $date = substr($start, 0, 10);
++        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) return null;
++        $registry = get_option('tandem_capacity_status_v1', []);
++        $entry = is_array($registry) ? ($registry['entries'][$program . ':' . $date] ?? null) : null;
++        $state = is_array($entry) ? sanitize_key((string) ($entry['state'] ?? '')) : '';
++        return in_array($state, ['available', 'sold_out'], true) ? $state : null;
++    }
++
+     public function is_unavailable(string $program, string $start): bool {
+         return in_array($this->status($program, $start), ['sold_out', 'waitlist_offer_pending', 'closed', 'unregistered'], true);
+diff --git a/wordpress/tandem-snippets/includes/class-stripe-checkout.php b/wordpress/tandem-snippets/includes/class-stripe-checkout.php
+index 969f351f4..f35b1ce1d 100644
+--- a/wordpress/tandem-snippets/includes/class-stripe-checkout.php
++++ b/wordpress/tandem-snippets/includes/class-stripe-checkout.php
+@@ -339,4 +339,14 @@ class Tandem_Stripe_Checkout {
+     /** Reserve one managed cohort seat before any payment object is created. */
+     private function reserve_session_capacity(array &$session, string $token, array $product): ?WP_REST_Response {
++        // Owner-approved simple sync counts only successful sales and explicit
++        // operator commitments. New checkout attempts never create temporary
++        // seat holds or depend on NanoClaw availability.
++        $simple_sync = defined('TANDEM_CAPACITY_SIMPLE_SYNC_ENABLED')
++            ? TANDEM_CAPACITY_SIMPLE_SYNC_ENABLED === true
++            : function_exists('get_option')
++                && get_option('tandem_capacity_simple_sync_enabled', false) === true;
++        if ($simple_sync) {
++            return null;
++        }
+         if (empty($product['capacity_managed']) || empty($session['cohort_program']) || empty($session['cohort_start'])) {
+             return null;
+diff --git a/wordpress/tandem-snippets/tandem-snippets.php b/wordpress/tandem-snippets/tandem-snippets.php
+index 3ea09ff93..6584eebb6 100644
+--- a/wordpress/tandem-snippets/tandem-snippets.php
++++ b/wordpress/tandem-snippets/tandem-snippets.php
+@@ -102,4 +102,8 @@ class Tandem_Snippets {
+         new Tandem_Footer($this->snippets_dir);
+
++        // Signed Academy capacity state used by cached calendar cards and checkout.
++        require_once __DIR__ . '/includes/class-capacity-status-sync.php';
++        new Tandem_Capacity_Status_Sync();
++
+         // Program calendar — next start date cards on program pages.
+         // Stored globally so schema manager can reuse it.

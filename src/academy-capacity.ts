@@ -8,7 +8,11 @@ import {
 export type DeliveryBlockState = 'scheduled' | 'cancelled' | 'completed';
 export type SeatPoolOperationalState = 'open' | 'closed';
 export type PublicInventoryState = 'open' | 'sold_out' | 'closed';
-export type ReservationChannel = 'checkout' | 'manual' | 'waitlist_offer';
+export type ReservationChannel =
+  | 'checkout'
+  | 'manual'
+  | 'waitlist_offer'
+  | 'commitment';
 export type ReservationState =
   | 'held'
   | 'consumed'
@@ -163,6 +167,7 @@ export interface InventorySnapshot {
   capacity: number;
   occupied: number;
   reserved: number;
+  committed: number;
   available: number;
   waitlistCount: number;
   publicState: PublicInventoryState;
@@ -193,6 +198,14 @@ const RESERVATION_CHANNELS = new Set<ReservationChannel>([
   'checkout',
   'manual',
   'waitlist_offer',
+  'commitment',
+]);
+const COMMITMENT_SOURCE_SCOPES = new Set([
+  'website_stripe_sale',
+  'invoice',
+  'check',
+  'sponsor',
+  'manual_sale',
 ]);
 const RESERVATION_RELEASE_OUTCOMES = new Set<
   'released' | 'cancelled' | 'expired'
@@ -676,20 +689,33 @@ export function showInventory(
       ACTIVE_ASSIGNMENT_STATES.has(value.state),
   ).length;
   const reserved = Object.values(state.reservations).filter(
-    (value) => value.poolKey === poolKey && reservationIsLive(value, atMs),
+    (value) =>
+      value.poolKey === poolKey &&
+      value.channel !== 'commitment' &&
+      reservationIsLive(value, atMs),
+  ).length;
+  const committed = Object.values(state.reservations).filter(
+    (value) =>
+      value.poolKey === poolKey &&
+      value.channel === 'commitment' &&
+      reservationIsLive(value, atMs),
   ).length;
   const waitlistCount = Object.values(state.waitlistEntries).filter(
     (value) =>
       value.poolKey === poolKey &&
       ['waiting', 'offered', 'accepted'].includes(value.state),
   ).length;
-  const available = Math.max(0, pool.capacity - occupied - reserved);
+  const available = Math.max(
+    0,
+    pool.capacity - occupied - reserved - committed,
+  );
   return {
     poolKey,
     deliveryBlockKey: pool.deliveryBlockKey,
     capacity: pool.capacity,
     occupied,
     reserved,
+    committed,
     available,
     waitlistCount,
     publicState:
@@ -760,12 +786,39 @@ export function reserveCapacity(
       'invalid_channel',
       'reservation channel is invalid',
     );
-  assertReservationTtl(input.channel, input.occurredAt, input.expiresAt);
+  const block = state.deliveryBlocks[pool.deliveryBlockKey];
+  if (!block || block.state !== 'scheduled')
+    throw new CapacityCommandError(
+      'delivery_block_unavailable',
+      'scheduled delivery block is required',
+    );
+  if (input.channel === 'commitment') {
+    if (!COMMITMENT_SOURCE_SCOPES.has(input.sourceScope))
+      throw new CapacityCommandError(
+        'invalid_commitment_source',
+        'committed seat source is not supported',
+      );
+    if (input.expiresAt !== block.endsAt)
+      throw new CapacityCommandError(
+        'invalid_commitment_lifetime',
+        'committed seat must remain live through the delivery block end',
+      );
+  } else {
+    assertReservationTtl(input.channel, input.occurredAt, input.expiresAt);
+  }
   if (input.channel === 'manual') {
     if (!input.reason)
       throw new CapacityCommandError(
         'manual_reason_required',
         'manual hold requires a reason',
+      );
+    assertText(input.reason, 'reason', 500);
+  }
+  if (input.channel === 'commitment') {
+    if (!input.reason)
+      throw new CapacityCommandError(
+        'commitment_reason_required',
+        'committed seat requires a bounded reason',
       );
     assertText(input.reason, 'reason', 500);
   }
@@ -823,12 +876,6 @@ export function reserveCapacity(
   assertVersion(pool.version, input.expectedPoolVersion, 'seat pool');
   if (pool.operationalState !== 'open')
     throw new CapacityCommandError('pool_closed', 'seat pool is closed');
-  const block = state.deliveryBlocks[pool.deliveryBlockKey];
-  if (!block || block.state !== 'scheduled')
-    throw new CapacityCommandError(
-      'delivery_block_unavailable',
-      'scheduled delivery block is required',
-    );
   requireActiveMapping(
     state,
     input.poolKey,
@@ -846,7 +893,7 @@ export function reserveCapacity(
     input.poolKey,
     input.occurredAt,
   );
-  if (snapshot.available < 1)
+  if (snapshot.available < 1 && input.channel !== 'commitment')
     throw new CapacityCommandError(
       'capacity_unavailable',
       'no seat is available',
@@ -904,8 +951,292 @@ export function reserveCapacity(
     subjectType: 'reservation',
     subjectKey: input.reservationKey,
     previousVersion: null,
-    eventType: 'capacity_reserved',
+    eventType:
+      input.channel === 'commitment'
+        ? 'capacity_commitment_recorded'
+        : 'capacity_reserved',
     evidenceSha256: input.sourceEvidenceSha256,
+    actor: input.actor,
+    occurredAt: input.occurredAt,
+  });
+  return next;
+}
+
+export function changeSeatPoolCapacity(
+  state: AcademyCapacityState,
+  enrollmentState: EnrollmentFoundationState,
+  input: {
+    poolKey: string;
+    expectedPoolVersion: number;
+    newCapacity: number;
+    reason: string;
+    evidenceSha256: string;
+    actor: string;
+    occurredAt: string;
+  },
+): AcademyCapacityState {
+  const pool = state.seatPools[input.poolKey];
+  if (!pool)
+    throw new CapacityCommandError('pool_not_found', 'seat pool not found');
+  assertPositiveInteger(input.newCapacity, 'newCapacity');
+  assertText(input.reason, 'reason', 500);
+  assertSha(input.evidenceSha256, 'evidenceSha256');
+  assertActor(input.actor);
+  assertTime(input.occurredAt, 'occurredAt');
+  if (pool.capacity === input.newCapacity) {
+    const receipt = [...state.events]
+      .reverse()
+      .find(
+        (value) =>
+          value.subjectType === 'seat_pool' &&
+          value.subjectKey === input.poolKey &&
+          value.eventType === 'seat_pool_capacity_changed',
+      );
+    if (receipt?.evidenceSha256 === input.evidenceSha256)
+      return copyCapacity(state);
+    throw new CapacityCommandError(
+      'idempotency_conflict',
+      'capacity already has this value with different evidence',
+    );
+  }
+  assertVersion(pool.version, input.expectedPoolVersion, 'seat pool');
+  const snapshot = showInventory(
+    state,
+    enrollmentState,
+    input.poolKey,
+    input.occurredAt,
+  );
+  if (
+    input.newCapacity <
+    snapshot.occupied + snapshot.reserved + snapshot.committed
+  )
+    throw new CapacityCommandError(
+      'capacity_below_commitments',
+      'new capacity is below occupied plus committed seats',
+    );
+  const next = copyCapacity(state);
+  next.seatPools[input.poolKey] = {
+    ...pool,
+    capacity: input.newCapacity,
+    configurationEvidenceSha256: input.evidenceSha256,
+    version: pool.version + 1,
+    updatedAt: input.occurredAt,
+    updatedBy: input.actor,
+  };
+  appendEvent(next, {
+    subjectType: 'seat_pool',
+    subjectKey: input.poolKey,
+    previousVersion: pool.version,
+    eventType: 'seat_pool_capacity_changed',
+    evidenceSha256: input.evidenceSha256,
+    actor: input.actor,
+    occurredAt: input.occurredAt,
+  });
+  return next;
+}
+
+export function transferCommitment(
+  state: AcademyCapacityState,
+  enrollmentState: EnrollmentFoundationState,
+  input: {
+    commitmentKey: string;
+    expectedCommitmentVersion: number;
+    expectedOriginPoolVersion: number;
+    destinationPoolKey: string;
+    expectedDestinationPoolVersion: number;
+    evidenceSha256: string;
+    actor: string;
+    occurredAt: string;
+  },
+): AcademyCapacityState {
+  const commitment = state.reservations[input.commitmentKey];
+  if (!commitment || commitment.channel !== 'commitment')
+    throw new CapacityCommandError(
+      'commitment_not_found',
+      'committed seat was not found',
+    );
+  const originPool = state.seatPools[commitment.poolKey];
+  const destinationPool = state.seatPools[input.destinationPoolKey];
+  const destinationBlock =
+    destinationPool && state.deliveryBlocks[destinationPool.deliveryBlockKey];
+  if (!originPool || !destinationPool || !destinationBlock)
+    throw new CapacityCommandError(
+      'destination_not_found',
+      'origin or destination pool was not found',
+    );
+  assertSha(input.evidenceSha256, 'evidenceSha256');
+  assertActor(input.actor);
+  assertTime(input.occurredAt, 'occurredAt');
+  if (commitment.state !== 'held')
+    throw new CapacityCommandError(
+      'commitment_terminal',
+      'only a live committed seat can move',
+    );
+  if (originPool.poolKey === destinationPool.poolKey)
+    throw new CapacityCommandError(
+      'same_pool_transfer',
+      'origin and destination pools must differ',
+    );
+  assertVersion(
+    commitment.version,
+    input.expectedCommitmentVersion,
+    'commitment',
+  );
+  assertVersion(
+    originPool.version,
+    input.expectedOriginPoolVersion,
+    'origin pool',
+  );
+  assertVersion(
+    destinationPool.version,
+    input.expectedDestinationPoolVersion,
+    'destination pool',
+  );
+  if (
+    destinationPool.operationalState !== 'open' ||
+    destinationBlock.state !== 'scheduled'
+  )
+    throw new CapacityCommandError(
+      'destination_closed',
+      'destination pool must be open and scheduled',
+    );
+  requireActiveMapping(
+    state,
+    destinationPool.poolKey,
+    commitment.offerKey,
+    commitment.catalogRevision,
+  );
+  if (
+    showInventory(
+      state,
+      enrollmentState,
+      destinationPool.poolKey,
+      input.occurredAt,
+    ).available < 1
+  )
+    throw new CapacityCommandError(
+      'capacity_unavailable',
+      'destination has no available seat',
+    );
+  const next = copyCapacity(state);
+  next.reservations[input.commitmentKey] = {
+    ...commitment,
+    poolKey: destinationPool.poolKey,
+    expiresAt: destinationBlock.endsAt,
+    version: commitment.version + 1,
+    updatedAt: input.occurredAt,
+    updatedBy: input.actor,
+  };
+  next.seatPools[originPool.poolKey] = {
+    ...originPool,
+    version: originPool.version + 1,
+    updatedAt: input.occurredAt,
+    updatedBy: input.actor,
+  };
+  next.seatPools[destinationPool.poolKey] = {
+    ...destinationPool,
+    version: destinationPool.version + 1,
+    updatedAt: input.occurredAt,
+    updatedBy: input.actor,
+  };
+  appendEvent(next, {
+    subjectType: 'reservation',
+    subjectKey: input.commitmentKey,
+    previousVersion: commitment.version,
+    eventType: 'capacity_commitment_transferred',
+    evidenceSha256: input.evidenceSha256,
+    actor: input.actor,
+    occurredAt: input.occurredAt,
+  });
+  return next;
+}
+
+export function reconcileCommitment(
+  state: AcademyCapacityState,
+  enrollmentState: EnrollmentFoundationState,
+  input: {
+    commitmentKey: string;
+    expectedCommitmentVersion: number;
+    expectedPoolVersion: number;
+    assignmentKey: string;
+    expectedAssignmentVersion: number;
+    evidenceSha256: string;
+    actor: string;
+    occurredAt: string;
+  },
+): AcademyCapacityState {
+  const commitment = state.reservations[input.commitmentKey];
+  if (!commitment || commitment.channel !== 'commitment')
+    throw new CapacityCommandError(
+      'commitment_not_found',
+      'committed seat was not found',
+    );
+  const pool = state.seatPools[commitment.poolKey];
+  const assignment = enrollmentState.assignments[input.assignmentKey];
+  if (!pool || !assignment)
+    throw new CapacityCommandError(
+      'assignment_not_found',
+      'pool or exact assignment was not found',
+    );
+  assertSha(input.evidenceSha256, 'evidenceSha256');
+  assertActor(input.actor);
+  assertTime(input.occurredAt, 'occurredAt');
+  if (commitment.state === 'consumed') {
+    const receipt = [...state.events]
+      .reverse()
+      .find(
+        (value) =>
+          value.subjectType === 'reservation' &&
+          value.subjectKey === input.commitmentKey &&
+          value.eventType === 'capacity_commitment_reconciled',
+      );
+    if (receipt?.evidenceSha256 === input.evidenceSha256)
+      return copyCapacity(state);
+    throw new CapacityCommandError(
+      'idempotency_conflict',
+      'commitment was reconciled with different evidence',
+    );
+  }
+  assertVersion(
+    commitment.version,
+    input.expectedCommitmentVersion,
+    'commitment',
+  );
+  assertVersion(pool.version, input.expectedPoolVersion, 'seat pool');
+  assertVersion(
+    assignment.version,
+    input.expectedAssignmentVersion,
+    'assignment',
+  );
+  if (
+    commitment.state !== 'held' ||
+    !ACTIVE_ASSIGNMENT_STATES.has(assignment.state) ||
+    assignment.deliveryBlockKey !== pool.deliveryBlockKey
+  )
+    throw new CapacityCommandError(
+      'commitment_assignment_conflict',
+      'commitment and assignment do not consume the same delivery block',
+    );
+  const next = copyCapacity(state);
+  next.reservations[input.commitmentKey] = {
+    ...commitment,
+    state: 'consumed',
+    version: commitment.version + 1,
+    updatedAt: input.occurredAt,
+    updatedBy: input.actor,
+  };
+  next.seatPools[pool.poolKey] = {
+    ...pool,
+    version: pool.version + 1,
+    updatedAt: input.occurredAt,
+    updatedBy: input.actor,
+  };
+  appendEvent(next, {
+    subjectType: 'reservation',
+    subjectKey: input.commitmentKey,
+    previousVersion: commitment.version,
+    eventType: 'capacity_commitment_reconciled',
+    evidenceSha256: input.evidenceSha256,
     actor: input.actor,
     occurredAt: input.occurredAt,
   });

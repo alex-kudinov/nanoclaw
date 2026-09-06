@@ -283,6 +283,24 @@ describe('parseLifecycleSentinel', () => {
     expect(parsed.summary).toBe('[PAYMENT RECEIVED]');
     expect(parsed.fulfillment).toEqual(fulfillment);
   });
+
+  it('strips and returns the privacy-minimized Academy capacity sale fact', () => {
+    const fact = {
+      version: 1,
+      eligible: true,
+      payment_intent_id: 'pi_123',
+      product_slug: 'acc-full',
+      cohort_program: 'acc',
+      cohort_start: '2026-09-07T11:00:00-04:00',
+    };
+    const encoded = Buffer.from(JSON.stringify(fact)).toString('base64url');
+    const parsed = parseLifecycleSentinel(
+      `[PAYMENT RECEIVED]\n__ACADEMY_CAPACITY_SALE__${encoded}\n`,
+    );
+    expect(parsed.summary).toBe('[PAYMENT RECEIVED]');
+    expect(parsed.capacityFact).toEqual(fact);
+    expect(parsed.summary).not.toContain(encoded);
+  });
 });
 
 describe('handleStripePayment', () => {
@@ -307,6 +325,76 @@ describe('handleStripePayment', () => {
         state: 'complete',
       }),
     );
+  });
+
+  it('records an eligible verified website sale without blocking payment completion', async () => {
+    const fulfillment = {
+      version: 1,
+      stripeAccount: 'heartbeat',
+      paymentIntentId: 'pi_capacity',
+      sourceObjectId: 'pi_capacity',
+      state: 'complete',
+      errorCode: null,
+      aliases: [{ kind: 'payment_intent', id: 'pi_capacity' }],
+      receipts: [
+        {
+          stage: 'stripe_source',
+          outcome: 'verified',
+          resultCode: 'stripe_source_resolved',
+        },
+        {
+          stage: 'payment_log',
+          outcome: 'verified',
+          resultCode: 'payment_log_readback_verified',
+        },
+        {
+          stage: 'postgres_payment',
+          outcome: 'verified',
+          resultCode: 'postgres_payment_readback_verified',
+        },
+        {
+          stage: 'student_roster',
+          outcome: 'verified',
+          resultCode: 'student_roster_readback_verified',
+        },
+      ],
+    };
+    const capacityFact = {
+      version: 1,
+      eligible: true,
+      payment_intent_id: 'pi_capacity',
+      product_slug: 'acc-full',
+      cohort_program: 'acc',
+      cohort_start: '2026-10-07T11:00:00-04:00',
+    };
+    execFileImpl = (_file: string, _args: string[], _opts: any, cb: any) =>
+      cb(null, {
+        stdout:
+          `summary\n__CONTADOR_FULFILLMENT__${Buffer.from(JSON.stringify(fulfillment)).toString('base64url')}\n` +
+          `__ACADEMY_CAPACITY_SALE__${Buffer.from(JSON.stringify(capacityFact)).toString('base64url')}\n`,
+        stderr: '',
+      });
+    const recordCapacitySale = vi.fn(async () => ({
+      caseKey: 'website-sale:test',
+      commandType: 'commit_seat' as const,
+      state: 'applied' as const,
+      code: 'command_applied',
+      replayed: false,
+      resultSha256: 'f'.repeat(64),
+      summary: {},
+    }));
+    const result = await handleStripePayment(
+      {
+        stripe_id: 'pi_capacity',
+        event_type: 'payment_intent.succeeded',
+        account: 'heartbeat',
+      },
+      { recordCapacitySale },
+    );
+    expect(recordCapacitySale).toHaveBeenCalledWith(capacityFact);
+    expect(result.capacityCommitmentState).toBe('applied');
+    expect(result.summary).toContain('[CAPACITY COMMITTED]');
+    expect(result.fulfillmentState).toBe('complete');
   });
 
   it('acknowledges an owned needs_product exception without pretending complete', async () => {

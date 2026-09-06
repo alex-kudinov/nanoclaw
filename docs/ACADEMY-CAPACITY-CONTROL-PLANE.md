@@ -1,8 +1,8 @@
 # Academy Capacity Control Plane
 
-Status: accepted architecture v1; migrations 142-143 and the exact source-bound
-shadow are live under `NC-20260906-002`; Gate D operator pilot implementation
-is active under `NC-20260906-003`
+Status: accepted architecture v1 with owner-approved simple-sync Gate E
+strategy; migrations 142-144, the exact source-bound shadow, and Gate D are
+live; `NC-20260906-005` implements the simplified cached-site integration
 
 Task: `NC-20260905-004`
 
@@ -104,7 +104,9 @@ future module. Multi-cohort pooled capacity is outside v1.
 ```text
 occupied = current capacity-bearing class assignments in the seat pool
 reserved = unexpired, unconsumed capacity reservations
-available = max(0, capacity - occupied - reserved)
+committed = successful sales and explicit invoice/manual seat promises not yet
+            reconciled to an assignment
+available = max(0, capacity - occupied - reserved - committed)
 ```
 
 Payment count, order count, enrollment-seat count, roster-row count, Heartbeat
@@ -147,6 +149,8 @@ close_seat_pool            reopen_seat_pool
 reconcile_seat_pool        join_waitlist
 stage_waitlist_offer       resolve_waitlist_offer
 show_inventory             show_enrollment
+commit_seat                transfer_commitment
+reconcile_commitment       change_capacity
 ```
 
 The minion may resolve operator wording to exact candidate IDs and explain
@@ -167,7 +171,14 @@ remains. Every source uses an immutable idempotency key.
 - Checkout holds use a short fixed TTL.
 - Manual holds require a bounded TTL, named actor, reason, and supporting order
   or intake reference. They cover invoices, checks, sponsor lists, and other
-  legitimate commitments before participant materialization is complete.
+  temporary commitments before participant materialization is complete.
+
+The simplified Gate E does not create checkout reservations. A successful
+website sale or explicit operator promise creates one durable `commitment`
+record per seat. It remains counted through the delivery-block end unless it is
+released, transferred, or reconciled to an exact assignment. A commitment is
+funding/capacity evidence, not participant or assignment authority. Duplicate
+PaymentIntent or invoice-seat references replay idempotently.
 
 ### Commit assignment
 
@@ -206,8 +217,9 @@ assignment.
 - Bookkeeper/Contador records source-bound funding evidence and enrollment
   exceptions; it never decides occupancy or a last seat.
 - Capacity invokes typed host commands over canonical state.
-- Tandemweb renders a signed, expiring projection and calls the reservation
-  API before checkout. Browser-visible availability is never authoritative.
+- Tandemweb renders a signed two-state projection stored locally in WordPress.
+  Checkout reads that local state and never calls NanoClaw synchronously.
+  Browser-visible availability is never internal inventory authority.
 - Student Roster is an operator projection with exact readback.
 - Heartbeat access and marker writes are projections; later progress drift is
   owned by the Student Lifecycle Control Plane.
@@ -223,14 +235,23 @@ named gated work item, not an assumed side effect.
 
 ## Tandemweb contract
 
-Tandemweb receives a signed and expiring projection with exact pool, delivery
-block, and offer IDs plus public state and waitlist destination. Every purchase
-attempt calls the Tandem OS reservation boundary. The reservation ID and source
-version flow into payment metadata. Uncertain responses reconcile by stable
-reservation/payment receipt; the website never invents a second enrollment.
+Tandemweb receives a signed, PII-free `available|sold_out` projection with
+exact pool, program, cohort date, monotonic publication revision, and payload
+hash. WordPress stores it separately from `cohorts.json`; the accepted live
+option drives both cached calendar rendering and server-side checkout
+validation, while `cohorts.json` remains the bootstrap and rollback fallback.
 
-Until that cutover is separately authorized, the current WordPress/JSON sold-
-out controls remain the public safety layer.
+Checkout never waits for NanoClaw and creates no temporary capacity hold. A
+verified successful payment later enters the host through the existing
+Contador path and creates one durable commitment. This deliberately accepts a
+small simultaneous-sale/stale-publication oversale risk in exchange for fewer
+lost-sale dependencies.
+
+Threshold crossings and one daily reconciliation use one publication outbox.
+On an accepted change, only the fixed affected LiteSpeed and Cloudflare URLs
+are purged, then immediately prewarmed. Publication failure freezes the last
+accepted website state, remains retryable, and alerts internally; it never
+turns a functioning checkout into a NanoClaw availability dependency.
 
 ## Delivery gates
 
@@ -240,10 +261,28 @@ out controls remain the public safety layer.
 | B — capacity extension | Reversible capacity relations, functions, views, permissions, fixtures, rollback, and default-off host mechanics extending the active enrollment dark foundation | Requires separate owner authorization; no provider or student data |
 | C — read-only reconciliation | Exact schedule/catalog/Stripe/Bookkeeper/Roster source inventory and variance report | Requires explicit population, privacy scope, and historical window |
 | D — operator pilot | Manual holds, transfers, withdrawals, reconciliation, and waitlist staging behind current website behavior | Requires internal-write authorization; no customer messages |
-| E — Tandemweb cutover | Signed projection and reserve/release/commit integration with verified parity and rollback | Requires release authorization and live canaries |
+| E — simple site sync | Committed-seat ingestion, operator capacity changes, signed available/sold-out WordPress projection, daily/threshold publication, and targeted purge/prewarm with no checkout holds | Authorized under `NC-20260906-005`; requires reviewed release and live cache/status proof |
 | F — authority cutover | Tandem OS becomes assignment/capacity authority; prior writers become projections | Requires a separate owner cutover decision |
 
 No completed gate authorizes the next.
+
+## Owner-approved Gate E simplification
+
+On 2026-09-06 the owner rejected the proposed real-time reservation cutover as
+disproportionate to current sales volume and explicitly accepted the residual
+race risk. The superseding Gate E rules are:
+
+1. count only successful website sales and explicit invoice/check/sponsor or
+   manual promises as durable commitments;
+2. create no 30-minute or other checkout-attempt seat hold;
+3. update WordPress daily and whenever the two-state public threshold changes;
+4. keep program pages fully cached and refresh only exact affected URLs;
+5. keep checkout functioning from the last accepted local state during a
+   publication outage;
+6. preserve current sold-out ACC September 7 and MCS Friday, available MCS
+   Thursday, and Rita's settled January Thursday assignment;
+7. keep automatic waitlist contact, refunds/payments, and Gate F authority
+   cutover separately governed.
 
 Gate D is separately authorized by
 `.program/decisions/decision-academy-capacity-gate-d-2026-09-06.json`. Its

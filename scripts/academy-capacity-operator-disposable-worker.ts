@@ -293,6 +293,50 @@ async function main() {
     evidenceSha256: hash('january:reconcile'),
   });
 
+  const januaryFridayEnd = await pool.query<{ ends_at: Date }>(
+    `SELECT d.ends_at
+       FROM business_v2.academy_delivery_blocks d
+      WHERE d.delivery_block_key='mcs-practicum:2027-01-08'`,
+  );
+  now = '2026-09-06T19:34:00.000Z';
+  const commitment = await execute({
+    type: 'commit_seat',
+    caseKey: 'case:january:commitment',
+    commitmentKey: 'commitment:january:invoice:1',
+    poolKey: januaryFriday,
+    expectedPoolVersion: 8,
+    sourceScope: 'invoice',
+    idempotencyKey: 'invoice-january-seat-1',
+    offerKey: 'mcs-full',
+    catalogRevision: 1,
+    orderKey: null,
+    seatKey: null,
+    expiresAt: januaryFridayEnd.rows[0].ends_at.toISOString(),
+    reason: 'Disposable issued invoice seat',
+    evidenceSha256: hash('january:commitment'),
+  });
+  now = '2026-09-06T19:34:01.000Z';
+  const capacityChanged = await execute({
+    type: 'change_capacity',
+    caseKey: 'case:january:capacity-change',
+    poolKey: januaryFriday,
+    expectedPoolVersion: 9,
+    newCapacity: 13,
+    reason: 'Disposable added facilitator seat',
+    evidenceSha256: hash('january:capacity-change'),
+  });
+  now = '2026-09-06T19:34:02.000Z';
+  const commitmentTransferred = await execute({
+    type: 'transfer_commitment',
+    caseKey: 'case:january:commitment-transfer',
+    commitmentKey: 'commitment:january:invoice:1',
+    expectedCommitmentVersion: 0,
+    expectedOriginPoolVersion: 10,
+    destinationPoolKey: januaryThursday,
+    expectedDestinationPoolVersion: 1,
+    evidenceSha256: hash('january:commitment-transfer'),
+  });
+
   const inventory = await readAcademyCapacityInventory(januaryFriday, {
     query: (text, params) => pool.query(text, params),
   });
@@ -367,6 +411,13 @@ async function main() {
       destinationState: enrollment?.assignments.find(
         (item) => item.assignmentKey === 'assignment:january:transferred',
       )?.state,
+    },
+    simpleSync: {
+      commitment: commitment.state,
+      capacityChanged: capacityChanged.state,
+      commitmentTransferred: commitmentTransferred.state,
+      destinationCommitment:
+        commitmentTransferred.summary.destinationInventory,
     },
     inventory: inventory[0],
     exceptionReadback: {

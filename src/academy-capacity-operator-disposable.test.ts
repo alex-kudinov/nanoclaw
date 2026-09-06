@@ -44,13 +44,25 @@ describe('Academy Capacity Gate D disposable proof', () => {
       originState: 'transferred',
       destinationState: 'cancelled',
     });
+    expect(result.worker.simpleSync).toMatchObject({
+      commitment: 'applied',
+      capacityChanged: 'applied',
+      commitmentTransferred: 'applied',
+      destinationCommitment: {
+        capacity: 12,
+        occupied: 0,
+        reserved: 0,
+        committed: 1,
+        available: 11,
+      },
+    });
     expect(result.worker.inventory).toMatchObject({
-      capacity: 12,
+      capacity: 13,
       occupied: 0,
       reserved: 1,
-      available: 11,
+      available: 12,
       waitlistCount: 2,
-      poolVersion: 8,
+      poolVersion: 11,
     });
     expect(result.worker.exceptionReadback).toEqual({
       inventory: [
@@ -61,8 +73,8 @@ describe('Academy Capacity Gate D disposable proof', () => {
       ],
     });
     expect(result.worker.ledger).toEqual({
-      cases: '14',
-      receipts: '28',
+      cases: '17',
+      receipts: '34',
       review_cases: '4',
       pii_summaries: '0',
     });
