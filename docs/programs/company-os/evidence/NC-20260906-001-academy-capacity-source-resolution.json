@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "resolution_id": "academy-capacity-source-resolution-2026-09-06",
   "task_id": "NC-20260906-001",
-  "observed_at": "2026-09-06T16:17:40.708Z",
+  "observed_at": "2026-09-06T16:49:27Z",
   "resolves": {
     "report_id": "academy-capacity-readonly-reconciliation-2026-09-05",
     "correction_id": "academy-capacity-sales-reconstruction-2026-09-05",
@@ -65,7 +65,13 @@
         "acc-pcc-full": 0
       },
       "product_cells_updated_and_verified": 2,
-      "seat_binding_rows_sha256": "85594f892fe1862c7c3450b850767193261c29d002fb3fd647ed0e3f32ae9af5"
+      "seat_binding_rows_sha256": "85594f892fe1862c7c3450b850767193261c29d002fb3fd647ed0e3f32ae9af5",
+      "mcs_friday_manual_or_legacy_funding": {
+        "seat_binding_rows": 3,
+        "unique_participants": 3,
+        "product_cells_updated_and_verified": 2,
+        "seat_binding_rows_sha256": "f1821730ea40360760f412018d576560356db6762bc8913abd104a34252b099e"
+      }
     },
     "plutio": {
       "read_only": true,
@@ -104,22 +110,26 @@
     "tandemweb": {
       "branch": "codex/capacity-roster-floor-20260906",
       "prevention_commit": "4bb852bb3",
-      "source_resolution_commit": "7872a3a9b",
-      "mcs_transfer_origin": "2026-09-25",
+      "source_resolution_commit": "56bb8f6ee",
+      "mcs_assignment_origin": "2026-09-25",
+      "mcs_payment_source_cohort": "2026-09-24",
       "mcs_transfer_destination": "2027-01-07",
       "paired_adjustment_source_ref": "owner-confirmed-deferral-2026-09-04",
       "reconciliation": {
         "september_thursday": {
           "roster_active": 5,
           "stripe_floor": 6,
-          "occupied": 6,
-          "status": "needs_review",
+          "payment_transfer_adjustment": -1,
+          "reconciled_funding": 5,
+          "occupied": 5,
+          "status": "matched",
           "public_state": "open"
         },
         "september_friday": {
           "roster_active": 13,
           "stripe_floor": 10,
-          "transfer_adjustment": -1,
+          "manual_or_legacy_funding_adjustment": 3,
+          "reconciled_funding": 13,
           "occupied": 13,
           "status": "needs_review",
           "public_state": "sold_out"
@@ -183,26 +193,18 @@
     {
       "exception_id": "exception:acc-september-funding-classification-incomplete",
       "disposition": "reduced_from_8_to_1_exact_unresolved_assignment"
+    },
+    {
+      "exception_id": "exception:mcs-friday-funding-source-coverage-incomplete",
+      "disposition": "resolved_by_10_dated_checkout_and_3_exact_manual_or_legacy_payment_bindings"
     }
   ],
   "remaining_exceptions": [
-    {
-      "exception_id": "exception:mcs-thursday-funding-source-coverage-incomplete",
-      "facts": "After the settled transfer moved to the Friday origin, Thursday has five active roster assignments and a six-seat Stripe floor.",
-      "owner": "bookkeeper_integration",
-      "next_evidence": "Bind or disposition the separate sixth Thursday payment against exact assignment, refund, transfer, or participant evidence without reassigning the settled deferral."
-    },
     {
       "exception_id": "exception:mcs-friday-roster-owner-count-conflict",
       "facts": "The current roster has 13 active Friday assignments excluding the settled deferral; the earlier owner count was 12.",
       "owner": "academy_operations",
       "next_evidence": "Disposition the separate thirteenth active Friday row from current attendance or enrollment evidence without attributing it to the settled deferral."
-    },
-    {
-      "exception_id": "exception:mcs-friday-funding-source-coverage-incomplete",
-      "facts": "Friday roster assignment and exact funding coverage remain unequal after the corrected transfer origin.",
-      "owner": "bookkeeper_integration",
-      "next_evidence": "Bind remaining Friday assignments to exact invoice, ACH, sponsored, scholarship, or operator-grant evidence."
     },
     {
       "exception_id": "exception:acc-module-1-funding-source-unresolved",
@@ -218,9 +220,9 @@
     }
   ],
   "boundary": {
-    "source_mutations": 14,
+    "source_mutations": 16,
     "student_roster_mutations": 11,
-    "payment_log_mutations": 2,
+    "payment_log_mutations": 4,
     "heartbeat_membership_mutations": 1,
     "plutio_mutations": 0,
     "refund_mutations": 0,

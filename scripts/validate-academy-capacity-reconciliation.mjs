@@ -711,8 +711,9 @@ export function validateAcademyCapacitySourceResolution(resolution) {
   const tandemweb = resolution?.source_readback?.tandemweb ?? {};
   add(
     tandemweb?.prevention_commit === '4bb852bb3' &&
-      tandemweb?.source_resolution_commit === '7872a3a9b' &&
-      tandemweb?.mcs_transfer_origin === '2026-09-25' &&
+      tandemweb?.source_resolution_commit === '56bb8f6ee' &&
+      tandemweb?.mcs_assignment_origin === '2026-09-25' &&
+      tandemweb?.mcs_payment_source_cohort === '2026-09-24' &&
       tandemweb?.mcs_transfer_destination === '2027-01-07' &&
       typeof tandemweb?.paired_adjustment_source_ref === 'string' &&
       tandemweb.paired_adjustment_source_ref.length > 0,
@@ -723,12 +724,17 @@ export function validateAcademyCapacitySourceResolution(resolution) {
   add(
     mcsReconciliation?.september_thursday?.roster_active === 5 &&
       mcsReconciliation?.september_thursday?.stripe_floor === 6 &&
-      mcsReconciliation?.september_thursday?.occupied === 6 &&
-      mcsReconciliation?.september_thursday?.status === 'needs_review' &&
+      mcsReconciliation?.september_thursday?.payment_transfer_adjustment ===
+        -1 &&
+      mcsReconciliation?.september_thursday?.reconciled_funding === 5 &&
+      mcsReconciliation?.september_thursday?.occupied === 5 &&
+      mcsReconciliation?.september_thursday?.status === 'matched' &&
       mcsReconciliation?.september_thursday?.public_state === 'open' &&
       mcsReconciliation?.september_friday?.roster_active === 13 &&
       mcsReconciliation?.september_friday?.stripe_floor === 10 &&
-      mcsReconciliation?.september_friday?.transfer_adjustment === -1 &&
+      mcsReconciliation?.september_friday
+        ?.manual_or_legacy_funding_adjustment === 3 &&
+      mcsReconciliation?.september_friday?.reconciled_funding === 13 &&
       mcsReconciliation?.september_friday?.occupied === 13 &&
       mcsReconciliation?.september_friday?.status === 'needs_review' &&
       mcsReconciliation?.september_friday?.public_state === 'sold_out' &&
@@ -796,6 +802,7 @@ export function validateAcademyCapacitySourceResolution(resolution) {
     findings,
   );
   const log = resolution?.source_readback?.payment_log ?? {};
+  const mcsManualFunding = log.mcs_friday_manual_or_legacy_funding ?? {};
   add(
     log.seat_binding_rows === 17 &&
       log.unique_participants === 16 &&
@@ -804,6 +811,14 @@ export function validateAcademyCapacitySourceResolution(resolution) {
       log.by_exact_offer?.['acc-pcc-full'] === 0 &&
       log.product_cells_updated_and_verified === 2,
     'Payment Log source repair coverage changed unexpectedly',
+    findings,
+  );
+  add(
+    mcsManualFunding.seat_binding_rows === 3 &&
+      mcsManualFunding.unique_participants === 3 &&
+      mcsManualFunding.product_cells_updated_and_verified === 2 &&
+      SHA256.test(mcsManualFunding.seat_binding_rows_sha256 ?? ''),
+    'MCS Friday manual or legacy funding receipt is incomplete',
     findings,
   );
   const plutio = resolution?.source_readback?.plutio ?? {};
@@ -844,9 +859,9 @@ export function validateAcademyCapacitySourceResolution(resolution) {
     findings,
   );
   add(
-    boundary.source_mutations === 14 &&
+    boundary.source_mutations === 16 &&
       boundary.student_roster_mutations === 11 &&
-      boundary.payment_log_mutations === 2 &&
+      boundary.payment_log_mutations === 4 &&
       boundary.heartbeat_membership_mutations === 1 &&
       boundary.student_roster_mutations +
         boundary.payment_log_mutations +
@@ -869,6 +884,7 @@ export function validateAcademyCapacitySourceResolution(resolution) {
     'exception:acc-september-full-offer-split-unresolved',
     'exception:acc-professional-projections-missing',
     'exception:acc-september-funding-classification-incomplete',
+    'exception:mcs-friday-funding-source-coverage-incomplete',
   ]);
   const resolved = resolution?.resolved_exceptions ?? [];
   add(
@@ -906,11 +922,17 @@ export function validateAcademyCapacitySourceResolution(resolution) {
     'settled MCS deferral must not remain an exception',
     findings,
   );
+  add(
+    !remaining.some((entry) => expectedResolved.has(entry?.exception_id)),
+    'resolved source exception must not remain active',
+    findings,
+  );
   for (const digest of [
     acc.rowset_sha256,
     roster?.prior_june_boundary?.rowset_sha256,
     roster?.owner_named_deferral?.row_sha256,
     log.seat_binding_rows_sha256,
+    mcsManualFunding.seat_binding_rows_sha256,
     plutio.receipt_sha256,
     heartbeat?.mcs_september?.member_sha256,
     heartbeat?.acc_full?.member_sha256,

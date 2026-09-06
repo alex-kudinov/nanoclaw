@@ -329,9 +329,12 @@ Against the reconstructed 21 operational seats this is oversold by 9; the held
 public state remains sold out. This fact removes the numeric-capacity exception
 but grants no authority to populate migration 143 or repair any source.
 `NC-20260906-001` is the separately authorized source-repair receipt. Rita's
-transfer is conclusively September Friday to January Thursday; roster and
-Heartbeat readback settle the destination and remove stale September cohort
-access while preserving base MCS access. ACC now has 21 explicit `2026-09`
+assignment transfer is conclusively September Friday to January Thursday;
+historical Stripe payment attribution remains Thursday and is stored
+separately. Roster and Heartbeat readback settle the destination and remove
+stale September cohort access while preserving base MCS access. Three exact
+manual/legacy bindings reconcile Friday funding to all 13 current rows; the
+13-versus-owner-12 roster variance remains separate. ACC now has 21 explicit `2026-09`
 assignments, 10 Module 1 plus 11 Full Program, with the May 27 row explicitly in
 the prior June cohort. Exact evidence resolves the paid offers to 9 Module 1,
 11 `$3,999` ACC Full, and 0 `$7,499` Professional Coach; one Module 1 funding

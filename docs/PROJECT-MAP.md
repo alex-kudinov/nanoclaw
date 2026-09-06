@@ -647,9 +647,11 @@ September Friday to January Thursday; stale September Heartbeat access was
 removed while base MCS access remained; ACC September is explicitly 21/12 and
 oversold by 9; the May 27 row belongs to June; the 11 Full Program seats are all
 `$3,999` ACC Full and none are `$7,499` Professional Coach; one Module 1 funding
-source, one cross-provider email alias, and separate MCS Thursday/Friday
-assignment-versus-funding variances remain held. This does not apply migrations
-142-143 or activate the capacity runtime.
+source, one cross-provider email alias, and the separate MCS Friday
+13-versus-owner-12 roster variance remain held. MCS funding is reconciled by
+separating the Friday assignment origin from the Thursday payment source and
+binding three exact manual/legacy Friday payments. This does not apply
+migrations 142-143 or activate the capacity runtime.
 
 Internal deterministic Slack notifications follow a human-first preview
 contract: the first line names the business event and subject; implementation

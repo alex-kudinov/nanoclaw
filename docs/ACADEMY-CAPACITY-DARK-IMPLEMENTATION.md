@@ -145,11 +145,15 @@ check/email and combined-program sales outside the dated cohort labels. MCS
 Thursday is reconciled at 5/12 and
 remains open. MCS Friday has 13 active roster assignments against capacity 12,
 not the owner hypothesis of 12; it remains sold out and blocked from import.
-`NC-20260906-001` settles the owner-named deferral as September Friday to
-January Thursday. The roster already had the destination; the stale September
-Heartbeat membership was removed while preserving the user and base MCS
-access, and Tandemweb's paired transfer source is corrected. This fact must not
-return to the exception set.
+`NC-20260906-001` settles the owner-named deferral's assignment as September
+Friday to January Thursday. The historical Stripe payment remains attributed
+to Thursday, so Tandemweb now carries assignment origin and payment source as
+separate fields rather than forcing one false origin. The roster already had
+the destination; the stale September Heartbeat membership was removed while
+preserving the user and base MCS access. Thursday reconciles to 5 funded seats,
+and three exact manual/legacy bindings reconcile Friday funding to all 13
+current rows. The distinct Friday 13-versus-owner-12 roster variance remains;
+the settled deferral must not return to the exception set.
 
 The same source-repair slice makes ACC September 7 explicit at 21 assignments:
 10 Module 1 and 11 Full Program routes, capacity 12, oversold by 9. The May 27

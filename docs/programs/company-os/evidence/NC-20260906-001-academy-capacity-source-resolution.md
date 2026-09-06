@@ -9,9 +9,11 @@ Work item: `work:academy-capacity-reconciliation-resolution`
 Rita's transfer is settled. The Student Roster already placed the owner-named
 deferral in January 2027 Thursday. Heartbeat's stale September 2026 cohort
 membership was removed with exact group/user preconditions and read back
-absent; the user and base MCS access remain. Tandemweb now records the transfer
-as September Friday to January Thursday. Her origin and destination are no
-longer reconciliation questions.
+absent; the user and base MCS access remain. Tandemweb now records the
+owner-confirmed seat origin as September Friday, the historical Stripe payment
+source as September Thursday, and the destination as January Thursday. These
+are separate facts; her assignment origin and destination are no longer
+reconciliation questions.
 
 The September 7 ACC shared delivery block is now explicit in the Student
 Roster: 21 active assignments, capacity 12, zero availability, oversold by 9.
@@ -48,11 +50,17 @@ invented.
   value. Final ACC readback is 21 September rows, one June boundary row, and
   zero unlabeled post-boundary rows.
 - Payment Log: two guarded Product cells updated and verified by exact Stripe
-  ID and expected prior value.
+  ID and expected prior value for ACC Full. Two more were similarly corrected
+  to MCS Practicum after exact paid invoice readback. The three non-checkout
+  Friday funding rows now reconcile the 13 assignments to 13 funded seats.
 - Heartbeat: one exact September cohort membership removed and verified absent;
   the user remains with base MCS access.
-- Tandemweb: source-only paired transfer correction and regression test are in
-  progress on the capacity branch.
+- Tandemweb: pushed `56bb8f6ee` separates assignment origin from payment
+  source, validates the paired transfer, and accepts the three manual/legacy
+  funding seats only with zero seat delta, exact count, source receipt, and
+  64-character evidence hash. Thursday is 5/matched/open, Friday is
+  13/funding-matched but owner-variance `needs_review`/sold out, and January
+  Thursday is 1/matched/open.
 - Toolbox: commit `8d996dd` contains the guarded removal operation. Full tests
   pass 65/65 plus focused Heartbeat tests. Claude Sonnet/high's material
   readback-refusal test finding and minor argument-test finding were corrected.
@@ -62,16 +70,13 @@ The machine-readable receipt contains only aggregate counts and hashes:
 
 ## Remaining exceptions
 
-Five exceptions remain, none involving Rita or the ACC offer split:
+Three exceptions remain, none involving Rita, MCS funding, or the ACC offer
+split:
 
-1. Thursday MCS has five active roster assignments and a six-seat Stripe floor
-   after the transfer origin correction. This is a separate funding/assignment
-   mismatch and does not reopen the settled deferral.
-2. The current MCS roster has 13 Friday rows excluding Rita, while the earlier
+1. The current MCS roster has 13 Friday rows excluding Rita, while the earlier
    owner count was 12. That is a separate current-roster variance.
-3. MCS Friday funding coverage remains incomplete.
-4. One ACC Module 1 assignment has no exact matching live-offer funding source.
-5. One ACC Full participant uses different roster and Heartbeat emails; an
+2. One ACC Module 1 assignment has no exact matching live-offer funding source.
+3. One ACC Full participant uses different roster and Heartbeat emails; an
    explicit alias is required before database population.
 
 No refund, customer communication, certificate, public deployment, production

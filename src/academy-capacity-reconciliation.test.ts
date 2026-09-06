@@ -207,6 +207,42 @@ describe('Academy capacity source resolution', () => {
     ).toBe(false);
   });
 
+  it('separates assignment origin from payment source and reconciles Friday funding', () => {
+    expect(resolution.source_readback.tandemweb).toMatchObject({
+      mcs_assignment_origin: '2026-09-25',
+      mcs_payment_source_cohort: '2026-09-24',
+      mcs_transfer_destination: '2027-01-07',
+      reconciliation: {
+        september_thursday: {
+          roster_active: 5,
+          payment_transfer_adjustment: -1,
+          reconciled_funding: 5,
+          occupied: 5,
+          status: 'matched',
+          public_state: 'open',
+        },
+        september_friday: {
+          roster_active: 13,
+          manual_or_legacy_funding_adjustment: 3,
+          reconciled_funding: 13,
+          occupied: 13,
+          status: 'needs_review',
+          public_state: 'sold_out',
+        },
+      },
+    });
+    expect(
+      resolution.resolved_exceptions.map(
+        (entry: { exception_id: string }) => entry.exception_id,
+      ),
+    ).toContain('exception:mcs-friday-funding-source-coverage-incomplete');
+    expect(
+      resolution.remaining_exceptions.map(
+        (entry: { exception_id: string }) => entry.exception_id,
+      ),
+    ).not.toContain('exception:mcs-friday-funding-source-coverage-incomplete');
+  });
+
   it('balances 21 explicit assignments into exact offers and one held funding case', () => {
     expect(
       resolution.source_readback.student_roster.acc_september,
