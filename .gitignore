@@ -25,6 +25,7 @@ logs/
 groups/*
 !groups/*/
 groups/*/*
+!groups/certifier/EXECUTION-STEPS.md
 !groups/*/CLAUDE.md
 !groups/*/CLAUDE-MAIN.md
 !groups/*/WORKFLOWS.md

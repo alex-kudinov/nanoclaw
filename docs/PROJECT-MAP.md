@@ -574,6 +574,33 @@ overwritten. Actual daemon-down recovery, prompt/source convergence, Node 22
 startup enforcement, and a genuine or test-routed end-to-end send remain
 separate verification work.
 
+### Gru certificate API follow-through (`NC-20260907-003`)
+
+Gru's certificate approval remains the only authorization for a new issuance.
+Its pending script calls the shared `issue-and-followthrough.sh` wrapper, which
+uses the canonical duplicate-safe Sertifier issuer and then handles every newly
+issued public credential through two independent Heartbeat API outcomes:
+
+- an idempotent direct message, using `PUT /directChats`, one guarded
+  `PUT /directMessages`, and bounded `GET /directMessages/{chatID}` readback;
+- an idempotent `Our Graduates` POSTS thread, using the existing verified
+  `PUT /threads` plus exact thread readback.
+
+The DM resolves the exact credential email and the configured Administrator
+sender (`alex@tandemcoach.co` by default), uses the branded registrar URL as its
+dedupe marker, and persists intent before the send. An uncertain send is
+reconciled but never repeated automatically. The combined receipt keeps DM and
+community outcomes separate and reaches terminal success only when both are
+verified. Private and `already_issued` credentials are not automatically
+messaged or announced. A missed existing credential requires the explicit
+repair mode and never reissues.
+
+This workflow is API-only. Browser and Computer Use are outside Gru's
+certificate completion path. `groups/certifier/EXECUTION-STEPS.md` is tracked
+as behavior authority rather than remaining an ignored operational file, and a
+prompt/workflow deployment must reset the certifier root session so a resumed
+Claude conversation cannot retain the prior contract.
+
 ## 12. Integrations
 
 The repository contains active or planned connections to:

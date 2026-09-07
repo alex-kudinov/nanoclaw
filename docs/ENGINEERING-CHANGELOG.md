@@ -8,6 +8,30 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260907-003 — Make Gru complete certificate DMs and graduate announcements through APIs
+
+- Date: 2026-09-07T22:20Z
+- Owner/client: Codex Astra, bounded Sol implementer, Claude Sonnet/high reviewer
+- State: validating — isolated source and stubbed provider tests; not yet
+  deployed or live-verified.
+- Branches: NanoClaw `codex/certifier-api-followthrough` from `51185a5d`;
+  toolbox `codex/heartbeat-certificate-followthrough` from `67287be`.
+- Change class: C4 — newly automated student-facing direct messages and public
+  community announcements, preserving the existing issuance approval.
+- Scope: documented Heartbeat `/directChats`, `/directMessages`, and message
+  readback; durable registrar-URL DM dedupe; combined certificate follow-through
+  receipt; independent `Our Graduates` outcome; Gru wrapper/prompt/tracked
+  execution contract; focused tests and three explicitly authorized missed
+  Practicum repairs. LinkedIn is excluded.
+- Safety: dry-run performs no provider writes; recipient and Administrator
+  sender resolve by exact email; a message intent is persisted before the only
+  send; uncertain sends and posts reconcile without blind retry; private and
+  already-issued credentials do not auto-follow-through; repair never issues.
+- Current verification: toolbox shell syntax, both shared registries, focused
+  Heartbeat/Sertifier stubs, live GET-only dry-runs for Nola Gephart, Sheizana
+  Murji, and Lori Pietropaoli, and the Nano prompt contract. Production sync,
+  session reset, Gru execution, and exact API receipts remain pending.
+
 ### NC-20260815-006 — Refuse to run a release from inside the release, and say which knowledge tree agents read
 
 - Date: 2026-08-15T20:35Z
