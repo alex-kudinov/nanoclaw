@@ -1,0 +1,139 @@
+{
+  "artifact_id": "NC-20260907-005-technical-gap-resolution",
+  "generated_at_utc": "2026-09-07T20:47:33Z",
+  "status": "proposed_unapplied",
+  "scope": "Targeted supported capability and source checks needed for the first publication-contract population; no population records or provider writes.",
+  "bases": {
+    "nc004_acceptance_commit": "0e6fb6050a304689561234d8fdbb0282674ae5bd",
+    "nc005_claim_commit": "70e0bc6e",
+    "working_branch": "codex/catalog-rollout-prep-20260907"
+  },
+  "resolutions": [
+    {
+      "gap_id": "stripe_account_alias",
+      "status": "native_identity_confirmed_consumer_binding_unverified",
+      "finding": "Current processor source labels its STRIPE_SECRET_KEY_ALT slot tandem. Provider whoami proves the native account selected by the separately configured toolbox alt slot, but these facts alone do not prove both runtime configurations currently select the same account.",
+      "evidence": {
+        "method": "current process-payment source, documented stripe/whoami with sanitized arguments {account: alt}, and accepted NC-004 native-account observations",
+        "provider_namespace": "stripe:alt",
+        "native_account_id": "acct_1G1wKzA7hTBWpVVq",
+        "sensitive_account_fields_retained": false
+      },
+      "contract_effect": "A versioned consumer_account_alias relationship requires a probe through the actual configured consumer or equivalent non-secret deployment/configuration attestation plus provider readback before activation. Observation time does not invent historical effective_from. Missing, held, ambiguous, expired, or mismatched aliases fail publication for the affected consumer. Existing consumer keys are not renamed."
+    },
+    {
+      "gap_id": "supervision_product_default_price_identity",
+      "status": "technically_resolved_for_first_population",
+      "finding": "Both exact supervision products exist and are active in stripe:alt, and each native default-price field exactly matches its separately declared supervision price ID.",
+      "evidence": {
+        "method": "documented read-only stripe/get-product for the two exact product IDs",
+        "routes": [
+          {
+            "offer_key": "supervision-inaugural",
+            "product_id": "prod_UvqkpUONPWr8Bo",
+            "default_price_id": "price_1Tvz3MA7hTBWpVVqhF708kPv",
+            "native_product_active": true,
+            "checkout_expected_active": true
+          },
+          {
+            "offer_key": "supervision-regular",
+            "product_id": "prod_UvqkMSjRqR4zho",
+            "default_price_id": "price_1Tvz3MA7hTBWpVVq9gL3v49F",
+            "native_product_active": true,
+            "checkout_expected_active": false
+          }
+        ]
+      },
+      "contract_effect": "Default-price identity may enter the first compatibility fixture. Native product active never overrides source-owned checkout active state."
+    },
+    {
+      "gap_id": "supervision_heartbeat_object_existence",
+      "status": "native_and_managed_source_existence_confirmed_attachment_unverified",
+      "finding": "The supervision access-group object and course object exist in the native Heartbeat inventory; the exact course is also present in the managed course source. These are separate existence observations and do not prove their attachment or any learner state.",
+      "evidence": {
+        "method": "accepted NC-004 privacy-minimized Heartbeat snapshot and source-authority snapshot",
+        "observed_at": "2026-09-07T18:05:42.798Z",
+        "provider_snapshot_ref": "docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json",
+        "provider_snapshot_sha256": "55486082ddc00817ad2c69ab0a4f87e7495c4849ee354f157add2f11ecba4afe",
+        "source_snapshot_ref": "docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json",
+        "source_snapshot_sha256": "0ba747c83465584ec2f1837ef1543fe001fb78923116585e7c361542ec6628e1",
+        "declared_group_id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+        "group_native_exists": true,
+        "declared_course_id": "1f2febfe-eb34-463a-818e-ce7d0cac1251",
+        "course_native_exists": true,
+        "course_found_in_managed_source": true,
+        "group_course_attachment_verified": false,
+        "learner_state_read": false
+      },
+      "contract_effect": "The future fixture may record group and course existence with these exact evidence references and existence-only statuses. Current-lineage implementation must refresh or explicitly accept the still-current digests before generation. Attachment, access, progress, class, completion, fulfillment, and global strict-publication eligibility remain held."
+    },
+    {
+      "gap_id": "native_price_amount_and_recurrence",
+      "status": "supported_surface_limit_unresolved",
+      "finding": "The current documented Stripe toolbox exposes product/default-price identity but no exact price getter for native amount, currency, interval, recurrence, or installment duration.",
+      "evidence": {
+        "method": "single global capability discovery and exact stripe toolset listing",
+        "available_relevant_read": "stripe/get-product",
+        "missing_read": "exact price object getter",
+        "nc004_native_default_price_links": 3,
+        "nc004_native_null_default_prices": 6
+      },
+      "contract_effect": "Offer and checkout amount/recurrence remain source declarations. The first fixture validator can check equality among source declarations and native default-price identity, but it cannot label native amount or recurrence verified. This does not block exact v1 identity-export parity."
+    },
+    {
+      "gap_id": "pcc_practice_test_group_course_attachment",
+      "status": "supported_surface_limit_unresolved",
+      "finding": "The exact native PCC/MCC Practice Test course exists and the managed local course manifest binds that course and cohort. A same-label native group candidate exists, while the catalog-declared historical group ID remains absent. Neither the documented provider surfaces nor the local manifest exposes group-course attachment.",
+      "evidence": {
+        "method": "single Heartbeat capability discovery, exact filtered course/group reads from the documented bizmgr context, and one exact local course-manifest inspection",
+        "native_course_id": "5e9eb6c7-7f5c-4244-b352-e202a604969b",
+        "candidate_group_id": "5c2616f5-3379-4144-bbef-8fc746415cdc",
+        "candidate_relationship_status": "label_match_only_not_substitutable",
+        "declared_historical_group_id_status": "native_absent",
+        "supported_attachment_read": false,
+        "nanoclaw_context_result": "MISSING_CONFIG",
+        "provider_outage_inferred": false
+      },
+      "contract_effect": "Keep a specific provider_attachment_or_purpose_authority hold. Do not ask the owner to choose the candidate ID and do not infer attachment, access, progress, class, or completion. This population is outside the first supervision identity-consumer application."
+    },
+    {
+      "gap_id": "plutio_project_reference_reads",
+      "status": "prior_supported_wrapper_limit_preserved",
+      "finding": "NC-004 recorded two generic wrapper exit-1 results without an HTTP code. They are not repeated and are not classified as missing projects.",
+      "evidence": {
+        "method": "accepted NC-004 evidence only",
+        "repeated_in_nc005": false
+      },
+      "contract_effect": "No Plutio offer or agreement relationship enters the first application."
+    }
+  ],
+  "first_population_readiness": {
+    "population": ["supervision-inaugural", "supervision-regular"],
+    "ready_for": [
+      "unapplied source fixture",
+      "deterministic schema and cross-source validation",
+      "exact existing v1 roster identity compatibility export generation and parity test"
+    ],
+    "not_ready_for": [
+      "activation before actual consumer account-alias probe",
+      "global strict_publish_eligible",
+      "native price-semantic verification",
+      "Heartbeat access or attachment activation",
+      "provider fulfillment or learner lifecycle coverage",
+      "runtime or website deployment"
+    ],
+    "independent_holds_do_not_block": [
+      "MCS variant and account semantics",
+      "Foundations locale promise decisions",
+      "PCC practice-test attachment",
+      "service quantity and consumption policy"
+    ]
+  },
+  "privacy": {
+    "people_or_member_records_read": 0,
+    "customer_or_learner_records_read": 0,
+    "financial_record_population_reads": 0,
+    "secret_or_signed_urls_retained": 0,
+    "provider_writes": 0
+  }
+}

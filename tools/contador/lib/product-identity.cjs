@@ -129,7 +129,7 @@ function resolveProductIdentity(compiled, input, productMapRows) {
 function loadProductBindings() {
   return compileProductBindings(
     require('../../../facts/catalogs/student-entitlements-v1.json'),
-    require('../../../facts/catalogs/student-product-bindings-v1.json'),
+    require('../../../facts/generated/student-product-bindings-v1.compat.json'),
   );
 }
 

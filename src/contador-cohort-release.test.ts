@@ -11,6 +11,12 @@ describe('Contador cohort release lineage', () => {
     );
 
     expect(builder).toContain("'tools/contador/lib/cohort.cjs'");
+    expect(builder).toContain(
+      "'facts/generated/student-product-bindings-v1.compat.json'",
+    );
+    expect(builder).toContain(
+      "'scripts/build-student-catalog-publication.mjs'",
+    );
     expect(builder).toContain('required tracked runtime input missing');
     expect(processor).toContain("require('./lib/cohort.cjs')");
   });

@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nanoclaw.local/schemas/student-catalog-publication-v1.schema.json",
+  "title": "Student catalog publication coordination manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "catalog_id",
+    "revision",
+    "compatibility_profile",
+    "population_keys",
+    "source_roots",
+    "sources",
+    "relationships",
+    "consumers",
+    "holds"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "catalog_id": { "const": "student-catalog-publication" },
+    "revision": { "type": "integer", "minimum": 1 },
+    "compatibility_profile": { "const": "nanoclaw-v1-exact" },
+    "population_keys": {
+      "const": ["supervision-inaugural", "supervision-regular"]
+    },
+    "source_roots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nanoclaw", "tandemweb"],
+      "properties": {
+        "nanoclaw": { "const": "nanoclaw" },
+        "tandemweb": { "const": "tandemweb" }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "relationships": {
+      "type": "array",
+      "minItems": 15,
+      "items": { "$ref": "#/$defs/relationship" }
+    },
+    "consumers": {
+      "const": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    "holds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "native_price_amount_verified",
+        "native_price_recurrence_verified",
+        "heartbeat_group_course_attachment_verified",
+        "heartbeat_learner_access_verified",
+        "heartbeat_progress_verified",
+        "heartbeat_class_assignment_verified",
+        "heartbeat_completion_verified",
+        "global_strict_publication_eligible"
+      ],
+      "properties": {
+        "native_price_amount_verified": { "const": false },
+        "native_price_recurrence_verified": { "const": false },
+        "heartbeat_group_course_attachment_verified": { "const": false },
+        "heartbeat_learner_access_verified": { "const": false },
+        "heartbeat_progress_verified": { "const": false },
+        "heartbeat_class_assignment_verified": { "const": false },
+        "heartbeat_completion_verified": { "const": false },
+        "global_strict_publication_eligible": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "timestampOrNull": {
+      "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_key",
+        "root",
+        "path",
+        "namespace",
+        "object_type",
+        "object_id",
+        "source_version",
+        "source_sha256"
+      ],
+      "properties": {
+        "source_key": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "root": { "enum": ["nanoclaw", "tandemweb"] },
+        "path": {
+          "enum": [
+            "facts/catalogs/coaching-supervision-mastery.json",
+            "facts/catalogs/student-entitlements-v1.json",
+            "facts/catalogs/student-product-bindings-v1.json",
+            "data/checkout/products.json",
+            "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
+            "docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json",
+            "docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json",
+            "docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json"
+          ]
+        },
+        "namespace": { "type": "string", "minLength": 1 },
+        "object_type": { "type": "string", "minLength": 1 },
+        "object_id": { "type": "string", "minLength": 1 },
+        "source_version": { "type": "string", "minLength": 1 },
+        "source_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace", "object_type", "object_id"],
+      "properties": {
+        "namespace": { "type": "string", "minLength": 1 },
+        "object_type": { "type": "string", "minLength": 1 },
+        "object_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relationship_key",
+        "namespace",
+        "object_type",
+        "object_id",
+        "relationship_type",
+        "relationship_status",
+        "target",
+        "source_ref",
+        "source_version",
+        "source_sha256",
+        "evidence_class",
+        "evidence_ref",
+        "observed_at",
+        "effective_from",
+        "effective_to",
+        "owner",
+        "consumer_keys"
+      ],
+      "properties": {
+        "relationship_key": { "type": "string", "pattern": "^[a-z0-9:_-]+$" },
+        "namespace": { "type": "string", "minLength": 1 },
+        "object_type": { "type": "string", "minLength": 1 },
+        "object_id": { "type": "string", "minLength": 1 },
+        "relationship_type": {
+          "enum": [
+            "consumer_account_alias",
+            "offer_uses_product",
+            "product_default_price",
+            "offer_includes_bundle",
+            "checkout_represents_offer",
+            "offer_projects_to_roster",
+            "offer_declares_access_group",
+            "bundle_declares_course",
+            "access_group_exists",
+            "course_exists"
+          ]
+        },
+        "relationship_status": {
+          "enum": [
+            "accepted",
+            "native_verified",
+            "source_declared",
+            "candidate",
+            "unverified",
+            "held",
+            "retired",
+            "historical"
+          ]
+        },
+        "target": { "$ref": "#/$defs/endpoint" },
+        "source_ref": { "type": "string", "minLength": 1 },
+        "source_version": { "type": "string", "minLength": 1 },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "evidence_class": {
+          "enum": [
+            "source_declaration",
+            "accepted_source",
+            "native_readback",
+            "existence_only"
+          ]
+        },
+        "evidence_ref": { "type": "string", "minLength": 1 },
+        "observed_at": { "$ref": "#/$defs/timestampOrNull" },
+        "effective_from": { "$ref": "#/$defs/timestampOrNull" },
+        "effective_to": { "$ref": "#/$defs/timestampOrNull" },
+        "owner": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "consumer"],
+          "properties": {
+            "source": { "type": "string", "minLength": 1 },
+            "consumer": { "type": "string", "minLength": 1 }
+          }
+        },
+        "consumer_keys": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["nanoclaw-v1", "tandemweb-checkout-validation"] }
+        }
+      }
+    }
+  }
+}

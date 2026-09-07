@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "task_id": "NC-20260907-006",
+  "prepared_at": "2026-09-07T22:12:12Z",
+  "population_keys": ["supervision-inaugural", "supervision-regular"],
+  "bases": {
+    "nanoclaw": "1449812c1e716135cd90c5d28c5a80d31ff197a0",
+    "tandemweb": "0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
+    "claim_commit": "fba915c421d1166af26273e6a3c1e517ab71f262"
+  },
+  "actual_consumer_alias": {
+    "consumer_key": "tandem",
+    "configuration_slot": "STRIPE_SECRET_KEY_ALT",
+    "provider_namespace": "stripe:alt",
+    "native_account_id": "acct_1G1wKzA7hTBWpVVq",
+    "match": true,
+    "observed_at": "2026-09-07T21:39:46Z",
+    "evidence_ref": "docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json"
+  },
+  "deterministic_payloads": {
+    "nanoclaw_sha256": "95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9",
+    "tandemweb_sha256": "2e12395f47601b9f7a0698417a0f34b6bb9828520d12f8d75fb26590a550218a",
+    "tandemweb_payload_sha256": "25e1d2f22f410861cdb0904f4948727a95575973f30ae27ab29c6c6ad1ebb71c",
+    "selected_checkout_sha256": "bb6d256909260977e0a6ccf7db790215a56de32323b69295f09f8403634e3237"
+  },
+  "consumers": {
+    "nanoclaw-v1": {
+      "state": "validated",
+      "prior_release": "1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "artifact": "facts/generated/student-product-bindings-v1.compat.json",
+      "artifact_sha256": "95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9",
+      "new_release": null,
+      "activated_at": null,
+      "read_back_at": null
+    },
+    "tandemweb-checkout-validation": {
+      "state": "validated",
+      "prior_source": "0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
+      "artifact": "data/generated/student-catalog-publication-v1.json",
+      "artifact_sha256": "2e12395f47601b9f7a0698417a0f34b6bb9828520d12f8d75fb26590a550218a",
+      "new_source": null,
+      "activated_at": null,
+      "read_back_at": null
+    }
+  },
+  "verification": {
+    "nanoclaw_focused": "3 files / 22 tests passed",
+    "tandemweb_focused": "10 tests passed",
+    "full_checks": "pending",
+    "review": "pending"
+  },
+  "privacy": {
+    "credentials_output": false,
+    "customer_or_learner_population_read": false,
+    "financial_population_read": false
+  },
+  "business_outcome_validated": false
+}

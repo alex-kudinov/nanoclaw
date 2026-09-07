@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import crypto from 'crypto';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -165,6 +166,19 @@ if (process.argv.includes('--runtime')) {
       `release requires Node ${manifest.nodePin}; verifier is running under ${actual}`,
     );
   }
+}
+
+const studentCatalogVerifier = path.join(
+  root,
+  'scripts',
+  'build-student-catalog-publication.mjs',
+);
+if (fs.existsSync(studentCatalogVerifier)) {
+  execFileSync(
+    process.execPath,
+    [studentCatalogVerifier, '--nanoclaw-root', root, '--check-nanoclaw'],
+    { cwd: root, stdio: 'inherit' },
+  );
 }
 
 process.stdout.write(

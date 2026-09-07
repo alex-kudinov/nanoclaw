@@ -1,0 +1,522 @@
+{
+  "schema_version": 1,
+  "catalog_id": "student-catalog-publication",
+  "revision": 1,
+  "compatibility_profile": "nanoclaw-v1-exact",
+  "population_keys": ["supervision-inaugural", "supervision-regular"],
+  "source_roots": {
+    "nanoclaw": "nanoclaw",
+    "tandemweb": "tandemweb"
+  },
+  "sources": [
+    {
+      "source_key": "supervision_program",
+      "root": "nanoclaw",
+      "path": "facts/catalogs/coaching-supervision-mastery.json",
+      "namespace": "catalog:coaching-supervision-mastery",
+      "object_type": "catalog",
+      "object_id": "coaching-supervision-mastery",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "285b306d5d8936881009f4663cf2a726896a72a55c860b69193cfcd00f3870c4"
+    },
+    {
+      "source_key": "entitlement_catalog",
+      "root": "nanoclaw",
+      "path": "facts/catalogs/student-entitlements-v1.json",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "catalog",
+      "object_id": "student-entitlements",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b"
+    },
+    {
+      "source_key": "binding_catalog",
+      "root": "nanoclaw",
+      "path": "facts/catalogs/student-product-bindings-v1.json",
+      "namespace": "catalog:student-product-bindings",
+      "object_type": "catalog",
+      "object_id": "student-product-bindings-v1",
+      "source_version": "revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "08df8787fbf5fa621afe1f727bca7ffdb376da511537df5020db23c0f5a3e5ac"
+    },
+    {
+      "source_key": "checkout_catalog",
+      "root": "tandemweb",
+      "path": "data/checkout/products.json",
+      "namespace": "checkout:tandemweb",
+      "object_type": "catalog",
+      "object_id": "checkout-products",
+      "source_version": "git:0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
+      "source_sha256": "f45ba9c0dce6265c69176a21778b8e93ee63ced65740cfadaf5e8b9cf0c49528"
+    },
+    {
+      "source_key": "stripe_snapshot",
+      "root": "nanoclaw",
+      "path": "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
+      "namespace": "stripe:alt",
+      "object_type": "evidence_snapshot",
+      "object_id": "NC-20260907-004-b2-provider-catalog",
+      "source_version": "snapshot:2026-09-07T18:42:45.768Z",
+      "source_sha256": "69e048005f819aaaf0228bebb9ad89cb2c7be87a0b5c301519c26a1729bd089a"
+    },
+    {
+      "source_key": "heartbeat_snapshot",
+      "root": "nanoclaw",
+      "path": "docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json",
+      "namespace": "heartbeat:main",
+      "object_type": "evidence_snapshot",
+      "object_id": "NC-20260907-004-b1-heartbeat-main",
+      "source_version": "snapshot:2026-09-07T18:05:42.798Z",
+      "source_sha256": "55486082ddc00817ad2c69ab0a4f87e7495c4849ee354f157add2f11ecba4afe"
+    },
+    {
+      "source_key": "course_source_snapshot",
+      "root": "nanoclaw",
+      "path": "docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json",
+      "namespace": "courses:community",
+      "object_type": "evidence_snapshot",
+      "object_id": "NC-20260907-004-c-source-authority",
+      "source_version": "snapshot:2026-09-07T18:33:48.955Z",
+      "source_sha256": "0ba747c83465584ec2f1837ef1543fe001fb78923116585e7c361542ec6628e1"
+    },
+    {
+      "source_key": "consumer_alias_attestation",
+      "root": "nanoclaw",
+      "path": "docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json",
+      "namespace": "consumer:nanoclaw",
+      "object_type": "attestation",
+      "object_id": "NC-20260907-006-stripe-alias-attestation",
+      "source_version": "receipt:2026-09-07T21:39:46Z",
+      "source_sha256": "18954c1aea6a0042d89e918f9300c26369a7c419c315016fd66df634097a3ef1"
+    }
+  ],
+  "relationships": [
+    {
+      "relationship_key": "alias:tandem:stripe-alt",
+      "namespace": "consumer:nanoclaw",
+      "object_type": "consumer_account_key",
+      "object_id": "tandem",
+      "relationship_type": "consumer_account_alias",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "stripe:alt",
+        "object_type": "account",
+        "object_id": "acct_1G1wKzA7hTBWpVVq"
+      },
+      "source_ref": "docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json",
+      "source_version": "receipt:2026-09-07T21:39:46Z",
+      "source_sha256": "18954c1aea6a0042d89e918f9300c26369a7c419c315016fd66df634097a3ef1",
+      "evidence_class": "native_readback",
+      "evidence_ref": "docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json",
+      "observed_at": "2026-09-07T21:39:46Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "NanoClaw host operations",
+        "consumer": "NanoClaw Contador"
+      },
+      "consumer_keys": ["nanoclaw-v1"]
+    },
+    {
+      "relationship_key": "offer:supervision-inaugural:bundle",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "supervision-inaugural",
+      "relationship_type": "offer_includes_bundle",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "catalog:student-entitlements",
+        "object_type": "bundle",
+        "object_id": "coaching-supervision-mastery:v1"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "facts/catalogs/student-entitlements-v1.json",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "student entitlement catalog",
+        "consumer": "both publication consumers"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "offer:supervision-regular:bundle",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "supervision-regular",
+      "relationship_type": "offer_includes_bundle",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "catalog:student-entitlements",
+        "object_type": "bundle",
+        "object_id": "coaching-supervision-mastery:v1"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "facts/catalogs/student-entitlements-v1.json",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "student entitlement catalog",
+        "consumer": "both publication consumers"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "offer:supervision-inaugural:product",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "supervision-inaugural",
+      "relationship_type": "offer_uses_product",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "stripe:alt",
+        "object_type": "product",
+        "object_id": "prod_UvqkpUONPWr8Bo"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Stripe alt account",
+        "consumer": "NanoClaw Contador"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "offer:supervision-regular:product",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "supervision-regular",
+      "relationship_type": "offer_uses_product",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "stripe:alt",
+        "object_type": "product",
+        "object_id": "prod_UvqkMSjRqR4zho"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Stripe alt account",
+        "consumer": "NanoClaw Contador"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "product:supervision-inaugural:default-price",
+      "namespace": "stripe:alt",
+      "object_type": "product",
+      "object_id": "prod_UvqkpUONPWr8Bo",
+      "relationship_type": "product_default_price",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "stripe:alt",
+        "object_type": "price",
+        "object_id": "price_1Tvz3MA7hTBWpVVqhF708kPv"
+      },
+      "source_ref": "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
+      "source_version": "snapshot:2026-09-07T18:42:45.768Z",
+      "source_sha256": "69e048005f819aaaf0228bebb9ad89cb2c7be87a0b5c301519c26a1729bd089a",
+      "evidence_class": "native_readback",
+      "evidence_ref": "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
+      "observed_at": "2026-09-07T18:42:45.768Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Stripe alt account",
+        "consumer": "both publication consumers"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "product:supervision-regular:default-price",
+      "namespace": "stripe:alt",
+      "object_type": "product",
+      "object_id": "prod_UvqkMSjRqR4zho",
+      "relationship_type": "product_default_price",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "stripe:alt",
+        "object_type": "price",
+        "object_id": "price_1Tvz3MA7hTBWpVVq9gL3v49F"
+      },
+      "source_ref": "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
+      "source_version": "snapshot:2026-09-07T18:42:45.768Z",
+      "source_sha256": "69e048005f819aaaf0228bebb9ad89cb2c7be87a0b5c301519c26a1729bd089a",
+      "evidence_class": "native_readback",
+      "evidence_ref": "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
+      "observed_at": "2026-09-07T18:42:45.768Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Stripe alt account",
+        "consumer": "both publication consumers"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "checkout:supervision-inaugural:offer",
+      "namespace": "checkout:tandemweb",
+      "object_type": "checkout_product",
+      "object_id": "supervision-inaugural",
+      "relationship_type": "checkout_represents_offer",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "catalog:student-entitlements",
+        "object_type": "offer",
+        "object_id": "supervision-inaugural"
+      },
+      "source_ref": "data/checkout/products.json",
+      "source_version": "git:0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
+      "source_sha256": "f45ba9c0dce6265c69176a21778b8e93ee63ced65740cfadaf5e8b9cf0c49528",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "data/checkout/products.json#supervision-inaugural",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Tandemweb checkout catalog",
+        "consumer": "Tandemweb checkout validation"
+      },
+      "consumer_keys": ["tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "checkout:supervision-regular:offer",
+      "namespace": "checkout:tandemweb",
+      "object_type": "checkout_product",
+      "object_id": "supervision-regular",
+      "relationship_type": "checkout_represents_offer",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "catalog:student-entitlements",
+        "object_type": "offer",
+        "object_id": "supervision-regular"
+      },
+      "source_ref": "data/checkout/products.json",
+      "source_version": "git:0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
+      "source_sha256": "f45ba9c0dce6265c69176a21778b8e93ee63ced65740cfadaf5e8b9cf0c49528",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "data/checkout/products.json#supervision-regular",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Tandemweb checkout catalog",
+        "consumer": "Tandemweb checkout validation"
+      },
+      "consumer_keys": ["tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "offer:supervision-inaugural:roster",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "supervision-inaugural",
+      "relationship_type": "offer_projects_to_roster",
+      "relationship_status": "accepted",
+      "target": {
+        "namespace": "roster:student-roster",
+        "object_type": "tab_column",
+        "object_id": "CSS/Coaching Supervision Mastery"
+      },
+      "source_ref": "facts/catalogs/student-product-bindings-v1.json",
+      "source_version": "revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "08df8787fbf5fa621afe1f727bca7ffdb376da511537df5020db23c0f5a3e5ac",
+      "evidence_class": "accepted_source",
+      "evidence_ref": "facts/catalogs/student-product-bindings-v1.json",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Student Roster Product Map binding",
+        "consumer": "NanoClaw Contador"
+      },
+      "consumer_keys": ["nanoclaw-v1"]
+    },
+    {
+      "relationship_key": "offer:supervision-regular:roster",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "supervision-regular",
+      "relationship_type": "offer_projects_to_roster",
+      "relationship_status": "accepted",
+      "target": {
+        "namespace": "roster:student-roster",
+        "object_type": "tab_column",
+        "object_id": "CSS/Coaching Supervision Mastery"
+      },
+      "source_ref": "facts/catalogs/student-product-bindings-v1.json",
+      "source_version": "revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "08df8787fbf5fa621afe1f727bca7ffdb376da511537df5020db23c0f5a3e5ac",
+      "evidence_class": "accepted_source",
+      "evidence_ref": "facts/catalogs/student-product-bindings-v1.json",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Student Roster Product Map binding",
+        "consumer": "NanoClaw Contador"
+      },
+      "consumer_keys": ["nanoclaw-v1"]
+    },
+    {
+      "relationship_key": "offer:supervision-inaugural:access-group",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "supervision-inaugural",
+      "relationship_type": "offer_declares_access_group",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "heartbeat:main",
+        "object_type": "group",
+        "object_id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "facts/catalogs/student-entitlements-v1.json#supervision-inaugural",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "student entitlement catalog",
+        "consumer": "publication evidence only"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "offer:supervision-regular:access-group",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "supervision-regular",
+      "relationship_type": "offer_declares_access_group",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "heartbeat:main",
+        "object_type": "group",
+        "object_id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "facts/catalogs/student-entitlements-v1.json#supervision-regular",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "student entitlement catalog",
+        "consumer": "publication evidence only"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "heartbeat:supervision-access-group:exists",
+      "namespace": "heartbeat:main",
+      "object_type": "group",
+      "object_id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+      "relationship_type": "access_group_exists",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "heartbeat:main",
+        "object_type": "existence_observation",
+        "object_id": "group:fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"
+      },
+      "source_ref": "docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json",
+      "source_version": "snapshot:2026-09-07T18:05:42.798Z",
+      "source_sha256": "55486082ddc00817ad2c69ab0a4f87e7495c4849ee354f157add2f11ecba4afe",
+      "evidence_class": "existence_only",
+      "evidence_ref": "docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json",
+      "observed_at": "2026-09-07T18:05:42.798Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Heartbeat",
+        "consumer": "publication evidence only"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "bundle:supervision:course",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "bundle",
+      "object_id": "coaching-supervision-mastery:v1",
+      "relationship_type": "bundle_declares_course",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "heartbeat:main",
+        "object_type": "course",
+        "object_id": "1f2febfe-eb34-463a-818e-ce7d0cac1251"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "managed supervision course source",
+        "consumer": "publication evidence only"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "heartbeat:supervision-course:exists",
+      "namespace": "heartbeat:main",
+      "object_type": "course",
+      "object_id": "1f2febfe-eb34-463a-818e-ce7d0cac1251",
+      "relationship_type": "course_exists",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "heartbeat:main",
+        "object_type": "existence_observation",
+        "object_id": "course:1f2febfe-eb34-463a-818e-ce7d0cac1251"
+      },
+      "source_ref": "docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json",
+      "source_version": "snapshot:2026-09-07T18:05:42.798Z",
+      "source_sha256": "55486082ddc00817ad2c69ab0a4f87e7495c4849ee354f157add2f11ecba4afe",
+      "evidence_class": "existence_only",
+      "evidence_ref": "docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json",
+      "observed_at": "2026-09-07T18:05:42.798Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Heartbeat",
+        "consumer": "publication evidence only"
+      },
+      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+    }
+  ],
+  "consumers": ["nanoclaw-v1", "tandemweb-checkout-validation"],
+  "holds": {
+    "native_price_amount_verified": false,
+    "native_price_recurrence_verified": false,
+    "heartbeat_group_course_attachment_verified": false,
+    "heartbeat_learner_access_verified": false,
+    "heartbeat_progress_verified": false,
+    "heartbeat_class_assignment_verified": false,
+    "heartbeat_completion_verified": false,
+    "global_strict_publication_eligible": false
+  }
+}
