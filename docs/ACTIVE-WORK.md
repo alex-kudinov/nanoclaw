@@ -9,6 +9,24 @@ outside the current client conversation.
 
 ## Active work
 
+### NC-20260906-007 — Local multi-source enrollment adapters
+
+| Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `NC-20260906-007` | Normalize eight enrollment ingress channels with independent host evidence and canonical aliases | Codex | `codex/student-enrollment-ingress-adapters-20260906` @ `2755a284` | `in_progress` | C2 | Local synthetic source adapter/test, contract, continuity; future identity/financial impact C5/C4 | Implement, test, independently review, commit/push and reconcile | 2026-09-07T01:06Z |
+
+- Company OS `work:student-enrollment-multisource-ingress-adapters` is the sole
+  active claim at r229. User's proceed instruction is recorded in the accepted
+  `decision-student-enrollment-ingress-adapters-2026-09-06` decision.
+- Worktree: `/Users/xbohdpukc/dev/NanoClaw-enrollment-ingress-20260906`.
+  Primary dirty checkout remains untouched except governance/handoff records.
+- Scope: new pure source envelope, proof binding, canonical alias admission,
+  per-channel normalization and synthetic tests. Reuse the reviewed Bookkeeper
+  and enrollment engines. No overlap with live Bookkeeper or capacity writers.
+- No real records, historical inspection/replay/reconciliation, production
+  data/schema/runtime integration, provider/Sheet writes, deployment, financial
+  action or communication. Database integration and activation are later work.
+
 ### NC-20260906-006 — Bookkeeper funding contract (local-only)
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
