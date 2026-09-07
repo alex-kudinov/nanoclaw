@@ -25,3 +25,13 @@ Authorization granted: complete final repository continuity, commit all task-own
 Authorization not granted: apply canonical catalogs or bindings; mutate provider, product, price, student, roster, payment, class, capacity, schedule, message, migration, runtime, service, deployment, primary checkout, or `.program` state; begin publication enforcement, rollout, or a production pilot.
 
 The primary program remains for Astra to reconcile separately after the repository push receipt.
+
+## Repository evidence receipt
+
+- Evidence commit: `7de990e3`
+- Branch: `codex/student-catalog-reconciliation-20260907`
+- Push: accepted by `origin` from prior `ab8a3c99` to `7de990e3`
+- Included paths: 31 task-owned continuity, evidence, proposal, review, and
+  deterministic-generation files, including the execution packet edits
+- Remaining authority: Astra applies the refreshed program delta and saves the
+  semantic handoff; no catalog/provider/runtime/deployment action follows

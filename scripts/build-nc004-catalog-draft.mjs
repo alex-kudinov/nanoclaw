@@ -955,7 +955,7 @@ const programDelta = {
   proposal_id: 'NC-20260907-004-proposed-program-delta',
   generated_at_utc: new Date().toISOString(),
   apply_authority: 'Astra only',
-  status: 'review_complete_pending_astra_acceptance_do_not_apply',
+  status: 'repository_evidence_pushed_pending_astra_program_apply',
   observed_state_revision:
     sourceAuthority.program_binding_observed_read_only.state_revision,
   work_item: 'work:student-product-catalog-source-reconciliation',
@@ -1009,6 +1009,13 @@ const programDelta = {
     'Do not mark review or source-closure commitments complete before review, commit, push, and handoff evidence exist.',
     'Do not activate rollout, mutate catalogs or providers or runtime, or begin the production pilot.',
   ],
+  repository_acceptance: {
+    receipt: 'receipt:astra-independent-nc004-counts-and-scope-pass',
+    evidence_commit: '7de990e3',
+    branch: 'codex/student-catalog-reconciliation-20260907',
+    push_verified: true,
+    primary_program_apply: 'pending_astra',
+  },
 };
 
 const progressMarkdown = [

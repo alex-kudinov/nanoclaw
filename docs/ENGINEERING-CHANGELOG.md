@@ -241,12 +241,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-09-07T20:01:00Z
 - Owner/client: Astra strategy/acceptance owner; Codex Sol High execution
   worker; Claude Sonnet/high independent reviewer
-- State: ready_for_review; source evidence, disposition draft, owner decision
-  brief, unapplied proposal, deterministic verification, and two review rounds
-  are complete; final commit/push and program reconciliation wait for Astra
-  acceptance
-- Branch/base: `codex/student-catalog-reconciliation-20260907` from
-  `40f0d364`; current uncommitted HEAD `ab8a3c99`
+- State: complete; Astra accepted the full draft and
+  `receipt:astra-independent-nc004-counts-and-scope-pass`. Evidence commit
+  `7de990e3` is pushed; primary program reconciliation remains Astra-owned
+- Branch/base: pushed `codex/student-catalog-reconciliation-20260907` at
+  evidence commit `7de990e3` from `40f0d364`
 - Change class: C1 internal evidence and proposal documents; all provider
   interactions were read-only
 - Outcome: records 56 source/disposition entries without converting them into
@@ -294,6 +293,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   sellable intent, PCC group source verification, correct service-source types,
   and unresolved service quantities/attachments. Publication/rollout and any
   production pilot remain separately gated.
+- Repository addendum 2026-09-07T20:16:00Z: Astra independently accepted the
+  final packet after checking all 56 unique records, exactly 37 active checkout
+  records, all 56 party-role boundaries, 42 checkout price references, 8
+  offer-level references, and exactly 3 native product/default-price links.
+  Evidence commit `7de990e3` was pushed successfully. This receipt authorizes no
+  catalog application or external/runtime action; Astra separately owns primary
+  `.program` reconciliation and the semantic handoff.
 
 ### NC-20260907-003 — Adopt model routing and durable student lifecycle strategy
 
