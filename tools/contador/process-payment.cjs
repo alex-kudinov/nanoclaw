@@ -23,6 +23,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 const { resolveCohortLabel, COHORT_COLUMN } = require('./lib/cohort.cjs');
+const { loadProductBindings, resolveProductIdentity } = require('./lib/product-identity.cjs');
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -557,12 +558,23 @@ async function fetchPaymentData() {
   let invoiceId = '';
   let chargeDescription = '';
   let chargeMetadata = {};
+  const identityProductIds = [];
+  const identityPriceIds = [];
+  let identityIncomplete = false;
+  const addLineIdentity = (line) => {
+    const product = line.pricing?.price_details?.product || line.price?.product;
+    const price = line.pricing?.price_details?.price || line.price?.id;
+    if (product) identityProductIds.push(typeof product === 'string' ? product : product.id);
+    if (price) identityPriceIds.push(typeof price === 'string' ? price : price.id);
+  };
 
   if (ID_TYPE === 'checkout') {
     const session = await stripeGet(
       `/v1/checkout/sessions/${STRIPE_ID}?expand[]=line_items.data.price.product&expand[]=customer_details`,
     );
     lineItems = session.line_items?.data || [];
+    identityIncomplete = Boolean(session.line_items?.has_more);
+    lineItems.forEach(addLineIdentity);
     const firstItem = lineItems[0];
     productName = firstItem?.price?.product?.name || 'Unknown';
     productId = firstItem?.price?.product?.id || '';
@@ -599,7 +611,11 @@ async function fetchPaymentData() {
             customerName = charge.billing_details.name;
           }
         }
-      } catch { /* non-fatal */ }
+      } catch {
+        // Never let an unread PaymentIntent/charge hide a conflicting binding.
+        // Legacy processing remains unchanged; registered identities are held.
+        identityIncomplete = true;
+      }
     }
   } else {
     const pi = await stripeGet(`/v1/payment_intents/${STRIPE_ID}`);
@@ -615,6 +631,8 @@ async function fetchPaymentData() {
     if (invoiceId) {
       try {
         const inv = await stripeGet(`/v1/invoices/${invoiceId}`);
+        (inv.lines?.data || []).forEach(addLineIdentity);
+        identityIncomplete = Boolean(inv.lines?.has_more);
         const line = (inv.lines && inv.lines.data && inv.lines.data[0]) || {};
         const prodId =
           (line.pricing && line.pricing.price_details && line.pricing.price_details.product) ||
@@ -627,7 +645,10 @@ async function fetchPaymentData() {
             productId = prodId;
           }
         }
-      } catch { /* non-fatal — fall back to pi.description */ }
+      } catch {
+        identityIncomplete = true;
+        // Legacy falls back to description; registered identities stay held.
+      }
     }
     amountCents = pi.amount || 0;
     currency = (pi.currency || 'usd').toUpperCase();
@@ -668,6 +689,7 @@ async function fetchPaymentData() {
     feeCents, refundedCents, lineItems, stripeCreatedAt,
     canonicalTransactionId, canonicalProductSlug, chargeId, invoiceId,
     chargeDescription, chargeMetadata,
+    identityProductIds, identityPriceIds, identityIncomplete,
   };
 }
 
@@ -753,6 +775,9 @@ function derivePaymentFulfillmentOutcome({
   } else if (rosterMode === 'unmapped_product') {
     state = 'needs_product';
     errorCode = 'product_mapping_missing';
+  } else if (rosterMode === 'identity_conflict') {
+    state = 'needs_review';
+    errorCode = 'product_identity_conflict';
   } else if (rosterMode === 'mapped_verified' || rosterMode === 'not_student') {
     state = 'complete';
   } else {
@@ -766,7 +791,7 @@ function derivePaymentFulfillmentOutcome({
         ? 'verified'
         : rosterMode === 'not_student'
           ? 'not_applicable'
-        : ['missing_student', 'unmapped_product'].includes(rosterMode)
+        : ['missing_student', 'unmapped_product', 'identity_conflict'].includes(rosterMode)
           ? 'exception'
           : 'failed',
     resultCode:
@@ -778,6 +803,8 @@ function derivePaymentFulfillmentOutcome({
           ? 'student_identity_missing'
           : rosterMode === 'unmapped_product'
             ? 'product_mapping_missing'
+          : rosterMode === 'identity_conflict'
+            ? 'product_identity_conflict'
             : 'student_roster_readback_failed',
   });
   return { state, errorCode, receipts };
@@ -825,6 +852,7 @@ async function main() {
     feeCents, refundedCents, lineItems, stripeCreatedAt,
     canonicalTransactionId, stripeAccount, canonicalProductSlug,
     chargeId, invoiceId, chargeDescription, chargeMetadata,
+    identityProductIds, identityPriceIds, identityIncomplete,
   } = fetchResult;
   const accountingStripeId = canonicalTransactionId || STRIPE_ID;
 
@@ -970,12 +998,15 @@ async function main() {
       // Combo products have multiple rows — one per roster tab
       const mapping = await sheetsGet(SHEETS_ROSTER_ID, 'Product Map!A:C');
       const rows = mapping.values || [];
-      const productRows = rows.filter(
-        (row, index) =>
-          index > 0 &&
-          row[0] &&
-          row[0].toLowerCase() === productName.toLowerCase(),
-      );
+      const identity = resolveProductIdentity(loadProductBindings(), {
+        account: stripeAccount,
+        offerKey: canonicalProductSlug,
+        productIds: identityProductIds,
+        priceIds: identityPriceIds,
+        incomplete: identityIncomplete,
+        productName,
+      }, rows);
+      const productRows = identity.rows;
       const targets = resolveRosterTargets(productRows);
       ({ notAStudent, rosterMatches } = targets);
 
@@ -988,7 +1019,10 @@ async function main() {
         rosterMatches = await resolveExamRouting(rosterMatches, programTabs, customerEmail);
       }
 
-      if (notAStudent) {
+      if (identity.status === 'conflict') {
+        rosterMode = 'identity_conflict';
+        results.sheets_roster = `held (${identity.code}; binding revision ${identity.revision})`;
+      } else if (notAStudent) {
         try {
           const cleared = await clearSalesCatchAll(accountingStripeId, STRIPE_ID);
           results.sheets_roster = `skipped (not a student — delivered service${cleared ? '; stale Sales row cleared' : ''})`;

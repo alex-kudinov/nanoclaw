@@ -133,6 +133,9 @@ try {
   const requiredTrackedRuntimeInputs = [
     'tools/contador/process-payment.cjs',
     'tools/contador/lib/cohort.cjs',
+    'tools/contador/lib/product-identity.cjs',
+    'facts/catalogs/student-entitlements-v1.json',
+    'facts/catalogs/student-product-bindings-v1.json',
   ];
   for (const relative of requiredTrackedRuntimeInputs) {
     if (!tracked.includes(relative)) {

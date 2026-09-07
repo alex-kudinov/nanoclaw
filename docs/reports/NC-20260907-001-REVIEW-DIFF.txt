@@ -1,0 +1,602 @@
+diff --git a/facts/catalogs/student-product-bindings-v1.json b/facts/catalogs/student-product-bindings-v1.json
+new file mode 100644
+index 00000000..f08cbbc7
+--- /dev/null
++++ b/facts/catalogs/student-product-bindings-v1.json
+@@ -0,0 +1,22 @@
++{
++  "schema_version": 1,
++  "revision": 1,
++  "entitlement_catalog_revision": 1,
++  "authority": "Identity and legacy roster projection bindings only. Offers, bundles and provider IDs are referenced from student-entitlements-v1.json; prices, obligations, access and class assignments retain their native authorities.",
++  "routes": [
++    {
++      "offer_key": "supervision-inaugural",
++      "stripe_account": "tandem",
++      "roster_targets": [
++        { "tab": "CSS", "column": "Coaching Supervision Mastery" }
++      ]
++    },
++    {
++      "offer_key": "supervision-regular",
++      "stripe_account": "tandem",
++      "roster_targets": [
++        { "tab": "CSS", "column": "Coaching Supervision Mastery" }
++      ]
++    }
++  ]
++}
+diff --git a/scripts/audit-student-product-identity.mjs b/scripts/audit-student-product-identity.mjs
+new file mode 100644
+index 00000000..9c35fae7
+--- /dev/null
++++ b/scripts/audit-student-product-identity.mjs
+@@ -0,0 +1,101 @@
++import fs from 'node:fs';
++import crypto from 'node:crypto';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { createRequire } from 'node:module';
++const require = createRequire(import.meta.url);
++const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const {
++  compileProductBindings,
++  resolveProductIdentity,
++} = require('../tools/contador/lib/product-identity.cjs');
++
++export function auditProductIdentity(
++  catalog,
++  bindings,
++  checkout,
++  productMapRows,
++) {
++  const compiled = compileProductBindings(catalog, bindings);
++  const offers = new Map(catalog.offers.map((o) => [o.offer_key, o]));
++  const products = Object.entries(checkout).filter(
++    ([key]) => !key.startsWith('_'),
++  );
++  const coverage = products.map(([key, value]) => {
++    const offer = offers.get(key);
++    const prices = [
++      value.stripe_price_id,
++      value.installments?.enabled ? value.installments?.stripe_price_id : null,
++    ].filter(Boolean);
++    const identity = resolveProductIdentity(
++      compiled,
++      {
++        account: 'tandem',
++        offerKey: key,
++        productName: value.name,
++        productIds: [],
++        priceIds: prices,
++      },
++      productMapRows,
++    );
++    return {
++      offer_key: key,
++      checkout_active: value.active === true,
++      entitlement_catalogued: Boolean(offer),
++      identity_status: identity.status,
++      roster_route_present: identity.rows.length > 0,
++      code: identity.code ?? null,
++      price_bindings_match: offer
++        ? prices.every((id) => offer.stripe_price_ids.includes(id))
++        : null,
++    };
++  });
++  const active = coverage.filter((p) => p.checkout_active);
++  const gaps = active.filter(
++    (p) => p.identity_status !== 'resolved' || !p.roster_route_present,
++  );
++  return {
++    binding_revision: bindings.revision,
++    entitlement_catalog_revision: catalog.catalog_revision,
++    checkout_products: products.length,
++    active_products: active.length,
++    active_canonical_routes: active.length - gaps.length,
++    active_coverage_gaps: gaps.map((p) => p.offer_key),
++    catalog_offers_absent_from_checkout: [...offers.keys()].filter(
++      (key) => !Object.hasOwn(checkout, key),
++    ),
++    coverage,
++  };
++}
++
++if (
++  process.argv[1] &&
++  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
++) {
++  const args = process.argv.slice(2);
++  const readArg = (key) => args[args.indexOf(key) + 1];
++  if (!args.includes('--checkout') || !args.includes('--product-map')) {
++    throw new Error(
++      'Usage: --checkout <products.json> --product-map <rows.json> [--require-active-coverage]',
++    );
++  }
++  const checkoutText = fs.readFileSync(readArg('--checkout'), 'utf8');
++  const mapText = fs.readFileSync(readArg('--product-map'), 'utf8');
++  const report = auditProductIdentity(
++    require(path.join(root, 'facts/catalogs/student-entitlements-v1.json')),
++    require(path.join(root, 'facts/catalogs/student-product-bindings-v1.json')),
++    JSON.parse(checkoutText),
++    JSON.parse(mapText),
++  );
++  // Hash source bytes for provenance; never output checkout secrets/invite codes.
++  report.source_sha256 = {
++    checkout: crypto.createHash('sha256').update(checkoutText).digest('hex'),
++    product_map: crypto.createHash('sha256').update(mapText).digest('hex'),
++  };
++  console.log(JSON.stringify(report, null, 2));
++  if (
++    args.includes('--require-active-coverage') &&
++    report.active_coverage_gaps.length
++  )
++    process.exitCode = 2;
++}
+diff --git a/scripts/build-release.mjs b/scripts/build-release.mjs
+index 24959f17..575c1a4a 100644
+--- a/scripts/build-release.mjs
++++ b/scripts/build-release.mjs
+@@ -133,6 +133,9 @@ try {
+   const requiredTrackedRuntimeInputs = [
+     'tools/contador/process-payment.cjs',
+     'tools/contador/lib/cohort.cjs',
++    'tools/contador/lib/product-identity.cjs',
++    'facts/catalogs/student-entitlements-v1.json',
++    'facts/catalogs/student-product-bindings-v1.json',
+   ];
+   for (const relative of requiredTrackedRuntimeInputs) {
+     if (!tracked.includes(relative)) {
+diff --git a/tools/contador/lib/product-identity.cjs b/tools/contador/lib/product-identity.cjs
+new file mode 100644
+index 00000000..68933de0
+--- /dev/null
++++ b/tools/contador/lib/product-identity.cjs
+@@ -0,0 +1,140 @@
++/** Product names are labels; exact provider-scoped bindings identify offers.
++ * This bridge routes the existing roster writer only. It grants no access,
++ * invents no payment terms, and never assigns or counts a class seat.
++ */
++function compileProductBindings(catalog, bindings) {
++  if (
++    bindings.schema_version !== 1 ||
++    !Number.isInteger(bindings.revision) ||
++    bindings.revision < 1 ||
++    bindings.entitlement_catalog_revision !== catalog.catalog_revision ||
++    !Array.isArray(bindings.routes) ||
++    !bindings.routes.length
++  ) {
++    throw new Error('product binding catalog revision invalid');
++  }
++  const offers = new Map();
++  for (const offer of catalog.offers ?? []) {
++    if (offers.has(offer.offer_key)) throw new Error('duplicate catalog offer');
++    offers.set(offer.offer_key, offer);
++  }
++  const index = new Map();
++  const add = (account, kind, value, route) => {
++    const key = `${account}:${kind}:${value}`;
++    if (index.has(key)) throw new Error(`duplicate product binding: ${key}`);
++    index.set(key, route);
++  };
++  for (const route of bindings.routes) {
++    const offer = offers.get(route.offer_key);
++    if (
++      !offer ||
++      !catalog.bundles?.some((b) => b.bundle_key === offer.bundle_key) ||
++      !['tandem', 'heartbeat'].includes(route.stripe_account) ||
++      !Array.isArray(route.roster_targets) ||
++      !route.roster_targets.length ||
++      route.roster_targets.some(
++        (t) => !t.tab || !t.column || t.tab === '(not a student)',
++      ) ||
++      new Set(route.roster_targets.map((t) => `${t.tab}\0${t.column}`)).size !==
++        route.roster_targets.length
++    ) {
++      throw new Error('invalid product binding route');
++    }
++    add(route.stripe_account, 'offer', offer.offer_key, route);
++    for (const id of offer.stripe_product_ids ?? [])
++      add(route.stripe_account, 'product', id, route);
++    for (const id of offer.stripe_price_ids ?? [])
++      add(route.stripe_account, 'price', id, route);
++  }
++  return { index, revision: bindings.revision };
++}
++
++function targetKey(rows) {
++  return [
++    ...new Set(
++      rows.map((r) => `${String(r[1]).trim()}\0${String(r[2]).trim()}`),
++    ),
++  ]
++    .sort()
++    .join('\n');
++}
++
++function resolveProductIdentity(compiled, input, productMapRows) {
++  const legacyRows = productMapRows.filter(
++    (row, i) =>
++      i > 0 &&
++      row[0] &&
++      String(row[0]).toLowerCase() ===
++        String(input.productName || '').toLowerCase(),
++  );
++  const signals = [
++    ...(input.offerKey ? [['offer', input.offerKey]] : []),
++    ...[...new Set(input.productIds ?? [])]
++      .filter(Boolean)
++      .map((id) => ['product', id]),
++    ...[...new Set(input.priceIds ?? [])]
++      .filter(Boolean)
++      .map((id) => ['price', id]),
++  ];
++  const matches = signals.map(([kind, id]) =>
++    compiled.index.get(`${input.account}:${kind}:${id}`),
++  );
++  const known = matches.filter(Boolean);
++  // Coverage is explicit: unregistered products retain their existing path.
++  if (!known.length) {
++    const wrongScope = signals.some(([kind, id]) =>
++      [...compiled.index.keys()].some((key) => key.endsWith(`:${kind}:${id}`)),
++    );
++    if (wrongScope)
++      return {
++        status: 'conflict',
++        rows: [],
++        code: 'product_identity_scope_conflict',
++        revision: compiled.revision,
++      };
++    return { status: 'legacy', rows: legacyRows, revision: compiled.revision };
++  }
++  const offerKeys = new Set(known.map((r) => r.offer_key));
++  if (input.incomplete || matches.some((r) => !r) || offerKeys.size !== 1) {
++    return {
++      status: 'conflict',
++      rows: [],
++      code: 'product_identity_conflict',
++      revision: compiled.revision,
++    };
++  }
++  const route = known[0];
++  const rows = route.roster_targets.map((t) => [
++    `offer:${route.offer_key}`,
++    t.tab,
++    t.column,
++  ]);
++  // A live operator mapping disagreement is owned, never silently overridden.
++  if (legacyRows.length && targetKey(legacyRows) !== targetKey(rows)) {
++    return {
++      status: 'conflict',
++      rows: [],
++      code: 'product_projection_conflict',
++      revision: compiled.revision,
++    };
++  }
++  return {
++    status: 'resolved',
++    offerKey: route.offer_key,
++    rows,
++    revision: compiled.revision,
++  };
++}
++
++function loadProductBindings() {
++  return compileProductBindings(
++    require('../../../facts/catalogs/student-entitlements-v1.json'),
++    require('../../../facts/catalogs/student-product-bindings-v1.json'),
++  );
++}
++
++module.exports = {
++  compileProductBindings,
++  resolveProductIdentity,
++  loadProductBindings,
++};
+diff --git a/tools/contador/process-payment.cjs b/tools/contador/process-payment.cjs
+index dcb8cecb..51df7826 100644
+--- a/tools/contador/process-payment.cjs
++++ b/tools/contador/process-payment.cjs
+@@ -23,6 +23,7 @@ const crypto = require('crypto');
+ const fs = require('fs');
+ const { execFileSync } = require('child_process');
+ const { resolveCohortLabel, COHORT_COLUMN } = require('./lib/cohort.cjs');
++const { loadProductBindings, resolveProductIdentity } = require('./lib/product-identity.cjs');
+ 
+ // ── Config ──────────────────────────────────────────────────────────────────
+ 
+@@ -557,12 +558,23 @@ async function fetchPaymentData() {
+   let invoiceId = '';
+   let chargeDescription = '';
+   let chargeMetadata = {};
++  const identityProductIds = [];
++  const identityPriceIds = [];
++  let identityIncomplete = false;
++  const addLineIdentity = (line) => {
++    const product = line.pricing?.price_details?.product || line.price?.product;
++    const price = line.pricing?.price_details?.price || line.price?.id;
++    if (product) identityProductIds.push(typeof product === 'string' ? product : product.id);
++    if (price) identityPriceIds.push(typeof price === 'string' ? price : price.id);
++  };
+ 
+   if (ID_TYPE === 'checkout') {
+     const session = await stripeGet(
+       `/v1/checkout/sessions/${STRIPE_ID}?expand[]=line_items.data.price.product&expand[]=customer_details`,
+     );
+     lineItems = session.line_items?.data || [];
++    identityIncomplete = Boolean(session.line_items?.has_more);
++    lineItems.forEach(addLineIdentity);
+     const firstItem = lineItems[0];
+     productName = firstItem?.price?.product?.name || 'Unknown';
+     productId = firstItem?.price?.product?.id || '';
+@@ -615,6 +627,8 @@ async function fetchPaymentData() {
+     if (invoiceId) {
+       try {
+         const inv = await stripeGet(`/v1/invoices/${invoiceId}`);
++        (inv.lines?.data || []).forEach(addLineIdentity);
++        identityIncomplete = Boolean(inv.lines?.has_more);
+         const line = (inv.lines && inv.lines.data && inv.lines.data[0]) || {};
+         const prodId =
+           (line.pricing && line.pricing.price_details && line.pricing.price_details.product) ||
+@@ -627,7 +641,10 @@ async function fetchPaymentData() {
+             productId = prodId;
+           }
+         }
+-      } catch { /* non-fatal — fall back to pi.description */ }
++      } catch {
++        identityIncomplete = true;
++        // Legacy falls back to description; registered identities stay held.
++      }
+     }
+     amountCents = pi.amount || 0;
+     currency = (pi.currency || 'usd').toUpperCase();
+@@ -668,6 +685,7 @@ async function fetchPaymentData() {
+     feeCents, refundedCents, lineItems, stripeCreatedAt,
+     canonicalTransactionId, canonicalProductSlug, chargeId, invoiceId,
+     chargeDescription, chargeMetadata,
++    identityProductIds, identityPriceIds, identityIncomplete,
+   };
+ }
+ 
+@@ -753,6 +771,9 @@ function derivePaymentFulfillmentOutcome({
+   } else if (rosterMode === 'unmapped_product') {
+     state = 'needs_product';
+     errorCode = 'product_mapping_missing';
++  } else if (rosterMode === 'identity_conflict') {
++    state = 'needs_review';
++    errorCode = 'product_identity_conflict';
+   } else if (rosterMode === 'mapped_verified' || rosterMode === 'not_student') {
+     state = 'complete';
+   } else {
+@@ -766,7 +787,7 @@ function derivePaymentFulfillmentOutcome({
+         ? 'verified'
+         : rosterMode === 'not_student'
+           ? 'not_applicable'
+-        : ['missing_student', 'unmapped_product'].includes(rosterMode)
++        : ['missing_student', 'unmapped_product', 'identity_conflict'].includes(rosterMode)
+           ? 'exception'
+           : 'failed',
+     resultCode:
+@@ -778,6 +799,8 @@ function derivePaymentFulfillmentOutcome({
+           ? 'student_identity_missing'
+           : rosterMode === 'unmapped_product'
+             ? 'product_mapping_missing'
++          : rosterMode === 'identity_conflict'
++            ? 'product_identity_conflict'
+             : 'student_roster_readback_failed',
+   });
+   return { state, errorCode, receipts };
+@@ -825,6 +848,7 @@ async function main() {
+     feeCents, refundedCents, lineItems, stripeCreatedAt,
+     canonicalTransactionId, stripeAccount, canonicalProductSlug,
+     chargeId, invoiceId, chargeDescription, chargeMetadata,
++    identityProductIds, identityPriceIds, identityIncomplete,
+   } = fetchResult;
+   const accountingStripeId = canonicalTransactionId || STRIPE_ID;
+ 
+@@ -970,12 +994,15 @@ async function main() {
+       // Combo products have multiple rows — one per roster tab
+       const mapping = await sheetsGet(SHEETS_ROSTER_ID, 'Product Map!A:C');
+       const rows = mapping.values || [];
+-      const productRows = rows.filter(
+-        (row, index) =>
+-          index > 0 &&
+-          row[0] &&
+-          row[0].toLowerCase() === productName.toLowerCase(),
+-      );
++      const identity = resolveProductIdentity(loadProductBindings(), {
++        account: stripeAccount,
++        offerKey: canonicalProductSlug,
++        productIds: identityProductIds,
++        priceIds: identityPriceIds,
++        incomplete: identityIncomplete,
++        productName,
++      }, rows);
++      const productRows = identity.rows;
+       const targets = resolveRosterTargets(productRows);
+       ({ notAStudent, rosterMatches } = targets);
+ 
+@@ -988,7 +1015,10 @@ async function main() {
+         rosterMatches = await resolveExamRouting(rosterMatches, programTabs, customerEmail);
+       }
+ 
+-      if (notAStudent) {
++      if (identity.status === 'conflict') {
++        rosterMode = 'identity_conflict';
++        results.sheets_roster = `held (${identity.code}; binding revision ${identity.revision})`;
++      } else if (notAStudent) {
+         try {
+           const cleared = await clearSalesCatchAll(accountingStripeId, STRIPE_ID);
+           results.sheets_roster = `skipped (not a student — delivered service${cleared ? '; stale Sales row cleared' : ''})`;
+diff --git a/tools/contador/product-identity.test.ts b/tools/contador/product-identity.test.ts
+new file mode 100644
+index 00000000..767ba850
+--- /dev/null
++++ b/tools/contador/product-identity.test.ts
+@@ -0,0 +1,166 @@
++import { createRequire } from 'node:module';
++import { describe, expect, it } from 'vitest';
++const require = createRequire(import.meta.url);
++const {
++  compileProductBindings,
++  resolveProductIdentity,
++  loadProductBindings,
++} = require('./lib/product-identity.cjs');
++const { derivePaymentFulfillmentOutcome } = require('./process-payment.cjs');
++const catalog = require('../../facts/catalogs/student-entitlements-v1.json');
++const bindings = require('../../facts/catalogs/student-product-bindings-v1.json');
++const compiled = loadProductBindings();
++const inaugural = catalog.offers.find(
++  (o: any) => o.offer_key === 'supervision-inaugural',
++);
++const regular = catalog.offers.find(
++  (o: any) => o.offer_key === 'supervision-regular',
++);
++const header = ['Product Name', 'Roster Tab', 'Column'];
++const base = {
++  account: 'tandem',
++  offerKey: 'supervision-inaugural',
++  productName: 'New translated display name',
++  productIds: [],
++  priceIds: [],
++};
++const resolve = (input = {}, rows = [header]) =>
++  resolveProductIdentity(compiled, { ...base, ...input }, rows);
++
++describe('source-bound product identity', () => {
++  it('routes a metadata-only full payment with a renamed or missing display name', () => {
++    for (const productName of ['New translated display name', '', 'Unknown']) {
++      expect(resolve({ productName })).toMatchObject({
++        status: 'resolved',
++        offerKey: 'supervision-inaugural',
++        rows: [
++          [
++            'offer:supervision-inaugural',
++            'CSS',
++            'Coaching Supervision Mastery',
++          ],
++        ],
++      });
++    }
++  });
++  it('routes installment product and price to the same offer without declaring it fully paid', () => {
++    const result = resolve({
++      offerKey: null,
++      productIds: inaugural.stripe_product_ids,
++      priceIds: inaugural.stripe_price_ids,
++    });
++    expect(result.status).toBe('resolved');
++    expect(result.offerKey).toBe('supervision-inaugural');
++    expect(result).not.toHaveProperty('paid');
++    expect(result).not.toHaveProperty('assignment');
++  });
++  it('keeps inaugural and regular commercial offers distinct despite their shared bundle', () => {
++    expect(
++      resolve({
++        offerKey: 'supervision-regular',
++        productIds: regular.stripe_product_ids,
++      }).offerKey,
++    ).toBe('supervision-regular');
++    expect(resolve({ productIds: regular.stripe_product_ids }).status).toBe(
++      'conflict',
++    );
++  });
++  it('holds mixed, unknown, and incomplete provider bindings instead of selecting the first line', () => {
++    for (const input of [
++      {
++        productIds: [
++          ...inaugural.stripe_product_ids,
++          ...regular.stripe_product_ids,
++        ],
++      },
++      { productIds: ['prod_unregistered'] },
++      { priceIds: ['price_unregistered'] },
++      {
++        offerKey: 'new-unregistered-slug',
++        productIds: inaugural.stripe_product_ids,
++      },
++      { incomplete: true },
++    ])
++      expect(resolve(input)).toMatchObject({ status: 'conflict', rows: [] });
++  });
++  it('does not resolve a known identity through the other Stripe account or a display-name fallback', () => {
++    expect(
++      resolve({ account: 'heartbeat' }, [
++        header,
++        [base.productName, 'CSS', 'Coaching Supervision Mastery'],
++      ]),
++    ).toMatchObject({ status: 'conflict', rows: [] });
++  });
++  it('holds a conflicting operator destination, including not-a-student', () => {
++    for (const dest of [
++      ['ACC', 'M1'],
++      ['(not a student)', 'n/a'],
++    ]) {
++      expect(resolve({}, [header, [base.productName, ...dest]])).toMatchObject({
++        status: 'conflict',
++        code: 'product_projection_conflict',
++        rows: [],
++      });
++    }
++  });
++  it('accepts a matching operator projection without depending on its label', () => {
++    expect(
++      resolve({}, [
++        header,
++        [base.productName, 'CSS', 'Coaching Supervision Mastery'],
++      ]).status,
++    ).toBe('resolved');
++  });
++  it('preserves existing routes for products outside the explicitly migrated population', () => {
++    const row = ['Legacy service', '(not a student)', 'n/a'];
++    expect(
++      resolve(
++        { offerKey: null, productName: row[0], productIds: ['prod_legacy'] },
++        [header, row],
++      ),
++    ).toMatchObject({ status: 'legacy', rows: [row] });
++  });
++  it('rejects drift, duplicate aliases, unknown offers and duplicate destinations at compilation', () => {
++    const invalid = [
++      { ...bindings, entitlement_catalog_revision: 999 },
++      { ...bindings, routes: [...bindings.routes, bindings.routes[0]] },
++      {
++        ...bindings,
++        routes: [{ ...bindings.routes[0], offer_key: 'not-an-offer' }],
++      },
++      {
++        ...bindings,
++        routes: [
++          {
++            ...bindings.routes[0],
++            roster_targets: [
++              ...bindings.routes[0].roster_targets,
++              ...bindings.routes[0].roster_targets,
++            ],
++          },
++        ],
++      },
++    ];
++    for (const value of invalid)
++      expect(() => compileProductBindings(catalog, value)).toThrow();
++  });
++  it('records an owned non-retryable identity exception while preserving successful accounting', () => {
++    expect(
++      derivePaymentFulfillmentOutcome({
++        paymentLogVerified: true,
++        postgresVerified: true,
++        rosterMode: 'identity_conflict',
++      }),
++    ).toMatchObject({
++      state: 'needs_review',
++      errorCode: 'product_identity_conflict',
++      receipts: expect.arrayContaining([
++        {
++          stage: 'student_roster',
++          outcome: 'exception',
++          resultCode: 'product_identity_conflict',
++        },
++      ]),
++    });
++  });
++});

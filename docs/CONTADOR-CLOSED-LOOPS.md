@@ -1,5 +1,11 @@
 # Contador closed-loop design
 
+`NC-20260907-001` repaired supervision case 63 through verified CSS and payment
+readback. The product-identity bridge and coverage audit now separate stable
+offer/provider bindings from display names; see `STUDENT-PRODUCT-IDENTITY.md`
+for scope and release evidence. No enrollment writer or capacity cutover is
+implied by this registration repair.
+
 Status: current-state diagnosis plus accepted target; invoice-routing foundation
 and payment-fulfillment cases are live. `NC-20260903-001` repaired the current
 month's product/roster exceptions in production; automatic transient-failure
