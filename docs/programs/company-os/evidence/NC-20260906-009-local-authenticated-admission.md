@@ -91,3 +91,27 @@ must prove both real paths do so before activation.
 - Both corrected review-only and legacy/new race paths are proven in actual
   disposable PostgreSQL; no real provider, credential, student or historical
   record was accessed, no production migration/activation occurred.
+
+## Git and program closure
+
+- Registration `8679b46e` and reviewed implementation
+  `a46ecfe2c81e5aa624ee29472301e3d025a41d83` committed/pushed to
+  `origin/codex/enrollment-authenticated-admission-20260906`; isolated checkout
+  clean and commit-hook formatting left source unchanged.
+- Company OS r238 closes all nine commitments and releases the claim. The
+  owner-authorized split preserves the original live/native completion condition
+  in `work:student-enrollment-production-admission-pilot`, still unauthorized
+  and a prerequisite of authority cutover. No real credential, provider,
+  migration, deployment, cutover, financial or communication authority expanded.
+- Final continuity: 166 task rows / 162 changelog entries; schema sanitizer,
+  capability mirror, format and diff checks pass. Program validate/status pass.
+- Final checkpoint:
+  `/Users/xbohdpukc/dev/NanoClaw/handoffs/2026-09-06-2345-local-authenticated-admission-complete.md`.
+  Check-handoff passes at r238. The completed local item is explicit, while
+  the checkpoint binds the existing unauthorized pilot for orientation because
+  terminal work-item bindings are rejected by the checker. Nothing was reopened
+  or claimed for production.
+- Primary governance copy: `.program/evidence/NC-20260906-009-local-authenticated-admission.md`.
+  Primary source stayed at `51185a5d` with its dirty changes preserved; only
+  governance/handoff records changed there. Migration 147 and all cryptographic
+  fixtures remain local/synthetic. No native provider or live outcome is claimed.

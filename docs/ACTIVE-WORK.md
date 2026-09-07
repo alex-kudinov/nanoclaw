@@ -13,9 +13,9 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260906-009` | Authenticate purpose-scoped issuer evidence and exclude dual writers before local enrollment persistence | Codex | `codex/enrollment-authenticated-admission-20260906` @ `a382e215`; registration `8679b46e` pushed | `ready_for_review` | C2 | Reviewed local signed host receipts, immutable control ledgers, 159 focused tests and disposable proof; production excluded | Commit/push, reconcile local item and verify handoff; pilot stays unauthorized | 2026-09-07T04:35Z |
+| `NC-20260906-009` | Authenticate purpose-scoped issuer evidence and exclude dual writers before local enrollment persistence | Codex | pushed `codex/enrollment-authenticated-admission-20260906`; implementation `a46ecfe2` over `a382e215` | `complete` | C2 | Reviewed synthetic-only admission and local migration 147; 159 focused tests; Company OS r238 done, claim released; no production activation | None for local slice; production admission pilot remains unauthorized | 2026-09-07T04:47Z |
 
-- Sole Company OS claim at r237, nine commitments attached. Accepted decision
+- Company OS r238: local item done, claim released, all nine commitments closed. Accepted decision
   `decision-enrollment-local-authenticated-admission-2026-09-06` explicitly
   separates local implementation from the unauthorized production admission pilot.
 - Worktree `/Users/xbohdpukc/dev/NanoClaw-enrollment-admission-20260906`;
@@ -31,6 +31,10 @@ outside the current client conversation.
   with four workers: 3,725 pass / 32 skip / two reproduced baseline failures.
   A default-parallel run hit an old five-second disposable-test timeout; isolated
   and bounded-full reruns passed, with no unrelated source change.
+- Implementation `a46ecfe2c81e5aa624ee29472301e3d025a41d83` committed/pushed;
+  isolated checkout clean. Program validation/status and final handoff check
+  pass. Native bindings and production pilot remain a separately unauthorized
+  item; no consequential commitment was silently marked complete.
 
 ### NC-20260906-008 — Local atomic enrollment persistence
 

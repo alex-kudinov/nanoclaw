@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-07T04:05:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_review; independent review complete, commit/push pending
+- State: complete; reviewed local source committed/pushed, production excluded
 - Branch/base: `codex/enrollment-authenticated-admission-20260906` over
   `a382e215`; registration committed/pushed before source changes.
 - Change class: C2 synthetic source/disposable DDL/DML; future C5/C4 impact.
@@ -56,6 +56,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   testing also hit an unchanged five-second capacity-disposable timeout; that
   proof passed in 0.6 seconds alone and in bounded full execution. No assertion
   was skipped and no unrelated timeout/source setting was changed.
+- Closure addendum 2026-09-07T04:47:00Z: reviewed implementation
+  `a46ecfe2c81e5aa624ee29472301e3d025a41d83` committed/pushed; checkout clean
+  and formatting hook changed no source. Company OS r238 closes nine local
+  commitments and releases the claim. The original consequential promise is
+  preserved in the unauthorized production admission pilot. Program and final
+  checkpoint validation pass; no production/provider/pilot action occurred.
 
 ### NC-20260906-008 — Disposable-only atomic enrollment persistence
 
