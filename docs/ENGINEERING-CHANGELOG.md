@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-07T00:26:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_review; independent review complete, commit/push pending
+- State: complete; reviewed local implementation committed/pushed, no deployment
 - Branch/base: `codex/bookkeeper-capacity-enrollment-contract-20260906` from
   exact `f5adc8cc`; registration `38813c85` pushed before source edits.
 - Change class: C2 local source; future financial/identity impact C4/C5.
@@ -44,6 +44,15 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   format/diff pass; full 3,664 passed / 32 skipped with the same two independently
   reproduced predecessor failures. Session metrics and before/after regression
   evidence are in the task report. No unresolved material review finding.
+- Closure addendum 2026-09-07T00:50:00Z: implementation
+  `6952442ccad2447148d23b6e3ab609663b72fbd2` pushed on the isolated branch;
+  commit hook changed no source and checkout was clean. Final staged continuity
+  passes (163 task rows / 159 changelog entries). Company OS r226 records all
+  nine commitments complete and releases the sole claim. Program validation,
+  generated status, and the final checkpoint check pass. The checkpoint binds
+  the existing unclaimed/unauthorized ingress candidate for orientation because
+  the checker rejects terminal bindings; the completed work item is separately
+  named without reopening it. No live/business-data verification is claimed.
 
 ### NC-20260906-004 — Bind Sales drafts to current program authority
 

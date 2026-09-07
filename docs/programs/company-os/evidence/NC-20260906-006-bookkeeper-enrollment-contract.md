@@ -93,3 +93,30 @@ AI can propose fields; it cannot supply trusted host authority or mutate state.
 - No Claude source edits occurred; only the named response artifacts were
   written. Source changes, regression implementation, and verification were
   performed by Codex in the isolated worktree.
+
+## Git, governance, and final handoff
+
+- Implementation `6952442ccad2447148d23b6e3ab609663b72fbd2` committed and pushed
+  to `origin/codex/bookkeeper-capacity-enrollment-contract-20260906`. The commit
+  hook reformatted no source; isolated checkout was clean afterward.
+- Final staged continuity passed: 163 task rows / 159 changelog entries, schema
+  sanitizer and generated capability check clean. No unrelated file was staged.
+- Company OS applied r225→r226 through compare-and-swap. All seven original
+  commitments plus explicit commit and push commitments are completed with
+  evidence. The selected work item is done and its claim is null. The existing
+  multi-source ingress-adapters candidate has this evidence as provenance and
+  remains unclaimed/not authorized; no strategy or concurrency policy changed.
+- Primary governance evidence mirror:
+  `.program/evidence/NC-20260906-006-bookkeeper-enrollment-contract.md`.
+- Final checkpoint:
+  `/Users/xbohdpukc/dev/NanoClaw/handoffs/2026-09-06-1947-bookkeeper-enrollment-contract-complete.md`.
+  Program validate/status and check-handoff pass at r226. The checker rejects
+  terminal work-item bindings, so the checkpoint explicitly preserves
+  `completed_program_work_item: work:bookkeeper-capacity-enrollment-contract`
+  and binds the existing unauthorized ingress candidate for orientation only.
+  There is no active or eligible work and no automatic continuation authority.
+- Primary source remained on `51185a5d`; no cleanup, reset, broad staging,
+  production/runtime/schema/data/provider/Sheet mutation, replay/reconciliation,
+  payment/refund, communication, or deployment occurred. Local dependency
+  installation and synthetic/disposable tests are the only execution effects
+  beyond source/Git/governance and the explicitly requested Claude review.

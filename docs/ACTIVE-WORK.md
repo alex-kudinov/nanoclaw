@@ -13,13 +13,13 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260906-006` | Source-bound Bookkeeper enrollment and capacity contract | Codex | `codex/bookkeeper-capacity-enrollment-contract-20260906` @ `f5adc8cc` | `ready_for_review` | C2 | Reviewed pure adapter; 131 focused tests pass, full suite retains two proved baseline failures; no live actions | Commit/push reviewed source, reconcile program and verify final handoff | 2026-09-07T00:44Z |
+| `NC-20260906-006` | Source-bound Bookkeeper enrollment and capacity contract | Codex | pushed `codex/bookkeeper-capacity-enrollment-contract-20260906`; implementation `6952442c` over `f5adc8cc` | `complete` | C2 | Reviewed local synthetic adapter; 131 focused tests pass, full suite retains two proved baseline failures; Company OS r226 done, claim released; deployment not applicable by explicit scope | None for this slice; ingress adapters remain separately unauthorized | 2026-09-07T00:50Z |
 
-- Owner: Codex with independent Claude Sonnet/high review; `ready_for_review`, C2
+- Owner: Codex with independent Claude Sonnet/high review; `complete`, C2
   local source (future operational identity/financial impact C5/C4).
 - Branch: `codex/bookkeeper-capacity-enrollment-contract-20260906`, isolated
   `/Users/xbohdpukc/dev/NanoClaw-bookkeeper-enrollment-20260906`, base `f5adc8cc`.
-- Company OS r225: sole claim `work:bookkeeper-capacity-enrollment-contract`;
+- Company OS r226: `work:bookkeeper-capacity-enrollment-contract` done, claim released;
   accepted decision `decision-bookkeeper-capacity-enrollment-contract-2026-09-06`.
 - Scope: new pure Bookkeeper enrollment adapter/test, contract documentation,
   project map, changelog, review/evidence. Existing payment and capacity ingress
@@ -30,7 +30,12 @@ outside the current client conversation.
   NO MATERIAL FINDINGS. Codex also reproduced/corrected resolved-conflict replay.
 - Verification: pinned Node 22.23.2 typecheck; focused 131/131; full 3,664 pass /
   32 skipped / two reproduced predecessor failures; format/diff/continuity pass.
-- Next: commit/push source, reconcile Company OS, verify final handoff.
+- Source implementation `6952442ccad2447148d23b6e3ab609663b72fbd2` is committed
+  and pushed; isolated checkout was clean. Company OS validation/status and
+  final handoff check pass. All nine commitments are evidence-closed.
+- Next: none for this slice. The separate ingress-adapter candidate remains
+  unclaimed and unauthorized. Deployment and live verification are not
+  applicable under the explicit local/synthetic-only instruction.
 - Excluded: history/reconciliation, real records, production/schema/runtime,
   provider/Sheet writes, deployment, payments/refunds, communication.
 
