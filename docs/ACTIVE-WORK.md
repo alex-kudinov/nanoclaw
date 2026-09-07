@@ -13,10 +13,10 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260906-007` | Normalize eight enrollment ingress channels with independent host evidence and canonical aliases | Codex | `codex/student-enrollment-ingress-adapters-20260906` @ `2755a284` | `ready_for_review` | C2 | Reviewed local snapshot adapters; 166 focused pass; full retains two proved baseline failures; no live actions | Commit/push reviewed source, reconcile program and verify handoff | 2026-09-07T01:28Z |
+| `NC-20260906-007` | Normalize eight enrollment ingress channels with independent host evidence and canonical aliases | Codex | pushed `codex/student-enrollment-ingress-adapters-20260906`; implementation `86141afa` over `2755a284` | `complete` | C2 | Reviewed local snapshot adapters; 166 focused pass; full retains two proved baseline failures; Company OS r230 done, claim released; deployment not applicable by explicit scope | None for this slice; atomic persistence and authenticated admission remain unauthorized candidates | 2026-09-07T01:33Z |
 
-- Company OS `work:student-enrollment-multisource-ingress-adapters` is the sole
-  active claim at r229. User's proceed instruction is recorded in the accepted
+- Company OS `work:student-enrollment-multisource-ingress-adapters` is done at
+  r230, claim released. User's proceed instruction is recorded in the accepted
   `decision-student-enrollment-ingress-adapters-2026-09-06` decision.
 - Worktree: `/Users/xbohdpukc/dev/NanoClaw-enrollment-ingress-20260906`.
   Primary dirty checkout remains untouched except governance/handoff records.
@@ -32,6 +32,9 @@ outside the current client conversation.
   change weakened the accepted funding-count rule.
 - Validation: pinned Node 22.23.2 typecheck, 166 focused tests, 3,699 root
   passes / 32 skipped / two predecessor failures, format/diff/continuity.
+- Implementation `86141afa1ba941538b29c4f75fb56ed88a0eb6fd` committed/pushed;
+  checkout clean after commit hook. Program validation, generated status and
+  final handoff binding pass. All nine commitments are evidence-closed.
 
 ### NC-20260906-006 — Bookkeeper funding contract (local-only)
 
@@ -57,8 +60,8 @@ outside the current client conversation.
 - Source implementation `6952442ccad2447148d23b6e3ab609663b72fbd2` is committed
   and pushed; isolated checkout was clean. Company OS validation/status and
   final handoff check pass. All nine commitments are evidence-closed.
-- Next: none for this slice. The separate ingress-adapter candidate remains
-  unclaimed and unauthorized. Deployment and live verification are not
+- Next: none for NC-006. Its local ingress follow-up completed under NC-007;
+  production integration remains separately gated. Deployment and live verification are not
   applicable under the explicit local/synthetic-only instruction.
 - Excluded: history/reconciliation, real records, production/schema/runtime,
   provider/Sheet writes, deployment, payments/refunds, communication.

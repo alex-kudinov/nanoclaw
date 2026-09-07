@@ -72,7 +72,7 @@ host boundary; a digest of an untrusted proposal cannot authenticate itself.
   website capacity ingress and container package are unchanged; independent
   runner build/email transport checks are not applicable to this pure slice.
 
-## Remaining work to register at program closure
+## Remaining work registered at program closure
 
 - `work:student-enrollment-transactional-store`: atomically persist both
   aggregates plus aliases, proofs, exceptions and outbox; prove retries and
@@ -83,3 +83,27 @@ host boundary; a digest of an untrusted proposal cannot authenticate itself.
   and replace old funding writers without duplicate effects.
 - Both remain candidates requiring separate authorization. The current slice
   neither claims these capabilities nor activates any runtime/provider path.
+
+## Git and program closure
+
+- Reviewed implementation `86141afa1ba941538b29c4f75fb56ed88a0eb6fd` is committed
+  and pushed to `origin/codex/student-enrollment-ingress-adapters-20260906`.
+  Commit-hook formatting changed no source; the isolated worktree was clean.
+- Final staged continuity: 164 task rows / 160 changelog entries; schema
+  sanitizer, generated capability matrix, targeted Prettier and diff checks pass.
+- Company OS r230 applied through compare-and-swap from r229. All nine
+  commitments are completed with evidence and the claim is null. The two exact
+  follow-ups above remain unauthorized candidates; their dependency edges also
+  prevent authority cutover from appearing independent of unfinished runtime
+  integration. No strategy, authority boundary or concurrency limit was weakened.
+- Primary governance mirror:
+  `.program/evidence/NC-20260906-007-enrollment-ingress-adapters.md`.
+- Final handoff:
+  `/Users/xbohdpukc/dev/NanoClaw/handoffs/2026-09-06-2029-enrollment-ingress-adapters-complete.md`.
+  Program validate/status and check-handoff pass at r230. Because the checker
+  rejects terminal bindings, the checkpoint explicitly names completed adapter
+  work and binds the unauthorized transactional-store candidate for orientation.
+  No active/eligible work or downstream action authority is implied.
+- Primary Git HEAD remains `51185a5d`; its dirty source was not edited, cleaned,
+  reset or staged. Only governance/handoff files changed there. The new source
+  is unwired; no database durability, live enrollment or provider outcome is claimed.

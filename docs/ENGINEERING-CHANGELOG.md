@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-07T01:21:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_review; independent review complete, commit/push pending
+- State: complete; reviewed local source committed/pushed, deployment excluded
 - Branch/base: `codex/student-enrollment-ingress-adapters-20260906` over
   `2755a284`; registration `ea6ec317` committed/pushed before source changes.
 - Change class: C2 local source; future identity/financial impact C5/C4.
@@ -43,6 +43,15 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   FINDINGS; no code/policy change was needed. Final focused 166/166 (35 new),
   typecheck pass, root 3,699 pass / 32 skip / two unchanged CNPC/Trafft failures.
   Session metrics and disposition are preserved in the task evidence.
+- Closure addendum 2026-09-07T01:33:00Z: reviewed implementation
+  `86141afa1ba941538b29c4f75fb56ed88a0eb6fd` committed/pushed; commit hook left
+  source unchanged and the isolated worktree clean. Final continuity passes
+  (164 task rows / 160 changelog entries). Company OS r230 closes all nine
+  commitments and releases the claim; atomic-store and authenticated-admission
+  follow-ups are unauthorized candidates and explicit prerequisites of later
+  authority cutover. Program validation/status and final checkpoint check pass.
+  No runtime, provider, financial, production, historical-data or communication
+  effect was performed or claimed.
 
 ### NC-20260906-006 — Local Bookkeeper funding to enrollment contract
 
