@@ -9,6 +9,24 @@ outside the current client conversation.
 
 ## Active work
 
+### NC-20260906-008 — Local atomic enrollment persistence
+
+| Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `NC-20260906-008` | Persist both enrollment and capacity aggregates atomically with source/seat race and recovery proof | Codex | `codex/student-enrollment-transactional-store-20260906` @ `e6463ba2` | `in_progress` | C2 | Unwired relational store and disposable PostgreSQL tests; future C5/C4 impact | Implement, prove rollback/concurrency/retry, independently review, verify and commit/push | 2026-09-07T01:40Z |
+
+- Company OS r233: sole claim `work:student-enrollment-transactional-store`.
+  Owner's Go is recorded in the accepted transactional-store decision; nine
+  continuity commitments attached before source implementation.
+- Isolated worktree: `/Users/xbohdpukc/dev/NanoClaw-enrollment-store-20260906`.
+  Dirty primary is preserved; source begins from reviewed ingress `e6463ba2`.
+- Scope: new canonical relational mapping/store, synthetic/disposable proof,
+  contract and continuity. Existing live operator/payment writers are read-only
+  references and will not be edited or used against production.
+- Excluded: production migration/data/runtime, real or historical records,
+  provider activity, deployment, financial actions and communication. Local
+  disposable PostgreSQL DDL/DML is explicitly authorized for proof only.
+
 ### NC-20260906-007 — Local multi-source enrollment adapters
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
