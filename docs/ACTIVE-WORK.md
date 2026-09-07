@@ -9,6 +9,20 @@ outside the current client conversation.
 
 ## Active work
 
+### NC-20260906-009 — Local authenticated source admission
+
+| Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `NC-20260906-009` | Authenticate purpose-scoped issuer evidence and exclude dual writers before local enrollment persistence | Codex | `codex/enrollment-authenticated-admission-20260906` @ `a382e215` | `in_progress` | C2 | Local synthetic issuer/service, shared writer claims, disposable tests, docs; future C5/C4 impact | Implement, verify, independently review, commit/push and reconcile | 2026-09-07T03:25Z |
+
+- Sole Company OS claim at r237, nine commitments attached. Accepted decision
+  `decision-enrollment-local-authenticated-admission-2026-09-06` explicitly
+  separates local implementation from the unauthorized production admission pilot.
+- Worktree `/Users/xbohdpukc/dev/NanoClaw-enrollment-admission-20260906`;
+  primary dirty source preserved. See `docs/ENROLLMENT-ADMISSION-SCOPE.md`.
+- Existing native/legacy writers remain unchanged. All provider/event/operator
+  observations and keys are synthetic; migration source is disposable-only.
+
 ### NC-20260906-008 — Local atomic enrollment persistence
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
