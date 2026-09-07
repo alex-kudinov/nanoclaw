@@ -9,6 +9,8 @@ outside the current client conversation.
 
 ## Active work
 
+| `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | `codex/catalog-publication-20260907` from exact live `1449812c1e71`; dirty primary preserved; Tandemweb companion branch from `0e42c7dd2c27` | `in_progress` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | Revalidate source digests and actual configured-consumer Stripe account alias; implement both consumer artifacts and fail-closed compatibility checks; review; release one consumer at a time with exact artifact/readback proof. | 2026-09-07T21:28Z |
+
 | `NC-20260907-002` | Add selective consultative Sales dialogue while preserving direct answers | Codex + Claude reviewer | `codex/sales-consultative-dialogue-20260907` from exact live `aa73538c8450`; dirty primary preserved | `in_progress` | C3 | Sales decision/playbook/continuity, bounded manual-review protection, generated conversation evaluation, focused/full checks and immutable release. No customer send, follow-up cadence change, new provider access or schema migration. | Implement against accepted owner examples; verify continuity and direct/mixed/exploratory responses; obtain bounded Sonnet review and deploy with non-sending live proof. | 2026-09-07T14:14Z |
 
 
