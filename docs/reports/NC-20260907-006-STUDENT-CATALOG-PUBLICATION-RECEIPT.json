@@ -6,7 +6,8 @@
   "bases": {
     "nanoclaw": "1449812c1e716135cd90c5d28c5a80d31ff197a0",
     "tandemweb_initial": "0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
-    "tandemweb_current_source": "c61fabf84f45e70630751de44ece1b368505b531",
+    "tandemweb_preflight_base": "c61fabf84f45e70630751de44ece1b368505b531",
+    "tandemweb_final_base": "636129a3b3b0dfa72f85f2e88e350ff1e90b4f5a",
     "claim_commit": "fba915c421d1166af26273e6a3c1e517ab71f262"
   },
   "actual_consumer_alias": {
@@ -26,26 +27,26 @@
   },
   "consumers": {
     "nanoclaw-v1": {
-      "state": "validated",
+      "state": "read_back",
       "prior_release": "1449812c1e716135cd90c5d28c5a80d31ff197a0",
       "artifact": "facts/generated/student-product-bindings-v1.compat.json",
       "artifact_sha256": "95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9",
-      "new_release": null,
-      "activated_at": null,
-      "read_back_at": null
+      "new_release": "c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1",
+      "activated_at": "2026-09-07T23:32:07Z",
+      "read_back_at": "2026-09-07T23:33:00Z"
     },
     "tandemweb-checkout-validation": {
-      "state": "validated",
-      "prior_source": "c61fabf84f45e70630751de44ece1b368505b531",
+      "state": "read_back",
+      "prior_source": "636129a3b3b0dfa72f85f2e88e350ff1e90b4f5a",
       "artifact": "data/generated/student-catalog-publication-v1.json",
       "artifact_sha256": "9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4",
-      "new_source": null,
-      "activated_at": null,
-      "read_back_at": null
+      "new_source": "9d708ec4d940065df5919c9306d5de285cdd52a9",
+      "activated_at": "2026-09-07T23:40:16Z",
+      "read_back_at": "2026-09-07T23:41:00Z"
     }
   },
   "source_mirror_reconciliation": {
-    "state": "dry_run_held_for_sync_divergence",
+    "state": "applied_mini_only_under_existing_pause",
     "syncthing": {
       "studio_dev_tandemweb_paused": false,
       "mini_dev_tandemweb_paused": true
@@ -57,11 +58,38 @@
     },
     "mini": {
       "before_sha256": "87646188b32d47a5e4300ea8c3393d614d27b5ec1e4677519dea24899818dd06",
-      "proposed_after_sha256": "52a6f5b535585ee736dacb6585c03ee763a2305af80b368494576e7e2615405f",
-      "nonselected_bytes_sha256": "2168fd6f064f351496257d1a16200497eed2681ed08a0d1be49dbeb4b9ebe852"
+      "after_sha256": "52a6f5b535585ee736dacb6585c03ee763a2305af80b368494576e7e2615405f",
+      "nonselected_bytes_sha256": "2168fd6f064f351496257d1a16200497eed2681ed08a0d1be49dbeb4b9ebe852",
+      "backup": "/Users/xbohdpukc/.local/share/nanoclaw-deploy-backups/NC-20260907-006-20260907T2325Z/source-mirror/products.before-87646188b32d-1788823637245.json"
     },
-    "syncthing_file_state": "Both hosts use folder id dev-tandemweb but report different global/local blocks and vector versions for data/checkout/products.json; Mini availability is null while paused. Applying either independent file could conflict or overwrite unrelated edits on a later unpause.",
-    "applied_at": null
+    "syncthing_file_state": "Both hosts use folder id dev-tandemweb but report different global/local blocks and vector versions for data/checkout/products.json. Astra accepted the Mini-only repair under its existing paused/null-availability boundary. Studio stayed untouched; future unpause requires separately authorized convergence.",
+    "applied_at": "2026-09-07T23:27:17Z"
+  },
+  "nanoclaw_release": {
+    "commit": "c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1",
+    "source_tree": "8282c530379eb64a0f9641ff49073268e07b45df",
+    "archive_sha256": "06e408cf1d361a351070def045d642f0722b435954d356babb22e3b506fa35b0",
+    "artifact_sha256": "945c70544c489a159e78291a92dfef631d56ddb736cd2b5aed9fb020950ef660",
+    "artifact_files": 1072,
+    "node": "22.23.2",
+    "prior_release": "1449812c1e716135cd90c5d28c5a80d31ff197a0",
+    "rollback_plist": "/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-1449812c1e71-2026-09-07T23-32-07-849Z"
+  },
+  "operational_knowledge": {
+    "consumer_count": 14,
+    "backup_sha256": "cc18276c897f8665b5d574c8df2eb4da573d2f63755760f3072f5abb9c2392b3",
+    "backup": "/Users/xbohdpukc/.local/share/nanoclaw-deploy-backups/NC-20260907-006-20260907T2325Z/knowledge-before.tar.gz",
+    "catalog_sha256": "535088c9ff7a55c823d123d5d521bb244de95aa0d14d530d5e8892d9f23013a5",
+    "read_back": "14 exact canonical blocks; program fact detector checked 5 domains with zero findings"
+  },
+  "tandemweb_release": {
+    "commit": "9d708ec4d940065df5919c9306d5de285cdd52a9",
+    "base": "636129a3b3b0dfa72f85f2e88e350ff1e90b4f5a",
+    "webhook_first_attempt": "held before reset because the webhook environment lacked the existing design-governance decision paths",
+    "retry": "repository deploy.sh with the existing accepted decision and detached approval",
+    "cache_readback": "LiteSpeed purged; Cloudflare HTTP 200",
+    "validator_sha256": "304e3dba3a07af5c6f5d3a4c3a000a497eb81f7d929f744d15c685a8e48dd110",
+    "deploy_sha256": "402c46eb0e5ea333c00c7755cc6bcbe014aa396a62f7435a8536878b254a33e1"
   },
   "verification": {
     "nanoclaw_focused": "publication/resolver/drift 4 files / 51 tests; source mirror 4 tests; fact sync 8 tests passed",

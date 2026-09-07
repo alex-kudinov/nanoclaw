@@ -1,6 +1,6 @@
 # NC-20260907-006 supervision checkout source correction
 
-Status: accepted current-source reconciliation; implementation staged
+Status: accepted and applied on the Mini operational mirror; Studio unchanged
 
 The NC-005 preparation branch `0e42c7dd2c27` retained the July 22 launch
 shape: inaugural active and regular inactive. Current deployed Tandemweb/main
@@ -54,10 +54,11 @@ Dry-run receipts:
   unchanged nonselected-byte digest
   `2168fd6f064f351496257d1a16200497eed2681ed08a0d1be49dbeb4b9ebe852`.
 
-Application is additionally held until a safe cross-host convergence decision
-can preserve each file's unrelated edits; running both independent patches
-would create competing Syncthing versions. It waits for Astra's reviewed release
-acceptance and an exact convergence plan. It will not reset, reformat, or copy
-either repository; touch PHP; deploy Tandemweb; or change
-provider, roster, payment, enrollment, access, class, capacity, schedule, or
-customer state.
+Astra accepted a Mini-only repair under the observed existing paused and
+null-availability boundary. The guarded helper changed the Mini whole-file hash
+from `87646188b32d47a5e4300ea8c3393d614d27b5ec1e4677519dea24899818dd06`
+to `52a6f5b535585ee736dacb6585c03ee763a2305af80b368494576e7e2615405f`,
+preserved the exact nonselected-byte digest,
+created a mode-0600 backup, and re-read every selected field. Studio remained
+untouched. Future unpause/replica convergence remains separate unauthorized
+work because the two vector versions were already concurrent before NC-006.
