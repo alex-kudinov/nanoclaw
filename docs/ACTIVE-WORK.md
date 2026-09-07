@@ -187,6 +187,37 @@ outside the current client conversation.
 
 ## Task details
 
+### NC-20260907-006 — Supervision catalog publication
+
+- Authority: accepted decision
+  `.program/decisions/decision-supervision-catalog-publication-implementation-2026-09-07.json`;
+  Astra owns strategy, `.program`, and release acceptance. The Sol High worker
+  owns the exact implementation/review/release execution slice.
+- Lineage: NanoClaw starts from exact live
+  `1449812c1e716135cd90c5d28c5a80d31ff197a0`; Tandemweb starts from
+  `0e42c7dd2c271926e09ec5f16e0a71ef3936d68f`. Both primary checkouts and all
+  unrelated changes remain preserved.
+- Implementation: schema-validated source-reference manifest, deterministic
+  two-consumer generator, generated exact v1 binding loaded by the current
+  resolver, release-owned stale/tamper gate, static Tandemweb artifact, and
+  one-commit staged deploy preflight. No website-to-NanoClaw runtime call.
+- Account gate: the actual live consumer configuration reader selected native
+  account `acct_1G1wKzA7hTBWpVVq` through `STRIPE_SECRET_KEY_ALT`, matching
+  `stripe:alt`; the receipt contains no credential or population data.
+- Verification: focused Nano 22/22 and Tandem 10/10 pass; typecheck,
+  runtime doctor, email replay 13/13, email-critical 801/801 plus runner 45/45,
+  checkout pricing 38/38 and installments 11/11 pass. Full Nano is 3,656 pass /
+  32 skip / three failures. Exact base `1449812c` independently reproduces the
+  additional Capacity disposable failure with the same expected reserved 1 /
+  actual reserved 0 signature; CNPC wrapper and date-sensitive Trafft are the
+  established two predecessor failures. Broad Tandem Python collection is
+  unavailable in the current interpreter because optional BeautifulSoup and
+  markdownify dependencies are absent; task-owned and checkout-specific tests
+  do not use them.
+- Boundary: review and consumer activation/readback remain pending. No payment,
+  provider, roster, enrollment, access, customer, class, capacity, schedule,
+  message, migration, checkout promise, or business-state mutation occurred.
+
 ### NC-20260907-002 — Selective Sales consultation
 
 - Accepted scope: selective consultative judgment for advice inquiries, direct

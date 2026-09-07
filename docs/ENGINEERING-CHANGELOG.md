@@ -57,8 +57,16 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   customer, learner, payment, or financial population entered output.
 - Verification so far: deterministic full generation and release-owned
   Nano-only validation pass; Nano focused generator/resolver/release checks are
-  22/22; Tandem static validator tests are 10/10; JSON, shell syntax, and diff
-  checks pass. Full checks and independent review remain.
+  22/22; Tandem static validator tests are 10/10; typecheck, runtime doctor,
+  email replay 13/13, email-critical 801/801 plus runner 45/45, checkout
+  pricing 38/38, installments 11/11, JSON, shell syntax, and diff checks pass.
+  Full Nano is 3,656 pass / 32 skip / three failures. Exact base `1449812c`
+  independently reproduces the additional Capacity disposable failure with the
+  same reserved expected 1 / actual 0 signature; the established CNPC wrapper
+  and date-sensitive Trafft failures remain. Broad Tandem Python collection is
+  unavailable because the current interpreter lacks optional BeautifulSoup and
+  markdownify dependencies; the task-owned and checkout suites do not use them.
+  Independent review remains.
 - Boundary: native price amount/recurrence, Heartbeat group-course attachment,
   learner access/progress/class/completion, and global strict publication
   eligibility remain explicitly false. No provider, roster, payment,

@@ -46,7 +46,11 @@
   "verification": {
     "nanoclaw_focused": "3 files / 22 tests passed",
     "tandemweb_focused": "10 tests passed",
-    "full_checks": "pending",
+    "nanoclaw_email_replay": "13 tests passed",
+    "nanoclaw_email_critical": "801 tests passed; runner 45 tests passed",
+    "nanoclaw_full": "3656 passed, 32 skipped, 3 failed; exact base 1449812c reproduces academy-capacity-operator-disposable reserved expected 1 actual 0; established CNPC and Trafft failures also unchanged",
+    "tandemweb_checkout": "regional pricing 38 passed; installments 11 passed",
+    "tandemweb_broad_collection": "not run: current interpreter lacks optional BeautifulSoup and markdownify dependencies",
     "review": "pending"
   },
   "privacy": {
