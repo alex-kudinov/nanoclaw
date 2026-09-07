@@ -1,0 +1,110 @@
+{
+  "projection_id": "NC-20260907-004-claude-correction-review-r2",
+  "generated_at_utc": "2026-09-07T19:58:43.758Z",
+  "r1_findings": [
+    "P1 payer/participant separation absent from reviewed packet",
+    "P2 nine initially selected families unsupported in allowed read set"
+  ],
+  "p1_correction": {
+    "records": 56,
+    "records_with_explicit_party_role_boundary": 56,
+    "required_relationship_status": "not_evidenced_and_never_assumed_same",
+    "all_records_match": true,
+    "party_role_invariant": "Payer, purchaser, sponsor, participant, and student are distinct roles unless exact accepted evidence links them.",
+    "proposal_invariant": "Do not infer group-to-course attachment, payer-to-participant, or schedule assignment.",
+    "validation_contract": "Every record keeps payer, purchaser, sponsor, participant, and student as distinct roles; no identity relation was collected and sameness is never assumed.",
+    "owner_brief_section": "Evidence-only gaps",
+    "evidence_report_item": "Material contradictions and safe holds item 7"
+  },
+  "p2_correction": {
+    "initial_selected_page_family_count": 9,
+    "initial_selected_page_families": [
+      {
+        "source_dir": "pages/acc",
+        "language": "en",
+        "slug": "/icf/acc-coach-certification-training/"
+      },
+      {
+        "source_dir": "pages/pcc",
+        "language": "en",
+        "slug": "/icf/pcc-professional-coach-certification/"
+      },
+      {
+        "source_dir": "pages/actc",
+        "language": "en",
+        "slug": "/icf/actc-team-coaching-training/"
+      },
+      {
+        "source_dir": "pages/acc-pcc-certification",
+        "language": "en",
+        "slug": "/icf/acc-pcc-certification/"
+      },
+      {
+        "source_dir": "pages/mcs-advanced-accreditation-mentor-coaching",
+        "language": "en",
+        "slug": "/mcs/advanced-accreditation-mentor-coaching/"
+      },
+      {
+        "source_dir": "pages/coaching-supervisor-training",
+        "language": "en",
+        "slug": "coaching-supervisor-training"
+      },
+      {
+        "source_dir": "pages/mentor-coaching-foundations",
+        "language": "en",
+        "slug": "/mcs/mentor-coaching-foundations/"
+      },
+      {
+        "source_dir": "pages/es-mentor-coaching-foundations",
+        "language": "es",
+        "slug": "/es/fundamentos-mentor-coaching/"
+      },
+      {
+        "source_dir": "pages/ja-mentor-coaching-foundations",
+        "language": "ja",
+        "slug": "/ja/mentor-coaching-foundations/"
+      }
+    ],
+    "site_wide_scan": {
+      "scope": "pages/**/*.html excluding sync-conflict, preview, and backup filenames",
+      "active_found": 33,
+      "active_total": 37,
+      "active_not_found": [
+        "mcq-eval-acc-bars",
+        "mcq-eval-bundle",
+        "mcq-eval-mcc-bars",
+        "mcq-eval-pcc-markers"
+      ]
+    },
+    "source_index": {
+      "path": "pages/catalog.json",
+      "generated_at": "2026-02-12T15:55:11Z",
+      "entry_count": 97,
+      "live_path_count": 81,
+      "sha256": "017b3d5e52b6b85ac00c15b07931de6aaafb3f45e7cf0e1e80a4cf57214818c1",
+      "freshness_boundary": "Index predates current ES and JA source directories; catalog_live_path=false is not proof that a page is not public."
+    },
+    "french_counterpart": {
+      "source_path": "community/icf/mentor-coaching/i18n/fr/course.json",
+      "source_status": "production-published-linked-resource-incident-open",
+      "checkout_offer_slug_found": false,
+      "page_meta_or_source_found": false,
+      "sellable_offer_inferred": false,
+      "relationship_boundary": "Course source and native objects prove a French learning counterpart, not a sellable offer, checkout relationship, access-group attachment, entitlement, or publication."
+    }
+  },
+  "regression_checks": {
+    "record_count": 56,
+    "active_checkout_count": 37,
+    "dispositions": {
+      "legacy_dispositioned": 16,
+      "source_bound": 7,
+      "unresolved": 33
+    },
+    "checkout_price_refs": 42,
+    "offer_price_refs": 8,
+    "verified_native_product_price_links": 3,
+    "proposal_changes": 7,
+    "qualified_questions": 20
+  }
+}

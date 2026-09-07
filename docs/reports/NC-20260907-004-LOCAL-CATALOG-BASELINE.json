@@ -1,0 +1,939 @@
+{
+  "report_id": "NC-20260907-004-local-catalog-baseline",
+  "captured_at_utc": "2026-09-07T17:50:44.352Z",
+  "evidence_scope": "sanitized local working-tree checkout and source-controlled NanoClaw catalogs only",
+  "verification_boundary": {
+    "checkout_state": "local working tree; not deployed or provider-native verified",
+    "catalogs_state": "source-controlled local files; not proof of runtime migration, publication, or provider state",
+    "external_reads_or_writes": "none",
+    "excluded_fields": [
+      "invitation codes",
+      "access URLs",
+      "welcome routes and text",
+      "descriptions",
+      "tokens and credentials",
+      "raw source payloads",
+      "student or person rows"
+    ]
+  },
+  "program_binding_observed_read_only": {
+    "source_root": "/Users/xbohdpukc/dev/NanoClaw",
+    "program_id": "program:company-os",
+    "charter_version": "1.0.0",
+    "charter_sha256": "38b36c42358ff7c9ec919bfee0d06064cb52e9f9f1623fd4622c933f95b53c6a",
+    "state_revision": 252,
+    "work_item": "work:student-product-catalog-source-reconciliation",
+    "work_status": "active",
+    "claim_task_id": "NC-20260907-004",
+    "claim_lease_expires_at": "2026-09-08T15:54:43+00:00"
+  },
+  "execution_checkout": {
+    "root": "/Users/xbohdpukc/dev/NanoClaw-student-catalog-20260907",
+    "branch": "codex/student-catalog-reconciliation-20260907",
+    "head": "ab8a3c99df184badeed58f9616daaa98f70d6510",
+    "upstream": "origin/codex/student-catalog-reconciliation-20260907",
+    "pre_checkpoint_status_short": "M docs/work-packets/NC-20260907-004-EXECUTION.md"
+  },
+  "sources": {
+    "checkout_catalog": {
+      "path": "/Users/xbohdpukc/dev/tandemweb/data/checkout/products.json",
+      "repository_root": "/Users/xbohdpukc/dev/tandemweb",
+      "repository_branch": "codex/lucid-calendar-holiday-policy",
+      "repository_head": "681f9f72404c06434e163f59d6c5764bd9fa7ee2",
+      "file_status_short": "M data/checkout/products.json",
+      "last_committed_file_revision": "84f8ddd5f58247a5ddf9125ca05577a2d14638d1",
+      "bytes": 22431,
+      "modified_at_utc": "2026-08-22T02:32:51.980Z",
+      "sha256": "e7dc68f42709feaf1643971363c264bd73ec7d17c61fb64128b42890f5369011",
+      "safe_selected_field_changes_vs_repository_head": []
+    },
+    "entitlement_catalog": {
+      "path": "facts/catalogs/student-entitlements-v1.json",
+      "last_committed_file_revision": "a9839d9299da815eb63b5730348b62c27b8138b7",
+      "bytes": 67395,
+      "modified_at_utc": "2026-09-07T15:52:47.597Z",
+      "sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "catalog_id": "student-entitlements",
+      "catalog_revision": 1
+    },
+    "product_bindings": {
+      "path": "facts/catalogs/student-product-bindings-v1.json",
+      "last_committed_file_revision": "16171042e81d1f33911694b754b3c514657a35e9",
+      "bytes": 717,
+      "modified_at_utc": "2026-09-07T15:52:47.599Z",
+      "sha256": "08df8787fbf5fa621afe1f727bca7ffdb376da511537df5020db23c0f5a3e5ac",
+      "revision": 1,
+      "entitlement_catalog_revision": 1
+    }
+  },
+  "counts": {
+    "checkout_entries": 47,
+    "checkout_active_entries": 37,
+    "checkout_inactive_entries": 10,
+    "checkout_programs": 8,
+    "checkout_installment_entries": 7,
+    "checkout_regional_pricing_entries": 1,
+    "entitlement_components": 42,
+    "entitlement_bundles": 7,
+    "entitlement_offers": 8,
+    "entitlement_known_conflicts": 6,
+    "product_binding_routes": 2,
+    "offer_key_overlap": 7
+  },
+  "sanitized_checkout_entries": [
+    {
+      "offer_slug": "acc-exam-prep",
+      "product_label": "ACC ICF Exam Prep",
+      "active": false,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 2900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIY6uA7hTBWpVVqQAqvXC9k",
+      "heartbeat_group_ids": ["94af2b4e-d0f5-47cb-8852-cb7533f3da1c"]
+    },
+    {
+      "offer_slug": "acc-free",
+      "product_label": "ACC Coaching Foundations - Free Access",
+      "active": false,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 0,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["6463962c-4942-48af-bb57-4c47fc5f56e8"]
+    },
+    {
+      "offer_slug": "acc-full",
+      "product_label": "ACC Level 1 Full Program",
+      "active": true,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 399900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIY6rA7hTBWpVVqNg7G7XzC",
+      "heartbeat_group_ids": ["1892f2a6-3117-4c6b-b5fa-540129ce0b3f"]
+    },
+    {
+      "offer_slug": "acc-group-mentoring",
+      "product_label": "ACC Group Mentor Coaching",
+      "active": true,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 69900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIY6tA7hTBWpVVq0DhSDEDG",
+      "heartbeat_group_ids": ["7a89b0f8-9b79-4b90-9356-86330ed6ba89"]
+    },
+    {
+      "offer_slug": "acc-group-supervision",
+      "product_label": "ACC Group Coaching Supervision",
+      "active": true,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 69900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIY6tA7hTBWpVVqviJLlXrp",
+      "heartbeat_group_ids": ["b979853f-bb7b-4f71-a694-c310b2a4ff6a"]
+    },
+    {
+      "offer_slug": "acc-individual-mentoring",
+      "product_label": "ACC Individual Mentor Coaching",
+      "active": true,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 119900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIY6tA7hTBWpVVq0hw2Nlps",
+      "heartbeat_group_ids": ["a00695d5-efd8-40c7-acc7-d648309aba19"]
+    },
+    {
+      "offer_slug": "acc-module-1",
+      "product_label": "ACC Module 1: Coaching Fundamentals",
+      "active": true,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIY6rA7hTBWpVVqY6t4VpzY",
+      "heartbeat_group_ids": ["37443ab2-874b-4c3b-8829-8da00025e355"]
+    },
+    {
+      "offer_slug": "acc-module-2",
+      "product_label": "ACC Module 2: Deepening Practice",
+      "active": true,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIY6sA7hTBWpVVq5Aj6ttn0",
+      "heartbeat_group_ids": ["03dd5ea5-a201-43a2-bc7d-088ac2671e8c"]
+    },
+    {
+      "offer_slug": "acc-module-3",
+      "product_label": "ACC Module 3: Coaching Mastery",
+      "active": true,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIY6sA7hTBWpVVqTSnHgr6t",
+      "heartbeat_group_ids": ["5df3f15a-2f60-4f4b-8742-f146a148f80e"]
+    },
+    {
+      "offer_slug": "acc-module-4",
+      "product_label": "ACC Module 4: Advanced Coaching Techniques",
+      "active": true,
+      "program": "acc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIY6sA7hTBWpVVqOdqiAv1D",
+      "heartbeat_group_ids": ["7945ed4a-f918-4110-ae18-fd408aeb5c51"]
+    },
+    {
+      "offer_slug": "acc-pcc-free",
+      "product_label": "Professional Coach Program - Free Coaching Foundations",
+      "active": false,
+      "program": "acc-pcc",
+      "currency": "usd",
+      "price_cents": 0,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["6463962c-4942-48af-bb57-4c47fc5f56e8"]
+    },
+    {
+      "offer_slug": "acc-pcc-full",
+      "product_label": "Professional Coach Program (ACC + PCC + ACTC)",
+      "active": true,
+      "program": "acc-pcc",
+      "currency": "usd",
+      "price_cents": 749900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TId1qA7hTBWpVVqEqTpvs14",
+      "heartbeat_group_ids": [
+        "1892f2a6-3117-4c6b-b5fa-540129ce0b3f",
+        "8eb5731a-a812-4ae6-ad6c-e4ad306f9c0a"
+      ]
+    },
+    {
+      "offer_slug": "actc-exam-prep",
+      "product_label": "ACTC Exam Prep",
+      "active": false,
+      "program": "actc",
+      "currency": "usd",
+      "price_cents": 5900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIae1A7hTBWpVVqGh8fwg0o",
+      "heartbeat_group_ids": ["4005359c-a4fb-4722-9e86-5fd9ccce3dfc"]
+    },
+    {
+      "offer_slug": "actc-free",
+      "product_label": "ACTC Team Coaching Competencies - Free Access",
+      "active": false,
+      "program": "actc",
+      "currency": "usd",
+      "price_cents": 0,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["bcf43aa7-1ea3-41c0-949c-45af5129c908"]
+    },
+    {
+      "offer_slug": "actc-full",
+      "product_label": "ACTC Full Program",
+      "active": true,
+      "program": "actc",
+      "currency": "usd",
+      "price_cents": 249900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIadwA7hTBWpVVq4UQilXGE",
+      "heartbeat_group_ids": ["5ff8be1e-1ce8-4732-a997-62661a1aa1ee"]
+    },
+    {
+      "offer_slug": "actc-group-supervision",
+      "product_label": "ACTC Group Supervision",
+      "active": true,
+      "program": "actc",
+      "currency": "usd",
+      "price_cents": 69900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIadzA7hTBWpVVqhYjgahjU",
+      "heartbeat_group_ids": ["7c65c290-56db-422f-bca1-c4494ac2145a"]
+    },
+    {
+      "offer_slug": "actc-module-1",
+      "product_label": "ACTC Module 1: System Coaching Mindset",
+      "active": true,
+      "program": "actc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIadwA7hTBWpVVqFLSxoWb5",
+      "heartbeat_group_ids": ["ed43ee64-d579-4123-979d-606a8aafb0e0"]
+    },
+    {
+      "offer_slug": "actc-module-2",
+      "product_label": "ACTC Module 2: Coaching Systems",
+      "active": true,
+      "program": "actc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIadxA7hTBWpVVqgXIB5ePi",
+      "heartbeat_group_ids": ["2b1f7c4e-5a8c-4a52-bb13-cdf141adaa4a"]
+    },
+    {
+      "offer_slug": "actc-module-3",
+      "product_label": "ACTC Module 3: System Perception",
+      "active": true,
+      "program": "actc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIadyA7hTBWpVVqNd59SGys",
+      "heartbeat_group_ids": ["d930d4ee-49b1-4766-a0e8-2f10683f902e"]
+    },
+    {
+      "offer_slug": "actc-module-4",
+      "product_label": "ACTC Module 4: System Awareness",
+      "active": true,
+      "program": "actc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIadzA7hTBWpVVqJOVQHnDz",
+      "heartbeat_group_ids": ["a918cbb6-b45e-4a12-bcc9-c39c2ec9e0bc"]
+    },
+    {
+      "offer_slug": "actc-recording-review",
+      "product_label": "ACTC Recording Review",
+      "active": true,
+      "program": "actc",
+      "currency": "usd",
+      "price_cents": 34900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIae0A7hTBWpVVqeyUAncw0",
+      "heartbeat_group_ids": ["414dc9c1-8083-4f49-acbe-72272ba6b30a"]
+    },
+    {
+      "offer_slug": "mcq-eval-acc-bars",
+      "product_label": "MCS Evaluation Training: ACC BARS",
+      "active": true,
+      "program": "mcq",
+      "currency": "usd",
+      "price_cents": 4900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TPueRA7hTBWpVVqk4rZmOVT",
+      "heartbeat_group_ids": ["4ef843cf-c457-41e4-93eb-9877aed2e357"]
+    },
+    {
+      "offer_slug": "mcq-eval-bundle",
+      "product_label": "MCS Evaluation Training: Complete Bundle",
+      "active": true,
+      "program": "mcq",
+      "currency": "usd",
+      "price_cents": 14900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TPueUA7hTBWpVVqc9bRYHHy",
+      "heartbeat_group_ids": [
+        "4ef843cf-c457-41e4-93eb-9877aed2e357",
+        "47489a3c-b777-40e6-a3e3-1b6418a054cd",
+        "872674dc-e880-4418-8f57-a1b8a18b285e"
+      ]
+    },
+    {
+      "offer_slug": "mcq-eval-mcc-bars",
+      "product_label": "MCS Evaluation Training: MCC BARS",
+      "active": true,
+      "program": "mcq",
+      "currency": "usd",
+      "price_cents": 4900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TPueTA7hTBWpVVqdG1h2X0Y",
+      "heartbeat_group_ids": ["872674dc-e880-4418-8f57-a1b8a18b285e"]
+    },
+    {
+      "offer_slug": "mcq-eval-pcc-markers",
+      "product_label": "MCS Evaluation Training: PCC Markers",
+      "active": true,
+      "program": "mcq",
+      "currency": "usd",
+      "price_cents": 9900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TPueSA7hTBWpVVqpfYIGEf8",
+      "heartbeat_group_ids": ["47489a3c-b777-40e6-a3e3-1b6418a054cd"]
+    },
+    {
+      "offer_slug": "mcq-program-a-foundations",
+      "product_label": "Mentor Coaching Foundations (Program A)",
+      "active": true,
+      "program": "mcq",
+      "currency": "usd",
+      "price_cents": 29900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TMwqZA7hTBWpVVqjeJ6h332",
+      "heartbeat_group_ids": ["4c54983c-0e7b-4dd0-aebc-0f0cb1c82298"]
+    },
+    {
+      "offer_slug": "mcs-cohort-sept-friday",
+      "product_label": "Mentor Coach Training - September Friday Cohort",
+      "active": true,
+      "program": "mcs",
+      "currency": "usd",
+      "price_cents": 299700,
+      "installments": {
+        "enabled": true,
+        "count": 3,
+        "interval": "month",
+        "amount_cents": 99900,
+        "total_cents": 299700,
+        "native_price_id": "price_1TkYJfA7hTBWpVVqm502swAb"
+      },
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["917a7a35-2ea8-4fb3-999a-26949d9de4da"]
+    },
+    {
+      "offer_slug": "mcs-cohort-sept-thursday",
+      "product_label": "Mentor Coach Training - September Thursday Cohort",
+      "active": true,
+      "program": "mcs",
+      "currency": "usd",
+      "price_cents": 299700,
+      "installments": {
+        "enabled": true,
+        "count": 3,
+        "interval": "month",
+        "amount_cents": 99900,
+        "total_cents": 299700,
+        "native_price_id": "price_1TkYJfA7hTBWpVVqm502swAb"
+      },
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["917a7a35-2ea8-4fb3-999a-26949d9de4da"]
+    },
+    {
+      "offer_slug": "mcs-foundations-es",
+      "product_label": "Fundamentos de Mentor Coaching",
+      "active": true,
+      "program": "mcq",
+      "currency": "usd",
+      "price_cents": 29900,
+      "installments": null,
+      "regional_pricing": {
+        "label": "Precio regional para residentes de América Latina",
+        "countries": [
+          "AR",
+          "BO",
+          "CL",
+          "CO",
+          "CR",
+          "DO",
+          "EC",
+          "SV",
+          "GT",
+          "HN",
+          "MX",
+          "NI",
+          "PA",
+          "PY",
+          "PE",
+          "PR",
+          "UY",
+          "VE"
+        ],
+        "price_cents": 19900,
+        "policy_id": "latam-resident-v1"
+      },
+      "native_price_id": "price_1TMwqZA7hTBWpVVqjeJ6h332",
+      "heartbeat_group_ids": ["ad1ee8f1-4b43-41a3-9239-34bdc36a1d23"]
+    },
+    {
+      "offer_slug": "mcs-foundations-ja",
+      "product_label": "メンターコーチング基礎講座",
+      "active": true,
+      "program": "mcq",
+      "currency": "usd",
+      "price_cents": 29900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TMwqZA7hTBWpVVqjeJ6h332",
+      "heartbeat_group_ids": ["b817b870-9d25-415f-bc20-d8a6e9437ccb"]
+    },
+    {
+      "offer_slug": "mentor-acc",
+      "product_label": "ICF Mentor Coaching - ACC Renewal",
+      "active": true,
+      "program": "mentor",
+      "currency": "usd",
+      "price_cents": 150000,
+      "installments": {
+        "enabled": true,
+        "count": 3,
+        "interval": "month",
+        "amount_cents": 50000,
+        "total_cents": 150000,
+        "native_price_id": "price_1TwhZQA7hTBWpVVqUuQ6ruSp"
+      },
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["73f6dabd-0618-4b06-954f-81497512830c"]
+    },
+    {
+      "offer_slug": "mentor-mcc",
+      "product_label": "ICF Mentor Coaching - Earn MCC",
+      "active": true,
+      "program": "mentor",
+      "currency": "usd",
+      "price_cents": 399900,
+      "installments": {
+        "enabled": true,
+        "count": 3,
+        "interval": "month",
+        "amount_cents": 133300,
+        "total_cents": 399900,
+        "native_price_id": "price_1TwhZRA7hTBWpVVqL9msKxPr"
+      },
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": []
+    },
+    {
+      "offer_slug": "mentor-pcc",
+      "product_label": "ICF Mentor Coaching - Earn PCC",
+      "active": true,
+      "program": "mentor",
+      "currency": "usd",
+      "price_cents": 180000,
+      "installments": {
+        "enabled": true,
+        "count": 3,
+        "interval": "month",
+        "amount_cents": 60000,
+        "total_cents": 180000,
+        "native_price_id": "price_1TwhZQA7hTBWpVVq5oMvGK9e"
+      },
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["ffc187ed-c6b3-4c13-b4ff-8a0f80a28721"]
+    },
+    {
+      "offer_slug": "pcc-exam-prep-individual",
+      "product_label": "PCC Individual Exam Prep",
+      "active": false,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 4900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcncA7hTBWpVVqqSNmEaba",
+      "heartbeat_group_ids": ["94af2b4e-d0f5-47cb-8852-cb7533f3da1c"]
+    },
+    {
+      "offer_slug": "pcc-exam-prep-team",
+      "product_label": "PCC Team Exam Prep",
+      "active": false,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 5900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcndA7hTBWpVVqtMvXJO85",
+      "heartbeat_group_ids": ["4005359c-a4fb-4722-9e86-5fd9ccce3dfc"]
+    },
+    {
+      "offer_slug": "pcc-free-competencies",
+      "product_label": "PCC Free: ICF Individual and Team Competencies",
+      "active": false,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 0,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["bcf43aa7-1ea3-41c0-949c-45af5129c908"]
+    },
+    {
+      "offer_slug": "pcc-free-core",
+      "product_label": "PCC Free: Mastering ICF Core Competencies",
+      "active": false,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 0,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["6463962c-4942-48af-bb57-4c47fc5f56e8"]
+    },
+    {
+      "offer_slug": "pcc-full",
+      "product_label": "PCC + ACTC Full Program",
+      "active": true,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 399900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcnWA7hTBWpVVqJHoGwLnO",
+      "heartbeat_group_ids": ["a8e3d6fd-00ea-4213-9cc3-05acedc57f74"]
+    },
+    {
+      "offer_slug": "pcc-group-mentoring",
+      "product_label": "PCC Group Mentoring",
+      "active": true,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 69900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcnbA7hTBWpVVqidw8hYEv",
+      "heartbeat_group_ids": ["0ce0734c-e359-4cf0-9251-4bb54070545a"]
+    },
+    {
+      "offer_slug": "pcc-group-supervision",
+      "product_label": "PCC Group Supervision",
+      "active": true,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 69900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcnaA7hTBWpVVq5iTQBXFu",
+      "heartbeat_group_ids": ["7c65c290-56db-422f-bca1-c4494ac2145a"]
+    },
+    {
+      "offer_slug": "pcc-individual-mentoring",
+      "product_label": "PCC Individual Mentoring",
+      "active": true,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 119900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcncA7hTBWpVVqx7epmP7Y",
+      "heartbeat_group_ids": ["2fec5ee0-586b-4146-891e-c534999d4da4"]
+    },
+    {
+      "offer_slug": "pcc-module-1",
+      "product_label": "PCC Module 1: System Coaching Mindset",
+      "active": true,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcnXA7hTBWpVVq0lXeRJAt",
+      "heartbeat_group_ids": ["ed43ee64-d579-4123-979d-606a8aafb0e0"]
+    },
+    {
+      "offer_slug": "pcc-module-2",
+      "product_label": "PCC Module 2: Coaching Systems",
+      "active": true,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcnYA7hTBWpVVqgLlnHSQX",
+      "heartbeat_group_ids": ["2b1f7c4e-5a8c-4a52-bb13-cdf141adaa4a"]
+    },
+    {
+      "offer_slug": "pcc-module-3",
+      "product_label": "PCC Module 3: System Perception",
+      "active": true,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcnYA7hTBWpVVq28rh3Wzo",
+      "heartbeat_group_ids": ["d930d4ee-49b1-4766-a0e8-2f10683f902e"]
+    },
+    {
+      "offer_slug": "pcc-module-4",
+      "product_label": "PCC Module 4: System Awareness",
+      "active": true,
+      "program": "pcc",
+      "currency": "usd",
+      "price_cents": 39900,
+      "installments": null,
+      "regional_pricing": null,
+      "native_price_id": "price_1TIcnZA7hTBWpVVqigAovndD",
+      "heartbeat_group_ids": ["a918cbb6-b45e-4a12-bcc9-c39c2ec9e0bc"]
+    },
+    {
+      "offer_slug": "supervision-inaugural",
+      "product_label": "Coaching Supervision Mastery - Inaugural Cohort",
+      "active": true,
+      "program": "supervision",
+      "currency": "usd",
+      "price_cents": 399600,
+      "installments": {
+        "enabled": true,
+        "count": 4,
+        "interval": "month",
+        "amount_cents": 99900,
+        "total_cents": 399600,
+        "native_price_id": "price_1Tvz3MA7hTBWpVVqhF708kPv"
+      },
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"]
+    },
+    {
+      "offer_slug": "supervision-regular",
+      "product_label": "Coaching Supervision Mastery - Regular Tuition",
+      "active": false,
+      "program": "supervision",
+      "currency": "usd",
+      "price_cents": 479600,
+      "installments": {
+        "enabled": true,
+        "count": 4,
+        "interval": "month",
+        "amount_cents": 119900,
+        "total_cents": 479600,
+        "native_price_id": "price_1Tvz3MA7hTBWpVVq9gL3v49F"
+      },
+      "regional_pricing": null,
+      "native_price_id": null,
+      "heartbeat_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"]
+    }
+  ],
+  "sanitized_entitlement_offers": [
+    {
+      "offer_slug": "acc-full",
+      "active_state": "active",
+      "bundle_key": "acc-full:v1",
+      "currency": "usd",
+      "price_cents": 399900,
+      "native_price_ids": ["price_1TIY6rA7hTBWpVVqNg7G7XzC"],
+      "heartbeat_group_ids": ["1892f2a6-3117-4c6b-b5fa-540129ce0b3f"]
+    },
+    {
+      "offer_slug": "acc-module-1",
+      "active_state": "active",
+      "bundle_key": "acc-module-1:v1",
+      "currency": "usd",
+      "price_cents": 39900,
+      "native_price_ids": ["price_1TIY6rA7hTBWpVVqY6t4VpzY"],
+      "heartbeat_group_ids": ["37443ab2-874b-4c3b-8829-8da00025e355"]
+    },
+    {
+      "offer_slug": "acc-pcc-full",
+      "active_state": "active",
+      "bundle_key": "professional-coach-full:v1",
+      "currency": "usd",
+      "price_cents": 749900,
+      "native_price_ids": ["price_1TId1qA7hTBWpVVqEqTpvs14"],
+      "heartbeat_group_ids": [
+        "1892f2a6-3117-4c6b-b5fa-540129ce0b3f",
+        "8eb5731a-a812-4ae6-ad6c-e4ad306f9c0a"
+      ]
+    },
+    {
+      "offer_slug": "actc-full",
+      "active_state": "active",
+      "bundle_key": "actc-full:v1",
+      "currency": "usd",
+      "price_cents": 249900,
+      "native_price_ids": ["price_1TIadwA7hTBWpVVq4UQilXGE"],
+      "heartbeat_group_ids": ["5ff8be1e-1ce8-4732-a997-62661a1aa1ee"]
+    },
+    {
+      "offer_slug": "mcs-full",
+      "active_state": "active",
+      "bundle_key": "mcs-standard-path:v1",
+      "currency": "usd",
+      "price_cents": 299700,
+      "native_price_ids": ["price_1TkYJfA7hTBWpVVqm502swAb"],
+      "heartbeat_group_ids": ["917a7a35-2ea8-4fb3-999a-26949d9de4da"]
+    },
+    {
+      "offer_slug": "pcc-full",
+      "active_state": "active",
+      "bundle_key": "pcc-actc-full:v1",
+      "currency": "usd",
+      "price_cents": 399900,
+      "native_price_ids": ["price_1TIcnWA7hTBWpVVqJHoGwLnO"],
+      "heartbeat_group_ids": ["a8e3d6fd-00ea-4213-9cc3-05acedc57f74"]
+    },
+    {
+      "offer_slug": "supervision-inaugural",
+      "active_state": "active",
+      "bundle_key": "coaching-supervision-mastery:v1",
+      "currency": "usd",
+      "price_cents": 399600,
+      "native_price_ids": ["price_1Tvz3MA7hTBWpVVqhF708kPv"],
+      "heartbeat_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"]
+    },
+    {
+      "offer_slug": "supervision-regular",
+      "active_state": "active_future_cohort",
+      "bundle_key": "coaching-supervision-mastery:v1",
+      "currency": "usd",
+      "price_cents": 479600,
+      "native_price_ids": ["price_1Tvz3MA7hTBWpVVq9gL3v49F"],
+      "heartbeat_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"]
+    }
+  ],
+  "sanitized_binding_summary": {
+    "route_count": 2,
+    "offer_slugs": ["supervision-inaugural", "supervision-regular"]
+  },
+  "initial_local_comparison": {
+    "active_checkout_without_entitlement_offer": [
+      "acc-group-mentoring",
+      "acc-group-supervision",
+      "acc-individual-mentoring",
+      "acc-module-2",
+      "acc-module-3",
+      "acc-module-4",
+      "actc-group-supervision",
+      "actc-module-1",
+      "actc-module-2",
+      "actc-module-3",
+      "actc-module-4",
+      "actc-recording-review",
+      "mcq-eval-acc-bars",
+      "mcq-eval-bundle",
+      "mcq-eval-mcc-bars",
+      "mcq-eval-pcc-markers",
+      "mcq-program-a-foundations",
+      "mcs-cohort-sept-friday",
+      "mcs-cohort-sept-thursday",
+      "mcs-foundations-es",
+      "mcs-foundations-ja",
+      "mentor-acc",
+      "mentor-mcc",
+      "mentor-pcc",
+      "pcc-group-mentoring",
+      "pcc-group-supervision",
+      "pcc-individual-mentoring",
+      "pcc-module-1",
+      "pcc-module-2",
+      "pcc-module-3",
+      "pcc-module-4"
+    ],
+    "entitlement_offer_absent_from_checkout": ["mcs-full"],
+    "entitlement_offers_without_binding_route": [
+      "acc-full",
+      "acc-module-1",
+      "acc-pcc-full",
+      "actc-full",
+      "mcs-full",
+      "pcc-full"
+    ],
+    "overlapping_offer_field_checks": [
+      {
+        "offer_slug": "acc-full",
+        "checkout_active": true,
+        "catalog_active_state": "active",
+        "currency_match": true,
+        "price_cents_match": true,
+        "native_price_ids_match": true,
+        "heartbeat_group_ids_match": true,
+        "binding_route_present": false
+      },
+      {
+        "offer_slug": "acc-module-1",
+        "checkout_active": true,
+        "catalog_active_state": "active",
+        "currency_match": true,
+        "price_cents_match": true,
+        "native_price_ids_match": true,
+        "heartbeat_group_ids_match": true,
+        "binding_route_present": false
+      },
+      {
+        "offer_slug": "acc-pcc-full",
+        "checkout_active": true,
+        "catalog_active_state": "active",
+        "currency_match": true,
+        "price_cents_match": true,
+        "native_price_ids_match": true,
+        "heartbeat_group_ids_match": true,
+        "binding_route_present": false
+      },
+      {
+        "offer_slug": "actc-full",
+        "checkout_active": true,
+        "catalog_active_state": "active",
+        "currency_match": true,
+        "price_cents_match": true,
+        "native_price_ids_match": true,
+        "heartbeat_group_ids_match": true,
+        "binding_route_present": false
+      },
+      {
+        "offer_slug": "pcc-full",
+        "checkout_active": true,
+        "catalog_active_state": "active",
+        "currency_match": true,
+        "price_cents_match": true,
+        "native_price_ids_match": true,
+        "heartbeat_group_ids_match": true,
+        "binding_route_present": false
+      },
+      {
+        "offer_slug": "supervision-inaugural",
+        "checkout_active": true,
+        "catalog_active_state": "active",
+        "currency_match": true,
+        "price_cents_match": true,
+        "native_price_ids_match": true,
+        "heartbeat_group_ids_match": true,
+        "binding_route_present": true
+      },
+      {
+        "offer_slug": "supervision-regular",
+        "checkout_active": false,
+        "catalog_active_state": "active_future_cohort",
+        "currency_match": true,
+        "price_cents_match": true,
+        "native_price_ids_match": true,
+        "heartbeat_group_ids_match": true,
+        "binding_route_present": true
+      }
+    ],
+    "interpretation": [
+      "All seven overlapping offer records match on currency, total price, native price IDs when direct and installment IDs are considered together, and Heartbeat group IDs.",
+      "Coverage gaps are baseline observations only; they are not retirement, migration, publication, or provider-state decisions.",
+      "The checkout file is locally modified, while the selected safe fields are unchanged from its repository HEAD. Excluded fields were not inspected or emitted."
+    ]
+  },
+  "next_required_source_reads": [
+    "Tandemweb localized publishing and sale-mode owners for current variants and checkout lineage",
+    "native Student Roster spreadsheet metadata plus bounded Product Map and header ranges, with no student rows",
+    "supported read-only Stripe product and price relationships in both account namespaces",
+    "supported read-only Heartbeat group and course metadata",
+    "supported read-only Plutio item, template, agreement, and payment-plan relationships",
+    "source-owned curriculum, assessment, accepted schedule, delivery-block, and pool identities"
+  ]
+}

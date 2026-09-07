@@ -1,0 +1,1662 @@
+{
+  "snapshot_id": "NC-20260907-004-checkpoint-c-source-authority",
+  "captured_at_utc": "2026-09-07T18:33:48.435Z",
+  "program_binding_observed_read_only": {
+    "program_id": "program:company-os",
+    "state_revision": 253,
+    "work_item": "work:student-product-catalog-source-reconciliation",
+    "status": "active"
+  },
+  "privacy_boundary": {
+    "student_or_person_rows_read": 0,
+    "provider_member_or_progress_rows_read": 0,
+    "retained": "source paths, hashes, public program labels, catalog-safe IDs, commercial terms, schedule blocks, and aggregate status only",
+    "excluded": "credentials, invitation codes, secret URLs, raw provider payloads, invoices, students, members, progress, and assessment records"
+  },
+  "repositories": {
+    "nanoclaw_audit": {
+      "root": "/Users/xbohdpukc/dev/NanoClaw-student-catalog-20260907",
+      "branch": "codex/student-catalog-reconciliation-20260907",
+      "head": "ab8a3c99df184badeed58f9616daaa98f70d6510"
+    },
+    "tandemweb": {
+      "root": "/Users/xbohdpukc/dev/tandemweb",
+      "branch": "codex/lucid-calendar-holiday-policy",
+      "head": "681f9f72404c06434e163f59d6c5764bd9fa7ee2"
+    },
+    "courses": {
+      "root": "/Users/xbohdpukc/dev/courses",
+      "branch": "main",
+      "head": "062b346e0da0bea4fdab3e6ba67dea966add4fed"
+    },
+    "coach_grader": {
+      "root": "/Users/xbohdpukc/dev/coach-grader",
+      "branch": "codex/coaching-moments-tandem-export",
+      "head": "a065aa8b2089639ff5ae1f2d7f9b6c56d985e6cc"
+    }
+  },
+  "sales_release_lineage": {
+    "commit": "1449812c1e716135cd90c5d28c5a80d31ff197a0",
+    "subject": "merge: preserve current product identity release in Sales rollout",
+    "ancestor_of_audit_branch": false,
+    "ancestor_of_primary_checkout_head": false,
+    "interpretation": "Deployed Sales lineage is separate current evidence and was not merged into this audit branch."
+  },
+  "checkout_and_publishing": {
+    "counts": {
+      "checkout_entries": 47,
+      "checkout_active": 37,
+      "target_page_families": 9,
+      "static_checkout_slugs_in_target_pages": 30,
+      "active_checkout_slugs_with_target_static_reference": 30,
+      "active_checkout_slugs_without_target_static_reference": 7,
+      "localized_foundations_variants": 3
+    },
+    "source_files": [
+      {
+        "path": "pages/acc/05-section-program-overview.html",
+        "exists": true,
+        "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add",
+        "status": "",
+        "last_commit": "325c6194893089cc434450959bb2b1827445696a"
+      },
+      {
+        "path": "pages/pcc/05-section-program-overview.html",
+        "exists": true,
+        "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa",
+        "status": "",
+        "last_commit": "325c6194893089cc434450959bb2b1827445696a"
+      },
+      {
+        "path": "pages/actc/05-section-program-overview.html",
+        "exists": true,
+        "sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7",
+        "status": "",
+        "last_commit": "325c6194893089cc434450959bb2b1827445696a"
+      },
+      {
+        "path": "pages/acc-pcc-certification/05-section-program-overview.html",
+        "exists": true,
+        "sha256": "f53858c74ca62064ca5e07b2d6f941fda82f8c86f089f6ae01ca7d1daa6bd63b",
+        "status": "",
+        "last_commit": "8b71638bff3c59c323f1baadfb648ab59c54b741"
+      },
+      {
+        "path": "pages/mcs-advanced-accreditation-mentor-coaching/02-section-what-you-get.html",
+        "exists": true,
+        "sha256": "5c126a310a687ef59c9fa437d8f4f154fc8638d932f13b5a71d64dd6359c27d7",
+        "status": "",
+        "last_commit": "ef1bd9cf4e6b8e32b5f1135f9de5af8e5fb97534"
+      },
+      {
+        "path": "pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+        "exists": true,
+        "sha256": "b7851ef1c8e816e8f7ae662dc858e2bb6f75ac91df410bb2a424fb381ec2eb31",
+        "status": "",
+        "last_commit": "ad67d0bdadabfeb71083d1f8cf850431b003c81b"
+      },
+      {
+        "path": "pages/coaching-supervisor-training/04-section-curriculum.html",
+        "exists": true,
+        "sha256": "604d6190354e31a32002a46c37a40ec7b58973be341c60b120e0a887c1cbb794",
+        "status": "",
+        "last_commit": "3fd883bdf4cfc588dfc9b33adc8b384722bb28be"
+      },
+      {
+        "path": "pages/coaching-supervisor-training/08-section-founding-cohort.html",
+        "exists": true,
+        "sha256": "28c69807cf18be6c199e08117d0195fe5429ea1a15f3f337ac88ee2d19907eeb",
+        "status": "",
+        "last_commit": "325c6194893089cc434450959bb2b1827445696a"
+      },
+      {
+        "path": "data/checkout/products.json",
+        "exists": true,
+        "sha256": "e7dc68f42709feaf1643971363c264bd73ec7d17c61fb64128b42890f5369011",
+        "status": "M data/checkout/products.json",
+        "last_commit": "84f8ddd5f58247a5ddf9125ca05577a2d14638d1"
+      }
+    ],
+    "pages": [
+      {
+        "source_dir": "pages/acc",
+        "language": "en",
+        "slug": "/icf/acc-coach-certification-training/",
+        "canonical_url": "https://tandemcoach.co/icf/acc-coach-certification-training/",
+        "meta_file": {
+          "path": "pages/acc/meta.json",
+          "exists": true,
+          "sha256": "69a7382a3a29231b2cfb0dd6d8e2eda711f9796b0f792bc137f955cb2f822271",
+          "status": "",
+          "last_commit": "cc308f1c383987c391ff0c90a1df5373deb7bc21"
+        },
+        "checkout_sources": [
+          {
+            "file": "pages/acc/05-section-program-overview.html",
+            "file_sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add",
+            "checkout_slugs": [
+              "acc-full",
+              "acc-group-mentoring",
+              "acc-group-supervision",
+              "acc-individual-mentoring",
+              "acc-module-1",
+              "acc-module-2",
+              "acc-module-3",
+              "acc-module-4"
+            ]
+          },
+          {
+            "file": "pages/acc/11-section-final-cta.html",
+            "file_sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb",
+            "checkout_slugs": [
+              "acc-full",
+              "acc-group-mentoring",
+              "acc-group-supervision",
+              "acc-individual-mentoring",
+              "acc-module-1",
+              "acc-module-2",
+              "acc-module-3",
+              "acc-module-4"
+            ]
+          }
+        ]
+      },
+      {
+        "source_dir": "pages/pcc",
+        "language": "en",
+        "slug": "/icf/pcc-professional-coach-certification/",
+        "canonical_url": "https://tandemcoach.co/icf/pcc-professional-coach-certification/",
+        "meta_file": {
+          "path": "pages/pcc/meta.json",
+          "exists": true,
+          "sha256": "a8aa023f169c653602f08a73b64b4e0c9cc01a023998976752725d268d38d544",
+          "status": "",
+          "last_commit": "67904aa9ba8e204f476dd59de5fb798cf7dc0a75"
+        },
+        "checkout_sources": [
+          {
+            "file": "pages/pcc/05-section-program-overview.html",
+            "file_sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa",
+            "checkout_slugs": [
+              "pcc-full",
+              "pcc-group-mentoring",
+              "pcc-group-supervision",
+              "pcc-individual-mentoring",
+              "pcc-module-1",
+              "pcc-module-2",
+              "pcc-module-3",
+              "pcc-module-4"
+            ]
+          },
+          {
+            "file": "pages/pcc/11-section-final-cta.html",
+            "file_sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537",
+            "checkout_slugs": [
+              "pcc-full",
+              "pcc-group-mentoring",
+              "pcc-group-supervision",
+              "pcc-individual-mentoring",
+              "pcc-module-1",
+              "pcc-module-2",
+              "pcc-module-3",
+              "pcc-module-4"
+            ]
+          }
+        ]
+      },
+      {
+        "source_dir": "pages/actc",
+        "language": "en",
+        "slug": "/icf/actc-team-coaching-training/",
+        "canonical_url": "https://tandemcoach.co/icf/actc-team-coaching-training/",
+        "meta_file": {
+          "path": "pages/actc/meta.json",
+          "exists": true,
+          "sha256": "0fcb7d27b81b03f50026aba3b3fb382b21bf4caf030a8e5248c5b68e6921bd6d",
+          "status": "",
+          "last_commit": "cc308f1c383987c391ff0c90a1df5373deb7bc21"
+        },
+        "checkout_sources": [
+          {
+            "file": "pages/actc/05-section-program-overview.html",
+            "file_sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7",
+            "checkout_slugs": [
+              "actc-full",
+              "actc-group-supervision",
+              "actc-module-1",
+              "actc-module-2",
+              "actc-module-3",
+              "actc-module-4",
+              "actc-recording-review"
+            ]
+          },
+          {
+            "file": "pages/actc/09-section-comparison.html",
+            "file_sha256": "d85b97136eb2e1fc05c84ee4590219ef492f03712bc3fa52f8076cb3c2003e67",
+            "checkout_slugs": ["actc-full"]
+          },
+          {
+            "file": "pages/actc/11-section-final-cta.html",
+            "file_sha256": "b40b0a63c8a740325278debf2bc0cea15e388907b1f49c59b1da71b455c5505d",
+            "checkout_slugs": [
+              "actc-full",
+              "actc-group-supervision",
+              "actc-module-1",
+              "actc-module-2",
+              "actc-module-3",
+              "actc-module-4",
+              "actc-recording-review"
+            ]
+          }
+        ]
+      },
+      {
+        "source_dir": "pages/acc-pcc-certification",
+        "language": "en",
+        "slug": "/icf/acc-pcc-certification/",
+        "canonical_url": "https://tandemcoach.co/icf/acc-pcc-certification/",
+        "meta_file": {
+          "path": "pages/acc-pcc-certification/meta.json",
+          "exists": true,
+          "sha256": "dfa101b98eace683ab348c156c5c0c33f88f0580221dc637886c1f8b06e6a005",
+          "status": "",
+          "last_commit": "bca5621cad62f0f2d8bcb0d5f223588c0904a639"
+        },
+        "checkout_sources": [
+          {
+            "file": "pages/acc-pcc-certification/05-section-program-overview.html",
+            "file_sha256": "f53858c74ca62064ca5e07b2d6f941fda82f8c86f089f6ae01ca7d1daa6bd63b",
+            "checkout_slugs": ["acc-pcc-full"]
+          },
+          {
+            "file": "pages/acc-pcc-certification/11-section-final-cta.html",
+            "file_sha256": "fe391ccbb0bea59d55b157e8b220d32d495d227913954be3844ac92f9569b319",
+            "checkout_slugs": ["acc-pcc-full"]
+          }
+        ]
+      },
+      {
+        "source_dir": "pages/mcs-advanced-accreditation-mentor-coaching",
+        "language": "en",
+        "slug": "/mcs/advanced-accreditation-mentor-coaching/",
+        "canonical_url": "https://tandemcoach.co/mcs/advanced-accreditation-mentor-coaching/",
+        "meta_file": {
+          "path": "pages/mcs-advanced-accreditation-mentor-coaching/meta.json",
+          "exists": true,
+          "sha256": "010c543444c5aac13e7827534eb7007184f0aba163a7b99876b05f5a907c8440",
+          "status": "",
+          "last_commit": "4b7030d778cebbd1f49563b0c3896c969b0abefc"
+        },
+        "checkout_sources": [
+          {
+            "file": "pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+            "file_sha256": "b7851ef1c8e816e8f7ae662dc858e2bb6f75ac91df410bb2a424fb381ec2eb31",
+            "checkout_slugs": [
+              "mcs-cohort-sept-friday",
+              "mcs-cohort-sept-thursday"
+            ]
+          }
+        ]
+      },
+      {
+        "source_dir": "pages/coaching-supervisor-training",
+        "language": "en",
+        "slug": "coaching-supervisor-training",
+        "canonical_url": "https://tandemcoach.co/coaching-supervisor-training/",
+        "meta_file": {
+          "path": "pages/coaching-supervisor-training/meta.json",
+          "exists": true,
+          "sha256": "be8ebec4792593e1da0f83b0b07e34fcec74914bb84437042cd04e2f06613dbb",
+          "status": "",
+          "last_commit": "83036565d6f07a5438798d191645cf901923bb92"
+        },
+        "checkout_sources": [
+          {
+            "file": "pages/coaching-supervisor-training/08-section-founding-cohort.html",
+            "file_sha256": "28c69807cf18be6c199e08117d0195fe5429ea1a15f3f337ac88ee2d19907eeb",
+            "checkout_slugs": ["supervision-inaugural"]
+          }
+        ]
+      },
+      {
+        "source_dir": "pages/mentor-coaching-foundations",
+        "language": "en",
+        "slug": "/mcs/mentor-coaching-foundations/",
+        "canonical_url": "https://tandemcoach.co/mcs/mentor-coaching-foundations/",
+        "meta_file": {
+          "path": "pages/mentor-coaching-foundations/meta.json",
+          "exists": true,
+          "sha256": "9baad3b123b979238998562a66b63fc03e79a86b3d5bd7188693b7b7a58434de",
+          "status": "",
+          "last_commit": "84f8ddd5f58247a5ddf9125ca05577a2d14638d1"
+        },
+        "checkout_sources": [
+          {
+            "file": "pages/mentor-coaching-foundations/01-section-hero.html",
+            "file_sha256": "b2caed8a0b70ad7c21832d45251da42429d044b3bb758558bffae3dff31ce8f0",
+            "checkout_slugs": ["mcq-program-a-foundations"]
+          },
+          {
+            "file": "pages/mentor-coaching-foundations/03-section-who-this-is-for.html",
+            "file_sha256": "196197a4641d3480f5e87556992ba330743b908e8f5de29bb2b609ee4e77348e",
+            "checkout_slugs": ["mcq-program-a-foundations"]
+          },
+          {
+            "file": "pages/mentor-coaching-foundations/04-section-program-overview.html",
+            "file_sha256": "7ae5ce5404f8dbf978c1ffe1eff90f5f511dd588725491135cb5ae183fc33bff",
+            "checkout_slugs": ["mcq-program-a-foundations"]
+          },
+          {
+            "file": "pages/mentor-coaching-foundations/09-section-pricing-checkout.html",
+            "file_sha256": "939790f424f1cfafd79986c9df84e96b41b8f1911ac8eb800b5ee964858b9c0d",
+            "checkout_slugs": ["mcq-program-a-foundations"]
+          },
+          {
+            "file": "pages/mentor-coaching-foundations/11-section-final-cta.html",
+            "file_sha256": "8df48e0d49a739f75b4e1bacf079834ea5edc02ac10cb4bde073e4f3690bb862",
+            "checkout_slugs": ["mcq-program-a-foundations"]
+          },
+          {
+            "file": "pages/mentor-coaching-foundations/13-section-sticky-exit.html",
+            "file_sha256": "240a6a6045ca9bfaa87fab6df124287837fba4ee7f6c71ab569e8786e5986de3",
+            "checkout_slugs": ["mcq-program-a-foundations"]
+          }
+        ]
+      },
+      {
+        "source_dir": "pages/es-mentor-coaching-foundations",
+        "language": "es",
+        "slug": "/es/fundamentos-mentor-coaching/",
+        "canonical_url": "https://tandemcoach.co/es/fundamentos-mentor-coaching/",
+        "meta_file": {
+          "path": "pages/es-mentor-coaching-foundations/meta.json",
+          "exists": true,
+          "sha256": "6f94a80c2ed144db5a5e391a6d8ec198c747d462ef15ef41cc468053029fd20b",
+          "status": "",
+          "last_commit": "84f8ddd5f58247a5ddf9125ca05577a2d14638d1"
+        },
+        "checkout_sources": [
+          {
+            "file": "pages/es-mentor-coaching-foundations/01-content.html",
+            "file_sha256": "46266a1bb1266e2a3faa92f5c5f82f218e475a61de9dbb8499be88df7a63e492",
+            "checkout_slugs": ["mcs-foundations-es"]
+          }
+        ]
+      },
+      {
+        "source_dir": "pages/ja-mentor-coaching-foundations",
+        "language": "ja",
+        "slug": "/ja/mentor-coaching-foundations/",
+        "canonical_url": "https://tandemcoach.co/ja/mentor-coaching-foundations/",
+        "meta_file": {
+          "path": "pages/ja-mentor-coaching-foundations/meta.json",
+          "exists": true,
+          "sha256": "edfeb73c60a8276c9891c2785052c4c19bbf5ad8b244b7dc6ff57ae2f7cf1b9b",
+          "status": "",
+          "last_commit": "84f8ddd5f58247a5ddf9125ca05577a2d14638d1"
+        },
+        "checkout_sources": [
+          {
+            "file": "pages/ja-mentor-coaching-foundations/01-content.html",
+            "file_sha256": "2f60da2fa43889f9fa463213ff18336a4f085207227321990efa2090bea17c9c",
+            "checkout_slugs": ["mcs-foundations-ja"]
+          }
+        ]
+      }
+    ],
+    "localized_variants": [
+      {
+        "offer_slug": "mcq-program-a-foundations",
+        "active": true,
+        "program": "mcq",
+        "currency": "usd",
+        "price_cents": 29900,
+        "regional_price_cents": null,
+        "native_price_id": "price_1TMwqZA7hTBWpVVqjeJ6h332",
+        "native_groups": [
+          {
+            "id": "4c54983c-0e7b-4dd0-aebc-0f0cb1c82298",
+            "native_label": "Mentor Coaching Foundation",
+            "native_exists": true
+          }
+        ],
+        "source_course_id": "abd312e4-b01a-4718-8918-f79d081753c0",
+        "source_course_native_exists": true,
+        "entitlement_offer_present": false,
+        "binding_route_present": false,
+        "static_page_sources": [
+          "pages/mentor-coaching-foundations/01-section-hero.html",
+          "pages/mentor-coaching-foundations/03-section-who-this-is-for.html",
+          "pages/mentor-coaching-foundations/04-section-program-overview.html",
+          "pages/mentor-coaching-foundations/09-section-pricing-checkout.html",
+          "pages/mentor-coaching-foundations/11-section-final-cta.html",
+          "pages/mentor-coaching-foundations/13-section-sticky-exit.html"
+        ]
+      },
+      {
+        "offer_slug": "mcs-foundations-es",
+        "active": true,
+        "program": "mcq",
+        "currency": "usd",
+        "price_cents": 29900,
+        "regional_price_cents": 19900,
+        "native_price_id": "price_1TMwqZA7hTBWpVVqjeJ6h332",
+        "native_groups": [
+          {
+            "id": "ad1ee8f1-4b43-41a3-9239-34bdc36a1d23",
+            "native_label": "Fundamentos de Mentor Coaching",
+            "native_exists": true
+          }
+        ],
+        "source_course_id": "7be7606b-8da7-4214-82f2-1a235412fa12",
+        "source_course_native_exists": true,
+        "entitlement_offer_present": false,
+        "binding_route_present": false,
+        "static_page_sources": [
+          "pages/es-mentor-coaching-foundations/01-content.html"
+        ]
+      },
+      {
+        "offer_slug": "mcs-foundations-ja",
+        "active": true,
+        "program": "mcq",
+        "currency": "usd",
+        "price_cents": 29900,
+        "regional_price_cents": null,
+        "native_price_id": "price_1TMwqZA7hTBWpVVqjeJ6h332",
+        "native_groups": [
+          {
+            "id": "b817b870-9d25-415f-bc20-d8a6e9437ccb",
+            "native_label": "メンターコーチング基礎講座",
+            "native_exists": true
+          }
+        ],
+        "source_course_id": "360068af-9fed-4ea3-8e61-8eadf6193b0e",
+        "source_course_native_exists": true,
+        "entitlement_offer_present": false,
+        "binding_route_present": false,
+        "static_page_sources": [
+          "pages/ja-mentor-coaching-foundations/01-content.html"
+        ]
+      }
+    ],
+    "active_without_target_static_reference": [
+      "mcq-eval-acc-bars",
+      "mcq-eval-bundle",
+      "mcq-eval-mcc-bars",
+      "mcq-eval-pcc-markers",
+      "mentor-acc",
+      "mentor-mcc",
+      "mentor-pcc"
+    ],
+    "public_read_observations": {
+      "observed_at_utc": "2026-09-07T18:33:48.955Z",
+      "method": "public web open/search plus separate direct-fetch boundary check",
+      "pages": [
+        {
+          "url": "https://tandemcoach.co/icf/acc-coach-certification-training/",
+          "read_status": "public web open available",
+          "facts": [
+            "$399 module and $3,999 full-program terms visible",
+            "September 7, 2026 sold-out waitlist visible",
+            "later module schedules visible"
+          ],
+          "exact_checkout_slug_dom": "unavailable; direct DOM fetch returned HTTP 403"
+        },
+        {
+          "url": "https://tandemcoach.co/icf/pcc-professional-coach-certification/",
+          "read_status": "public web open available",
+          "facts": [
+            "$399 module and $3,999 full-program terms visible",
+            "current module schedules visible"
+          ],
+          "exact_checkout_slug_dom": "unavailable; direct DOM fetch returned HTTP 403"
+        },
+        {
+          "url": "https://tandemcoach.co/icf/actc-team-coaching-training/",
+          "read_status": "public web open available",
+          "facts": [
+            "$399 module and $2,499 full-program terms visible",
+            "current module schedules visible"
+          ],
+          "exact_checkout_slug_dom": "unavailable; direct DOM fetch returned HTTP 403"
+        },
+        {
+          "url": "https://tandemcoach.co/icf/acc-pcc-certification/",
+          "read_status": "public web open available",
+          "facts": ["program page exists"],
+          "exact_checkout_slug_dom": "unavailable; direct DOM fetch returned HTTP 403"
+        },
+        {
+          "url": "https://tandemcoach.co/mcs/advanced-accreditation-mentor-coaching/",
+          "read_status": "public web open available",
+          "facts": [
+            "one $2,997 program-wide enrollment and 3 monthly payments of $999 visible",
+            "September 24 Thursday available",
+            "September 25 Friday sold out with waitlist",
+            "January 7 Thursday and January 8 Friday available"
+          ],
+          "exact_checkout_slug_dom": "unavailable; direct DOM fetch returned HTTP 403"
+        },
+        {
+          "url": "https://tandemcoach.co/coaching-supervisor-training/",
+          "read_status": "public web open available",
+          "facts": [
+            "$3,996 founding cohort and 4 monthly payments of $999 visible",
+            "current 2026-2027 cohort schedules visible"
+          ],
+          "exact_checkout_slug_dom": "unavailable; direct DOM fetch returned HTTP 403"
+        },
+        {
+          "url": "https://tandemcoach.co/mcs/mentor-coaching-foundations/",
+          "read_status": "public web search/open available",
+          "facts": ["English Foundations page exists"],
+          "exact_checkout_slug_dom": "unavailable; direct DOM fetch returned HTTP 403"
+        },
+        {
+          "url": "https://tandemcoach.co/es/fundamentos-mentor-coaching/",
+          "read_status": "public web search result available; direct open tool returned internal error",
+          "facts": [
+            "Spanish Foundations content and standard $299/regional $199 terms visible in search read"
+          ],
+          "exact_checkout_slug_dom": "unavailable; direct DOM fetch returned HTTP 403"
+        },
+        {
+          "url": "https://tandemcoach.co/ja/mentor-coaching-foundations/",
+          "read_status": "public web open available",
+          "facts": ["Japanese Foundations page exists"],
+          "exact_checkout_slug_dom": "unavailable; direct DOM fetch returned HTTP 403"
+        }
+      ],
+      "boundary": "Public text and availability are presentation evidence. They do not prove exact data-checkout attributes, provider IDs, canonical capacity, or deployed source commit."
+    }
+  },
+  "curriculum_and_bundles": {
+    "counts": {
+      "course_json_records": 30,
+      "course_json_native_course_ids": 27,
+      "catalog_declared_course_ids": 20,
+      "entitlement_components": 42,
+      "entitlement_bundles": 7,
+      "entitlement_offers": 8,
+      "catalog_declared_course_ids_found_in_scanned_course_manifests": 18
+    },
+    "authority_files": [
+      {
+        "path": "community/icf/CLAUDE.md",
+        "exists": true,
+        "sha256": "1e172da8dfcafa88778b7327ce59a9f1173cb6a61d9c239862d4e1f3c835fbc0",
+        "status": "",
+        "last_commit": "d66704de7e8b5e0a215fe57c550fecf34f2d605d"
+      },
+      {
+        "path": "community/icf/STUDENT-TRACKING-FRAMEWORK.md",
+        "exists": true,
+        "sha256": "47113a509b8b114558964590d410c8c707b3f567fb8b74a15185042304ad32e4",
+        "status": "",
+        "last_commit": "81b92a379bb0a353ba8081472cd65d219e5d8d83"
+      },
+      {
+        "path": "community/icf/supervision/COURSE-STRUCTURE.md",
+        "exists": true,
+        "sha256": "236a1f5ad52f08fd8d5b7612a585649237564f28c46d4c6bb655f8180461e103",
+        "status": "",
+        "last_commit": "e39235ac9d1fc5f0c7978de840bad86145df507a"
+      },
+      {
+        "path": "community/icf/supervision/course.json",
+        "exists": true,
+        "sha256": "03af61b147303c2aeb266edbb9731c12301fe794b790afb7a3a9310a200db96b",
+        "status": "",
+        "last_commit": "e39235ac9d1fc5f0c7978de840bad86145df507a"
+      },
+      {
+        "path": "community/icf/mentor-coaching/course.json",
+        "exists": true,
+        "sha256": "e8b9bbea19538e35d8adeb4adbbcb98a9367bd4348036c772d8fd0635d09037f",
+        "status": "",
+        "last_commit": "7f91ec2ec7769eb1563d66238cb1947f88527bf2"
+      },
+      {
+        "path": "community/icf/mentor-coaching/i18n/es/course.json",
+        "exists": true,
+        "sha256": "15f077922edc531640cb3bbd114ff277e401703ea626f9dfd831b3c3a88ed30f",
+        "status": "",
+        "last_commit": "7f91ec2ec7769eb1563d66238cb1947f88527bf2"
+      },
+      {
+        "path": "community/icf/mentor-coaching/i18n/ja/course.json",
+        "exists": true,
+        "sha256": "be3e70e52372a3e01863ba3564904b512a1ae3230d0c5cd4ce52cac72b4a106a",
+        "status": "",
+        "last_commit": "4624e01e62c621c7f8c4c2c7c2b99123b29da24b"
+      },
+      {
+        "path": "community/icf/mentor-coaching/practicum-2026/course.json",
+        "exists": true,
+        "sha256": "9337f71cc0174ea6b0de37ed95c38c5ccca993f33a2b4524aae4cf232b2b017d",
+        "status": "M community/icf/mentor-coaching/practicum-2026/course.json",
+        "last_commit": "7f91ec2ec7769eb1563d66238cb1947f88527bf2"
+      },
+      {
+        "path": "community/icf/tests/acc/course.json",
+        "exists": true,
+        "sha256": "fef2ffcedb80f7415df2dae0e8860fe7045b16607f9fe53dd7fa8e43584000dd",
+        "status": "",
+        "last_commit": "a85875dfeb159fdfddbdb1ec671e3806c70f083e"
+      },
+      {
+        "path": "community/icf/tests/pcc/course.json",
+        "exists": true,
+        "sha256": "4b3eda161e053b0e1b0de295f01dfa7f64853ef4339bb84a72c540f0e27b9a70",
+        "status": "",
+        "last_commit": "6f959e301e164717d4b601f6a8fd9bfb5740e686"
+      },
+      {
+        "path": "community/icf/tests/actc/course.json",
+        "exists": true,
+        "sha256": "893c12a5770f63462e72c61d3b56c4b513e84dd2e2be6ab183e84f6e0c6bdc08",
+        "status": "",
+        "last_commit": "d66704de7e8b5e0a215fe57c550fecf34f2d605d"
+      }
+    ],
+    "course_records": [
+      {
+        "path": "community/icf/aatc/input/heartbeat/actc-exam-prep/course.json",
+        "sha256": "0d0ee418214fafb91b42674ebf300cc2a9f7fadbddbab6866e23ad1cb35f062d",
+        "status": "",
+        "last_commit": "",
+        "slug": "actc-exam-prep",
+        "title": "Mastering the ICF ACTC Team Coaching Exam: Your Path to Certification",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "0574df6b-1159-41f7-b52b-2e058a885856",
+        "heartbeat_cohort_id": "afcc3a68-63fb-4a97-993c-86594df5aead",
+        "module_count": 7
+      },
+      {
+        "path": "community/icf/aatc/input/heartbeat/l2-actc-assessment/course.json",
+        "sha256": "2031e7400951b483690f1cb1d21c1f83feeb9951cba8591bf01baf8b82b41d2b",
+        "status": "",
+        "last_commit": "",
+        "slug": "l2-actc-assessment",
+        "title": "ACTC ONLY: Team Coaching Assessment and Feedback - Single Recording",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "8b9b0510-7bfd-4e16-ac4d-07e6393f2a31",
+        "heartbeat_cohort_id": "fcf5dedc-2cae-40d6-b92a-518efa773d35",
+        "module_count": 1
+      },
+      {
+        "path": "community/icf/aatc/input/heartbeat/l2-full-course/course.json",
+        "sha256": "412ea2954ef2155c58cb0d7486b85e895547ff1cc49b94bc7a132d97e7c7cdb0",
+        "status": "",
+        "last_commit": "",
+        "slug": "l2-full-course",
+        "title": "FULL COURSE: Level 2: Elevate Coaching: Coaching Teams and Organizations",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "205bec70-6a26-4fc5-b836-b2718a67447d",
+        "heartbeat_cohort_id": "0f8acfef-4cbd-4219-bce9-02449dd0d8ef",
+        "module_count": 13
+      },
+      {
+        "path": "community/icf/aatc/input/heartbeat/l2-group-mentoring/course.json",
+        "sha256": "c52e905722063e0155782ce26bb737f5870a2a9bf4a5176b3e293b852611780f",
+        "status": "",
+        "last_commit": "",
+        "slug": "l2-group-mentoring",
+        "title": "Level 2: Group Mentoring",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "a3ec8de6-a854-4c41-b0d5-853ad272d1f0",
+        "heartbeat_cohort_id": "a2bec675-ceb9-432b-a50e-ac6c7e767d0d",
+        "module_count": 1
+      },
+      {
+        "path": "community/icf/aatc/input/heartbeat/l2-group-supervision/course.json",
+        "sha256": "7497a0c43a251e81d7edec5b9015c480d4bd03353fb34a831a65fc1edc4c534b",
+        "status": "",
+        "last_commit": "",
+        "slug": "l2-group-supervision",
+        "title": "Group Supervision",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "ca2e4d23-3582-4e73-be7d-18d8ecbafdda",
+        "heartbeat_cohort_id": "0dcd27a0-477d-4dd7-a2c5-9c1f360e4a69",
+        "module_count": 1
+      },
+      {
+        "path": "community/icf/aatc/input/heartbeat/l2-individual-mentor-coaching/course.json",
+        "sha256": "4db39c847b64e1a9249f5de8f6b7ace45c9d9dbd50cea1ff9ced3a9124746bf9",
+        "status": "",
+        "last_commit": "",
+        "slug": "l2-individual-mentor-coaching",
+        "title": "Level 2: Individual Mentor Coaching and Coaching Assessments",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "ef42da65-acb6-4ee5-9b91-be1f2caa9358",
+        "heartbeat_cohort_id": "89ffc33a-0029-4a3f-9827-708fdba04db5",
+        "module_count": 1
+      },
+      {
+        "path": "community/icf/acc-module1/course.json",
+        "sha256": "9d3bd6cfac3e9993422212dff74ddace01d170d7c4144a6a6ca5a7da6c7623b8",
+        "status": "",
+        "last_commit": "81b92a379bb0a353ba8081472cd65d219e5d8d83",
+        "slug": "acc-module1",
+        "title": "ICF Level 1: Module 1 Coaching Fundamentals",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "27fffe4b-28f5-4f59-b705-71c131c9023b",
+        "heartbeat_cohort_id": "8750e33a-67f2-4bb7-aef1-cdbb5b1b127d",
+        "module_count": 2
+      },
+      {
+        "path": "community/icf/acc-module2/course.json",
+        "sha256": "e245c009f8e0e702c9a7a74efd9d1d9bb0998b43947222b7c6356eb8b4ea2f27",
+        "status": "",
+        "last_commit": "81b92a379bb0a353ba8081472cd65d219e5d8d83",
+        "slug": "acc-module2",
+        "title": "ICF Level 1: Module 2 Critical Coaching Skills",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "b7e4a9b4-2948-45e9-8d39-76fb9715af30",
+        "heartbeat_cohort_id": "b165ac5e-43d9-4e0e-8ea1-9f31e42ca8d4",
+        "module_count": 1
+      },
+      {
+        "path": "community/icf/acc-module3/course.json",
+        "sha256": "af0aa2cd6057a4e7af78721a5127357e2bb1c457b0c520fc319e6f19dcd096c5",
+        "status": "",
+        "last_commit": "81b92a379bb0a353ba8081472cd65d219e5d8d83",
+        "slug": "acc-module3",
+        "title": "ICF Level 1: Module 3 Coaching Client Mindsets and Beliefs",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "b889259e-b586-4ada-9102-cdf59bbd62eb",
+        "heartbeat_cohort_id": "40df9084-1cda-433d-bda9-9aac6c6f7d0b",
+        "module_count": 1
+      },
+      {
+        "path": "community/icf/acc-module4/course.json",
+        "sha256": "44f27f51cb10da935a63607440c3fdce3d2730724d8d8705cf25716fdabdff21",
+        "status": "",
+        "last_commit": "81b92a379bb0a353ba8081472cd65d219e5d8d83",
+        "slug": "acc-module4",
+        "title": "ICF Level 1: Module 4 Advanced Coaching Techniques",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "7a3cdcff-089e-47e7-bdae-c59e05ae0789",
+        "heartbeat_cohort_id": "4e2a5916-8c49-4179-846b-39e15e1e0f68",
+        "module_count": 1
+      },
+      {
+        "path": "community/icf/free-icf-competencies/course.json",
+        "sha256": "8b05fb73af540ea59f7ef508b0bd04c84f13ac38d4382717c821453447977c6e",
+        "status": "",
+        "last_commit": "2677eab08b77b11a50931fc823ec69f35bd849c6",
+        "slug": "free-icf-competencies",
+        "title": "Master the 2025 ICF Core Competencies",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "e7245369-e44b-49ba-9eb7-cb846cb0206a",
+        "heartbeat_cohort_id": "efc96468-1156-45a7-bfaa-c990edf57897",
+        "module_count": 9
+      },
+      {
+        "path": "community/icf/master-2025-competencies/course.json",
+        "sha256": "04840591108773f8176487e6127825fc8f45ac08cb56e877aaa366fdcb7e3d0d",
+        "status": "",
+        "last_commit": "6a92b4586494fbf9f114393580381a79f791cbc8",
+        "slug": "master-2025-competencies",
+        "title": "Master the 2025 ICF Core Competencies",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "6f0e5cd4-47c7-44e5-92dd-d0d5658a5471",
+        "heartbeat_cohort_id": "9d57fc28-50bd-442a-b997-5a152e8e3452",
+        "module_count": 9
+      },
+      {
+        "path": "community/icf/mentor-coaching/course.json",
+        "sha256": "e8b9bbea19538e35d8adeb4adbbcb98a9367bd4348036c772d8fd0635d09037f",
+        "status": "",
+        "last_commit": "7f91ec2ec7769eb1563d66238cb1947f88527bf2",
+        "slug": "mentor-coaching",
+        "title": "Mentor Coaching Foundations",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "abd312e4-b01a-4718-8918-f79d081753c0",
+        "heartbeat_cohort_id": "f2a36eca-a017-4536-9b83-368f51219895",
+        "module_count": 15
+      },
+      {
+        "path": "community/icf/mentor-coaching/i18n/es/course.json",
+        "sha256": "15f077922edc531640cb3bbd114ff277e401703ea626f9dfd831b3c3a88ed30f",
+        "status": "",
+        "last_commit": "7f91ec2ec7769eb1563d66238cb1947f88527bf2",
+        "slug": "mentor-coaching-es",
+        "title": "Fundamentos de Mentor Coaching",
+        "source_status": "module-1-heartbeat-drafts-live-verified",
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "7be7606b-8da7-4214-82f2-1a235412fa12",
+        "heartbeat_cohort_id": "f3abc1d5-3c80-43b7-885a-89acf014a7d0",
+        "module_count": 6
+      },
+      {
+        "path": "community/icf/mentor-coaching/i18n/fr/course.json",
+        "sha256": "a208c622965b59e1e5132c232888c32a807339e9ede8258dd7cc2501075fdda1",
+        "status": "",
+        "last_commit": "e51620446cb84375901078de230d506dcae53271",
+        "slug": "mcs-foundations-fr",
+        "title": "Fondamentaux du mentor coaching",
+        "source_status": "production-published-linked-resource-incident-open",
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "4aa45a9c-271d-4525-983d-0ea9864f31a6",
+        "heartbeat_cohort_id": "674dc326-1b7e-488a-b10c-1b764152a54f",
+        "module_count": 6
+      },
+      {
+        "path": "community/icf/mentor-coaching/i18n/ja/course.json",
+        "sha256": "be3e70e52372a3e01863ba3564904b512a1ae3230d0c5cd4ce52cac72b4a106a",
+        "status": "",
+        "last_commit": "4624e01e62c621c7f8c4c2c7c2b99123b29da24b",
+        "slug": "mentor-coaching-ja",
+        "title": "メンターコーチング基礎講座",
+        "source_status": "verified",
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "360068af-9fed-4ea3-8e61-8eadf6193b0e",
+        "heartbeat_cohort_id": "15b0d919-9c5d-4c37-b8a4-544aeb92a9dc",
+        "module_count": 6
+      },
+      {
+        "path": "community/icf/mentor-coaching/i18n/pl/course.json",
+        "sha256": "957d59531ffc3fa8deac32fafde8c99d578a43c04845a6e3f5c8dfa7df02d04f",
+        "status": "",
+        "last_commit": "7f1347cf48ed3e7b619a51c845209a1d023ec23a",
+        "slug": "mentor-coaching-pl",
+        "title": "Podstawy Mentoringu Coachingowego",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "5c356c78-ef28-426b-878d-06889628bccc",
+        "heartbeat_cohort_id": "86ca0250-c76f-474e-a887-2ec8c9b0d591",
+        "module_count": 1
+      },
+      {
+        "path": "community/icf/mentor-coaching/practicum-2026/course.json",
+        "sha256": "9337f71cc0174ea6b0de37ed95c38c5ccca993f33a2b4524aae4cf232b2b017d",
+        "status": "M community/icf/mentor-coaching/practicum-2026/course.json",
+        "last_commit": "7f91ec2ec7769eb1563d66238cb1947f88527bf2",
+        "slug": "practicum-2026",
+        "title": "Mentor Coaching Practicum — September 2026",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "381ea897-a636-440b-b30c-250c1d03d54b",
+        "heartbeat_cohort_id": "644ad414-d8a0-4c0e-a6b8-493e1568d2c7",
+        "module_count": 2
+      },
+      {
+        "path": "community/icf/pcc/foundations/course.json",
+        "sha256": "827ec4992bcb5854a186bfcfc31d8866bef57e19ed07f288836d15326d6b80a2",
+        "status": "",
+        "last_commit": "0cd10e6f77bd0fa879f62a75a6ac7e3ffdb3a575",
+        "slug": "pcc-foundations",
+        "title": "ICF Level 2: Foundations - ICF Competencies & Ethics Asynchronous Learning Modules",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "29ea12f4-8cce-42db-b011-cec6c50b2df0",
+        "heartbeat_cohort_id": "d735c158-e197-446c-9bce-b273e6c0456b",
+        "module_count": 4
+      },
+      {
+        "path": "community/icf/pcc/pcc-module1/course.json",
+        "sha256": "5daa48f21b6caac396ff9064cf182d98c0e7ba737153a3ed1656c440b556174c",
+        "status": "",
+        "last_commit": "0cd10e6f77bd0fa879f62a75a6ac7e3ffdb3a575",
+        "slug": "pcc-module1",
+        "title": "ICF Level 2: Module 1 System Coaching Mindset and Focus",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "9766b662-5d49-4282-8962-3372caad511c",
+        "heartbeat_cohort_id": "189e8d7c-83ba-43d1-ab85-a91993356478",
+        "module_count": 2
+      },
+      {
+        "path": "community/icf/pcc/pcc-module2/course.json",
+        "sha256": "2616baf8666df183fba877ad907dd08e44384134086b91056dfbb00f2d48953a",
+        "status": "",
+        "last_commit": "0cd10e6f77bd0fa879f62a75a6ac7e3ffdb3a575",
+        "slug": "pcc-module2",
+        "title": "ICF Level 2: Module 2 Coaching Organizational and Team Systems",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "b2241aa8-da14-48d2-8d6e-9d419b957e36",
+        "heartbeat_cohort_id": "6617fff8-1d28-465a-8d3b-919ba056f70d",
+        "module_count": 2
+      },
+      {
+        "path": "community/icf/pcc/pcc-module3/course.json",
+        "sha256": "60ae0a838c55a70905a5ef2336dd79f1229ff5e6bd340f7874ac38962cb5fd40",
+        "status": "",
+        "last_commit": "0cd10e6f77bd0fa879f62a75a6ac7e3ffdb3a575",
+        "slug": "pcc-module3",
+        "title": "ICF Level 2: Module 3 System Perception and Framing",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "17d6ce83-fdc6-422c-aa31-ebc1c8d7d12f",
+        "heartbeat_cohort_id": "c7d4d3b3-13a8-458e-b54a-dd602287a919",
+        "module_count": 2
+      },
+      {
+        "path": "community/icf/pcc/pcc-module4/course.json",
+        "sha256": "b3d670ce68f8713f211f3a7cce42414130ddca1236279db41cd019e32185ccd9",
+        "status": "",
+        "last_commit": "0cd10e6f77bd0fa879f62a75a6ac7e3ffdb3a575",
+        "slug": "pcc-module4",
+        "title": "ICF Level 2: Module 4 System Awareness",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "70572040-5e35-4d03-bf59-9c95934b5a61",
+        "heartbeat_cohort_id": "9e4d254d-520f-4626-87c7-5d105265b532",
+        "module_count": 2
+      },
+      {
+        "path": "community/icf/supervision/course.json",
+        "sha256": "03af61b147303c2aeb266edbb9731c12301fe794b790afb7a3a9310a200db96b",
+        "status": "",
+        "last_commit": "e39235ac9d1fc5f0c7978de840bad86145df507a",
+        "slug": "supervision",
+        "title": "Coaching Supervision Mastery",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "1f2febfe-eb34-463a-818e-ce7d0cac1251",
+        "heartbeat_cohort_id": "c110fd5f-792f-4e13-85aa-1d4c9789ca04",
+        "module_count": 11
+      },
+      {
+        "path": "community/icf/team-coaching-competencies/course.json",
+        "sha256": "1a2e0ae551f655f1b6276c32c6a7d1afd18754a11057ff586d154f6d5f118d00",
+        "status": "",
+        "last_commit": "6e54b8e416750bdef89ee4d39dd3240cd508ae97",
+        "slug": "team-coaching-competencies",
+        "title": "Master the ICF Team Coaching Competencies",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "f43d87f7-b66e-49b4-b46b-7a47ac3c4e43",
+        "heartbeat_cohort_id": "aa70aa3a-8311-4a42-96bd-44fdbcedb9cf",
+        "module_count": 10
+      },
+      {
+        "path": "community/icf/tests/acc/course.json",
+        "sha256": "fef2ffcedb80f7415df2dae0e8860fe7045b16607f9fe53dd7fa8e43584000dd",
+        "status": "",
+        "last_commit": "a85875dfeb159fdfddbdb1ec671e3806c70f083e",
+        "slug": "acc-test",
+        "title": "ACC-Level Coaching Practice Test",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "43f59311-36c6-4c26-b41f-9cde7c6ef42e",
+        "heartbeat_cohort_id": "8f74c339-a899-4636-9330-17efc45ec431",
+        "module_count": 4
+      },
+      {
+        "path": "community/icf/tests/actc/actc-explanations/course.json",
+        "sha256": "99cf5b088aa95c388bec2721e39980c8c3343301d211b4ca641375bf81eaa77a",
+        "status": "",
+        "last_commit": "d66704de7e8b5e0a215fe57c550fecf34f2d605d",
+        "slug": "actc-explanations",
+        "title": "ICF ACTC Practice Test — Scenarios Explained",
+        "source_status": null,
+        "heartbeat_instance": null,
+        "heartbeat_course_id": null,
+        "heartbeat_cohort_id": null,
+        "module_count": null
+      },
+      {
+        "path": "community/icf/tests/actc/course.json",
+        "sha256": "893c12a5770f63462e72c61d3b56c4b513e84dd2e2be6ab183e84f6e0c6bdc08",
+        "status": "",
+        "last_commit": "d66704de7e8b5e0a215fe57c550fecf34f2d605d",
+        "slug": "actc-test",
+        "title": "Mastering the ICF ACTC Team Coaching Exam",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "0574df6b-1159-41f7-b52b-2e058a885856",
+        "heartbeat_cohort_id": "afcc3a68-63fb-4a97-993c-86594df5aead",
+        "module_count": 9
+      },
+      {
+        "path": "community/icf/tests/pcc/course.json",
+        "sha256": "4b3eda161e053b0e1b0de295f01dfa7f64853ef4339bb84a72c540f0e27b9a70",
+        "status": "",
+        "last_commit": "6f959e301e164717d4b601f6a8fd9bfb5740e686",
+        "slug": "pcc-test",
+        "title": "ICF Core Competencies PCC Practice Test",
+        "source_status": null,
+        "heartbeat_instance": "main",
+        "heartbeat_course_id": "5e9eb6c7-7f5c-4244-b352-e202a604969b",
+        "heartbeat_cohort_id": "49b41c18-a8b6-4fb9-b8a4-a0a643ab2519",
+        "module_count": 5
+      },
+      {
+        "path": "community/icf/tests/pcc/explanations/course.json",
+        "sha256": "54413fa91cd3d26f1a456f13b0ec63850442e172149cfcf03dcfa8c7e88d7ff8",
+        "status": "",
+        "last_commit": "5e0805cdc153a4481fd90e4fc3798b649bd0a2fa",
+        "slug": "explanations",
+        "title": "ICF PCC Practice Test — Scenarios Explained",
+        "source_status": null,
+        "heartbeat_instance": null,
+        "heartbeat_course_id": null,
+        "heartbeat_cohort_id": null,
+        "module_count": null
+      }
+    ],
+    "source_course_ids_absent_from_entitlement_declarations": [
+      "205bec70-6a26-4fc5-b836-b2718a67447d",
+      "29ea12f4-8cce-42db-b011-cec6c50b2df0",
+      "360068af-9fed-4ea3-8e61-8eadf6193b0e",
+      "4aa45a9c-271d-4525-983d-0ea9864f31a6",
+      "5c356c78-ef28-426b-878d-06889628bccc",
+      "6f0e5cd4-47c7-44e5-92dd-d0d5658a5471",
+      "7be7606b-8da7-4214-82f2-1a235412fa12",
+      "e7245369-e44b-49ba-9eb7-cb846cb0206a",
+      "f43d87f7-b66e-49b4-b46b-7a47ac3c4e43"
+    ],
+    "authority_discrepancy": "The current ICF CLAUDE/STUDENT-TRACKING framework still names Plutio as student source of truth; current accepted NanoClaw authority makes Plutio an operator projection and Company OS the cross-provider master.",
+    "declared_course_ids_not_found_in_scanned_course_manifests": [
+      "2f0da0f8-7278-4cf4-baeb-f5f1949f8c77",
+      "cc660896-b415-4a72-928b-475b3236ea62"
+    ],
+    "service_container_manifest_gaps": [
+      {
+        "native_course_id": "cc660896-b415-4a72-928b-475b3236ea62",
+        "components": [
+          {
+            "component_key": "acc.group-mentoring",
+            "component_type": "group_mentoring",
+            "scheduling_model": "group_series",
+            "consumption_model": "hour_count"
+          }
+        ],
+        "interpretation": "Not found in the scanned managed course manifests. The appropriate authority may be a service allowance, procedure, or schedule contract."
+      },
+      {
+        "native_course_id": "2f0da0f8-7278-4cf4-baeb-f5f1949f8c77",
+        "components": [
+          {
+            "component_key": "acc.individual-mentoring",
+            "component_type": "individual_mentoring",
+            "scheduling_model": "individual_booking",
+            "consumption_model": "hour_count"
+          },
+          {
+            "component_key": "acc.performance-evaluation",
+            "component_type": "performance_evaluation",
+            "scheduling_model": "milestone_window",
+            "consumption_model": "submission_count"
+          }
+        ],
+        "interpretation": "Not found in the scanned managed course manifests. The appropriate authority may be a service allowance, assessment procedure, booking rule, or milestone contract."
+      }
+    ]
+  },
+  "assessment_references": {
+    "repository_files": [
+      {
+        "path": "CLAUDE.md",
+        "exists": true,
+        "sha256": "d669ad208a01ad83a122445b30357e9c9abf13a9356ee7244010607410d5c2e1",
+        "status": "",
+        "last_commit": ""
+      },
+      {
+        "path": "README.md",
+        "exists": true,
+        "sha256": "e0b9f1495b4ea3c21d6ab707b1a3902933be6c95507e8a140d0de87d139b542b",
+        "status": "M README.md",
+        "last_commit": "0968c3899f64914507770f6d544e6ac2abe0839d"
+      },
+      {
+        "path": "specs/assessment-types/acc.md",
+        "exists": true,
+        "sha256": "24822c6437e55ad6cfd1e7afce1c4c6869e3b05a79bada251d722ed2ef6990ab",
+        "status": "",
+        "last_commit": "d21cd95cbf62cf8dc24dfbbd8633c6e4706dade1"
+      },
+      {
+        "path": "specs/assessment-types/pcc.md",
+        "exists": true,
+        "sha256": "2337bf362ab76096a00a79cd1770ec8e96b305d77e6249a219e647cea208b42f",
+        "status": "",
+        "last_commit": "4142dc0e68e9e74a64c899dbfd6a192c813ea47e"
+      },
+      {
+        "path": "specs/assessment-types/team-coaching.md",
+        "exists": true,
+        "sha256": "e4c2de4967521f35e65d378aec5a2127596203247ed94d2d8be667d97c2f382c",
+        "status": "",
+        "last_commit": "d21cd95cbf62cf8dc24dfbbd8633c6e4706dade1"
+      },
+      {
+        "path": "docs/ACADEMY_PROGRAM_ENGAGEMENTS.md",
+        "exists": true,
+        "sha256": "05802a4e66d0c202ab5d5e356ddfbbce7a9c5ac8c213e0ddd36afc90236b1765",
+        "status": "M docs/ACADEMY_PROGRAM_ENGAGEMENTS.md",
+        "last_commit": "eb51764d9364ca7158afa0a062e0f7e9e5bdd59b"
+      }
+    ],
+    "source_course_references": [
+      {
+        "path": "community/icf/aatc/input/heartbeat/actc-exam-prep/course.json",
+        "slug": "actc-exam-prep",
+        "title": "Mastering the ICF ACTC Team Coaching Exam: Your Path to Certification",
+        "heartbeat_course_id": "0574df6b-1159-41f7-b52b-2e058a885856",
+        "heartbeat_cohort_id": "afcc3a68-63fb-4a97-993c-86594df5aead"
+      },
+      {
+        "path": "community/icf/aatc/input/heartbeat/l2-actc-assessment/course.json",
+        "slug": "l2-actc-assessment",
+        "title": "ACTC ONLY: Team Coaching Assessment and Feedback - Single Recording",
+        "heartbeat_course_id": "8b9b0510-7bfd-4e16-ac4d-07e6393f2a31",
+        "heartbeat_cohort_id": "fcf5dedc-2cae-40d6-b92a-518efa773d35"
+      },
+      {
+        "path": "community/icf/tests/acc/course.json",
+        "slug": "acc-test",
+        "title": "ACC-Level Coaching Practice Test",
+        "heartbeat_course_id": "43f59311-36c6-4c26-b41f-9cde7c6ef42e",
+        "heartbeat_cohort_id": "8f74c339-a899-4636-9330-17efc45ec431"
+      },
+      {
+        "path": "community/icf/tests/actc/actc-explanations/course.json",
+        "slug": "actc-explanations",
+        "title": "ICF ACTC Practice Test — Scenarios Explained",
+        "heartbeat_course_id": null,
+        "heartbeat_cohort_id": null
+      },
+      {
+        "path": "community/icf/tests/actc/course.json",
+        "slug": "actc-test",
+        "title": "Mastering the ICF ACTC Team Coaching Exam",
+        "heartbeat_course_id": "0574df6b-1159-41f7-b52b-2e058a885856",
+        "heartbeat_cohort_id": "afcc3a68-63fb-4a97-993c-86594df5aead"
+      },
+      {
+        "path": "community/icf/tests/pcc/course.json",
+        "slug": "pcc-test",
+        "title": "ICF Core Competencies PCC Practice Test",
+        "heartbeat_course_id": "5e9eb6c7-7f5c-4244-b352-e202a604969b",
+        "heartbeat_cohort_id": "49b41c18-a8b6-4fb9-b8a4-a0a643ab2519"
+      },
+      {
+        "path": "community/icf/tests/pcc/explanations/course.json",
+        "slug": "explanations",
+        "title": "ICF PCC Practice Test — Scenarios Explained",
+        "heartbeat_course_id": null,
+        "heartbeat_cohort_id": null
+      }
+    ],
+    "relationship_status": "CoachGrader is source authority for its native assessment facts only. No reviewed source in this checkpoint binds a checkout offer or entitlement component directly to a CoachGrader assessment record.",
+    "deployment_status": "Current local CoachGrader checkout is dirty and its branch is ahead/behind; local source presence is not deployed proof."
+  },
+  "schedule_delivery_and_pool": {
+    "supported_calendar_read": {
+      "transient_prior_attempt": {
+        "fetched_at": "2026-09-07T18:11:16Z",
+        "result": "fetch failed for all six programs"
+      },
+      "current_success": {
+        "fetched_at": "2026-09-07T18:43:10Z",
+        "programs": {
+          "acc": {
+            "status": "available",
+            "events_fetched": 155,
+            "events_matched_level": 81,
+            "next_start": "2026-10-07T19:00:00-04:00",
+            "cohorts": [],
+            "upcoming_modules": []
+          },
+          "pcc": {
+            "status": "available",
+            "events_fetched": 147,
+            "events_matched_level": 73,
+            "next_start": "2026-10-06T11:00:00-04:00",
+            "cohorts": [],
+            "upcoming_modules": [
+              {
+                "module": 3,
+                "start_date": "2026-10-06T11:00:00-04:00",
+                "end_date": "2026-10-27T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 4,
+                "start_date": "2026-11-03T11:00:00-05:00",
+                "end_date": "2026-11-24T11:00:00-05:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 1,
+                "start_date": "2027-01-05T19:00:00-05:00",
+                "end_date": "2027-01-26T19:00:00-05:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 2,
+                "start_date": "2027-02-02T19:00:00-05:00",
+                "end_date": "2027-02-23T19:00:00-05:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 1,
+                "start_date": "2027-03-02T11:00:00-05:00",
+                "end_date": "2027-03-23T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 3,
+                "start_date": "2027-03-02T19:00:00-05:00",
+                "end_date": "2027-03-23T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 2,
+                "start_date": "2027-04-06T11:00:00-04:00",
+                "end_date": "2027-04-27T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 4,
+                "start_date": "2027-04-06T19:00:00-04:00",
+                "end_date": "2027-04-27T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 3,
+                "start_date": "2027-05-04T11:00:00-04:00",
+                "end_date": "2027-05-25T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 4,
+                "start_date": "2027-06-08T11:00:00-04:00",
+                "end_date": "2027-06-29T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 1,
+                "start_date": "2027-06-08T19:00:00-04:00",
+                "end_date": "2027-06-29T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 2,
+                "start_date": "2027-07-06T19:00:00-04:00",
+                "end_date": "2027-07-27T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 1,
+                "start_date": "2027-08-03T11:00:00-04:00",
+                "end_date": "2027-08-24T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 3,
+                "start_date": "2027-08-03T19:00:00-04:00",
+                "end_date": "2027-08-24T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 2,
+                "start_date": "2027-09-07T11:00:00-04:00",
+                "end_date": "2027-09-07T11:00:00-04:00",
+                "lesson_count": 1
+              }
+            ]
+          },
+          "actc": {
+            "status": "available",
+            "events_fetched": 147,
+            "events_matched_level": 73,
+            "next_start": "2026-10-06T11:00:00-04:00",
+            "cohorts": [],
+            "upcoming_modules": [
+              {
+                "module": 3,
+                "start_date": "2026-10-06T11:00:00-04:00",
+                "end_date": "2026-10-27T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 4,
+                "start_date": "2026-11-03T11:00:00-05:00",
+                "end_date": "2026-11-24T11:00:00-05:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 1,
+                "start_date": "2027-01-05T19:00:00-05:00",
+                "end_date": "2027-01-26T19:00:00-05:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 2,
+                "start_date": "2027-02-02T19:00:00-05:00",
+                "end_date": "2027-02-23T19:00:00-05:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 1,
+                "start_date": "2027-03-02T11:00:00-05:00",
+                "end_date": "2027-03-23T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 3,
+                "start_date": "2027-03-02T19:00:00-05:00",
+                "end_date": "2027-03-23T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 2,
+                "start_date": "2027-04-06T11:00:00-04:00",
+                "end_date": "2027-04-27T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 4,
+                "start_date": "2027-04-06T19:00:00-04:00",
+                "end_date": "2027-04-27T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 3,
+                "start_date": "2027-05-04T11:00:00-04:00",
+                "end_date": "2027-05-25T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 4,
+                "start_date": "2027-06-08T11:00:00-04:00",
+                "end_date": "2027-06-29T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 1,
+                "start_date": "2027-06-08T19:00:00-04:00",
+                "end_date": "2027-06-29T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 2,
+                "start_date": "2027-07-06T19:00:00-04:00",
+                "end_date": "2027-07-27T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 1,
+                "start_date": "2027-08-03T11:00:00-04:00",
+                "end_date": "2027-08-24T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 3,
+                "start_date": "2027-08-03T19:00:00-04:00",
+                "end_date": "2027-08-24T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "module": 2,
+                "start_date": "2027-09-07T11:00:00-04:00",
+                "end_date": "2027-09-07T11:00:00-04:00",
+                "lesson_count": 1
+              }
+            ]
+          },
+          "mentor": {
+            "status": "available",
+            "events_fetched": 35,
+            "events_matched_level": 35,
+            "next_start": "2026-10-06T19:00:00-04:00",
+            "cohorts": [
+              {
+                "start": "2026-10-06T19:00:00-04:00",
+                "end": "2026-10-27T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "start": "2026-12-01T11:00:00-05:00",
+                "end": "2026-12-22T11:00:00-05:00",
+                "lesson_count": 4
+              },
+              {
+                "start": "2027-01-04T11:00:00-05:00",
+                "end": "2027-01-25T11:00:00-05:00",
+                "lesson_count": 4
+              },
+              {
+                "start": "2027-02-03T19:00:00-05:00",
+                "end": "2027-02-24T19:00:00-05:00",
+                "lesson_count": 4
+              },
+              {
+                "start": "2027-05-04T19:00:00-04:00",
+                "end": "2027-05-25T19:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "start": "2027-06-07T11:00:00-04:00",
+                "end": "2027-06-28T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "start": "2027-07-06T11:00:00-04:00",
+                "end": "2027-07-27T11:00:00-04:00",
+                "lesson_count": 4
+              },
+              {
+                "start": "2027-08-02T16:00:00-04:00",
+                "end": "2027-08-23T16:00:00-04:00",
+                "lesson_count": 4
+              }
+            ],
+            "upcoming_modules": []
+          },
+          "mcs-practicum": {
+            "status": "available",
+            "events_fetched": 76,
+            "events_matched_level": 74,
+            "next_start": "2026-09-24T18:00:00-04:00",
+            "cohorts": [
+              {
+                "start": "2026-09-24T18:00:00-04:00",
+                "end": "2026-12-17T18:00:00-05:00",
+                "lesson_count": 12
+              },
+              {
+                "start": "2026-09-25T10:00:00-04:00",
+                "end": "2026-12-18T10:00:00-05:00",
+                "lesson_count": 12
+              },
+              {
+                "start": "2027-01-07T18:00:00-05:00",
+                "end": "2027-03-11T18:00:00-05:00",
+                "lesson_count": 10
+              },
+              {
+                "start": "2027-01-08T10:00:00-05:00",
+                "end": "2027-03-12T10:00:00-05:00",
+                "lesson_count": 10
+              },
+              {
+                "start": "2027-04-02T16:00:00-04:00",
+                "end": "2027-06-04T16:00:00-04:00",
+                "lesson_count": 10
+              },
+              {
+                "start": "2027-06-24T11:00:00-04:00",
+                "end": "2027-08-26T11:00:00-04:00",
+                "lesson_count": 10
+              }
+            ],
+            "upcoming_modules": []
+          },
+          "supervision": {
+            "status": "available",
+            "events_fetched": 41,
+            "events_matched_level": 41,
+            "next_start": "2026-10-07T10:00:00-04:00",
+            "cohorts": [
+              {
+                "start": "2026-10-07T10:00:00-04:00",
+                "end": "2027-02-10T10:00:00-05:00",
+                "lesson_count": 16
+              },
+              {
+                "start": "2027-03-03T18:00:00-05:00",
+                "end": "2027-06-16T18:00:00-04:00",
+                "lesson_count": 16
+              },
+              {
+                "start": "2027-07-07T10:00:00-04:00",
+                "end": "2027-09-01T10:00:00-04:00",
+                "lesson_count": 9
+              }
+            ],
+            "upcoming_modules": []
+          }
+        }
+      }
+    },
+    "accepted_source_evidence": {
+      "shadow_recorded_at": "2026-09-06T19:06:26Z",
+      "gate_d_recorded_at": "2026-09-06T21:35:00Z",
+      "simple_sync_release": "aa73538c84505212767628b81477e7d287e98af9",
+      "simple_sync_policy": "durable commitments; no temporary checkout holds; one seat pool per delivery block; website is signed cached projection",
+      "delivery_blocks": [
+        {
+          "delivery_block_key": "acc.module-1:2026-09-07",
+          "capacity": 12,
+          "occupied": 21,
+          "available": 0,
+          "public_state": "sold_out",
+          "pool_rule": "one seat pool per delivery block v1",
+          "current_pool_key_readback": "not refreshed in checkpoint C"
+        },
+        {
+          "delivery_block_key": "mcs-practicum:2026-09-24",
+          "capacity": 12,
+          "occupied": 5,
+          "available": 7,
+          "public_state": "open",
+          "pool_rule": "one seat pool per delivery block v1",
+          "current_pool_key_readback": "not refreshed in checkpoint C"
+        },
+        {
+          "delivery_block_key": "mcs-practicum:2026-09-25",
+          "capacity": 12,
+          "occupied": 13,
+          "available": 0,
+          "public_state": "sold_out",
+          "pool_rule": "one seat pool per delivery block v1",
+          "current_pool_key_readback": "not refreshed in checkpoint C"
+        },
+        {
+          "delivery_block_key": "mcs-practicum:2027-01-07",
+          "capacity": 12,
+          "occupied": 1,
+          "available": 11,
+          "public_state": "open",
+          "pool_rule": "one seat pool per delivery block v1",
+          "current_pool_key_readback": "not refreshed in checkpoint C"
+        },
+        {
+          "delivery_block_key": "mcs-practicum:2027-01-08",
+          "capacity": 12,
+          "occupied": 0,
+          "available": 12,
+          "public_state": "open",
+          "pool_rule": "one seat pool per delivery block v1",
+          "current_pool_key_readback": "not refreshed in checkpoint C"
+        }
+      ]
+    },
+    "current_live_boundary": "The recovered supported calendar read verifies all six current schedule projections. Public ACC and MCS pages align with the five accepted availability states. Exact current production pool keys and occupancy were not reread in checkpoint C."
+  },
+  "heartbeat_group_provenance": {
+    "component_key": "systems.individual-exam-preparation",
+    "component_evidence_status": "provisional",
+    "declared_group_id": "5c2616f5-3379-4144-bbef-8fc225e701c3",
+    "declared_course_id": "5e9eb6c7-7f5c-4244-b352-e202a604969b",
+    "declared_attachment_status": "group_and_course_verified_attachment_unavailable",
+    "introduced_commit": "64f48df8d9e68f9291422f2bb95e96fb535adb9b",
+    "introduced_commit_subject": "feat(student-lifecycle): define full-program entitlements",
+    "source_controlled_correct_group_id_references_before_b1": 0,
+    "current_native_near_match": {
+      "id": "5c2616f5-3379-4144-bbef-8fc746415cdc",
+      "name": "PCC/MCC Practice Test"
+    },
+    "current_source_course": {
+      "path": "community/icf/tests/pcc/course.json",
+      "course_id": "5e9eb6c7-7f5c-4244-b352-e202a604969b",
+      "cohort_id": "49b41c18-a8b6-4fb9-b8a4-a0a643ab2519",
+      "group_id_declared_in_course_source": null
+    },
+    "finding": "The provisional catalog UUID cannot be reproduced from the cited checkout, page, or course source. The course source proves the PCC practice-test course/cohort only. The near-match native group remains a candidate, not an accepted replacement."
+  },
+  "contradictions": [
+    {
+      "id": "C-01",
+      "scope": "PCC individual exam preparation",
+      "finding": "Catalog-declared group UUID is absent natively and has no independent source-controlled provenance; the inactive checkout still points at ACC Practice Test.",
+      "safe_hold": "Observe the standalone offer as locally inactive. Propose preserving the historical invalid UUID as unresolved evidence and holding any replacement/publication change until source verification; no hold is applied or enforced by this audit."
+    },
+    {
+      "id": "C-02",
+      "scope": "localized Mentor Coaching Foundations",
+      "finding": "English, Spanish, and Japanese active checkout variants and native localized group/course objects exist, but none has an entitlement offer or binding route.",
+      "safe_hold": "Observe existing delivery without conferring an exemption. Propose holding new canonical admission or changed publication until locale-specific relationships are accepted; this is not applied or enforced."
+    },
+    {
+      "id": "C-03",
+      "scope": "MCS dated cohorts",
+      "finding": "Source checkout and page use dated Thursday/Friday slugs while the entitlement catalog uses mcs-full; public copy says one program-wide enrollment across cohorts.",
+      "safe_hold": "Treat dated slugs as candidate context-bearing variants only. Propose no collapse or new offer until Stripe, Plutio, schedule, and owner meaning align; this is not applied policy."
+    },
+    {
+      "id": "C-04",
+      "scope": "schedule and pool freshness",
+      "finding": "The supported calendar feed transiently failed for all six programs, then recovered and returned current schedules for all six. Exact production pool-key/occupancy readback was not authorized or refreshed.",
+      "safe_hold": "Use the recovered schedule dates and five accepted delivery-block identities as evidence. Propose holding new pool identity or occupancy claims without canonical readback; no enforcement is added."
+    },
+    {
+      "id": "C-05",
+      "scope": "student authority documentation",
+      "finding": "Courses documentation still names Plutio as student source of truth, conflicting with accepted Company OS authority.",
+      "safe_hold": "Treat courses documents as curriculum and component evidence under the already accepted Company OS authority. This is superseded source drift, not an open authority choice."
+    },
+    {
+      "id": "C-06",
+      "scope": "assessment relationship",
+      "finding": "CoachGrader source confirms assessment capability and native assessment authority, but no reviewed offer/component-to-assessment binding exists.",
+      "safe_hold": "Do not infer enrollment, entitlement, completion, or certificate state from CoachGrader source presence."
+    },
+    {
+      "id": "C-07",
+      "scope": "managed-manifest and service-source identity",
+      "finding": "Two exact catalog-declared and native Heartbeat course IDs were not found in the scanned managed course manifests. Their linked components are mentoring, performance-evaluation, or service containers, so no curriculum-absence conclusion is made.",
+      "safe_hold": "Treat native existence as verified while the appropriate service, allowance, procedure, schedule, assessment, or managed-manifest authority remains unidentified. Propose no quantity, procedure, version, or attachment claim; no policy is applied."
+    }
+  ],
+  "remaining_reads": [
+    "Stripe/Plutio sanitized supplement and final B2 integration",
+    "appropriate service, allowance, procedure, schedule, assessment, or managed-manifest authority for the two native service-container IDs",
+    "owner/source evidence for locale-specific offers and PCC practice-test group attachment",
+    "final per-entry disposition and publication-coverage synthesis across A, B1, B2, and C"
+  ],
+  "corrected_at_utc": "2026-09-07T18:43:10.621Z",
+  "corrected_for_astra_at_utc": "2026-09-07T19:19:41.775Z",
+  "corrected_for_policy_scope_at_utc": "2026-09-07T19:21:14.385Z"
+}

@@ -1,0 +1,65 @@
+{
+  "proposal_id": "NC-20260907-004-proposed-program-delta",
+  "generated_at_utc": "2026-09-07T20:04:51.903Z",
+  "apply_authority": "Astra only",
+  "status": "review_complete_pending_astra_acceptance_do_not_apply",
+  "observed_state_revision": 253,
+  "work_item": "work:student-product-catalog-source-reconciliation",
+  "pre_review_operations": {
+    "keep_status": "active",
+    "attach_evidence_to_commitments": {
+      "commitment:catalog-source-baseline": [
+        "docs/reports/NC-20260907-004-LOCAL-CATALOG-BASELINE.json",
+        "docs/reports/NC-20260907-004-B1-STUDENT-ROSTER-SNAPSHOT.json",
+        "docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json",
+        "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
+        "docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json",
+        "docs/reports/NC-20260907-004-C-PUBLISHING-DISCOVERY-SUPPLEMENT.json"
+      ],
+      "commitment:catalog-dispositions": [
+        "docs/reports/NC-20260907-004-CATALOG-DISPOSITION-DRAFT.json"
+      ],
+      "commitment:catalog-business-decisions": [
+        "docs/reports/NC-20260907-004-OWNER-DECISION-BRIEF.md"
+      ],
+      "commitment:catalog-proposal": [
+        "docs/reports/NC-20260907-004-UNAPPLIED-CATALOG-BINDING-PROPOSAL.json"
+      ],
+      "commitment:catalog-verification-review": [
+        "docs/reports/NC-20260907-004-PRE-REVIEW-VERIFICATION.md",
+        "docs/reports/NC-20260907-004-POST-R1-CORRECTION-VERIFICATION.md",
+        "docs/reports/NC-20260907-004-CLAUDE-REVIEW-RESPONSE-R1.md",
+        "docs/reports/NC-20260907-004-CLAUDE-REVIEW-RESPONSE-R2.md"
+      ],
+      "commitment:catalog-source-closure": [
+        "docs/programs/company-os/evidence/NC-20260907-004-student-product-catalog-reconciliation.md",
+        "docs/reports/NC-20260907-004-C-PUBLISHING-DISCOVERY-SUPPLEMENT.json"
+      ]
+    }
+  },
+  "post_review_candidate": {
+    "refresh_expected_revision": true,
+    "work_status_after_commit": "done",
+    "evidence_to_add": [
+      "docs/programs/company-os/evidence/NC-20260907-004-student-product-catalog-reconciliation.md",
+      "docs/reports/NC-20260907-004-CATALOG-DISPOSITION-DRAFT.json",
+      "docs/reports/NC-20260907-004-UNAPPLIED-CATALOG-BINDING-PROPOSAL.json",
+      "docs/reports/NC-20260907-004-OWNER-DECISION-BRIEF.md"
+    ],
+    "satisfied_now": [
+      "review artifact with no unresolved material findings",
+      "focused validation receipts"
+    ],
+    "mark_completed_only_with_remaining": [
+      "commit hash and push receipt",
+      "verified handoff"
+    ]
+  },
+  "candidates_to_register": [],
+  "strategy_candidates": [],
+  "prohibited": [
+    "Do not apply against stale revision 253 without refresh.",
+    "Do not mark review or source-closure commitments complete before review, commit, push, and handoff evidence exist.",
+    "Do not activate rollout, mutate catalogs or providers or runtime, or begin the production pilot."
+  ]
+}
