@@ -4,6 +4,12 @@ Status: tracked operating guide. Running PostgreSQL schema and permissions
 remain implementation authority; ordered migrations in
 `data/business/migrations/nanoclaw-v2/` are the portable change history.
 
+Local/unapplied migration 147 adds append-only authenticated issuer receipts
+and shared canonical writer claims for NC-20260906-009. It grants no minion
+access and is exercised only in disposable databases. See
+`docs/STUDENT-ENROLLMENT-AUTHENTICATED-ADMISSION.md`; native provider bindings,
+both real writer paths and production promotion remain separate pilot gates.
+
 Local/unapplied migration 146 supports the unwired enrollment store: projection
 row versions and individual evidence-history identities. It changes no roles
 or grants and has guarded rollback. See

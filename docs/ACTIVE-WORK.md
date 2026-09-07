@@ -13,7 +13,7 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260906-009` | Authenticate purpose-scoped issuer evidence and exclude dual writers before local enrollment persistence | Codex | `codex/enrollment-authenticated-admission-20260906` @ `a382e215` | `in_progress` | C2 | Local synthetic issuer/service, shared writer claims, disposable tests, docs; future C5/C4 impact | Implement, verify, independently review, commit/push and reconcile | 2026-09-07T03:25Z |
+| `NC-20260906-009` | Authenticate purpose-scoped issuer evidence and exclude dual writers before local enrollment persistence | Codex | `codex/enrollment-authenticated-admission-20260906` @ `a382e215`; registration `8679b46e` pushed | `ready_for_review` | C2 | Reviewed local signed host receipts, immutable control ledgers, 159 focused tests and disposable proof; production excluded | Commit/push, reconcile local item and verify handoff; pilot stays unauthorized | 2026-09-07T04:35Z |
 
 - Sole Company OS claim at r237, nine commitments attached. Accepted decision
   `decision-enrollment-local-authenticated-admission-2026-09-06` explicitly
@@ -22,6 +22,15 @@ outside the current client conversation.
   primary dirty source preserved. See `docs/ENROLLMENT-ADMISSION-SCOPE.md`.
 - Existing native/legacy writers remain unchanged. All provider/event/operator
   observations and keys are synthetic; migration source is disposable-only.
+- Review: two bounded Sonnet/high rounds. R1's duplicate-enrollment scenario
+  did not reproduce, but a narrower funding-only channel-binding gap did.
+  Every statement now authenticates channel, issuer channels are constrained,
+  and correction requests take an explicit review-only branch. R2 closed all
+  material findings; no student effect or legacy ownership change occurs there.
+- Checks: 159 focused pass; root/strict worker types and continuity pass. Full
+  with four workers: 3,725 pass / 32 skip / two reproduced baseline failures.
+  A default-parallel run hit an old five-second disposable-test timeout; isolated
+  and bounded-full reruns passed, with no unrelated source change.
 
 ### NC-20260906-008 — Local atomic enrollment persistence
 

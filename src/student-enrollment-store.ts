@@ -1,4 +1,5 @@
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
+import type { BookkeeperEnrollmentState } from './bookkeeper-enrollment-contract.js';
 import {
   applyEnrollmentIngress,
   type EnrollmentIngressAuthority,
@@ -30,6 +31,20 @@ export async function persistEnrollmentIngress(
   candidate: unknown,
   authority: EnrollmentIngressAuthority,
 ): Promise<EnrollmentIngressResult> {
+  return persistEnrollmentDecision(pool, async (_client, state) =>
+    applyEnrollmentIngress(state, candidate, authority),
+  );
+}
+
+/** Trusted host composition seam, not a serialized or externally supplied callback.
+ * The decision runs under the same locks/transaction and must preserve prior state. */
+export async function persistEnrollmentDecision(
+  pool: Pick<Pool, 'connect'>,
+  decide: (
+    client: PoolClient,
+    state: BookkeeperEnrollmentState,
+  ) => Promise<EnrollmentIngressResult>,
+): Promise<EnrollmentIngressResult> {
   const client = await pool.connect();
   let began = false;
   let committing = false;
@@ -46,7 +61,7 @@ export async function persistEnrollmentIngress(
       `LOCK TABLE ${ENROLLMENT_STORE_TABLES.map((t) => 'business_v2.' + t).join(',')} IN SHARE ROW EXCLUSIVE MODE`,
     );
     const before = await loadEnrollmentStore(client);
-    const result = applyEnrollmentIngress(before.state, candidate, authority);
+    const result = await decide(client, before.state);
     await persistEnrollmentStore(client, before, result);
     const readback = await loadEnrollmentStore(client);
     committing = true;

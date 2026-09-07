@@ -1,5 +1,10 @@
 # Local atomic enrollment store
 
+Local follow-up NC-20260906-009 is documented in
+`docs/STUDENT-ENROLLMENT-AUTHENTICATED-ADMISSION.md`. It adds a trusted in-transaction
+admission decision without changing this store's disposable-only guard. Production
+promotion and a native new-event pilot are separately governed.
+
 `NC-20260906-008`, based on reviewed ingress `e6463ba2`. Unwired and
 **disposable-only**; no production database/provider activation is included.
 

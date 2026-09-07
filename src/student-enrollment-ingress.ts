@@ -190,12 +190,9 @@ export function enrollmentIngressProofPayload(
   };
 }
 
-/** Snapshot adapter; no real source retrieval or authentication happens here. */
-export function applyEnrollmentIngress(
-  original: BookkeeperEnrollmentState,
+export function parseEnrollmentIngressEnvelope(
   candidate: unknown,
-  host: EnrollmentIngressAuthority,
-): EnrollmentIngressResult {
+): EnrollmentIngressEnvelope {
   const parsed = envelopeSchema.safeParse(candidate);
   if (!parsed.success)
     throw new EnrollmentCommandError(
@@ -204,6 +201,16 @@ export function applyEnrollmentIngress(
     );
   const e = parsed.data;
   e.funding.aliases.sort((a, b) => refId(a).localeCompare(refId(b)));
+  return e;
+}
+
+/** Snapshot adapter; no real source retrieval or authentication happens here. */
+export function applyEnrollmentIngress(
+  original: BookkeeperEnrollmentState,
+  candidate: unknown,
+  host: EnrollmentIngressAuthority,
+): EnrollmentIngressResult {
+  const e = parseEnrollmentIngressEnvelope(candidate);
   const proofs = z.array(proofSchema).max(1000).parse(host.proofs);
   const at = z.iso.datetime({ offset: true }).parse(host.catalog.occurredAt);
   const fingerprint = hash(e);

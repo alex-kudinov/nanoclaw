@@ -8,6 +8,55 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260906-009 — Local authenticated enrollment admission
+
+- Date: 2026-09-07T04:05:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_review; independent review complete, commit/push pending
+- Branch/base: `codex/enrollment-authenticated-admission-20260906` over
+  `a382e215`; registration committed/pushed before source changes.
+- Change class: C2 synthetic source/disposable DDL/DML; future C5/C4 impact.
+- Governance: owner explicitly split local admission from the original mixed
+  production/new-event condition. Local item claimed at r236 with nine
+  commitments at r237. The separate production admission pilot is unauthorized
+  and is also a prerequisite of authority cutover.
+- Outcome: registered host issuer HMAC authentication, scope/role/purpose and
+  exact payload/time binding, distinct private keys, opaque certificates,
+  transactional immutable receipt identity and canonical writer ownership.
+  Local migration 147 adds two append-only admin tables with guarded rollback.
+- Safeguards: no caller-supplied verified flag; expiry checked after database
+  locks; reused receipt/policy conflicts yield owner exceptions; both synthetic
+  writer paths participate in one ownership gate; canonical and control records
+  roll back together and receive exact readback. No keys/signatures persisted.
+- Verification: 157 focused tests pass, root and strict worker typechecks pass;
+  full root 3,723 pass / 32 skipped / two known CNPC/Trafft baseline failures.
+  Actual disposable PostgreSQL proves event/read/operator mocks, aliases, grants,
+  partial sponsors, dual-writer races, corrupt-control readback refusal, rollback,
+  commit-ack loss, expiry, receipt/policy conflicts, append-only and grants.
+- Boundary: this is a host verification receipt protocol, not native provider
+  webhook compatibility. No real keys/providers/records/history, production
+  migration, deployment, actual writer cutover, financial action or communication.
+  Existing native/legacy writers and the store's disposable-only guard remain.
+- Documentation: local scope split, authenticated-admission contract, store,
+  project map, database guide, clearly local schema delta, active work, review
+  and task evidence. Rollback refuses populated admission/control ledgers.
+- Next gate: production pilot must establish actual native/operator bindings,
+  credentials, bounded target/data, migrations/store promotion, both writers,
+  rollback and real new-event verification; local code does not satisfy that gate.
+- Review/correction addendum 2026-09-07T04:35:00Z: R1 incorrectly inferred that
+  the predecessor correction route materialized students; actual SQL proof shows
+  an owned case only, with unchanged legacy effects. A narrower funding-only
+  channel-binding gap was reproduced by a failing unit test. Signed statements
+  now include channel, issuer channel scopes enforce operator/owner boundaries,
+  and the correction branch is explicitly review-only. R2 found NO MATERIAL
+  FINDINGS. Both schema and source behavior remain local/synthetic.
+- Final checks: 159 focused tests, root/strict-worker typechecks, format/diff and
+  continuity pass. Full suite with `--maxWorkers=4`: 3,725 pass / 32 skipped /
+  two CNPC/Trafft failures reproduced on unchanged `a382e215`. Default parallel
+  testing also hit an unchanged five-second capacity-disposable timeout; that
+  proof passed in 0.6 seconds alone and in bounded full execution. No assertion
+  was skipped and no unrelated timeout/source setting was changed.
+
 ### NC-20260906-008 — Disposable-only atomic enrollment persistence
 
 - Date: 2026-09-07T03:05:00Z

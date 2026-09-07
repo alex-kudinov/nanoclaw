@@ -2,6 +2,13 @@
 
 Generated: 2026-09-06T21:30:24.628Z
 
+Additional local/unapplied source extension (NC-20260906-009): migration 147
+creates `business_v2.student_enrollment_authenticated_receipts` (issuer/receipt
+identity, source/body hashes, actor/role/purpose/transport and times) and
+`business_v2.student_enrollment_writer_claims` (canonical source, writer/policy,
+evidence and actor/time). Both are append-only, admin-owned and tested only in
+disposable PostgreSQL. This is not a production schema refresh or apply receipt.
+
 Local source extension, not part of the live snapshot below: migration 146
 (`146_student_enrollment_store_contract.sql`, NC-20260906-008) adds
 `business_v2.student_projection_outbox.version integer NOT NULL DEFAULT 0`

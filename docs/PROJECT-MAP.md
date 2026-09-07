@@ -696,6 +696,13 @@ underlying processing or routing.
 
 ### Contador payment-fulfillment checkpoint (`NC-20260823-006`)
 
+`NC-20260906-009` adds local registered-issuer authentication and transactional
+writer exclusion. Its HMAC host receipts use synthetic keys and provider/operator
+mocks; native bindings and production remain gated. Local migration 147 adds
+immutable authentication receipts and writer claims. See
+`docs/STUDENT-ENROLLMENT-AUTHENTICATED-ADMISSION.md`; the separate production
+pilot remains a prerequisite of authority cutover.
+
 `NC-20260906-008` adds the unwired disposable-only transactional store and
 relational mapper for both enrollment/capacity aggregates. It serializes local
 transactions, checks versions, verifies readback and reports uncertain commits.

@@ -58,7 +58,9 @@ function sql(db, statement) {
 }
 
 /** Always generates its own fresh database. No supplied target or inherited PG routing. */
-export function runEnrollmentStoreDisposableProof() {
+export function runEnrollmentStoreDisposableProof(mode = 'store') {
+  if (!['store', 'admission'].includes(mode))
+    throw new Error('unsupported disposable proof mode');
   const database =
     'nc_student_enrollment_store_' + randomUUID().replaceAll('-', '');
   if (!safe.test(database)) throw new Error('invalid generated name');
@@ -131,11 +133,27 @@ export function runEnrollmentStoreDisposableProof() {
         'utf8',
       ),
     );
+    if (mode === 'admission') {
+      for (const name of [
+        '147_student_enrollment_writer_claims.sql',
+        'rollback_147_student_enrollment_writer_claims.sql',
+        '147_student_enrollment_writer_claims.sql',
+      ])
+        sql(
+          database,
+          fs.readFileSync(
+            path.join(root, 'data/business/migrations/nanoclaw-v2', name),
+            'utf8',
+          ),
+        );
+    }
     const worker = JSON.parse(
       run(path.join(root, 'node_modules/.bin/tsx'), [
         path.join(
           root,
-          'scripts/student-enrollment-store-disposable-worker.ts',
+          mode === 'store'
+            ? 'scripts/student-enrollment-store-disposable-worker.ts'
+            : 'scripts/student-enrollment-admission-disposable-worker.ts',
         ),
         database,
       ]),
