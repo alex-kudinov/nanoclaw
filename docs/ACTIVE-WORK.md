@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw `codex/catalog-publication-20260907` from exact live `1449812c1e71`; Tandemweb current-lineage `codex/catalog-publication-current-20260907` from deployed `c61fabf84f45`; dirty primaries preserved | `ready_for_deploy` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded stale-source mirror repair, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | R1 hold-key correction is complete and R2 returned no material findings. Prepare exact commits/artifacts for Astra acceptance. Operational mirror repair remains held because the same Syncthing folder contains divergent local versions and Mini is paused. | 2026-09-07T23:02Z |
+| `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `c5fdf5f6d9d5`; Tandemweb live `9d708ec4d940` over preserved educator-keyword base `636129a3`; source branches pushed; dirty primaries preserved | `complete` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded Mini-only stale-source mirror repair, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | None for publication. Future `work:tandemweb-checkout-source-sync-convergence` must reconcile the pre-existing concurrent Syncthing file versions before anyone unpauses Mini; that work is not authorized here. | 2026-09-07T23:41Z |
 
 | `NC-20260907-002` | Add selective consultative Sales dialogue while preserving direct answers | Codex + Claude reviewer | `codex/sales-consultative-dialogue-20260907` from exact live `aa73538c8450`; dirty primary preserved | `in_progress` | C3 | Sales decision/playbook/continuity, bounded manual-review protection, generated conversation evaluation, focused/full checks and immutable release. No customer send, follow-up cadence change, new provider access or schema migration. | Implement against accepted owner examples; verify continuity and direct/mixed/exploratory responses; obtain bounded Sonnet review and deploy with non-sending live proof. | 2026-09-07T14:14Z |
 
@@ -193,10 +193,10 @@ outside the current client conversation.
   `.program/decisions/decision-supervision-catalog-publication-implementation-2026-09-07.json`;
   Astra owns strategy, `.program`, and release acceptance. The Sol High worker
   owns the exact implementation/review/release execution slice.
-- Lineage: NanoClaw starts from exact live
-  `1449812c1e716135cd90c5d28c5a80d31ff197a0`; Tandemweb starts from
-  `0e42c7dd2c271926e09ec5f16e0a71ef3936d68f`. Both primary checkouts and all
-  unrelated changes remain preserved.
+- Lineage: NanoClaw started from exact live `1449812c1e71` and now runs
+  `c5fdf5f6d9d5`. Tandemweb final integration preserved live/current-main
+  `636129a3b3b0` and fast-forwarded to `9d708ec4d940`. Both primary checkouts and
+  all unrelated changes remain preserved.
 - Implementation: schema-validated source-reference manifest, deterministic
   two-consumer generator, generated exact v1 binding loaded by the current
   resolver, release-owned stale/tamper gate, static Tandemweb artifact, and
@@ -207,9 +207,9 @@ outside the current client conversation.
 - Account gate: the actual live consumer configuration reader selected native
   account `acct_1G1wKzA7hTBWpVVq` through `STRIPE_SECRET_KEY_ALT`, matching
   `stripe:alt`; the receipt contains no credential or population data.
-- Verification: focused Nano 22/22 and Tandem 10/10 pass; typecheck,
+- Verification: focused Nano 55/55 and Tandem 17/17 pass; typecheck,
   runtime doctor, email replay 13/13, email-critical 801/801 plus runner 45/45,
-  checkout pricing 38/38 and installments 11/11 pass. Full Nano is 3,656 pass /
+  checkout pricing 38/38 and installments 11/11 pass. Full Nano is 3,661 pass /
   32 skip / three failures. Exact base `1449812c` independently reproduces the
   additional Capacity disposable failure with the same expected reserved 1 /
   actual reserved 0 signature; CNPC wrapper and date-sensitive Trafft are the
@@ -217,9 +217,17 @@ outside the current client conversation.
   unavailable in the current interpreter because optional BeautifulSoup and
   markdownify dependencies are absent; task-owned and checkout-specific tests
   do not use them.
-- Boundary: review and consumer activation/readback remain pending. No payment,
-  provider, roster, enrollment, access, customer, class, capacity, schedule,
-  message, migration, checkout promise, or business-state mutation occurred.
+- Release/readback: Nano exact archive SHA-256 `06e408cf…35b0` verifies and
+  reports the generated `95611db8…7ae9` compatibility artifact; live health has
+  one listener, Node 22.23.2, connected Gmail/Slack, and empty queues. Both
+  supervision routes resolve to CSS, all required conflicts/legacy behavior
+  match, and program-fact detection returns zero findings. Tandem installed
+  `9d708ec4d940`, exact artifact `9e694641…1db4`, validator, LiteSpeed purge, and
+  Cloudflare HTTP 200 read back.
+- Boundary: no payment, provider, roster, enrollment, access, customer, class,
+  capacity, schedule, message, migration, checkout promise, or natural business
+  outcome was manufactured. Mini remains paused in Syncthing; future convergence
+  of its pre-existing concurrent checkout file requires separate authority.
 
 ### NC-20260907-002 — Selective Sales consultation
 

@@ -32,12 +32,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-07T22:12Z
 - Owner/client: Astra owner, one Sol High execution writer, bounded Claude
-  Sonnet/high review pending
-- State: validating
+  Sonnet/high review complete
+- State: complete
 - Base: NanoClaw exact live `1449812c1e716135cd90c5d28c5a80d31ff197a0`;
-  Tandemweb source `0e42c7dd2c271926e09ec5f16e0a71ef3936d68f`;
-  isolated `codex/catalog-publication-20260907` branches; both dirty primary
-  checkouts preserved.
+  Tandemweb final live/current-main `636129a3b3b0dfa72f85f2e88e350ff1e90b4f5a`;
+  isolated task branches; both dirty primary checkouts preserved.
 - Change class: C4 — deterministic product identity and checkout publication
   validation for exactly `supervision-inaugural` and `supervision-regular`.
 - Implementation: a strict schema and source-reference manifest, allowlisted
@@ -59,10 +58,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   customer, learner, payment, or financial population entered output.
 - Verification so far: deterministic full generation and release-owned
   Nano-only validation pass; Nano focused generator/resolver/release checks are
-  22/22; Tandem static validator tests are 10/10; typecheck, runtime doctor,
+  55/55; Tandem static validator tests are 17/17; typecheck, runtime doctor,
   email replay 13/13, email-critical 801/801 plus runner 45/45, checkout
   pricing 38/38, installments 11/11, JSON, shell syntax, and diff checks pass.
-  Full Nano is 3,656 pass / 32 skip / three failures. Exact base `1449812c`
+  Full Nano is 3,661 pass / 32 skip / three failures. Exact base `1449812c`
   independently reproduces the additional Capacity disposable failure with the
   same reserved expected 1 / actual 0 signature; the established CNPC wrapper
   and date-sensitive Trafft failures remain. Broad Tandem Python collection is
@@ -95,14 +94,55 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   eligibility remain explicitly false. No provider, roster, payment,
   enrollment, access, capacity, schedule, message, migration, checkout promise,
   or customer action changed.
-- Mirror hold: Studio and Mini configure the same Syncthing folder ID but expose
+- Mirror boundary: Studio and Mini configure the same Syncthing folder ID but
+  expose
   divergent local/global block hashes and vector versions for `products.json`;
   Mini is paused and reports no file availability. The two exact dry-run patches
-  preserve each local file independently, but applying either could overwrite
-  unrelated edits on a later unpause. No operational mirror write occurs until
-  an exact cross-host convergence plan is accepted.
+  preserve each local file independently. Astra accepted a Mini-only repair
+  under its existing paused/no-availability state: `87646188…` became
+  `52a6f5b5…`, the nonselected-byte digest remained `2168fd6f…`, and Studio was
+  untouched. Future unpause still requires separately authorized convergence.
 - Rollback: NanoClaw restores the prior immutable release; Tandemweb restores
   the prior source commit. Neither rollback edits provider or student state.
+
+#### Release addendum 2026-09-07T23:41Z
+
+- NanoClaw: exact source `c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1`,
+  source tree `8282c530379eb64a0f9641ff49073268e07b45df`, archive
+  SHA-256 `06e408cf1d361a351070def045d642f0722b435954d356babb22e3b506fa35b0`,
+  compiled artifact `945c70544c489a159e78291a92dfef631d56ddb736cd2b5aed9fb020950ef660`,
+  1,072 files, Node 22.23.2. Local, fresh-extraction, installed-bundle, and
+  release-owned catalog checks pass.
+- Operational knowledge: mode-0600 backup SHA-256
+  `cc18276c897f8665b5d574c8df2eb4da573d2f63755760f3072f5abb9c2392b3`;
+  actual current target is 14 consumers (13 agents plus shared), and all 14
+  exact canonical blocks read back. The earlier 13 shorthand omitted the new
+  current agent target; no consumer was skipped.
+- Activation: drain was zero active containers, zero active/waiting queue, zero
+  dangerous pending-send states, and one listener. The activator changed only
+  three release pointers and retained rollback plist
+  `com.nanoclaw.plist.rollback-1449812c1e71-2026-09-07T23-32-07-849Z`.
+  Live health reports exact verified `c5fdf5f6`, Node 22.23.2, connected
+  Gmail/Slack, one listener, and empty queues.
+- Live behavior: installed compatibility SHA-256 is
+  `95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9`;
+  inaugural and regular resolve to the distinct offers and shared CSS target at
+  revision 1. Wrong scope, known-plus-unknown, mixed, incomplete, and differing
+  Product Map inputs return the exact required conflicts; an unregistered route
+  remains legacy. Program facts check five domains with zero findings.
+- Tandemweb: the first push safely held before reset because the webhook lacked
+  the existing governance decision paths. No partial activation occurred. The
+  same exact candidate was transplanted byte-for-byte over intervening live
+  educator-keyword commit `636129a3`, passed local and remote validator/design
+  gates, then fast-forwarded to `9d708ec4d940065df5919c9306d5de285cdd52a9`.
+  Manual retry through the repository deploy script used the existing accepted
+  design decision and detached approval. Installed HEAD, validator, artifact
+  SHA-256 `9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4`,
+  embedded payload and selected hashes read back; LiteSpeed purge and Cloudflare
+  HTTP 200 completed.
+- Outcome boundary: both consumers are `read_back`. No purchase, payment,
+  student, provider, roster, access, class, capacity, schedule, message, or
+  migration canary ran; natural business outcomes remain unvalidated.
 
 ### NC-20260907-002 — Selective consultative Sales dialogue
 
