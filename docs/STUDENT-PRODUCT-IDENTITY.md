@@ -1,6 +1,7 @@
 # Student product identity across systems
 
-Task: NC-20260907-001. Version 1. Status: implementation under verification.
+Task: NC-20260907-001. Version 1. Status: supervision bridge deployed in
+`138e43abb7a5845af9185c731e70189a35c9f95b`; repair and installed behavior verified.
 
 ## Ownership and identity
 

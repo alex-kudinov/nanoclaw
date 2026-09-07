@@ -1,5 +1,17 @@
 # NanoClaw engineering changelog
 
+## 2026-09-07 — NC-20260907-001 production closure
+
+Immutable release `138e43abb7a5845af9185c731e70189a35c9f95b` activated on Mini
+from aa73538c after exact archive verification, zero active-send drain, and
+reviewed Contador instruction synchronization. Health verifies commit/root and
+connected Gmail/Slack. Installed binding revision 1 resolves renamed supervision
+labels and rejects wrong-account aliases. Completed case 63 replays as no-op
+with downstream tripwires; roster/payment records remain verified. This is not
+a new natural purchase canary. Full evidence and explicit broader coverage,
+enrollment pilot and supervision-capacity remainders are in
+`docs/programs/company-os/evidence/NC-20260907-001-product-identity.md`.
+
 ## 2026-09-07 — NC-20260907-001 supervision repair and product identity bridge
 
 - Exact live case 63 repaired through the deployed host: CSS row 6 verified,
