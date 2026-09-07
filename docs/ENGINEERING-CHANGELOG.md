@@ -1,5 +1,25 @@
 # NanoClaw engineering changelog
 
+## 2026-09-07 — NC-20260907-001 supervision repair and product identity bridge
+
+- Exact live case 63 repaired through the deployed host: CSS row 6 verified,
+  Sales placeholder cleared, Payment Log row 469 and one PostgreSQL payment
+  read back. Lifecycle enqueue suppressed; no communication or capacity change.
+- Implemented versioned, account-scoped product bindings referencing existing
+  entitlement offers/provider IDs. The first migrated population is the two
+  supervision offers; changed names no longer select their destination.
+  Mixed, missing companion, scope, projection and incomplete-source conflicts
+  hold registration while preserving independent accounting receipts.
+- Added an identity coverage audit and cross-provider ownership contract.
+  Full local checkout snapshot: 47 total / 37 active / one active canonical
+  route / 36 explicit coverage gaps; missing mcs-full requires reconciliation.
+- Tests: 85 focused pass; full 3630 pass / 32 skip / two unchanged CNPC/Trafft
+  failures reproduced on f5adc8cc. Typecheck, catalog and continuity pass.
+- Sonnet/high R1 no material findings; Codex separately closed the Checkout
+  unread-PI catch path; narrow R2 verified the correction with no further
+  material findings. Source is ready for commit/release; deployment evidence
+  will be appended after immutable activation and live verification.
+
 This is the shared, append-only engineering and operations record for Claude
 Code, Codex, and human collaborators. It records change evidence, not product
 marketing.

@@ -9,6 +9,16 @@ Code and Codex without replacing Claude-owned sources.
 
 ## 1. How to use this map
 
+Product identity checkpoint `NC-20260907-001`: the versioned
+`facts/catalogs/student-product-bindings-v1.json` references existing entitlement
+offer/provider identities and owns legacy roster destinations for the explicitly
+migrated supervision offers. `tools/contador/lib/product-identity.cjs` resolves
+account-scoped native identities before names; conflicting evidence holds only
+registration while accounting remains independently receipted. The reproducible
+coverage audit and cross-provider ownership contract are in
+`docs/STUDENT-PRODUCT-IDENTITY.md`. This does not activate the new enrollment
+writer, access provisioning or supervision capacity.
+
 This document separates four things that are easy to conflate:
 
 1. **Intent** — requirements, prompts, and design documents.
