@@ -40,6 +40,54 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260907-005 — Prepare first student catalog publication population
+
+- Date: 2026-09-07T21:12:00Z
+- Owner/client: Astra strategy/acceptance owner; Codex Sol High execution
+  worker; Claude Sonnet/high independent reviewer
+- State: complete; Astra accepted the reviewed packet and authorized the final
+  source/continuity commit and push; claim commit `70e0bc6e` is pushed and the
+  exact final remote HEAD is returned in the handoff receipt
+- Branch/base: `codex/catalog-rollout-prep-20260907` from exact accepted NC-004
+  base `0e6fb6050a304689561234d8fdbb0282674ae5bd`
+- Change class: C1 internal proposed contract, execution/application packets,
+  compact technical resolution, business-decision boundary, review, validation,
+  and aggregate evidence
+- Outcome: selects exactly `supervision-inaugural` and `supervision-regular` for
+  a future deterministic publication-tooling implementation. It names concrete
+  NanoClaw/Tandemweb paths, preserves inaugural active and regular inactive,
+  defines typed source references and immutable payload hashes, and requires
+  consumer-specific activation/readback plus prior-artifact rollback.
+- Technical resolution: exact alt-account product/default-price identity is
+  reconfirmed. Native price amount/recurrence remains unverified. The consumer
+  alias is held because toolbox `alt` identity does not prove the deployed
+  processor's separate `tandem` configuration. Exact supervision Heartbeat group
+  and course existence is evidence-bound while attachment/access remains
+  unverified. PCC attachment remains a separate source hold.
+- Resolver boundary: current v1 wrong-scope, incomplete/unknown co-signal,
+  mixed-route, Product Map conflict, and legacy fallback semantics are preserved;
+  future many-to-many or interval-scoped relations must fail unsafe lowering.
+- Review: Sonnet/high R1 found one material missing evidence citation for the
+  first fixture's Heartbeat objects. Codex added exact accepted snapshot paths,
+  recomputed digests, observation time, IDs, existence-only states, attachment
+  false, and a current-lineage refresh/acceptance gate. Narrow R2 returned
+  `NO MATERIAL FINDINGS`. R1 usage: 4 calls, 74,909 cache-create, 120,120
+  cache-read, 24,038 output, max context 74,911. R2 usage: 4 calls, 42,327
+  cache-create, 118,029 cache-read, 6,057 output, max context 49,101.
+- Verification: JSON/required-path/cross-link/privacy/no-`.program`/diff checks,
+  recomputed NC-004 snapshot digests and native object presence, current product
+  resolver 10/10, and pinned Node 22.23.2 documentation continuity pass.
+- Deployment/migration: not applicable and not performed. No canonical catalog,
+  binding, schema, fixture, generator, consumer output, production code, provider,
+  roster, payment, capacity, schedule, message, migration, deployment,
+  publication enforcement, checkout, or `.program` state changed.
+- Follow-up: after Astra accepts and the packet is committed/pushed, coding may
+  begin only under a new implementation task from then-current production
+  lineages. Alias proof and per-consumer release/readback remain activation gates.
+  D-01 locale, D-02 MCS promise equivalence after source evidence, and D-05
+  service policy are later business decisions; D-03/D-04 remain source work
+  first.
+
 ### NC-20260907-004 — Reconcile the student product catalog as read-only evidence
 
 - Date: 2026-09-07T20:01:00Z

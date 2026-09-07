@@ -33,6 +33,17 @@ checkpoint applies no migrations, provider/student writes, or runtime deployment
 Sol made no portfolio mutation; after R2, Astra registered the four reviewed
 candidate gaps at revision 247 without activating them.
 
+Publication-preparation checkpoint `NC-20260907-005`:
+`docs/STUDENT-CATALOG-PUBLICATION-CONTRACT.md` proposes a source-reference
+manifest, deterministic payloads, pinned consumer outputs, exact v1 resolver
+parity, per-consumer activation/readback, and non-atomic rollback. The first
+future implementation population is exactly the inaugural and regular
+supervision routes, preserving inaugural active and regular inactive checkout.
+The deployed consumer account alias still requires actual configured-consumer
+identity proof before activation; native price semantics and Heartbeat
+attachment/access remain unverified. The reviewed packet applies no catalog,
+binding, schema, generator, runtime, provider, website, or deployment change.
+
 This document separates four things that are easy to conflate:
 
 1. **Intent** — requirements, prompts, and design documents.
