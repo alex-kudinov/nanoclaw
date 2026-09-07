@@ -241,8 +241,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-09-07T15:05:00Z
 - Owner/client: Astra strategy owner; Codex Sol High execution worker; Claude
   Sonnet/high independent reviewer
-- State: validating; claim commit `bd2adc88` is pushed, while implementation,
-  review, Astra acceptance, primary installation, and final commit remain pending
+- State: complete; claim `bd2adc88` and implementation `807808ae` are pushed;
+  review, Astra acceptance, primary installation, and exact readback are complete
 - Branch/base: `codex/lifecycle-strategy-routing-20260907` from `c9c65dfb`, in
   isolated worktree `/Users/xbohdpukc/dev/NanoClaw-lifecycle-strategy-20260907`
 - Change class: C1 project-local configuration, operating policy, strategy, and
@@ -325,6 +325,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   its capability generator. No adjacent repair, staging, commit, `.program`
   mutation by Sol, global/trust/runtime/provider/business action, or deployment
   occurred. The clean strategy worktree retains the passing full continuity gate.
+- Closure addendum 2026-09-07T15:43:00Z: implementation commit
+  `807808ae145603bca01139c94905754025e92ea5` is pushed with the unedited Astra
+  execution packet/strategy brief and all owned policy, plan, decision, review,
+  proposal, receipt, and continuity artifacts. Final clean-worktree evidence:
+  documentation continuity/capabilities pass at 164 active/ready rows and 159
+  changelog entries; entitlement validation reports 42 components, seven bundles,
+  eight offers, six conflicts, five provisional components and 20 open questions;
+  enrollment validation reports 10 entities, eight channels, 14 commands, 18
+  exceptions and 10 scenarios; focused product-identity tests pass 10/10; exact
+  TOML, line-limit, link, sequencing, portfolio-readback and diff assertions pass.
+  Program r247 validates with only the accepted 21-versus-20 candidate-pressure
+  warning. Primary routing hashes were independently verified by Astra. Deployment
+  is not applicable; fresh-task default consumption remains intentionally
+  unverified and explicit model/effort is still required on every dispatch.
+
 ### NC-20260906-004 — Bind Sales drafts to current program authority
 
 - Date: 2026-09-06T21:43:00Z
