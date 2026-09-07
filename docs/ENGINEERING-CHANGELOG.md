@@ -236,7 +236,95 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   the existing unclaimed/unauthorized ingress candidate for orientation because
   the checker rejects terminal bindings; the completed work item is separately
   named without reopening it. No live/business-data verification is claimed.
+### NC-20260907-003 — Adopt model routing and durable student lifecycle strategy
 
+- Date: 2026-09-07T15:05:00Z
+- Owner/client: Astra strategy owner; Codex Sol High execution worker; Claude
+  Sonnet/high independent reviewer
+- State: validating; claim commit `bd2adc88` is pushed, while implementation,
+  review, Astra acceptance, primary installation, and final commit remain pending
+- Branch/base: `codex/lifecycle-strategy-routing-20260907` from `c9c65dfb`, in
+  isolated worktree `/Users/xbohdpukc/dev/NanoClaw-lifecycle-strategy-20260907`
+- Change class: C1 project-local configuration, operating policy, strategy, and
+  planning documents only
+- Outcome: adopts Astra strategy/acceptance, one explicit Sol High execution
+  writer, and bounded Claude Sonnet/high review. The assembled lifecycle strategy
+  preserves typed provider relationships, one-agreement/multiple-receipt identity,
+  staged coverage ratchets, committed-seat simple sync, deliberate integration of
+  the undeployed `8b1ffbb9` enrollment line with the live supervision bridge, and
+  evidence-bound later progress/assessment/completion/actions.
+- Portfolio: maps phases 0-7 to current Company OS work and proposes four
+  candidate gaps without applying them: source catalog reconciliation, projection
+  foundation, financial agreement semantics, and provider projection
+  reconciliation. Astra later applied the exact candidate-only delta at r247,
+  moving the observed count from 17 to 21; existing production-pilot, capacity,
+  control-plane, action, and minion items remain intact and unauthorized where
+  applicable.
+- Files: `.codex/config.toml`, `AGENTS.md`, `CLAUDE.md`,
+  `docs/MODEL-ROUTING-POLICY.md`, `docs/STUDENT-LIFECYCLE-STRATEGY.md`,
+  `docs/STUDENT-LIFECYCLE-DECISION-REGISTER.md`, the planned read-only catalog
+  reconciliation packet, Project Map, Active Work, and this entry. Astra-owned
+  strategy brief and execution packet are inputs and remain unedited by Sol.
+- Verification so far: CoachGrader source policy hash matched the execution
+  packet; explicit Sol High dispatch is observed; program revision 246 validates
+  with one active claim; TOML parses with the three intended agent settings;
+  Git ancestry/changed-file comparison confirms application-source independence
+  and continuity-file overlap between product-identity and enrollment branches.
+  Final continuity, links, diff, bounded review, and correction evidence pass.
+- Deployment/migration: not applicable to this planning task. No global config or
+  trust change, `.program` mutation, migration, runtime deployment/restart,
+  provider/student/payment/capacity/roster action, or communication occurred.
+- Rollback/recovery: revert the task-owned local policy/config/document changes;
+  no live or external rollback is required. Primary installation is separately
+  gated on Astra's review acceptance and exact dirty-worktree comparisons.
+- Follow-ups: after strategy closure, Astra may apply the prepared revision-247
+  candidate portfolio delta. The first source reconciliation packet remains
+  planned and unexecuted.
+- Review addendum 2026-09-07T15:20:00Z: the first Claude invocation was blocked
+  before any model call because the draft made root CLAUDE 208 lines against the
+  repository's 200-line hook limit. Sol compressed the binding to 200 lines and
+  incorporated Astra's acceptance corrections: canonical admission now completes
+  before separately authorized projection/readback; one fully settled receipt's
+  aliases are distinct from later multiple installment payments; the local ingress
+  has eight source-channel dispositions including review-only correction; explicit
+  model/effort remains mandatory; and Astra alone owns `.program` mutation.
+  Fresh bounded Sonnet/high R1 then returned `NO MATERIAL FINDINGS` across the six
+  authorized artifacts. Usage: four model calls, 67,019 cache-create, 122,062
+  cache-read, 14,995 output, 67,021 maximum context; no warning threshold fired.
+  Sol independently rechecked the accepted facts, exact proposed r247 mapping,
+  config, instruction bindings, phase dependency order, and worktree scope.
+- Sequencing addendum 2026-09-07T15:24:00Z: Astra required provider delivery to
+  be built/reviewed before any paid event enters the new writer, and canonical
+  plus projection activation/readback to run as separate evidence milestones in
+  one bounded rollout before unrelated financial expansion. The plan now adds
+  `work:student-enrollment-projection-foundation` as an internal/disposable
+  prerequisite, preserves the acyclic pilot-to-live-reconciliation dependency,
+  and acknowledges 21 candidates. R1's statement that Phase 3 excluded replay
+  proof is an overstatement; the actual reviewed plan required disposable replay
+  and still does. Narrow Sonnet/high R2 returned `NO MATERIAL FINDINGS` on the
+  correction and exact acyclic mapping. R2 usage: four model calls, 52,991
+  cache-create, 126,367 cache-read, 10,155 output, 59,765 maximum context; no
+  warning threshold fired. No third review round was started.
+- Primary-install proposal addendum 2026-09-07T15:20:00Z: no install had occurred. The
+  exact proposal records primary target hashes, preserves the unrelated modified
+  199-line CLAUDE file via one unique-anchor replacement, copies only reviewed
+  policy/config bytes, and stops on target drift. Astra acceptance remains the
+  internal gate before primary mutation or final commit/push.
+- Adoption/install addendum 2026-09-07T15:40:00Z: Astra applied the exact reviewed
+  four-candidate delta at program revision 247; all remain unactivated and the
+  acyclic graph is valid with the explicit 21-versus-20 pressure signal. Astra
+  then accepted proposal SHA-256 `79f6da7a...899`. Sol rechecked all four primary
+  preconditions and changed only `.codex/config.toml`, the new routing policy,
+  and narrow AGENTS/CLAUDE insertions. Exact resulting hashes are config
+  `13114f07...32232`, policy `2ad44e0b...517`, AGENTS `60bc6f7b...0a18`, and
+  CLAUDE `dc66053c...d6ad` at 199 lines. New files are byte-identical to reviewed
+  sources; TOML/binding/diff assertions pass. The primary's own continuity command
+  cannot launch because that older dirty checkout lacks the pinned launcher; an
+  equivalent Node 22.23.2 run passed the sanitizer then exposed only existing
+  untracked-support/task-detail/changelog debt, and the old checkout also lacks
+  its capability generator. No adjacent repair, staging, commit, `.program`
+  mutation by Sol, global/trust/runtime/provider/business action, or deployment
+  occurred. The clean strategy worktree retains the passing full continuity gate.
 ### NC-20260906-004 — Bind Sales drafts to current program authority
 
 - Date: 2026-09-06T21:43:00Z

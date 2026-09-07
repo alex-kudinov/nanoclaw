@@ -3,6 +3,17 @@
 NanoClaw was developed and is operated primarily through Claude Code. Codex is
 an additional collaborator, not a replacement for that operating model.
 
+## Model routing
+
+Follow [the NanoClaw model routing policy](docs/MODEL-ROUTING-POLICY.md): Astra
+owns strategy and acceptance, an explicitly selected `gpt-5.6-sol` worker with
+high reasoning owns bounded execution, and Claude Code Sonnet/high supplies
+independent review. Sol workers execute their assigned slice and do not create
+more Codex workers. Keep one execution writer and treat the configured two-child
+ceiling as a runtime limit, not authority for another `.program` claim or release.
+Select the explicit model and effort on every dispatch; project defaults are
+defense in depth even after fresh-task behavior is observed.
+
 ## Read first
 
 Before investigating or changing this repository, read these in order:

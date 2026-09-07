@@ -1,6 +1,6 @@
 # NanoClaw
 
-Personal Claude assistant. See [README.md](README.md) for philosophy and setup. See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for architecture decisions. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system map.
+Personal Claude assistant. See [README.md](README.md) for philosophy and setup, [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for architecture decisions, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system map.
 
 ## Quick Context
 
@@ -13,9 +13,9 @@ Inbound Gmail messages flow through a **bidirectional classification pipeline**:
 
 ## Shared Claude Code + Codex Continuity
 
-Claude Code and Codex use the same tracked engineering record. Client-private
-memory or chat history is never the only record of a change.
+Claude Code and Codex use the same tracked engineering record; client-private memory or chat history is never the only record of a change.
 
+Codex collaboration follows `docs/MODEL-ROUTING-POLICY.md`: Astra owns strategy/acceptance, one explicit Sol High worker owns bounded execution, and Claude Code Sonnet/high reviews independently; routing changes no runtime, program-concurrency, approval, or release boundary.
 Before non-trivial work, read:
 
 1. `docs/PROJECT-MAP.md` — reconciled system and authority map.
