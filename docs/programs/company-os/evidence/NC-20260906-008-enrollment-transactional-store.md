@@ -82,3 +82,26 @@ and readback mismatches are refused.
 - Final staged continuity passes: 165 task rows / 161 changelog entries,
   schema sanitizer and generated capabilities checks clean. The existing live
   schema snapshot date is preserved with a clearly labeled local 146 delta.
+
+## Git and program closure
+
+- Registration `1dcb9350` and reviewed implementation
+  `ef52b51d7d77d9f129608dd05f3d0d28de1e81e8` are committed/pushed to
+  `origin/codex/student-enrollment-transactional-store-20260906`. Commit-hook
+  formatting changed no source; the isolated checkout was clean.
+- Company OS applied r233→r234 with compare-and-swap, closed all nine promises
+  with this evidence and released the claim. Authenticated source admission
+  remains an unauthorized candidate with explicit production-promotion, 146,
+  data/locking, proof-issuer, coexistence and new-event pilot requirements.
+  No new candidate, strategy, authority expansion or runtime action was inferred.
+- Primary governance mirror:
+  `.program/evidence/NC-20260906-008-enrollment-transactional-store.md`.
+- Final checkpoint:
+  `/Users/xbohdpukc/dev/NanoClaw/handoffs/2026-09-06-2211-enrollment-transactional-store-complete.md`.
+  Program validate/status and check-handoff pass at r234. The checkpoint names
+  completed store work separately and binds the existing unauthorized admission
+  candidate for orientation because the checker rejects terminal bindings.
+- Primary source stayed at `51185a5d` with its dirty work preserved. Only
+  governance/handoff records changed there. Migration 146 exists in source and
+  disposable proofs only; no production schema/data/runtime or provider action
+  or live student-enrollment outcome is claimed.

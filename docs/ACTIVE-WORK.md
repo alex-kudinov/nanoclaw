@@ -13,9 +13,9 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260906-008` | Persist both enrollment and capacity aggregates atomically with source/seat race and recovery proof | Codex | `codex/student-enrollment-transactional-store-20260906` @ `e6463ba2`; registration `1dcb9350` pushed | `ready_for_review` | C2 | Reviewed disposable-only store, local migration 146, 148 focused tests and real PostgreSQL proof; no live actions | Commit/push, reconcile program and verify final handoff | 2026-09-07T03:10Z |
+| `NC-20260906-008` | Persist both enrollment and capacity aggregates atomically with source/seat race and recovery proof | Codex | pushed `codex/student-enrollment-transactional-store-20260906`; implementation `ef52b51d` over `e6463ba2` | `complete` | C2 | Reviewed disposable-only store; 148 focused tests and actual PostgreSQL proof; migration 146 local only; Company OS r234 done, claim released; deployment excluded | None for this slice; authenticated admission/promotion remains unauthorized | 2026-09-07T03:13Z |
 
-- Company OS r233: sole claim `work:student-enrollment-transactional-store`.
+- Company OS r234: `work:student-enrollment-transactional-store` done, claim released.
   Owner's Go is recorded in the accepted transactional-store decision; nine
   continuity commitments attached before source implementation.
 - Isolated worktree: `/Users/xbohdpukc/dev/NanoClaw-enrollment-store-20260906`.
@@ -33,6 +33,10 @@ outside the current client conversation.
   concurrency/rollback/uncertain-commit and complete mapping proof, continuity
   165/161 pass. Full root 3,706 pass / 32 skipped / two failures reproduced on
   unchanged `e6463ba2` (CNPC wrapper literal, Trafft freshness).
+- Implementation `ef52b51d7d77d9f129608dd05f3d0d28de1e81e8` committed/pushed;
+  isolated checkout clean. All nine commitments closed with evidence. Program
+  validation/status and final checkpoint check pass. Production migration and
+  live verification are not applicable under the explicit local-only scope.
 
 ### NC-20260906-007 — Local multi-source enrollment adapters
 

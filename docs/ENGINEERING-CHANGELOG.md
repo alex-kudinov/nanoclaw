@@ -12,7 +12,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-07T03:05:00Z
 - Owner/client: Codex with independent Claude Sonnet/high review
-- State: ready_for_review; independent review complete, commit/push pending
+- State: complete; reviewed local source committed/pushed, deployment excluded
 - Branch/base: `codex/student-enrollment-transactional-store-20260906` over
   `e6463ba2`, isolated source worktree; primary dirty source preserved.
 - Change class: C2 local source/disposable DDL/DML; future C5/C4 impact.
@@ -50,6 +50,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   PostgreSQL tests. Root and strict standalone worker typechecks pass;
   final continuity passes (165 task rows / 161 changelog entries). Both full
   suite failures reproduced on the unchanged predecessor in this task.
+- Closure addendum 2026-09-07T03:13:00Z: implementation
+  `ef52b51d7d77d9f129608dd05f3d0d28de1e81e8` committed/pushed; formatting hook
+  left source unchanged and checkout clean. Company OS r234 closes all nine
+  commitments and releases the claim. The existing authenticated-admission
+  candidate now explicitly names disposable-store promotion, migration 146,
+  bounded data/locking, proof issuers, writer coexistence and authorized pilot
+  requirements. Program validation/status, final handoff binding and continuity
+  pass. No production migration, provider, financial or communication action.
 
 ### NC-20260906-007 — Local multi-source enrollment snapshot adapters
 
