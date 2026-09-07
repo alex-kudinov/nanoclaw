@@ -84,6 +84,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   did not change. Authorized narrow R3 returned `NO MATERIAL FINDINGS`: four
   calls, 43,231 cache-create, 115,120 cache-read, 10,217 output, max context
   50,005.
+  Fresh `/tmp` extraction then exposed that macOS physical path resolution to
+  `/private/tmp` made the generator's direct-run equality return silently. The
+  entrypoint now compares physical paths, matching the reviewed mirror helper;
+  final archive verification must emit the Nano catalog validation receipt.
   Final full Nano is 3,661 pass / 32 skip with the same three independently
   classified predecessor failures.
 - Boundary: native price amount/recurrence, Heartbeat group-course attachment,

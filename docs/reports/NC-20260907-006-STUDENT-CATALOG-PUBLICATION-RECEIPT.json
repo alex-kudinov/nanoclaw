@@ -71,6 +71,7 @@
     "nanoclaw_full": "3661 passed, 32 skipped, 3 failed; exact base 1449812c reproduces academy-capacity-operator-disposable reserved expected 1 actual 0; established CNPC and Trafft failures also unchanged",
     "tandemweb_checkout": "regional pricing 38 passed; installments 11 passed",
     "tandemweb_broad_collection": "not run: current interpreter lacks optional BeautifulSoup and markdownify dependencies",
+    "fresh_archive_gate": "macOS /tmp resolves physically to /private/tmp; direct-run detection now compares real paths so extracted verification executes and emits the Nano catalog validation receipt",
     "review": "Claude Sonnet/high R1 found one verified hold-key validation gap and one projection-scope gap; the exact-key fix passed focused checks and narrow R2 returned NO MATERIAL FINDINGS. Astra then found duplicated consumer business constants; the source-driven correction preserved artifact bytes and authorized narrow R3 returned NO MATERIAL FINDINGS. R1/R2/R3 calls 4/5/4; cache-create 74159/35713/43231; cache-read 126705/148656/115120; output 17544/5164/10217; max context 74161/42487/50005."
   },
   "privacy": {
